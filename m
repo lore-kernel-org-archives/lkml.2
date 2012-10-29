@@ -1,170 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757160Ab2J2TyB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 15:54:01 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:33028 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752991Ab2J2TyA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 15:54:00 -0400
-Message-ID: <508EDEC6.7030101@ahsoftware.de>
-Date: Mon, 29 Oct 2012 20:53:42 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1757644Ab2J2TzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 15:55:06 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54843 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752111Ab2J2TzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 15:55:03 -0400
+Date: Mon, 29 Oct 2012 21:49:01 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Felipe Balbi <balbi@ti.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>, <tony@atomide.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-input@vger.kernel.org>
+Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
+Message-ID: <20121029194901.GA30152@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
+ <20121024161429.GA16350@core.coreip.homeip.net>
+ <CACRpkdai3NocZQnW6YRF+k6GXUSx3P_Ge=F-tkuivrFm6tBbLg@mail.gmail.com>
+ <4099134.xWUIfbbahk@dtor-d630.eng.vmware.com>
+ <20121024185818.GB772@arwen.pp.htv.fi>
+ <20121025205901.GA3827@sirena.org.uk>
+ <20121026062008.GA21734@arwen.pp.htv.fi>
+ <20121026160316.GY18814@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Jacob Shin <jacob.shin@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: x86: Regression in 3.6.4, bisected to "Exclude E820_RESERVED
- regions..."
-References: <508E58FD.2000707@ahsoftware.de> <508E8264.8070807@ahsoftware.de> <20121029165946.GB6614@kroah.com> <508EC69F.2030505@ahsoftware.de> <20121029183250.GB4623@kroah.com>
-In-Reply-To: <20121029183250.GB4623@kroah.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gBBFr7Ir9EOA20Yy"
+Content-Disposition: inline
+In-Reply-To: <20121026160316.GY18814@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.10.2012 19:32, schrieb Greg Kroah-Hartman:
-> On Mon, Oct 29, 2012 at 07:10:39PM +0100, Alexander Holler wrote:
->> Am 29.10.2012 17:59, schrieb Greg Kroah-Hartman:
->>> On Mon, Oct 29, 2012 at 02:19:32PM +0100, Alexander Holler wrote:
->>>> Am 29.10.2012 11:22, schrieb Alexander Holler:
->>>>> Hello,
->>>>>
->>>>> I've just bisected a problem with 3.6.4.
->>>>>
->>>>> I had to revert commit 54ce8ce298f382a06186cb4672ad6aa090b050b6
->>>>> (1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a in mainline), otherwise my box
->>>>> didn't boot.
->>>>>
->>>>> I can't provide any output, because I don't see if that commit is
->>>>> applied. ;)
->>>>
->>>> That sentence missed an 'any'. But I've now attached a serial, here is
->>>> the output:
->>>
->>> Thanks for this, it should be fixed in the next 3.6.y release, we needed
->>> to add two more commits from upstream:
->>> 	844ab6f993b1d32eb40512503d35ff6ad0c57030
->>> 	f82f64dd9f485e13f29f369772d4a0e868e5633a
->>> If you apply those two, and it doesn't solve the problem for you, please
->>> let us know.
->>
->> They don't applied cleanly, but after fixing the conflicts it seem's
->> to work.
+--gBBFr7Ir9EOA20Yy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Fri, Oct 26, 2012 at 05:03:16PM +0100, Mark Brown wrote:
+> On Fri, Oct 26, 2012 at 09:20:36AM +0300, Felipe Balbi wrote:
+> > On Thu, Oct 25, 2012 at 09:59:01PM +0100, Mark Brown wrote:
+>=20
+> > > I suspect that's not actually a big deal and that if we went down this
+> > > route we'd have the driver take over control from the core code during
+> > > probe() with the core still setting up the default state.
+>=20
+> > > Personally I do think we want to be factoring bolierplate out of
+> > > drivers, if they're not doing anything constructive with pinctrl they
+> > > should be able to avoid having code for it.  There definitely are iss=
+ues
+> > > to work through but it seems like we ought to be able to do something.
+>=20
+> > IMHO this will come back to bite you in the *ss. Specially when the same
+> > driver is shared among multiple revisions of the same SoC or multiple
+> > different SoCs.
+>=20
+> I'm not entirely sure you fully understood the proposal...
+>=20
+> > Hypothetical situation: OMAP4 has keypad as the default pin mode and low
+> > power is handled by the HW, so keypad could have pinctlr "boilerplate"
+> > factored out. Then comes OMAP5 and low power mode has to be handled by
+> > SW for whatever reason (maybe there are more than one low power mode).
+> > Then we will need to patch omap4-keypad.c to remove "dont_touch_my_pins"
+> > flag and add pinctrl support.
+>=20
+> This isn't going to make any practical difference at all, as soon as the
+> driver starts using pinctrl explicitly a flag gets set in the driver and
+> the default code does nothing more.  The only difference will be that we
+> may get a default configuration applied prior to probe.
 >
-> The conflict was in the printk, right?  I fixed that up in the 3.4
-> stable tree.
+> You could have the driver explicitly set the flag, it would just be one
+> extra line, but it seems marginally nicer to just do it.
 
-No, I've come up with that on top of 3.6.4:
+You didn't get the whole picture I'm afraid. Consider the situation
+where the same e.g. keypad driver is being used on OMAP4 and OMAP5 and
+those have different requirements towards pinctrl.
 
------------------
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index ab1f6a9..d7aea41 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -35,40 +35,44 @@ struct map_range {
-  	unsigned page_size_mask;
-  };
+Let's just assume for the sake of argument that OMAP4 would set the flag
+on the driver structure which would tell drivers/base/ to handle pinctrl
+default automatically and let's assume that's just fine for OMAP4 since
+sleep mode is handled by HW (all of this is just for the sake of
+argument, I'm not claiming this is how OMAP4/5 work).
 
--static void __init find_early_table_space(struct map_range *mr, 
-unsigned long end,
--					  int use_pse, int use_gbpages)
-+/*
-+ * First calculate space needed for kernel direct mapping page tables 
-to cover
-+ * mr[0].start to mr[nr_range - 1].end, while accounting for possible 
-2M and 1GB
-+ * pages. Then find enough contiguous space for those page tables.
-+ */
-+static void __init find_early_table_space(struct map_range *mr, int 
-nr_range)
-  {
--	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
-+	int i;
-+	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
-+	unsigned long start = 0, good_end;
-  	phys_addr_t base;
+Now, we need to add OMAP5 support *to the same keypad driver*.
+Unfortunately, OMAP5 needs to handle pinctrl explicitly for whatever
+reason (SW-controlled sleep mode, errata fix, whatever).
 
--	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
--	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
--
--	if (use_gbpages) {
--		unsigned long extra;
--
--		extra = end - ((end>>PUD_SHIFT) << PUD_SHIFT);
--		pmds = (extra + PMD_SIZE - 1) >> PMD_SHIFT;
--	} else
--		pmds = (end + PMD_SIZE - 1) >> PMD_SHIFT;
-+	for (i = 0; i < nr_range; i++) {
-+		unsigned long range, extra;
+This will mean that we will have to remove the flag from the keypad
+driver because that's not valid anymore for OMAP5.
 
--	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
-+		range = mr[i].end - mr[i].start;
-+		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+What I'm claiming below is that quite possibly all drivers will go
+through that:
 
--	if (use_pse) {
--		unsigned long extra;
-+		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
-+			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
-+			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
-+		} else {
-+			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
-+		}
+- start with transparent pinctrl default mode by letting drivers/base/
+  automagically take care of that for us.
 
--		extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
-+		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
-+			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
-  #ifdef CONFIG_X86_32
--		extra += PMD_SIZE;
-+			extra += PMD_SIZE;
-  #endif
--		/* The first 2/4M doesn't use large pages. */
--		if (mr->start < PMD_SIZE)
--			extra += mr->end - mr->start;
--
--		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
--	} else
--		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		} else {
-+			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		}
-+	}
+- remove the 'handle-pinctrl-automatically-for-me' flag because of new
+  requirements on different version of the IP.
 
-+	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
-+	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
-  	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
+This is why I think hiding things from drivers makes no sense. Also
+consider the situations Linus W exposed on another subthread. If you
+change ordering of certain calls, you will really break the
+functionality of the IP. Because we can't make sure this won't work
+automagically in all cases (just like we can't make sure $size memory
+allocation is enough for all drivers) we don't hide that from the
+driver. We require driver to manage its resources properly.
 
-  #ifdef CONFIG_X86_32
-@@ -86,7 +90,7 @@ static void __init find_early_table_space(struct 
-map_range *mr, unsigned long en
-  	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
+> > When you think of the possibilities of every single driver going
+> > throught that it sounds a lot nicer to not make that decision IMHO and
+> > keep pinctrl explicit.
+>=20
+> I'm just not seeing any impact on drivers that do something interesting
+> here.
 
-  	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem 
-%#010lx-%#010lx]\n",
--		end - 1, pgt_buf_start << PAGE_SHIFT,
-+		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
-  		(pgt_buf_top << PAGE_SHIFT) - 1);
-  }
+that's because you didn't consider enough possibilities. See above.
 
-@@ -267,7 +271,7 @@ unsigned long __init_refok 
-init_memory_mapping(unsigned long start,
-  	 * nodes are discovered.
-  	 */
-  	if (!after_bootmem)
--		find_early_table_space(&mr[0], end, use_pse, use_gbpages);
-+		find_early_table_space(mr, nr_range);
+How can you make sure that this will work for at least 50% of the
+drivers ? You just can't. We don't know the implementation details of
+every arch/soc/platform supported by Linux today to make that decision.
 
-  	for (i = 0; i < nr_range; i++)
-  		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
------------------
+IMHO, it's best to require drivers to explicitly setup pin muxing by
+calling into pinctrl framework.
 
-> Fixing problems is good :)
+--=20
+balbi
 
-At least better than creating them. ;)
+--gBBFr7Ir9EOA20Yy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Regards,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Alexander
+iQIcBAEBAgAGBQJQjt2sAAoJEIaOsuA1yqREVTMP/2CoOY8gIpvAVq+CcPvcXjyd
+boRoyQgEcTdsIUMmAPcJ6axyoZPaTBVVItUyjMQ+LbYHU3knLhDLe0lH8PD0jJgC
+O5AiHMonToSDX6UBL6oQGY7qbo9+SG4OXwQA39HJ0MM0/QfRBm3eyyKZgGCn6fn7
+k5/tSXuFZniJOCdetlRjUUkZ1QhxLiEDqD4ZK7F4Dtt+WmcHUm03p4uwDjbSswtM
+tDk9EDWy32ICszkFMlUlTnAaUptO6YIxb5qW6KUkRIuygO64RE7/k0nb2oPoBARA
+QcMGmEsLuEkniJrus/gm8V/uH/l8KRH8vX73PDMBiceQmk+t2I4wHvVKP5eAD5xn
+vC6eS4rLZ3GLLWUiBPWFs2IUMgR0j4bd86NumbqTYQ81bfNfblO18cm8/a9X8Yjj
+JexnJj0EodqM3m5VQLXPaqcHChQ9uV5LfRAwM3cI28A33rnkAIUxMuhi7JegQvWO
+S+amhhKtq2riA6BMwTBrykpHkGtL8nOXMXK3hcPjLiA7Vua9MARhikt0D52YUceb
+XbOSXBOt5j+sMFcBLmuAlmt+tXxyRqKsNnDnjYALH3n6ev3rJCiur6znvEAS4p04
++WiZ6fsnJTiijY9zCDJL84xZXOcLZq0RjjySPXQgA0lLHNfhbbA09BxCpqDKFY6m
+KGEkOTkWDMQoEdveteZh
+=67JQ
+-----END PGP SIGNATURE-----
+
+--gBBFr7Ir9EOA20Yy--
