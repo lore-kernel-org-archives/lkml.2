@@ -1,75 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758660Ab2J2LFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 07:05:32 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:52258 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758578Ab2J2LF1 (ORCPT
+	id S1758687Ab2J2LFj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 07:05:39 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53624 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758663Ab2J2LFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 07:05:27 -0400
-Date: Mon, 29 Oct 2012 12:05:19 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] s390: Add pmd_mknotpresent()
-Message-ID: <20121029110519.GA22569@gmail.com>
-References: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
- <20121018182642.2a541275@thinkpad>
- <20121028131014.GA10754@gmail.com>
- <20121029084956.12b512e6@mschwide>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029084956.12b512e6@mschwide>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Oct 2012 07:05:36 -0400
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH 5/7] staging/gdm72xx: Use dev_ printks in sdio_boot.c
+Date: Mon, 29 Oct 2012 20:05:30 +0900
+Message-Id: <1351508730-1857-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351508627-1713-1-git-send-email-yamanetoshi@gmail.com>
+References: <1351508627-1713-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+fixed below checkpatch warnings.
+- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
 
-* Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+---
+ drivers/staging/gdm72xx/sdio_boot.c |   25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
-> On Sun, 28 Oct 2012 14:10:14 +0100
-> Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > 
-> > There's a related problem on s390: other THP implementations 
-> > have pmd_mknotpresent() while s390 not, resulting in:
-> > 
-> >   mm/huge_memory.c:1543:2: error: implicit declaration of function 'pmd_mknotpresent'
-> > 
-> > The (untested!) patch below adds the s390 version of this 
-> > method.
-> > 
-> > Gerald, Martin, did I get the S390 details right?
-> 
-> This won't work I'm afraid. S390 uses invalid bits which need 
-> to be set to make an entry not present. Just setting the 
-> _SEGMENT_ENTRY_INV bit is not good enough either, there is 
-> _HPAGE_TYPE_NONE to consider. The patch to fix this for 
-> pmd_none & pmd_present just got added to the s390 tree on 
-> kernel.org:
->
-> https://git.kernel.org/?p=linux/kernel/git/s390/linux.git;a=shortlog;h=refs/heads/fixes
-> 
-> Now, if pmd_mknotpresent is supposed to make the entry invalid 
-> so that pmd_present will return false the function needs to do 
-> two things, 1) set the _SEGMENT_ENTRY_INV bit, and 2) clear 
-> the _SEGMENT_ENTRY_RO bit.
+diff --git a/drivers/staging/gdm72xx/sdio_boot.c b/drivers/staging/gdm72xx/sdio_boot.c
+index 38feb1a..6291829 100644
+--- a/drivers/staging/gdm72xx/sdio_boot.c
++++ b/drivers/staging/gdm72xx/sdio_boot.c
+@@ -65,15 +65,15 @@ static int download_image(struct sdio_func *func, const char *img_name)
+ 
+ 	ret = request_firmware(&firm, img_name, &func->dev);
+ 	if (ret < 0) {
+-		printk(KERN_ERR
+-		       "requesting firmware %s failed with error %d\n",
++		dev_err(&func->dev,
++			"requesting firmware %s failed with error %d\n",
+ 			img_name, ret);
+ 		return ret;
+ 	}
+ 
+ 	buf = kmalloc(DOWNLOAD_SIZE + TYPE_A_HEADER_SIZE, GFP_KERNEL);
+ 	if (buf == NULL) {
+-		printk(KERN_ERR "Error: kmalloc\n");
++		dev_err(&func->dev, "Error: kmalloc\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -101,8 +101,9 @@ static int download_image(struct sdio_func *func, const char *img_name)
+ 		memcpy(buf+TYPE_A_HEADER_SIZE, firm->data + pos, len);
+ 		ret = sdio_memcpy_toio(func, 0, buf, len + TYPE_A_HEADER_SIZE);
+ 		if (ret < 0) {
+-			printk(KERN_ERR "gdmwm: send image error: "
+-				"packet number = %d ret = %d\n", pno, ret);
++			dev_err(&func->dev,
++				"send image error: packet number = %d ret = %d\n",
++				pno, ret);
+ 			goto out;
+ 		}
+ 
+@@ -110,13 +111,14 @@ static int download_image(struct sdio_func *func, const char *img_name)
+ 			break;
+ 		if (!ack_ready(func)) {
+ 			ret = -EIO;
+-			printk(KERN_ERR "gdmwm: Ack is not ready.\n");
++			dev_err(&func->dev, "Ack is not ready.\n");
+ 			goto out;
+ 		}
+ 		ret = sdio_memcpy_fromio(func, buf, 0, TYPE_A_LOOKAHEAD_SIZE);
+ 		if (ret < 0) {
+-			printk(KERN_ERR "gdmwm: receive ack error: "
+-				"packet number = %d ret = %d\n", pno, ret);
++			dev_err(&func->dev,
++				"receive ack error: packet number = %d ret = %d\n",
++				pno, ret);
+ 			goto out;
+ 		}
+ 		sdio_writeb(func, 0x01, 0x13, &ret);
+@@ -140,19 +142,20 @@ int sdio_boot(struct sdio_func *func)
+ 
+ 	tx_buf = kmalloc(YMEM0_SIZE, GFP_KERNEL);
+ 	if (tx_buf == NULL) {
+-		printk(KERN_ERR "Error: kmalloc: %s %d\n", __func__, __LINE__);
++		dev_err(&func->dev, "Error: kmalloc: %s %d\n",
++			__func__, __LINE__);
+ 		return -ENOMEM;
+ 	}
+ 
+ 	ret = download_image(func, krn_name);
+ 	if (ret)
+ 		goto restore_fs;
+-	printk(KERN_INFO "GCT: Kernel download success.\n");
++	dev_info(&func->dev, "GCT: Kernel download success.\n");
+ 
+ 	ret = download_image(func, rfs_name);
+ 	if (ret)
+ 		goto restore_fs;
+-	printk(KERN_INFO "GCT: Filesystem download success.\n");
++	dev_info(&func->dev, "GCT: Filesystem download success.\n");
+ 
+ restore_fs:
+ 	kfree(tx_buf);
+-- 
+1.7.9.5
 
-Would be nice if you could send me your suggested 
-pmd_mknotpresent().
-
-(Writing it into the email would be enough, I can turn it into a 
-patch - but a patch would be welcome as well.)
-
-Thanks,
-
-	Ingo
