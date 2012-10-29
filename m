@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab2J2Hpn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 03:45:43 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:42465 "EHLO ogre.sisk.pl"
+	id S1755981Ab2J2Htu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 03:49:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44854 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753680Ab2J2Hpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 03:45:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Micael <kam1kaz3@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Zheng Yan <zheng.z.yan@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Huang Ying <ying.huang@intel.com>
-Subject: Re: Power regression found on 3.6-rc1+
-Date: Mon, 29 Oct 2012 08:49:38 +0100
-Message-ID: <2972912.ooClOChIux@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CAKw44fY_f69qGXHbcyXvr4i=or4FpB7TDQVijLkN7tv5iU-zrQ@mail.gmail.com>
-References: <CAKw44fY_f69qGXHbcyXvr4i=or4FpB7TDQVijLkN7tv5iU-zrQ@mail.gmail.com>
+	id S1752487Ab2J2Htt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 03:49:49 -0400
+Date: Mon, 29 Oct 2012 08:49:41 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support 
+In-Reply-To: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+Message-ID: <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 26, 2012 12:37:36 AM Micael wrote:
-> I have a laptop running Arch Linux and found that upgrading from 3.5.6
-> to 3.6.2 had a huge impact on my battery life. Power consumption went
-> from ~10W to ~20W.
-> I initially thought it was a i915 driver problem since the CPU temps
-> went up and so I opened this bug:
-> https://bugzilla.kernel.org/show_bug.cgi?id=49031
-> 
-> However, as you can see if you read the bug's comments, after
-> bisecting this I found the culprit to be commit
-> 71a83bd727cc31c5fe960c3758cb396267ff710e:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=71a83bd727cc31c5fe960c3758cb396267ff710e
+On Thu, 20 Sep 2012, Matthew Garrett wrote:
 
-I wonder what the problem may be here.
+> This is pretty much identical to the first patchset, but with the capability
+> renamed (CAP_COMPROMISE_KERNEL) and the kexec patch dropped. If anyone wants
+> to deploy these then they should disable kexec until support for signed
+> kexec payloads has been merged.
 
-It looks like the polling change in pci_pme_list_scan() is causing problems
-to happen.
+Apparently your patchset currently doesn't handle device firmware loading, 
+nor do you seem to mention in in the comments.
+
+I believe signed firmware loading should be put on plate as well, right?
 
 Thanks,
-Rafael
-
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jiri Kosina
+SUSE Labs
+
