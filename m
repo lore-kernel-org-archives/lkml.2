@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933094Ab2J2Vu3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:50:29 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48678 "EHLO mail.kernel.org"
+	id S933264Ab2J2VvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:51:06 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48648 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932978Ab2J2Vle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:34 -0400
+	id S932958Ab2J2Vlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 28/54] USB: sierra: fix memory leak in attach error path
-Date: Mon, 29 Oct 2012 14:40:29 -0700
-Message-Id: <20121029213805.885742306@linuxfoundation.org>
+Subject: [ 26/54] USB: opticon: fix memory leak in error path
+Date: Mon, 29 Oct 2012 14:40:27 -0700
+Message-Id: <20121029213805.677997495@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -27,41 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 7e41f9bcdd2e813ea2a3c40db291d87ea06b559f upstream.
+commit acbf0e5263de563e25f7c104868e4490b9e72b13 upstream.
 
-Make sure port private data is deallocated on errors in attach.
+Fix memory leak in write error path.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/usb/serial/opticon.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -936,7 +936,7 @@ static int sierra_startup(struct usb_ser
- 			dev_dbg(&port->dev, "%s: kmalloc for "
- 				"sierra_port_private (%d) failed!\n",
- 				__func__, i);
--			return -ENOMEM;
-+			goto err;
- 		}
- 		spin_lock_init(&portdata->lock);
- 		init_usb_anchor(&portdata->active);
-@@ -973,6 +973,13 @@ static int sierra_startup(struct usb_ser
+--- a/drivers/usb/serial/opticon.c
++++ b/drivers/usb/serial/opticon.c
+@@ -297,7 +297,7 @@ static int opticon_write(struct tty_stru
+ 	if (!dr) {
+ 		dev_err(&port->dev, "out of memory\n");
+ 		count = -ENOMEM;
+-		goto error;
++		goto error_no_dr;
  	}
  
- 	return 0;
-+err:
-+	for (--i; i >= 0; --i) {
-+		portdata = usb_get_serial_port_data(serial->port[i]);
-+		kfree(portdata);
-+	}
-+
-+	return -ENOMEM;
- }
+ 	dr->bRequestType = USB_TYPE_VENDOR | USB_RECIP_INTERFACE | USB_DIR_OUT;
+@@ -327,6 +327,8 @@ static int opticon_write(struct tty_stru
  
- static void sierra_release(struct usb_serial *serial)
+ 	return count;
+ error:
++	kfree(dr);
++error_no_dr:
+ 	usb_free_urb(urb);
+ error_no_urb:
+ 	kfree(buffer);
 
 
