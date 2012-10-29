@@ -1,103 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757023Ab2J2NZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:25:56 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58554 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754860Ab2J2NZy (ORCPT
+	id S1756938Ab2J2N15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:27:57 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:42672 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754795Ab2J2N14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:25:54 -0400
-Date: Mon, 29 Oct 2012 09:25:52 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 14/16] net,rds: use new hashtable implementation
-Message-ID: <20121029132552.GB16391@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-14-git-send-email-levinsasha928@gmail.com>
+	Mon, 29 Oct 2012 09:27:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351450948-15618-14-git-send-email-levinsasha928@gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <50880774.5090605@ti.com>
+References: <1349595838-31274-1-git-send-email-vincent.guittot@linaro.org>
+	<1349595838-31274-6-git-send-email-vincent.guittot@linaro.org>
+	<50880774.5090605@ti.com>
+Date: Mon, 29 Oct 2012 14:27:54 +0100
+Message-ID: <CAKfTPtBsAJ4u265TzOz9qvL4d-eMmrVD-MtgG_Rri_2shGrPBQ@mail.gmail.com>
+Subject: Re: [RFC 5/6] sched: pack the idle load balance
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, peterz@infradead.org, mingo@redhat.com,
+        pjt@google.com, linux@arm.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> Switch rds to use the new hashtable implementation. This reduces the amount of
-> generic unrelated code in rds.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  net/rds/bind.c       |  28 +++++++++-----
->  net/rds/connection.c | 102 +++++++++++++++++++++++----------------------------
->  2 files changed, 63 insertions(+), 67 deletions(-)
-> 
-> diff --git a/net/rds/bind.c b/net/rds/bind.c
-> index 637bde5..79d65ce 100644
-> --- a/net/rds/bind.c
-> +++ b/net/rds/bind.c
-> @@ -36,16 +36,16 @@
->  #include <linux/if_arp.h>
->  #include <linux/jhash.h>
->  #include <linux/ratelimit.h>
-> +#include <linux/hashtable.h>
->  #include "rds.h"
->  
-> -#define BIND_HASH_SIZE 1024
-> -static struct hlist_head bind_hash_table[BIND_HASH_SIZE];
-> +#define BIND_HASH_BITS 10
-> +static DEFINE_HASHTABLE(bind_hash_table, BIND_HASH_BITS);
->  static DEFINE_SPINLOCK(rds_bind_lock);
->  
-> -static struct hlist_head *hash_to_bucket(__be32 addr, __be16 port)
-> +static u32 rds_hash(__be32 addr, __be16 port)
->  {
-> -	return bind_hash_table + (jhash_2words((u32)addr, (u32)port, 0) &
-> -				  (BIND_HASH_SIZE - 1));
-> +	return jhash_2words((u32)addr, (u32)port, 0);
->  }
->  
->  static struct rds_sock *rds_bind_lookup(__be32 addr, __be16 port,
-> @@ -53,12 +53,12 @@ static struct rds_sock *rds_bind_lookup(__be32 addr, __be16 port,
->  {
->  	struct rds_sock *rs;
->  	struct hlist_node *node;
-> -	struct hlist_head *head = hash_to_bucket(addr, port);
-> +	u32 key = rds_hash(addr, port);
->  	u64 cmp;
->  	u64 needle = ((u64)be32_to_cpu(addr) << 32) | be16_to_cpu(port);
->  
->  	rcu_read_lock();
-> -	hlist_for_each_entry_rcu(rs, node, head, rs_bound_node) {
-> +	hash_for_each_possible_rcu(bind_hash_table, rs, node, rs_bound_node, key) {
+On 24 October 2012 17:21, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+> On Sunday 07 October 2012 01:13 PM, Vincent Guittot wrote:
+>>
+>> Look for an idle CPU close the pack buddy CPU whenever possible.
+>
+> s/close/close to
 
-here too, key will be hashed twice:
+yes
 
-- once by jhash_2words,
-- once by hash_32(),
+>
+>> The goal is to prevent the wake up of a CPU which doesn't share the power
+>> line of the pack CPU
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>   kernel/sched/fair.c |   18 ++++++++++++++++++
+>>   1 file changed, 18 insertions(+)
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 6df53b5..f76acdc 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5158,7 +5158,25 @@ static struct {
+>>
+>>   static inline int find_new_ilb(int call_cpu)
+>>   {
+>> +       struct sched_domain *sd;
+>>         int ilb = cpumask_first(nohz.idle_cpus_mask);
+>> +       int buddy = per_cpu(sd_pack_buddy, call_cpu);
+>> +
+>> +       /*
+>> +        * If we have a pack buddy CPU, we try to run load balance on a
+>> CPU
+>> +        * that is close to the buddy.
+>> +        */
+>> +       if (buddy != -1)
+>> +               for_each_domain(buddy, sd) {
+>> +                       if (sd->flags & SD_SHARE_CPUPOWER)
+>> +                               continue;
+>
+> Do you mean SD_SHARE_POWERLINE here ?
 
-is this intended ?
+No, I just don't want to take hyperthread level for ILB
 
-Thanks,
+>
+>> +
+>> +                       ilb = cpumask_first_and(sched_domain_span(sd),
+>> +                                       nohz.idle_cpus_mask);
+>> +
+>> +                       if (ilb < nr_cpu_ids)
+>> +                               break;
+>> +               }
+>>
+>>         if (ilb < nr_cpu_ids && idle_cpu(ilb))
+>>                 return ilb;
+>>
+> Can you please expand "idle CPU _close_ the pack buddy CPU" ?
 
-Mathieu
+The goal is to packed  the tasks on the pack buddy CPU so when the
+scheduler needs to start ILB, I try to wake up a CPU that is close to
+the buddy and preferably in the same cluster
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+>
+> Regards
+> santosh
