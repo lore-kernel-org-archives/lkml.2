@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760678Ab2J2USI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:18:08 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42533 "EHLO mail.kernel.org"
+	id S1753263Ab2J2UVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:21:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5828 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760586Ab2J2UIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:08:46 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Luebbe <jlu@pengutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Roland Stigge <stigge@antcom.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 03/34] drivers/rtc/rtc-imxdi.c: add missing spin lock initialization
-Date: Mon, 29 Oct 2012 13:07:34 -0700
-Message-Id: <20121029200420.959210447@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
-References: <20121029200420.550338074@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1750970Ab2J2UVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:21:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,673,1344236400"; 
+   d="scan'208";a="234228123"
+Subject: Re: [PATCH] x86/ioapic: Fix the vector_irq[] is corrupted randomly
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de, yinghai@kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 29 Oct 2012 13:24:04 -0700
+In-Reply-To: <1351527341.15558.1445.camel@cliu38-desktop-build>
+References: <1351527341.15558.1445.camel@cliu38-desktop-build>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1351542245.12459.39.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2012-10-30 at 00:15 +0800, Chuansheng Liu wrote:
+> Not all irq chips are IO-APIC chip.
+> 
+> In our system, there are many demux GPIO interrupts except for the
+> io-apic chip interrupts, and these GPIO interrupts are belonged
+> to other irq chips, the chip data is not type of struct irq_cfg
+> either.
+> 
+> But in function __setup_vector_irq(), it listed all allocated irqs,
+> and presume all irq chip is ioapic_chip and the chip data is type
+> of struct irq_cfg, it possibly causes the vector_irq is corrupted
+> randomly.
+> 
+> For example, one irq 258 is not io-apic chip irq, in __setup_vector_irq(),
+> the chip data is forced to be used as struct irq_cfg, then the value
+> cfg->domain and cfg->vector are wrong to be used to write vector_irq:
+> 		vector = cfg->vector;
+> 		per_cpu(vector_irq, cpu)[vector] = irq;
+> 
+> This patch use the .flags to identify if the irq chip is io-apic.
 
-------------------
+I have a feeling that your gpio driver is abusing the 'chip_data' in the
+struct irq_data. Shouldn't the driver be using 'handler_data' instead?
 
-From: Jan Luebbe <jlu@pengutronix.de>
+>From include/linux/irq.h:
+ * @handler_data:       per-IRQ data for the irq_chip methods
+ * @chip_data:          platform-specific per-chip private data for the chip
+ *                      methods, to allow shared chip implementations
 
-commit fee0de7791f967c2c5f0d43eb7b7261761b45e64 upstream.
+Also, how are these routed to the processors and the mechanism of the
+vector assignment for these irq's? I presume irq_cfg is needed for the
+setup and the interrupt migration from one cpu to another.
 
-Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Roland Stigge <stigge@antcom.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Tested-by: Roland Stigge <stigge@antcom.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+What am I missing?
 
----
- drivers/rtc/rtc-imxdi.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/rtc/rtc-imxdi.c
-+++ b/drivers/rtc/rtc-imxdi.c
-@@ -391,6 +391,8 @@ static int dryice_rtc_probe(struct platf
- 	if (imxdi->ioaddr == NULL)
- 		return -ENOMEM;
- 
-+	spin_lock_init(&imxdi->irq_lock);
-+
- 	imxdi->irq = platform_get_irq(pdev, 0);
- 	if (imxdi->irq < 0)
- 		return imxdi->irq;
-
+thanks,
+suresh
 
