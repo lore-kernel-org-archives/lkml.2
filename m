@@ -1,98 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751162Ab2J2THI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 15:07:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:52096 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab2J2THG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 15:07:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,673,1344236400"; 
-   d="scan'208";a="212618628"
-From: Andi Kleen <andi@firstfloor.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Dave Chinner <david@fromorbit.com>, "Luck\, Tony" <tony.luck@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Kleen\, Andi" <andi.kleen@intel.com>,
-        "Wu\, Fengguang" <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Akira Fujita <a-fujita@rs.jp.nec.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "linux-ext4\@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ext4: introduce ext4_error_remove_page
-References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1351177969-893-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<20121026061206.GA31139@thunk.org>
-	<3908561D78D1C84285E8C5FCA982C28F19D5A13B@ORSMSX108.amr.corp.intel.com>
-	<20121026184649.GA8614@thunk.org>
-	<3908561D78D1C84285E8C5FCA982C28F19D5A388@ORSMSX108.amr.corp.intel.com>
-	<20121027221626.GA9161@thunk.org> <20121029011632.GN29378@dastard>
-	<20121029024024.GC9365@thunk.org> <m27gq9r2cu.fsf@firstfloor.org>
-	<20121029182455.GA7098@thunk.org>
-Date: Mon, 29 Oct 2012 12:07:04 -0700
-In-Reply-To: <20121029182455.GA7098@thunk.org> (Theodore Ts'o's message of
-	"Mon, 29 Oct 2012 14:24:56 -0400")
-Message-ID: <m21ughksh3.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1751575Ab2J2TH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 15:07:57 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42892 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719Ab2J2THz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 15:07:55 -0400
+Date: Mon, 29 Oct 2012 15:05:56 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Alexander Duyck <alexander.duyck@gmail.com>
+Cc: konrad@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        rob@landley.net, akpm@linux-foundation.org, joerg.roedel@amd.com,
+        bhelgaas@google.com, shuahkhan@gmail.com,
+        fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Alexander Duyck <alexander.h.duyck@intel.com>
+Subject: Re: [PATCH v3 0/7] Improve swiotlb performance by using physical
+ addresses
+Message-ID: <20121029190555.GD2551@localhost.localdomain>
+References: <20121015171707.25171.35294.stgit@gitlad.jf.intel.com>
+ <CAKgT0UfG99tb29TOSQmDqnhy4uck5t+pjgeJnweqkV-EUuq3VA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKgT0UfG99tb29TOSQmDqnhy4uck5t+pjgeJnweqkV-EUuq3VA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Theodore Ts'o <tytso@mit.edu> writes:
->
-> It's actually pretty easy to test this particular one, 
+On Mon, Oct 29, 2012 at 11:18:09AM -0700, Alexander Duyck wrote:
+> On Mon, Oct 15, 2012 at 10:19 AM, Alexander Duyck
+> <alexander.h.duyck@intel.com> wrote:
+> > While working on 10Gb/s routing performance I found a significant amount of
+> > time was being spent in the swiotlb DMA handler. Further digging found that a
+> > significant amount of this was due to virtual to physical address translation
+> > and calling the function that did it. It accounted for nearly 60% of the
+> > total swiotlb overhead.
+> >
+> > This patch set works to resolve that by replacing the io_tlb_start and
+> > io_tlb_end virtual addresses with a physical addresses. In addition it changes
+> > the io_tlb_overflow_buffer from a virtual to a physical address. I followed
+> > through with the cleanup to the point that the only functions that really
+> > require the virtual address for the DMA buffer are the init, free, and
+> > bounce functions.
+> >
+> > In the case of devices that are using the bounce buffers these patches should
+> > result in only a slight performance gain if any. This is due to the locking
+> > overhead required to map and unmap the buffers.
+> >
+> > In the case of devices that are not making use of bounce buffers these patches
+> > can significantly reduce their overhead. In the case of an ixgbe routing test
+> > for example, these changes result in 7 fewer calls to __phys_addr and
+> > allow is_swiotlb_buffer to become inlined due to a reduction in the number of
+> > instructions. When running a routing throughput test using small packets I
+> > saw roughly a 6% increase in packets rates after applying these patches. This
+> > appears to match up with the CPU overhead reduction I was tracking via perf.
+> >
+> > Before:
+> > Results 10.0Mpps
+> >
+> > After:
+> > Results 10.6Mpps
+> >
+> > Finally, I updated the parameter names for several of the core function calls
+> > as there was some ambiguity in naming. Specifically virtual address pointers
+> > were named dma_addr. When I changed these pointers to physical I instead used
+> > the name tlb_addr as this value represented a physical address in the
+> > io_tlb_start region and is less likely to be confused with a bus address.
+> >
+> > v2:
+> > I reviewed the changes and realized that the first patch that was dropping
+> > io_tlb_end and calculating the value didn't actually gain me much once I had
+> > gone through and translated the rest of the addresses to physical addresses.
+> > As such I have updated the patch so that it instead is converting io_tlb_end
+> > from a virtual address to a physical address.  This actually helps to reduce
+> > the overhead for is_swiotlb_buffer and swiotlb_dma_supported by several
+> > instructions.
+> >
+> > v3:
+> > After reviewing the patches I realized I was causing some namespace pollution
+> > since a "static char *" was being replaced with "phys_addr_t" when it should
+> > have been "static phys_addr_t".  As such I have updated the first 3 patches to
+> > correctly replace static pointers with static physical addresses.
+> >
+> > ---
+> >
+> > Alexander Duyck (7):
+> >       swiotlb:  Do not export swiotlb_bounce since there are no external consumers
+> >       swiotlb: Use physical addresses instead of virtual in swiotlb_tbl_sync_single
+> >       swiotlb: Use physical addresses for swiotlb_tbl_unmap_single
+> >       swiotlb: Return physical addresses when calling swiotlb_tbl_map_single
+> >       swiotlb: Make io_tlb_overflow_buffer a physical address
+> >       swiotlb: Make io_tlb_start a physical address instead of a virtual one
+> >       swiotlb: Make io_tlb_end a physical address instead of a virtual one
+> >
+> >
+> >  drivers/xen/swiotlb-xen.c |   25 ++--
+> >  include/linux/swiotlb.h   |   20 ++-
+> >  lib/swiotlb.c             |  269 +++++++++++++++++++++++----------------------
+> >  3 files changed, 163 insertions(+), 151 deletions(-)
+> >
+> 
+> Is there any ETA on when this patch series might be pulled into a
+> tree?  I'm just wondering if I need to rebase this patch series and
+> resubmit it, and if so what tree I need to rebase it off of?
 
-Note the error can happen at any time.
+No need to rebase it. I did a test on V2 version with Xen, but I still
+need to do a IA64/Calgary/AMD Vi/Intel VT-d/GART test before
+pushing it out.
 
-> and certainly
-> one of the things I'd strongly encourage in this patch series is the
-> introduction of an interface via madvise
-
-It already exists of course.
-
-I would suggest to study the existing framework before more 
-suggestions.
-
-> simulate an ECC hard error event.  So I don't think "it's hard to
-> test" is a reason not to do the right thing.  Let's make it easy to
-
-What you can't test doesn't work. It's that simple.
-
-And memory error handling is extremly hard to test. The errors
-can happen at any time. It's not a well defined event.
-There are test suites for it of course (mce-test, mce-inject[1]),
-but they needed a lot of engineering effort to be at where
-they are.
-
-[1] despite the best efforts of some current RAS developers
-at breaking it.
-
-> Note that the problem that we're dealing with is buffered writes; so
-> it's quite possible that the process which wrote the file, thus
-> dirtying the page cache, has already exited; so there's no way we can
-> guarantee we can inform the process which wrote the file via a signal
-> or a error code return.
-
-Is that any different from other IO errors? It doesn't need to 
-be better.
-
-> Also, if you're going to keep this state in memory, what happens if
-> the inode gets pushed out of memory? 
-
-You lose the error, just like you do today with any other IO error.
-
-We had a lot of discussions on this when the memory error handling
-was originally introduced, that was the conclusuion.
-
-I don't think a special panic knob for this makes sense either.
-We already have multiple panic knobs for memory errors, that
-can be used.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+> 
+> Thanks,
+> 
+> Alex
