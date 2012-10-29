@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759697Ab2J2VE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:04:26 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:38048 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933Ab2J2VEZ (ORCPT
+	id S1760492Ab2J2VIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:08:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60579 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2J2VII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:04:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <1351521477.8467.78.camel@gandalf.local.home>
-References: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
-	<1351517296-9173-10-git-send-email-fweisbec@gmail.com>
-	<1351521477.8467.78.camel@gandalf.local.home>
-Date: Mon, 29 Oct 2012 22:04:23 +0100
-Message-ID: <CAFTL4hxQf72sx1sspDNFBvQOSOz2pMynQUpi8S+3HGMNusUsbw@mail.gmail.com>
-Subject: Re: [RFC PATCH 9/9] printk: Wake up klogd using irq_work
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+	Mon, 29 Oct 2012 17:08:08 -0400
+Date: Mon, 29 Oct 2012 14:08:05 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Yinghai Lu <yinghai@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.linux-foundation.org
+Subject: Re: [V5 PATCH 08/26] memcontrol: use N_MEMORY instead
+ N_HIGH_MEMORY
+In-Reply-To: <20121029205806.GB21640@dhcp22.suse.cz>
+Message-ID: <alpine.DEB.2.00.1210291405100.18552@chino.kir.corp.google.com>
+References: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com> <1351524078-20363-7-git-send-email-laijs@cn.fujitsu.com> <20121029162212.GE20757@dhcp22.suse.cz> <alpine.DEB.2.00.1210291340100.18552@chino.kir.corp.google.com>
+ <20121029205806.GB21640@dhcp22.suse.cz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/29 Steven Rostedt <rostedt@goodmis.org>:
-> On Mon, 2012-10-29 at 14:28 +0100, Frederic Weisbecker wrote:
->> klogd is woken up asynchronously from the tick in order
->> to do it safely.
->>
->> However if printk is called when the tick is stopped, the reader
->> won't be woken up until the next interrupt, which might not fire
->> before a while. As a result, the user may miss some message.
->
-> Just a grammar nit (and goes for your previous patch as well). We say
-> "might not fire for a while." or you could say ".. for some time", but
-> not "before a while" ;-)
+On Mon, 29 Oct 2012, Michal Hocko wrote:
 
-Right!
+> > > > N_HIGH_MEMORY stands for the nodes that has normal or high memory.
+> > > > N_MEMORY stands for the nodes that has any memory.
+> > > 
+> > > What is the difference of those two?
+> > > 
+> > 
+> > Patch 5 in the series 
+> 
+> Strange, I do not see that one at the mailing list.
+> 
 
->
-> I wounder what the French translation of that is.
+http://marc.info/?l=linux-kernel&m=135152595827692
 
-You don't really want to know ;)
-But as you guess, this is quite close to something like "before a while" ;)
+> > introduces it to be equal to N_HIGH_MEMORY, so 
+> 
+> So this is just a rename? If yes it would be much esier if it was
+> mentioned in the patch description.
+> 
+
+It's not even a rename even though it should be, it's adding yet another 
+node_states that is equal to N_HIGH_MEMORY since that state already 
+includes all memory.  It's just a matter of taste but I think we should be 
+renaming it instead of aliasing it (unless you actually want to make 
+N_HIGH_MEMORY only include nodes with highmem, but nothing depends on 
+that).
