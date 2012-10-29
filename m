@@ -1,110 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758022Ab2J2Eeb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 00:34:31 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:34474 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757995Ab2J2Ee0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 00:34:26 -0400
+	id S1757613Ab2J2Ecx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 00:32:53 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:40836 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757390Ab2J2Ect (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 00:32:49 -0400
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
         viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com,
-        Dave Chinner <dchinner@redhat.com>
-Subject: [RFC v4+ hot_track 17/19] xfs: add hot tracking support
-Date: Mon, 29 Oct 2012 12:30:59 +0800
-Message-Id: <1351485061-12297-18-git-send-email-zwu.kernel@gmail.com>
+        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Subject: [RFC v4+ hot_track 11/19] vfs: register one shrinker
+Date: Mon, 29 Oct 2012 12:30:53 +0800
+Message-Id: <1351485061-12297-12-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
 References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102904-5406-0000-0000-00000180FC7E
+x-cbid: 12102904-6078-0000-0000-00001139DEDA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-  Connect up the VFS hot tracking support
-so XFS filesystems can make use of it.
+  Register a shrinker to control the amount of
+memory that is used in tracking hot regions - if we are throwing
+inodes out of memory due to memory pressure, we most definitely are
+going to need to reduce the amount of memory the tracking code is
+using, even if it means losing useful information (i.e. the shrinker
+accelerates the aging process).
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/xfs/xfs_mount.h |    1 +
- fs/xfs/xfs_super.c |   16 ++++++++++++++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
+ fs/hot_tracking.c            |   61 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/hot_tracking.h |    1 +
+ 2 files changed, 62 insertions(+), 0 deletions(-)
 
-diff --git a/fs/xfs/xfs_mount.h b/fs/xfs/xfs_mount.h
-index deee09e..96d93c2 100644
---- a/fs/xfs/xfs_mount.h
-+++ b/fs/xfs/xfs_mount.h
-@@ -217,6 +217,7 @@ typedef struct xfs_mount {
- #define XFS_MOUNT_WSYNC		(1ULL << 0)	/* for nfs - all metadata ops
- 						   must be synchronous except
- 						   for space allocations */
-+#define XFS_MOUNT_HOTTRACK      (1ULL << 1)     /* hot inode tracking */
- #define XFS_MOUNT_WAS_CLEAN	(1ULL << 3)
- #define XFS_MOUNT_FS_SHUTDOWN	(1ULL << 4)	/* atomic stop of all filesystem
- 						   operations, typically for
-diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
-index 26a09bd..48b3bed 100644
---- a/fs/xfs/xfs_super.c
-+++ b/fs/xfs/xfs_super.c
-@@ -61,6 +61,7 @@
- #include <linux/kthread.h>
- #include <linux/freezer.h>
- #include <linux/parser.h>
-+#include <linux/hot_tracking.h>
+diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+index c6c6138..54a8208 100644
+--- a/fs/hot_tracking.c
++++ b/fs/hot_tracking.c
+@@ -653,6 +653,61 @@ err:
+ }
+ EXPORT_SYMBOL_GPL(hot_cache_init);
  
- static const struct super_operations xfs_super_operations;
- static kmem_zone_t *xfs_ioend_zone;
-@@ -114,6 +115,7 @@ mempool_t *xfs_ioend_pool;
- #define MNTOPT_NODELAYLOG  "nodelaylog"	/* Delayed logging disabled */
- #define MNTOPT_DISCARD	   "discard"	/* Discard unused blocks */
- #define MNTOPT_NODISCARD   "nodiscard"	/* Do not discard unused blocks */
-+#define MNTOPT_HOTTRACK    "hot_track"  /* hot inode tracking */
- 
- /*
-  * Table driven mount option parser.
-@@ -371,6 +373,8 @@ xfs_parseargs(
- 			mp->m_flags |= XFS_MOUNT_DISCARD;
- 		} else if (!strcmp(this_char, MNTOPT_NODISCARD)) {
- 			mp->m_flags &= ~XFS_MOUNT_DISCARD;
-+		} else if (!strcmp(this_char, MNTOPT_HOTTRACK)) {
-+			mp->m_flags |= XFS_MOUNT_HOTTRACK;
- 		} else if (!strcmp(this_char, "ihashsize")) {
- 			xfs_warn(mp,
- 	"ihashsize no longer used, option is deprecated.");
-@@ -1005,6 +1009,9 @@ xfs_fs_put_super(
- {
- 	struct xfs_mount	*mp = XFS_M(sb);
- 
-+	if (mp->m_flags & XFS_MOUNT_HOTTRACK)
-+		hot_track_exit(sb);
++static int hot_track_prune_map(struct hot_map_head *map_head,
++				bool type, int nr)
++{
++	struct hot_comm_item *node;
++	int i;
 +
- 	xfs_filestream_unmount(mp);
- 	cancel_delayed_work_sync(&mp->m_sync_work);
- 	xfs_unmountfs(mp);
-@@ -1407,7 +1414,16 @@ xfs_fs_fill_super(
- 		goto out_unmount;
- 	}
- 
-+	if (mp->m_flags & XFS_MOUNT_HOTTRACK) {
-+		error = hot_track_init(sb);
-+		if (error)
-+			goto out_free_root;
++	for (i = 0; i < HEAT_MAP_SIZE; i++) {
++		while (!list_empty(&(map_head + i)->node_list)) {
++			if (nr-- <= 0)
++				break;
++
++			node = list_first_entry(&(map_head + i)->node_list,
++					struct hot_comm_item, n_list);
++			if (type) {
++				struct hot_inode_item *hot_inode =
++					container_of(node,
++					struct hot_inode_item, hot_inode);
++				hot_inode_item_put(hot_inode);
++			} else {
++				struct hot_range_item *hot_range =
++					container_of(node,
++					struct hot_range_item, hot_range);
++				hot_range_item_put(hot_range);
++			}
++		}
 +	}
 +
++	return nr;
++}
++
++/* The shrinker callback function */
++static int hot_track_prune(struct shrinker *shrink,
++			struct shrink_control *sc)
++{
++	struct hot_info *root =
++		container_of(shrink, struct hot_info, hot_shrink);
++	int ret;
++
++	if (sc->nr_to_scan == 0)
++		return root->hot_map_nr;
++
++	if (!(sc->gfp_mask & __GFP_FS))
++		return -1;
++
++	ret = hot_track_prune_map(root->heat_range_map,
++				false, sc->nr_to_scan);
++	if (ret > 0)
++		ret = hot_track_prune_map(root->heat_inode_map,
++					true, ret);
++	if (ret > 0)
++		root->hot_map_nr -= (sc->nr_to_scan - ret);
++
++	return root->hot_map_nr;
++}
++
+ /*
+  * Main function to update access frequency from read/writepage(s) hooks
+  */
+@@ -791,6 +846,11 @@ int hot_track_init(struct super_block *sb)
+ 	queue_delayed_work(root->update_wq, &root->update_work,
+ 		msecs_to_jiffies(HEAT_UPDATE_DELAY * MSEC_PER_SEC));
+ 
++	/* Register a shrinker callback */
++	root->hot_shrink.shrink = hot_track_prune;
++	root->hot_shrink.seeks = DEFAULT_SEEKS;
++	register_shrinker(&root->hot_shrink);
++
+ 	printk(KERN_INFO "VFS: Turning on hot data tracking\n");
+ 
  	return 0;
-+ out_free_root:
-+	dput(sb->s_root);
-+	sb->s_root = NULL;
-  out_syncd_stop:
- 	xfs_syncd_stop(mp);
-  out_filestream_unmount:
+@@ -807,6 +867,7 @@ void hot_track_exit(struct super_block *sb)
+ {
+ 	struct hot_info *root = sb->s_hot_root;
+ 
++	unregister_shrinker(&root->hot_shrink);
+ 	cancel_delayed_work_sync(&root->update_work);
+ 	destroy_workqueue(root->update_wq);
+ 	hot_map_array_exit(root);
+diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
+index 3941052..f82db2d 100644
+--- a/include/linux/hot_tracking.h
++++ b/include/linux/hot_tracking.h
+@@ -107,6 +107,7 @@ struct hot_info {
+ 	struct workqueue_struct *update_wq;
+ 	struct delayed_work update_work;
+ 	struct hot_func_type *hot_func_type;
++	struct shrinker hot_shrink;
+ };
+ 
+ extern void __init hot_cache_init(void);
 -- 
 1.7.6.5
 
