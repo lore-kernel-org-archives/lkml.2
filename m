@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794Ab2J2PQK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:16:10 -0400
+	id S932124Ab2J2PQU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:16:20 -0400
 Received: from mail-wi0-f172.google.com ([209.85.212.172]:60203 "EHLO
 	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756764Ab2J2PQH (ORCPT
+	with ESMTP id S1757114Ab2J2PQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:16:07 -0400
+	Mon, 29 Oct 2012 11:16:09 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, ming.m.lin@intel.com
-Subject: [Patch v1 03/10] perf: add generic memory sampling interface
-Date: Mon, 29 Oct 2012 16:15:45 +0100
-Message-Id: <1351523752-4215-4-git-send-email-eranian@google.com>
+Subject: [Patch v1 04/10] perf/x86: add memory profiling via PEBS Load Latency
+Date: Mon, 29 Oct 2012 16:15:46 +0100
+Message-Id: <1351523752-4215-5-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351523752-4215-1-git-send-email-eranian@google.com>
 References: <1351523752-4215-1-git-send-email-eranian@google.com>
@@ -21,171 +21,437 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds PERF_SAMPLE_COST and PERF_SAMPLE_DSRC.
-The first collects a cost associated with the sampled
-event. In case of memory access, the cost would be
-the latency of the load, otherwise it defaults to
-the sampling period.
+This patch adds support for memory profiling using the
+PEBS Load Latency facility.
 
-PERF_SAMPLE_DSRC collects the data source, i.e., where
-did the data associated with the sampled instruction
-come from. Information is stored in a perf_mem_dsrc
-structure. It contains opcode, mem level, tlb, snoop,
-lock information, subject to availability in hardware.
+Load accesses are sampled by HW and the instruction
+address, data address, load latency, data source, tlb,
+locked information can be saved in the sampling buffer
+if using the PERF_SAMPLE_COST (for latency),
+PERF_SAMPLE_ADDR, PERF_SAMPLE_DSRC types.
+
+To enable PEBS Load Latency, users have to use the
+model specific event:
+- on NHM/WSM: MEM_INST_RETIRED:LATENCY_ABOVE_THRESHOLD
+- on SNB/IVB: MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
+
+To make things easier, this patch also exports a generic
+alias via sysfs: mem-loads. It export the right event
+encoding based on the host CPU and can be used directly
+by the perf tool.
+
+Loosely based on Intel's Lin Ming patch posted on LKML
+in July 2011.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- include/linux/perf_event.h      |    4 +++
- include/uapi/linux/perf_event.h |   70 ++++++++++++++++++++++++++++++++++++++-
- kernel/events/core.c            |   12 +++++++
- 3 files changed, 85 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/msr-index.h          |    1 +
+ arch/x86/kernel/cpu/perf_event.c          |    3 +
+ arch/x86/kernel/cpu/perf_event.h          |   22 ++++-
+ arch/x86/kernel/cpu/perf_event_intel.c    |   56 ++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |  133 +++++++++++++++++++++++++++--
+ 5 files changed, 206 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 484cfbc..a323ee2 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -579,6 +579,8 @@ struct perf_sample_data {
- 		u32	reserved;
- 	}				cpu_entry;
- 	u64				period;
-+	u64				cost;
-+	union  perf_mem_dsrc		dsrc;
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
-@@ -597,6 +599,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
-+	data->cost = period; /* by default */
-+	data->dsrc.val = 0;
- }
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 7f0edce..5edc9c0 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -66,6 +66,7 @@
+ #define MSR_IA32_PEBS_ENABLE		0x000003f1
+ #define MSR_IA32_DS_AREA		0x00000600
+ #define MSR_IA32_PERF_CAPABILITIES	0x00000345
++#define MSR_PEBS_LD_LAT_THRESHOLD	0x000003f6
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 4f63c05..2a3401b 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -132,8 +132,10 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
-+	PERF_SAMPLE_COST			= 1U << 14,
-+	PERF_SAMPLE_DSRC			= 1U << 15,
+ #define MSR_MTRRfix64K_00000		0x00000250
+ #define MSR_MTRRfix16K_80000		0x00000258
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 9b56c20..2fc34d6 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1475,6 +1475,9 @@ static int __init init_hw_perf_events(void)
+ 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+ 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
  
--	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
++	if (x86_pmu.event_attrs)
++		x86_pmu_events_group.attrs = x86_pmu.event_attrs;
++
+ 	if (!x86_pmu.events_sysfs_show)
+ 		x86_pmu_events_group.attrs = &empty_attrs;
+ 	else
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index f78d6e8..3c5aa72 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -46,6 +46,7 @@ enum extra_reg_type {
+ 	EXTRA_REG_RSP_0 = 0,	/* offcore_response_0 */
+ 	EXTRA_REG_RSP_1 = 1,	/* offcore_response_1 */
+ 	EXTRA_REG_LBR   = 2,	/* lbr_select */
++	EXTRA_REG_LDLAT = 3,	/* ld_lat_threshold */
+ 
+ 	EXTRA_REG_MAX		/* number of entries needed */
+ };
+@@ -61,6 +62,10 @@ struct event_constraint {
+ 	int	overlap;
+ 	int	flags;
+ };
++/*
++ * struct event_constraint flags
++ */
++#define PERF_X86_EVENT_PEBS_LDLAT	0x1 /* ld+ldlat data address sampling */
+ 
+ struct amd_nb {
+ 	int nb_id;  /* NorthBridge id */
+@@ -233,6 +238,10 @@ struct cpu_hw_events {
+ #define INTEL_UEVENT_CONSTRAINT(c, n)	\
+ 	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+ 
++#define INTEL_PLD_CONSTRAINT(c, n)	\
++	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
++			   HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
++
+ #define EVENT_CONSTRAINT_END		\
+ 	EVENT_CONSTRAINT(0, 0, 0)
+ 
+@@ -262,12 +271,22 @@ struct extra_reg {
+ 	.msr = (ms),		\
+ 	.config_mask = (m),	\
+ 	.valid_mask = (vm),	\
+-	.idx = EXTRA_REG_##i	\
++	.idx = EXTRA_REG_##i,	\
+ 	}
+ 
+ #define INTEL_EVENT_EXTRA_REG(event, msr, vm, idx)	\
+ 	EVENT_EXTRA_REG(event, msr, ARCH_PERFMON_EVENTSEL_EVENT, vm, idx)
+ 
++#define INTEL_UEVENT_EXTRA_REG(event, msr, vm, idx) \
++	EVENT_EXTRA_REG(event, msr, ARCH_PERFMON_EVENTSEL_EVENT | \
++			ARCH_PERFMON_EVENTSEL_UMASK, vm, idx)
++
++#define INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(c) \
++	INTEL_UEVENT_EXTRA_REG(c, \
++			       MSR_PEBS_LD_LAT_THRESHOLD, \
++			       0xffff, \
++			       LDLAT)
++
+ #define EVENT_EXTRA_END EVENT_EXTRA_REG(0, 0, 0, 0, RSP_0)
+ 
+ union perf_capabilities {
+@@ -355,6 +374,7 @@ struct x86_pmu {
+ 	 */
+ 	int		attr_rdpmc;
+ 	struct attribute **format_attrs;
++	struct attribute **event_attrs;
+ 
+ 	ssize_t		(*events_sysfs_show)(char *page, u64 config);
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 57d6527..059fc8c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -81,6 +81,7 @@ static struct event_constraint intel_nehalem_event_constraints[] __read_mostly =
+ static struct extra_reg intel_nehalem_extra_regs[] __read_mostly =
+ {
+ 	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
++	INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x100b),
+ 	EVENT_EXTRA_END
  };
  
- /*
-@@ -587,6 +589,9 @@ enum perf_event_type {
- 	 * 	{ u64			size;
- 	 * 	  char			data[size];
- 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
-+	 *
-+	 *	{ u64			cost;  } && PERF_SAMPLE_COST
-+	 *	{ u64			dsrc;  } && PERF_SAMPLE_DSRC
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-@@ -612,4 +617,67 @@ enum perf_callchain_context {
- #define PERF_FLAG_FD_OUTPUT		(1U << 1)
- #define PERF_FLAG_PID_CGROUP		(1U << 2) /* pid=cgroup id, per-cpu mode only */
+@@ -111,6 +112,7 @@ static struct extra_reg intel_westmere_extra_regs[] __read_mostly =
+ {
+ 	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+ 	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0xffff, RSP_1),
++	INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x100b),
+ 	EVENT_EXTRA_END
+ };
  
-+union perf_mem_dsrc {
-+	__u64 val;
+@@ -130,9 +132,55 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
+ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
+ 	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffffffffull, RSP_0),
+ 	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffffffffull, RSP_1),
++	INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG(0x01cd),
+ 	EVENT_EXTRA_END
+ };
+ 
++
++EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
++EVENT_ATTR(instructions,		INSTRUCTIONS		);
++EVENT_ATTR(cache-references,		CACHE_REFERENCES	);
++EVENT_ATTR(cache-misses,		CACHE_MISSES		);
++EVENT_ATTR(branch-instructions,		BRANCH_INSTRUCTIONS	);
++EVENT_ATTR(branch-misses,		BRANCH_MISSES		);
++EVENT_ATTR(bus-cycles,			BUS_CYCLES		);
++EVENT_ATTR(stalled-cycles-frontend,	STALLED_CYCLES_FRONTEND	);
++EVENT_ATTR(stalled-cycles-backend,	STALLED_CYCLES_BACKEND	);
++EVENT_ATTR(ref-cycles,			REF_CPU_CYCLES		);
++
++EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x100b,umask=0x1,ldlat=3");
++EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
++
++struct attribute *nhm_events_attrs[] = {
++	EVENT_PTR(CPU_CYCLES),
++	EVENT_PTR(INSTRUCTIONS),
++	EVENT_PTR(CACHE_REFERENCES),
++	EVENT_PTR(CACHE_MISSES),
++	EVENT_PTR(BRANCH_INSTRUCTIONS),
++	EVENT_PTR(BRANCH_MISSES),
++	EVENT_PTR(BUS_CYCLES),
++	EVENT_PTR(STALLED_CYCLES_FRONTEND),
++	EVENT_PTR(STALLED_CYCLES_BACKEND),
++	EVENT_PTR(REF_CPU_CYCLES),
++	EVENT_PTR(mem_ld_nhm),
++	NULL,
++};
++
++struct attribute *snb_events_attrs[] = {
++	EVENT_PTR(CPU_CYCLES),
++	EVENT_PTR(INSTRUCTIONS),
++	EVENT_PTR(CACHE_REFERENCES),
++	EVENT_PTR(CACHE_MISSES),
++	EVENT_PTR(BRANCH_INSTRUCTIONS),
++	EVENT_PTR(BRANCH_MISSES),
++	EVENT_PTR(BUS_CYCLES),
++	EVENT_PTR(STALLED_CYCLES_FRONTEND),
++	EVENT_PTR(STALLED_CYCLES_BACKEND),
++	EVENT_PTR(REF_CPU_CYCLES),
++	EVENT_PTR(mem_ld_snb),
++	NULL,
++};
++
+ static u64 intel_pmu_event_map(int hw_event)
+ {
+ 	return intel_perfmon_event_map[hw_event];
+@@ -2009,6 +2057,8 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
+ 		x86_pmu.extra_regs = intel_nehalem_extra_regs;
+ 
++		x86_pmu.event_attrs = nhm_events_attrs;
++
+ 		/* UOPS_ISSUED.STALLED_CYCLES */
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =
+ 			X86_CONFIG(.event=0x0e, .umask=0x01, .inv=1, .cmask=1);
+@@ -2049,6 +2099,8 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.extra_regs = intel_westmere_extra_regs;
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+ 
++		x86_pmu.event_attrs = nhm_events_attrs;
++
+ 		/* UOPS_ISSUED.STALLED_CYCLES */
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =
+ 			X86_CONFIG(.event=0x0e, .umask=0x01, .inv=1, .cmask=1);
+@@ -2077,6 +2129,8 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+ 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+ 
++		x86_pmu.event_attrs = snb_events_attrs;
++
+ 		/* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =
+ 			X86_CONFIG(.event=0x0e, .umask=0x01, .inv=1, .cmask=1);
+@@ -2102,6 +2156,8 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+ 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+ 
++		x86_pmu.event_attrs = snb_events_attrs;
++
+ 		/* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =
+ 			X86_CONFIG(.event=0x0e, .umask=0x01, .inv=1, .cmask=1);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index f30d85b..3ee6e83 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -24,6 +24,92 @@ struct pebs_record_32 {
+ 
+  */
+ 
++union intel_x86_pebs_dse {
++	u64 val;
 +	struct {
-+		__u64   mem_op:5,	/* type of opcode */
-+			mem_lvl:14,	/* memory hierarchy level */
-+			mem_snoop:5,	/* snoop mode */
-+			mem_lock:2,	/* lock instr */
-+			mem_dtlb:7,	/* tlb access */
-+			mem_rsvd:31;
++		unsigned int ld_dse:4;
++		unsigned int ld_stlb_miss:1;
++		unsigned int ld_locked:1;
++		unsigned int ld_reserved:26;
++	};
++	struct {
++		unsigned int st_l1d_hit:1;
++		unsigned int st_reserved1:3;
++		unsigned int st_stlb_miss:1;
++		unsigned int st_locked:1;
++		unsigned int st_reserved2:26;
 +	};
 +};
 +
-+/* type of opcode (load/store/prefetch,code) */
-+#define PERF_MEM_OP_NA		0x01 /* not available */
-+#define PERF_MEM_OP_LOAD	0x02 /* load instruction */
-+#define PERF_MEM_OP_STORE	0x04 /* store instruction */
-+#define PERF_MEM_OP_PFETCH	0x08 /* prefetch */
-+#define PERF_MEM_OP_EXEC	0x10 /* code (execution) */
-+#define PERF_MEM_OP_SHIFT	0
 +
-+/* memory hierarchy (memory level, hit or miss) */
-+#define PERF_MEM_LVL_NA		0x01  /* not available */
-+#define PERF_MEM_LVL_HIT	0x02  /* hit level */
-+#define PERF_MEM_LVL_MISS	0x04  /* miss level  */
-+#define PERF_MEM_LVL_L1		0x08  /* L1 */
-+#define PERF_MEM_LVL_LFB	0x10  /* Line Fill Buffer */
-+#define PERF_MEM_LVL_L2		0x20  /* L2 hit */
-+#define PERF_MEM_LVL_L3		0x40  /* L3 hit */
-+#define PERF_MEM_LVL_LOC_RAM	0x80  /* Local DRAM */
-+#define PERF_MEM_LVL_REM_RAM1	0x100 /* Remote DRAM (1 hop) */
-+#define PERF_MEM_LVL_REM_RAM2	0x200 /* Remote DRAM (2 hops) */
-+#define PERF_MEM_LVL_REM_CCE1	0x400 /* Remote Cache (1 hop) */
-+#define PERF_MEM_LVL_REM_CCE2	0x800 /* Remote Cache (2 hops) */
-+#define PERF_MEM_LVL_IO		0x1000 /* I/O memory */
-+#define PERF_MEM_LVL_UNC	0x2000 /* Uncached memory */
-+#define PERF_MEM_LVL_SHIFT	5
++/*
++ * Map PEBS Load Latency Data Source encodings to generic
++ * memory data source information
++ */
++#define P(a, b) PERF_MEM_S(a, b)
++#define OP_LH (P(OP, LOAD) | P(LVL, HIT))
++#define SNOOP_NONE_MISS (P(SNOOP, NONE) | P(SNOOP, MISS))
 +
-+/* snoop mode */
-+#define PERF_MEM_SNOOP_NA	0x01 /* not available */
-+#define PERF_MEM_SNOOP_NONE	0x02 /* no snoop */
-+#define PERF_MEM_SNOOP_HIT	0x04 /* snoop hit */
-+#define PERF_MEM_SNOOP_MISS	0x08 /* snoop miss */
-+#define PERF_MEM_SNOOP_HITM	0x10 /* snoop hit modified */
-+#define PERF_MEM_SNOOP_SHIFT	19
++static const u64 pebs_data_source[] = {
++	P(OP, LOAD) | P(LVL, MISS) | P(LVL, L3) | P(SNOOP, NA),/* 0x00:ukn L3 */
++	OP_LH | P(LVL, L1) | P(SNOOP, NONE),	/* 0x01: L1 local */
++	OP_LH | P(LVL, LFB)| P(SNOOP, NONE),	/* 0x02: LFB hit */
++	OP_LH | P(LVL, L2) | P(SNOOP, NONE),	/* 0x03: L2 hit */
++	OP_LH | P(LVL, L3) | P(SNOOP, NONE),	/* 0x04: L3 hit */
++	OP_LH | P(LVL, L3) | P(SNOOP, MISS),	/* 0x05: L3 hit, snoop miss */
++	OP_LH | P(LVL, L3) | P(SNOOP, HIT),	/* 0x06: L3 hit, snoop hit */
++	OP_LH | P(LVL, L3) | P(SNOOP, HITM),	/* 0x07: L3 hit, snoop hitm */
++	OP_LH | P(LVL, REM_CCE1) | P(SNOOP, HIT),  /* 0x08: L3 miss snoop hit */
++	OP_LH | P(LVL, REM_CCE1) | P(SNOOP, HITM), /* 0x09: L3 miss snoop hitm*/
++	OP_LH | P(LVL, LOC_RAM)  | P(SNOOP, HIT),  /* 0x0a: L3 miss, shared */
++	OP_LH | P(LVL, REM_RAM1) | P(SNOOP, HIT),  /* 0x0b: L3 miss, shared */
++	OP_LH | P(LVL, LOC_RAM)  | SNOOP_NONE_MISS,/* 0x0c: L3 miss, excl */
++	OP_LH | P(LVL, REM_RAM1) | SNOOP_NONE_MISS,/* 0x0d: L3 miss, excl */
++	OP_LH | P(LVL, IO) | P(SNOOP, NONE), /* 0x0e: I/O */
++	OP_LH | P(LVL,UNC) | P(SNOOP, NONE), /* 0x0f: uncached */
++};
 +
-+/* locked instruction */
-+#define PERF_MEM_LOCK_NA	0x01 /* not available */
-+#define PERF_MEM_LOCK_LOCKED	0x02 /* locked transaction */
-+#define PERF_MEM_LOCK_SHIFT	24
++static u64 load_latency_data(u64 status)
++{
++	union intel_x86_pebs_dse dse;
++	u64 val;
++	int model = boot_cpu_data.x86_model;
++	int fam = boot_cpu_data.x86;
 +
-+/* TLB access */
-+#define PERF_MEM_TLB_NA		0x01 /* not available */
-+#define PERF_MEM_TLB_HIT	0x02 /* hit level */
-+#define PERF_MEM_TLB_MISS	0x04 /* miss level */
-+#define PERF_MEM_TLB_L1		0x08 /* L1 */
-+#define PERF_MEM_TLB_L2		0x10 /* L2 */
-+#define PERF_MEM_TLB_WK		0x20 /* Hardware Walker*/
-+#define PERF_MEM_TLB_OS		0x40 /* OS fault handler */
-+#define PERF_MEM_TLB_SHIFT	26
++	dse.val = status;
 +
-+#define PERF_MEM_S(a, s) \
-+	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
++	/*
++	 * use the mapping table for bit 0-15
++	 */
++	val = pebs_data_source[dse.ld_dse];
 +
- #endif /* _UAPI_LINUX_PERF_EVENT_H */
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index dbccf83..a1cf8f2 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -955,6 +955,12 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
++	/*
++	 * Nehalem models do not support TLB, Lock infos
++	 */
++	if (fam == 0x6 && (model == 26 || model == 30
++	    || model == 31 || model == 46)) {
++		val |= P(TLB, NA) | P(LOCK, NA);
++		return val;
++	}
++	/*
++	 * bit 4: TLB access
++	 * 0 = did not miss 2nd level TLB
++	 * 1 = missed 2nd level TLB
++	 */
++	if (dse.ld_stlb_miss)
++		val |= P(TLB, MISS) | P(TLB, L2);
++	else
++		val |= P(TLB, HIT) | P(TLB,L1) | P(TLB, L2);
++
++	/*
++	 * bit 5: locked prefix
++	 */
++	if (dse.ld_locked)
++		val |= P(LOCK, LOCKED);
++
++	return val;
++}
++
+ struct pebs_record_core {
+ 	u64 flags, ip;
+ 	u64 ax, bx, cx, dx;
+@@ -364,7 +450,7 @@ struct event_constraint intel_atom_pebs_event_constraints[] = {
+ };
  
-+	if (sample_type & PERF_SAMPLE_COST)
-+		size += sizeof(data->cost);
+ struct event_constraint intel_nehalem_pebs_event_constraints[] = {
+-	INTEL_EVENT_CONSTRAINT(0x0b, 0xf),    /* MEM_INST_RETIRED.* */
++	INTEL_PLD_CONSTRAINT(0x100b, 0xf),      /* MEM_INST_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0x0f, 0xf),    /* MEM_UNCORE_RETIRED.* */
+ 	INTEL_UEVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
+ 	INTEL_EVENT_CONSTRAINT(0xc0, 0xf),    /* INST_RETIRED.ANY */
+@@ -379,7 +465,7 @@ struct event_constraint intel_nehalem_pebs_event_constraints[] = {
+ };
+ 
+ struct event_constraint intel_westmere_pebs_event_constraints[] = {
+-	INTEL_EVENT_CONSTRAINT(0x0b, 0xf),    /* MEM_INST_RETIRED.* */
++	INTEL_PLD_CONSTRAINT(0x100b, 0xf),      /* MEM_INST_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0x0f, 0xf),    /* MEM_UNCORE_RETIRED.* */
+ 	INTEL_UEVENT_CONSTRAINT(0x010c, 0xf), /* MEM_STORE_RETIRED.DTLB_MISS */
+ 	INTEL_EVENT_CONSTRAINT(0xc0, 0xf),    /* INSTR_RETIRED.* */
+@@ -399,7 +485,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
+ 	INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+ 	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+-	INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
++	INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+ 	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+@@ -413,7 +499,7 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
+         INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+         INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+         INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+-        INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
++        INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+         INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+         INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+         INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+@@ -448,6 +534,9 @@ void intel_pmu_pebs_enable(struct perf_event *event)
+ 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
+ 
+ 	cpuc->pebs_enabled |= 1ULL << hwc->idx;
 +
-+	if (sample_type & PERF_SAMPLE_DSRC)
-+		size += sizeof(data->dsrc.val);
-+
- 	event->header_size = size;
++	if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT)
++		cpuc->pebs_enabled |= 1ULL << (hwc->idx + 32);
  }
  
-@@ -4169,6 +4175,12 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		perf_output_sample_ustack(handle,
- 					  data->stack_user_size,
- 					  data->regs_user.regs);
-+
-+	if (sample_type & PERF_SAMPLE_COST)
-+		perf_output_put(handle, data->cost);
-+
-+	if (sample_type & PERF_SAMPLE_DSRC)
-+		perf_output_put(handle, data->dsrc.val);
- }
+ void intel_pmu_pebs_disable(struct perf_event *event)
+@@ -560,20 +649,48 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 				   struct pt_regs *iregs, void *__pebs)
+ {
+ 	/*
+-	 * We cast to pebs_record_core since that is a subset of
+-	 * both formats and we don't use the other fields in this
+-	 * routine.
++	 * We cast to pebs_record_nhm to get the load latency data
++	 * if extra_reg MSR_PEBS_LD_LAT_THRESHOLD used
+ 	 */
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-	struct pebs_record_core *pebs = __pebs;
++	struct pebs_record_nhm *pebs = __pebs;
+ 	struct perf_sample_data data;
+ 	struct pt_regs regs;
++	u64 sample_type;
++	int fll;
  
- void perf_prepare_sample(struct perf_event_header *header,
+ 	if (!intel_pmu_save_and_restart(event))
+ 		return;
+ 
++	fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
++
+ 	perf_sample_data_init(&data, 0, event->hw.last_period);
+ 
++	data.period = event->hw.last_period;
++	sample_type = event->attr.sample_type;
++
++	/*
++	 * if PEBS-LL or PreciseStore
++	 */
++	if (fll) {
++		if (sample_type & PERF_SAMPLE_ADDR)
++			data.addr = pebs->dla;
++
++		/*
++		 * Use latency for cost (only avail with PEBS-LL)
++		 */
++		if (fll && (sample_type & PERF_SAMPLE_COST))
++			data.cost = pebs->lat;
++
++		/*
++		 * data.dsrc encodes the data source
++		 */
++		if (sample_type & PERF_SAMPLE_DSRC) {
++			if (fll)
++				data.dsrc.val = load_latency_data(pebs->dse);
++		}
++	}
++
+ 	/*
+ 	 * We use the interrupt regs as a base because the PEBS record
+ 	 * does not contain a full regs set, specifically it seems to
 -- 
 1.7.9.5
 
