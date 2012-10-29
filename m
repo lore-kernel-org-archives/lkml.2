@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615Ab2J2S5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 14:57:51 -0400
-Received: from nm6.bullet.mail.ukl.yahoo.com ([217.146.182.227]:36374 "EHLO
-	nm6.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932248Ab2J2S5u (ORCPT
+	id S932878Ab2J2S6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 14:58:21 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44321 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932427Ab2J2S6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 14:57:50 -0400
-X-Yahoo-Newman-Id: 417418.56202.bm@smtp120.mail.ukl.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: vTSiZJ4VM1mX8Wbzm49INsrfymOGXn9_YeDL1kRDTxOserC
- UeghXdcea2OahLZKEv9ZRKQxXbpFoXGF2_YORFKd6EWVyaGPgydnl8wCQX4i
- Nevxuq0o6don6OCzqAMv_xC6HG6riUb8Z9k3i1Qqa3scQ8GV5.mMt8d5hC0s
- WCQjxlfsNX67jbdvYVyaY4_Z7HcXsw_QW4ra15KE_Ytn66i0e5zudEo3bCzf
- ep8P9BZ3NC0dX6PPFZjNvulqlUW.L5MFvc_2VRBM_8fRdNMlMDNPdz59Pr7.
- tGsWnxWDEWRPqFFRuGXMt4gpPkhHesWdJ76EA6gK0yzPV8oeP8.b9cQyVDQQ
- tWRDLKp5I8AscpscphJT5G8C1IGowyqlxW7ejH5BFxyixKanHSM80Yp4qTxW
- rm5_P4TsofQBQpsPeYqE2NYiJV3vgnPj1VRlJEprw_E5ssErasKbv9H37SpS
- hdGapjY6TAHbHFsZuSFzmTnYx9QR4FPezyLno.gugLrA-
-X-Yahoo-SMTP: ppJOssmswBB0AEys0QgqrDbC6xOpOcdUvw--
-Message-ID: <508E6F2E.262482E6@smtp.mail.yahoo.com>
-Date: Mon, 29 Oct 2012 11:57:41 -0700
-From: "bayoutrucker@yahoo.com" <bayoutrucker@yahoo.com>
-Subject: FW: Green coffee beans from the Red Sea = flat tummy!
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-Mailer: Mozilla/5.0 (Windows; U; Win98; en-US; rv:0.9.4) Gecko/20011019
- Netscape6/6.2
+	Mon, 29 Oct 2012 14:58:20 -0400
+Date: Mon, 29 Oct 2012 11:58:14 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 06/16] tracepoint: use new hashtable implementation
+Message-ID: <20121029185814.GC4066@htj.dyndns.org>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
+ <1351450948-15618-6-git-send-email-levinsasha928@gmail.com>
+ <20121029113515.GB9115@Krystal>
+ <CA+1xoqce6uJ6wy3+2CBwsLHKnsz4wD0vt8MBEGKCFfXTvuC0Hg@mail.gmail.com>
+ <20121029183157.GC3097@jtriplet-mobl1>
+ <CA+1xoqfMrn9zDFMJNFfA0NA86wE_DedD97cP1yJ2UQdTjs3uyQ@mail.gmail.com>
+ <20121029185319.GA21546@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121029185319.GA21546@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Did you see --> http://bit.ly/S8Am6X
+On Mon, Oct 29, 2012 at 02:53:19PM -0400, Mathieu Desnoyers wrote:
+> The argument about hash_init being useful to add magic values in the
+> future only works for the cases where a hash table is declared with
+> DECLARE_HASHTABLE(). It's completely pointless with DEFINE_HASHTABLE(),
+> because we could initialize any debugging variables from within
+> DEFINE_HASHTABLE().
 
-I feel like a terrible friend! Sorry I've not been in touch lately! I've been so busy lately. Have I got some news for you! I lost the baby weight! It took forever and I probably would have kept the weight on, but I found this! I saw it on tv, so it must work pretty well! Go ahead, be skeptical, but when you see me in my bikini, you'll KNOW it works lolol! Take care! Talk to you soon! 
+You can do that with [0 .. HASH_SIZE - 1] initializer.
 
+Thanks.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- 
+tejun
