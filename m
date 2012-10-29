@@ -1,73 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab2J2LHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 07:07:10 -0400
-Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:58468 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758582Ab2J2LHI (ORCPT
+	id S932357Ab2J2LHU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 07:07:20 -0400
+Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:45884 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932306Ab2J2LHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 07:07:08 -0400
-Message-ID: <508E630F.2080800@ce.jp.nec.com>
-Date: Mon, 29 Oct 2012 20:05:51 +0900
+	Mon, 29 Oct 2012 07:07:14 -0400
+Message-ID: <508E572C.6000707@ce.jp.nec.com>
+Date: Mon, 29 Oct 2012 19:15:08 +0900
 From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        "Luck\, Tony" <tony.luck@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Kleen\, Andi" <andi.kleen@intel.com>,
-        "Wu\, Fengguang" <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Akira Fujita <a-fujita@rs.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ext4: introduce ext4_error_remove_page
-References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1351177969-893-3-git-send-email-n-horiguchi@ah.jp.nec.com> <20121026061206.GA31139@thunk.org> <3908561D78D1C84285E8C5FCA982C28F19D5A13B@ORSMSX108.amr.corp.intel.com> <20121026184649.GA8614@thunk.org> <3908561D78D1C84285E8C5FCA982C28F19D5A388@ORSMSX108.amr.corp.intel.com> <20121027221626.GA9161@thunk.org> <20121029011632.GN29378@dastard> <20121029024024.GC9365@thunk.org> <m27gq9r2cu.fsf@firstfloor.org>
-In-Reply-To: <m27gq9r2cu.fsf@firstfloor.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: [PATCH 2/2] dm: stay in blk_queue_bypass until queue becomes
+ initialized
+References: <50890937.7010809@ce.jp.nec.com> <20121026202105.GF24687@redhat.com>
+In-Reply-To: <20121026202105.GF24687@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/12 19:37, Andi Kleen wrote:
-> Theodore Ts'o <tytso@mit.edu> writes:
->> On Mon, Oct 29, 2012 at 12:16:32PM +1100, Dave Chinner wrote:
->>> Except that there are filesystems that cannot implement such flags,
->>> or require on-disk format changes to add more of those flags. This
->>> is most definitely not a filesystem specific behaviour, so any sort
->>> of VFS level per-file state needs to be kept in xattrs, not special
->>> flags. Filesystems are welcome to optimise the storage of such
->>> special xattrs (e.g. down to a single boolean flag in an inode), but
->>> using a flag for something that dould, in fact, storage the exactly
->>> offset and length of the corruption is far better than just storing
->>> a "something is corrupted in this file" bit....
+On 10/27/12 05:21, Vivek Goyal wrote:
+> On Thu, Oct 25, 2012 at 06:41:11PM +0900, Jun'ichi Nomura wrote:
+>> [PATCH] dm: stay in blk_queue_bypass until queue becomes initialized
 >>
->> Agreed, if we're going to add an xattr, then we might as well store
+>> With 749fefe677 ("block: lift the initial queue bypass mode on
+>> blk_register_queue() instead of blk_init_allocated_queue()"),
+>> add_disk() eventually calls blk_queue_bypass_end().
+>> This change invokes the following warning when multipath is used.
+>>
+>>   BUG: scheduling while atomic: multipath/2460/0x00000002
+>>   1 lock held by multipath/2460:
+>>    #0:  (&md->type_lock){......}, at: [<ffffffffa019fb05>] dm_lock_md_type+0x17/0x19 [dm_mod]
+>>   Modules linked in: ...
+>>   Pid: 2460, comm: multipath Tainted: G        W    3.7.0-rc2 #1
+>>   Call Trace:
+>>    [<ffffffff810723ae>] __schedule_bug+0x6a/0x78
+>>    [<ffffffff81428ba2>] __schedule+0xb4/0x5e0
+>>    [<ffffffff814291e6>] schedule+0x64/0x66
+>>    [<ffffffff8142773a>] schedule_timeout+0x39/0xf8
+>>    [<ffffffff8108ad5f>] ? put_lock_stats+0xe/0x29
+>>    [<ffffffff8108ae30>] ? lock_release_holdtime+0xb6/0xbb
+>>    [<ffffffff814289e3>] wait_for_common+0x9d/0xee
+>>    [<ffffffff8107526c>] ? try_to_wake_up+0x206/0x206
+>>    [<ffffffff810c0eb8>] ? kfree_call_rcu+0x1c/0x1c
+>>    [<ffffffff81428aec>] wait_for_completion+0x1d/0x1f
+>>    [<ffffffff810611f9>] wait_rcu_gp+0x5d/0x7a
+>>    [<ffffffff81061216>] ? wait_rcu_gp+0x7a/0x7a
+>>    [<ffffffff8106fb18>] ? complete+0x21/0x53
+>>    [<ffffffff810c0556>] synchronize_rcu+0x1e/0x20
+>>    [<ffffffff811dd903>] blk_queue_bypass_start+0x5d/0x62
+>>    [<ffffffff811ee109>] blkcg_activate_policy+0x73/0x270
+>>    [<ffffffff81130521>] ? kmem_cache_alloc_node_trace+0xc7/0x108
+>>    [<ffffffff811f04b3>] cfq_init_queue+0x80/0x28e
+>>    [<ffffffffa01a1600>] ? dm_blk_ioctl+0xa7/0xa7 [dm_mod]
+>>    [<ffffffff811d8c41>] elevator_init+0xe1/0x115
+>>    [<ffffffff811e229f>] ? blk_queue_make_request+0x54/0x59
+>>    [<ffffffff811dd743>] blk_init_allocated_queue+0x8c/0x9e
+>>    [<ffffffffa019ffcd>] dm_setup_md_queue+0x36/0xaa [dm_mod]
+>>    [<ffffffffa01a60e6>] table_load+0x1bd/0x2c8 [dm_mod]
+>>    [<ffffffffa01a7026>] ctl_ioctl+0x1d6/0x236 [dm_mod]
+>>    [<ffffffffa01a5f29>] ? table_clear+0xaa/0xaa [dm_mod]
+>>    [<ffffffffa01a7099>] dm_ctl_ioctl+0x13/0x17 [dm_mod]
+>>    [<ffffffff811479fc>] do_vfs_ioctl+0x3fb/0x441
+>>    [<ffffffff811b643c>] ? file_has_perm+0x8a/0x99
+>>    [<ffffffff81147aa0>] sys_ioctl+0x5e/0x82
+>>    [<ffffffff812010be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>>    [<ffffffff814310d9>] system_call_fastpath+0x16/0x1b
+>>
+>> The warning means during queue initialization blk_queue_bypass_start()
+>> calls sleeping function (synchronize_rcu) while dm holds md->type_lock.
 > 
-> I don't think an xattr makes sense for this. It's sufficient to keep
-> this state in memory.
-> 
-> In general these error paths are hard to test and it's important
-> to keep them as simple as possible. Doing IO and other complexities
-> just doesn't make sense. Just have the simplest possible path
-> that can do the job.
+> md->type_lock is a mutex, isn't it? I thought we are allowed to block
+> and schedule out under mutex?
 
-And since it's difficult to prove, I think it's nice to have an
-option to panic if the memory error was on dirty page cache.
+Hm, you are right. It's a mutex.
+The warning occurs only if I turned on CONFIG_PREEMPT=y.
 
-It's theoretically same as disk I/O error; dirty cache is marked invalid
-and next read will go to disk.
-Though in practice, the next read will likely to fail if disk was broken.
-(Given that transient errors are usually recovered by retries and fail-overs
- in storage stack and not visible to applications which don't care.)
-So it's "consistent" in some sense.
-OTOH, the next read will likely succeed reading old data from disk
-in case of the memory error.
-I'm afraid the read-after-write inconsistency could cause silent data
-corruption.
+> add_disk() also calls disk_alloc_events() which does kzalloc(GFP_KERNEL).
+> So we already have code which can block/wait under md->type_lock. I am
+> not sure why should we get this warning under a mutex.
+
+add_disk() is called without md->type_lock.
+
+Call flow is like this:
+
+dm_create
+  alloc_dev
+    blk_alloc_queue
+    alloc_disk
+    add_disk
+      blk_queue_bypass_end [with 3.7-rc2]
+
+table_load
+  dm_lock_md_type [takes md->type_lock]
+  dm_setup_md_queue
+    blk_init_allocated_queue [when DM_TYPE_REQUEST_BASED]
+      elevator_init
+        blkcg_activate_policy
+          blk_queue_bypass_start <-- THIS triggers the warning
+          blk_queue_bypass_end
+      blk_queue_bypass_end [with 3.6]
+  dm_unlock_md_type
+
+blk_queue_bypass_start() in blkcg_activate_policy was nested call,
+that did nothing, with 3.6.
+With 3.7-rc2, it becomes the initial call and does
+actual draining stuff.
 
 -- 
 Jun'ichi Nomura, NEC Corporation
