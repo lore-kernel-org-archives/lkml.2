@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037Ab2J2XDn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 19:03:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58408 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756039Ab2J2XDl (ORCPT
+	id S1761028Ab2J2XEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 19:04:40 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:37997 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755911Ab2J2XEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 19:03:41 -0400
-Date: Mon, 29 Oct 2012 16:03:37 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Jacob Shin <jacob.shin@amd.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Yinghai Lu <yinghai@kernel.org>, Willy Tarreau <w@1wt.eu>,
-        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: Regression from 3.4.9 to 3.4.16 "stable" kernel
-Message-ID: <20121029230337.GA22444@kroah.com>
-References: <508E002B.4090200@teksavvy.com>
- <20121029064643.GE574@1wt.eu>
- <508E913D.2080104@teksavvy.com>
- <1351521658.13356.7.camel@deadeye.wl.decadent.org.uk>
- <20121029144722.GA23217@jshin-Toonie>
- <20121029165823.GA6614@kroah.com>
- <508F0AA6.6010702@teksavvy.com>
+	Mon, 29 Oct 2012 19:04:38 -0400
+Date: Tue, 30 Oct 2012 00:01:39 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Cyril Brulebois <kibi@debian.org>
+Cc: nic_swsd@realtek.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] r8169: Fix WoL on RTL8168d/8111d.
+Message-ID: <20121029230139.GA17476@electric-eye.fr.zoreil.com>
+References: <1351392414-32219-1-git-send-email-kibi@debian.org>
+ <20121028230523.GA26778@electric-eye.fr.zoreil.com>
+ <20121029002140.GK6195@mraw.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <508F0AA6.6010702@teksavvy.com>
+In-Reply-To: <20121029002140.GK6195@mraw.org>
+X-Organisation: Land of Sunshine Inc.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 07:00:54PM -0400, Mark Lord wrote:
-> There's something else very wrong when going from 3.4.9 to 3.4.16.
-> I've done it on two machines here, one the AMD-450 server (64-bit),
-> and the other my main notebook (Core2duo 32-bit-PAE).
-> 
-> Both systems feel much more sluggish than usual with 3.4.16 running.
-> Reverted them both back to earlier kernels (3.4.9, 3.4.4-PAE),
-> and the usual responsive feel has returned.
-> 
-> Vague, I know, but something bad happened in there somewhere.
+Cyril Brulebois <kibi@debian.org> :
+[...]
+> Thanks. Should I re-send with that as reference, or will you amend the
+> patch once you're done with your testing?
 
-That's too vague for me to do anything with, sorry.  Bisection would be
-good if you can figure out how to measure this.
+It would be nice to resend, directly to netdev and davem.
 
-greg k-h
+Shutdown Wol behaved as expected with 3.7-rc3 for both cards: unicast WoL
+failed without the patch while broadcast WoL worked. Unicast and broadcast
+worked after the patch.
+
+-- 
+Ueimor
