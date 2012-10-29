@@ -1,83 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760418Ab2J2SlH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 14:41:07 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:34087 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab2J2SlE convert rfc822-to-8bit (ORCPT
+	id S1760453Ab2J2Smz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 14:42:55 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:59753 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760261Ab2J2Smy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 14:41:04 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [REGRESSION] 3.7-rc2 [ INFO: suspicious RCU usage. ]
-Date: Mon, 29 Oct 2012 19:40:59 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.0-rc3; KDE/4.8.4; x86_64; ; )
-References: <201210232012.25163.maciej.rutecki@gmail.com>
-In-Reply-To: <201210232012.25163.maciej.rutecki@gmail.com>
+	Mon, 29 Oct 2012 14:42:54 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201210291940.59657.maciej.rutecki@gmail.com>
+In-Reply-To: <20121029183157.GC3097@jtriplet-mobl1>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
+ <1351450948-15618-6-git-send-email-levinsasha928@gmail.com>
+ <20121029113515.GB9115@Krystal> <CA+1xoqce6uJ6wy3+2CBwsLHKnsz4wD0vt8MBEGKCFfXTvuC0Hg@mail.gmail.com>
+ <20121029183157.GC3097@jtriplet-mobl1>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 29 Oct 2012 14:42:33 -0400
+Message-ID: <CA+1xoqfMrn9zDFMJNFfA0NA86wE_DedD97cP1yJ2UQdTjs3uyQ@mail.gmail.com>
+Subject: Re: [PATCH v7 06/16] tracepoint: use new hashtable implementation
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        torvalds@linux-foundation.org, tj@kernel.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wtorek, 23 października 2012 o 20:12:25 Maciej Rutecki wrote:
-> Got during normal boot:
-> [    0.748900] ===============================
-> [    0.748948] [ INFO: suspicious RCU usage. ]
-> [    0.748997] 3.7.0-rc2 #1 Not tainted
-> [    0.749045] -------------------------------
-> [    0.749094] include/linux/cgroup.h:566 suspicious
-> rcu_dereference_check() usage!
-> [    0.749149]
-> [    0.749149] other info that might help us debug this:
-> [    0.749149]
-> [    0.749207]
-> [    0.749207] rcu_scheduler_active = 1, debug_locks = 0
-> [    0.749260] 2 locks held by kdevtmpfs/29:
-> [    0.749308]  #0:  (sb_writers){.+.+.+}, at: [<ffffffff81133b22>]
-> mnt_want_write+0x1f/0x46
-> [    0.749570]  #1:  (&sb->s_type->i_mutex_key#3/1){+.+.+.}, at:
-> [<ffffffff811250fa>] kern_path_create+0x7e/0x13f
-> [    0.749919]
-> [    0.749919] stack backtrace:
-> [    0.749970] Pid: 29, comm: kdevtmpfs Not tainted 3.7.0-rc2 #1
-> [    0.750022] Call Trace:
-> [    0.750084]  [<ffffffff8108654b>] lockdep_rcu_suspicious+0x109/0x112
-> [    0.750152]  [<ffffffff811ed588>]
-> task_subsys_state.constprop.6+0x68/0x70 [    0.750219] 
-> [<ffffffff811edce1>] devcgroup_inode_mknod+0x20/0x9b [    0.750287] 
-> [<ffffffff811d6721>] ? security_capable+0x13/0x15
-> [    0.750353]  [<ffffffff81049c49>] ? ns_capable+0x48/0x60
-> [    0.750418]  [<ffffffff811255d0>] vfs_mknod+0x61/0xae
-> [    0.750483]  [<ffffffff8132ce74>] handle_create.isra.2+0x13f/0x1b0
-> [    0.750549]  [<ffffffff8132cf8e>] ? devtmpfsd+0xa9/0x156
-> [    0.750614]  [<ffffffff81088371>] ? lock_release+0x164/0x1aa
-> [    0.750679]  [<ffffffff8132cee5>] ? handle_create.isra.2+0x1b0/0x1b0
-> [    0.750746]  [<ffffffff8132cfd3>] devtmpfsd+0xee/0x156
-> [    0.750809]  [<ffffffff8132cee5>] ? handle_create.isra.2+0x1b0/0x1b0
-> [    0.750876]  [<ffffffff8105d10a>] kthread+0xac/0xb4
-> [    0.750939]  [<ffffffff8105d05e>] ? __kthread_parkme+0x60/0x60
-> [    0.751006]  [<ffffffff814877bc>] ret_from_fork+0x7c/0xb0
-> [    0.751070]  [<ffffffff8105d05e>] ? __kthread_parkme+0x60/0x60
-> 
-> 
-> Last known good kernel: 3.6.1
-> 
-> lspci:
-> http://mrutecki.pl/download/kernel/3.7-rc2/leon/lspci.txt
-> 
-> dmesg:
-> http://mrutecki.pl/download/kernel/3.7-rc2/leon/dmesg-3.7-rc2.txt
-> 
-> Regards
+On Mon, Oct 29, 2012 at 2:31 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> On Mon, Oct 29, 2012 at 01:29:24PM -0400, Sasha Levin wrote:
+>> On Mon, Oct 29, 2012 at 7:35 AM, Mathieu Desnoyers
+>> <mathieu.desnoyers@efficios.com> wrote:
+>> > * Sasha Levin (levinsasha928@gmail.com) wrote:
+>> >> Switch tracepoints to use the new hashtable implementation. This reduces the amount of
+>> >> generic unrelated code in the tracepoints.
+>> >>
+>> >> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+>> >> ---
+>> >>  kernel/tracepoint.c | 27 +++++++++++----------------
+>> >>  1 file changed, 11 insertions(+), 16 deletions(-)
+>> >>
+>> >> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+>> >> index d96ba22..854df92 100644
+>> >> --- a/kernel/tracepoint.c
+>> >> +++ b/kernel/tracepoint.c
+>> >> @@ -26,6 +26,7 @@
+>> >>  #include <linux/slab.h>
+>> >>  #include <linux/sched.h>
+>> >>  #include <linux/static_key.h>
+>> >> +#include <linux/hashtable.h>
+>> >>
+>> >>  extern struct tracepoint * const __start___tracepoints_ptrs[];
+>> >>  extern struct tracepoint * const __stop___tracepoints_ptrs[];
+>> >> @@ -49,8 +50,7 @@ static LIST_HEAD(tracepoint_module_list);
+>> >>   * Protected by tracepoints_mutex.
+>> >>   */
+>> >>  #define TRACEPOINT_HASH_BITS 6
+>> >> -#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
+>> >> -static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
+>> >> +static DEFINE_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
+>> >>
+>> > [...]
+>> >>
+>> >> @@ -722,6 +715,8 @@ struct notifier_block tracepoint_module_nb = {
+>> >>
+>> >>  static int init_tracepoints(void)
+>> >>  {
+>> >> +     hash_init(tracepoint_table);
+>> >> +
+>> >>       return register_module_notifier(&tracepoint_module_nb);
+>> >>  }
+>> >>  __initcall(init_tracepoints);
+>> >
+>> > So we have a hash table defined in .bss (therefore entirely initialized
+>> > to NULL), and you add a call to "hash_init", which iterates on the whole
+>> > array and initialize it to NULL (again) ?
+>> >
+>> > This extra initialization is redundant. I think it should be removed
+>> > from here, and hashtable.h should document that hash_init() don't need
+>> > to be called on zeroed memory (which includes static/global variables,
+>> > kzalloc'd memory, etc).
+>>
+>> This was discussed in the previous series, the conclusion was to call
+>> hash_init() either way to keep the encapsulation and consistency.
+>>
+>> It's cheap enough and happens only once, so why not?
+>
+> Unnecessary work adds up.  Better not to do it unnecessarily, even if by
+> itself it doesn't cost that much.
+>
+> It doesn't seem that difficult for future fields to have 0 as their
+> initialized state.
 
-It seems that in -rc3 warning has gone.
-Regards
+Let's put it this way: hlist requires the user to initialize hlist
+head before usage, therefore as a hlist user, hashtable implementation
+must do that.
 
--- 
-Maciej Rutecki
-http://www.mrutecki.pl
+We do it automatically when the hashtable user does
+DEFINE_HASHTABLE(), but we can't do that if he does
+DECLARE_HASHTABLE(). This means that the hashtable user must call
+hash_init() whenever he uses DECLARE_HASHTABLE() to create his
+hashtable.
+
+There are two options here, either we specify that hash_init() should
+only be called if DECLARE_HASHTABLE() was called, which is confusing,
+inconsistent and prone to errors, or we can just say that it should be
+called whenever a hashtable is used.
+
+The only way to work around it IMO is to get hlist to not require
+initializing before usage, and there are good reasons that that won't
+happen.
+
+
+Thanks,
+Sasha
