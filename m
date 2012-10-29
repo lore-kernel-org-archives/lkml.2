@@ -1,64 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604Ab2J2TJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 15:09:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51691 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab2J2TJN convert rfc822-to-8bit (ORCPT
+	id S1752250Ab2J2TJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 15:09:59 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37848 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963Ab2J2TJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 15:09:13 -0400
-Message-ID: <1351537727.4047.21.camel@twins>
-Subject: Re: [RFC/PATCHSET 00/15] perf report: Add support to accumulate
- hist periods
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Date: Mon, 29 Oct 2012 20:08:47 +0100
-In-Reply-To: <1347520811-28150-1-git-send-email-namhyung@kernel.org>
-References: <1347520811-28150-1-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 29 Oct 2012 15:09:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121029185319.GA21546@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
+ <1351450948-15618-6-git-send-email-levinsasha928@gmail.com>
+ <20121029113515.GB9115@Krystal> <CA+1xoqce6uJ6wy3+2CBwsLHKnsz4wD0vt8MBEGKCFfXTvuC0Hg@mail.gmail.com>
+ <20121029183157.GC3097@jtriplet-mobl1> <CA+1xoqfMrn9zDFMJNFfA0NA86wE_DedD97cP1yJ2UQdTjs3uyQ@mail.gmail.com>
+ <20121029185319.GA21546@Krystal>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 29 Oct 2012 15:09:36 -0400
+Message-ID: <CA+1xoqcSx04JEXy2aPu4Qt7Zb4iSqXBSjARgMae_FusgzpgnaQ@mail.gmail.com>
+Subject: Re: [PATCH v7 06/16] tracepoint: use new hashtable implementation
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, torvalds@linux-foundation.org,
+        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-09-13 at 16:19 +0900, Namhyung Kim wrote:
-> When --cumulate option is given, it'll be shown like this:
-> 
->    $ perf report --cumulate
->    (...)
->    +  93.63%  abc  libc-2.15.so        [.] __libc_start_main
->    +  93.35%  abc  abc                 [.] main
->    +  93.35%  abc  abc                 [.] c
->    +  93.35%  abc  abc                 [.] b
->    +  93.35%  abc  abc                 [.] a
->    +   5.17%  abc  ld-2.15.so          [.] _dl_map_object
->    +   5.17%  abc  ld-2.15.so          [.] _dl_map_object_from_fd
->    +   1.13%  abc  ld-2.15.so          [.] _dl_start_user
->    +   1.13%  abc  ld-2.15.so          [.] _dl_start
->    +   0.29%  abc  perf                [.] main
->    +   0.29%  abc  perf                [.] run_builtin
->    +   0.29%  abc  perf                [.] cmd_record
->    +   0.29%  abc  libpthread-2.15.so  [.] __libc_close
->    +   0.07%  abc  ld-2.15.so          [.] _start
->    +   0.07%  abc  [kernel.kallsyms]   [k] page_fault
->    
-> (This output came from TUI since stdio bothered by callchains) 
+On Mon, Oct 29, 2012 at 2:53 PM, Mathieu Desnoyers
+<mathieu.desnoyers@efficios.com> wrote:
+> * Sasha Levin (levinsasha928@gmail.com) wrote:
+>> On Mon, Oct 29, 2012 at 2:31 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+>> > On Mon, Oct 29, 2012 at 01:29:24PM -0400, Sasha Levin wrote:
+>> >> On Mon, Oct 29, 2012 at 7:35 AM, Mathieu Desnoyers
+>> >> <mathieu.desnoyers@efficios.com> wrote:
+>> >> > * Sasha Levin (levinsasha928@gmail.com) wrote:
+>> >> >> Switch tracepoints to use the new hashtable implementation. This reduces the amount of
+>> >> >> generic unrelated code in the tracepoints.
+>> >> >>
+>> >> >> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+>> >> >> ---
+>> >> >>  kernel/tracepoint.c | 27 +++++++++++----------------
+>> >> >>  1 file changed, 11 insertions(+), 16 deletions(-)
+>> >> >>
+>> >> >> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+>> >> >> index d96ba22..854df92 100644
+>> >> >> --- a/kernel/tracepoint.c
+>> >> >> +++ b/kernel/tracepoint.c
+>> >> >> @@ -26,6 +26,7 @@
+>> >> >>  #include <linux/slab.h>
+>> >> >>  #include <linux/sched.h>
+>> >> >>  #include <linux/static_key.h>
+>> >> >> +#include <linux/hashtable.h>
+>> >> >>
+>> >> >>  extern struct tracepoint * const __start___tracepoints_ptrs[];
+>> >> >>  extern struct tracepoint * const __stop___tracepoints_ptrs[];
+>> >> >> @@ -49,8 +50,7 @@ static LIST_HEAD(tracepoint_module_list);
+>> >> >>   * Protected by tracepoints_mutex.
+>> >> >>   */
+>> >> >>  #define TRACEPOINT_HASH_BITS 6
+>> >> >> -#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
+>> >> >> -static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
+>> >> >> +static DEFINE_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
+>> >> >>
+>> >> > [...]
+>> >> >>
+>> >> >> @@ -722,6 +715,8 @@ struct notifier_block tracepoint_module_nb = {
+>> >> >>
+>> >> >>  static int init_tracepoints(void)
+>> >> >>  {
+>> >> >> +     hash_init(tracepoint_table);
+>> >> >> +
+>> >> >>       return register_module_notifier(&tracepoint_module_nb);
+>> >> >>  }
+>> >> >>  __initcall(init_tracepoints);
+>> >> >
+>> >> > So we have a hash table defined in .bss (therefore entirely initialized
+>> >> > to NULL), and you add a call to "hash_init", which iterates on the whole
+>> >> > array and initialize it to NULL (again) ?
+>> >> >
+>> >> > This extra initialization is redundant. I think it should be removed
+>> >> > from here, and hashtable.h should document that hash_init() don't need
+>> >> > to be called on zeroed memory (which includes static/global variables,
+>> >> > kzalloc'd memory, etc).
+>> >>
+>> >> This was discussed in the previous series, the conclusion was to call
+>> >> hash_init() either way to keep the encapsulation and consistency.
+>> >>
+>> >> It's cheap enough and happens only once, so why not?
+>> >
+>> > Unnecessary work adds up.  Better not to do it unnecessarily, even if by
+>> > itself it doesn't cost that much.
+>> >
+>> > It doesn't seem that difficult for future fields to have 0 as their
+>> > initialized state.
+>>
+>> Let's put it this way: hlist requires the user to initialize hlist
+>> head before usage, therefore as a hlist user, hashtable implementation
+>> must do that.
+>>
+>> We do it automatically when the hashtable user does
+>> DEFINE_HASHTABLE(), but we can't do that if he does
+>> DECLARE_HASHTABLE(). This means that the hashtable user must call
+>> hash_init() whenever he uses DECLARE_HASHTABLE() to create his
+>> hashtable.
+>>
+>> There are two options here, either we specify that hash_init() should
+>> only be called if DECLARE_HASHTABLE() was called, which is confusing,
+>> inconsistent and prone to errors, or we can just say that it should be
+>> called whenever a hashtable is used.
+>>
+>> The only way to work around it IMO is to get hlist to not require
+>> initializing before usage, and there are good reasons that that won't
+>> happen.
+>
+> Hrm, just a second here.
+>
+> The argument about hash_init being useful to add magic values in the
+> future only works for the cases where a hash table is declared with
+> DECLARE_HASHTABLE(). It's completely pointless with DEFINE_HASHTABLE(),
+> because we could initialize any debugging variables from within
+> DEFINE_HASHTABLE().
+>
+> So I take my "Agreed" back. I disagree with initializing the hash table
+> twice redundantly. There should be at least "DEFINE_HASHTABLE()" or a
+> hash_init() (for DECLARE_HASHTABLE()), but not useless execution
+> initialization on top of an already statically initialized hash table.
 
-Right, so I tried this and I would expect the callchains to be inverted
-too, so that when I expand say 'c' I would see that 'c' calls 'b' for
-100% which calls 'a' for 100%.
+The "magic values" argument was used to point out that some sort of
+initialization *must* occur, either by hash_init() or by a proper
+initialization in DEFINE_HASHTABLE(), and we can't simply memset() it
+to 0. It appears that we all agree on that.
 
-Instead I get the regular callchains, expanding 'c' gives me main calls
-it for 100%.
+The other thing is whether hash_init() should be called for hashtables
+that were created with DEFINE_HASHTABLE(). That point was raised by
+Neil Brown last time this series went around, and it seems that no one
+objected to the point that it should be consistent across the code.
 
-Adding -G (invert callchains) doesn't make it better, in that case, when
-I expand 'c' we start at '__libc_start_main' instead of 'c'.
+Even if we ignore hash_init() being mostly optimized out, is it really
+worth it taking the risk that some future patch would move a hashtable
+that user DEFINE_HASHTABLE() into a struct and will start using
+DECLARE_HASHTABLE() and forgetting to initialize it, for example?
 
-Is there anything I'm missing?
+
+Thanks,
+Sasha
