@@ -1,40 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759857Ab2J2Qhg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:37:36 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42130 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756804Ab2J2Qhe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:37:34 -0400
+	id S1760052Ab2J2Qjr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:39:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42123 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759665Ab2J2Qjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 12:39:45 -0400
+Date: Mon, 29 Oct 2012 12:38:45 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Alasdair G Kergon <agk@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/2] dm: stay in blk_queue_bypass until queue becomes
+ initialized
+Message-ID: <20121029163845.GB7709@redhat.com>
+References: <50890937.7010809@ce.jp.nec.com>
+ <20121026202105.GF24687@redhat.com>
+ <508E572C.6000707@ce.jp.nec.com>
 MIME-Version: 1.0
-In-Reply-To: <1351521658.13356.7.camel@deadeye.wl.decadent.org.uk>
-References: <508E002B.4090200@teksavvy.com>
-	<20121029064643.GE574@1wt.eu>
-	<508E913D.2080104@teksavvy.com>
-	<1351521658.13356.7.camel@deadeye.wl.decadent.org.uk>
-Date: Mon, 29 Oct 2012 09:37:32 -0700
-X-Google-Sender-Auth: DKM_uJe01e3X5GkvHYSPZMPXXPA
-Message-ID: <CAE9FiQXHgLyCUGdFbbzYmXsX8uqpsAwXCt=j6ZD8RG=g7kRnfA@mail.gmail.com>
-Subject: Re: Regression from 3.4.9 to 3.4.16 "stable" kernel
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Mark Lord <kernel@teksavvy.com>, Willy Tarreau <w@1wt.eu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508E572C.6000707@ce.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 7:40 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> However I'm not sure that this loop is correct either.  Yinghai, does
-> your version definitely iterate in increasing pfn order?  If not then
-> the max_pfn_mapped assignment must be conditional.
+On Mon, Oct 29, 2012 at 07:15:08PM +0900, Jun'ichi Nomura wrote:
+> On 10/27/12 05:21, Vivek Goyal wrote:
+> > On Thu, Oct 25, 2012 at 06:41:11PM +0900, Jun'ichi Nomura wrote:
+> >> [PATCH] dm: stay in blk_queue_bypass until queue becomes initialized
+> >>
+> >> With 749fefe677 ("block: lift the initial queue bypass mode on
+> >> blk_register_queue() instead of blk_init_allocated_queue()"),
+> >> add_disk() eventually calls blk_queue_bypass_end().
+> >> This change invokes the following warning when multipath is used.
+> >>
+> >>   BUG: scheduling while atomic: multipath/2460/0x00000002
+> >>   1 lock held by multipath/2460:
+> >>    #0:  (&md->type_lock){......}, at: [<ffffffffa019fb05>] dm_lock_md_type+0x17/0x19 [dm_mod]
+> >>   Modules linked in: ...
+> >>   Pid: 2460, comm: multipath Tainted: G        W    3.7.0-rc2 #1
+> >>   Call Trace:
+> >>    [<ffffffff810723ae>] __schedule_bug+0x6a/0x78
+> >>    [<ffffffff81428ba2>] __schedule+0xb4/0x5e0
+> >>    [<ffffffff814291e6>] schedule+0x64/0x66
+> >>    [<ffffffff8142773a>] schedule_timeout+0x39/0xf8
+> >>    [<ffffffff8108ad5f>] ? put_lock_stats+0xe/0x29
+> >>    [<ffffffff8108ae30>] ? lock_release_holdtime+0xb6/0xbb
+> >>    [<ffffffff814289e3>] wait_for_common+0x9d/0xee
+> >>    [<ffffffff8107526c>] ? try_to_wake_up+0x206/0x206
+> >>    [<ffffffff810c0eb8>] ? kfree_call_rcu+0x1c/0x1c
+> >>    [<ffffffff81428aec>] wait_for_completion+0x1d/0x1f
+> >>    [<ffffffff810611f9>] wait_rcu_gp+0x5d/0x7a
+> >>    [<ffffffff81061216>] ? wait_rcu_gp+0x7a/0x7a
+> >>    [<ffffffff8106fb18>] ? complete+0x21/0x53
+> >>    [<ffffffff810c0556>] synchronize_rcu+0x1e/0x20
+> >>    [<ffffffff811dd903>] blk_queue_bypass_start+0x5d/0x62
+> >>    [<ffffffff811ee109>] blkcg_activate_policy+0x73/0x270
+> >>    [<ffffffff81130521>] ? kmem_cache_alloc_node_trace+0xc7/0x108
+> >>    [<ffffffff811f04b3>] cfq_init_queue+0x80/0x28e
+> >>    [<ffffffffa01a1600>] ? dm_blk_ioctl+0xa7/0xa7 [dm_mod]
+> >>    [<ffffffff811d8c41>] elevator_init+0xe1/0x115
+> >>    [<ffffffff811e229f>] ? blk_queue_make_request+0x54/0x59
+> >>    [<ffffffff811dd743>] blk_init_allocated_queue+0x8c/0x9e
+> >>    [<ffffffffa019ffcd>] dm_setup_md_queue+0x36/0xaa [dm_mod]
+> >>    [<ffffffffa01a60e6>] table_load+0x1bd/0x2c8 [dm_mod]
+> >>    [<ffffffffa01a7026>] ctl_ioctl+0x1d6/0x236 [dm_mod]
+> >>    [<ffffffffa01a5f29>] ? table_clear+0xaa/0xaa [dm_mod]
+> >>    [<ffffffffa01a7099>] dm_ctl_ioctl+0x13/0x17 [dm_mod]
+> >>    [<ffffffff811479fc>] do_vfs_ioctl+0x3fb/0x441
+> >>    [<ffffffff811b643c>] ? file_has_perm+0x8a/0x99
+> >>    [<ffffffff81147aa0>] sys_ioctl+0x5e/0x82
+> >>    [<ffffffff812010be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> >>    [<ffffffff814310d9>] system_call_fastpath+0x16/0x1b
+> >>
+> >> The warning means during queue initialization blk_queue_bypass_start()
+> >> calls sleeping function (synchronize_rcu) while dm holds md->type_lock.
+> > 
+> > md->type_lock is a mutex, isn't it? I thought we are allowed to block
+> > and schedule out under mutex?
+> 
+> Hm, you are right. It's a mutex.
+> The warning occurs only if I turned on CONFIG_PREEMPT=y.
 
-yes, memblock is in order.
+Ok, so the question is what's wrong with calling synchronize_rcu() inside
+a mutex with CONFIG_PREEMPT=y. I don't know. Ccing paul mckenney  and
+peterz.
 
-Yinghai
+> 
+> > add_disk() also calls disk_alloc_events() which does kzalloc(GFP_KERNEL).
+> > So we already have code which can block/wait under md->type_lock. I am
+> > not sure why should we get this warning under a mutex.
+> 
+> add_disk() is called without md->type_lock.
+> 
+> Call flow is like this:
+> 
+> dm_create
+>   alloc_dev
+>     blk_alloc_queue
+>     alloc_disk
+>     add_disk
+>       blk_queue_bypass_end [with 3.7-rc2]
+> 
+> table_load
+>   dm_lock_md_type [takes md->type_lock]
+>   dm_setup_md_queue
+>     blk_init_allocated_queue [when DM_TYPE_REQUEST_BASED]
+>       elevator_init
+>         blkcg_activate_policy
+>           blk_queue_bypass_start <-- THIS triggers the warning
+>           blk_queue_bypass_end
+>       blk_queue_bypass_end [with 3.6]
+>   dm_unlock_md_type
+> 
+> blk_queue_bypass_start() in blkcg_activate_policy was nested call,
+> that did nothing, with 3.6.
+> With 3.7-rc2, it becomes the initial call and does
+> actual draining stuff.
+
+Ok. Once we know what's wrong, we should be able to figure out the 
+right solution. Artificially putting queue one level deep in bypass
+to avoid calling synchronize_rcu() sounds bad.
+
+Thanks
+Vivek
+
+> 
+> -- 
+> Jun'ichi Nomura, NEC Corporation
