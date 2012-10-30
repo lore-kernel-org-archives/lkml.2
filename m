@@ -1,130 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760124Ab2J3XBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 19:01:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6697 "EHLO mx1.redhat.com"
+	id S1760363Ab2J3XFG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 19:05:06 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:47081 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758621Ab2J3XBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 19:01:49 -0400
-Date: Wed, 31 Oct 2012 00:01:20 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 03/25] perf tests: Add framework for automated
- perf_event_attr tests
-Message-ID: <20121030230120.GA1067@krava.redhat.com>
-References: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
- <1351634526-1516-4-git-send-email-jolsa@redhat.com>
+	id S1758621Ab2J3XFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 19:05:02 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [PATCH v4 5/7] efi_pstore: Add a sequence counter to a variable name
+Date: Wed, 31 Oct 2012 00:09:06 +0100
+Message-ID: <7522525.tXjogSGO9Q@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D4138B1E5F@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D4138B1E5F@USINDEM103.corp.hds.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351634526-1516-4-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 11:01:44PM +0100, Jiri Olsa wrote:
-> Adding automated test to check event's perf_event_attr values.
+On Tuesday, October 30, 2012 08:02:54 PM Seiji Aguchi wrote:
 > 
-> The idea is run perf session with kidnapping sys_perf_event_open
-> function. For each sys_perf_event_open call we store the
-> perf_event_attr data to the file to be checked later against what
-> we expect.
+> [Issue]
 > 
-> You can run this by:
->   $ python ./tests/attr.py -d ./tests/attr/ -p ./perf -v
+> Currently, a variable name, which identifies each entry, consists of type, id and ctime.
+> But if multiple events happens in a short time, a second/third event may fail to log because
+> efi_pstore can't distinguish each event with current variable name.
 > 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> [Solution]
+> 
+> A reasonable way to identify all events precisely is introducing a sequence counter to
+> the variable name.
+> 
+> The sequence counter has already supported in a pstore layer with "oopscount".
+> So, this patch adds it to a variable name.
+> Also, it is passed to read/erase callbacks of platform drivers in accordance with
+> the modification of the variable name.
+> 
+>   <before applying this patch>
+>  a variable name of first event: dump-type0-1-12345678
+>  a variable name of second event: dump-type0-1-12345678
+> 
+>   type:0
+>   id:1
+>   ctime:12345678
+> 
+>  If multiple events happen in a short time, efi_pstore can't distinguish them because
+>  variable names are same among them.
+> 
+>   <after applying this patch>
+> 
+>  it can be distinguishable by adding a sequence counter as follows.
+> 
+>  a variable name of first event: dump-type0-1-1-12345678
+>  a variable name of Second event: dump-type0-1-2-12345678
+> 
+>   type:0
+>   id:1
+>   sequence counter: 1(first event), 2(second event)
+>   ctime:12345678
+> 
+> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+
+Please feel free to add
+
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+
+for the erst.c change.
+
+Thanks!
+
+
 > ---
->  tools/perf/Makefile      |   1 +
->  tools/perf/perf.c        |   2 +
->  tools/perf/perf.h        |  16 ++-
->  tools/perf/tests/attr.c  | 136 ++++++++++++++++++++
->  tools/perf/tests/attr.py | 313 +++++++++++++++++++++++++++++++++++++++++++++++
->  5 files changed, 466 insertions(+), 2 deletions(-)
->  create mode 100644 tools/perf/tests/attr.c
->  create mode 100644 tools/perf/tests/attr.py
+>  drivers/acpi/apei/erst.c   |   12 ++++++------
+>  drivers/firmware/efivars.c |   23 ++++++++++++++---------
+>  fs/pstore/inode.c          |    8 +++++---
+>  fs/pstore/internal.h       |    2 +-
+>  fs/pstore/platform.c       |   11 ++++++-----
+>  fs/pstore/ram.c            |    7 +++----
+>  include/linux/pstore.h     |    8 +++++---
+>  7 files changed, 40 insertions(+), 31 deletions(-)
 > 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 2d3427f..1da87a3 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -430,6 +430,7 @@ LIB_OBJS += $(OUTPUT)arch/common.o
+> diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+> index 0bd6ae4..6d894bf 100644
+> --- a/drivers/acpi/apei/erst.c
+> +++ b/drivers/acpi/apei/erst.c
+> @@ -931,13 +931,13 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
 >  
->  LIB_OBJS += $(OUTPUT)tests/parse-events.o
->  LIB_OBJS += $(OUTPUT)tests/dso-data.o
-> +LIB_OBJS += $(OUTPUT)tests/attr.o
+>  static int erst_open_pstore(struct pstore_info *psi);
+>  static int erst_close_pstore(struct pstore_info *psi);
+> -static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+> +static ssize_t erst_reader(u64 *id, enum pstore_type_id *type, int *count,
+>  			   struct timespec *time, char **buf,
+>  			   struct pstore_info *psi);
+>  static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
+> -		       u64 *id, unsigned int part,
+> +		       u64 *id, unsigned int part, int count,
+>  		       size_t size, struct pstore_info *psi);
+> -static int erst_clearer(enum pstore_type_id type, u64 id,
+> +static int erst_clearer(enum pstore_type_id type, u64 id, int count,
+>  			struct timespec time, struct pstore_info *psi);
 >  
->  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
->  BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-> diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-> index e968373..a0ae290 100644
-> --- a/tools/perf/perf.c
-> +++ b/tools/perf/perf.c
-> @@ -484,6 +484,8 @@ int main(int argc, const char **argv)
->  	}
->  	cmd = argv[0];
->  
-> +	test_attr__init();
-> +
->  	/*
->  	 * We use PATH to find perf commands, but we prepend some higher
->  	 * precedence paths: the "--exec-path" option, the PERF_EXEC_PATH
-> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-> index 469fbf2..0047264 100644
-> --- a/tools/perf/perf.h
-> +++ b/tools/perf/perf.h
-> @@ -174,13 +174,25 @@ static inline unsigned long long rdclock(void)
->  	(void) (&_min1 == &_min2);		\
->  	_min1 < _min2 ? _min1 : _min2; })
->  
-> +extern bool test_attr__enabled;
-> +void test_attr__init(void);
-> +void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
-> +		     int fd, int group_fd, unsigned long flags);
-> +
->  static inline int
->  sys_perf_event_open(struct perf_event_attr *attr,
->  		      pid_t pid, int cpu, int group_fd,
->  		      unsigned long flags)
->  {
-> -	return syscall(__NR_perf_event_open, attr, pid, cpu,
-> -		       group_fd, flags);
-> +	int fd;
-> +
-> +	fd = syscall(__NR_perf_event_open, attr, pid, cpu,
-> +		     group_fd, flags);
-> +
-> +	if (unlikely(test_attr__enabled))
-> +		test_attr__open(attr, pid, cpu, fd, group_fd, flags);
-> +
-> +	return fd;
+>  static struct pstore_info erst_info = {
+> @@ -987,7 +987,7 @@ static int erst_close_pstore(struct pstore_info *psi)
+>  	return 0;
 >  }
 >  
-
-SNIP
-
-> +
-> +void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
-> +		     int fd, int group_fd, unsigned long flags)
-> +{
-> +	if (store_event(attr, pid, cpu, fd, group_fd, flags))
-> +		die("test attr FAILED");
-> +}
-
-ahh crap, I forgot the errno value preservation fix.. 
-
-I'd send it later with another fix I have for perf stat or v2 if needed ;-)
-
-jirka
+> -static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+> +static ssize_t erst_reader(u64 *id, enum pstore_type_id *type, int *count,
+>  			   struct timespec *time, char **buf,
+>  			   struct pstore_info *psi)
+>  {
+> @@ -1055,7 +1055,7 @@ out:
+>  }
+>  
+>  static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
+> -		       u64 *id, unsigned int part,
+> +		       u64 *id, unsigned int part, int count,
+>  		       size_t size, struct pstore_info *psi)
+>  {
+>  	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
+> @@ -1101,7 +1101,7 @@ static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
+>  	return ret;
+>  }
+>  
+> -static int erst_clearer(enum pstore_type_id type, u64 id,
+> +static int erst_clearer(enum pstore_type_id type, u64 id, int count,
+>  			struct timespec time, struct pstore_info *psi)
+>  {
+>  	return erst_clear(id);
+> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+> index 3803621..7ad3aae 100644
+> --- a/drivers/firmware/efivars.c
+> +++ b/drivers/firmware/efivars.c
+> @@ -658,13 +658,14 @@ static int efi_pstore_close(struct pstore_info *psi)
+>  }
+>  
+>  static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+> -			       struct timespec *timespec,
+> +			       int *count, struct timespec *timespec,
+>  			       char **buf, struct pstore_info *psi)
+>  {
+>  	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+>  	struct efivars *efivars = psi->data;
+>  	char name[DUMP_NAME_LEN];
+>  	int i;
+> +	int cnt;
+>  	unsigned int part, size;
+>  	unsigned long time;
+>  
+> @@ -674,8 +675,10 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+>  			for (i = 0; i < DUMP_NAME_LEN; i++) {
+>  				name[i] = efivars->walk_entry->var.VariableName[i];
+>  			}
+> -			if (sscanf(name, "dump-type%u-%u-%lu", type, &part, &time) == 3) {
+> +			if (sscanf(name, "dump-type%u-%u-%d-%lu",
+> +				   type, &part, &cnt, &time) == 4) {
+>  				*id = part;
+> +				*count = cnt;
+>  				timespec->tv_sec = time;
+>  				timespec->tv_nsec = 0;
+>  				get_var_data_locked(efivars, &efivars->walk_entry->var);
+> @@ -698,7 +701,8 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+>  
+>  static int efi_pstore_write(enum pstore_type_id type,
+>  		enum kmsg_dump_reason reason, u64 *id,
+> -		unsigned int part, size_t size, struct pstore_info *psi)
+> +		unsigned int part, int count, size_t size,
+> +		struct pstore_info *psi)
+>  {
+>  	char name[DUMP_NAME_LEN];
+>  	efi_char16_t efi_name[DUMP_NAME_LEN];
+> @@ -725,7 +729,7 @@ static int efi_pstore_write(enum pstore_type_id type,
+>  		return -ENOSPC;
+>  	}
+>  
+> -	sprintf(name, "dump-type%u-%u-%lu", type, part,
+> +	sprintf(name, "dump-type%u-%u-%d-%lu", type, part, count,
+>  		get_seconds());
+>  
+>  	for (i = 0; i < DUMP_NAME_LEN; i++)
+> @@ -746,7 +750,7 @@ static int efi_pstore_write(enum pstore_type_id type,
+>  	return ret;
+>  };
+>  
+> -static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+> +static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
+>  			    struct timespec time, struct pstore_info *psi)
+>  {
+>  	char name[DUMP_NAME_LEN];
+> @@ -756,7 +760,7 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+>  	struct efivar_entry *entry, *found = NULL;
+>  	int i;
+>  
+> -	sprintf(name, "dump-type%u-%u-%lu", type, (unsigned int)id,
+> +	sprintf(name, "dump-type%u-%u-%d-%lu", type, (unsigned int)id, count,
+>  		time.tv_sec);
+>  
+>  	spin_lock(&efivars->lock);
+> @@ -807,7 +811,7 @@ static int efi_pstore_close(struct pstore_info *psi)
+>  	return 0;
+>  }
+>  
+> -static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+> +static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type, int *count,
+>  			       struct timespec *timespec,
+>  			       char **buf, struct pstore_info *psi)
+>  {
+> @@ -816,12 +820,13 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+>  
+>  static int efi_pstore_write(enum pstore_type_id type,
+>  		enum kmsg_dump_reason reason, u64 *id,
+> -		unsigned int part, size_t size, struct pstore_info *psi)
+> +		unsigned int part, int count, size_t size,
+> +		struct pstore_info *psi)
+>  {
+>  	return 0;
+>  }
+>  
+> -static int efi_pstore_erase(enum pstore_type_id type, u64 id,
+> +static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
+>  			    struct timespec time, struct pstore_info *psi)
+>  {
+>  	return 0;
+> diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+> index 4300af6..ed1d8c7 100644
+> --- a/fs/pstore/inode.c
+> +++ b/fs/pstore/inode.c
+> @@ -49,6 +49,7 @@ struct pstore_private {
+>  	struct pstore_info *psi;
+>  	enum pstore_type_id type;
+>  	u64	id;
+> +	int	count;
+>  	ssize_t	size;
+>  	char	data[];
+>  };
+> @@ -175,8 +176,8 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
+>  	struct pstore_private *p = dentry->d_inode->i_private;
+>  
+>  	if (p->psi->erase)
+> -		p->psi->erase(p->type, p->id, dentry->d_inode->i_ctime,
+> -			      p->psi);
+> +		p->psi->erase(p->type, p->id, p->count,
+> +			      dentry->d_inode->i_ctime, p->psi);
+>  
+>  	return simple_unlink(dir, dentry);
+>  }
+> @@ -271,7 +272,7 @@ int pstore_is_mounted(void)
+>   * Load it up with "size" bytes of data from "buf".
+>   * Set the mtime & ctime to the date that this record was originally stored.
+>   */
+> -int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+> +int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+>  		  char *data, size_t size, struct timespec time,
+>  		  struct pstore_info *psi)
+>  {
+> @@ -307,6 +308,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+>  		goto fail_alloc;
+>  	private->type = type;
+>  	private->id = id;
+> +	private->count = count;
+>  	private->psi = psi;
+>  
+>  	switch (type) {
+> diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
+> index 4847f58..937d820 100644
+> --- a/fs/pstore/internal.h
+> +++ b/fs/pstore/internal.h
+> @@ -50,7 +50,7 @@ extern struct pstore_info *psinfo;
+>  extern void	pstore_set_kmsg_bytes(int);
+>  extern void	pstore_get_records(int);
+>  extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
+> -			      char *data, size_t size,
+> +			      int count, char *data, size_t size,
+>  			      struct timespec time, struct pstore_info *psi);
+>  extern int	pstore_is_mounted(void);
+>  
+> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+> index a40da07..f911bbd 100644
+> --- a/fs/pstore/platform.c
+> +++ b/fs/pstore/platform.c
+> @@ -136,7 +136,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+>  			break;
+>  
+>  		ret = psinfo->write(PSTORE_TYPE_DMESG, reason, &id, part,
+> -				    hsize + len, psinfo);
+> +				    oopscount, hsize + len, psinfo);
+>  		if (ret == 0 && reason == KMSG_DUMP_OOPS && pstore_is_mounted())
+>  			pstore_new_entry = 1;
+>  
+> @@ -196,7 +196,7 @@ static void pstore_register_console(void) {}
+>  
+>  static int pstore_write_compat(enum pstore_type_id type,
+>  			       enum kmsg_dump_reason reason,
+> -			       u64 *id, unsigned int part,
+> +			       u64 *id, unsigned int part, int count,
+>  			       size_t size, struct pstore_info *psi)
+>  {
+>  	return psi->write_buf(type, reason, id, part, psinfo->buf, size, psi);
+> @@ -266,6 +266,7 @@ void pstore_get_records(int quiet)
+>  	char			*buf = NULL;
+>  	ssize_t			size;
+>  	u64			id;
+> +	int			count;
+>  	enum pstore_type_id	type;
+>  	struct timespec		time;
+>  	int			failed = 0, rc;
+> @@ -277,9 +278,9 @@ void pstore_get_records(int quiet)
+>  	if (psi->open && psi->open(psi))
+>  		goto out;
+>  
+> -	while ((size = psi->read(&id, &type, &time, &buf, psi)) > 0) {
+> -		rc = pstore_mkfile(type, psi->name, id, buf, (size_t)size,
+> -				  time, psi);
+> +	while ((size = psi->read(&id, &type, &count, &time, &buf, psi)) > 0) {
+> +		rc = pstore_mkfile(type, psi->name, id, count, buf,
+> +				  (size_t)size, time, psi);
+>  		kfree(buf);
+>  		buf = NULL;
+>  		if (rc && (rc != -EEXIST || !quiet))
+> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+> index 749693f..2bfa36e 100644
+> --- a/fs/pstore/ram.c
+> +++ b/fs/pstore/ram.c
+> @@ -132,9 +132,8 @@ ramoops_get_next_prz(struct persistent_ram_zone *przs[], uint *c, uint max,
+>  }
+>  
+>  static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+> -				   struct timespec *time,
+> -				   char **buf,
+> -				   struct pstore_info *psi)
+> +				   int *count, struct timespec *time,
+> +				   char **buf, struct pstore_info *psi)
+>  {
+>  	ssize_t size;
+>  	struct ramoops_context *cxt = psi->data;
+> @@ -236,7 +235,7 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
+>  	return 0;
+>  }
+>  
+> -static int ramoops_pstore_erase(enum pstore_type_id type, u64 id,
+> +static int ramoops_pstore_erase(enum pstore_type_id type, u64 id, int count,
+>  				struct timespec time, struct pstore_info *psi)
+>  {
+>  	struct ramoops_context *cxt = psi->data;
+> diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+> index f6e9336..1788909 100644
+> --- a/include/linux/pstore.h
+> +++ b/include/linux/pstore.h
+> @@ -50,17 +50,19 @@ struct pstore_info {
+>  	int		(*open)(struct pstore_info *psi);
+>  	int		(*close)(struct pstore_info *psi);
+>  	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
+> -			struct timespec *time, char **buf,
+> +			int *count, struct timespec *time, char **buf,
+>  			struct pstore_info *psi);
+>  	int		(*write)(enum pstore_type_id type,
+>  			enum kmsg_dump_reason reason, u64 *id,
+> -			unsigned int part, size_t size, struct pstore_info *psi);
+> +			unsigned int part, int count, size_t size,
+> +			struct pstore_info *psi);
+>  	int		(*write_buf)(enum pstore_type_id type,
+>  			enum kmsg_dump_reason reason, u64 *id,
+>  			unsigned int part, const char *buf, size_t size,
+>  			struct pstore_info *psi);
+>  	int		(*erase)(enum pstore_type_id type, u64 id,
+> -			struct timespec time, struct pstore_info *psi);
+> +			int count, struct timespec time,
+> +			struct pstore_info *psi);
+>  	void		*data;
+>  };
+>  
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
