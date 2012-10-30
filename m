@@ -1,52 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344Ab2J3T1G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:27:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10780 "EHLO mx1.redhat.com"
+	id S965521Ab2J3T2R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:28:17 -0400
+Received: from fieldses.org ([174.143.236.118]:54400 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932084Ab2J3TUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:20:23 -0400
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 05/23] KEYS: Store public key algo ID in public_key_signature
- struct
-To: rusty@rustcorp.com.au
-Cc: dhowells@redhat.com, pjones@redhat.com, jwboyer@redhat.com, mjg@redhat.com,
-        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
-        keescook@chromium.org, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 30 Oct 2012 19:20:15 +0000
-Message-ID: <20121030192015.11000.87499.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
-References: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1755158Ab2J3T2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:28:15 -0400
+Date: Tue, 30 Oct 2012 15:28:09 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        michael.brantley@deshaw.com, hch@infradead.org, miklos@szeredi.hu,
+        pstaubach@exagrid.com
+Subject: Re: [PATCH v8 11/32] vfs: make do_unlinkat retry on ESTALE errors
+Message-ID: <20121030192809.GE24618@fieldses.org>
+References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
+ <1351341219-17837-12-git-send-email-jlayton@redhat.com>
+ <20121030161429.GD24618@fieldses.org>
+ <20121030123355.5c404373@tlielax.poochiereds.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030123355.5c404373@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Store public key algorithm ID in public_key_signature struct for reference
-purposes.  This allows a public_key_signature struct to be embedded in
-struct x509_certificate and struct pkcs7_message more easily.
+On Tue, Oct 30, 2012 at 12:33:55PM -0400, Jeff Layton wrote:
+> On Tue, 30 Oct 2012 12:14:29 -0400
+> "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> 
+> > On Sat, Oct 27, 2012 at 08:33:18AM -0400, Jeff Layton wrote:
+> > > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > > ---
+> > >  fs/namei.c | 12 ++++++++++--
+> > >  1 file changed, 10 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/fs/namei.c b/fs/namei.c
+> > > index 7c9bb50..467b9f1 100644
+> > > --- a/fs/namei.c
+> > > +++ b/fs/namei.c
+> > > @@ -3446,9 +3446,13 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+> > >  	struct filename *name;
+> > >  	struct dentry *dentry;
+> > >  	struct nameidata nd;
+> > > -	struct inode *inode = NULL;
+> > > +	struct inode *inode;
+> > > +	unsigned int try = 0;
+> > > +	unsigned int lookup_flags = LOOKUP_PARENT;
+> > >  
+> > > -	name = user_path_parent(dfd, pathname, &nd, 0);
+> > > +retry:
+> > > +	inode = NULL;
+> > 
+> > So, you fail after "inode" was set (say vfs_unlink returned an error)
+> > the first time, then before "inode" was set (lookup_hash returns an
+> > error), and you end up incorrectly doing another iput() the second time
+> > through if you don't reset inode here?
+> > 
+> > (I think I made the same mistake in another patch, actually....)
+> > 
+> > --b.
+> > 
+> 
+> Correct. That's a new delta in this patch, btw. The original patch
+> didn't do that and it was causing a busy inodes on umount bug in
+> testing.
+> 
+> It would occasionally hit an ESTALE error in this function and
+> because "inode" wasn't reset to NULL, it would do a double-put of the
+> inode and cause the counter to underflow.
+> 
+> It might be good to restructure this code to make those sorts of bugs
+> less likely, but the error handling in here is already so hairy that I
+> decided to punt on that for now...
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Understood.  I might find it just a little more obvious why we're doing
+this if the assignment was next to the final iput:
 
- include/crypto/public_key.h |    1 +
- 1 file changed, 1 insertion(+)
+	if (inode)
+		iput(inode);
+	inode = NULL;
+	...
 
+--b.
 
-diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
-index 05778df..b34fda4 100644
---- a/include/crypto/public_key.h
-+++ b/include/crypto/public_key.h
-@@ -90,6 +90,7 @@ struct public_key_signature {
- 	u8 *digest;
- 	u8 digest_size;			/* Number of bytes in digest */
- 	u8 nr_mpi;			/* Occupancy of mpi[] */
-+	enum pkey_algo pkey_algo : 8;
- 	enum pkey_hash_algo pkey_hash_algo : 8;
- 	union {
- 		MPI mpi[2];
-
+> 
+> > > +	name = user_path_parent(dfd, pathname, &nd, try);
+> > >  	if (IS_ERR(name))
+> > >  		return PTR_ERR(name);
+> > >  
+> > > @@ -3486,6 +3490,10 @@ exit2:
+> > >  exit1:
+> > >  	path_put(&nd.path);
+> > >  	putname(name);
+> > > +	if (retry_estale(error, try++)) {
+> > > +		lookup_flags |= LOOKUP_REVAL;
+> > > +		goto retry;
+> > > +	}
+> > >  	return error;
+> > >  
+> > >  slashes:
+> > > -- 
+> > > 1.7.11.7
+> > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+> -- 
+> Jeff Layton <jlayton@redhat.com>
