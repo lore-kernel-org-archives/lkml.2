@@ -1,247 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab2J3GBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 02:01:30 -0400
-Received: from smtp25.sms.unimo.it ([155.185.44.25]:48538 "EHLO
-	smtp25.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab2J3GB3 (ORCPT
+	id S1754853Ab2J3GCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 02:02:34 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:42612 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab2J3GCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 02:01:29 -0400
-Date: Tue, 30 Oct 2012 07:00:56 +0100
-From: Paolo Valente <paolo.valente@unimore.it>
-To: jhs@mojatatu.com, davem@davemloft.net, shemminger@vyatta.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, rizzo@iet.unipi.it,
-        fchecconi@gmail.com, paolo.valente@unimore.it
-Subject: [PATCH RFC] pkt_sched: enable QFQ to support TSO/GSO
-Message-ID: <20121030060056.GA3373@paolo-ThinkPad-W520>
+	Tue, 30 Oct 2012 02:02:31 -0400
+Message-ID: <508F6C60.1050202@linux.vnet.ibm.com>
+Date: Tue, 30 Oct 2012 11:27:52 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-UNIMORE-X-SA-Score: -2.9
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V2 RFC 3/3] kvm: Check system load and handle different
+ commit cases accordingly
+References: <20121029140621.15448.92083.sendpatchset@codeblue> <20121029140717.15448.83182.sendpatchset@codeblue> <1351533280.24721.46.camel@twins>
+In-Reply-To: <1351533280.24721.46.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12103006-8256-0000-0000-000004C84E78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[new version modified according to the suggestions received]
+On 10/29/2012 11:24 PM, Peter Zijlstra wrote:
+> On Mon, 2012-10-29 at 19:37 +0530, Raghavendra K T wrote:
+>> +/*
+>> + * A load of 2048 corresponds to 1:1 overcommit
+>> + * undercommit threshold is half the 1:1 overcommit
+>> + * overcommit threshold is 1.75 times of 1:1 overcommit threshold
+>> + */
+>> +#define COMMIT_THRESHOLD (FIXED_1)
+>> +#define UNDERCOMMIT_THRESHOLD (COMMIT_THRESHOLD >> 1)
+>> +#define OVERCOMMIT_THRESHOLD ((COMMIT_THRESHOLD << 1) -
+>> (COMMIT_THRESHOLD >> 2))
+>> +
+>> +unsigned long kvm_system_load(void)
+>> +{
+>> +       unsigned long load;
+>> +
+>> +       load = avenrun[0] + FIXED_1/200;
+>> +       load = load / num_online_cpus();
+>> +
+>> +       return load;
+>> +}
+>
+> ARGH.. no that's wrong.. very wrong.
+>
+>   1) avenrun[] EXPORT_SYMBOL says it should be removed, that's not a
+> joke.
 
-Hi,
-if the max packet size for some class (configured through tc) is
-violated by the actual size of the packets of that class, then QFQ
-would not schedule classes correctly, and the data structures
-implementing the bucket lists may get corrupted. This problem occurs
-with TSO/GSO even if the max packet size is set to the MTU, and is,
-e.g., the cause of the failure reported in [1]. Two patches have been
-proposed to solve this problem in [2], one of them is a preliminary
-version of this patch.
+Okay.
 
-This patch addresses the above issues by: 1) setting QFQ parameters to
-proper values for supporting TSO/GSO (in particular, setting the
-maximum possible packet size to 64KB), 2) automatically increasing the
-max packet size for a class, lmax, when a packet with a larger size
-than the current value of lmax arrives.
+>   2) avenrun[] is a global load, do not ever use a global load measure
 
-The drawback of the first point is that the maximum weight for a class
-is now limited to 4096, which is equal to 1/16 of the maximum weight
-sum.
+This makes sense. Using a local optimization that leads to near global
+optimization is the way to go.
 
-Finally, this patch also forcibly caps the timestamps of a class if
-they are too high to be stored in the bucket list. This capping, taken
-from QFQ+ [3], handles the unfrequent case described in the comment to
-the function slot_insert.
+>
+>   3) avenrun[] has nothing what so ever to do with runqueue lengths,
+> someone with a gazillion tasks in D state will get a huge load but the
+> cpu is very idle.
+>
 
-[1] http://marc.info/?l=linux-netdev&m=134968777902077&w=2
-[2] http://marc.info/?l=linux-netdev&m=135096573507936&w=2
-[3] http://marc.info/?l=linux-netdev&m=134902691421670&w=2
+I used loadavg as an alternative measure. But the above condition
+poses a concern for that.
 
-Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
-Tested-by: Cong Wang <amwang@redhat.com>
----
- net/sched/sch_qfq.c |  109 +++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 79 insertions(+), 30 deletions(-)
+Okay, now IIUC, usage of *any* global measure is bad?
 
-diff --git a/net/sched/sch_qfq.c b/net/sched/sch_qfq.c
-index f0dd83c..9687fa1 100644
---- a/net/sched/sch_qfq.c
-+++ b/net/sched/sch_qfq.c
-@@ -84,18 +84,19 @@
-  * grp->index is the index of the group; and grp->slot_shift
-  * is the shift for the corresponding (scaled) sigma_i.
-  */
--#define QFQ_MAX_INDEX		19
--#define QFQ_MAX_WSHIFT		16
-+#define QFQ_MAX_INDEX		24
-+#define QFQ_MAX_WSHIFT		12
- 
- #define	QFQ_MAX_WEIGHT		(1<<QFQ_MAX_WSHIFT)
--#define QFQ_MAX_WSUM		(2*QFQ_MAX_WEIGHT)
-+#define QFQ_MAX_WSUM		(16*QFQ_MAX_WEIGHT)
- 
- #define FRAC_BITS		30	/* fixed point arithmetic */
- #define ONE_FP			(1UL << FRAC_BITS)
- #define IWSUM			(ONE_FP/QFQ_MAX_WSUM)
- 
--#define QFQ_MTU_SHIFT		11
-+#define QFQ_MTU_SHIFT		16	/* to support TSO/GSO */
- #define QFQ_MIN_SLOT_SHIFT	(FRAC_BITS + QFQ_MTU_SHIFT - QFQ_MAX_INDEX)
-+#define QFQ_MIN_LMAX		256	/* min possible lmax for a class */
- 
- /*
-  * Possible group states.  These values are used as indexes for the bitmaps
-@@ -231,6 +232,32 @@ static void qfq_update_class_params(struct qfq_sched *q, struct qfq_class *cl,
- 	q->wsum += delta_w;
- }
- 
-+static void qfq_update_reactivate_class(struct qfq_sched *q,
-+					struct qfq_class *cl,
-+					u32 inv_w, u32 lmax, int delta_w)
-+{
-+	bool need_reactivation = false;
-+	int i = qfq_calc_index(inv_w, lmax);
-+
-+	if (&q->groups[i] != cl->grp && cl->qdisc->q.qlen > 0) {
-+		/*
-+		 * shift cl->F back, to not charge the
-+		 * class for the not-yet-served head
-+		 * packet
-+		 */
-+		cl->F = cl->S;
-+		/* remove class from its slot in the old group */
-+		qfq_deactivate_class(q, cl);
-+		need_reactivation = true;
-+	}
-+
-+	qfq_update_class_params(q, cl, lmax, inv_w, delta_w);
-+
-+	if (need_reactivation) /* activate in new group */
-+		qfq_activate_class(q, cl, qdisc_peek_len(cl->qdisc));
-+}
-+
-+
- static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 			    struct nlattr **tca, unsigned long *arg)
- {
-@@ -238,7 +265,7 @@ static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 	struct qfq_class *cl = (struct qfq_class *)*arg;
- 	struct nlattr *tb[TCA_QFQ_MAX + 1];
- 	u32 weight, lmax, inv_w;
--	int i, err;
-+	int err;
- 	int delta_w;
- 
- 	if (tca[TCA_OPTIONS] == NULL) {
-@@ -270,16 +297,14 @@ static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 
- 	if (tb[TCA_QFQ_LMAX]) {
- 		lmax = nla_get_u32(tb[TCA_QFQ_LMAX]);
--		if (!lmax || lmax > (1UL << QFQ_MTU_SHIFT)) {
-+		if (lmax < QFQ_MIN_LMAX || lmax > (1UL << QFQ_MTU_SHIFT)) {
- 			pr_notice("qfq: invalid max length %u\n", lmax);
- 			return -EINVAL;
- 		}
- 	} else
--		lmax = 1UL << QFQ_MTU_SHIFT;
-+		lmax = psched_mtu(qdisc_dev(sch));
- 
- 	if (cl != NULL) {
--		bool need_reactivation = false;
--
- 		if (tca[TCA_RATE]) {
- 			err = gen_replace_estimator(&cl->bstats, &cl->rate_est,
- 						    qdisc_root_sleeping_lock(sch),
-@@ -291,24 +316,8 @@ static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 		if (lmax == cl->lmax && inv_w == cl->inv_w)
- 			return 0; /* nothing to update */
- 
--		i = qfq_calc_index(inv_w, lmax);
- 		sch_tree_lock(sch);
--		if (&q->groups[i] != cl->grp && cl->qdisc->q.qlen > 0) {
--			/*
--			 * shift cl->F back, to not charge the
--			 * class for the not-yet-served head
--			 * packet
--			 */
--			cl->F = cl->S;
--			/* remove class from its slot in the old group */
--			qfq_deactivate_class(q, cl);
--			need_reactivation = true;
--		}
--
--		qfq_update_class_params(q, cl, lmax, inv_w, delta_w);
--
--		if (need_reactivation) /* activate in new group */
--			qfq_activate_class(q, cl, qdisc_peek_len(cl->qdisc));
-+		qfq_update_reactivate_class(q, cl, inv_w, lmax, delta_w);
- 		sch_tree_unlock(sch);
- 
- 		return 0;
-@@ -663,15 +672,48 @@ static void qfq_make_eligible(struct qfq_sched *q, u64 old_V)
- 
- 
- /*
-- * XXX we should make sure that slot becomes less than 32.
-- * This is guaranteed by the input values.
-- * roundedS is always cl->S rounded on grp->slot_shift bits.
-+ * If the weight and lmax (max_pkt_size) of the classes do not change,
-+ * then QFQ guarantees that the slot index is never higher than
-+ * 2 + ((1<<QFQ_MTU_SHIFT)/QFQ_MIN_LMAX) * (QFQ_MAX_WEIGHT/QFQ_MAX_WSUM).
-+ *
-+ * With the current values of the above constants, the index is
-+ * then guaranteed to never be higher than 2 + 256 * (1 / 16) = 18.
-+ *
-+ * When the weight of a class is increased or the lmax of the class is
-+ * decreased, a new class with smaller slot size may happen to be
-+ * activated. The activation of this class should be properly delayed
-+ * to when the service of the class has finished in the ideal system
-+ * tracked by QFQ. If the activation of the class is not delayed to
-+ * this reference time instant, then this class may be unjustly served
-+ * before other classes waiting for service. This may cause
-+ * (unfrequently) the above bound to the slot index to be violated for
-+ * some of these unlucky classes.
-+ *
-+ * Instead of delaying the activation of the new class, which is quite
-+ * complex, the following inaccurate but simple solution is used: if
-+ * the slot index is higher than QFQ_MAX_SLOTS-2, then the timestamps
-+ * of the class are shifted backward so as to let the slot index
-+ * become equal to QFQ_MAX_SLOTS-2. This threshold is used because, if
-+ * the slot index is above it, then the data structure implementing
-+ * the bucket list either gets immediately corrupted or may get
-+ * corrupted on a possible next packet arrival that causes the start
-+ * time of the group to be shifted backward.
-  */
- static void qfq_slot_insert(struct qfq_group *grp, struct qfq_class *cl,
- 			    u64 roundedS)
- {
- 	u64 slot = (roundedS - grp->S) >> grp->slot_shift;
--	unsigned int i = (grp->front + slot) % QFQ_MAX_SLOTS;
-+	unsigned int i; /* slot index in the bucket list */
-+
-+	if (unlikely(slot > QFQ_MAX_SLOTS - 2)) {
-+		u64 deltaS = roundedS - grp->S -
-+			((u64)(QFQ_MAX_SLOTS - 2)<<grp->slot_shift);
-+		cl->S -= deltaS;
-+		cl->F -= deltaS;
-+		slot = QFQ_MAX_SLOTS - 2;
-+	}
-+
-+	i = (grp->front + slot) % QFQ_MAX_SLOTS;
- 
- 	hlist_add_head(&cl->next, &grp->slots[i]);
- 	__set_bit(slot, &grp->full_slots);
-@@ -892,6 +934,13 @@ static int qfq_enqueue(struct sk_buff *skb, struct Qdisc *sch)
- 	}
- 	pr_debug("qfq_enqueue: cl = %x\n", cl->common.classid);
- 
-+	if (unlikely(cl->lmax < qdisc_pkt_len(skb))) {
-+		pr_debug("qfq: increasing maxpkt from %u to %u for class %u",
-+			  cl->lmax, qdisc_pkt_len(skb), cl->common.classid);
-+		qfq_update_reactivate_class(q, cl, cl->inv_w,
-+					    qdisc_pkt_len(skb), 0);
-+	}
-+
- 	err = qdisc_enqueue(skb, cl->qdisc);
- 	if (unlikely(err != NET_XMIT_SUCCESS)) {
- 		pr_debug("qfq_enqueue: enqueue failed %d\n", err);
--- 
-1.7.9.5
+Because I was also thinking to use nrrunning()/ num_online_cpus(), to
+get an idea of global overcommit sense. (ofcourse since, this involves
+iteration over per CPU nrrunning, I wanted to calculate this
+periodically)
+
+The overall logic, of having overcommit_threshold, 
+undercommit_threshold, I wanted to use for even dynamic ple_window 
+tuning purpose.
+
+so logic was:
+< undercommit_threshold => 16k ple_window
+ > overcommit_threshold  => 4k window.
+for in between case scale the ple_window accordingly.
+
+The alternative was to decide depending on how ple handler succeeded in
+yield_to. But I thought, that is too sensitive and more overhead.
+
+This topic may deserve different thread, but thought I shall table it here.
+
+So, Thinking about the alternatives to implement, logic such as
+
+(a) if(undercommitted)
+     just go back and spin rather than going for yield_to iteration.
+(b) if (overcommitted)
+    better to yield rather than  spinning logic
+
+    of current patches..
+
+[ ofcourse, (a) is already met to large extent by your patches..]
+
+So I think everything boils down to
+
+"how do we measure these two thresholds without much overhead in a
+compliant way"
+
+Ideas welcome..
 
