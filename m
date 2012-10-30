@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150Ab2J3TT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:19:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29060 "EHLO mx1.redhat.com"
+	id S965592Ab2J3TUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:20:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12183 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754801Ab2J3TTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:19:54 -0400
+	id S1754075Ab2J3TUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:20:19 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 02/23] KEYS: Move the algorithm pointer array from x509 to
- public_key.c
+Subject: [PATCH 04/23] KEYS: Split public_key_verify_signature() and make
+ available
 To: rusty@rustcorp.com.au
 Cc: dhowells@redhat.com, pjones@redhat.com, jwboyer@redhat.com, mjg@redhat.com,
         dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
         keescook@chromium.org, keyrings@linux-nfs.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 30 Oct 2012 19:19:45 +0000
-Message-ID: <20121030191945.11000.42288.stgit@warthog.procyon.org.uk>
+Date: Tue, 30 Oct 2012 19:20:02 +0000
+Message-ID: <20121030192002.11000.7722.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
 References: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -26,76 +26,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the public-key algorithm pointer array from x509_public_key.c to
-public_key.c as it isn't X.509 specific.
+Modify public_key_verify_signature() so that it now takes a public_key struct
+rather than a key struct and supply a wrapper that takes a key struct.  The
+wrapper is then used by the asymmetric key subtype and the modified function is
+used by X.509 self-signature checking and can be used by PKCS#7 also.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/public_key.c      |    8 ++++++++
- crypto/asymmetric_keys/x509_public_key.c |   11 +----------
- include/crypto/public_key.h              |    1 +
- 3 files changed, 10 insertions(+), 10 deletions(-)
+ crypto/asymmetric_keys/public_key.c      |   38 ++++++++++++++++++++++++------
+ crypto/asymmetric_keys/public_key.h      |    6 +++++
+ crypto/asymmetric_keys/x509_public_key.c |    2 +-
+ 3 files changed, 37 insertions(+), 9 deletions(-)
 
 
 diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
-index b313df1..796ce08 100644
+index 796ce08..566cc50 100644
 --- a/crypto/asymmetric_keys/public_key.c
 +++ b/crypto/asymmetric_keys/public_key.c
-@@ -28,6 +28,14 @@ const char *const pkey_algo_name[PKEY_ALGO__LAST] = {
- };
- EXPORT_SYMBOL_GPL(pkey_algo_name);
- 
-+const struct public_key_algorithm *pkey_algo[PKEY_ALGO__LAST] = {
-+#if defined(CONFIG_PUBLIC_KEY_ALGO_RSA) || \
-+	defined(CONFIG_PUBLIC_KEY_ALGO_RSA_MODULE)
-+	[PKEY_ALGO_RSA]		= &RSA_public_key_algorithm,
-+#endif
-+};
-+EXPORT_SYMBOL_GPL(pkey_algo);
-+
- const char *const pkey_hash_algo_name[PKEY_HASH__LAST] = {
- 	[PKEY_HASH_MD4]		= "md4",
- 	[PKEY_HASH_MD5]		= "md5",
-diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-index afbbc36..fe38628 100644
---- a/crypto/asymmetric_keys/x509_public_key.c
-+++ b/crypto/asymmetric_keys/x509_public_key.c
-@@ -23,15 +23,6 @@
- #include "public_key.h"
- #include "x509_parser.h"
- 
--static const
--struct public_key_algorithm *x509_public_key_algorithms[PKEY_ALGO__LAST] = {
--	[PKEY_ALGO_DSA]		= NULL,
--#if defined(CONFIG_PUBLIC_KEY_ALGO_RSA) || \
--	defined(CONFIG_PUBLIC_KEY_ALGO_RSA_MODULE)
--	[PKEY_ALGO_RSA]		= &RSA_public_key_algorithm,
--#endif
--};
--
+@@ -86,21 +86,43 @@ EXPORT_SYMBOL_GPL(public_key_destroy);
  /*
-  * Check the signature on a certificate using the provided public key
+  * Verify a signature using a public key.
   */
-@@ -174,7 +165,7 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
- 		goto error_free_cert;
+-static int public_key_verify_signature(const struct key *key,
+-				       const struct public_key_signature *sig)
++int public_key_verify_signature(const struct public_key *pk,
++				const struct public_key_signature *sig)
+ {
+-	const struct public_key *pk = key->payload.data;
++	const struct public_key_algorithm *algo;
++
++	BUG_ON(!pk);
++	BUG_ON(!pk->mpi[0]);
++	BUG_ON(!pk->mpi[1]);
++	BUG_ON(!sig);
++	BUG_ON(!sig->digest);
++	BUG_ON(!sig->mpi[0]);
++
++	algo = pk->algo;
++	if (!algo) {
++		algo = pkey_algo[pk->pkey_algo];
++		if (!algo)
++			return -ENOPKG;
++	}
+ 
+-	if (!pk->algo->verify_signature)
++	if (!algo->verify_signature)
+ 		return -ENOTSUPP;
+ 
+-	if (sig->nr_mpi != pk->algo->n_sig_mpi) {
++	if (sig->nr_mpi != algo->n_sig_mpi) {
+ 		pr_debug("Signature has %u MPI not %u\n",
+-			 sig->nr_mpi, pk->algo->n_sig_mpi);
++			 sig->nr_mpi, algo->n_sig_mpi);
+ 		return -EINVAL;
  	}
  
--	cert->pub->algo = x509_public_key_algorithms[cert->pkey_algo];
-+	cert->pub->algo = pkey_algo[cert->pkey_algo];
- 	cert->pub->id_type = PKEY_ID_X509;
+-	return pk->algo->verify_signature(pk, sig);
++	return algo->verify_signature(pk, sig);
++}
++EXPORT_SYMBOL_GPL(public_key_verify_signature);
++
++static int public_key_verify_signature_2(const struct key *key,
++					 const struct public_key_signature *sig)
++{
++	const struct public_key *pk = key->payload.data;
++	return public_key_verify_signature(pk, sig);
+ }
  
- 	/* Check the signature on the key */
-diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
-index 619d570..46bde25 100644
---- a/include/crypto/public_key.h
-+++ b/include/crypto/public_key.h
-@@ -23,6 +23,7 @@ enum pkey_algo {
+ /*
+@@ -111,6 +133,6 @@ struct asymmetric_key_subtype public_key_subtype = {
+ 	.name			= "public_key",
+ 	.describe		= public_key_describe,
+ 	.destroy		= public_key_destroy,
+-	.verify_signature	= public_key_verify_signature,
++	.verify_signature	= public_key_verify_signature_2,
+ };
+ EXPORT_SYMBOL_GPL(public_key_subtype);
+diff --git a/crypto/asymmetric_keys/public_key.h b/crypto/asymmetric_keys/public_key.h
+index 5e5e356..5c37a22 100644
+--- a/crypto/asymmetric_keys/public_key.h
++++ b/crypto/asymmetric_keys/public_key.h
+@@ -28,3 +28,9 @@ struct public_key_algorithm {
  };
  
- extern const char *const pkey_algo_name[PKEY_ALGO__LAST];
-+extern const struct public_key_algorithm *pkey_algo[PKEY_ALGO__LAST];
+ extern const struct public_key_algorithm RSA_public_key_algorithm;
++
++/*
++ * public_key.c
++ */
++extern int public_key_verify_signature(const struct public_key *pk,
++				       const struct public_key_signature *sig);
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index fac574c..8cb2f70 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -76,7 +76,7 @@ static int x509_check_signature(const struct public_key *pub,
+ 	if (ret < 0)
+ 		goto error_mpi;
  
- enum pkey_hash_algo {
- 	PKEY_HASH_MD4,
+-	ret = pub->algo->verify_signature(pub, sig);
++	ret = public_key_verify_signature(pub, sig);
+ 
+ 	pr_debug("Cert Verification: %d\n", ret);
+ 
 
