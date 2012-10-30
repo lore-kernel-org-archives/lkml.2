@@ -1,61 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933998Ab2J3Q12 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:27:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34827 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758531Ab2J3Q11 (ORCPT
+	id S934012Ab2J3Q2K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:28:10 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:27852 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933864Ab2J3Q2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:27:27 -0400
-Date: Tue, 30 Oct 2012 09:27:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
-Message-ID: <20121030162723.GA16135@kroah.com>
-References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121030021938.GC1920@kroah.com>
- <20121030040744.GB32055@dtor-ws.eng.vmware.com>
- <20121030154801.GC14167@kroah.com>
- <20121030161807.GA9709@dtor-ws.eng.vmware.com>
-MIME-Version: 1.0
+	Tue, 30 Oct 2012 12:28:08 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAG6Zu0/O+Ip3/2dsb2JhbABEtBGBCIIVAQEFJxMbASMQCxUDLhQlJBOIDroJiyGEQWIDlRqOGYFYgwWBQw
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="203159629"
+Date: Tue, 30 Oct 2012 12:21:03 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 4/4] rcu: Document alternative
+ RCU/reference-count algorithms
+Message-ID: <20121030162103.GA17261@Krystal>
+References: <20121030160350.GA21837@linux.vnet.ibm.com>
+ <1351613076-22022-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1351613076-22022-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20121030161807.GA9709@dtor-ws.eng.vmware.com>
+In-Reply-To: <1351613076-22022-4-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Editor: vi
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 09:18:07AM -0700, Dmitry Torokhov wrote:
-> > > I think that even if we had a special directory for vmci having network
-> > > drivers in Dave's realm and pvscsi in James's is best option, so the new
-> > > directory would contain vmci and the balloon driver (vsock will go into
-> > > net/).  Given that balloon is already in drivers/misc it looked like
-> > > obvious place for VMCI as well.
-> > 
-> > I agree that the individual drivers should go in the subsystem area,
-> > it's this "hypervisor bus core" type code that I'm questioning.  Right
-> > now every hypervisor is putting that logic in a different place in the
-> > kernel, having some consistency here would be nice.
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> Hmm, I wonder if miscellaneous and core hypervisor drivers should end
-> up in drivers/platform:
+> The approach for mixing RCU and reference counting listed in the RCU
+> documentation only describes one possible approach.  This approach can
+> result in failure on the read side, which is nice if you want fresh data,
+> but not so good if you want simple code.  This commit therefore adds
+> two additional approaches that feature unconditional reference-count
+> acquisition by RCU readers.  These approaches are very similar to that
+> used in the security code.
 > 
-> 	drivers/platform/hyperv
-> 	drivers/platform/olpc
-> 	drivers/platform/vmware
-> 	drivers/platform/xen
-> 	drivers/platform/x86
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  Documentation/RCU/rcuref.txt |   61 ++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 59 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/RCU/rcuref.txt b/Documentation/RCU/rcuref.txt
+> index 4202ad0..99ca662 100644
+> --- a/Documentation/RCU/rcuref.txt
+> +++ b/Documentation/RCU/rcuref.txt
+> @@ -20,7 +20,7 @@ release_referenced()			delete()
+>  {					{
+>      ...					    write_lock(&list_lock);
+>      atomic_dec(&el->rc, relfunc)	    ...
+> -    ...					    delete_element
+> +    ...					    remove_element
+>  }					    write_unlock(&list_lock);
+>   					    ...
+>  					    if (atomic_dec_and_test(&el->rc))
+> @@ -52,7 +52,7 @@ release_referenced()			delete()
+>  {					{
+>      ...					    spin_lock(&list_lock);
+>      if (atomic_dec_and_test(&el->rc))       ...
+> -        call_rcu(&el->head, el_free);       delete_element
+> +        call_rcu(&el->head, el_free);       remove_element
+>      ...                                     spin_unlock(&list_lock);
+>  } 					    ...
+>  					    if (atomic_dec_and_test(&el->rc))
+> @@ -64,3 +64,60 @@ Sometimes, a reference to the element needs to be obtained in the
+>  update (write) stream.  In such cases, atomic_inc_not_zero() might be
+>  overkill, since we hold the update-side spinlock.  One might instead
+>  use atomic_inc() in such cases.
+> +
+> +It is not always convenient to deal with "FAIL" in the
+> +search_and_reference() code path.  In such cases, the
+> +atomic_dec_and_test() may be moved from delete() to el_free()
+> +as follows:
+> +
+> +1.					2.
+> +add()					search_and_reference()
+> +{					{
+> +    alloc_object			    rcu_read_lock();
+> +    ...					    search_for_element
+> +    atomic_set(&el->rc, 1);		    atomic_inc(&el->rc);
+> +    spin_lock(&list_lock);		    ...
+> +				
+> +    add_element				    rcu_read_unlock();
+> +    ...					}
 
-That makes sense to me, nice.
+indentation looks wrong in my mail client for the two lines above (for
+the 2. block).
 
-> But really we'd like to get VMCI into mainline first and move to a new
-> place later if such a better place is found.
+Otherwise, it looks good to me,
 
-Heh, no one wants to fight for something to help everyone out, they just
-want their own code accepted :)
+Thanks,
 
-greg k-h
+Mathieu
+
+
+> +    spin_unlock(&list_lock);		4.
+> +}					delete()
+> +3.					{
+> +release_referenced()			    spin_lock(&list_lock);
+> +{					    ...
+> +    ...					    remove_element
+> +    if (atomic_dec_and_test(&el->rc))       spin_unlock(&list_lock);
+> +        kfree(el);			    ...
+> +    ...                                     call_rcu(&el->head, el_free);
+> +} 					    ...
+> +5.					}
+> +void el_free(struct rcu_head *rhp)
+> +{
+> +    release_referenced();
+> +}
+> +
+> +The key point is that the initial reference added by add() is not removed
+> +until after a grace period has elapsed following removal.  This means that
+> +search_and_reference() cannot find this element, which means that the value
+> +of el->rc cannot increase.  Thus, once it reaches zero, there are no
+> +readers that can or ever will be able to reference the element.  The
+> +element can therefore safely be freed.  This in turn guarantees that if
+> +any reader finds the element, that reader may safely acquire a reference
+> +without checking the value of the reference counter.
+> +
+> +In cases where delete() can sleep, synchronize_rcu() can be called from
+> +delete(), so that el_free() can be subsumed into delete as follows:
+> +
+> +4.
+> +delete()
+> +{
+> +    spin_lock(&list_lock);
+> +    ...
+> +    remove_element
+> +    spin_unlock(&list_lock);
+> +    ...
+> +    synchronize_rcu();
+> +    if (atomic_dec_and_test(&el->rc))
+> +    	kfree(el);
+> +    ...
+> +}
+> -- 
+> 1.7.8
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
