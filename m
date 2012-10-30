@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934763Ab2J3WC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 18:02:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49844 "EHLO mx1.redhat.com"
+	id S934824Ab2J3WHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 18:07:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27285 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934478Ab2J3WCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 18:02:55 -0400
+	id S932932Ab2J3WCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 18:02:52 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -14,19 +14,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 13/25] perf tests: Add attr record data test
-Date: Tue, 30 Oct 2012 23:01:54 +0100
-Message-Id: <1351634526-1516-14-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 10/25] perf tests: Add attr record period test
+Date: Tue, 30 Oct 2012 23:01:51 +0100
+Message-Id: <1351634526-1516-11-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
 References: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "jolsa@redhat.com" <jolsa@redhat.com>
-
 Adding test to validate perf_event_attr data for command:
-  'record -d'
+  'record -c 100 -P'
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -36,24 +34,23 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/perf/tests/attr/test-record-data | 8 ++++++++
- 1 file changed, 8 insertions(+)
- create mode 100644 tools/perf/tests/attr/test-record-data
+ tools/perf/tests/attr/test-record-period | 7 +++++++
+ 1 file changed, 7 insertions(+)
+ create mode 100644 tools/perf/tests/attr/test-record-period
 
-diff --git a/tools/perf/tests/attr/test-record-data b/tools/perf/tests/attr/test-record-data
+diff --git a/tools/perf/tests/attr/test-record-period b/tools/perf/tests/attr/test-record-period
 new file mode 100644
-index 0000000..6627c3e
+index 0000000..8abc531
 --- /dev/null
-+++ b/tools/perf/tests/attr/test-record-data
-@@ -0,0 +1,8 @@
++++ b/tools/perf/tests/attr/test-record-period
+@@ -0,0 +1,7 @@
 +[config]
 +command = record
-+args    = -d kill >/dev/null 2>&1
++args    = -c 100 -P kill >/dev/null 2>&1
 +
 +[event:base-record]
-+sample_period=4000
-+sample_type=271
-+mmap_data=1
++sample_period=100
++freq=0
 -- 
 1.7.11.7
 
