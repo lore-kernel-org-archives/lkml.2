@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab2J3EsZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 00:48:25 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58384 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751205Ab2J3EsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 00:48:24 -0400
-Date: Tue, 30 Oct 2012 00:48:18 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, chris.mason@fusionio.com,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 2/9] uuid: use random32_get_bytes()
-Message-ID: <20121030044818.GA5972@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Huang Ying <ying.huang@intel.com>,
-	Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-	akpm@linux-foundation.org, chris.mason@fusionio.com,
-	linux-btrfs@vger.kernel.org
-References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
- <1351408746-8623-2-git-send-email-akinobu.mita@gmail.com>
- <20121029205200.GD7098@thunk.org>
- <1351561798.7817.352.camel@yhuang-dev>
+	id S1752850Ab2J3ExK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 00:53:10 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:62320 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751190Ab2J3ExI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 00:53:08 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqIBAG6Zu08YNPuJ/2dsb2JhbAANN4UtqxuGZgEBAQEDI1UBEAsYAgIFFgsCAgkDAgECAUUGDQEHAQGvGJJ7gSaJYoQogRQDqBA
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="203126546"
+Message-ID: <508F5D32.3080308@teksavvy.com>
+Date: Tue, 30 Oct 2012 00:53:06 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351561798.7817.352.camel@yhuang-dev>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jacob Shin <jacob.shin@amd.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Yinghai Lu <yinghai@kernel.org>, Willy Tarreau <w@1wt.eu>,
+        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: Regression from 3.4.9 to 3.4.16 "stable" kernel
+References: <508E002B.4090200@teksavvy.com> <20121029064643.GE574@1wt.eu> <508E913D.2080104@teksavvy.com> <1351521658.13356.7.camel@deadeye.wl.decadent.org.uk> <20121029144722.GA23217@jshin-Toonie> <20121029165823.GA6614@kroah.com> <508F0AA6.6010702@teksavvy.com> <20121029230337.GA22444@kroah.com>
+In-Reply-To: <20121029230337.GA22444@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 09:49:58AM +0800, Huang Ying wrote:
-> The uuid_le/be_gen() in lib/uuid.c has set UUID variants to be DCE,
-> that is done in __uuid_gen_common() with "b[8] = (b[8] & 0x3F) | 0x80".
+On 12-10-29 07:03 PM, Greg Kroah-Hartman wrote:
+> On Mon, Oct 29, 2012 at 07:00:54PM -0400, Mark Lord wrote:
+>> There's something else very wrong when going from 3.4.9 to 3.4.16.
+>> I've done it on two machines here, one the AMD-450 server (64-bit),
+>> and the other my main notebook (Core2duo 32-bit-PAE).
+>>
+>> Both systems feel much more sluggish than usual with 3.4.16 running.
+>> Reverted them both back to earlier kernels (3.4.9, 3.4.4-PAE),
+>> and the usual responsive feel has returned.
+>>
+>> Vague, I know, but something bad happened in there somewhere.
+> 
+> That's too vague for me to do anything with, sorry.  Bisection would be
+> good if you can figure out how to measure this.
 
-Oh, I see, I missed that.
+Well, I'd bet Donkeys to Daises that reverting the kernel/sched.c changes
+will probably fix the responsiveness, but I haven't done that yet.
+I've lost enough time already debugging the other issues.
 
-> To deal with random number generation issue, how about use
-> get_random_bytes() in __uuid_gen_common()?
+This is more just an indication that perhaps -stable patches need better review
+than they're getting.  Take the setup.c breakage: as soon as I pointed it out,
+a few people jumped in with knowledge that it was broken, and that patches
+existed to fix it.
 
-We already have generate_random_uuid() in drivers/char/random.c, and
-no users for lib/uuid.c's equivalent uuid_be_gen().  So here's a
-counter-proposal, why don't we drop lib/uuid.c, and include in
-drivers/char/random.c:
+That kind of thing should be happening before a -stable release,
+though I don't know how you would get the Right People to look
+at this stuff then rather than after the fact.  Maybe a topic
+for a future kernel summit or something.
 
-/*
- * Generate random GUID
- *
- * GUID's is like UUID's, but they uses the non-standard little-endian
- * layout, compared to what is defined in RFC-4112; it is primarily
- * used by the EFI specification.
- */
-void generate_random_guid(unsigned char uuid_out[16])
-{
-	get_random_bytes(uuid_out, 16);
-	/* Set UUID version to 4 --- truly random generation */
-	uuid_out[7] = (uuid_out[7] & 0x0F) | 0x40;
-	/* Set the UUID variant to DCE */
-	uuid_out[8] = (uuid_out[8] & 0x3F) | 0x80;
-}
-EXPORT_SYMBOL(generate_random_guid);
+Best wishes.
+-ml
 
-I really don't think it's worth it to have a __uuid_gen_common once we
-are using get_random_bytes(), since there isn't much code to be
-factored out, and it's simpler just to have two functions in one place.
-
-Using UUID vs. GUID I think makes things much clearer, since the EFI
-specification talks about GUID's, not UUID's, and that way we don't
-have to worry about people getting confused about whether they should
-be using the little-endian versus big-endian variant.  (And I'd love
-to ask to whoever wrote the EFI specification what on *Earth* were
-they thinking when they decided to diverge from the rest of the
-world....)
-
-	      	       	       	       	    - Ted
