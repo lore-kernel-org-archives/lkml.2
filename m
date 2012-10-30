@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934315Ab2J3TZh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:25:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62382 "EHLO mx1.redhat.com"
+	id S934340Ab2J3T0B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:26:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38430 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934310Ab2J3TVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:21:05 -0400
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 10/23] X.509: Export certificate parse and free functions
-To: rusty@rustcorp.com.au
-Cc: dhowells@redhat.com, pjones@redhat.com, jwboyer@redhat.com, mjg@redhat.com,
-        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
-        keescook@chromium.org, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 30 Oct 2012 19:20:57 +0000
-Message-ID: <20121030192057.11000.14373.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
-References: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S934292Ab2J3TU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:20:59 -0400
+Message-ID: <5090292A.3020605@redhat.com>
+Date: Tue, 30 Oct 2012 15:23:22 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 26/31] sched, numa, mm: Add fault driven placement and
+ migration policy
+References: <20121025121617.617683848@chello.nl> <20121025124834.467791319@chello.nl>
+In-Reply-To: <20121025124834.467791319@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export certificate parse and free functions for use by modules.
+On 10/25/2012 08:16 AM, Peter Zijlstra wrote:
+> +/*
+> + * Drive the periodic memory faults..
+> + */
+> +void task_tick_numa(struct rq *rq, struct task_struct *curr)
+> +{
+> +	struct callback_head *work = &curr->numa_work;
+> +	u64 period, now;
+> +
+> +	/*
+> +	 * We don't care about NUMA placement if we don't have memory.
+> +	 */
+> +	if (!curr->mm || (curr->flags & PF_EXITING) || work->next != work)
+> +		return;
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+We should probably skip the whole unmap-and-refault
+business if we are running on a system that is not
+NUMA.  Ie. a system with just one node...
 
- crypto/asymmetric_keys/x509_cert_parser.c |    3 +++
- 1 file changed, 3 insertions(+)
+> +	/*
+> +	 * Using runtime rather than walltime has the dual advantage that
+> +	 * we (mostly) drive the selection from busy threads and that the
+> +	 * task needs to have done some actual work before we bother with
+> +	 * NUMA placement.
+> +	 */
+> +	now = curr->se.sum_exec_runtime;
+> +	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
+> +
 
-
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 931f069..9cf0e16 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -11,6 +11,7 @@
- 
- #define pr_fmt(fmt) "X.509: "fmt
- #include <linux/kernel.h>
-+#include <linux/export.h>
- #include <linux/slab.h>
- #include <linux/err.h>
- #include <linux/oid_registry.h>
-@@ -52,6 +53,7 @@ void x509_free_certificate(struct x509_certificate *cert)
- 		kfree(cert);
- 	}
- }
-+EXPORT_SYMBOL_GPL(x509_free_certificate);
- 
- /*
-  * Parse an X.509 certificate
-@@ -97,6 +99,7 @@ error_no_ctx:
- error_no_cert:
- 	return ERR_PTR(ret);
- }
-+EXPORT_SYMBOL_GPL(x509_cert_parse);
- 
- /*
-  * Note an OID when we find one for later processing when we know how
 
