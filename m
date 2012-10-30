@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965480Ab2J3SrW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:47:22 -0400
+	id S965499Ab2J3Srb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:47:31 -0400
 Received: from mail-qa0-f46.google.com ([209.85.216.46]:59446 "EHLO
 	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965427Ab2J3SrO (ORCPT
+	with ESMTP id S965249Ab2J3Sr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:47:14 -0400
+	Tue, 30 Oct 2012 14:47:28 -0400
 From: Sasha Levin <levinsasha928@gmail.com>
 To: torvalds@linux-foundation.org
 Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
         Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v8 04/16] workqueue: use new hashtable implementation
-Date: Tue, 30 Oct 2012 14:46:00 -0400
-Message-Id: <1351622772-16400-4-git-send-email-levinsasha928@gmail.com>
+Subject: [PATCH v8 06/16] tracepoint: use new hashtable implementation
+Date: Tue, 30 Oct 2012 14:46:02 -0400
+Message-Id: <1351622772-16400-6-git-send-email-levinsasha928@gmail.com>
 X-Mailer: git-send-email 1.7.12.4
 In-Reply-To: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
 References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
@@ -32,188 +32,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch workqueues to use the new hashtable implementation. This reduces the
-amount of generic unrelated code in the workqueues.
+Switch tracepoints to use the new hashtable implementation. This reduces the
+amount of generic unrelated code in the tracepoints.
 
 Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 ---
- kernel/workqueue.c | 86 ++++++++++--------------------------------------------
- 1 file changed, 15 insertions(+), 71 deletions(-)
+ kernel/tracepoint.c | 25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index a1135c6..8f6e1bf 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -41,6 +41,7 @@
- #include <linux/debug_locks.h>
- #include <linux/lockdep.h>
- #include <linux/idr.h>
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index d96ba22..5b599f1 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -26,6 +26,7 @@
+ #include <linux/slab.h>
+ #include <linux/sched.h>
+ #include <linux/static_key.h>
 +#include <linux/hashtable.h>
  
- #include "workqueue_sched.h"
+ extern struct tracepoint * const __start___tracepoints_ptrs[];
+ extern struct tracepoint * const __stop___tracepoints_ptrs[];
+@@ -49,8 +50,7 @@ static LIST_HEAD(tracepoint_module_list);
+  * Protected by tracepoints_mutex.
+  */
+ #define TRACEPOINT_HASH_BITS 6
+-#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
+-static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
++static DEFINE_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
  
-@@ -82,8 +83,6 @@ enum {
- 	NR_WORKER_POOLS		= 2,		/* # worker pools per gcwq */
+ /*
+  * Note about RCU :
+@@ -191,16 +191,15 @@ tracepoint_entry_remove_probe(struct tracepoint_entry *entry,
+  */
+ static struct tracepoint_entry *get_tracepoint(const char *name)
+ {
+-	struct hlist_head *head;
+ 	struct hlist_node *node;
+ 	struct tracepoint_entry *e;
+ 	u32 hash = jhash(name, strlen(name), 0);
  
- 	BUSY_WORKER_HASH_ORDER	= 6,		/* 64 pointers */
--	BUSY_WORKER_HASH_SIZE	= 1 << BUSY_WORKER_HASH_ORDER,
--	BUSY_WORKER_HASH_MASK	= BUSY_WORKER_HASH_SIZE - 1,
- 
- 	MAX_IDLE_WORKERS_RATIO	= 4,		/* 1/4 of busy can be idle */
- 	IDLE_WORKER_TIMEOUT	= 300 * HZ,	/* keep idle ones for 5 mins */
-@@ -180,7 +179,7 @@ struct global_cwq {
- 	unsigned int		flags;		/* L: GCWQ_* flags */
- 
- 	/* workers are chained either in busy_hash or pool idle_list */
--	struct hlist_head	busy_hash[BUSY_WORKER_HASH_SIZE];
-+	DECLARE_HASHTABLE(busy_hash, BUSY_WORKER_HASH_ORDER);
- 						/* L: hash of busy workers */
- 
- 	struct worker_pool	pools[NR_WORKER_POOLS];
-@@ -285,8 +284,7 @@ EXPORT_SYMBOL_GPL(system_freezable_wq);
- 	     (pool) < &(gcwq)->pools[NR_WORKER_POOLS]; (pool)++)
- 
- #define for_each_busy_worker(worker, i, pos, gcwq)			\
--	for (i = 0; i < BUSY_WORKER_HASH_SIZE; i++)			\
--		hlist_for_each_entry(worker, pos, &gcwq->busy_hash[i], hentry)
-+	hash_for_each(gcwq->busy_hash, i, pos, worker, hentry)
- 
- static inline int __next_gcwq_cpu(int cpu, const struct cpumask *mask,
- 				  unsigned int sw)
-@@ -857,63 +855,6 @@ static inline void worker_clr_flags(struct worker *worker, unsigned int flags)
+-	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
+-	hlist_for_each_entry(e, node, head, hlist) {
++	hash_for_each_possible(tracepoint_table, e, node, hlist, hash) {
+ 		if (!strcmp(name, e->name))
+ 			return e;
+ 	}
++
+ 	return NULL;
  }
  
- /**
-- * busy_worker_head - return the busy hash head for a work
-- * @gcwq: gcwq of interest
-- * @work: work to be hashed
-- *
-- * Return hash head of @gcwq for @work.
-- *
-- * CONTEXT:
-- * spin_lock_irq(gcwq->lock).
-- *
-- * RETURNS:
-- * Pointer to the hash head.
-- */
--static struct hlist_head *busy_worker_head(struct global_cwq *gcwq,
--					   struct work_struct *work)
--{
--	const int base_shift = ilog2(sizeof(struct work_struct));
--	unsigned long v = (unsigned long)work;
--
--	/* simple shift and fold hash, do we need something better? */
--	v >>= base_shift;
--	v += v >> BUSY_WORKER_HASH_ORDER;
--	v &= BUSY_WORKER_HASH_MASK;
--
--	return &gcwq->busy_hash[v];
--}
--
--/**
-- * __find_worker_executing_work - find worker which is executing a work
-- * @gcwq: gcwq of interest
-- * @bwh: hash head as returned by busy_worker_head()
-- * @work: work to find worker for
-- *
-- * Find a worker which is executing @work on @gcwq.  @bwh should be
-- * the hash head obtained by calling busy_worker_head() with the same
-- * work.
-- *
-- * CONTEXT:
-- * spin_lock_irq(gcwq->lock).
-- *
-- * RETURNS:
-- * Pointer to worker which is executing @work if found, NULL
-- * otherwise.
-- */
--static struct worker *__find_worker_executing_work(struct global_cwq *gcwq,
--						   struct hlist_head *bwh,
--						   struct work_struct *work)
--{
--	struct worker *worker;
--	struct hlist_node *tmp;
--
--	hlist_for_each_entry(worker, tmp, bwh, hentry)
--		if (worker->current_work == work)
--			return worker;
--	return NULL;
--}
--
--/**
-  * find_worker_executing_work - find worker which is executing a work
-  * @gcwq: gcwq of interest
-  * @work: work to find worker for
-@@ -932,8 +873,14 @@ static struct worker *__find_worker_executing_work(struct global_cwq *gcwq,
- static struct worker *find_worker_executing_work(struct global_cwq *gcwq,
- 						 struct work_struct *work)
+@@ -210,19 +209,13 @@ static struct tracepoint_entry *get_tracepoint(const char *name)
+  */
+ static struct tracepoint_entry *add_tracepoint(const char *name)
  {
--	return __find_worker_executing_work(gcwq, busy_worker_head(gcwq, work),
--					    work);
-+	struct worker *worker;
-+	struct hlist_node *tmp;
-+
-+	hash_for_each_possible(gcwq->busy_hash, worker, tmp, hentry, (unsigned long)work)
-+		if (worker->current_work == work)
-+			return worker;
-+
-+	return NULL;
+-	struct hlist_head *head;
+-	struct hlist_node *node;
+ 	struct tracepoint_entry *e;
+ 	size_t name_len = strlen(name) + 1;
+ 	u32 hash = jhash(name, name_len-1, 0);
+ 
+-	head = &tracepoint_table[hash & (TRACEPOINT_TABLE_SIZE - 1)];
+-	hlist_for_each_entry(e, node, head, hlist) {
+-		if (!strcmp(name, e->name)) {
+-			printk(KERN_NOTICE
+-				"tracepoint %s busy\n", name);
+-			return ERR_PTR(-EEXIST);	/* Already there */
+-		}
++	if (get_tracepoint(name)) {
++		printk(KERN_NOTICE "tracepoint %s busy\n", name);
++		return ERR_PTR(-EEXIST);	/* Already there */
+ 	}
+ 	/*
+ 	 * Using kmalloc here to allocate a variable length element. Could
+@@ -234,7 +227,7 @@ static struct tracepoint_entry *add_tracepoint(const char *name)
+ 	memcpy(&e->name[0], name, name_len);
+ 	e->funcs = NULL;
+ 	e->refcount = 0;
+-	hlist_add_head(&e->hlist, head);
++	hash_add(tracepoint_table, &e->hlist, hash);
+ 	return e;
  }
  
- /**
-@@ -2160,7 +2107,6 @@ __acquires(&gcwq->lock)
- 	struct cpu_workqueue_struct *cwq = get_work_cwq(work);
- 	struct worker_pool *pool = worker->pool;
- 	struct global_cwq *gcwq = pool->gcwq;
--	struct hlist_head *bwh = busy_worker_head(gcwq, work);
- 	bool cpu_intensive = cwq->wq->flags & WQ_CPU_INTENSIVE;
- 	work_func_t f = work->func;
- 	int work_color;
-@@ -2192,7 +2138,7 @@ __acquires(&gcwq->lock)
- 	 * already processing the work.  If so, defer the work to the
- 	 * currently executing one.
- 	 */
--	collision = __find_worker_executing_work(gcwq, bwh, work);
-+	collision = find_worker_executing_work(gcwq, work);
- 	if (unlikely(collision)) {
- 		move_linked_works(work, &collision->scheduled, NULL);
- 		return;
-@@ -2200,7 +2146,7 @@ __acquires(&gcwq->lock)
- 
- 	/* claim and dequeue */
- 	debug_work_deactivate(work);
--	hlist_add_head(&worker->hentry, bwh);
-+	hash_add(gcwq->busy_hash, &worker->hentry, (unsigned long)worker);
- 	worker->current_work = work;
- 	worker->current_cwq = cwq;
- 	work_color = get_work_color(work);
-@@ -2258,7 +2204,7 @@ __acquires(&gcwq->lock)
- 		worker_clr_flags(worker, WORKER_CPU_INTENSIVE);
- 
- 	/* we're done with it, release */
--	hlist_del_init(&worker->hentry);
-+	hash_del(&worker->hentry);
- 	worker->current_work = NULL;
- 	worker->current_cwq = NULL;
- 	cwq_dec_nr_in_flight(cwq, work_color);
-@@ -3823,7 +3769,6 @@ out_unlock:
- static int __init init_workqueues(void)
+@@ -244,7 +237,7 @@ static struct tracepoint_entry *add_tracepoint(const char *name)
+  */
+ static inline void remove_tracepoint(struct tracepoint_entry *e)
  {
- 	unsigned int cpu;
--	int i;
+-	hlist_del(&e->hlist);
++	hash_del(&e->hlist);
+ 	kfree(e);
+ }
  
- 	/* make sure we have enough bits for OFFQ CPU number */
- 	BUILD_BUG_ON((1LU << (BITS_PER_LONG - WORK_OFFQ_CPU_SHIFT)) <
-@@ -3841,8 +3786,7 @@ static int __init init_workqueues(void)
- 		gcwq->cpu = cpu;
- 		gcwq->flags |= GCWQ_DISASSOCIATED;
- 
--		for (i = 0; i < BUSY_WORKER_HASH_SIZE; i++)
--			INIT_HLIST_HEAD(&gcwq->busy_hash[i]);
-+		hash_init(gcwq->busy_hash);
- 
- 		for_each_worker_pool(pool, gcwq) {
- 			pool->gcwq = gcwq;
 -- 
 1.7.12.4
 
