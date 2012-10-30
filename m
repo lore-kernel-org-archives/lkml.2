@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965716Ab2J3URZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 16:17:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21632 "EHLO mx1.redhat.com"
+	id S965519Ab2J3URW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 16:17:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28456 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755306Ab2J3UPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 16:15:20 -0400
+	id S1753593Ab2J3UPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 16:15:21 -0400
 From: Jeff Moyer <jmoyer@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+Cc: Neela Syam Kolli <megaraidlinux@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
         linux-scsi@vger.kernel.org
-Subject: [patch 08/10] mpt2sas: use scsi_host_alloc_node
-Date: Tue, 30 Oct 2012 16:14:42 -0400
-Message-Id: <1351628084-29358-11-git-send-email-jmoyer@redhat.com>
+Subject: [patch 07/10] megaraid_sas: use scsi_host_alloc_node
+Date: Tue, 30 Oct 2012 16:14:41 -0400
+Message-Id: <1351628084-29358-10-git-send-email-jmoyer@redhat.com>
 In-Reply-To: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
 References: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,24 +23,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index af4e6c4..a4d6b36 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -8011,8 +8011,8 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	struct MPT2SAS_ADAPTER *ioc;
- 	struct Scsi_Host *shost;
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index d2c5366..707a6cd 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -4020,8 +4020,9 @@ megasas_probe_one(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	if (megasas_set_dma_mask(pdev))
+ 		goto fail_set_dma_mask;
  
--	shost = scsi_host_alloc(&scsih_driver_template,
--	    sizeof(struct MPT2SAS_ADAPTER));
-+	shost = scsi_host_alloc_node(&scsih_driver_template,
-+	    sizeof(struct MPT2SAS_ADAPTER), dev_to_node(&pdev->dev));
- 	if (!shost)
- 		return -ENODEV;
+-	host = scsi_host_alloc(&megasas_template,
+-			       sizeof(struct megasas_instance));
++	host = scsi_host_alloc_node(&megasas_template,
++				    sizeof(struct megasas_instance),
++				    dev_to_node(&pdev->dev));
  
+ 	if (!host) {
+ 		printk(KERN_DEBUG "megasas: scsi_host_alloc failed\n");
 -- 
 1.7.1
 
