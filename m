@@ -1,97 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933871Ab2J3Pw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:52:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11020 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753631Ab2J3PwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:52:24 -0400
-Date: Tue, 30 Oct 2012 17:54:36 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Vlad Yasevich <vyasevic@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
+	id S1757725Ab2J3Pwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:52:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26453 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933838Ab2J3Pwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 11:52:32 -0400
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=V7vpMoT6iB0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ficjY6ek3-4A:10 a=QgrmKwSj0rEDmE5dbtMA:9 a=PUjeQqilurYA:10 a=f1zr2VQgi52f-w2L:21 a=ZVMf7pOS9KxP0KJy:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351612350.8467.104.camel@gandalf.local.home>
+Subject: Re: [PATCH 0/2] irq_work: A couple fixes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 2/8] skb: api to report errors for zero copy skbs
-Message-ID: <20121030155436.GB7256@redhat.com>
-References: <cover.1351524501.git.mst@redhat.com>
- <ee85ad5053a929c90e0347b6ba33778d96690e9b.1351524501.git.mst@redhat.com>
- <508FF5D0.6080107@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508FF5D0.6080107@redhat.com>
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Tue, 30 Oct 2012 11:52:30 -0400
+In-Reply-To: <1351611301-3520-1-git-send-email-fweisbec@gmail.com>
+References: <1351611301-3520-1-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 11:44:16AM -0400, Vlad Yasevich wrote:
-> On 10/29/2012 11:49 AM, Michael S. Tsirkin wrote:
-> >Orphaning frags for zero copy skbs needs to allocate data in atomic
-> >context so is has a chance to fail. If it does we currently discard
-> >the skb which is safe, but we don't report anything to the caller,
-> >so it can not recover by e.g. disabling zero copy.
-> >
-> >Add an API to free skb reporting such errors: this is used
-> >by tun in case orphaning frags fails.
-> >
-> >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >---
-> >  include/linux/skbuff.h |  1 +
-> >  net/core/skbuff.c      | 19 +++++++++++++++++++
-> >  2 files changed, 20 insertions(+)
-> >
-> >diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> >index 8bac11b..0644432 100644
-> >--- a/include/linux/skbuff.h
-> >+++ b/include/linux/skbuff.h
-> >@@ -568,6 +568,7 @@ static inline struct rtable *skb_rtable(const struct sk_buff *skb)
-> >  }
-> >
-> >  extern void kfree_skb(struct sk_buff *skb);
-> >+extern void skb_tx_error(struct sk_buff *skb, int err);
-> >  extern void consume_skb(struct sk_buff *skb);
-> >  extern void	       __kfree_skb(struct sk_buff *skb);
-> >  extern struct kmem_cache *skbuff_head_cache;
-> >diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> >index eb31f6e..ad99c64 100644
-> >--- a/net/core/skbuff.c
-> >+++ b/net/core/skbuff.c
-> >@@ -635,6 +635,25 @@ void kfree_skb(struct sk_buff *skb)
-> >  EXPORT_SYMBOL(kfree_skb);
-> >
-> >  /**
-> >+ *	kfree_skb_on_error - report an sk_buff xmit error
-> >+ *	@skb: buffer that triggered an error
-> >+ *
-> >+ *	Report xmit error if a device callback is tracking this skb.
-> >+ */
-> 
-> Nit:  Comment doesn't match new function.
-> 
-> -vlad
+On Tue, 2012-10-30 at 16:34 +0100, Frederic Weisbecker wrote:
+> Hi,
 
-Good catch, thanks.
+> And I still wonder if cpu_relax() is enough to prevent the compiler
+> from correctly reloading work->flags in irq_work_sync() loop.
+> Do we need ACCESS_ONCE()?
 
-> >+void skb_tx_error(struct sk_buff *skb, int err)
-> >+{
-> >+	if (skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
-> >+		struct ubuf_info *uarg;
-> >+
-> >+		uarg = skb_shinfo(skb)->destructor_arg;
-> >+		if (uarg->callback)
-> >+			uarg->callback(uarg, err);
-> >+		skb_shinfo(skb)->tx_flags &= ~SKBTX_DEV_ZEROCOPY;
-> >+	}
-> >+}
-> >+EXPORT_SYMBOL(skb_tx_error);
-> >+
-> >+/**
-> >   *	consume_skb - free an skbuff
-> >   *	@skb: buffer to free
-> >   *
-> >
+You mean this loop:
+
+       flags = work->flags & ~IRQ_WORK_PENDING;
+       for (;;) {
+               nflags = flags | IRQ_WORK_FLAGS;
+               oflags = cmpxchg(&work->flags, flags, nflags);
+               if (oflags == flags)
+                       break;
+               if (oflags & IRQ_WORK_PENDING)
+                       return false;
+               flags = oflags;
+               cpu_relax();
+       }
+
+After the first loading of work->flags, you are worried about the
+&work->flags in the cmpxchg()?  The cmpxchg() will handle that itself. I
+don't see any place that a ACCESS_ONCE() is required here. The cmpxchg()
+acts on the address of work->flags, the compiler isn't involved with the
+value at that address.
+
+-- Steve
+
+
