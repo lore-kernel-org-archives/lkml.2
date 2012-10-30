@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934275Ab2J3T6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:58:54 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:6957 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab2J3T6v (ORCPT
+	id S934363Ab2J3T7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:59:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33231 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070Ab2J3T7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:58:51 -0400
-Message-ID: <1351627126.2654.15.camel@lorien2>
-Subject: Re: [PATCH RFT RESEND linux-next] mips: dma-mapping: support
- debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: ralf@linux-mips.org, kyungmin.park@samsung.com, arnd@arndb.de,
-        andrzej.p@samsung.com, m.szyprowski@samsung.com,
-        linux-mips@linux-mips.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Tue, 30 Oct 2012 13:58:46 -0600
-In-Reply-To: <508B0F4B.80601@gmail.com>
-References: <1351208193.6851.17.camel@lorien2>
-	 <1351267298.4013.12.camel@lorien2> <508ABE1D.5010106@gmail.com>
-	 <1351271198.4013.35.camel@lorien2> <508AED66.3040808@gmail.com>
-	 <1351288264.6885.11.camel@lorien2> <508B0F4B.80601@gmail.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 30 Oct 2012 15:59:50 -0400
+Date: Tue, 30 Oct 2012 12:59:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
+Message-ID: <20121030195945.GA32243@kroah.com>
+References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
+ <20121030021938.GC1920@kroah.com>
+ <20121030040744.GB32055@dtor-ws.eng.vmware.com>
+ <20121030154801.GC14167@kroah.com>
+ <20121030161807.GA9709@dtor-ws.eng.vmware.com>
+ <20121030162723.GA16135@kroah.com>
+ <20121030194354.GA32137@dtor-ws.eng.vmware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030194354.GA32137@dtor-ws.eng.vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 15:31 -0700, David Daney wrote:
-> On 10/26/2012 02:51 PM, Shuah Khan wrote:
+On Tue, Oct 30, 2012 at 12:43:54PM -0700, Dmitry Torokhov wrote:
+> On Tue, Oct 30, 2012 at 09:27:23AM -0700, Greg KH wrote:
+> > On Tue, Oct 30, 2012 at 09:18:07AM -0700, Dmitry Torokhov wrote:
+> > > > > I think that even if we had a special directory for vmci having network
+> > > > > drivers in Dave's realm and pvscsi in James's is best option, so the new
+> > > > > directory would contain vmci and the balloon driver (vsock will go into
+> > > > > net/).  Given that balloon is already in drivers/misc it looked like
+> > > > > obvious place for VMCI as well.
+> > > > 
+> > > > I agree that the individual drivers should go in the subsystem area,
+> > > > it's this "hypervisor bus core" type code that I'm questioning.  Right
+> > > > now every hypervisor is putting that logic in a different place in the
+> > > > kernel, having some consistency here would be nice.
+> > > 
+> > > Hmm, I wonder if miscellaneous and core hypervisor drivers should end
+> > > up in drivers/platform:
+> > > 
+> > > 	drivers/platform/hyperv
+> > > 	drivers/platform/olpc
+> > > 	drivers/platform/vmware
+> > > 	drivers/platform/xen
+> > > 	drivers/platform/x86
+> > 
+> > That makes sense to me, nice.
+> > 
+> > > But really we'd like to get VMCI into mainline first and move to a new
+> > > place later if such a better place is found.
+> > 
+> > Heh, no one wants to fight for something to help everyone out, they just
+> > want their own code accepted :)
 > 
-> >>>> On 10/26/2012 09:01 AM, Shuah Khan wrote:
-> >>>>> Add support for debug_dma_mapping_error() call to avoid warning from
-> >>>>> debug_dma_unmap() interface when it checks for mapping error checked
-> >>>>> status. Without this patch, device driver failed to check map error
-> >>>>> warning is generated.
+> No, this is more about finding a person who would be maintaining it and
+> thus would review our code. For now we got you tagged and do not want to
+> let go of you :P
 > 
-> I'm confused.
-> 
-> Your claim that a 'warning is generated' seems to be in conflict with...
-> 
-> 
-> [...]
-> > Got it. Thanks. I would volunteer to look at fixing all the problems,
-> > but unfortunately I don't have a MIPS box handy
-> 
-> This statement that you don't have hardware that exhibits the problem.
-> 
-> How was the patch tested?  How do you even know there is a problem?
+> Or should we maintain our own stuff and have Linus pull it directly,
+> like Xen guys appear to be doing? Really, moving it is not an issue for
+> us.
 
-I enhanced the existing dma debug interfaces to add an interface to
-debug missing dma_mapping_error() checks. That went into linux-next.
-With this patch, when dma_map_page() and dma_map_single() are debugged
-with a call to debug_dma_map_page() and the corresponding
-dma_mapping_error() interface doesn't call debug_dma_mapping_error()
-interface, a warning will be generated. I have been sending changes to
-arch specific dma_mapping_error() routines to add this debug interface.
-That is why I marked this patch RFT requesting testing.
+No, I don't mind doing some of the review, and getting it to Linus to
+start with, but over time, having you all be the owners and push stuff
+directly to him is fine with me.
 
-Thanks,
--- Shuah
+So I agree, for now, let's leave it as-is.
 
+thanks,
 
+greg k-h
