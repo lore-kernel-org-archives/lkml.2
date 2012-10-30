@@ -1,213 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965453Ab2J3VKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:10:33 -0400
-Received: from spam1.webland.se ([91.207.112.90]:56403 "EHLO spam1.webland.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934561Ab2J3VKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:10:31 -0400
-X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 17:10:31 EDT
-From: Arvid Brodin <Arvid.Brodin@xdin.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "David Rientjes" <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: fs/proc/base.c: text md5sums; tgid vs tid; and INF vs ONE?
-Thread-Topic: fs/proc/base.c: text md5sums; tgid vs tid; and INF vs ONE?
-Thread-Index: AQHNtuHhIVxzjv635UGK6J9DcxIIZA==
-Date: Tue, 30 Oct 2012 21:02:33 +0000
-Message-ID: <50904066.4060404@xdin.com>
-Accept-Language: sv-SE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20120410
- Thunderbird/8.0
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <B21EEBD1195C4D4DBC60212617E4261A@redbull.xdin.com>
+	id S934609Ab2J3VLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:11:17 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64636 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934578Ab2J3VLO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 17:11:14 -0400
 MIME-Version: 1.0
+In-Reply-To: <20121030192148.11000.3582.stgit@warthog.procyon.org.uk>
+References: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
+	<20121030192148.11000.3582.stgit@warthog.procyon.org.uk>
+Date: Tue, 30 Oct 2012 14:11:13 -0700
+X-Google-Sender-Auth: 4jZ-6ng0PZk7byvtGqFRA8vppac
+Message-ID: <CAGXu5jK22D_15jYopqaegYAGSHO2x0asXogXCnZGfMw2KwUVNw@mail.gmail.com>
+Subject: Re: [PATCH 16/23] pefile: Parse a PE binary to find a key and a
+ signature contained therein
+From: Kees Cook <keescook@chromium.org>
+To: David Howells <dhowells@redhat.com>
+Cc: rusty@rustcorp.com.au, pjones@redhat.com, jwboyer@redhat.com,
+        mjg@redhat.com, dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9ULAYBE014872
 
-Hi,
+On Tue, Oct 30, 2012 at 12:21 PM, David Howells <dhowells@redhat.com> wrote:
+> Parse a PE binary to find a key and a signature contained therein.  Later
+> patches will check the signature and add the key if the signature checks out.
+>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+>
+>  crypto/asymmetric_keys/Kconfig         |   10 ++
+>  crypto/asymmetric_keys/Makefile        |    8 +
+>  crypto/asymmetric_keys/pefile_parser.c |  178 ++++++++++++++++++++++++++++++++
+>  crypto/asymmetric_keys/pefile_parser.h |   31 ++++++
+>  4 files changed, 226 insertions(+), 1 deletion(-)
+>  create mode 100644 crypto/asymmetric_keys/pefile_parser.c
+>  create mode 100644 crypto/asymmetric_keys/pefile_parser.h
+>
+>
+> diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+> index 413f3f6..2e7315c 100644
+> --- a/crypto/asymmetric_keys/Kconfig
+> +++ b/crypto/asymmetric_keys/Kconfig
+> @@ -31,7 +31,7 @@ config X509_CERTIFICATE_PARSER
+>         select ASN1
+>         select OID_REGISTRY
+>         help
+> -         This option procides support for parsing X.509 format blobs for key
+> +         This option provides support for parsing X.509 format blobs for key
+>           data and provides the ability to instantiate a crypto key from a
+>           public key packet found inside the certificate.
+>
+> @@ -44,4 +44,12 @@ config PKCS7_MESSAGE_PARSER
+>           This option provides support for parsing PKCS#7 format messages for
+>           signature data and provides the ability to verify the signature.
+>
+> +config PE_FILE_PARSER
+> +       tristate "PE binary-wrapped key parser"
+> +       depends on X509_CERTIFICATE_PARSER
+> +       depends on PKCS7_MESSAGE_PARSER
+> +       help
+> +         This option provides support for parsing signed PE binaries that
+> +         contain an X.509 certificate in an internal section.
+> +
+>  endif # ASYMMETRIC_KEY_TYPE
+> diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+> index b6b39e7..61905d3 100644
+> --- a/crypto/asymmetric_keys/Makefile
+> +++ b/crypto/asymmetric_keys/Makefile
+> @@ -39,3 +39,11 @@ $(obj)/pkcs7_parser.o: $(obj)/pkcs7-asn1.h
+>  $(obj)/pkcs7-asn1.o: $(obj)/pkcs7-asn1.c $(obj)/pkcs7-asn1.h
+>
+>  clean-files    += pkcs7-asn1.c pkcs7-asn1.h
+> +
+> +#
+> +# Signed PE binary-wrapped key handling
+> +#
+> +obj-$(CONFIG_PE_FILE_PARSER) += pefile_key_parser.o
+> +
+> +pefile_key_parser-y := \
+> +       pefile_parser.o
+> diff --git a/crypto/asymmetric_keys/pefile_parser.c b/crypto/asymmetric_keys/pefile_parser.c
+> new file mode 100644
+> index 0000000..efae278
+> --- /dev/null
+> +++ b/crypto/asymmetric_keys/pefile_parser.c
+> @@ -0,0 +1,178 @@
+> +/* Parse a signed PE binary that wraps a key.
+> + *
+> + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
+> + * Written by David Howells (dhowells@redhat.com)
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public Licence
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the Licence, or (at your option) any later version.
+> + */
+> +
+> +#define pr_fmt(fmt) "PEFILE: "fmt
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/slab.h>
+> +#include <linux/err.h>
+> +#include <linux/pe.h>
+> +#include <keys/asymmetric-subtype.h>
+> +#include <keys/asymmetric-parser.h>
+> +#include <crypto/hash.h>
+> +#include "asymmetric_keys.h"
+> +#include "public_key.h"
+> +#include "pefile_parser.h"
+> +
+> +/*
+> + * Parse a PE binary.
+> + */
+> +static int pefile_parse_binary(struct key_preparsed_payload *prep,
+> +                              struct pefile_context *ctx)
+> +{
+> +       const struct mz_hdr *mz = prep->data;
+> +       const struct pe_hdr *pe;
+> +       const struct pe32_opt_hdr *pe32;
+> +       const struct pe32plus_opt_hdr *pe64;
+> +       const struct data_directory *ddir;
+> +       const struct data_dirent *dde;
+> +       const struct section_header *secs, *sec;
+> +       unsigned loop;
+> +       size_t cursor, datalen = prep->datalen;
+> +
+> +       kenter("");
+> +
+> +#define chkaddr(base, x, s)                                            \
+> +       do {                                                            \
+> +               if ((x) < base || (s) >= datalen || (x) > datalen - (s))        \
+> +                       return -ERANGE;                                 \
+> +       } while(0)
+> +
+> +       chkaddr(0, 0, sizeof(*mz));
+> +       if (mz->magic != MZ_MAGIC)
+> +               return -ELIBBAD;
+> +       cursor = sizeof(*mz);
+> +
+> +       chkaddr(cursor, mz->peaddr, sizeof(*pe));
+> +       pe = prep->data + mz->peaddr;
+> +       if (pe->magic != PE_MAGIC)
+> +               return -ELIBBAD;
+> +       cursor = mz->peaddr + sizeof(*pe);
+> +
+> +       chkaddr(0, cursor, sizeof(pe32->magic));
+> +       pe32 = prep->data + cursor;
+> +       pe64 = prep->data + cursor;
+> +
+> +       switch (pe32->magic) {
+> +       case PE_OPT_MAGIC_PE32:
+> +               chkaddr(0, cursor, sizeof(*pe32));
+> +               ctx->image_checksum_offset =
+> +                       (unsigned long)&pe32->csum - (unsigned long)prep->data;
+> +               ctx->header_size = pe32->header_size;
+> +               cursor += sizeof(*pe32);
+> +               ctx->n_data_dirents = pe32->data_dirs;
+> +               break;
+> +
+> +       case PE_OPT_MAGIC_PE32PLUS:
+> +               chkaddr(0, cursor, sizeof(*pe64));
+> +               ctx->image_checksum_offset =
+> +                       (unsigned long)&pe64->csum - (unsigned long)prep->data;
+> +               ctx->header_size = pe64->header_size;
+> +               cursor += sizeof(*pe64);
+> +               ctx->n_data_dirents = pe64->data_dirs;
+> +               break;
+> +
+> +       default:
+> +               pr_devel("Unknown PEOPT magic = %04hx\n", pe32->magic);
+> +               return -ELIBBAD;
+> +       }
+> +
+> +       pr_devel("checksum @ %x\n", ctx->image_checksum_offset);
+> +       pr_devel("header size = %x\n", ctx->header_size);
+> +
+> +       chkaddr(0, cursor, sizeof(*ddir));
+> +       ddir = prep->data + cursor;
+> +       cursor += sizeof(*dde) * ctx->n_data_dirents;
 
-Below is a patch that adds a file /proc/PID/text_md5sum which when read returns the md5
-checksum of a process' text segment. (This would be used e.g. to make sure a process'
-code hasn't been tampered with.)
+This multiplication can push the cursor out of bounds. (n_data_dirents
+is unverified).
 
-However, I have a few questions:
+> +       ctx->cert_dirent_offset =
+> +               (unsigned long)&ddir->certs - (unsigned long)prep->data;
+> +       ctx->certs_size = ddir->certs.size;
+> +
+> +       if (!ddir->certs.virtual_address || !ddir->certs.size) {
+> +               pr_devel("Unsigned PE binary\n");
+> +               return -EKEYREJECTED;
+> +       }
+> +
+> +       chkaddr(cursor, ddir->certs.virtual_address, ddir->certs.size);
+> +       ctx->sig_offset = ddir->certs.virtual_address;
+> +       ctx->sig_len = ddir->certs.size;
+> +       pr_devel("cert = %x @%x [%*ph]\n",
+> +                ctx->sig_len, ctx->sig_offset,
+> +                ctx->sig_len, prep->data + ctx->sig_offset);
+> +
+> +       /* Parse the section table, checking the parameters and looking for the
+> +        * section containing the list of keys.
+> +        */
+> +       ctx->n_sections = pe->sections;
+> +       chkaddr(0, cursor, sizeof(*sec) * ctx->n_sections);
+> +       ctx->secs = secs = prep->data + cursor;
+> +       cursor += sizeof(*sec) * ctx->n_sections;
 
-* What's the difference between the tgid_base_stuff and tid_base_stuff arrays? (One for
-processes and one for the process' threads? I haven't been able to find any info about
-this so I'm guessing.)
+Both of these cases of n_sections multiplications can wrap.
+Ultimately, you can end up with cursor close to zero, but n_sections
+being giant.
 
-* When should I use the INF ("read") vs the ONE ("show") macro?
+> +       for (loop = 0; loop < ctx->n_sections; loop++) {
+> +               sec = &secs[loop];
+> +               chkaddr(cursor, sec->data_addr, sec->raw_data_size);
+> +               if (memcmp(sec->name, ".keylist", 8) == 0) {
+> +                       ctx->keylist_offset = sec->data_addr;
+> +                       ctx->keylist_len = sec->raw_data_size;
+> +               }
+> +       }
 
-* Any other comments about the code?
+Which means this loop will walk past the end of the memory (loop is
+bounded by n_sections, so secs[loop] can go past datalen). While
+data_addr and raw_data_size will stay bounded, the read of sec->name
+can be out of bounds. (Also, do you want a "break" in there after the
+first .keylist is found, or is this intentionally "use last key
+list"?)
 
-Thanks!
+> +
+> +       if (ctx->keylist_offset == 0) {
+> +               pr_devel("No .keylist section in PE binary\n");
+> +               return -ENOENT;
+> +       }
+> +
+> +       pr_devel("keylist = %x @%x [%*ph]\n",
+> +                ctx->keylist_len, ctx->keylist_offset,
+> +                ctx->keylist_len, prep->data + ctx->keylist_offset);
+> +
+> +       return 0;
+> +}
+> +
+> +/*
+> + * Parse a PE binary.
+> + */
+> +static int pefile_key_preparse(struct key_preparsed_payload *prep)
+> +{
+> +       struct pefile_context ctx;
+> +       int ret;
+> +
+> +       kenter("");
+> +
+> +       memset(&ctx, 0, sizeof(ctx));
+> +       ret = pefile_parse_binary(prep, &ctx);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       return -ENOANO; // Not yet complete
+> +}
+> +
+> +static struct asymmetric_key_parser pefile_key_parser = {
+> +       .owner  = THIS_MODULE,
+> +       .name   = "pefile",
+> +       .parse  = pefile_key_preparse,
+> +};
+> +
+> +/*
+> + * Module stuff
+> + */
+> +static int __init pefile_key_init(void)
+> +{
+> +       return register_asymmetric_key_parser(&pefile_key_parser);
+> +}
+> +
+> +static void __exit pefile_key_exit(void)
+> +{
+> +       unregister_asymmetric_key_parser(&pefile_key_parser);
+> +}
+> +
+> +module_init(pefile_key_init);
+> +module_exit(pefile_key_exit);
+> diff --git a/crypto/asymmetric_keys/pefile_parser.h b/crypto/asymmetric_keys/pefile_parser.h
+> new file mode 100644
+> index 0000000..82bcaf6
+> --- /dev/null
+> +++ b/crypto/asymmetric_keys/pefile_parser.h
+> @@ -0,0 +1,31 @@
+> +/* PE Binary parser bits
+> + *
+> + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
+> + * Written by David Howells (dhowells@redhat.com)
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public Licence
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the Licence, or (at your option) any later version.
+> + */
+> +#include "pkcs7_parser.h"
+> +
+> +struct pefile_context {
+> +       unsigned        header_size;
+> +       unsigned        image_checksum_offset;
+> +       unsigned        cert_dirent_offset;
+> +       unsigned        n_data_dirents;
+> +       unsigned        n_sections;
+> +       unsigned        certs_size;
+> +       unsigned        sig_offset;
+> +       unsigned        sig_len;
+> +       unsigned        keylist_offset;
+> +       unsigned        keylist_len;
+> +       const struct section_header *secs;
+> +       struct pkcs7_message *pkcs7;
+> +
+> +       /* PKCS#7 MS Individual Code Signing content */
+> +       const void      *digest;                /* Digest */
+> +       unsigned        digest_len;             /* Digest length */
+> +       enum pkey_hash_algo digest_algo;        /* Digest algorithm */
+> +};
+>
 
----
-
-diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
-index 15af622..317ad92 100644
---- a/fs/proc/Kconfig
-+++ b/fs/proc/Kconfig
-@@ -67,3 +67,13 @@ config PROC_PAGE_MONITOR
- 	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
- 	  /proc/kpagecount, and /proc/kpageflags. Disabling these
-           interfaces will reduce the size of the kernel by approximately 4kb.
-+
-+config PROC_TEXT_MD5SUM
-+	bool "/proc/<pid>/text_md5sum support"
-+	depends on PROC_FS
-+	select CRYPTO
-+	select CRYPTO_MD5
-+	help
-+	  Read /proc/<pid>/text_md5sum to get the kernel to perform an MD5
-+	  checksum over the process' text segment and print the result. Can be
-+	  used to make sure a process' code has not been tampered with.
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 91da78c..14a825f 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -85,6 +85,10 @@
- #include <linux/fs_struct.h>
- #include <linux/slab.h>
- #include <linux/flex_array.h>
-+#ifdef CONFIG_PROC_TEXT_MD5SUM
-+#include <linux/scatterlist.h>
-+#include <linux/crypto.h>
-+#endif
- #ifdef CONFIG_HARDWALL
- #include <asm/hardwall.h>
- #endif
-@@ -2526,6 +2530,107 @@ static int proc_pid_personality(struct seq_file *m, struct
-pid_namespace *ns,
- 	return err;
- }
-
-+#ifdef CONFIG_PROC_TEXT_MD5SUM
-+#define MD5_DIGEST_SIZE 16
-+static int proc_get_text_md5sum(struct seq_file *m, struct pid_namespace *ns,
-+				struct pid *pid, struct task_struct *task)
-+{
-+	int retval;
-+	int text_size;
-+	int nr_pages, nr_pages_mapped;
-+	int i;
-+	struct page **pages;
-+	struct scatterlist *sgl, *sg;
-+	u8 result[MD5_DIGEST_SIZE + 2];
-+	struct crypto_hash *tfm;
-+	struct hash_desc desc;
-+
-+	retval = 0;
-+
-+	if (!task->mm)
-+		return -EINVAL;
-+
-+	text_size = task->mm->end_code - task->mm->start_code;
-+	nr_pages = (text_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+
-+
-+	/**** User page code ****/
-+
-+	pages = kmalloc(nr_pages * sizeof(*pages), GFP_KERNEL);
-+	if (!pages) {
-+		retval = -ENOMEM;
-+		goto err_pages;
-+	}
-+
-+	down_read(&task->mm->mmap_sem);
-+	nr_pages_mapped = get_user_pages(current, task->mm,
-+			task->mm->start_code, nr_pages, 0, 0, pages, NULL);
-+	up_read(&task->mm->mmap_sem);
-+	if (nr_pages_mapped < 0) {
-+		retval = nr_pages_mapped;
-+		goto err_mapped;
-+	}
-+	if (nr_pages_mapped < nr_pages) {
-+		retval = -EBUSY; /* Weird error code for this,
-+				    but couldn't find any better */
-+		goto err_not_all_pages;
-+	}
-+
-+
-+	/**** Scatterlist code ****/
-+
-+	sgl = kmalloc(nr_pages_mapped * sizeof(*sgl), GFP_KERNEL);
-+	if (!sgl) {
-+		retval = -ENOMEM;
-+		goto err_sg;
-+	}
-+
-+	sg_init_table(sgl, nr_pages_mapped);
-+	for_each_sg(sgl, sg, nr_pages_mapped, i)
-+		sg_set_page(sg, pages[i], (i < nr_pages_mapped) ? PAGE_SIZE :
-+						text_size & ~PAGE_MASK, 0);
-+
-+
-+	/**** Crypto code ****/
-+
-+	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
-+	if (IS_ERR(tfm)) {
-+		retval = -ENOMEM;
-+		goto err_crypto;
-+	}
-+
-+	desc.tfm = tfm;
-+	desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-+
-+	memset(result, 0, MD5_DIGEST_SIZE + 2);
-+	retval = crypto_hash_digest(&desc, sgl, text_size, result);
-+	if (retval)
-+		goto err_digest;
-+
-+	for (i = 0; i < MD5_DIGEST_SIZE; i++)
-+		seq_printf(m, "%02x", result[i]);
-+	seq_printf(m, "\n");
-+
-+
-+err_digest:
-+	crypto_free_hash(tfm);
-+
-+err_crypto:
-+	kfree(sgl);
-+
-+err_sg:
-+err_not_all_pages:
-+	for (i = 0; i < nr_pages_mapped; i++)
-+		put_page(pages[i]);
-+
-+err_mapped:
-+	kfree(pages);
-+
-+err_pages:
-+	return retval;
-+}
-+#endif /* CONFIG_PROC_TEXT_MD5SUM */
-+
- /*
-  * Thread groups
-  */
-@@ -2621,6 +2726,9 @@ static const struct pid_entry tgid_base_stuff[] = {
- 	REG("gid_map",    S_IRUGO|S_IWUSR, proc_gid_map_operations),
- 	REG("projid_map", S_IRUGO|S_IWUSR, proc_projid_map_operations),
- #endif
-+#ifdef CONFIG_PROC_TEXT_MD5SUM
-+	ONE("text_md5sum", S_IRUGO, proc_get_text_md5sum),
-+#endif
- };
-
- static int proc_tgid_base_readdir(struct file * filp,
 
 
 -- 
-Arvid Brodin | Consultant (Linux)
-XDIN AB | KnarrarnÃ¤sgatan 7 | SE-164 40 Kista | Sweden | xdin.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Kees Cook
+Chrome OS Security
