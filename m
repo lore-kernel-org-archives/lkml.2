@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965591Ab2J3THC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:07:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5701 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965222Ab2J3TG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:06:59 -0400
-Message-ID: <509025ED.8050207@redhat.com>
-Date: Tue, 30 Oct 2012 15:09:33 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S965676Ab2J3THb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:07:31 -0400
+Received: from shrek-modem2.podlesie.net ([83.13.132.46]:45309 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965222Ab2J3TH2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:07:28 -0400
+Date: Tue, 30 Oct 2012 20:07:25 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
+Message-ID: <20121030190725.GA14044@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+ <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
+ <1351589868.17077.34.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, klamm@yandex-team.ru,
-        mgorman@suse.de, hannes@cmpxchg.org
-Subject: Re: [PATCH RFC] mm,vmscan: only evict file pages when we have plenty
-References: <20121030144204.0aa14d92@dull> <20121030115451.f4c097f0.akpm@linux-foundation.org>
-In-Reply-To: <20121030115451.f4c097f0.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351589868.17077.34.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2012 02:54 PM, Andrew Morton wrote:
-> On Tue, 30 Oct 2012 14:42:04 -0400
-> Rik van Riel <riel@redhat.com> wrote:
->
->> If we have more inactive file pages than active file pages, we
->> skip scanning the active file pages alltogether, with the idea
->> that we do not want to evict the working set when there is
->> plenty of streaming IO in the cache.
->
-> Yes, I've never liked that.  The "(active > inactive)" thing is a magic
-> number.  And suddenly causing a complete cessation of vm scanning at a
-> particular magic threshold seems rather crude, compared to some complex
-> graduated thing which will also always do the wrong thing, only more
-> obscurely ;)
->
-> Ho hum, in the absence of observed problems, I guess we don't muck with
-> it.
+On Tue, Oct 30, 2012 at 09:37:48AM +0000, David Woodhouse wrote:
+> 
+> Should we be locking it earlier, so that the atm_may_send() call is also
+> covered by the lock?
 
-The thing is, when we "suddenly switch behaviour" back to
-scanning all the lists, that does not have to suddenly
-lead to pages from the other lists being actually evicted.
+Yes, but only to protect against concurent vcc_sendmsg().
 
-Instead, it will lead to referenced inactive_anon pages
-being moved back to the active_anon list, and any pages
-from the end of the active_file list being moved to the
-inactive_file list.
+> 
+> Either way, it's an obvious improvement on what we had before ??? and even
+> if the answer to my question above is 'yes', exceeding the configured
+> size by one packet is both harmless and almost never going to happen
+> since we now limit ourselves to two packets anyway. So:
+> 
+> Acked-By: David Woodhouse <David.Woodhouse@intel.com>
+> 
 
-There is a threshold, and Johannes has patches to set
-the threshold in a much more intelligent way, but the
-change in behaviour should not be sudden due to the
-inactive lists providing a rather large buffer.
+I'm sending proposed patch (not tested).
 
-When the VM is bouncing around the threshold, it should
-look like a reduction in the rate at which the other
-lists are scanned.
+Should I squash it into original patch or send it later because it's
+not really important?
 
+Thanks.
+
+Krzysiek
+
+-- >8 --
+diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
+index a766d96..3081834 100644
+--- a/net/atm/pppoatm.c
++++ b/net/atm/pppoatm.c
+@@ -214,15 +214,7 @@ error:
+ 
+ static inline int pppoatm_may_send(struct pppoatm_vcc *pvcc, int size)
+ {
+-	/*
+-	 * It's not clear that we need to bother with using atm_may_send()
+-	 * to check we don't exceed sk->sk_sndbuf. If userspace sets a
+-	 * value of sk_sndbuf which is lower than the MTU, we're going to
+-	 * block for ever. But the code always did that before we introduced
+-	 * the packet count limit, so...
+-	 */
+-	if (atm_may_send(pvcc->atmvcc, size) &&
+-	    atomic_inc_not_zero_hint(&pvcc->inflight, NONE_INFLIGHT))
++	if (atomic_inc_not_zero_hint(&pvcc->inflight, NONE_INFLIGHT))
+ 		return 1;
+ 
+ 	/*
+@@ -251,8 +243,7 @@ static inline int pppoatm_may_send(struct pppoatm_vcc *pvcc, int size)
+ 	 * code path that calls pppoatm_send(), and is thus going to
+ 	 * wait for us to finish.
+ 	 */
+-	if (atm_may_send(pvcc->atmvcc, size) &&
+-	    atomic_inc_not_zero(&pvcc->inflight))
++	if (atomic_inc_not_zero(&pvcc->inflight))
+ 		return 1;
+ 
+ 	return 0;
+@@ -314,6 +305,16 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ 			|| !test_bit(ATM_VF_READY, &vcc->flags))
+ 		goto nospace_unlock_sock;
+ 
++	/*
++	 * It's not clear that we need to bother with using atm_may_send()
++	 * to check we don't exceed sk->sk_sndbuf. If userspace sets a
++	 * value of sk_sndbuf which is lower than the MTU, we're going to
++	 * block for ever. But the code always did that before we introduced
++	 * the packet count limit, so...
++	 */
++	if (!atm_may_send(vcc, skb->truesize))
++		goto nospace_unlock_sock;
++
+ 	atomic_add(skb->truesize, &sk_atm(ATM_SKB(skb)->vcc)->sk_wmem_alloc);
+ 	ATM_SKB(skb)->atm_options = ATM_SKB(skb)->vcc->atm_options;
+ 	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n",
