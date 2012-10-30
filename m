@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934680Ab2J3VRH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:17:07 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55293 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934532Ab2J3VRD (ORCPT
+	id S934692Ab2J3VSr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:18:47 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:46755 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934639Ab2J3VSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:17:03 -0400
-Date: Tue, 30 Oct 2012 21:17:01 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Steve French <sfrench@samba.org>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, Matthew Wilcox <matthew@wil.cx>,
-        linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, ocfs2-devel@oss.oracle.com
-Subject: Re: [patch 05/10] vfs: pass data to alloc_inode super operation
-Message-ID: <20121030211701.GC2616@ZenIV.linux.org.uk>
-References: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
- <1351628084-29358-8-git-send-email-jmoyer@redhat.com>
- <20121030205142.GB2616@ZenIV.linux.org.uk>
+	Tue, 30 Oct 2012 17:18:41 -0400
+From: Behan Webster <behanw@converseincode.com>
+To: balbi@ti.com, davem@davemloft.net
+Cc: linux-usb@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Behan Webster <behanw@converseincode.com>
+Subject: [PATCH V2 0/3] Removing the use of VLAIS from USB Gadget and netfilter
+Date: Tue, 30 Oct 2012 17:18:54 -0400
+Message-Id: <1351631937-21455-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030205142.GB2616@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 08:51:42PM +0000, Al Viro wrote:
-> On Tue, Oct 30, 2012 at 04:14:39PM -0400, Jeff Moyer wrote:
-> > This patch passes a data pointer along to the alloc_inode
-> > super_operations function.  The value will initially be used by
-> > bdev_alloc_inode to allocate the bdev_inode on the same numa
-> > node as the device to which it is tied.
-> 
-> Yecchhh...
-> 
-> > -static struct inode *bdev_alloc_inode(struct super_block *sb)
-> > +static struct inode *bdev_alloc_inode(struct super_block *sb, void *data)
-> >  {
-> > -	struct bdev_inode *ei = kmem_cache_alloc(bdev_cachep, GFP_KERNEL);
-> > +	struct bdev_inode *ei;
-> > +	int partno;
-> > +	int node;
-> > +
-> > +	if (data) {
-> > +		struct gendisk *disk;
-> > +		dev_t dev = *(dev_t *)data;
-> > +		disk = get_gendisk(dev, &partno);
-> > +		node = disk->node_id;
+This is a V2 version of the patch set I previously sent out. Since the use of a
+new valign.h file spans both the USB and netfilter subsystems, I should have
+sent out all 3 patches to both trees at once. Assuming all is well, hopefully
+both subsystems can cooperate to get these patches in without causing
+conflicts.
 
-BTW, speaking of other reasons this is FUBAR - mknod a block device node
-for something that doesn't exist and try to open it.  struct block_device
-lifetime is not limited to that of struct gendisk; it can be allocated
-before gendisk is there.  Moreover, with static /dev and demand-loaded
-modules this will be the normal scenario.
+The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
+precludes the use of compilers which don't implement VLAIS (for instance the
+Clang compiler). The LLVMLinux Project is working towards the ability of
+providing the Linux kernel developer the choice of using the Clang compiler
+toolchain. This is a part of a series of patches which remove the use of VLAIS
+from crypto code, dm-crypt, jbd2, libcrc32c, netfilter, and usb gadget. Other
+patches to allow Clang to be used to compile the Linux kernel will follow.
 
-IOW, this is completely misguided.
+Behan Webster (2):
+  Helper macros used for replacing the use of VLAIS
+  Remove VLAIS usage from gadget code
+
+Jan-Simon Möller (1):
+  Remove VLAIS usage from netfilter
+
+ drivers/usb/gadget/f_fs.c   |  106 +++++++++++++++++++++++++------------------
+ include/linux/valign.h      |   87 +++++++++++++++++++++++++++++++++++
+ net/netfilter/xt_repldata.h |   40 +++++++++-------
+ 3 files changed, 172 insertions(+), 61 deletions(-)
+ create mode 100644 include/linux/valign.h
+
+-- 
+1.7.9.5
+
