@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759010Ab2J3Ktl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 06:49:41 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3514 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758147Ab2J3Ktk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 06:49:40 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 30 Oct 2012 03:49:38 -0700
-Message-ID: <508FB063.70206@nvidia.com>
-Date: Tue, 30 Oct 2012 16:18:03 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1759217Ab2J3Kvt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 06:51:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47860 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758201Ab2J3Kvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 06:51:47 -0400
+From: Oliver Neukum <oneukum@suse.de>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
+Date: Tue, 30 Oct 2012 11:57:35 +0100
+Message-ID: <2149424.HsnQpSLjK5@linux-lqwf.site>
+Organization: SUSE
+User-Agent: KMail/4.8.4 (Linux/3.7.0-rc2-12-desktop+; KDE/4.9.1; x86_64; ; )
+In-Reply-To: <CACVXFVOPDu6wVgPmvtTkokn7VV41x3XVvL4g_E0pz0mikUbvUg@mail.gmail.com>
+References: <1351513440-9286-3-git-send-email-ming.lei@canonical.com> <Pine.LNX.4.44L0.1210291125590.22882-100000@netrider.rowland.org> <CACVXFVOPDu6wVgPmvtTkokn7VV41x3XVvL4g_E0pz0mikUbvUg@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mfd: Convert tps6586x to irq_domain
-References: <1349712805-10014-1-git-send-email-ldewangan@nvidia.com> <1349712805-10014-2-git-send-email-ldewangan@nvidia.com> <20121009060641.GE8237@opensource.wolfsonmicro.com> <5073BAA8.4060404@nvidia.com> <20121009062355.GJ8237@opensource.wolfsonmicro.com> <5073BE7F.5060107@nvidia.com> <20121009064011.GQ8237@opensource.wolfsonmicro.com>
-In-Reply-To: <20121009064011.GQ8237@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark/Samuel,
-There is one more change for doing cleanups in regulator parsing where I 
-moved the regulator parsing from mfd to regulator driver:
-[PATCH] mfd: tps6586x: move regulator dt parsing to regulator driver
+On Tuesday 30 October 2012 11:21:33 Ming Lei wrote:
+> On Mon, Oct 29, 2012 at 11:41 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > On Mon, 29 Oct 2012, Ming Lei wrote:
+> >
+> >> The patch introduces the flag of memalloc_noio_resume in
+> >> 'struct dev_pm_info' to help PM core to teach mm not allocating
+> >> memory with GFP_KERNEL flag for avoiding probable deadlock
+> >> problem.
+> >>
+> >> As explained in the comment, any GFP_KERNEL allocation inside
+> >> runtime_resume on any one of device in the path from one block
+> >> or network device to the root device in the device tree may cause
+> >> deadlock, the introduced pm_runtime_set_memalloc_noio() sets or
+> >> clears the flag on device of the path recursively.
+> >>
+> >> This patch also introduces pm_runtime_get_memalloc_noio() because
+> >> the flag may be accessed in block device's error handling path
+> >> (for example, usb device reset)
+> >
+> >> +/*
+> >> + * pm_runtime_get_memalloc_noio - Get a device's memalloc_noio flag.
+> >> + * @dev: Device to handle.
+> >> + *
+> >> + * Return the device's memalloc_noio flag.
+> >> + *
+> >> + * The device power lock is held because bitfield is not SMP-safe.
+> >> + */
+> >> +bool pm_runtime_get_memalloc_noio(struct device *dev)
+> >> +{
+> >> +     bool ret;
+> >> +     spin_lock_irq(&dev->power.lock);
+> >> +     ret = dev->power.memalloc_noio_resume;
+> >> +     spin_unlock_irq(&dev->power.lock);
+> >> +     return ret;
+> >> +}
+> >
+> > You don't need to acquire and release a spinlock just to read the
+> > value.  Reading bitfields _is_ SMP-safe; writing them is not.
+> 
+> Thanks for your review.
+> 
+> As you pointed out before, the flag need to be checked before
+> resetting usb devices, so the lock should be held to make another
+> context(CPU) see the updated value suppose one context(CPU)
+> call pm_runtime_set_memalloc_noio() to change the flag at the
+> same time.
+> 
+> The lock needn't to be held when the function is called inside
+> pm_runtime_set_memalloc_noio(),  so the bitfield flag should
+> be checked directly without holding power lock in dev_memalloc_noio().
 
-Although this series and above change is independent but I like to go 
-these in same branch to avoid the merge conflict.
+Hi,
 
-If this is fine to go in same branch theb I can create a new series of 
-these 3 changes and above change.
-These series is already reviewed by Mark.
+how is this to work with power management domains?
+And I may be dense, but disks are added in slave_configure().
+This seems to be a race to me.
 
-Please let me know your opinion.
-
-
-Thanks,
-Laxman
-
-On Tuesday 09 October 2012 12:10 PM, Mark Brown wrote:
-> On Tue, Oct 09, 2012 at 11:34:47AM +0530, Laxman Dewangan wrote:
->
->> The bit definitions are also different in status and mask register
->> and yes, this will be again problem as we do in isr thread
->>   data->status_buf[i]&= ~data->mask_buf[i];
->> So given the constraint, generic will not work here.
-> OK, that's a good reason not to use the generic code.
+	Regards
+		Oliver
 
