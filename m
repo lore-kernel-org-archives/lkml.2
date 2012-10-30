@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab2J3CG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 22:06:59 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51297 "EHLO
+	id S1752057Ab2J3CKF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 22:10:05 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43874 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab2J3CG6 (ORCPT
+	with ESMTP id S1751249Ab2J3CKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 22:06:58 -0400
-Date: Mon, 29 Oct 2012 19:07:52 -0700
+	Mon, 29 Oct 2012 22:10:03 -0400
+Date: Mon, 29 Oct 2012 19:10:58 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: George Zhang <georgezhang@vmware.com>
 Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
         pv-drivers@vmware.com
 Subject: Re: [PATCH 01/12] VMCI: context implementation.
-Message-ID: <20121030020752.GA1920@kroah.com>
+Message-ID: <20121030021058.GB1920@kroah.com>
 References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
  <20121030010333.17788.94988.stgit@promb-2n-dhcp175.eng.vmware.com>
 MIME-Version: 1.0
@@ -26,32 +26,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Oct 29, 2012 at 06:03:42PM -0700, George Zhang wrote:
-> VMCI Context code maintains state for vmci and allows the driver to communicate with multiple VMs.
-> 
-
-Very minor nit, wrap your changelog comments at 72 columns or at the
-least, 80.  Didn't checkpatch complain about that?
-
 > +/*
-> + * vmci_context_id_to_host_vmid() - Map CID to HostID
-> + * @context_id: Context ID of VMCI context.
-> + * @host_vmid:  Host VM ID data
-> + * @host_vmid_len:      Length of Host VM ID Data.
-> + *
-> + * Maps a context ID to the host specific (process/world) ID
-> + * of the VM/VMX.  This function is not used on Linux systems
-> + * and should be ignored.
+> + * Releases the VMCI context. If this is the last reference to
+> + * the context it will be deallocated. A context is created with
+> + * a reference count of one, and on destroy, it is removed from
+> + * the context list before its reference count is
+> + * decremented. Thus, if we reach zero, we are sure that nobody
+> + * else are about to increment it (they need the entry in the
+> + * context list for that). This function musn't be called with a
+> + * lock held.
 > + */
-> +int vmci_context_id_to_host_vmid(u32 context_id,
-> +				 void *host_vmid, size_t host_vmid_len)
+> +void vmci_ctx_release(struct vmci_ctx *context)
 > +{
-> +	return VMCI_ERROR_UNAVAILABLE;
+> +	ASSERT(context);
+> +	kref_put(&context->kref, ctx_free_ctx);
 > +}
-> +EXPORT_SYMBOL_GPL(vmci_context_id_to_host_vmid);
+> +
 
-Why even have this function if it doesn't do anything?
+Hm, are you _sure_ you should be calling this without a lock held?
+That's usually kref-101, you MUST hold a lock when calling put,
+otherwise you can race a kref_get() call, and all hell can break loose.
 
+Because of this, some saner people (like Al Viro), have suggested that I
+force the kref_put() and kref_get() calls pass in a spinlock just to
+enforce this.
 
-thanks,
+So, tell me what I'm missing here, and why you put the comment here
+saying that it really is supposed to be called without a lock held?  How
+is that safe?
+
+confused,
 
 greg k-h
