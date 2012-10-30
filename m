@@ -1,93 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab2J3Xko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 19:40:44 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47141 "EHLO ogre.sisk.pl"
+	id S1753886Ab2J3Xks (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 19:40:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38077 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751928Ab2J3Xkn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 19:40:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: maciej.rutecki@gmail.com
-Cc: wujianguo@huawei.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jiang.liu@huawei.com, akpm@linux-foundation.org,
-        Petr Tesarik <ptesarik@suse.cz>
-Subject: Re: [REGRESSION] 3.7-rc2 kernel BUG at kernel/power/snapshot.c:517!
-Date: Wed, 31 Oct 2012 00:44:47 +0100
-Message-ID: <2355953.ClcD7YxnmU@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <201210302135.48585.maciej.rutecki@gmail.com>
-References: <201210211712.28571.maciej.rutecki@gmail.com> <1552872.pfLgNj3qcY@vostro.rjw.lan> <201210302135.48585.maciej.rutecki@gmail.com>
+	id S1753001Ab2J3Xkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 19:40:45 -0400
+Date: Wed, 31 Oct 2012 00:40:43 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, lm-sensors@lm-sensors.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, oprofile-list@lists.sf.net,
+        Stephane Eranian <eranian@google.com>,
+        Robert Richter <rric@kernel.org>,
+        =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+Subject: Re: [PATCH 3/4] cpufreq, powernow-k8: Change email address
+Message-ID: <20121030234042.GC14055@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Andreas Herrmann <herrmann.der.user@googlemail.com>,
+	Jean Delvare <khali@linux-fr.org>,
+	Guenter Roeck <linux@roeck-us.net>, Ingo Molnar <mingo@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+	lm-sensors@lm-sensors.org, cpufreq@vger.kernel.org,
+	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	oprofile-list@lists.sf.net, Stephane Eranian <eranian@google.com>,
+	Robert Richter <rric@kernel.org>,
+	=?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+References: <20121029174924.GA5024@tweety>
+ <2663527.sPyzc5AXi8@vostro.rjw.lan>
+ <20121029233100.GE8393@liondog.tnic>
+ <2384721.S5BJ6UP5pX@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <2384721.S5BJ6UP5pX@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 30, 2012 09:35:48 PM Maciej Rutecki wrote:
-> On niedziela, 28 października 2012 o 22:45:26 Rafael J. Wysocki wrote:
-> > On Sunday, October 28, 2012 10:12:49 PM Maciej Rutecki wrote:
-> > > On niedziela, 21 października 2012 o 17:12:28 Maciej Rutecki wrote:
-> > > > Error: kernel BUG at kernel/power/snapshot.c:517!
+On Wed, Oct 31, 2012 at 12:42:01AM +0100, Rafael J. Wysocki wrote:
+> On Tuesday, October 30, 2012 12:31:00 AM Borislav Petkov wrote:
+> > On Tue, Oct 30, 2012 at 12:33:15AM +0100, Rafael J. Wysocki wrote:
+> > > On Monday, October 29, 2012 06:52:21 PM Andreas Herrmann wrote:
 > > > > 
-> > > > Last known good: 3.6.1
-> > > > Bad: 3.7-rc2
-> > > > 
-> > > > Steps to reproduce:
-> > > > 1. Boot system with 3.7-rc2 kernel
-> > > > 2. Try suspend to disk (s2ram works OK)
-> > > > 
-> > > > System dies on message:
-> > > > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/DSCN0280.jpg
-> > > > 
-> > > > lspci:
-> > > > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/lspci.txt
-> > > > 
-> > > > dmesg:
-> > > > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/dmesg-3.7-rc2.txt
+> > > > Signed-off-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
 > > > 
-> > > Still present in -rc3
+> > > Am I supposed to take this one?
 > > 
-> > This appears to be a memory allocation error and I have no idea what
-> > the reason of it is.
-> > 
-> > Any chance to bisect?
+> > Yes please.
 > 
-> 7f1290f2f2a4d2c3f1b7ce8e87256e052ca23125 is the first bad commit
-> commit 7f1290f2f2a4d2c3f1b7ce8e87256e052ca23125
-> Author: Jianguo Wu <wujianguo@huawei.com>
-> Date:   Mon Oct 8 16:33:06 2012 -0700
-> 
->     mm: fix-up zone present pages
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
->     Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->     Reported-by: Petr Tesarik <ptesarik@suse.cz>
->     Tested-by: Petr Tesarik <ptesarik@suse.cz>
->     Cc: "Luck, Tony" <tony.luck@intel.com>
->     Cc: Mel Gorman <mel@csn.ul.ie>
->     Cc: Yinghai Lu <yinghai@kernel.org>
->     Cc: Minchan Kim <minchan.kim@gmail.com>
->     Cc: Johannes Weiner <hannes@cmpxchg.org>
->     Cc: David Rientjes <rientjes@google.com>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> 
-> 
-> Description says:
-> "This patch intends to fix-up zone->present_pages when memory are freed to
->     buddy system on x86_64 and IA64 platforms."
-> 
-> but I use 32 bit kernel
-> 
-> Revert this commit solves problem.
+> OK, I'm going to push it for v3.7.
 
-This is good to know, thanks for bisecting it!
+Sure thing.
 
-Rafael
-
+Thanks.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards/Gruss,
+    Boris.
