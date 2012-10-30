@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758524Ab2J3Wsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 18:48:53 -0400
-Received: from smtp-03.mandic.com.br ([200.225.81.143]:59687 "EHLO
-	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500Ab2J3Wsw (ORCPT
+	id S934898Ab2J3Wts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 18:49:48 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:59827 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752500Ab2J3Wtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 18:48:52 -0400
-Message-ID: <5090594E.7050401@cesarb.net>
-Date: Tue, 30 Oct 2012 20:48:46 -0200
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Tue, 30 Oct 2012 18:49:46 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/2] mm: refactor reinsert of swap_info in sys_swapoff
-References: <1351372847-13625-1-git-send-email-cesarb@cesarb.net> <1351372847-13625-2-git-send-email-cesarb@cesarb.net> <20121030140417.988c2437.akpm@linux-foundation.org>
-In-Reply-To: <20121030140417.988c2437.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Tue, 30 Oct 2012 23:49:45 +0100
+Message-ID: <CACRpkdZRb-RjYDdgDpGFXSLhwSC+0e5Dy=EE2Atmiwyewa-D+Q@mail.gmail.com>
+Subject: [GIT PULL] GPIO fixes for v3.7
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Lunn <andrew@lunn.ch>, Dan Carpenter <dan.carpenter@oracle.com>,
+        Jon Hunter <jon-hunter@ti.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Roland Stigge <stigge@antcom.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 30-10-2012 19:04, Andrew Morton escreveu:
-> Your patch doesn't change this, but...  it is very unusual for any
-> subsystem's ->init method to be called under a spinlock.  Because it is
-> highly likely that such a method will wish to do things such as memory
-> allocation.
->
-> It is rare and unlikely for an ->init() method to *need* such external
-> locking, because all the objects it is dealing with cannot be looked up
-> by other threads because nothing has been registered anywhere yet.
+Hi Linus,
 
-The frontswap_init() method is being passed the swap_info_struct's 
-->type, which it uses to get back the swap_info_struct itself, which it 
-then uses to check if the frontswap_map allocation succeeded. As noted 
-by the commit message for commit 38b5faf (mm: frontswap: core swap 
-subsystem hooks and headers), that allocation can fail, which will do 
-nothing more than not enable frontswap for that swap area.
+here is a set of GPIO fixes accumulated since -rc1 that have been
+trickling in. Condensed description of the contents is in the tag.
 
-The same parameter is then passed down to the ->init() method, which 
-proceeds to sumarily ignore it on the three in-tree implementations I 
-looked at.
+Please pull them in!
 
-Yeah, it looks like a violation of YAGNI to me, and doing things in a 
-more roundabount way than is justified. Why pass the ->type and then get 
-the pointer from it instead of just passing the pointer in the first 
-place? Or better yet, why not pass the frontswap_map pointer? Even 
-better, why not a boolean saying whether it worked? Even better, *why 
-not just put the conditional inside enable_swap_info* and pass no 
-parameter at all?
-
-> So either frontswap is doing something wrong here or there's some
-> subtlety which escapes me.  If the former then we should try to get
-> that ->init call to happen outside swap_lock.
-
-I believe the swap_lock is protecting the poolid. It is possible that 
-other things in the frontswap code are being called before the first 
-swapon with a successful frontswap_map allocation (which is when the 
-poolid would get allocated).
-
-A quick look suggests the poolid only gets set on an initcall or in the 
-->init() method; perhaps a local mutex (to prevent double allocation) 
-and an atomic update of the poolid would be enough to move it outside 
-the lock (and also outside the swapon_mutex).
-
-But that would work only if no out-of-tree frontswap module needs it 
-within the swap_lock.
-
-> And if we can do that, perhaps we can fix the regrettable GFP_ATOMIC
-> in zcache_new_pool().
+Yours,
+Linus Walleij
 
 
--- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+
+  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+tags/gpio-fixes-v3.7-rc4
+
+for you to fetch changes up to 8fcff5f13773aa3898df1d13a1615d468079cb15:
+
+  GPIO: mvebu-gpio: Don't initialize the mask_cache (2012-10-30 22:34:20 +0100)
+
+----------------------------------------------------------------
+Some GPIO fixes for the v3.7 series since -rc1:
+- Fix a potential bit wrap issue in the Timberdale driver
+- Fix up the buffer allocation size in the 74x164 driver
+- Set the value in direction_output() right in the mvebu driver
+- Return proper error codes for invalid GPIOs
+- Fix an off-mode bug for the OMAP
+- Don't initialized the mask_cach on the mvebu driver
+
+----------------------------------------------------------------
+Andrew Lunn (1):
+      GPIO: mvebu-gpio: Don't initialize the mask_cache
+
+Dan Carpenter (1):
+      gpio-timberdale: fix a potential wrapping issue
+
+Jon Hunter (1):
+      gpio/omap: fix off-mode bug: clear debounce settings on free/reset
+
+Mathias Nyman (1):
+      gpiolib: Don't return -EPROBE_DEFER to sysfs, or for invalid gpios
+
+Roland Stigge (1):
+      gpio-74x164: Fix buffer allocation size
+
+Thomas Petazzoni (1):
+      gpio: mvebu: correctly set the value in direction_output()
+
+ drivers/gpio/gpio-74x164.c     |  2 +-
+ drivers/gpio/gpio-mvebu.c      |  4 +++-
+ drivers/gpio/gpio-omap.c       | 35 +++++++++++++++++++++++++++++++++++
+ drivers/gpio/gpio-timberdale.c |  4 ++--
+ drivers/gpio/gpiolib.c         | 10 +++++++---
+ 5 files changed, 48 insertions(+), 7 deletions(-)
