@@ -1,124 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760003Ab2J3Q7K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:59:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35917 "EHLO mx2.suse.de"
+	id S1760023Ab2J3RAp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 13:00:45 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:33907 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab2J3Q7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:59:07 -0400
-Date: Tue, 30 Oct 2012 16:59:01 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 00/31] numa/core patches
-Message-ID: <20121030165901.GF3888@suse.de>
-References: <20121025121617.617683848@chello.nl>
- <20121030122032.GC3888@suse.de>
- <20121030082810.b9576441.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121030082810.b9576441.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751410Ab2J3RAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 13:00:43 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 5/7] rcu: Avoid counter wrap in synchronize_sched_expedited()
+Date: Tue, 30 Oct 2012 09:54:34 -0700
+Message-Id: <1351616076-25617-5-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1351616076-25617-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20121030165415.GA25438@linux.vnet.ibm.com>
+ <1351616076-25617-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12103016-1976-0000-0000-000012DB53C1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 08:28:10AM -0700, Andrew Morton wrote:
-> 
-> On Tue, 30 Oct 2012 12:20:32 +0000 Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > ...
-> 
-> Useful testing - thanks.  Did I miss the description of what
-> autonumabench actually does?  How representitive is it of real-world
-> things?
-> 
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-It's not representative of anything at all. It's a synthetic benchmark
-that just measures if automatic NUMA migration (whatever the mechanism)
-is working as expected. I'm not aware of a decent description of what
-the test does and why. Here is my current interpretation and hopefully
-Andrea will correct me if I'm wrong.
+There is a counter scheme similar to ticket locking that
+synchronize_sched_expedited() uses to service multiple concurrent
+callers with the same expedited grace period.  Upon entry, a
+sync_sched_expedited_started variable is atomically incremented,
+and upon completion of a expedited grace period a separate
+sync_sched_expedited_done variable is atomically incremented.
 
-NUMA01
-  Two processes
-  NUM_CPUS/2 number of threads so all CPUs are in use
-  
-  On startup, the process forks
-  Each process mallocs a 3G buffer but there is no communication
-      between the processes.
-  Threads are created that zeros out the full buffer 1000 times
+However, if a synchronize_sched_expedited() is delayed while
+in try_stop_cpus(), concurrent invocations will increment the
+sync_sched_expedited_started counter, which will eventually overflow.
+If the original synchronize_sched_expedited() resumes execution just
+as the counter overflows, a concurrent invocation could incorrectly
+conclude that an expedited grace period elapsed in zero time, which
+would be bad.  One could rely on counter size to prevent this from
+happening in practice, but the goal is to formally validate this
+code, so it needs to be fixed anyway.
 
-  The objective of the test is that initially the two processes
-  allocate their memory on the same node. As the threads are
-  are created the memory will migrate from the initial node to
-  nodes that are closer to the referencing thread.
+This commit therefore checks the gap between the two counters before
+incrementing sync_sched_expedited_started, and if the gap is too
+large, does a normal grace period instead.  Overflow is thus only
+possible if there are more than about 3.5 billion threads on 32-bit
+systems, which can be excluded until such time as task_struct fits
+into a single byte and 4G/4G patches are accepted into mainline.
+It is also easy to encode this limitation into mechanical theorem
+provers.
 
-  It is worth noting that this benchmark is specifically tuned
-  for two nodes and the expectation is that the two processes
-  and their threads split so that all process A runs on node 0
-  and all threads on process B run in node 1
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutree.c |   62 ++++++++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 44 insertions(+), 18 deletions(-)
 
-  With 4 and more nodes, this is actually an adverse workload.
-  As all the buffer is zeroed in both processes, there is an
-  expectation that it will continually bounce between two nodes.
-
-  So, on 2 nodes, this benchmark tests convergence. On 4 or more
-  nodes, this partially measures how much busy work automatic
-  NUMA migrate does and it'll be very noisy due to cache conflicts.
-
-NUMA01_THREADLOCAL
-  Two processes
-  NUM_CPUS/2 number of threads so all CPUs are in use
-
-  On startup, the process forks
-  Each process mallocs a 3G buffer but there is no communication
-      between the processes
-  Threads are created that zero out their own subset of the buffer.
-      Each buffer is 3G/NR_THREADS in size
-  
-  This benchmark is more realistic. In an ideal situation, each
-  thread will migrate its data to its local node. The test really
-  is to see does it converge and how quickly.
-
-NUMA02
- One process, NR_CPU threads
-
- On startup, malloc a 1G buffer
- Create threads that zero out a thread-local portion of the buffer.
-      Zeros multiple times - the number of times is fixed and seems
-      to just be to take a period of time
-
- This is similar in principal to NUMA01_THREADLOCAL except that only
- one process is involved. I think it was aimed at being more JVM-like.
-
-NUMA02_SMT
- One process, NR_CPU/2 threads
-
- This is a variation of NUMA02 except that with half the cores idle it
- is checking if the system migrates the memory to two or more nodes or
- if it tries to fit everything in one node even though the memory should
- migrate to be close to the CPU
-
-> > I also expect autonuma is continually scanning where as schednuma is
-> > reacting to some other external event or at least less frequently scanning.
-> 
-> Might this imply that autonuma is consuming more CPU in kernel threads,
-> the cost of which didn't get included in these results?
-
-It might but according to top, knuma_scand only used 7.86 seconds of CPU
-time during the whole test and the time used by the migration tests is
-also very low. Most migration threads used less than 1 second of CPU
-time. Two migration threads used 2 seconds of CPU time each but that
-still seems low.
-
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 8914886..6789055 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -2249,8 +2249,8 @@ void synchronize_rcu_bh(void)
+ }
+ EXPORT_SYMBOL_GPL(synchronize_rcu_bh);
+ 
+-static atomic_t sync_sched_expedited_started = ATOMIC_INIT(0);
+-static atomic_t sync_sched_expedited_done = ATOMIC_INIT(0);
++static atomic_long_t sync_sched_expedited_started = ATOMIC_LONG_INIT(0);
++static atomic_long_t sync_sched_expedited_done = ATOMIC_LONG_INIT(0);
+ 
+ static int synchronize_sched_expedited_cpu_stop(void *data)
+ {
+@@ -2308,10 +2308,30 @@ static int synchronize_sched_expedited_cpu_stop(void *data)
+  */
+ void synchronize_sched_expedited(void)
+ {
+-	int firstsnap, s, snap, trycount = 0;
++	long firstsnap, s, snap;
++	int trycount = 0;
+ 
+-	/* Note that atomic_inc_return() implies full memory barrier. */
+-	firstsnap = snap = atomic_inc_return(&sync_sched_expedited_started);
++	/*
++	 * If we are in danger of counter wrap, just do synchronize_sched().
++	 * By allowing sync_sched_expedited_started to advance no more than
++	 * ULONG_MAX/8 ahead of sync_sched_expedited_done, we are ensuring
++	 * that more than 3.5 billion CPUs would be required to force a
++	 * counter wrap on a 32-bit system.  Quite a few more CPUs would of
++	 * course be required on a 64-bit system.
++	 */
++	if (ULONG_CMP_GE((ulong)atomic_read(&sync_sched_expedited_started),
++			 (ulong)atomic_read(&sync_sched_expedited_done) +
++			 ULONG_MAX / 8)) {
++		synchronize_sched();
++		return;
++	}
++
++	/*
++	 * Take a ticket.  Note that atomic_inc_return() implies a
++	 * full memory barrier.
++	 */
++	snap = atomic_long_inc_return(&sync_sched_expedited_started);
++	firstsnap = snap;
+ 	get_online_cpus();
+ 	WARN_ON_ONCE(cpu_is_offline(raw_smp_processor_id()));
+ 
+@@ -2324,6 +2344,13 @@ void synchronize_sched_expedited(void)
+ 			     NULL) == -EAGAIN) {
+ 		put_online_cpus();
+ 
++		/* Check to see if someone else did our work for us. */
++		s = atomic_long_read(&sync_sched_expedited_done);
++		if (ULONG_CMP_GE((ulong)s, (ulong)firstsnap)) {
++			smp_mb(); /* ensure test happens before caller kfree */
++			return;
++		}
++
+ 		/* No joy, try again later.  Or just synchronize_sched(). */
+ 		if (trycount++ < 10) {
+ 			udelay(trycount * num_online_cpus());
+@@ -2332,23 +2359,22 @@ void synchronize_sched_expedited(void)
+ 			return;
+ 		}
+ 
+-		/* Check to see if someone else did our work for us. */
+-		s = atomic_read(&sync_sched_expedited_done);
+-		if (UINT_CMP_GE((unsigned)s, (unsigned)firstsnap)) {
++		/* Recheck to see if someone else did our work for us. */
++		s = atomic_long_read(&sync_sched_expedited_done);
++		if (ULONG_CMP_GE((ulong)s, (ulong)firstsnap)) {
+ 			smp_mb(); /* ensure test happens before caller kfree */
+ 			return;
+ 		}
+ 
+ 		/*
+ 		 * Refetching sync_sched_expedited_started allows later
+-		 * callers to piggyback on our grace period.  We subtract
+-		 * 1 to get the same token that the last incrementer got.
+-		 * We retry after they started, so our grace period works
+-		 * for them, and they started after our first try, so their
+-		 * grace period works for us.
++		 * callers to piggyback on our grace period.  We retry
++		 * after they started, so our grace period works for them,
++		 * and they started after our first try, so their grace
++		 * period works for us.
+ 		 */
+ 		get_online_cpus();
+-		snap = atomic_read(&sync_sched_expedited_started);
++		snap = atomic_long_read(&sync_sched_expedited_started);
+ 		smp_mb(); /* ensure read is before try_stop_cpus(). */
+ 	}
+ 
+@@ -2356,15 +2382,15 @@ void synchronize_sched_expedited(void)
+ 	 * Everyone up to our most recent fetch is covered by our grace
+ 	 * period.  Update the counter, but only if our work is still
+ 	 * relevant -- which it won't be if someone who started later
+-	 * than we did beat us to the punch.
++	 * than we did already did their update.
+ 	 */
+ 	do {
+-		s = atomic_read(&sync_sched_expedited_done);
+-		if (UINT_CMP_GE((unsigned)s, (unsigned)snap)) {
++		s = atomic_long_read(&sync_sched_expedited_done);
++		if (ULONG_CMP_GE((ulong)s, (ulong)snap)) {
+ 			smp_mb(); /* ensure test happens before caller kfree */
+ 			break;
+ 		}
+-	} while (atomic_cmpxchg(&sync_sched_expedited_done, s, snap) != s);
++	} while (atomic_long_cmpxchg(&sync_sched_expedited_done, s, snap) != s);
+ 
+ 	put_online_cpus();
+ }
 -- 
-Mel Gorman
-SUSE Labs
+1.7.8
+
