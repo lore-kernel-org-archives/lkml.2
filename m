@@ -1,193 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758209Ab2J3KQS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 06:16:18 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:59361 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab2J3KQQ (ORCPT
+	id S1758280Ab2J3KSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 06:18:12 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:36891 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab2J3KSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 06:16:16 -0400
+	Tue, 30 Oct 2012 06:18:10 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>
+CC: <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
+        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
+        <linux-kernel@vger.kernel.org>, <manabian@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v3 00/10] net/macb: driver enhancement concerning GEM support, ring logic and cleanup
+Date: Tue, 30 Oct 2012 11:17:52 +0100
+Message-ID: <cover.1351591858.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-In-Reply-To: <20121029220058.GB15413@polaris.bitmath.org>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1351241067-9521-7-git-send-email-benjamin.tissoires@gmail.com>
-	<20121029220058.GB15413@polaris.bitmath.org>
-Date: Tue, 30 Oct 2012 11:16:14 +0100
-Message-ID: <CAN+gG=GRd6re056mn_C-UH0r8NgPiH98npxShMe3Ost_dcnzfg@mail.gmail.com>
-Subject: Re: [PATCH v2 06/11] HID: hid-multitouch: support T and C for win8 devices
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+This is an enhancement work that began several years ago. I try to catchup with
+some performance improvement that has been implemented then by Havard.
+The ring index logic and the TX error path modification are the biggest changes
+but some cleanup/debugging have been added along the way.
+The GEM revision will benefit from the Gigabit support.
+Newer pinctrl infrastructure support is added but it is optional.
 
-On Mon, Oct 29, 2012 at 11:00 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Hi Benjamin,
->
->> Win8 input specification clarifies the X and Y sent by devices.
->> It distincts the position where the user wants to Touch (T) from
->> the center of the ellipsoide (C). This patch enable supports for this
->> distinction in hid-multitouch.
->>
->> We recognize Win8 certified devices from their vendor feature 0xff0000c5
->> where Microsoft put a signed blob in the report to check if the device
->> passed the certification.
->>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
->> ---
->>  drivers/hid/hid-multitouch.c | 53 ++++++++++++++++++++++++++++++++++++--------
->>  1 file changed, 44 insertions(+), 9 deletions(-)
->
-> This is great, just a few comments below.
->
->>
->> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
->> index 41f2981..000c979 100644
->> --- a/drivers/hid/hid-multitouch.c
->> +++ b/drivers/hid/hid-multitouch.c
->> @@ -52,9 +52,10 @@ MODULE_LICENSE("GPL");
->>  #define MT_QUIRK_VALID_IS_CONFIDENCE (1 << 6)
->>  #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE (1 << 8)
->>  #define MT_QUIRK_NO_AREA             (1 << 9)
->> +#define MT_QUIRK_WIN_8_CERTIFIED     (1 << 10)
->>
->>  struct mt_slot {
->> -     __s32 x, y, p, w, h;
->> +     __s32 x, y, cx, cy, p, w, h;
->>       __s32 contactid;        /* the device ContactID assigned to this slot */
->>       bool touch_state;       /* is the touch valid? */
->>  };
->> @@ -292,6 +293,10 @@ static void mt_feature_mapping(struct hid_device *hdev,
->>                       td->maxcontacts = td->mtclass.maxcontacts;
->>
->>               break;
->> +     case 0xff0000c5:
->> +             if (field->report_count == 256 && field->report_size == 8)
->> +                     td->mtclass.quirks |= MT_QUIRK_WIN_8_CERTIFIED;
->> +             break;
->>       }
->>  }
->>
->> @@ -350,18 +355,36 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->>       case HID_UP_GENDESK:
->>               switch (usage->hid) {
->>               case HID_GD_X:
->> -                     hid_map_usage(hi, usage, bit, max,
->> +                     if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED &&
->
-> Parenthesis, please. Precedence is not always enough.
+The series has been tested on several Atmel AT91 SoC with the two MACB/GEM
+flavors.
 
-oops
+v3: - rebased on net-next to take into account current effor to merge
+      at91_ether with macb drivers
+    - add additional patch to use the new pinctrl infrastructure
+v2: - modify the tx error handling: now uses a workqueue
+    - information provided by ethtool -i were not accurate: removed
 
->
->> +                             usage_index) {
->> +                             hid_map_usage(hi, usage, bit, max,
->> +                                     EV_ABS, ABS_MT_TOOL_X);
->> +                             set_abs(hi->input, ABS_MT_TOOL_X, field,
->> +                                     cls->sn_move);
->> +                     } else {
->> +                             hid_map_usage(hi, usage, bit, max,
->>                                       EV_ABS, ABS_MT_POSITION_X);
->> -                     set_abs(hi->input, ABS_MT_POSITION_X, field,
->> -                             cls->sn_move);
->> +                             set_abs(hi->input, ABS_MT_POSITION_X, field,
->> +                                     cls->sn_move);
->> +                     }
->> +
->
-> Do we really want to do the latter several times, even if the device is not a win8 one?
+Havard Skinnemoen (4):
+  net/macb: memory barriers cleanup
+  net/macb: change debugging messages
+  net/macb: clean up ring buffer logic
+  net/macb: Offset first RX buffer by two bytes
 
-I don't get your point here. The only difference with the previous
-release is that it will treat differently the first in the array than
-the others. For non win8 devices, there is no changes in the behavior.
-Could you elaborate a little bit more, please?
+Jean-Christophe PLAGNIOL-VILLARD (1):
+  net/macb: add pinctrl consumer support
 
->
->>                       mt_store_field(usage, td, hi);
->>                       td->last_field_index = field->index;
->>                       return 1;
->>               case HID_GD_Y:
->> -                     hid_map_usage(hi, usage, bit, max,
->> +                     if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED &&
->
-> Ditto.
->
->> +                             usage_index) {
->> +                             hid_map_usage(hi, usage, bit, max,
->> +                                     EV_ABS, ABS_MT_TOOL_Y);
->> +                             set_abs(hi->input, ABS_MT_TOOL_Y, field,
->> +                                     cls->sn_move);
->> +                     } else {
->> +                             hid_map_usage(hi, usage, bit, max,
->>                                       EV_ABS, ABS_MT_POSITION_Y);
->> -                     set_abs(hi->input, ABS_MT_POSITION_Y, field,
->> -                             cls->sn_move);
->> +                             set_abs(hi->input, ABS_MT_POSITION_Y, field,
->> +                                     cls->sn_move);
->> +                     }
->> +
->
-> Ditto.
->
->>                       mt_store_field(usage, td, hi);
->>                       td->last_field_index = field->index;
->>                       return 1;
->> @@ -502,6 +525,12 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
->>
->>                       input_event(input, EV_ABS, ABS_MT_POSITION_X, s->x);
->>                       input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
->> +                     if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED) {
->> +                             input_event(input, EV_ABS, ABS_MT_TOOL_X,
->> +                                     s->cx);
->
-> Won't this fit on one line?
+Nicolas Ferre (4):
+  net/macb: remove macb_get_drvinfo()
+  net/macb: tx status is more than 8 bits now
+  net/macb: ethtool interface: add register dump feature
+  net/macb: better manage tx errors
 
-I'm afraid not: 81 columns... ;-)
+Patrice Vilchez (1):
+  net/macb: Add support for Gigabit Ethernet mode
 
->
->> +                             input_event(input, EV_ABS, ABS_MT_TOOL_Y,
->> +                                     s->cy);
->> +                     }
->>                       input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
->>                       input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
->>                       input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
->> @@ -553,10 +582,16 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
->>                       td->curdata.p = value;
->>                       break;
->>               case HID_GD_X:
->> -                     td->curdata.x = value;
->> +                     if (usage->code == ABS_MT_POSITION_X)
->> +                             td->curdata.x = value;
->> +                     else
->> +                             td->curdata.cx = value;
->
-> Since cx is the new value, reversing the logic would make sense here.
+ drivers/net/ethernet/cadence/macb.c | 446 +++++++++++++++++++++++++-----------
+ drivers/net/ethernet/cadence/macb.h |  30 ++-
+ 2 files changed, 334 insertions(+), 142 deletions(-)
 
-ok
+-- 
+1.8.0
 
-Cheers,
-Benjamin
-
->
->>                       break;
->>               case HID_GD_Y:
->> -                     td->curdata.y = value;
->> +                     if (usage->code == ABS_MT_POSITION_Y)
->> +                             td->curdata.y = value;
->> +                     else
->> +                             td->curdata.cy = value;
->>                       break;
->>               case HID_DG_WIDTH:
->>                       td->curdata.w = value;
->> --
->> 1.7.11.7
->>
->
-> Thanks,
-> Henrik
