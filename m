@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab2J3EYa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 00:24:30 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60933 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab2J3EY2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 00:24:28 -0400
+	id S1752583Ab2J3EsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 00:48:25 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58384 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751205Ab2J3EsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 00:48:24 -0400
+Date: Tue, 30 Oct 2012 00:48:18 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, chris.mason@fusionio.com,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 2/9] uuid: use random32_get_bytes()
+Message-ID: <20121030044818.GA5972@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Huang Ying <ying.huang@intel.com>,
+	Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+	akpm@linux-foundation.org, chris.mason@fusionio.com,
+	linux-btrfs@vger.kernel.org
+References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
+ <1351408746-8623-2-git-send-email-akinobu.mita@gmail.com>
+ <20121029205200.GD7098@thunk.org>
+ <1351561798.7817.352.camel@yhuang-dev>
 MIME-Version: 1.0
-In-Reply-To: <20121029164936.2022db6c.akpm@linux-foundation.org>
-References: <1351389223-2628-1-git-send-email-linkinjeon@gmail.com>
-	<20121029164936.2022db6c.akpm@linux-foundation.org>
-Date: Tue, 30 Oct 2012 13:24:26 +0900
-Message-ID: <CAKYAXd_eA3naT84qnVpPGcc9t4ysc45GqKk5xktXyQWaFp2MOQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] fat: add mutex lock to fat_build_inode
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: hirofumi@mail.parknet.co.jp, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351561798.7817.352.camel@yhuang-dev>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/30, Andrew Morton <akpm@linux-foundation.org>:
-> On Sun, 28 Oct 2012 10:53:43 +0900
-> Namjae Jeon <linkinjeon@gmail.com> wrote:
->
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> fat_nfs_get_inode does not hold i_mutex of parent directory.So add
->> lock to fat_build_inode.
->
-Hi. Andrew.
-> Well..  why?  Presumably this patch fixes some race.  A good
-> description of that race would be useful - partly because others may
-> then be able to suggest alternative ways of fixing that bug.
-We are making use of fat_build_inode to build the inode using 'i_pos'.
-Since, this function is local to FAT and when mounted over NFS. We can
-make use of FAT parallely from local NFS Server and mounted from NFS
-client. So, in order to avoid race to multiple regeneration for the
-same 'i_pos' - we have introduced this locking.
+On Tue, Oct 30, 2012 at 09:49:58AM +0800, Huang Ying wrote:
+> The uuid_le/be_gen() in lib/uuid.c has set UUID variants to be DCE,
+> that is done in __uuid_gen_common() with "b[8] = (b[8] & 0x3F) | 0x80".
 
->
-> I'll merge these patches for some testing.
->
-> I did merge these patches three weekes ago:
->
-> fat-modify-nfs-mount-option.patch
-> fat-exportfs-rebuild-inode-if-ilookup-fails.patch
-> fat-exportfs-rebuild-inode-if-ilookup-fails-fix.patch
-> fat-exportfs-rebuild-directory-inode-if-fat_dget-fails.patch
-> documentation-update-nfs-option-in-filesystem-vfattxt.patch
->
-> But I have no record of Bruce or Ogawa having reviewed/acked them?
-While the patches were sent for review on LKML and also in the
-meantime since the functionality was finalised, the patches were
-picked for merging in the linux tree. But there few comments which
-were later provided by OGAWA. So, these patches are extending the
-earlier patch-set by providing some fix-ups and cleanup routines.
+Oh, I see, I missed that.
 
-Thanks!
->
+> To deal with random number generation issue, how about use
+> get_random_bytes() in __uuid_gen_common()?
+
+We already have generate_random_uuid() in drivers/char/random.c, and
+no users for lib/uuid.c's equivalent uuid_be_gen().  So here's a
+counter-proposal, why don't we drop lib/uuid.c, and include in
+drivers/char/random.c:
+
+/*
+ * Generate random GUID
+ *
+ * GUID's is like UUID's, but they uses the non-standard little-endian
+ * layout, compared to what is defined in RFC-4112; it is primarily
+ * used by the EFI specification.
+ */
+void generate_random_guid(unsigned char uuid_out[16])
+{
+	get_random_bytes(uuid_out, 16);
+	/* Set UUID version to 4 --- truly random generation */
+	uuid_out[7] = (uuid_out[7] & 0x0F) | 0x40;
+	/* Set the UUID variant to DCE */
+	uuid_out[8] = (uuid_out[8] & 0x3F) | 0x80;
+}
+EXPORT_SYMBOL(generate_random_guid);
+
+I really don't think it's worth it to have a __uuid_gen_common once we
+are using get_random_bytes(), since there isn't much code to be
+factored out, and it's simpler just to have two functions in one place.
+
+Using UUID vs. GUID I think makes things much clearer, since the EFI
+specification talks about GUID's, not UUID's, and that way we don't
+have to worry about people getting confused about whether they should
+be using the little-endian versus big-endian variant.  (And I'd love
+to ask to whoever wrote the EFI specification what on *Earth* were
+they thinking when they decided to diverge from the rest of the
+world....)
+
+	      	       	       	       	    - Ted
