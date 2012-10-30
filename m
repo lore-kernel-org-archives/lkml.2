@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934030Ab2J3Qab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:30:31 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:36529 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758531Ab2J3Qa1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:30:27 -0400
-Date: Tue, 30 Oct 2012 09:30:22 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Jacob Shin <jacob.shin@amd.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Yinghai Lu <yinghai@kernel.org>, Willy Tarreau <w@1wt.eu>,
-        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: Regression from 3.4.9 to 3.4.16 "stable" kernel
-Message-ID: <20121030163022.GA16449@kroah.com>
-References: <508E002B.4090200@teksavvy.com>
- <20121029064643.GE574@1wt.eu>
- <508E913D.2080104@teksavvy.com>
- <1351521658.13356.7.camel@deadeye.wl.decadent.org.uk>
- <20121029144722.GA23217@jshin-Toonie>
- <20121029165823.GA6614@kroah.com>
- <508F0AA6.6010702@teksavvy.com>
- <20121029230337.GA22444@kroah.com>
- <508F5D32.3080308@teksavvy.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508F5D32.3080308@teksavvy.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934025Ab2J3QeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:34:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40705 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751410Ab2J3QeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 12:34:14 -0400
+Date: Tue, 30 Oct 2012 12:33:55 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        michael.brantley@deshaw.com, hch@infradead.org, miklos@szeredi.hu,
+        pstaubach@exagrid.com
+Subject: Re: [PATCH v8 11/32] vfs: make do_unlinkat retry on ESTALE errors
+Message-ID: <20121030123355.5c404373@tlielax.poochiereds.net>
+In-Reply-To: <20121030161429.GD24618@fieldses.org>
+References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
+	<1351341219-17837-12-git-send-email-jlayton@redhat.com>
+	<20121030161429.GD24618@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 12:53:06AM -0400, Mark Lord wrote:
-> On 12-10-29 07:03 PM, Greg Kroah-Hartman wrote:
-> > On Mon, Oct 29, 2012 at 07:00:54PM -0400, Mark Lord wrote:
-> >> There's something else very wrong when going from 3.4.9 to 3.4.16.
-> >> I've done it on two machines here, one the AMD-450 server (64-bit),
-> >> and the other my main notebook (Core2duo 32-bit-PAE).
-> >>
-> >> Both systems feel much more sluggish than usual with 3.4.16 running.
-> >> Reverted them both back to earlier kernels (3.4.9, 3.4.4-PAE),
-> >> and the usual responsive feel has returned.
-> >>
-> >> Vague, I know, but something bad happened in there somewhere.
+On Tue, 30 Oct 2012 12:14:29 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
+
+> On Sat, Oct 27, 2012 at 08:33:18AM -0400, Jeff Layton wrote:
+> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > ---
+> >  fs/namei.c | 12 ++++++++++--
+> >  1 file changed, 10 insertions(+), 2 deletions(-)
 > > 
-> > That's too vague for me to do anything with, sorry.  Bisection would be
-> > good if you can figure out how to measure this.
+> > diff --git a/fs/namei.c b/fs/namei.c
+> > index 7c9bb50..467b9f1 100644
+> > --- a/fs/namei.c
+> > +++ b/fs/namei.c
+> > @@ -3446,9 +3446,13 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+> >  	struct filename *name;
+> >  	struct dentry *dentry;
+> >  	struct nameidata nd;
+> > -	struct inode *inode = NULL;
+> > +	struct inode *inode;
+> > +	unsigned int try = 0;
+> > +	unsigned int lookup_flags = LOOKUP_PARENT;
+> >  
+> > -	name = user_path_parent(dfd, pathname, &nd, 0);
+> > +retry:
+> > +	inode = NULL;
 > 
-> Well, I'd bet Donkeys to Daises that reverting the kernel/sched.c changes
-> will probably fix the responsiveness, but I haven't done that yet.
-> I've lost enough time already debugging the other issues.
+> So, you fail after "inode" was set (say vfs_unlink returned an error)
+> the first time, then before "inode" was set (lookup_hash returns an
+> error), and you end up incorrectly doing another iput() the second time
+> through if you don't reset inode here?
 > 
-> This is more just an indication that perhaps -stable patches need better review
-> than they're getting.  Take the setup.c breakage: as soon as I pointed it out,
-> a few people jumped in with knowledge that it was broken, and that patches
-> existed to fix it.
+> (I think I made the same mistake in another patch, actually....)
+> 
+> --b.
+> 
 
-There will always be bugs, fixing them quickly is the best that we can
-do.
+Correct. That's a new delta in this patch, btw. The original patch
+didn't do that and it was causing a busy inodes on umount bug in
+testing.
 
-> That kind of thing should be happening before a -stable release,
-> though I don't know how you would get the Right People to look
-> at this stuff then rather than after the fact.  Maybe a topic
-> for a future kernel summit or something.
+It would occasionally hit an ESTALE error in this function and
+because "inode" wasn't reset to NULL, it would do a double-put of the
+inode and cause the counter to underflow.
 
-I send patches to everyone involved, and there's a -rc period where
-people are _supposed_ to test things out.  If you know of a better way
-to get other people to test and review, please let me know, this is the
-best that we have come up with so far.
+It might be good to restructure this code to make those sorts of bugs
+less likely, but the error handling in here is already so hairy that I
+decided to punt on that for now...
 
-thanks,
+> > +	name = user_path_parent(dfd, pathname, &nd, try);
+> >  	if (IS_ERR(name))
+> >  		return PTR_ERR(name);
+> >  
+> > @@ -3486,6 +3490,10 @@ exit2:
+> >  exit1:
+> >  	path_put(&nd.path);
+> >  	putname(name);
+> > +	if (retry_estale(error, try++)) {
+> > +		lookup_flags |= LOOKUP_REVAL;
+> > +		goto retry;
+> > +	}
+> >  	return error;
+> >  
+> >  slashes:
+> > -- 
+> > 1.7.11.7
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-greg k-h
+
+-- 
+Jeff Layton <jlayton@redhat.com>
