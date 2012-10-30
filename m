@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964786Ab2J3Ol6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 10:41:58 -0400
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:57526 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932348Ab2J3Ol5 (ORCPT
+	id S933773Ab2J3Ope (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 10:45:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43427 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932348Ab2J3Opc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 10:41:57 -0400
-X-Greylist: delayed 637 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 10:41:57 EDT
-Message-Id: <201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
-From: "Chas Williams (CONTRACTOR)" <chas@cmf.nrl.navy.mil>
-To: Krzysztof Mazur <krzysiek@podlesie.net>
-cc: davem@davemloft.net, dwmw2@infradead.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
-In-reply-to: <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
-Date: Tue, 30 Oct 2012 10:26:46 -0400
-X-NRLCMF-Spam-Score: () hits=-1.01
-X-NRLCMF-Virus-Scanned: No virus found
-X-NRLCMF-Languages: en
+	Tue, 30 Oct 2012 10:45:32 -0400
+Message-ID: <508FE808.2030306@gmail.com>
+Date: Tue, 30 Oct 2012 08:45:28 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>, acme@ghostprotocols.net
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
+        fweisbec@gmail.com
+Subject: Re: [PATCH 1/9] perf python: add ui stubs file
+References: <1351528309-87705-1-git-send-email-dsahern@gmail.com> <1351528309-87705-2-git-send-email-dsahern@gmail.com> <87a9v4777t.fsf@sejong.aot.lge.com>
+In-Reply-To: <87a9v4777t.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In message <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>,Krzysztof Mazur writes:
->The pppoatm_send() calls vcc->send() and now also checks for
->some vcc flags that indicate destroyed vcc without proper locking.
-...
->The vcc_sendmsg() uses lock_sock(sk). This lock is used by
->vcc_release(), so vcc_destroy_socket() will not be called between
->check and during ->send(). The vcc_release_async() sets ATM_VF_CLOSE,
->but it should be safe to call ->send() after it, because
->vcc->dev->ops->close() is not called.
+On 10/30/12 1:24 AM, Namhyung Kim wrote:
+> Hi David,
+>
+> On Mon, 29 Oct 2012 10:31:41 -0600, David Ahern wrote:
+>> stdio based implementations of ui_xxxx based functions for the python
+>> library. Needed for patch 3 - consolidating open counters method.
+>
+> How about adding ui/util.c to the python-ext-sources?
 
-as i recall from way back, this shouldnt be necessary.  closing a vcc
-for an attached protocol isnt supposed to require addtional locking
-or synchronization.
+Handles some of the ui_xxxx functions, but still missing some symbols -- 
+verbose, eprintf, ui__error_paranoid. The point of the python_stubs.c 
+was a short term solution for the ui handlers. Arnaldo had some ideas on 
+what is really needed.
 
-vcc_release() locks the socket and vcc_destroy_socket() calls the device's
-vcc close routine and pushes a NULL skb to the attached protocol.
-this NULL push is supposed to let the attached protocol that no more
-sends and recvs can be handled. 
+David
 
-that said, the order for the device vcc close and push does seem
-reversed.  since i imagine there could be a pending pppoatm_send()
-during this interval.  the push of the NULL skb is allowed to wait for
-the subprotocol to finish its cleanup/shutdown.
+
