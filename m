@@ -1,141 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934240Ab2J3TkD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:40:03 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:43797 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932448Ab2J3Tj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:39:59 -0400
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: Zheng Li <zheng.x.li@oracle.com>
-cc: netdev@vger.kernel.org, andy@greyhouse.net, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, joe.jin@oracle.com
-Subject: Re: [PATCH] bonding: fix bond 6 mode change MAC of arp reply from vif to cause Domu's network unreachable intermittently
-In-reply-to: <1351565271-5888-1-git-send-email-zheng.x.li@oracle.com>
-References: <1351565271-5888-1-git-send-email-zheng.x.li@oracle.com>
-Comments: In-reply-to Zheng Li <zheng.x.li@oracle.com>
-   message dated "Tue, 30 Oct 2012 10:47:51 +0800."
-X-Mailer: MH-E 8.2; nmh 1.4; GNU Emacs 23.4.1
-Date: Tue, 30 Oct 2012 12:39:52 -0700
-Message-ID: <10469.1351625992@death.nxdomain>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12103019-3534-0000-0000-00000E5FA084
+	id S934253Ab2J3Tkw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:40:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51222 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755564Ab2J3Tkt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:40:49 -0400
+Date: Tue, 30 Oct 2012 12:40:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Behan Webster <behanw@converseincode.com>
+Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Helper macros used for replacing the use of VLAIS
+Message-ID: <20121030194045.GA14892@kroah.com>
+References: <1351621520-17768-1-git-send-email-behanw@converseincode.com>
+ <1351621520-17768-2-git-send-email-behanw@converseincode.com>
+ <20121030192021.GA1979@kroah.com>
+ <50902BFC.4090309@converseincode.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50902BFC.4090309@converseincode.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zheng Li <zheng.x.li@oracle.com> wrote:
+On Tue, Oct 30, 2012 at 03:35:24PM -0400, Behan Webster wrote:
+> On 12-10-30 03:20 PM, Greg KH wrote:
+> >On Tue, Oct 30, 2012 at 02:25:19PM -0400, Behan Webster wrote:
+> >>The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
+> >>precludes the use of compilers which don't implement VLAIS (for instance the
+> >>Clang compiler). This new header file contains macros which can be used to
+> >>calculate the size and offset of variables in an allocated buffer of memory
+> >>taking into account alignment issues.
+> >>
+> >>Signed-off-by: Behan Webster <behanw@converseincode.com>
+> >>---
+> >>  include/linux/valign.h |   87 ++++++++++++++++++++++++++++++++++++++++++++++++
+> >>  1 file changed, 87 insertions(+)
+> >>  create mode 100644 include/linux/valign.h
+> >You sent the same patch here, to two different trees (usb and
+> >networking).  That's not good, what happens if they both apply them?
+> Good point. My mistake.
+> 
+> People in both subsystems needed to see the patch which is why I sent them.
+> 
+> What would have been a better approach? And how can I fix this?
 
->This is a fix for a bug in bond_alb.c
->Rate of reproduced:100%
->Scenario: set Dom0 to bond 6 mode, Domu communicate with Dom0 through vif which
->is in bridge mode. The Dom0's bridge of xenbr0 contains vif and bond0, bond0
->contains eth0 and eth1. You can just need to ping a host which is in same LAN on
->Domu, some of packets will be lost intermittently.
->Analyse: When Dom0 set bond mode to 6, the bond alb will change MAC of every arp
->reply in rlb_arp_xmit function to affect receive packets, it is ok for normal
->NIC, but it's wrong to Domu, when Domu send arp reply through vif of Dom0, bond
->of alb replace Domu's MAC in arp reply with NIC's MAC address, that will cause
->remote host send packets to Domu using real NIC's MAC instead of Domu's MAC. Domu
->can't receive the packets whose dst MAC is not Domu's MAC.
+Send all 3 as a single series, to everyone and ask the different
+maintainers to work together to figure out who is going to apply what.
 
-	If I understand correctly, the issue really isn't about Dom0 /
-Domu specifically, but rather that ARP traffic passing through a bridge
-and out via the bond (when the bond is a port of the bridge) should not
-have its source MAC address adjusted by the receive load balance code in
-rlb_arp_xmit.
+Yeah, it's tough, but things like this are pretty rare, so they don't
+come up often.
 
-	Is my understanding correct?
-
-	If so, then the patch in principle seems reasonable (although it
-could be coded without the sentinel; more on that in a minute), but the
-subject and description aren't really an accurate description of the
-root problem (just one manifestation of it).  A better subject might be
-something like "rlb mode should not alter ARP replies originating via
-bridge."
-
->Cc: Jay Vosburgh <fubar@us.ibm.com>
->Cc: Andy Gospodarek <andy@greyhouse.net>
->Cc: "David S. Miller" <davem@davemloft.net>
->Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
->
->---
-> drivers/net/bonding/bond_alb.c |   13 ++++++++++++-
-> 1 files changed, 12 insertions(+), 1 deletions(-)
->
->diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
->index e15cc11..d6b134a 100644
->--- a/drivers/net/bonding/bond_alb.c
->+++ b/drivers/net/bonding/bond_alb.c
->@@ -700,7 +700,18 @@ static struct slave *rlb_arp_xmit(struct sk_buff *skb, struct bonding *bond)
-> 		*/
-> 		tx_slave = rlb_choose_channel(skb, bond);
-> 		if (tx_slave) {
->-			memcpy(arp->mac_src,tx_slave->dev->dev_addr, ETH_ALEN);
->+			struct slave *tmp_slave = NULL;
->+			int i = 0, found_mac = 0;
->+			bond_for_each_slave(bond, tmp_slave, i) {
->+				if (ether_addr_equal_64bits(arp->mac_src,
->+						tmp_slave->dev->dev_addr)) {
->+					found_mac = 1;
->+					break;
->+				}
->+			}
->+			if (found_mac)
->+				memcpy(arp->mac_src, tx_slave->dev->dev_addr,
->+					ETH_ALEN);
-
-	I think this could be coded as:
-
-			bond_for_each_slave(bond, tmp_slave, i) {
-				if (ether_addr_equal_64bits(arp->mac_src,
-						tmp_slave->dev->dev_addr)) {
-					memcpy(arp->mac_src,
-					       tx_slave->dev->dev_addr,
-					       ETH_ALEN);
-					break;
-				}
-			}
-
-	or even create a "bond_slave_has_mac" helper, since this loop is
-something done several times in the code, e.g.,
-
-struct slave *bond_slave_has_mac(struct bonding *bond, const u8 *mac)
-{
-	int i = 0;
-	struct slave *tmp;
-
-	bond_for_each_slave(bond, tmp, i)
-		if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
-			return tmp;
-
-	return NULL;
-}
-
-	then your code would be
-
-		if (tx_slave) {
-			struct slave *tmp;
-
-			/* Only modify ARP's MAC if it originates locally;
-			 * don't change ARPs arriving via a bridge.
-			 */
-			tmp = bond_slave_has_mac(bond, arp->mac_src);
-			if (tmp)
-				memcpy(arp->mac_src, tx_slave->dev->dev_addr,
-				       ETH_ALEN);
-
-	... and so on.  I haven't tested any of the above, I'm just
-scribbling it out into email, but it seems reasonable.
-
-> 		}
-> 		pr_debug("Server sent ARP Reply packet\n");
-> 	} else if (arp->op_code == htons(ARPOP_REQUEST)) {
->-- 
->1.7.6.5
-
-	-J
-
----
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
-
+greg k-h
