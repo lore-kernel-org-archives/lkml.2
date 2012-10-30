@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965084Ab2J3Rgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 13:36:52 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:34309 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965003Ab2J3RcQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 13:32:16 -0400
+	id S965070Ab2J3Rgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 13:36:49 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:58931 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965006Ab2J3RcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 13:32:17 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,126 +14,96 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
+        Richard Weinberger <richard@nod.at>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 07/14] rcu: Remove the interface "rcudata.csv"
-Date: Tue, 30 Oct 2012 10:05:06 -0700
-Message-Id: <1351616713-26930-7-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/5] rcu: Remove rcu_switch()
+Date: Tue, 30 Oct 2012 10:19:19 -0700
+Message-Id: <1351617563-28506-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1351616713-26930-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20121030170454.GA25712@linux.vnet.ibm.com>
- <1351616713-26930-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20121030171906.GA27431@linux.vnet.ibm.com>
+References: <20121030171906.GA27431@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12103017-7408-0000-0000-000009C5C67D
+x-cbid: 12103017-6078-0000-0000-0000114AA884
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-This patch removes the interface "rcudata.csv" since it is apparently
-not used.
+It's only there to call rcu_user_hooks_switch(). Let's
+just call rcu_user_hooks_switch() directly, we don't need this
+function in the middle.
 
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Richard Weinberger <richard@nod.at>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree_trace.c |   76 ------------------------------------------------
- 1 files changed, 0 insertions(+), 76 deletions(-)
+ arch/um/drivers/mconsole_kern.c |    2 +-
+ include/linux/rcupdate.h        |    2 ++
+ include/linux/sched.h           |    8 --------
+ kernel/sched/core.c             |    2 +-
+ 4 files changed, 4 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index 0e2ab64..bcc4865 100644
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -174,77 +174,6 @@ static const struct file_operations rcudata_fops = {
- 	.release = seq_release,
- };
+diff --git a/arch/um/drivers/mconsole_kern.c b/arch/um/drivers/mconsole_kern.c
+index 79ccfe6..49e3b49 100644
+--- a/arch/um/drivers/mconsole_kern.c
++++ b/arch/um/drivers/mconsole_kern.c
+@@ -648,7 +648,7 @@ static void stack_proc(void *arg)
+ 	struct task_struct *from = current, *to = arg;
  
--static void print_one_rcu_data_csv(struct seq_file *m, struct rcu_data *rdp)
+ 	to->thread.saved_task = from;
+-	rcu_switch(from, to);
++	rcu_user_hooks_switch(from, to);
+ 	switch_to(from, to, from);
+ }
+ 
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 7c968e4..5d009de 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -204,6 +204,8 @@ static inline void rcu_user_enter(void) { }
+ static inline void rcu_user_exit(void) { }
+ static inline void rcu_user_enter_after_irq(void) { }
+ static inline void rcu_user_exit_after_irq(void) { }
++static inline void rcu_user_hooks_switch(struct task_struct *prev,
++					 struct task_struct *next) { }
+ #endif /* CONFIG_RCU_USER_QS */
+ 
+ extern void exit_rcu(void);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0dd42a0..432cc5e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1844,14 +1844,6 @@ static inline void rcu_copy_process(struct task_struct *p)
+ 
+ #endif
+ 
+-static inline void rcu_switch(struct task_struct *prev,
+-			      struct task_struct *next)
 -{
--	if (!rdp->beenonline)
--		return;
--	seq_printf(m, "%d,%s,%lu,%lu,%d,%d",
--		   rdp->cpu,
--		   cpu_is_offline(rdp->cpu) ? "\"N\"" : "\"Y\"",
--		   rdp->completed, rdp->gpnum,
--		   rdp->passed_quiesce, rdp->qs_pending);
--	seq_printf(m, ",%d,%llx,%d,%lu",
--		   atomic_read(&rdp->dynticks->dynticks),
--		   rdp->dynticks->dynticks_nesting,
--		   rdp->dynticks->dynticks_nmi_nesting,
--		   rdp->dynticks_fqs);
--	seq_printf(m, ",%lu", rdp->offline_fqs);
--	seq_printf(m, ",%ld,%ld,\"%c%c%c%c\"", rdp->qlen_lazy, rdp->qlen,
--		   ".N"[rdp->nxttail[RCU_NEXT_READY_TAIL] !=
--			rdp->nxttail[RCU_NEXT_TAIL]],
--		   ".R"[rdp->nxttail[RCU_WAIT_TAIL] !=
--			rdp->nxttail[RCU_NEXT_READY_TAIL]],
--		   ".W"[rdp->nxttail[RCU_DONE_TAIL] !=
--			rdp->nxttail[RCU_WAIT_TAIL]],
--		   ".D"[&rdp->nxtlist != rdp->nxttail[RCU_DONE_TAIL]]);
--#ifdef CONFIG_RCU_BOOST
--	seq_printf(m, ",%d,\"%c\"",
--		   per_cpu(rcu_cpu_has_work, rdp->cpu),
--		   convert_kthread_status(per_cpu(rcu_cpu_kthread_status,
--					  rdp->cpu)));
--#endif /* #ifdef CONFIG_RCU_BOOST */
--	seq_printf(m, ",%ld", rdp->blimit);
--	seq_printf(m, ",%lu,%lu,%lu\n",
--		   rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
+-#ifdef CONFIG_RCU_USER_QS
+-	rcu_user_hooks_switch(prev, next);
+-#endif
 -}
 -
--static int show_rcudata_csv(struct seq_file *m, void *v)
--{
--	struct rcu_data *rdp = (struct rcu_data *)v;
--	if (cpumask_first(cpu_possible_mask) == rdp->cpu) {
--		seq_puts(m, "\"CPU\",\"Online?\",\"c\",\"g\",\"pq\",\"pq\",");
--		seq_puts(m, "\"dt\",\"dt nesting\",\"dt NMI nesting\",\"df\",");
--		seq_puts(m, "\"of\",\"qll\",\"ql\",\"qs\"");
--#ifdef CONFIG_RCU_BOOST
--		seq_puts(m, "\"kt\",\"ktl\"");
--#endif /* #ifdef CONFIG_RCU_BOOST */
--		seq_puts(m, ",\"b\",\"ci\",\"co\",\"ca\"\n");
--	}
--
--	print_one_rcu_data_csv(m, rdp);
--	return 0;
--}
--
--static const struct seq_operations rcudate_csv_op = {
--	.start = r_start,
--	.next  = r_next,
--	.stop  = r_stop,
--	.show  = show_rcudata_csv,
--};
--
--static int rcudata_csv_open(struct inode *inode, struct file *file)
--{
--	return r_open(inode, file, &rcudate_csv_op);
--}
--
--static const struct file_operations rcudata_csv_fops = {
--	.owner = THIS_MODULE,
--	.open = rcudata_csv_open,
--	.read = seq_read,
--	.llseek = no_llseek,
--	.release = seq_release,
--};
--
- #ifdef CONFIG_RCU_BOOST
+ static inline void tsk_restore_flags(struct task_struct *task,
+ 				unsigned long orig_flags, unsigned long flags)
+ {
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2d8927f..68414fa 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1887,7 +1887,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
+ #endif
  
- static void print_one_rcu_node_boost(struct seq_file *m, struct rcu_node *rnp)
-@@ -496,11 +425,6 @@ static int __init rcutree_trace_init(void)
- 			if (!retval)
- 				goto free_out;
+ 	/* Here we just switch the register state and the stack. */
+-	rcu_switch(prev, next);
++	rcu_user_hooks_switch(prev, next);
+ 	switch_to(prev, next, prev);
  
--			retval = debugfs_create_file("rcudata.csv", 0444,
--					rspdir, rsp, &rcudata_csv_fops);
--			if (!retval)
--				goto free_out;
--
- 			retval = debugfs_create_file("rcu_pending", 0444,
- 					rspdir, rsp, &rcu_pending_fops);
- 			if (!retval)
+ 	barrier();
 -- 
 1.7.8
 
