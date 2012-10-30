@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965577Ab2J3TDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:03:54 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58505 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754449Ab2J3TDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:03:52 -0400
-Date: Tue, 30 Oct 2012 15:03:49 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Tekkaman Ninja <tekkamanninja@gmail.com>
-Cc: Harry Wei <harryxiyou@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dave Martin <dave.martin@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH]Documentation: Chinese translation of
- Documentation/arm/kernel_user_helpers.txt
-Message-ID: <20121030190349.GC5044@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Tekkaman Ninja <tekkamanninja@gmail.com>,
-	Harry Wei <harryxiyou@gmail.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Nicolas Pitre <nicolas.pitre@linaro.org>,
-	Dave Martin <dave.martin@linaro.org>, linux-kernel@vger.kernel.org,
-	linux-doc@vger.kernel.org
-References: <20121030162004.GA3467@Super-MAGI>
+	id S934256Ab2J3TFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:05:05 -0400
+Received: from redaccionline.com ([207.218.180.67]:60106 "EHLO
+	correo.fcctpdom.usmp.edu.pe" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754449Ab2J3TFD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:05:03 -0400
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 15:05:02 EDT
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030162004.GA3467@Super-MAGI>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Payment Sent!!
+To: linux-kernel@vger.kernel.org
+From: "Western Union Transfer" <info@westernunion.com>
+Date: Wed, 31 Oct 2012 02:58:10 +0800
+Reply-To: westernuniont12@yahoo.cn
+Message-Id: <20121030183748.625A01F0290@correo.fcctpdom.usmp.edu.pe>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 12:20:04AM +0800, Tekkaman Ninja wrote:
-> This is a Chinese translated version of
-> Documentation/arm/kernel_user_helpers.txt
-> 
-> Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
-
-I wonder if it woiuld be a good idea to note the git commit id of the
-kernel version that was used as the source document for the
-translation.  That way in the future, someone can just do a "git log
--p" to find all of the changes since the original version of the
-translation, and use that to update the translation.
-
-Just a suggestion,
-
-				- Ted
+We write to inform you that we have transferred $400,000 dollars.  deposited for transfer to you by one MR Bernard Harry from BLACKBERRY MOBILE COMPANY for transfer as a winning prize from the promotion lottery held by the communication company to encourage usage and appreciate already users of their product.
+ 
+ The money is available for pick up by receiver(you) to be cashed on daily installment of $10,000 for 40days. We tried calling to give you the information over the phone but we could not reach you so we decided to email you the information to pick up the first $10,000  already transferred to you. for you to be able to pick the first payment,
+You will have to pay $250 to get it re-activated in your name for you to start picking up your money because we de-activate the transaction for security reason, by making the status to display pick up.
+ 
+ 
+Use this link to track the below information 
+https://wumt.westernunion.com/asp/orderStatus.asp?country=global
+ 
+ Sender's Fist name: Ronald
+ Sender's Last Name: Mundy
+ MTCN: 6605740058
+ Question: Who Is Great
+ Answer: God
+ Amount: $10,000.00USD
+ 
+ Thanks
+ Best Regards
+ Mr.Mcferrin Phoenix .
+ +60169162934
+ western union Office,
+ MALAYSIA OFFICE.
+ Western Union® Money Transfer
