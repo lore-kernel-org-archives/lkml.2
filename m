@@ -1,134 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759658Ab2J3QTm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:19:42 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34702 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753423Ab2J3QTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:19:39 -0400
-Date: Tue, 30 Oct 2012 17:19:33 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v4 6/9] compiler.h, bug.h: Prevent double error messages
- with BUILD_BUG{,_ON}
-Message-ID: <20121030161933.GD28499@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Daniel Santos <daniel.santos@pobox.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Andi Kleen <ak@linux.intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Christopher Li <sparse@chrisli.org>,
-	David Daney <david.daney@cavium.com>,
-	David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-	Josh Triplett <josh@joshtriplett.org>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-	Paul Gortmaker <paul.gortmaker@windriver.com>,
-	Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	David Rientjes <rientjes@google.com>
-References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
- <1351457835-7553-6-git-send-email-daniel.santos@pobox.com>
+	id S964820Ab2J3QUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:20:20 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64928 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933852Ab2J3QUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 12:20:19 -0400
+Date: Wed, 31 Oct 2012 00:20:04 +0800
+From: Tekkaman Ninja <tekkamanninja@gmail.com>
+To: Harry Wei <harryxiyou@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Martin <dave.martin@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: [PATCH]Documentation: Chinese translation of
+ Documentation/arm/kernel_user_helpers.txt
+Message-ID: <20121030162004.GA3467@Super-MAGI>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1351457835-7553-6-git-send-email-daniel.santos@pobox.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 03:57:12PM -0500, danielfsantos@att.net wrote:
-> Prior to the introduction of __attribute__((error("msg"))) in gcc 4.3,
-> creating compile-time errors required a little trickery.
-> BUILD_BUG{,_ON} uses this attribute when available to generate
-> compile-time errors, but also uses the negative-sized array trick for
-> older compilers, resulting in two error messages in some cases.  The
-> reason it's "some" cases is that as of gcc 4.4, the negative-sized array
-> will not create an error in some situations, like inline functions.
-> 
-> This patch replaces the negative-sized array code with the new
-> __compiletime_error_fallback() macro which expands to the same thing
-> unless the the error attribute is available, in which case it expands to
-> do{}while(0), resulting in exactly one compile-time error on all
-> versions of gcc.
-> 
-> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-> ---
->  include/linux/bug.h      |    4 ++--
->  include/linux/compiler.h |    7 +++++++
->  2 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/bug.h b/include/linux/bug.h
-> index 03259d7..da03dc1 100644
-> --- a/include/linux/bug.h
-> +++ b/include/linux/bug.h
-> @@ -57,13 +57,13 @@ struct pt_regs;
->   * track down.
->   */
->  #ifndef __OPTIMIZE__
-> -#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
-> +#define BUILD_BUG_ON(condition) __compiletime_error_fallback(condition)
->  #else
->  #define BUILD_BUG_ON(condition)						\
->  	do {								\
->  		extern void __build_bug_on_failed(void)			\
->  			__compiletime_error("BUILD_BUG_ON failed");	\
-> -		((void)sizeof(char[1 - 2*!!(condition)]));		\
-> +		__compiletime_error_fallback(condition);		\
->  		if (condition)						\
->  			__build_bug_on_failed();			\
+This is a Chinese translated version of
+Documentation/arm/kernel_user_helpers.txt
 
-If we're defining a fallback, shouldn't it come second? I.e.:
+Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
 
-		if (condition)
-			__build_bug_on_failed();
-		__compiletime_error_fallback(condition);
+---
+ Documentation/zh_CN/arm/kernel_user_helpers.txt |  285 +++++++++++++++++++++++
+ 1 file changed, 285 insertions(+)
+ create mode 100644 Documentation/zh_CN/arm/kernel_user_helpers.txt
 
-Also, the error message from __build_bug_on_failed is much more
-informative:
-
-arch/x86/kernel/cpu/amd.c: In function ‘early_init_amd’:
-arch/x86/kernel/cpu/amd.c:486:2: error: call to ‘__build_bug_on_failed’ declared with attribute error: BUILD_BUG_ON failed
-make[1]: *** [arch/x86/kernel/cpu/amd.o] Error 1
-make[1]: *** Waiting for unfinished jobs....
-make: *** [arch/x86/kernel/cpu/] Error 2
-
-than
-
-arch/x86/kernel/cpu/amd.c: In function ‘early_init_amd’:
-arch/x86/kernel/cpu/amd.c:486:2: error: size of unnamed array is negative
-make[1]: *** [arch/x86/kernel/cpu/amd.o] Error 1
-make[1]: *** Waiting for unfinished jobs....
-make: *** [arch/x86/kernel/cpu/] Error 2
-
-Finally, you need to do:
-
-	bool __cond = !!(condition);
-
-and use __cond so that condition doesn't get evaluated multiple times
-(possibly with side effects).
-
-Thanks.
-
+diff --git a/Documentation/zh_CN/arm/kernel_user_helpers.txt b/Documentation/zh_CN/arm/kernel_user_helpers.txt
+new file mode 100644
+index 0000000..5ec5c6b
+--- /dev/null
++++ b/Documentation/zh_CN/arm/kernel_user_helpers.txt
+@@ -0,0 +1,285 @@
++Chinese translated version of Documentation/arm/kernel_user_helpers.txt
++
++If you have any comment or update to the content, please contact the
++original document maintainer directly.  However, if you have a problem
++communicating in English you can also ask the Chinese maintainer for
++help.  Contact the Chinese maintainer if this translation is outdated
++or if there is a problem with the translation.
++
++Maintainer: Nicolas Pitre <nicolas.pitre@linaro.org>
++		Dave Martin <dave.martin@linaro.org>
++Chinese maintainer: Fu Wei <tekkamanninja@gmail.com>
++---------------------------------------------------------------------
++Documentation/arm/kernel_user_helpers.txt 的中文翻译
++
++如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
++交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
++译存在问题，请联系中文版维护者。
++英文版维护者： Nicolas Pitre <nicolas.pitre@linaro.org>
++		Dave Martin <dave.martin@linaro.org>
++中文版维护者： 傅炜 Fu Wei <tekkamanninja@gmail.com>
++中文版翻译者： 傅炜 Fu Wei <tekkamanninja@gmail.com>
++中文版校译者： 傅炜 Fu Wei <tekkamanninja@gmail.com>
++
++
++以下为正文
++---------------------------------------------------------------------
++内核提供的用户空间辅助代码
++======================
++
++在内核内存空间的固定地址处有一个用户代码可从用户空间访问的由内核提供
++的代码段。它用于向用户空间提供因在许多 ARM CPU 中未实现的特性和/或
++指令而需内核提供帮助的某些操作。这些代码直接在用户模式下执行的想法是
++为了获得最佳的效率，但那些与内核计数器联系过于紧密的部分则被留给了用
++户库实现。事实上，此代码甚至可能因不同的CPU而异，这取决于其使用的指
++令集或它是否为 SMP 系统。换句话说，内核保留在不作出警告的情况下根据
++需要更改这些代码的权利。只有本文档描诉的入口点及其结果是保证稳定不变
++的。
++
++这与完全成熟的 VDSO 实现不同（但不排除特殊情况），而 VDSO 可阻止某
++些汇编技巧（通过常量做到那些代码段的高效跳转）。且由于那些代码段在返
++回用户代码前仅使用少量的代码周期，则一个 VDSO 间接远跳转的开销将会在
++这样简约的操作上增加一个可测量的开销。
++
++当对那些拥有基本原生支持的新型处理器的代码进行优化时，用户空间最好绕
++过这些辅助代码并在内联函数中实现这些操作（无论是通过编译器在代码中直
++接放置，还是作为库函数调用实现的一部分），而仅在其他处理器因使用相似
++的本地指令而导致二进制结果已与早期 ARM 处理不兼容的情况下才使用这些
++辅助代码。也就是说，如果你编译的代码不会为了其他目的使用新的指令，则
++不要仅为了不使用这些内核辅助代码而导致二进制程序无法在早期处理器上运
++行。
++
++新的辅助代码可能随着时间的推移而增加，所以新内核中的某些辅助代码在旧
++内核中可能不存在。因此，程序必须在假设对任何特定辅助代码调用是安全的
++之前，检测 __kuser_helper_version 的值（见下文）。理想情况下，
++这种检测应只在进程启动时执行一次；如果其内核版本不提供所需辅助代码的
++支持，则该进程可尽早中止执行。
++
++kuser_helper_version
++--------------------
++
++位置:	0xffff0ffc
++
++参考声明:
++
++  extern int32_t __kuser_helper_version;
++
++定义:
++
++  这个区域包含了当前运行内核实现的辅助代码版本号。用户空间可以通过读
++  取此版本号以确定特定的辅助代码是否存在。
++
++使用范例:
++
++#define __kuser_helper_version (*(int32_t *)0xffff0ffc)
++
++void check_kuser_version(void)
++{
++	if (__kuser_helper_version < 2) {
++		fprintf(stderr, "can't do atomic operations, kernel too old\n");
++		abort();
++	}
++}
++
++注意:
++
++  用户空间可以假设这个域的值不会在任何单个进程的生存期内改变。也就
++  是说，这个域可以仅在库的初始化阶段或进程启动阶段读取一次。
++
++kuser_get_tls
++-------------
++
++位置:	0xffff0fe0
++
++参考原型:
++
++  void * __kuser_get_tls(void);
++
++输入:
++
++  lr = 返回地址
++
++输出:
++
++  r0 = TLS 值
++
++被篡改的寄存器:
++
++  无
++
++定义:
++
++  通过 __ARM_NR_set_tls 系统调用获取之前设置的 TLS 值。
++
++使用范例:
++
++typedef void * (__kuser_get_tls_t)(void);
++#define __kuser_get_tls (*(__kuser_get_tls_t *)0xffff0fe0)
++
++void foo()
++{
++	void *tls = __kuser_get_tls();
++	printf("TLS = %p\n", tls);
++}
++
++注意:
++
++  - 仅在 __kuser_helper_version >= 1 时，此辅助代码存在
++    （从内核版本 2.6.12 开始）。
++
++kuser_cmpxchg
++-------------
++
++位置:	0xffff0fc0
++
++参考原型:
++
++  int __kuser_cmpxchg(int32_t oldval, int32_t newval, volatile int32_t *ptr);
++
++输入:
++
++  r0 = oldval
++  r1 = newval
++  r2 = ptr
++  lr = 返回地址
++
++输出:
++
++  r0 = 成功代码 (零或非零)
++  C flag = 如果 r0 == 0 则置 1，如果 r0 != 0 则清零。
++
++被篡改的寄存器:
++
++  r3, ip, flags
++
++定义:
++
++  仅在 *ptr 为 oldval 时自动保存 newval 于 *ptr 中。
++  如果 *ptr 被改变，则返回值为零，否则为非零值。
++  如果 *ptr 被改变，则 C flag 也会被置1，以实现调用代码中的汇编
++  优化。
++
++使用范例:
++
++typedef int (__kuser_cmpxchg_t)(int oldval, int newval, volatile int *ptr);
++#define __kuser_cmpxchg (*(__kuser_cmpxchg_t *)0xffff0fc0)
++
++int atomic_add(volatile int *ptr, int val)
++{
++	int old, new;
++
++	do {
++		old = *ptr;
++		new = old + val;
++	} while(__kuser_cmpxchg(old, new, ptr));
++
++	return new;
++}
++
++注意:
++
++  - 这个例程已根据需要包含了内存屏障。
++
++  - 仅在 __kuser_helper_version >= 2 时，此辅助代码存在
++    （从内核版本 2.6.12 开始）。
++
++kuser_memory_barrier
++--------------------
++
++位置:	0xffff0fa0
++
++参考原型:
++
++  void __kuser_memory_barrier(void);
++
++输入:
++
++  lr = 返回地址
++
++输出:
++
++  无
++
++被篡改的寄存器:
++
++  无
++
++定义:
++
++  应用于任何需要内存屏障以防止手动数据修改带来的一致性问题以及
++  __kuser_cmpxchg 中。
++
++使用范例:
++
++typedef void (__kuser_dmb_t)(void);
++#define __kuser_dmb (*(__kuser_dmb_t *)0xffff0fa0)
++
++注意:
++
++  - 仅在 __kuser_helper_version >= 3 时，此辅助代码存在
++    （从内核版本 2.6.15 开始）。
++
++kuser_cmpxchg64
++---------------
++
++位置:	0xffff0f60
++
++参考原型:
++
++  int __kuser_cmpxchg64(const int64_t *oldval,
++                        const int64_t *newval,
++                        volatile int64_t *ptr);
++
++输入:
++
++  r0 = 指向 oldval
++  r1 = 指向 newval
++  r2 = 指向目标值
++  lr = 返回地址
++
++输出:
++
++  r0 = 成功代码 (零或非零)
++  C flag = 如果 r0 == 0 则置 1，如果 r0 != 0 则清零。
++
++被篡改的寄存器:
++
++  r3, lr, flags
++
++定义:
++
++  仅在 *ptr 等于 *oldval 指向的 64 位值时，自动保存 *newval
++  指向的 64 位值于 *ptr 中。如果 *ptr 被改变，则返回值为零，
++  否则为非零值。
++
++  如果 *ptr 被改变，则 C flag 也会被置1，以实现调用代码中的汇编
++  优化。
++
++使用范例:
++
++typedef int (__kuser_cmpxchg64_t)(const int64_t *oldval,
++                                  const int64_t *newval,
++                                  volatile int64_t *ptr);
++#define __kuser_cmpxchg64 (*(__kuser_cmpxchg64_t *)0xffff0f60)
++
++int64_t atomic_add64(volatile int64_t *ptr, int64_t val)
++{
++	int64_t old, new;
++
++	do {
++		old = *ptr;
++		new = old + val;
++	} while(__kuser_cmpxchg64(&old, &new, ptr));
++
++	return new;
++}
++
++注意:
++
++  - 这个例程已根据需要包含了内存屏障。
++
++  - 由于这个过程的代码长度（此辅助代码跨越 2 个常规的 kuser “槽”），
++    因此 0xffff0f80 不被作为有效的入口点。
++
++  - 仅在 __kuser_helper_version >= 5 时，此辅助代码存在
++    （从内核版本 3.1 开始）。
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
+
