@@ -1,163 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab2J3FfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 01:35:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52261 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753705Ab2J3FfL convert rfc822-to-8bit (ORCPT
+	id S1754641Ab2J3FpT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 01:45:19 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8323 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752973Ab2J3FpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 01:35:11 -0400
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: "Porter, Matt" <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>
-CC: Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC PATCH v3 13/16] ARM: dts: add AM33XX MMC support
-Thread-Topic: [RFC PATCH v3 13/16] ARM: dts: add AM33XX MMC support
-Thread-Index: AQHNrTR1ukj4M+0aw0mqfpQ/EnwANpfRXzmA
-Date: Tue, 30 Oct 2012 05:33:40 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EA5AE57@DBDE01.ent.ti.com>
-References: <1350566815-409-1-git-send-email-mporter@ti.com>
- <1350566815-409-14-git-send-email-mporter@ti.com>
-In-Reply-To: <1350566815-409-14-git-send-email-mporter@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Oct 2012 01:45:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 29 Oct 2012 22:32:33 -0700
+Message-ID: <508F6906.7020704@nvidia.com>
+Date: Tue, 30 Oct 2012 11:13:34 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2] spi: tegra: add spi driver for SLINK controller
+References: <1351531104-1604-1-git-send-email-ldewangan@nvidia.com> <508ED5A5.3000703@wwwdotorg.org>
+In-Reply-To: <508ED5A5.3000703@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 18:56:52, Porter, Matt wrote:
-> Adds AM33XX MMC support for am335x-bone and am335x-evm.
-> 
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> ---
->  arch/arm/boot/dts/am335x-bone.dts |    6 ++++++
->  arch/arm/boot/dts/am335x-evm.dts  |    6 ++++++
->  arch/arm/boot/dts/am33xx.dtsi     |   27 +++++++++++++++++++++++++++
->  3 files changed, 39 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-> index c634f87..5510979 100644
-> --- a/arch/arm/boot/dts/am335x-bone.dts
-> +++ b/arch/arm/boot/dts/am335x-bone.dts
-> @@ -70,6 +70,8 @@
->  		};
->  
->  		ldo3_reg: regulator@5 {
-> +			regulator-min-microvolt = <1800000>;
-> +			regulator-max-microvolt = <3300000>;
+On Tuesday 30 October 2012 12:44 AM, Stephen Warren wrote:
+> On 10/29/2012 11:18 AM, Laxman Dewangan wrote:
+>> Tegra20/Tegra30 supports the spi interface through its SLINK
+>> controller. Add spi driver for SLINK controller.
+>> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+>> +config SPI_TEGRA20_SLINK
+>> +	tristate "Nvidia Tegra20/Tegra30 SLINK Controller"
+>> +	depends on ARCH_TEGRA&&  TEGRA20_APB_DMA
+> I think it depends on DMAENGINE, not the specific driver now, doesn't it?
 
-I think these min & max limits are regulator limits. Are these fields
-required? Add details of these additions. AFAIK fine-tuned (board
-specific) min/max limits should be add here(like mpu and core
-regulator nodes)
+Taking example from the mfd, we depends on particular driver, not from 
+the core driver.
+I like to have this depends on Tegra20_apb_dma.
 
->  			regulator-always-on;
->  		};
->  
-> @@ -78,3 +80,7 @@
->  		};
->  	};
->  };
-> +
-> +&mmc1 {
-> +	vmmc-supply = <&ldo3_reg>;
-> +};
-> diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-> index 185d632..d63fce8 100644
-> --- a/arch/arm/boot/dts/am335x-evm.dts
-> +++ b/arch/arm/boot/dts/am335x-evm.dts
-> @@ -114,7 +114,13 @@
->  		};
->  
->  		vmmc_reg: regulator@12 {
-> +			regulator-min-microvolt = <1800000>;
-> +			regulator-max-microvolt = <3300000>;
+>> +			x = 0;
+>> +			for (i = 0; nbytes&&  (i<  tspi->bytes_per_word);
+>> +							i++, nbytes--)
+>> +				x |= ((*tx_buf++)<<  i*8);
+>> +			tegra_slink_writel(tspi, x, SLINK_TX_FIFO);
+>> +		}
+>> +	}
+> The if and the else there are basically identical now. Can't the else
+> branch simply be replaced by the if branch? At most I think the
+> difference comes down to max_n_32bit v.s. fifo_words_left calculations
+> being slight different; everything else is the same.
+>
+> I suppose this isn't a big deal though; we could clean it up later if
+> necessary.
+>
 
-=same=
+I like to clean it later.
 
->  			regulator-always-on;
->  		};
->  	};
->  };
-> +
-> +&mmc1 {
-> +	vmmc-supply = <&vmmc_reg>;
-> +};
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index ab9c78f..26a6af7 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -234,6 +234,33 @@
->  			status = "disabled";
->  		};
->  
-> +		mmc1: mmc@48060000 {
-> +			compatible = "ti,omap3-hsmmc";
-> +			ti,hwmods = "mmc1";
-> +			ti,dual-volt;
-> +			ti,needs-special-reset;
-> +			dmas = <&edma 24
-> +				&edma 25>;
-> +			dma-names = "tx", "rx";
 
-Add status = "disabled" here and "okay" in corresponding
-.dts file
+>> +		val |= SLINK_PACKED;
+>> +		tegra_slink_writel(tspi, val, SLINK_DMA_CTL);
+>> +		udelay(1);
+>> +		wmb();
+> Why the udelay() and wmb()?
+udelay() is suggetsed by ASIC.
+wmb() is lying in our downstream code and hence it is there but I dont 
+think it is require now. I will remove it.
 
-> +		};
-> +
-> +		mmc2: mmc@481d8000 {
-> +			compatible = "ti,omap3-hsmmc";
-> +			ti,hwmods = "mmc2";
-> +			ti,needs-special-reset;
-> +			dmas = <&edma 2
-> +				&edma 3>;
-> +			dma-names = "tx", "rx";
-> +			status = "disabled";
-> +		};
-> +
-> +		mmc3: mmc@47810000 {
-> +			compatible = "ti,omap3-hsmmc";
-> +			ti,hwmods = "mmc3";
-> +			ti,needs-special-reset;
 
-What about DMA resources for mmc3?
+>> +static int tegra_slink_runtime_resume(struct device *dev)
+>> +{
+>> +	struct spi_master *master = dev_get_drvdata(dev);
+>> +	struct tegra_slink_data *tspi = spi_master_get_devdata(master);
+>> +
+>> +	return tegra_slink_clk_prepare(tspi);
+>> +}
+> Why not move the body of tegra_slink_clk_{un,prepare} inside those
+> functions, since they're only called from those functions?
+>
+Fine, I will do this,
 
-AnilKumar
 
-> +			status = "disabled";
-> +		};
-> +
->  		wdt2: wdt@44e35000 {
->  			compatible = "ti,omap3-wdt";
->  			ti,hwmods = "wd_timer2";
-> -- 
-> 1.7.9.5
-> 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
-> 
+>> +MODULE_ALIAS("platform:tegra_slink-slink");
+> I think that's a typo.
+Yes, I will correct it.
+
 
