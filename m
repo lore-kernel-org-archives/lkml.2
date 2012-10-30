@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab2J3Nox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 09:44:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3815 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752096Ab2J3Now (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 09:44:52 -0400
-Date: Tue, 30 Oct 2012 14:44:50 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: NULL pointer dereference at fat_detach
-Message-ID: <20121030134449.GA5435@redhat.com>
+	id S1753615Ab2J3NrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 09:47:06 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:57493 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2J3NrE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 09:47:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1351600332-29443-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1351600332-29443-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Tue, 30 Oct 2012 19:17:02 +0530
+X-Google-Sender-Auth: 4i4yzdXKQhjd_TkTH1SdzUu46Sc
+Message-ID: <CAOh2x=msMTYb0D-c26wr-HJsTiM9e5KEH=uuRGSazsfZjLg0wg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] dw_dmac: add PCI driver and move dw stuff to its own folder
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Oct 30, 2012 at 6:02 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> This is split of the dw_dmac to support different platform devices with one
+> core driver. It uses platform_driver model and weak link to the parent driver.
+> The pros and cons are still under discussion here:
+> http://www.spinics.net/lists/kernel/msg1408495.html
 
->From time to time Fedora users reports crash at fat_detach.
-It happens randomly and seldom. Seems to be related with
-unmount operation.
+This was the last discussion on earlier thread.
 
-Early reports are from 3.0 and problem still randomly occurs
-on recent kernels.
+http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg327998.html
 
-Calltraces looks like below:
+This is highly discouraged in kernel mailing lists. You must have closed
+the earlier thread before pushing these patches again for review. This is
+waste of time for people who are involved in review.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000009c
-IP: [<c046d983>] do_raw_spin_lock+0xd/0x1e
+Please close the earlier thread first. I really hoped you agreed to my and
+Vinod's view there. :)
 
-[<c07fcc94>] _raw_spin_lock+0xd/0xf
-[<f8fe03de>] fat_detach+0x20/0x59 [fat]
-[<f8fe0874>] fat_evict_inode+0x5b/0x5e [fat]
-[<c05058ad>] evict+0x57/0xe9
-[<c0505a67>] iput+0xf8/0xfd
-[<c051ce0f>] fsnotify_destroy_mark+0xdf/0xf8
-[<c051e488>] sys_inotify_rm_watch+0x59/0x79
-[<c07fcfbc>] syscall_call+0x7/0xb
-
-what most likely indicate that fat_evict is called with
-inode with i_sb->s_fs_info == NULL.
-
-Some more info about this problem can be found here:
-https://bugzilla.redhat.com/show_bug.cgi?id=768534
-
-Any insight on this isssue is welcome.
-
-Thanks
-Stanislaw 
+--
+viresh
