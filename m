@@ -1,144 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758695Ab2J3Lzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 07:55:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43029 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754773Ab2J3Lzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 07:55:52 -0400
-Date: Tue, 30 Oct 2012 13:49:49 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Felipe Balbi <balbi@ti.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, <tony@atomide.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-input@vger.kernel.org>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Message-ID: <20121030114949.GC28722@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
- <20121024161429.GA16350@core.coreip.homeip.net>
- <CACRpkdai3NocZQnW6YRF+k6GXUSx3P_Ge=F-tkuivrFm6tBbLg@mail.gmail.com>
- <4099134.xWUIfbbahk@dtor-d630.eng.vmware.com>
- <20121024185818.GB772@arwen.pp.htv.fi>
- <20121025205901.GA3827@sirena.org.uk>
- <20121026062008.GA21734@arwen.pp.htv.fi>
- <20121026160316.GY18814@opensource.wolfsonmicro.com>
- <20121029194901.GA30152@arwen.pp.htv.fi>
- <20121030112410.GM4511@opensource.wolfsonmicro.com>
+	id S1754773Ab2J3L7m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 07:59:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40778 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911Ab2J3L7k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 07:59:40 -0400
+Date: Tue, 30 Oct 2012 04:58:58 -0700
+From: tip-bot for Andi Kleen <ak@linux.intel.com>
+Message-ID: <tip-9175ce1f1244edd9f4d39605aa06ce5b0a50b8e0@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        jolsa@redhat.com, ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        ak@linux.intel.com, tglx@linutronix.de, jolsa@redhat.com
+In-Reply-To: <1351283415-13170-25-git-send-email-andi@firstfloor.org>
+References: <1351283415-13170-25-git-send-email-andi@firstfloor.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools:
+  Move parse_events error printing to parse_events_options
+Git-Commit-ID: 9175ce1f1244edd9f4d39605aa06ce5b0a50b8e0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZwgA9U+XZDXt4+m+"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20121030112410.GM4511@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 30 Oct 2012 04:59:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ZwgA9U+XZDXt4+m+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  9175ce1f1244edd9f4d39605aa06ce5b0a50b8e0
+Gitweb:     http://git.kernel.org/tip/9175ce1f1244edd9f4d39605aa06ce5b0a50b8e0
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Fri, 26 Oct 2012 13:30:06 -0700
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Sun, 28 Oct 2012 11:29:52 -0200
 
-Hi,
+perf tools: Move parse_events error printing to parse_events_options
 
-On Tue, Oct 30, 2012 at 11:24:10AM +0000, Mark Brown wrote:
-> > This is why I think hiding things from drivers makes no sense. Also
-> > consider the situations Linus W exposed on another subthread. If you
-> > change ordering of certain calls, you will really break the
-> > functionality of the IP. Because we can't make sure this won't work
-> > automagically in all cases (just like we can't make sure $size memory
-> > allocation is enough for all drivers) we don't hide that from the
-> > driver. We require driver to manage its resources properly.
->=20
-> We need some place to put the SoC integration; power domains seem like
-> the obvious place to me but YMMV.  Nothing about having this out of the
+The callers of parse_events usually have their own error handling.  Move
+the fprintf for a bad event to parse_events_options, which is the only
+one who should need it.
 
-except that pin muxing has nothing to do with power domain. To me that
-sounds like an abuse of the API.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1351283415-13170-25-git-send-email-andi@firstfloor.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/parse-events.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-> drivers requires that this be done by individual subsystems in isolation
-> from each other.  Half the point here is that for the reusable IPs this
-> stuff often isn't driver specific at all, it's often more about the SoC
-> integration than it is about the driver and so you'll get a consistent
-> pattern for most IPs on the SoC.
-
-and all of that SoC-specific detail is already hidden behind power
-domains, runtime PM, pinctrl, clk API, regulator framework, etc.
-
-> > How can you make sure that this will work for at least 50% of the
-> > drivers ? You just can't. We don't know the implementation details of
-> > every arch/soc/platform supported by Linux today to make that decision.
->=20
-> Well, we've managed to get along for rather a long time with essentially
-> all architectures implementing this stuff by doing static setup for the
-> pins on boot.  That does suggest we can get a reasonably long way with
-
-and this is one of the issues we're all trying to solve today so we have
-single zImage approach for the ARM port.
-
-> something simple, and it does seem to match up with how things usually
-> look at an electrical level too.
-
-simple ? I really doubt it. Just look at the amount of code duplication
-the ARM port had (still has in some places) to handle platform-specific
-details.
-
-It turned out that drivers weren't very portable when they had to do
-platform-specific initialization, we were all abusing platform_data to
-pass strings and/or function pointers down to drivers and so on.
-
-I'm concerned if we hide pinctrl under e.g. power domains (as said
-above, it sounds like an abuse of the API to me) we will end up with a
-situation like above. Maybe not as bad, but still weird-looking.
-
-> It seems fairly obvious that if we need to add identical bolier plate
-> code to lots of drivers we're doing something wrong, it's just churn for
-> little practical gain and a problem if we ever decide to change how this
-> stuff works in the future.
-
-I wouldn't consider it boilerplate if you remember that each driver
-might have different requirements regarding how all of those details
-need to be handled.
-
-We have to consider power consumption, ordering of calls, proper IP
-setup, IP reuse on multiple platforms (even multiple ARCHes), etc etc,
-and to get that right outside of the driver - who's the only class that
-actually knows what it needs to do with its resources - will just be too
-complex and error-prone.
-
-I would strongly suggest starting with explicit calls to pinctrl, clk
-API, etc and if we can really prove later that 95% of the users are
-"standard", then we can factor code out, but making that assumption now
-is quite risky IMHO.
-
---=20
-balbi
-
---ZwgA9U+XZDXt4+m+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQj77dAAoJEIaOsuA1yqREx6sQAIKveh2DOtMG8mQIgn4YYtZ9
-oI6AYq9JLF9xnXUn/JpuXH5jDBsYL2DVvDltGMgs1VY0FysmEFqLE0VFvXu5X2hn
-DnH9+MZdSYXg4UaP/aPLPD/TCsFUjZP73Ue46z/jyo7Rs8VdfKcptruuLsdn0h+M
-DoNZFPw1NVdEqwcrkcKGQhzmyWVhJvxMwHqOXpigNDJRiCC0seOvPbYfUI5Y5Zgh
-C+PrylltsakwbxptG7uI8f9wUJpaapHO4qdRLNrsL1rZkLwnOXUSe9+9XTrx9MXD
-9rqOy0UjmeGhuRNDvUx5caA9Jv7HTUrFv9LcrdTX84ESslpmk9sRJW7GYC02ryUw
-Y4qM545SUKvG/4poDOCoiHJ0KkrQ/uZWkfaYqTqKwEpCSVrUgvGkUCKKm7Ar2I1m
-H6GZh30Nk3rRvATxYRqQDfeyagA/vt/NCQ/Ftw/KXzoKEoULYbbNFH0ElQ43T3nz
-xH9J9R7HsIazEKntsW0hcw29Tzxe0dlJHsRr0G5w91nO7Xqs4aYjvIIEnxcD1Laj
-3/1bHKEJpAe17C0QEAkacVaP4yF6Yt3IW6cVnBeEoqKSrNGgkgHL/NfaaJ7RBLK2
-tQg9L13lCiIzWSqtUtA4oiDucVJjBETqWo7Zauw+amY7/DyCY9B8BrbQeEUEw9EO
-F2KQZQRWQKrG3mns9zrC
-=THTM
------END PGP SIGNATURE-----
-
---ZwgA9U+XZDXt4+m+--
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 3a3efcf..c0b785b 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -827,8 +827,6 @@ int parse_events(struct perf_evlist *evlist, const char *str,
+ 	 * Both call perf_evlist__delete in case of error, so we dont
+ 	 * need to bother.
+ 	 */
+-	fprintf(stderr, "invalid or unsupported event: '%s'\n", str);
+-	fprintf(stderr, "Run 'perf list' for a list of valid events\n");
+ 	return ret;
+ }
+ 
+@@ -836,7 +834,13 @@ int parse_events_option(const struct option *opt, const char *str,
+ 			int unset __maybe_unused)
+ {
+ 	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
+-	return parse_events(evlist, str, unset);
++	int ret = parse_events(evlist, str, unset);
++
++	if (ret) {
++		fprintf(stderr, "invalid or unsupported event: '%s'\n", str);
++		fprintf(stderr, "Run 'perf list' for a list of valid events\n");
++	}
++	return ret;
+ }
+ 
+ int parse_filter(const struct option *opt, const char *str,
