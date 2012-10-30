@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760520Ab2J3SoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:44:16 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:50463 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753445Ab2J3SoO (ORCPT
+	id S933971Ab2J3Spz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:45:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31279 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932788Ab2J3Spy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:44:14 -0400
-From: Behan Webster <behanw@converseincode.com>
-To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>, pageexec@freemail.hu,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH] Remove VLAIS usage from libcrc32c.c
-Date: Tue, 30 Oct 2012 14:44:25 -0400
-Message-Id: <1351622665-18547-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 30 Oct 2012 14:45:54 -0400
+X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=gPGaiRUHczgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=rQ8w98ZuNmwA:10 a=lC5Bz_El-uJzycyYwPkA:9 a=PUjeQqilurYA:10 a=7PVchbkP683bnDCq:21 a=y5vyED47RSmQPJ6s:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351622752.4004.21.camel@gandalf.local.home>
+Subject: Re: [PATCH 2/2] irq_work: Fix racy IRQ_WORK_BUSY flag setting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: anish kumar <anish198519851985@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Tue, 30 Oct 2012 14:45:52 -0400
+In-Reply-To: <1351622024.1504.13.camel@anish-Inspiron-N5050>
+References: <1351611301-3520-1-git-send-email-fweisbec@gmail.com>
+	 <1351611301-3520-3-git-send-email-fweisbec@gmail.com>
+	 <1351622024.1504.13.camel@anish-Inspiron-N5050>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+On Wed, 2012-10-31 at 03:33 +0900, anish kumar wrote:
 
-The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
-precludes the use of compilers which don't implement VLAIS (for instance the
-Clang compiler). This patch instead allocates the appropriate amount of memory
-using an char array.
+> > CPU 0                                 CPU 1
+> > 
+> > data = something                     flags = IRQ_WORK_BUSY
+> > smp_mb() (implicit with cmpxchg      smp_mb()
+> >           on flags in claim)         execute_work (sees data from CPU
+> > 0)
+> > try to claim
+> > 
+> As I understand without the memory barrier proposed by you the situation
+> would be as below:
+> CPU 0                                 CPU 1
+>  
+> data = something                     flags = IRQ_WORK_BUSY
+> smp_mb() (implicit with cmpxchg      execute_work (sees data from CPU 0)
+>            on flags in claim)        
+> _success_ in claiming and goes
 
-Patch from series at
-http://lists.cs.uiuc.edu/pipermail/llvm-commits/Week-of-Mon-20120507/142707.html
-by PaX Team.
+Correct, because it would see the stale value of flags.
 
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Cc: pageexec@freemail.hu
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- lib/libcrc32c.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+> ahead and execute the work(wrong?)
+> 		                     cmpxchg cause flag to IRQ_WORK_BUSY
+> 
+> Now knows the flag==IRQ_WORK_BUSY
+>                                 
+> Am I right?
 
-diff --git a/lib/libcrc32c.c b/lib/libcrc32c.c
-index 244f548..5d0bac8 100644
---- a/lib/libcrc32c.c
-+++ b/lib/libcrc32c.c
-@@ -41,20 +41,21 @@ static struct crypto_shash *tfm;
- 
- u32 crc32c(u32 crc, const void *address, unsigned int length)
- {
--	struct {
--		struct shash_desc shash;
--		char ctx[crypto_shash_descsize(tfm)];
--	} desc;
-+	char desc[sizeof(struct shash_desc) + crypto_shash_descsize(tfm)
-+		+ CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
-+	struct shash_desc *shash = (struct shash_desc *)desc;
-+	u32 *ctx = (u32 *)((unsigned long)(desc + sizeof(struct shash_desc)
-+		+ CRYPTO_MINALIGN - 1) & ~(CRYPTO_MINALIGN - 1));
- 	int err;
- 
--	desc.shash.tfm = tfm;
--	desc.shash.flags = 0;
--	*(u32 *)desc.ctx = crc;
-+	shash->tfm = tfm;
-+	shash->flags = 0;
-+	*ctx = crc;
- 
--	err = crypto_shash_update(&desc.shash, address, length);
-+	err = crypto_shash_update(shash, address, length);
- 	BUG_ON(err);
- 
--	return *(u32 *)desc.ctx;
-+	return *ctx;
- }
- 
- EXPORT_SYMBOL(crc32c);
--- 
-1.7.9.5
+right.
+
+> 
+> Probably a stupid question.Why do we return the bool from irq_work_queue
+> when no one bothers to check the return value?Wouldn't it be better if
+> this function is void as used by the users of this function or am I
+> looking at the wrong code.
+
+Not a stupid question, as I was asking that to myself just earlier
+today. But forgot to mention it as well. Especially, because it makes it
+look like there's a bug in the code. Maybe someday someone will care if
+their work was finished by itself, or some other CPU.
+
+Probably should just nix the return value.
+
+-- Steve
+
 
