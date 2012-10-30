@@ -1,56 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013Ab2J3DN2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 23:13:28 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:36056 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761Ab2J3DN1 (ORCPT
+	id S1754140Ab2J3DVi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 23:21:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46213 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753769Ab2J3DVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 23:13:27 -0400
-Date: Tue, 30 Oct 2012 12:13:22 +0900
-From: Norbert Preining <preining@logic.at>
-To: Ben Widawsky <ben@bwidawsk.net>
-Cc: Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: drm i915 hangs on heavy io load
-Message-ID: <20121030031322.GA14213@gamma.logic.tuwien.ac.at>
-References: <20121024003659.GA30962@gamma.logic.tuwien.ac.at> <b94cdc$72fm1r@fmsmga001.fm.intel.com> <20121028024753.GA4254@gamma.logic.tuwien.ac.at> <eeac1e$4q1mqm@AZSMGA002.ch.intel.com> <A941F80C-7EDB-4FCF-A8DE-4AE5532D2CB5@logic.at> <20121029071715.GA17023@mac.home> <20121030004958.GA6976@gamma.logic.tuwien.ac.at> <CAPM=9tw_0vDcRG25i2ypJEKT+JNqWzkXw2+jg=qj6H5M1hoJXg@mail.gmail.com> <20121030010138.GB6976@gamma.logic.tuwien.ac.at> <20121029183739.47eeb944@bwidawsk.net>
+	Mon, 29 Oct 2012 23:21:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029183739.47eeb944@bwidawsk.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <Pine.LNX.4.44L0.1210291125590.22882-100000@netrider.rowland.org>
+References: <1351513440-9286-3-git-send-email-ming.lei@canonical.com>
+	<Pine.LNX.4.44L0.1210291125590.22882-100000@netrider.rowland.org>
+Date: Tue, 30 Oct 2012 11:21:33 +0800
+Message-ID: <CACVXFVOPDu6wVgPmvtTkokn7VV41x3XVvL4g_E0pz0mikUbvUg@mail.gmail.com>
+Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
+From: Ming Lei <ming.lei@canonical.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mo, 29 Okt 2012, Ben Widawsky wrote:
-> Hi Norbert. In addition to the above, if this truly appears to be
-> related to i/o, can we try to decrease the time to failure with some
+On Mon, Oct 29, 2012 at 11:41 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Mon, 29 Oct 2012, Ming Lei wrote:
+>
+>> The patch introduces the flag of memalloc_noio_resume in
+>> 'struct dev_pm_info' to help PM core to teach mm not allocating
+>> memory with GFP_KERNEL flag for avoiding probable deadlock
+>> problem.
+>>
+>> As explained in the comment, any GFP_KERNEL allocation inside
+>> runtime_resume on any one of device in the path from one block
+>> or network device to the root device in the device tree may cause
+>> deadlock, the introduced pm_runtime_set_memalloc_noio() sets or
+>> clears the flag on device of the path recursively.
+>>
+>> This patch also introduces pm_runtime_get_memalloc_noio() because
+>> the flag may be accessed in block device's error handling path
+>> (for example, usb device reset)
+>
+>> +/*
+>> + * pm_runtime_get_memalloc_noio - Get a device's memalloc_noio flag.
+>> + * @dev: Device to handle.
+>> + *
+>> + * Return the device's memalloc_noio flag.
+>> + *
+>> + * The device power lock is held because bitfield is not SMP-safe.
+>> + */
+>> +bool pm_runtime_get_memalloc_noio(struct device *dev)
+>> +{
+>> +     bool ret;
+>> +     spin_lock_irq(&dev->power.lock);
+>> +     ret = dev->power.memalloc_noio_resume;
+>> +     spin_unlock_irq(&dev->power.lock);
+>> +     return ret;
+>> +}
+>
+> You don't need to acquire and release a spinlock just to read the
+> value.  Reading bitfields _is_ SMP-safe; writing them is not.
 
-I am *not* sure. As I said, the last thing was shotwell photo
-editing. It might be some io while loading the photos, but
-after that they are in the cache, and the only thing is done is
-lots of displaying.
+Thanks for your review.
 
-> serious i/o tests? Off the top of my head I am not sure what's
+As you pointed out before, the flag need to be checked before
+resetting usb devices, so the lock should be held to make another
+context(CPU) see the updated value suppose one context(CPU)
+call pm_runtime_set_memalloc_noio() to change the flag at the
+same time.
 
-Anyway, that is my idea. I think I don't need google. A simple
-	svn up
-on my 15Gb svn repository creates enough io. And doing some git pull
-or so on same sized repositories in parallel brings anyway the
-laptop to its knees (actually, badly to its knees).
+The lock needn't to be held when the function is called inside
+pm_runtime_set_memalloc_noio(),  so the bitfield flag should
+be checked directly without holding power lock in dev_memalloc_noio().
 
-Best wishes
+>
+>> +/*
+>> + * pm_runtime_set_memalloc_noio - Set a device's memalloc_noio flag.
+>> + * @dev: Device to handle.
+>> + * @enable: True for setting the flag and False for clearing the flag.
+>> + *
+>> + * Set the flag for all devices in the path from the device to the
+>> + * root device in the device tree if @enable is true, otherwise clear
+>> + * the flag for devices in the path which sibliings don't set the flag.
+>
+> s/which/whose/
+> s/ii/i
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-Far out in the uncharted backwaters of the unfashionable
-end of the western spiral arm of the Galaxy lies a small
-unregarded yellow sun.
-                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
+Will fix it in -v4.
+
+>> + *
+>> + * The function should only be called by block device, or network
+>> + * device driver for solving the deadlock problem during runtime
+>> + * resume:
+>> + *   if memory allocation with GFP_KERNEL is called inside runtime
+>> + *   resume callback of any one of its ancestors(or the block device
+>> + *   itself), the deadlock may be triggered inside the memory
+>> + *   allocation since it might not complete until the block device
+>> + *   becomes active and the involed page I/O finishes. The situation
+>> + *   is pointed out first by Alan Stern. Network device are involved
+>> + *   in iSCSI kind of situation.
+>> + *
+>> + * The lock of dev_hotplug_mutex is held in the function for handling
+>> + * hotplug race because pm_runtime_set_memalloc_noio() may be called
+>> + * in async probe().
+>> + */
+>> +void pm_runtime_set_memalloc_noio(struct device *dev, bool enable)
+>> +{
+>> +     static DEFINE_MUTEX(dev_hotplug_mutex);
+>> +
+>> +     mutex_lock(&dev_hotplug_mutex);
+>> +     while (dev) {
+>
+> Unless you think somebody is likely to call this function with dev
+> equal to NULL, this can simply be
+>
+>         for (;;) {
+>
+>> +             /* hold power lock since bitfield is not SMP-safe. */
+>> +             spin_lock_irq(&dev->power.lock);
+>> +             dev->power.memalloc_noio_resume = enable;
+>> +             spin_unlock_irq(&dev->power.lock);
+>> +
+>> +             dev = dev->parent;
+>> +
+>> +             /* only clear the flag for one device if all
+>> +              * children of the device don't set the flag.
+>> +              */
+>> +             if (!dev || (!enable &&
+>
+> ... thanks to this test.
+>
+>> +                          device_for_each_child(dev, NULL,
+>> +                                                dev_memalloc_noio)))
+>> +                     break;
+>> +     }
+>> +     mutex_unlock(&dev_hotplug_mutex);
+>> +}
+>
+> This might not work if somebody calls pm_runtime_set_memalloc_noio(dev,
+> true) and then afterwards registers dev at the same time as someone
+> else calls pm_runtime_set_memalloc_noio(dev2, false), if dev and dev2
+> have the same parent.
+
+Good catch, pm_runtime_set_memalloc_noio() should be called between
+device_add() and device_del() on block/network device.
+
+> Perhaps the kerneldoc should mention that this function must not be
+> called until after dev is registered.
+
+Yes,  it should be added in -v4.
+
+
+Thanks,
+--
+Ming Lei
