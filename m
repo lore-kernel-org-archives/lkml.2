@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab2J3IWG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 04:22:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52242 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051Ab2J3IWD convert rfc822-to-8bit (ORCPT
+	id S1756077Ab2J3IcV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 04:32:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34969 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752051Ab2J3IcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 04:22:03 -0400
-Message-ID: <1351585291.4047.34.camel@twins>
-Subject: Re: [GIT PULL 0/9] perf/core improvements and fixes
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
-        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Tue, 30 Oct 2012 09:21:31 +0100
-In-Reply-To: <20121030081807.GA8245@gmail.com>
-References: <1351261913-28250-1-git-send-email-acme@infradead.org>
-	 <20121026145451.GA14379@gmail.com>
-	 <20121026170503.GC20695@ghostprotocols.net>
-	 <20121027131935.GA30001@gmail.com> <20121030081807.GA8245@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 30 Oct 2012 04:32:18 -0400
+Message-ID: <508F90A0.1030503@gmail.com>
+Date: Tue, 30 Oct 2012 16:32:32 +0800
+From: Charles Wang <0oo0.hust@gmail.com>
+Reply-To: muming.wq@gmail.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Subject: Re: [PATCH 01/32] nohz: Move nohz load balancer selection into idle
+ logic
+References: <20121029202711.062749374@goodmis.org> <20121029203846.797007049@goodmis.org>
+In-Reply-To: <20121029203846.797007049@goodmis.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-30 at 09:18 +0100, Ingo Molnar wrote:
-> > > The optimal way, I guess, would be to have some cache file 
-> > > with the results of such feature tests, that would be created 
-> > > and then used till the build fails using its findings, which 
-> > > would trigger a new feature check round, followed by an 
-> > > automatic rebuild. 
+calc_load_exit_idle depends on updated jiffies, so you shouldn't move 
+this before tick_do_update_jiffies64.
 
-autoconf!! ;-)
+And why should we do nohz_balance_enter_idle in tick_nohz_idle_exit? 
+It's nohz_balance_exit_idle here.
 
-/me runs
+Regards,
+Charles
+
+On 10/30/2012 04:27 AM, Steven Rostedt wrote:
+［snipped］
+ > @@ -573,7 +573,6 @@ static void tick_nohz_restart_sched_tick(struct 
+tick_sched *ts, ktime_t now)
+ >  	tick_do_update_jiffies64(now);
+ >  	update_cpu_load_nohz();
+ >
+ > -	calc_load_exit_idle();
+ >  	touch_softlockup_watchdog();
+ >  	/*
+ >  	 * Cancel the scheduled timer and restore the tick
+ > @@ -628,6 +627,8 @@ void tick_nohz_idle_exit(void)
+ >  		tick_nohz_stop_idle(cpu, now);
+ >
+ >  	if (ts->tick_stopped) {
+ > +		nohz_balance_enter_idle(cpu);
+ > +		calc_load_exit_idle();
+ >  		tick_nohz_restart_sched_tick(ts, now);
+ >  		tick_nohz_account_idle_ticks(ts);
+ >  	}
