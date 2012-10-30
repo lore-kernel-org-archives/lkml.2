@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934388Ab2J3Uvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 16:51:49 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55048 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306Ab2J3Uvq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 16:51:46 -0400
-Date: Tue, 30 Oct 2012 20:51:42 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Steve French <sfrench@samba.org>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, Matthew Wilcox <matthew@wil.cx>,
-        linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, ocfs2-devel@oss.oracle.com
-Subject: Re: [patch 05/10] vfs: pass data to alloc_inode super operation
-Message-ID: <20121030205142.GB2616@ZenIV.linux.org.uk>
-References: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
- <1351628084-29358-8-git-send-email-jmoyer@redhat.com>
+	id S1757866Ab2J3U5J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 16:57:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4986 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753294Ab2J3U5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 16:57:07 -0400
+Message-ID: <50903F18.10004@draigBrady.com>
+Date: Tue, 30 Oct 2012 20:56:56 +0000
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351628084-29358-8-git-send-email-jmoyer@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        =?ISO-8859-1?Q?Lasse_K=E4rkk=E4inen?= <ljkarkk2@cc.hut.fi>,
+        linux-kernel@vger.kernel.org
+Subject: Re: urandom is too slow
+References: <508FEA5A.7010406@cc.hut.fi> <20121030185403.GA5044@thunk.org>
+In-Reply-To: <20121030185403.GA5044@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 04:14:39PM -0400, Jeff Moyer wrote:
-> This patch passes a data pointer along to the alloc_inode
-> super_operations function.  The value will initially be used by
-> bdev_alloc_inode to allocate the bdev_inode on the same numa
-> node as the device to which it is tied.
+On 10/30/2012 06:54 PM, Theodore Ts'o wrote:
+> On Tue, Oct 30, 2012 at 04:55:22PM +0200, Lasse Kärkkäinen wrote:
+>> Apparently there has been little or no development on urandom even
+>> though the device is in widespread use for disk shredding and such
+>> use. The device emits data at rather slow rate of 19 MB/s even on
+>> modern hardware where other software-based PRNGs could do far
+>> better. An even better option seems to be utilizing AES for
+>> encrypting zeroes, using a random key, allowing for rates up to 500
+>> MB/s with hardware that has AES-NI instructions.
+>>
+>> Why is urandom so slow and why isn't AES hardware acceleration utilized?
+>
+> If you can use a software-based PRNG, you should use one in userspace.
+> The intended use of urandom is for cryptographic purposes (i.e.,
+> generating random session keys, long-term public keys, etc.).  If you
+> just want to wipe a disk, you shouldn't be using /dev/urandom for that
+> purpose.
 
-Yecchhh...
+For the record, shred uses a user space PRNG for speed
+for the last 3 years or so, rather than using /dev/urandom:
+http://git.sv.gnu.org/gitweb/?p=coreutils.git;a=commit;h=af5723c7
 
-> -static struct inode *bdev_alloc_inode(struct super_block *sb)
-> +static struct inode *bdev_alloc_inode(struct super_block *sb, void *data)
->  {
-> -	struct bdev_inode *ei = kmem_cache_alloc(bdev_cachep, GFP_KERNEL);
-> +	struct bdev_inode *ei;
-> +	int partno;
-> +	int node;
-> +
-> +	if (data) {
-> +		struct gendisk *disk;
-> +		dev_t dev = *(dev_t *)data;
-> +		disk = get_gendisk(dev, &partno);
-> +		node = disk->node_id;
-> +		put_disk(disk);
+$ shred-old -v -n3 t
+shred-old: t: pass 1/3 (random)...
+shred-old: t: pass 1/3 (random)...8.3MiB/1000MiB 0%
+shred-old: t: pass 1/3 (random)...17MiB/1000MiB 1%
+shred-old: t: pass 1/3 (random)...32MiB/1000MiB 3%
+...
 
-Oh, _lovely_.  Such a stunningly elegant idea.  And why not pass the
-sodding node_id directly, if I may ask?
+$ time shred-new -v t
+shred-new: t: pass 1/3 (random)...
+shred-new: t: pass 1/3 (random)...116MiB/1000MiB 11%
+shred-new: t: pass 1/3 (random)...216MiB/1000MiB 21%
+shred-new: t: pass 1/3 (random)...340MiB/1000MiB 34%
+...
 
-[reads further]
-[finds completely undocumented reason for that]
-
-Take that crap out and don't bring it back.  And consider this kludge NAKed
-once and forever.  It's unspeakably ugly, even if it didn't break just about
-every fs out there (you do realize that almost all of them have ->alloc_inode(),
-don't you?  Use grep and see).
+cheers,
+Pádraig.
