@@ -1,77 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964812Ab2J3QSK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:18:10 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:48259 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753625Ab2J3QSI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:18:08 -0400
-Date: Tue, 30 Oct 2012 09:18:07 -0700
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
-Message-ID: <20121030161807.GA9709@dtor-ws.eng.vmware.com>
-References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121030021938.GC1920@kroah.com>
- <20121030040744.GB32055@dtor-ws.eng.vmware.com>
- <20121030154801.GC14167@kroah.com>
+	id S1759658Ab2J3QTm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:19:42 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34702 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753423Ab2J3QTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 12:19:39 -0400
+Date: Tue, 30 Oct 2012 17:19:33 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v4 6/9] compiler.h, bug.h: Prevent double error messages
+ with BUILD_BUG{,_ON}
+Message-ID: <20121030161933.GD28499@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Daniel Santos <daniel.santos@pobox.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Andi Kleen <ak@linux.intel.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Christopher Li <sparse@chrisli.org>,
+	David Daney <david.daney@cavium.com>,
+	David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+	Josh Triplett <josh@joshtriplett.org>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>,
+	Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	David Rientjes <rientjes@google.com>
+References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
+ <1351457835-7553-6-git-send-email-daniel.santos@pobox.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121030154801.GC14167@kroah.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1351457835-7553-6-git-send-email-daniel.santos@pobox.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 08:48:01AM -0700, Greg KH wrote:
-> On Mon, Oct 29, 2012 at 09:07:44PM -0700, Dmitry Torokhov wrote:
-> > Hi Greg,
-> > 
-> > On Mon, Oct 29, 2012 at 07:19:38PM -0700, Greg KH wrote:
-> > > On Mon, Oct 29, 2012 at 06:03:28PM -0700, George Zhang wrote:
-> > > >  drivers/misc/Kconfig                      |    1
-> > > >  drivers/misc/Makefile                     |    2
-> > > >  drivers/misc/vmw_vmci/Kconfig             |   16
-> > > >  drivers/misc/vmw_vmci/Makefile            |   43
-> > > 
-> > > Meta comment here, why drivers/misc/?  The other hypervisor
-> > > infrastructures all have their own directory under drivers/  Should we
-> > > be moving everything to drivers/hyperv/ somehow?
-> > 
-> > drivers/hyperv is not the best name for obvious reasons...
+On Sun, Oct 28, 2012 at 03:57:12PM -0500, danielfsantos@att.net wrote:
+> Prior to the introduction of __attribute__((error("msg"))) in gcc 4.3,
+> creating compile-time errors required a little trickery.
+> BUILD_BUG{,_ON} uses this attribute when available to generate
+> compile-time errors, but also uses the negative-sized array trick for
+> older compilers, resulting in two error messages in some cases.  The
+> reason it's "some" cases is that as of gcc 4.4, the negative-sized array
+> will not create an error in some situations, like inline functions.
 > 
-> Sorry, yes :)
-
-:)
-
+> This patch replaces the negative-sized array code with the new
+> __compiletime_error_fallback() macro which expands to the same thing
+> unless the the error attribute is available, in which case it expands to
+> do{}while(0), resulting in exactly one compile-time error on all
+> versions of gcc.
 > 
-> > I think that even if we had a special directory for vmci having network
-> > drivers in Dave's realm and pvscsi in James's is best option, so the new
-> > directory would contain vmci and the balloon driver (vsock will go into
-> > net/).  Given that balloon is already in drivers/misc it looked like
-> > obvious place for VMCI as well.
+> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+> ---
+>  include/linux/bug.h      |    4 ++--
+>  include/linux/compiler.h |    7 +++++++
+>  2 files changed, 9 insertions(+), 2 deletions(-)
 > 
-> I agree that the individual drivers should go in the subsystem area,
-> it's this "hypervisor bus core" type code that I'm questioning.  Right
-> now every hypervisor is putting that logic in a different place in the
-> kernel, having some consistency here would be nice.
+> diff --git a/include/linux/bug.h b/include/linux/bug.h
+> index 03259d7..da03dc1 100644
+> --- a/include/linux/bug.h
+> +++ b/include/linux/bug.h
+> @@ -57,13 +57,13 @@ struct pt_regs;
+>   * track down.
+>   */
+>  #ifndef __OPTIMIZE__
+> -#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+> +#define BUILD_BUG_ON(condition) __compiletime_error_fallback(condition)
+>  #else
+>  #define BUILD_BUG_ON(condition)						\
+>  	do {								\
+>  		extern void __build_bug_on_failed(void)			\
+>  			__compiletime_error("BUILD_BUG_ON failed");	\
+> -		((void)sizeof(char[1 - 2*!!(condition)]));		\
+> +		__compiletime_error_fallback(condition);		\
+>  		if (condition)						\
+>  			__build_bug_on_failed();			\
 
-Hmm, I wonder if miscellaneous and core hypervisor drivers should end
-up in drivers/platform:
+If we're defining a fallback, shouldn't it come second? I.e.:
 
-	drivers/platform/hyperv
-	drivers/platform/olpc
-	drivers/platform/vmware
-	drivers/platform/xen
-	drivers/platform/x86
+		if (condition)
+			__build_bug_on_failed();
+		__compiletime_error_fallback(condition);
 
-But really we'd like to get VMCI into mainline first and move to a new
-place later if such a better place is found.
+Also, the error message from __build_bug_on_failed is much more
+informative:
 
-Thanks,
-Dmitry
+arch/x86/kernel/cpu/amd.c: In function ‘early_init_amd’:
+arch/x86/kernel/cpu/amd.c:486:2: error: call to ‘__build_bug_on_failed’ declared with attribute error: BUILD_BUG_ON failed
+make[1]: *** [arch/x86/kernel/cpu/amd.o] Error 1
+make[1]: *** Waiting for unfinished jobs....
+make: *** [arch/x86/kernel/cpu/] Error 2
+
+than
+
+arch/x86/kernel/cpu/amd.c: In function ‘early_init_amd’:
+arch/x86/kernel/cpu/amd.c:486:2: error: size of unnamed array is negative
+make[1]: *** [arch/x86/kernel/cpu/amd.o] Error 1
+make[1]: *** Waiting for unfinished jobs....
+make: *** [arch/x86/kernel/cpu/] Error 2
+
+Finally, you need to do:
+
+	bool __cond = !!(condition);
+
+and use __cond so that condition doesn't get evaluated multiple times
+(possibly with side effects).
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
