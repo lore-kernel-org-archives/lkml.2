@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934887Ab2J3Wpr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 18:45:47 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:58076 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308Ab2J3Wpp (ORCPT
+	id S1758524Ab2J3Wsx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 18:48:53 -0400
+Received: from smtp-03.mandic.com.br ([200.225.81.143]:59687 "EHLO
+	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752500Ab2J3Wsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 18:45:45 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Arvid Brodin <Arvid.Brodin@xdin.com>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "David Rientjes" <rientjes@google.com>
-References: <50904066.4060404@xdin.com>
-Date: Tue, 30 Oct 2012 15:45:35 -0700
-In-Reply-To: <50904066.4060404@xdin.com> (Arvid Brodin's message of "Tue, 30
-	Oct 2012 21:02:33 +0000")
-Message-ID: <87ip9refzk.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 30 Oct 2012 18:48:52 -0400
+Message-ID: <5090594E.7050401@cesarb.net>
+Date: Tue, 30 Oct 2012 20:48:46 -0200
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18P/+LtNJXnR9zHVq77grjrYiNoqdnw4Dc=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0411]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Arvid Brodin <Arvid.Brodin@xdin.com>
-X-Spam-Relay-Country: 
-Subject: Re: fs/proc/base.c: text md5sums; tgid vs tid; and INF vs ONE?
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] mm: refactor reinsert of swap_info in sys_swapoff
+References: <1351372847-13625-1-git-send-email-cesarb@cesarb.net> <1351372847-13625-2-git-send-email-cesarb@cesarb.net> <20121030140417.988c2437.akpm@linux-foundation.org>
+In-Reply-To: <20121030140417.988c2437.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arvid Brodin <Arvid.Brodin@xdin.com> writes:
-
-> Hi,
+Em 30-10-2012 19:04, Andrew Morton escreveu:
+> Your patch doesn't change this, but...  it is very unusual for any
+> subsystem's ->init method to be called under a spinlock.  Because it is
+> highly likely that such a method will wish to do things such as memory
+> allocation.
 >
-> Below is a patch that adds a file /proc/PID/text_md5sum which when read returns the md5
-> checksum of a process' text segment. (This would be used e.g. to make sure a process'
-> code hasn't been tampered with.)
->
-> However, I have a few questions:
->
-> * What's the difference between the tgid_base_stuff and tid_base_stuff arrays? (One for
-> processes and one for the process' threads? I haven't been able to find any info about
-> this so I'm guessing.)
+> It is rare and unlikely for an ->init() method to *need* such external
+> locking, because all the objects it is dealing with cannot be looked up
+> by other threads because nothing has been registered anywhere yet.
 
-Yes.  One for thread groups and one for threads.
+The frontswap_init() method is being passed the swap_info_struct's 
+->type, which it uses to get back the swap_info_struct itself, which it 
+then uses to check if the frontswap_map allocation succeeded. As noted 
+by the commit message for commit 38b5faf (mm: frontswap: core swap 
+subsystem hooks and headers), that allocation can fail, which will do 
+nothing more than not enable frontswap for that swap area.
 
-> * When should I use the INF ("read") vs the ONE ("show") macro?
+The same parameter is then passed down to the ->init() method, which 
+proceeds to sumarily ignore it on the three in-tree implementations I 
+looked at.
 
-proc_read depends on the caller to allocate a 4k buffer, instead of
-sizing the buffer based upon the size of the text being written.  Which
-makes proc_read an error prone and ultimately deprecated way of handling
-things.
+Yeah, it looks like a violation of YAGNI to me, and doing things in a 
+more roundabount way than is justified. Why pass the ->type and then get 
+the pointer from it instead of just passing the pointer in the first 
+place? Or better yet, why not pass the frontswap_map pointer? Even 
+better, why not a boolean saying whether it worked? Even better, *why 
+not just put the conditional inside enable_swap_info* and pass no 
+parameter at all?
 
-Using some variant on seq_file is preferred for new files.
+> So either frontswap is doing something wrong here or there's some
+> subtlety which escapes me.  If the former then we should try to get
+> that ->init call to happen outside swap_lock.
 
-> * Any other comments about the code?
+I believe the swap_lock is protecting the poolid. It is possible that 
+other things in the frontswap code are being called before the first 
+swapon with a successful frontswap_map allocation (which is when the 
+poolid would get allocated).
 
-There are known successful attacks against md5 so using md5 for
-something new and security related is a bad idea.
+A quick look suggests the poolid only gets set on an initcall or in the 
+->init() method; perhaps a local mutex (to prevent double allocation) 
+and an atomic update of the poolid would be enough to move it outside 
+the lock (and also outside the swapon_mutex).
 
-Userspace can just as easily compute a security hash itself you don't
-need kernel support.
+But that would work only if no out-of-tree frontswap module needs it 
+within the swap_lock.
+
+> And if we can do that, perhaps we can fix the regrettable GFP_ATOMIC
+> in zcache_new_pool().
 
 
-I recommend you checkout the code in security/ima/ looks like it can
-already do what you are trying to do.
-
-Eric
+-- 
+Cesar Eduardo Barros
+cesarb@cesarb.net
+cesar.barros@gmail.com
