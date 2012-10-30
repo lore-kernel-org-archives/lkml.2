@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759950Ab2J3Qk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:40:56 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:39877 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753580Ab2J3Qkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:40:53 -0400
+	id S964871Ab2J3QlV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:41:21 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:38952 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759588Ab2J3Qjh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 12:39:37 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,141 +15,78 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 5/6] rcu: Clarify memory-ordering properties of grace-period primitives
-Date: Tue, 30 Oct 2012 09:27:54 -0700
-Message-Id: <1351614475-22895-5-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/6] rcu: Fix batch-limit size problem
+Date: Tue, 30 Oct 2012 09:27:51 -0700
+Message-Id: <1351614475-22895-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1351614475-22895-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20121030162728.GA22648@linux.vnet.ibm.com>
  <1351614475-22895-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12103016-3534-0000-0000-00000E5DED5E
+x-cbid: 12103016-7408-0000-0000-000009C554B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-This commit explicitly states the memory-ordering properties of the
-RCU grace-period primitives.  Although these properties were in some
-sense implied by the fundmental property of RCU ("a grace period must
-wait for all pre-existing RCU read-side critical sections to complete"),
-stating it explicitly will be a great labor-saving device.
+Commit 29c00b4a1d9e27 (rcu: Add event-tracing for RCU callback
+invocation) added a regression in rcu_do_batch()
 
-Reported-by: Oleg Nesterov <oleg@redhat.com>
+Under stress, RCU is supposed to allow to process all items in queue,
+instead of a batch of 10 items (blimit), but an integer overflow makes
+the effective limit being 1.  So, unless there is frequent idle periods
+(during which RCU ignores batch limits), RCU can be forced into a
+state where it cannot keep up with the callback-generation rate,
+eventually resulting in OOM.
+
+This commit therefore converts a few variables in rcu_do_batch() from
+int to long to fix this problem, along with the module parameters
+controlling the batch limits.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: <stable@vger.kernel.org> # 3.2 +
 ---
- include/linux/rcupdate.h |   20 ++++++++++++++++++++
- kernel/rcutree.c         |   16 ++++++++++++++++
- kernel/rcutree_plugin.h  |    8 ++++++++
- 3 files changed, 44 insertions(+), 0 deletions(-)
+ kernel/rcutree.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 7c968e4..91d530a 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -90,6 +90,20 @@ extern void do_trace_rcu_torture_read(char *rcutorturename,
-  * that started after call_rcu() was invoked.  RCU read-side critical
-  * sections are delimited by rcu_read_lock() and rcu_read_unlock(),
-  * and may be nested.
-+ *
-+ * Note that all CPUs must agree that the grace period extended beyond
-+ * all pre-existing RCU read-side critical section.  This means that
-+ * on systems with more than one CPU, when "func()" is invoked, each
-+ * CPU is guaranteed to have executed a full memory barrier since the
-+ * end of its last RCU read-side critical section whose beginning
-+ * preceded the call to call_rcu().  Note that this guarantee includes
-+ * CPUs that are offline, idle, or executing in user mode, as well as
-+ * CPUs that are executing in the kernel.  Furthermore, if CPU A
-+ * invoked call_rcu() and CPU B invoked the resulting RCU callback
-+ * function "func()", then both CPU A and CPU B are guaranteed to execute
-+ * a full memory barrier during the time interval between the call to
-+ * call_rcu() and the invocation of "func()" -- even if CPU A and CPU B
-+ * are the same CPU (but again only if the system has more than one CPU).
-  */
- extern void call_rcu(struct rcu_head *head,
- 			      void (*func)(struct rcu_head *head));
-@@ -118,6 +132,9 @@ extern void call_rcu(struct rcu_head *head,
-  *  OR
-  *  - rcu_read_lock_bh() and rcu_read_unlock_bh(), if in process context.
-  *  These may be nested.
-+ *
-+ * See the description of call_rcu() for more detailed information on
-+ * memory ordering guarantees.
-  */
- extern void call_rcu_bh(struct rcu_head *head,
- 			void (*func)(struct rcu_head *head));
-@@ -137,6 +154,9 @@ extern void call_rcu_bh(struct rcu_head *head,
-  *  OR
-  *  anything that disables preemption.
-  *  These may be nested.
-+ *
-+ * See the description of call_rcu() for more detailed information on
-+ * memory ordering guarantees.
-  */
- extern void call_rcu_sched(struct rcu_head *head,
- 			   void (*func)(struct rcu_head *rcu));
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e4c2192..ca32215 100644
+index 93d6871..e4c2192 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -2233,6 +2233,19 @@ static inline int rcu_blocking_is_gp(void)
-  * softirq handlers will have completed, since in some kernels, these
-  * handlers can run in process context, and can block.
-  *
-+ * Note that this guarantee implies a further memory-ordering guarantee.
-+ * On systems with more than one CPU, when synchronize_sched() returns,
-+ * each CPU is guaranteed to have executed a full memory barrier since
-+ * the end of its last RCU-sched read-side critical section whose beginning
-+ * preceded the call to synchronize_sched().  Note that this guarantee
-+ * includes CPUs that are offline, idle, or executing in user mode, as
-+ * well as CPUs that are executing in the kernel.  Furthermore, if CPU A
-+ * invoked synchronize_sched(), which returned to its caller on CPU B,
-+ * then both CPU A and CPU B are guaranteed to have executed a full memory
-+ * barrier during the execution of synchronize_sched() -- even if CPU A
-+ * and CPU B are the same CPU (but again only if the system has more than
-+ * one CPU).
-+ *
-  * This primitive provides the guarantees made by the (now removed)
-  * synchronize_kernel() API.  In contrast, synchronize_rcu() only
-  * guarantees that rcu_read_lock() sections will have completed.
-@@ -2259,6 +2272,9 @@ EXPORT_SYMBOL_GPL(synchronize_sched);
-  * read-side critical sections have completed.  RCU read-side critical
-  * sections are delimited by rcu_read_lock_bh() and rcu_read_unlock_bh(),
-  * and may be nested.
-+ *
-+ * See the description of synchronize_sched() for more detailed information
-+ * on memory ordering guarantees.
-  */
- void synchronize_rcu_bh(void)
- {
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index f921154..0f370a8 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -670,6 +670,9 @@ EXPORT_SYMBOL_GPL(kfree_call_rcu);
-  * concurrently with new RCU read-side critical sections that began while
-  * synchronize_rcu() was waiting.  RCU read-side critical sections are
-  * delimited by rcu_read_lock() and rcu_read_unlock(), and may be nested.
-+ *
-+ * See the description of synchronize_sched() for more detailed information
-+ * on memory ordering guarantees.
-  */
- void synchronize_rcu(void)
- {
-@@ -875,6 +878,11 @@ EXPORT_SYMBOL_GPL(synchronize_rcu_expedited);
+@@ -212,13 +212,13 @@ DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
+ #endif
+ };
  
- /**
-  * rcu_barrier - Wait until all in-flight call_rcu() callbacks complete.
-+ *
-+ * Note that this primitive will not always wait for an RCU grace period
-+ * to complete.  For example, if there are no RCU callbacks queued anywhere
-+ * in the system, then rcu_barrier() is within its rights to return
-+ * immediately, without waiting for anything, much less an RCU grace period.
-  */
- void rcu_barrier(void)
+-static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
+-static int qhimark = 10000;	/* If this many pending, ignore blimit. */
+-static int qlowmark = 100;	/* Once only this many pending, use blimit. */
++static long blimit = 10;	/* Maximum callbacks per rcu_do_batch. */
++static long qhimark = 10000;	/* If this many pending, ignore blimit. */
++static long qlowmark = 100;	/* Once only this many pending, use blimit. */
+ 
+-module_param(blimit, int, 0444);
+-module_param(qhimark, int, 0444);
+-module_param(qlowmark, int, 0444);
++module_param(blimit, long, 0444);
++module_param(qhimark, long, 0444);
++module_param(qlowmark, long, 0444);
+ 
+ int rcu_cpu_stall_suppress __read_mostly; /* 1 = suppress stall warnings. */
+ int rcu_cpu_stall_timeout __read_mostly = CONFIG_RCU_CPU_STALL_TIMEOUT;
+@@ -1791,7 +1791,8 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
  {
+ 	unsigned long flags;
+ 	struct rcu_head *next, *list, **tail;
+-	int bl, count, count_lazy, i;
++	long bl, count, count_lazy;
++	int i;
+ 
+ 	/* If no callbacks are ready, just return.*/
+ 	if (!cpu_has_callbacks_ready_to_invoke(rdp)) {
 -- 
 1.7.8
 
