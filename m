@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab2J3FWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 01:22:35 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:55536 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753343Ab2J3FWe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 01:22:34 -0400
-Date: Mon, 29 Oct 2012 22:22:34 -0700
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 12/12] VMCI: Some header and config files.
-Message-ID: <20121030052234.GH32055@dtor-ws.eng.vmware.com>
-References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121030010533.17788.79417.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121030023255.GJ1920@kroah.com>
+	id S1754364Ab2J3FZj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 01:25:39 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51919 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751223Ab2J3FZh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 01:25:37 -0400
+Message-ID: <508F64EC.9000809@ti.com>
+Date: Tue, 30 Oct 2012 10:56:04 +0530
+From: Sourav <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030023255.GJ1920@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benoit Cousson <b-cousson@ti.com>
+CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [RESEND/PATCHv3] arm: dts: omap5-evm: Add keypad support
+References: <1351507226-10328-1-git-send-email-sourav.poddar@ti.com> <508EB250.20607@ti.com>
+In-Reply-To: <508EB250.20607@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 07:32:55PM -0700, Greg KH wrote:
-> On Mon, Oct 29, 2012 at 06:05:38PM -0700, George Zhang wrote:
-> > --- /dev/null
-> > +++ b/drivers/misc/vmw_vmci/Makefile
-> > @@ -0,0 +1,43 @@
-> > +################################################################################
-> > +#
-> > +# Linux driver for VMware's VMCI device.
-> > +#
-> > +# Copyright (C) 2007-2012, VMware, Inc. All Rights Reserved.
-> > +#
-> > +# This program is free software; you can redistribute it and/or modify it
-> > +# under the terms of the GNU General Public License as published by the
-> > +# Free Software Foundation; version 2 of the License and no later version.
-> > +#
-> > +# This program is distributed in the hope that it will be useful, but
-> > +# WITHOUT ANY WARRANTY; without even the implied warranty of
-> > +# MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-> > +# NON INFRINGEMENT.  See the GNU General Public License for more
-> > +# details.
-> > +#
-> > +# Maintained by: Andrew Stiegmann <pv-drivers@vmware.com>
-> > +#
-> > +################################################################################
-> 
-> That's a big boiler-plate for a makefile :)
-> 
-> Wait, what's Andrew's name doing here, and yet it isn't on any of the
-> signed-off-by: or From: lines of the driver?  Surely you aren't the only
-> contributor here?
-> 
-> > +#
-> > +# Makefile for the VMware VMCI
-> > +#
-> 
-> That's the only needed comment for this file, if even that.
-> 
-> > +
-> > +obj-$(CONFIG_VMWARE_VMCI) += vmw_vmci.o
-> > +
-> > +vmw_vmci-y += vmci_context.o
-> > +vmw_vmci-y += vmci_datagram.o
-> > +vmw_vmci-y += vmci_doorbell.o
-> > +vmw_vmci-y += vmci_driver.o
-> > +vmw_vmci-y += vmci_event.o
-> > +vmw_vmci-y += vmci_guest.o
-> > +vmw_vmci-y += vmci_handle_array.o
-> > +vmw_vmci-y += vmci_host.o
-> > +vmw_vmci-y += vmci_queue_pair.o
-> > +vmw_vmci-y += vmci_resource.o
-> > +vmw_vmci-y += vmci_route.o
-> 
-> You can do this cleaner with multiple .o objects on the same line...
-> 
-> > +vmci:
-> > +	$(MAKE) -C ../../.. SUBDIRS=$$PWD CONFIG_VMWARE_VMCI=m modules
-> > +
-> > +clean:
-> > +	$(MAKE) -C ../../.. SUBDIRS=$$PWD CONFIG_VMWARE_VMCI=m clean
-> 
-> What are these two last targets for?  I'm guessing this is from when you
-> ported it from a stand-along module?  Please remove them.
+Hi Benoit,
+On Monday 29 October 2012 10:14 PM, Benoit Cousson wrote:
+> Hi Sourav,
+>
+> On 10/29/2012 11:40 AM, Sourav Poddar wrote:
+>> Add keypad data node in omap5-evm.
+>>
+>> Based on I2C support patch for omap5, which has been
+>> already posted as a different series.
+>>
+>> Tested on omap5430 evm with 3.7-rc1 kernel.
+>>
+>> Cc: Felipe Balbi <balbi@ti.com>
+>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>
+>> Tested on omap5430 sdp with 3.7-rc1 kernel.
+>>
+>> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+>> ---
+>>   arch/arm/boot/dts/omap5-evm.dts |   95 +++++++++++++++++++++++++++++++++++++++
+>>   1 files changed, 95 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-evm.dts
+>> index c663eba..b812d6d 100644
+>> --- a/arch/arm/boot/dts/omap5-evm.dts
+>> +++ b/arch/arm/boot/dts/omap5-evm.dts
+>> @@ -140,3 +140,98 @@
+>>   &mcbsp3 {
+>>   	status = "disabled";
+>>   };
+>> +
+>> +&i2c5 {
+>> +	clock-frequency = <400000>;
+>> +
+>> +	smsc@38 {
+>> +		compatible = "smscece1099";
+>> +		reg = <0x38>;
+>> +		clock = <0x13>;
+> What does that "clock" mean?
+This chip supports a clock control register which is used to enable the
+interface used by the chip to communicate. Here, the interface which you 
+can are
+SMBUS interface or BC-LINK interface.
+> I cannot find that in the binding documentation. BTW, did you add that
+> documentation in the driver patch?
+Nope, I missed out on the dt binding documentation for the driver. :(
 
-We'll clean it all up.
+Will send a seperate patch for the bindings.
+> Regards,
+> Benoit
+>
 
-Thanks for going over the code.
-
--- 
-Dmitry
