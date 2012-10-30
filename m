@@ -1,134 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512Ab2J3UYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 16:24:19 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:40187 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294Ab2J3UYR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 16:24:17 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: Julia.Lawall@lip6.fr
-Cc: Gilles.Muller@lip6.fr, nicolas.palix@imag.fr, peter.senna@gmail.com,
-        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH] scripts/coccinelle/misc/semicolon.cocci: Add unnecessary semicolon test
-Date: Tue, 30 Oct 2012 21:23:50 +0100
-Message-Id: <1351628630-3800-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S934413Ab2J3U0y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 16:26:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58334 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756252Ab2J3U0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 16:26:52 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Marcelo Tostatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        kvm@vger.kernel.org, x86@kernel.org
+Subject: [PATCH] x86, add hypervisor name to dump_stack() [v4]
+Date: Tue, 30 Oct 2012 16:26:33 -0400
+Message-Id: <1351628793-27180-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This semantic patch looks for semicolons that can be removed without
-changing the semantics of the code. The confidence is moderate
-because there are some false positives on cases like:
+Debugging crash, panics, stack trace WARN_ONs, etc., from both virtual and
+bare-metal boots can get difficult very quickly.  While there are ways to
+decipher the output and determine if the output is from a virtual guest,
+the in-kernel hypervisors now have a single registration point
+and set x86_hyper.  We can use this to output additional debug
+information during a panic/oops/stack trace.
 
-drivers/mmc/host/cb710-mmc.c:589
-		break;
-	case MMC_POWER_UP:
-	default:
--		/* ignore */;
-	}
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>
+Cc: Marcelo Tostatti <mtosatti@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: kvm@vger.kernel.org
+Cc: x86@kernel.org
 
-There are 37 patches accepted reported by this semantic patch and
-more than 300 fixes to be applied.
+[v2]: Modifications suggested by Ingo and added changes for similar output
+      from process.c
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+[v3]: Unify common code and move output to end of line
 ---
- scripts/coccinelle/misc/semicolon.cocci | 83 +++++++++++++++++++++++++++++++++
- 1 file changed, 83 insertions(+)
- create mode 100644 scripts/coccinelle/misc/semicolon.cocci
+ arch/x86/kernel/dumpstack.c |    6 +-----
+ arch/x86/kernel/process.c   |   14 ++++++++++++--
+ 2 files changed, 13 insertions(+), 7 deletions(-)
 
-diff --git a/scripts/coccinelle/misc/semicolon.cocci b/scripts/coccinelle/misc/semicolon.cocci
-new file mode 100644
-index 0000000..a47eba2
---- /dev/null
-+++ b/scripts/coccinelle/misc/semicolon.cocci
-@@ -0,0 +1,83 @@
-+///
-+/// Removes unneeded semicolon.
-+///
-+// Confidence: Moderate
-+// Copyright: (C) 2012 Peter Senna Tschudin, INRIA/LIP6.  GPLv2.
-+// URL: http://coccinelle.lip6.fr/
-+// Comments: Some false positives on empty default cases in switch statements.
-+// Options: --no-includes --include-headers
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index ae42418b..96d40ed 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -188,11 +188,7 @@ void dump_stack(void)
+ 	unsigned long stack;
+ 
+ 	bp = stack_frame(current, NULL);
+-	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
+-		current->pid, current->comm, print_tainted(),
+-		init_utsname()->release,
+-		(int)strcspn(init_utsname()->version, " "),
+-		init_utsname()->version);
++	show_regs_common();
+ 	show_trace(NULL, NULL, &stack, bp);
+ }
+ EXPORT_SYMBOL(dump_stack);
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index b644e1c..7ea4692 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -28,6 +28,7 @@
+ #include <asm/fpu-internal.h>
+ #include <asm/debugreg.h>
+ #include <asm/nmi.h>
++#include <asm/hypervisor.h>
+ 
+ /*
+  * per-CPU TSS segments. Threads are completely 'soft' on Linux,
+@@ -124,6 +125,13 @@ void exit_thread(void)
+ void show_regs_common(void)
+ {
+ 	const char *vendor, *product, *board;
++	const char *machine_name = "x86";
++	const char *kernel_type = "native";
 +
-+virtual patch
-+virtual report
-+virtual context
-+virtual org
-+
-+@r_default@
-+position p;
-+@@
-+switch (...)
-+{
-+default: ...;@p
-+}
-+
-+@r_case@
-+position p;
-+@@
-+(
-+switch (...)
-+{
-+case ...:;@p
-+}
-+|
-+switch (...)
-+{
-+case ...:...
-+case ...:;@p
-+}
-+|
-+switch (...)
-+{
-+case ...:...
-+case ...:
-+case ...:;@p
-+}
-+)
-+
-+@r1@
-+statement S;
-+position p1;
-+position p != {r_default.p, r_case.p};
-+identifier label;
-+@@
-+(
-+label:;
-+|
-+S@p1;@p
-+)
-+
-+@script:python@
-+p << r1.p;
-+p1 << r1.p1;
-+@@
-+if p[0].line != p1[0].line_end:
-+	cocci.include_match(False)
-+
-+@depends on patch@
-+position r1.p;
-+@@
-+-;@p
-+
-+@script:python depends on report@
-+p << r1.p;
-+@@
-+coccilib.report.print_report(p[0],"Unneeded semicolon")
-+
-+@depends on context@
-+position r1.p;
-+@@
-+*;@p
-+
-+@script:python depends on org@
-+p << r1.p;
-+@@
-+cocci.print_main("Unneeded semicolon",p)
++	if (x86_hyper) {
++		machine_name = x86_hyper->name;
++		kernel_type = "guest";
++	}
+ 
+ 	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
+ 	if (!vendor)
+@@ -135,14 +143,16 @@ void show_regs_common(void)
+ 	/* Board Name is optional */
+ 	board = dmi_get_system_info(DMI_BOARD_NAME);
+ 
+-	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s\n",
++	printk(KERN_DEFAULT
++	       "Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s [%s %s kernel]\n",
+ 	       current->pid, current->comm, print_tainted(),
+ 	       init_utsname()->release,
+ 	       (int)strcspn(init_utsname()->version, " "),
+ 	       init_utsname()->version,
+ 	       vendor, product,
+ 	       board ? "/" : "",
+-	       board ? board : "");
++	       board ? board : "",
++	       machine_name, kernel_type);
+ }
+ 
+ void flush_thread(void)
 -- 
-1.7.11.7
+1.7.9.3
 
