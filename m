@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933778Ab2J3Pjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:39:52 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57502 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932135Ab2J3Pju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:39:50 -0400
+	id S933801Ab2J3Po0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:44:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59544 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753228Ab2J3PoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 11:44:24 -0400
+Message-ID: <508FF5D0.6080107@redhat.com>
+Date: Tue, 30 Oct 2012 11:44:16 -0400
+From: Vlad Yasevich <vyasevic@redhat.com>
+Reply-To: vyasevic@redhat.com
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAKohpon7KP5V3xjMG_HaNoP3x1aPT2FtivTz=41PT7neGTpTUw@mail.gmail.com>
-References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348731121-2515-6-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348735450.1648.5.camel@vkoul-udesk3>
-	<1348739022.13371.157.camel@smile>
-	<1348740071.1648.25.camel@vkoul-udesk3>
-	<CAOh2x=ntwp22Z3sHf9QehVwab--ZayF-kmTpZsjbkyQYVxrzpw@mail.gmail.com>
-	<1349691428.10584.95.camel@smile>
-	<CAKohpokGsAv2cPjj2EMvmTmN1Q+LOU7mN0H9YZcGzs95mm6c-w@mail.gmail.com>
-	<1349700409.10584.118.camel@smile>
-	<CAKohpo=t_uV-S+cbeDFvSDLe0SxXVx6tvA8yGMF45-YvU_FRvw@mail.gmail.com>
-	<1351609530.11158.87.camel@smile>
-	<CAKohpon7KP5V3xjMG_HaNoP3x1aPT2FtivTz=41PT7neGTpTUw@mail.gmail.com>
-Date: Tue, 30 Oct 2012 17:39:49 +0200
-Message-ID: <CAHp75Vf6ntXh2w03jMUN+qH91UedPsCiJ3mxTe-Y3nA7mpJzLw@mail.gmail.com>
-Subject: Re: [PATCHv3 5/7] dmaengine: dw_dmac: add PCI part of the driver
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 2/8] skb: api to report errors for zero copy
+ skbs
+References: <cover.1351524501.git.mst@redhat.com> <ee85ad5053a929c90e0347b6ba33778d96690e9b.1351524501.git.mst@redhat.com>
+In-Reply-To: <ee85ad5053a929c90e0347b6ba33778d96690e9b.1351524501.git.mst@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 5:19 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 30 October 2012 20:35, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
->> On Mon, 2012-10-08 at 18:57 +0530, Viresh Kumar wrote:
+On 10/29/2012 11:49 AM, Michael S. Tsirkin wrote:
+> Orphaning frags for zero copy skbs needs to allocate data in atomic
+> context so is has a chance to fail. If it does we currently discard
+> the skb which is safe, but we don't report anything to the caller,
+> so it can not recover by e.g. disabling zero copy.
+>
+> Add an API to free skb reporting such errors: this is used
+> by tun in case orphaning frags fails.
+>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>   include/linux/skbuff.h |  1 +
+>   net/core/skbuff.c      | 19 +++++++++++++++++++
+>   2 files changed, 20 insertions(+)
+>
+> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> index 8bac11b..0644432 100644
+> --- a/include/linux/skbuff.h
+> +++ b/include/linux/skbuff.h
+> @@ -568,6 +568,7 @@ static inline struct rtable *skb_rtable(const struct sk_buff *skb)
+>   }
+>
+>   extern void kfree_skb(struct sk_buff *skb);
+> +extern void skb_tx_error(struct sk_buff *skb, int err);
+>   extern void consume_skb(struct sk_buff *skb);
+>   extern void	       __kfree_skb(struct sk_buff *skb);
+>   extern struct kmem_cache *skbuff_head_cache;
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index eb31f6e..ad99c64 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -635,6 +635,25 @@ void kfree_skb(struct sk_buff *skb)
+>   EXPORT_SYMBOL(kfree_skb);
+>
+>   /**
+> + *	kfree_skb_on_error - report an sk_buff xmit error
+> + *	@skb: buffer that triggered an error
+> + *
+> + *	Report xmit error if a device callback is tracking this skb.
+> + */
 
-> For me i don't agree with your approach. So, its a NACK.
-Point taken.
+Nit:  Comment doesn't match new function.
 
-> However if Arnd/Vinod or You can give me some strong points about
-> your approach, i can consider it again :)
-Fair enough.
+-vlad
 
--- 
-With Best Regards,
-Andy Shevchenko
+> +void skb_tx_error(struct sk_buff *skb, int err)
+> +{
+> +	if (skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
+> +		struct ubuf_info *uarg;
+> +
+> +		uarg = skb_shinfo(skb)->destructor_arg;
+> +		if (uarg->callback)
+> +			uarg->callback(uarg, err);
+> +		skb_shinfo(skb)->tx_flags &= ~SKBTX_DEV_ZEROCOPY;
+> +	}
+> +}
+> +EXPORT_SYMBOL(skb_tx_error);
+> +
+> +/**
+>    *	consume_skb - free an skbuff
+>    *	@skb: buffer to free
+>    *
+>
+
