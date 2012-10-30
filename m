@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759987Ab2J2QHW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:07:22 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58737 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759844Ab2J2QHN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759917Ab2J2QHT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:07:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25567 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759864Ab2J2QHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Oct 2012 12:07:13 -0400
-Date: Mon, 29 Oct 2012 12:07:10 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 10/16] dlm: use new hashtable implementation
-Message-ID: <20121029160710.GA18944@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-10-git-send-email-levinsasha928@gmail.com> <20121029124655.GD11733@Krystal> <20121029130736.GF11733@Krystal> <CA+1xoqfxgB+8BybPpf+jwT-ObfGPxnbKvkz1MUMuJuR8NDSNaw@mail.gmail.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,672,1344236400"; 
+   d="scan'208";a="234114776"
+Date: Wed, 31 Oct 2012 00:05:53 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 5/8] perf ui/browser: Integrate script browser into
+ main hists browser
+Message-ID: <20121030160553.GA21738@feng-snb>
+References: <1351569369-26732-1-git-send-email-feng.tang@intel.com>
+ <1351569369-26732-6-git-send-email-feng.tang@intel.com>
+ <20121029145423.GF6754@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+1xoqfxgB+8BybPpf+jwT-ObfGPxnbKvkz1MUMuJuR8NDSNaw@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121029145423.GF6754@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> On Mon, Oct 29, 2012 at 9:07 AM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> > * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> >> * Sasha Levin (levinsasha928@gmail.com) wrote:
-> >> [...]
-> >> > @@ -158,34 +159,21 @@ static int dlm_allow_conn;
-> >> >  static struct workqueue_struct *recv_workqueue;
-> >> >  static struct workqueue_struct *send_workqueue;
-> >> >
-> >> > -static struct hlist_head connection_hash[CONN_HASH_SIZE];
-> >> > +static struct hlist_head connection_hash[CONN_HASH_BITS];
-> >> >  static DEFINE_MUTEX(connections_lock);
-> >> >  static struct kmem_cache *con_cache;
-> >> >
-> >> >  static void process_recv_sockets(struct work_struct *work);
-> >> >  static void process_send_sockets(struct work_struct *work);
-> >> >
-> >> > -
-> >> > -/* This is deliberately very simple because most clusters have simple
-> >> > -   sequential nodeids, so we should be able to go straight to a connection
-> >> > -   struct in the array */
-> >> > -static inline int nodeid_hash(int nodeid)
-> >> > -{
-> >> > -   return nodeid & (CONN_HASH_SIZE-1);
-> >> > -}
-> >>
-> >> There is one thing I dislike about this change: you remove a useful
-> >> comment. It's good to be informed of the reason why a direct mapping
-> >> "value -> hash" without any dispersion function is preferred here.
+On Mon, Oct 29, 2012 at 12:54:23PM -0200, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Oct 30, 2012 at 11:56:06AM +0800, Feng Tang escreveu:
+> > Integrate the script browser into "perf report" framework, users can
+> > use function key 'r' or the drop down menu to list all perf scripts
+> > and select one of them, just like they did for the annotation.
+> > 
+> > Signed-off-by: Feng Tang <feng.tang@intel.com>
 > 
-> Yes, I've removed the comment because it's no longer true with the patch :)
+> I noticed this comment on another patch:
 > 
-> > And now that I come to think of it: you're changing the behavior : you
-> > will now use a dispersion function on the key, which goes against the
-> > intent expressed in this comment.
+> --------------------------
+> This initial version only enables it for 'perf report', by checking
+> the "timer" parameter of perf_evsel__hists_browser() equals NULL.
+> --------------------------
 > 
-> The comment gave us the information that nodeids are mostly
-> sequential, we no longer need to rely on that.
+> Yeah, one can say that if a timer is provided, we can say its 'top' and
+> not 'report', at least as things stand now.
+> 
+> So please add a 'is_top(void *timer)' so that we know the intent more
+> clearly and use it to avoid showing the 'r' key when in 'top' mode, ok?
 
-I'm fine with turning a direct + modulo mapping into a dispersed hash as
-long as there are no underlying assumptions about sequentiality of value
-accesses.
-
-If the access pattern would happen to be typically sequential, then
-adding dispersion could hurt performances significantly, turning a
-frequent L1 access into a L2 access for instance.
-
-> 
-> > It might be good to change hash_add(), hash_add_rcu(),
-> > hash_for_each_possible*() key parameter for a "hash" parameter, and let
-> > the caller provide the hash value computed by the function they like as
-> > parameter, rather than enforcing hash_32/hash_64.
-> 
-> Why? We already proved that hash_32() is more than enough as a hashing
-> function, why complicate things?
-> 
-> Even doing hash_32() on top of another hash is probably a good idea to
-> keep things simple.
-
-All I'm asking is: have you made sure that this hash table is not
-deliberately kept sequential (without dispersion) to accelerate specific
-access patterns ? This should at least be documented in the changelog.
+Will do and thanks for the catch. I once thought about hiding script option
+for 'top' mode, but forgot to follow it on.
 
 Thanks,
+Feng
 
-Mathieu
-
-
-> 
-> Thanks,
-> Sasha
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
