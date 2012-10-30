@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab2J3KJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 06:09:49 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:62038 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756683Ab2J3KJr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 06:09:47 -0400
+	id S1758184Ab2J3KKv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 06:10:51 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2891 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754913Ab2J3KKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 06:10:49 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <508FA79A.3030309@broadcom.com>
+Date: Tue, 30 Oct 2012 11:10:34 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011
+ Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121029192558.GA15061@polaris.bitmath.org>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1351241067-9521-4-git-send-email-benjamin.tissoires@gmail.com>
-	<20121029192558.GA15061@polaris.bitmath.org>
-Date: Tue, 30 Oct 2012 11:09:46 +0100
-Message-ID: <CAN+gG=HLmCszdxgdcmt5AgzNyt08HamCdd2BjzCaTB5k7wYcnQ@mail.gmail.com>
-Subject: Re: [PATCH v2 03/11] HID: hid-input: add usage_index argument in
- input_mapping and event.
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Linux PM list" <linux-pm@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Hante Meuleman" <meuleman@broadcom.com>
+Subject: Re: Linux 3.7-rc3
+References: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com>
+ <26004880.qboZkUVCy9@vostro.rjw.lan>
+In-Reply-To: <26004880.qboZkUVCy9@vostro.rjw.lan>
+X-WSS-ID: 7C9178BF3QC1430011-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 8:25 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Hi Benjamin,
->
->> Currently, there is no way to know the index of the current field
->> in the .input_mapping and .event callbacks  when this field is inside
->> an array of HID fields.
->> This patch forwards this index to the input_mapping and event
->> callbacks.
->
-> I agree with the idea, but the function argument list is becoming
-> ridiculously long... Could we remove the usage pointer argument, at
-> least?
-
-yeah, totally agree. Let me just check whether it will not introduce
-more problems than it solves for my driver.
-
->
->         int (*event)(struct hid_device *hdev, struct hid_field *field,
->                         unsigned int usage_index, __s32 value);
->
->
->> @@ -1071,19 +1072,24 @@ static void hid_input_field(struct hid_device *hid, struct hid_field *field,
->>       for (n = 0; n < count; n++) {
+On 10/30/2012 01:10 AM, Rafael J. Wysocki wrote:
+> On Sunday, October 28, 2012 12:59:49 PM Linus Torvalds wrote:
+>> It's been a week, time for -rc3!
 >>
->>               if (HID_MAIN_ITEM_VARIABLE & field->flags) {
->> -                     hid_process_event(hid, field, &field->usage[n], value[n], interrupt);
->> +                     hid_process_event(hid, field, &field->usage[n], n,
->> +                             value[n], interrupt);
->>                       continue;
->>               }
+>> Nothing particularly stands out here. Lots of small fixes, exemplified
+>> by the series of memory leak fixes in usb serial drivers. Just a lot
+>> of random stuff..
 >>
->>               if (field->value[n] >= min && field->value[n] <= max
->>                       && field->usage[field->value[n] - min].hid
->>                       && search(value, field->value[n], count))
->> -                             hid_process_event(hid, field, &field->usage[field->value[n] - min], 0, interrupt);
->> +                             hid_process_event(hid, field,
->> +                                     &field->usage[field->value[n] - min], n,
->> +                                     0, interrupt);
+>> Most of it is drivers (all over: drm, wireless, staging, usb, sound),
+>> but there's a few filesystem updates (nfs, btrfs, ext4), arch updates
+>> (arm, x86 and m68k) and just random stuff. Shortlog appended.
 >
-> Wrong index?
+> Unfortunately, s2disk is broken with this one and previous -rc.  In the
+> majority of cases it just hangs the machine during hibernation, although
+> sometimes it returns to user space reporting freezing problems, suspicions
+> RCU usage and similar stuff, pretty much without any useful debug information.
+>
+> I'm quite confident that v3.6 was OK (and -stable based on that too), so
+> it most likely is a recent regression.  The in-kernel hibernation
+> (ie. "echo disk > /sys/power/state") works no problem.  So does suspend to
+> RAM on my test boxes.
 
-oops, I'll have to check that.
+Since v3.7-rc1 I am seeing suspend to RAM fail as well. It was obscured 
+by a nouveau recursive locking issue on my machine. I reverted the 3.7 
+DRM merged completely. From there "echo mem > /sys/power/state" works, 
+but choosing suspend like most mere mortals do results in suspend, but 
+attempt to resume brings me straight to the BIOS starting anew.
 
-Thanks,
-Benjamin
-
+> So far I have been able to reproduce this 100% of the time on two machines
+> with Intel CPUs and graphics driven by i915.  I _suspect_ that this may be
+> related to VT switching, because s2disk does some ugly things in that area
+> which are not done by the in-kernel code.  Dunno.
 >
->>
->>               if (value[n] >= min && value[n] <= max
->>                       && field->usage[value[n] - min].hid
->>                       && search(field->value, value[n], count))
->> -                             hid_process_event(hid, field, &field->usage[value[n] - min], 1, interrupt);
->> +                             hid_process_event(hid, field,
->> +                                     &field->usage[value[n] - min], n,
->> +                                     1, interrupt);
->
-> Wrong index?
->
->>       }
->>
->>       memcpy(field->value, value, count * sizeof(__s32));
+> Anyway, it looks like nothing short of bisection is going to help debug this,
+> but I'm afraid I won't have the time to bisect within the next two weeks, so if
+> anyone can reproduce this issue and will be able to bisect it, please help
+> (openSUSE/Tumbleweed users anyone?).
 >
 > Thanks,
-> Henrik
+> Rafael
+>
+>
+
+Not sure if it has the same root cause. Since DRM revert did not work 
+for me I put my money on ACPI (not a lot of money though ;-) ).
+
+Gr. AvS
+
