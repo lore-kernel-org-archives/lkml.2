@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965802Ab2J3TXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:23:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55581 "EHLO mx1.redhat.com"
+	id S965787Ab2J3TXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:23:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44213 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965682Ab2J3TWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:22:55 -0400
+	id S1755158Ab2J3TXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:23:19 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 23/23] KEYS: Add a 'trusted' flag and a 'trusted only' flag
+Subject: [PATCH 19/23] pefile: Parse the "Microsoft individual code signing"
+ data blob
 To: rusty@rustcorp.com.au
 Cc: dhowells@redhat.com, pjones@redhat.com, jwboyer@redhat.com, mjg@redhat.com,
         dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
         keescook@chromium.org, keyrings@linux-nfs.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 30 Oct 2012 19:22:48 +0000
-Message-ID: <20121030192248.11000.91470.stgit@warthog.procyon.org.uk>
+Date: Tue, 30 Oct 2012 19:22:14 +0000
+Message-ID: <20121030192214.11000.20716.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
 References: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -25,221 +26,238 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add KEY_FLAG_TRUSTED to indicate that a key either comes from a trusted source
-or had a cryptographic signature chain that led back to a trusted key the
-kernel already possessed.
-
-Add KEY_FLAGS_TRUSTED_ONLY to indicate that a keyring will only accept links to
-keys marked with KEY_FLAGS_TRUSTED.
+The PKCS#7 certificate should contain a "Microsoft individual code signing"
+data blob as its signed content.  This blob contains a digest of the signed
+content of the PE binary and the OID of the digest algorithm used (typically
+SHA256).
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/pefile_parser.c |    2 +-
- crypto/asymmetric_keys/pkcs7_parser.h  |    3 ++-
- crypto/asymmetric_keys/pkcs7_trust.c   |    6 +++++-
- include/linux/key-type.h               |    1 +
- include/linux/key.h                    |    3 +++
- kernel/modsign_pubkey.c                |    6 ++++--
- security/keys/key.c                    |    8 ++++++++
- security/keys/keyring.c                |    4 ++++
- security/keys/proc.c                   |    3 ++-
- 9 files changed, 30 insertions(+), 6 deletions(-)
+ crypto/asymmetric_keys/Makefile        |    9 ++-
+ crypto/asymmetric_keys/mscode.asn1     |   28 ++++++++
+ crypto/asymmetric_keys/mscode_parser.c |  110 ++++++++++++++++++++++++++++++++
+ crypto/asymmetric_keys/pefile_parser.c |    6 ++
+ crypto/asymmetric_keys/pefile_parser.h |    5 +
+ include/linux/oid_registry.h           |    6 +-
+ 6 files changed, 162 insertions(+), 2 deletions(-)
+ create mode 100644 crypto/asymmetric_keys/mscode.asn1
+ create mode 100644 crypto/asymmetric_keys/mscode_parser.c
 
 
+diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
+index 61905d3..566dd45 100644
+--- a/crypto/asymmetric_keys/Makefile
++++ b/crypto/asymmetric_keys/Makefile
+@@ -46,4 +46,11 @@ clean-files	+= pkcs7-asn1.c pkcs7-asn1.h
+ obj-$(CONFIG_PE_FILE_PARSER) += pefile_key_parser.o
+ 
+ pefile_key_parser-y := \
+-	pefile_parser.o
++	pefile_parser.o \
++	mscode_parser.o \
++	mscode-asn1.o
++
++$(obj)/mscode_parser.o: $(obj)/mscode-asn1.h $(obj)/mscode-asn1.h
++$(obj)/mscode-asn1.o: $(obj)/mscode-asn1.c $(obj)/mscode-asn1.h
++
++clean-files	+= mscode-asn1.c mscode-asn1.h
+diff --git a/crypto/asymmetric_keys/mscode.asn1 b/crypto/asymmetric_keys/mscode.asn1
+new file mode 100644
+index 0000000..6d09ba4
+--- /dev/null
++++ b/crypto/asymmetric_keys/mscode.asn1
+@@ -0,0 +1,28 @@
++--- Microsoft individual code signing data blob parser
++---
++--- Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++--- Written by David Howells (dhowells@redhat.com)
++---
++--- This program is free software; you can redistribute it and/or
++--- modify it under the terms of the GNU General Public Licence
++--- as published by the Free Software Foundation; either version
++--- 2 of the Licence, or (at your option) any later version.
++---
++
++MSCode ::= SEQUENCE {
++	type			SEQUENCE {
++		contentType	ContentType,
++		parameters	ANY
++	},
++	content			SEQUENCE {
++		digestAlgorithm	DigestAlgorithmIdentifier,
++		digest		OCTET STRING ({ mscode_note_digest })
++	}
++}
++
++ContentType ::= OBJECT IDENTIFIER ({ mscode_note_content_type })
++
++DigestAlgorithmIdentifier ::= SEQUENCE {
++	algorithm   OBJECT IDENTIFIER ({ mscode_note_digest_algo }),
++	parameters  ANY OPTIONAL
++}
+diff --git a/crypto/asymmetric_keys/mscode_parser.c b/crypto/asymmetric_keys/mscode_parser.c
+new file mode 100644
+index 0000000..0bd68e0
+--- /dev/null
++++ b/crypto/asymmetric_keys/mscode_parser.c
+@@ -0,0 +1,110 @@
++/* Parse a Microsoft Individual Code Signing blob
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#define pr_fmt(fmt) "MSCODE: "fmt
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/oid_registry.h>
++#include "pefile_parser.h"
++#include "mscode-asn1.h"
++
++/*
++ * Parse a Microsoft Individual Code Signing blob
++ */
++int mscode_parse(struct pefile_context *ctx)
++{
++	pr_devel("Data: %zu [%*ph]\n",
++		 ctx->pkcs7->data_len + ctx->pkcs7->data_hdrlen,
++		 (unsigned)(ctx->pkcs7->data_len + ctx->pkcs7->data_hdrlen),
++		 ctx->pkcs7->data - ctx->pkcs7->data_hdrlen);
++
++	return asn1_ber_decoder(&mscode_decoder, ctx,
++				ctx->pkcs7->data - ctx->pkcs7->data_hdrlen,
++				ctx->pkcs7->data_len + ctx->pkcs7->data_hdrlen);
++}
++
++/*
++ * Check the content type OID
++ */
++int mscode_note_content_type(void *context, size_t hdrlen,
++			     unsigned char tag,
++			     const void *value, size_t vlen)
++{
++	enum OID oid;
++
++	oid = look_up_OID(value, vlen);
++	if (oid == OID__NR) {
++		char buffer[50];
++		sprint_oid(value, vlen, buffer, sizeof(buffer));
++		printk("MSCODE: Unknown OID: %s\n", buffer);
++		return -EBADMSG;
++	}
++
++	if (oid != OID_msIndividualSPKeyPurpose) {
++		printk("MSCODE: Unexpected content type OID %u\n", oid);
++		return -EBADMSG;
++	}
++
++	return 0;
++}
++
++/*
++ * Note the digest algorithm OID
++ */
++int mscode_note_digest_algo(void *context, size_t hdrlen,
++			    unsigned char tag,
++			    const void *value, size_t vlen)
++{
++	struct pefile_context *ctx = context;
++	char buffer[50];
++	enum OID oid;
++
++	oid = look_up_OID(value, vlen);
++	switch (oid) {
++	case OID_md4:
++		ctx->digest_algo = PKEY_HASH_MD4;
++		break;
++	case OID_md5:
++		ctx->digest_algo = PKEY_HASH_MD5;
++		break;
++	case OID_sha1:
++		ctx->digest_algo = PKEY_HASH_SHA1;
++		break;
++	case OID_sha256:
++		ctx->digest_algo = PKEY_HASH_SHA256;
++		break;
++
++	case OID__NR:
++		sprint_oid(value, vlen, buffer, sizeof(buffer));
++		printk("MSCODE: Unknown OID: %s\n", buffer);
++		return -EBADMSG;
++
++	default:
++		printk("MSCODE: Unsupported content type: %u\n", oid);
++		return -ENOPKG;
++	}
++
++	return 0;
++}
++
++/*
++ * Note the digest we're guaranteeing with this certificate
++ */
++int mscode_note_digest(void *context, size_t hdrlen,
++		       unsigned char tag,
++		       const void *value, size_t vlen)
++{
++	struct pefile_context *ctx = context;
++	ctx->digest = value;
++	ctx->digest_len = vlen;
++	return 0;
++}
 diff --git a/crypto/asymmetric_keys/pefile_parser.c b/crypto/asymmetric_keys/pefile_parser.c
-index 28be7d3..da2db58 100644
+index 68fc525..42b9696 100644
 --- a/crypto/asymmetric_keys/pefile_parser.c
 +++ b/crypto/asymmetric_keys/pefile_parser.c
-@@ -432,7 +432,7 @@ static int pefile_key_preparse(struct key_preparsed_payload *prep)
- 	if (ret < 0)
+@@ -224,6 +224,12 @@ static int pefile_key_preparse(struct key_preparsed_payload *prep)
  		goto error;
- 
--	ret = pkcs7_validate_trust(pkcs7, modsign_keyring);
-+	ret = pkcs7_validate_trust(pkcs7, modsign_keyring, &prep->trusted);
- 	if (ret < 0)
- 		goto error;
- 
-diff --git a/crypto/asymmetric_keys/pkcs7_parser.h b/crypto/asymmetric_keys/pkcs7_parser.h
-index f6df500..ffa72dc 100644
---- a/crypto/asymmetric_keys/pkcs7_parser.h
-+++ b/crypto/asymmetric_keys/pkcs7_parser.h
-@@ -63,7 +63,8 @@ extern void pkcs7_free_message(struct pkcs7_message *pkcs7);
-  * pkcs7_trust.c
-  */
- extern int pkcs7_validate_trust(struct pkcs7_message *pkcs7,
--				struct key *trust_keyring);
-+				struct key *trust_keyring,
-+				bool *_trusted);
- 
- /*
-  * pkcs7_verify.c
-diff --git a/crypto/asymmetric_keys/pkcs7_trust.c b/crypto/asymmetric_keys/pkcs7_trust.c
-index 9abcb39..cc226f5 100644
---- a/crypto/asymmetric_keys/pkcs7_trust.c
-+++ b/crypto/asymmetric_keys/pkcs7_trust.c
-@@ -74,11 +74,13 @@ static struct key *pkcs7_request_asymmetric_key(
-  * keys we already know and trust.
-  */
- int pkcs7_validate_trust(struct pkcs7_message *pkcs7,
--			 struct key *trust_keyring)
-+			 struct key *trust_keyring,
-+			 bool *_trusted)
- {
- 	struct public_key_signature *sig = &pkcs7->sig;
- 	struct x509_certificate *x509, *last = NULL;
- 	struct key *key;
-+	bool trusted;
- 	int ret;
- 
- 	kenter("");
-@@ -131,6 +133,7 @@ int pkcs7_validate_trust(struct pkcs7_message *pkcs7,
- 
- matched:
- 	ret = verify_signature(key, sig);
-+	trusted = test_bit(KEY_FLAG_TRUSTED, &key->flags);
- 	key_put(key);
- 	if (ret < 0) {
- 		if (ret == -ENOMEM)
-@@ -139,6 +142,7 @@ matched:
- 		return -EKEYREJECTED;
  	}
  
-+	*_trusted = trusted;
- 	kleave(" = 0");
- 	return 0;
- }
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index 518a53a..f942b2d 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -45,6 +45,7 @@ struct key_preparsed_payload {
- 	const void	*data;		/* Raw data */
- 	size_t		datalen;	/* Raw datalen */
- 	size_t		quotalen;	/* Quota length for proposed payload */
-+	bool		trusted;	/* True if key is trusted */
++	ret = mscode_parse(&ctx);
++	if (ret < 0)
++		goto error;
++
++	pr_devel("Digest: %u [%*ph]\n", ctx.digest_len, ctx.digest_len, ctx.digest);
++
+ 	ret = -ENOANO; // Not yet complete
+ 
+ error:
+diff --git a/crypto/asymmetric_keys/pefile_parser.h b/crypto/asymmetric_keys/pefile_parser.h
+index 82bcaf6..c3462b7 100644
+--- a/crypto/asymmetric_keys/pefile_parser.h
++++ b/crypto/asymmetric_keys/pefile_parser.h
+@@ -29,3 +29,8 @@ struct pefile_context {
+ 	unsigned	digest_len;		/* Digest length */
+ 	enum pkey_hash_algo digest_algo;	/* Digest algorithm */
  };
- 
- typedef int (*request_key_actor_t)(struct key_construction *key,
-diff --git a/include/linux/key.h b/include/linux/key.h
-index 2393b1c..cd0b9e9 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -162,6 +162,8 @@ struct key {
- #define KEY_FLAG_NEGATIVE	5	/* set if key is negative */
- #define KEY_FLAG_ROOT_CAN_CLEAR	6	/* set if key can be cleared by root without permission */
- #define KEY_FLAG_INVALIDATED	7	/* set if key has been invalidated */
-+#define KEY_FLAG_TRUSTED	8	/* set if key is trusted */
-+#define KEY_FLAG_TRUSTED_ONLY	9	/* set if keyring only accepts links to trusted keys */
- 
- 	/* the description string
- 	 * - this is used to match a key against search criteria
-@@ -203,6 +205,7 @@ extern struct key *key_alloc(struct key_type *type,
- #define KEY_ALLOC_IN_QUOTA	0x0000	/* add to quota, reject if would overrun */
- #define KEY_ALLOC_QUOTA_OVERRUN	0x0001	/* add to quota, permit even if overrun */
- #define KEY_ALLOC_NOT_IN_QUOTA	0x0002	/* not in quota */
-+#define KEY_ALLOC_TRUSTED	0x0004	/* Key should be flagged as trusted */
- 
- extern void key_revoke(struct key *key);
- extern void key_invalidate(struct key *key);
-diff --git a/kernel/modsign_pubkey.c b/kernel/modsign_pubkey.c
-index 602be22..57b0a77 100644
---- a/kernel/modsign_pubkey.c
-+++ b/kernel/modsign_pubkey.c
-@@ -45,7 +45,7 @@ static __init int module_verify_init(void)
- 				    KUIDT_INIT(0), KGIDT_INIT(0),
- 				    current_cred(),
- 				    (KEY_POS_ALL & ~KEY_POS_SETATTR) |
--				    KEY_USR_VIEW | KEY_USR_READ,
-+				    KEY_USR_VIEW | KEY_USR_READ | KEY_USR_WRITE,
- 				    KEY_ALLOC_NOT_IN_QUOTA);
- 	if (IS_ERR(modsign_keyring))
- 		panic("Can't allocate module signing keyring\n");
-@@ -53,6 +53,7 @@ static __init int module_verify_init(void)
- 	if (key_instantiate_and_link(modsign_keyring, NULL, 0, NULL, NULL) < 0)
- 		panic("Can't instantiate module signing keyring\n");
- 
-+	set_bit(KEY_FLAG_TRUSTED_ONLY, &modsign_keyring->flags);
- 	return 0;
- }
- 
-@@ -95,7 +96,8 @@ static __init int load_module_signing_keys(void)
- 					   plen,
- 					   (KEY_POS_ALL & ~KEY_POS_SETATTR) |
- 					   KEY_USR_VIEW,
--					   KEY_ALLOC_NOT_IN_QUOTA);
-+					   KEY_ALLOC_NOT_IN_QUOTA |
-+					   KEY_ALLOC_TRUSTED);
- 		if (IS_ERR(key))
- 			pr_err("MODSIGN: Problem loading in-kernel X.509 certificate (%ld)\n",
- 			       PTR_ERR(key));
-diff --git a/security/keys/key.c b/security/keys/key.c
-index a15c9da..d0f35d1 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -299,6 +299,8 @@ struct key *key_alloc(struct key_type *type, const char *desc,
- 
- 	if (!(flags & KEY_ALLOC_NOT_IN_QUOTA))
- 		key->flags |= 1 << KEY_FLAG_IN_QUOTA;
-+	if (flags & KEY_ALLOC_TRUSTED)
-+		key->flags |= 1 << KEY_FLAG_TRUSTED;
- 
- 	memset(&key->type_data, 0, sizeof(key->type_data));
- 
-@@ -813,6 +815,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 	prep.data = payload;
- 	prep.datalen = plen;
- 	prep.quotalen = ktype->def_datalen;
-+	prep.trusted = flags & KEY_ALLOC_TRUSTED;
- 	if (ktype->preparse) {
- 		ret = ktype->preparse(&prep);
- 		if (ret < 0) {
-@@ -826,6 +829,11 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
- 			goto error_free_prep;
- 	}
- 
-+	key_ref = ERR_PTR(-EPERM);
-+	if (!prep.trusted && test_bit(KEY_FLAG_TRUSTED_ONLY, &keyring->flags))
-+		goto error_free_prep;
-+	flags |= prep.trusted ? KEY_ALLOC_TRUSTED : 0;
 +
- 	ret = __key_link_begin(keyring, ktype, description, &prealloc);
- 	if (ret < 0) {
- 		key_ref = ERR_PTR(ret);
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 6e42df1..af90786 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -1008,6 +1008,10 @@ int key_link(struct key *keyring, struct key *key)
- 	key_check(keyring);
- 	key_check(key);
++/*
++ * mscode_parser.c
++ */
++extern int mscode_parse(struct pefile_context *ctx);
+diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
+index edeff85..332dcf5 100644
+--- a/include/linux/oid_registry.h
++++ b/include/linux/oid_registry.h
+@@ -52,8 +52,12 @@ enum OID {
+ 	OID_md4,			/* 1.2.840.113549.2.4 */
+ 	OID_md5,			/* 1.2.840.113549.2.5 */
  
-+	if (test_bit(KEY_FLAG_TRUSTED_ONLY, &keyring->flags) &&
-+	    !test_bit(KEY_FLAG_TRUSTED, &key->flags))
-+		return -EPERM;
+-	OID_certAuthInfoAccess,		/* 1.3.6.1.5.5.7.1.1 */
++	/* Microsoft Authenticode & Software Publishing */
++	OID_msIndirectData,		/* 1.3.6.1.4.1.311.2.1.4 */
++	OID_msIndividualSPKeyPurpose,	/* 1.3.6.1.4.1.311.2.1.21 */
+ 	OID_msOutlookExpress,		/* 1.3.6.1.4.1.311.16.4 */
 +
- 	ret = __key_link_begin(keyring, key->type, key->description, &prealloc);
- 	if (ret == 0) {
- 		ret = __key_link_check_live_key(keyring, key);
-diff --git a/security/keys/proc.c b/security/keys/proc.c
-index 217b685..d0ca948 100644
---- a/security/keys/proc.c
-+++ b/security/keys/proc.c
-@@ -242,7 +242,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
- #define showflag(KEY, LETTER, FLAG) \
- 	(test_bit(FLAG,	&(KEY)->flags) ? LETTER : '-')
++	OID_certAuthInfoAccess,		/* 1.3.6.1.5.5.7.1.1 */
+ 	OID_sha1,			/* 1.3.14.3.2.26 */
+ 	OID_sha256,			/* 2.16.840.1.101.3.4.2.1 */
  
--	seq_printf(m, "%08x %c%c%c%c%c%c%c %5d %4s %08x %5d %5d %-9.9s ",
-+	seq_printf(m, "%08x %c%c%c%c%c%c%c%c %5d %4s %08x %5d %5d %-9.9s ",
- 		   key->serial,
- 		   showflag(key, 'I', KEY_FLAG_INSTANTIATED),
- 		   showflag(key, 'R', KEY_FLAG_REVOKED),
-@@ -251,6 +251,7 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 		   showflag(key, 'U', KEY_FLAG_USER_CONSTRUCT),
- 		   showflag(key, 'N', KEY_FLAG_NEGATIVE),
- 		   showflag(key, 'i', KEY_FLAG_INVALIDATED),
-+		   showflag(key, 'T', KEY_FLAG_TRUSTED),
- 		   atomic_read(&key->usage),
- 		   xbuf,
- 		   key->perm,
 
