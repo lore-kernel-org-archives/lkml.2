@@ -1,197 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759687Ab2J3Tmw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:42:52 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42451 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab2J3Tmu (ORCPT
+	id S934321Ab2J3Tn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:43:56 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:34480 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932088Ab2J3Tny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:42:50 -0400
-Date: Tue, 30 Oct 2012 22:40:23 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] zram: factor-out zram_decompress_page() function (resend)
-Message-ID: <20121030194023.GF2454@swordfish>
+	Tue, 30 Oct 2012 15:43:54 -0400
+Date: Tue, 30 Oct 2012 12:43:54 -0700
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
+Message-ID: <20121030194354.GA32137@dtor-ws.eng.vmware.com>
+References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
+ <20121030021938.GC1920@kroah.com>
+ <20121030040744.GB32055@dtor-ws.eng.vmware.com>
+ <20121030154801.GC14167@kroah.com>
+ <20121030161807.GA9709@dtor-ws.eng.vmware.com>
+ <20121030162723.GA16135@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20121030162723.GA16135@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zram_bvec_read() shared decompress functionality with zram_read_before_write() function.
-Factor-out and make commonly used zram_decompress_page() function, which also simplified
-error handling in zram_bvec_read().
+On Tue, Oct 30, 2012 at 09:27:23AM -0700, Greg KH wrote:
+> On Tue, Oct 30, 2012 at 09:18:07AM -0700, Dmitry Torokhov wrote:
+> > > > I think that even if we had a special directory for vmci having network
+> > > > drivers in Dave's realm and pvscsi in James's is best option, so the new
+> > > > directory would contain vmci and the balloon driver (vsock will go into
+> > > > net/).  Given that balloon is already in drivers/misc it looked like
+> > > > obvious place for VMCI as well.
+> > > 
+> > > I agree that the individual drivers should go in the subsystem area,
+> > > it's this "hypervisor bus core" type code that I'm questioning.  Right
+> > > now every hypervisor is putting that logic in a different place in the
+> > > kernel, having some consistency here would be nice.
+> > 
+> > Hmm, I wonder if miscellaneous and core hypervisor drivers should end
+> > up in drivers/platform:
+> > 
+> > 	drivers/platform/hyperv
+> > 	drivers/platform/olpc
+> > 	drivers/platform/vmware
+> > 	drivers/platform/xen
+> > 	drivers/platform/x86
+> 
+> That makes sense to me, nice.
+> 
+> > But really we'd like to get VMCI into mainline first and move to a new
+> > place later if such a better place is found.
+> 
+> Heh, no one wants to fight for something to help everyone out, they just
+> want their own code accepted :)
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Reviewed-by: Nitin Gupta <ngupta@vflare.org>
+No, this is more about finding a person who would be maintaining it and
+thus would review our code. For now we got you tagged and do not want to
+let go of you :P
 
----
+Or should we maintain our own stuff and have Linus pull it directly,
+like Xen guys appear to be doing? Really, moving it is not an issue for
+us.
 
- drivers/staging/zram/zram_drv.c | 113 +++++++++++++++++-----------------------
- 1 file changed, 48 insertions(+), 65 deletions(-)
-
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 6edefde..fb4a7c9 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -183,62 +183,25 @@ static inline int is_partial_io(struct bio_vec *bvec)
- 	return bvec->bv_len != PAGE_SIZE;
- }
- 
--static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
--			  u32 index, int offset, struct bio *bio)
-+static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
- {
--	int ret;
--	size_t clen;
--	struct page *page;
--	unsigned char *user_mem, *cmem, *uncmem = NULL;
--
--	page = bvec->bv_page;
--
--	if (zram_test_flag(zram, index, ZRAM_ZERO)) {
--		handle_zero_page(bvec);
--		return 0;
--	}
-+	int ret = LZO_E_OK;
-+	size_t clen = PAGE_SIZE;
-+	unsigned char *cmem;
-+	unsigned long handle = zram->table[index].handle;
- 
--	/* Requested page is not present in compressed area */
--	if (unlikely(!zram->table[index].handle)) {
--		pr_debug("Read before write: sector=%lu, size=%u",
--			 (ulong)(bio->bi_sector), bio->bi_size);
--		handle_zero_page(bvec);
-+	if (!handle || zram_test_flag(zram, index, ZRAM_ZERO)) {
-+		memset(mem, 0, PAGE_SIZE);
- 		return 0;
- 	}
- 
--	if (is_partial_io(bvec)) {
--		/* Use  a temporary buffer to decompress the page */
--		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
--		if (!uncmem) {
--			pr_info("Error allocating temp memory!\n");
--			return -ENOMEM;
--		}
--	}
--
--	user_mem = kmap_atomic(page);
--	if (!is_partial_io(bvec))
--		uncmem = user_mem;
--	clen = PAGE_SIZE;
--
--	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle,
--				ZS_MM_RO);
--
--	if (zram->table[index].size == PAGE_SIZE) {
--		memcpy(uncmem, cmem, PAGE_SIZE);
--		ret = LZO_E_OK;
--	} else {
-+	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
-+	if (zram->table[index].size == PAGE_SIZE)
-+		memcpy(mem, cmem, PAGE_SIZE);
-+	else
- 		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
--				    uncmem, &clen);
--	}
--
--	if (is_partial_io(bvec)) {
--		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
--		       bvec->bv_len);
--		kfree(uncmem);
--	}
--
--	zs_unmap_object(zram->mem_pool, zram->table[index].handle);
--	kunmap_atomic(user_mem);
-+						mem, &clen);
-+	zs_unmap_object(zram->mem_pool, handle);
- 
- 	/* Should NEVER happen. Return bio error if it does. */
- 	if (unlikely(ret != LZO_E_OK)) {
-@@ -247,36 +210,56 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 		return ret;
- 	}
- 
--	flush_dcache_page(page);
--
- 	return 0;
- }
- 
--static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
-+static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
-+			  u32 index, int offset, struct bio *bio)
- {
- 	int ret;
--	size_t clen = PAGE_SIZE;
--	unsigned char *cmem;
--	unsigned long handle = zram->table[index].handle;
-+	struct page *page;
-+	unsigned char *user_mem, *uncmem = NULL;
- 
--	if (zram_test_flag(zram, index, ZRAM_ZERO) || !handle) {
--		memset(mem, 0, PAGE_SIZE);
-+	page = bvec->bv_page;
-+
-+	if (unlikely(!zram->table[index].handle) ||
-+			zram_test_flag(zram, index, ZRAM_ZERO)) {
-+		handle_zero_page(bvec);
- 		return 0;
- 	}
- 
--	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
--	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
--				    mem, &clen);
--	zs_unmap_object(zram->mem_pool, handle);
-+	user_mem = kmap_atomic(page);
-+	if (is_partial_io(bvec))
-+		/* Use  a temporary buffer to decompress the page */
-+		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+	else
-+		uncmem = user_mem;
- 
-+	if (!uncmem) {
-+		pr_info("Unable to allocate temp memory\n");
-+		ret = -ENOMEM;
-+		goto out_cleanup;
-+	}
-+
-+	ret = zram_decompress_page(zram, uncmem, index);
- 	/* Should NEVER happen. Return bio error if it does. */
- 	if (unlikely(ret != LZO_E_OK)) {
- 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
- 		zram_stat64_inc(zram, &zram->stats.failed_reads);
--		return ret;
-+		goto out_cleanup;
- 	}
- 
--	return 0;
-+	if (is_partial_io(bvec))
-+		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
-+				bvec->bv_len);
-+
-+	flush_dcache_page(page);
-+	ret = 0;
-+out_cleanup:
-+	kunmap_atomic(user_mem);
-+	if (is_partial_io(bvec))
-+		kfree(uncmem);
-+	return ret;
- }
- 
- static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-@@ -302,7 +285,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			ret = -ENOMEM;
- 			goto out;
- 		}
--		ret = zram_read_before_write(zram, uncmem, index);
-+		ret = zram_decompress_page(zram, uncmem, index);
- 		if (ret) {
- 			kfree(uncmem);
- 			goto out;
-
-
+Thanks,
+Dmitry
