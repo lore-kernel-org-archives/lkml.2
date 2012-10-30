@@ -1,42 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab2J3Inx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 04:43:53 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62077 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab2J3Inu (ORCPT
+	id S1756300Ab2J3IqL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 04:46:11 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:55175 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462Ab2J3IqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 04:43:50 -0400
-X-AuditID: 9c93016f-b7c7bae000000eb7-e0-508f9342d7ab
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
-        ming.m.lin@intel.com
-Subject: Re: [Patch v1 04/10] perf/x86: add memory profiling via PEBS Load Latency
-References: <1351523752-4215-1-git-send-email-eranian@google.com>
-	<1351523752-4215-5-git-send-email-eranian@google.com>
-Date: Tue, 30 Oct 2012 17:43:46 +0900
-In-Reply-To: <1351523752-4215-5-git-send-email-eranian@google.com> (Stephane
-	Eranian's message of "Mon, 29 Oct 2012 16:15:46 +0100")
-Message-ID: <87wqy85ozh.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 30 Oct 2012 04:46:06 -0400
+Date: Tue, 30 Oct 2012 09:46:00 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
+        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] perf tools: Speed up the perf build time by simplifying the
+ perf --version string generation
+Message-ID: <20121030084600.GB8245@gmail.com>
+References: <1351261913-28250-1-git-send-email-acme@infradead.org>
+ <20121026145451.GA14379@gmail.com>
+ <20121026170503.GC20695@ghostprotocols.net>
+ <20121027131935.GA30001@gmail.com>
+ <20121030081807.GA8245@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030081807.GA8245@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephane,
 
-On Mon, 29 Oct 2012 16:15:46 +0100, Stephane Eranian wrote:
-> +	/*
-> +	 * use the mapping table for bit 0-15
-> +	 */
-> +	val = pebs_data_source[dse.ld_dse];
+* Ingo Molnar <mingo@kernel.org> wrote:
 
-I guess you meant bit 0-3, right?
+> Btw., there's another thing that would be nice in addition to 
+> simplifying the PERF-VERSION-GEN script: [...]
 
-Thanks,
-Namhyung
+Here's a stab at that.
+
+----------------->
+
+Building perf is pretty slow on trees that have a lot of commits 
+relative to the nearest Git tag. This slowness manifests itself 
+during version string generation:
+
+ $ perf stat --null --repeat 3 --sync --pre "rm -f PERF-VERSION-FILE" util/PERF-VERSION-GEN 
+ PERF_VERSION = 3.7.rc3.1458.g5399b3b
+ PERF_VERSION = 3.7.rc3.1458.g5399b3b
+ PERF_VERSION = 3.7.rc3.1458.g5399b3b
+
+ Performance counter stats for 'util/PERF-VERSION-GEN' (3 runs):
+
+       2.857503976 seconds time elapsed                                          ( +-  0.22% )
+
+The build can be even slower than that, when one over NFS 
+volumes.
+
+The reason for the slowness is that util/PERF-VERSION-GEN uses 
+"git describe" to generate the string, which has to count the 
+"number of commits distance" from the nearest tag - the ".1458." 
+count in the output above. For that Git had to extract and 
+decompress 1458 Git objects, which takes time and bandwidth.
+
+But this "number of commits" value is mostly irrelevant in 
+practice. We either want to know an approximate tag name, or we 
+want to know the precise sha1.
+
+So this patch simplifies the version string to:
+
+ PERF_VERSION = 3.7.rc3.g5399b3b.dirty
+
+which speeds up the version string generation script by an order 
+of magnitude:
+
+ $ perf stat --null --repeat 3 --sync --pre "rm -f PERF-VERSION-FILE" util/PERF-VERSION-GEN 
+ PERF_VERSION = 3.7.rc3.g5399b3b.dirty
+ PERF_VERSION = 3.7.rc3.g5399b3b.dirty
+ PERF_VERSION = 3.7.rc3.g5399b3b.dirty
+
+ Performance counter stats for 'util/PERF-VERSION-GEN' (3 runs):
+
+       0.307633559 seconds time elapsed                                          ( +-  0.84% )
+
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/util/PERF-VERSION-GEN | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
+index 95264f3..c774b89 100755
+--- a/tools/perf/util/PERF-VERSION-GEN
++++ b/tools/perf/util/PERF-VERSION-GEN
+@@ -12,7 +12,7 @@ LF='
+ # First check if there is a .git to get the version from git describe
+ # otherwise try to get the version from the kernel makefile
+ if test -d ../../.git -o -f ../../.git &&
+-	VN=$(git describe --match 'v[0-9].[0-9]*' --abbrev=4 HEAD 2>/dev/null) &&
++	VN=$(echo $(git tag --list "v[0-9].[0-9]*" | tail -1)"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD) 2>/dev/null) &&
+ 	case "$VN" in
+ 	*$LF*) (exit 1) ;;
+ 	v[0-9]*)
