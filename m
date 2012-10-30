@@ -1,82 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758184Ab2J3KKv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 06:10:51 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:2891 "EHLO mms2.broadcom.com"
+	id S1758295Ab2J3KLO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 06:11:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51194 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754913Ab2J3KKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 06:10:49 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <508FA79A.3030309@broadcom.com>
-Date: Tue, 30 Oct 2012 11:10:34 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011
- Thunderbird/16.0.1
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Linux PM list" <linux-pm@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Hante Meuleman" <meuleman@broadcom.com>
-Subject: Re: Linux 3.7-rc3
-References: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com>
- <26004880.qboZkUVCy9@vostro.rjw.lan>
-In-Reply-To: <26004880.qboZkUVCy9@vostro.rjw.lan>
-X-WSS-ID: 7C9178BF3QC1430011-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756283Ab2J3KLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 06:11:08 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: mst@redhat.com, davem@davemloft.net,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        rusty@rustcorp.com.au, krkumar2@in.ibm.com
+Cc: kvm@vger.kernel.org, Jason Wang <jasowang@redhat.com>
+Subject: [rfc net-next v6 0/3] Multiqueue virtio-net
+Date: Tue, 30 Oct 2012 18:03:20 +0800
+Message-Id: <1351591403-23065-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2012 01:10 AM, Rafael J. Wysocki wrote:
-> On Sunday, October 28, 2012 12:59:49 PM Linus Torvalds wrote:
->> It's been a week, time for -rc3!
->>
->> Nothing particularly stands out here. Lots of small fixes, exemplified
->> by the series of memory leak fixes in usb serial drivers. Just a lot
->> of random stuff..
->>
->> Most of it is drivers (all over: drm, wireless, staging, usb, sound),
->> but there's a few filesystem updates (nfs, btrfs, ext4), arch updates
->> (arm, x86 and m68k) and just random stuff. Shortlog appended.
->
-> Unfortunately, s2disk is broken with this one and previous -rc.  In the
-> majority of cases it just hangs the machine during hibernation, although
-> sometimes it returns to user space reporting freezing problems, suspicions
-> RCU usage and similar stuff, pretty much without any useful debug information.
->
-> I'm quite confident that v3.6 was OK (and -stable based on that too), so
-> it most likely is a recent regression.  The in-kernel hibernation
-> (ie. "echo disk > /sys/power/state") works no problem.  So does suspend to
-> RAM on my test boxes.
+Hi all:
 
-Since v3.7-rc1 I am seeing suspend to RAM fail as well. It was obscured 
-by a nouveau recursive locking issue on my machine. I reverted the 3.7 
-DRM merged completely. From there "echo mem > /sys/power/state" works, 
-but choosing suspend like most mere mortals do results in suspend, but 
-attempt to resume brings me straight to the BIOS starting anew.
+This series is an update version of multiqueue virtio-net driver based on
+Krishna Kumar's work to let virtio-net use multiple rx/tx queues to do the
+packets reception and transmission. Please review and comments.
 
-> So far I have been able to reproduce this 100% of the time on two machines
-> with Intel CPUs and graphics driven by i915.  I _suspect_ that this may be
-> related to VT switching, because s2disk does some ugly things in that area
-> which are not done by the in-kernel code.  Dunno.
->
-> Anyway, it looks like nothing short of bisection is going to help debug this,
-> but I'm afraid I won't have the time to bisect within the next two weeks, so if
-> anyone can reproduce this issue and will be able to bisect it, please help
-> (openSUSE/Tumbleweed users anyone?).
->
-> Thanks,
-> Rafael
->
->
+Changes from v5:
+- Align the implementation with the RFC spec update v4
+- Switch the mode between single mode and multiqueue mode without reset
+- Remove the 256 limitation of queues
+- Use helpers to do the mapping between virtqueues and tx/rx queues
+- Use commbined channels instead of separated rx/tx queus when do the queue
+number configuartion
+- Other coding style comments from Michael
 
-Not sure if it has the same root cause. Since DRM revert did not work 
-for me I put my money on ACPI (not a lot of money though ;-) ).
+Reference:
+- A protype implementation of qemu-kvm support could by found in
+git://github.com/jasowang/qemu-kvm-mq.git
+- V5 could be found at http://lwn.net/Articles/505388/
+- V4 could be found at https://lkml.org/lkml/2012/6/25/120
+- V2 could be found at http://lwn.net/Articles/467283/
+- Michael virtio-spec: http://www.spinics.net/lists/netdev/msg209986.html
 
-Gr. AvS
+Perf Numbers:
+
+- Pktgen test shows the receiving capability of the multiqueue virtio-net were
+  dramatically improved.
+- Netperf result shows latency were greately improved according to the test
+result. The throughput were kept or improved when transfter with large
+packets. But we get regression with small packet (<1500)
+transmission/receiving. According to the satistics, TCP tends batch less when mq
+is enabled which means much more but smaller pakcets were sent/received whcih
+lead much higher cpu utilization and degradate the throughput. In the future,
+either tuning of TCP or automatic switch bettwen mq and sq is needed.
+
+Test environment:
+- Intel(R) Xeon(R) CPU E5620 @ 2.40GHz, 8 cores 2 numa nodes
+- Two directed connected 82599
+- Host/Guest kenrel: net-next with the mq virtio-net patches and mq tuntap
+patches
+
+Pktgen test:
+- Local host generate 64 byte UDP packet to guest.
+- average of 20 runs
+
+20 runs
+#q #vcpu   kpps     +improvement
+1q 1vcpu:  264kpps  +0%
+2q 2vcpu:  451kpps  +70%
+3q 3vcpu:  661kpps  +150%
+4q 4vcpu:  941kpps  +250%
+
+Netperf Local VM to VM test:
+- VM1 and its vcpu/vhost thread in numa node 0
+- VM2 and its vcpu/vhost thread in numa node 1
+- a script is used to lauch the netperf with demo mode and do the postprocessing
+  to measure the aggreagte result with the help of timestamp
+- average of 3 runs
+
+TCP_RR:
+size/session/+lat%/+normalize%
+    1/     1/    0%/    0%
+    1/    10/  +52%/   +6%
+    1/    20/  +27%/   +5%
+   64/     1/    0%/    0%
+   64/    10/  +45%/   +4%
+   64/    20/  +28%/   +7%
+  256/     1/   -1%/    0%
+  256/    10/  +38%/   +2%
+  256/    20/  +27%/   +6%
+TCP_CRR:
+size/session/+lat%/+normalize%
+    1/     1/   -7%/  -12%
+    1/    10/  +34%/   +3%
+    1/    20/   +3%/   -8%
+   64/     1/   -7%/   -3%
+   64/    10/  +32%/   +1%
+   64/    20/   +4%/   -7%
+  256/     1/   -6%/  -18%
+  256/    10/  +33%/    0%
+  256/    20/   +4%/   -8%
+STREAM:
+size/session/+thu%/+normalize%
+    1/     1/   -3%/    0%
+    1/     2/   -1%/    0%
+    1/     4/   -2%/    0%
+   64/     1/    0%/   +1%
+   64/     2/   -6%/   -6%
+   64/     4/   -8%/  -14%
+  256/     1/    0%/    0%
+  256/     2/  -48%/  -52%
+  256/     4/  -50%/  -55%
+  512/     1/   +4%/   +5%
+  512/     2/  -29%/  -33%
+  512/     4/  -37%/  -49%
+ 1024/     1/   +6%/   +7%
+ 1024/     2/  -46%/  -51%
+ 1024/     4/  -15%/  -17%
+ 4096/     1/   +1%/   +1%
+ 4096/     2/  +16%/   -2%
+ 4096/     4/  +31%/  -10%
+16384/     1/    0%/    0%
+16384/     2/  +16%/   +9%
+16384/     4/  +17%/   -9%
+
+Netperf test between external host and guest over 10gb(ixgbe):
+- VM thread and vhost threads were pinned int the node 0
+- a script is used to lauch the netperf with demo mode and do the postprocessing
+  to measure the aggreagte result with the help of timestamp
+- average of 3 runs
+
+TCP_RR:
+size/session/+lat%/+normalize%
+    1/     1/    0%/   +6%
+    1/    10/  +41%/   +2%
+    1/    20/  +10%/   -3%
+   64/     1/    0%/  -10%
+   64/    10/  +39%/   +1%
+   64/    20/  +22%/   +2%
+  256/     1/    0%/   +2%
+  256/    10/  +26%/  -17%
+  256/    20/  +24%/  +10%
+TCP_CRR:
+size/session/+lat%/+normalize%
+    1/     1/   -3%/   -3%
+    1/    10/  +34%/   -3%
+    1/    20/    0%/  -15%
+   64/     1/   -3%/   -3%
+   64/    10/  +34%/   -3%
+   64/    20/   -1%/  -16%
+  256/     1/   -1%/   -3%
+  256/    10/  +38%/   -2%
+  256/    20/   -2%/  -17%
+TCP_STREAM:(guest receiving)
+size/session/+thu%/+normalize%
+    1/     1/   +1%/  +14%
+    1/     2/    0%/   +4%
+    1/     4/   -2%/  -24%
+   64/     1/   -6%/   +1%
+   64/     2/   +1%/   +1%
+   64/     4/   -1%/  -11%
+  256/     1/   +3%/   +4%
+  256/     2/    0%/   -1%
+  256/     4/    0%/  -15%
+  512/     1/   +4%/    0%
+  512/     2/  -10%/  -12%
+  512/     4/    0%/  -11%
+ 1024/     1/   -5%/    0%
+ 1024/     2/  -11%/  -16%
+ 1024/     4/   +3%/  -11%
+ 4096/     1/  +27%/   +6%
+ 4096/     2/    0%/  -12%
+ 4096/     4/    0%/  -20%
+16384/     1/    0%/   -2%
+16384/     2/    0%/   -9%
+16384/     4/  +10%/   -2%
+TCP_MAERTS:(guest sending)
+    1/     1/   -1%/    0%
+    1/     2/    0%/    0%
+    1/     4/   -5%/    0%
+   64/     1/    0%/    0%
+   64/     2/   -7%/   -8%
+   64/     4/   -7%/   -8%
+  256/     1/    0%/    0%
+  256/     2/  -28%/  -28%
+  256/     4/  -28%/  -29%
+  512/     1/    0%/    0%
+  512/     2/  -15%/  -13%
+  512/     4/  -53%/  -59%
+ 1024/     1/   +4%/  +13%
+ 1024/     2/   -7%/  -18%
+ 1024/     4/   +1%/  -18%
+ 4096/     1/   +2%/    0%
+ 4096/     2/   +3%/  -19%
+ 4096/     4/   -1%/  -19%
+16384/     1/   -3%/   -1%
+16384/     2/    0%/  -12%
+16384/     4/    0%/  -10%
+
+Jason Wang (2):
+  virtio_net: multiqueue support
+  virtio-net: change the number of queues through ethtool
+
+Krishna Kumar (1):
+  virtio_net: Introduce VIRTIO_NET_F_MULTIQUEUE
+
+ drivers/net/virtio_net.c        |  790 ++++++++++++++++++++++++++++-----------
+ include/uapi/linux/virtio_net.h |   19 +
+ 2 files changed, 594 insertions(+), 215 deletions(-)
 
