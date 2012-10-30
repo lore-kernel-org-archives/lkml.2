@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933747Ab2J3Nma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 09:42:30 -0400
-Received: from webmail.gata.edu.tr ([193.140.32.15]:36832 "EHLO
-	zimbra.gata.edu.tr" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752589Ab2J3Nm3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 09:42:29 -0400
-X-Greylist: delayed 476 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 09:42:28 EDT
-Date: Tue, 30 Oct 2012 15:39:27 +0200 (EET)
-From: Administrador do Sistema <tcelik@gata.edu.tr>
-Reply-To: Administrador do Sistema <upgrade2012@inMail24.com>
-Message-ID: <2066853514.52798.1351604367350.JavaMail.root@zimbra.gata.edu.tr>
-Subject: Sua caixa de correio
+	id S1753375Ab2J3Nox (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 09:44:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3815 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752096Ab2J3Now (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 09:44:52 -0400
+Date: Tue, 30 Oct 2012 14:44:50 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Subject: NULL pointer dereference at fat_detach
+Message-ID: <20121030134449.GA5435@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [116.203.127.114]
-X-Mailer: Zimbra 6.0.5_GA_2213.RHEL5_64 (zclient/6.0.5_GA_2213.RHEL5_64)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ATENÇÃO;
+Hi
 
-Sua caixa de correio excedeu o limite de armazenamento que é de 5 GB, como definido pelo administrador, que está atualmente em execução no 10.9GB, você pode não ser capaz de enviar ou receber novas mensagens até que você re-validar a sua caixa de correio. Para revalidar sua caixa postal, envie os seguintes dados abaixo:
+>From time to time Fedora users reports crash at fat_detach.
+It happens randomly and seldom. Seems to be related with
+unmount operation.
 
-nome:
-Nome de usuário:
-senha:
-Confirme a Senha:
-E-mail:
+Early reports are from 3.0 and problem still randomly occurs
+on recent kernels.
 
-Se você não conseguir revalidar sua caixa de correio, o correio será desactivado!
+Calltraces looks like below:
 
-obrigado
-Administrador do Sistema
+BUG: unable to handle kernel NULL pointer dereference at 0000009c
+IP: [<c046d983>] do_raw_spin_lock+0xd/0x1e
+
+[<c07fcc94>] _raw_spin_lock+0xd/0xf
+[<f8fe03de>] fat_detach+0x20/0x59 [fat]
+[<f8fe0874>] fat_evict_inode+0x5b/0x5e [fat]
+[<c05058ad>] evict+0x57/0xe9
+[<c0505a67>] iput+0xf8/0xfd
+[<c051ce0f>] fsnotify_destroy_mark+0xdf/0xf8
+[<c051e488>] sys_inotify_rm_watch+0x59/0x79
+[<c07fcfbc>] syscall_call+0x7/0xb
+
+what most likely indicate that fat_evict is called with
+inode with i_sb->s_fs_info == NULL.
+
+Some more info about this problem can be found here:
+https://bugzilla.redhat.com/show_bug.cgi?id=768534
+
+Any insight on this isssue is welcome.
+
+Thanks
+Stanislaw 
