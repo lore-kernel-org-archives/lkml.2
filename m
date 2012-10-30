@@ -1,388 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760363Ab2J3XFG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 19:05:06 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47081 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758621Ab2J3XFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 19:05:02 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [PATCH v4 5/7] efi_pstore: Add a sequence counter to a variable name
-Date: Wed, 31 Oct 2012 00:09:06 +0100
-Message-ID: <7522525.tXjogSGO9Q@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D4138B1E5F@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D4138B1E5F@USINDEM103.corp.hds.com>
+	id S1760603Ab2J3XJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 19:09:28 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:58003 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759938Ab2J3XJ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 19:09:26 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <alpine.LFD.2.02.1210262351330.2756@ionos>
+References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
+	<1350925299.8609.978.camel@edumazet-glaptop>
+	<CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
+	<CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
+	<CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com>
+	<1351053164.6537.95.camel@edumazet-glaptop>
+	<CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com>
+	<1351270087.30380.9.camel@edumazet-glaptop>
+	<CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com>
+	<1351285552.30380.20.camel@edumazet-glaptop>
+	<CAN8Q1Ecx-pDR=NBQm4O=VaynQsxBU1wku9e_kcKkWB=xU0OtMA@mail.gmail.com>
+	<alpine.LFD.2.02.1210262351330.2756@ionos>
+Date: Tue, 30 Oct 2012 16:09:24 -0700
+X-Google-Sender-Auth: bkOQg-SH0v4qVa2_tVgTUfmFUww
+Message-ID: <CAN8Q1Ef1_OOTpqSrvPB6ja3A3e9-Lky-iceH4NKjWLw8HcW2AA@mail.gmail.com>
+Subject: Re: Process Hang in __read_seqcount_begin
+From: Peter LaDow <petela@gocougs.wsu.edu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org, netfilter@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 30, 2012 08:02:54 PM Seiji Aguchi wrote:
-> 
-> [Issue]
-> 
-> Currently, a variable name, which identifies each entry, consists of type, id and ctime.
-> But if multiple events happens in a short time, a second/third event may fail to log because
-> efi_pstore can't distinguish each event with current variable name.
-> 
-> [Solution]
-> 
-> A reasonable way to identify all events precisely is introducing a sequence counter to
-> the variable name.
-> 
-> The sequence counter has already supported in a pstore layer with "oopscount".
-> So, this patch adds it to a variable name.
-> Also, it is passed to read/erase callbacks of platform drivers in accordance with
-> the modification of the variable name.
-> 
->   <before applying this patch>
->  a variable name of first event: dump-type0-1-12345678
->  a variable name of second event: dump-type0-1-12345678
-> 
->   type:0
->   id:1
->   ctime:12345678
-> 
->  If multiple events happen in a short time, efi_pstore can't distinguish them because
->  variable names are same among them.
-> 
->   <after applying this patch>
-> 
->  it can be distinguishable by adding a sequence counter as follows.
-> 
->  a variable name of first event: dump-type0-1-1-12345678
->  a variable name of Second event: dump-type0-1-2-12345678
-> 
->   type:0
->   id:1
->   sequence counter: 1(first event), 2(second event)
->   ctime:12345678
-> 
-> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Ok.  More of an update.  We've managed to create a scenario that
+exhibits the problem much earlier.  We can now cause the lockup to
+occur within a few hours (rather than the 12 to 24 hours in our other
+scenario).
 
-Please feel free to add
+ Our setup is to to have a a lot of traffic constantly being processed
+by the netfilter code.  After about 2 hours, any external attempt to
+read the table entries (such as with getsocktopt and
+IPT_SO_GET_ENTRIES) triggers the lockup.  What is strange is that this
+does not appear until after a couple of hours of heavy traffic.  We
+cannot trigger this problem in the first hour, rarely in the second
+hour, and always after the second hour.
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Now, our original setup did not have as much traffic.  But based upon
+a quick, back of the napkin computation, it seems to occurring after a
+certain amount of traffic.  I can try to get more firm numbers.  But
+this kind of behavior hints less at a race condition between two
+writers, and is instead somehow dependent upon the amount of traffic.
+Indeed, my test program only uses IPT_SO_GET_ENTRIES which does not
+trigger the second path do do_add_counters.  So I'm no longer thinking
+the path through setsockopts is a cause of the problem.
 
-for the erst.c change.
+So instead, it seems that the only way there could be multiple writers
+(assuming that is the problem), is if there are multiple contexts
+through which ipt_do_table() is called.  So far, my perusal of the
+code indicates only through the hooks in each of the iptables modules.
+ And it isn't clear to me how these are called.  But it does seem that
+even with the patch Eric provided (which fixes the seqcount update),
+there is still a potential problem.
 
-Thanks!
+If indeed we have multiple contexts executing ipt_do_table(), it is
+possible for more than just the seqcount to be corrupted.  Indeed, it
+seems that any updates to the internal structures could cause
+problems.  It isn't clear to me if there is anything modified here,
+other than the counters, so I'm not sure if there are any other
+issues.  But regardless, if the counters could become corrupted, then
+it is possible to break any rules that use them.
 
+Anyway, based on earlier discussion, is there any reason not to use a
+lock (presuming any solution properly takes into account possible
+recursion)?  I understand that the mainline is protected, but perhaps
+in the RT version we can use seqlock (and prevent a recursive lock)?
 
-> ---
->  drivers/acpi/apei/erst.c   |   12 ++++++------
->  drivers/firmware/efivars.c |   23 ++++++++++++++---------
->  fs/pstore/inode.c          |    8 +++++---
->  fs/pstore/internal.h       |    2 +-
->  fs/pstore/platform.c       |   11 ++++++-----
->  fs/pstore/ram.c            |    7 +++----
->  include/linux/pstore.h     |    8 +++++---
->  7 files changed, 40 insertions(+), 31 deletions(-)
-> 
-> diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-> index 0bd6ae4..6d894bf 100644
-> --- a/drivers/acpi/apei/erst.c
-> +++ b/drivers/acpi/apei/erst.c
-> @@ -931,13 +931,13 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
->  
->  static int erst_open_pstore(struct pstore_info *psi);
->  static int erst_close_pstore(struct pstore_info *psi);
-> -static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
-> +static ssize_t erst_reader(u64 *id, enum pstore_type_id *type, int *count,
->  			   struct timespec *time, char **buf,
->  			   struct pstore_info *psi);
->  static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
-> -		       u64 *id, unsigned int part,
-> +		       u64 *id, unsigned int part, int count,
->  		       size_t size, struct pstore_info *psi);
-> -static int erst_clearer(enum pstore_type_id type, u64 id,
-> +static int erst_clearer(enum pstore_type_id type, u64 id, int count,
->  			struct timespec time, struct pstore_info *psi);
->  
->  static struct pstore_info erst_info = {
-> @@ -987,7 +987,7 @@ static int erst_close_pstore(struct pstore_info *psi)
->  	return 0;
->  }
->  
-> -static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
-> +static ssize_t erst_reader(u64 *id, enum pstore_type_id *type, int *count,
->  			   struct timespec *time, char **buf,
->  			   struct pstore_info *psi)
->  {
-> @@ -1055,7 +1055,7 @@ out:
->  }
->  
->  static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
-> -		       u64 *id, unsigned int part,
-> +		       u64 *id, unsigned int part, int count,
->  		       size_t size, struct pstore_info *psi)
->  {
->  	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
-> @@ -1101,7 +1101,7 @@ static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
->  	return ret;
->  }
->  
-> -static int erst_clearer(enum pstore_type_id type, u64 id,
-> +static int erst_clearer(enum pstore_type_id type, u64 id, int count,
->  			struct timespec time, struct pstore_info *psi)
->  {
->  	return erst_clear(id);
-> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-> index 3803621..7ad3aae 100644
-> --- a/drivers/firmware/efivars.c
-> +++ b/drivers/firmware/efivars.c
-> @@ -658,13 +658,14 @@ static int efi_pstore_close(struct pstore_info *psi)
->  }
->  
->  static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
-> -			       struct timespec *timespec,
-> +			       int *count, struct timespec *timespec,
->  			       char **buf, struct pstore_info *psi)
->  {
->  	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
->  	struct efivars *efivars = psi->data;
->  	char name[DUMP_NAME_LEN];
->  	int i;
-> +	int cnt;
->  	unsigned int part, size;
->  	unsigned long time;
->  
-> @@ -674,8 +675,10 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
->  			for (i = 0; i < DUMP_NAME_LEN; i++) {
->  				name[i] = efivars->walk_entry->var.VariableName[i];
->  			}
-> -			if (sscanf(name, "dump-type%u-%u-%lu", type, &part, &time) == 3) {
-> +			if (sscanf(name, "dump-type%u-%u-%d-%lu",
-> +				   type, &part, &cnt, &time) == 4) {
->  				*id = part;
-> +				*count = cnt;
->  				timespec->tv_sec = time;
->  				timespec->tv_nsec = 0;
->  				get_var_data_locked(efivars, &efivars->walk_entry->var);
-> @@ -698,7 +701,8 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
->  
->  static int efi_pstore_write(enum pstore_type_id type,
->  		enum kmsg_dump_reason reason, u64 *id,
-> -		unsigned int part, size_t size, struct pstore_info *psi)
-> +		unsigned int part, int count, size_t size,
-> +		struct pstore_info *psi)
->  {
->  	char name[DUMP_NAME_LEN];
->  	efi_char16_t efi_name[DUMP_NAME_LEN];
-> @@ -725,7 +729,7 @@ static int efi_pstore_write(enum pstore_type_id type,
->  		return -ENOSPC;
->  	}
->  
-> -	sprintf(name, "dump-type%u-%u-%lu", type, part,
-> +	sprintf(name, "dump-type%u-%u-%d-%lu", type, part, count,
->  		get_seconds());
->  
->  	for (i = 0; i < DUMP_NAME_LEN; i++)
-> @@ -746,7 +750,7 @@ static int efi_pstore_write(enum pstore_type_id type,
->  	return ret;
->  };
->  
-> -static int efi_pstore_erase(enum pstore_type_id type, u64 id,
-> +static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
->  			    struct timespec time, struct pstore_info *psi)
->  {
->  	char name[DUMP_NAME_LEN];
-> @@ -756,7 +760,7 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id,
->  	struct efivar_entry *entry, *found = NULL;
->  	int i;
->  
-> -	sprintf(name, "dump-type%u-%u-%lu", type, (unsigned int)id,
-> +	sprintf(name, "dump-type%u-%u-%d-%lu", type, (unsigned int)id, count,
->  		time.tv_sec);
->  
->  	spin_lock(&efivars->lock);
-> @@ -807,7 +811,7 @@ static int efi_pstore_close(struct pstore_info *psi)
->  	return 0;
->  }
->  
-> -static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
-> +static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type, int *count,
->  			       struct timespec *timespec,
->  			       char **buf, struct pstore_info *psi)
->  {
-> @@ -816,12 +820,13 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
->  
->  static int efi_pstore_write(enum pstore_type_id type,
->  		enum kmsg_dump_reason reason, u64 *id,
-> -		unsigned int part, size_t size, struct pstore_info *psi)
-> +		unsigned int part, int count, size_t size,
-> +		struct pstore_info *psi)
->  {
->  	return 0;
->  }
->  
-> -static int efi_pstore_erase(enum pstore_type_id type, u64 id,
-> +static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
->  			    struct timespec time, struct pstore_info *psi)
->  {
->  	return 0;
-> diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-> index 4300af6..ed1d8c7 100644
-> --- a/fs/pstore/inode.c
-> +++ b/fs/pstore/inode.c
-> @@ -49,6 +49,7 @@ struct pstore_private {
->  	struct pstore_info *psi;
->  	enum pstore_type_id type;
->  	u64	id;
-> +	int	count;
->  	ssize_t	size;
->  	char	data[];
->  };
-> @@ -175,8 +176,8 @@ static int pstore_unlink(struct inode *dir, struct dentry *dentry)
->  	struct pstore_private *p = dentry->d_inode->i_private;
->  
->  	if (p->psi->erase)
-> -		p->psi->erase(p->type, p->id, dentry->d_inode->i_ctime,
-> -			      p->psi);
-> +		p->psi->erase(p->type, p->id, p->count,
-> +			      dentry->d_inode->i_ctime, p->psi);
->  
->  	return simple_unlink(dir, dentry);
->  }
-> @@ -271,7 +272,7 @@ int pstore_is_mounted(void)
->   * Load it up with "size" bytes of data from "buf".
->   * Set the mtime & ctime to the date that this record was originally stored.
->   */
-> -int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
-> +int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
->  		  char *data, size_t size, struct timespec time,
->  		  struct pstore_info *psi)
->  {
-> @@ -307,6 +308,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
->  		goto fail_alloc;
->  	private->type = type;
->  	private->id = id;
-> +	private->count = count;
->  	private->psi = psi;
->  
->  	switch (type) {
-> diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
-> index 4847f58..937d820 100644
-> --- a/fs/pstore/internal.h
-> +++ b/fs/pstore/internal.h
-> @@ -50,7 +50,7 @@ extern struct pstore_info *psinfo;
->  extern void	pstore_set_kmsg_bytes(int);
->  extern void	pstore_get_records(int);
->  extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
-> -			      char *data, size_t size,
-> +			      int count, char *data, size_t size,
->  			      struct timespec time, struct pstore_info *psi);
->  extern int	pstore_is_mounted(void);
->  
-> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-> index a40da07..f911bbd 100644
-> --- a/fs/pstore/platform.c
-> +++ b/fs/pstore/platform.c
-> @@ -136,7 +136,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
->  			break;
->  
->  		ret = psinfo->write(PSTORE_TYPE_DMESG, reason, &id, part,
-> -				    hsize + len, psinfo);
-> +				    oopscount, hsize + len, psinfo);
->  		if (ret == 0 && reason == KMSG_DUMP_OOPS && pstore_is_mounted())
->  			pstore_new_entry = 1;
->  
-> @@ -196,7 +196,7 @@ static void pstore_register_console(void) {}
->  
->  static int pstore_write_compat(enum pstore_type_id type,
->  			       enum kmsg_dump_reason reason,
-> -			       u64 *id, unsigned int part,
-> +			       u64 *id, unsigned int part, int count,
->  			       size_t size, struct pstore_info *psi)
->  {
->  	return psi->write_buf(type, reason, id, part, psinfo->buf, size, psi);
-> @@ -266,6 +266,7 @@ void pstore_get_records(int quiet)
->  	char			*buf = NULL;
->  	ssize_t			size;
->  	u64			id;
-> +	int			count;
->  	enum pstore_type_id	type;
->  	struct timespec		time;
->  	int			failed = 0, rc;
-> @@ -277,9 +278,9 @@ void pstore_get_records(int quiet)
->  	if (psi->open && psi->open(psi))
->  		goto out;
->  
-> -	while ((size = psi->read(&id, &type, &time, &buf, psi)) > 0) {
-> -		rc = pstore_mkfile(type, psi->name, id, buf, (size_t)size,
-> -				  time, psi);
-> +	while ((size = psi->read(&id, &type, &count, &time, &buf, psi)) > 0) {
-> +		rc = pstore_mkfile(type, psi->name, id, count, buf,
-> +				  (size_t)size, time, psi);
->  		kfree(buf);
->  		buf = NULL;
->  		if (rc && (rc != -EEXIST || !quiet))
-> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-> index 749693f..2bfa36e 100644
-> --- a/fs/pstore/ram.c
-> +++ b/fs/pstore/ram.c
-> @@ -132,9 +132,8 @@ ramoops_get_next_prz(struct persistent_ram_zone *przs[], uint *c, uint max,
->  }
->  
->  static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
-> -				   struct timespec *time,
-> -				   char **buf,
-> -				   struct pstore_info *psi)
-> +				   int *count, struct timespec *time,
-> +				   char **buf, struct pstore_info *psi)
->  {
->  	ssize_t size;
->  	struct ramoops_context *cxt = psi->data;
-> @@ -236,7 +235,7 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
->  	return 0;
->  }
->  
-> -static int ramoops_pstore_erase(enum pstore_type_id type, u64 id,
-> +static int ramoops_pstore_erase(enum pstore_type_id type, u64 id, int count,
->  				struct timespec time, struct pstore_info *psi)
->  {
->  	struct ramoops_context *cxt = psi->data;
-> diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-> index f6e9336..1788909 100644
-> --- a/include/linux/pstore.h
-> +++ b/include/linux/pstore.h
-> @@ -50,17 +50,19 @@ struct pstore_info {
->  	int		(*open)(struct pstore_info *psi);
->  	int		(*close)(struct pstore_info *psi);
->  	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
-> -			struct timespec *time, char **buf,
-> +			int *count, struct timespec *time, char **buf,
->  			struct pstore_info *psi);
->  	int		(*write)(enum pstore_type_id type,
->  			enum kmsg_dump_reason reason, u64 *id,
-> -			unsigned int part, size_t size, struct pstore_info *psi);
-> +			unsigned int part, int count, size_t size,
-> +			struct pstore_info *psi);
->  	int		(*write_buf)(enum pstore_type_id type,
->  			enum kmsg_dump_reason reason, u64 *id,
->  			unsigned int part, const char *buf, size_t size,
->  			struct pstore_info *psi);
->  	int		(*erase)(enum pstore_type_id type, u64 id,
-> -			struct timespec time, struct pstore_info *psi);
-> +			int count, struct timespec time,
-> +			struct pstore_info *psi);
->  	void		*data;
->  };
->  
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Thanks,
+Pete LaDow
