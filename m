@@ -1,101 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934359Ab2J3Tpj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:45:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756339Ab2J3Tpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:45:38 -0400
-Date: Tue, 30 Oct 2012 15:45:20 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michael.brantley@deshaw.com, hch@infradead.org, miklos@szeredi.hu,
-        pstaubach@exagrid.com
-Subject: Re: [PATCH v8 11/32] vfs: make do_unlinkat retry on ESTALE errors
-Message-ID: <20121030154520.4f3503e8@tlielax.poochiereds.net>
-In-Reply-To: <20121030192809.GE24618@fieldses.org>
-References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
-	<1351341219-17837-12-git-send-email-jlayton@redhat.com>
-	<20121030161429.GD24618@fieldses.org>
-	<20121030123355.5c404373@tlielax.poochiereds.net>
-	<20121030192809.GE24618@fieldses.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934351Ab2J3Tw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:52:28 -0400
+Received: from shrek-modem1.podlesie.net ([83.18.25.171]:48944 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755564Ab2J3Tw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:52:26 -0400
+Date: Tue, 30 Oct 2012 20:52:24 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
+Message-ID: <20121030195224.GA2153@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+ <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
+ <1351589868.17077.34.camel@shinybook.infradead.org>
+ <20121030190725.GA14044@shrek.podlesie.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030190725.GA14044@shrek.podlesie.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Oct 2012 15:28:09 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
-
-> On Tue, Oct 30, 2012 at 12:33:55PM -0400, Jeff Layton wrote:
-> > On Tue, 30 Oct 2012 12:14:29 -0400
-> > "J. Bruce Fields" <bfields@fieldses.org> wrote:
+On Tue, Oct 30, 2012 at 08:07:25PM +0100, Krzysztof Mazur wrote:
+> On Tue, Oct 30, 2012 at 09:37:48AM +0000, David Woodhouse wrote:
 > > 
-> > > On Sat, Oct 27, 2012 at 08:33:18AM -0400, Jeff Layton wrote:
-> > > > Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> > > > ---
-> > > >  fs/namei.c | 12 ++++++++++--
-> > > >  1 file changed, 10 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/fs/namei.c b/fs/namei.c
-> > > > index 7c9bb50..467b9f1 100644
-> > > > --- a/fs/namei.c
-> > > > +++ b/fs/namei.c
-> > > > @@ -3446,9 +3446,13 @@ static long do_unlinkat(int dfd, const char __user *pathname)
-> > > >  	struct filename *name;
-> > > >  	struct dentry *dentry;
-> > > >  	struct nameidata nd;
-> > > > -	struct inode *inode = NULL;
-> > > > +	struct inode *inode;
-> > > > +	unsigned int try = 0;
-> > > > +	unsigned int lookup_flags = LOOKUP_PARENT;
-> > > >  
-> > > > -	name = user_path_parent(dfd, pathname, &nd, 0);
-> > > > +retry:
-> > > > +	inode = NULL;
-> > > 
-> > > So, you fail after "inode" was set (say vfs_unlink returned an error)
-> > > the first time, then before "inode" was set (lookup_hash returns an
-> > > error), and you end up incorrectly doing another iput() the second time
-> > > through if you don't reset inode here?
-> > > 
-> > > (I think I made the same mistake in another patch, actually....)
-> > > 
-> > > --b.
-> > > 
-> > 
-> > Correct. That's a new delta in this patch, btw. The original patch
-> > didn't do that and it was causing a busy inodes on umount bug in
-> > testing.
-> > 
-> > It would occasionally hit an ESTALE error in this function and
-> > because "inode" wasn't reset to NULL, it would do a double-put of the
-> > inode and cause the counter to underflow.
-> > 
-> > It might be good to restructure this code to make those sorts of bugs
-> > less likely, but the error handling in here is already so hairy that I
-> > decided to punt on that for now...
+> > Should we be locking it earlier, so that the atm_may_send() call is also
+> > covered by the lock?
 > 
-> Understood.  I might find it just a little more obvious why we're doing
-> this if the assignment was next to the final iput:
+> Yes, but only to protect against concurent vcc_sendmsg().
 > 
-> 	if (inode)
-> 		iput(inode);
-> 	inode = NULL;
-> 	...
+> > 
+> > Either way, it's an obvious improvement on what we had before ??? and even
+> > if the answer to my question above is 'yes', exceeding the configured
+> > size by one packet is both harmless and almost never going to happen
+> > since we now limit ourselves to two packets anyway. So:
+> > 
+> > Acked-By: David Woodhouse <David.Woodhouse@intel.com>
+> > 
 > 
 
-Yeah, my initial patch did something similar (but inside the "if"
-block). Ultimately, though I figured it was best to avoid setting
-"inode" unless it was needed.
+David, I think we should also fix the issue with sk_sndbuf < MTU,
+which is described in comment in pppoatm_may_send() added by
+your "pppoatm: Fix excessive queue bloat" patch.
 
-The patch I've got basically does that, but it's not as obvious as the
-other way. Maybe I should just go ahead and try to clean up that logic
-after all. Unrolling the error handling there is pretty nasty though.
+The vcc_sendmsg() already does that.
 
+Krzysiek
+
+-- >8 --
+Subject: [PATCH] pppoatm: fix sending packets when sk_sndbuf < MTU
+
+Now pppoatm_send() works, when sk_sndbuf is smaller than MTU. This
+issue was already pointed in comment:
+
+	/*
+	 * It's not clear that we need to bother with using atm_may_send()
+	 * to check we don't exceed sk->sk_sndbuf. If userspace sets a
+	 * value of sk_sndbuf which is lower than the MTU, we're going to
+	 * block for ever. But the code always did that before we introduced
+	 * the packet count limit, so...
+	 */
+
+The test is copied from alloc_tx() which is used by vcc_sendmsg().
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+---
+ net/atm/pppoatm.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
+index 4cc81b5..f25536b 100644
+--- a/net/atm/pppoatm.c
++++ b/net/atm/pppoatm.c
+@@ -306,12 +306,9 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ 
+ 	/*
+ 	 * It's not clear that we need to bother with using atm_may_send()
+-	 * to check we don't exceed sk->sk_sndbuf. If userspace sets a
+-	 * value of sk_sndbuf which is lower than the MTU, we're going to
+-	 * block for ever. But the code always did that before we introduced
+-	 * the packet count limit, so...
++	 * to check we don't exceed sk->sk_sndbuf.
+ 	 */
+-	if (!atm_may_send(vcc, skb->truesize))
++	if (sk_wmem_alloc_get(sk_atm(vcc)) && !atm_may_send(vcc, skb->truesize))
+ 		goto nospace_unlock_sock;
+ 
+ 	atomic_add(skb->truesize, &sk_atm(ATM_SKB(skb)->vcc)->sk_wmem_alloc);
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.8.0.172.g62af90c
+
