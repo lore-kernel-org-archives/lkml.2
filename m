@@ -1,330 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934609Ab2J3VLR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:11:17 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:64636 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934578Ab2J3VLO (ORCPT
+	id S934635Ab2J3VOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:14:17 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:37952 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934577Ab2J3VOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:11:14 -0400
+	Tue, 30 Oct 2012 17:14:15 -0400
+Date: Tue, 30 Oct 2012 17:01:43 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, tony.luck@intel.com, fenghua.yu@intel.com,
+        len.brown@intel.com, rjw@sisk.pl, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: Re: [PATCH 2/2] ACPI, ia64: export acpi_[un]register_gsi()
+Message-ID: <20121030210141.GA21481@phenom.dumpdata.com>
+References: <1351502792-13221-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1351502792-13221-2-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20121030192148.11000.3582.stgit@warthog.procyon.org.uk>
-References: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
-	<20121030192148.11000.3582.stgit@warthog.procyon.org.uk>
-Date: Tue, 30 Oct 2012 14:11:13 -0700
-X-Google-Sender-Auth: 4jZ-6ng0PZk7byvtGqFRA8vppac
-Message-ID: <CAGXu5jK22D_15jYopqaegYAGSHO2x0asXogXCnZGfMw2KwUVNw@mail.gmail.com>
-Subject: Re: [PATCH 16/23] pefile: Parse a PE binary to find a key and a
- signature contained therein
-From: Kees Cook <keescook@chromium.org>
-To: David Howells <dhowells@redhat.com>
-Cc: rusty@rustcorp.com.au, pjones@redhat.com, jwboyer@redhat.com,
-        mjg@redhat.com, dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
-        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351502792-13221-2-git-send-email-mika.westerberg@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 12:21 PM, David Howells <dhowells@redhat.com> wrote:
-> Parse a PE binary to find a key and a signature contained therein.  Later
-> patches will check the signature and add the key if the signature checks out.
->
-> Signed-off-by: David Howells <dhowells@redhat.com>
+On Mon, Oct 29, 2012 at 11:26:32AM +0200, Mika Westerberg wrote:
+> These functions might be called from modules as well so make sure they are
+> exported.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > ---
->
->  crypto/asymmetric_keys/Kconfig         |   10 ++
->  crypto/asymmetric_keys/Makefile        |    8 +
->  crypto/asymmetric_keys/pefile_parser.c |  178 ++++++++++++++++++++++++++++++++
->  crypto/asymmetric_keys/pefile_parser.h |   31 ++++++
->  4 files changed, 226 insertions(+), 1 deletion(-)
->  create mode 100644 crypto/asymmetric_keys/pefile_parser.c
->  create mode 100644 crypto/asymmetric_keys/pefile_parser.h
->
->
-> diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
-> index 413f3f6..2e7315c 100644
-> --- a/crypto/asymmetric_keys/Kconfig
-> +++ b/crypto/asymmetric_keys/Kconfig
-> @@ -31,7 +31,7 @@ config X509_CERTIFICATE_PARSER
->         select ASN1
->         select OID_REGISTRY
->         help
-> -         This option procides support for parsing X.509 format blobs for key
-> +         This option provides support for parsing X.509 format blobs for key
->           data and provides the ability to instantiate a crypto key from a
->           public key packet found inside the certificate.
->
-> @@ -44,4 +44,12 @@ config PKCS7_MESSAGE_PARSER
->           This option provides support for parsing PKCS#7 format messages for
->           signature data and provides the ability to verify the signature.
->
-> +config PE_FILE_PARSER
-> +       tristate "PE binary-wrapped key parser"
-> +       depends on X509_CERTIFICATE_PARSER
-> +       depends on PKCS7_MESSAGE_PARSER
-> +       help
-> +         This option provides support for parsing signed PE binaries that
-> +         contain an X.509 certificate in an internal section.
-> +
->  endif # ASYMMETRIC_KEY_TYPE
-> diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-> index b6b39e7..61905d3 100644
-> --- a/crypto/asymmetric_keys/Makefile
-> +++ b/crypto/asymmetric_keys/Makefile
-> @@ -39,3 +39,11 @@ $(obj)/pkcs7_parser.o: $(obj)/pkcs7-asn1.h
->  $(obj)/pkcs7-asn1.o: $(obj)/pkcs7-asn1.c $(obj)/pkcs7-asn1.h
->
->  clean-files    += pkcs7-asn1.c pkcs7-asn1.h
-> +
-> +#
-> +# Signed PE binary-wrapped key handling
-> +#
-> +obj-$(CONFIG_PE_FILE_PARSER) += pefile_key_parser.o
-> +
-> +pefile_key_parser-y := \
-> +       pefile_parser.o
-> diff --git a/crypto/asymmetric_keys/pefile_parser.c b/crypto/asymmetric_keys/pefile_parser.c
-> new file mode 100644
-> index 0000000..efae278
-> --- /dev/null
-> +++ b/crypto/asymmetric_keys/pefile_parser.c
-> @@ -0,0 +1,178 @@
-> +/* Parse a signed PE binary that wraps a key.
-> + *
-> + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-> + * Written by David Howells (dhowells@redhat.com)
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public Licence
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the Licence, or (at your option) any later version.
-> + */
-> +
-> +#define pr_fmt(fmt) "PEFILE: "fmt
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/err.h>
-> +#include <linux/pe.h>
-> +#include <keys/asymmetric-subtype.h>
-> +#include <keys/asymmetric-parser.h>
-> +#include <crypto/hash.h>
-> +#include "asymmetric_keys.h"
-> +#include "public_key.h"
-> +#include "pefile_parser.h"
-> +
-> +/*
-> + * Parse a PE binary.
-> + */
-> +static int pefile_parse_binary(struct key_preparsed_payload *prep,
-> +                              struct pefile_context *ctx)
-> +{
-> +       const struct mz_hdr *mz = prep->data;
-> +       const struct pe_hdr *pe;
-> +       const struct pe32_opt_hdr *pe32;
-> +       const struct pe32plus_opt_hdr *pe64;
-> +       const struct data_directory *ddir;
-> +       const struct data_dirent *dde;
-> +       const struct section_header *secs, *sec;
-> +       unsigned loop;
-> +       size_t cursor, datalen = prep->datalen;
-> +
-> +       kenter("");
-> +
-> +#define chkaddr(base, x, s)                                            \
-> +       do {                                                            \
-> +               if ((x) < base || (s) >= datalen || (x) > datalen - (s))        \
-> +                       return -ERANGE;                                 \
-> +       } while(0)
-> +
-> +       chkaddr(0, 0, sizeof(*mz));
-> +       if (mz->magic != MZ_MAGIC)
-> +               return -ELIBBAD;
-> +       cursor = sizeof(*mz);
-> +
-> +       chkaddr(cursor, mz->peaddr, sizeof(*pe));
-> +       pe = prep->data + mz->peaddr;
-> +       if (pe->magic != PE_MAGIC)
-> +               return -ELIBBAD;
-> +       cursor = mz->peaddr + sizeof(*pe);
-> +
-> +       chkaddr(0, cursor, sizeof(pe32->magic));
-> +       pe32 = prep->data + cursor;
-> +       pe64 = prep->data + cursor;
-> +
-> +       switch (pe32->magic) {
-> +       case PE_OPT_MAGIC_PE32:
-> +               chkaddr(0, cursor, sizeof(*pe32));
-> +               ctx->image_checksum_offset =
-> +                       (unsigned long)&pe32->csum - (unsigned long)prep->data;
-> +               ctx->header_size = pe32->header_size;
-> +               cursor += sizeof(*pe32);
-> +               ctx->n_data_dirents = pe32->data_dirs;
-> +               break;
-> +
-> +       case PE_OPT_MAGIC_PE32PLUS:
-> +               chkaddr(0, cursor, sizeof(*pe64));
-> +               ctx->image_checksum_offset =
-> +                       (unsigned long)&pe64->csum - (unsigned long)prep->data;
-> +               ctx->header_size = pe64->header_size;
-> +               cursor += sizeof(*pe64);
-> +               ctx->n_data_dirents = pe64->data_dirs;
-> +               break;
-> +
-> +       default:
-> +               pr_devel("Unknown PEOPT magic = %04hx\n", pe32->magic);
-> +               return -ELIBBAD;
-> +       }
-> +
-> +       pr_devel("checksum @ %x\n", ctx->image_checksum_offset);
-> +       pr_devel("header size = %x\n", ctx->header_size);
-> +
-> +       chkaddr(0, cursor, sizeof(*ddir));
-> +       ddir = prep->data + cursor;
-> +       cursor += sizeof(*dde) * ctx->n_data_dirents;
+>  arch/ia64/kernel/acpi.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
+> index 44057885..bd86e39 100644
+> --- a/arch/ia64/kernel/acpi.c
+> +++ b/arch/ia64/kernel/acpi.c
+> @@ -633,6 +633,7 @@ int acpi_register_gsi(struct device *dev, u32 gsi, int triggering, int polarity)
+>  				      ACPI_EDGE_SENSITIVE) ? IOSAPIC_EDGE :
+>  				     IOSAPIC_LEVEL);
+>  }
+> +EXPORT_SYMBOL(acpi_register_gsi);
 
-This multiplication can push the cursor out of bounds. (n_data_dirents
-is unverified).
-
-> +       ctx->cert_dirent_offset =
-> +               (unsigned long)&ddir->certs - (unsigned long)prep->data;
-> +       ctx->certs_size = ddir->certs.size;
-> +
-> +       if (!ddir->certs.virtual_address || !ddir->certs.size) {
-> +               pr_devel("Unsigned PE binary\n");
-> +               return -EKEYREJECTED;
-> +       }
-> +
-> +       chkaddr(cursor, ddir->certs.virtual_address, ddir->certs.size);
-> +       ctx->sig_offset = ddir->certs.virtual_address;
-> +       ctx->sig_len = ddir->certs.size;
-> +       pr_devel("cert = %x @%x [%*ph]\n",
-> +                ctx->sig_len, ctx->sig_offset,
-> +                ctx->sig_len, prep->data + ctx->sig_offset);
-> +
-> +       /* Parse the section table, checking the parameters and looking for the
-> +        * section containing the list of keys.
-> +        */
-> +       ctx->n_sections = pe->sections;
-> +       chkaddr(0, cursor, sizeof(*sec) * ctx->n_sections);
-> +       ctx->secs = secs = prep->data + cursor;
-> +       cursor += sizeof(*sec) * ctx->n_sections;
-
-Both of these cases of n_sections multiplications can wrap.
-Ultimately, you can end up with cursor close to zero, but n_sections
-being giant.
-
-> +       for (loop = 0; loop < ctx->n_sections; loop++) {
-> +               sec = &secs[loop];
-> +               chkaddr(cursor, sec->data_addr, sec->raw_data_size);
-> +               if (memcmp(sec->name, ".keylist", 8) == 0) {
-> +                       ctx->keylist_offset = sec->data_addr;
-> +                       ctx->keylist_len = sec->raw_data_size;
-> +               }
-> +       }
-
-Which means this loop will walk past the end of the memory (loop is
-bounded by n_sections, so secs[loop] can go past datalen). While
-data_addr and raw_data_size will stay bounded, the read of sec->name
-can be out of bounds. (Also, do you want a "break" in there after the
-first .keylist is found, or is this intentionally "use last key
-list"?)
-
-> +
-> +       if (ctx->keylist_offset == 0) {
-> +               pr_devel("No .keylist section in PE binary\n");
-> +               return -ENOENT;
-> +       }
-> +
-> +       pr_devel("keylist = %x @%x [%*ph]\n",
-> +                ctx->keylist_len, ctx->keylist_offset,
-> +                ctx->keylist_len, prep->data + ctx->keylist_offset);
-> +
-> +       return 0;
-> +}
-> +
-> +/*
-> + * Parse a PE binary.
-> + */
-> +static int pefile_key_preparse(struct key_preparsed_payload *prep)
-> +{
-> +       struct pefile_context ctx;
-> +       int ret;
-> +
-> +       kenter("");
-> +
-> +       memset(&ctx, 0, sizeof(ctx));
-> +       ret = pefile_parse_binary(prep, &ctx);
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       return -ENOANO; // Not yet complete
-> +}
-> +
-> +static struct asymmetric_key_parser pefile_key_parser = {
-> +       .owner  = THIS_MODULE,
-> +       .name   = "pefile",
-> +       .parse  = pefile_key_preparse,
-> +};
-> +
-> +/*
-> + * Module stuff
-> + */
-> +static int __init pefile_key_init(void)
-> +{
-> +       return register_asymmetric_key_parser(&pefile_key_parser);
-> +}
-> +
-> +static void __exit pefile_key_exit(void)
-> +{
-> +       unregister_asymmetric_key_parser(&pefile_key_parser);
-> +}
-> +
-> +module_init(pefile_key_init);
-> +module_exit(pefile_key_exit);
-> diff --git a/crypto/asymmetric_keys/pefile_parser.h b/crypto/asymmetric_keys/pefile_parser.h
-> new file mode 100644
-> index 0000000..82bcaf6
-> --- /dev/null
-> +++ b/crypto/asymmetric_keys/pefile_parser.h
-> @@ -0,0 +1,31 @@
-> +/* PE Binary parser bits
-> + *
-> + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-> + * Written by David Howells (dhowells@redhat.com)
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public Licence
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the Licence, or (at your option) any later version.
-> + */
-> +#include "pkcs7_parser.h"
-> +
-> +struct pefile_context {
-> +       unsigned        header_size;
-> +       unsigned        image_checksum_offset;
-> +       unsigned        cert_dirent_offset;
-> +       unsigned        n_data_dirents;
-> +       unsigned        n_sections;
-> +       unsigned        certs_size;
-> +       unsigned        sig_offset;
-> +       unsigned        sig_len;
-> +       unsigned        keylist_offset;
-> +       unsigned        keylist_len;
-> +       const struct section_header *secs;
-> +       struct pkcs7_message *pkcs7;
-> +
-> +       /* PKCS#7 MS Individual Code Signing content */
-> +       const void      *digest;                /* Digest */
-> +       unsigned        digest_len;             /* Digest length */
-> +       enum pkey_hash_algo digest_algo;        /* Digest algorithm */
-> +};
->
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+_GPL ?
+>  
+>  void acpi_unregister_gsi(u32 gsi)
+>  {
+> @@ -644,6 +645,7 @@ void acpi_unregister_gsi(u32 gsi)
+>  
+>  	iosapic_unregister_intr(gsi);
+>  }
+> +EXPORT_SYMBOL(acpi_unregister_gsi);
+>  
+>  static int __init acpi_parse_fadt(struct acpi_table_header *table)
+>  {
+> -- 
+> 1.7.12.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
