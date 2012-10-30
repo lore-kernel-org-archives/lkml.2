@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757866Ab2J3U5J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 16:57:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4986 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753294Ab2J3U5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 16:57:07 -0400
-Message-ID: <50903F18.10004@draigBrady.com>
-Date: Tue, 30 Oct 2012 20:56:56 +0000
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+	id S934558Ab2J3VCT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:02:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59565 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934175Ab2J3VCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 17:02:17 -0400
+Date: Tue, 30 Oct 2012 14:02:13 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Omar Ramirez Luna <omar.luna@linaro.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        devel@driverdev.osuosl.org, linux-omap@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Juan Gutierrez <jgutierrez@ti.com>, linux-kernel@vger.kernel.org,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        Suman Anna <s-anna@ti.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: OMAP2+: move mailbox.h out of plat-omap headers
+Message-ID: <20121030210213.GA6098@kroah.com>
+References: <1351530381-11459-1-git-send-email-omar.luna@linaro.org>
+ <1351530381-11459-2-git-send-email-omar.luna@linaro.org>
+ <20121029175228.GD11908@atomide.com>
+ <CALLhW=4ukBuRSVcPm2A37PgBhv33yKqk2G=Dz2XTUyswXw=JMg@mail.gmail.com>
+ <20121030162441.GF11908@atomide.com>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        =?ISO-8859-1?Q?Lasse_K=E4rkk=E4inen?= <ljkarkk2@cc.hut.fi>,
-        linux-kernel@vger.kernel.org
-Subject: Re: urandom is too slow
-References: <508FEA5A.7010406@cc.hut.fi> <20121030185403.GA5044@thunk.org>
-In-Reply-To: <20121030185403.GA5044@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030162441.GF11908@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2012 06:54 PM, Theodore Ts'o wrote:
-> On Tue, Oct 30, 2012 at 04:55:22PM +0200, Lasse Kärkkäinen wrote:
->> Apparently there has been little or no development on urandom even
->> though the device is in widespread use for disk shredding and such
->> use. The device emits data at rather slow rate of 19 MB/s even on
->> modern hardware where other software-based PRNGs could do far
->> better. An even better option seems to be utilizing AES for
->> encrypting zeroes, using a random key, allowing for rates up to 500
->> MB/s with hardware that has AES-NI instructions.
->>
->> Why is urandom so slow and why isn't AES hardware acceleration utilized?
->
-> If you can use a software-based PRNG, you should use one in userspace.
-> The intended use of urandom is for cryptographic purposes (i.e.,
-> generating random session keys, long-term public keys, etc.).  If you
-> just want to wipe a disk, you shouldn't be using /dev/urandom for that
-> purpose.
+On Tue, Oct 30, 2012 at 09:24:42AM -0700, Tony Lindgren wrote:
+> * Omar Ramirez Luna <omar.luna@linaro.org> [121030 05:20]:
+> > Tony,
+> > 
+> > On 29 October 2012 12:52, Tony Lindgren <tony@atomide.com> wrote:
+> > >> --- /dev/null
+> > >> +++ b/include/linux/platform_data/omap_mailbox.h
+> > >> @@ -0,0 +1,105 @@
+> > >
+> > > This file should only contain pure platform data needed
+> > > by the core omap code to pass to the mailbox driver.
+> > 
+> > Ok, looking at it closely, this header file is related to the API
+> > itself, there is nothing that could be actually considered as pure
+> > platform data, the structures are related with the mailbox framework
+> > and even if I split this file into two, the additional header would
+> > end up including the "platform_data" header unless I move
+> > save/restore_ctx functions and then export them as symbols for the
+> > API.
+> > 
+> > So, it might be better for the entire file to sit in
+> > linux/include/mailbox/ then.
+> 
+> OK to me.
+>  
+> > > The mailbox API header should be somewhere else,
+> > > like include/linux/mailbox/mailbox-omap.h or similar.
+> > 
+> > Ok.
+> > 
+> > > But shouldn't this all now be handled by using the
+> > > remoteproc framework?
+> > 
+> > Remoteproc doesn't handle the mailbox hardware directly, it still
+> > relies in the mailbox framework for the low level communications.
+> > E.g.: Proc1 has a message (virtqueue msg) queued to Proc2, uses
+> > mailbox msg to generate an interrupt to Proc2, Proc2 queries the
+> > message (virtqueue) based on the mailbox message received.
+> 
+> OK.
+> 
+> Greg, do these patches look OK to you to move to live under
+> drivers/mailbox?
 
-For the record, shred uses a user space PRNG for speed
-for the last 3 years or so, rather than using /dev/urandom:
-http://git.sv.gnu.org/gitweb/?p=coreutils.git;a=commit;h=af5723c7
+Um, I don't know, I wasn't paying attention here, sorry.
 
-$ shred-old -v -n3 t
-shred-old: t: pass 1/3 (random)...
-shred-old: t: pass 1/3 (random)...8.3MiB/1000MiB 0%
-shred-old: t: pass 1/3 (random)...17MiB/1000MiB 1%
-shred-old: t: pass 1/3 (random)...32MiB/1000MiB 3%
-...
-
-$ time shred-new -v t
-shred-new: t: pass 1/3 (random)...
-shred-new: t: pass 1/3 (random)...116MiB/1000MiB 11%
-shred-new: t: pass 1/3 (random)...216MiB/1000MiB 21%
-shred-new: t: pass 1/3 (random)...340MiB/1000MiB 34%
-...
-
-cheers,
-Pádraig.
+greg k-h
