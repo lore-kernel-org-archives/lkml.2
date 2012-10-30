@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965350Ab2J3SZB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:25:01 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43067 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760206Ab2J3SY5 (ORCPT
+	id S965327Ab2J3S1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:27:46 -0400
+Received: from shrek-modem2.podlesie.net ([83.13.132.46]:58437 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759674Ab2J3S1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:24:57 -0400
-Message-ID: <50901B72.6090201@ursulin.net>
-Date: Tue, 30 Oct 2012 18:24:50 +0000
-From: Tvrtko Ursulin <tvrtko@ursulin.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 30 Oct 2012 14:27:43 -0400
+X-Greylist: delayed 458 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 14:27:43 EDT
+Date: Tue, 30 Oct 2012 19:20:01 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: "Chas Williams (CONTRACTOR)" <chas@cmf.nrl.navy.mil>
+Cc: davem@davemloft.net, dwmw2@infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
+Message-ID: <20121030182001.GA30373@shrek.podlesie.net>
+References: <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
+ <201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
 MIME-Version: 1.0
-To: Milan Broz <mbroz@redhat.com>
-CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-rt-users@vger.kernel.org, dm-crypt@saout.de,
-        linux-kernel@vger.kernel.org, okozina@redhat.com
-Subject: Re: [PATCH] Fix crypto api init for 3.6.4-rt10
-References: <5083C61C.5090807@gmail.com> <5083E4A8.3060501@ursulin.net> <5083E87B.2080908@gmail.com> <5083EC61.8070505@ursulin.net> <50844D01.9090805@gmail.com> <5084551E.5040304@ursulin.net> <508ED985.5060301@ursulin.net> <508EDD6E.7030908@gmail.com> <508EE395.9010709@ursulin.net> <508EEAF2.4090506@ursulin.net> <20121030094001.GV639@pengutronix.de> <508FA405.2050509@redhat.com> <508FF1D6.3030900@redhat.com>
-In-Reply-To: <508FF1D6.3030900@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 30, 2012 at 10:26:46AM -0400, Chas Williams (CONTRACTOR) wrote:
+> In message <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>,Krzysztof Mazur writes:
+> 
+> as i recall from way back, this shouldnt be necessary.  closing a vcc
+> for an attached protocol isnt supposed to require addtional locking
+> or synchronization.
 
-Hi,
+Such locking is already used by vcc_sendmsg() and I think we should do here
+exacly what vcc_sendmsg() does.
 
-On 30/10/12 15:27, Milan Broz wrote:
-> Fix crypto api for 3.6.4-rt10 (broken only in realtime patchset)
->
-> In peterz-srcu-crypto-chain.patch the blocking notifier is changed
-> to srcu notifier and added initialization to module init fucntion.
->
-> Later, in crypto-make-core-static-and-init-scru-early.patch, is that
-> initialization added also to core_initcall().
->
-> This patch removes crypto_chain init from algapi initialization,
-> because this function is called later and already initialized
-> cryptomgr notifier is lost.
->
-> This cause a failure in initialization of larval algorithms,
-> like e.g. cbc(aes).
+> 
+> vcc_release() locks the socket and vcc_destroy_socket() calls the device's
+> vcc close routine and pushes a NULL skb to the attached protocol.
+> this NULL push is supposed to let the attached protocol that no more
+> sends and recvs can be handled. 
+> 
+> that said, the order for the device vcc close and push does seem
+> reversed.  since i imagine there could be a pending pppoatm_send()
+> during this interval.  the push of the NULL skb is allowed to wait for
+> the subprotocol to finish its cleanup/shutdown.
 
-Thanks for the quick fix!
+Yes, this problem can be probably fixed by reversing close and push
+and adding some synchronization to pppoatm_unassign_vcc(), but I think
+we need that locking anyway, for instance for synchronization for
+checking and incrementing sk->sk_wmem_alloc, between pppoatm_send()
+and vcc_sendmsg().
 
-Tvrtko
+Thanks.
 
+Krzysiek
