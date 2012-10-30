@@ -1,315 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab2J3DoY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 23:44:24 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58916 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab2J3DoW (ORCPT
+	id S1751049Ab2J3EBm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 00:01:42 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:59206 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750711Ab2J3EBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 23:44:22 -0400
-Date: Tue, 30 Oct 2012 14:44:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: linux-next: manual merge of the samsung tree with the pinctrl tree
-Message-Id: <20121030144412.4a4a60dc0dace86f1a91af8c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__30_Oct_2012_14_44_12_+1100_2tUa8exMbwvoPmqk"
+	Tue, 30 Oct 2012 00:01:40 -0400
+Date: Mon, 29 Oct 2012 21:01:40 -0700
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 01/12] VMCI: context implementation.
+Message-ID: <20121030040139.GA32055@dtor-ws.eng.vmware.com>
+References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
+ <20121030010333.17788.94988.stgit@promb-2n-dhcp175.eng.vmware.com>
+ <20121030021058.GB1920@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030021058.GB1920@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__30_Oct_2012_14_44_12_+1100_2tUa8exMbwvoPmqk
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Greg,
 
-Hi Kukjin,
+On Mon, Oct 29, 2012 at 07:10:58PM -0700, Greg KH wrote:
+> On Mon, Oct 29, 2012 at 06:03:42PM -0700, George Zhang wrote:
+> > +/*
+> > + * Releases the VMCI context. If this is the last reference to
+> > + * the context it will be deallocated. A context is created with
+> > + * a reference count of one, and on destroy, it is removed from
+> > + * the context list before its reference count is
+> > + * decremented. Thus, if we reach zero, we are sure that nobody
+> > + * else are about to increment it (they need the entry in the
+> > + * context list for that). This function musn't be called with a
+> > + * lock held.
+> > + */
+> > +void vmci_ctx_release(struct vmci_ctx *context)
+> > +{
+> > +	ASSERT(context);
+> > +	kref_put(&context->kref, ctx_free_ctx);
+> > +}
+> > +
+> 
+> Hm, are you _sure_ you should be calling this without a lock held?
+> That's usually kref-101, you MUST hold a lock when calling put,
+> otherwise you can race a kref_get() call, and all hell can break loose.
+> 
+> Because of this, some saner people (like Al Viro), have suggested that I
+> force the kref_put() and kref_get() calls pass in a spinlock just to
+> enforce this.
+> 
+> So, tell me what I'm missing here, and why you put the comment here
+> saying that it really is supposed to be called without a lock held?  How
+> is that safe?
+> 
 
-Today's linux-next merge of the samsung tree got a conflict in
-arch/arm/boot/dts/exynos4210.dtsi between commit a7a8241540c3 ("ARM: dts:
-exynos4210-pinctrl: Add nodes for pin banks") from the pinctrl tree and
-commit 8d4155dbb184 ("ARM: EXYNOS: Add devicetree node for TMU driver for
-exynos4") from the samsung tree.
+Contexts are created/registered in vmci_ctx_init_ctx() and unregistered in
+vmci_ctx_release_ctx() and these operations are protected by
+ctx_list.lock spinlock. Context lookup (vmci_ctx_get) also uses spinlock
+to traverse list of registered contexts and then grabs reference to the
+[valid] context. The use of kref_put() without additional locking in
+vmci_ctx_release() is fine as there is no chance of another thread
+bumping count from 0 to 1.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I believe the comment should actually read that the function should not
+be called from atomic contexts.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/boot/dts/exynos4210.dtsi
-index d877dbe,038de97..0000000
---- a/arch/arm/boot/dts/exynos4210.dtsi
-+++ b/arch/arm/boot/dts/exynos4210.dtsi
-@@@ -64,4 -74,240 +64,11 @@@
-  		compatible =3D "samsung,pinctrl-exynos4210";
-  		reg =3D <0x03860000 0x1000>;
-  	};
-+=20
- -	gpio-controllers {
- -		#address-cells =3D <1>;
- -		#size-cells =3D <1>;
- -		gpio-controller;
- -		ranges;
- -
- -		gpa0: gpio-controller@11400000 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11400000 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpa1: gpio-controller@11400020 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11400020 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpb: gpio-controller@11400040 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11400040 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpc0: gpio-controller@11400060 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11400060 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpc1: gpio-controller@11400080 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11400080 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpd0: gpio-controller@114000A0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x114000A0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpd1: gpio-controller@114000C0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x114000C0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpe0: gpio-controller@114000E0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x114000E0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpe1: gpio-controller@11400100 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11400100 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpe2: gpio-controller@11400120 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11400120 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpe3: gpio-controller@11400140 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11400140 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpe4: gpio-controller@11400160 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11400160 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpf0: gpio-controller@11400180 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11400180 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpf1: gpio-controller@114001A0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x114001A0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpf2: gpio-controller@114001C0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x114001C0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpf3: gpio-controller@114001E0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x114001E0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpj0: gpio-controller@11000000 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000000 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpj1: gpio-controller@11000020 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000020 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpk0: gpio-controller@11000040 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000040 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpk1: gpio-controller@11000060 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000060 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpk2: gpio-controller@11000080 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000080 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpk3: gpio-controller@110000A0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x110000A0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpl0: gpio-controller@110000C0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x110000C0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpl1: gpio-controller@110000E0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x110000E0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpl2: gpio-controller@11000100 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000100 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpy0: gpio-controller@11000120 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000120 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpy1: gpio-controller@11000140 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000140 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpy2: gpio-controller@11000160 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000160 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpy3: gpio-controller@11000180 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000180 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpy4: gpio-controller@110001A0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x110001A0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpy5: gpio-controller@110001C0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x110001C0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpy6: gpio-controller@110001E0 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x110001E0 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpx0: gpio-controller@11000C00 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000C00 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpx1: gpio-controller@11000C20 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000C20 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpx2: gpio-controller@11000C40 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000C40 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpx3: gpio-controller@11000C60 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x11000C60 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -
- -		gpz: gpio-controller@03860000 {
- -			compatible =3D "samsung,exynos4-gpio";
- -			reg =3D <0x03860000 0x20>;
- -			#gpio-cells =3D <4>;
- -		};
- -	};
- -
-+ 	tmu@100C0000 {
-+ 		compatible =3D "samsung,exynos4210-tmu";
-+ 		interrupt-parent =3D <&combiner>;
-+ 		reg =3D <0x100C0000 0x100>;
-+ 		interrupts =3D <2 4>;
-+ 	};
-  };
-
---Signature=_Tue__30_Oct_2012_14_44_12_+1100_2tUa8exMbwvoPmqk
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQj00MAAoJEECxmPOUX5FE5K0P/2y1x6VOoxVuxoA4y0gyFK6d
-JXzYA0u4GJHusZOnd9aekTGxt9wyjACeBfZtcJcXJjlOgM30L6SzY7iFlF0wPw7C
-Le1XedYKZ5YMB/1pUgZnTxyeNF1dHaVGo6RXI5KRTSXnTZBhgFN4VAqzu8nO7w6/
-COiACRfpFChmixWEzmboO3OyIHMqFPQVhC5jybAjRFawlRqogL04dVFsMIv8rzB1
-ofTqSkvWq48knxqsC5bnGdDa9QwGlGBBYLx8kXklP5hMt5HxxbdAQdeoS4GeGMyX
-mHPd9DpZ56rqDKhY1bd1mjwOTlzL8KRywuPwyu2L1y3CK/m0U08zlubqhR/ekXL1
-VjUu3e6zT7Q/0+x0VomKGXhmRCGBsp3crHAQb/OwFKOIDW7ftJEsZOHBYaWcFheb
-UypD96WaKBnxWY78yzKi58QB0Ma4aSRZ89boH7BxBWiEMuB+0iNcFbHYrmMJKwN6
-smkPl3Wjt2qmO0KDrn9MEGDofjCU5lfFX/LV8PHzp3q44j2QashPd5LNoHgix4Gx
-XSq6WLX8bO2KSE26LAPfgXrmOuS+HtueqYN1DHRItwZGTUnnIiGM4nbA2UvRKDW/
-BR/fzRRNKX+c2wsJ1ryBdln0kS7xX/GTfw0O5GUtfCXpnaSzN7QNS8DEiKpQk3lh
-sRiYZ2KcdiGnMQIgGsFd
-=zSkb
------END PGP SIGNATURE-----
-
---Signature=_Tue__30_Oct_2012_14_44_12_+1100_2tUa8exMbwvoPmqk--
+Thanks,
+Dmitry
