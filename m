@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933891Ab2J3Pxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:53:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18866 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933813Ab2J3Pxr (ORCPT
+	id S933873Ab2J3P4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:56:49 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:33794 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932350Ab2J3P4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:53:47 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=DP589D6xibcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=uakuW5ncBZAA:10 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=t7CeM3EgAAAA:8 a=cpGsHAT1lXgpjA10TvMA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=LI9Vle30uBYA:10 a=Zh68SRI7RUMA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=2e6ZYRoF4I4A:10 a=gLTAEdqw5wo_1JzZ:21 a=SkWysUwkmET09t_5:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351612425.8467.105.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/2] irq_work: Fix racy check on work pending flag
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Tue, 30 Oct 2012 11:53:45 -0400
-In-Reply-To: <1351611301-3520-2-git-send-email-fweisbec@gmail.com>
-References: <1351611301-3520-1-git-send-email-fweisbec@gmail.com>
-	 <1351611301-3520-2-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Oct 2012 11:56:48 -0400
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 01/12] VMCI: context implementation.
+Date: Tue, 30 Oct 2012 08:56:47 -0700
+Message-ID: <6866362.eNDmFOn8qX@dtor-d630.eng.vmware.com>
+Organization: VMware, Inc.
+User-Agent: KMail/4.9.2 (Linux/3.6.0+; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121030154652.GB14167@kroah.com>
+References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com> <20121030040139.GA32055@dtor-ws.eng.vmware.com> <20121030154652.GB14167@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-30 at 16:35 +0100, Frederic Weisbecker wrote:
-> Work claiming semantics require this operation
-> to be SMP-safe.
+On Tuesday, October 30, 2012 08:46:52 AM Greg KH wrote:
+> On Mon, Oct 29, 2012 at 09:01:40PM -0700, Dmitry Torokhov wrote:
+> > Hi Greg,
+> > 
+> > On Mon, Oct 29, 2012 at 07:10:58PM -0700, Greg KH wrote:
+> > > On Mon, Oct 29, 2012 at 06:03:42PM -0700, George Zhang wrote:
+> > > > +/*
+> > > > + * Releases the VMCI context. If this is the last reference to
+> > > > + * the context it will be deallocated. A context is created with
+> > > > + * a reference count of one, and on destroy, it is removed from
+> > > > + * the context list before its reference count is
+> > > > + * decremented. Thus, if we reach zero, we are sure that nobody
+> > > > + * else are about to increment it (they need the entry in the
+> > > > + * context list for that). This function musn't be called with a
+> > > > + * lock held.
+> > > > + */
+> > > > +void vmci_ctx_release(struct vmci_ctx *context)
+> > > > +{
+> > > > +	ASSERT(context);
+> > > > +	kref_put(&context->kref, ctx_free_ctx);
+> > > > +}
+> > > > +
+> > > 
+> > > Hm, are you _sure_ you should be calling this without a lock held?
+> > > That's usually kref-101, you MUST hold a lock when calling put,
+> > > otherwise you can race a kref_get() call, and all hell can break loose.
+> > > 
+> > > Because of this, some saner people (like Al Viro), have suggested that I
+> > > force the kref_put() and kref_get() calls pass in a spinlock just to
+> > > enforce this.
+> > > 
+> > > So, tell me what I'm missing here, and why you put the comment here
+> > > saying that it really is supposed to be called without a lock held?  How
+> > > is that safe?
+> > 
+> > Contexts are created/registered in vmci_ctx_init_ctx() and unregistered in
+> > vmci_ctx_release_ctx() and these operations are protected by
+> > ctx_list.lock spinlock. Context lookup (vmci_ctx_get) also uses spinlock
+> > to traverse list of registered contexts and then grabs reference to the
+> > [valid] context. The use of kref_put() without additional locking in
+> > vmci_ctx_release() is fine as there is no chance of another thread
+> > bumping count from 0 to 1.
 > 
-> So we want a strict ordering between the data we
-> want the work to handle and the flags that describe
-> the work state such that either we claim and we enqueue
-> the work that will see our data or we fail the claim
-> but the CPU where the work is still pending will
-> see the data we prepared when it executes the work:
-> 
-> CPU 0                   CPU 1
-> 
-> data = something        claim work
-> smp_mb()                smp_mb()
-> try claim work          execute work (data)
-> 
-> The early check for the pending flag in irq_work_claim()
-> fails to meet this ordering requirement. As a result,
-> when we fail to claim a work, it may have been processed
-> by CPU that were previously owning it already, leaving
-> our data unprocessed.
-> 
-> Discussing this with Steven Rostedt, we can use memory
-> barriers to fix this or we can rely on cmpxchg() that
-> implies full barrier already.
-> 
-> To fix this, we start by speculating about the value we
-> wish to be in the work->flags but we only make any conclusion
-> after the value returned by the cmpxchg() call that either
-> claims the work or does the ordering such that the CPU
-> where the work is pending handles our data.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> As I didn't see all callers of this holding that spinlock, it was
+> confusing.  You should put this type of description somewhere so that
+> other reviewers don't have the same questions.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Fair enough, we'll add better comments to this code.
 
--- Steve
-
-> ---
->  kernel/irq_work.c |   22 +++++++++++++++++-----
->  1 files changed, 17 insertions(+), 5 deletions(-)
-> 
-
+Thanks,
+Dmitry
 
