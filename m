@@ -1,247 +1,540 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab2J3H6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 03:58:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46298 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755300Ab2J3H6f convert rfc822-to-8bit (ORCPT
+	id S1756095Ab2J3IAR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 04:00:17 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:37523 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755797Ab2J3IAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 03:58:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,677,1344236400"; 
-   d="scan'208";a="234473147"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jan Beulich <jbeulich@suse.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Index: AQHNtdJ8Ti91BiFLfUibRvXA4zlK85fRdOaA
-Date: Tue, 30 Oct 2012 07:58:15 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335374C86@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
- <5089676602000078000A4928@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
- <508A89CB020000780008E6ED@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
- <20121026201409.GF2708@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC8292335373918@SHSMSX101.ccr.corp.intel.com>
- <20121029123950.GK2708@phenom.dumpdata.com>
-In-Reply-To: <20121029123950.GK2708@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 30 Oct 2012 04:00:14 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-ca-508f88ecd8b9
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com
+Subject: [PATCH] ARM: Exynos: move interrupt combiner controller driver to
+ drivers/irqchip
+Date: Tue, 30 Oct 2012 13:52:36 +0530
+Message-id: <1351585356-13008-1-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHJMWRmVeSWpSXmKPExsVy+t9jAd03Hf0BBl8eiVpc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGU83nKLtWBGaUXP75ssDYwvEroYOTkkBEwk/kyezAxh
+	i0lcuLeeDcQWEljEKHGhK72LkQvIbmOS2N72mB0kwSZgIPFo4TswW0RAVeJz2wIwm1kgXmL9
+	8ldMILawQIzEwm0/WEFsFqCa57M2g9XwCnhKtHyZxA6xTEliQ+9RpgmM3AsYGVYxiqYWJBcU
+	J6XnGukVJ+YWl+al6yXn525iBPvymfQOxlUNFocYBTgYlXh4N67pCxBiTSwrrsw9xCjBwawk
+	wpvv3R8gxJuSWFmVWpQfX1Sak1p8iFGag0VJnLfZIyVASCA9sSQ1OzW1ILUIJsvEwSnVwDj3
+	78pdKdHs/fkPD7/JvXG74LxitpyJR1bF/GtvXoUffusZOEXh29FyhyCJsrhb/38lHfaM9eFv
+	E85/uNtBtc53nYO/+t65h1oeBPhJhD05sFPY5aJpeZrM3dBJdaonRYvmO6zq22bxuuuAp92T
+	h3qrHxiudG9NF3vXVfFGZunixvsV1o/XP1ViKc5INNRiLipOBABgvrGA4QEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Mon, Oct 29, 2012 at 03:38:14AM +0000, Liu, Jinsong wrote:
->> It's doable to register a stub for xen. However, it's not preferred,
->> say, to make xen pad as module, considering the case 'rmmod
->> xen_acpi_pad' then 'insmod acpi_pad'? Under such case there is risk
->> of mwait #UD, if we want to remove mwait check as 'patch 2/2:
->> Revert-pad-config-check-in-xen_check_mwait.patch' did, advantages of
->> which is to enjoy deep Cx.     
-> 
-> You are missing my point. This is what I was thinking off:
-> 
-> 
-> From 5f30320b8a1c21d60a2c22e98bcf013b7773938b Mon Sep 17 00:00:00 2001
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date: Mon, 29 Oct 2012 08:38:22 -0400
-> Subject: [PATCH] xen/acpi: Provide a stub function to register for
->  ACPI PAD module.
-> 
-> TODO: Give more details.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/xen/Kconfig             |    5 ++
->  drivers/xen/Makefile            |    3 +-
->  drivers/xen/xen-acpi-pad-stub.c |  128
->  +++++++++++++++++++++++++++++++++++++++ drivers/xen/xen-acpi.h      
->  |    2 + 4 files changed, 137 insertions(+), 1 deletions(-)
->  create mode 100644 drivers/xen/xen-acpi-pad-stub.c
->  create mode 100644 drivers/xen/xen-acpi.h
-> 
-> diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-> index d4dffcd..9156a08 100644
-> --- a/drivers/xen/Kconfig
-> +++ b/drivers/xen/Kconfig
-> @@ -204,4 +204,9 @@ config XEN_MCE_LOG
->  	  Allow kernel fetching MCE error from Xen platform and
->  	  converting it into Linux mcelog format for mcelog tools
-> 
-> +config XEN_ACPI_PAD_STUB
-> +	bool
-> +	depends on XEN_DOM0 && X86_64 && ACPI
-> +	default n
-> +
+The irqchip support for interrupt combiner controller is moved into
+drivers/irqchip directory from arch/arm/mach-exynos/common.c file.
 
-This Kconfig is pointless, if CONFIG_XEN_ACPI_PAD_STUB = n, native pad would successfully registerred, and then mwait #UD (we would revert df88b2d96e36d9a9e325bfcd12eb45671cbbc937, right?). So xen stub logic should unconditionally built-in kernel.
+While at it, the use of soc_is_exynos4/5() macro in the combiner controller
+driver (used to determine the number of combiners) is removed. Instead, a new
+parameter is added to combiner_init function that allows non-dt platform code
+to specify the number of combiners available.
 
->  endmenu
-> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-> index 0e863703..d1895d9 100644
-> --- a/drivers/xen/Makefile
-> +++ b/drivers/xen/Makefile
-> @@ -9,9 +9,10 @@ nostackp := $(call cc-option, -fno-stack-protector)
->  CFLAGS_features.o			:= $(nostackp)
-> 
->  dom0-$(CONFIG_PCI) += pci.o
-> -dom0-$(CONFIG_USB_SUPPORT) += dbgp.o
-> +dom0-$(CONFIG_USB_EHCI_HCD) += dbgp.o
->  dom0-$(CONFIG_ACPI) += acpi.o
->  dom0-$(CONFIG_X86) += pcpu.o
-> +dom0-$(CONFIG_XEN_ACPI_PAD_STUB)	+= xen-acpi-pad-stub.o
->  obj-$(CONFIG_XEN_DOM0)			+= $(dom0-y)
->  obj-$(CONFIG_BLOCK)			+= biomerge.o
->  obj-$(CONFIG_XEN_XENCOMM)		+= xencomm.o
-> diff --git a/drivers/xen/xen-acpi-pad-stub.c
-> b/drivers/xen/xen-acpi-pad-stub.c new file mode 100644
-> index 0000000..cac9a39
-> --- /dev/null
-> +++ b/drivers/xen/xen-acpi-pad-stub.c
-> @@ -0,0 +1,128 @@
-> +/*
-> + * Copyright 2012 by Oracle Inc
-> + * Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> + *
-> + * This code borrows ideas from https://lkml.org/lkml/2011/11/30/249
-> + * so many thanks go to Kevin Tian <kevin.tian@intel.com>
-> + * and Yu Ke <ke.yu@intel.com>.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> modify it + * under the terms and conditions of the GNU General
-> Public License, + * version 2, as published by the Free Software
-> Foundation. + *
-> + * This program is distributed in the hope it will be useful, but
-> WITHOUT + * ANY WARRANTY; without even the implied warranty of
-> MERCHANTABILITY or + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> General Public License for + * more details.
-> + *
-> + */
-> +
-> +#include <linux/cpumask.h>
-> +#include <linux/freezer.h>
-> +#include <linux/kernel.h>
-> +#include <linux/kthread.h>
-> +#include <linux/init.h>
-> +#include <linux/module.h>
-> +#include <linux/types.h>
-> +#include <acpi/acpi_bus.h>
-> +#include <acpi/acpi_drivers.h>
-> +#include <acpi/processor.h>
-> +
-> +#include <xen/xen.h>
-> +#include <xen/interface/platform.h>
-> +#include <xen/interface/version.h>
-> +#include <asm/xen/hypercall.h>
-> +
-> +/* TODO: Needs comments. */
-> +static struct acpi_device_ops *xen_acpi_pad_ops;
-> +static bool __read_mostly xen_acpi_pad_registered;
-> +static DEFINE_SPINLOCK(xen_acpi_pad_spinlock);
-> +
-> +int xen_register_acpi_pad_owner(struct acpi_device_ops *ops)
-> +{
-> +	if (xen_acpi_pad_ops)
-> +		return -EEXIST;
-> +
-> +	spin_lock(&xen_acpi_pad_spinlock);
-> +	xen_acpi_pad_ops = ops;
-> +	spin_unlock(&xen_acpi_pad_spinlock);
-> +	return 0;
-> +}
-> +int xen_unregister_acpi_pad_owner(struct acpi_device_ops *ops)
-> +{
-> +	spin_lock(&xen_acpi_pad_spinlock);
-> +	if (xen_acpi_pad_ops != ops) {
-> +		spin_unlock(&xen_acpi_pad_spinlock);
-> +		return -ENODEV;
-> +	}
-> +	xen_acpi_pad_ops = NULL;
-> +	spin_unlock(&xen_acpi_pad_spinlock);
-> +	return 0;
-> +}
-> +
-> +static int xen_acpi_pad_remove(struct acpi_device *device, int type)
-> +{
-> +	int ret = -ENOSYS;
-> +
-> +	spin_lock(&xen_acpi_pad_spinlock);
-> +	if (xen_acpi_pad_ops && xen_acpi_pad_ops->remove)
-> +		ret = xen_acpi_pad_ops->remove(device, type);
-> +	spin_unlock(&xen_acpi_pad_spinlock);
-> +	return ret;
-> +}
-> +static int xen_acpi_pad_add(struct acpi_device *device)
-> +{
-> +	int ret = -ENOSYS;
-> +	spin_lock(&xen_acpi_pad_spinlock);
-> +	if (xen_acpi_pad_ops && xen_acpi_pad_ops->add)
-> +		ret = xen_acpi_pad_ops->add(device);
-> +	spin_unlock(&xen_acpi_pad_spinlock);
-> +	return ret;
-> +}
-> +
-> +static const struct acpi_device_id pad_device_ids[] = {
-> +	{"ACPI000C", 0},
-> +	{"", 0},
-> +};
-> +MODULE_DEVICE_TABLE(acpi, pad_device_ids);
-> +#define ACPI_PROCESSOR_AGGREGATOR_CLASS "acpi_pad"
-> +
-> +static struct acpi_driver xen_acpi_pad_driver = {
-> +	.name = "processor_aggregator",
-> +	.class = ACPI_PROCESSOR_AGGREGATOR_CLASS,
-> +	.ids = pad_device_ids,
-> +	.ops = {
-> +		.add = xen_acpi_pad_add,
-> +		.remove = xen_acpi_pad_remove,
-> +	},
-> +};
-> +
-> +static int __init xen_acpi_pad_stub_init(void)
-> +{
-> +	int ret = -ENOSYS;
-> +	unsigned version;
-> +
-> +	if (!xen_initial_domain())
-> +		return -ENODEV;
-> +
-> +	version = HYPERVISOR_xen_version(XENVER_version, NULL);
-> +
-> +	if ((version >> 16 >= 4) && ((version & 0xffff) >= 2)) {
-> +        	ret = acpi_bus_register_driver(&xen_acpi_pad_driver);
-> +        	if (!ret)
-> +			xen_acpi_pad_registered = true;
-> +    	}
-> +    	return ret;
-> +}
-> +#if 0
-> +/* For testing purposes. */
-> +static void __exit xen_acpi_pad_stub_exit(void)
-> +{
-> +	if (xen_acpi_pad_registered)
-> +		acpi_bus_unregister_driver(&xen_acpi_pad_driver);
-> +	/* The driver should have unregistered first ! */
-> +	if (WARN_ON(xen_acpi_pad_ops))
-> +		xen_acpi_pad_ops = NULL;
-> +}
-> +#endif
-> +subsys_initcall(xen_acpi_pad_stub_init);
+Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+---
+ arch/arm/mach-exynos/common.c           |  210 +------------------------------
+ drivers/irqchip/Makefile                |    1 +
+ drivers/irqchip/irq-exynos-combiner.c   |  212 +++++++++++++++++++++++++++++++
+ include/linux/irqchip/exynos-combiner.h |   18 +++
+ 4 files changed, 234 insertions(+), 207 deletions(-)
+ create mode 100644 drivers/irqchip/irq-exynos-combiner.c
+ create mode 100644 include/linux/irqchip/exynos-combiner.h
 
-I'm still confused. In this way there are xen-acpi-pad-stub.c and xen-acpi-pad.c, and you want to let xen-acpi-pad loaded as module, right? how can xen-acpi-pad logic work when it was insmoded?
+diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+index 5c75815..56844d1 100644
+--- a/arch/arm/mach-exynos/common.c
++++ b/arch/arm/mach-exynos/common.c
+@@ -17,11 +17,9 @@
+ #include <linux/gpio.h>
+ #include <linux/sched.h>
+ #include <linux/serial_core.h>
+-#include <linux/of.h>
+ #include <linux/of_irq.h>
+ #include <linux/export.h>
+-#include <linux/irqdomain.h>
+-#include <linux/of_address.h>
++#include <linux/irqchip/exynos-combiner.h>
+ 
+ #include <asm/proc-fns.h>
+ #include <asm/exception.h>
+@@ -384,210 +382,7 @@ static void __init exynos5_init_clocks(int xtal)
+ 	exynos5_setup_clocks();
+ }
+ 
+-#define COMBINER_ENABLE_SET	0x0
+-#define COMBINER_ENABLE_CLEAR	0x4
+-#define COMBINER_INT_STATUS	0xC
+-
+-static DEFINE_SPINLOCK(irq_controller_lock);
+-
+-struct combiner_chip_data {
+-	unsigned int irq_offset;
+-	unsigned int irq_mask;
+-	void __iomem *base;
+-};
+-
+-static struct irq_domain *combiner_irq_domain;
+-static struct combiner_chip_data combiner_data[MAX_COMBINER_NR];
+-
+-static inline void __iomem *combiner_base(struct irq_data *data)
+-{
+-	struct combiner_chip_data *combiner_data =
+-		irq_data_get_irq_chip_data(data);
+-
+-	return combiner_data->base;
+-}
+-
+-static void combiner_mask_irq(struct irq_data *data)
+-{
+-	u32 mask = 1 << (data->hwirq % 32);
+-
+-	__raw_writel(mask, combiner_base(data) + COMBINER_ENABLE_CLEAR);
+-}
+-
+-static void combiner_unmask_irq(struct irq_data *data)
+-{
+-	u32 mask = 1 << (data->hwirq % 32);
+-
+-	__raw_writel(mask, combiner_base(data) + COMBINER_ENABLE_SET);
+-}
+-
+-static void combiner_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
+-{
+-	struct combiner_chip_data *chip_data = irq_get_handler_data(irq);
+-	struct irq_chip *chip = irq_get_chip(irq);
+-	unsigned int cascade_irq, combiner_irq;
+-	unsigned long status;
+-
+-	chained_irq_enter(chip, desc);
+-
+-	spin_lock(&irq_controller_lock);
+-	status = __raw_readl(chip_data->base + COMBINER_INT_STATUS);
+-	spin_unlock(&irq_controller_lock);
+-	status &= chip_data->irq_mask;
+-
+-	if (status == 0)
+-		goto out;
+-
+-	combiner_irq = __ffs(status);
+-
+-	cascade_irq = combiner_irq + (chip_data->irq_offset & ~31);
+-	if (unlikely(cascade_irq >= NR_IRQS))
+-		do_bad_IRQ(cascade_irq, desc);
+-	else
+-		generic_handle_irq(cascade_irq);
+-
+- out:
+-	chained_irq_exit(chip, desc);
+-}
+-
+-static struct irq_chip combiner_chip = {
+-	.name		= "COMBINER",
+-	.irq_mask	= combiner_mask_irq,
+-	.irq_unmask	= combiner_unmask_irq,
+-};
+-
+-static void __init combiner_cascade_irq(unsigned int combiner_nr, unsigned int irq)
+-{
+-	unsigned int max_nr;
+-
+-	if (soc_is_exynos5250())
+-		max_nr = EXYNOS5_MAX_COMBINER_NR;
+-	else
+-		max_nr = EXYNOS4_MAX_COMBINER_NR;
+-
+-	if (combiner_nr >= max_nr)
+-		BUG();
+-	if (irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0)
+-		BUG();
+-	irq_set_chained_handler(irq, combiner_handle_cascade_irq);
+-}
+-
+-static void __init combiner_init_one(unsigned int combiner_nr,
+-				     void __iomem *base)
+-{
+-	combiner_data[combiner_nr].base = base;
+-	combiner_data[combiner_nr].irq_offset = irq_find_mapping(
+-		combiner_irq_domain, combiner_nr * MAX_IRQ_IN_COMBINER);
+-	combiner_data[combiner_nr].irq_mask = 0xff << ((combiner_nr % 4) << 3);
+-
+-	/* Disable all interrupts */
+-	__raw_writel(combiner_data[combiner_nr].irq_mask,
+-		     base + COMBINER_ENABLE_CLEAR);
+-}
+-
+ #ifdef CONFIG_OF
+-static int combiner_irq_domain_xlate(struct irq_domain *d,
+-				     struct device_node *controller,
+-				     const u32 *intspec, unsigned int intsize,
+-				     unsigned long *out_hwirq,
+-				     unsigned int *out_type)
+-{
+-	if (d->of_node != controller)
+-		return -EINVAL;
+-
+-	if (intsize < 2)
+-		return -EINVAL;
+-
+-	*out_hwirq = intspec[0] * MAX_IRQ_IN_COMBINER + intspec[1];
+-	*out_type = 0;
+-
+-	return 0;
+-}
+-#else
+-static int combiner_irq_domain_xlate(struct irq_domain *d,
+-				     struct device_node *controller,
+-				     const u32 *intspec, unsigned int intsize,
+-				     unsigned long *out_hwirq,
+-				     unsigned int *out_type)
+-{
+-	return -EINVAL;
+-}
+-#endif
+-
+-static int combiner_irq_domain_map(struct irq_domain *d, unsigned int irq,
+-				   irq_hw_number_t hw)
+-{
+-	irq_set_chip_and_handler(irq, &combiner_chip, handle_level_irq);
+-	irq_set_chip_data(irq, &combiner_data[hw >> 3]);
+-	set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+-
+-	return 0;
+-}
+-
+-static struct irq_domain_ops combiner_irq_domain_ops = {
+-	.xlate	= combiner_irq_domain_xlate,
+-	.map	= combiner_irq_domain_map,
+-};
+-
+-static void __init combiner_init(void __iomem *combiner_base,
+-				 struct device_node *np)
+-{
+-	int i, irq, irq_base;
+-	unsigned int max_nr, nr_irq;
+-
+-	if (np) {
+-		if (of_property_read_u32(np, "samsung,combiner-nr", &max_nr)) {
+-			pr_warning("%s: number of combiners not specified, "
+-				"setting default as %d.\n",
+-				__func__, EXYNOS4_MAX_COMBINER_NR);
+-			max_nr = EXYNOS4_MAX_COMBINER_NR;
+-		}
+-	} else {
+-		max_nr = soc_is_exynos5250() ? EXYNOS5_MAX_COMBINER_NR :
+-						EXYNOS4_MAX_COMBINER_NR;
+-	}
+-	nr_irq = max_nr * MAX_IRQ_IN_COMBINER;
+-
+-	irq_base = irq_alloc_descs(COMBINER_IRQ(0, 0), 1, nr_irq, 0);
+-	if (IS_ERR_VALUE(irq_base)) {
+-		irq_base = COMBINER_IRQ(0, 0);
+-		pr_warning("%s: irq desc alloc failed. Continuing with %d as linux irq base\n", __func__, irq_base);
+-	}
+-
+-	combiner_irq_domain = irq_domain_add_legacy(np, nr_irq, irq_base, 0,
+-				&combiner_irq_domain_ops, &combiner_data);
+-	if (WARN_ON(!combiner_irq_domain)) {
+-		pr_warning("%s: irq domain init failed\n", __func__);
+-		return;
+-	}
+-
+-	for (i = 0; i < max_nr; i++) {
+-		combiner_init_one(i, combiner_base + (i >> 2) * 0x10);
+-		irq = IRQ_SPI(i);
+-#ifdef CONFIG_OF
+-		if (np)
+-			irq = irq_of_parse_and_map(np, i);
+-#endif
+-		combiner_cascade_irq(i, irq);
+-	}
+-}
+-
+-#ifdef CONFIG_OF
+-int __init combiner_of_init(struct device_node *np, struct device_node *parent)
+-{
+-	void __iomem *combiner_base;
+-
+-	combiner_base = of_iomap(np, 0);
+-	if (!combiner_base) {
+-		pr_err("%s: failed to map combiner registers\n", __func__);
+-		return -ENXIO;
+-	}
+-
+-	combiner_init(combiner_base, np);
+-
+-	return 0;
+-}
+-
+ static const struct of_device_id exynos4_dt_irq_match[] = {
+ 	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
+ 	{ .compatible = "samsung,exynos4210-combiner",
+@@ -610,7 +405,8 @@ void __init exynos4_init_irq(void)
+ #endif
+ 
+ 	if (!of_have_populated_dt())
+-		combiner_init(S5P_VA_COMBINER_BASE, NULL);
++		combiner_init(S5P_VA_COMBINER_BASE, EXYNOS4_MAX_COMBINER_NR,
++					NULL);
+ 
+ 	/*
+ 	 * The parameters of s5p_init_irq() are for VIC init.
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index 054321d..8501eaa 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -1 +1,2 @@
+ obj-$(CONFIG_ARCH_BCM2835) += irq-bcm2835.o
++obj-$(CONFIG_ARCH_EXYNOS) += irq-exynos-combiner.o
+diff --git a/drivers/irqchip/irq-exynos-combiner.c b/drivers/irqchip/irq-exynos-combiner.c
+new file mode 100644
+index 0000000..86caa98
+--- /dev/null
++++ b/drivers/irqchip/irq-exynos-combiner.c
+@@ -0,0 +1,212 @@
++/*
++ * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com
++ *
++ * Interrupt combiner controller driver for Samsung Exynos platforms.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/export.h>
++#include <linux/irqdomain.h>
++#include <linux/of_address.h>
++#include <linux/err.h>
++#include <asm/mach/irq.h>
++
++#define COMBINER_ENABLE_SET	0x0
++#define COMBINER_ENABLE_CLEAR	0x4
++#define COMBINER_INT_STATUS	0xC
++
++struct combiner_chip_data {
++	unsigned int irq_offset;
++	unsigned int irq_mask;
++	void __iomem *base;
++};
++
++static DEFINE_SPINLOCK(irq_controller_lock);
++static struct irq_domain *combiner_irq_domain;
++static struct combiner_chip_data combiner_data[MAX_COMBINER_NR];
++
++static inline void __iomem *combiner_base(struct irq_data *data)
++{
++	struct combiner_chip_data *combiner_data =
++		irq_data_get_irq_chip_data(data);
++
++	return combiner_data->base;
++}
++
++static void combiner_mask_irq(struct irq_data *data)
++{
++	u32 mask = 1 << (data->hwirq % 32);
++
++	__raw_writel(mask, combiner_base(data) + COMBINER_ENABLE_CLEAR);
++}
++
++static void combiner_unmask_irq(struct irq_data *data)
++{
++	u32 mask = 1 << (data->hwirq % 32);
++
++	__raw_writel(mask, combiner_base(data) + COMBINER_ENABLE_SET);
++}
++
++static void combiner_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
++{
++	struct combiner_chip_data *chip_data = irq_get_handler_data(irq);
++	struct irq_chip *chip = irq_get_chip(irq);
++	unsigned int cascade_irq, combiner_irq;
++	unsigned long status;
++
++	chained_irq_enter(chip, desc);
++
++	spin_lock(&irq_controller_lock);
++	status = __raw_readl(chip_data->base + COMBINER_INT_STATUS);
++	spin_unlock(&irq_controller_lock);
++	status &= chip_data->irq_mask;
++
++	if (status == 0)
++		goto out;
++
++	combiner_irq = __ffs(status);
++
++	cascade_irq = combiner_irq + (chip_data->irq_offset & ~31);
++	if (unlikely(cascade_irq >= NR_IRQS))
++		do_bad_IRQ(cascade_irq, desc);
++	else
++		generic_handle_irq(cascade_irq);
++
++ out:
++	chained_irq_exit(chip, desc);
++}
++
++static struct irq_chip combiner_chip = {
++	.name		= "COMBINER",
++	.irq_mask	= combiner_mask_irq,
++	.irq_unmask	= combiner_unmask_irq,
++};
++
++static void __init combiner_cascade_irq(unsigned int combiner_nr,
++						unsigned int irq)
++{
++	if (irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0)
++		BUG();
++	irq_set_chained_handler(irq, combiner_handle_cascade_irq);
++}
++
++static void __init combiner_init_one(unsigned int combiner_nr,
++				     void __iomem *base)
++{
++	combiner_data[combiner_nr].base = base;
++	combiner_data[combiner_nr].irq_offset = irq_find_mapping(
++		combiner_irq_domain, combiner_nr * MAX_IRQ_IN_COMBINER);
++	combiner_data[combiner_nr].irq_mask = 0xff << ((combiner_nr % 4) << 3);
++
++	/* Disable all interrupts */
++	__raw_writel(combiner_data[combiner_nr].irq_mask,
++		     base + COMBINER_ENABLE_CLEAR);
++}
++
++#ifdef CONFIG_OF
++static int combiner_irq_domain_xlate(struct irq_domain *d,
++				     struct device_node *controller,
++				     const u32 *intspec, unsigned int intsize,
++				     unsigned long *out_hwirq,
++				     unsigned int *out_type)
++{
++	if (d->of_node != controller)
++		return -EINVAL;
++
++	if (intsize < 2)
++		return -EINVAL;
++
++	*out_hwirq = intspec[0] * MAX_IRQ_IN_COMBINER + intspec[1];
++	*out_type = 0;
++
++	return 0;
++}
++#else
++static int combiner_irq_domain_xlate(struct irq_domain *d,
++				     struct device_node *controller,
++				     const u32 *intspec, unsigned int intsize,
++				     unsigned long *out_hwirq,
++				     unsigned int *out_type)
++{
++	return -EINVAL;
++}
++#endif
++
++static int combiner_irq_domain_map(struct irq_domain *d, unsigned int irq,
++				   irq_hw_number_t hw)
++{
++	irq_set_chip_and_handler(irq, &combiner_chip, handle_level_irq);
++	irq_set_chip_data(irq, &combiner_data[hw >> 3]);
++	set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
++
++	return 0;
++}
++
++static struct irq_domain_ops combiner_irq_domain_ops = {
++	.xlate	= combiner_irq_domain_xlate,
++	.map	= combiner_irq_domain_map,
++};
++
++void __init combiner_init(void __iomem *combiner_base, unsigned int nr_combiner,
++					struct device_node *np)
++{
++	int i, irq, irq_base;
++	unsigned int nr_irq;
++
++	nr_irq = nr_combiner * MAX_IRQ_IN_COMBINER;
++
++	irq_base = irq_alloc_descs(COMBINER_IRQ(0, 0), 1, nr_irq, 0);
++	if (IS_ERR_VALUE(irq_base)) {
++		irq_base = COMBINER_IRQ(0, 0);
++		pr_warn("%s: irq desc alloc failed. Continuing with %d as "
++				"linux irq base\n", __func__, irq_base);
++	}
++
++	combiner_irq_domain = irq_domain_add_legacy(np, nr_irq, irq_base, 0,
++				&combiner_irq_domain_ops, &combiner_data);
++	if (WARN_ON(!combiner_irq_domain)) {
++		pr_warn("%s: irq domain init failed\n", __func__);
++		return;
++	}
++
++	for (i = 0; i < nr_combiner; i++) {
++		combiner_init_one(i, combiner_base + (i >> 2) * 0x10);
++		irq = IRQ_SPI(i);
++#ifdef CONFIG_OF
++		if (np)
++			irq = irq_of_parse_and_map(np, i);
++#endif
++		combiner_cascade_irq(i, irq);
++	}
++}
++
++#ifdef CONFIG_OF
++int __init combiner_of_init(struct device_node *np, struct device_node *parent)
++{
++	void __iomem *combiner_base;
++	unsigned int nr_combiner;
++
++	combiner_base = of_iomap(np, 0);
++	if (!combiner_base) {
++		pr_err("%s: failed to map combiner registers\n", __func__);
++		return -ENXIO;
++	}
++
++	if (of_property_read_u32(np, "samsung,combiner-nr", &nr_combiner)) {
++			pr_warn("%s: number of combiners not specified, "
++			"setting default as %d.\n",
++			__func__, EXYNOS4_MAX_COMBINER_NR);
++		nr_combiner = EXYNOS4_MAX_COMBINER_NR;
++	}
++
++	combiner_init(combiner_base, nr_combiner, np);
++	return 0;
++}
++#endif
+diff --git a/include/linux/irqchip/exynos-combiner.h b/include/linux/irqchip/exynos-combiner.h
+new file mode 100644
+index 0000000..faa781c
+--- /dev/null
++++ b/include/linux/irqchip/exynos-combiner.h
+@@ -0,0 +1,18 @@
++/*
++ * Copyright (c) 2012-2013 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __LINUX_IRQCHIP_EXYNOS_COMBINER_H_
++#define __LINUX_IRQCHIP_EXYNOS_COMBINER_H_
++
++extern void __init combiner_init(void __iomem *combiner_base,
++			unsigned int nr_combiner, struct device_node *np);
++extern int __init combiner_of_init(struct device_node *np,
++			struct device_node *parent);
++
++#endif /* __LINUX_IRQCHIP_EXYNOS_COMBINER_H_ */
+-- 
+1.6.6.rc2
 
-Thanks,
-Jinsong
