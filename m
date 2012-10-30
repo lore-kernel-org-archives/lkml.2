@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965787Ab2J3TXV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:23:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44213 "EHLO mx1.redhat.com"
+	id S965751Ab2J3TWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:22:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11757 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755158Ab2J3TXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:23:19 -0400
+	id S1758702Ab2J3TWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:22:18 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 19/23] pefile: Parse the "Microsoft individual code signing"
- data blob
+Subject: [PATCH 16/23] pefile: Parse a PE binary to find a key and a signature
+ contained therein
 To: rusty@rustcorp.com.au
 Cc: dhowells@redhat.com, pjones@redhat.com, jwboyer@redhat.com, mjg@redhat.com,
         dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
         keescook@chromium.org, keyrings@linux-nfs.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 30 Oct 2012 19:22:14 +0000
-Message-ID: <20121030192214.11000.20716.stgit@warthog.procyon.org.uk>
+Date: Tue, 30 Oct 2012 19:21:48 +0000
+Message-ID: <20121030192148.11000.3582.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
 References: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -26,83 +26,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PKCS#7 certificate should contain a "Microsoft individual code signing"
-data blob as its signed content.  This blob contains a digest of the signed
-content of the PE binary and the OID of the digest algorithm used (typically
-SHA256).
+Parse a PE binary to find a key and a signature contained therein.  Later
+patches will check the signature and add the key if the signature checks out.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/Makefile        |    9 ++-
- crypto/asymmetric_keys/mscode.asn1     |   28 ++++++++
- crypto/asymmetric_keys/mscode_parser.c |  110 ++++++++++++++++++++++++++++++++
- crypto/asymmetric_keys/pefile_parser.c |    6 ++
- crypto/asymmetric_keys/pefile_parser.h |    5 +
- include/linux/oid_registry.h           |    6 +-
- 6 files changed, 162 insertions(+), 2 deletions(-)
- create mode 100644 crypto/asymmetric_keys/mscode.asn1
- create mode 100644 crypto/asymmetric_keys/mscode_parser.c
+ crypto/asymmetric_keys/Kconfig         |   10 ++
+ crypto/asymmetric_keys/Makefile        |    8 +
+ crypto/asymmetric_keys/pefile_parser.c |  178 ++++++++++++++++++++++++++++++++
+ crypto/asymmetric_keys/pefile_parser.h |   31 ++++++
+ 4 files changed, 226 insertions(+), 1 deletion(-)
+ create mode 100644 crypto/asymmetric_keys/pefile_parser.c
+ create mode 100644 crypto/asymmetric_keys/pefile_parser.h
 
 
+diff --git a/crypto/asymmetric_keys/Kconfig b/crypto/asymmetric_keys/Kconfig
+index 413f3f6..2e7315c 100644
+--- a/crypto/asymmetric_keys/Kconfig
++++ b/crypto/asymmetric_keys/Kconfig
+@@ -31,7 +31,7 @@ config X509_CERTIFICATE_PARSER
+ 	select ASN1
+ 	select OID_REGISTRY
+ 	help
+-	  This option procides support for parsing X.509 format blobs for key
++	  This option provides support for parsing X.509 format blobs for key
+ 	  data and provides the ability to instantiate a crypto key from a
+ 	  public key packet found inside the certificate.
+ 
+@@ -44,4 +44,12 @@ config PKCS7_MESSAGE_PARSER
+ 	  This option provides support for parsing PKCS#7 format messages for
+ 	  signature data and provides the ability to verify the signature.
+ 
++config PE_FILE_PARSER
++	tristate "PE binary-wrapped key parser"
++	depends on X509_CERTIFICATE_PARSER
++	depends on PKCS7_MESSAGE_PARSER
++	help
++	  This option provides support for parsing signed PE binaries that
++	  contain an X.509 certificate in an internal section.
++
+ endif # ASYMMETRIC_KEY_TYPE
 diff --git a/crypto/asymmetric_keys/Makefile b/crypto/asymmetric_keys/Makefile
-index 61905d3..566dd45 100644
+index b6b39e7..61905d3 100644
 --- a/crypto/asymmetric_keys/Makefile
 +++ b/crypto/asymmetric_keys/Makefile
-@@ -46,4 +46,11 @@ clean-files	+= pkcs7-asn1.c pkcs7-asn1.h
- obj-$(CONFIG_PE_FILE_PARSER) += pefile_key_parser.o
+@@ -39,3 +39,11 @@ $(obj)/pkcs7_parser.o: $(obj)/pkcs7-asn1.h
+ $(obj)/pkcs7-asn1.o: $(obj)/pkcs7-asn1.c $(obj)/pkcs7-asn1.h
  
- pefile_key_parser-y := \
--	pefile_parser.o
-+	pefile_parser.o \
-+	mscode_parser.o \
-+	mscode-asn1.o
+ clean-files	+= pkcs7-asn1.c pkcs7-asn1.h
 +
-+$(obj)/mscode_parser.o: $(obj)/mscode-asn1.h $(obj)/mscode-asn1.h
-+$(obj)/mscode-asn1.o: $(obj)/mscode-asn1.c $(obj)/mscode-asn1.h
++#
++# Signed PE binary-wrapped key handling
++#
++obj-$(CONFIG_PE_FILE_PARSER) += pefile_key_parser.o
 +
-+clean-files	+= mscode-asn1.c mscode-asn1.h
-diff --git a/crypto/asymmetric_keys/mscode.asn1 b/crypto/asymmetric_keys/mscode.asn1
++pefile_key_parser-y := \
++	pefile_parser.o
+diff --git a/crypto/asymmetric_keys/pefile_parser.c b/crypto/asymmetric_keys/pefile_parser.c
 new file mode 100644
-index 0000000..6d09ba4
+index 0000000..efae278
 --- /dev/null
-+++ b/crypto/asymmetric_keys/mscode.asn1
-@@ -0,0 +1,28 @@
-+--- Microsoft individual code signing data blob parser
-+---
-+--- Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
-+--- Written by David Howells (dhowells@redhat.com)
-+---
-+--- This program is free software; you can redistribute it and/or
-+--- modify it under the terms of the GNU General Public Licence
-+--- as published by the Free Software Foundation; either version
-+--- 2 of the Licence, or (at your option) any later version.
-+---
-+
-+MSCode ::= SEQUENCE {
-+	type			SEQUENCE {
-+		contentType	ContentType,
-+		parameters	ANY
-+	},
-+	content			SEQUENCE {
-+		digestAlgorithm	DigestAlgorithmIdentifier,
-+		digest		OCTET STRING ({ mscode_note_digest })
-+	}
-+}
-+
-+ContentType ::= OBJECT IDENTIFIER ({ mscode_note_content_type })
-+
-+DigestAlgorithmIdentifier ::= SEQUENCE {
-+	algorithm   OBJECT IDENTIFIER ({ mscode_note_digest_algo }),
-+	parameters  ANY OPTIONAL
-+}
-diff --git a/crypto/asymmetric_keys/mscode_parser.c b/crypto/asymmetric_keys/mscode_parser.c
-new file mode 100644
-index 0000000..0bd68e0
---- /dev/null
-+++ b/crypto/asymmetric_keys/mscode_parser.c
-@@ -0,0 +1,110 @@
-+/* Parse a Microsoft Individual Code Signing blob
++++ b/crypto/asymmetric_keys/pefile_parser.c
+@@ -0,0 +1,178 @@
++/* Parse a signed PE binary that wraps a key.
 + *
 + * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
@@ -113,151 +100,208 @@ index 0000000..0bd68e0
 + * 2 of the Licence, or (at your option) any later version.
 + */
 +
-+#define pr_fmt(fmt) "MSCODE: "fmt
++#define pr_fmt(fmt) "PEFILE: "fmt
++#include <linux/module.h>
 +#include <linux/kernel.h>
 +#include <linux/slab.h>
 +#include <linux/err.h>
-+#include <linux/oid_registry.h>
++#include <linux/pe.h>
++#include <keys/asymmetric-subtype.h>
++#include <keys/asymmetric-parser.h>
++#include <crypto/hash.h>
++#include "asymmetric_keys.h"
++#include "public_key.h"
 +#include "pefile_parser.h"
-+#include "mscode-asn1.h"
 +
 +/*
-+ * Parse a Microsoft Individual Code Signing blob
++ * Parse a PE binary.
 + */
-+int mscode_parse(struct pefile_context *ctx)
++static int pefile_parse_binary(struct key_preparsed_payload *prep,
++			       struct pefile_context *ctx)
 +{
-+	pr_devel("Data: %zu [%*ph]\n",
-+		 ctx->pkcs7->data_len + ctx->pkcs7->data_hdrlen,
-+		 (unsigned)(ctx->pkcs7->data_len + ctx->pkcs7->data_hdrlen),
-+		 ctx->pkcs7->data - ctx->pkcs7->data_hdrlen);
++	const struct mz_hdr *mz = prep->data;
++	const struct pe_hdr *pe;
++	const struct pe32_opt_hdr *pe32;
++	const struct pe32plus_opt_hdr *pe64;
++	const struct data_directory *ddir;
++	const struct data_dirent *dde;
++	const struct section_header *secs, *sec;
++	unsigned loop;
++	size_t cursor, datalen = prep->datalen;
 +
-+	return asn1_ber_decoder(&mscode_decoder, ctx,
-+				ctx->pkcs7->data - ctx->pkcs7->data_hdrlen,
-+				ctx->pkcs7->data_len + ctx->pkcs7->data_hdrlen);
-+}
++	kenter("");
 +
-+/*
-+ * Check the content type OID
-+ */
-+int mscode_note_content_type(void *context, size_t hdrlen,
-+			     unsigned char tag,
-+			     const void *value, size_t vlen)
-+{
-+	enum OID oid;
++#define chkaddr(base, x, s)						\
++	do {								\
++		if ((x) < base || (s) >= datalen || (x) > datalen - (s))	\
++			return -ERANGE;					\
++	} while(0)
 +
-+	oid = look_up_OID(value, vlen);
-+	if (oid == OID__NR) {
-+		char buffer[50];
-+		sprint_oid(value, vlen, buffer, sizeof(buffer));
-+		printk("MSCODE: Unknown OID: %s\n", buffer);
-+		return -EBADMSG;
-+	}
++	chkaddr(0, 0, sizeof(*mz));
++	if (mz->magic != MZ_MAGIC)
++		return -ELIBBAD;
++	cursor = sizeof(*mz);
 +
-+	if (oid != OID_msIndividualSPKeyPurpose) {
-+		printk("MSCODE: Unexpected content type OID %u\n", oid);
-+		return -EBADMSG;
-+	}
++	chkaddr(cursor, mz->peaddr, sizeof(*pe));
++	pe = prep->data + mz->peaddr;
++	if (pe->magic != PE_MAGIC)
++		return -ELIBBAD;
++	cursor = mz->peaddr + sizeof(*pe);
 +
-+	return 0;
-+}
-+
-+/*
-+ * Note the digest algorithm OID
-+ */
-+int mscode_note_digest_algo(void *context, size_t hdrlen,
-+			    unsigned char tag,
-+			    const void *value, size_t vlen)
-+{
-+	struct pefile_context *ctx = context;
-+	char buffer[50];
-+	enum OID oid;
-+
-+	oid = look_up_OID(value, vlen);
-+	switch (oid) {
-+	case OID_md4:
-+		ctx->digest_algo = PKEY_HASH_MD4;
-+		break;
-+	case OID_md5:
-+		ctx->digest_algo = PKEY_HASH_MD5;
-+		break;
-+	case OID_sha1:
-+		ctx->digest_algo = PKEY_HASH_SHA1;
-+		break;
-+	case OID_sha256:
-+		ctx->digest_algo = PKEY_HASH_SHA256;
++	chkaddr(0, cursor, sizeof(pe32->magic));
++	pe32 = prep->data + cursor;
++	pe64 = prep->data + cursor;
++	
++	switch (pe32->magic) {
++	case PE_OPT_MAGIC_PE32:
++		chkaddr(0, cursor, sizeof(*pe32));
++		ctx->image_checksum_offset =
++			(unsigned long)&pe32->csum - (unsigned long)prep->data;
++		ctx->header_size = pe32->header_size;
++		cursor += sizeof(*pe32);
++		ctx->n_data_dirents = pe32->data_dirs;
 +		break;
 +
-+	case OID__NR:
-+		sprint_oid(value, vlen, buffer, sizeof(buffer));
-+		printk("MSCODE: Unknown OID: %s\n", buffer);
-+		return -EBADMSG;
++	case PE_OPT_MAGIC_PE32PLUS:
++		chkaddr(0, cursor, sizeof(*pe64));
++		ctx->image_checksum_offset =
++			(unsigned long)&pe64->csum - (unsigned long)prep->data;
++		ctx->header_size = pe64->header_size;
++		cursor += sizeof(*pe64);
++		ctx->n_data_dirents = pe64->data_dirs;
++		break;
 +
 +	default:
-+		printk("MSCODE: Unsupported content type: %u\n", oid);
-+		return -ENOPKG;
++		pr_devel("Unknown PEOPT magic = %04hx\n", pe32->magic);
++		return -ELIBBAD;
 +	}
 +
++	pr_devel("checksum @ %x\n", ctx->image_checksum_offset);
++	pr_devel("header size = %x\n", ctx->header_size);
++
++	chkaddr(0, cursor, sizeof(*ddir));
++	ddir = prep->data + cursor;
++	cursor += sizeof(*dde) * ctx->n_data_dirents;
++
++	ctx->cert_dirent_offset =
++		(unsigned long)&ddir->certs - (unsigned long)prep->data;
++	ctx->certs_size = ddir->certs.size;
++
++	if (!ddir->certs.virtual_address || !ddir->certs.size) {
++		pr_devel("Unsigned PE binary\n");
++		return -EKEYREJECTED;
++	}
++
++	chkaddr(cursor, ddir->certs.virtual_address, ddir->certs.size);
++	ctx->sig_offset = ddir->certs.virtual_address;
++	ctx->sig_len = ddir->certs.size;
++	pr_devel("cert = %x @%x [%*ph]\n",
++		 ctx->sig_len, ctx->sig_offset,
++		 ctx->sig_len, prep->data + ctx->sig_offset);
++
++	/* Parse the section table, checking the parameters and looking for the
++	 * section containing the list of keys.
++	 */
++	ctx->n_sections = pe->sections;
++	chkaddr(0, cursor, sizeof(*sec) * ctx->n_sections);
++	ctx->secs = secs = prep->data + cursor;
++	cursor += sizeof(*sec) * ctx->n_sections;
++
++	for (loop = 0; loop < ctx->n_sections; loop++) {
++		sec = &secs[loop];
++		chkaddr(cursor, sec->data_addr, sec->raw_data_size);
++		if (memcmp(sec->name, ".keylist", 8) == 0) {
++			ctx->keylist_offset = sec->data_addr;
++			ctx->keylist_len = sec->raw_data_size;
++		}
++	}
++
++	if (ctx->keylist_offset == 0) {
++		pr_devel("No .keylist section in PE binary\n");
++		return -ENOENT;
++	}
++
++	pr_devel("keylist = %x @%x [%*ph]\n",
++		 ctx->keylist_len, ctx->keylist_offset,
++		 ctx->keylist_len, prep->data + ctx->keylist_offset);
++
 +	return 0;
 +}
 +
 +/*
-+ * Note the digest we're guaranteeing with this certificate
++ * Parse a PE binary.
 + */
-+int mscode_note_digest(void *context, size_t hdrlen,
-+		       unsigned char tag,
-+		       const void *value, size_t vlen)
++static int pefile_key_preparse(struct key_preparsed_payload *prep)
 +{
-+	struct pefile_context *ctx = context;
-+	ctx->digest = value;
-+	ctx->digest_len = vlen;
-+	return 0;
-+}
-diff --git a/crypto/asymmetric_keys/pefile_parser.c b/crypto/asymmetric_keys/pefile_parser.c
-index 68fc525..42b9696 100644
---- a/crypto/asymmetric_keys/pefile_parser.c
-+++ b/crypto/asymmetric_keys/pefile_parser.c
-@@ -224,6 +224,12 @@ static int pefile_key_preparse(struct key_preparsed_payload *prep)
- 		goto error;
- 	}
- 
-+	ret = mscode_parse(&ctx);
++	struct pefile_context ctx;
++	int ret;
++
++	kenter("");
++
++	memset(&ctx, 0, sizeof(ctx));
++	ret = pefile_parse_binary(prep, &ctx);
 +	if (ret < 0)
-+		goto error;
++		return ret;
 +
-+	pr_devel("Digest: %u [%*ph]\n", ctx.digest_len, ctx.digest_len, ctx.digest);
++	return -ENOANO; // Not yet complete
++}
 +
- 	ret = -ENOANO; // Not yet complete
- 
- error:
-diff --git a/crypto/asymmetric_keys/pefile_parser.h b/crypto/asymmetric_keys/pefile_parser.h
-index 82bcaf6..c3462b7 100644
---- a/crypto/asymmetric_keys/pefile_parser.h
-+++ b/crypto/asymmetric_keys/pefile_parser.h
-@@ -29,3 +29,8 @@ struct pefile_context {
- 	unsigned	digest_len;		/* Digest length */
- 	enum pkey_hash_algo digest_algo;	/* Digest algorithm */
- };
++static struct asymmetric_key_parser pefile_key_parser = {
++	.owner	= THIS_MODULE,
++	.name	= "pefile",
++	.parse	= pefile_key_preparse,
++};
 +
 +/*
-+ * mscode_parser.c
++ * Module stuff
 + */
-+extern int mscode_parse(struct pefile_context *ctx);
-diff --git a/include/linux/oid_registry.h b/include/linux/oid_registry.h
-index edeff85..332dcf5 100644
---- a/include/linux/oid_registry.h
-+++ b/include/linux/oid_registry.h
-@@ -52,8 +52,12 @@ enum OID {
- 	OID_md4,			/* 1.2.840.113549.2.4 */
- 	OID_md5,			/* 1.2.840.113549.2.5 */
- 
--	OID_certAuthInfoAccess,		/* 1.3.6.1.5.5.7.1.1 */
-+	/* Microsoft Authenticode & Software Publishing */
-+	OID_msIndirectData,		/* 1.3.6.1.4.1.311.2.1.4 */
-+	OID_msIndividualSPKeyPurpose,	/* 1.3.6.1.4.1.311.2.1.21 */
- 	OID_msOutlookExpress,		/* 1.3.6.1.4.1.311.16.4 */
++static int __init pefile_key_init(void)
++{
++	return register_asymmetric_key_parser(&pefile_key_parser);
++}
 +
-+	OID_certAuthInfoAccess,		/* 1.3.6.1.5.5.7.1.1 */
- 	OID_sha1,			/* 1.3.14.3.2.26 */
- 	OID_sha256,			/* 2.16.840.1.101.3.4.2.1 */
- 
++static void __exit pefile_key_exit(void)
++{
++	unregister_asymmetric_key_parser(&pefile_key_parser);
++}
++
++module_init(pefile_key_init);
++module_exit(pefile_key_exit);
+diff --git a/crypto/asymmetric_keys/pefile_parser.h b/crypto/asymmetric_keys/pefile_parser.h
+new file mode 100644
+index 0000000..82bcaf6
+--- /dev/null
++++ b/crypto/asymmetric_keys/pefile_parser.h
+@@ -0,0 +1,31 @@
++/* PE Binary parser bits
++ *
++ * Copyright (C) 2012 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++#include "pkcs7_parser.h"
++
++struct pefile_context {
++	unsigned	header_size;
++	unsigned	image_checksum_offset;
++	unsigned	cert_dirent_offset;
++	unsigned	n_data_dirents;
++	unsigned	n_sections;
++	unsigned	certs_size;
++	unsigned	sig_offset;
++	unsigned	sig_len;
++	unsigned	keylist_offset;
++	unsigned	keylist_len;
++	const struct section_header *secs;
++	struct pkcs7_message *pkcs7;
++
++	/* PKCS#7 MS Individual Code Signing content */
++	const void	*digest;		/* Digest */
++	unsigned	digest_len;		/* Digest length */
++	enum pkey_hash_algo digest_algo;	/* Digest algorithm */
++};
 
