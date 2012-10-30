@@ -1,47 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934256Ab2J3TFF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:05:05 -0400
-Received: from redaccionline.com ([207.218.180.67]:60106 "EHLO
-	correo.fcctpdom.usmp.edu.pe" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754449Ab2J3TFD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:05:03 -0400
-X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 15:05:02 EDT
-Content-Type: text/plain; charset="iso-8859-1"
+	id S965672Ab2J3TFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:05:35 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:24872 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965393Ab2J3TFd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:05:33 -0400
+Message-ID: <509024F4.8080408@hp.com>
+Date: Tue, 30 Oct 2012 12:05:24 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Payment Sent!!
-To: linux-kernel@vger.kernel.org
-From: "Western Union Transfer" <info@westernunion.com>
-Date: Wed, 31 Oct 2012 02:58:10 +0800
-Reply-To: westernuniont12@yahoo.cn
-Message-Id: <20121030183748.625A01F0290@correo.fcctpdom.usmp.edu.pe>
+To: Jason Wang <jasowang@redhat.com>
+CC: mst@redhat.com, davem@davemloft.net,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        rusty@rustcorp.com.au, krkumar2@in.ibm.com, kvm@vger.kernel.org
+Subject: Re: [rfc net-next v6 0/3] Multiqueue virtio-net
+References: <1351591403-23065-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1351591403-23065-1-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We write to inform you that we have transferred $400,000 dollars.  deposited for transfer to you by one MR Bernard Harry from BLACKBERRY MOBILE COMPANY for transfer as a winning prize from the promotion lottery held by the communication company to encourage usage and appreciate already users of their product.
- 
- The money is available for pick up by receiver(you) to be cashed on daily installment of $10,000 for 40days. We tried calling to give you the information over the phone but we could not reach you so we decided to email you the information to pick up the first $10,000  already transferred to you. for you to be able to pick the first payment,
-You will have to pay $250 to get it re-activated in your name for you to start picking up your money because we de-activate the transaction for security reason, by making the status to display pick up.
- 
- 
-Use this link to track the below information 
-https://wumt.westernunion.com/asp/orderStatus.asp?country=global
- 
- Sender's Fist name: Ronald
- Sender's Last Name: Mundy
- MTCN: 6605740058
- Question: Who Is Great
- Answer: God
- Amount: $10,000.00USD
- 
- Thanks
- Best Regards
- Mr.Mcferrin Phoenix .
- +60169162934
- western union Office,
- MALAYSIA OFFICE.
- Western Union® Money Transfer
+On 10/30/2012 03:03 AM, Jason Wang wrote:
+> Hi all:
+>
+> This series is an update version of multiqueue virtio-net driver based on
+> Krishna Kumar's work to let virtio-net use multiple rx/tx queues to do the
+> packets reception and transmission. Please review and comments.
+>
+> Changes from v5:
+> - Align the implementation with the RFC spec update v4
+> - Switch the mode between single mode and multiqueue mode without reset
+> - Remove the 256 limitation of queues
+> - Use helpers to do the mapping between virtqueues and tx/rx queues
+> - Use commbined channels instead of separated rx/tx queus when do the queue
+> number configuartion
+> - Other coding style comments from Michael
+>
+> Reference:
+> - A protype implementation of qemu-kvm support could by found in
+> git://github.com/jasowang/qemu-kvm-mq.git
+> - V5 could be found at http://lwn.net/Articles/505388/
+> - V4 could be found at https://lkml.org/lkml/2012/6/25/120
+> - V2 could be found at http://lwn.net/Articles/467283/
+> - Michael virtio-spec: http://www.spinics.net/lists/netdev/msg209986.html
+>
+> Perf Numbers:
+>
+> - Pktgen test shows the receiving capability of the multiqueue virtio-net were
+>    dramatically improved.
+> - Netperf result shows latency were greately improved according to the test
+> result.
+
+I suppose it is technically correct to say that latency was improved, 
+but usually for aggregate request/response tests I tend to talk about 
+the aggregate transactions per second.
+
+Do you have a hypothesis as to why the improvement dropped going to 20 
+concurrent sessions from 10?
+
+rick jones
+
+> Netperf Local VM to VM test:
+> - VM1 and its vcpu/vhost thread in numa node 0
+> - VM2 and its vcpu/vhost thread in numa node 1
+> - a script is used to lauch the netperf with demo mode and do the postprocessing
+>    to measure the aggreagte result with the help of timestamp
+> - average of 3 runs
+>
+> TCP_RR:
+> size/session/+lat%/+normalize%
+>      1/     1/    0%/    0%
+>      1/    10/  +52%/   +6%
+>      1/    20/  +27%/   +5%
+>     64/     1/    0%/    0%
+>     64/    10/  +45%/   +4%
+>     64/    20/  +28%/   +7%
+>    256/     1/   -1%/    0%
+>    256/    10/  +38%/   +2%
+>    256/    20/  +27%/   +6%
+> TCP_CRR:
+> size/session/+lat%/+normalize%
+>      1/     1/   -7%/  -12%
+>      1/    10/  +34%/   +3%
+>      1/    20/   +3%/   -8%
+>     64/     1/   -7%/   -3%
+>     64/    10/  +32%/   +1%
+>     64/    20/   +4%/   -7%
+>    256/     1/   -6%/  -18%
+>    256/    10/  +33%/    0%
+>    256/    20/   +4%/   -8%
+> STREAM:
+> size/session/+thu%/+normalize%
+>      1/     1/   -3%/    0%
+>      1/     2/   -1%/    0%
+>      1/     4/   -2%/    0%
+>     64/     1/    0%/   +1%
+>     64/     2/   -6%/   -6%
+>     64/     4/   -8%/  -14%
+>    256/     1/    0%/    0%
+>    256/     2/  -48%/  -52%
+>    256/     4/  -50%/  -55%
+>    512/     1/   +4%/   +5%
+>    512/     2/  -29%/  -33%
+>    512/     4/  -37%/  -49%
+>   1024/     1/   +6%/   +7%
+>   1024/     2/  -46%/  -51%
+>   1024/     4/  -15%/  -17%
+>   4096/     1/   +1%/   +1%
+>   4096/     2/  +16%/   -2%
+>   4096/     4/  +31%/  -10%
+> 16384/     1/    0%/    0%
+> 16384/     2/  +16%/   +9%
+> 16384/     4/  +17%/   -9%
+>
+> Netperf test between external host and guest over 10gb(ixgbe):
+> - VM thread and vhost threads were pinned int the node 0
+> - a script is used to lauch the netperf with demo mode and do the postprocessing
+>    to measure the aggreagte result with the help of timestamp
+> - average of 3 runs
+>
+> TCP_RR:
+> size/session/+lat%/+normalize%
+>      1/     1/    0%/   +6%
+>      1/    10/  +41%/   +2%
+>      1/    20/  +10%/   -3%
+>     64/     1/    0%/  -10%
+>     64/    10/  +39%/   +1%
+>     64/    20/  +22%/   +2%
+>    256/     1/    0%/   +2%
+>    256/    10/  +26%/  -17%
+>    256/    20/  +24%/  +10%
+> TCP_CRR:
+> size/session/+lat%/+normalize%
+>      1/     1/   -3%/   -3%
+>      1/    10/  +34%/   -3%
+>      1/    20/    0%/  -15%
+>     64/     1/   -3%/   -3%
+>     64/    10/  +34%/   -3%
+>     64/    20/   -1%/  -16%
+>    256/     1/   -1%/   -3%
+>    256/    10/  +38%/   -2%
+>    256/    20/   -2%/  -17%
+> TCP_STREAM:(guest receiving)
+> size/session/+thu%/+normalize%
+>      1/     1/   +1%/  +14%
+>      1/     2/    0%/   +4%
+>      1/     4/   -2%/  -24%
+>     64/     1/   -6%/   +1%
+>     64/     2/   +1%/   +1%
+>     64/     4/   -1%/  -11%
+>    256/     1/   +3%/   +4%
+>    256/     2/    0%/   -1%
+>    256/     4/    0%/  -15%
+>    512/     1/   +4%/    0%
+>    512/     2/  -10%/  -12%
+>    512/     4/    0%/  -11%
+>   1024/     1/   -5%/    0%
+>   1024/     2/  -11%/  -16%
+>   1024/     4/   +3%/  -11%
+>   4096/     1/  +27%/   +6%
+>   4096/     2/    0%/  -12%
+>   4096/     4/    0%/  -20%
+> 16384/     1/    0%/   -2%
+> 16384/     2/    0%/   -9%
+> 16384/     4/  +10%/   -2%
+> TCP_MAERTS:(guest sending)
+>      1/     1/   -1%/    0%
+>      1/     2/    0%/    0%
+>      1/     4/   -5%/    0%
+>     64/     1/    0%/    0%
+>     64/     2/   -7%/   -8%
+>     64/     4/   -7%/   -8%
+>    256/     1/    0%/    0%
+>    256/     2/  -28%/  -28%
+>    256/     4/  -28%/  -29%
+>    512/     1/    0%/    0%
+>    512/     2/  -15%/  -13%
+>    512/     4/  -53%/  -59%
+>   1024/     1/   +4%/  +13%
+>   1024/     2/   -7%/  -18%
+>   1024/     4/   +1%/  -18%
+>   4096/     1/   +2%/    0%
+>   4096/     2/   +3%/  -19%
+>   4096/     4/   -1%/  -19%
+> 16384/     1/   -3%/   -1%
+> 16384/     2/    0%/  -12%
+> 16384/     4/    0%/  -10%
+>
+> Jason Wang (2):
+>    virtio_net: multiqueue support
+>    virtio-net: change the number of queues through ethtool
+>
+> Krishna Kumar (1):
+>    virtio_net: Introduce VIRTIO_NET_F_MULTIQUEUE
+>
+>   drivers/net/virtio_net.c        |  790 ++++++++++++++++++++++++++++-----------
+>   include/uapi/linux/virtio_net.h |   19 +
+>   2 files changed, 594 insertions(+), 215 deletions(-)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
