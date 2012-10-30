@@ -1,131 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934206Ab2J3SZy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:25:54 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:60130 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965389Ab2J3SZO (ORCPT
+	id S965391Ab2J3S0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:26:32 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:33666 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933952Ab2J3S0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:25:14 -0400
-From: Behan Webster <behanw@converseincode.com>
-To: balbi@ti.com
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH 1/2] Helper macros used for replacing the use of VLAIS
-Date: Tue, 30 Oct 2012 14:25:19 -0400
-Message-Id: <1351621520-17768-2-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351621520-17768-1-git-send-email-behanw@converseincode.com>
-References: <1351621520-17768-1-git-send-email-behanw@converseincode.com>
+	Tue, 30 Oct 2012 14:26:30 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/cQZEu/VZeb2zdI27VtaxL
+Date: Tue, 30 Oct 2012 11:26:25 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] w1-gpio: Pinctrl-fy
+Message-ID: <20121030182625.GP11908@atomide.com>
+References: <1351699058-4576-1-git-send-email-panto@antoniou-consulting.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351699058-4576-1-git-send-email-panto@antoniou-consulting.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
-precludes the use of compilers which don't implement VLAIS (for instance the
-Clang compiler). This new header file contains macros which can be used to
-calculate the size and offset of variables in an allocated buffer of memory
-taking into account alignment issues.
+* Pantelis Antoniou <panto@antoniou-consulting.com> [121030 11:17]:
+> Enable pinctrl for w1-gpio.
+>
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- include/linux/valign.h |   87 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 87 insertions(+)
- create mode 100644 include/linux/valign.h
+Acked-by: Tony Lindgren <tony@atomide.com>
 
-diff --git a/include/linux/valign.h b/include/linux/valign.h
-new file mode 100644
-index 0000000..b39381b
---- /dev/null
-+++ b/include/linux/valign.h
-@@ -0,0 +1,87 @@
-+/*
-+ * Variable alignment macros used to break up a larger chunk of memory into
-+ * smaller variables. Meant to be used to replace the use of Variable Length
-+ * Arrays In Structures (VLAIS)
-+ *
-+ *  Copyright (C) 2012 Behan Webster <behanw@conversincode.com>
-+ */
-+
-+#ifndef _VALIGN_H_
-+#define _VALIGN_H_
-+
-+/**
-+ * truncalign() - Align a memory address by truncation
-+ * @num:	Address or size to align
-+ * @padwidth:	Number of byte upon which to align
-+ *
-+ * Truncate an address or size to a particular memory alignment.
-+ * Used by truncalign().
-+ */
-+#define truncalign(num, padwidth) ((long)(num) & ~((padwidth)-1))
-+
-+/**
-+ * padalign() - Align a memory address by padding
-+ * @num:	Address or size to align
-+ * @padwidth:	Number of byte upon which to align
-+ *
-+ * Pad out an address or size to a particular memory alignment
-+ * Used by paddedsize() and paddedstart().
-+ */
-+#define padalign(num, padwidth) \
-+	truncalign((long)(num) + ((padwidth)-1), padwidth)
-+
-+/**
-+ * paddedsize() - Calculate the size of an chunk of aligned memory
-+ * @offset:	Unaligned offset to the start of the chunk size being calculated
-+ * @num:	The number of variables in the array of "type" (can be 1)
-+ * @type:	The type of variables in the array
-+ * @nexttype:	The type of the next variable in the large piece of memory
-+ *
-+ * Calculate the size that a variable (or array) will take as a part of a
-+ * larger piece of memory.  Takes into account a potentially unaligned offset
-+ * into the larger piece of allocated memory, the alignment of the variable
-+ * type, and the alignement of the type of the variable to be used after that.
-+ *
-+ * Example: size_t l = paddedsize(1, 2, short, int);
-+ *
-+ * The example above would give you a padded size of 6 bytes: 2x 16-bit shorts,
-+ * starting at 2 bytes into the buffer (the offset of 1 byte being padded out
-+ * to 2 bytes) followed by 2 bytes of padding so that the next type (a 32-bit
-+ * int) would be 32-bit aligned. looking like this:
-+ *
-+ *   0: O.SS SS.. iiii
-+ *        \-----/ <-- 2 shorts + 2 bytes of padding = size of 6 bytes
-+ *
-+ * O = The offset
-+ * . = Padding bytes
-+ * S = 2 shorts
-+ * i = int which will theoretically be next
-+ */
-+#define paddedsize(offset, num, type, nexttype) (padalign((offset) \
-+	+ (num) * sizeof(type), __alignof__(nexttype)) - (offset))
-+
-+/**
-+ * paddedstart() - Calculate the start of a chunk of aligned memory
-+ * @ptr:	Pointer from which to calculate the start of the chunk
-+ * @offset:	Offset from the ptr to the start of the chunk being calculated
-+ * @type:	The type of variable in the chunk of memory
-+ *
-+ * Calculate the start address of a variable based on the offset from an
-+ * address, aligned based on the type of the variable specified.
-+ *
-+ * Example: char *data = kmalloc(size, GFP_KERNEL);
-+ *          long *var = paddedstart(data, 12, long);
-+ *
-+ * The example above on a 64-bit machine would return the equivalent of
-+ * &buffer[16] since a long needs to be 8 byte aligned.
-+ *
-+ *   0: OOOO OOOO OOOO .... LLLL LLLL
-+ *                          ^ <-- The start address of the long
-+ * O = The offset
-+ * . = Padding bytes
-+ * L = The long
-+ */
-+#define paddedstart(ptr, offset, type) \
-+	(type *)padalign((long)(ptr)+(offset), __alignof__(type))
-+
-+#endif
--- 
-1.7.9.5
-
+> ---
+>  drivers/w1/masters/w1-gpio.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
+> index 6012c4e..aec35bd 100644
+> --- a/drivers/w1/masters/w1-gpio.c
+> +++ b/drivers/w1/masters/w1-gpio.c
+> @@ -16,6 +16,8 @@
+>  #include <linux/gpio.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/of_gpio.h>
+> +#include <linux/pinctrl/consumer.h>
+> +#include <linux/err.h>
+>  
+>  #include "../w1.h"
+>  #include "../w1_int.h"
+> @@ -85,8 +87,13 @@ static int __init w1_gpio_probe(struct platform_device *pdev)
+>  {
+>  	struct w1_bus_master *master;
+>  	struct w1_gpio_platform_data *pdata;
+> +	struct pinctrl *pinctrl;
+>  	int err;
+>  
+> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+> +	if (IS_ERR(pinctrl))
+> +		dev_warn(&pdev->dev, "unable to select pin group\n");
+> +
+>  	err = w1_gpio_probe_dt(pdev);
+>  	if (err < 0)
+>  		return err;
+> -- 
+> 1.7.12
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
