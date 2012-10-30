@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934479Ab2J3UPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 16:15:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7913 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934432Ab2J3UPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 16:15:07 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: [patch 00/10] make I/O path allocations more numa-friendly
-Date: Tue, 30 Oct 2012 16:14:34 -0400
-Message-Id: <1351628084-29358-3-git-send-email-jmoyer@redhat.com>
-In-Reply-To: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
-References: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
+	id S934499Ab2J3UTm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 16:19:42 -0400
+Received: from shrek-modem2.podlesie.net ([83.13.132.46]:40511 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932726Ab2J3UTk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 16:19:40 -0400
+Date: Tue, 30 Oct 2012 21:19:37 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] pppoatm: don't send frames to destroyed vcc
+Message-ID: <20121030201937.GA9583@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+ <1351589700.17077.31.camel@shinybook.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351589700.17077.31.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Oct 30, 2012 at 09:35:00AM +0000, David Woodhouse wrote:
+> On Mon, 2012-10-22 at 19:14 +0200, Krzysztof Mazur wrote:
+> > Now pppoatm_send(), like vcc_sendmsg(), checks for vcc flags that
+> > indicate that vcc is not ready.
+> 
+> I note that vcc_sendmsg() also checks for sock->state == SS_CONNECTED.
+> Is that check not needed here? Otherwise, looks sane enough.
+> 
+> Acked-By: David Woodhouse <David.Woodhouse@intel.com>
 
-This patch set makes memory allocations for data structures used
-in the I/O path more numa friendly by allocating from the same
-numa node on which the device resides.  I've only converted a
-handfull of drivers at this point.  My testing showed that, for
-workloads where the I/O processes were not tied to the numa node
-housing the device, a speedup of around 6% was observed.  When the
-I/O processes were tied to the numa node of the device, there was
-no measurable different in my test setup.  Given my relatively
-low-end setup[1], I wouldn't be surprised if others could show a more
-significant performance gap.
+I don't think so. We never leave SS_CONNECTED state. This check is
+done in vcc_sendmsg() because it's called from userspace.
 
-Comments would be greatly appreciated.
+However maybe we should check socket state before assigning vcc to
+pppoatm (untested):
 
-Cheers,
-Jeff
+diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
+index 0dcb5dc..df06d14 100644
+--- a/net/atm/pppoatm.c
++++ b/net/atm/pppoatm.c
+@@ -414,6 +414,8 @@ static int pppoatm_ioctl(struct socket *sock, unsigned int cmd,
+ 			return -ENOIOCTLCMD;
+ 		if (!capable(CAP_NET_ADMIN))
+ 			return -EPERM;
++		if (sock->state != SS_CONNECTED)
++			return -EINVAL;
+ 		return pppoatm_assign_vcc(atmvcc, argp);
+ 		}
+ 	case PPPIOCGCHAN:
 
-[1] LSI Megaraid SAS controller with 1GB battery-backed cache,
-fronting a RAID 6 10+2.  The workload I used was tuned to not
-have to hit disk.  Fio file attached.
+Thanks.
 
-Jeff Moyer (10):
-  scsi: make __scsi_alloc_queue numa-aware
-  scsi: make scsi_alloc_sdev numa-aware
-  scsi: allocate scsi_cmnd-s from the device's local numa node
-  sd: use alloc_disk_node
-  vfs: pass data to alloc_inode super operation
-  ata: use scsi_host_alloc_node
-  megaraid_sas: use scsi_host_alloc_node
-  mpt2sas: use scsi_host_alloc_node
-  lpfc: use scsi_host_alloc_node
-  cciss: use blk_init_queue_node
-
- drivers/ata/libata-scsi.c                 |    3 ++-
- drivers/block/cciss.c                     |    3 ++-
- drivers/scsi/lpfc/lpfc_init.c             |   10 ++++++----
- drivers/scsi/megaraid/megaraid_sas_base.c |    5 +++--
- drivers/scsi/mpt2sas/mpt2sas_scsih.c      |    4 ++--
- drivers/scsi/scsi.c                       |   17 +++++++++++------
- drivers/scsi/scsi_lib.c                   |    2 +-
- drivers/scsi/scsi_scan.c                  |    4 ++--
- drivers/scsi/sd.c                         |    2 +-
- fs/afs/super.c                            |    5 +++--
- fs/block_dev.c                            |   17 +++++++++++++++--
- fs/btrfs/ctree.h                          |    2 +-
- fs/btrfs/inode.c                          |    3 ++-
- fs/cifs/cifsfs.c                          |    2 +-
- fs/inode.c                                |   10 +++++-----
- fs/ocfs2/dlmfs/dlmfs.c                    |    3 ++-
- fs/ocfs2/super.c                          |    5 +++--
- include/linux/fs.h                        |    2 +-
- 18 files changed, 63 insertions(+), 36 deletions(-)
-
+Krzysiek
