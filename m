@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965188Ab2J3VEb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:04:31 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37694 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934544Ab2J3VE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:04:26 -0400
-Date: Tue, 30 Oct 2012 22:04:23 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Marcelo Tostatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        kvm@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] x86, add hypervisor name to dump_stack() [v4]
-Message-ID: <20121030210423.GA8024@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-	Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-	Alex Williamson <alex.williamson@redhat.com>,
-	Marcelo Tostatti <mtosatti@redhat.com>,
-	Ingo Molnar <mingo@redhat.com>, kvm@vger.kernel.org, x86@kernel.org
-References: <1351628793-27180-1-git-send-email-prarit@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1351628793-27180-1-git-send-email-prarit@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934585Ab2J3VEO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:04:14 -0400
+Received: from smtp181.dfw.emailsrvr.com ([67.192.241.181]:60775 "EHLO
+	smtp181.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934531Ab2J3VEL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 17:04:11 -0400
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/6] arm: use devicetree to get smp_twd clock
+Date: Tue, 30 Oct 2012 16:04:11 -0500
+Message-Id: <1351631056-25938-2-git-send-email-mark.langsdorf@calxeda.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 04:26:33PM -0400, Prarit Bhargava wrote:
-> Debugging crash, panics, stack trace WARN_ONs, etc., from both virtual and
-> bare-metal boots can get difficult very quickly.  While there are ways to
-> decipher the output and determine if the output is from a virtual guest,
-> the in-kernel hypervisors now have a single registration point
-> and set x86_hyper.  We can use this to output additional debug
-> information during a panic/oops/stack trace.
-> 
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Gleb Natapov <gleb@redhat.com>
-> Cc: Alex Williamson <alex.williamson@redhat.com>
-> Cc: Marcelo Tostatti <mtosatti@redhat.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: kvm@vger.kernel.org
-> Cc: x86@kernel.org
-> 
-> [v2]: Modifications suggested by Ingo and added changes for similar output
->       from process.c
-> 
-> [v3]: Unify common code and move output to end of line
+From: Rob Herring <rob.herring@calxeda.com>
 
-Looks useful.
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ arch/arm/kernel/smp_twd.c | 23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
 
-Acked-by: Borislav Petkov <bp@alien8.de>
-
+diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+index b22d700..600fbcc 100644
+--- a/arch/arm/kernel/smp_twd.c
++++ b/arch/arm/kernel/smp_twd.c
+@@ -237,12 +237,15 @@ static irqreturn_t twd_handler(int irq, void *dev_id)
+ 	return IRQ_NONE;
+ }
+ 
+-static struct clk *twd_get_clock(void)
++static struct clk *twd_get_clock(struct device_node *np)
+ {
+-	struct clk *clk;
++	struct clk *clk = NULL;
+ 	int err;
+ 
+-	clk = clk_get_sys("smp_twd", NULL);
++	if (np)
++		clk = of_clk_get(np, 0);
++	if (!clk)
++		clk = clk_get_sys("smp_twd", NULL);
+ 	if (IS_ERR(clk)) {
+ 		pr_err("smp_twd: clock not found: %d\n", (int)PTR_ERR(clk));
+ 		return clk;
+@@ -263,6 +266,7 @@ static struct clk *twd_get_clock(void)
+ 		return ERR_PTR(err);
+ 	}
+ 
++	twd_timer_rate = clk_get_rate(clk);
+ 	return clk;
+ }
+ 
+@@ -273,12 +277,7 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
+ {
+ 	struct clock_event_device **this_cpu_clk;
+ 
+-	if (!twd_clk)
+-		twd_clk = twd_get_clock();
+-
+-	if (!IS_ERR_OR_NULL(twd_clk))
+-		twd_timer_rate = clk_get_rate(twd_clk);
+-	else
++	if (IS_ERR_OR_NULL(twd_clk))
+ 		twd_calibrate_rate();
+ 
+ 	__raw_writel(0, twd_base + TWD_TIMER_CONTROL);
+@@ -349,6 +348,10 @@ int __init twd_local_timer_register(struct twd_local_timer *tlt)
+ 	if (!twd_base)
+ 		return -ENOMEM;
+ 
++	twd_clk = twd_get_clock(NULL);
++
++	twd_clk = twd_get_clock(NULL);
++
+ 	return twd_local_timer_common_register();
+ }
+ 
+@@ -383,6 +386,8 @@ void __init twd_local_timer_of_register(void)
+ 		goto out;
+ 	}
+ 
++	twd_clk = twd_get_clock(np);
++
+ 	err = twd_local_timer_common_register();
+ 
+ out:
 -- 
-Regards/Gruss,
-    Boris.
+1.7.11.7
+
