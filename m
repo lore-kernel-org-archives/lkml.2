@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965676Ab2J3THb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:07:31 -0400
-Received: from shrek-modem2.podlesie.net ([83.13.132.46]:45309 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965222Ab2J3TH2 (ORCPT
+	id S1755670Ab2J3TIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:08:30 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:43747 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651Ab2J3TI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:07:28 -0400
-Date: Tue, 30 Oct 2012 20:07:25 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
-Message-ID: <20121030190725.GA14044@shrek.podlesie.net>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
- <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
- <1351589868.17077.34.camel@shinybook.infradead.org>
+	Tue, 30 Oct 2012 15:08:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351589868.17077.34.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAH9NwWdtai6uPCAZZuQt_n4sb7rounSa_UHCHoncBAAS2TmwBA@mail.gmail.com>
+References: <1349095840-26450-1-git-send-email-christian.gmeiner@gmail.com>
+ <20121001152501.GA7978@kroah.com> <CAH9NwWdtai6uPCAZZuQt_n4sb7rounSa_UHCHoncBAAS2TmwBA@mail.gmail.com>
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Tue, 30 Oct 2012 20:08:07 +0100
+Message-ID: <CAH9NwWfjCyokzFt20KMtJP+weTcZ+-sp9VTnuwr5=VWJgyz1LA@mail.gmail.com>
+Subject: Re: [PATCH] leds-ot200: Fix error caused by shifted mask
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, rpurdie@rpsys.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 09:37:48AM +0000, David Woodhouse wrote:
-> 
-> Should we be locking it earlier, so that the atm_may_send() call is also
-> covered by the lock?
+2012/10/12 Christian Gmeiner <christian.gmeiner@gmail.com>:
+> 2012/10/1 Greg KH <greg@kroah.com>:
+>> On Mon, Oct 01, 2012 at 02:50:40PM +0200, Christian Gmeiner wrote:
+>>> During the development of this driver an in-house register
+>>> documentation was used. The last weeks some integration tests
+>>> were done and this problem was found. It turned out that
+>>> the released register documentation is wrong.
+>>>
+>>> The fix is very simple: shift all mask by one.
+>>>
+>>> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+>>> ---
+>>>  drivers/leds/leds-ot200.c | 14 +++++++-------
+>>>  1 file changed, 7 insertions(+), 7 deletions(-)
+>>
+>> <formletter>
+>>
+>> This is not the correct way to submit patches for inclusion in the
+>> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+>> for how to do this properly.
+>>
+>> </formletter>
+>
+> Thanks... I will inform stable team again if this patch gets into
+> mainline - hopefully soon.
 
-Yes, but only to protect against concurent vcc_sendmsg().
+Is something missing to get this patch mainline?
 
-> 
-> Either way, it's an obvious improvement on what we had before ??? and even
-> if the answer to my question above is 'yes', exceeding the configured
-> size by one packet is both harmless and almost never going to happen
-> since we now limit ourselves to two packets anyway. So:
-> 
-> Acked-By: David Woodhouse <David.Woodhouse@intel.com>
-> 
-
-I'm sending proposed patch (not tested).
-
-Should I squash it into original patch or send it later because it's
-not really important?
-
-Thanks.
-
-Krzysiek
-
--- >8 --
-diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
-index a766d96..3081834 100644
---- a/net/atm/pppoatm.c
-+++ b/net/atm/pppoatm.c
-@@ -214,15 +214,7 @@ error:
- 
- static inline int pppoatm_may_send(struct pppoatm_vcc *pvcc, int size)
- {
--	/*
--	 * It's not clear that we need to bother with using atm_may_send()
--	 * to check we don't exceed sk->sk_sndbuf. If userspace sets a
--	 * value of sk_sndbuf which is lower than the MTU, we're going to
--	 * block for ever. But the code always did that before we introduced
--	 * the packet count limit, so...
--	 */
--	if (atm_may_send(pvcc->atmvcc, size) &&
--	    atomic_inc_not_zero_hint(&pvcc->inflight, NONE_INFLIGHT))
-+	if (atomic_inc_not_zero_hint(&pvcc->inflight, NONE_INFLIGHT))
- 		return 1;
- 
- 	/*
-@@ -251,8 +243,7 @@ static inline int pppoatm_may_send(struct pppoatm_vcc *pvcc, int size)
- 	 * code path that calls pppoatm_send(), and is thus going to
- 	 * wait for us to finish.
- 	 */
--	if (atm_may_send(pvcc->atmvcc, size) &&
--	    atomic_inc_not_zero(&pvcc->inflight))
-+	if (atomic_inc_not_zero(&pvcc->inflight))
- 		return 1;
- 
- 	return 0;
-@@ -314,6 +305,16 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
- 			|| !test_bit(ATM_VF_READY, &vcc->flags))
- 		goto nospace_unlock_sock;
- 
-+	/*
-+	 * It's not clear that we need to bother with using atm_may_send()
-+	 * to check we don't exceed sk->sk_sndbuf. If userspace sets a
-+	 * value of sk_sndbuf which is lower than the MTU, we're going to
-+	 * block for ever. But the code always did that before we introduced
-+	 * the packet count limit, so...
-+	 */
-+	if (!atm_may_send(vcc, skb->truesize))
-+		goto nospace_unlock_sock;
-+
- 	atomic_add(skb->truesize, &sk_atm(ATM_SKB(skb)->vcc)->sk_wmem_alloc);
- 	ATM_SKB(skb)->atm_options = ATM_SKB(skb)->vcc->atm_options;
- 	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n",
+thanks
+--
+Christian Gmeiner, MSc
