@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934236Ab2J3S7f (ORCPT <rfc822;w@1wt.eu>);
+	id S965661Ab2J3S7o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:59:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39622 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934221Ab2J3S7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Oct 2012 14:59:35 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:40573 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965649Ab2J3S73 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:59:29 -0400
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Subject: [RFC 7/7] capebus: Documentation; capebus-summary
-Date: Wed, 31 Oct 2012 18:52:13 +0200
-Message-Id: <1351702333-8456-8-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
-References: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
+Date: Tue, 30 Oct 2012 20:53:03 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Koen Kooi <koen@dominion.thruhere.net>,
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>
+Subject: Re: [PATCH] i2c: pinctrl-ify i2c-omap.c
+Message-ID: <20121030185303.GD4804@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1351698930-3797-1-git-send-email-panto@antoniou-consulting.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tNQTSEo8WG/FKZ8E"
+Content-Disposition: inline
+In-Reply-To: <1351698930-3797-1-git-send-email-panto@antoniou-consulting.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Small summary of capebus.
+--tNQTSEo8WG/FKZ8E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
----
- Documentation/capebus/capebus-summary | 40 +++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
- create mode 100644 Documentation/capebus/capebus-summary
+Hi,
 
-diff --git a/Documentation/capebus/capebus-summary b/Documentation/capebus/capebus-summary
-new file mode 100644
-index 0000000..742e33c
---- /dev/null
-+++ b/Documentation/capebus/capebus-summary
-@@ -0,0 +1,40 @@
-+Overview of Linux kernel Capebus support
-+========================================
-+
-+30-Oct-2012
-+
-+What is Capebus?
-+----------------
-+Capebus is an abstract concept. There's no such thing as a vanilla physical
-+capebus, what is there is a concept and a method on how various capebus
-+based implementations can be made.
-+
-+Capebus is created to address the problem of many SoCs that can provide a
-+multitude of hardware interfaces but in order to keep costs down the main
-+boards only support a limited number of them. The rest are typically brought
-+out to pin connectors on to which other boards, named capes are connected and
-+allow those peripherals to be used.
-+
-+These capes connect to the SoC interfaces but might also contain various other
-+parts that may need some kind of driver to work.
-+
-+Since SoCs have limited pins and pin muxing options, not all capes can work
-+together so some kind of resource tracking (at least for the pins in use) is
-+required.
-+
-+Before capebus all of this took place in the board support file, and frankly
-+for boards with too many capes it was becoming unmanageable.
-+
-+Capebus provides a virtual bus, which along with a board specific controller,
-+cape drivers can be written using the standard Linux device model.
-+
-+What kind of systems/boards capebus supports?
-+---------------------------------------------
-+
-+The core capebus infrastructure is not depended on any specific board.
-+However capebus needs a board controller to provide services to the cape devices
-+it controls. Services like addressing and resource reservation are provided
-+by the board controller.
-+
-+Capebus at the moment only support TI's Beaglebone platform.
-+
--- 
-1.7.12
+On Wed, Oct 31, 2012 at 05:55:30PM +0200, Pantelis Antoniou wrote:
+> Enable pinctrl for i2c-omap.
+>=20
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> ---
+>  drivers/i2c/busses/i2c-omap.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>=20
+> diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+> index db31eae..4c38aa0 100644
+> --- a/drivers/i2c/busses/i2c-omap.c
+> +++ b/drivers/i2c/busses/i2c-omap.c
+> @@ -44,6 +44,8 @@
+>  #include <linux/i2c-omap.h>
+>  #include <linux/pm_runtime.h>
+>  #include <linux/pm_qos.h>
+> +#include <linux/pinctrl/consumer.h>
+> +#include <linux/err.h>
+> =20
+>  /* I2C controller revisions */
+>  #define OMAP_I2C_OMAP1_REV_2		0x20
+> @@ -1064,6 +1066,7 @@ omap_i2c_probe(struct platform_device *pdev)
+>  	const struct of_device_id *match;
+>  	int irq;
+>  	int r;
+> +	struct pinctrl *pinctrl;
+> =20
+>  	/* NOTE: driver uses the static register mapping */
+>  	mem =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> @@ -1202,6 +1205,13 @@ omap_i2c_probe(struct platform_device *pdev)
+> =20
+>  	of_i2c_register_devices(adap);
+> =20
+> +	pinctrl =3D devm_pinctrl_get_select_default(&pdev->dev);
+> +	if (IS_ERR(pinctrl))
+> +		dev_warn(dev->dev, "unable to select pin group\n");
 
+if we continue anyway, should this be dev_warn() ? Would you consider
+dev_dbg() instead ?
+
+> +	dev_info(dev->dev, "bus %d rev%d.%d.%d at %d kHz\n", adap->nr,
+> +		 dev->dtrev, dev->rev >> 4, dev->rev & 0xf, dev->speed);
+
+this dev_info() doesn't look like it's part of $subject. Care to, at
+least, add a reasoning for adding this to commit log ?
+
+--=20
+balbi
+
+--tNQTSEo8WG/FKZ8E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQkCIPAAoJEIaOsuA1yqREqDIQAIhOBrnoILrEBDhusah/8kdn
+Zsbr/BhO9NqA939KbgBBhEv71qEQ20NmlduA8YhiZvS+IwKF/KtkFZeGTZzhAb0c
+/p2Wp3OBWNIbdCC++OVKQGPydFbS2O6BdeI12wt0eTvm7QLnM9KAEUxw949SYvOQ
+Vh1SOGwmDPWDZbm7fQtTE3rt8yOhbhEz3djWrXCTMnYtPYvT8Gi24iQ0EDhqycAF
+Av52Fe6iCIPjTB3tGCUB0KE+0TwQH5Gde0oRXUnKPXSpz8HmHxgbToPat6uJd1zt
+vOQB84YnL8+ED8Ezelj6ejx2QjPbEmLwuEBo85on3+gVw2XFTZo3nV+lpVuWX6v1
+/+/gsR3Evnzg9kdU57FY964UQiuSD2tSaQHoRQ2iMwEJbHRhUiBzTj6xL3G4MIBT
+MVcuvPCOTjth6ADV/No5HUMpxn7q9x8BqFPdAGaC7sZ7BTom9b7ALrteUTrCUT74
+BAeYFTblkVnFDTgbCqwZIZZI2i6k+imrszI/QhMFqmBqNnAucEGuVKH72wdPZI2f
+CDo9KXiIB/zgLHgh1L4YvMeIgxscVGsWKIf6ML/FCbFhfF492Ewq9CJtf6Ii2KOp
+h9C10D7qMs0j9Y1xIxj3sND9HEHqLIw324yRkv8yo/gnhAlGi3UkxWVtGS+enmEv
+u1W86IWGWydzhkTPisEM
+=/oGd
+-----END PGP SIGNATURE-----
+
+--tNQTSEo8WG/FKZ8E--
