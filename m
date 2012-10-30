@@ -1,100 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965488Ab2J3Syf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:54:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37623 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934001Ab2J3Syc (ORCPT
+	id S965511Ab2J3Syz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:54:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47585 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965134Ab2J3Syx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:54:32 -0400
-Date: Tue, 30 Oct 2012 20:48:28 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, <tony@atomide.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-input@vger.kernel.org>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Message-ID: <20121030184828.GB4804@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20121026062008.GA21734@arwen.pp.htv.fi>
- <20121026160316.GY18814@opensource.wolfsonmicro.com>
- <20121029194901.GA30152@arwen.pp.htv.fi>
- <20121030112410.GM4511@opensource.wolfsonmicro.com>
- <20121030114949.GC28722@arwen.pp.htv.fi>
- <20121030140714.GO4511@opensource.wolfsonmicro.com>
- <20121030151642.GE29159@arwen.pp.htv.fi>
- <20121030155821.GU4511@opensource.wolfsonmicro.com>
- <20121030172513.GA3993@arwen.pp.htv.fi>
- <20121030182007.GA21851@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VrqPEDrXMn8OVzN4"
-Content-Disposition: inline
-In-Reply-To: <20121030182007.GA21851@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 30 Oct 2012 14:54:53 -0400
+Date: Tue, 30 Oct 2012 11:54:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, klamm@yandex-team.ru,
+        mgorman@suse.de, hannes@cmpxchg.org
+Subject: Re: [PATCH RFC] mm,vmscan: only evict file pages when we have
+ plenty
+Message-Id: <20121030115451.f4c097f0.akpm@linux-foundation.org>
+In-Reply-To: <20121030144204.0aa14d92@dull>
+References: <20121030144204.0aa14d92@dull>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---VrqPEDrXMn8OVzN4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 30 Oct 2012 14:42:04 -0400
+Rik van Riel <riel@redhat.com> wrote:
 
-Hi,
+> If we have more inactive file pages than active file pages, we
+> skip scanning the active file pages alltogether, with the idea
+> that we do not want to evict the working set when there is
+> plenty of streaming IO in the cache.
 
-On Tue, Oct 30, 2012 at 11:20:07AM -0700, Dmitry Torokhov wrote:
-> On Tue, Oct 30, 2012 at 07:25:13PM +0200, Felipe Balbi wrote:
-> > On Tue, Oct 30, 2012 at 03:58:21PM +0000, Mark Brown wrote:
-> > >=20
-> > > But then this comes round to the mindless code that ought to be facto=
-red
-> > > out :)  Only the more interesting cases that do something unusual rea=
-lly
-> > > register here.
-> >=20
-> > fair enough. I see your point. Not saying I agree though, just that this
-> > discussion has been flying for far too long, so feel free to provide
-> > patches implementing what you're defending here ;-)
-> >=20
-> > Guess code will speak for itself. On way or another, we need OMAP keypad
-> > driver working in mainline
->=20
-> Are you saying that introducing pincrtl infrastructure actually _broke_
-> the driver in mainline?
+Yes, I've never liked that.  The "(active > inactive)" thing is a magic
+number.  And suddenly causing a complete cessation of vm scanning at a
+particular magic threshold seems rather crude, compared to some complex
+graduated thing which will also always do the wrong thing, only more
+obscurely ;)
 
-no dude, I'm saying we need pinctrl working for this driver because we
-need to remove OMAP-specific MUX settings. One way or another, this has
-to work.
+Ho hum, in the absence of observed problems, I guess we don't muck with
+it.
 
---=20
-balbi
+> However, the code forgot to also skip scanning anonymous pages
+> in that situation.  That lead to the curious situation of keeping
+> the active file pages protected from being paged out when there
+> are lots of inactive file pages, while still scanning and evicting
+> anonymous pages.
+> 
+> This patch fixes that situation, by only evicting file pages
+> when we have plenty of them and most are inactive.
+> 
 
---VrqPEDrXMn8OVzN4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Any observed runtime effects from this?  If so, were they good?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1686,6 +1686,15 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+>  			fraction[1] = 0;
+>  			denominator = 1;
+>  			goto out;
+> +		} else if (!inactive_file_is_low_global(zone)) {
+> +			/*
+> +			 * There is enough inactive page cache, do not
+> +			 * reclaim anything from the working set right now.
+> +			 */
+> +			fraction[0] = 0;
+> +			fraction[1] = 1;
+> +			denominator = 1;
+> +			goto out;
+>  		}
+>  	}
 
-iQIcBAEBAgAGBQJQkCD8AAoJEIaOsuA1yqRExbwP/RsiJ0tZ4envXPJkAk9FusHr
-gM3KATpzj8nsaedhnfQU0qA7X0adO6tA/QHJFva869xp071/PnoaGv+tsqiMb8Nv
-7HZAA6p577k7zNdN+FjzNSgtLt0KQrkIt5DatbzXJxbhHhNhCqqlbvYzJ+IGD/Rw
-lUy4feXwn5TRgPXNvSyLaj13Tg8zEYBGRFsrbLijAKHVQKcsAIvp9Si3dd2kod+R
-4GrAxDsCBi6SB+4zHBDoW0kEZBubs5PRO44l3nzeumMMQWk8FfsRbzajd/GtiAdb
-BDWLKr4p4EXjVeTVkbvvTHvH9QbhhWbqHUZINXeflkVTnugLHu7dHDzeBi4VpodX
-d+JLA33ACaXG0CSGnq3znHGqYd7jCFPGh6lPLct5hFrsgZLcgj10aJUGdVdiKvCe
-VNlQ6jAcjBJNuJUC3FiR+bTouxvOrSjHGkF2xjaT3fmsAquZZULC2GXpJbdaAZeB
-e+fRsSl7oSVlUvh+Irzrht8tTiSPVQ8ZAEZgQ5IPaGWL6G8ynibJQ5hncTPtpzsH
-dk+W4ge0xCf/Qvwe+RoYwSb5N1LU3wIhB/W5nyMNovEALhhNxozG51AJ6icULw5w
-8P8jfgMKHUECBHc6BckU+f5TA+D2cqaFAQc+HuYn5JB9fetD91gsjSc79A/5ogTD
-Ns2dQ8ziOK292Tbf0nNu
-=Wytf
------END PGP SIGNATURE-----
+Let's make the commenting look logical:
 
---VrqPEDrXMn8OVzN4--
+--- a/mm/vmscan.c~mmvmscan-only-evict-file-pages-when-we-have-plenty-fix
++++ a/mm/vmscan.c
+@@ -1679,9 +1679,11 @@ static void get_scan_count(struct lruvec
+ 
+ 	if (global_reclaim(sc)) {
+ 		free  = zone_page_state(zone, NR_FREE_PAGES);
+-		/* If we have very few page cache pages,
+-		   force-scan anon pages. */
+ 		if (unlikely(file + free <= high_wmark_pages(zone))) {
++			/*
++			 * If we have very few page cache pages, force-scan
++			 * anon pages.
++			 */
+ 			fraction[0] = 1;
+ 			fraction[1] = 0;
+ 			denominator = 1;
+_
+
