@@ -1,217 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965410Ab2J3SZX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:25:23 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:60130 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965349Ab2J3SZR (ORCPT
+	id S934187Ab2J3SZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:25:53 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:32068 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934038Ab2J3SZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:25:17 -0400
-From: Behan Webster <behanw@converseincode.com>
-To: balbi@ti.com
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH 2/2] Remove VLAIS usage from gadget code
-Date: Tue, 30 Oct 2012 14:25:20 -0400
-Message-Id: <1351621520-17768-3-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351621520-17768-1-git-send-email-behanw@converseincode.com>
-References: <1351621520-17768-1-git-send-email-behanw@converseincode.com>
+	Tue, 30 Oct 2012 14:25:47 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18xjlAJVNgoipziGIWN5Np7
+Date: Tue, 30 Oct 2012 11:25:44 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] gpio-keys: Pinctrl-fy
+Message-ID: <20121030182544.GO11908@atomide.com>
+References: <1351699019-4313-1-git-send-email-panto@antoniou-consulting.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351699019-4313-1-git-send-email-panto@antoniou-consulting.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
-precludes the use of compilers which don't implement VLAIS (for instance the
-Clang compiler). This patch instead calculates offsets into the kmalloc-ed
-memory buffer using macros from valign.h.
+* Pantelis Antoniou <panto@antoniou-consulting.com> [121030 11:23]:
+> Enable pinctrl support for gpio-keys.
 
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- drivers/usb/gadget/f_fs.c |  106 ++++++++++++++++++++++++++-------------------
- 1 file changed, 61 insertions(+), 45 deletions(-)
+There's some discussion going on regarding doing the
+pinctrl boilerplate things somewhere else started by
+Dmitry, but meanwhile:
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 64c4ec1..ca6cacc 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -22,6 +22,7 @@
- #include <linux/pagemap.h>
- #include <linux/export.h>
- #include <linux/hid.h>
-+#include <linux/valign.h>
- #include <asm/unaligned.h>
+Acked-by: Tony Lindgren <tony@atomide.com>
  
- #include <linux/usb/composite.h>
-@@ -1875,6 +1876,15 @@ error:
- 	return ret;
- }
- 
-+static void __ffs_init_stringtabs(struct usb_gadget_strings **stringtabs,
-+	struct usb_gadget_strings *t, unsigned len)
-+{
-+		do {
-+			*stringtabs++ = t++;
-+		} while (--len);
-+		*stringtabs = NULL;
-+}
-+
- static int __ffs_data_got_strings(struct ffs_data *ffs,
- 				  char *const _data, size_t len)
- {
-@@ -1911,31 +1921,26 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
- 
- 	/* Allocate everything in one chunk so there's less maintenance. */
- 	{
--		struct {
--			struct usb_gadget_strings *stringtabs[lang_count + 1];
--			struct usb_gadget_strings stringtab[lang_count];
--			struct usb_string strings[lang_count*(needed_count+1)];
--		} *d;
--		unsigned i = 0;
--
--		d = kmalloc(sizeof *d, GFP_KERNEL);
-+		int strtabslen = paddedsize(0, lang_count+1,
-+			struct usb_gadget_strings *, struct usb_gadget_strings);
-+		int strtablen = paddedsize(strtabslen, lang_count,
-+			struct usb_gadget_strings, struct usb_string);
-+		int strlen = paddedsize(strtabslen + strtablen,
-+			lang_count*(needed_count+1), struct usb_string, int);
-+
-+		stringtabs = kmalloc(strtabslen + strtablen + strlen,
-+			GFP_KERNEL);
- 		if (unlikely(!d)) {
- 			kfree(_data);
- 			return -ENOMEM;
- 		}
- 
--		stringtabs = d->stringtabs;
--		t = d->stringtab;
--		i = lang_count;
--		do {
--			*stringtabs++ = t++;
--		} while (--i);
--		*stringtabs = NULL;
--
--		stringtabs = d->stringtabs;
--		t = d->stringtab;
--		s = d->strings;
-+		t = paddedstart(stringtabs, strtabslen,
-+			struct usb_gadget_strings);
-+		s = paddedstart(t, strtablen, struct usb_string);
- 		strings = s;
-+
-+		__ffs_init_stringtabs(stringtabs, t, lang_count);
- 	}
- 
- 	/* For each language */
-@@ -2209,17 +2214,23 @@ static int ffs_func_bind(struct usb_configuration *c,
- 
- 	int ret;
- 
--	/* Make it a single chunk, less management later on */
--	struct {
--		struct ffs_ep eps[ffs->eps_count];
--		struct usb_descriptor_header
--			*fs_descs[full ? ffs->fs_descs_count + 1 : 0];
--		struct usb_descriptor_header
--			*hs_descs[high ? ffs->hs_descs_count + 1 : 0];
--		short inums[ffs->interfaces_count];
--		char raw_descs[high ? ffs->raw_descs_length
--				    : ffs->raw_fs_descs_length];
--	} *data;
-+	struct ffs_ep *eps;
-+	struct usb_descriptor_header **fs_descs;
-+	struct usb_descriptor_header **hs_descs;
-+	short *inums;
-+	char *raw_descs;
-+
-+	int epslen = paddedsize(0, ffs->eps_count,
-+			struct ffs_ep, struct usb_descriptor_header);
-+	int fsdlen = paddedsize(epslen, full ? ffs->fs_descs_count + 1 : 0,
-+			struct usb_descriptor_header,
-+			struct usb_descriptor_header);
-+	int hsdlen = paddedsize(fsdlen, high ? ffs->hs_descs_count + 1 : 0,
-+			struct usb_descriptor_header, short);
-+	int inumlen = paddedsize(hsdlen, ffs->interfaces_count, short, char);
-+	int rawlen = paddedsize(inumlen,
-+		high ? ffs->raw_descs_length : ffs->raw_fs_descs_length,
-+		char, int);
- 
- 	ENTER();
- 
-@@ -2227,21 +2238,28 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	if (unlikely(!(full | high)))
- 		return -ENOTSUPP;
- 
--	/* Allocate */
--	data = kmalloc(sizeof *data, GFP_KERNEL);
-+	/* Allocate a single chunk, less management later on */
-+	eps = kmalloc(epslen+fsdlen+hsdlen+inumlen+rawlen, GFP_KERNEL);
- 	if (unlikely(!data))
- 		return -ENOMEM;
- 
-+	/* Calculate start of each variable in the allocated memory */
-+	fs_descs = paddedstart(eps, epslen, struct usb_descriptor_header *);
-+	hs_descs = paddedstart(fs_descs, fsdlen,
-+		struct usb_descriptor_header *);
-+	inums = paddedstart(hs_descs, hsdlen, short);
-+	raw_descs = paddedstart(inums, inumlen, char);
-+
- 	/* Zero */
--	memset(data->eps, 0, sizeof data->eps);
--	memcpy(data->raw_descs, ffs->raw_descs + 16, sizeof data->raw_descs);
--	memset(data->inums, 0xff, sizeof data->inums);
-+	memset(eps, 0, epslen);
-+	memcpy(raw_descs, ffs->raw_descs + 16, rawlen);
-+	memset(inums, 0xff, inumlen);
- 	for (ret = ffs->eps_count; ret; --ret)
--		data->eps[ret].num = -1;
-+		eps[ret].num = -1;
- 
- 	/* Save pointers */
--	func->eps             = data->eps;
--	func->interfaces_nums = data->inums;
-+	func->eps             = eps;
-+	func->interfaces_nums = inums;
- 
- 	/*
- 	 * Go through all the endpoint descriptors and allocate
-@@ -2249,10 +2267,9 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	 * numbers without worrying that it may be described later on.
- 	 */
- 	if (likely(full)) {
--		func->function.descriptors = data->fs_descs;
-+		func->function.descriptors = fs_descs;
- 		ret = ffs_do_descs(ffs->fs_descs_count,
--				   data->raw_descs,
--				   sizeof data->raw_descs,
-+				   raw_descs, rawlen,
- 				   __ffs_func_bind_do_descs, func);
- 		if (unlikely(ret < 0))
- 			goto error;
-@@ -2261,10 +2278,9 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	}
- 
- 	if (likely(high)) {
--		func->function.hs_descriptors = data->hs_descs;
-+		func->function.hs_descriptors = hs_descs;
- 		ret = ffs_do_descs(ffs->hs_descs_count,
--				   data->raw_descs + ret,
--				   (sizeof data->raw_descs) - ret,
-+				   raw_descs + ret, rawlen - ret,
- 				   __ffs_func_bind_do_descs, func);
- 	}
- 
-@@ -2275,7 +2291,7 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	 */
- 	ret = ffs_do_descs(ffs->fs_descs_count +
- 			   (high ? ffs->hs_descs_count : 0),
--			   data->raw_descs, sizeof data->raw_descs,
-+			   raw_descs, rawlen,
- 			   __ffs_func_bind_do_nums, func);
- 	if (unlikely(ret < 0))
- 		goto error;
--- 
-1.7.9.5
-
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> ---
+>  drivers/input/keyboard/gpio_keys.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
+> index 6a68041..e421082 100644
+> --- a/drivers/input/keyboard/gpio_keys.c
+> +++ b/drivers/input/keyboard/gpio_keys.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/of_platform.h>
+>  #include <linux/of_gpio.h>
+>  #include <linux/spinlock.h>
+> +#include <linux/pinctrl/consumer.h>
+>  
+>  struct gpio_button_data {
+>  	const struct gpio_keys_button *button;
+> @@ -666,6 +667,7 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
+>  	struct input_dev *input;
+>  	int i, error;
+>  	int wakeup = 0;
+> +	struct pinctrl *pinctrl;
+>  
+>  	if (!pdata) {
+>  		pdata = gpio_keys_get_devtree_pdata(dev);
+> @@ -731,6 +733,10 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
+>  		goto fail3;
+>  	}
+>  
+> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+> +	if (IS_ERR(pinctrl))
+> +		dev_warn(&pdev->dev, "unable to select pin group\n");
+> +
+>  	/* get current state of buttons that are connected to GPIOs */
+>  	for (i = 0; i < pdata->nbuttons; i++) {
+>  		struct gpio_button_data *bdata = &ddata->data[i];
+> -- 
+> 1.7.12
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
