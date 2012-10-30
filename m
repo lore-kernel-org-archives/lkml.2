@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965193Ab2J3SCL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:02:11 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59844 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759668Ab2J3SCJ (ORCPT
+	id S965202Ab2J3SEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:04:44 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:55890 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759939Ab2J3SEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:02:09 -0400
-Message-ID: <5090161D.2030702@wwwdotorg.org>
-Date: Tue, 30 Oct 2012 12:02:05 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Tue, 30 Oct 2012 14:04:42 -0400
+Date: Tue, 30 Oct 2012 11:04:39 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] zram: permit sleeping while in pool zs_malloc()
+Message-ID: <20121030180439.GA3350@kroah.com>
+References: <20121030090319.GB5052@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@ti.com>
-CC: Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [RFC PATCH] dt: describe base reset signal binding
-References: <1351028756-22309-1-git-send-email-swarren@wwwdotorg.org> <20121029183233.18780.11964@nucleus>
-In-Reply-To: <20121029183233.18780.11964@nucleus>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030090319.GB5052@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2012 12:32 PM, Mike Turquette wrote:
-> Quoting Stephen Warren (2012-10-23 14:45:56)
->> What do people think of this? Does it sound like a good idea to go ahead
->> with a reset subsystem? Should we simply add a new API to the common clock
->> subsystem instead (and assume that reset and clock domains match 1:1).
->> Should this be implemented as part of the generic power management domains;
->> see include/linux/pm_domain.h instead?
->>
-> 
-> Hi Stephen,
-> 
-> I'm not sure a "reset subsystem" is necessary, but I also do not like
-> using clocks as the keys for IP reset.
+On Tue, Oct 30, 2012 at 12:03:19PM +0300, Sergey Senozhatsky wrote:
+>     zram: permit sleeping while in pool zs_malloc()
 
-I'm not sure what you're suggesting as an alternative to a reset
-subsystem (or API if you want something that sounds smaller!) :-)
+2/2?  Huh?  Where is 1/2?
 
-> I think it is more common to map IPs to struct device, no?
+I have a raft of patches from you, all out of order, and full of
+responses from Nitin, and so, I really have no idea what should and
+should not be applied here.
 
-It is indeed probably common that there's a 1:1 mapping between IP
-blocks and struct device. However, I'm sure there are plenty of
-counter-examples; IP blocks with multiple reset domains (hence struct
-devices that encompass multiple reset domains, or reset domains that
-encompass multiple struct devices), just as there are many examples of
-non-1:1 mappings between struct device and struct clk.
+So, I'm dropping them all.  Please work with Nitin to get a series of
+patches that are acceptable and resend them with the proper numbering.
 
-Even ignoring that, we'd still need to API say device_reset(struct
-device *dev) or device_reset(struct device *dev, const char *conid)
-wouldn't we? That's really all I meant by a reset subsystem.
+thanks,
 
-An alternative here would be to simply move Tegra's
-tegra_periph_reset_{de,}assert() function prototypes into a header in
-include/linux rather than mach-tegra/include/mach. However, I imagine at
-least some other SoC needs a similar API, so a common API might be useful?
+greg k-h
