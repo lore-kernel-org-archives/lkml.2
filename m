@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab2J3I70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 04:59:26 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:61589 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756427Ab2J3I7X (ORCPT
+	id S1756890Ab2J3JA1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 05:00:27 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35468 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756427Ab2J3JAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 04:59:23 -0400
+	Tue, 30 Oct 2012 05:00:24 -0400
+Message-ID: <508F9724.50804@linaro.org>
+Date: Tue, 30 Oct 2012 10:00:20 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAK44p22G4ri9KBYiLMCK9SThgFxofz66LVgUY28SepaC+YBDdw@mail.gmail.com>
-References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351079900-32236-3-git-send-email-hongbo.zhang@linaro.com>
-	<CAK44p22G4ri9KBYiLMCK9SThgFxofz66LVgUY28SepaC+YBDdw@mail.gmail.com>
-Date: Tue, 30 Oct 2012 09:59:23 +0100
-Message-ID: <CAJLyvQxm-NbuWnF7f+4fFSk+hwPuVOHpCfuAUgmQq-ZAJvo9tQ@mail.gmail.com>
-Subject: Re: [PATCH V2 2/6] Thermal: make sure cpufreq cooling register after
- cpufreq driver
-From: Hongbo Zhang <hongbo.zhang@linaro.org>
-To: Amit Kachhap <amit.kachhap@linaro.org>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Ben Hutchings <bhutchings@solarflare.com>, netdev@vger.kernel.org,
+        linaro-dev@lists.linaro.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: Re: [PATCH] net: dsa/slave: Fix compilation warnings
+References: <5afab1ebe83e4361f1fd75bbea0c559af195bf02.1351529738.git.viresh.kumar@linaro.org> <1351540778.2721.7.camel@bwh-desktop.uk.solarflarecom.com> <CAKohponL_3m2KVytiWm8ZHyB5aimk8CzGrqr5J0LMy8MFGodHg@mail.gmail.com> <CAKohponOKk5e2Sxyhjw-XvzVxF3tNp66rsnYCwvwHazAPAauKw@mail.gmail.com> <508F8779.8070300@linaro.org> <CAKohpokmfFSFsADmtOyN9JRCX8aVdNs+tDFhUQuM6sSQ+dFfUA@mail.gmail.com>
+In-Reply-To: <CAKohpokmfFSFsADmtOyN9JRCX8aVdNs+tDFhUQuM6sSQ+dFfUA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 October 2012 12:42, Amit Kachhap <amit.kachhap@linaro.org> wrote:
-> On 24 October 2012 17:28, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
->> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+On 10/30/2012 08:55 AM, Viresh Kumar wrote:
+> On 30 October 2012 13:23, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+>>> From: Viresh Kumar <viresh.kumar@linaro.org>
+> 
+>>>  config NET_DSA_TAG_DSA
+>>> -     bool
+>>> +     bool "Original DSA packet tagging format"
+>>> +     select NET_DSt
 >>
->> The cpufreq works as a cooling device, so the cooling layer should check if the
->> cpufreq driver is initialized or not.
->>
->> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
->> ---
->>  drivers/thermal/cpu_cooling.c | 4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
->> index b6b4c2a..7519a0b 100644
->> --- a/drivers/thermal/cpu_cooling.c
->> +++ b/drivers/thermal/cpu_cooling.c
->> @@ -354,6 +354,10 @@ struct thermal_cooling_device *cpufreq_cooling_register(
->>         int ret = 0, i;
->>         struct cpufreq_policy policy;
->>
->> +       /* make sure cpufreq driver has been initialized */
->> +       if (!cpufreq_frequency_get_table(cpumask_any(clip_cpus)))
->> +               return ERR_PTR(-EPROBE_DEFER);
->> +
-> Hi Hongbo,
->
-> I am not against this change but this might cause unnecessary delay in
-> probe thread. I also thought about it but have not put this
-> restriction. Actually you can put a check in platform_bind for this
-> condition and defer the binding till the time actual throttling
-> starts. So basically only after throttling cpufreq_table is needed.
-> (See my implementation exynos_thermal.c).
-In fact, this piece of checking code was in my
-db8500_cpufreq_cooling_probe() before, I will move it back there
-again, and the ST-E's policy is separating cooling devs and thermal
-zone, so cannot be in binding function on my platform, only in probe
-function instead.
->
-> Thanks,
-> Amit Daniel
->>         list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node)
->>                 cpufreq_dev_count++;
->>
->> --
->> 1.7.11.3
->>
->>
->> _______________________________________________
->> linaro-dev mailing list
->> linaro-dev@lists.linaro.org
->> http://lists.linaro.org/mailman/listinfo/linaro-dev
+>> typo NET_DSA
+> 
+> Unbelievable mistake :(
+> 
+> Will fix it after some reviews now :)
+
+Yeah, has to be ! ;)
+
+It is very curious if we disable all the configs option, a slave
+creation raise a BUG (cf. dsa_slave_create). IIUC, booting with NET_DSA
+enabled and none of the NET_DSA_TAG* enabled will raise a BUG in the
+probe function, right ?
+
+Maybe we should force at least one config when none are set ?
+
+diff --git a/net/dsa/Kconfig b/net/dsa/Kconfig
+index 274791c..86326e3 100644
+--- a/net/dsa/Kconfig
++++ b/net/dsa/Kconfig
+@@ -1,8 +1,9 @@
+-config NET_DSA
++menuconfig NET_DSA
+        tristate "Distributed Switch Architecture support"
+        default n
+        depends on EXPERIMENTAL && NETDEVICES && !S390
+        select PHYLIB
++       select NET_DSA_TAG_DSA if (!NET_DSA_TAG_EDSA &&
+!NET_DSA_TAG_TRAILER)
+        ---help---
+          This allows you to use hardware switch chips that use
+          the Distributed Switch Architecture.
+@@ -12,15 +13,15 @@ if NET_DSA
+
+ # tagging formats
+ config NET_DSA_TAG_DSA
+-       bool
++       bool "tag dsa"
+        default n
+
+ config NET_DSA_TAG_EDSA
+-       bool
++       bool "tag edsa"
+        default n
+
+ config NET_DSA_TAG_TRAILER
+-       bool
++       bool "tag trailer"
+        default n
+
+ endif
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
