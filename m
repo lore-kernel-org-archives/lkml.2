@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab2J3Jfm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 05:35:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53047 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757054Ab2J3Jfk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 05:35:40 -0400
-Date: Tue, 30 Oct 2012 02:35:13 -0700
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
-        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] perf tools: Speed up the perf build time by simplifying
- the perf --version string generation
-Message-ID: <20121030093513.GE25959@ghostprotocols.net>
-References: <1351261913-28250-1-git-send-email-acme@infradead.org>
- <20121026145451.GA14379@gmail.com>
- <20121026170503.GC20695@ghostprotocols.net>
- <20121027131935.GA30001@gmail.com>
- <20121030081807.GA8245@gmail.com>
- <20121030084600.GB8245@gmail.com>
+	id S1757404Ab2J3JgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 05:36:06 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37528 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756971Ab2J3JgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 05:36:03 -0400
+Message-ID: <508F9FA2.4040407@ti.com>
+Date: Tue, 30 Oct 2012 15:06:34 +0530
+From: Sourav <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030084600.GB8245@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: "Cousson, Benoit" <b-cousson@ti.com>
+CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [RESEND/PATCHv3] arm: dts: omap5-evm: Add keypad support
+References: <1351507226-10328-1-git-send-email-sourav.poddar@ti.com> <508EB250.20607@ti.com> <508F64EC.9000809@ti.com> <508F9A3E.9020105@ti.com>
+In-Reply-To: <508F9A3E.9020105@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 30, 2012 at 09:46:00AM +0100, Ingo Molnar escreveu:
-> +++ b/tools/perf/util/PERF-VERSION-GEN
-> @@ -12,7 +12,7 @@ LF='
->  # First check if there is a .git to get the version from git describe
->  # otherwise try to get the version from the kernel makefile
->  if test -d ../../.git -o -f ../../.git &&
-> -	VN=$(git describe --match 'v[0-9].[0-9]*' --abbrev=4 HEAD 2>/dev/null) &&
-> +	VN=$(echo $(git tag --list "v[0-9].[0-9]*" | tail -1)"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD) 2>/dev/null) &&
+Hi Benoit,
+On Tuesday 30 October 2012 02:43 PM, Cousson, Benoit wrote:
+> Hi Sourav,
+>
+> On 10/30/2012 6:26 AM, Sourav wrote:
+>> Hi Benoit,
+>> On Monday 29 October 2012 10:14 PM, Benoit Cousson wrote:
+>>> Hi Sourav,
+>>>
+>>> On 10/29/2012 11:40 AM, Sourav Poddar wrote:
+>>>> Add keypad data node in omap5-evm.
+>>>>
+>>>> Based on I2C support patch for omap5, which has been
+>>>> already posted as a different series.
+>>>>
+>>>> Tested on omap5430 evm with 3.7-rc1 kernel.
+>>>>
+>>>> Cc: Felipe Balbi <balbi@ti.com>
+>>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>>
+>>>> Tested on omap5430 sdp with 3.7-rc1 kernel.
+>>>>
+>>>> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+>>>> ---
+>>>>   arch/arm/boot/dts/omap5-evm.dts |   95
+>>>> +++++++++++++++++++++++++++++++++++++++
+>>>>   1 files changed, 95 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/arch/arm/boot/dts/omap5-evm.dts
+>>>> b/arch/arm/boot/dts/omap5-evm.dts
+>>>> index c663eba..b812d6d 100644
+>>>> --- a/arch/arm/boot/dts/omap5-evm.dts
+>>>> +++ b/arch/arm/boot/dts/omap5-evm.dts
+>>>> @@ -140,3 +140,98 @@
+>>>>   &mcbsp3 {
+>>>>       status = "disabled";
+>>>>   };
+>>>> +
+>>>> +&i2c5 {
+>>>> +    clock-frequency = <400000>;
+>>>> +
+>>>> +    smsc@38 {
+>>>> +        compatible = "smscece1099";
+>>>> +        reg = <0x38>;
+>>>> +        clock = <0x13>;
+>>> What does that "clock" mean?
+>> This chip supports a clock control register which is used to enable the
+>> interface used by the chip to communicate. Here, the interface which you
+>> can are
+>> SMBUS interface or BC-LINK interface.
+>
+> OK, so you should use a less generic name than "clock" and potentially 
+> prefix it with "smsc," since it is not a generic attribute at all.
+>
+Sure, will think of less generic name. May be "smsc, ctrl-reg" will do.
+> BTW, cannot we use the CCF in order to control that clock?
+I don't have much idea about the CCF, so cant really comment on this.
+> I guess it is just a clock mux?
+Yes.
+> Well, anyway we need CCF for OMAP to be merged first :-)
+>
+> But it might worth highlighting this is a temporary solution.
+>
+>>> I cannot find that in the binding documentation. BTW, did you add that
+>>> documentation in the driver patch?
+>> Nope, I missed out on the dt binding documentation for the driver. :(
+>>
+>> Will send a seperate patch for the bindings.
+>
+> Thanks,
+> Benoit
+>
 
-[acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
-make: Entering directory `/home/git/linux/tools/perf'
-error: unknown option `list'
-usage: git tag [-a|-s|-u <key-id>] [-f] [-m <msg>|-F <file>] <tagname>
-[<head>]
-
-<SNIP>
-
-[acme@sandy linux]$ git --version
-git version 1.7.1
-
-- Arnaldo
