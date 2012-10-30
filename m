@@ -1,106 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab2J3IqL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 04:46:11 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55175 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab2J3IqG (ORCPT
+	id S1756391Ab2J3IwH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 04:52:07 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56340 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126Ab2J3IwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 04:46:06 -0400
-Date: Tue, 30 Oct 2012 09:46:00 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
-        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] perf tools: Speed up the perf build time by simplifying the
- perf --version string generation
-Message-ID: <20121030084600.GB8245@gmail.com>
-References: <1351261913-28250-1-git-send-email-acme@infradead.org>
- <20121026145451.GA14379@gmail.com>
- <20121026170503.GC20695@ghostprotocols.net>
- <20121027131935.GA30001@gmail.com>
- <20121030081807.GA8245@gmail.com>
+	Tue, 30 Oct 2012 04:52:02 -0400
+From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur@brendeland.net>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Amit Shah <amit.shah@redhat.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, sjurbren@gmail.com,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [PATCHv8 0/3]virtio_console: Add rproc_serial driver
+Date: Tue, 30 Oct 2012 09:51:50 +0100
+Message-Id: <1351587113-2566-1-git-send-email-sjur@brendeland.net>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030081807.GA8245@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+This patch-set introduces a new virtio type "rproc_serial" for communicating
+with remote processors over shared memory. The driver depends on the
+the remoteproc framework. As preparation for introducing "rproc_serial"
+I've done a refactoring of the transmit buffer handling.
 
-> Btw., there's another thing that would be nice in addition to 
-> simplifying the PERF-VERSION-GEN script: [...]
+Changes since v7:
+- Rebased to virtio-next branch.
+- Removed extra added lines.
+- Removed superfluous checks before calling reclaim_dma_bufs().
+- Rusty raised some question regarding garbage collection of the
+  out-vq, so I moved this into a separate patch.
 
-Here's a stab at that.
+Thanks,
+Sjur
 
------------------>
 
-Building perf is pretty slow on trees that have a lot of commits 
-relative to the nearest Git tag. This slowness manifests itself 
-during version string generation:
+Sjur Brændeland (3):
+  virtio_console: Merge struct buffer_token into struct port_buffer
+  virtio_console: Add support for remoteproc serial
+  virtio_console: Remove buffers from out_vq at port removal
 
- $ perf stat --null --repeat 3 --sync --pre "rm -f PERF-VERSION-FILE" util/PERF-VERSION-GEN 
- PERF_VERSION = 3.7.rc3.1458.g5399b3b
- PERF_VERSION = 3.7.rc3.1458.g5399b3b
- PERF_VERSION = 3.7.rc3.1458.g5399b3b
+ drivers/char/virtio_console.c   |  325 +++++++++++++++++++++++++++------------
+ include/uapi/linux/virtio_ids.h |    1 +
+ 2 files changed, 230 insertions(+), 96 deletions(-)
 
- Performance counter stats for 'util/PERF-VERSION-GEN' (3 runs):
+-- 
+1.7.9.5
 
-       2.857503976 seconds time elapsed                                          ( +-  0.22% )
-
-The build can be even slower than that, when one over NFS 
-volumes.
-
-The reason for the slowness is that util/PERF-VERSION-GEN uses 
-"git describe" to generate the string, which has to count the 
-"number of commits distance" from the nearest tag - the ".1458." 
-count in the output above. For that Git had to extract and 
-decompress 1458 Git objects, which takes time and bandwidth.
-
-But this "number of commits" value is mostly irrelevant in 
-practice. We either want to know an approximate tag name, or we 
-want to know the precise sha1.
-
-So this patch simplifies the version string to:
-
- PERF_VERSION = 3.7.rc3.g5399b3b.dirty
-
-which speeds up the version string generation script by an order 
-of magnitude:
-
- $ perf stat --null --repeat 3 --sync --pre "rm -f PERF-VERSION-FILE" util/PERF-VERSION-GEN 
- PERF_VERSION = 3.7.rc3.g5399b3b.dirty
- PERF_VERSION = 3.7.rc3.g5399b3b.dirty
- PERF_VERSION = 3.7.rc3.g5399b3b.dirty
-
- Performance counter stats for 'util/PERF-VERSION-GEN' (3 runs):
-
-       0.307633559 seconds time elapsed                                          ( +-  0.84% )
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/util/PERF-VERSION-GEN | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index 95264f3..c774b89 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -12,7 +12,7 @@ LF='
- # First check if there is a .git to get the version from git describe
- # otherwise try to get the version from the kernel makefile
- if test -d ../../.git -o -f ../../.git &&
--	VN=$(git describe --match 'v[0-9].[0-9]*' --abbrev=4 HEAD 2>/dev/null) &&
-+	VN=$(echo $(git tag --list "v[0-9].[0-9]*" | tail -1)"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD) 2>/dev/null) &&
- 	case "$VN" in
- 	*$LF*) (exit 1) ;;
- 	v[0-9]*)
