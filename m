@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758597Ab2J3K0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 06:26:36 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:38600 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758331Ab2J3K0e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 06:26:34 -0400
-Message-ID: <508FB970.8070703@atmel.com>
-Date: Tue, 30 Oct 2012 12:26:40 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S932648Ab2J3KgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 06:36:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47307 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757604Ab2J3KgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 06:36:03 -0400
+Date: Tue, 30 Oct 2012 11:35:59 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH v3 3/6] memcg: Simplify mem_cgroup_force_empty_list error
+ handling
+Message-ID: <20121030103559.GA7394@dhcp22.suse.cz>
+References: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
+ <1351251453-6140-4-git-send-email-mhocko@suse.cz>
+ <508E8B95.406@parallels.com>
+ <20121029150022.a595b866.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, <havard@skinnemoen.net>,
-        <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
-        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <manabian@gmail.com>
-Subject: Re: [PATCH v3 00/10] net/macb: driver enhancement concerning GEM
- support, ring logic and cleanup
-References: <cover.1351591858.git.nicolas.ferre@atmel.com>
-In-Reply-To: <cover.1351591858.git.nicolas.ferre@atmel.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121029150022.a595b866.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2012 11:17 AM, Nicolas Ferre :
-> This is an enhancement work that began several years ago. I try to catchup with
-> some performance improvement that has been implemented then by Havard.
-> The ring index logic and the TX error path modification are the biggest changes
-> but some cleanup/debugging have been added along the way.
-> The GEM revision will benefit from the Gigabit support.
-> Newer pinctrl infrastructure support is added but it is optional.
+On Mon 29-10-12 15:00:22, Andrew Morton wrote:
+> On Mon, 29 Oct 2012 17:58:45 +0400
+> Glauber Costa <glommer@parallels.com> wrote:
 > 
-> The series has been tested on several Atmel AT91 SoC with the two MACB/GEM
-> flavors.
+> > > + * move charges to its parent or the root cgroup if the group has no
+> > > + * parent (aka use_hierarchy==0).
+> > > + * Although this might fail (get_page_unless_zero, isolate_lru_page or
+> > > + * mem_cgroup_move_account fails) the failure is always temporary and
+> > > + * it signals a race with a page removal/uncharge or migration. In the
+> > > + * first case the page is on the way out and it will vanish from the LRU
+> > > + * on the next attempt and the call should be retried later.
+> > > + * Isolation from the LRU fails only if page has been isolated from
+> > > + * the LRU since we looked at it and that usually means either global
+> > > + * reclaim or migration going on. The page will either get back to the
+> > > + * LRU or vanish.
+> > 
+> > I just wonder for how long can it go in the worst case?
 > 
-> v3: - rebased on net-next to take into account current effor to merge
->       at91_ether with macb drivers
->     - add additional patch to use the new pinctrl infrastructure
-> v2: - modify the tx error handling: now uses a workqueue
->     - information provided by ethtool -i were not accurate: removed
+> If the kernel is uniprocessor and the caller is SCHED_FIFO: ad infinitum!
 
-David, if you feel more comfortable with a git branch (I can also 
-cook a signed tag if you want), here it is:
+You are right, if the rmdir (resp. echo > force_empty) at SCHED_FIFO
+races with put_page (on a shared page) which gets preempted after
+put_page_testzero and before __page_cache_release then we are screwed:
 
+						put_page(page)
+						  put_page_testzero
+						  <preempted and page still on LRU>
+mem_cgroup_force_empty_list
+  page = list_entry(list->prev, struct page, lru);
+  mem_cgroup_move_parent(page)
+    get_page_unless_zero <fails>
+  cond_resched() <scheduled again>
 
-The following changes since commit a932657f51eadb8280166e82dc7034dfbff3985a:
+The race window is really small but it is definitely possible. I am not
+happy about this state and it should be probably mentioned in the
+patch description but I do not see any way around (except for hacks like
+sched_setscheduler for the current which is, ehm...) and still keep
+do_not_fail contract here.
 
-  net: sierra: shut up sparse restricted type warnings (2012-10-28 19:09:02 -0400)
+Can we consider this as a corner case (it is much easier to kill a
+machine with SCHED_FIFO than this anyway) or the concern is really
+strong and we should come with a solution before this can get merged?
 
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git net-next_macb_enhancement3
-
-for you to fetch changes up to 3269426bdd44debc00d027651f8248db9d40f3dc:
-
-  net/macb: add pinctrl consumer support (2012-10-30 11:08:10 +0100)
-
-----------------------------------------------------------------
-Havard Skinnemoen (4):
-      net/macb: memory barriers cleanup
-      net/macb: change debugging messages
-      net/macb: clean up ring buffer logic
-      net/macb: Offset first RX buffer by two bytes
-
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      net/macb: add pinctrl consumer support
-
-Nicolas Ferre (4):
-      net/macb: remove macb_get_drvinfo()
-      net/macb: tx status is more than 8 bits now
-      net/macb: ethtool interface: add register dump feature
-      net/macb: better manage tx errors
-
-Patrice Vilchez (1):
-      net/macb: Add support for Gigabit Ethernet mode
-
- drivers/net/ethernet/cadence/macb.c | 446 ++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------
- drivers/net/ethernet/cadence/macb.h |  30 ++++--
- 2 files changed, 334 insertions(+), 142 deletions(-)
-
-
-Thanks, best regards,
 -- 
-Nicolas Ferre
+Michal Hocko
+SUSE Labs
