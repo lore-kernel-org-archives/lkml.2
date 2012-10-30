@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965657Ab2J3UQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 16:16:56 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:44522 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965249Ab2J3UQx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 16:16:53 -0400
-Subject: Re: [RFC 2/7] capebus: Add beaglebone board support
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20121030193939.GR11908@atomide.com>
-Date: Tue, 30 Oct 2012 22:16:47 +0200
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DE47929E-9579-4DD2-B01C-08554D49FADE@antoniou-consulting.com>
-References: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com> <1351702333-8456-3-git-send-email-panto@antoniou-consulting.com> <20121030193939.GR11908@atomide.com>
-To: Tony Lindgren <tony@atomide.com>
-X-Mailer: Apple Mail (2.1085)
+	id S965716Ab2J3URZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 16:17:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21632 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755306Ab2J3UPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 16:15:20 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [patch 08/10] mpt2sas: use scsi_host_alloc_node
+Date: Tue, 30 Oct 2012 16:14:42 -0400
+Message-Id: <1351628084-29358-11-git-send-email-jmoyer@redhat.com>
+In-Reply-To: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
+References: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 30, 2012, at 9:39 PM, Tony Lindgren wrote:
 
-> * Pantelis Antoniou <panto@antoniou-consulting.com> [121030 12:00]:
->> +
->> +	priv->lcdc_oh = omap_hwmod_lookup("lcdc");
->> +	if (priv->lcdc_oh == NULL) {
->> +		dev_err(&pdev->dev, "Failed to lookup omap_hwmod lcdc\n");
->> +		return -ENODEV;
->> +	}
->> +
->> +	priv->lcdc_pdev = omap_device_build("da8xx_lcdc", 0, priv->lcdc_oh,
->> +			&priv->lcd_pdata,
->> +			sizeof(struct da8xx_lcdc_platform_data),
->> +			NULL, 0, 0);
->> +	if (priv->lcdc_pdev == NULL) {
->> +		dev_err(&pdev->dev, "Failed to build LCDC device\n");
->> +		return -ENODEV;
->> +	}
-> 
-> ..and these kind of things need to become private to
-> arch/arm/mach-omap2, we already have it working for other
-> devices with device tree.
-> 
-> Regards,
-> 
-> Tony
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+---
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-I see,
-
-I know that if the device driver is DTified it will pick up the hwmod automatically.
-The issue is that the driver is question is not yet; how would I go about
-creating the platform device and having it pick up the hwmod automatically?
-
-Regards
-
--- Pantelis
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index af4e6c4..a4d6b36 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -8011,8 +8011,8 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	struct MPT2SAS_ADAPTER *ioc;
+ 	struct Scsi_Host *shost;
+ 
+-	shost = scsi_host_alloc(&scsih_driver_template,
+-	    sizeof(struct MPT2SAS_ADAPTER));
++	shost = scsi_host_alloc_node(&scsih_driver_template,
++	    sizeof(struct MPT2SAS_ADAPTER), dev_to_node(&pdev->dev));
+ 	if (!shost)
+ 		return -ENODEV;
+ 
+-- 
+1.7.1
 
