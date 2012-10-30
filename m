@@ -1,108 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964956Ab2J3RRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 13:17:55 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49320 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964823Ab2J3RRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 13:17:51 -0400
-Date: Tue, 30 Oct 2012 18:17:47 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v4 8/9] bug.h: Add BUILD_BUG_ON_MSG & _BUILD_BUG_INTERNAL
-Message-ID: <20121030171747.GF28499@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Daniel Santos <daniel.santos@pobox.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Andi Kleen <ak@linux.intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Christopher Li <sparse@chrisli.org>,
-	David Daney <david.daney@cavium.com>,
-	David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-	Josh Triplett <josh@joshtriplett.org>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-	Paul Gortmaker <paul.gortmaker@windriver.com>,
-	Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	David Rientjes <rientjes@google.com>
-References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
- <1351457835-7553-8-git-send-email-daniel.santos@pobox.com>
+	id S964981Ab2J3R17 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 13:27:59 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:40233 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933788Ab2J3R16 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 13:27:58 -0400
+Date: Tue, 30 Oct 2012 10:27:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 4/4] rcu: Document alternative
+ RCU/reference-count algorithms
+Message-ID: <20121030172734.GS3027@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121030160350.GA21837@linux.vnet.ibm.com>
+ <1351613076-22022-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1351613076-22022-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20121030162103.GA17261@Krystal>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351457835-7553-8-git-send-email-daniel.santos@pobox.com>
+In-Reply-To: <20121030162103.GA17261@Krystal>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12103017-7606-0000-0000-000004EEA765
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 03:57:14PM -0500, danielfsantos@att.net wrote:
-> Add BUILD_BUG_ON_MSG which behaves like BUILD_BUG_ON (with optimizations
-> enabled), except that it allows you to specify the error message you
-> want emitted as the third parameter.  Under the hood, this relies on
-> _BUILD_BUG_INTERNAL, which does the actual work and is pretty-much
-> identical to BUILD_BUG_ON.
+On Tue, Oct 30, 2012 at 12:21:03PM -0400, Mathieu Desnoyers wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > The approach for mixing RCU and reference counting listed in the RCU
+> > documentation only describes one possible approach.  This approach can
+> > result in failure on the read side, which is nice if you want fresh data,
+> > but not so good if you want simple code.  This commit therefore adds
+> > two additional approaches that feature unconditional reference-count
+> > acquisition by RCU readers.  These approaches are very similar to that
+> > used in the security code.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  Documentation/RCU/rcuref.txt |   61 ++++++++++++++++++++++++++++++++++++++++-
+> >  1 files changed, 59 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/Documentation/RCU/rcuref.txt b/Documentation/RCU/rcuref.txt
+> > index 4202ad0..99ca662 100644
+> > --- a/Documentation/RCU/rcuref.txt
+> > +++ b/Documentation/RCU/rcuref.txt
+> > @@ -20,7 +20,7 @@ release_referenced()			delete()
+> >  {					{
+> >      ...					    write_lock(&list_lock);
+> >      atomic_dec(&el->rc, relfunc)	    ...
+> > -    ...					    delete_element
+> > +    ...					    remove_element
+> >  }					    write_unlock(&list_lock);
+> >   					    ...
+> >  					    if (atomic_dec_and_test(&el->rc))
+> > @@ -52,7 +52,7 @@ release_referenced()			delete()
+> >  {					{
+> >      ...					    spin_lock(&list_lock);
+> >      if (atomic_dec_and_test(&el->rc))       ...
+> > -        call_rcu(&el->head, el_free);       delete_element
+> > +        call_rcu(&el->head, el_free);       remove_element
+> >      ...                                     spin_unlock(&list_lock);
+> >  } 					    ...
+> >  					    if (atomic_dec_and_test(&el->rc))
+> > @@ -64,3 +64,60 @@ Sometimes, a reference to the element needs to be obtained in the
+> >  update (write) stream.  In such cases, atomic_inc_not_zero() might be
+> >  overkill, since we hold the update-side spinlock.  One might instead
+> >  use atomic_inc() in such cases.
+> > +
+> > +It is not always convenient to deal with "FAIL" in the
+> > +search_and_reference() code path.  In such cases, the
+> > +atomic_dec_and_test() may be moved from delete() to el_free()
+> > +as follows:
+> > +
+> > +1.					2.
+> > +add()					search_and_reference()
+> > +{					{
+> > +    alloc_object			    rcu_read_lock();
+> > +    ...					    search_for_element
+> > +    atomic_set(&el->rc, 1);		    atomic_inc(&el->rc);
+> > +    spin_lock(&list_lock);		    ...
+> > +				
+> > +    add_element				    rcu_read_unlock();
+> > +    ...					}
 > 
-> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-> ---
->  include/linux/bug.h |   22 ++++++++++++++++++++++
->  1 files changed, 22 insertions(+), 0 deletions(-)
+> indentation looks wrong in my mail client for the two lines above (for
+> the 2. block).
+
+Ah, the "+" characters offset the tab stops.  Looks OK in the actual
+file when the patch is applied.  (Though it would not hurt to check.)
+
+							Thanx, Paul
+
+> Otherwise, it looks good to me,
 > 
-> diff --git a/include/linux/bug.h b/include/linux/bug.h
-> index 6c38988..3bc1ddf 100644
-> --- a/include/linux/bug.h
-> +++ b/include/linux/bug.h
-> @@ -16,6 +16,7 @@ struct pt_regs;
->  #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
->  #define BUILD_BUG_ON_ZERO(e) (0)
->  #define BUILD_BUG_ON_NULL(e) ((void*)0)
-> +#define BUILD_BUG_ON_MSG(cond, msg) (0)
->  #define BUILD_BUG_ON(condition) (0)
->  #define BUILD_BUG() (0)
->  #else /* __CHECKER__ */
-> @@ -38,6 +39,27 @@ struct pt_regs;
->   */
->  #define BUILD_BUG_ON_INVALID(e) ((void)(sizeof((__force long)(e))))
->  
-> +#define __BUILD_BUG_INTERNAL(condition, msg, line)		\
-> +	do {							\
-> +		extern void __build_bug_on_failed_ ## line	\
-> +			(void) __compiletime_error(msg);	\
-> +		__compiletime_error_fallback(condition);	\
-> +		if (condition)					\
-> +			__build_bug_on_failed_ ## line();	\
-> +	} while (0)
-> +
-> +#define _BUILD_BUG_INTERNAL(condition, msg, line) \
-> +	__BUILD_BUG_INTERNAL(condition, msg, line)
+> Thanks,
+> 
+> Mathieu
+> 
+> 
+> > +    spin_unlock(&list_lock);		4.
+> > +}					delete()
+> > +3.					{
+> > +release_referenced()			    spin_lock(&list_lock);
+> > +{					    ...
+> > +    ...					    remove_element
+> > +    if (atomic_dec_and_test(&el->rc))       spin_unlock(&list_lock);
+> > +        kfree(el);			    ...
+> > +    ...                                     call_rcu(&el->head, el_free);
+> > +} 					    ...
+> > +5.					}
+> > +void el_free(struct rcu_head *rhp)
+> > +{
+> > +    release_referenced();
+> > +}
+> > +
+> > +The key point is that the initial reference added by add() is not removed
+> > +until after a grace period has elapsed following removal.  This means that
+> > +search_and_reference() cannot find this element, which means that the value
+> > +of el->rc cannot increase.  Thus, once it reaches zero, there are no
+> > +readers that can or ever will be able to reference the element.  The
+> > +element can therefore safely be freed.  This in turn guarantees that if
+> > +any reader finds the element, that reader may safely acquire a reference
+> > +without checking the value of the reference counter.
+> > +
+> > +In cases where delete() can sleep, synchronize_rcu() can be called from
+> > +delete(), so that el_free() can be subsumed into delete as follows:
+> > +
+> > +4.
+> > +delete()
+> > +{
+> > +    spin_lock(&list_lock);
+> > +    ...
+> > +    remove_element
+> > +    spin_unlock(&list_lock);
+> > +    ...
+> > +    synchronize_rcu();
+> > +    if (atomic_dec_and_test(&el->rc))
+> > +    	kfree(el);
+> > +    ...
+> > +}
+> > -- 
+> > 1.7.8
+> > 
+> 
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
+> 
 
-Stupid question:
-
-can BUILD_BUG_ON and BUILD_BUG_ON_MSG both use __BUILD_BUG_INTERNAL?
-
-In the BUILD_BUG_ON msg will be "BUILD_BUG_ON failed" and line empty.
-Can that even work?
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
