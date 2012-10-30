@@ -1,91 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933963Ab2J3QFe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:05:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21447 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335Ab2J3QFa (ORCPT
+	id S1757908Ab2J3QFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:05:45 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:39513 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757369Ab2J3QFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:05:30 -0400
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=V3PaAaPhDywA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=MpoW4NFLMuQA:10 a=TjdZuqBtraRauxM7rlMA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351613128.8467.109.camel@gandalf.local.home>
-Subject: Re: [PATCH] scripts/recordmcount.pl: Support build with
- -ffunction-sections.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Newton <will.newton@gmail.com>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Tue, 30 Oct 2012 12:05:28 -0400
-In-Reply-To: <CAFbHwiRXzWpKjtu2jQzr_COuSLg=HNit-CfkTuArrzc+xP53Og@mail.gmail.com>
-References: <CAFbHwiRtBaHkpZqTm6VZ=fCJcyu+dsdpo_kxMHy1egce=rTuyA@mail.gmail.com>
-	 <1351609517.8467.85.camel@gandalf.local.home>
-	 <CAFbHwiRXzWpKjtu2jQzr_COuSLg=HNit-CfkTuArrzc+xP53Og@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Oct 2012 12:05:33 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        Kees Cook <keescook@chromium.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 3/4] RCU: Update docs to include kfree_rcu()
+Date: Tue, 30 Oct 2012 09:04:35 -0700
+Message-Id: <1351613076-22022-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1351613076-22022-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20121030160350.GA21837@linux.vnet.ibm.com>
+ <1351613076-22022-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12103016-5518-0000-0000-000008D6839A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-30 at 15:35 +0000, Will Newton wrote:
-> On Tue, Oct 30, 2012 at 3:05 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Tue, 2012-10-30 at 14:51 +0000, Will Newton wrote:
-> >> Scan any text section whose name begins with ".text." so
-> >> we will find all the functions in a kernel built with
-> >> -ffunction-sections.
-> >
-> > A couple of things.
-> >
-> > First, I'm very paranoid about a blanket "ok" on sections. We must
-> > guarantee that all sections that starts with ".text" never is freed. And
-> > if it is freed, that it must inform ftrace that it's about to free it
-> > before it does. If we can not guarantee this, then we can't do it.
-> 
-> I share that concern, however it looks like it should be safe. 
+From: Kees Cook <keescook@chromium.org>
 
-Can we confirm that it is safe. I'm not too confident with the words
-"looks like" ;-)
+Mention kfree_rcu() in the call_rcu() section.  Additionally fix the
+example code for list replacement that used the wrong structure element.
 
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ Documentation/RCU/listRCU.txt   |    2 +-
+ Documentation/RCU/whatisRCU.txt |   13 +++++++++++--
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
-> The two
-> architectures in tree that enable -ffunction-sections by default are
-> parisc and score and they both use a .text.* wildcard in their linker
-> script. If the support for building with --gc-sections is ever
-> completed then that would require -ffunction-sections and a similar
-> wildcard to be applied to section names.
-
-We need to make a way to guarantee any section that is added as ".text"
-is never removed (freed), except for modules, which already have a way
-to notify ftrace that its removing its text.
-
-> 
-> > Second, most archs today do not use recordmcount.pl. They use the new
-> > recordmcount.c file.
-> 
-> Ok, thanks for letting me know. Is the plan to switch over to
-> recordmcount.c exclusively at some point?
-
-When all the archs convert.
-
-> 
-> The following architectures have some support in recordmcount.c but do
-> not enable it:
-> 
-> sh, powerpc, ia64
-
-Hmm, I have a powerpc, I should get that fixed.
-
-> 
-> And the following have no support in recordmcount.c as yet:
-> 
-> blackfin, microblaze
-
-It's up to the arch maintainers to do the work. If the perl script is
-good enough for them then I have no problem maintaining both. But I
-don't have the machines to test these archs.
-
--- Steve
-
+diff --git a/Documentation/RCU/listRCU.txt b/Documentation/RCU/listRCU.txt
+index 4349c14..adb5a37 100644
+--- a/Documentation/RCU/listRCU.txt
++++ b/Documentation/RCU/listRCU.txt
+@@ -205,7 +205,7 @@ RCU ("read-copy update") its name.  The RCU code is as follows:
+ 				audit_copy_rule(&ne->rule, &e->rule);
+ 				ne->rule.action = newaction;
+ 				ne->rule.file_count = newfield_count;
+-				list_replace_rcu(e, ne);
++				list_replace_rcu(&e->list, &ne->list);
+ 				call_rcu(&e->rcu, audit_free_rule);
+ 				return 0;
+ 			}
+diff --git a/Documentation/RCU/whatisRCU.txt b/Documentation/RCU/whatisRCU.txt
+index bf0f6de..160ac55 100644
+--- a/Documentation/RCU/whatisRCU.txt
++++ b/Documentation/RCU/whatisRCU.txt
+@@ -499,6 +499,8 @@ The foo_reclaim() function might appear as follows:
+ 	{
+ 		struct foo *fp = container_of(rp, struct foo, rcu);
+ 
++		foo_cleanup(fp->a);
++
+ 		kfree(fp);
+ 	}
+ 
+@@ -521,6 +523,12 @@ o	Use call_rcu() -after- removing a data element from an
+ 	read-side critical sections that might be referencing that
+ 	data item.
+ 
++If the callback for call_rcu() is not doing anything more than calling
++kfree() on the structure, you can use kfree_rcu() instead of call_rcu()
++to avoid having to write your own callback:
++
++	kfree_rcu(old_fp, rcu);
++
+ Again, see checklist.txt for additional rules governing the use of RCU.
+ 
+ 
+@@ -773,8 +781,8 @@ a single atomic update, converting to RCU will require special care.
+ 
+ Also, the presence of synchronize_rcu() means that the RCU version of
+ delete() can now block.  If this is a problem, there is a callback-based
+-mechanism that never blocks, namely call_rcu(), that can be used in
+-place of synchronize_rcu().
++mechanism that never blocks, namely call_rcu() or kfree_rcu(), that can
++be used in place of synchronize_rcu().
+ 
+ 
+ 7.  FULL LIST OF RCU APIs
+@@ -813,6 +821,7 @@ RCU:	Critical sections	Grace period		Barrier
+ 	rcu_read_unlock		synchronize_rcu
+ 	rcu_dereference		synchronize_rcu_expedited
+ 				call_rcu
++				kfree_rcu
+ 
+ 
+ bh:	Critical sections	Grace period		Barrier
+-- 
+1.7.8
 
