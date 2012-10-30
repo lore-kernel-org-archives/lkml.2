@@ -1,82 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759606Ab2J3Piu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:38:50 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51416 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758566Ab2J3Pir (ORCPT
+	id S1759862Ab2J3PjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:39:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31754 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758566Ab2J3PjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:38:47 -0400
-Date: Tue, 30 Oct 2012 11:38:46 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
-In-Reply-To: <CACVXFVOPDu6wVgPmvtTkokn7VV41x3XVvL4g_E0pz0mikUbvUg@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1210301112270.1363-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 30 Oct 2012 11:39:15 -0400
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=60KdgoBU-20A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=Gcm4EvZRSmsA:10 a=pcLIrrrKAAAA:8 a=rFMEq44me7uM0rZAdykA:9 a=QEXdDO2ut3YA:10 a=J0D9jONdvmQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351611552.8467.96.camel@gandalf.local.home>
+Subject: Re: [PATCH 01/32] nohz: Move nohz load balancer selection into idle
+ logic
+From: Steven Rostedt <rostedt@goodmis.org>
+To: muming.wq@gmail.com
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Alex Shi <alex.shi@intel.com>
+Date: Tue, 30 Oct 2012 11:39:12 -0400
+In-Reply-To: <508F90A0.1030503@gmail.com>
+References: <20121029202711.062749374@goodmis.org>
+	 <20121029203846.797007049@goodmis.org> <508F90A0.1030503@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Oct 2012, Ming Lei wrote:
 
-> >> +bool pm_runtime_get_memalloc_noio(struct device *dev)
-> >> +{
-> >> +     bool ret;
-> >> +     spin_lock_irq(&dev->power.lock);
-> >> +     ret = dev->power.memalloc_noio_resume;
-> >> +     spin_unlock_irq(&dev->power.lock);
-> >> +     return ret;
-> >> +}
-> >
-> > You don't need to acquire and release a spinlock just to read the
-> > value.  Reading bitfields _is_ SMP-safe; writing them is not.
+On Tue, 2012-10-30 at 16:32 +0800, Charles Wang wrote:
+> calc_load_exit_idle depends on updated jiffies, so you shouldn't move 
+> this before tick_do_update_jiffies64.
+
+OK, so it should be moved to the end of the if block. Note, that was a
+change I made, as that function was added since Frederic did his code. I
+looked into the code and it seemed that it should be moved for just idle
+as well. But I agree with you that it should be after the jiffies
+update.
+
+
+> And why should we do nohz_balance_enter_idle in tick_nohz_idle_exit? 
+> It's nohz_balance_exit_idle here.
+
+OK, that's my fault as well. As Frederic's original patch just moved
+select_nohz_load_balance(0). But the commit c1cc017c59 "sched/nohz:
+Clean up select_nohz_load_balancer()" replaced it with
+nohz_balance_enter_idle(cpu), and removed it on exit, there was nothing
+to replace for the current code.
+
+Knowing this patch was considered "buggy" instead of just not moving it
+(and forgetting about it), I did the change to remind myself to talk
+about it :-)
+
+My question is now, is there any reason to keep that call there? Or can
+we just remove it as well.
+
+-- Steve
+
+
 > 
-> Thanks for your review.
+> Regards,
+> Charles
 > 
-> As you pointed out before, the flag need to be checked before
-> resetting usb devices, so the lock should be held to make another
-> context(CPU) see the updated value suppose one context(CPU)
-> call pm_runtime_set_memalloc_noio() to change the flag at the
-> same time.
+> On 10/30/2012 04:27 AM, Steven Rostedt wrote:
+> ［snipped］
+>  > @@ -573,7 +573,6 @@ static void tick_nohz_restart_sched_tick(struct 
+> tick_sched *ts, ktime_t now)
+>  >  	tick_do_update_jiffies64(now);
+>  >  	update_cpu_load_nohz();
+>  >
+>  > -	calc_load_exit_idle();
+>  >  	touch_softlockup_watchdog();
+>  >  	/*
+>  >  	 * Cancel the scheduled timer and restore the tick
+>  > @@ -628,6 +627,8 @@ void tick_nohz_idle_exit(void)
+>  >  		tick_nohz_stop_idle(cpu, now);
+>  >
+>  >  	if (ts->tick_stopped) {
+>  > +		nohz_balance_enter_idle(cpu);
+>  > +		calc_load_exit_idle();
+>  >  		tick_nohz_restart_sched_tick(ts, now);
+>  >  		tick_nohz_account_idle_ticks(ts);
+>  >  	}
 
-Okay, I see your point.  But acquiring the lock here doesn't solve the 
-problem.  Suppose a thread is about to reset a USB mass-storage device.  
-It acquires the lock and sees that the noio flag is clear.  But before 
-it can issue the reset, another thread sets the noio flag.
-
-I'm not sure what the best solution is.
-
-> The lock needn't to be held when the function is called inside
-> pm_runtime_set_memalloc_noio(),  so the bitfield flag should
-> be checked directly without holding power lock in dev_memalloc_noio().
-
-Yes.
-
-A couple of other things...  Runtime resume can be blocked by runtime
-suspend, if a resume is requested while the suspend is in progress.  
-Therefore the runtime suspend code also needs to save-set-restore the
-noio flag.
-
-Also, we should set the noio flag at the start of 
-usb_stor_control_thread, because everything that thread does can 
-potentially block an I/O operation.
-
-Lastly, pm_runtime_get_memalloc_noio always returns false when 
-CONFIG_PM_RUNTIME is disabled.  But we still need to prevent I/O during 
-usb_reset_device even when there's no runtime PM.  Maybe the simplest 
-answer is always to set noio during resets.  That would also help with 
-the race described above.
-
-Alan Stern
 
