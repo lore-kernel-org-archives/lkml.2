@@ -1,263 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934655Ab2J3VQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:16:56 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57908 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934577Ab2J3VQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:16:54 -0400
-Date: Tue, 30 Oct 2012 16:16:13 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, Kent Yoder <key@linux.vnet.ibm.com>,
-        benh@kernel.crashing.org, adlai@linux.vnet.ibm.com
-Subject: [PULL] IBM vTPM driver update
-Message-ID: <20121030211613.GA15631@ennui.austin.ibm.com>
+	id S934680Ab2J3VRH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:17:07 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55293 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934532Ab2J3VRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 17:17:03 -0400
+Date: Tue, 30 Oct 2012 21:17:01 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Steve French <sfrench@samba.org>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, Matthew Wilcox <matthew@wil.cx>,
+        linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, ocfs2-devel@oss.oracle.com
+Subject: Re: [patch 05/10] vfs: pass data to alloc_inode super operation
+Message-ID: <20121030211701.GC2616@ZenIV.linux.org.uk>
+References: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
+ <1351628084-29358-8-git-send-email-jmoyer@redhat.com>
+ <20121030205142.GB2616@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20121030205142.GB2616@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12103021-9360-0000-0000-00000C38DF24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On Tue, Oct 30, 2012 at 08:51:42PM +0000, Al Viro wrote:
+> On Tue, Oct 30, 2012 at 04:14:39PM -0400, Jeff Moyer wrote:
+> > This patch passes a data pointer along to the alloc_inode
+> > super_operations function.  The value will initially be used by
+> > bdev_alloc_inode to allocate the bdev_inode on the same numa
+> > node as the device to which it is tied.
+> 
+> Yecchhh...
+> 
+> > -static struct inode *bdev_alloc_inode(struct super_block *sb)
+> > +static struct inode *bdev_alloc_inode(struct super_block *sb, void *data)
+> >  {
+> > -	struct bdev_inode *ei = kmem_cache_alloc(bdev_cachep, GFP_KERNEL);
+> > +	struct bdev_inode *ei;
+> > +	int partno;
+> > +	int node;
+> > +
+> > +	if (data) {
+> > +		struct gendisk *disk;
+> > +		dev_t dev = *(dev_t *)data;
+> > +		disk = get_gendisk(dev, &partno);
+> > +		node = disk->node_id;
 
- Please pull as an update for 3.7.
+BTW, speaking of other reasons this is FUBAR - mknod a block device node
+for something that doesn't exist and try to open it.  struct block_device
+lifetime is not limited to that of struct gendisk; it can be allocated
+before gendisk is there.  Moreover, with static /dev and demand-loaded
+modules this will be the normal scenario.
 
-Thanks,
-Kent
-
-The following changes since commit 8f0d8163b50e01f398b14bcd4dc039ac5ab18d64:
-
-  Linux 3.7-rc3 (2012-10-28 12:24:48 -0700)
-
-are available in the git repository at:
-
-  git://github.com/shpedoikal/linux.git tpmdd-v3.7-rc3
-
-for you to fetch changes up to b9451cc9d33b090f6eabbe2ff0aac988b82abe3b:
-
-  drivers/char/tpm: remove tasklet and cleanup (2012-10-30 14:52:34 -0500)
-
-----------------------------------------------------------------
-Ashley Lai (1):
-      drivers/char/tpm: remove tasklet and cleanup
-
- drivers/char/tpm/tpm_ibmvtpm.c | 81 +++++++++++++++---------------------------
- drivers/char/tpm/tpm_ibmvtpm.h |  5 ++-
- 2 files changed, 30 insertions(+), 56 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
-index efc4ab3..88a95ea 100644
---- a/drivers/char/tpm/tpm_ibmvtpm.c
-+++ b/drivers/char/tpm/tpm_ibmvtpm.c
-@@ -38,8 +38,6 @@ static struct vio_device_id tpm_ibmvtpm_device_table[] __devinitdata = {
- };
- MODULE_DEVICE_TABLE(vio, tpm_ibmvtpm_device_table);
- 
--DECLARE_WAIT_QUEUE_HEAD(wq);
--
- /**
-  * ibmvtpm_send_crq - Send a CRQ request
-  * @vdev:	vio device struct
-@@ -83,6 +81,7 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
- {
- 	struct ibmvtpm_dev *ibmvtpm;
- 	u16 len;
-+	int sig;
- 
- 	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
- 
-@@ -91,22 +90,23 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
- 		return 0;
- 	}
- 
--	wait_event_interruptible(wq, ibmvtpm->crq_res.len != 0);
-+	sig = wait_event_interruptible(ibmvtpm->wq, ibmvtpm->res_len != 0);
-+	if (sig)
-+		return -EINTR;
-+
-+	len = ibmvtpm->res_len;
- 
--	if (count < ibmvtpm->crq_res.len) {
-+	if (count < len) {
- 		dev_err(ibmvtpm->dev,
- 			"Invalid size in recv: count=%ld, crq_size=%d\n",
--			count, ibmvtpm->crq_res.len);
-+			count, len);
- 		return -EIO;
- 	}
- 
- 	spin_lock(&ibmvtpm->rtce_lock);
--	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, ibmvtpm->crq_res.len);
--	memset(ibmvtpm->rtce_buf, 0, ibmvtpm->crq_res.len);
--	ibmvtpm->crq_res.valid = 0;
--	ibmvtpm->crq_res.msg = 0;
--	len = ibmvtpm->crq_res.len;
--	ibmvtpm->crq_res.len = 0;
-+	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, len);
-+	memset(ibmvtpm->rtce_buf, 0, len);
-+	ibmvtpm->res_len = 0;
- 	spin_unlock(&ibmvtpm->rtce_lock);
- 	return len;
- }
-@@ -273,7 +273,6 @@ static int __devexit tpm_ibmvtpm_remove(struct vio_dev *vdev)
- 	int rc = 0;
- 
- 	free_irq(vdev->irq, ibmvtpm);
--	tasklet_kill(&ibmvtpm->tasklet);
- 
- 	do {
- 		if (rc)
-@@ -372,7 +371,6 @@ static int ibmvtpm_reset_crq(struct ibmvtpm_dev *ibmvtpm)
- static int tpm_ibmvtpm_resume(struct device *dev)
- {
- 	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(dev);
--	unsigned long flags;
- 	int rc = 0;
- 
- 	do {
-@@ -387,10 +385,11 @@ static int tpm_ibmvtpm_resume(struct device *dev)
- 		return rc;
- 	}
- 
--	spin_lock_irqsave(&ibmvtpm->lock, flags);
--	vio_disable_interrupts(ibmvtpm->vdev);
--	tasklet_schedule(&ibmvtpm->tasklet);
--	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-+	rc = vio_enable_interrupts(ibmvtpm->vdev);
-+	if (rc) {
-+		dev_err(dev, "Error vio_enable_interrupts rc=%d\n", rc);
-+		return rc;
-+	}
- 
- 	rc = ibmvtpm_crq_send_init(ibmvtpm);
- 	if (rc)
-@@ -467,7 +466,7 @@ static struct ibmvtpm_crq *ibmvtpm_crq_get_next(struct ibmvtpm_dev *ibmvtpm)
- 	if (crq->valid & VTPM_MSG_RES) {
- 		if (++crq_q->index == crq_q->num_entry)
- 			crq_q->index = 0;
--		rmb();
-+		smp_rmb();
- 	} else
- 		crq = NULL;
- 	return crq;
-@@ -535,11 +534,9 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
- 			ibmvtpm->vtpm_version = crq->data;
- 			return;
- 		case VTPM_TPM_COMMAND_RES:
--			ibmvtpm->crq_res.valid = crq->valid;
--			ibmvtpm->crq_res.msg = crq->msg;
--			ibmvtpm->crq_res.len = crq->len;
--			ibmvtpm->crq_res.data = crq->data;
--			wake_up_interruptible(&wq);
-+			/* len of the data in rtce buffer */
-+			ibmvtpm->res_len = crq->len;
-+			wake_up_interruptible(&ibmvtpm->wq);
- 			return;
- 		default:
- 			return;
-@@ -559,38 +556,19 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
- static irqreturn_t ibmvtpm_interrupt(int irq, void *vtpm_instance)
- {
- 	struct ibmvtpm_dev *ibmvtpm = (struct ibmvtpm_dev *) vtpm_instance;
--	unsigned long flags;
--
--	spin_lock_irqsave(&ibmvtpm->lock, flags);
--	vio_disable_interrupts(ibmvtpm->vdev);
--	tasklet_schedule(&ibmvtpm->tasklet);
--	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
--
--	return IRQ_HANDLED;
--}
--
--/**
-- * ibmvtpm_tasklet - Interrupt handler tasklet
-- * @data:	ibm vtpm device struct
-- *
-- * Returns:
-- *	Nothing
-- **/
--static void ibmvtpm_tasklet(void *data)
--{
--	struct ibmvtpm_dev *ibmvtpm = data;
- 	struct ibmvtpm_crq *crq;
--	unsigned long flags;
- 
--	spin_lock_irqsave(&ibmvtpm->lock, flags);
-+	/* while loop is needed for initial setup (get version and
-+	 * get rtce_size). There should be only one tpm request at any
-+	 * given time.
-+	 */
- 	while ((crq = ibmvtpm_crq_get_next(ibmvtpm)) != NULL) {
- 		ibmvtpm_crq_process(crq, ibmvtpm);
- 		crq->valid = 0;
--		wmb();
-+		smp_wmb();
- 	}
- 
--	vio_enable_interrupts(ibmvtpm->vdev);
--	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-+	return IRQ_HANDLED;
- }
- 
- /**
-@@ -650,9 +628,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
- 		goto reg_crq_cleanup;
- 	}
- 
--	tasklet_init(&ibmvtpm->tasklet, (void *)ibmvtpm_tasklet,
--		     (unsigned long)ibmvtpm);
--
- 	rc = request_irq(vio_dev->irq, ibmvtpm_interrupt, 0,
- 			 tpm_ibmvtpm_driver_name, ibmvtpm);
- 	if (rc) {
-@@ -666,13 +641,14 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
- 		goto init_irq_cleanup;
- 	}
- 
-+	init_waitqueue_head(&ibmvtpm->wq);
-+
- 	crq_q->index = 0;
- 
- 	ibmvtpm->dev = dev;
- 	ibmvtpm->vdev = vio_dev;
- 	chip->vendor.data = (void *)ibmvtpm;
- 
--	spin_lock_init(&ibmvtpm->lock);
- 	spin_lock_init(&ibmvtpm->rtce_lock);
- 
- 	rc = ibmvtpm_crq_send_init(ibmvtpm);
-@@ -689,7 +665,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
- 
- 	return rc;
- init_irq_cleanup:
--	tasklet_kill(&ibmvtpm->tasklet);
- 	do {
- 		rc1 = plpar_hcall_norets(H_FREE_CRQ, vio_dev->unit_address);
- 	} while (rc1 == H_BUSY || H_IS_LONG_BUSY(rc1));
-diff --git a/drivers/char/tpm/tpm_ibmvtpm.h b/drivers/char/tpm/tpm_ibmvtpm.h
-index 4296eb4..bd82a79 100644
---- a/drivers/char/tpm/tpm_ibmvtpm.h
-+++ b/drivers/char/tpm/tpm_ibmvtpm.h
-@@ -38,13 +38,12 @@ struct ibmvtpm_dev {
- 	struct vio_dev *vdev;
- 	struct ibmvtpm_crq_queue crq_queue;
- 	dma_addr_t crq_dma_handle;
--	spinlock_t lock;
--	struct tasklet_struct tasklet;
- 	u32 rtce_size;
- 	void __iomem *rtce_buf;
- 	dma_addr_t rtce_dma_handle;
- 	spinlock_t rtce_lock;
--	struct ibmvtpm_crq crq_res;
-+	wait_queue_head_t wq;
-+	u16 res_len;
- 	u32 vtpm_version;
- };
- 
-
+IOW, this is completely misguided.
