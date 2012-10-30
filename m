@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757791Ab2J3WBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 18:01:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:41162 "EHLO mga02.intel.com"
+	id S1758355Ab2J3WCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 18:02:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16316 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753225Ab2J3WBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 18:01:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
-   d="scan'208";a="213206618"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, tangchen@cn.fujitsu.com,
-        miaox@cn.fujitsu.com, bp@alien8.de
-Subject: [GIT PULL] Fix a cmci discovery problem
-Date: Tue, 30 Oct 2012 15:01:53 -0700
-Message-Id: <50904e5125023a741@agluck-desk.sc.intel.com>
+	id S1758268Ab2J3WCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 18:02:44 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 08/25] perf tests: Add attr record count test
+Date: Tue, 30 Oct 2012 23:01:49 +0100
+Message-Id: <1351634526-1516-9-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
+References: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 8f0d8163b50e01f398b14bcd4dc039ac5ab18d64:
+Adding test to validate perf_event_attr data for command:
+  'record -c 123'
 
-  Linux 3.7-rc3 (2012-10-28 12:24:48 -0700)
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ tools/perf/tests/attr/test-record-count | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+ create mode 100644 tools/perf/tests/attr/test-record-count
 
-are available in the git repository at:
+diff --git a/tools/perf/tests/attr/test-record-count b/tools/perf/tests/attr/test-record-count
+new file mode 100644
+index 0000000..2f841de
+--- /dev/null
++++ b/tools/perf/tests/attr/test-record-count
+@@ -0,0 +1,8 @@
++[config]
++command = record
++args    = -c 123 kill >/dev/null 2>&1
++
++[event:base-record]
++sample_period=123
++sample_type=7
++freq=0
+-- 
+1.7.11.7
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-tangchen
-
-for you to fetch changes up to 85b97637bb40a9f486459dd254598759af9c3d50:
-
-  x86/mce: Do not change worker's running cpu in cmci_rediscover(). (2012-10-30 14:38:12 -0700)
-
-----------------------------------------------------------------
-Fix problem in CMCI rediscovery code that was illegally
-migrating worker threads to other cpus.
-
-----------------------------------------------------------------
-Tang Chen (1):
-      x86/mce: Do not change worker's running cpu in cmci_rediscover().
-
- arch/x86/kernel/cpu/mcheck/mce_intel.c |   31 ++++++++++++++++++-------------
- 1 file changed, 18 insertions(+), 13 deletions(-)
