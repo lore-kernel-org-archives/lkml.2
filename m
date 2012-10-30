@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab2J3FBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 01:01:53 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:37777 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752715Ab2J3FBw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 01:01:52 -0400
-Date: Mon, 29 Oct 2012 22:01:52 -0700
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 05/12] VMCI: event handling implementation.
-Message-ID: <20121030050152.GE32055@dtor-ws.eng.vmware.com>
-References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121030010420.17788.59187.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121030022605.GG1920@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030022605.GG1920@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753979Ab2J3FNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 01:13:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12820 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751190Ab2J3FNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 01:13:49 -0400
+Message-ID: <1351573979.3810.4.camel@turiel>
+Subject: Re: Nouveau regression between 3.6 and 3.7-rc3: driver stuck at
+ "running init tables"
+From: Ben Skeggs <bskeggs@redhat.com>
+Reply-To: bskeggs@redhat.com
+To: Mathieu Chouquet-Stringer <mathieu@csetco.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Date: Tue, 30 Oct 2012 15:12:59 +1000
+In-Reply-To: <20121029233237.GA10839@kashmir>
+References: <20121029230647.GA10369@kashmir>
+	 <1351552559.3810.2.camel@turiel> <20121029233237.GA10839@kashmir>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 07:26:05PM -0700, Greg KH wrote:
-> On Mon, Oct 29, 2012 at 06:04:27PM -0700, George Zhang wrote:
-> > +static void event_signal_destroy(struct kref *kref)
-> > +{
-> > +	struct vmci_subscription *entry =
-> > +			container_of(kref, struct vmci_subscription, kref);
-> > +
-> > +	complete(&entry->done);
-> > +}
+On Tue, 2012-10-30 at 00:32 +0100, Mathieu Chouquet-Stringer wrote:
+> 	Hi again,
 > 
-> Didn't you just leak memory here?  What frees the structure up?
+> On Tue, Oct 30, 2012 at 09:15:59AM +1000, Ben Skeggs wrote:
+> > Are you able to go back to the current master, and get me a
+> > log/screenshot with "nouveau.debug=trace" appended to your kernel
+> > options?
+> 
+> Hmmm I did just that on v3.7-rc3-8-g35fd3dc and it doesn't seem to
+> output more stuff:
+Hm, the module probably wasn't built with a high enough debug level by
+default.  It's alright, we'll come back to that if we need to.
 
-event_unregister_subscription() waits for that completion and frees the
-structure. We want event_unregister_subscription() to wait until all
-fired callbacks completed before unregister is complete.
+Not sure what's up with the hang yet, however, I noticed the issue [1]
+which is likely causing the error messages from nouveau's i2c code.
+With some luck, it'll stop triggering whatever bug is making it hang in
+the VBIOS init table parser.
 
-Thanks,
-Dmitry
+Ben.
+
+[1]
+http://cgit.freedesktop.org/nouveau/linux-2.6/commit/?id=000463f13fba6b2f94a5bfcb0d615751ae9c34a0
+
+> 
+> http://mathieu.csetco.com/nouveau.jpeg
+
+
