@@ -1,79 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750726Ab2J3BuD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 21:50:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53153 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743Ab2J3BuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 21:50:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,676,1344236400"; 
-   d="scan'208";a="212760718"
-Message-ID: <1351561798.7817.352.camel@yhuang-dev>
-Subject: Re: [PATCH 2/9] uuid: use random32_get_bytes()
-From: Huang Ying <ying.huang@intel.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, chris.mason@fusionio.com,
-        linux-btrfs@vger.kernel.org
-Date: Tue, 30 Oct 2012 09:49:58 +0800
-In-Reply-To: <20121029205200.GD7098@thunk.org>
-References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
-	 <1351408746-8623-2-git-send-email-akinobu.mita@gmail.com>
-	 <20121029205200.GD7098@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	id S1751533Ab2J3BxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 21:53:19 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:40056 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab2J3BxS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 21:53:18 -0400
+Message-ID: <508F32A5.10000@ahsoftware.de>
+Date: Tue, 30 Oct 2012 02:51:33 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, Jacob Shin <jacob.shin@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: x86: Regression in 3.6.4, bisected to "Exclude E820_RESERVED
+ regions..."
+References: <508E58FD.2000707@ahsoftware.de> <508E8264.8070807@ahsoftware.de> <20121029165946.GB6614@kroah.com> <508EC69F.2030505@ahsoftware.de> <20121029183250.GB4623@kroah.com> <508EDEC6.7030101@ahsoftware.de> <20121029230146.GA22320@kroah.com>
+In-Reply-To: <20121029230146.GA22320@kroah.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-29 at 16:52 -0400, Theodore Ts'o wrote:
-> On Sun, Oct 28, 2012 at 04:18:59PM +0900, Akinobu Mita wrote:
-> > Use random32_get_bytes() to generate 16 bytes of pseudo-random bytes.
-> > 
-> > Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> 
-> Since your patch is going to allow users to set the random seed, it
-> means that what had previously been a bad security bug has just become
-> a grievous security bug.  If you are going to be generating UUID's
-> they _must_ use a truly random random generator, since the whole point
-> of uuid's is that they be unique.  If someone can trivially set the
-> random seed of a prng, and thus cause the uuid generator to generate,
-> well, non-unique UUID's, the results can range anywhere from
-> confusion, to file system corruption and data loss.
-> 
-> Fortunately, there is only one user of lib/uuid.c, and that's the
-> btrfs file system.
-> 
-> Chris and the Btrfs folks --- my recommendation would be to ditch the
-> use of uuid_be_gen, "git rm lib/uuid.c" with extreme prejudice, and
-> use generate_random_uuid() which was coded over a decade ago in
-> drivers/char/random.c.  Not only does this properly use the kernel
-> random number generator, but it also creates a UUID with the correct
-> format.  (It's not enough to set the UUID version to 4; you also need
-> to set the UUID variant to be DCE if you want to be properly compliant
-> with RFC 4122 --- see section 4.1.1.)
+Am 30.10.2012 00:01, schrieb Greg Kroah-Hartman:
 
-The uuid_le/be_gen() in lib/uuid.c has set UUID variants to be DCE,
-that is done in __uuid_gen_common() with "b[8] = (b[8] & 0x3F) | 0x80".
+> Can you test out 3.6.5-rc1 and see if that works properly for you or
+> not?  It should have all of the fixes in it already.
 
-To deal with random number generation issue, how about use
-get_random_bytes() in __uuid_gen_common()?
+Just in time before I receive my new "memory layout" which might not 
+have the problem with 3.6.4. ;)
 
-> The btrfs file system doesn't generate uuid's in any critical fast
-> paths as near as I can determine, so it should be perfectly safe to
-> use uuid_generate() --- I also would drop the whole distinction
-> between little-endian and big-endian uuid's, BTW.  RFC 4122 is quite
-> explicit about how uuid's should be encoded, and it's in internet byte
-> order.  This is what OSF/DCE uses, and it's what the rest of the world
-> (Microsoft, SAP AG, Apple, GNOME, KDE) uses as well.
+3.6.5-rc1 booted just fine, thanks a lot.
 
-uuid_be complies RFC4122, it uses internet byte order.  But EFI uses
-little endian.
+Regards,
 
-Best Regards,
-Huang Ying
-
+Alexander
 
