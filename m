@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933759Ab2J3Okd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 10:40:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48649 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131Ab2J3Okb (ORCPT
+	id S964786Ab2J3Ol6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 10:41:58 -0400
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:57526 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932348Ab2J3Ol5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 10:40:31 -0400
-From: Colin King <colin.king@canonical.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] pstore: fix NULL pointer dereference in console writes
-Date: Tue, 30 Oct 2012 14:40:26 +0000
-Message-Id: <1351608026-12208-1-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 30 Oct 2012 10:41:57 -0400
+X-Greylist: delayed 637 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 10:41:57 EDT
+Message-Id: <201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
+From: "Chas Williams (CONTRACTOR)" <chas@cmf.nrl.navy.mil>
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+cc: davem@davemloft.net, dwmw2@infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
+In-reply-to: <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
+Date: Tue, 30 Oct 2012 10:26:46 -0400
+X-NRLCMF-Spam-Score: () hits=-1.01
+X-NRLCMF-Virus-Scanned: No virus found
+X-NRLCMF-Languages: en
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+In message <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>,Krzysztof Mazur writes:
+>The pppoatm_send() calls vcc->send() and now also checks for
+>some vcc flags that indicate destroyed vcc without proper locking.
+...
+>The vcc_sendmsg() uses lock_sock(sk). This lock is used by
+>vcc_release(), so vcc_destroy_socket() will not be called between
+>check and during ->send(). The vcc_release_async() sets ATM_VF_CLOSE,
+>but it should be safe to call ->send() after it, because
+>vcc->dev->ops->close() is not called.
 
-Passing a NULL id causes a NULL pointer deference in writers
-such as erst_writer and efi_pstore_write because they expect
-to update this id.  Pass a dummy id instead.
+as i recall from way back, this shouldnt be necessary.  closing a vcc
+for an attached protocol isnt supposed to require addtional locking
+or synchronization.
 
-This avoids a cascade of oopses caused when the initial
-pstore_console_write passes a null which in turn causes
-writes to the console causing further oopses in subsequent
-pstore_console_write calls.
+vcc_release() locks the socket and vcc_destroy_socket() calls the device's
+vcc close routine and pushes a NULL skb to the attached protocol.
+this NULL push is supposed to let the attached protocol that no more
+sends and recvs can be handled. 
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- fs/pstore/platform.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index a40da07..947fbe0 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -161,6 +161,7 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
- 
- 	while (s < e) {
- 		unsigned long flags;
-+		u64 id;
- 
- 		if (c > psinfo->bufsize)
- 			c = psinfo->bufsize;
-@@ -172,7 +173,7 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
- 			spin_lock_irqsave(&psinfo->buf_lock, flags);
- 		}
- 		memcpy(psinfo->buf, s, c);
--		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
-+		psinfo->write(PSTORE_TYPE_CONSOLE, 0, &id, 0, c, psinfo);
- 		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
- 		s += c;
- 		c = e - s;
--- 
-1.7.10.4
-
+that said, the order for the device vcc close and push does seem
+reversed.  since i imagine there could be a pending pppoatm_send()
+during this interval.  the push of the NULL skb is allowed to wait for
+the subprotocol to finish its cleanup/shutdown.
