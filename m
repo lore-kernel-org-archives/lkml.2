@@ -1,86 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934058Ab2J3Qyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:54:54 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56686 "EHLO e9.ny.us.ibm.com"
+	id S1760003Ab2J3Q7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:59:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35917 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934018Ab2J3Qyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:54:52 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 3/7] cpu: No more __stop_machine() in _cpu_down()
-Date: Tue, 30 Oct 2012 09:54:32 -0700
-Message-Id: <1351616076-25617-3-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1351616076-25617-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20121030165415.GA25438@linux.vnet.ibm.com>
- <1351616076-25617-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12103016-7182-0000-0000-000002FDB4A6
+	id S1751410Ab2J3Q7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 12:59:07 -0400
+Date: Tue, 30 Oct 2012 16:59:01 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 00/31] numa/core patches
+Message-ID: <20121030165901.GF3888@suse.de>
+References: <20121025121617.617683848@chello.nl>
+ <20121030122032.GC3888@suse.de>
+ <20121030082810.b9576441.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121030082810.b9576441.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On Tue, Oct 30, 2012 at 08:28:10AM -0700, Andrew Morton wrote:
+> 
+> On Tue, 30 Oct 2012 12:20:32 +0000 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > ...
+> 
+> Useful testing - thanks.  Did I miss the description of what
+> autonumabench actually does?  How representitive is it of real-world
+> things?
+> 
 
-The _cpu_down() function invoked as part of the CPU-hotplug offlining
-process currently invokes __stop_machine(), which is slow and inflicts
-substantial real-time latencies on the entire system.  This patch
-substitutes stop_cpus() for __stop_machine() in order to improve
-both performance and real-time latency.
+It's not representative of anything at all. It's a synthetic benchmark
+that just measures if automatic NUMA migration (whatever the mechanism)
+is working as expected. I'm not aware of a decent description of what
+the test does and why. Here is my current interpretation and hopefully
+Andrea will correct me if I'm wrong.
 
-This is currently unsafe, because there are a number of uses of
-preempt_disable() that are intended to block CPU-hotplug offlining.
-These will be fixed, but in the meantime, this commit is one way to help
-locate them.
+NUMA01
+  Two processes
+  NUM_CPUS/2 number of threads so all CPUs are in use
+  
+  On startup, the process forks
+  Each process mallocs a 3G buffer but there is no communication
+      between the processes.
+  Threads are created that zeros out the full buffer 1000 times
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/cpu.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+  The objective of the test is that initially the two processes
+  allocate their memory on the same node. As the threads are
+  are created the memory will migrate from the initial node to
+  nodes that are closer to the referencing thread.
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 42bd331..6b37ce0 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -247,13 +247,18 @@ static int __ref take_cpu_down(void *_param)
- {
- 	struct take_cpu_down_param *param = _param;
- 	int err;
-+	unsigned long flags;
- 
- 	/* Ensure this CPU doesn't handle any more interrupts. */
-+	local_irq_save(flags);
- 	err = __cpu_disable();
--	if (err < 0)
-+	if (err < 0) {
-+		local_irq_restore(flags);
- 		return err;
-+	}
- 
- 	cpu_notify(CPU_DYING | param->mod, param->hcpu);
-+	local_irq_restore(flags);
- 	return 0;
- }
- 
-@@ -286,7 +291,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 	}
- 	smpboot_park_threads(cpu);
- 
--	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
-+	err = stop_cpus(cpumask_of(cpu), take_cpu_down, &tcd_param);
- 	if (err) {
- 		/* CPU didn't die: tell everyone.  Can't complain. */
- 		smpboot_unpark_threads(cpu);
+  It is worth noting that this benchmark is specifically tuned
+  for two nodes and the expectation is that the two processes
+  and their threads split so that all process A runs on node 0
+  and all threads on process B run in node 1
+
+  With 4 and more nodes, this is actually an adverse workload.
+  As all the buffer is zeroed in both processes, there is an
+  expectation that it will continually bounce between two nodes.
+
+  So, on 2 nodes, this benchmark tests convergence. On 4 or more
+  nodes, this partially measures how much busy work automatic
+  NUMA migrate does and it'll be very noisy due to cache conflicts.
+
+NUMA01_THREADLOCAL
+  Two processes
+  NUM_CPUS/2 number of threads so all CPUs are in use
+
+  On startup, the process forks
+  Each process mallocs a 3G buffer but there is no communication
+      between the processes
+  Threads are created that zero out their own subset of the buffer.
+      Each buffer is 3G/NR_THREADS in size
+  
+  This benchmark is more realistic. In an ideal situation, each
+  thread will migrate its data to its local node. The test really
+  is to see does it converge and how quickly.
+
+NUMA02
+ One process, NR_CPU threads
+
+ On startup, malloc a 1G buffer
+ Create threads that zero out a thread-local portion of the buffer.
+      Zeros multiple times - the number of times is fixed and seems
+      to just be to take a period of time
+
+ This is similar in principal to NUMA01_THREADLOCAL except that only
+ one process is involved. I think it was aimed at being more JVM-like.
+
+NUMA02_SMT
+ One process, NR_CPU/2 threads
+
+ This is a variation of NUMA02 except that with half the cores idle it
+ is checking if the system migrates the memory to two or more nodes or
+ if it tries to fit everything in one node even though the memory should
+ migrate to be close to the CPU
+
+> > I also expect autonuma is continually scanning where as schednuma is
+> > reacting to some other external event or at least less frequently scanning.
+> 
+> Might this imply that autonuma is consuming more CPU in kernel threads,
+> the cost of which didn't get included in these results?
+
+It might but according to top, knuma_scand only used 7.86 seconds of CPU
+time during the whole test and the time used by the migration tests is
+also very low. Most migration threads used less than 1 second of CPU
+time. Two migration threads used 2 seconds of CPU time each but that
+still seems low.
+
 -- 
-1.7.8
-
+Mel Gorman
+SUSE Labs
