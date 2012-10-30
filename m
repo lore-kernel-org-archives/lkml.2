@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757899Ab2J2D5l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 23:57:41 -0400
+	id S1757930Ab2J2D6B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 23:58:01 -0400
 Received: from mga14.intel.com ([143.182.124.37]:42679 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757774Ab2J2D5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 23:57:37 -0400
+	id S1757812Ab2J2D5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 23:57:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,669,1344236400"; 
-   d="scan'208";a="210544447"
+   d="scan'208";a="210544455"
 From: Feng Tang <feng.tang@intel.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
         linux-kernel@vger.kernel.org
 Cc: Feng Tang <feng.tang@intel.com>
-Subject: [PATCH v5 6/8] perf header: Add is_perf_magic() func
-Date: Tue, 30 Oct 2012 11:56:07 +0800
-Message-Id: <1351569369-26732-7-git-send-email-feng.tang@intel.com>
+Subject: [PATCH v5 7/8] perf hists browser: Add option for runtime switching perf data file
+Date: Tue, 30 Oct 2012 11:56:08 +0800
+Message-Id: <1351569369-26732-8-git-send-email-feng.tang@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351569369-26732-1-git-send-email-feng.tang@intel.com>
 References: <1351569369-26732-1-git-send-email-feng.tang@intel.com>
@@ -25,52 +25,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this function, other modules can basically check whether a
-file is a legal perf data file by checking its first 8 bytes
-against all possible perf magic numbers.
+Based on perf report/top/scripts browser integration idea from acme.
 
-Change the function name from check_perf_magic to more meaningful
-is_perf_magic as suggested by acme.
+This will enable user to runtime switch the data file, when this option
+is selected, it will popup all the legal data files in current working
+directory, and the filename selected by user is saved in the global
+variable "input_name", and a new key 'K_SWITCH_INPUT_DATA' will be
+passed back to the built-in command which will perform the switch.
+
+This initial version only enables it for 'perf report', by checking
+the "timer" parameter of perf_evsel__hists_browser() equals NULL.
 
 Signed-off-by: Feng Tang <feng.tang@intel.com>
 ---
- tools/perf/util/header.c |   10 ++++++++++
- tools/perf/util/header.h |    1 +
- 2 files changed, 11 insertions(+)
+ tools/perf/ui/browsers/hists.c |  106 +++++++++++++++++++++++++++++++++++++++-
+ tools/perf/ui/keysyms.h        |    1 +
+ 2 files changed, 106 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 7daad23..87e679e 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2340,6 +2340,16 @@ static int try_all_pipe_abis(uint64_t hdr_sz, struct perf_header *ph)
- 	return -1;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index fe62284..671b0fb 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1127,6 +1127,91 @@ static inline void free_popup_options(char **options, int n)
+ 	}
  }
  
-+bool is_perf_magic(u64 magic)
-+{
-+	if (!memcmp(&magic, __perf_magic1, sizeof(magic))
-+		|| magic == __perf_magic2
-+		|| magic == __perf_magic2_sw)
-+		return true;
++/*
++ * Only runtime switching of perf data file will make "input_name" point
++ * to a malloced buffer. So add "is_input_name_malloced" flag to decide
++ * whether we need to call free() for current "input_name" during the switch.
++ */
++static bool is_input_name_malloced = false;
 +
-+	return false;
++static int switch_data_file(void)
++{
++	char *pwd, *options[256], *abs_path[256], *tmp;
++	DIR *pwd_dir;
++	int nr_options = 0, choice = -1, ret = -1;
++
++	struct dirent *dent;
++
++	pwd = getenv("PWD");
++	if (!pwd)
++		return ret;
++
++	pwd_dir = opendir(pwd);
++	if (!pwd_dir)
++		return ret;
++
++	memset(options, 0, sizeof(options));
++	memset(options, 0, sizeof(abs_path));
++
++	while ((dent = readdir(pwd_dir))) {
++		char path[PATH_MAX];
++		u64 magic;
++		char *name = dent->d_name;
++		FILE *file;
++
++		if (!(dent->d_type == DT_REG))
++			continue;
++
++		snprintf(path, PATH_MAX, "%s/%s", pwd, name);
++
++		file = fopen(path, "r");
++		if (!file)
++			continue;
++
++		if (fread(&magic, 1, 8, file) < 8)
++			goto close_file_and_continue;
++
++		if (is_perf_magic(magic)) {
++			options[nr_options] = strdup(name);
++			if (!options[nr_options])
++				goto close_file_and_continue;
++
++			abs_path[nr_options] = strdup(path);
++			if (!abs_path[nr_options]) {
++				free(options[nr_options]);
++				goto close_file_and_continue;
++			}
++
++			nr_options++;
++		}
++
++close_file_and_continue:
++		fclose(file);
++		if (nr_options >= 256)
++			break;
++	}
++	closedir(pwd_dir);
++
++	if (nr_options) {
++		choice = ui__popup_menu(nr_options, options);
++		if (choice < nr_options && choice >= 0) {
++			tmp = strdup(abs_path[choice]);
++			if (tmp) {
++				if (is_input_name_malloced)
++					free((void *)input_name);
++				input_name = tmp;
++				is_input_name_malloced = true;
++				ret = 0;
++			}
++		}
++	}
++
++	free_popup_options(options, nr_options);
++	free_popup_options(abs_path, nr_options);
++	return ret;
 +}
 +
- static int check_magic_endian(u64 magic, uint64_t hdr_sz,
- 			      bool is_pipe, struct perf_header *ph)
- {
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 879d215..5f1cd68 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -154,6 +154,7 @@ int perf_event__synthesize_build_id(struct perf_tool *tool,
- int perf_event__process_build_id(struct perf_tool *tool,
- 				 union perf_event *event,
- 				 struct perf_session *session);
-+bool is_perf_magic(u64 magic);
++
+ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 				    const char *helpline, const char *ev_name,
+ 				    bool left_exits,
+@@ -1160,7 +1245,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 		int choice = 0,
+ 		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
+ 		    annotate_f = -2, annotate_t = -2, browse_map = -2;
+-		int scripts_comm = -2, scripts_symbol = -2, scripts_all = -2;
++		int scripts_comm = -2, scripts_symbol = -2,
++		    scripts_all = -2, switch_data = -2;
  
- /*
-  * arch specific callback
+ 		nr_options = 0;
+ 
+@@ -1215,6 +1301,11 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 			continue;
+ 		case 'r':
+ 			goto do_scripts;
++		case 's':
++			/* input_name for 'perf top' is NULL */
++			if (input_name)
++				goto do_data_switch;
++			continue;
+ 		case K_F1:
+ 		case 'h':
+ 		case '?':
+@@ -1234,6 +1325,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 					"d             Zoom into current DSO\n"
+ 					"t             Zoom into current Thread\n"
+ 					"r             Run available scripts\n"
++					"s             Switch to another data file in PWD\n"
+ 					"P             Print histograms to perf.hist.N\n"
+ 					"V             Verbose (DSO names in callchains, etc)\n"
+ 					"/             Filter symbol by name");
+@@ -1341,6 +1433,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 		if (asprintf(&options[nr_options], "Run scripts for all samples") > 0)
+ 			scripts_all = nr_options++;
+ 
++		if (!timer && asprintf(&options[nr_options],
++				"Switch to another data file in PWD") > 0)
++			switch_data = nr_options++;
+ add_exit_option:
+ 		options[nr_options++] = (char *)"Exit";
+ retry_popup_menu:
+@@ -1449,6 +1544,14 @@ do_scripts:
+ 
+ 			script_browse(script_opt);
+ 		}
++		/* Switch to another data file */
++		else if (choice == switch_data) {
++do_data_switch:
++			if (!switch_data_file()) {
++				key = K_SWITCH_INPUT_DATA;
++				break;
++			}
++		}
+ 	}
+ out_free_stack:
+ 	pstack__delete(fstack);
+@@ -1563,6 +1666,7 @@ browse_hists:
+ 						"Do you really want to exit?"))
+ 					continue;
+ 				/* Fall thru */
++			case K_SWITCH_INPUT_DATA:
+ 			case 'q':
+ 			case CTRL('c'):
+ 				goto out;
+diff --git a/tools/perf/ui/keysyms.h b/tools/perf/ui/keysyms.h
+index 809eca5..65092d5 100644
+--- a/tools/perf/ui/keysyms.h
++++ b/tools/perf/ui/keysyms.h
+@@ -23,5 +23,6 @@
+ #define K_TIMER	 -1
+ #define K_ERROR	 -2
+ #define K_RESIZE -3
++#define K_SWITCH_INPUT_DATA -4
+ 
+ #endif /* _PERF_KEYSYMS_H_ */
 -- 
 1.7.9.5
 
