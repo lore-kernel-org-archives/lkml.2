@@ -1,577 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934259Ab2J3TBI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:01:08 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:40547 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965587Ab2J3S7T (ORCPT
+	id S965645Ab2J3TBQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:01:16 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:51465 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934261Ab2J3TBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:59:19 -0400
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Subject: [RFC 4/7] capebus: Beaglebone geiger cape support
-Date: Wed, 31 Oct 2012 18:52:10 +0200
-Message-Id: <1351702333-8456-5-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
-References: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
+	Tue, 30 Oct 2012 15:01:09 -0400
+Date: Tue, 30 Oct 2012 21:58:42 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] zram: factor-out zram_decompress_page() function
+Message-ID: <20121030185842.GC2454@swordfish>
+References: <20121030090319.GB5052@swordfish.minsk.epam.com>
+ <20121030180439.GA3350@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030180439.GA3350@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support beaglebone's geiger cape.
+  zram: factor-out zram_decompress_page() function
 
-The geiger cape allows you to measure the amount of
-ionising radiation in your area, and as an example
-of how to create a complex non-generic cape driver.
+  zram_bvec_read() shared decompress functionality with zram_read_before_write() function.
+  Factor-out and make commonly used zram_decompress_page() function, which also simplified
+  error handling in zram_bvec_read().
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+  Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
 ---
- drivers/capebus/capes/Kconfig            |   7 +
- drivers/capebus/capes/Makefile           |   1 +
- drivers/capebus/capes/bone-geiger-cape.c | 506 +++++++++++++++++++++++++++++++
- 3 files changed, 514 insertions(+)
- create mode 100644 drivers/capebus/capes/bone-geiger-cape.c
 
-diff --git a/drivers/capebus/capes/Kconfig b/drivers/capebus/capes/Kconfig
-index bfe54a6..0418bef 100644
---- a/drivers/capebus/capes/Kconfig
-+++ b/drivers/capebus/capes/Kconfig
-@@ -4,3 +4,10 @@ config CAPEBUS_BONE_GENERIC
- 	default n
- 	help
- 	  "Select this to enable a generic cape driver; LCD/DVI capes etc"
-+
-+config CAPEBUS_BONE_GEIGER
-+	tristate "Beaglebone Geiger cape driver"
-+	depends on CAPEBUS_BONE_CONTROLLER
-+	default n
-+	help
-+	  "Select this to enable a driver for the geiger cape"
-diff --git a/drivers/capebus/capes/Makefile b/drivers/capebus/capes/Makefile
-index 83da381..d6f94ce 100644
---- a/drivers/capebus/capes/Makefile
-+++ b/drivers/capebus/capes/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_CAPEBUS_BONE_GENERIC)	+= bone-generic-cape.o
-+obj-$(CONFIG_CAPEBUS_BONE_GEIGER)	+= bone-geiger-cape.o
-diff --git a/drivers/capebus/capes/bone-geiger-cape.c b/drivers/capebus/capes/bone-geiger-cape.c
-new file mode 100644
-index 0000000..880eaae
---- /dev/null
-+++ b/drivers/capebus/capes/bone-geiger-cape.c
-@@ -0,0 +1,506 @@
-+/*
-+ * Driver for beaglebone Geiger cape
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/timer.h>
-+#include <linux/errno.h>
-+#include <linux/init.h>
-+#include <linux/delay.h>
-+#include <linux/bitops.h>
-+#include <linux/err.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinmux.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/atomic.h>
-+#include <linux/clk.h>
-+#include <linux/interrupt.h>
-+#include <asm/barrier.h>
-+#include <plat/clock.h>
-+#include <plat/omap_device.h>
-+#include <linux/clkdev.h>
-+#include <linux/pwm.h>
-+#include <linux/math64.h>
-+#include <linux/atomic.h>
-+#include <linux/leds.h>
-+#include <linux/input/ti_am335x_tsc.h>
-+#include <linux/platform_data/ti_am335x_adc.h>
-+#include <linux/mfd/ti_am335x_tscadc.h>
-+#include <plat/omap_device.h>
-+#include <linux/iio/iio.h>
-+#include <linux/iio/machine.h>
-+#include <linux/iio/consumer.h>
-+
-+#include <linux/capebus/capebus-bone.h>
-+
-+/* fwd decl. */
-+extern struct cape_driver bonegeiger_driver;
-+
-+struct bone_geiger_info {
-+	struct cape_dev *dev;
-+	struct bone_capebus_generic_info *geninfo;
-+	struct pwm_device *pwm_dev;
-+	int pwm_frequency;
-+	int pwm_duty_cycle;
-+	int run;
-+	atomic64_t counter;
-+	int event_gpio;
-+	int event_irq;
-+	struct led_trigger *event_led;		/* event detect */
-+	struct led_trigger *run_led;		/* running      */
-+	unsigned long event_blink_delay;
-+	struct sysfs_dirent *counter_sd;	/* notifier */
-+	const char *vsense_name;
-+	unsigned int vsense_scale;
-+	struct iio_channel *vsense_channel;
-+};
-+
-+static const struct of_device_id bonegeiger_of_match[] = {
-+	{
-+		.compatible = "bone-geiger-cape",
-+	},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, bonegeiger_of_match);
-+
-+static int bonegeiger_start(struct cape_dev *dev)
-+{
-+	struct bone_geiger_info *info = dev->drv_priv;
-+	int duty, period;
-+
-+	if (info->run != 0)
-+		return 0;
-+
-+	/* checks */
-+	if (info->pwm_frequency < 1000 || info->pwm_frequency > 50000) {
-+		dev_err(&dev->dev, "Cowardly refusing to use a "
-+				"frequency of %d\n",
-+				info->pwm_frequency);
-+		return -EINVAL;
-+	}
-+	if (info->pwm_duty_cycle > 80) {
-+		dev_err(&dev->dev, "Cowardly refusing to use a "
-+				"duty cycle of %d\n",
-+				info->pwm_duty_cycle);
-+		return -EINVAL;
-+	}
-+
-+	period = div_u64(1000000000LLU, info->pwm_frequency);
-+	duty = (period * info->pwm_duty_cycle) / 100;
-+
-+	dev_info(&dev->dev, "starting geiger tube with "
-+			"duty=%duns period=%dus\n",
-+			duty, period);
-+
-+	pwm_config(info->pwm_dev, duty, period);
-+	pwm_enable(info->pwm_dev);
-+
-+	info->run = 1;
-+	led_trigger_event(info->run_led, LED_FULL);
-+
-+	return 0;
-+}
-+
-+static int bonegeiger_stop(struct cape_dev *dev)
-+{
-+	struct bone_geiger_info *info = dev->drv_priv;
-+
-+	if (info->run == 0)
-+		return 0;
-+
-+	dev_info(&dev->dev, "disabling geiger tube\n");
-+	pwm_config(info->pwm_dev, 0, 50000);	/* 0% duty cycle, 20KHz */
-+	pwm_disable(info->pwm_dev);
-+
-+	info->run = 0;
-+	led_trigger_event(info->run_led, LED_OFF);
-+
-+	return 0;
-+}
-+
-+static ssize_t bonegeiger_show_run(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct cape_dev *cdev = to_cape_dev(dev);
-+	struct bone_geiger_info *info = cdev->drv_priv;
-+
-+	return sprintf(buf, "%d\n", info->run);
-+}
-+
-+static ssize_t bonegeiger_store_run(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
-+{
-+	struct cape_dev *cdev = to_cape_dev(dev);
-+	int run, err;
-+
-+	if (sscanf(buf, "%i", &run) != 1)
-+		return -EINVAL;
-+
-+	if (run)
-+		err = bonegeiger_start(cdev);
+ drivers/staging/zram/zram_drv.c | 113 +++++++++++++++++-----------------------
+ 1 file changed, 48 insertions(+), 65 deletions(-)
+
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 6edefde..fb4a7c9 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -183,62 +183,25 @@ static inline int is_partial_io(struct bio_vec *bvec)
+ 	return bvec->bv_len != PAGE_SIZE;
+ }
+ 
+-static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+-			  u32 index, int offset, struct bio *bio)
++static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+ {
+-	int ret;
+-	size_t clen;
+-	struct page *page;
+-	unsigned char *user_mem, *cmem, *uncmem = NULL;
+-
+-	page = bvec->bv_page;
+-
+-	if (zram_test_flag(zram, index, ZRAM_ZERO)) {
+-		handle_zero_page(bvec);
+-		return 0;
+-	}
++	int ret = LZO_E_OK;
++	size_t clen = PAGE_SIZE;
++	unsigned char *cmem;
++	unsigned long handle = zram->table[index].handle;
+ 
+-	/* Requested page is not present in compressed area */
+-	if (unlikely(!zram->table[index].handle)) {
+-		pr_debug("Read before write: sector=%lu, size=%u",
+-			 (ulong)(bio->bi_sector), bio->bi_size);
+-		handle_zero_page(bvec);
++	if (!handle || zram_test_flag(zram, index, ZRAM_ZERO)) {
++		memset(mem, 0, PAGE_SIZE);
+ 		return 0;
+ 	}
+ 
+-	if (is_partial_io(bvec)) {
+-		/* Use  a temporary buffer to decompress the page */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+-		if (!uncmem) {
+-			pr_info("Error allocating temp memory!\n");
+-			return -ENOMEM;
+-		}
+-	}
+-
+-	user_mem = kmap_atomic(page);
+-	if (!is_partial_io(bvec))
+-		uncmem = user_mem;
+-	clen = PAGE_SIZE;
+-
+-	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle,
+-				ZS_MM_RO);
+-
+-	if (zram->table[index].size == PAGE_SIZE) {
+-		memcpy(uncmem, cmem, PAGE_SIZE);
+-		ret = LZO_E_OK;
+-	} else {
++	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
++	if (zram->table[index].size == PAGE_SIZE)
++		memcpy(mem, cmem, PAGE_SIZE);
 +	else
-+		err = bonegeiger_stop(cdev);
+ 		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
+-				    uncmem, &clen);
+-	}
+-
+-	if (is_partial_io(bvec)) {
+-		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
+-		       bvec->bv_len);
+-		kfree(uncmem);
+-	}
+-
+-	zs_unmap_object(zram->mem_pool, zram->table[index].handle);
+-	kunmap_atomic(user_mem);
++						mem, &clen);
++	zs_unmap_object(zram->mem_pool, handle);
+ 
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
+@@ -247,36 +210,56 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 		return ret;
+ 	}
+ 
+-	flush_dcache_page(page);
+-
+ 	return 0;
+ }
+ 
+-static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
++static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
++			  u32 index, int offset, struct bio *bio)
+ {
+ 	int ret;
+-	size_t clen = PAGE_SIZE;
+-	unsigned char *cmem;
+-	unsigned long handle = zram->table[index].handle;
++	struct page *page;
++	unsigned char *user_mem, *uncmem = NULL;
+ 
+-	if (zram_test_flag(zram, index, ZRAM_ZERO) || !handle) {
+-		memset(mem, 0, PAGE_SIZE);
++	page = bvec->bv_page;
 +
-+	return err ? err : count;
-+}
-+
-+static ssize_t bonegeiger_show_counter(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct cape_dev *cdev = to_cape_dev(dev);
-+	struct bone_geiger_info *info = cdev->drv_priv;
-+
-+	return sprintf(buf, "%llu\n", atomic64_read(&info->counter));
-+}
-+
-+static ssize_t bonegeiger_store_counter(struct device *dev,
-+				struct device_attribute *attr,
-+				const char *buf, size_t count)
-+{
-+	struct cape_dev *cdev = to_cape_dev(dev);
-+	struct bone_geiger_info *info = cdev->drv_priv;
-+
-+	atomic64_set(&info->counter, 0);	/* just reset */
-+	return count;
-+}
-+
-+static ssize_t bonegeiger_show_vsense(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct cape_dev *cdev = to_cape_dev(dev);
-+	struct bone_geiger_info *info = cdev->drv_priv;
-+	int ret, val;
-+	u32 mvolts;
-+
-+	ret = iio_read_channel_raw(info->vsense_channel, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* V = (1800 / 4096) * val * scale) = (1.8 * val * scale / 4096) */
-+	mvolts = div_u64(1800 * info->vsense_scale * (u64)val, 4096 * 100);
-+
-+	return sprintf(buf, "%d\n", mvolts);
-+}
-+
-+static DEVICE_ATTR(run, S_IRUGO | S_IWUSR,
-+		bonegeiger_show_run, bonegeiger_store_run);
-+static DEVICE_ATTR(counter, S_IRUGO | S_IWUSR,
-+		bonegeiger_show_counter, bonegeiger_store_counter);
-+static DEVICE_ATTR(vsense, S_IRUGO,
-+		bonegeiger_show_vsense, NULL);
-+
-+static int bonegeiger_sysfs_register(struct cape_dev *cdev)
-+{
-+	int err;
-+
-+	err = device_create_file(&cdev->dev, &dev_attr_run);
-+	if (err != 0)
-+		goto err_no_run;
-+
-+	err = device_create_file(&cdev->dev, &dev_attr_counter);
-+	if (err != 0)
-+		goto err_no_counter;
-+
-+	err = device_create_file(&cdev->dev, &dev_attr_vsense);
-+	if (err != 0)
-+		goto err_no_vsense;
-+
-+	return 0;
-+
-+err_no_vsense:
-+	device_remove_file(&cdev->dev, &dev_attr_counter);
-+err_no_counter:
-+	device_remove_file(&cdev->dev, &dev_attr_run);
-+err_no_run:
-+	return err;
-+}
-+
-+static void bonegeiger_sysfs_unregister(struct cape_dev *cdev)
-+{
-+	device_remove_file(&cdev->dev, &dev_attr_vsense);
-+	device_remove_file(&cdev->dev, &dev_attr_counter);
-+	device_remove_file(&cdev->dev, &dev_attr_run);
-+}
-+
-+static irqreturn_t bonegeiger_irq_handler(int irq, void *dev_id)
-+{
-+	struct cape_dev *dev = dev_id;
-+	struct bone_geiger_info *info = dev->drv_priv;
-+
-+	atomic64_inc(&info->counter);
-+
-+	led_trigger_blink_oneshot(info->event_led,
-+		  &info->event_blink_delay, &info->event_blink_delay, 0);
-+
-+	sysfs_notify_dirent(info->counter_sd);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int bonegeiger_probe(struct cape_dev *dev, const struct cape_device_id *id)
-+{
-+	char boardbuf[33];
-+	char versionbuf[5];
-+	const char *board_name;
-+	const char *version;
-+	struct bone_geiger_info *info;
-+	struct pinctrl *pinctrl;
-+	struct device_node *node, *pwm_node;
-+	phandle phandle;
-+	u32 val;
-+	int err;
-+
-+	/* boiler plate probing */
-+	err = bone_capebus_probe_prolog(dev, id);
-+	if (err != 0)
-+		return err;
-+
-+	/* get the board name (after check of cntrlboard match) */
-+	board_name = bone_capebus_id_get_field(id, BONE_CAPEBUS_BOARD_NAME,
-+			boardbuf, sizeof(boardbuf));
-+	/* get the board version */
-+	version = bone_capebus_id_get_field(id, BONE_CAPEBUS_VERSION,
-+			versionbuf, sizeof(versionbuf));
-+	/* should never happen; but check anyway */
-+	if (board_name == NULL || version == NULL)
-+		return -ENODEV;
-+
-+	dev->drv_priv = devm_kzalloc(&dev->dev, sizeof(*info), GFP_KERNEL);
-+	if (dev->drv_priv == NULL) {
-+		dev_err(&dev->dev, "Failed to allocate info\n");
-+		err = -ENOMEM;
-+		goto err_no_mem;
-+	}
-+	info = dev->drv_priv;
-+
-+	pinctrl = devm_pinctrl_get_select_default(&dev->dev);
-+	if (IS_ERR(pinctrl))
-+		dev_warn(&dev->dev,
-+			"pins are not configured from the driver\n");
-+
-+	node = capebus_of_find_property_node(dev, "version", version, "pwms");
-+	if (node == NULL) {
-+		dev_err(&dev->dev, "unable to find pwms property\n");
-+		err = -ENODEV;
-+		goto err_no_pwm;
++	if (unlikely(!zram->table[index].handle) ||
++			zram_test_flag(zram, index, ZRAM_ZERO)) {
++		handle_zero_page(bvec);
+ 		return 0;
+ 	}
+ 
+-	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
+-	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
+-				    mem, &clen);
+-	zs_unmap_object(zram->mem_pool, handle);
++	user_mem = kmap_atomic(page);
++	if (is_partial_io(bvec))
++		/* Use  a temporary buffer to decompress the page */
++		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++	else
++		uncmem = user_mem;
+ 
++	if (!uncmem) {
++		pr_info("Unable to allocate temp memory\n");
++		ret = -ENOMEM;
++		goto out_cleanup;
 +	}
 +
-+	err = of_property_read_u32(node, "pwms", &val);
-+	if (err != 0) {
-+		dev_err(&dev->dev, "unable to read pwm handle\n");
-+		goto err_no_pwm;
-+	}
-+	phandle = val;
++	ret = zram_decompress_page(zram, uncmem, index);
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
+ 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+ 		zram_stat64_inc(zram, &zram->stats.failed_reads);
+-		return ret;
++		goto out_cleanup;
+ 	}
+ 
+-	return 0;
++	if (is_partial_io(bvec))
++		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
++				bvec->bv_len);
 +
-+	pwm_node = of_find_node_by_phandle(phandle);
-+	if (pwm_node == NULL) {
-+		dev_err(&dev->dev, "Failed to pwm node\n");
-+		err = -EINVAL;
-+		goto err_no_pwm;
-+	}
-+
-+	err = capebus_of_platform_device_enable(pwm_node);
-+	of_node_put(pwm_node);
-+	if (err != 0) {
-+		dev_err(&dev->dev, "Failed to pwm node\n");
-+		goto err_no_pwm;
-+	}
-+
-+	info->pwm_dev = of_pwm_request(node, NULL);
-+	of_node_put(node);
-+	if (IS_ERR(info->pwm_dev)) {
-+		dev_err(&dev->dev, "unable to request PWM\n");
-+		err = PTR_ERR(info->pwm_dev);
-+		goto err_no_pwm;
-+	}
-+
-+	if (capebus_of_property_read_u32(dev,
-+				"version", version,
-+				"pwm-frequency", &val) != 0) {
-+		val = 20000;
-+		dev_warn(&dev->dev, "Could not read pwm-frequency property; "
-+				"using default %u\n",
-+				val);
-+	}
-+	info->pwm_frequency = val;
-+
-+	if (capebus_of_property_read_u32(dev,
-+				"version", version,
-+				"pwm-duty-cycle", &val) != 0) {
-+		val = 60;
-+		dev_warn(&dev->dev, "Could not read pwm-duty-cycle property; "
-+				"using default %u\n",
-+				val);
-+	}
-+	info->pwm_duty_cycle = val;
-+
-+	node = capebus_of_find_property_node(dev, "gpios", version, "pwms");
-+	info->event_gpio = of_get_gpio_flags(node, 0, NULL);
-+	of_node_put(node);
-+	if (IS_ERR_VALUE(info->event_gpio)) {
-+		dev_err(&dev->dev, "unable to get event GPIO\n");
-+		err = info->event_gpio;
-+		goto err_no_gpio;
-+	}
-+
-+	err = gpio_request_one(info->event_gpio,
-+			GPIOF_DIR_IN | GPIOF_EXPORT,
-+			"bone-geiger-cape-event");
-+	if (err != 0) {
-+		dev_err(&dev->dev, "failed to request event GPIO\n");
-+		goto err_no_gpio;
-+	}
-+
-+	atomic64_set(&info->counter, 0);
-+
-+	info->event_irq = gpio_to_irq(info->event_gpio);
-+	if (IS_ERR_VALUE(info->event_irq)) {
-+		dev_err(&dev->dev, "unable to get event GPIO IRQ\n");
-+		err = info->event_irq;
-+		goto err_no_irq;
-+	}
-+
-+	err = request_irq(info->event_irq, bonegeiger_irq_handler,
-+			IRQF_TRIGGER_RISING | IRQF_SHARED,
-+			"bone-geiger-irq", dev);
-+	if (err != 0) {
-+		dev_err(&dev->dev, "unable to request irq\n");
-+		goto err_no_irq;
-+	}
-+
-+	err = bonegeiger_sysfs_register(dev);
-+	if (err != 0) {
-+		dev_err(&dev->dev, "unable to register sysfs\n");
-+		goto err_no_sysfs;
-+	}
-+
-+	info->counter_sd = sysfs_get_dirent(dev->dev.kobj.sd, NULL, "counter");
-+	if (info->counter_sd == NULL) {
-+		dev_err(&dev->dev, "unable to get dirent of counter\n");
-+		err = -ENODEV;
-+		goto err_no_counter_dirent;
-+	}
-+
-+	led_trigger_register_simple("geiger-event", &info->event_led);
-+	led_trigger_register_simple("geiger-run", &info->run_led);
-+
-+	/* pick up the generics; tsc & leds */
-+	info->geninfo = bone_capebus_probe_generic(dev, id);
-+	if (info->geninfo == NULL) {
-+		dev_err(&dev->dev, "Could not probe generic\n");
-+		goto err_no_generic;
-+	}
-+
-+	led_trigger_event(info->run_led, LED_OFF);
-+
-+	/* default */
-+	if (capebus_of_property_read_u32(dev,
-+				"version", version,
-+				"event-blink-delay", &val) != 0) {
-+		val = 30;
-+		dev_warn(&dev->dev, "Could not read event-blink-delay "
-+				"property; using default %u\n",
-+					val);
-+	}
-+	info->event_blink_delay = val;
-+
-+	/* default */
-+	if (capebus_of_property_read_string(dev,
-+				"version", version,
-+				"vsense-name", &info->vsense_name) != 0) {
-+		info->vsense_name = "AIN5";
-+		dev_warn(&dev->dev, "Could not read vsense-name property; "
-+				"using default %u\n",
-+					val);
-+	}
-+
-+	if (capebus_of_property_read_u32(dev,
-+				"version", version,
-+				"vsense-scale", &info->vsense_scale) != 0) {
-+		info->vsense_scale = 37325;	/* 373.25 */
-+		dev_warn(&dev->dev, "Could not read vsense-scale property; "
-+				"using default %u\n",
-+					info->vsense_scale);
-+	}
-+
-+	info->vsense_channel = iio_channel_get(NULL, info->vsense_name);
-+	if (IS_ERR(info->vsense_channel)) {
-+		dev_err(&dev->dev, "Could not get AIN5 analog input\n");
-+		err = PTR_ERR(info->vsense_channel);
-+		goto err_no_vsense;
-+	}
-+
-+	dev_info(&dev->dev, "ready\n");
-+
-+	err = bonegeiger_start(dev);
-+	if (err != 0) {
-+		dev_err(&dev->dev, "Could not start geiger device\n");
-+		goto err_no_start;
-+	}
-+
-+	return 0;
-+
-+err_no_start:
-+	iio_channel_release(info->vsense_channel);
-+err_no_vsense:
-+	bone_capebus_remove_generic(info->geninfo);
-+err_no_generic:
-+	led_trigger_unregister_simple(info->run_led);
-+	led_trigger_unregister_simple(info->event_led);
-+	sysfs_put(info->counter_sd);
-+err_no_counter_dirent:
-+	bonegeiger_sysfs_unregister(dev);
-+err_no_sysfs:
-+	free_irq(info->event_irq, dev);
-+err_no_irq:
-+	gpio_free(info->event_gpio);
-+err_no_gpio:
-+	pwm_put(info->pwm_dev);
-+err_no_pwm:
-+	devm_kfree(&dev->dev, info);
-+err_no_mem:
-+	return err;
-+}
-+
-+static void bonegeiger_remove(struct cape_dev *dev)
-+{
-+	struct bone_geiger_info *info = dev->drv_priv;
-+
-+	dev_info(&dev->dev, "Removing geiger cape driver...\n");
-+
-+	bonegeiger_stop(dev);
-+
-+	iio_channel_release(info->vsense_channel);
-+	bone_capebus_remove_generic(info->geninfo);
-+	led_trigger_unregister_simple(info->run_led);
-+	led_trigger_unregister_simple(info->event_led);
-+	sysfs_put(info->counter_sd);
-+	bonegeiger_sysfs_unregister(dev);
-+	free_irq(info->event_irq, dev);
-+	gpio_free(info->event_gpio);
-+	pwm_put(info->pwm_dev);
-+}
-+
-+struct cape_driver bonegeiger_driver = {
-+	.driver = {
-+		.name		= "bonegeiger",
-+		.owner		= THIS_MODULE,
-+		.of_match_table	= bonegeiger_of_match,
-+	},
-+	.probe		= bonegeiger_probe,
-+	.remove		= bonegeiger_remove,
-+};
-+
-+module_capebus_driver(bonegeiger_driver);
-+
-+MODULE_AUTHOR("Pantelis Antoniou");
-+MODULE_DESCRIPTION("Beaglebone geiger cape");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:bone-geiger-cape");
--- 
-1.7.12
++	flush_dcache_page(page);
++	ret = 0;
++out_cleanup:
++	kunmap_atomic(user_mem);
++	if (is_partial_io(bvec))
++		kfree(uncmem);
++	return ret;
+ }
+ 
+ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+@@ -302,7 +285,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 			ret = -ENOMEM;
+ 			goto out;
+ 		}
+-		ret = zram_read_before_write(zram, uncmem, index);
++		ret = zram_decompress_page(zram, uncmem, index);
+ 		if (ret) {
+ 			kfree(uncmem);
+ 			goto out;
 
