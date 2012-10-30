@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965077Ab2J3Rc1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 13:32:27 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:34310 "EHLO
+	id S965091Ab2J3Rc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 13:32:28 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:34331 "EHLO
 	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964998Ab2J3RcQ (ORCPT
+	with ESMTP id S965007Ab2J3RcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 13:32:16 -0400
+	Tue, 30 Oct 2012 13:32:17 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,53 +15,94 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 5/5] rcu: Wordsmith help text for RCU_USER_QS kernel parameter
-Date: Tue, 30 Oct 2012 10:19:23 -0700
-Message-Id: <1351617563-28506-5-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 14/14] rcu: Add tracing for synchronize_sched_expedited()
+Date: Tue, 30 Oct 2012 10:05:13 -0700
+Message-Id: <1351616713-26930-14-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1351617563-28506-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20121030171906.GA27431@linux.vnet.ibm.com>
- <1351617563-28506-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1351616713-26930-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20121030170454.GA25712@linux.vnet.ibm.com>
+ <1351616713-26930-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12103017-7408-0000-0000-000009C5C646
+x-cbid: 12103017-7408-0000-0000-000009C5C6A2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-This commit adds a "try" missing from the end of the first paragraph
-of the RCU_USER_QS help text.
+This commit adds a per-RCU-flavor "rcuexp" file that dumps out
+statistics for synchonize_sched_expedited().
 
-[ paulmck: Also fix up the last paragraph a bit. ]
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- init/Kconfig |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/rcutree_trace.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index b63e798..ec62139 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -494,11 +494,11 @@ config RCU_USER_QS
- 	  puts RCU in extended quiescent state when the CPU runs in
- 	  userspace. It means that when a CPU runs in userspace, it is
- 	  excluded from the global RCU state machine and thus doesn't
--	  to keep the timer tick on for RCU.
-+	  try to keep the timer tick on for RCU.
+diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
+index c6f9cb3..e84679c 100644
+--- a/kernel/rcutree_trace.c
++++ b/kernel/rcutree_trace.c
+@@ -171,6 +171,45 @@ static const struct file_operations rcudata_fops = {
+ 	.release = seq_release,
+ };
  
- 	  Unless you want to hack and help the development of the full
--	  tickless feature, you shouldn't enable this option. It adds
--	  unnecessary overhead.
-+	  tickless feature, you shouldn't enable this option.  It also
-+	  adds unnecessary overhead.
++static int show_rcuexp(struct seq_file *m, void *v)
++{
++	struct rcu_state *rsp = (struct rcu_state *)v;
++
++	seq_printf(m, "s=%lu d=%lu w=%lu tf=%lu wd1=%lu wd2=%lu n=%lu sc=%lu dt=%lu dl=%lu dx=%lu",
++		   atomic_long_read(&rsp->expedited_start),
++		   atomic_long_read(&rsp->expedited_done),
++		   atomic_long_read(&rsp->expedited_wrap),
++		   atomic_long_read(&rsp->expedited_tryfail),
++		   atomic_long_read(&rsp->expedited_workdone1),
++		   atomic_long_read(&rsp->expedited_workdone2),
++		   atomic_long_read(&rsp->expedited_normal),
++		   atomic_long_read(&rsp->expedited_stoppedcpus),
++		   atomic_long_read(&rsp->expedited_done_tries),
++		   atomic_long_read(&rsp->expedited_done_lost),
++		   atomic_long_read(&rsp->expedited_done_exit));
++	return 0;
++}
++
++static const struct seq_operations rcuexp_op = {
++	.start = r_start,
++	.next  = r_next,
++	.stop  = r_stop,
++	.show  = show_rcuexp,
++};
++
++static int rcuexp_open(struct inode *inode, struct file *file)
++{
++	return r_open(inode, file, &rcuexp_op);
++}
++
++static const struct file_operations rcuexp_fops = {
++	.owner = THIS_MODULE,
++	.open = rcuexp_open,
++	.read = seq_read,
++	.llseek = no_llseek,
++	.release = seq_release,
++};
++
+ #ifdef CONFIG_RCU_BOOST
  
- 	  If unsure say N
+ static void print_one_rcu_node_boost(struct seq_file *m, struct rcu_node *rnp)
+@@ -402,6 +441,11 @@ static int __init rcutree_trace_init(void)
+ 		if (!retval)
+ 			goto free_out;
  
++		retval = debugfs_create_file("rcuexp", 0444,
++				rspdir, rsp, &rcuexp_fops);
++		if (!retval)
++			goto free_out;
++
+ 		retval = debugfs_create_file("rcu_pending", 0444,
+ 				rspdir, rsp, &rcu_pending_fops);
+ 		if (!retval)
 -- 
 1.7.8
 
