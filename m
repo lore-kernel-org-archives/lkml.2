@@ -1,196 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934618Ab2J3VGc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:06:32 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63433 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934550Ab2J3VGa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:06:30 -0400
-Date: Wed, 31 Oct 2012 00:04:03 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] zram: factor-out zram_decompress_page() function
-Message-ID: <20121030210403.GA2635@swordfish>
-References: <20121027160052.GA4771@swordfish>
- <508EB96C.4040505@vflare.org>
+	id S965453Ab2J3VKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:10:33 -0400
+Received: from spam1.webland.se ([91.207.112.90]:56403 "EHLO spam1.webland.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934561Ab2J3VKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 17:10:31 -0400
+X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 17:10:31 EDT
+From: Arvid Brodin <Arvid.Brodin@xdin.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "David Rientjes" <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: fs/proc/base.c: text md5sums; tgid vs tid; and INF vs ONE?
+Thread-Topic: fs/proc/base.c: text md5sums; tgid vs tid; and INF vs ONE?
+Thread-Index: AQHNtuHhIVxzjv635UGK6J9DcxIIZA==
+Date: Tue, 30 Oct 2012 21:02:33 +0000
+Message-ID: <50904066.4060404@xdin.com>
+Accept-Language: sv-SE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20120410
+ Thunderbird/8.0
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <B21EEBD1195C4D4DBC60212617E4261A@redbull.xdin.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508EB96C.4040505@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9ULAYBE014872
 
-On (10/29/12 10:14), Nitin Gupta wrote:
-> ======
-> zram: Fix use-after-free in partial I/O case
-> 
-> When the compressed size of a page exceeds a threshold, the page is
-> stored as-is i.e. in uncompressed form. In the partial I/O i.e.
-> non-PAGE_SIZE'ed I/O case, however, the uncompressed memory was being
-> freed before it could be copied into the zsmalloc pool resulting in
-> use-after-free bug.
-> 
+Hi,
 
-Hello Nitin,
-hope you are fine.
+Below is a patch that adds a file /proc/PID/text_md5sum which when read returns the md5
+checksum of a process' text segment. (This would be used e.g. to make sure a process'
+code hasn't been tampered with.)
 
-how about the following one? I moved some of the code to zram_compress_page()
-(very similar to zram_decompress_page()), so errors are easier to care in 
-zram_bvec_write(). now we handle both use after-kfree (as you did in your patch),
-and use after-kunmap. 
+However, I have a few questions:
 
-please review.
+* What's the difference between the tgid_base_stuff and tid_base_stuff arrays? (One for
+processes and one for the process' threads? I haven't been able to find any info about
+this so I'm guessing.)
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+* When should I use the INF ("read") vs the ONE ("show") macro?
+
+* Any other comments about the code?
+
+Thanks!
 
 ---
 
- drivers/staging/zram/zram_drv.c | 91 +++++++++++++++++++++--------------------
- 1 file changed, 46 insertions(+), 45 deletions(-)
-
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 47f2e3a..5f37be1 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -213,6 +213,44 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
- 	return 0;
+diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+index 15af622..317ad92 100644
+--- a/fs/proc/Kconfig
++++ b/fs/proc/Kconfig
+@@ -67,3 +67,13 @@ config PROC_PAGE_MONITOR
+ 	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
+ 	  /proc/kpagecount, and /proc/kpageflags. Disabling these
+           interfaces will reduce the size of the kernel by approximately 4kb.
++
++config PROC_TEXT_MD5SUM
++	bool "/proc/<pid>/text_md5sum support"
++	depends on PROC_FS
++	select CRYPTO
++	select CRYPTO_MD5
++	help
++	  Read /proc/<pid>/text_md5sum to get the kernel to perform an MD5
++	  checksum over the process' text segment and print the result. Can be
++	  used to make sure a process' code has not been tampered with.
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 91da78c..14a825f 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -85,6 +85,10 @@
+ #include <linux/fs_struct.h>
+ #include <linux/slab.h>
+ #include <linux/flex_array.h>
++#ifdef CONFIG_PROC_TEXT_MD5SUM
++#include <linux/scatterlist.h>
++#include <linux/crypto.h>
++#endif
+ #ifdef CONFIG_HARDWALL
+ #include <asm/hardwall.h>
+ #endif
+@@ -2526,6 +2530,107 @@ static int proc_pid_personality(struct seq_file *m, struct
+pid_namespace *ns,
+ 	return err;
  }
- 
-+static int zram_compress_page(struct zram *zram, char *uncmem, u32 index)
-+{
-+	int ret;
-+	size_t clen;
-+	unsigned long handle;
-+	unsigned char *cmem, *src;
-+
-+	src = zram->compress_buffer;
-+	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
-+			       zram->compress_workmem);
-+	if (unlikely(ret != LZO_E_OK)) {
-+		pr_err("Page compression failed: err=%d\n", ret);
-+		return ret;
-+	}
-+
-+	if (unlikely(clen > max_zpage_size)) {
-+		zram_stat_inc(&zram->stats.bad_compress);
-+		src = uncmem;
-+		clen = PAGE_SIZE;
-+	}
-+
-+	handle = zs_malloc(zram->mem_pool, clen);
-+	if (!handle) {
-+		pr_info("Error allocating memory for compressed "
-+			"page: %u, size=%zu\n", index, clen);
-+		return -ENOMEM;
-+	}
-+
-+	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
-+	memcpy(cmem, src, clen);
-+	zs_unmap_object(zram->mem_pool, handle);
-+
-+	zram->table[index].handle = handle;
-+	zram->table[index].size = clen;
-+
-+	return 0;
-+}
-+
- static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 			  u32 index, int offset, struct bio *bio)
- {
-@@ -267,13 +305,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- {
- 	int ret;
- 	size_t clen;
--	unsigned long handle;
- 	struct page *page;
--	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
-+	unsigned char *user_mem, *uncmem = NULL;
- 
- 	page = bvec->bv_page;
--	src = zram->compress_buffer;
--
- 	if (is_partial_io(bvec)) {
- 		/*
- 		 * This is a partial IO. We need to read the full page
-@@ -286,10 +321,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			goto out;
- 		}
- 		ret = zram_decompress_page(zram, uncmem, index);
--		if (ret) {
--			kfree(uncmem);
-+		if (ret)
- 			goto out;
--		}
- 	}
- 
- 	/*
-@@ -309,58 +342,26 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		uncmem = user_mem;
- 
- 	if (page_zero_filled(uncmem)) {
--		kunmap_atomic(user_mem);
--		if (is_partial_io(bvec))
--			kfree(uncmem);
- 		zram_stat_inc(&zram->stats.pages_zero);
- 		zram_set_flag(zram, index, ZRAM_ZERO);
- 		ret = 0;
- 		goto out;
- 	}
- 
--	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
--			       zram->compress_workmem);
--
--	kunmap_atomic(user_mem);
--	if (is_partial_io(bvec))
--			kfree(uncmem);
--
--	if (unlikely(ret != LZO_E_OK)) {
--		pr_err("Compression failed! err=%d\n", ret);
--		goto out;
--	}
--
--	if (unlikely(clen > max_zpage_size)) {
--		zram_stat_inc(&zram->stats.bad_compress);
--		src = uncmem;
--		clen = PAGE_SIZE;
--	}
--
--	handle = zs_malloc(zram->mem_pool, clen);
--	if (!handle) {
--		pr_info("Error allocating memory for compressed "
--			"page: %u, size=%zu\n", index, clen);
--		ret = -ENOMEM;
-+	ret = zram_compress_page(zram, uncmem, index);
-+	if (ret)
- 		goto out;
--	}
--	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
--
--	memcpy(cmem, src, clen);
--
--	zs_unmap_object(zram->mem_pool, handle);
--
--	zram->table[index].handle = handle;
--	zram->table[index].size = clen;
- 
-+	clen = zram->table[index].size;
- 	/* Update stats */
- 	zram_stat64_add(zram, &zram->stats.compr_size, clen);
- 	zram_stat_inc(&zram->stats.pages_stored);
- 	if (clen <= PAGE_SIZE / 2)
- 		zram_stat_inc(&zram->stats.good_compress);
--
--	return 0;
--
- out:
-+	kunmap_atomic(user_mem);
-+	if (is_partial_io(bvec))
-+		kfree(uncmem);
- 	if (ret)
- 		zram_stat64_inc(zram, &zram->stats.failed_writes);
- 	return ret;
 
++#ifdef CONFIG_PROC_TEXT_MD5SUM
++#define MD5_DIGEST_SIZE 16
++static int proc_get_text_md5sum(struct seq_file *m, struct pid_namespace *ns,
++				struct pid *pid, struct task_struct *task)
++{
++	int retval;
++	int text_size;
++	int nr_pages, nr_pages_mapped;
++	int i;
++	struct page **pages;
++	struct scatterlist *sgl, *sg;
++	u8 result[MD5_DIGEST_SIZE + 2];
++	struct crypto_hash *tfm;
++	struct hash_desc desc;
++
++	retval = 0;
++
++	if (!task->mm)
++		return -EINVAL;
++
++	text_size = task->mm->end_code - task->mm->start_code;
++	nr_pages = (text_size + PAGE_SIZE - 1) >> PAGE_SHIFT;
++
++
++	/**** User page code ****/
++
++	pages = kmalloc(nr_pages * sizeof(*pages), GFP_KERNEL);
++	if (!pages) {
++		retval = -ENOMEM;
++		goto err_pages;
++	}
++
++	down_read(&task->mm->mmap_sem);
++	nr_pages_mapped = get_user_pages(current, task->mm,
++			task->mm->start_code, nr_pages, 0, 0, pages, NULL);
++	up_read(&task->mm->mmap_sem);
++	if (nr_pages_mapped < 0) {
++		retval = nr_pages_mapped;
++		goto err_mapped;
++	}
++	if (nr_pages_mapped < nr_pages) {
++		retval = -EBUSY; /* Weird error code for this,
++				    but couldn't find any better */
++		goto err_not_all_pages;
++	}
++
++
++	/**** Scatterlist code ****/
++
++	sgl = kmalloc(nr_pages_mapped * sizeof(*sgl), GFP_KERNEL);
++	if (!sgl) {
++		retval = -ENOMEM;
++		goto err_sg;
++	}
++
++	sg_init_table(sgl, nr_pages_mapped);
++	for_each_sg(sgl, sg, nr_pages_mapped, i)
++		sg_set_page(sg, pages[i], (i < nr_pages_mapped) ? PAGE_SIZE :
++						text_size & ~PAGE_MASK, 0);
++
++
++	/**** Crypto code ****/
++
++	tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
++	if (IS_ERR(tfm)) {
++		retval = -ENOMEM;
++		goto err_crypto;
++	}
++
++	desc.tfm = tfm;
++	desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
++
++	memset(result, 0, MD5_DIGEST_SIZE + 2);
++	retval = crypto_hash_digest(&desc, sgl, text_size, result);
++	if (retval)
++		goto err_digest;
++
++	for (i = 0; i < MD5_DIGEST_SIZE; i++)
++		seq_printf(m, "%02x", result[i]);
++	seq_printf(m, "\n");
++
++
++err_digest:
++	crypto_free_hash(tfm);
++
++err_crypto:
++	kfree(sgl);
++
++err_sg:
++err_not_all_pages:
++	for (i = 0; i < nr_pages_mapped; i++)
++		put_page(pages[i]);
++
++err_mapped:
++	kfree(pages);
++
++err_pages:
++	return retval;
++}
++#endif /* CONFIG_PROC_TEXT_MD5SUM */
++
+ /*
+  * Thread groups
+  */
+@@ -2621,6 +2726,9 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	REG("gid_map",    S_IRUGO|S_IWUSR, proc_gid_map_operations),
+ 	REG("projid_map", S_IRUGO|S_IWUSR, proc_projid_map_operations),
+ #endif
++#ifdef CONFIG_PROC_TEXT_MD5SUM
++	ONE("text_md5sum", S_IRUGO, proc_get_text_md5sum),
++#endif
+ };
+
+ static int proc_tgid_base_readdir(struct file * filp,
+
+
+-- 
+Arvid Brodin | Consultant (Linux)
+XDIN AB | KnarrarnÃ¤sgatan 7 | SE-164 40 Kista | Sweden | xdin.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
