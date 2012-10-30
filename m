@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965152Ab2J3R5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 13:57:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51859 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759632Ab2J3R5n (ORCPT
+	id S965193Ab2J3SCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:02:11 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59844 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759668Ab2J3SCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 13:57:43 -0400
-Date: Tue, 30 Oct 2012 18:57:37 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Milan Broz <mbroz@redhat.com>
-cc: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Tvrtko Ursulin <tvrtko@ursulin.net>, linux-rt-users@vger.kernel.org,
-        dm-crypt@saout.de, linux-kernel@vger.kernel.org, okozina@redhat.com
-Subject: Re: [PATCH] Fix crypto api init for 3.6.4-rt10
-In-Reply-To: <508FF1D6.3030900@redhat.com>
-Message-ID: <alpine.LFD.2.02.1210301856390.2756@ionos>
-References: <5083C61C.5090807@gmail.com> <5083E4A8.3060501@ursulin.net> <5083E87B.2080908@gmail.com> <5083EC61.8070505@ursulin.net> <50844D01.9090805@gmail.com> <5084551E.5040304@ursulin.net> <508ED985.5060301@ursulin.net> <508EDD6E.7030908@gmail.com>
- <508EE395.9010709@ursulin.net> <508EEAF2.4090506@ursulin.net> <20121030094001.GV639@pengutronix.de> <508FA405.2050509@redhat.com> <508FF1D6.3030900@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 30 Oct 2012 14:02:09 -0400
+Message-ID: <5090161D.2030702@wwwdotorg.org>
+Date: Tue, 30 Oct 2012 12:02:05 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Mike Turquette <mturquette@ti.com>
+CC: Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [RFC PATCH] dt: describe base reset signal binding
+References: <1351028756-22309-1-git-send-email-swarren@wwwdotorg.org> <20121029183233.18780.11964@nucleus>
+In-Reply-To: <20121029183233.18780.11964@nucleus>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Oct 2012, Milan Broz wrote:
+On 10/29/2012 12:32 PM, Mike Turquette wrote:
+> Quoting Stephen Warren (2012-10-23 14:45:56)
+>> What do people think of this? Does it sound like a good idea to go ahead
+>> with a reset subsystem? Should we simply add a new API to the common clock
+>> subsystem instead (and assume that reset and clock domains match 1:1).
+>> Should this be implemented as part of the generic power management domains;
+>> see include/linux/pm_domain.h instead?
+>>
+> 
+> Hi Stephen,
+> 
+> I'm not sure a "reset subsystem" is necessary, but I also do not like
+> using clocks as the keys for IP reset.
 
-> Fix crypto api for 3.6.4-rt10 (broken only in realtime patchset)
-> 
-> In peterz-srcu-crypto-chain.patch the blocking notifier is changed
-> to srcu notifier and added initialization to module init fucntion.
-> 
-> Later, in crypto-make-core-static-and-init-scru-early.patch, is that
-> initialization added also to core_initcall().
-> 
-> This patch removes crypto_chain init from algapi initialization,
-> because this function is called later and already initialized
-> cryptomgr notifier is lost.
+I'm not sure what you're suggesting as an alternative to a reset
+subsystem (or API if you want something that sounds smaller!) :-)
 
-Grrr. So I forgot top zap the one Peter added. Stupid me.
- 
-> This cause a failure in initialization of larval algorithms,
-> like e.g. cbc(aes).
+> I think it is more common to map IPs to struct device, no?
 
-Thanks for spotting!
- 
-> Signed-off-by: Milan Broz <mbroz@redhat.com>
-> 
-> --- crypto/algapi.c.old	2012-10-30 16:11:23.000000000 +0100
-> +++ crypto/algapi.c	2012-10-30 16:12:14.988847944 +0100
-> @@ -956,7 +956,6 @@ EXPORT_SYMBOL_GPL(crypto_xor);
->  
->  static int __init crypto_algapi_init(void)
->  {
-> -	srcu_init_notifier_head(&crypto_chain);
->  	crypto_init_proc();
->  	return 0;
->  }
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+It is indeed probably common that there's a 1:1 mapping between IP
+blocks and struct device. However, I'm sure there are plenty of
+counter-examples; IP blocks with multiple reset domains (hence struct
+devices that encompass multiple reset domains, or reset domains that
+encompass multiple struct devices), just as there are many examples of
+non-1:1 mappings between struct device and struct clk.
+
+Even ignoring that, we'd still need to API say device_reset(struct
+device *dev) or device_reset(struct device *dev, const char *conid)
+wouldn't we? That's really all I meant by a reset subsystem.
+
+An alternative here would be to simply move Tegra's
+tegra_periph_reset_{de,}assert() function prototypes into a header in
+include/linux rather than mach-tegra/include/mach. However, I imagine at
+least some other SoC needs a similar API, so a common API might be useful?
