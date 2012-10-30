@@ -1,90 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab2J3JFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 05:05:47 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62534 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932Ab2J3JFo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 05:05:44 -0400
-Date: Tue, 30 Oct 2012 12:03:19 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] zram: permit sleeping while in pool zs_malloc()
-Message-ID: <20121030090319.GB5052@swordfish.minsk.epam.com>
+	id S1756545Ab2J3JHz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 05:07:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46755 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751394Ab2J3JHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 05:07:52 -0400
+Date: Tue, 30 Oct 2012 10:07:32 +0100
+From: Andrew Jones <drjones@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH V2 RFC 3/3] kvm: Check system load and handle different
+ commit cases accordingly
+Message-ID: <20121030090732.GB2224@turtle.usersys.redhat.com>
+References: <20121029140621.15448.92083.sendpatchset@codeblue>
+ <20121029140717.15448.83182.sendpatchset@codeblue>
+ <1351533280.24721.46.camel@twins>
+ <508F6C60.1050202@linux.vnet.ibm.com>
+ <20121030063436.GA2224@turtle.usersys.redhat.com>
+ <508F826A.7010302@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <508F826A.7010302@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    zram: permit sleeping while in pool zs_malloc()
-    
-    zram pool is created with GFP_NOIO flag, which may trigger errors because nested allocation
-    are able to sleep. set __GFP_WAIT pool flag in zram_init_device() to allow sleeping.
-    
-     BUG: sleeping function called from invalid context at mm/page_alloc.c:2603
-     in_atomic(): 1, irqs_disabled(): 0, pid: 2555, name: mkfs.reiserfs
-     2 locks held by mkfs.reiserfs/2555:
-      #0:  (&zram->init_lock){+++++.}, at: [<ffffffffa0127d18>] zram_make_request+0x48/0x270 [zram]
-      #1:  (&zram->lock){++++..}, at: [<ffffffffa012742b>] zram_bvec_rw+0x3b/0x510 [zram]
-     Pid: 2555, comm: mkfs.reiserfs Tainted: G         C   3.7.0-rc3-dbg-01664-gf2d9543-dirty #1401
-     Call Trace:
-      [<ffffffff8107984a>] __might_sleep+0x15a/0x250
-      [<ffffffff8111df9b>] __alloc_pages_nodemask+0x1bb/0x920
-      [<ffffffffa00f0b93>] ? zs_malloc+0x63/0x480 [zsmalloc]
-      [<ffffffff81320e2d>] ? do_raw_spin_unlock+0x5d/0xb0
-      [<ffffffffa00f0cf5>] zs_malloc+0x1c5/0x480 [zsmalloc]
-      [<ffffffffa0127574>] zram_bvec_rw+0x184/0x510 [zram]
-      [<ffffffffa0127e85>] zram_make_request+0x1b5/0x270 [zram]
-      [<ffffffff812ec0c2>] generic_make_request+0xc2/0x110
-      [<ffffffff812ec17a>] submit_bio+0x6a/0x140
-      [<ffffffff8119f27b>] submit_bh+0xfb/0x130
-      [<ffffffff811a2710>] __block_write_full_page+0x220/0x3d0
-      [<ffffffff810a7784>] ? __lock_is_held+0x54/0x80
-      [<ffffffff8119ffb0>] ? end_buffer_async_read+0x210/0x210
-      [<ffffffff811a7aa0>] ? blkdev_get_blocks+0xd0/0xd0
-      [<ffffffff811a7aa0>] ? blkdev_get_blocks+0xd0/0xd0
-      [<ffffffff8119ffb0>] ? end_buffer_async_read+0x210/0x210
-      [<ffffffff811a298f>] block_write_full_page_endio+0xcf/0x100
-      [<ffffffff8111f555>] ? clear_page_dirty_for_io+0x105/0x130
-      [<ffffffff811a29d5>] block_write_full_page+0x15/0x20
-      [<ffffffff811a7038>] blkdev_writepage+0x18/0x20
-      [<ffffffff8111f3aa>] __writepage+0x1a/0x50
-      [<ffffffff8111f8b0>] write_cache_pages+0x200/0x630
-      [<ffffffff8111e883>] ? free_hot_cold_page+0x113/0x1a0
-      [<ffffffff8111f390>] ? global_dirtyable_memory+0x40/0x40
-      [<ffffffff8111fd2d>] generic_writepages+0x4d/0x70
-      [<ffffffff81121071>] do_writepages+0x21/0x50
-      [<ffffffff81116939>] __filemap_fdatawrite_range+0x59/0x60
-      [<ffffffff81116a40>] filemap_write_and_wait_range+0x50/0x70
-      [<ffffffff811a73a4>] blkdev_fsync+0x24/0x50
-      [<ffffffff8119d5bd>] do_fsync+0x5d/0x90
-      [<ffffffff8119d990>] sys_fsync+0x10/0x20
-      [<ffffffff815dce06>] tracesys+0xd4/0xd9
-    
-    Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+On Tue, Oct 30, 2012 at 01:01:54PM +0530, Raghavendra K T wrote:
+> On 10/30/2012 12:04 PM, Andrew Jones wrote:
+> >On Tue, Oct 30, 2012 at 11:27:52AM +0530, Raghavendra K T wrote:
+> >>On 10/29/2012 11:24 PM, Peter Zijlstra wrote:
+> >>>On Mon, 2012-10-29 at 19:37 +0530, Raghavendra K T wrote:
+> >>>>+/*
+> >>>>+ * A load of 2048 corresponds to 1:1 overcommit
+> >>>>+ * undercommit threshold is half the 1:1 overcommit
+> >>>>+ * overcommit threshold is 1.75 times of 1:1 overcommit threshold
+> >>>>+ */
+> >>>>+#define COMMIT_THRESHOLD (FIXED_1)
+> >>>>+#define UNDERCOMMIT_THRESHOLD (COMMIT_THRESHOLD >> 1)
+> >>>>+#define OVERCOMMIT_THRESHOLD ((COMMIT_THRESHOLD << 1) -
+> >>>>(COMMIT_THRESHOLD >> 2))
+> >>>>+
+> >>>>+unsigned long kvm_system_load(void)
+> >>>>+{
+> >>>>+       unsigned long load;
+> >>>>+
+> >>>>+       load = avenrun[0] + FIXED_1/200;
+> >>>>+       load = load / num_online_cpus();
+> >>>>+
+> >>>>+       return load;
+> >>>>+}
+> >>>
+> >>>ARGH.. no that's wrong.. very wrong.
+> >>>
+> >>>  1) avenrun[] EXPORT_SYMBOL says it should be removed, that's not a
+> >>>joke.
+> >>
+> >>Okay.
+> >>
+> >>>  2) avenrun[] is a global load, do not ever use a global load measure
+> >>
+> >>This makes sense. Using a local optimization that leads to near global
+> >>optimization is the way to go.
+> >>
+> >>>
+> >>>  3) avenrun[] has nothing what so ever to do with runqueue lengths,
+> >>>someone with a gazillion tasks in D state will get a huge load but the
+> >>>cpu is very idle.
+> >>>
+> >>
+> >>I used loadavg as an alternative measure. But the above condition
+> >>poses a concern for that.
+> >>
+> >>Okay, now IIUC, usage of *any* global measure is bad?
+> >>
+> >>Because I was also thinking to use nrrunning()/ num_online_cpus(), to
+> >>get an idea of global overcommit sense. (ofcourse since, this involves
+> >>iteration over per CPU nrrunning, I wanted to calculate this
+> >>periodically)
+> >>
+> >>The overall logic, of having overcommit_threshold,
+> >>undercommit_threshold, I wanted to use for even dynamic ple_window
+> >>tuning purpose.
+> >>
+> >>so logic was:
+> >>< undercommit_threshold => 16k ple_window
+> >>>overcommit_threshold  => 4k window.
+> >>for in between case scale the ple_window accordingly.
+> >>
+> >>The alternative was to decide depending on how ple handler succeeded in
+> >>yield_to. But I thought, that is too sensitive and more overhead.
+> >>
+> >>This topic may deserve different thread, but thought I shall table it here.
+> >>
+> >>So, Thinking about the alternatives to implement, logic such as
+> >>
+> >>(a) if(undercommitted)
+> >>     just go back and spin rather than going for yield_to iteration.
+> >>(b) if (overcommitted)
+> >>    better to yield rather than  spinning logic
+> >>
+> >>    of current patches..
+> >>
+> >>[ ofcourse, (a) is already met to large extent by your patches..]
+> >>
+> >>So I think everything boils down to
+> >>
+> >>"how do we measure these two thresholds without much overhead in a
+> >>compliant way"
+> >>
+> >>Ideas welcome..
+> >>
+> >
+> >What happened to Avi's preempt notifier idea for determining
+> >under/overcommit? If nobody has picked that up yet, then I'll go ahead and
+> >try to prototype it.
+> 
+> Hi Drew,
+> 
+> I had assumed my priority order as
+> 1) this patch series 2) dynamic ple window 3) preempt notifiers.
+> 
+> But I do not have any problem on re-prioritizing / helping on these
+> as far as we are clear on what we are looking into.
+> 
+> I was thinking about preempt notifier idea as a tool to refine
+> candidate VCPUs. But you are right, Avi, also told we can use
+> bitmap/counter itself as an indicator to decide whether we go ahead
+> with yield_to at all.
+> 
+> IMO, only patch(3) has some conflict because of various approach we can
+> try.May be we should attack the problem via all 3 solutions at once and
+> decide?
+> 
+> To be frank, within each of the approach, trying/analyzing all the
+>  possibilities made the things slow.. (my end).
+> 
+> Suggestions..?
+> 
 
----
+I agree, it's a complex problem that needs lots of trial+error work. We
+should definitely work in parallel on multiple ideas. I'll go ahead and
+dig into the preempt notifiers.
 
- drivers/staging/zram/zram_drv.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index d2e0a85..47f2e3a 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -576,7 +576,7 @@ int zram_init_device(struct zram *zram)
- 	/* zram devices sort of resembles non-rotational disks */
- 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
- 
--	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_HIGHMEM);
-+	zram->mem_pool = zs_create_pool("zram", GFP_NOIO | __GFP_WAIT | __GFP_HIGHMEM);
- 	if (!zram->mem_pool) {
- 		pr_err("Error creating memory pool\n");
- 		ret = -ENOMEM;
-
+Drew
