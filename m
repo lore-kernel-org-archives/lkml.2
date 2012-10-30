@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932962Ab2J3Oh7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 10:37:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60824 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759391Ab2J3Oh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 10:37:58 -0400
-Date: Tue, 30 Oct 2012 10:37:50 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [Patch 0/2] Exclude hwpoison page from vmcore dump
-Message-ID: <20121030143750.GF2290@redhat.com>
-References: <508FDEF3.8030601@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508FDEF3.8030601@hitachi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933759Ab2J3Okd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 10:40:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48649 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab2J3Okb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 10:40:31 -0400
+From: Colin King <colin.king@canonical.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] pstore: fix NULL pointer dereference in console writes
+Date: Tue, 30 Oct 2012 14:40:26 +0000
+Message-Id: <1351608026-12208-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 11:06:43PM +0900, Mitsuhiro Tanino wrote:
+From: Colin Ian King <colin.king@canonical.com>
 
-[..]
-> These patches introduce a new "-p" option into "makedumpfile" to
-> exclude hwpoison page from vmcore.
+Passing a NULL id causes a NULL pointer deference in writers
+such as erst_writer and efi_pstore_write because they expect
+to update this id.  Pass a dummy id instead.
 
-Why to introduce this option "-p"? Until and unless there are serious
-side effects, this should be default functionality. Isn't it? Who would
-like to touch/save poisoned pages and run into MCE?
+This avoids a cascade of oopses caused when the initial
+pstore_console_write passes a null which in turn causes
+writes to the console causing further oopses in subsequent
+pstore_console_write calls.
 
-Thanks
-Vivek
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+---
+ fs/pstore/platform.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index a40da07..947fbe0 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -161,6 +161,7 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
+ 
+ 	while (s < e) {
+ 		unsigned long flags;
++		u64 id;
+ 
+ 		if (c > psinfo->bufsize)
+ 			c = psinfo->bufsize;
+@@ -172,7 +173,7 @@ static void pstore_console_write(struct console *con, const char *s, unsigned c)
+ 			spin_lock_irqsave(&psinfo->buf_lock, flags);
+ 		}
+ 		memcpy(psinfo->buf, s, c);
+-		psinfo->write(PSTORE_TYPE_CONSOLE, 0, NULL, 0, c, psinfo);
++		psinfo->write(PSTORE_TYPE_CONSOLE, 0, &id, 0, c, psinfo);
+ 		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+ 		s += c;
+ 		c = e - s;
+-- 
+1.7.10.4
+
