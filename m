@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934508Ab2J3U3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 16:29:51 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57070 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934293Ab2J3U3u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 16:29:50 -0400
-Message-ID: <509038BA.30600@wwwdotorg.org>
-Date: Tue, 30 Oct 2012 14:29:46 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S934517Ab2J3Ucd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 16:32:33 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58522 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934369Ab2J3Ucc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 16:32:32 -0400
+Date: Tue, 30 Oct 2012 16:32:21 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jani Nikula <jani.nikula@intel.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] i915: failure to interoperate with HP ZR30w using
+ an X230
+Message-ID: <20121030203221.GA4537@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Jani Nikula <jani.nikula@intel.com>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <nsxa9v4ssgz.fsf@closure.thunk.org>
+ <87hapcqu97.fsf@intel.com>
+ <87zk34gok8.fsf@intel.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 0/4] ARM: tegra: Enable SLINK controller driver
-References: <1351580726-17350-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1351580726-17350-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zk34gok8.fsf@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2012 01:05 AM, Laxman Dewangan wrote:
-> This series modify the dts file to add the slink addresses,
-> make AUXDATA in board dt files, enable slink4 for tegra30-cardhu and 
-> enable slink controller defconfig.
+On Tue, Oct 30, 2012 at 01:57:27PM +0200, Jani Nikula wrote:
+> > [1] drm-intel-next-queued branch at git://people.freedesktop.org/~danvet/drm-intel
+> 
+> Hmm, actually not. Either drm-intel-fixes branch, or Linus' master.
 
-This series only instantiates the SPI controller, and not any SPI
-devices. I tried to solve this:
+Confirmed, the drm-intel-fixes branch from Daniel's tree
+(3.7.0-rc2-00031-g1623392) works fine for me.
 
-> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-> index 700f0a3..3689853 100644
-> --- a/arch/arm/boot/dts/tegra30-cardhu.dtsi
-> +++ b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-> @@ -278,6 +278,11 @@
->         spi@7000da00 {
->                 status = "okay";
->                 spi-max-frequency = <25000000>;
-> +               flash@0 {
-> +                       reg = <0>;
-> +                       compatible = "atmel,at25df321a";
-> +                       spi-max-frequency = <25000000>;
-> +               };
->         };
->  
->         ahub {
+Do you know which commit(s) are likely to have fixed the problem, so we
+can cherry pick the appropriate fix(es) to the 3.6.x tree?
 
-However, this didn't work. Has the driver been tested? I'm seeing the
-exact same problems I saw with the old driver, namely that the SPI flash
-chip can't be identified; I think the ID bytes are read back as 0, and
-hence drivers/mtd/devices/m25p80.c falls back to identifying the device
-as mr25h256. Attempting to hexdump -C /dev/mtd0 gives me 32K of zeros,
-whereas the device is 4M and full of non-zero data according to U-Boot.
+Thanks,
 
-Do you know what the problem is here? Can you please update the patch
-series so that the SPI flash is instantiated and works correctly?
+					- Ted
