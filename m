@@ -1,116 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab2J3PTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:19:06 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55421 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab2J3PTE (ORCPT
+	id S1758294Ab2J3PWw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:22:52 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51480 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753946Ab2J3PWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:19:04 -0400
+	Tue, 30 Oct 2012 11:22:50 -0400
+Date: Tue, 30 Oct 2012 17:16:42 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Felipe Balbi <balbi@ti.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>, <tony@atomide.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-input@vger.kernel.org>
+Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
+Message-ID: <20121030151642.GE29159@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <CACRpkdai3NocZQnW6YRF+k6GXUSx3P_Ge=F-tkuivrFm6tBbLg@mail.gmail.com>
+ <4099134.xWUIfbbahk@dtor-d630.eng.vmware.com>
+ <20121024185818.GB772@arwen.pp.htv.fi>
+ <20121025205901.GA3827@sirena.org.uk>
+ <20121026062008.GA21734@arwen.pp.htv.fi>
+ <20121026160316.GY18814@opensource.wolfsonmicro.com>
+ <20121029194901.GA30152@arwen.pp.htv.fi>
+ <20121030112410.GM4511@opensource.wolfsonmicro.com>
+ <20121030114949.GC28722@arwen.pp.htv.fi>
+ <20121030140714.GO4511@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <1351609530.11158.87.camel@smile>
-References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348731121-2515-6-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1348735450.1648.5.camel@vkoul-udesk3>
-	<1348739022.13371.157.camel@smile>
-	<1348740071.1648.25.camel@vkoul-udesk3>
-	<CAOh2x=ntwp22Z3sHf9QehVwab--ZayF-kmTpZsjbkyQYVxrzpw@mail.gmail.com>
-	<1349691428.10584.95.camel@smile>
-	<CAKohpokGsAv2cPjj2EMvmTmN1Q+LOU7mN0H9YZcGzs95mm6c-w@mail.gmail.com>
-	<1349700409.10584.118.camel@smile>
-	<CAKohpo=t_uV-S+cbeDFvSDLe0SxXVx6tvA8yGMF45-YvU_FRvw@mail.gmail.com>
-	<1351609530.11158.87.camel@smile>
-Date: Tue, 30 Oct 2012 20:49:03 +0530
-Message-ID: <CAKohpon7KP5V3xjMG_HaNoP3x1aPT2FtivTz=41PT7neGTpTUw@mail.gmail.com>
-Subject: Re: [PATCHv3 5/7] dmaengine: dw_dmac: add PCI part of the driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Vinod Koul <vinod.koul@linux.intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qFgkTsE6LiHkLPZw"
+Content-Disposition: inline
+In-Reply-To: <20121030140714.GO4511@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 October 2012 20:35, Andy Shevchenko
-<andriy.shevchenko@linux.intel.com> wrote:
-> On Mon, 2012-10-08 at 18:57 +0530, Viresh Kumar wrote:
+--qFgkTsE6LiHkLPZw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> I do agree, we must have as less routines in kernel namespace as possible.
->> But not at the price of over complexity of stuff which isn't required.
->
-> I didn't see the complexity you are talking about.
+Hi,
 
-Complexity not in the way that we need a genius to understand the code :)
-But creating devices layer which doesn't exist.
+On Tue, Oct 30, 2012 at 02:07:15PM +0000, Mark Brown wrote:
+> On Tue, Oct 30, 2012 at 01:49:49PM +0200, Felipe Balbi wrote:
+> > On Tue, Oct 30, 2012 at 11:24:10AM +0000, Mark Brown wrote:
+>=20
+> > > We need some place to put the SoC integration; power domains seem like
+> > > the obvious place to me but YMMV.  Nothing about having this out of t=
+he
+>=20
+> > except that pin muxing has nothing to do with power domain. To me that
+> > sounds like an abuse of the API.
+>=20
+> Well, we can call the API Archibald if we like...  what I mean is
 
->> Logically speaking, we never had two devices for the same
->> dma controller.
->
-> What do you mean by this? Do we ever have the same IP block on different
-> buses at the same time? I think it's potentially possible.
+I'm sure you know it's not at all about the name and much more about the
+semantics ;-)
 
-One device is one instance of an IP. With your approach we will have two
-device structures for a single physical IP present.
+> something that sits in the system below the device in pretty much
+> exactly the way that power domains do.
+>=20
+> > > drivers requires that this be done by individual subsystems in isolat=
+ion
+> > > from each other.  Half the point here is that for the reusable IPs th=
+is
+> > > stuff often isn't driver specific at all, it's often more about the S=
+oC
+> > > integration than it is about the driver and so you'll get a consistent
+> > > pattern for most IPs on the SoC.
+>=20
+> > and all of that SoC-specific detail is already hidden behind power
+> > domains, runtime PM, pinctrl, clk API, regulator framework, etc.
+>=20
+> That's all getting rather open coded, especially if you're going to get
+> down to a situation where you have varying ordering constraints between
+> the different APIs on different SoCs.
 
->> We are adding them just to have pci over platform.. Which
->> would mean the system become more and more complex..
->
->> So, during run time...
->> - there will be two device-driver binding loops.. Once for pci and then for
->>   platform
->
-> Is this a real problem? We have dozens of the drivers on modern hw, part
-> of them by the way use proposed approach.
+however we need to consider those cases right ? Otherwise we will endup
+pushing something to mainline which will have to be reverted couple
+weeks later after a big rant from Linus ;-)
 
-I am repeating this (probably said this earlier, if not sorry). If
-something already
-exists in kernel, it doesn't meant that it is perfect and others
-should blindly follow
-it.
+> > > > How can you make sure that this will work for at least 50% of the
+> > > > drivers ? You just can't. We don't know the implementation details =
+of
+> > > > every arch/soc/platform supported by Linux today to make that decis=
+ion.
+>=20
+> > > Well, we've managed to get along for rather a long time with essentia=
+lly
+> > > all architectures implementing this stuff by doing static setup for t=
+he
+> > > pins on boot.  That does suggest we can get a reasonably long way with
+>=20
+> > and this is one of the issues we're all trying to solve today so we have
+> > single zImage approach for the ARM port.
+>=20
+> I don't see the relevance of single zImage here; device tree is supposed
+> to solve that one.
 
-The loops isn't a problem, but an unnecessary activity done.
+DT is part of the deal. DT alone will solve nothing.
 
->> - In suspend/resume... two devices will get into suspend, instead of one..
->
-> True. But it allows to keep a potential to have the same devices to be
-> attached to the different buses simultaneously.
+> > > something simple, and it does seem to match up with how things usually
+> > > look at an electrical level too.
+>=20
+> > simple ? I really doubt it. Just look at the amount of code duplication
+> > the ARM port had (still has in some places) to handle platform-specific
+> > details.
+>=20
+> What I'm saying here is that I'm concerned about us ending up with more
+> code duplication...
 
-I don't see why a single physical block would be connected to AMBA and PCI
-at the same time. And obviously that's not the case right now, so better leave
-that in current argument :)
+a fair concern.
 
->> - There might be other frameworks in kernel.. which react on struct device
->>    basis... they will get affected too..
->
-> I'm wondering if there any that affects us. I think you might know if
-> there was any example of it (in history?).
+> > It turned out that drivers weren't very portable when they had to do
+> > platform-specific initialization, we were all abusing platform_data to
+> > pass strings and/or function pointers down to drivers and so on.
+>=20
+> > I'm concerned if we hide pinctrl under e.g. power domains (as said
+> > above, it sounds like an abuse of the API to me) we will end up with a
+> > situation like above. Maybe not as bad, but still weird-looking.
+>=20
+> Well, nothing's going to stop that happening if people are determined
+> enough - one could equally see that there'll be flags getting passed to
+> control the ordering of calls if things are open coded.  I would expect
+> that with a power domain style approach any data would be being passed
+> directly and bypassing the driver completely.
 
-There are many frameworks which work per device. regulator, clk, RTPM, etc.
-They will see a hardware hierarchy which doesn't exist.
+situations like that would be a lot more rare in open coded case, don't
+you think ? Also a lot more local, since they will show up on a driver
+source code which is used in a small set of use cases, instead of being
+part of the pm domain implementation for the entire platform.
 
->> - You have larger image size for pci case. as you compile platform too..
->
-> How much? I didn't check this, but I believe it will consume one page at
-> most.
+> > > It seems fairly obvious that if we need to add identical bolier plate
+> > > code to lots of drivers we're doing something wrong, it's just churn =
+for
+> > > little practical gain and a problem if we ever decide to change how t=
+his
+> > > stuff works in the future.
+>=20
+> > I wouldn't consider it boilerplate if you remember that each driver
+> > might have different requirements regarding how all of those details
+> > need to be handled.
+>=20
+> Essentially all the patches I'm seeing adding pinctrl are totally
+> mindless, most of them are just doing the initial setup on boot and not
+> doing any active management at runtime at all.
 
-Whatever amount it is. We can't waste it.
+have you considered that might be just a first step ? I have mentioned
+this before. We first add the bare minimum and work on PM optimizations
+later. You can be sure most likely those mindless patches you're seeing
+are probably building blocks for upcoming patches adding sleep/idle
+modes.
 
-> Actually sdhci seems for me as a not good example. In the mmc code they
-> have already robust architecture (there is host controller, there is
-> core part, there is card part and so on...) and enough of ->ops
-> structures. We have a simpler driver.
+> > We have to consider power consumption, ordering of calls, proper IP
+> > setup, IP reuse on multiple platforms (even multiple ARCHes), etc etc,
+> > and to get that right outside of the driver - who's the only class that
+> > actually knows what it needs to do with its resources - will just be too
+> > complex and error-prone.
+>=20
+> A big part of my point here is that it's not at all clear to me that it
+> is the driver which knows what's going on.  For SoC-specific IPs you can
+> be confident about how the SoC integration looks but for IPs that get
+> reused widely this becomes less true. =20
 
-I am not talking about SD/MMC as a whole. SDHCI targets a specific hardware
-configuration (manufactured by multiple vendors). It is very similar to our case
-here.
+I don't think so. As long as we keep the meaning of the 'default'
+pinctrl state to mean that this is the working state for the IP,
+underlying pinctrl-$arch implementation should know how to set muxing up
+properly, no ?
 
-For me i don't agree with your approach. So, its a NACK.
-However if Arnd/Vinod or You can give me some strong points about
-your approach, i can consider it again :)
+> > I would strongly suggest starting with explicit calls to pinctrl, clk
+> > API, etc and if we can really prove later that 95% of the users are
+> > "standard", then we can factor code out, but making that assumption now
+> > is quite risky IMHO.
+>=20
+> Like I say I think we're already seeing a pattern here, the code going
+> into most drivers looks *very* similar with lots of the drivers simply
+> calling get_select_default().
 
---
-viresh
+might be true, but we don't really know if those aren't building blocks
+for upcoming PM optimizations IMO.
+
+--=20
+balbi
+
+--qFgkTsE6LiHkLPZw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQj+9aAAoJEIaOsuA1yqREEDgQAIo/VUICCQpLqiWUmNHO19XH
+QldLE57rZCOH4h8gJ7jzckM/2lpHjNpbSg+dSi4kTAgTmwEQVfPw7slIgalkJ6M2
+XhpCX2CgoPeNiO/a2JlNPxhkfz/2D5wY+DtcPtlRymwvWOBalFB6sdV8W2W3fBsq
+O5mgHw56ISgSa//FsO6wPCSBaJstJALsjfp+hd70+Ioyy73oHUv76eJg6acrjzXR
+d1IudEhmeL04AEOKdNjSbso8NjlEg8ABOrtzNa+ZumzvniEosn6aXxTqI5NTM0xu
+XQP47IJqhQbwXzaddHx+lQXZhuilxZeqtsLz0s+CLaEm+0o+tM8pXL1LHIs5rhY4
+eiJR3eUTr6oxTRNvox5wFCVfdBCBMmCQ3Nlot0Q/QMbPlbpUfrAF4pzo1EwSvjxX
+aj8Ljfydc34m0SRT6cOywEaOK+peGdKYNzkyDyvCM48gQWRunfNowt8s0qckcYBI
+QCd1QkeKZoDWfCc/AFPaJtDj2aTvL4TpPDbsbxywruXi9z3cWJl5FtS8ALFOqkuj
+3ExSew3CPwI6EMfZzsCnb+tyxvOXbxxvBGAZr3SxqS7dUH6NqELz7mbzSd0qFxOu
+lBgmx37enkdS5a/zHGomLAUji5b3aoksmZJC4gdZRh3fD09f0/ThwagHkrNSsMG4
+5brKfCXeV3rLJT2o8YX4
+=E1PO
+-----END PGP SIGNATURE-----
+
+--qFgkTsE6LiHkLPZw--
