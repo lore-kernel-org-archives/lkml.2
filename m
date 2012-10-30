@@ -1,279 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759288Ab2J3KS7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 06:18:59 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:37157 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759203Ab2J3KSy (ORCPT
+	id S1758382Ab2J3KYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 06:24:23 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:53614 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758040Ab2J3KYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 06:18:54 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>
-CC: <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
-        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <manabian@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v3 08/10] net/macb: better manage tx errors
-Date: Tue, 30 Oct 2012 11:18:00 +0100
-Message-ID: <02784761cd0464183d0ce26e0fff1305cab30436.1351591858.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <cover.1351591858.git.nicolas.ferre@atmel.com>
-References: <cover.1351591858.git.nicolas.ferre@atmel.com>
+	Tue, 30 Oct 2012 06:24:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20121029221905.GA15537@polaris.bitmath.org>
+References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1351241067-9521-9-git-send-email-benjamin.tissoires@gmail.com>
+	<20121029221905.GA15537@polaris.bitmath.org>
+Date: Tue, 30 Oct 2012 11:24:19 +0100
+Message-ID: <CAN+gG=ESZLHneinkc6kdkazRBfsGP70GaBPfV=jLhnTtZMVrKQ@mail.gmail.com>
+Subject: Re: [PATCH v2 08/11] HID: hid-multitouch: fix Win 8 protocol
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handle all TX errors, not only underruns. TX error management is
-deferred to a dedicated workqueue.
-Reinitialize the TX ring after treating all remaining frames, and
-restart the controller when everything has been cleaned up properly.
-Napi is not stopped during this task as the driver only handles
-napi for RX for now.
-With this sequence, we do not need a special check during the xmit
-method as the packets will be caught by TX disable during workqueue
-execution.
+Hi Henrik,
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/net/ethernet/cadence/macb.c | 166 ++++++++++++++++++++++++------------
- drivers/net/ethernet/cadence/macb.h |   1 +
- 2 files changed, 113 insertions(+), 54 deletions(-)
+On Mon, Oct 29, 2012 at 11:19 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> On Fri, Oct 26, 2012 at 10:44:24AM +0200, Benjamin Tissoires wrote:
+>> Win 8 specification is much more precise than the Win 7 one.
+>> Moreover devices that need to take certification must be submitted
+>> to Microsoft.
+>>
+>> The result is a better protocol support and we can rely on that to
+>> skip all the messy tests we used to do.
+>>
+>> The protocol specify the fact that each valid touch must be reported
+>> within a frame, and that the release touch coordinate must be the
+>> same than the last known touch.
+>> So we can use the always_valid quirk and dismiss reports when we
+>> touch coordiante do not follow this rule.
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+>> ---
+>>  drivers/hid/hid-multitouch.c | 16 ++++++++++++++--
+>>  1 file changed, 14 insertions(+), 2 deletions(-)
+>
+> Why do we need this patch?
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index ce29741..83aa834 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -44,6 +44,16 @@
- 
- #define MACB_RX_INT_FLAGS	(MACB_BIT(RCOMP) | MACB_BIT(RXUBR)	\
- 				 | MACB_BIT(ISR_ROVR))
-+#define MACB_TX_ERR_FLAGS	(MACB_BIT(ISR_TUND)			\
-+					| MACB_BIT(ISR_RLE)		\
-+					| MACB_BIT(TXERR))
-+#define MACB_TX_INT_FLAGS	(MACB_TX_ERR_FLAGS | MACB_BIT(TCOMP))
-+
-+/*
-+ * Graceful stop timeouts in us. We should allow up to
-+ * 1 frame time (10 Mbits/s, full-duplex, ignoring collisions)
-+ */
-+#define MACB_HALT_TIMEOUT	1230
- 
- /* Ring buffer accessors */
- static unsigned int macb_tx_ring_wrap(unsigned int index)
-@@ -339,66 +349,113 @@ static void macb_update_stats(struct macb *bp)
- 		*p += __raw_readl(reg);
- }
- 
--static void macb_tx(struct macb *bp)
-+static int macb_halt_tx(struct macb *bp)
- {
--	unsigned int tail;
--	unsigned int head;
--	u32 status;
-+	unsigned long	halt_time, timeout;
-+	u32		status;
- 
--	status = macb_readl(bp, TSR);
--	macb_writel(bp, TSR, status);
-+	macb_writel(bp, NCR, macb_readl(bp, NCR) | MACB_BIT(THALT));
- 
--	netdev_vdbg(bp->dev, "macb_tx status = 0x%03lx\n", (unsigned long)status);
-+	timeout = jiffies + usecs_to_jiffies(MACB_HALT_TIMEOUT);
-+	do {
-+		halt_time = jiffies;
-+		status = macb_readl(bp, TSR);
-+		if (!(status & MACB_BIT(TGO)))
-+			return 0;
- 
--	if (status & (MACB_BIT(UND) | MACB_BIT(TSR_RLE))) {
--		int i;
--		netdev_err(bp->dev, "TX %s, resetting buffers\n",
--			   status & MACB_BIT(UND) ?
--			   "underrun" : "retry limit exceeded");
-+		usleep_range(10, 250);
-+	} while (time_before(halt_time, timeout));
- 
--		/* Transfer ongoing, disable transmitter, to avoid confusion */
--		if (status & MACB_BIT(TGO))
--			macb_writel(bp, NCR, macb_readl(bp, NCR) & ~MACB_BIT(TE));
-+	return -ETIMEDOUT;
-+}
- 
--		head = bp->tx_head;
-+static void macb_tx_error_task(struct work_struct *work)
-+{
-+	struct macb	*bp = container_of(work, struct macb, tx_error_task);
-+	struct macb_tx_skb	*tx_skb;
-+	struct sk_buff		*skb;
-+	unsigned int		tail;
- 
--		/*Mark all the buffer as used to avoid sending a lost buffer*/
--		for (i = 0; i < TX_RING_SIZE; i++)
--			bp->tx_ring[i].ctrl = MACB_BIT(TX_USED);
-+	netdev_vdbg(bp->dev, "macb_tx_error_task: t = %u, h = %u\n",
-+		    bp->tx_tail, bp->tx_head);
- 
--		/* Add wrap bit */
--		bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
-+	/* Make sure nobody is trying to queue up new packets */
-+	netif_stop_queue(bp->dev);
- 
--		/* free transmit buffer in upper layer*/
--		for (tail = bp->tx_tail; tail != head; tail++) {
--			struct macb_tx_skb	*tx_skb;
--			struct sk_buff		*skb;
-+	/*
-+	 * Stop transmission now
-+	 * (in case we have just queued new packets)
-+	 */
-+	if (macb_halt_tx(bp))
-+		/* Just complain for now, reinitializing TX path can be good */
-+		netdev_err(bp->dev, "BUG: halt tx timed out\n");
- 
--			rmb();
-+	/* No need for the lock here as nobody will interrupt us anymore */
- 
--			tx_skb = macb_tx_skb(bp, tail);
--			skb = tx_skb->skb;
-+	/*
-+	 * Treat frames in TX queue including the ones that caused the error.
-+	 * Free transmit buffers in upper layer.
-+	 */
-+	for (tail = bp->tx_tail; tail != bp->tx_head; tail++) {
-+		struct macb_dma_desc	*desc;
-+		u32			ctrl;
- 
--			dma_unmap_single(&bp->pdev->dev, tx_skb->mapping,
--						skb->len, DMA_TO_DEVICE);
--			tx_skb->skb = NULL;
--			dev_kfree_skb_irq(skb);
--		}
-+		desc = macb_tx_desc(bp, tail);
-+		ctrl = desc->ctrl;
-+		tx_skb = macb_tx_skb(bp, tail);
-+		skb = tx_skb->skb;
- 
--		bp->tx_head = bp->tx_tail = 0;
-+		if (ctrl & MACB_BIT(TX_USED)) {
-+			netdev_vdbg(bp->dev, "txerr skb %u (data %p) TX complete\n",
-+				    macb_tx_ring_wrap(tail), skb->data);
-+			bp->stats.tx_packets++;
-+			bp->stats.tx_bytes += skb->len;
-+		} else {
-+			/*
-+			 * "Buffers exhausted mid-frame" errors may only happen
-+			 * if the driver is buggy, so complain loudly about those.
-+			 * Statistics are updated by hardware.
-+			 */
-+			if (ctrl & MACB_BIT(TX_BUF_EXHAUSTED))
-+				netdev_err(bp->dev,
-+					   "BUG: TX buffers exhausted mid-frame\n");
- 
--		/* Enable the transmitter again */
--		if (status & MACB_BIT(TGO))
--			macb_writel(bp, NCR, macb_readl(bp, NCR) | MACB_BIT(TE));
-+			desc->ctrl = ctrl | MACB_BIT(TX_USED);
-+		}
-+
-+		dma_unmap_single(&bp->pdev->dev, tx_skb->mapping, skb->len,
-+				 DMA_TO_DEVICE);
-+		tx_skb->skb = NULL;
-+		dev_kfree_skb(skb);
- 	}
- 
--	if (!(status & MACB_BIT(COMP)))
--		/*
--		 * This may happen when a buffer becomes complete
--		 * between reading the ISR and scanning the
--		 * descriptors.  Nothing to worry about.
--		 */
--		return;
-+	/* Make descriptor updates visible to hardware */
-+	wmb();
-+
-+	/* Reinitialize the TX desc queue */
-+	macb_writel(bp, TBQP, bp->tx_ring_dma);
-+	/* Make TX ring reflect state of hardware */
-+	bp->tx_head = bp->tx_tail = 0;
-+
-+	/* Now we are ready to start transmission again */
-+	netif_wake_queue(bp->dev);
-+
-+	/* Housework before enabling TX IRQ */
-+	macb_writel(bp, TSR, macb_readl(bp, TSR));
-+	macb_writel(bp, IER, MACB_TX_INT_FLAGS);
-+}
-+
-+static void macb_tx_interrupt(struct macb *bp)
-+{
-+	unsigned int tail;
-+	unsigned int head;
-+	u32 status;
-+
-+	status = macb_readl(bp, TSR);
-+	macb_writel(bp, TSR, status);
-+
-+	netdev_vdbg(bp->dev, "macb_tx_interrupt status = 0x%03lx\n",
-+		(unsigned long)status);
- 
- 	head = bp->tx_head;
- 	for (tail = bp->tx_tail; tail != head; tail++) {
-@@ -638,9 +695,14 @@ static irqreturn_t macb_interrupt(int irq, void *dev_id)
- 			}
- 		}
- 
--		if (status & (MACB_BIT(TCOMP) | MACB_BIT(ISR_TUND) |
--			    MACB_BIT(ISR_RLE)))
--			macb_tx(bp);
-+		if (unlikely(status & (MACB_TX_ERR_FLAGS))) {
-+			macb_writel(bp, IDR, MACB_TX_INT_FLAGS);
-+			schedule_work(&bp->tx_error_task);
-+			break;
-+		}
-+
-+		if (status & MACB_BIT(TCOMP))
-+			macb_tx_interrupt(bp);
- 
- 		/*
- 		 * Link change detection isn't possible with RMII, so we'll
-@@ -970,13 +1032,8 @@ static void macb_init_hw(struct macb *bp)
- 	macb_writel(bp, NCR, MACB_BIT(RE) | MACB_BIT(TE) | MACB_BIT(MPE));
- 
- 	/* Enable interrupts */
--	macb_writel(bp, IER, (MACB_BIT(RCOMP)
--			      | MACB_BIT(RXUBR)
--			      | MACB_BIT(ISR_TUND)
--			      | MACB_BIT(ISR_RLE)
--			      | MACB_BIT(TXERR)
--			      | MACB_BIT(TCOMP)
--			      | MACB_BIT(ISR_ROVR)
-+	macb_writel(bp, IER, (MACB_RX_INT_FLAGS
-+			      | MACB_TX_INT_FLAGS
- 			      | MACB_BIT(HRESP)));
- 
- }
-@@ -1428,6 +1485,7 @@ static int __init macb_probe(struct platform_device *pdev)
- 	bp->dev = dev;
- 
- 	spin_lock_init(&bp->lock);
-+	INIT_WORK(&bp->tx_error_task, macb_tx_error_task);
- 
- 	bp->pclk = clk_get(&pdev->dev, "pclk");
- 	if (IS_ERR(bp->pclk)) {
-diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-index 232dca6..4235ab8 100644
---- a/drivers/net/ethernet/cadence/macb.h
-+++ b/drivers/net/ethernet/cadence/macb.h
-@@ -538,6 +538,7 @@ struct macb {
- 	struct clk		*hclk;
- 	struct net_device	*dev;
- 	struct napi_struct	napi;
-+	struct work_struct	tx_error_task;
- 	struct net_device_stats	stats;
- 	union {
- 		struct macb_stats	macb;
--- 
-1.8.0
+This patch prevents a corner case where the device use contactID 0 for
+it's first reported touch.
+Once you got the invalid touches, most of the time, contactID will be
+0, x, y, and other fields too. So this ensures to avoid conflict
+between valid values and garbage values. The problem lies in the fact
+that we don't have the whole overview of the frame (with the contact
+count) to decide which contacts are good and which are not.
 
+Cheers,
+Benjamin
+
+>
+>> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+>> index 43bd8e8..bd23f19 100644
+>> --- a/drivers/hid/hid-multitouch.c
+>> +++ b/drivers/hid/hid-multitouch.c
+>> @@ -510,6 +510,18 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
+>>               int slotnum = mt_compute_slot(td, input);
+>>               struct mt_slot *s = &td->curdata;
+>>
+>> +             if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED &&
+>> +                 !s->touch_state) {
+>> +                     struct input_mt_slot *slot = &input->mt->slots[slotnum];
+>> +                     int prv_x = input_mt_get_value(slot, ABS_MT_POSITION_X);
+>> +                     int prv_y = input_mt_get_value(slot, ABS_MT_POSITION_Y);
+>> +                     /* valid releases occurs when the last x and y positions
+>> +                      * are the same as the last known touch. */
+>> +                     if (!input_mt_is_active(slot) ||
+>> +                         prv_x != s->x || prv_y != s->y)
+>> +                             return;
+>> +             }
+>> +
+>>               if (slotnum < 0 || slotnum >= td->maxcontacts)
+>>                       return;
+>>
+>> @@ -681,8 +693,8 @@ static void mt_post_parse_default_settings(struct mt_device *td)
+>>  {
+>>       __s32 quirks = td->mtclass.quirks;
+>>
+>> -     /* unknown serial device needs special quirks */
+>> -     if (td->touches_by_report == 1) {
+>> +     /* unknown serial devices or win8 ones need special quirks */
+>> +     if (td->touches_by_report == 1 || quirks & MT_QUIRK_WIN_8_CERTIFIED) {
+>>               quirks |= MT_QUIRK_ALWAYS_VALID;
+>>               quirks &= ~MT_QUIRK_NOT_SEEN_MEANS_UP;
+>>               quirks &= ~MT_QUIRK_VALID_IS_INRANGE;
+>> --
+>> 1.7.11.7
+>>
+>
+> Henrik
