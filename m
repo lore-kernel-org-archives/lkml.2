@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424Ab2J3PJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:09:53 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:65215 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088Ab2J3PJv (ORCPT
+	id S1755955Ab2J3PO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:14:58 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35083 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752312Ab2J3PO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:09:51 -0400
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: mchehab@infradead.org
-Cc: crope@iki.fi, remi.schwartz@gmail.com, kyle@kyle.strickland.name,
-        pinusdtv@hotmail.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH] drivers/media/pci/saa7134/saa7134-dvb.c: Test if videobuf_dvb_get_frontend return NULL
-Date: Tue, 30 Oct 2012 16:09:41 +0100
-Message-Id: <1351609781-16148-1-git-send-email-peter.senna@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	Tue, 30 Oct 2012 11:14:56 -0400
+Date: Tue, 30 Oct 2012 15:14:51 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH V2] spi: tegra: add spi driver for SLINK controller
+Message-ID: <20121030151451.GT4511@opensource.wolfsonmicro.com>
+References: <1351531104-1604-1-git-send-email-ldewangan@nvidia.com>
+ <508ED5A5.3000703@wwwdotorg.org>
+ <508F6906.7020704@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="e9fMjeYs+GPci+mg"
+Content-Disposition: inline
+In-Reply-To: <508F6906.7020704@nvidia.com>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on commit: e66131cee501ee720b7b58a4b87073b8fbaaaba6
 
-Not testing videobuf_dvb_get_frontend output may cause OOPS if it return
-NULL. This patch fixes this issue.
+--e9fMjeYs+GPci+mg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The semantic patch that found this issue is(http://coccinelle.lip6.fr/):
-// <smpl>
-@@
-identifier i,a,b;
-statement S, S2;
-@@
-i = videobuf_dvb_get_frontend(...);
-... when != if (!i) S
-* if (i->a.b)
-S2
-// </smpl>
+On Tue, Oct 30, 2012 at 11:13:34AM +0530, Laxman Dewangan wrote:
+> On Tuesday 30 October 2012 12:44 AM, Stephen Warren wrote:
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
----
- drivers/media/pci/saa7134/saa7134-dvb.c | 3 +++
- 1 file changed, 3 insertions(+)
+> >I think it depends on DMAENGINE, not the specific driver now, doesn't it?
 
-diff --git a/drivers/media/pci/saa7134/saa7134-dvb.c b/drivers/media/pci/saa7134/saa7134-dvb.c
-index b209de4..27915e5 100644
---- a/drivers/media/pci/saa7134/saa7134-dvb.c
-+++ b/drivers/media/pci/saa7134/saa7134-dvb.c
-@@ -607,6 +607,9 @@ static int configure_tda827x_fe(struct saa7134_dev *dev,
- 	/* Get the first frontend */
- 	fe0 = videobuf_dvb_get_frontend(&dev->frontends, 1);
- 
-+	if (!fe0)
-+		return -EINVAL;
-+
- 	fe0->dvb.frontend = dvb_attach(tda10046_attach, cdec_conf, &dev->i2c_adap);
- 	if (fe0->dvb.frontend) {
- 		if (cdec_conf->i2c_gate)
--- 
-1.7.11.7
+> Taking example from the mfd, we depends on particular driver, not
+> from the core driver.
+> I like to have this depends on Tegra20_apb_dma.
 
+The reason MFDs do this is that the function drivers usually directly
+reference the core driver in some way, for example by relying on data
+structures it sets up.  With DMA that should all be hidden behind the
+dmaengine API.
+
+--e9fMjeYs+GPci+mg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQj+7JAAoJELSic+t+oim9cLEP/27j1SH9q3Pbc/epbs1hqYl9
+/klO4ftaYVHGxgs1v/cpUUEH9Q4hDIpMKilXhYoz4jDStC4HZF5N+TU1ZgdZRg/Z
+SH0sJwZzYr9aFBIc3nnJTsJ8/rWM77CArG9/LOugPrmvdALXesizZZkkVWv9IC5K
+sw7VuvimrbnmdPeqf3h7R5UF7nHCPWCNZYZKXwI4l3VmpvVtrKCLFrSErYZw6ySr
+kdRWfg2bTZA2O5oQ6sxplLUG5ZDjsBEoQHeDXTp6TmuXmU72zldkl3JG8EYNGIZn
+wJjFVMgKt1iXIhKw/1trU2CTgkji2mhoc96Y6gIFzuDE7cLXpuauzlV0oyIrqTG7
+q76CP46bsaSPGsXB/5jYBNvFdPGXM994lFbJlGSsXdOQCw/leeAch0Vg5UhtMtHT
+bYgYotaguzK1SUAjEzi9dHi3JFuSF4gzVbZaHiahUJlTC2mcBFTwjng5cpYWuTrw
+JXzxmXxIdt+CjHyR/A2CXYuUEU1/5Zd3pDY2nh2QgP0yV6tR5P0JizhoYJXqd9xO
+QavwUAj+/rfX2vnW69o36J6KnNQNu7m4JcxZwjlKPoAhftu9cRlPMpZVLmOLHZ/Q
+SAeVQ/71++3ZvwzcP8s6BrMuGZG2tUvTTGiiqKWMn3m1KDSlseHfdBufbj2jpFwu
+jf1hzEb6LEUuiTYxufaG
+=2lpI
+-----END PGP SIGNATURE-----
+
+--e9fMjeYs+GPci+mg--
