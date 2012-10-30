@@ -1,57 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934253Ab2J3Tkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:40:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51222 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab2J3Tkt (ORCPT
+	id S1759687Ab2J3Tmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:42:52 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42451 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab2J3Tmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:40:49 -0400
-Date: Tue, 30 Oct 2012 12:40:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Behan Webster <behanw@converseincode.com>
-Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Helper macros used for replacing the use of VLAIS
-Message-ID: <20121030194045.GA14892@kroah.com>
-References: <1351621520-17768-1-git-send-email-behanw@converseincode.com>
- <1351621520-17768-2-git-send-email-behanw@converseincode.com>
- <20121030192021.GA1979@kroah.com>
- <50902BFC.4090309@converseincode.com>
+	Tue, 30 Oct 2012 15:42:50 -0400
+Date: Tue, 30 Oct 2012 22:40:23 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] zram: factor-out zram_decompress_page() function (resend)
+Message-ID: <20121030194023.GF2454@swordfish>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50902BFC.4090309@converseincode.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 03:35:24PM -0400, Behan Webster wrote:
-> On 12-10-30 03:20 PM, Greg KH wrote:
-> >On Tue, Oct 30, 2012 at 02:25:19PM -0400, Behan Webster wrote:
-> >>The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
-> >>precludes the use of compilers which don't implement VLAIS (for instance the
-> >>Clang compiler). This new header file contains macros which can be used to
-> >>calculate the size and offset of variables in an allocated buffer of memory
-> >>taking into account alignment issues.
-> >>
-> >>Signed-off-by: Behan Webster <behanw@converseincode.com>
-> >>---
-> >>  include/linux/valign.h |   87 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >>  1 file changed, 87 insertions(+)
-> >>  create mode 100644 include/linux/valign.h
-> >You sent the same patch here, to two different trees (usb and
-> >networking).  That's not good, what happens if they both apply them?
-> Good point. My mistake.
-> 
-> People in both subsystems needed to see the patch which is why I sent them.
-> 
-> What would have been a better approach? And how can I fix this?
+zram_bvec_read() shared decompress functionality with zram_read_before_write() function.
+Factor-out and make commonly used zram_decompress_page() function, which also simplified
+error handling in zram_bvec_read().
 
-Send all 3 as a single series, to everyone and ask the different
-maintainers to work together to figure out who is going to apply what.
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Reviewed-by: Nitin Gupta <ngupta@vflare.org>
 
-Yeah, it's tough, but things like this are pretty rare, so they don't
-come up often.
+---
 
-greg k-h
+ drivers/staging/zram/zram_drv.c | 113 +++++++++++++++++-----------------------
+ 1 file changed, 48 insertions(+), 65 deletions(-)
+
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 6edefde..fb4a7c9 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -183,62 +183,25 @@ static inline int is_partial_io(struct bio_vec *bvec)
+ 	return bvec->bv_len != PAGE_SIZE;
+ }
+ 
+-static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+-			  u32 index, int offset, struct bio *bio)
++static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+ {
+-	int ret;
+-	size_t clen;
+-	struct page *page;
+-	unsigned char *user_mem, *cmem, *uncmem = NULL;
+-
+-	page = bvec->bv_page;
+-
+-	if (zram_test_flag(zram, index, ZRAM_ZERO)) {
+-		handle_zero_page(bvec);
+-		return 0;
+-	}
++	int ret = LZO_E_OK;
++	size_t clen = PAGE_SIZE;
++	unsigned char *cmem;
++	unsigned long handle = zram->table[index].handle;
+ 
+-	/* Requested page is not present in compressed area */
+-	if (unlikely(!zram->table[index].handle)) {
+-		pr_debug("Read before write: sector=%lu, size=%u",
+-			 (ulong)(bio->bi_sector), bio->bi_size);
+-		handle_zero_page(bvec);
++	if (!handle || zram_test_flag(zram, index, ZRAM_ZERO)) {
++		memset(mem, 0, PAGE_SIZE);
+ 		return 0;
+ 	}
+ 
+-	if (is_partial_io(bvec)) {
+-		/* Use  a temporary buffer to decompress the page */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+-		if (!uncmem) {
+-			pr_info("Error allocating temp memory!\n");
+-			return -ENOMEM;
+-		}
+-	}
+-
+-	user_mem = kmap_atomic(page);
+-	if (!is_partial_io(bvec))
+-		uncmem = user_mem;
+-	clen = PAGE_SIZE;
+-
+-	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle,
+-				ZS_MM_RO);
+-
+-	if (zram->table[index].size == PAGE_SIZE) {
+-		memcpy(uncmem, cmem, PAGE_SIZE);
+-		ret = LZO_E_OK;
+-	} else {
++	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
++	if (zram->table[index].size == PAGE_SIZE)
++		memcpy(mem, cmem, PAGE_SIZE);
++	else
+ 		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
+-				    uncmem, &clen);
+-	}
+-
+-	if (is_partial_io(bvec)) {
+-		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
+-		       bvec->bv_len);
+-		kfree(uncmem);
+-	}
+-
+-	zs_unmap_object(zram->mem_pool, zram->table[index].handle);
+-	kunmap_atomic(user_mem);
++						mem, &clen);
++	zs_unmap_object(zram->mem_pool, handle);
+ 
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
+@@ -247,36 +210,56 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 		return ret;
+ 	}
+ 
+-	flush_dcache_page(page);
+-
+ 	return 0;
+ }
+ 
+-static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
++static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
++			  u32 index, int offset, struct bio *bio)
+ {
+ 	int ret;
+-	size_t clen = PAGE_SIZE;
+-	unsigned char *cmem;
+-	unsigned long handle = zram->table[index].handle;
++	struct page *page;
++	unsigned char *user_mem, *uncmem = NULL;
+ 
+-	if (zram_test_flag(zram, index, ZRAM_ZERO) || !handle) {
+-		memset(mem, 0, PAGE_SIZE);
++	page = bvec->bv_page;
++
++	if (unlikely(!zram->table[index].handle) ||
++			zram_test_flag(zram, index, ZRAM_ZERO)) {
++		handle_zero_page(bvec);
+ 		return 0;
+ 	}
+ 
+-	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
+-	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
+-				    mem, &clen);
+-	zs_unmap_object(zram->mem_pool, handle);
++	user_mem = kmap_atomic(page);
++	if (is_partial_io(bvec))
++		/* Use  a temporary buffer to decompress the page */
++		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++	else
++		uncmem = user_mem;
+ 
++	if (!uncmem) {
++		pr_info("Unable to allocate temp memory\n");
++		ret = -ENOMEM;
++		goto out_cleanup;
++	}
++
++	ret = zram_decompress_page(zram, uncmem, index);
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
+ 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+ 		zram_stat64_inc(zram, &zram->stats.failed_reads);
+-		return ret;
++		goto out_cleanup;
+ 	}
+ 
+-	return 0;
++	if (is_partial_io(bvec))
++		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
++				bvec->bv_len);
++
++	flush_dcache_page(page);
++	ret = 0;
++out_cleanup:
++	kunmap_atomic(user_mem);
++	if (is_partial_io(bvec))
++		kfree(uncmem);
++	return ret;
+ }
+ 
+ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+@@ -302,7 +285,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 			ret = -ENOMEM;
+ 			goto out;
+ 		}
+-		ret = zram_read_before_write(zram, uncmem, index);
++		ret = zram_decompress_page(zram, uncmem, index);
+ 		if (ret) {
+ 			kfree(uncmem);
+ 			goto out;
+
+
