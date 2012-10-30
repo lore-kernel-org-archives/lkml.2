@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933040Ab2J3Lrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 07:47:49 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59760 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932537Ab2J3Lrr (ORCPT
+	id S933072Ab2J3Lsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 07:48:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51713 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932537Ab2J3Lsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 07:47:47 -0400
-From: asingh.engi@gmail.com
+	Tue, 30 Oct 2012 07:48:38 -0400
+From: Ashwini Singh <asingh.engi@gmail.com>
 To: johannes@sipsolutions.net
 Cc: linville@tuxdriver.com, davem@davemloft.net,
         linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
         Ashwini Singh <asingh.engi@gmail.com>
 Subject: [PATCH] Linus's tree: wireless: Spelling corrections
-Date: Tue, 30 Oct 2012 17:17:28 +0530
-Message-Id: <508fbe62.a689440a.0273.2f2b@mx.google.com>
+Date: Tue, 30 Oct 2012 17:18:21 +0530
+Message-Id: <1351597701-18216-1-git-send-email-asingh.engi@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-From: Ashwini Singh <asingh.engi@gmail.com>
 
 Few spelling corrections in wireless directory.
 
