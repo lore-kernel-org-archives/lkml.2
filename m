@@ -1,125 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759789Ab2J3LYQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 07:24:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54870 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751555Ab2J3LYN (ORCPT
+	id S932879Ab2J3L1u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 07:27:50 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35885 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932771Ab2J3L1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 07:24:13 -0400
-Date: Tue, 30 Oct 2012 11:24:10 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Message-ID: <20121030112410.GM4511@opensource.wolfsonmicro.com>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
- <20121024161429.GA16350@core.coreip.homeip.net>
- <CACRpkdai3NocZQnW6YRF+k6GXUSx3P_Ge=F-tkuivrFm6tBbLg@mail.gmail.com>
- <4099134.xWUIfbbahk@dtor-d630.eng.vmware.com>
- <20121024185818.GB772@arwen.pp.htv.fi>
- <20121025205901.GA3827@sirena.org.uk>
- <20121026062008.GA21734@arwen.pp.htv.fi>
- <20121026160316.GY18814@opensource.wolfsonmicro.com>
- <20121029194901.GA30152@arwen.pp.htv.fi>
+	Tue, 30 Oct 2012 07:27:49 -0400
+Message-ID: <508FB9B1.5060404@monstr.eu>
+Date: Tue, 30 Oct 2012 12:27:45 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eWmFpGZayiNrn4FL"
-Content-Disposition: inline
-In-Reply-To: <20121029194901.GA30152@arwen.pp.htv.fi>
-X-Cookie: You will never know hunger.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nick Bowler <nbowler@elliptictech.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        John Linn <john.linn@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Josh Cartwright <josh.cartwright@ni.com>
+Subject: Re: [PATCH v2] ARM: zynq: Allow UART1 to be used as DEBUG_LL console.
+References: <1351534769-22155-1-git-send-email-nbowler@elliptictech.com>
+In-Reply-To: <1351534769-22155-1-git-send-email-nbowler@elliptictech.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/29/2012 07:19 PM, Nick Bowler wrote:
+> The main UART on the Xilinx ZC702 board is UART1, located at address
+> e0001000.  Add a Kconfig option to select this device as the low-level
+> debugging port.  This allows the really early boot printouts to reach
+> the USB serial adaptor on this board.
+>
+> For consistency's sake, add a choice entry for UART0 even though it is
+> the the default if UART1 is not selected.
+>
+> Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
+> Tested-by: Josh Cartwright <josh.cartwright@ni.com>
+> ---
+> v2: rebase on newest patch series, signoff.
+>
+> This should apply cleanly on top of Josh Cartwright's v5 "zynq subarch
+> cleanups" series.
+>
+>   arch/arm/Kconfig.debug                     |   17 +++++++++++++++++
+>   arch/arm/mach-zynq/common.c                |    6 +++---
+>   arch/arm/mach-zynq/include/mach/zynq_soc.h |   16 +++++++++++-----
+>   3 files changed, 31 insertions(+), 8 deletions(-)
+>
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index b0f3857b3a4c..7754d51f2b19 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -132,6 +132,23 @@ choice
+>   		  their output to UART1 serial port on DaVinci TNETV107X
+>   		  devices.
+>
+> +	config DEBUG_ZYNQ_UART0
+> +		bool "Kernel low-level debugging on Xilinx Zynq using UART0"
+> +		depends on ARCH_ZYNQ
+> +		help
+> +		  Say Y here if you want the debug print routines to direct
+> +		  their output to UART0 on the Zynq platform.
+> +
+> +	config DEBUG_ZYNQ_UART1
+> +		bool "Kernel low-level debugging on Xilinx Zynq using UART1"
+> +		depends on ARCH_ZYNQ
+> +		help
+> +		  Say Y here if you want the debug print routines to direct
+> +		  their output to UART1 on the Zynq platform.
+> +
+> +		  If you have a ZC702 board and want early boot messages to
+> +		  appear on the USB serial adaptor, select this option.
+> +
+>   	config DEBUG_DC21285_PORT
+>   		bool "Kernel low-level debugging messages via footbridge serial port"
+>   		depends on FOOTBRIDGE
+> diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+> index ba8d14f78d4d..93b91059faab 100644
+> --- a/arch/arm/mach-zynq/common.c
+> +++ b/arch/arm/mach-zynq/common.c
+> @@ -84,9 +84,9 @@ static struct map_desc io_desc[] __initdata = {
+>
+>   #ifdef CONFIG_DEBUG_LL
+>   	{
+> -		.virtual	= UART0_VIRT,
+> -		.pfn		= __phys_to_pfn(UART0_PHYS),
+> -		.length		= UART0_SIZE,
+> +		.virtual	= LL_UART_VADDR,
+> +		.pfn		= __phys_to_pfn(LL_UART_PADDR),
+> +		.length		= UART_SIZE,
+>   		.type		= MT_DEVICE,
+>   	},
+>   #endif
+> diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+> index 1b8bf0ecbcb0..7f4f38bcada9 100644
+> --- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
+> +++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+> @@ -25,8 +25,9 @@
+>    * address that is known to work.
+>    */
+>   #define UART0_PHYS		0xE0000000
+> -#define UART0_SIZE		SZ_4K
+> -#define UART0_VIRT		0xF0001000
+> +#define UART1_PHYS		0xE0001000
+> +#define UART_SIZE		SZ_4K
+> +#define UART_VIRT		0xF0001000
+>
+>   #define TTC0_PHYS		0xF8001000
+>   #define TTC0_SIZE		SZ_4K
+> @@ -36,12 +37,17 @@
+>   #define SCU_PERIPH_SIZE		SZ_8K
+>   #define SCU_PERIPH_VIRT		(TTC0_VIRT - SCU_PERIPH_SIZE)
+>
+> +#if IS_ENABLED(CONFIG_DEBUG_ZYNQ_UART1)
+> +#	define LL_UART_PADDR	UART1_PHYS
+> +#	define LL_UART_VADDR	UART_VIRT
+> +#else
+> +#	define LL_UART_PADDR	UART0_PHYS
+> +#	define LL_UART_VADDR	UART_VIRT
+> +#endif
 
---eWmFpGZayiNrn4FL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Probably no reason to setup LL_UART_VADDR on two lines.
+It is enough to set it up once.
 
-On Mon, Oct 29, 2012 at 09:49:01PM +0200, Felipe Balbi wrote:
-> On Fri, Oct 26, 2012 at 05:03:16PM +0100, Mark Brown wrote:
+MINOR: It is just my personal preference to use different coding style.
 
-> > You could have the driver explicitly set the flag, it would just be one
-> > extra line, but it seems marginally nicer to just do it.
+#if IS_ENABLED(CONFIG_DEBUG_ZYNQ_UART1)
+# define LL_UART_PADDR	UART1_PHYS
+#else
+# define LL_UART_PADDR	UART0_PHYS
+#endif
 
-> You didn't get the whole picture I'm afraid. Consider the situation
-> where the same e.g. keypad driver is being used on OMAP4 and OMAP5 and
-> those have different requirements towards pinctrl.
+#define LL_UART_VADDR	UART_VIRT
 
-No, I'm pretty certain that I do.
+Thanks,
+Michal
 
-> Now, we need to add OMAP5 support *to the same keypad driver*.
-> Unfortunately, OMAP5 needs to handle pinctrl explicitly for whatever
-> reason (SW-controlled sleep mode, errata fix, whatever).
-
-> This will mean that we will have to remove the flag from the keypad
-> driver because that's not valid anymore for OMAP5.
-
-This isn't a problem; either the pinctrl code for OMAP5 will do
-something sensible for OMAP4 in which case there's no difference to the
-resulting code or you're going to have to have conditional code for the
-two devices anyway and you're no worse off.
-
-> This is why I think hiding things from drivers makes no sense. Also
-> consider the situations Linus W exposed on another subthread. If you
-> change ordering of certain calls, you will really break the
-> functionality of the IP. Because we can't make sure this won't work
-> automagically in all cases (just like we can't make sure $size memory
-> allocation is enough for all drivers) we don't hide that from the
-> driver. We require driver to manage its resources properly.
-
-We need some place to put the SoC integration; power domains seem like
-the obvious place to me but YMMV.  Nothing about having this out of the
-drivers requires that this be done by individual subsystems in isolation
-=66rom each other.  Half the point here is that for the reusable IPs this
-stuff often isn't driver specific at all, it's often more about the SoC
-integration than it is about the driver and so you'll get a consistent
-pattern for most IPs on the SoC.
-
-> How can you make sure that this will work for at least 50% of the
-> drivers ? You just can't. We don't know the implementation details of
-> every arch/soc/platform supported by Linux today to make that decision.
-
-Well, we've managed to get along for rather a long time with essentially
-all architectures implementing this stuff by doing static setup for the
-pins on boot.  That does suggest we can get a reasonably long way with
-something simple, and it does seem to match up with how things usually
-look at an electrical level too.
-
-It seems fairly obvious that if we need to add identical bolier plate
-code to lots of drivers we're doing something wrong, it's just churn for
-little practical gain and a problem if we ever decide to change how this
-stuff works in the future.
-
---eWmFpGZayiNrn4FL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQj7jQAAoJELSic+t+oim9WhwP/2CnMJ92z7eKpVpMjMMZa+yo
-5/P4MYtQFjHlOnsorDey5yLsO1YPbVyGzrHnAElsb0U38wIMQqqH7Z7p5ge00DTM
-fq/8oL8/FDGjZFW9wbsI/GOZyH4e0zAuKIu3G5hIBjZu8kIbmDXcu+tq+Mm1C4nL
-Rv+PZLnCGXQDTbQDrW7d/dip+IHj9y6N1955yLg6J+GEj/Pdr3Ym/p8xl0ul8/SU
-EMh3TfPar73HouozUERH+h20aHF5fMs0EiAGpmRdrflfxAMfN4AgPRT5LxZ6vJOR
-/HZoyJ8nQnlRExOhc0BTGV9PlcO9M/cQvI3P+3l78OFIGlmFaFiWZfgT+ELtp0sk
-DbvsaaW4ilhQDRyqQ8QSkt7GLRlWpiNXY64IDbtVigp5eqwXO5BRI+OpZWGc6W38
-/yXWmol6ewi7Qy8xEWzHV26J5kTWDY1hzbrm+WZr0rT++o4vI0zC1zCod+4yBEqQ
-f5SzJu0kdwDfqrujBiFQUV0tIkJptPmP12o8YRZxbRiIb3J7cFowhyB6gY6L5RCf
-kuFMV/VyoyqaQSX1+rb2EdzufMRdfHeZKTb3Jejkbj95SA+EBucJ7ASiTxbkxuC4
-wYKM/AJePPoFVJHXKmWkBgOk51MKgInrC/r+kId1x3IA3wB0yj8JWEtSvfVhSNiP
-rIeQvDw7ZClCyAB6gV8i
-=9wtN
------END PGP SIGNATURE-----
-
---eWmFpGZayiNrn4FL--
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
