@@ -1,269 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934264Ab2J3TTZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:19:25 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:59928 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753257Ab2J3TTO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:19:14 -0400
-Date: Tue, 30 Oct 2012 15:19:09 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive
-	hashtable
-Message-ID: <20121030191909.GB9427@Krystal>
-References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
+	id S965487Ab2J3TTs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:19:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9786 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934273Ab2J3TTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:19:46 -0400
+From: David Howells <dhowells@redhat.com>
+Subject: [RFC][PATCH 00/23] Load keys from signed PE binaries
+To: rusty@rustcorp.com.au
+Cc: dhowells@redhat.com, pjones@redhat.com, jwboyer@redhat.com, mjg@redhat.com,
+        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
+        keescook@chromium.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 30 Oct 2012 19:19:28 +0000
+Message-ID: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> This hashtable implementation is using hlist buckets to provide a simple
-> hashtable to prevent it from getting reimplemented all over the kernel.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 
-Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Hi Rusty,
 
-> ---
-> 
-> Changes from v8:
-> 
->  - Addressed comments from Tejun Heo and Mathieu Desnoyers.
-> 
-> 
->  include/linux/hashtable.h | 196 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 196 insertions(+)
->  create mode 100644 include/linux/hashtable.h
-> 
-> diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
-> new file mode 100644
-> index 0000000..3c1a9cb
-> --- /dev/null
-> +++ b/include/linux/hashtable.h
-> @@ -0,0 +1,196 @@
-> +/*
-> + * Statically sized hash table implementation
-> + * (C) 2012  Sasha Levin <levinsasha928@gmail.com>
-> + */
-> +
-> +#ifndef _LINUX_HASHTABLE_H
-> +#define _LINUX_HASHTABLE_H
-> +
-> +#include <linux/list.h>
-> +#include <linux/types.h>
-> +#include <linux/kernel.h>
-> +#include <linux/hash.h>
-> +#include <linux/rculist.h>
-> +
-> +#define DEFINE_HASHTABLE(name, bits)						\
-> +	struct hlist_head name[1 << (bits)] =					\
-> +			{ [0 ... ((1 << (bits)) - 1)] = HLIST_HEAD_INIT }
-> +
-> +#define DECLARE_HASHTABLE(name, bits)                                   	\
-> +	struct hlist_head name[1 << (bits)]
-> +
-> +#define HASH_SIZE(name) (ARRAY_SIZE(name))
-> +#define HASH_BITS(name) ilog2(HASH_SIZE(name))
-> +
-> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
-> +#define hash_min(val, bits)							\
-> +({										\
-> +	sizeof(val) <= 4 ?							\
-> +	hash_32(val, bits) :							\
-> +	hash_long(val, bits);							\
-> +})
-> +
-> +static inline void __hash_init(struct hlist_head *ht, unsigned int sz)
-> +{
-> +	unsigned int i;
-> +
-> +	for (i = 0; i < sz; i++)
-> +		INIT_HLIST_HEAD(&ht[i]);
-> +}
-> +
-> +/**
-> + * hash_init - initialize a hash table
-> + * @hashtable: hashtable to be initialized
-> + *
-> + * Calculates the size of the hashtable from the given parameter, otherwise
-> + * same as hash_init_size.
-> + *
-> + * This has to be a macro since HASH_BITS() will not work on pointers since
-> + * it calculates the size during preprocessing.
-> + */
-> +#define hash_init(hashtable) __hash_init(hashtable, HASH_SIZE(hashtable))
-> +
-> +/**
-> + * hash_add - add an object to a hashtable
-> + * @hashtable: hashtable to add to
-> + * @node: the &struct hlist_node of the object to be added
-> + * @key: the key of the object to be added
-> + */
-> +#define hash_add(hashtable, node, key)						\
-> +	hlist_add_head(node, &hashtable[hash_min(key, HASH_BITS(hashtable))])
-> +
-> +/**
-> + * hash_add_rcu - add an object to a rcu enabled hashtable
-> + * @hashtable: hashtable to add to
-> + * @node: the &struct hlist_node of the object to be added
-> + * @key: the key of the object to be added
-> + */
-> +#define hash_add_rcu(hashtable, node, key)					\
-> +	hlist_add_head_rcu(node, &hashtable[hash_min(key, HASH_BITS(hashtable))])
-> +
-> +/**
-> + * hash_hashed - check whether an object is in any hashtable
-> + * @node: the &struct hlist_node of the object to be checked
-> + */
-> +static inline bool hash_hashed(struct hlist_node *node)
-> +{
-> +	return !hlist_unhashed(node);
-> +}
-> +
-> +static inline bool __hash_empty(struct hlist_head *ht, unsigned int sz)
-> +{
-> +	unsigned int i;
-> +
-> +	for (i = 0; i < sz; i++)
-> +		if (!hlist_empty(&ht[i]))
-> +			return false;
-> +
-> +	return true;
-> +}
-> +
-> +/**
-> + * hash_empty - check whether a hashtable is empty
-> + * @hashtable: hashtable to check
-> + *
-> + * This has to be a macro since HASH_BITS() will not work on pointers since
-> + * it calculates the size during preprocessing.
-> + */
-> +#define hash_empty(hashtable) __hash_empty(hashtable, HASH_SIZE(hashtable))
-> +
-> +/**
-> + * hash_del - remove an object from a hashtable
-> + * @node: &struct hlist_node of the object to remove
-> + */
-> +static inline void hash_del(struct hlist_node *node)
-> +{
-> +	hlist_del_init(node);
-> +}
-> +
-> +/**
-> + * hash_del_rcu - remove an object from a rcu enabled hashtable
-> + * @node: &struct hlist_node of the object to remove
-> + */
-> +static inline void hash_del_rcu(struct hlist_node *node)
-> +{
-> +	hlist_del_init_rcu(node);
-> +}
-> +
-> +/**
-> + * hash_for_each - iterate over a hashtable
-> + * @name: hashtable to iterate
-> + * @bkt: integer to use as bucket loop cursor
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @member: the name of the hlist_node within the struct
-> + */
-> +#define hash_for_each(name, bkt, node, obj, member)				\
-> +	for ((bkt) = 0, node = NULL; node == NULL && (bkt) < HASH_SIZE(name); (bkt)++)\
-> +		hlist_for_each_entry(obj, node, &name[bkt], member)
-> +
-> +/**
-> + * hash_for_each_rcu - iterate over a rcu enabled hashtable
-> + * @name: hashtable to iterate
-> + * @bkt: integer to use as bucket loop cursor
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @member: the name of the hlist_node within the struct
-> + */
-> +#define hash_for_each_rcu(name, bkt, node, obj, member)				\
-> +	for ((bkt) = 0, node = NULL; node == NULL && (bkt) < HASH_SIZE(name); (bkt)++)\
-> +		hlist_for_each_entry_rcu(obj, node, &name[bkt], member)
-> +
-> +/**
-> + * hash_for_each_safe - iterate over a hashtable safe against removal of
-> + * hash entry
-> + * @name: hashtable to iterate
-> + * @bkt: integer to use as bucket loop cursor
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @tmp: a &struct used for temporary storage
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @member: the name of the hlist_node within the struct
-> + */
-> +#define hash_for_each_safe(name, bkt, node, tmp, obj, member)			\
-> +	for ((bkt) = 0, node = NULL; node == NULL && (bkt) < HASH_SIZE(name); (bkt)++)\
-> +		hlist_for_each_entry_safe(obj, node, tmp, &name[bkt], member)
-> +
-> +/**
-> + * hash_for_each_possible - iterate over all possible objects hashing to the
-> + * same bucket
-> + * @name: hashtable to iterate
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @member: the name of the hlist_node within the struct
-> + * @key: the key of the objects to iterate over
-> + */
-> +#define hash_for_each_possible(name, obj, node, member, key)			\
-> +	hlist_for_each_entry(obj, node,	&name[hash_min(key, HASH_BITS(name))], member)
-> +
-> +/**
-> + * hash_for_each_possible_rcu - iterate over all possible objects hashing to the
-> + * same bucket in an rcu enabled hashtable
-> + * in a rcu enabled hashtable
-> + * @name: hashtable to iterate
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @member: the name of the hlist_node within the struct
-> + * @key: the key of the objects to iterate over
-> + */
-> +#define hash_for_each_possible_rcu(name, obj, node, member, key)		\
-> +	hlist_for_each_entry_rcu(obj, node, &name[hash_min(key, HASH_BITS(name))], member)
-> +
-> +/**
-> + * hash_for_each_possible_safe - iterate over all possible objects hashing to the
-> + * same bucket safe against removals
-> + * @name: hashtable to iterate
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @tmp: a &struct used for temporary storage
-> + * @member: the name of the hlist_node within the struct
-> + * @key: the key of the objects to iterate over
-> + */
-> +#define hash_for_each_possible_safe(name, obj, node, tmp, member, key)		\
-> +	hlist_for_each_entry_safe(obj, node, tmp,				\
-> +		&name[hash_min(key, HASH_BITS(name))], member)
-> +
-> +
-> +#endif
-> -- 
-> 1.7.12.4
-> 
+Here's a set of patches to load a key out of a signed PE format binary:
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+	http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=shortlog;h=refs/heads/devel-pekey
+
+The problem (as I understand it) these patches aim to solve is that Microsoft
+will only sign PE binaries (driver DLLs, application EXEs) and not keys.
+However, under some circumstances, we need to add a new key to the system.  We
+could require that the user reboot into the BIOS, add the key, and then switch
+back, but under some circumstances we want to be able to do this whilst the
+kernel is running.
+
+Unfortunately, if the kernel is running in secure-boot mode, we can't load a
+new key if it isn't signed by a key we already have (and trust).
+
+The way we get around this is to embed an X.509 certificate containing the key
+in a section called ".keylist" in a PE binary and then get the binary signed by
+Microsoft or whoever.  The key can then be passed to the kernel by:
+
+	keyctl padd asymmetric "" {ID of .modsign_keyring} <key_carrying.dll
+
+This command executes the following steps:
+
+ (1) Parse the PE binary to locate the signature and the new key.
+
+ (2) Parse the PKCS#7 message in the PE binary.
+
+ (3) Parse the content of the PKCS#7 message which is in "Microsoft individual
+     code signing form" (the mscode bits in my patches).  This contains the PE
+     binary digest type and the expected resultant digest value.
+
+ (4) Digest the signed parts of the PE binary according to step (3) and compare
+     the digest obtained to the digest expected.
+
+ (5) Digest the signed parts of the PKCS#7 message (which covers the content
+     data used in step (3)).
+
+ (6) Verify the signature on the PKCS#7 message against one of the X.509
+     certificates it contains.
+
+ (7) Check the signatures on the chain of X.509 certificates in the PKCS#7
+     message as far as possible.
+
+ (8) Cross-reference the chain of X.509 certificates against the known keys the
+     kernel already possesses, and if one is found, verify the signature of the
+     nearest object to the PKCS#7 message that we can (or the PKCS#7 message
+     itself) against the trusted key.
+
+ (9) Pass the X.509 certificate embedded in the message to the X.509 parser to
+     be turned into a key.
+
+To make this work, step (8) requires access to the .module_sign keyring -
+something that could be made cleaner.
+
+
+Since this requires the ability to add to the .module_sign keyring, I have
+turned on WRITE permission for root - but so that _only_ trusted keys can be
+added, I've added two more flags in key->flags:
+
+	KEY_FLAG_TRUSTED - this key is trusted.
+
+	KEY_FLAG_TRUSTED_ONLY - only links to trusted keys can be made to this
+				keyring.
+
+A trusted key appears with a 'T' flag in /proc/keys:
+
+	0616778d I------T     2 perm 1f010000     0     0 asymmetri Magrathea: Glacier signing key: b0d8dceca6af6da583cfcd6ab84f113d8a3b7e44: X509.RSA 8a3b7e44 []
+
+I'm not sure that this is the best mechanism by which to filter keyring
+additions.
+
+
+What these patches then do is allow you to add new keys by signing them with a
+key a user will already have.  There can be more than one source for these
+keys: firstly, there is a key built into the kernel for module signing
+purposes, and secondly, we have patches under development for extracting keys
+from the UEFI signature database.
+
+
+One further note: Though we don't actually execute the PE binary container to
+get at the key, there's no reason that the PE binary couldn't be executable.
+For instance, it could be an EFI binary that can be run under the BIOS to add
+the key.
+
+The test wrapper I'm using is this:
+
+	#include <efi.h>
+	#include <efilib.h>
+
+	EFI_STATUS
+	efi_main (EFI_HANDLE image_handle, EFI_SYSTEM_TABLE *systab)
+	{
+		InitializeLib(image_handle, systab);
+		Print(L"This program contains a list of public keys.\n");
+		return EFI_SUCCESS;
+	}
+
+	extern __attribute__((section(".keylist"))) const uint8_t certificate_list[];
+	extern __attribute__((section(".keylist"))) const uint8_t certificate_list_end[];
+	asm(".section .keylist,\"a\"\n"
+	    "certificate_list:\n"
+	    ".incbin \"signing_key.x509\"\n"
+	    "certificate_list_end:"
+	    );
+
+and is built something like this:
+
+	CPPFLAGS := -nostdinc -I /usr/include/efi -I /usr/include/efi/x86_64
+
+	CFLAGS := -O2 -fpic \
+		-Wall -fshort-wchar -fno-strict-aliasing \
+		-fno-merge-constants -mno-red-zone
+
+	LDSCRIPT := /usr/lib64/gnuefi/elf_x86_64_efi.lds
+	CRT0	:= /usr/lib64/gnuefi/crt0-efi-x86_64.o
+	X509	:= magrathea
+	KEY	:= /data/modsign/linux-modsign/signing_key.priv
+
+	pekey.efi.signed: pekey.efi
+		pesign -i $< -o $@ \
+			-c $(X509) \
+			-p $(KEY) \
+			-s -f
+
+	pekey.efi: pekey.so
+		objcopy \
+			-j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel \
+			-j .rela -j .reloc -j .keylist --target=efi-app-x86_64 $< $@
+
+	pekey.so: pekey.o
+		$(LD) -nostdlib -T $(LDSCRIPT) -shared -Bsymbolic $(CRT0) $< -o $@ \
+			-L /usr/lib64 -lefi -lgnuefi \
+			-L /usr/lib/gcc/x86_64-redhat-linux/4.7.2 -lgcc
+
+	pekey.o: pekey.c Makefile
+		$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+David
+---
+David Howells (23):
+      KEYS: Add a 'trusted' flag and a 'trusted only' flag
+      PEFILE: Load the contained key if we consider the container to be validly signed
+      PKCS#7: Find intersection between PKCS#7 message and known, trusted keys
+      pefile: Digest the PE binary and compare to the PKCS#7 data
+      pefile: Parse the "Microsoft individual code signing" data blob
+      pefile: Parse the presumed PKCS#7 content of the certificate blob
+      pefile: Strip the wrapper off of the cert data block
+      pefile: Parse a PE binary to find a key and a signature contained therein
+      Provide PE binary definitions
+      PKCS#7: Verify internal certificate chain
+      PKCS#7: Find the right key in the PKCS#7 key list and verify the signature
+      PKCS#7: Digest the data in a signed-data message
+      PKCS#7: Implement a parser [RFC 2315]
+      X.509: Export certificate parse and free functions
+      X.509: Handle certificates that lack an authorityKeyIdentifier field
+      X.509: Embed public_key_signature struct and create filler function
+      X.509: Add bits needed for PKCS#7
+      x509: struct x509_certificate needs struct tm declaring
+      KEYS: Store public key algo ID in public_key_signature struct
+      KEYS: Split public_key_verify_signature() and make available
+      KEYS: Store public key algo ID in public_key struct
+      KEYS: Move the algorithm pointer array from x509 to public_key.c
+      KEYS: Rename public key parameter name arrays
+
+
+ crypto/asymmetric_keys/Kconfig            |   19 +
+ crypto/asymmetric_keys/Makefile           |   30 ++
+ crypto/asymmetric_keys/mscode.asn1        |   28 ++
+ crypto/asymmetric_keys/mscode_parser.c    |  110 +++++++
+ crypto/asymmetric_keys/pefile_parser.c    |  473 +++++++++++++++++++++++++++++
+ crypto/asymmetric_keys/pefile_parser.h    |   36 ++
+ crypto/asymmetric_keys/pkcs7.asn1         |  127 ++++++++
+ crypto/asymmetric_keys/pkcs7_parser.c     |  326 ++++++++++++++++++++
+ crypto/asymmetric_keys/pkcs7_parser.h     |   72 ++++
+ crypto/asymmetric_keys/pkcs7_trust.c      |  149 +++++++++
+ crypto/asymmetric_keys/pkcs7_verify.c     |  256 ++++++++++++++++
+ crypto/asymmetric_keys/public_key.c       |   58 +++-
+ crypto/asymmetric_keys/public_key.h       |    6 
+ crypto/asymmetric_keys/x509.asn1          |    2 
+ crypto/asymmetric_keys/x509_cert_parser.c |   55 ++-
+ crypto/asymmetric_keys/x509_parser.h      |   28 +-
+ crypto/asymmetric_keys/x509_public_key.c  |  107 +++----
+ include/crypto/public_key.h               |    9 -
+ include/linux/key-type.h                  |    1 
+ include/linux/key.h                       |    3 
+ include/linux/oid_registry.h              |    7 
+ include/linux/pe.h                        |  448 +++++++++++++++++++++++++++
+ kernel/modsign_pubkey.c                   |    7 
+ kernel/module_signing.c                   |    4 
+ security/keys/key.c                       |    8 
+ security/keys/keyring.c                   |    4 
+ security/keys/proc.c                      |    3 
+ 27 files changed, 2277 insertions(+), 99 deletions(-)
+ create mode 100644 crypto/asymmetric_keys/mscode.asn1
+ create mode 100644 crypto/asymmetric_keys/mscode_parser.c
+ create mode 100644 crypto/asymmetric_keys/pefile_parser.c
+ create mode 100644 crypto/asymmetric_keys/pefile_parser.h
+ create mode 100644 crypto/asymmetric_keys/pkcs7.asn1
+ create mode 100644 crypto/asymmetric_keys/pkcs7_parser.c
+ create mode 100644 crypto/asymmetric_keys/pkcs7_parser.h
+ create mode 100644 crypto/asymmetric_keys/pkcs7_trust.c
+ create mode 100644 crypto/asymmetric_keys/pkcs7_verify.c
+ create mode 100644 include/linux/pe.h
+
