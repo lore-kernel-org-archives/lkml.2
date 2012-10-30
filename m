@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab2J3Prz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:47:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755609Ab2J3Prw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:47:52 -0400
-Message-ID: <508FF6A1.5060201@redhat.com>
-Date: Tue, 30 Oct 2012 11:47:45 -0400
-From: Vlad Yasevich <vyasevic@redhat.com>
-Reply-To: vyasevic@redhat.com
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1757859Ab2J3PsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:48:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42285 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab2J3PsF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 11:48:05 -0400
+Date: Tue, 30 Oct 2012 08:48:01 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
+Message-ID: <20121030154801.GC14167@kroah.com>
+References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
+ <20121030021938.GC1920@kroah.com>
+ <20121030040744.GB32055@dtor-ws.eng.vmware.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 8/8] vhost-net: reduce vq polling on tx zerocopy
-References: <cover.1351524501.git.mst@redhat.com> <3e57e2cde71a4270a8fef395c31f5f0e8a130c28.1351524502.git.mst@redhat.com>
-In-Reply-To: <3e57e2cde71a4270a8fef395c31f5f0e8a130c28.1351524502.git.mst@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030040744.GB32055@dtor-ws.eng.vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2012 11:49 AM, Michael S. Tsirkin wrote:
-> It seems that to avoid deadlocks it is enough to poll vq before
->   we are going to use the last buffer.  This should be faster than
-> c70aa540c7a9f67add11ad3161096fb95233aa2e.
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->   drivers/vhost/net.c | 12 ++++++++++--
->   1 file changed, 10 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 8e9de79..3967f82 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -197,8 +197,16 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, int status)
->   {
->   	struct vhost_ubuf_ref *ubufs = ubuf->ctx;
->   	struct vhost_virtqueue *vq = ubufs->vq;
-> -
-> -	vhost_poll_queue(&vq->poll);
-> +	int cnt = atomic_read(&ubufs->kref.refcount);
-> +
-> +	/*
-> +	 * Trigger polling thread if guest stopped submitting new buffers:
-> +	 * in this case, the refcount after decrement will eventually reach 1
-> +	 * so here it is 2.
-> +	 * We also trigger polling periodically after each 16 packets.
-> +	 */
-> +	if (cnt <= 2 || !(cnt % 16))
+On Mon, Oct 29, 2012 at 09:07:44PM -0700, Dmitry Torokhov wrote:
+> Hi Greg,
+> 
+> On Mon, Oct 29, 2012 at 07:19:38PM -0700, Greg KH wrote:
+> > On Mon, Oct 29, 2012 at 06:03:28PM -0700, George Zhang wrote:
+> > >  drivers/misc/Kconfig                      |    1
+> > >  drivers/misc/Makefile                     |    2
+> > >  drivers/misc/vmw_vmci/Kconfig             |   16
+> > >  drivers/misc/vmw_vmci/Makefile            |   43
+> > 
+> > Meta comment here, why drivers/misc/?  The other hypervisor
+> > infrastructures all have their own directory under drivers/  Should we
+> > be moving everything to drivers/hyperv/ somehow?
+> 
+> drivers/hyperv is not the best name for obvious reasons...
 
-Why 16?  Does it make sense to make it configurable?
+Sorry, yes :)
 
--vlad
+> I think that even if we had a special directory for vmci having network
+> drivers in Dave's realm and pvscsi in James's is best option, so the new
+> directory would contain vmci and the balloon driver (vsock will go into
+> net/).  Given that balloon is already in drivers/misc it looked like
+> obvious place for VMCI as well.
 
-> +		vhost_poll_queue(&vq->poll);
->   	/* set len to mark this desc buffers done DMA */
->   	vq->heads[ubuf->desc].len = status ?
->   		VHOST_DMA_FAILED_LEN : VHOST_DMA_DONE_LEN;
->
+I agree that the individual drivers should go in the subsystem area,
+it's this "hypervisor bus core" type code that I'm questioning.  Right
+now every hypervisor is putting that logic in a different place in the
+kernel, having some consistency here would be nice.
 
+thanks,
+
+greg k-h
