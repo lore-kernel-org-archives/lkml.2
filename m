@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934751Ab2J3V5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:57:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52844 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934528Ab2J3V5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:57:34 -0400
-Date: Tue, 30 Oct 2012 22:57:30 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Daniel Santos <daniel.santos@pobox.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v4 8/9] bug.h: Add BUILD_BUG_ON_MSG & _BUILD_BUG_INTERNAL
-Message-ID: <20121030215729.GB9558@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Daniel Santos <daniel.santos@pobox.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Andi Kleen <ak@linux.intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Christopher Li <sparse@chrisli.org>,
-	David Daney <david.daney@cavium.com>,
-	David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-	Josh Triplett <josh@joshtriplett.org>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-	Paul Gortmaker <paul.gortmaker@windriver.com>,
-	Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	David Rientjes <rientjes@google.com>
-References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
- <1351457835-7553-8-git-send-email-daniel.santos@pobox.com>
- <20121030171747.GF28499@liondog.tnic>
+	id S1757897Ab2J3V6A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:58:00 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:32971 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934528Ab2J3V56 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 17:57:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121030171747.GF28499@liondog.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87sj97hs5e.fsf@rustcorp.com.au>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
+	<CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
+	<50749DE8.7010703@zytor.com>
+	<CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
+	<5074A0AB.8040207@zytor.com>
+	<87d30o7iy6.fsf@rustcorp.com.au>
+	<CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com>
+	<87ipa8o4mn.fsf@rustcorp.com.au>
+	<CAKgNAkiVxUiqJ1pYNq3wW_yQxcyhqntUzcEWscFOhJ3GaVn1aQ@mail.gmail.com>
+	<87sj97hs5e.fsf@rustcorp.com.au>
+Date: Tue, 30 Oct 2012 14:57:57 -0700
+X-Google-Sender-Auth: f6K5yusIeNev2HSGmpCzBonVtgg
+Message-ID: <CAGXu5jKnok56CHY_YQn9df9MC64TQFexs7fNMmF-NU4Yd+aAig@mail.gmail.com>
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+From: Kees Cook <keescook@chromium.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: mtk.manpages@gmail.com, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        jonathon@jonmasters.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 06:17:47PM +0100, Borislav Petkov wrote:
-> can BUILD_BUG_ON and BUILD_BUG_ON_MSG both use __BUILD_BUG_INTERNAL?
+On Mon, Oct 22, 2012 at 12:39 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>>> FIX: add flags arg to sys_finit_module()
+>>>
+>>> Thanks to Michael Kerrisk for keeping us honest.
+>>
+>> w00t! Thanks, Rusty ;-).
+>>
+>> Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
 >
-> In the BUILD_BUG_ON msg will be "BUILD_BUG_ON failed" and line empty.
-> Can that even work?
+> Here's the version I ended up with when I added two flags.
+>
+> Lucas, is this useful to you?
+>
+> BTW Michael: why aren't the syscall man pages in the kernel source?
+>
+> Thanks,
+> Rusty.
+>
+> module: add flags arg to sys_finit_module()
+>
+> Thanks to Michael Kerrisk for keeping us honest.  These flags are actually
+> useful for eliminating the only case where kmod has to mangle a module's
+> internals: for overriding module versioning.
+>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Yes it can, I should simply look at patch 9/9 first :-).
+Rusty,
+
+I haven't seen this land in your modules-next tree. I just wanted to
+make sure it hadn't gotten lost. I'd like to do some kmod tests
+against linux-next, but I've been waiting for this to appear.
+
+I acked this before, but as long as I'm replying again:
+
+Acked-by: Kees Cook <keescook@chromium.org>
+
+-Kees
 
 -- 
-Regards/Gruss,
-    Boris.
+Kees Cook
+Chrome OS Security
