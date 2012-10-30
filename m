@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2J3DDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 23:03:19 -0400
-Received: from plane.gmane.org ([80.91.229.3]:34622 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752174Ab2J3DDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 23:03:17 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Cong Wang <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH] bonding: fix bond 6 mode change MAC of arp reply from
- vif to cause Domu's network unreachable intermittently
-Date: Tue, 30 Oct 2012 03:03:05 +0000 (UTC)
-Message-ID: <k6ng19$fvd$1@ger.gmane.org>
-References: <1351565271-5888-1-git-send-email-zheng.x.li@oracle.com>
-Mime-Version: 1.0
+	id S1754013Ab2J3DN2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 23:13:28 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:36056 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761Ab2J3DN1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 23:13:27 -0400
+Date: Tue, 30 Oct 2012 12:13:22 +0900
+From: Norbert Preining <preining@logic.at>
+To: Ben Widawsky <ben@bwidawsk.net>
+Cc: Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: drm i915 hangs on heavy io load
+Message-ID: <20121030031322.GA14213@gamma.logic.tuwien.ac.at>
+References: <20121024003659.GA30962@gamma.logic.tuwien.ac.at> <b94cdc$72fm1r@fmsmga001.fm.intel.com> <20121028024753.GA4254@gamma.logic.tuwien.ac.at> <eeac1e$4q1mqm@AZSMGA002.ch.intel.com> <A941F80C-7EDB-4FCF-A8DE-4AE5532D2CB5@logic.at> <20121029071715.GA17023@mac.home> <20121030004958.GA6976@gamma.logic.tuwien.ac.at> <CAPM=9tw_0vDcRG25i2ypJEKT+JNqWzkXw2+jg=qj6H5M1hoJXg@mail.gmail.com> <20121030010138.GB6976@gamma.logic.tuwien.ac.at> <20121029183739.47eeb944@bwidawsk.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: 112.132.138.96
-User-Agent: slrn/0.9.9p1 (Linux)
-Cc: netdev@vger.kernel.org
+Content-Disposition: inline
+In-Reply-To: <20121029183739.47eeb944@bwidawsk.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Oct 2012 at 02:47 GMT, Zheng Li <zheng.x.li@oracle.com> wrote:
-> +			struct slave *tmp_slave = NULL;
-> +			int i = 0, found_mac = 0;
-> +			bond_for_each_slave(bond, tmp_slave, i) {
-> +				if (ether_addr_equal_64bits(arp->mac_src,
-> +						tmp_slave->dev->dev_addr)) {
-> +					found_mac = 1;
-> +					break;
-> +				}
-> +			}
-> +			if (found_mac)
-> +				memcpy(arp->mac_src, tx_slave->dev->dev_addr,
-> +					ETH_ALEN);
+On Mo, 29 Okt 2012, Ben Widawsky wrote:
+> Hi Norbert. In addition to the above, if this truly appears to be
+> related to i/o, can we try to decrease the time to failure with some
 
-A nitpick: found_mac can be a bool.
+I am *not* sure. As I said, the last thing was shotwell photo
+editing. It might be some io while loading the photos, but
+after that they are in the cache, and the only thing is done is
+lots of displaying.
 
+> serious i/o tests? Off the top of my head I am not sure what's
+
+Anyway, that is my idea. I think I don't need google. A simple
+	svn up
+on my 15Gb svn repository creates enough io. And doing some git pull
+or so on same sized repositories in parallel brings anyway the
+laptop to its knees (actually, badly to its knees).
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+Far out in the uncharted backwaters of the unfashionable
+end of the western spiral arm of the Galaxy lies a small
+unregarded yellow sun.
+                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
