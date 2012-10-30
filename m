@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab2J3Xho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 19:37:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50353 "EHLO mx2.suse.de"
+	id S1753065Ab2J3XiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 19:38:00 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:47119 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750737Ab2J3Xhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 19:37:43 -0400
-Date: Wed, 31 Oct 2012 00:37:36 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: memcg/cgroup: do not fail fail on pre_destroy callbacks
-Message-ID: <20121030233356.GA19496@dhcp22.suse.cz>
-References: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
- <20121029232602.GF4066@htj.dyndns.org>
+	id S1752800Ab2J3Xh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 19:37:58 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, lm-sensors@lm-sensors.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, oprofile-list@lists.sf.net,
+        Stephane Eranian <eranian@google.com>,
+        Robert Richter <rric@kernel.org>,
+        =?ISO-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>
+Subject: Re: [PATCH 3/4] cpufreq, powernow-k8: Change email address
+Date: Wed, 31 Oct 2012 00:42:01 +0100
+Message-ID: <2384721.S5BJ6UP5pX@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20121029233100.GE8393@liondog.tnic>
+References: <20121029174924.GA5024@tweety> <2663527.sPyzc5AXi8@vostro.rjw.lan> <20121029233100.GE8393@liondog.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029232602.GF4066@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-10-12 16:26:02, Tejun Heo wrote:
-> Hello, Michal.
+On Tuesday, October 30, 2012 12:31:00 AM Borislav Petkov wrote:
+> On Tue, Oct 30, 2012 at 12:33:15AM +0100, Rafael J. Wysocki wrote:
+> > On Monday, October 29, 2012 06:52:21 PM Andreas Herrmann wrote:
+> > > 
+> > > Signed-off-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
+> > 
+> > Am I supposed to take this one?
 > 
-> > Tejun is planning to build on top of that and make some more cleanups
-> > in the cgroup core (namely get rid of of the whole retry code in
-> > cgroup_rmdir).
-> 
-> I applied 1-3 to the following branch which is based on top of v3.6.
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git cgroup-destroy-updates
+> Yes please.
 
-Ok, Andrew droped all the patches from his tree and I set up this
-branch for automerging to -mm git tree.
+OK, I'm going to push it for v3.7.
 
-> I'll follow up with updates to the destroy path which will replace #4.
-> #5 and #6 should be stackable on top.
+Thanks,
+Rafael
 
-Could you take care of them and apply those two on top of the first one
-which guarantees that css_tryget fails and no new task can appear in the
-group (aka #4 without follow up cleanups)? So that Andrew doesn't have
-to care about them later.
 
-Thanks!
 -- 
-Michal Hocko
-SUSE Labs
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
