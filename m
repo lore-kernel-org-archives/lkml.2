@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab2J3Sfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:35:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7786 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab2J3Sff (ORCPT
+	id S1756341Ab2J3ShJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:37:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33212 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752523Ab2J3ShH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:35:35 -0400
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=V3PaAaPhDywA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=MpoW4NFLMuQA:10 a=Ev6e3Ck_rFUU5JYsq8MA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351622134.4004.17.camel@gandalf.local.home>
-Subject: Re: [PATCH] scripts/recordmcount.pl: Support build with
- -ffunction-sections.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Newton <will.newton@gmail.com>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Tue, 30 Oct 2012 14:35:34 -0400
-In-Reply-To: <CAFbHwiSwGc8g7AV5mKic3JPDktFHw0pE7kR4yXRYoL_Jsyz6fQ@mail.gmail.com>
-References: <CAFbHwiRtBaHkpZqTm6VZ=fCJcyu+dsdpo_kxMHy1egce=rTuyA@mail.gmail.com>
-	 <1351609517.8467.85.camel@gandalf.local.home>
-	 <CAFbHwiRXzWpKjtu2jQzr_COuSLg=HNit-CfkTuArrzc+xP53Og@mail.gmail.com>
-	 <1351613128.8467.109.camel@gandalf.local.home>
-	 <CAFbHwiSwGc8g7AV5mKic3JPDktFHw0pE7kR4yXRYoL_Jsyz6fQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Oct 2012 14:37:07 -0400
+Date: Tue, 30 Oct 2012 18:37:04 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
+Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
+Message-ID: <20121030183704.GX4511@opensource.wolfsonmicro.com>
+References: <20121025205901.GA3827@sirena.org.uk>
+ <20121026062008.GA21734@arwen.pp.htv.fi>
+ <20121026160316.GY18814@opensource.wolfsonmicro.com>
+ <20121029194901.GA30152@arwen.pp.htv.fi>
+ <20121030112410.GM4511@opensource.wolfsonmicro.com>
+ <20121030114949.GC28722@arwen.pp.htv.fi>
+ <20121030140714.GO4511@opensource.wolfsonmicro.com>
+ <20121030151642.GE29159@arwen.pp.htv.fi>
+ <20121030155821.GU4511@opensource.wolfsonmicro.com>
+ <20121030172513.GA3993@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DMefDzZywwCHZelG"
+Content-Disposition: inline
+In-Reply-To: <20121030172513.GA3993@arwen.pp.htv.fi>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-30 at 17:43 +0000, Will Newton wrote:
 
-> Ok, well we are only concerned with C compiled code, otherwise there
-> would be no calls to mcount? The only way I can think of to cause code
-> to be emitted in a section of this type is to use the section
-> attribute. A quick grep for __attribute__(__section__ or __section
-> does not turn up any sections that are named .text.* on any
-> architecture (freed or not).
-> 
-> Is there any other case I have missed? I also did a grep for .text.
-> more generally and didn't see anything that looked problematic
-> (although it is mainly .S files so not relevant).
+--DMefDzZywwCHZelG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If you feel confident enough, then I'm fine with it. But if any more
-network cards get bricked, I'm blaming you.
+On Tue, Oct 30, 2012 at 07:25:13PM +0200, Felipe Balbi wrote:
+> On Tue, Oct 30, 2012 at 03:58:21PM +0000, Mark Brown wrote:
 
- ;-)
+> > But then this comes round to the mindless code that ought to be factored
+> > out :)  Only the more interesting cases that do something unusual really
+> > register here.
 
-> 
-> >>
-> >> > Second, most archs today do not use recordmcount.pl. They use the new
-> >> > recordmcount.c file.
-> >>
-> >> Ok, thanks for letting me know. Is the plan to switch over to
-> >> recordmcount.c exclusively at some point?
-> >
-> > When all the archs convert.
-> 
-> I'll rework my patch against recordmcount.c once I have it working.
+> fair enough. I see your point. Not saying I agree though, just that this
+> discussion has been flying for far too long, so feel free to provide
+> patches implementing what you're defending here ;-)
 
-OK, thanks.
+> Guess code will speak for itself. On way or another, we need OMAP keypad
+> driver working in mainline and I don't think your arguments are strong
+> enough to keep $SUBJECT from being merged, unless you can provide
+> something stable/tested for v3.8 merge window.
 
--- Steve
+Ship me an OMAP5 system and I might see what I can do :)
 
+More seriously the amount of time we seem to have been spending recently
+on changes which end up requiring us to go through essentially every
+driver and add code to them (often several times) doesn't seem like
+we're doing a good job here.  pinctrl is really noticable because it's
+new but it's not the only thing.  As a subsystem maintainer this code
+just makes me want to add new subsystem features to pull the code out of
+drivers but obviously that's not something that should be being done at
+the subsystem level.
 
+--DMefDzZywwCHZelG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQkB43AAoJELSic+t+oim9I0wP/1rfBcXfK+YljZUr1hkeCm28
+8C32AJqxiOv6udgo4yLnsJmfJkCXiyrLrg5Xl3mfXL/Jl+CQVYUM3GaqatPsqA08
+0Olfa5KM+Ftsfvb91lxjvqYvYHzmkFBUY4s3Kk5Xtu0ltEeTy9Dxvzb7Sh8Pj+/m
+cwBBqwf+milN3u84ZxHvgpLshzq+prsUMq0ym7gnr8+7VeDooSM+uao5uk/hSblw
+FloanO5OkNk/FSHfc9eAEDaJVHHrxM88bWwTNkR3IvFwdB8WFVwbHpuXHlg3PhLy
+3hoiDDW8yTJxXwYy9ld8jpTg4O36kSTF5+nHYkWTAm0UUocdAEy0z4/cNnj/Wjqp
+v20zhskCYp6O1TWa5Ws34fgeifVgOKTFEYuURox1g7CXJCbnO7coQvY4GAbV5nqQ
+9GCQTIkLomOocctANrABGNEAMcNmU3E5JEhDaPMZhKRHwuMB0X1msaE+E/knwRUi
+DX3XeV70DaiAqBKyVfmKQknzgE9qbyOSuEWzIyVvMFPQw8xYDJhUKxKeMOK2U3uf
+0pKEamahZbQ6heUuyz5K6i6rUu+1zXkx3jqpVJ/DKpSM6keanNWzph0pvbT5RQX2
+ubbVGu5yOe8wZfOWfmqlAK3cztUxMBw/raCM78BMV0CbNoA2eAXoJRrUr5bCHzmZ
+Ea9qpZRWusegfByl1USM
+=V4+A
+-----END PGP SIGNATURE-----
+
+--DMefDzZywwCHZelG--
