@@ -1,312 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab2J3Iwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 04:52:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55409 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756139Ab2J3IwE (ORCPT
+	id S1756750Ab2J3IxI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 04:53:08 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:63398 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756239Ab2J3IxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 04:52:04 -0400
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur@brendeland.net>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, sjurbren@gmail.com,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCH v8 1/3] virtio_console: Merge struct buffer_token into struct port_buffer
-Date: Tue, 30 Oct 2012 09:51:51 +0100
-Message-Id: <1351587113-2566-2-git-send-email-sjur@brendeland.net>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351587113-2566-1-git-send-email-sjur@brendeland.net>
-References: <1351587113-2566-1-git-send-email-sjur@brendeland.net>
+	Tue, 30 Oct 2012 04:53:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK44p21QhTT0xwUh4d8CzoN3R0Qoz4uXGSu4=a3s7cT49YicNQ@mail.gmail.com>
+References: <50898F97.3000202@gmail.com>
+	<1351235345-13050-1-git-send-email-hongbo.zhang@linaro.com>
+	<CAK44p21QhTT0xwUh4d8CzoN3R0Qoz4uXGSu4=a3s7cT49YicNQ@mail.gmail.com>
+Date: Tue, 30 Oct 2012 09:53:02 +0100
+Message-ID: <CAJLyvQxF7d44F2hDyL_bk8CTyfs+6=K7eAuWA2d-=12Y45=tQg@mail.gmail.com>
+Subject: Re: [PATCH V2 4/6] Thermal: Remove the cooling_cpufreq_list.
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: Amit Kachhap <amit.kachhap@linaro.org>
+Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+On 30 October 2012 09:03, Amit Kachhap <amit.kachhap@linaro.org> wrote:
+> On 26 October 2012 12:39, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
+>> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+>>
+>> Problem of using this list is that the cpufreq_get_max_state callback will be
+>> called when register cooling device by thermal_cooling_device_register, but
+>> this list isn't ready at this moment. What's more, there is no need to maintain
+>> such a list, we can get cpufreq_cooling_device instance by the private
+>> thermal_cooling_device.devdata.
+>
+> Hi,
+>
+> Removing this list seems fine as most of frequency checks are moved
+> inside generic thermal layer.
+> Some minor review comments below,
+>
+> Reviewed-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+Thanks.
+>>
+>> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+>> ---
+>>  drivers/thermal/cpu_cooling.c | 91 +++++++++----------------------------------
+>>  1 file changed, 19 insertions(+), 72 deletions(-)
+>>
+>> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+>> index 415b041..2ffd12c 100644
+>> --- a/drivers/thermal/cpu_cooling.c
+>> +++ b/drivers/thermal/cpu_cooling.c
+>> @@ -58,8 +58,9 @@ struct cpufreq_cooling_device {
+>>  };
+>>  static LIST_HEAD(cooling_cpufreq_list);
+>>  static DEFINE_IDR(cpufreq_idr);
+>> +static DEFINE_MUTEX(cooling_cpufreq_lock);
+>>
+>> -static struct mutex cooling_cpufreq_lock;
+>> +static unsigned int cpufreq_dev_count;
+>>
+>>  /* notify_table passes value to the CPUFREQ_ADJUST callback function. */
+>>  #define NOTIFY_INVALID NULL
+>> @@ -240,28 +241,18 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
+>>  static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
+>>                                  unsigned long *state)
+>>  {
+>> -       int ret = -EINVAL, i = 0;
+>> -       struct cpufreq_cooling_device *cpufreq_device;
+>> -       struct cpumask *maskPtr;
+>> +       struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
+> check cdev is not null.
+>> +       struct cpumask *maskPtr = &cpufreq_device->allowed_cpus;
+>>         unsigned int cpu;
+>>         struct cpufreq_frequency_table *table;
+>>         unsigned long count = 0;
+>> +       int i = 0;
+>>
+>> -       mutex_lock(&cooling_cpufreq_lock);
+>> -       list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
+>> -               if (cpufreq_device && cpufreq_device->cool_dev == cdev)
+>> -                       break;
+>> -       }
+>> -       if (cpufreq_device == NULL)
+>> -               goto return_get_max_state;
+>> -
+>> -       maskPtr = &cpufreq_device->allowed_cpus;
+>>         cpu = cpumask_any(maskPtr);
+>>         table = cpufreq_frequency_get_table(cpu);
+>>         if (!table) {
+>>                 *state = 0;
+>> -               ret = 0;
+>> -               goto return_get_max_state;
+>> +               return 0;
+>>         }
+>>
+>>         for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+>> @@ -272,12 +263,10 @@ static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
+>>
+>>         if (count > 0) {
+>>                 *state = --count;
+>> -               ret = 0;
+>> +               return 0;
+>>         }
+>>
+>> -return_get_max_state:
+>> -       mutex_unlock(&cooling_cpufreq_lock);
+>> -       return ret;
+>> +       return -EINVAL;
+>>  }
+>>
+>>  /**
+>> @@ -288,20 +277,10 @@ return_get_max_state:
+>>  static int cpufreq_get_cur_state(struct thermal_cooling_device *cdev,
+>>                                  unsigned long *state)
+>>  {
+>> -       int ret = -EINVAL;
+>> -       struct cpufreq_cooling_device *cpufreq_device;
+>> +       struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
+>>
+>> -       mutex_lock(&cooling_cpufreq_lock);
+>> -       list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
+>> -               if (cpufreq_device && cpufreq_device->cool_dev == cdev) {
+>> -                       *state = cpufreq_device->cpufreq_state;
+>> -                       ret = 0;
+>> -                       break;
+>> -               }
+>> -       }
+>> -       mutex_unlock(&cooling_cpufreq_lock);
+>> -
+>> -       return ret;
+>> +       *state = cpufreq_device->cpufreq_state;
+>> +       return 0;
+>>  }
+>>
+>>  /**
+>> @@ -312,22 +291,9 @@ static int cpufreq_get_cur_state(struct thermal_cooling_device *cdev,
+>>  static int cpufreq_set_cur_state(struct thermal_cooling_device *cdev,
+>>                                  unsigned long state)
+>>  {
+>> -       int ret = -EINVAL;
+>> -       struct cpufreq_cooling_device *cpufreq_device;
+>> +       struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
+> check cdev is not null
+Such values are used in all the three static cpufreq_***_state
+callback functions, when these functions are called, cdev->devdata
+should have been set in the registration function, and cannot be null,
+no body can call these function before registration, so I think there
+is no need to add such a check here.
 
-Refactoring the splice functionality by unifying the approach for
-sending scatter-lists and regular buffers. This simplifies
-buffer handling and reduces code size. Splice will now allocate
-a port_buffer and send_buf() and free_buf() can always be used
-for any buffer.
-
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-Acked-by: Amit Shah <amit.shah@redhat.com>
----
- drivers/char/virtio_console.c |  129 +++++++++++++++++------------------------
- 1 file changed, 53 insertions(+), 76 deletions(-)
-
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 4ad8aca..b84390f 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -111,6 +111,12 @@ struct port_buffer {
- 	size_t len;
- 	/* offset in the buf from which to consume data */
- 	size_t offset;
-+
-+	/* If sgpages == 0 then buf is used */
-+	unsigned int sgpages;
-+
-+	/* sg is used if spages > 0. sg must be the last in is struct */
-+	struct scatterlist sg[0];
- };
- 
- /*
-@@ -338,17 +344,39 @@ static inline bool use_multiport(struct ports_device *portdev)
- 
- static void free_buf(struct port_buffer *buf)
- {
-+	unsigned int i;
-+
- 	kfree(buf->buf);
-+	for (i = 0; i < buf->sgpages; i++) {
-+		struct page *page = sg_page(&buf->sg[i]);
-+		if (!page)
-+			break;
-+		put_page(page);
-+	}
-+
- 	kfree(buf);
- }
- 
--static struct port_buffer *alloc_buf(size_t buf_size)
-+static struct port_buffer *alloc_buf(struct virtqueue *vq, size_t buf_size,
-+				     int pages)
- {
- 	struct port_buffer *buf;
- 
--	buf = kmalloc(sizeof(*buf), GFP_KERNEL);
-+	/*
-+	 * Allocate buffer and the sg list. The sg list array is allocated
-+	 * directly after the port_buffer struct.
-+	 */
-+	buf = kmalloc(sizeof(*buf) + sizeof(struct scatterlist) * pages,
-+		      GFP_KERNEL);
- 	if (!buf)
- 		goto fail;
-+
-+	buf->sgpages = pages;
-+	if (pages > 0) {
-+		buf->buf = NULL;
-+		return buf;
-+	}
-+
- 	buf->buf = kmalloc(buf_size, GFP_KERNEL);
- 	if (!buf->buf)
- 		goto free_buf;
-@@ -476,52 +504,26 @@ static ssize_t send_control_msg(struct port *port, unsigned int event,
- 	return 0;
- }
- 
--struct buffer_token {
--	union {
--		void *buf;
--		struct scatterlist *sg;
--	} u;
--	/* If sgpages == 0 then buf is used, else sg is used */
--	unsigned int sgpages;
--};
--
--static void reclaim_sg_pages(struct scatterlist *sg, unsigned int nrpages)
--{
--	int i;
--	struct page *page;
--
--	for (i = 0; i < nrpages; i++) {
--		page = sg_page(&sg[i]);
--		if (!page)
--			break;
--		put_page(page);
--	}
--	kfree(sg);
--}
- 
- /* Callers must take the port->outvq_lock */
- static void reclaim_consumed_buffers(struct port *port)
- {
--	struct buffer_token *tok;
-+	struct port_buffer *buf;
- 	unsigned int len;
- 
- 	if (!port->portdev) {
- 		/* Device has been unplugged.  vqs are already gone. */
- 		return;
- 	}
--	while ((tok = virtqueue_get_buf(port->out_vq, &len))) {
--		if (tok->sgpages)
--			reclaim_sg_pages(tok->u.sg, tok->sgpages);
--		else
--			kfree(tok->u.buf);
--		kfree(tok);
-+	while ((buf = virtqueue_get_buf(port->out_vq, &len))) {
-+		free_buf(buf);
- 		port->outvq_full = false;
- 	}
- }
- 
- static ssize_t __send_to_port(struct port *port, struct scatterlist *sg,
- 			      int nents, size_t in_count,
--			      struct buffer_token *tok, bool nonblock)
-+			      void *data, bool nonblock)
- {
- 	struct virtqueue *out_vq;
- 	int err;
-@@ -534,7 +536,7 @@ static ssize_t __send_to_port(struct port *port, struct scatterlist *sg,
- 
- 	reclaim_consumed_buffers(port);
- 
--	err = virtqueue_add_buf(out_vq, sg, nents, 0, tok, GFP_ATOMIC);
-+	err = virtqueue_add_buf(out_vq, sg, nents, 0, data, GFP_ATOMIC);
- 
- 	/* Tell Host to go! */
- 	virtqueue_kick(out_vq);
-@@ -572,37 +574,6 @@ done:
- 	return in_count;
- }
- 
--static ssize_t send_buf(struct port *port, void *in_buf, size_t in_count,
--			bool nonblock)
--{
--	struct scatterlist sg[1];
--	struct buffer_token *tok;
--
--	tok = kmalloc(sizeof(*tok), GFP_ATOMIC);
--	if (!tok)
--		return -ENOMEM;
--	tok->sgpages = 0;
--	tok->u.buf = in_buf;
--
--	sg_init_one(sg, in_buf, in_count);
--
--	return __send_to_port(port, sg, 1, in_count, tok, nonblock);
--}
--
--static ssize_t send_pages(struct port *port, struct scatterlist *sg, int nents,
--			  size_t in_count, bool nonblock)
--{
--	struct buffer_token *tok;
--
--	tok = kmalloc(sizeof(*tok), GFP_ATOMIC);
--	if (!tok)
--		return -ENOMEM;
--	tok->sgpages = nents;
--	tok->u.sg = sg;
--
--	return __send_to_port(port, sg, nents, in_count, tok, nonblock);
--}
--
- /*
-  * Give out the data that's requested from the buffer that we have
-  * queued up.
-@@ -748,9 +719,10 @@ static ssize_t port_fops_write(struct file *filp, const char __user *ubuf,
- 			       size_t count, loff_t *offp)
- {
- 	struct port *port;
--	char *buf;
-+	struct port_buffer *buf;
- 	ssize_t ret;
- 	bool nonblock;
-+	struct scatterlist sg[1];
- 
- 	/* Userspace could be out to fool us */
- 	if (!count)
-@@ -766,11 +738,11 @@ static ssize_t port_fops_write(struct file *filp, const char __user *ubuf,
- 
- 	count = min((size_t)(32 * 1024), count);
- 
--	buf = kmalloc(count, GFP_KERNEL);
-+	buf = alloc_buf(port->out_vq, count, 0);
- 	if (!buf)
- 		return -ENOMEM;
- 
--	ret = copy_from_user(buf, ubuf, count);
-+	ret = copy_from_user(buf->buf, ubuf, count);
- 	if (ret) {
- 		ret = -EFAULT;
- 		goto free_buf;
-@@ -784,13 +756,14 @@ static ssize_t port_fops_write(struct file *filp, const char __user *ubuf,
- 	 * through to the host.
- 	 */
- 	nonblock = true;
--	ret = send_buf(port, buf, count, nonblock);
-+	sg_init_one(sg, buf->buf, count);
-+	ret = __send_to_port(port, sg, 1, count, buf, nonblock);
- 
- 	if (nonblock && ret > 0)
- 		goto out;
- 
- free_buf:
--	kfree(buf);
-+	free_buf(buf);
- out:
- 	return ret;
- }
-@@ -856,6 +829,7 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
- 	struct port *port = filp->private_data;
- 	struct sg_list sgl;
- 	ssize_t ret;
-+	struct port_buffer *buf;
- 	struct splice_desc sd = {
- 		.total_len = len,
- 		.flags = flags,
-@@ -867,17 +841,18 @@ static ssize_t port_fops_splice_write(struct pipe_inode_info *pipe,
- 	if (ret < 0)
- 		return ret;
- 
-+	buf = alloc_buf(port->out_vq, 0, pipe->nrbufs);
-+	if (!buf)
-+		return -ENOMEM;
-+
- 	sgl.n = 0;
- 	sgl.len = 0;
- 	sgl.size = pipe->nrbufs;
--	sgl.sg = kmalloc(sizeof(struct scatterlist) * sgl.size, GFP_KERNEL);
--	if (unlikely(!sgl.sg))
--		return -ENOMEM;
--
-+	sgl.sg = buf->sg;
- 	sg_init_table(sgl.sg, sgl.size);
- 	ret = __splice_from_pipe(pipe, &sd, pipe_to_sg);
- 	if (likely(ret > 0))
--		ret = send_pages(port, sgl.sg, sgl.n, sgl.len, true);
-+		ret = __send_to_port(port, buf->sg, sgl.n, sgl.len, buf, true);
- 
- 	if (unlikely(ret <= 0))
- 		kfree(sgl.sg);
-@@ -1033,6 +1008,7 @@ static const struct file_operations port_fops = {
- static int put_chars(u32 vtermno, const char *buf, int count)
- {
- 	struct port *port;
-+	struct scatterlist sg[1];
- 
- 	if (unlikely(early_put_chars))
- 		return early_put_chars(vtermno, buf, count);
-@@ -1041,7 +1017,8 @@ static int put_chars(u32 vtermno, const char *buf, int count)
- 	if (!port)
- 		return -EPIPE;
- 
--	return send_buf(port, (void *)buf, count, false);
-+	sg_init_one(sg, buf, count);
-+	return __send_to_port(port, sg, 1, count, (void *)buf, false);
- }
- 
- /*
-@@ -1262,7 +1239,7 @@ static unsigned int fill_queue(struct virtqueue *vq, spinlock_t *lock)
- 
- 	nr_added_bufs = 0;
- 	do {
--		buf = alloc_buf(PAGE_SIZE);
-+		buf = alloc_buf(vq, PAGE_SIZE, 0);
- 		if (!buf)
- 			break;
- 
--- 
-1.7.9.5
-
+>>
+>> -       mutex_lock(&cooling_cpufreq_lock);
+>> -       list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
+>> -               if (cpufreq_device && cpufreq_device->cool_dev == cdev) {
+>> -                       ret = 0;
+>> -                       break;
+>> -               }
+>> -       }
+>> -       if (!ret)
+>> -               ret = cpufreq_apply_cooling(cpufreq_device, state);
+>> -
+>> -       mutex_unlock(&cooling_cpufreq_lock);
+>> -
+>> -       return ret;
+>> +       return cpufreq_apply_cooling(cpufreq_device, state);
+>>  }
+>>
+>>  /* Bind cpufreq callbacks to thermal cooling device ops */
+>> @@ -351,7 +317,7 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+>>  {
+>>         struct thermal_cooling_device *cool_dev;
+>>         struct cpufreq_cooling_device *cpufreq_dev = NULL;
+>> -       unsigned int cpufreq_dev_count = 0, min = 0, max = 0;
+>> +       unsigned int min = 0, max = 0;
+>>         char dev_name[THERMAL_NAME_LENGTH];
+>>         int ret = 0, i;
+>>         struct cpufreq_policy policy;
+>> @@ -360,9 +326,6 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+>>         if (!cpufreq_frequency_get_table(cpumask_any(clip_cpus)))
+>>                 return ERR_PTR(-EPROBE_DEFER);
+>>
+>> -       list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node)
+>> -               cpufreq_dev_count++;
+>> -
+>>         /*Verify that all the clip cpus have same freq_min, freq_max limit*/
+>>         for_each_cpu(i, clip_cpus) {
+>>                 /*continue if cpufreq policy not found and not return error*/
+>> @@ -384,9 +347,6 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+>>
+>>         cpumask_copy(&cpufreq_dev->allowed_cpus, clip_cpus);
+>>
+>> -       if (cpufreq_dev_count == 0)
+>> -               mutex_init(&cooling_cpufreq_lock);
+>> -
+>>         ret = get_idr(&cpufreq_idr, &cpufreq_dev->id);
+>>         if (ret) {
+>>                 kfree(cpufreq_dev);
+>> @@ -405,12 +365,12 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+>>         cpufreq_dev->cool_dev = cool_dev;
+>>         cpufreq_dev->cpufreq_state = 0;
+>>         mutex_lock(&cooling_cpufreq_lock);
+>> -       list_add_tail(&cpufreq_dev->node, &cooling_cpufreq_list);
+>>
+>>         /* Register the notifier for first cpufreq cooling device */
+>>         if (cpufreq_dev_count == 0)
+>>                 cpufreq_register_notifier(&thermal_cpufreq_notifier_block,
+>>                                                 CPUFREQ_POLICY_NOTIFIER);
+>> +       cpufreq_dev_count++;
+>>
+>>         mutex_unlock(&cooling_cpufreq_lock);
+>>         return cool_dev;
+>> @@ -423,33 +383,20 @@ EXPORT_SYMBOL(cpufreq_cooling_register);
+>>   */
+>>  void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
+>>  {
+>> -       struct cpufreq_cooling_device *cpufreq_dev = NULL;
+>> -       unsigned int cpufreq_dev_count = 0;
+>> +       struct cpufreq_cooling_device *cpufreq_dev = cdev->devdata;
+>>
+>>         mutex_lock(&cooling_cpufreq_lock);
+>> -       list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node) {
+>> -               if (cpufreq_dev && cpufreq_dev->cool_dev == cdev)
+>> -                       break;
+>> -               cpufreq_dev_count++;
+>> -       }
+>> -
+>> -       if (!cpufreq_dev || cpufreq_dev->cool_dev != cdev) {
+>> -               mutex_unlock(&cooling_cpufreq_lock);
+>> -               return;
+>> -       }
+>> -
+>> -       list_del(&cpufreq_dev->node);
+>> +       cpufreq_dev_count--;
+>>
+>>         /* Unregister the notifier for the last cpufreq cooling device */
+>> -       if (cpufreq_dev_count == 1) {
+>> +       if (cpufreq_dev_count == 0) {
+>>                 cpufreq_unregister_notifier(&thermal_cpufreq_notifier_block,
+>>                                         CPUFREQ_POLICY_NOTIFIER);
+>>         }
+>>         mutex_unlock(&cooling_cpufreq_lock);
+>> +
+>>         thermal_cooling_device_unregister(cpufreq_dev->cool_dev);
+>>         release_idr(&cpufreq_idr, cpufreq_dev->id);
+>> -       if (cpufreq_dev_count == 1)
+>> -               mutex_destroy(&cooling_cpufreq_lock);
+>>         kfree(cpufreq_dev);
+>>  }
+>>  EXPORT_SYMBOL(cpufreq_cooling_unregister);
+>> --
+>> 1.7.11.3
+>>
+>>
+>> _______________________________________________
+>> linaro-dev mailing list
+>> linaro-dev@lists.linaro.org
+>> http://lists.linaro.org/mailman/listinfo/linaro-dev
