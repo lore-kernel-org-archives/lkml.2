@@ -1,64 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009Ab2J3LgL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 07:36:11 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60626 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932770Ab2J3LgJ (ORCPT
+	id S933040Ab2J3Lrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 07:47:49 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59760 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932537Ab2J3Lrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 07:36:09 -0400
-Message-ID: <508FBBA5.2080707@monstr.eu>
-Date: Tue, 30 Oct 2012 12:36:05 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Josh Cartwright <josh.cartwright@ni.com>
-CC: Michal Simek <michal.simek@xilinx.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] ARM: zynq: move ttc timer code to drivers/clocksource
-References: <20121029185630.GA26149@beefymiracle.amer.corp.natinst.com>
-In-Reply-To: <20121029185630.GA26149@beefymiracle.amer.corp.natinst.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Oct 2012 07:47:47 -0400
+From: asingh.engi@gmail.com
+To: johannes@sipsolutions.net
+Cc: linville@tuxdriver.com, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Ashwini Singh <asingh.engi@gmail.com>
+Subject: [PATCH] Linus's tree: wireless: Spelling corrections
+Date: Tue, 30 Oct 2012 17:17:28 +0530
+Message-Id: <508fbe62.a689440a.0273.2f2b@mx.google.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2012 07:56 PM, Josh Cartwright wrote:
-> Suggested cleanup by Arnd Bergmann.  Move the ttc timer.c code to
-> drivers/clocksource, and out of the mach-zynq directory.
->
-> The common.h (which only held the timer declaration) was renamed to
-> xilinx_ttc.h and moved into include/linux.
->
-> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> ---
->   arch/arm/mach-zynq/Makefile      |   2 +-
->   arch/arm/mach-zynq/common.c      |   2 +-
->   arch/arm/mach-zynq/common.h      |  24 ----
->   arch/arm/mach-zynq/timer.c       | 298 ---------------------------------------
->   drivers/clocksource/Makefile     |   1 +
->   drivers/clocksource/xilinx_ttc.c | 297 ++++++++++++++++++++++++++++++++++++++
->   include/linux/xilinx_ttc.h       |  24 ++++
->   7 files changed, 324 insertions(+), 324 deletions(-)
->   delete mode 100644 arch/arm/mach-zynq/common.h
->   delete mode 100644 arch/arm/mach-zynq/timer.c
->   create mode 100644 drivers/clocksource/xilinx_ttc.c
->   create mode 100644 include/linux/xilinx_ttc.h
+From: Ashwini Singh <asingh.engi@gmail.com>
 
-Really?
-If yes. shouldn't be there any better naming convention
-especially for headers. linux/clocksource/xilinx_ttc.h.
+Few spelling corrections in wireless directory.
 
-Thanks,
-Michal
+Signed-off-by: Ashwini Singh <asingh.engi@gmail.com>
+---
+ net/wireless/radiotap.c    |    2 +-
+ net/wireless/reg.c         |    6 +++---
+ net/wireless/wext-compat.c |    2 +-
+ net/wireless/wext-core.c   |    2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
-
+diff --git a/net/wireless/radiotap.c b/net/wireless/radiotap.c
+index 7d604c0..eaf4282 100644
+--- a/net/wireless/radiotap.c
++++ b/net/wireless/radiotap.c
+@@ -190,7 +190,7 @@ static void find_ns(struct ieee80211_radiotap_iterator *iterator,
+  * present fields.  @this_arg can be changed by the caller (eg,
+  * incremented to move inside a compound argument like
+  * IEEE80211_RADIOTAP_CHANNEL).  The args pointed to are in
+- * little-endian format whatever the endianess of your CPU.
++ * little-endian format whatever the endianness of your CPU.
+  *
+  * Alignment Gotcha:
+  * You must take care when dereferencing iterator.this_arg
+diff --git a/net/wireless/reg.c b/net/wireless/reg.c
+index 3b8cbbc..b98ff98 100644
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -718,7 +718,7 @@ static int freq_reg_info_regd(struct wiphy *wiphy,
+ 
+ 	/*
+ 	 * Follow the driver's regulatory domain, if present, unless a country
+-	 * IE has been processed or a user wants to help complaince further
++	 * IE has been processed or a user wants to help compliance further
+ 	 */
+ 	if (!custom_regd &&
+ 	    last_request->initiator != NL80211_REGDOM_SET_BY_COUNTRY_IE &&
+@@ -2133,7 +2133,7 @@ bool reg_supported_dfs_region(u8 dfs_region)
+ 	case NL80211_DFS_JP:
+ 		return true;
+ 	default:
+-		REG_DBG_PRINT("Ignoring uknown DFS master region: %d\n",
++		REG_DBG_PRINT("Ignoring unknown DFS master region: %d\n",
+ 			      dfs_region);
+ 		return false;
+ 	}
+@@ -2155,7 +2155,7 @@ static void print_dfs_region(u8 dfs_region)
+ 		pr_info(" DFS Master region JP");
+ 		break;
+ 	default:
+-		pr_info(" DFS Master region Uknown");
++		pr_info(" DFS Master region Unknown");
+ 		break;
+ 	}
+ }
+diff --git a/net/wireless/wext-compat.c b/net/wireless/wext-compat.c
+index 494379e..7642f60 100644
+--- a/net/wireless/wext-compat.c
++++ b/net/wireless/wext-compat.c
+@@ -1144,7 +1144,7 @@ static int cfg80211_wext_siwpower(struct net_device *dev,
+ 		switch (wrq->flags & IW_POWER_MODE) {
+ 		case IW_POWER_ON:       /* If not specified */
+ 		case IW_POWER_MODE:     /* If set all mask */
+-		case IW_POWER_ALL_R:    /* If explicitely state all */
++		case IW_POWER_ALL_R:    /* If explicitly state all */
+ 			ps = true;
+ 			break;
+ 		default:                /* Otherwise we ignore */
+diff --git a/net/wireless/wext-core.c b/net/wireless/wext-core.c
+index c8717c1..c9514ce 100644
+--- a/net/wireless/wext-core.c
++++ b/net/wireless/wext-core.c
+@@ -849,7 +849,7 @@ out:
+  *
+  * Note : our current commit strategy is currently pretty dumb,
+  * but we will be able to improve on that...
+- * The goal is to try to agreagate as many changes as possible
++ * The goal is to try to aggregate as many changes as possible
+  * before doing the commit. Drivers that will define a commit handler
+  * are usually those that need a reset after changing parameters, so
+  * we want to minimise the number of reset.
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+1.7.0.1
+
