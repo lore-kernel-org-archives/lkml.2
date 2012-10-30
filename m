@@ -1,82 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933987Ab2J3QOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:14:39 -0400
-Received: from fieldses.org ([174.143.236.118]:38938 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753423Ab2J3QOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:14:37 -0400
-Date: Tue, 30 Oct 2012 12:14:29 -0400
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michael.brantley@deshaw.com, hch@infradead.org, miklos@szeredi.hu,
-        pstaubach@exagrid.com
-Subject: Re: [PATCH v8 11/32] vfs: make do_unlinkat retry on ESTALE errors
-Message-ID: <20121030161429.GD24618@fieldses.org>
-References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
- <1351341219-17837-12-git-send-email-jlayton@redhat.com>
+	id S1759196Ab2J3QP3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:15:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49184 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab2J3QP1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 12:15:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351341219-17837-12-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+In-Reply-To: <CACVXFVO5-UPNrWsySzDE5AfOv1TMqbyitQX9ViidSJPM36fqAQ@mail.gmail.com>
+References: <CACVXFVOPDu6wVgPmvtTkokn7VV41x3XVvL4g_E0pz0mikUbvUg@mail.gmail.com>
+	<Pine.LNX.4.44L0.1210301112270.1363-100000@iolanthe.rowland.org>
+	<CACVXFVO5-UPNrWsySzDE5AfOv1TMqbyitQX9ViidSJPM36fqAQ@mail.gmail.com>
+Date: Wed, 31 Oct 2012 00:15:26 +0800
+Message-ID: <CACVXFVP+QkzXg1v+x2juOe3X0bib8pCZXi=0VyvBOuTp6bxr4Q@mail.gmail.com>
+Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
+From: Ming Lei <ming.lei@canonical.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 27, 2012 at 08:33:18AM -0400, Jeff Layton wrote:
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/namei.c | 12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 7c9bb50..467b9f1 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -3446,9 +3446,13 @@ static long do_unlinkat(int dfd, const char __user *pathname)
->  	struct filename *name;
->  	struct dentry *dentry;
->  	struct nameidata nd;
-> -	struct inode *inode = NULL;
-> +	struct inode *inode;
-> +	unsigned int try = 0;
-> +	unsigned int lookup_flags = LOOKUP_PARENT;
->  
-> -	name = user_path_parent(dfd, pathname, &nd, 0);
-> +retry:
-> +	inode = NULL;
+On Wed, Oct 31, 2012 at 12:00 AM, Ming Lei <ming.lei@canonical.com> wrote:
+>
+> Looks the simplest approach is to handle the noio flag thing at the start and
+> end of rpm_resume.
 
-So, you fail after "inode" was set (say vfs_unlink returned an error)
-the first time, then before "inode" was set (lookup_hash returns an
-error), and you end up incorrectly doing another iput() the second time
-through if you don't reset inode here?
+Sorry, that doesn't work, runtime_suspend need that too because memory
+allocation with block I/O might deadlock when doing I/O on the same device.
 
-(I think I made the same mistake in another patch, actually....)
-
---b.
-
-> +	name = user_path_parent(dfd, pathname, &nd, try);
->  	if (IS_ERR(name))
->  		return PTR_ERR(name);
->  
-> @@ -3486,6 +3490,10 @@ exit2:
->  exit1:
->  	path_put(&nd.path);
->  	putname(name);
-> +	if (retry_estale(error, try++)) {
-> +		lookup_flags |= LOOKUP_REVAL;
-> +		goto retry;
-> +	}
->  	return error;
->  
->  slashes:
-> -- 
-> 1.7.11.7
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks,
+--
+Ming Lei
