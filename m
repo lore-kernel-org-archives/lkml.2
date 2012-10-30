@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761531Ab2J3AGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 20:06:32 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:44823 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752117Ab2J3AGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 20:06:30 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: Linux 3.7-rc3
-Date: Tue, 30 Oct 2012 01:10:32 +0100
-Message-ID: <26004880.qboZkUVCy9@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com>
-References: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com>
+	id S1761632Ab2J3Af4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 20:35:56 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:39619 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755979Ab2J3Afz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 20:35:55 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EAB8596@DBDE01.ent.ti.com>
+References: <1349879449-22657-1-git-send-email-mporter@ti.com>
+	<1BAFE6F6C881BF42822005164F1491C33EAB8596@DBDE01.ent.ti.com>
+Date: Mon, 29 Oct 2012 19:35:54 -0500
+Message-ID: <CAD=GYpbBc-zTpkvWrf-4AYQy0dUniCML5ndC4cQfzOJ1MOU0mw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
+From: Joel A Fernandes <agnel.joel@gmail.com>
+To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Cc: "Porter, Matt" <mporter@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, October 28, 2012 12:59:49 PM Linus Torvalds wrote:
-> It's been a week, time for -rc3!
-> 
-> Nothing particularly stands out here. Lots of small fixes, exemplified
-> by the series of memory leak fixes in usb serial drivers. Just a lot
-> of random stuff..
-> 
-> Most of it is drivers (all over: drm, wireless, staging, usb, sound),
-> but there's a few filesystem updates (nfs, btrfs, ext4), arch updates
-> (arm, x86 and m68k) and just random stuff. Shortlog appended.
+[resending, because the first post got rejected due to non-plaintext]
 
-Unfortunately, s2disk is broken with this one and previous -rc.  In the
-majority of cases it just hangs the machine during hibernation, although
-sometimes it returns to user space reporting freezing problems, suspicions
-RCU usage and similar stuff, pretty much without any useful debug information.
+Hi Guraraja,
 
-I'm quite confident that v3.6 was OK (and -stable based on that too), so
-it most likely is a recent regression.  The in-kernel hibernation
-(ie. "echo disk > /sys/power/state") works no problem.  So does suspend to
-RAM on my test boxes.
+I am interested in this thread. I've been trying Gururaja's patches for
+audio as well.
 
-So far I have been able to reproduce this 100% of the time on two machines
-with Intel CPUs and graphics driven by i915.  I _suspect_ that this may be
-related to VT switching, because s2disk does some ugly things in that area
-which are not done by the in-kernel code.  Dunno.
+I rebased  Guraja's patches on top of Matt's EDMA patches which were
+applied to the beaglebone 3.7 kernel repo. With some fixes to make it
+compile with CONFIG_DUMMY_REGULATOR enabled, Currently it breaks at
+set_dai_fmt in davinci-mcasp.c when an audio file is played.
 
-Anyway, it looks like nothing short of bisection is going to help debug this,
-but I'm afraid I won't have the time to bisect within the next two weeks, so if
-anyone can reproduce this issue and will be able to bisect it, please help
-(openSUSE/Tumbleweed users anyone?).
+Could you try my tree on EVM?  dts changes may be required to use mcasp1 on
+EVM, https://github.com/joelagnel/linux-kernel/commits/3.7
+
+v3.7-rc2-fixes to v3.7-rc2-audio commits are Gururaja's patches which I
+applied, and after that are my commits to enable config , add dt data and
+some fixes.
 
 Thanks,
-Rafael
+Joel
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+On Mon, Oct 29, 2012 at 10:45 AM, Hebbar, Gururaja
+<gururaja.hebbar@ti.com> wrote:
+>
+> Matt,
+>
+> On Wed, Oct 10, 2012 at 20:00:49, Porter, Matt wrote:
+> > 6ea74cb ARM: OMAP2+: hwmod: get rid of all omap_clk_get_by_name usage
+> > exposes a bug in the AM33XX clock data for mcasp. After moving to
+> > clk_get() usage, the _init() of all registered hwmods fails on mcasp0
+> > due to incorrect clock data causing clk_get() to fail. This causes all
+> > successive hwmods to fail to _init() leaving them in a bad state.
+> >
+> > This patch updates the mcasp clock entries so clk_get() will succeed.
+> > It is tested on BeagleBone and is needed for 3.7-rc1 to fix AM33xx
+> > boot.
+>
+>
+> I want to test Audio on AM335x Evm with your EDMA patches. I have few
+> patches for AM335x.
+> Can you share the link to the repo & branch on which I need to rebase?
+> The patches are related to mcasp dt node, mcasp pinmux in dt, etc...
+>
+> >
+> ..snip..
+> ..snip..
+> >
+>
+>
+> Thanks & Regards,
+> Gururaja
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
