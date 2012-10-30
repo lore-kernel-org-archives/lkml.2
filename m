@@ -1,104 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761664Ab2J3BL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 21:11:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:65457 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755746Ab2J3BL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 21:11:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,675,1344236400"; 
-   d="scan'208";a="240059211"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>
-CC: "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] x86/ioapic: Fix the vector_irq[] is corrupted randomly
-Thread-Topic: [PATCH] x86/ioapic: Fix the vector_irq[] is corrupted randomly
-Thread-Index: AQHNthMCR3b6FfBCd0iln70bxTFINZfRCIQg
-Date: Tue, 30 Oct 2012 01:11:53 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A1B78F3@SHSMSX101.ccr.corp.intel.com>
-References: <1351527341.15558.1445.camel@cliu38-desktop-build>
- <1351542245.12459.39.camel@sbsiddha-desk.sc.intel.com>
-In-Reply-To: <1351542245.12459.39.camel@sbsiddha-desk.sc.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1761734Ab2J3BMz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 21:12:55 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:38947 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761636Ab2J3BMy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 21:12:54 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAOH1cHmYJmwJX8GsPthiKnF8T+dBi_ozBMD44HTWd0rTY4Nt7A@mail.gmail.com>
+References: <20110917001215.GA961@zombie.hq.fstein.net>
+	<20121009235446.GZ2616@ZenIV.linux.org.uk>
+	<CAOH1cHkowcv6k0D2bkXFcjU3k4UtG2WX3nSwNa267qmODNfs_w@mail.gmail.com>
+	<4547273.ji5OMfINXo@x2>
+	<CAOH1cHm_+ujK6_WAk4Ec6Y9BhhzL6s9UwaJjUJ91CKRXg--Edw@mail.gmail.com>
+	<CAOH1cHmYJmwJX8GsPthiKnF8T+dBi_ozBMD44HTWd0rTY4Nt7A@mail.gmail.com>
+Date: Mon, 29 Oct 2012 18:12:53 -0700
+Message-ID: <CAOH1cHnPpdJYUkM0090SeZKfXCE6sZnC6CBN_oapwocAki27fg@mail.gmail.com>
+Subject: Re: linux-audit: reconstruct path names from syscall events?
+From: Mark Moseley <moseleymark@gmail.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9U1CJge010080
+
+On Thu, Oct 11, 2012 at 10:27 AM, Mark Moseley <moseleymark@gmail.com> wrote:
+> On Wed, Oct 10, 2012 at 4:07 PM, Mark Moseley <moseleymark@gmail.com> wrote:
+>> On Wed, Oct 10, 2012 at 4:00 PM, Steve Grubb <sgrubb@redhat.com> wrote:
+>>> On Wednesday, October 10, 2012 03:45:08 PM Mark Moseley wrote:
+>>>> On Tue, Oct 9, 2012 at 4:54 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>>>> > Again, relying on pathnames for forensics (or security in general) is
+>>>> > a serious mistake (cue unprintable comments about apparmor and similar
+>>>> > varieties of snake oil).  And using audit as poor man's ktrace analog
+>>>> > is... misguided, to put it very mildly.
+>>>>
+>>>> Caveat: I'm just a sysadmin, so this stuff is as darn near "magic" as
+>>>> I get to see on a regular basis, so it's safe to expect some naivety
+>>>> and/or misguidedness on my part :)
+>>>>
+>>>> I'm just using it as a log of files that have been written/changed on
+>>>> moderately- to heavily-used systems. If there's another in-kernel
+>>>> mechanism that'd be better suited for that sort of thing (at least
+>>>> without adding a lot of overhead), I'd be definitely eager to know
+>>>> about it. It's a web hosting environment, with customer files all
+>>>> solely on NFS, so writes to the same directory can come from an
+>>>> arbitrary number of servers. When they get swamped with write
+>>>> requests, the amount of per-client stats exposed by our Netapp and
+>>>> Oracle NFS servers is often only enough to point us at a client server
+>>>> with an abusive user on it (but not much more, without turning on
+>>>> debugging). Having logs of who's doing writes would be quite useful,
+>>>> esp when writes aren't happening at that exact moment and wouldn't
+>>>> show up in tools like iotop. The audit subsystem seemed like the best
+>>>> fit for this kind of thing, but I'm more than open to whatever works.
+>>>
+>>> The audit system is the best fit. But I think Al is saying there are some
+>>> limitations. i know that Eric pushed some patches a while back that makes a
+>>> stronger effort at collecting some of this information. What kernel are you
+>>> using?
+
+Would you happen to have a pointer to those patches? I've been surfing
+the archives and not gotten lucky yet with finding the applicable
+patchset.
 
 
+>> Yup, understood. I've been playing with a variety of boxes, but mostly
+>> within the 3.0.x and 3.2.x series. I'll drop 3.5.6 on some of these
+>> boxes and see if my issues are already fixed (and proceed directly to
+>> foot-in-mouth chagrined stage -- usually takes slightly longer to get
+>> to that stage).
+>
+> Just gave 3.5.6 a shot and in these two particular cases, the result
+> is the same: chroot'd actions are logged in the audit entry relative
+> to the chroot, and the unlinkat/chmodat/chownat audit log entries only
+> have one item with the bare filename and no indication of directory.
 
-> -----Original Message-----
-> From: Siddha, Suresh B
-> Sent: Tuesday, October 30, 2012 4:24 AM
-> To: Liu, Chuansheng
-> Cc: mingo@redhat.com; hpa@zytor.com; tglx@linutronix.de;
-> yinghai@kernel.org; x86@kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] x86/ioapic: Fix the vector_irq[] is corrupted randomly
-> 
-> On Tue, 2012-10-30 at 00:15 +0800, Chuansheng Liu wrote:
-> > Not all irq chips are IO-APIC chip.
-> >
-> > In our system, there are many demux GPIO interrupts except for the
-> > io-apic chip interrupts, and these GPIO interrupts are belonged
-> > to other irq chips, the chip data is not type of struct irq_cfg
-> > either.
-> >
-> > But in function __setup_vector_irq(), it listed all allocated irqs,
-> > and presume all irq chip is ioapic_chip and the chip data is type
-> > of struct irq_cfg, it possibly causes the vector_irq is corrupted
-> > randomly.
-> >
-> > For example, one irq 258 is not io-apic chip irq, in __setup_vector_irq(),
-> > the chip data is forced to be used as struct irq_cfg, then the value
-> > cfg->domain and cfg->vector are wrong to be used to write vector_irq:
-> > 		vector = cfg->vector;
-> > 		per_cpu(vector_irq, cpu)[vector] = irq;
-> >
-> > This patch use the .flags to identify if the irq chip is io-apic.
-> 
-> I have a feeling that your gpio driver is abusing the 'chip_data' in the
-> struct irq_data. Shouldn't the driver be using 'handler_data' instead?
-Not abusing.
+renameat seems to be the toughest of all of them (where
+unlinkat/chmodat/chownat give you a hint in another audit entry). This
+is doing a renameat(), from /home/moseley/tmp/tmp/renameat/1/a1 to
+/home/moseley/tmp/tmp/renameat/2/a2
 
-There are many driver codes which has their own chip and chip_data.
-For example,
-langwell_gpio.c, the chip_data type is struct lnw_gpio;
-gpio_omap.c, the chip_data type is struct gpio_bank;
+type=SYSCALL msg=audit(1351557710.520:74211): arch=c000003e
+syscall=264 success=yes exit=0 a0=3 a1=40075c a2=4 a3=400759 items=4
+ppid=22742 pid=15181 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0
+sgid=0 fsgid=0 tty=pts17 ses=1727 comm="rename" exe="/tmp/rename"
+key=(null)
+type=CWD msg=audit(1351557710.520:74211):  cwd="/tmp"
+type=PATH msg=audit(1351557710.520:74211): item=0 name="/tmp"
+inode=2367550 dev=08:02 mode=040775 ouid=1000 ogid=1000 rdev=00:00
+type=PATH msg=audit(1351557710.520:74211): item=1 name="/tmp"
+inode=2367551 dev=08:02 mode=040775 ouid=1000 ogid=1000 rdev=00:00
+type=PATH msg=audit(1351557710.520:74211): item=2 name="a1"
+inode=2367552 dev=08:02 mode=0100664 ouid=1000 ogid=1000 rdev=00:00
+type=PATH msg=audit(1351557710.520:74211): item=3 name="a2"
+inode=2367552 dev=08:02 mode=0100664 ouid=1000 ogid=1000 rdev=00:00
 
-In these cases, if we abused the gpio chip_data type with struct irq_cfg,
-we will get very wrong cfg->vector, the value maybe 1 or 1000, anyway,
-it is a random value.
-> 
-> From include/linux/irq.h:
->  * @handler_data:       per-IRQ data for the irq_chip methods
->  * @chip_data:          platform-specific per-chip private data for the chip
->  *                      methods, to allow shared chip implementations
-> 
-> Also, how are these routed to the processors and the mechanism of the
-> vector assignment for these irq's? I presume irq_cfg is needed for the
-> setup and the interrupt migration from one cpu to another.
-Normally gpio chip just has only one base irq is related with io-apic interrupt,
-other allocated *VIRTUAL* irqs are based on this base irq, so no vector assign to them.
+Anything else I could/should be trying? I'm more than willing to
+experiment. I just always assume I'm missing some key flag or
+something.
 
-But in code __setup_vector_irq(), it list all allocated irqs which include the *VIRTUAL* irqs,
-It causes this case that chip_data type is abused.
+Here's the simple example code ... and, yes, I *do* know how to use
+variables, just didn't bother here ;)
 
-> 
-> What am I missing?
-> 
-> thanks,
-> suresh
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <dirent.h>
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+int main() {
+	DIR *a;
+	DIR *b;
+
+	char* dir1 = "/home/moseley/tmp/tmp/renameat/1";
+	char* dir2 = "/home/moseley/tmp/tmp/renameat/2";
+
+	a = opendir( dir1 );
+	b = opendir( dir2 );
+
+	int afd = dirfd( a );
+	int bfd = dirfd( b );
+
+	renameat( afd, "a1", bfd, "a2" );
+}
