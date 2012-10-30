@@ -1,212 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965672Ab2J3TFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:05:35 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:24872 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965393Ab2J3TFd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:05:33 -0400
-Message-ID: <509024F4.8080408@hp.com>
-Date: Tue, 30 Oct 2012 12:05:24 -0700
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S965591Ab2J3THC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:07:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5701 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965222Ab2J3TG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:06:59 -0400
+Message-ID: <509025ED.8050207@redhat.com>
+Date: Tue, 30 Oct 2012 15:09:33 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-To: Jason Wang <jasowang@redhat.com>
-CC: mst@redhat.com, davem@davemloft.net,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        rusty@rustcorp.com.au, krkumar2@in.ibm.com, kvm@vger.kernel.org
-Subject: Re: [rfc net-next v6 0/3] Multiqueue virtio-net
-References: <1351591403-23065-1-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1351591403-23065-1-git-send-email-jasowang@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, klamm@yandex-team.ru,
+        mgorman@suse.de, hannes@cmpxchg.org
+Subject: Re: [PATCH RFC] mm,vmscan: only evict file pages when we have plenty
+References: <20121030144204.0aa14d92@dull> <20121030115451.f4c097f0.akpm@linux-foundation.org>
+In-Reply-To: <20121030115451.f4c097f0.akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2012 03:03 AM, Jason Wang wrote:
-> Hi all:
+On 10/30/2012 02:54 PM, Andrew Morton wrote:
+> On Tue, 30 Oct 2012 14:42:04 -0400
+> Rik van Riel <riel@redhat.com> wrote:
 >
-> This series is an update version of multiqueue virtio-net driver based on
-> Krishna Kumar's work to let virtio-net use multiple rx/tx queues to do the
-> packets reception and transmission. Please review and comments.
+>> If we have more inactive file pages than active file pages, we
+>> skip scanning the active file pages alltogether, with the idea
+>> that we do not want to evict the working set when there is
+>> plenty of streaming IO in the cache.
 >
-> Changes from v5:
-> - Align the implementation with the RFC spec update v4
-> - Switch the mode between single mode and multiqueue mode without reset
-> - Remove the 256 limitation of queues
-> - Use helpers to do the mapping between virtqueues and tx/rx queues
-> - Use commbined channels instead of separated rx/tx queus when do the queue
-> number configuartion
-> - Other coding style comments from Michael
+> Yes, I've never liked that.  The "(active > inactive)" thing is a magic
+> number.  And suddenly causing a complete cessation of vm scanning at a
+> particular magic threshold seems rather crude, compared to some complex
+> graduated thing which will also always do the wrong thing, only more
+> obscurely ;)
 >
-> Reference:
-> - A protype implementation of qemu-kvm support could by found in
-> git://github.com/jasowang/qemu-kvm-mq.git
-> - V5 could be found at http://lwn.net/Articles/505388/
-> - V4 could be found at https://lkml.org/lkml/2012/6/25/120
-> - V2 could be found at http://lwn.net/Articles/467283/
-> - Michael virtio-spec: http://www.spinics.net/lists/netdev/msg209986.html
->
-> Perf Numbers:
->
-> - Pktgen test shows the receiving capability of the multiqueue virtio-net were
->    dramatically improved.
-> - Netperf result shows latency were greately improved according to the test
-> result.
+> Ho hum, in the absence of observed problems, I guess we don't muck with
+> it.
 
-I suppose it is technically correct to say that latency was improved, 
-but usually for aggregate request/response tests I tend to talk about 
-the aggregate transactions per second.
+The thing is, when we "suddenly switch behaviour" back to
+scanning all the lists, that does not have to suddenly
+lead to pages from the other lists being actually evicted.
 
-Do you have a hypothesis as to why the improvement dropped going to 20 
-concurrent sessions from 10?
+Instead, it will lead to referenced inactive_anon pages
+being moved back to the active_anon list, and any pages
+from the end of the active_file list being moved to the
+inactive_file list.
 
-rick jones
+There is a threshold, and Johannes has patches to set
+the threshold in a much more intelligent way, but the
+change in behaviour should not be sudden due to the
+inactive lists providing a rather large buffer.
 
-> Netperf Local VM to VM test:
-> - VM1 and its vcpu/vhost thread in numa node 0
-> - VM2 and its vcpu/vhost thread in numa node 1
-> - a script is used to lauch the netperf with demo mode and do the postprocessing
->    to measure the aggreagte result with the help of timestamp
-> - average of 3 runs
->
-> TCP_RR:
-> size/session/+lat%/+normalize%
->      1/     1/    0%/    0%
->      1/    10/  +52%/   +6%
->      1/    20/  +27%/   +5%
->     64/     1/    0%/    0%
->     64/    10/  +45%/   +4%
->     64/    20/  +28%/   +7%
->    256/     1/   -1%/    0%
->    256/    10/  +38%/   +2%
->    256/    20/  +27%/   +6%
-> TCP_CRR:
-> size/session/+lat%/+normalize%
->      1/     1/   -7%/  -12%
->      1/    10/  +34%/   +3%
->      1/    20/   +3%/   -8%
->     64/     1/   -7%/   -3%
->     64/    10/  +32%/   +1%
->     64/    20/   +4%/   -7%
->    256/     1/   -6%/  -18%
->    256/    10/  +33%/    0%
->    256/    20/   +4%/   -8%
-> STREAM:
-> size/session/+thu%/+normalize%
->      1/     1/   -3%/    0%
->      1/     2/   -1%/    0%
->      1/     4/   -2%/    0%
->     64/     1/    0%/   +1%
->     64/     2/   -6%/   -6%
->     64/     4/   -8%/  -14%
->    256/     1/    0%/    0%
->    256/     2/  -48%/  -52%
->    256/     4/  -50%/  -55%
->    512/     1/   +4%/   +5%
->    512/     2/  -29%/  -33%
->    512/     4/  -37%/  -49%
->   1024/     1/   +6%/   +7%
->   1024/     2/  -46%/  -51%
->   1024/     4/  -15%/  -17%
->   4096/     1/   +1%/   +1%
->   4096/     2/  +16%/   -2%
->   4096/     4/  +31%/  -10%
-> 16384/     1/    0%/    0%
-> 16384/     2/  +16%/   +9%
-> 16384/     4/  +17%/   -9%
->
-> Netperf test between external host and guest over 10gb(ixgbe):
-> - VM thread and vhost threads were pinned int the node 0
-> - a script is used to lauch the netperf with demo mode and do the postprocessing
->    to measure the aggreagte result with the help of timestamp
-> - average of 3 runs
->
-> TCP_RR:
-> size/session/+lat%/+normalize%
->      1/     1/    0%/   +6%
->      1/    10/  +41%/   +2%
->      1/    20/  +10%/   -3%
->     64/     1/    0%/  -10%
->     64/    10/  +39%/   +1%
->     64/    20/  +22%/   +2%
->    256/     1/    0%/   +2%
->    256/    10/  +26%/  -17%
->    256/    20/  +24%/  +10%
-> TCP_CRR:
-> size/session/+lat%/+normalize%
->      1/     1/   -3%/   -3%
->      1/    10/  +34%/   -3%
->      1/    20/    0%/  -15%
->     64/     1/   -3%/   -3%
->     64/    10/  +34%/   -3%
->     64/    20/   -1%/  -16%
->    256/     1/   -1%/   -3%
->    256/    10/  +38%/   -2%
->    256/    20/   -2%/  -17%
-> TCP_STREAM:(guest receiving)
-> size/session/+thu%/+normalize%
->      1/     1/   +1%/  +14%
->      1/     2/    0%/   +4%
->      1/     4/   -2%/  -24%
->     64/     1/   -6%/   +1%
->     64/     2/   +1%/   +1%
->     64/     4/   -1%/  -11%
->    256/     1/   +3%/   +4%
->    256/     2/    0%/   -1%
->    256/     4/    0%/  -15%
->    512/     1/   +4%/    0%
->    512/     2/  -10%/  -12%
->    512/     4/    0%/  -11%
->   1024/     1/   -5%/    0%
->   1024/     2/  -11%/  -16%
->   1024/     4/   +3%/  -11%
->   4096/     1/  +27%/   +6%
->   4096/     2/    0%/  -12%
->   4096/     4/    0%/  -20%
-> 16384/     1/    0%/   -2%
-> 16384/     2/    0%/   -9%
-> 16384/     4/  +10%/   -2%
-> TCP_MAERTS:(guest sending)
->      1/     1/   -1%/    0%
->      1/     2/    0%/    0%
->      1/     4/   -5%/    0%
->     64/     1/    0%/    0%
->     64/     2/   -7%/   -8%
->     64/     4/   -7%/   -8%
->    256/     1/    0%/    0%
->    256/     2/  -28%/  -28%
->    256/     4/  -28%/  -29%
->    512/     1/    0%/    0%
->    512/     2/  -15%/  -13%
->    512/     4/  -53%/  -59%
->   1024/     1/   +4%/  +13%
->   1024/     2/   -7%/  -18%
->   1024/     4/   +1%/  -18%
->   4096/     1/   +2%/    0%
->   4096/     2/   +3%/  -19%
->   4096/     4/   -1%/  -19%
-> 16384/     1/   -3%/   -1%
-> 16384/     2/    0%/  -12%
-> 16384/     4/    0%/  -10%
->
-> Jason Wang (2):
->    virtio_net: multiqueue support
->    virtio-net: change the number of queues through ethtool
->
-> Krishna Kumar (1):
->    virtio_net: Introduce VIRTIO_NET_F_MULTIQUEUE
->
->   drivers/net/virtio_net.c        |  790 ++++++++++++++++++++++++++++-----------
->   include/uapi/linux/virtio_net.h |   19 +
->   2 files changed, 594 insertions(+), 215 deletions(-)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+When the VM is bouncing around the threshold, it should
+look like a reduction in the rate at which the other
+lists are scanned.
 
