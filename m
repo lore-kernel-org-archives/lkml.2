@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934297Ab2J3To7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:44:59 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:61228 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab2J3To6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:44:58 -0400
-Date: Tue, 30 Oct 2012 22:42:31 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] zram: handle mem suffixes in disk size zram_sysfs
- parameter (resend)
-Message-ID: <20121030194231.GG2454@swordfish>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934359Ab2J3Tpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:45:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45194 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756339Ab2J3Tpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:45:38 -0400
+Date: Tue, 30 Oct 2012 15:45:20 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        michael.brantley@deshaw.com, hch@infradead.org, miklos@szeredi.hu,
+        pstaubach@exagrid.com
+Subject: Re: [PATCH v8 11/32] vfs: make do_unlinkat retry on ESTALE errors
+Message-ID: <20121030154520.4f3503e8@tlielax.poochiereds.net>
+In-Reply-To: <20121030192809.GE24618@fieldses.org>
+References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
+	<1351341219-17837-12-git-send-email-jlayton@redhat.com>
+	<20121030161429.GD24618@fieldses.org>
+	<20121030123355.5c404373@tlielax.poochiereds.net>
+	<20121030192809.GE24618@fieldses.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use memparse() to allow mem suffixes in disksize sysfs number.
-Examples:
-    echo 256K > /sys/block/zram0/disksize
-    echo 512M > /sys/block/zram0/disksize
-    echo 1G > /sys/block/zram0/disksize  
+On Tue, 30 Oct 2012 15:28:09 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Reviewed-by: Nitin Gupta <ngupta@vflare.org>
+> On Tue, Oct 30, 2012 at 12:33:55PM -0400, Jeff Layton wrote:
+> > On Tue, 30 Oct 2012 12:14:29 -0400
+> > "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > 
+> > > On Sat, Oct 27, 2012 at 08:33:18AM -0400, Jeff Layton wrote:
+> > > > Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> > > > ---
+> > > >  fs/namei.c | 12 ++++++++++--
+> > > >  1 file changed, 10 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/fs/namei.c b/fs/namei.c
+> > > > index 7c9bb50..467b9f1 100644
+> > > > --- a/fs/namei.c
+> > > > +++ b/fs/namei.c
+> > > > @@ -3446,9 +3446,13 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+> > > >  	struct filename *name;
+> > > >  	struct dentry *dentry;
+> > > >  	struct nameidata nd;
+> > > > -	struct inode *inode = NULL;
+> > > > +	struct inode *inode;
+> > > > +	unsigned int try = 0;
+> > > > +	unsigned int lookup_flags = LOOKUP_PARENT;
+> > > >  
+> > > > -	name = user_path_parent(dfd, pathname, &nd, 0);
+> > > > +retry:
+> > > > +	inode = NULL;
+> > > 
+> > > So, you fail after "inode" was set (say vfs_unlink returned an error)
+> > > the first time, then before "inode" was set (lookup_hash returns an
+> > > error), and you end up incorrectly doing another iput() the second time
+> > > through if you don't reset inode here?
+> > > 
+> > > (I think I made the same mistake in another patch, actually....)
+> > > 
+> > > --b.
+> > > 
+> > 
+> > Correct. That's a new delta in this patch, btw. The original patch
+> > didn't do that and it was causing a busy inodes on umount bug in
+> > testing.
+> > 
+> > It would occasionally hit an ESTALE error in this function and
+> > because "inode" wasn't reset to NULL, it would do a double-put of the
+> > inode and cause the counter to underflow.
+> > 
+> > It might be good to restructure this code to make those sorts of bugs
+> > less likely, but the error handling in here is already so hairy that I
+> > decided to punt on that for now...
+> 
+> Understood.  I might find it just a little more obvious why we're doing
+> this if the assignment was next to the final iput:
+> 
+> 	if (inode)
+> 		iput(inode);
+> 	inode = NULL;
+> 	...
+> 
 
----
+Yeah, my initial patch did something similar (but inside the "if"
+block). Ultimately, though I figured it was best to avoid setting
+"inode" unless it was needed.
 
- drivers/staging/zram/zram_sysfs.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+The patch I've got basically does that, but it's not as obvious as the
+other way. Maybe I should just go ahead and try to clean up that logic
+after all. Unrolling the error handling there is pretty nasty though.
 
-diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-index edb0ed4..de1eacf 100644
---- a/drivers/staging/zram/zram_sysfs.c
-+++ b/drivers/staging/zram/zram_sysfs.c
-@@ -15,6 +15,7 @@
- #include <linux/device.h>
- #include <linux/genhd.h>
- #include <linux/mm.h>
-+#include <linux/kernel.h>
- 
- #include "zram_drv.h"
- 
-@@ -54,13 +55,12 @@ static ssize_t disksize_show(struct device *dev,
- static ssize_t disksize_store(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t len)
- {
--	int ret;
- 	u64 disksize;
- 	struct zram *zram = dev_to_zram(dev);
- 
--	ret = kstrtoull(buf, 10, &disksize);
--	if (ret)
--		return ret;
-+	disksize = memparse(buf, NULL);
-+	if (!disksize)
-+		return -EINVAL;
- 
- 	down_write(&zram->init_lock);
- 	if (zram->init_done) {
-
-
+-- 
+Jeff Layton <jlayton@redhat.com>
