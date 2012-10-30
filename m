@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933942Ab2J3SnI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:43:08 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:42030 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932654Ab2J3SnF (ORCPT
+	id S1760520Ab2J3SoQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:44:16 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:50463 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab2J3SoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:43:05 -0400
+	Tue, 30 Oct 2012 14:44:14 -0400
 From: Behan Webster <behanw@converseincode.com>
-To: davem@davemloft.net
-Cc: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        pageexec@freemail.hu, Behan Webster <behanw@converseincode.com>
-Subject: [PATCH 2/2] Remove VLAIS usage from netfilter
-Date: Tue, 30 Oct 2012 14:42:54 -0400
-Message-Id: <1351622574-18421-3-git-send-email-behanw@converseincode.com>
+To: linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>, pageexec@freemail.hu,
+        Behan Webster <behanw@converseincode.com>
+Subject: [PATCH] Remove VLAIS usage from libcrc32c.c
+Date: Tue, 30 Oct 2012 14:44:25 -0400
+Message-Id: <1351622665-18547-1-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351622574-18421-1-git-send-email-behanw@converseincode.com>
-References: <1351622574-18421-1-git-send-email-behanw@converseincode.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -29,8 +26,8 @@ From: Jan-Simon Möller <dl9pf@gmx.de>
 
 The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
 precludes the use of compilers which don't implement VLAIS (for instance the
-Clang compiler). This patch instead calculates offsets into the kmalloc-ed
-memory buffer using macros from valign.h.
+Clang compiler). This patch instead allocates the appropriate amount of memory
+using an char array.
 
 Patch from series at
 http://lists.cs.uiuc.edu/pipermail/llvm-commits/Week-of-Mon-20120507/142707.html
@@ -38,72 +35,46 @@ by PaX Team.
 
 Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
 Cc: pageexec@freemail.hu
-[Modified to use macros from valign.h]
 Signed-off-by: Behan Webster <behanw@converseincode.com>
 ---
- net/netfilter/xt_repldata.h |   40 ++++++++++++++++++++++++----------------
- 1 file changed, 24 insertions(+), 16 deletions(-)
+ lib/libcrc32c.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/net/netfilter/xt_repldata.h b/net/netfilter/xt_repldata.h
-index 6efe4e5..d2b4232 100644
---- a/net/netfilter/xt_repldata.h
-+++ b/net/netfilter/xt_repldata.h
-@@ -5,31 +5,39 @@
-  * they serve as the hanging-off data accessed through repl.data[].
-  */
+diff --git a/lib/libcrc32c.c b/lib/libcrc32c.c
+index 244f548..5d0bac8 100644
+--- a/lib/libcrc32c.c
++++ b/lib/libcrc32c.c
+@@ -41,20 +41,21 @@ static struct crypto_shash *tfm;
  
-+#include <linux/valign.h>
-+
- #define xt_alloc_initial_table(type, typ2) ({ \
- 	unsigned int hook_mask = info->valid_hooks; \
- 	unsigned int nhooks = hweight32(hook_mask); \
- 	unsigned int bytes = 0, hooknum = 0, i = 0; \
--	struct { \
--		struct type##_replace repl; \
--		struct type##_standard entries[nhooks]; \
--		struct type##_error term; \
--	} *tbl = kzalloc(sizeof(*tbl), GFP_KERNEL); \
--	if (tbl == NULL) \
-+	int replsize = paddedsize(0, 1, \
-+		struct type##_replace, struct type##_standard); \
-+	int entsize = paddedsize(replsize, nhooks, \
-+		struct type##_standard, struct type##_error); \
-+	int termsize = paddedsize(replsize+entsize, 1, \
-+		struct type##_error, int); \
-+	struct type##_replace *repl = kzalloc(replsize+entsize+termsize, \
-+		GFP_KERNEL); \
-+	if (repl == NULL) \
- 		return NULL; \
--	strncpy(tbl->repl.name, info->name, sizeof(tbl->repl.name)); \
--	tbl->term = (struct type##_error)typ2##_ERROR_INIT;  \
--	tbl->repl.valid_hooks = hook_mask; \
--	tbl->repl.num_entries = nhooks + 1; \
--	tbl->repl.size = nhooks * sizeof(struct type##_standard) + \
--	                 sizeof(struct type##_error); \
-+	struct type##_standard *entries = paddedstart(repl, replsize, \
-+		struct type##_standard); \
-+	struct type##_error *term = paddedstart(entries, entsize, \
-+		struct type##_error); \
-+	strncpy(repl->name, info->name, sizeof(repl->name)); \
-+	*term = (struct type##_error)typ2##_ERROR_INIT;  \
-+	repl->valid_hooks = hook_mask; \
-+	repl->num_entries = nhooks + 1; \
-+	repl->size = entsize+termsize; \
- 	for (; hook_mask != 0; hook_mask >>= 1, ++hooknum) { \
- 		if (!(hook_mask & 1)) \
- 			continue; \
--		tbl->repl.hook_entry[hooknum] = bytes; \
--		tbl->repl.underflow[hooknum]  = bytes; \
--		tbl->entries[i++] = (struct type##_standard) \
-+		repl->hook_entry[hooknum] = bytes; \
-+		repl->underflow[hooknum]  = bytes; \
-+		entries[i++] = (struct type##_standard) \
- 			typ2##_STANDARD_INIT(NF_ACCEPT); \
- 		bytes += sizeof(struct type##_standard); \
- 	} \
--	tbl; \
-+	repl; \
- })
+ u32 crc32c(u32 crc, const void *address, unsigned int length)
+ {
+-	struct {
+-		struct shash_desc shash;
+-		char ctx[crypto_shash_descsize(tfm)];
+-	} desc;
++	char desc[sizeof(struct shash_desc) + crypto_shash_descsize(tfm)
++		+ CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
++	struct shash_desc *shash = (struct shash_desc *)desc;
++	u32 *ctx = (u32 *)((unsigned long)(desc + sizeof(struct shash_desc)
++		+ CRYPTO_MINALIGN - 1) & ~(CRYPTO_MINALIGN - 1));
+ 	int err;
+ 
+-	desc.shash.tfm = tfm;
+-	desc.shash.flags = 0;
+-	*(u32 *)desc.ctx = crc;
++	shash->tfm = tfm;
++	shash->flags = 0;
++	*ctx = crc;
+ 
+-	err = crypto_shash_update(&desc.shash, address, length);
++	err = crypto_shash_update(shash, address, length);
+ 	BUG_ON(err);
+ 
+-	return *(u32 *)desc.ctx;
++	return *ctx;
+ }
+ 
+ EXPORT_SYMBOL(crc32c);
 -- 
 1.7.9.5
 
