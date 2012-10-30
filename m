@@ -1,112 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934413Ab2J3U0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 16:26:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58334 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756252Ab2J3U0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 16:26:52 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Marcelo Tostatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        kvm@vger.kernel.org, x86@kernel.org
-Subject: [PATCH] x86, add hypervisor name to dump_stack() [v4]
-Date: Tue, 30 Oct 2012 16:26:33 -0400
-Message-Id: <1351628793-27180-1-git-send-email-prarit@redhat.com>
+	id S934467Ab2J3U16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 16:27:58 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:37765 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932221Ab2J3U15 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 16:27:57 -0400
+Date: Tue, 30 Oct 2012 21:27:50 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: andi@firstfloor.org, Pekka Enberg <penberg@kernel.org>,
+        Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        JoonSoo Kim <js1304@gmail.com>, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v2 1/2] kmem_cache: include allocators code directly into slab_common
+Message-ID: <20121030202750.GW16230@one.firstfloor.org>
+References: <1351087158-8524-1-git-send-email-glommer@parallels.com> <1351087158-8524-2-git-send-email-glommer@parallels.com> <CAOJsxLHxo7zJk=aWrjmuaYsEkaChTCgXowtHxtuiabaOP3W3-Q@mail.gmail.com> <0000013a9444c6ba-d26e7627-1890-40da-ae91-91e7c4a3d7e9-000000@email.amazonses.com> <CAAmzW4O1EAFxHf1tRaFzg-opPLzMboAdo-vbUFkyo=ZdQp9rmw@mail.gmail.com> <0000013ab24cd7ac-1c5345d6-5fea-4459-942e-b6deccd1a6f1-000000@email.amazonses.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000013ab24cd7ac-1c5345d6-5fea-4459-942e-b6deccd1a6f1-000000@email.amazonses.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Debugging crash, panics, stack trace WARN_ONs, etc., from both virtual and
-bare-metal boots can get difficult very quickly.  While there are ways to
-decipher the output and determine if the output is from a virtual guest,
-the in-kernel hypervisors now have a single registration point
-and set x86_hyper.  We can use this to output additional debug
-information during a panic/oops/stack trace.
+On Tue, Oct 30, 2012 at 03:31:51PM +0000, Christoph Lameter wrote:
+> On Fri, 26 Oct 2012, JoonSoo Kim wrote:
+> 
+> > 2012/10/25 Christoph Lameter <cl@linux.com>:
+> > > On Wed, 24 Oct 2012, Pekka Enberg wrote:
+> > >
+> > >> So I hate this patch with a passion. We don't have any fastpaths in
+> > >> mm/slab_common.c nor should we. Those should be allocator specific.
+> > >
+> > > I have similar thoughts on the issue. Lets keep the fast paths allocator
+> > > specific until we find a better way to handle this issue.
+> >
+> > Okay. I see.
+> > How about applying LTO not to the whole kernel code, but just to
+> > slab_common.o + sl[aou]b.o?
+> > I think that it may be possible, isn't it?
+> 
+> Well.... Andi: Is that possible?
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>
-Cc: Marcelo Tostatti <mtosatti@redhat.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: kvm@vger.kernel.org
-Cc: x86@kernel.org
+In principle yes, but would still need a toolchain with LTO 
+support and a few changes.
 
-[v2]: Modifications suggested by Ingo and added changes for similar output
-      from process.c
+-Andi
 
-[v3]: Unify common code and move output to end of line
----
- arch/x86/kernel/dumpstack.c |    6 +-----
- arch/x86/kernel/process.c   |   14 ++++++++++++--
- 2 files changed, 13 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index ae42418b..96d40ed 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -188,11 +188,7 @@ void dump_stack(void)
- 	unsigned long stack;
- 
- 	bp = stack_frame(current, NULL);
--	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
--		current->pid, current->comm, print_tainted(),
--		init_utsname()->release,
--		(int)strcspn(init_utsname()->version, " "),
--		init_utsname()->version);
-+	show_regs_common();
- 	show_trace(NULL, NULL, &stack, bp);
- }
- EXPORT_SYMBOL(dump_stack);
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index b644e1c..7ea4692 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -28,6 +28,7 @@
- #include <asm/fpu-internal.h>
- #include <asm/debugreg.h>
- #include <asm/nmi.h>
-+#include <asm/hypervisor.h>
- 
- /*
-  * per-CPU TSS segments. Threads are completely 'soft' on Linux,
-@@ -124,6 +125,13 @@ void exit_thread(void)
- void show_regs_common(void)
- {
- 	const char *vendor, *product, *board;
-+	const char *machine_name = "x86";
-+	const char *kernel_type = "native";
-+
-+	if (x86_hyper) {
-+		machine_name = x86_hyper->name;
-+		kernel_type = "guest";
-+	}
- 
- 	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
- 	if (!vendor)
-@@ -135,14 +143,16 @@ void show_regs_common(void)
- 	/* Board Name is optional */
- 	board = dmi_get_system_info(DMI_BOARD_NAME);
- 
--	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s\n",
-+	printk(KERN_DEFAULT
-+	       "Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s [%s %s kernel]\n",
- 	       current->pid, current->comm, print_tainted(),
- 	       init_utsname()->release,
- 	       (int)strcspn(init_utsname()->version, " "),
- 	       init_utsname()->version,
- 	       vendor, product,
- 	       board ? "/" : "",
--	       board ? board : "");
-+	       board ? board : "",
-+	       machine_name, kernel_type);
- }
- 
- void flush_thread(void)
 -- 
-1.7.9.3
-
+ak@linux.intel.com -- Speaking for myself only.
