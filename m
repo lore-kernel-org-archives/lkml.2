@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933918Ab2J3P7D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:59:03 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49627 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932350Ab2J3P67 (ORCPT
+	id S933923Ab2J3P7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:59:41 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:54205 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932350Ab2J3P7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:58:59 -0400
-From: Javier Martin <javier.martin@vista-silicon.com>
-To: linux-kernel@vger.kernel.org
-Cc: djbw@fb.com, vinod.koul@intel.com,
-        Javier Martin <javier.martin@vista-silicon.com>
-Subject: [PATCH] dmaengine: imx-dma: Disable use of hw_chain to fix sg_dma transfers.
-Date: Tue, 30 Oct 2012 16:58:50 +0100
-Message-Id: <1351612730-19029-1-git-send-email-javier.martin@vista-silicon.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 30 Oct 2012 11:59:40 -0400
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 05/12] VMCI: event handling implementation.
+Date: Tue, 30 Oct 2012 08:59:39 -0700
+Message-ID: <2950075.FZEQUln4vx@dtor-d630.eng.vmware.com>
+Organization: VMware, Inc.
+User-Agent: KMail/4.9.2 (Linux/3.6.0+; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121030155041.GF14167@kroah.com>
+References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com> <20121030050152.GE32055@dtor-ws.eng.vmware.com> <20121030155041.GF14167@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HW chaining is currently broken in imx-dma. It can be easily reproduced doing
-intensive accesses to a external MMC card and checking how the file system
-is corrupted.
+On Tuesday, October 30, 2012 08:50:41 AM Greg KH wrote:
+> On Mon, Oct 29, 2012 at 10:01:52PM -0700, Dmitry Torokhov wrote:
+> > On Mon, Oct 29, 2012 at 07:26:05PM -0700, Greg KH wrote:
+> > > On Mon, Oct 29, 2012 at 06:04:27PM -0700, George Zhang wrote:
+> > > > +static void event_signal_destroy(struct kref *kref)
+> > > > +{
+> > > > +	struct vmci_subscription *entry =
+> > > > +			container_of(kref, struct vmci_subscription, kref);
+> > > > +
+> > > > +	complete(&entry->done);
+> > > > +}
+> > > 
+> > > Didn't you just leak memory here?  What frees the structure up?
+> > 
+> > event_unregister_subscription() waits for that completion and frees the
+> > structure. We want event_unregister_subscription() to wait until all
+> > fired callbacks completed before unregister is complete.
+> 
+> So all calls to this can just sit and spin waiting for others to clean
+> up?  Odd, but ok.
 
-Preventing the driver to use HW chaining solves these issues.
+Not all as there is logically only one owner of the subscription so
+naturally it waits until all notification callbacks are done.
 
+Frankly we have a change that gets rid of delayed ecvent callbacks
+and so the refcounting is no longer needed at all.
 
-Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
----
- drivers/dma/imx-dma.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 5084975..03f3b64 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -643,9 +643,8 @@ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 			break;
- 		}
- 
--		imxdmac->hw_chaining = 1;
--		if (!imxdma_hw_chain(imxdmac))
--			return -EINVAL;
-+		imxdmac->hw_chaining = 0;
-+
- 		imxdmac->ccr_from_device = (mode | IMX_DMA_TYPE_FIFO) |
- 			((IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) << 2) |
- 			CCR_REN;
--- 
-1.7.9.5
+Thanks,
+Dmitry
 
