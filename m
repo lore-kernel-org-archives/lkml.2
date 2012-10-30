@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab2J3XiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 19:38:00 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47119 "EHLO ogre.sisk.pl"
+	id S1752873Ab2J3Xj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 19:39:28 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:47130 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752800Ab2J3Xh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 19:37:58 -0400
+	id S1751335Ab2J3XjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 19:39:25 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>, lm-sensors@lm-sensors.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, oprofile-list@lists.sf.net,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <rric@kernel.org>,
-        =?ISO-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>
-Subject: Re: [PATCH 3/4] cpufreq, powernow-k8: Change email address
-Date: Wed, 31 Oct 2012 00:42:01 +0100
-Message-ID: <2384721.S5BJ6UP5pX@vostro.rjw.lan>
+To: myungjoo.ham@samsung.com
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Nishanth Menon <nm@ti.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rajagopal Venkat <rajagopal.venkat@linaro.org>,
+        =?utf-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
+        Kevin Hilman <khilman@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?7J207KKF7ZmU?= <jonghwa3.lee@samsung.com>
+Subject: Re: [linux-next PATCH] PM / devfreq: documentation cleanups for devfreq header
+Date: Wed, 31 Oct 2012 00:43:28 +0100
+Message-ID: <16298248.vOPLeU1Xi9@vostro.rjw.lan>
 User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <20121029233100.GE8393@liondog.tnic>
-References: <20121029174924.GA5024@tweety> <2663527.sPyzc5AXi8@vostro.rjw.lan> <20121029233100.GE8393@liondog.tnic>
+In-Reply-To: <31002982.486491351584547433.JavaMail.weblogic@epv6ml03>
+References: <31002982.486491351584547433.JavaMail.weblogic@epv6ml03>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -30,19 +28,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 30, 2012 12:31:00 AM Borislav Petkov wrote:
-> On Tue, Oct 30, 2012 at 12:33:15AM +0100, Rafael J. Wysocki wrote:
-> > On Monday, October 29, 2012 06:52:21 PM Andreas Herrmann wrote:
-> > > 
-> > > Signed-off-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
+On Tuesday, October 30, 2012 08:09:09 AM MyungJoo Ham wrote:
+> > On 10/29/2012 06:02 AM, Nishanth Menon wrote:
 > > 
-> > Am I supposed to take this one?
+> > > struct parameters need to have ':' in documentation for
+> > > scripts/kernel-doc to parse appropriately.
+> > > 
+> > > Fix the errors reported by:
+> > > ./scripts/kernel-doc include/linux/devfreq.h >/dev/null
+> > > 
+> > > Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+> > > Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+> > > Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> > > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> > > Cc: Kevin Hilman <khilman@ti.com>
+> > > Cc: linux-pm@vger.kernel.org
+> > > Cc: linux-kernel@vger.kernel.org
+> > > 
+> > > Signed-off-by: Nishanth Menon <nm@ti.com>
+> > 
+> > 
+> > Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> > 
+> > Thanks.
 > 
-> Yes please.
+> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> 
+> Applying to git://git.kernel.org/pub/scm/linux/kernel/git/mzx/devfreq.git for-rafael, which is based on rafael's linux-pm.git / linux-next.
+> 
+> http://git.kernel.org/?p=linux/kernel/git/mzx/devfreq.git;a=shortlog;h=refs/heads/for-rafael
+> 
+> I'll apply your "Add sysfs node ..." patch after refactoring with Jonghwa's (devfreq trans_stat) as the two patches use the same data (list of available freqs).
 
-OK, I'm going to push it for v3.7.
+May I assume that you'll handle all of the subsequent devfreq patches too?
 
-Thanks,
 Rafael
 
 
