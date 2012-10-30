@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934000Ab2J3Qyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:54:36 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51464 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933788Ab2J3Qye (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:54:34 -0400
-Date: Tue, 30 Oct 2012 12:54:33 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
-In-Reply-To: <CACVXFVO5-UPNrWsySzDE5AfOv1TMqbyitQX9ViidSJPM36fqAQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1210301251050.1363-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S934086Ab2J3Qyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:54:55 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:59245 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934021Ab2J3Qyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 12:54:52 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 2/7] rcu: Make rcutorture give diagnostics if CPU offline fails
+Date: Tue, 30 Oct 2012 09:54:31 -0700
+Message-Id: <1351616076-25617-2-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1351616076-25617-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20121030165415.GA25438@linux.vnet.ibm.com>
+ <1351616076-25617-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12103016-9360-0000-0000-00000C369339
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012, Ming Lei wrote:
+From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-> On Tue, Oct 30, 2012 at 11:38 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> 
-> >
-> > Okay, I see your point.  But acquiring the lock here doesn't solve the
-> > problem.  Suppose a thread is about to reset a USB mass-storage device.
-> > It acquires the lock and sees that the noio flag is clear.  But before
-> > it can issue the reset, another thread sets the noio flag.
-> 
-> If the USB mass-storage device is being reseted, the flag should be set
-> already generally.  If the flag is still unset, that means the disk/network
-> device isn't added into system(or removed just now), so memory allocation
-> with block I/O should be allowed during the reset. Looks it isn't one problem,
-> isn't it?
+This commit causes rcutorture to print the errno if cpu_down() fails
+when the rcutorture "verbose" module parameter is specified.
 
-As Oliver said, it can be a problem.
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutorture.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-> > Lastly, pm_runtime_get_memalloc_noio always returns false when
-> > CONFIG_PM_RUNTIME is disabled.  But we still need to prevent I/O during
-> > usb_reset_device even when there's no runtime PM.  Maybe the simplest
-> > answer is always to set noio during resets.  That would also help with
-> > the race described above.
-> 
-> I have thought about this. IMO, pm_runtime_get_memalloc_noio should
-> return true always if CONFIG_PM_RUNTIME is unset.
-
-That's okay as long as the only user of pm_runtime_get_memalloc_noio
-(apart from the runtime PM core) is usbcore.
-
-Alan Stern
+diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+index aaa7b9f..9900f56 100644
+--- a/kernel/rcutorture.c
++++ b/kernel/rcutorture.c
+@@ -1502,6 +1502,7 @@ rcu_torture_onoff(void *arg)
+ 	unsigned long delta;
+ 	int maxcpu = -1;
+ 	DEFINE_RCU_RANDOM(rand);
++	int ret;
+ 	unsigned long starttime;
+ 
+ 	VERBOSE_PRINTK_STRING("rcu_torture_onoff task started");
+@@ -1522,7 +1523,13 @@ rcu_torture_onoff(void *arg)
+ 					 torture_type, cpu);
+ 			starttime = jiffies;
+ 			n_offline_attempts++;
+-			if (cpu_down(cpu) == 0) {
++			ret = cpu_down(cpu);
++			if (ret) {
++				if (verbose)
++					pr_alert("%s" TORTURE_FLAG
++						 "rcu_torture_onoff task: offline %d failed: errno %d\n",
++						 torture_type, cpu, ret);
++			} else {
+ 				if (verbose)
+ 					pr_alert("%s" TORTURE_FLAG
+ 						 "rcu_torture_onoff task: offlined %d\n",
+-- 
+1.7.8
 
