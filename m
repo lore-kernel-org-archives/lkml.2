@@ -1,142 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab2J3H2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 03:28:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37162 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752792Ab2J3H2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 03:28:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,677,1344236400"; 
-   d="scan'208";a="240165959"
-Date: Tue, 30 Oct 2012 15:28:45 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 5/7] ACPI / PM: Provide device PM functions operating on
- struct acpi_device
-Message-ID: <20121030072844.GA6154@aaronlu.sh.intel.com>
-References: <1766582.8gdQKXoi0K@vostro.rjw.lan>
- <3903921.4RDYB7KMxW@vostro.rjw.lan>
+	id S1755765Ab2J3HbF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 03:31:05 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54755 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755265Ab2J3HbC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 03:31:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3903921.4RDYB7KMxW@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohponL_3m2KVytiWm8ZHyB5aimk8CzGrqr5J0LMy8MFGodHg@mail.gmail.com>
+References: <5afab1ebe83e4361f1fd75bbea0c559af195bf02.1351529738.git.viresh.kumar@linaro.org>
+	<1351540778.2721.7.camel@bwh-desktop.uk.solarflarecom.com>
+	<CAKohponL_3m2KVytiWm8ZHyB5aimk8CzGrqr5J0LMy8MFGodHg@mail.gmail.com>
+Date: Tue, 30 Oct 2012 13:01:01 +0530
+Message-ID: <CAKohponOKk5e2Sxyhjw-XvzVxF3tNp66rsnYCwvwHazAPAauKw@mail.gmail.com>
+Subject: Re: [PATCH] net: dsa/slave: Fix compilation warnings
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: davem@davemloft.net, linaro-dev@lists.linaro.org, patches@linaro.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 10:11:20AM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> If the caller of acpi_bus_set_power() already has a pointer to the
-> struct acpi_device object corresponding to the device in question, it
-> doesn't make sense for it to go through acpi_bus_get_device(), which
-> may be costly, because it involves acquiring the global ACPI
-> namespace mutex.
-> 
-> For this reason, export the function operating on struct acpi_device
-> objects used internally by acpi_bus_set_power(), so that it may be
-> called instead of acpi_bus_set_power() in the above case, and change
-> its name to acpi_device_set_power().
-> 
-> Additionally, introduce two inline wrappers for checking ACPI PM
-> capabilities of devices represented by struct acpi_device objects.
+On 30 October 2012 12:15, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> And so, if we select NET_DSA from these tagging drivers, then only slave.c will
+> get compiled. Otherwise slave.c dsa.c dsa_core.c wouldn't be compiled and so
+> no warnings.
 
-What about adding yet another wrapper to check power off capability of
-the device? If device has _PS3 or _PRx, it means the device can be
-powered off from ACPI's perspective. This is useful for ZPODD when
-deciding if platform has the required ability to support it.
+If my above explanation/assumption is correct, then please review following
+patch:
 
-Thanks,
-Aaron
+--------------------------x-----------------------x----------------
 
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/bus.c      |   15 ++++++++++++---
->  include/acpi/acpi_bus.h |   11 +++++++++++
->  2 files changed, 23 insertions(+), 3 deletions(-)
-> 
-> Index: linux/drivers/acpi/bus.c
-> ===================================================================
-> --- linux.orig/drivers/acpi/bus.c
-> +++ linux/drivers/acpi/bus.c
-> @@ -257,7 +257,15 @@ static int __acpi_bus_get_power(struct a
->  }
->  
->  
-> -static int __acpi_bus_set_power(struct acpi_device *device, int state)
-> +/**
-> + * acpi_device_set_power - Set power state of an ACPI device.
-> + * @device: Device to set the power state of.
-> + * @state: New power state to set.
-> + *
-> + * Callers must ensure that the device is power manageable before using this
-> + * function.
-> + */
-> +int acpi_device_set_power(struct acpi_device *device, int state)
->  {
->  	int result = 0;
->  	acpi_status status = AE_OK;
-> @@ -341,6 +349,7 @@ static int __acpi_bus_set_power(struct a
->  
->  	return result;
->  }
-> +EXPORT_SYMBOL(acpi_device_set_power);
->  
->  
->  int acpi_bus_set_power(acpi_handle handle, int state)
-> @@ -359,7 +368,7 @@ int acpi_bus_set_power(acpi_handle handl
->  		return -ENODEV;
->  	}
->  
-> -	return __acpi_bus_set_power(device, state);
-> +	return acpi_device_set_power(device, state);
->  }
->  EXPORT_SYMBOL(acpi_bus_set_power);
->  
-> @@ -402,7 +411,7 @@ int acpi_bus_update_power(acpi_handle ha
->  	if (result)
->  		return result;
->  
-> -	result = __acpi_bus_set_power(device, state);
-> +	result = acpi_device_set_power(device, state);
->  	if (!result && state_p)
->  		*state_p = state;
->  
-> Index: linux/include/acpi/acpi_bus.h
-> ===================================================================
-> --- linux.orig/include/acpi/acpi_bus.h
-> +++ linux/include/acpi/acpi_bus.h
-> @@ -338,6 +338,7 @@ acpi_status acpi_bus_get_status_handle(a
->  				       unsigned long long *sta);
->  int acpi_bus_get_status(struct acpi_device *device);
->  int acpi_bus_set_power(acpi_handle handle, int state);
-> +int acpi_device_set_power(struct acpi_device *device, int state);
->  int acpi_bus_update_power(acpi_handle handle, int *state_p);
->  bool acpi_bus_power_manageable(acpi_handle handle);
->  bool acpi_bus_can_wakeup(acpi_handle handle);
-> @@ -482,6 +483,16 @@ static inline int acpi_pm_device_sleep_w
->  }
->  #endif
->  
-> +static inline bool acpi_device_power_manageable(struct acpi_device *adev)
-> +{
-> +	return adev->flags.power_manageable;
-> +}
-> +
-> +static inline bool acpi_device_can_wakeup(struct acpi_device *adev)
-> +{
-> +	return adev->wakeup.flags.valid;
-> +}
-> +
->  #else	/* CONFIG_ACPI */
->  
->  static inline int register_acpi_bus_type(void *bus) { return 0; }
-> 
+From: Viresh Kumar <viresh.kumar@linaro.org>
+Date: Mon, 29 Oct 2012 22:19:14 +0530
+Subject: [PATCH] net: dsa/slave: Fix compilation warnings
+
+Currently when none of CONFIG_NET_DSA_TAG_DSA, CONFIG_NET_DSA_TAG_EDSA and
+CONFIG_NET_DSA_TAG_TRAILER is defined, we get following compilation warnings:
+
+net/dsa/slave.c:51:12: warning: 'dsa_slave_init' defined but not used
+[-Wunused-function]
+net/dsa/slave.c:60:12: warning: 'dsa_slave_open' defined but not used
+[-Wunused-function]
+net/dsa/slave.c:98:12: warning: 'dsa_slave_close' defined but not used
+[-Wunused-function]
+net/dsa/slave.c:116:13: warning: 'dsa_slave_change_rx_flags' defined
+but not used [-Wunused-function]
+net/dsa/slave.c:127:13: warning: 'dsa_slave_set_rx_mode' defined but
+not used [-Wunused-function]
+net/dsa/slave.c:136:12: warning: 'dsa_slave_set_mac_address' defined
+but not used [-Wunused-function]
+net/dsa/slave.c:164:12: warning: 'dsa_slave_ioctl' defined but not
+used [-Wunused-function]
+
+Earlier approach to fix this was discussed here:
+
+lkml.org/lkml/2012/10/29/549
+
+This is another approach to fix it. This is done by some changes in config
+options, which make more sense than the earlier approach. As, atleast one
+tagging option must always be selected for using net/dsa/ infrastructure, this
+patch selects NET_DSA from tagging configs instead of having it as an selectable
+config.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/net/dsa/Kconfig |  1 -
+ net/dsa/Kconfig         | 16 +++++++++-------
+ 2 files changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/dsa/Kconfig b/drivers/net/dsa/Kconfig
+index dd151d5..96eae22 100644
+--- a/drivers/net/dsa/Kconfig
++++ b/drivers/net/dsa/Kconfig
+@@ -1,5 +1,4 @@
+ menu "Distributed Switch Architecture drivers"
+-	depends on NET_DSA
+
+ config NET_DSA_MV88E6XXX
+ 	tristate
+diff --git a/net/dsa/Kconfig b/net/dsa/Kconfig
+index 274791c..f7c6cef 100644
+--- a/net/dsa/Kconfig
++++ b/net/dsa/Kconfig
+@@ -1,5 +1,5 @@
+ config NET_DSA
+-	tristate "Distributed Switch Architecture support"
++	tristate
+ 	default n
+ 	depends on EXPERIMENTAL && NETDEVICES && !S390
+ 	select PHYLIB
+@@ -8,19 +8,21 @@ config NET_DSA
+ 	  the Distributed Switch Architecture.
+
+
+-if NET_DSA
++menu "Distributed Switch Architecture support"
+
+ # tagging formats
+ config NET_DSA_TAG_DSA
+-	bool
++	bool "Original DSA packet tagging format"
++	select NET_DSt
+ 	default n
+
+ config NET_DSA_TAG_EDSA
+-	bool
++	bool "Ethertype DSA packet tagging format"
++	select NET_DSA
+ 	default n
+
+ config NET_DSA_TAG_TRAILER
+-	bool
++	bool "Trailer DSA packet tagging format"
++	select NET_DSA
+ 	default n
+-
+-endif
++endmenu
