@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab2J3Iyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 04:54:49 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:50292 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756239Ab2J3Iyq (ORCPT
+	id S1756818Ab2J3I5M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 04:57:12 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:36299 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756427Ab2J3I5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 04:54:46 -0400
-Date: Tue, 30 Oct 2012 09:54:41 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
-        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] perf tools: Further speed up the perf build
-Message-ID: <20121030085441.GC8245@gmail.com>
-References: <1351261913-28250-1-git-send-email-acme@infradead.org>
- <20121026145451.GA14379@gmail.com>
- <20121026170503.GC20695@ghostprotocols.net>
- <20121027131935.GA30001@gmail.com>
- <20121030081807.GA8245@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030081807.GA8245@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 30 Oct 2012 04:57:09 -0400
+X-AuditID: cbfee61a-b7fa66d0000004cf-05-508f96632c2b
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 2/4] ARM: EXYNOS: PL330 MDMA1 fix for revision 0 of
+ Exynos4210 SOC
+Date: Tue, 30 Oct 2012 09:56:22 +0100
+User-Agent: KMail/1.13.2 (Linux/3.5.0-rc2+; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, jassisinghbrar@gmail.com,
+        vinod.koul@intel.com, rob.herring@calxeda.com, dinguyen@altera.com,
+        pawel.moll@arm.com, t.figa@samsung.com, kyungmin.park@samsung.com
+References: <1351504796-24788-1-git-send-email-b.zolnierkie@samsung.com>
+ <1351504796-24788-3-git-send-email-b.zolnierkie@samsung.com>
+ <508EBBB6.2090006@samsung.com>
+In-reply-to: <508EBBB6.2090006@samsung.com>
+MIME-version: 1.0
+Message-id: <201210300956.23102.b.zolnierkie@samsung.com>
+Content-type: Text/Plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t9jAd3kaf0BBh9miVpc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGWcWTSBveAkX8WDxiNMDYy3ubsYOTkkBEwkms9eYIew
+	xSQu3FvPBmILCSxilFhxh7mLkQvIbmGS2DzhDFiCTcBKYmL7KkYQW0RATaJn8VYwW1ggQmLZ
+	rgksIDaLgKrEsaX/weKiAg4SnVMnsIEMYhaYwCSxYvV5FoipKxglln05ANbBKaAtMW3LF7Az
+	eAUEJX5MvscCYVtK7O7bwgxiMwtoSTS/2cQIYctLbF7zlnkCo8AsJC2zkJTNQlK2gJF5FaNo
+	akFyQXFSeq6hXnFibnFpXrpecn7uJkZwOD6T2sG4ssHiEKMAB6MSD++GNX0BQqyJZcWVuYcY
+	JTiYlUR4Z0/qDxDiTUmsrEotyo8vKs1JLT7EKM3BoiTO2+yREiAkkJ5YkpqdmlqQWgSTZeLg
+	lGpg5HqxboU2j8GOmJAwft6Cpovp5upsWtZqGp1s8yew3fc9Z6DpaKqhEfNgzWLpdNZNyWdS
+	zL5pdybdkvu4ZeufYwzM9rYHd5xiZVlw70aqYISmKVfI86cLtt1tl971VJhhneEqZzHVxRob
+	dVLWrPr7Y+Vmkz7HRL2cy/vPeHcxTPM6GfRfw3GjEktxRqKhFnNRcSIAIYeY+UMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's another source of overhead in the perf version string 
-generator:
 
-   git update-index -q --refresh
+Hi,
 
-... which will iterate the whole checked out tree. This can be 
-pretty slow on NFS volumes, but takes some time even with local 
-SSD disks and a fully cached kernel tree:
+On Monday 29 October 2012 18:24:06 Kukjin Kim wrote:
+> On 10/29/12 10:59, Bartlomiej Zolnierkiewicz wrote:
+> > Commit 8214513 ("ARM: EXYNOS: fix address for EXYNOS4 MDMA1")
+> > changed EXYNOS specific setup of PL330 DMA engine to use 'non-secure'
+> > mdma1 address instead of 'secure' one (from 0x12840000 to 0x12850000)
+> > to fix issue with some Exynos4212 SOCs.  Unfortunately it brakes
+> > PL330 setup for revision 0 of Exynos4210 SOC (mdma1 device cannot
+> > be found at 'non-secure' address):
+> >
+> > [    0.566245] dma-pl330 dma-pl330.2: PERIPH_ID 0x0, PCELL_ID 0x0 !
+> > [    0.566278] dma-pl330: probe of dma-pl330.2 failed with error -22
+> >
+> > Fix it by using 'secure' mdma1 address on Exynos4210 revision 0 SOC.
+> >
+> > Cc: Tomasz Figa<t.figa@samsung.com>
+> > Cc: Kukjin Kim<kgene.kim@samsung.com>
+> > Signed-off-by: Bartlomiej Zolnierkiewicz<b.zolnierkie@samsung.com>
+> > Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
+> > ---
+> >   arch/arm/mach-exynos/dma.c              | 5 ++++-
+> >   arch/arm/mach-exynos/include/mach/map.h | 3 ++-
+> >   2 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> [...]
+> 
+> > +		if (samsung_rev() == EXYNOS4210_REV_0)
+> > +			exynos_mdma1_device.res.start = EXYNOS4_PA_S_MDMA1;
+> 
+> Hi Bart,
+> 
+> Hmm...above change and adding definition of EXYNOS_PA_S_MDMA1 address 
+> can fix the problem you commented on EXYNOS4210 Rev0 without others?...
 
- $ perf stat --null --repeat 3 --pre "rm -f PERF-VERSION-FILE" util/PERF-VERSION-GEN 
- PERF_VERSION = 3.7.rc3.g5399b3b.dirty
- PERF_VERSION = 3.7.rc3.g5399b3b.dirty
- PERF_VERSION = 3.7.rc3.g5399b3b.dirty
+The problem is affecting only EXYNOS4210 Rev0 and the fix is applied only
+for case when soc_is_exynos4210() && samsung_rev() == EXYNOS4210_REV_0,
+or did you mean something else?
 
- Performance counter stats for 'util/PERF-VERSION-GEN' (3 runs):
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung Poland R&D Center
 
-       0.306999221 seconds time elapsed                                          ( +-  0.56% )
-
-So remove the .dirty differentiator as well - it adds little 
-information because locally patched git trees are common, but 
-seldom are the perf tools modified.
-
-So a lot of version strings are reported as 'dirty' while in 
-fact they are pristine perf builds. For example 99% of my perf 
-builds are not patched but the kernel tree is slightly patched, 
-which adds the .dirty tag.
-
-Eliminating that tag speeds up version generation by another 
-order of magnitude:
-
- $ perf stat --null --repeat 3 --sync --pre "rm -f PERF-VERSION-FILE" util/PERF-VERSION-GEN 
- PERF_VERSION = 3.7.rc3.g4b0bd3
- PERF_VERSION = 3.7.rc3.g4b0bd3
- PERF_VERSION = 3.7.rc3.g4b0bd3
-
- Performance counter stats for 'util/PERF-VERSION-GEN' (3 runs):
-
-       0.021270923 seconds time elapsed                                          ( +-  1.94% )
-
-(Also clean up some of the comments around this code.)
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/util/PERF-VERSION-GEN | 13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
-
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index c774b89..6fb1cc8 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -9,17 +9,12 @@ GVF=${OUTPUT}PERF-VERSION-FILE
- LF='
- '
- 
-+#
- # First check if there is a .git to get the version from git describe
--# otherwise try to get the version from the kernel makefile
-+# otherwise try to get the version from the kernel Makefile
-+#
- if test -d ../../.git -o -f ../../.git &&
--	VN=$(echo $(git tag --list "v[0-9].[0-9]*" | tail -1)"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD) 2>/dev/null) &&
--	case "$VN" in
--	*$LF*) (exit 1) ;;
--	v[0-9]*)
--		git update-index -q --refresh
--		test -z "$(git diff-index --name-only HEAD --)" ||
--		VN="$VN-dirty" ;;
--	esac
-+	VN=$(echo $(git tag --list "v[0-9].[0-9]*" | tail -1)"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD) 2>/dev/null)
- then
- 	VN=$(echo "$VN" | sed -e 's/-/./g');
- else
+> Thanks.
+> 
+> Best regards,
+> Kgene.
+> --
+> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+> SW Solution Development Team, Samsung Electronics Co., Ltd.
