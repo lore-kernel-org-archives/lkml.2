@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934726Ab2J3VbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:31:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48822 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933973Ab2J3VbJ (ORCPT
+	id S934703Ab2J3Vdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:33:44 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60361 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164Ab2J3Vdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:31:09 -0400
-Date: Tue, 30 Oct 2012 14:31:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/5] mm, highmem: remove useless pool_lock
-Message-Id: <20121030143107.ee1f959b.akpm@linux-foundation.org>
-In-Reply-To: <1351451576-2611-3-git-send-email-js1304@gmail.com>
-References: <Yes>
-	<1351451576-2611-1-git-send-email-js1304@gmail.com>
-	<1351451576-2611-3-git-send-email-js1304@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 30 Oct 2012 17:33:43 -0400
+Date: Tue, 30 Oct 2012 21:38:50 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Lasse =?ISO-8859-1?B?S+Rya2vkaW5lbg==?= <ljkarkk2@cc.hut.fi>,
+        linux-kernel@vger.kernel.org
+Subject: Re: urandom is too slow
+Message-ID: <20121030213850.7b987ddf@pyramind.ukuu.org.uk>
+In-Reply-To: <20121030185403.GA5044@thunk.org>
+References: <508FEA5A.7010406@cc.hut.fi>
+	<20121030185403.GA5044@thunk.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,47 +26,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Oct 2012 04:12:53 +0900
-Joonsoo Kim <js1304@gmail.com> wrote:
+> If you just want to wipe a disk, you shouldn't be using /dev/urandom for that
+> purpose.
 
-> The pool_lock protects the page_address_pool from concurrent access.
-> But, access to the page_address_pool is already protected by kmap_lock.
-> So remove it.
+If you want to wipe a disk issue a security erase command via hdparm.
+There is no guarantee that simply writing crap all over it will re-use
+the same sectors of physical media, and for a flash drive it causes
+massive wear and takes forever while a security erase is normally near
+immediate.
 
-Well, there's a set_page_address() call in mm/page_alloc.c which
-doesn't have lock_kmap().  it doesn't *need* lock_kmap() because it's
-init-time code and we're running single-threaded there.  I hope!
-
-But this exception should be double-checked and mentioned in the
-changelog, please.  And it's a reason why we can't add
-assert_spin_locked(&kmap_lock) to set_page_address(), which is
-unfortunate.
-
-
-The irq-disabling in this code is odd.  If ARCH_NEEDS_KMAP_HIGH_GET=n,
-we didn't need irq-safe locking in set_page_address().  I guess we'll
-need to retain it in page_address() - I expect some callers have IRQs
-disabled.
-
-
-ARCH_NEEDS_KMAP_HIGH_GET is a nasty looking thing.  It's ARM:
-
-/*
- * The reason for kmap_high_get() is to ensure that the currently kmap'd
- * page usage count does not decrease to zero while we're using its
- * existing virtual mapping in an atomic context.  With a VIVT cache this
- * is essential to do, but with a VIPT cache this is only an optimization
- * so not to pay the price of establishing a second mapping if an existing
- * one can be used.  However, on platforms without hardware TLB maintenance
- * broadcast, we simply cannot use ARCH_NEEDS_KMAP_HIGH_GET at all since
- * the locking involved must also disable IRQs which is incompatible with
- * the IPI mechanism used by global TLB operations.
- */
-#define ARCH_NEEDS_KMAP_HIGH_GET
-#if defined(CONFIG_SMP) && defined(CONFIG_CPU_TLB_V6)
-#undef ARCH_NEEDS_KMAP_HIGH_GET
-#if defined(CONFIG_HIGHMEM) && defined(CONFIG_CPU_CACHE_VIVT)
-#error "The sum of features in your kernel config cannot be supported together"
-#endif
-#endif
-
+Alan
