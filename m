@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab2J3AmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 20:42:09 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:54573 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753815Ab2J3AmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 20:42:05 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
-        Will Drewry <wad@chromium.org>, Geremy Condra <gcondra@google.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 1/4] arch/arm: add syscall_get_arch
-Date: Mon, 29 Oct 2012 17:41:19 -0700
-Message-Id: <1351557682-20983-2-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351557682-20983-1-git-send-email-keescook@chromium.org>
-References: <1351557682-20983-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1754204Ab2J3Aqn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 20:46:43 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:39335 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab2J3Aql (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 20:46:41 -0400
+Message-ID: <508F2354.3090801@gmail.com>
+Date: Tue, 30 Oct 2012 11:46:12 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Krzysztof Halasa <khc@pm.waw.pl>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org,
+        lkml <linux-kernel@vger.kernel.org>, arm@kernel.org
+Subject: Re: [PULL REQ] IXP4xx changes for Linux 3.7
+References: <m3bog6m5iz.fsf@intrepid.localdomain> <201210142002.55841.arnd@arndb.de> <m3a9vkahci.fsf@intrepid.localdomain>
+In-Reply-To: <m3a9vkahci.fsf@intrepid.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Drewry <wad@chromium.org>
+On 18/10/12 09:01, Krzysztof Halasa wrote:
+> Hi,
+> 
 
-Provide an ARM implementation of syscall_get_arch. This is a pre-requisite
-for CONFIG_HAVE_ARCH_SECCOMP_FILTER.
+<snip>
 
-Signed-off-by: Will Drewry <wad@chromium.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- arch/arm/include/asm/syscall.h |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+> 
+> Unfortunately, as I already explained to you in
+> https://lkml.org/lkml/2012/9/29/37, my resources for IXP4xx are very
+> limited (and this isn't a paid job) and I'm in no way able to do what
+> you require. This, coupled with my inability to make the patches end up
+> upstream any other way, will make me post relevant MAINTAINERS changes
+> shortly.
+> 
+> Don't get me wrong. If I had time for this it could be different.
+> Unfortunately IXP4xx is a legacy arch, and for me it's simply a hobby at
+> this point. Given the raised barriers to participate, probably aimed at
+> paid maintainers, I have to quit doing this.
+> 
+> BTW since Imre has probably even much less time, it would be a good time
+> to find someone to maintain IXP4xx code. I will be publishing (from time
+> to time) my tree (I'm using the hw myself), so even simple
+> cherry-picking would probably make some sense.
 
-diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
-index 9fdded6..803f433 100644
---- a/arch/arm/include/asm/syscall.h
-+++ b/arch/arm/include/asm/syscall.h
-@@ -7,6 +7,8 @@
- #ifndef _ASM_ARM_SYSCALL_H
- #define _ASM_ARM_SYSCALL_H
- 
-+#include <linux/audit.h> /* for AUDIT_ARCH_* */
-+#include <linux/elf.h> /* for ELF_EM */
- #include <linux/err.h>
- #include <linux/sched.h>
- 
-@@ -95,4 +97,15 @@ static inline void syscall_set_arguments(struct task_struct *task,
- 	memcpy(&regs->ARM_r0 + i, args, n * sizeof(args[0]));
- }
- 
-+static inline int syscall_get_arch(struct task_struct *task,
-+				   struct pt_regs *regs)
-+{
-+	/* ARM tasks don't change audit architectures on the fly. */
-+#ifdef __ARMEB__
-+	return AUDIT_ARCH_ARMEB;
-+#else
-+	return AUDIT_ARCH_ARM;
-+#endif
-+}
-+
- #endif /* _ASM_ARM_SYSCALL_H */
--- 
-1.7.9.5
+I maintain a tree for the ep93xx, which is another legacy arm soc. I
+also do this as a hobbyist, not as a paid position. Pushing patches to
+mainline via arm-soc has been very easy. Basically I branch from Linus's
+tree (typically 3.x-rc1), apply patches to one of a bunch of branches
+(-devel, -fixes, etc) and then send pull requests to the arm-soc
+maintainers prior to the merge window. I also have a aggregate branch
+which is tested in next.
+
+It takes very little of my time to maintain this tree. I cannot see how
+it could be any harder than sending to Linus directly. Also, the arm-soc
+maintainers, Arnd and Olof, have been very helpful in getting me started
+with my maintainer tree, and in learning the development flow.
+
+I would also rather get flamed by the arm-soc guys than Linus when I
+make a mistake :-).
+
+~Ryan
 
