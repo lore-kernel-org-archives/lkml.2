@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750974Ab2J3Ajt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 20:39:49 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:45894 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab2J3Ajr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 20:39:47 -0400
-Date: Tue, 30 Oct 2012 09:39:43 +0900
-From: Norbert Preining <preining@logic.at>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: drm i915 hangs on heavy io load
-Message-ID: <20121030003942.GC6539@gamma.logic.tuwien.ac.at>
-References: <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <6c3329$6sai31@orsmga002.jf.intel.com> <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <CAPM=9txr4TzuG-BbL0bXeEK6AzkOK9pH0kh-nP=Njv53sgFZew@mail.gmail.com> <20121024003659.GA30962@gamma.logic.tuwien.ac.at> <b94cdc$72fm1r@fmsmga001.fm.intel.com> <20121028024753.GA4254@gamma.logic.tuwien.ac.at> <eeac1e$4q1mqm@AZSMGA002.ch.intel.com>
+	id S1752246Ab2J3AkE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 20:40:04 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58362 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751629Ab2J3AkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 20:40:00 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Jani Nikula <jani.nikula@intel.com>
+Subject: [REGRESSION] i915: failure to interoperate with HP ZR30w using an X230
+Date: Mon, 29 Oct 2012 20:39:56 -0400
+Message-ID: <nsxa9v4ssgz.fsf@closure.thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <eeac1e$4q1mqm@AZSMGA002.ch.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@mit.edu
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
 
-On So, 28 Okt 2012, Chris Wilson wrote:
-> > I pulled the whole branch into my compile branch, and removed everything
-> > from kernel cmd line regarding rc6, and got the
-> > 	[drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
-> > 	[drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
-> > 	[drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
-> > 	[drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
-> > 	[drm:i915_reset] *ERROR* Failed to reset chip.
-> > new i915_error_state.gz at the same place.
-> > 
-> > So it seems that the patches in the ilk-wa-pile branch do not help.
-> 
-> Yeah, looks like we have another issue to contend with, so can you
-> please file a bug on bugzilla.freedesktop.org (or bugzilla.kernel.org)
-> so that we don't lose track of it.
+I recently upgraded to 3.6.3, and my Lenovo X230 has stopped being able
+to work with an HP ZR30w 30" 2560x1600 display.   I saw the following
+messages in the dmesg:
 
-I have seen this here:
-	https://bugs.freedesktop.org/show_bug.cgi?id=55984
-does it make sense to start a new bug for that?
+[drm:ivb_manual_fdi_link_train] *ERROR* FDI train 1 fail!
+[drm:ivb_manual_fdi_link_train] *ERROR* FDI train 2 fail!
 
-Best wishes
+.. which I didn't see before; the exact same mini-displayport to
+displayport cable connecting the same Lenovo X230 laptop to exactly the
+same ZRW 30 display worked just fine with the 3.6.0 kernel.
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-SCREMBY (n.)
-The dehydrated felt-tip pen attached by a string to the 'Don't Forget'
-board in the kitchen which has never worked in living memory but which
-no one can be bothered to throw away.
-			--- Douglas Adams, The Meaning of Liff
+So I bisected the problem, and found the following commit.  Reverting
+this commit made the problem go away.   Maybe we should revert
+0c96c65b48fb in mainline?
+
+Let me know if you'd like me to do any further debugging.
+
+Thanks,
+
+                                                - Ted
+
+commit 6c34ed3be47036c173f7f43df112f93fbd89026f
+Author: Jani Nikula <jani.nikula@intel.com>
+Date:   Wed Sep 26 18:43:10 2012 +0300
+
+    drm/i915: use adjusted_mode instead of mode for checking the 6bpc force flag
+    
+    commit 0c96c65b48fba3ffe9822a554cbc0cd610765cd5 upstream.
+    
+    The dithering introduced in
+    
+    commit 3b5c78a35cf7511c15e09a9b0ffab290a42d9bcf
+    Author: Adam Jackson <ajax@redhat.com>
+    Date:   Tue Dec 13 15:41:00 2011 -0800
+    
+        drm/i915/dp: Dither down to 6bpc if it makes the mode fit
+    
+    stores the INTEL_MODE_DP_FORCE_6BPC flag in the private_flags of the
+    adjusted mode, while i9xx_crtc_mode_set() and ironlake_crtc_mode_set() use
+    the original mode, without the flag, so it would never have any
+    effect. However, the BPC was clamped by VBT settings, making things work by
+    coincidence, until that part was removed in
+    
+    commit 4344b813f105a19f793f1fd93ad775b784648b95
+    Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+    Date:   Fri Aug 10 11:10:20 2012 +0200
+    
+    Use adjusted_mode instead of mode when checking for
+    INTEL_MODE_DP_FORCE_6BPC to make the flag have effect.
+    
+    v2: Don't forget to fix this in i9xx_crtc_mode_set() also, pointed out by
+    Daniel both before and after sending the first patch.
+    
+    Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47621
+    CC: Adam Jackson <ajax@redhat.com>
+    Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+    Reviewed-by: Adam Jackson <ajax@redhat.com>
+    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+                                                - Ted
