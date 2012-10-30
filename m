@@ -1,87 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab2J3EGC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 00:06:02 -0400
-Received: from [118.186.34.234] ([118.186.34.234]:55337 "EHLO kylinos.com.cn"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab2J3EF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 00:05:59 -0400
-X-Greylist: delayed 425 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 00:05:59 EDT
-From: Li Wang <wangli@kylinos.com.cn>
-To: Tyler Hicks <tyhicks@canonical.com>,
-        Dustin Kirkland <dustin.kirkland@gazzang.com>
-Cc: <ecryptfs@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Li Wang <wangli@kylinos.com.cn>,
-        Yunchuan Wen <wenyunchuan@kylinos.com.cn>
-Subject: [PATCH] eCryptfs: Avoid unnecessary disk read and data decryption during writing
-Date: Tue, 30 Oct 2012 19:52:40 +0800
-Message-Id: <1351597960-1503-1-git-send-email-wangli@kylinos.com.cn>
-X-Mailer: git-send-email 1.7.6.5
+	id S1752012Ab2J3EGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 00:06:44 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53149 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab2J3EGm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 00:06:42 -0400
+Date: Tue, 30 Oct 2012 15:06:27 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mike Turquette <mturquette@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Subject: linux-next: manual merge of the clk tree with the arm-soc tree
+Message-Id: <20121030150627.ac1f6a3f75231ea49edf7b98@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__30_Oct_2012_15_06_27_+1100_DsXIhWfsiWj5NieN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ecryptfs_write_begin grabs a page from page cache for writing.
-If the page contains invalid data, or data older than the
-counterpart on the disk, eCryptfs will read out the
-corresponing data from the disk into the page, decrypt them,
-then perform writing. However, for this page, if the length
-of the data to be written into is equal to page size,
-that means the whole page of data will be overwritten,
-in which case, it does not matter whatever the data were before,
-it is beneficial to perform writing directly rather than bothering
-to read and decrypt first.
+--Signature=_Tue__30_Oct_2012_15_06_27_+1100_DsXIhWfsiWj5NieN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-With this optimization, according to our test on a machine with
-Intel Core 2 Duo processor, iozone 'write' operation on an existing
-file with write size being multiple of page size will enjoy a steady
-3x speedup.
+Hi Mike,
 
-Signed-off-by: Li Wang <wangli@kylinos.com.cn>
-Signed-off-by: Yunchuan Wen <wenyunchuan@kylinos.com.cn>
-Reviewed-by: Tyler Hicks <tyhicks@canonical.com>
----
- fs/ecryptfs/mmap.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+Today's linux-next merge of the clk tree got a conflict in
+arch/arm/include/asm/hardware/sp810.h between commit 0891642cf117 ("ARM:
+vexpress: Start using new Versatile Express infrastructure") from the
+arm-soc tree and commit 05e3659135a4 ("clk: Common clocks implementation
+for Versatile Express") from the clk tree.
 
-diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
-index bd1d57f..564a1fa 100644
---- a/fs/ecryptfs/mmap.c
-+++ b/fs/ecryptfs/mmap.c
-@@ -338,7 +338,8 @@ static int ecryptfs_write_begin(struct file *file,
- 			if (prev_page_end_size
- 			    >= i_size_read(page->mapping->host)) {
- 				zero_user(page, 0, PAGE_CACHE_SIZE);
--			} else {
-+				SetPageUptodate(page);
-+			} else if (len < PAGE_CACHE_SIZE) {
- 				rc = ecryptfs_decrypt_page(page);
- 				if (rc) {
- 					printk(KERN_ERR "%s: Error decrypting "
-@@ -348,8 +349,8 @@ static int ecryptfs_write_begin(struct file *file,
- 					ClearPageUptodate(page);
- 					goto out;
- 				}
-+				SetPageUptodate(page);
- 			}
--			SetPageUptodate(page);
- 		}
- 	}
- 	/* If creating a page or more of holes, zero them out via truncate.
-@@ -499,6 +500,13 @@ static int ecryptfs_write_end(struct file *file,
- 		}
- 		goto out;
- 	}
-+	if (!PageUptodate(page)) {
-+		if (copied < PAGE_CACHE_SIZE) {
-+			rc = 0;
-+			goto out;
-+		}
-+		SetPageUptodate(page);
-+	}
- 	/* Fills in zeros if 'to' goes beyond inode size */
- 	rc = fill_zeros_to_end_of_page(page, to);
- 	if (rc) {
--- 
-1.7.6.5
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/include/asm/hardware/sp810.h
+index 2cdcf44,afd7e91..0000000
+--- a/arch/arm/include/asm/hardware/sp810.h
++++ b/arch/arm/include/asm/hardware/sp810.h
+@@@ -50,6 -50,14 +50,8 @@@
+  #define SCPCELLID2		0xFF8
+  #define SCPCELLID3		0xFFC
+ =20
+ -#define SCCTRL_TIMEREN0SEL_REFCLK	(0 << 15)
+ -#define SCCTRL_TIMEREN0SEL_TIMCLK	(1 << 15)
+ -
+ -#define SCCTRL_TIMEREN1SEL_REFCLK	(0 << 17)
+ -#define SCCTRL_TIMEREN1SEL_TIMCLK	(1 << 17)
+ -
++ #define SCCTRL_TIMERENnSEL_SHIFT(n)	(15 + ((n) * 2))
++=20
+  static inline void sysctl_soft_reset(void __iomem *base)
+  {
+  	/* switch to slow mode */
+
+--Signature=_Tue__30_Oct_2012_15_06_27_+1100_DsXIhWfsiWj5NieN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQj1JDAAoJEECxmPOUX5FEAioP/jgBWYOrOQzgXGjwY7W+hVg/
+cejTc2KtwSHqOsn3jA0vS37DHlNyae4SyJ0/GAxYZXQZ6bzRetsuKD8G58zPH+D9
+3s9ctT20yA+BzcI/kS/JiU0vfFgewKT5VJhLm9pwYB7C4LWPwh/ZoFHcZi5+6Npu
+KBC/DbgjpxS8JNb3SvCUfh9HMXcrggqWQyn9XahtvMbdt08Arxa8cg12XasRuJNn
+E8FQ03KX41rI2sNIFyDkVS8VhWNiNoHVH7OhSaUfTxPoq792zlokr6qtpWuESOfd
+WquLNMyJT/cLlTz2lLGjHK+fEvlo8gDkYzQFF7Nv0bH4Lgj1GS7XiZ8NOpVFRojT
+Fp9h6bk3csNCuNRt8McCq9ruaUK0zr3DJIqE6fC3f+neuQD4JVt47vjS0wnaGK6V
+JWt+OvXUp/XABS6POOhqkZt5ZTELlOIJvotLU8BSj6leVhrbXME3xZKKepMXIdmv
+CH1Aq8G5zCqnDxuGbjQL6nI1FATK817oKAFjaDcvDzw2cVBF/Hkf+kgH8nD/LSck
+UCeJNDiZbpiFxn5SRVqpDbMQQmMChR0yiGT60+/3t56yFet5cgxUBcpXslvJvMzl
+k1w/qQwD2P30rmN1NiqV/66XgopqwQQn2I8QjuY+m95i89Ig+1lRJiAlCP0uVQwu
+f/mUBNdW67wXuhuTTLmL
+=kV2f
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__30_Oct_2012_15_06_27_+1100_DsXIhWfsiWj5NieN--
