@@ -1,85 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758199Ab2J3PTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:19:07 -0400
-Received: from mga14.intel.com ([143.182.124.37]:24328 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751906Ab2J3PTE convert rfc822-to-8bit (ORCPT
+	id S1756873Ab2J3PTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:19:06 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:55421 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab2J3PTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Oct 2012 11:19:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,679,1344236400"; 
-   d="scan'208";a="211277022"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <jbeulich@suse.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Index: AQHNtqOwTi91BiFLfUibRvXA4zlK85fR5CRg
-Date: Tue, 30 Oct 2012 15:18:59 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923353755E1@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
- <5089676602000078000A4928@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
- <508A89CB020000780008E6ED@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
- <20121026201409.GF2708@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC8292335373918@SHSMSX101.ccr.corp.intel.com>
- <20121029123950.GK2708@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC8292335374C86@SHSMSX101.ccr.corp.intel.com>
- <20121030133720.GA27463@phenom.dumpdata.com>
-In-Reply-To: <20121030133720.GA27463@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+In-Reply-To: <1351609530.11158.87.camel@smile>
+References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348731121-2515-6-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348735450.1648.5.camel@vkoul-udesk3>
+	<1348739022.13371.157.camel@smile>
+	<1348740071.1648.25.camel@vkoul-udesk3>
+	<CAOh2x=ntwp22Z3sHf9QehVwab--ZayF-kmTpZsjbkyQYVxrzpw@mail.gmail.com>
+	<1349691428.10584.95.camel@smile>
+	<CAKohpokGsAv2cPjj2EMvmTmN1Q+LOU7mN0H9YZcGzs95mm6c-w@mail.gmail.com>
+	<1349700409.10584.118.camel@smile>
+	<CAKohpo=t_uV-S+cbeDFvSDLe0SxXVx6tvA8yGMF45-YvU_FRvw@mail.gmail.com>
+	<1351609530.11158.87.camel@smile>
+Date: Tue, 30 Oct 2012 20:49:03 +0530
+Message-ID: <CAKohpon7KP5V3xjMG_HaNoP3x1aPT2FtivTz=41PT7neGTpTUw@mail.gmail.com>
+Subject: Re: [PATCHv3 5/7] dmaengine: dw_dmac: add PCI part of the driver
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
->>> +config XEN_ACPI_PAD_STUB
->>> +	bool
->>> +	depends on XEN_DOM0 && X86_64 && ACPI
->>> +	default n
->>> +
->> 
->> This Kconfig is pointless, if CONFIG_XEN_ACPI_PAD_STUB = n, native
->> pad would successfully registerred, and then mwait #UD (we would
->> revert df88b2d96e36d9a9e325bfcd12eb45671cbbc937, right?). So xen
->> stub logic should unconditionally built-in kernel.   
-> 
-> 
-> Potentially. Keep in mind that there is no need to built this if the
-> kernel is not built with ACPI.
+On 30 October 2012 20:35, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> On Mon, 2012-10-08 at 18:57 +0530, Viresh Kumar wrote:
 
-Sure, 'obj-$(CONFIG_XEN_DOM0) +=' is enough.
-(XEN_DOM0 depends on ACPI).
+>> I do agree, we must have as less routines in kernel namespace as possible.
+>> But not at the price of over complexity of stuff which isn't required.
+>
+> I didn't see the complexity you are talking about.
 
->>> +subsys_initcall(xen_acpi_pad_stub_init);
->> 
->> I'm still confused. In this way there are xen-acpi-pad-stub.c and
->> xen-acpi-pad.c, and you want to let xen-acpi-pad loaded as module,
->> right? how can xen-acpi-pad logic work when it was insmoded?  
-> 
-> Via the register/unregister calls that this provides? Or does ACPI bus
-> drivers get immediately called once the call acpi_bus_register_driver?
+Complexity not in the way that we need a genius to understand the code :)
+But creating devices layer which doesn't exist.
 
-But when xen stub driver registerred, real xen pad ops has not been hooked to stub ops.
+>> Logically speaking, we never had two devices for the same
+>> dma controller.
+>
+> What do you mean by this? Do we ever have the same IP block on different
+> buses at the same time? I think it's potentially possible.
 
-> 
-> Or can one 'poke' the 'add' and 'remove' calls so that once the "true"
-> PAD driver is loaded it will restart the ops->add call?
+One device is one instance of an IP. With your approach we will have two
+device structures for a single physical IP present.
 
-I think we'd better not to use xen pad stub approach. Technically it's complicated, say, how to match xen_acpi_pad driver w/ pad device? when and how to invoke .add method? how to avoid native pad loading risk? etc. I didn't find its obivous advantages, so how about keep simpler approach?
+>> We are adding them just to have pci over platform.. Which
+>> would mean the system become more and more complex..
+>
+>> So, during run time...
+>> - there will be two device-driver binding loops.. Once for pci and then for
+>>   platform
+>
+> Is this a real problem? We have dozens of the drivers on modern hw, part
+> of them by the way use proposed approach.
 
-Thanks,
-Jinsong
+I am repeating this (probably said this earlier, if not sorry). If
+something already
+exists in kernel, it doesn't meant that it is perfect and others
+should blindly follow
+it.
+
+The loops isn't a problem, but an unnecessary activity done.
+
+>> - In suspend/resume... two devices will get into suspend, instead of one..
+>
+> True. But it allows to keep a potential to have the same devices to be
+> attached to the different buses simultaneously.
+
+I don't see why a single physical block would be connected to AMBA and PCI
+at the same time. And obviously that's not the case right now, so better leave
+that in current argument :)
+
+>> - There might be other frameworks in kernel.. which react on struct device
+>>    basis... they will get affected too..
+>
+> I'm wondering if there any that affects us. I think you might know if
+> there was any example of it (in history?).
+
+There are many frameworks which work per device. regulator, clk, RTPM, etc.
+They will see a hardware hierarchy which doesn't exist.
+
+>> - You have larger image size for pci case. as you compile platform too..
+>
+> How much? I didn't check this, but I believe it will consume one page at
+> most.
+
+Whatever amount it is. We can't waste it.
+
+> Actually sdhci seems for me as a not good example. In the mmc code they
+> have already robust architecture (there is host controller, there is
+> core part, there is card part and so on...) and enough of ->ops
+> structures. We have a simpler driver.
+
+I am not talking about SD/MMC as a whole. SDHCI targets a specific hardware
+configuration (manufactured by multiple vendors). It is very similar to our case
+here.
+
+For me i don't agree with your approach. So, its a NACK.
+However if Arnd/Vinod or You can give me some strong points about
+your approach, i can consider it again :)
+
+--
+viresh
