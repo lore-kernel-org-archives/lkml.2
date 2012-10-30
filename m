@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761632Ab2J3Af4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 20:35:56 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:39619 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755979Ab2J3Afz convert rfc822-to-8bit (ORCPT
+	id S1750974Ab2J3Ajt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 20:39:49 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:45894 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab2J3Ajr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 20:35:55 -0400
+	Mon, 29 Oct 2012 20:39:47 -0400
+Date: Tue, 30 Oct 2012 09:39:43 +0900
+From: Norbert Preining <preining@logic.at>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: drm i915 hangs on heavy io load
+Message-ID: <20121030003942.GC6539@gamma.logic.tuwien.ac.at>
+References: <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <6c3329$6sai31@orsmga002.jf.intel.com> <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <CAPM=9txr4TzuG-BbL0bXeEK6AzkOK9pH0kh-nP=Njv53sgFZew@mail.gmail.com> <20121024003659.GA30962@gamma.logic.tuwien.ac.at> <b94cdc$72fm1r@fmsmga001.fm.intel.com> <20121028024753.GA4254@gamma.logic.tuwien.ac.at> <eeac1e$4q1mqm@AZSMGA002.ch.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EAB8596@DBDE01.ent.ti.com>
-References: <1349879449-22657-1-git-send-email-mporter@ti.com>
-	<1BAFE6F6C881BF42822005164F1491C33EAB8596@DBDE01.ent.ti.com>
-Date: Mon, 29 Oct 2012 19:35:54 -0500
-Message-ID: <CAD=GYpbBc-zTpkvWrf-4AYQy0dUniCML5ndC4cQfzOJ1MOU0mw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
-From: Joel A Fernandes <agnel.joel@gmail.com>
-To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Cc: "Porter, Matt" <mporter@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <eeac1e$4q1mqm@AZSMGA002.ch.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[resending, because the first post got rejected due to non-plaintext]
+Hi Chris,
 
-Hi Guraraja,
+On So, 28 Okt 2012, Chris Wilson wrote:
+> > I pulled the whole branch into my compile branch, and removed everything
+> > from kernel cmd line regarding rc6, and got the
+> > 	[drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+> > 	[drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
+> > 	[drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+> > 	[drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
+> > 	[drm:i915_reset] *ERROR* Failed to reset chip.
+> > new i915_error_state.gz at the same place.
+> > 
+> > So it seems that the patches in the ilk-wa-pile branch do not help.
+> 
+> Yeah, looks like we have another issue to contend with, so can you
+> please file a bug on bugzilla.freedesktop.org (or bugzilla.kernel.org)
+> so that we don't lose track of it.
 
-I am interested in this thread. I've been trying Gururaja's patches for
-audio as well.
+I have seen this here:
+	https://bugs.freedesktop.org/show_bug.cgi?id=55984
+does it make sense to start a new bug for that?
 
-I rebased  Guraja's patches on top of Matt's EDMA patches which were
-applied to the beaglebone 3.7 kernel repo. With some fixes to make it
-compile with CONFIG_DUMMY_REGULATOR enabled, Currently it breaks at
-set_dai_fmt in davinci-mcasp.c when an audio file is played.
+Best wishes
 
-Could you try my tree on EVM?  dts changes may be required to use mcasp1 on
-EVM, https://github.com/joelagnel/linux-kernel/commits/3.7
-
-v3.7-rc2-fixes to v3.7-rc2-audio commits are Gururaja's patches which I
-applied, and after that are my commits to enable config , add dt data and
-some fixes.
-
-Thanks,
-Joel
-
-On Mon, Oct 29, 2012 at 10:45 AM, Hebbar, Gururaja
-<gururaja.hebbar@ti.com> wrote:
->
-> Matt,
->
-> On Wed, Oct 10, 2012 at 20:00:49, Porter, Matt wrote:
-> > 6ea74cb ARM: OMAP2+: hwmod: get rid of all omap_clk_get_by_name usage
-> > exposes a bug in the AM33XX clock data for mcasp. After moving to
-> > clk_get() usage, the _init() of all registered hwmods fails on mcasp0
-> > due to incorrect clock data causing clk_get() to fail. This causes all
-> > successive hwmods to fail to _init() leaving them in a bad state.
-> >
-> > This patch updates the mcasp clock entries so clk_get() will succeed.
-> > It is tested on BeagleBone and is needed for 3.7-rc1 to fix AM33xx
-> > boot.
->
->
-> I want to test Audio on AM335x Evm with your EDMA patches. I have few
-> patches for AM335x.
-> Can you share the link to the repo & branch on which I need to rebase?
-> The patches are related to mcasp dt node, mcasp pinmux in dt, etc...
->
-> >
-> ..snip..
-> ..snip..
-> >
->
->
-> Thanks & Regards,
-> Gururaja
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+SCREMBY (n.)
+The dehydrated felt-tip pen attached by a string to the 'Don't Forget'
+board in the kitchen which has never worked in living memory but which
+no one can be bothered to throw away.
+			--- Douglas Adams, The Meaning of Liff
