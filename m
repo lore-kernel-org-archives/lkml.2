@@ -1,144 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933446Ab2J3MOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 08:14:15 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:37911 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932930Ab2J3MOM (ORCPT
+	id S933641Ab2J3MRa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 08:17:30 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:42427 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933585Ab2J3MRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 08:14:12 -0400
-Date: Tue, 30 Oct 2012 15:11:46 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [PATCH 1/2] zram: forbid IO operations from within
- zram_init_device()
-Message-ID: <20121030121146.GC5052@swordfish.minsk.epam.com>
-References: <20121030090150.GA5052@swordfish.minsk.epam.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030090150.GA5052@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 30 Oct 2012 08:17:18 -0400
+Subject: Re: [PATCH V2 RFC 0/3] kvm: Improving undercommit,overcommit
+ scenarios
+From: Andrew Theurer <habanero@linux.vnet.ibm.com>
+Reply-To: habanero@linux.vnet.ibm.com
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>, LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+In-Reply-To: <20121029140621.15448.92083.sendpatchset@codeblue>
+References: <20121029140621.15448.92083.sendpatchset@codeblue>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Tue, 30 Oct 2012 07:17:00 -0500
+Message-ID: <1351599420.23105.14.camel@oc6622382223.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12103012-7282-0000-0000-00000E675001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-10-29 at 19:36 +0530, Raghavendra K T wrote:
+> In some special scenarios like #vcpu <= #pcpu, PLE handler may
+> prove very costly, because there is no need to iterate over vcpus
+> and do unsuccessful yield_to burning CPU.
+> 
+>  Similarly, when we have large number of small guests, it is
+> possible that a spinning vcpu fails to yield_to any vcpu of same
+> VM and go back and spin. This is also not effective when we are
+> over-committed. Instead, we do a yield() so that we give chance
+> to other VMs to run.
+> 
+> This patch tries to optimize above scenarios.
+> 
+>  The first patch optimizes all the yield_to by bailing out when there
+>  is no need to continue yield_to (i.e., when there is only one task 
+>  in source and target rq).
+> 
+>  Second patch uses that in PLE handler.
+> 
+>  Third patch uses overall system load knowledge to take decison on
+>  continuing in yield_to handler, and also yielding in overcommits.
+>  To be precise, 
+>  * loadavg is converted to a scale of 2048  / per CPU 
+>  * a load value of less than 1024 is considered as undercommit and we
+>  return from PLE handler in those cases 
+>  * a load value of greater than 3586 (1.75 * 2048) is considered as overcommit
+>   and  we yield to other VMs in such cases.
+> 
+> (let threshold = 2048)
+> Rationale for using threshold/2 for undercommit limit:
+>  Having a load below (0.5 * threshold) is used to avoid (the concern rasied by Rik)
+> scenarios where we still have lock holder preempted vcpu waiting to be
+> scheduled. (scenario arises when rq length is > 1 even when we are under
+> committed)
+> 
+> Rationale for using (1.75 * threshold) for overcommit scenario:
+> This is a heuristic where we should probably see rq length > 1
+> and a vcpu of a different VM is waiting to be scheduled.
+> 
+>  Related future work (independent of this series):
+> 
+>  - Dynamically changing PLE window depending on system load.
+> 
+>  Result on 3.7.0-rc1 kernel shows around 146% improvement for ebizzy 1x
+>  with 32 core PLE machine with 32 vcpu guest.
+>  I believe we should get very good improvements for overcommit (especially > 2)
+>  on large machines with small vcpu guests. (Could not test this as I do not have
+>  access to a bigger machine)
+> 
+> base = 3.7.0-rc1 
+> machine: 32 core mx3850 x5 PLE mc
+> 
+> --+-----------+-----------+-----------+------------+-----------+
+>                ebizzy (rec/sec higher is beter)
+> --+-----------+-----------+-----------+------------+-----------+
+>     base        stdev       patched     stdev       %improve     
+> --+-----------+-----------+-----------+------------+-----------+
+> 1x  2543.3750    20.2903    6279.3750    82.5226   146.89143   
+> 2x  2410.8750    96.4327    2450.7500   207.8136     1.65396
+> 3x  2184.9167   205.5226    2178.3333    97.2034    -0.30131
+> --+-----------+-----------+-----------+------------+-----------+
+> 
+> --+-----------+-----------+-----------+------------+-----------+
+>         dbench (throughput in MB/sec. higher is better)
+> --+-----------+-----------+-----------+------------+-----------+
+>     base        stdev       patched     stdev       %improve     
+> --+-----------+-----------+-----------+------------+-----------+
+> 1x  5545.4330   596.4344    7042.8510  1012.0924    27.00272
+> 2x  1993.0970    43.6548    1990.6200    75.7837    -0.12428
+> 3x  1295.3867    22.3997    1315.5208    36.0075     1.55429
+> --+-----------+-----------+-----------+------------+-----------+
 
-please ignore this patch. on a second thought -- I'm sure it will not fix anything. 
-will rework and resend.
+Could you include a PLE-off result for 1x over-commit, so we know what
+the best possible result is?
+
+Looks like skipping the yield_to() for rq = 1 helps, but I'd like to
+know if the performance is the same as PLE off for 1x.  I am concerned
+the vcpu to task lookup is still expensive.
+
+Based on Peter's comments I would say the 3rd patch and the 2x,3x
+results are not conclusive at this time.
+
+I think we should also discuss what we think a good target is.  We
+should know what our high-water mark is, and IMO, if we cannot get
+close, then I do not feel we are heading down the right path.  For
+example, if dbench aggregate throughput for 1x with PLE off is 10000
+MB/sec, then the best possible 2x,3x result, should be a little lower
+than that due to task switching the vcpus and sharing chaches.  This
+should be quite evident with current PLE handler and smaller VMs (like
+10 vcpus or less).
+> 
+>  Changes since V1:
+>  - Discard the idea of exporting nrrunning and optimize in core scheduler (Peter)
+>  - Use yield() instead of schedule in overcommit scenarios (Rik)
+>  - Use loadavg knowledge to detect undercommit/overcommit
+> 
+>  Peter Zijlstra (1):
+>   Bail out of yield_to when source and target runqueue has one task
+> 
+>  Raghavendra K T (2):
+>   Handle yield_to failure return for potential undercommit case
+>   Check system load and handle different commit cases accordingly
+> 
+>  Please let me know your comments and suggestions.
+> 
+>  Link for V1:
+>  https://lkml.org/lkml/2012/9/21/168
+> 
+>  kernel/sched/core.c | 25 +++++++++++++++++++------
+>  virt/kvm/kvm_main.c | 56 ++++++++++++++++++++++++++++++++++++++++++++++----------
+>  2 files changed, 65 insertions(+), 16 deletions(-)
+
+-Andrew Theurer
 
 
-	-ss
-
-On (10/30/12 12:01), Sergey Senozhatsky wrote:
->     zram: forbid IO operations from within zram_init_device()
->     
->     Allocation operations in zram_make_request() -> zram_init_device() should not
->     raise IO and nested zram_make_request() -> zram_init_device() from IRQ context,
->     thus we must use GFP_NOIO flag.
->     
->     =================================
->     [ INFO: inconsistent lock state ]
->     3.7.0-rc2-dbg-01597-ge5cf11d-dirty #1397 Tainted: G         C O
->     ---------------------------------
->     inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
->     kswapd0/453 [HC0[0]:SC0[0]:HE1:SE1] takes:
->      (&zram->init_lock){+++++-}, at: [<ffffffffa0145ca8>] zram_make_request+0x48/0x270 [zram]
->     {RECLAIM_FS-ON-W} state was registered at:
->       [<ffffffff810ac82c>] mark_held_locks+0x8c/0x110
->       [<ffffffff810acf69>] lockdep_trace_alloc+0x79/0xd0
->       [<ffffffff8111de6a>] __alloc_pages_nodemask+0x8a/0x920
->       [<ffffffff8111e717>] __get_free_pages+0x17/0x50
->       [<ffffffff8115b1a9>] kmalloc_order_trace+0x39/0x180
->       [<ffffffffa0145abd>] zram_init_device+0x7d/0x220 [zram]
->       [<ffffffffa0145ebe>] zram_make_request+0x25e/0x270 [zram]
->       [<ffffffff812ebc92>] generic_make_request+0xc2/0x110
->       [<ffffffff812ebd4a>] submit_bio+0x6a/0x140
->       [<ffffffff8119f27b>] submit_bh+0xfb/0x130
->       [<ffffffff811a2d85>] block_read_full_page+0x2a5/0x3a0
->       [<ffffffff811a6bf8>] blkdev_readpage+0x18/0x20
->       [<ffffffff8112163a>] __do_page_cache_readahead+0x39a/0x3a0
->       [<ffffffff81121951>] ra_submit+0x21/0x30
->       [<ffffffff81121b2e>] ondemand_readahead+0x1ce/0x470
->       [<ffffffff81121eb1>] page_cache_sync_readahead+0x31/0x50
->       [<ffffffff811175d8>] generic_file_aio_read+0x518/0x780
->       [<ffffffff811a6740>] blkdev_aio_read+0xe0/0x210
->       [<ffffffff81169237>] do_sync_read+0xa7/0xe0
->       [<ffffffff811699a5>] vfs_read+0xa5/0x180
->       [<ffffffff81169ad2>] sys_read+0x52/0xa0
->       [<ffffffff815dc9c6>] tracesys+0xd4/0xd9
->     irq event stamp: 28815031
->     hardirqs last  enabled at (28815031): [<ffffffff81300470>] throtl_update_dispatch_stats+0xa0/0x110
->     hardirqs last disabled at (28815030): [<ffffffff8130042b>] throtl_update_dispatch_stats+0x5b/0x110
->     softirqs last  enabled at (28813582): [<ffffffff8104b437>] __do_softirq+0x147/0x3b0
->     softirqs last disabled at (28813565): [<ffffffff815ddbbc>] call_softirq+0x1c/0x30
->            CPU0
->            ----
->       lock(&zram->init_lock);
->       <Interrupt>
->         lock(&zram->init_lock);
->     no locks held by kswapd0/453.
->     Pid: 453, comm: kswapd0 Tainted: G         C O 3.7.0-rc2-dbg-01597-ge5cf11d-dirty #1397
->     Call Trace:
->      [<ffffffff815c7aff>] print_usage_bug+0x2a3/0x2b4
->      [<ffffffff81010aff>] ? save_stack_trace+0x2f/0x50
->      [<ffffffff810a8b90>] ? print_irq_inversion_bug+0x220/0x220
->      [<ffffffff810aa8f0>] mark_lock+0x270/0x620
->      [<ffffffff810ab15b>] __lock_acquire+0x4bb/0xb70
->      [<ffffffff810abe61>] lock_acquire+0xa1/0x1e0
->      [<ffffffffa0145ca8>] ? zram_make_request+0x48/0x270 [zram]
->      [<ffffffff815d05bc>] down_read+0x4c/0x61
->      [<ffffffffa0145ca8>] ? zram_make_request+0x48/0x270 [zram]
->      [<ffffffffa0145ca8>] zram_make_request+0x48/0x270 [zram]
->      [<ffffffff812ebc92>] generic_make_request+0xc2/0x110
->      [<ffffffff812ebd4a>] submit_bio+0x6a/0x140
->      [<ffffffff8119f27b>] submit_bh+0xfb/0x130
->      [<ffffffff811f430d>] reiserfs_write_full_page+0x2cd/0x5b0
->      [<ffffffff8111f555>] ? clear_page_dirty_for_io+0x105/0x130
->      [<ffffffff811f4626>] reiserfs_writepage+0x36/0x40
->      [<ffffffff8112884b>] shrink_page_list+0x74b/0xa20
->      [<ffffffff811290c8>] shrink_inactive_list+0x1e8/0x4b0
->      [<ffffffff81129759>] shrink_lruvec+0x3c9/0x530
->      [<ffffffff8112a760>] kswapd+0x690/0xd70
->      [<ffffffff8112a0d0>] ? try_to_free_pages+0x330/0x330
->      [<ffffffff8106b90b>] kthread+0xdb/0xe0
->      [<ffffffff815d3170>] ? _raw_spin_unlock_irq+0x30/0x50
->      [<ffffffff8106b830>] ? __init_kthread_worker+0x70/0x70
->      [<ffffffff815dc76c>] ret_from_fork+0x7c/0xb0
->      [<ffffffff8106b830>] ? __init_kthread_worker+0x70/0x70
-> 
->     
->    Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> 
-> ---
-> 
->  drivers/staging/zram/zram_drv.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index fb4a7c9..d2e0a85 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -548,7 +548,7 @@ int zram_init_device(struct zram *zram)
->  
->  	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
->  
-> -	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
-> +	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_NOIO);
->  	if (!zram->compress_workmem) {
->  		pr_err("Error allocating compressor working memory!\n");
->  		ret = -ENOMEM;
-> @@ -556,7 +556,7 @@ int zram_init_device(struct zram *zram)
->  	}
->  
->  	zram->compress_buffer =
-> -		(void *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, 1);
-> +		(void *)__get_free_pages(GFP_NOIO | __GFP_ZERO, 1);
->  	if (!zram->compress_buffer) {
->  		pr_err("Error allocating compressor buffer space\n");
->  		ret = -ENOMEM;
-> 
-> 
