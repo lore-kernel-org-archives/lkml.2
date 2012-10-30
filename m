@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933923Ab2J3P7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:59:41 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:54205 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932350Ab2J3P7k (ORCPT
+	id S933928Ab2J3QBA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:01:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49104 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab2J3QA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:59:40 -0400
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 05/12] VMCI: event handling implementation.
-Date: Tue, 30 Oct 2012 08:59:39 -0700
-Message-ID: <2950075.FZEQUln4vx@dtor-d630.eng.vmware.com>
-Organization: VMware, Inc.
-User-Agent: KMail/4.9.2 (Linux/3.6.0+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121030155041.GF14167@kroah.com>
-References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com> <20121030050152.GE32055@dtor-ws.eng.vmware.com> <20121030155041.GF14167@kroah.com>
+	Tue, 30 Oct 2012 12:00:58 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <Pine.LNX.4.44L0.1210301112270.1363-100000@iolanthe.rowland.org>
+References: <CACVXFVOPDu6wVgPmvtTkokn7VV41x3XVvL4g_E0pz0mikUbvUg@mail.gmail.com>
+	<Pine.LNX.4.44L0.1210301112270.1363-100000@iolanthe.rowland.org>
+Date: Wed, 31 Oct 2012 00:00:56 +0800
+Message-ID: <CACVXFVO5-UPNrWsySzDE5AfOv1TMqbyitQX9ViidSJPM36fqAQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
+From: Ming Lei <ming.lei@canonical.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 30, 2012 08:50:41 AM Greg KH wrote:
-> On Mon, Oct 29, 2012 at 10:01:52PM -0700, Dmitry Torokhov wrote:
-> > On Mon, Oct 29, 2012 at 07:26:05PM -0700, Greg KH wrote:
-> > > On Mon, Oct 29, 2012 at 06:04:27PM -0700, George Zhang wrote:
-> > > > +static void event_signal_destroy(struct kref *kref)
-> > > > +{
-> > > > +	struct vmci_subscription *entry =
-> > > > +			container_of(kref, struct vmci_subscription, kref);
-> > > > +
-> > > > +	complete(&entry->done);
-> > > > +}
-> > > 
-> > > Didn't you just leak memory here?  What frees the structure up?
-> > 
-> > event_unregister_subscription() waits for that completion and frees the
-> > structure. We want event_unregister_subscription() to wait until all
-> > fired callbacks completed before unregister is complete.
-> 
-> So all calls to this can just sit and spin waiting for others to clean
-> up?  Odd, but ok.
+On Tue, Oct 30, 2012 at 11:38 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
 
-Not all as there is logically only one owner of the subscription so
-naturally it waits until all notification callbacks are done.
+>
+> Okay, I see your point.  But acquiring the lock here doesn't solve the
+> problem.  Suppose a thread is about to reset a USB mass-storage device.
+> It acquires the lock and sees that the noio flag is clear.  But before
+> it can issue the reset, another thread sets the noio flag.
 
-Frankly we have a change that gets rid of delayed ecvent callbacks
-and so the refcounting is no longer needed at all.
+If the USB mass-storage device is being reseted, the flag should be set
+already generally.  If the flag is still unset, that means the disk/network
+device isn't added into system(or removed just now), so memory allocation
+with block I/O should be allowed during the reset. Looks it isn't one problem,
+isn't it?
+
+> I'm not sure what the best solution is.
+>
+>> The lock needn't to be held when the function is called inside
+>> pm_runtime_set_memalloc_noio(),  so the bitfield flag should
+>> be checked directly without holding power lock in dev_memalloc_noio().
+>
+> Yes.
+>
+> A couple of other things...  Runtime resume can be blocked by runtime
+> suspend, if a resume is requested while the suspend is in progress.
+> Therefore the runtime suspend code also needs to save-set-restore the
+> noio flag.
+
+Looks the simplest approach is to handle the noio flag thing at the start and
+end of rpm_resume.
+
+> Also, we should set the noio flag at the start of
+> usb_stor_control_thread, because everything that thread does can
+> potentially block an I/O operation.
+
+Yes, it should be done, and all GFP_NOIO in usbcore should be converted
+into GFP_KERNEL together. And the work shouldn't be started until
+the patchset is merged.
+
+> Lastly, pm_runtime_get_memalloc_noio always returns false when
+> CONFIG_PM_RUNTIME is disabled.  But we still need to prevent I/O during
+> usb_reset_device even when there's no runtime PM.  Maybe the simplest
+> answer is always to set noio during resets.  That would also help with
+> the race described above.
+
+I have thought about this. IMO, pm_runtime_get_memalloc_noio should
+return true always if CONFIG_PM_RUNTIME is unset.
 
 Thanks,
-Dmitry
-
+--
+Ming Lei
