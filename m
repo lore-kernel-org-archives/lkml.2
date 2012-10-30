@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965487Ab2J3TTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:19:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9786 "EHLO mx1.redhat.com"
+	id S965616Ab2J3TTu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:19:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31826 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934273Ab2J3TTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:19:46 -0400
+	id S934272Ab2J3TTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 15:19:45 -0400
 From: David Howells <dhowells@redhat.com>
-Subject: [RFC][PATCH 00/23] Load keys from signed PE binaries
+Subject: [PATCH 01/23] KEYS: Rename public key parameter name arrays
 To: rusty@rustcorp.com.au
 Cc: dhowells@redhat.com, pjones@redhat.com, jwboyer@redhat.com, mjg@redhat.com,
         dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
         keescook@chromium.org, keyrings@linux-nfs.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 30 Oct 2012 19:19:28 +0000
-Message-ID: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
+Date: Tue, 30 Oct 2012 19:19:37 +0000
+Message-ID: <20121030191936.11000.32457.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
+References: <20121030191927.11000.68420.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,209 +25,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Rename the arrays of public key parameters (public key algorithm names, hash
+algorithm names and ID type names) so that the array name ends in "_name".
 
-Hi Rusty,
-
-Here's a set of patches to load a key out of a signed PE format binary:
-
-	http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=shortlog;h=refs/heads/devel-pekey
-
-The problem (as I understand it) these patches aim to solve is that Microsoft
-will only sign PE binaries (driver DLLs, application EXEs) and not keys.
-However, under some circumstances, we need to add a new key to the system.  We
-could require that the user reboot into the BIOS, add the key, and then switch
-back, but under some circumstances we want to be able to do this whilst the
-kernel is running.
-
-Unfortunately, if the kernel is running in secure-boot mode, we can't load a
-new key if it isn't signed by a key we already have (and trust).
-
-The way we get around this is to embed an X.509 certificate containing the key
-in a section called ".keylist" in a PE binary and then get the binary signed by
-Microsoft or whoever.  The key can then be passed to the kernel by:
-
-	keyctl padd asymmetric "" {ID of .modsign_keyring} <key_carrying.dll
-
-This command executes the following steps:
-
- (1) Parse the PE binary to locate the signature and the new key.
-
- (2) Parse the PKCS#7 message in the PE binary.
-
- (3) Parse the content of the PKCS#7 message which is in "Microsoft individual
-     code signing form" (the mscode bits in my patches).  This contains the PE
-     binary digest type and the expected resultant digest value.
-
- (4) Digest the signed parts of the PE binary according to step (3) and compare
-     the digest obtained to the digest expected.
-
- (5) Digest the signed parts of the PKCS#7 message (which covers the content
-     data used in step (3)).
-
- (6) Verify the signature on the PKCS#7 message against one of the X.509
-     certificates it contains.
-
- (7) Check the signatures on the chain of X.509 certificates in the PKCS#7
-     message as far as possible.
-
- (8) Cross-reference the chain of X.509 certificates against the known keys the
-     kernel already possesses, and if one is found, verify the signature of the
-     nearest object to the PKCS#7 message that we can (or the PKCS#7 message
-     itself) against the trusted key.
-
- (9) Pass the X.509 certificate embedded in the message to the X.509 parser to
-     be turned into a key.
-
-To make this work, step (8) requires access to the .module_sign keyring -
-something that could be made cleaner.
-
-
-Since this requires the ability to add to the .module_sign keyring, I have
-turned on WRITE permission for root - but so that _only_ trusted keys can be
-added, I've added two more flags in key->flags:
-
-	KEY_FLAG_TRUSTED - this key is trusted.
-
-	KEY_FLAG_TRUSTED_ONLY - only links to trusted keys can be made to this
-				keyring.
-
-A trusted key appears with a 'T' flag in /proc/keys:
-
-	0616778d I------T     2 perm 1f010000     0     0 asymmetri Magrathea: Glacier signing key: b0d8dceca6af6da583cfcd6ab84f113d8a3b7e44: X509.RSA 8a3b7e44 []
-
-I'm not sure that this is the best mechanism by which to filter keyring
-additions.
-
-
-What these patches then do is allow you to add new keys by signing them with a
-key a user will already have.  There can be more than one source for these
-keys: firstly, there is a key built into the kernel for module signing
-purposes, and secondly, we have patches under development for extracting keys
-from the UEFI signature database.
-
-
-One further note: Though we don't actually execute the PE binary container to
-get at the key, there's no reason that the PE binary couldn't be executable.
-For instance, it could be an EFI binary that can be run under the BIOS to add
-the key.
-
-The test wrapper I'm using is this:
-
-	#include <efi.h>
-	#include <efilib.h>
-
-	EFI_STATUS
-	efi_main (EFI_HANDLE image_handle, EFI_SYSTEM_TABLE *systab)
-	{
-		InitializeLib(image_handle, systab);
-		Print(L"This program contains a list of public keys.\n");
-		return EFI_SUCCESS;
-	}
-
-	extern __attribute__((section(".keylist"))) const uint8_t certificate_list[];
-	extern __attribute__((section(".keylist"))) const uint8_t certificate_list_end[];
-	asm(".section .keylist,\"a\"\n"
-	    "certificate_list:\n"
-	    ".incbin \"signing_key.x509\"\n"
-	    "certificate_list_end:"
-	    );
-
-and is built something like this:
-
-	CPPFLAGS := -nostdinc -I /usr/include/efi -I /usr/include/efi/x86_64
-
-	CFLAGS := -O2 -fpic \
-		-Wall -fshort-wchar -fno-strict-aliasing \
-		-fno-merge-constants -mno-red-zone
-
-	LDSCRIPT := /usr/lib64/gnuefi/elf_x86_64_efi.lds
-	CRT0	:= /usr/lib64/gnuefi/crt0-efi-x86_64.o
-	X509	:= magrathea
-	KEY	:= /data/modsign/linux-modsign/signing_key.priv
-
-	pekey.efi.signed: pekey.efi
-		pesign -i $< -o $@ \
-			-c $(X509) \
-			-p $(KEY) \
-			-s -f
-
-	pekey.efi: pekey.so
-		objcopy \
-			-j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel \
-			-j .rela -j .reloc -j .keylist --target=efi-app-x86_64 $< $@
-
-	pekey.so: pekey.o
-		$(LD) -nostdlib -T $(LDSCRIPT) -shared -Bsymbolic $(CRT0) $< -o $@ \
-			-L /usr/lib64 -lefi -lgnuefi \
-			-L /usr/lib/gcc/x86_64-redhat-linux/4.7.2 -lgcc
-
-	pekey.o: pekey.c Makefile
-		$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-
-David
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-David Howells (23):
-      KEYS: Add a 'trusted' flag and a 'trusted only' flag
-      PEFILE: Load the contained key if we consider the container to be validly signed
-      PKCS#7: Find intersection between PKCS#7 message and known, trusted keys
-      pefile: Digest the PE binary and compare to the PKCS#7 data
-      pefile: Parse the "Microsoft individual code signing" data blob
-      pefile: Parse the presumed PKCS#7 content of the certificate blob
-      pefile: Strip the wrapper off of the cert data block
-      pefile: Parse a PE binary to find a key and a signature contained therein
-      Provide PE binary definitions
-      PKCS#7: Verify internal certificate chain
-      PKCS#7: Find the right key in the PKCS#7 key list and verify the signature
-      PKCS#7: Digest the data in a signed-data message
-      PKCS#7: Implement a parser [RFC 2315]
-      X.509: Export certificate parse and free functions
-      X.509: Handle certificates that lack an authorityKeyIdentifier field
-      X.509: Embed public_key_signature struct and create filler function
-      X.509: Add bits needed for PKCS#7
-      x509: struct x509_certificate needs struct tm declaring
-      KEYS: Store public key algo ID in public_key_signature struct
-      KEYS: Split public_key_verify_signature() and make available
-      KEYS: Store public key algo ID in public_key struct
-      KEYS: Move the algorithm pointer array from x509 to public_key.c
-      KEYS: Rename public key parameter name arrays
+
+ crypto/asymmetric_keys/public_key.c      |   14 +++++++-------
+ crypto/asymmetric_keys/x509_public_key.c |    8 ++++----
+ include/crypto/public_key.h              |    6 +++---
+ kernel/module_signing.c                  |    4 ++--
+ 4 files changed, 16 insertions(+), 16 deletions(-)
 
 
- crypto/asymmetric_keys/Kconfig            |   19 +
- crypto/asymmetric_keys/Makefile           |   30 ++
- crypto/asymmetric_keys/mscode.asn1        |   28 ++
- crypto/asymmetric_keys/mscode_parser.c    |  110 +++++++
- crypto/asymmetric_keys/pefile_parser.c    |  473 +++++++++++++++++++++++++++++
- crypto/asymmetric_keys/pefile_parser.h    |   36 ++
- crypto/asymmetric_keys/pkcs7.asn1         |  127 ++++++++
- crypto/asymmetric_keys/pkcs7_parser.c     |  326 ++++++++++++++++++++
- crypto/asymmetric_keys/pkcs7_parser.h     |   72 ++++
- crypto/asymmetric_keys/pkcs7_trust.c      |  149 +++++++++
- crypto/asymmetric_keys/pkcs7_verify.c     |  256 ++++++++++++++++
- crypto/asymmetric_keys/public_key.c       |   58 +++-
- crypto/asymmetric_keys/public_key.h       |    6 
- crypto/asymmetric_keys/x509.asn1          |    2 
- crypto/asymmetric_keys/x509_cert_parser.c |   55 ++-
- crypto/asymmetric_keys/x509_parser.h      |   28 +-
- crypto/asymmetric_keys/x509_public_key.c  |  107 +++----
- include/crypto/public_key.h               |    9 -
- include/linux/key-type.h                  |    1 
- include/linux/key.h                       |    3 
- include/linux/oid_registry.h              |    7 
- include/linux/pe.h                        |  448 +++++++++++++++++++++++++++
- kernel/modsign_pubkey.c                   |    7 
- kernel/module_signing.c                   |    4 
- security/keys/key.c                       |    8 
- security/keys/keyring.c                   |    4 
- security/keys/proc.c                      |    3 
- 27 files changed, 2277 insertions(+), 99 deletions(-)
- create mode 100644 crypto/asymmetric_keys/mscode.asn1
- create mode 100644 crypto/asymmetric_keys/mscode_parser.c
- create mode 100644 crypto/asymmetric_keys/pefile_parser.c
- create mode 100644 crypto/asymmetric_keys/pefile_parser.h
- create mode 100644 crypto/asymmetric_keys/pkcs7.asn1
- create mode 100644 crypto/asymmetric_keys/pkcs7_parser.c
- create mode 100644 crypto/asymmetric_keys/pkcs7_parser.h
- create mode 100644 crypto/asymmetric_keys/pkcs7_trust.c
- create mode 100644 crypto/asymmetric_keys/pkcs7_verify.c
- create mode 100644 include/linux/pe.h
+diff --git a/crypto/asymmetric_keys/public_key.c b/crypto/asymmetric_keys/public_key.c
+index cb2e291..b313df1 100644
+--- a/crypto/asymmetric_keys/public_key.c
++++ b/crypto/asymmetric_keys/public_key.c
+@@ -22,13 +22,13 @@
+ 
+ MODULE_LICENSE("GPL");
+ 
+-const char *const pkey_algo[PKEY_ALGO__LAST] = {
++const char *const pkey_algo_name[PKEY_ALGO__LAST] = {
+ 	[PKEY_ALGO_DSA]		= "DSA",
+ 	[PKEY_ALGO_RSA]		= "RSA",
+ };
+-EXPORT_SYMBOL_GPL(pkey_algo);
++EXPORT_SYMBOL_GPL(pkey_algo_name);
+ 
+-const char *const pkey_hash_algo[PKEY_HASH__LAST] = {
++const char *const pkey_hash_algo_name[PKEY_HASH__LAST] = {
+ 	[PKEY_HASH_MD4]		= "md4",
+ 	[PKEY_HASH_MD5]		= "md5",
+ 	[PKEY_HASH_SHA1]	= "sha1",
+@@ -38,13 +38,13 @@ const char *const pkey_hash_algo[PKEY_HASH__LAST] = {
+ 	[PKEY_HASH_SHA512]	= "sha512",
+ 	[PKEY_HASH_SHA224]	= "sha224",
+ };
+-EXPORT_SYMBOL_GPL(pkey_hash_algo);
++EXPORT_SYMBOL_GPL(pkey_hash_algo_name);
+ 
+-const char *const pkey_id_type[PKEY_ID_TYPE__LAST] = {
++const char *const pkey_id_type_name[PKEY_ID_TYPE__LAST] = {
+ 	[PKEY_ID_PGP]		= "PGP",
+ 	[PKEY_ID_X509]		= "X509",
+ };
+-EXPORT_SYMBOL_GPL(pkey_id_type);
++EXPORT_SYMBOL_GPL(pkey_id_type_name);
+ 
+ /*
+  * Provide a part of a description of the key for /proc/keys.
+@@ -56,7 +56,7 @@ static void public_key_describe(const struct key *asymmetric_key,
+ 
+ 	if (key)
+ 		seq_printf(m, "%s.%s",
+-			   pkey_id_type[key->id_type], key->algo->name);
++			   pkey_id_type_name[key->id_type], key->algo->name);
+ }
+ 
+ /*
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index 06007f0..afbbc36 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -49,7 +49,7 @@ static int x509_check_signature(const struct public_key *pub,
+ 	/* Allocate the hashing algorithm we're going to need and find out how
+ 	 * big the hash operational data will be.
+ 	 */
+-	tfm = crypto_alloc_shash(pkey_hash_algo[cert->sig_hash_algo], 0, 0);
++	tfm = crypto_alloc_shash(pkey_hash_algo_name[cert->sig_hash_algo], 0, 0);
+ 	if (IS_ERR(tfm))
+ 		return (PTR_ERR(tfm) == -ENOENT) ? -ENOPKG : PTR_ERR(tfm);
+ 
+@@ -117,7 +117,7 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ 
+ 	pr_devel("Cert Issuer: %s\n", cert->issuer);
+ 	pr_devel("Cert Subject: %s\n", cert->subject);
+-	pr_devel("Cert Key Algo: %s\n", pkey_algo[cert->pkey_algo]);
++	pr_devel("Cert Key Algo: %s\n", pkey_algo_name[cert->pkey_algo]);
+ 	pr_devel("Cert Valid From: %04ld-%02d-%02d %02d:%02d:%02d\n",
+ 		 cert->valid_from.tm_year + 1900, cert->valid_from.tm_mon + 1,
+ 		 cert->valid_from.tm_mday, cert->valid_from.tm_hour,
+@@ -127,8 +127,8 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ 		 cert->valid_to.tm_mday, cert->valid_to.tm_hour,
+ 		 cert->valid_to.tm_min,  cert->valid_to.tm_sec);
+ 	pr_devel("Cert Signature: %s + %s\n",
+-		 pkey_algo[cert->sig_pkey_algo],
+-		 pkey_hash_algo[cert->sig_hash_algo]);
++		 pkey_algo_name[cert->sig_pkey_algo],
++		 pkey_hash_algo_name[cert->sig_hash_algo]);
+ 
+ 	if (!cert->fingerprint || !cert->authority) {
+ 		pr_warn("Cert for '%s' must have SubjKeyId and AuthKeyId extensions\n",
+diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
+index f5b0224..619d570 100644
+--- a/include/crypto/public_key.h
++++ b/include/crypto/public_key.h
+@@ -22,7 +22,7 @@ enum pkey_algo {
+ 	PKEY_ALGO__LAST
+ };
+ 
+-extern const char *const pkey_algo[PKEY_ALGO__LAST];
++extern const char *const pkey_algo_name[PKEY_ALGO__LAST];
+ 
+ enum pkey_hash_algo {
+ 	PKEY_HASH_MD4,
+@@ -36,7 +36,7 @@ enum pkey_hash_algo {
+ 	PKEY_HASH__LAST
+ };
+ 
+-extern const char *const pkey_hash_algo[PKEY_HASH__LAST];
++extern const char *const pkey_hash_algo_name[PKEY_HASH__LAST];
+ 
+ enum pkey_id_type {
+ 	PKEY_ID_PGP,		/* OpenPGP generated key ID */
+@@ -44,7 +44,7 @@ enum pkey_id_type {
+ 	PKEY_ID_TYPE__LAST
+ };
+ 
+-extern const char *const pkey_id_type[PKEY_ID_TYPE__LAST];
++extern const char *const pkey_id_type_name[PKEY_ID_TYPE__LAST];
+ 
+ /*
+  * Cryptographic data for the public-key subtype of the asymmetric key type.
+diff --git a/kernel/module_signing.c b/kernel/module_signing.c
+index ea1b1df..015e5b7 100644
+--- a/kernel/module_signing.c
++++ b/kernel/module_signing.c
+@@ -54,7 +54,7 @@ static struct public_key_signature *mod_make_digest(enum pkey_hash_algo hash,
+ 	/* Allocate the hashing algorithm we're going to need and find out how
+ 	 * big the hash operational data will be.
+ 	 */
+-	tfm = crypto_alloc_shash(pkey_hash_algo[hash], 0, 0);
++	tfm = crypto_alloc_shash(pkey_hash_algo_name[hash], 0, 0);
+ 	if (IS_ERR(tfm))
+ 		return (PTR_ERR(tfm) == -ENOENT) ? ERR_PTR(-ENOPKG) : ERR_CAST(tfm);
+ 
+@@ -217,7 +217,7 @@ int mod_verify_sig(const void *mod, unsigned long *_modlen)
+ 		return -ENOPKG;
+ 
+ 	if (ms.hash >= PKEY_HASH__LAST ||
+-	    !pkey_hash_algo[ms.hash])
++	    !pkey_hash_algo_name[ms.hash])
+ 		return -ENOPKG;
+ 
+ 	key = request_asymmetric_key(sig, ms.signer_len,
 
