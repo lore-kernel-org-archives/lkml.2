@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761620Ab2J2X52 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 19:57:28 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:41727 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758880Ab2J2X51 (ORCPT
+	id S1761423Ab2J3ABM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 20:01:12 -0400
+Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:44540 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab2J3ABJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 19:57:27 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Joerg Roedel <joerg.roedel@amd.com>, Alexander Graf <agraf@suse.de>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-Subject: [GIT PULL] cputime: Cleanups and optimizations
-Date: Tue, 30 Oct 2012 00:57:16 +0100
-Message-Id: <1351555036-23545-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1351187283-20715-1-git-send-email-fweisbec@gmail.com>
-References: <1351187283-20715-1-git-send-email-fweisbec@gmail.com>
+	Mon, 29 Oct 2012 20:01:09 -0400
+Message-ID: <508F188D.2000408@ce.jp.nec.com>
+Date: Tue, 30 Oct 2012 09:00:13 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+        "Luck\, Tony" <tony.luck@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kleen\, Andi" <andi.kleen@intel.com>,
+        "Wu\, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Akira Fujita <a-fujita@rs.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ext4: introduce ext4_error_remove_page
+References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1351177969-893-3-git-send-email-n-horiguchi@ah.jp.nec.com> <20121026061206.GA31139@thunk.org> <3908561D78D1C84285E8C5FCA982C28F19D5A13B@ORSMSX108.amr.corp.intel.com> <20121026184649.GA8614@thunk.org> <3908561D78D1C84285E8C5FCA982C28F19D5A388@ORSMSX108.amr.corp.intel.com> <20121027221626.GA9161@thunk.org> <20121029011632.GN29378@dastard> <20121029024024.GC9365@thunk.org> <m27gq9r2cu.fsf@firstfloor.org> <20121029182455.GA7098@thunk.org> <m21ughksh3.fsf@firstfloor.org>
+In-Reply-To: <m21ughksh3.fsf@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+On 10/30/12 04:07, Andi Kleen wrote:
+> Theodore Ts'o <tytso@mit.edu> writes:
+>> Note that the problem that we're dealing with is buffered writes; so
+>> it's quite possible that the process which wrote the file, thus
+>> dirtying the page cache, has already exited; so there's no way we can
+>> guarantee we can inform the process which wrote the file via a signal
+>> or a error code return.
+> 
+> Is that any different from other IO errors? It doesn't need to 
+> be better.
 
-Please pull the latest cputime cleanups that can be found at:
+IMO, it is different in that next read from disk will likely succeed.
+(and read corrupted data)
+For IO errors come from disk failure, next read will likely fail
+again so we don't have to remember it somewhere.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git tags/cputime-cleanups-for-mingo
+>> Also, if you're going to keep this state in memory, what happens if
+>> the inode gets pushed out of memory? 
+> 
+> You lose the error, just like you do today with any other IO error.
 
-for you to fetch changes up to 3e1df4f506836e6bea1ab61cf88c75c8b1840643:
+-- 
+Jun'ichi Nomura, NEC Corporation
 
-  cputime: Separate irqtime accounting from generic vtime (2012-10-29 21:31:32 +0100)
-
-It is based on top of tip:sched/core of today.
-
-Tested on x86 and powerpc. Built-tested only on ia64 and s390.
-
-Thanks.
-
-----------------------------------------------------------------
-Cputime cleanups and optimizations:
-
-* Gather vtime headers that were a bit scattered around
-
-* Separate irqtime and vtime namespaces that were
-colliding, resulting in useless calls to irqtime accounting.
-
-* Slightly optimize irq and guest vtime accounting.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-
-----------------------------------------------------------------
-Frederic Weisbecker (5):
-      vtime: Gather vtime declarations to their own header file
-      vtime: Make vtime_account_system() irqsafe
-      kvm: Directly account vtime to system on guest switch
-      cputime: Specialize irq vtime hooks
-      cputime: Separate irqtime accounting from generic vtime
-
- arch/ia64/kernel/time.c     |    8 ++++----
- arch/powerpc/kernel/time.c  |    4 ++--
- arch/s390/kernel/vtime.c    |    4 ++++
- arch/s390/kvm/kvm-s390.c    |    4 ----
- include/linux/hardirq.h     |   15 +++-----------
- include/linux/kernel_stat.h |    9 +--------
- include/linux/kvm_host.h    |   12 +++++++++--
- include/linux/vtime.h       |   47 +++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/cputime.c      |   20 +++++++++++++-----
- kernel/softirq.c            |    6 +++---
- 10 files changed, 89 insertions(+), 40 deletions(-)
- create mode 100644 include/linux/vtime.h
