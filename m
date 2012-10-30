@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964829Ab2J3QYe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:24:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34719 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758531Ab2J3QYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:24:31 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
+	id S964843Ab2J3QY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:24:58 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:20911 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933864Ab2J3QY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 12:24:56 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+PTP+3ylFNQqPEKXbJfHMn
+Date: Tue, 30 Oct 2012 09:24:42 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Omar Ramirez Luna <omar.luna@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Suman Anna <s-anna@ti.com>,
+        Juan Gutierrez <jgutierrez@ti.com>,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
-Date: Tue, 30 Oct 2012 17:30:13 +0100
-Message-ID: <2504263.kbM6W9JoH9@linux-lqwf.site>
-Organization: SUSE
-User-Agent: KMail/4.8.4 (Linux/3.7.0-rc2-12-desktop+; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <CACVXFVO5-UPNrWsySzDE5AfOv1TMqbyitQX9ViidSJPM36fqAQ@mail.gmail.com>
-References: <CACVXFVOPDu6wVgPmvtTkokn7VV41x3XVvL4g_E0pz0mikUbvUg@mail.gmail.com> <Pine.LNX.4.44L0.1210301112270.1363-100000@iolanthe.rowland.org> <CACVXFVO5-UPNrWsySzDE5AfOv1TMqbyitQX9ViidSJPM36fqAQ@mail.gmail.com>
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCH 1/2] ARM: OMAP2+: move mailbox.h out of plat-omap
+ headers
+Message-ID: <20121030162441.GF11908@atomide.com>
+References: <1351530381-11459-1-git-send-email-omar.luna@linaro.org>
+ <1351530381-11459-2-git-send-email-omar.luna@linaro.org>
+ <20121029175228.GD11908@atomide.com>
+ <CALLhW=4ukBuRSVcPm2A37PgBhv33yKqk2G=Dz2XTUyswXw=JMg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALLhW=4ukBuRSVcPm2A37PgBhv33yKqk2G=Dz2XTUyswXw=JMg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 October 2012 00:00:56 Ming Lei wrote:
-> On Tue, Oct 30, 2012 at 11:38 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+* Omar Ramirez Luna <omar.luna@linaro.org> [121030 05:20]:
+> Tony,
 > 
+> On 29 October 2012 12:52, Tony Lindgren <tony@atomide.com> wrote:
+> >> --- /dev/null
+> >> +++ b/include/linux/platform_data/omap_mailbox.h
+> >> @@ -0,0 +1,105 @@
 > >
-> > Okay, I see your point.  But acquiring the lock here doesn't solve the
-> > problem.  Suppose a thread is about to reset a USB mass-storage device.
-> > It acquires the lock and sees that the noio flag is clear.  But before
-> > it can issue the reset, another thread sets the noio flag.
+> > This file should only contain pure platform data needed
+> > by the core omap code to pass to the mailbox driver.
 > 
-> If the USB mass-storage device is being reseted, the flag should be set
-> already generally.  If the flag is still unset, that means the disk/network
-> device isn't added into system(or removed just now), so memory allocation
-> with block I/O should be allowed during the reset. Looks it isn't one problem,
-> isn't it?
+> Ok, looking at it closely, this header file is related to the API
+> itself, there is nothing that could be actually considered as pure
+> platform data, the structures are related with the mailbox framework
+> and even if I split this file into two, the additional header would
+> end up including the "platform_data" header unless I move
+> save/restore_ctx functions and then export them as symbols for the
+> API.
+> 
+> So, it might be better for the entire file to sit in
+> linux/include/mailbox/ then.
 
-I am afraid it is, because a disk may just have been probed as the deviceis being reset.
+OK to me.
+ 
+> > The mailbox API header should be somewhere else,
+> > like include/linux/mailbox/mailbox-omap.h or similar.
+> 
+> Ok.
+> 
+> > But shouldn't this all now be handled by using the
+> > remoteproc framework?
+> 
+> Remoteproc doesn't handle the mailbox hardware directly, it still
+> relies in the mailbox framework for the low level communications.
+> E.g.: Proc1 has a message (virtqueue msg) queued to Proc2, uses
+> mailbox msg to generate an interrupt to Proc2, Proc2 queries the
+> message (virtqueue) based on the mailbox message received.
 
-	Regards
-		Oliver
+OK.
 
+Greg, do these patches look OK to you to move to live under
+drivers/mailbox?
+
+Regards,
+
+Tony
