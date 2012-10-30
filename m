@@ -1,172 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965530Ab2J3SzH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:55:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9923 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965249Ab2J3SzD (ORCPT
+	id S965454Ab2J3S6i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:58:38 -0400
+Received: from smtp.tele.fi ([192.89.123.25]:42601 "EHLO
+	vulpes-int.media.sonera.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752651Ab2J3S6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:55:03 -0400
-X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=UdlrXtXKRkIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SBH4brdnqqgA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=20KFwNOVAAAA:8 a=9AzMRrQhAAAA:8 a=NufY4J3AAAAA:8 a=KKAkSRfTAAAA:8 a=JfrnYn6hAAAA:8 a=ftUzEednAAAA:8 a=sozttTNsAAAA:8 a=EUspDBNiAAAA:8 a=VnNF1IyMAAAA:8 a=fh4mg5NFAAAA:8 a=G2TvuVglnKdlU-ZeKSQA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jEp0ucaQiEUA:10 a=SxxB86fLhQ4A:10 a=re9sYKne76oA:10 a=WwgC8nHKvroA:10 a=3Rfx1nUSh_UA:10 a=QwxQZocgbLcA:10 a=x2szoZtqnggA:10 a=IG2fH9E8heMA:10 a=Im-eZXwrtqoA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351623300.4004.25.camel@gandalf.local.home>
-Subject: Re: [PATCH 09/32] nohz/cpuset: Restart tick when nohz flag is
- cleared on cpuset
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Date: Tue, 30 Oct 2012 14:55:00 -0400
-In-Reply-To: <20121029203847.966629295@goodmis.org>
-References: <20121029202711.062749374@goodmis.org>
-	 <20121029203847.966629295@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Oct 2012 14:58:37 -0400
+X-Greylist: delayed 2459 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 14:58:36 EDT
+X-Originating-Ip: [194.89.68.22]
+Date: Tue, 30 Oct 2012 20:17:32 +0200
+From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
+To: Olaf Hering <olaf@aepfle.de>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen PVonHVM: require at least Xen 3.4 as
+ dom0
+Message-ID: <20121030181732.GZ8912@reaktio.net>
+References: <1351613105-24408-1-git-send-email-olaf@aepfle.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351613105-24408-1-git-send-email-olaf@aepfle.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-29 at 16:27 -0400, Steven Rostedt wrote:
-> plain text document attachment
-> (0009-nohz-cpuset-Restart-tick-when-nohz-flag-is-cleared-o.patch)
-> From: Frederic Weisbecker <fweisbec@gmail.com>
+On Tue, Oct 30, 2012 at 05:05:05PM +0100, Olaf Hering wrote:
+> The XenPVHVM extensions have not been tested much on very old
+> hypervisors. At least Xen 3.4 gets some testing with the pvops kernel.
 > 
-> Issue an IPI to restart the tick on a CPU that belongs
-> to a cpuset when its nohz flag gets cleared.
+> Require at least Xen 3.4 for the PVonHVM extensions. If an older
+> hypervisor is detected the extensions will be disabled and the guest
+> will only see emulated hardware.
 > 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Alessio Igor Bogani <abogani@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Geoff Levand <geoff@infradead.org>
-> Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> Cc: Hakan Akkan <hakanakkan@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Max Krasnyansky <maxk@qualcomm.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephen Hemminger <shemminger@vyatta.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Olaf Hering <olaf@aepfle.de>
+>
+
+IIRC upstream Linux PVonHVM drivers do work OK today on RHEL5 Xen, 
+which advertises itself as Xen 3.1.2-based..
+
+
+-- Pasi
+
+
 > ---
->  include/linux/cpuset.h   |    2 ++
->  kernel/cpuset.c          |   25 +++++++++++++++++++++++--
->  kernel/time/tick-sched.c |    8 ++++++++
->  3 files changed, 33 insertions(+), 2 deletions(-)
+>  arch/x86/xen/enlighten.c | 27 ++++++++++++++++++---------
+>  1 file changed, 18 insertions(+), 9 deletions(-)
 > 
-> diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-> index 7e7eb41..631968b 100644
-> --- a/include/linux/cpuset.h
-> +++ b/include/linux/cpuset.h
-> @@ -260,6 +260,8 @@ static inline bool cpuset_adaptive_nohz(void)
->  	 */
->  	return cpuset_cpu_adaptive_nohz(smp_processor_id());
->  }
-> +
-> +extern void cpuset_exit_nohz_interrupt(void *unused);
->  #else
->  static inline bool cpuset_cpu_adaptive_nohz(int cpu) { return false; }
->  static inline bool cpuset_adaptive_nohz(void) { return false; }
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index 6319d8e..1b67e5b 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -1200,6 +1200,14 @@ static void cpuset_change_flag(struct task_struct *tsk,
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 0cc41f8..8566fa8 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1543,17 +1543,10 @@ static void __init xen_hvm_init_shared_info(void)
 >  
->  DEFINE_PER_CPU(atomic_t, cpu_adaptive_nohz_ref);
->  
-> +static void cpu_exit_nohz(int cpu)
-> +{
-> +	preempt_disable();
-> +	smp_call_function_single(cpu, cpuset_exit_nohz_interrupt,
-> +				 NULL, true);
-> +	preempt_enable();
-> +}
-> +
->  static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
+>  static void __init init_hvm_pv_info(void)
 >  {
->  	int cpu;
-> @@ -1211,9 +1219,22 @@ static void update_nohz_cpus(struct cpuset *old_cs, struct cpuset *cs)
->  	for_each_cpu(cpu, cs->cpus_allowed) {
->  		atomic_t *ref = &per_cpu(cpu_adaptive_nohz_ref, cpu);
->  		if (is_adaptive_nohz(cs))
-> -			atomic_inc(ref);
-> +			val = atomic_inc_return(ref);
->  		else
-> -			atomic_dec(ref);
-> +			val = atomic_dec_return(ref);
+> -	int major, minor;
+>  	uint32_t eax, ebx, ecx, edx, pages, msr, base;
+>  	u64 pfn;
+>  
+>  	base = xen_cpuid_base();
+> -	cpuid(base + 1, &eax, &ebx, &ecx, &edx);
+> -
+> -	major = eax >> 16;
+> -	minor = eax & 0xffff;
+> -	printk(KERN_INFO "Xen version %d.%d.\n", major, minor);
+> -
+>  	cpuid(base + 2, &pages, &msr, &ecx, &edx);
+>  
+>  	pfn = __pa(hypercall_page);
+> @@ -1604,13 +1597,29 @@ static void __init xen_hvm_guest_init(void)
+>  
+>  static bool __init xen_hvm_platform(void)
+>  {
+> +	int major, minor, old = 0;
+> +	uint32_t eax, ebx, ecx, edx, base;
+> +	bool usable = true;
 > +
-> +		if (!val) {
-> +			/*
-> +			 * The update to cpu_adaptive_nohz_ref must be
-> +			 * visible right away. So that once we restart the tick
-> +			 * from the IPI, it won't be stopped again due to cache
-> +			 * update lag.
-> +			 * FIXME: We probably need more to ensure this value is really
-> +			 * visible right away.
-
-What more do you want? stomp_machine()??
-
-> +			 */
-> +			smp_mb();
-
-The atomic_inc_return() and atomic_dec_return() already imply a
-smp_mb().
-
-Later patches change this code, so I wont dwell on this patch too much.
-
-
-> +			cpu_exit_nohz(cpu);
-> +		}
->  	}
->  }
->  #else
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 0a5e650..de7de68 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -884,6 +884,14 @@ void tick_nohz_check_adaptive(void)
->  	}
+>  	if (xen_pv_domain())
+>  		return false;
+>  
+> -	if (!xen_cpuid_base())
+> +	base = xen_cpuid_base();
+> +	if (!base)
+>  		return false;
+>  
+> -	return true;
+> +	cpuid(base + 1, &eax, &ebx, &ecx, &edx);
+> +
+> +	major = eax >> 16;
+> +	minor = eax & 0xffff;
+> +
+> +	/* Require at least Xen 3.4 */
+> +	if (major < 3 || (major == 3 && minor < 4))
+> +		usable = false;
+> +	printk(KERN_INFO "Xen version %d.%d.%s\n",
+> +		major, minor, usable ? "" : " (too old)");
+> +
+> +	return usable;
 >  }
 >  
-> +void cpuset_exit_nohz_interrupt(void *unused)
-> +{
-> +	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-> +
-> +	if (ts->tick_stopped && !is_idle_task(current))
-> +		tick_nohz_restart_adaptive();
-
-BTW, what a confusing name. "restart_adaptive()"? It sounds like we are
-going to restart the adaptive code, like restarting NOHZ.
-
--- Steve
-
-> +}
-> +
->  void tick_nohz_post_schedule(void)
->  {
->  	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-
-
+>  bool xen_hvm_need_lapic(void)
+> -- 
+> 1.8.0
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
