@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932995Ab2J3Lah (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 07:30:37 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:48858 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932804Ab2J3Lag (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 07:30:36 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>
-CC: <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
-        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <manabian@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] net/at91_ether: fix the use of macb structure
-Date: Tue, 30 Oct 2012 12:30:28 +0100
-Message-ID: <1351596628-3405-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <75eb5df193c504e68ebff7d6a6a88d9a1cc678cb.1351591858.git.nicolas.ferre@atmel.com>
-References: <75eb5df193c504e68ebff7d6a6a88d9a1cc678cb.1351591858.git.nicolas.ferre@atmel.com>
+	id S932950Ab2J3LcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 07:32:13 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:53336 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751555Ab2J3LcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 07:32:10 -0400
+Message-ID: <508FBA99.3010009@parallels.com>
+Date: Tue, 30 Oct 2012 15:31:37 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: JoonSoo Kim <js1304@gmail.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        "David Rientjes" <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v5 13/18] memcg/sl[au]b Track all the memcg children of
+ a kmem_cache.
+References: <1350656442-1523-1-git-send-email-glommer@parallels.com> <1350656442-1523-14-git-send-email-glommer@parallels.com> <CAAmzW4MGdj-jL_FJ2Nkoa4Hx8KUDCeVK6HFidYQLauu_0vHhCg@mail.gmail.com>
+In-Reply-To: <CAAmzW4MGdj-jL_FJ2Nkoa4Hx8KUDCeVK6HFidYQLauu_0vHhCg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to the use of common structure in at91_ether and macb drivers,
-change the name of DMA descriptor structures in at91_ether as well:
-dma_desc => macb_dma_desc
+On 10/29/2012 07:26 PM, JoonSoo Kim wrote:
+> 2012/10/19 Glauber Costa <glommer@parallels.com>:
+>> +void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+>> +{
+>> +       struct kmem_cache *c;
+>> +       int i;
+>> +
+>> +       if (!s->memcg_params)
+>> +               return;
+>> +       if (!s->memcg_params->is_root_cache)
+>> +               return;
+>> +
+>> +       /*
+>> +        * If the cache is being destroyed, we trust that there is no one else
+>> +        * requesting objects from it. Even if there are, the sanity checks in
+>> +        * kmem_cache_destroy should caught this ill-case.
+>> +        *
+>> +        * Still, we don't want anyone else freeing memcg_caches under our
+>> +        * noses, which can happen if a new memcg comes to life. As usual,
+>> +        * we'll take the set_limit_mutex to protect ourselves against this.
+>> +        */
+>> +       mutex_lock(&set_limit_mutex);
+>> +       for (i = 0; i < memcg_limited_groups_array_size; i++) {
+>> +               c = s->memcg_params->memcg_caches[i];
+>> +               if (c)
+>> +                       kmem_cache_destroy(c);
+>> +       }
+>> +       mutex_unlock(&set_limit_mutex);
+>> +}
+> 
+> It may cause NULL deref.
+> Look at the following scenario.
+> 
+> 1. some memcg slab caches has remained object.
+> 2. start to destroy memcg.
+> 3. schedule_delayed_work(kmem_cache_destroy_work_func, @delay 60hz)
+> 4. all remained object is freed.
+> 5. start to destroy root cache.
+> 6. kmem_cache_destroy makes 's->memcg_params->memcg_caches[i]" NULL!!
+> 7. Start delayed work function.
+> 8. cachep in kmem_cache_destroy_work_func() may be NULL
+> 
+> Thanks.
+> 
+Thanks for spotting. This is the same problem we have in
+memcg_cache_destroy(),
+which I solved by not respawning the worker.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
-Hi,
+In here, I believe it should be possible to just cancel all remaining
+pending work, since we are now in the process of deleting the caches
+ourselves.
 
-This patch is a fix for the patch
-[PATCH v3 06/10] net/macb: clean up ring buffer logic
-that I have just sent.
 
-I would prefer to merge it with the patch mentioned above
-that introduces the issue. Tell me if you do it or if I
-have to provide a v4 for this patch series.
-
- drivers/net/ethernet/cadence/at91_ether.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/ethernet/cadence/at91_ether.c b/drivers/net/ethernet/cadence/at91_ether.c
-index b92815a..0d6392d 100644
---- a/drivers/net/ethernet/cadence/at91_ether.c
-+++ b/drivers/net/ethernet/cadence/at91_ether.c
-@@ -156,7 +156,7 @@ static int at91ether_start(struct net_device *dev)
- 	int i;
- 
- 	lp->rx_ring = dma_alloc_coherent(&lp->pdev->dev,
--					MAX_RX_DESCR * sizeof(struct dma_desc),
-+					MAX_RX_DESCR * sizeof(struct macb_dma_desc),
- 					&lp->rx_ring_dma, GFP_KERNEL);
- 	if (!lp->rx_ring) {
- 		netdev_err(lp->dev, "unable to alloc rx ring DMA buffer\n");
-@@ -170,7 +170,7 @@ static int at91ether_start(struct net_device *dev)
- 		netdev_err(lp->dev, "unable to alloc rx data DMA buffer\n");
- 
- 		dma_free_coherent(&lp->pdev->dev,
--					MAX_RX_DESCR * sizeof(struct dma_desc),
-+					MAX_RX_DESCR * sizeof(struct macb_dma_desc),
- 					lp->rx_ring, lp->rx_ring_dma);
- 		lp->rx_ring = NULL;
- 		return -ENOMEM;
-@@ -256,7 +256,7 @@ static int at91ether_close(struct net_device *dev)
- 	netif_stop_queue(dev);
- 
- 	dma_free_coherent(&lp->pdev->dev,
--				MAX_RX_DESCR * sizeof(struct dma_desc),
-+				MAX_RX_DESCR * sizeof(struct macb_dma_desc),
- 				lp->rx_ring, lp->rx_ring_dma);
- 	lp->rx_ring = NULL;
- 
--- 
-1.8.0
 
