@@ -1,67 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934878Ab2J3WD1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 18:03:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8997 "EHLO mx1.redhat.com"
+	id S934893Ab2J3WDe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 18:03:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7000 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934865Ab2J3WDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 18:03:20 -0400
+	id S934865Ab2J3WD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 18:03:29 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 00/25] perf test: Add perf_event_attr tests
-Date: Tue, 30 Oct 2012 23:01:41 +0100
-Message-Id: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 24/25] perf tests: Add attr tests under builtin test command
+Date: Tue, 30 Oct 2012 23:02:05 +0100
+Message-Id: <1351634526-1516-25-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
+References: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-this code tests the link between perf stat/record command line
-options and final perf_event_attr struct values. Also it tests
-the group fd linkage.
+The test attr suite is run only if it's run under perf source
+directory, or tests are found in installed path.
 
-Plus moving test related objects under 'test' directory.
+Otherwise tests are omitted (notification is displayed)
+and finished as successful.
 
-Attached patches:
-  01/25 perf tools: Remove BINDIR define from exec_cmd.o
-  02/25 perf tests: Move test objects into 'tests' directory
-  03/25 perf tests: Add framework for automated
-  04/25 perf tests: Add attr record basic test
-  05/25 perf tests: Add attr record group test
-  06/25 perf tests: Add attr record event syntax group test
-  07/25 perf tests: Add attr record freq test
-  08/25 perf tests: Add attr record count test
-  09/25 perf tests: Add attr record graph test
-  10/25 perf tests: Add attr record period test
-  11/25 perf tests: Add attr record no samples test
-  12/25 perf tests: Add attr record no-inherit test
-  13/25 perf tests: Add attr record data test
-  14/25 perf tests: Add attr record raw test
-  15/25 perf tests: Add attr record no delay test
-  16/25 perf tests: Add attr record branch any test
-  17/25 perf tests: Add attr record branch filter tests
-  18/25 perf tests: Add attr stat basic test
-  19/25 perf tests: Add attr stat no-inherit test
-  20/25 perf tests: Add attr stat group test
-  21/25 perf tests: Add attr stat event syntax group test
-  22/25 perf tests: Add attr stat default test
-  23/25 perf tests: Add attr stat default test
-  24/25 perf tests: Add attr tests under builtin test command
-  25/25 perf tests: Add documentation for attr tests
-
-Also available here:
-git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git
-perf/test4
-
-thanks,
-jirka
-
-
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -69,48 +37,119 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/perf/Makefile                                      |   20 +-
- tools/perf/builtin-test.c                                | 1559 ---------------------------------------------------------------------
- tools/perf/perf.c                                        |    2 +
- tools/perf/perf.h                                        |   17 +-
- tools/perf/tests/attr.c                                  |  171 ++++++++
- tools/perf/tests/attr.py                                 |  313 ++++++++++++++
- tools/perf/tests/attr/README                             |   64 +++
- tools/perf/tests/attr/base-record                        |   40 ++
- tools/perf/tests/attr/base-stat                          |   40 ++
- tools/perf/tests/attr/test-record-basic                  |    5 +
- tools/perf/tests/attr/test-record-branch-any             |    8 +
- tools/perf/tests/attr/test-record-branch-filter-any      |    8 +
- tools/perf/tests/attr/test-record-branch-filter-any_call |    8 +
- tools/perf/tests/attr/test-record-branch-filter-any_ret  |    8 +
- tools/perf/tests/attr/test-record-branch-filter-hv       |    8 +
- tools/perf/tests/attr/test-record-branch-filter-ind_call |    8 +
- tools/perf/tests/attr/test-record-branch-filter-k        |    8 +
- tools/perf/tests/attr/test-record-branch-filter-u        |    8 +
- tools/perf/tests/attr/test-record-count                  |    8 +
- tools/perf/tests/attr/test-record-data                   |    8 +
- tools/perf/tests/attr/test-record-freq                   |    6 +
- tools/perf/tests/attr/test-record-graph-default          |    6 +
- tools/perf/tests/attr/test-record-graph-dwarf            |   10 +
- tools/perf/tests/attr/test-record-graph-fp               |    6 +
- tools/perf/tests/attr/test-record-group                  |   17 +
- tools/perf/tests/attr/test-record-group1                 |   20 +
- tools/perf/tests/attr/test-record-no-delay               |    9 +
- tools/perf/tests/attr/test-record-no-inherit             |    7 +
- tools/perf/tests/attr/test-record-no-samples             |    6 +
- tools/perf/tests/attr/test-record-period                 |    7 +
- tools/perf/tests/attr/test-record-raw                    |    7 +
- tools/perf/tests/attr/test-stat-basic                    |    6 +
- tools/perf/tests/attr/test-stat-default                  |   64 +++
- tools/perf/tests/attr/test-stat-detailed-1               |  101 +++++
- tools/perf/tests/attr/test-stat-detailed-2               |  155 +++++++
- tools/perf/tests/attr/test-stat-detailed-3               |  173 ++++++++
- tools/perf/tests/attr/test-stat-group                    |   15 +
- tools/perf/tests/attr/test-stat-group1                   |   17 +
- tools/perf/tests/attr/test-stat-no-inherit               |    7 +
- tools/perf/tests/builtin-test.c                          | 1563 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/dso-data.c                              |  153 +++++++
- tools/perf/tests/parse-events.c                          | 1116 ++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/dso-test-data.c                          |  153 -------
- tools/perf/util/parse-events-test.c                      | 1116 --------------------------------------------------
- 44 files changed, 4216 insertions(+), 2835 deletions(-)
+ tools/perf/Makefile             |  9 +++++++++
+ tools/perf/perf.h               |  1 +
+ tools/perf/tests/attr.c         | 35 +++++++++++++++++++++++++++++++++++
+ tools/perf/tests/builtin-test.c |  4 ++++
+ 4 files changed, 49 insertions(+)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 1da87a3..ba380b9 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -898,6 +898,11 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+ 		'-DPREFIX="$(prefix_SQ)"' \
+ 		$<
+ 
++$(OUTPUT)tests/attr.o: $(OUTPUT)tests/attr.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
++		'-DBINDIR="$(bindir_SQ)"' \
++		$<
++
+ $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
+@@ -1062,6 +1067,10 @@ install: all try-install-man
+ 	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(sysconfdir_SQ)/bash_completion.d'
+ 	$(INSTALL) bash_completion '$(DESTDIR_SQ)$(sysconfdir_SQ)/bash_completion.d/perf'
++	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests'
++	$(INSTALL) tests/attr.py '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests'
++	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
++	$(INSTALL) tests/attr/* '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
+ 
+ install-python_ext:
+ 	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 0047264..054182e 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -178,6 +178,7 @@ extern bool test_attr__enabled;
+ void test_attr__init(void);
+ void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
+ 		     int fd, int group_fd, unsigned long flags);
++int  test_attr__run(void);
+ 
+ static inline int
+ sys_perf_event_open(struct perf_event_attr *attr,
+diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
+index 2fe8cae..ef2505e 100644
+--- a/tools/perf/tests/attr.c
++++ b/tools/perf/tests/attr.c
+@@ -26,9 +26,12 @@
+ #include <linux/kernel.h>
+ #include "../perf.h"
+ #include "util.h"
++#include "exec_cmd.h"
+ 
+ #define ENV "PERF_TEST_ATTR"
+ 
++extern int verbose;
++
+ bool test_attr__enabled;
+ 
+ static char *dir;
+@@ -134,3 +137,35 @@ void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
+ 	if (store_event(attr, pid, cpu, fd, group_fd, flags))
+ 		die("test attr FAILED");
+ }
++
++static int run_dir(const char *d, const char *perf)
++{
++	char cmd[3*PATH_MAX];
++
++	snprintf(cmd, 3*PATH_MAX, "python %s/attr.py -d %s/attr/ -p %s %s",
++		 d, d, perf, verbose ? "-v" : "");
++
++	return system(cmd);
++}
++
++int test_attr__run(void)
++{
++	struct stat st;
++	char path_perf[PATH_MAX];
++	char path_dir[PATH_MAX];
++
++	/* First try developement tree tests. */
++	if (!lstat("./tests", &st))
++		return run_dir("./tests", "./perf");
++
++	/* Then installed path. */
++	snprintf(path_dir,  PATH_MAX, "%s/tests", perf_exec_path());
++	snprintf(path_perf, PATH_MAX, "%s/perf", BINDIR);
++
++	if (!lstat(path_dir, &st) &&
++	    !lstat(path_perf, &st))
++		return run_dir(path_dir, path_perf);
++
++	fprintf(stderr, " (ommitted)");
++	return 0;
++}
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index a04276e..8e2e7d6 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -1455,6 +1455,10 @@ static struct test {
+ 		.func = test__syscall_open_tp_fields,
+ 	},
+ 	{
++		.desc = "struct perf_event_attr setup",
++		.func = test_attr__run,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+-- 
+1.7.11.7
+
