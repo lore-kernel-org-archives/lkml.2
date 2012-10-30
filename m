@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934697Ab2J3VWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:22:22 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55343 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934405Ab2J3VWV (ORCPT
+	id S934405Ab2J3VYO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:24:14 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:55350 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989Ab2J3VYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:22:21 -0400
-Date: Tue, 30 Oct 2012 21:22:17 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
+	Tue, 30 Oct 2012 17:24:12 -0400
+Date: Wed, 31 Oct 2012 01:23:56 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: Arvid Brodin <Arvid.Brodin@xdin.com>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         David Rientjes <rientjes@google.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>
 Subject: Re: fs/proc/base.c: text md5sums; tgid vs tid; and INF vs ONE?
-Message-ID: <20121030212217.GD2616@ZenIV.linux.org.uk>
+Message-ID: <20121030212356.GP15657@moon>
 References: <50904066.4060404@xdin.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -28,17 +28,25 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Oct 30, 2012 at 09:02:33PM +0000, Arvid Brodin wrote:
+> Hi,
+> 
+> Below is a patch that adds a file /proc/PID/text_md5sum which when read returns the md5
+> checksum of a process' text segment. (This would be used e.g. to make sure a process'
+> code hasn't been tampered with.)
+> 
+> However, I have a few questions:
+> 
+> * What's the difference between the tgid_base_stuff and tid_base_stuff arrays? (One for
+> processes and one for the process' threads? I haven't been able to find any info about
+> this so I'm guessing.)
+> 
+> * When should I use the INF ("read") vs the ONE ("show") macro?
+> 
+> * Any other comments about the code?
+> 
+> Thanks!
 
-> +config PROC_TEXT_MD5SUM
-> +	bool "/proc/<pid>/text_md5sum support"
-> +	depends on PROC_FS
-> +	select CRYPTO
-> +	select CRYPTO_MD5
-> +	help
-> +	  Read /proc/<pid>/text_md5sum to get the kernel to perform an MD5
-> +	  checksum over the process' text segment and print the result. Can be
-> +	  used to make sure a process' code has not been tampered with.
-
-Sorry, but this is pointless.  Any attacker capable of modifying the code
-will be just as capable of modifying pointers to functions in data segment.
-IOW, you are not making sure of anything useful.
+I don't think this increments security by any means. start/end-code are rather
+informative fields which are set when program being started, so one can ptrace
+it, alloc new exec area, put evil code there, tuneup cs:ip and restore original
+program contents, you won't even notice that.
