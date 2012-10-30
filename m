@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab2J3Jal (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 05:30:41 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:41034 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756993Ab2J3Jaj (ORCPT
+	id S1757146Ab2J3Jd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 05:33:27 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:42905 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756377Ab2J3JdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 05:30:39 -0400
-From: yongd <yongd@marvell.com>
-To: Chris Ball <cjb@laptop.org>, Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Daniel Drake <dsd@laptop.org>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Wilson Callan <wilson.callan@savantsystems.com>,
-        Ben Dooks <ben-linux@fluff.org>
-Cc: zhangfei.gao@marvell.com, kevin.liu@marvell.com, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yongd <yongd@marvell.com>
-Subject: [PATCH V2 2/3] mmc: sdhci-s3c: enable polling to detect card by itself
-Date: Tue, 30 Oct 2012 17:30:02 +0800
-Message-Id: <1351589403-26398-3-git-send-email-yongd@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351589403-26398-1-git-send-email-yongd@marvell.com>
-References: <1351589403-26398-1-git-send-email-yongd@marvell.com>
-X-OriginalArrivalTime: 30 Oct 2012 09:30:17.0910 (UTC) FILETIME=[2C9C7560:01CDB681]
+	Tue, 30 Oct 2012 05:33:25 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-36-508f9ee32ca0
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Subject: Re: [PATCH 4/4] DMA: PL330: add device tree property for DMA_MEMCPY
+ capability
+Date: Tue, 30 Oct 2012 10:21:42 +0100
+User-Agent: KMail/1.13.2 (Linux/3.5.0-rc2+; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, vinod.koul@intel.com,
+        kgene.kim@samsung.com, rob.herring@calxeda.com, dinguyen@altera.com,
+        pawel.moll@arm.com, t.figa@samsung.com, kyungmin.park@samsung.com
+References: <1351504796-24788-1-git-send-email-b.zolnierkie@samsung.com>
+ <1351504796-24788-5-git-send-email-b.zolnierkie@samsung.com>
+ <CABb+yY1Ztu2n38ObXJq+shOoXw6yk0YK39QUHhDN_pJKziAFQg@mail.gmail.com>
+In-reply-to: <CABb+yY1Ztu2n38ObXJq+shOoXw6yk0YK39QUHhDN_pJKziAFQg@mail.gmail.com>
+MIME-version: 1.0
+Message-id: <201210301021.42803.b.zolnierkie@samsung.com>
+Content-type: Text/Plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrILMWRmVeSWpSXmKPExsVy+t9jAd3H8/oDDNZ+Ere4vGsOm8WM8/uY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4MqYdrmPreAkZ8XDw0/ZGxhvsHcxcnJICJhILL7eygJh
+	i0lcuLeerYuRi0NIYBGjRNPSWUwQTguTxIJ5C8Gq2ASsJCa2r2IEsUUENCWWvZ7HBGILC0RK
+	nJjWygZiswioSrz/tQOsXlTAQaJz6gSwqcwCvUwSB7c9YIWYeo5R4sjec2B3cAoESzxu6WEF
+	sXkFBCV+TL7HAmFbSuy8/5EZxGYW0JJofrOJEcKWl9i85i3zBEaBWUhaZiEpm4WkbAEj8ypG
+	0dSC5ILipPRcI73ixNzi0rx0veT83E2M4IB8Jr2DcVWDxSFGAQ5GJR7ejWv6AoRYE8uKK3MP
+	MUpwMCuJ8M6e1B8gxJuSWFmVWpQfX1Sak1p8iFGag0VJnLfZIyVASCA9sSQ1OzW1ILUIJsvE
+	wSnVwBjfrv/5xvr04tqjt4yTTTTWuV6dsDIu0uVi2OZkKfYNqnVW50QWn1D4wSh5l9mlMlIr
+	3c7ff2FlWUnM6Vrvfw8uXZOvXH2l7Zig84OXmtZ8KoeEHPgmqMWdKKuZ8/SxfWj633d3LiW3
+	tPAvm2O1fY45n9DZkgv3XL4s5DtoOKPcNb/Vr0lwjhJLcUaioRZzUXEiABc8SIBEAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SDHCI_QUIRK_BROKEN_CARD_DETECTION is used to disable host internal
-card detection method. So it should be set for all card detection types
-except S3C_SDHCI_CD_INTERNAL, or host internal card detection interrupts
-will be redundantly enabled. So, the 1st change of this patch expands such
-flag setting.
 
-Moreover, we need move further after the above change.
+Hi,
 
-In the current code logic, sdhci_add_host() will enable the polling method
-(set MMC_CAP_NEEDS_POLL) for a removable card (MMC_CAP_NONREMOVABLE is not
-set) whose host's internal card detection method is disabled.
+On Monday 29 October 2012 22:45:48 Jassi Brar wrote:
+> On Mon, Oct 29, 2012 at 10:59 AM, Bartlomiej Zolnierkiewicz
+> <b.zolnierkie@samsung.com> wrote:
+> > * Add device tree (DT) property ("pl330,dma-memcpy") for DMA_MEMCPY
+> >   capability and instead of setting this capability unconditionally
+> >   in pl330_probe() do it only when property is present.
+> >
+> Perhaps we should pass the array of peripheral interfaces via DT, the
+> lack of which could imply MEMCPY capability ? (while it works, I doubt
+> if pl330 is supposed to have SLAVE and MEMCPY capabilities in any
+> instance)
 
-Apparently, this is arbitrary since we can have some other detection types.
-As a result, sdhci_add_host() will redundantly enable polling for a card with
-S3C_SDHCI_CD_GPIO/S3C_SDHCI_CD_EXTERNAL type.
+In case of PL330 on EXYNOS4 we have two interfaces with SLAVE capability
+and one interface with MEMCPY capability.  Could you please explain more
+the idea of passing the array of peripherals through DT so we can detect
+which interface has MEMCPY capability?
 
-So, we plan to remove such improper setting in sdhci_add_host(). But
-before this, this 2nd change of this patch is a MUST, which enables polling
-in host driver itself for S3C_SDHCI_CD_NONE type. Currently, we rely on the
-above improper logic for this.
+> That would also be a step towards discarding "struct dma_pl330_platdata".
 
-Change-Id: I28bd6765e6c6a9dd6c288ff4ca6ecf7268a2d8ed
-Signed-off-by: yongd <yongd@marvell.com>
----
- drivers/mmc/host/sdhci-s3c.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+I don't know if getting rid of "struct dma_pl330_platdata" is possible
+but we still need to come up with some way to pass the needed information
+through DT.  Do you have an idea how it could be done?
 
-diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
-index a093e2e..a669616 100644
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -683,10 +683,12 @@ static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
- 	/* Samsung SoCs need BROKEN_ADMA_ZEROLEN_DESC */
- 	host->quirks |= SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC;
- 
--	if (pdata->cd_type == S3C_SDHCI_CD_NONE ||
--	    pdata->cd_type == S3C_SDHCI_CD_PERMANENT)
-+	if (pdata->cd_type != S3C_SDHCI_CD_INTERNAL)
- 		host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
- 
-+	if (pdata->cd_type == S3C_SDHCI_CD_NONE)
-+		host->mmc->caps = MMC_CAP_NEEDS_POLL;
-+
- 	if (pdata->cd_type == S3C_SDHCI_CD_PERMANENT)
- 		host->mmc->caps = MMC_CAP_NONREMOVABLE;
- 
--- 
-1.7.9.5
-
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung Poland R&D Center
