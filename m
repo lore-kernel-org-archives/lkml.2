@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934321Ab2J3Tn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:43:56 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:34480 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932088Ab2J3Tny (ORCPT
+	id S934297Ab2J3To7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:44:59 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:61228 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755387Ab2J3To6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 15:43:54 -0400
-Date: Tue, 30 Oct 2012 12:43:54 -0700
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
-Message-ID: <20121030194354.GA32137@dtor-ws.eng.vmware.com>
-References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121030021938.GC1920@kroah.com>
- <20121030040744.GB32055@dtor-ws.eng.vmware.com>
- <20121030154801.GC14167@kroah.com>
- <20121030161807.GA9709@dtor-ws.eng.vmware.com>
- <20121030162723.GA16135@kroah.com>
+	Tue, 30 Oct 2012 15:44:58 -0400
+Date: Tue, 30 Oct 2012 22:42:31 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] zram: handle mem suffixes in disk size zram_sysfs
+ parameter (resend)
+Message-ID: <20121030194231.GG2454@swordfish>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121030162723.GA16135@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 09:27:23AM -0700, Greg KH wrote:
-> On Tue, Oct 30, 2012 at 09:18:07AM -0700, Dmitry Torokhov wrote:
-> > > > I think that even if we had a special directory for vmci having network
-> > > > drivers in Dave's realm and pvscsi in James's is best option, so the new
-> > > > directory would contain vmci and the balloon driver (vsock will go into
-> > > > net/).  Given that balloon is already in drivers/misc it looked like
-> > > > obvious place for VMCI as well.
-> > > 
-> > > I agree that the individual drivers should go in the subsystem area,
-> > > it's this "hypervisor bus core" type code that I'm questioning.  Right
-> > > now every hypervisor is putting that logic in a different place in the
-> > > kernel, having some consistency here would be nice.
-> > 
-> > Hmm, I wonder if miscellaneous and core hypervisor drivers should end
-> > up in drivers/platform:
-> > 
-> > 	drivers/platform/hyperv
-> > 	drivers/platform/olpc
-> > 	drivers/platform/vmware
-> > 	drivers/platform/xen
-> > 	drivers/platform/x86
-> 
-> That makes sense to me, nice.
-> 
-> > But really we'd like to get VMCI into mainline first and move to a new
-> > place later if such a better place is found.
-> 
-> Heh, no one wants to fight for something to help everyone out, they just
-> want their own code accepted :)
+Use memparse() to allow mem suffixes in disksize sysfs number.
+Examples:
+    echo 256K > /sys/block/zram0/disksize
+    echo 512M > /sys/block/zram0/disksize
+    echo 1G > /sys/block/zram0/disksize  
 
-No, this is more about finding a person who would be maintaining it and
-thus would review our code. For now we got you tagged and do not want to
-let go of you :P
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Reviewed-by: Nitin Gupta <ngupta@vflare.org>
 
-Or should we maintain our own stuff and have Linus pull it directly,
-like Xen guys appear to be doing? Really, moving it is not an issue for
-us.
+---
 
-Thanks,
-Dmitry
+ drivers/staging/zram/zram_sysfs.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index edb0ed4..de1eacf 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -15,6 +15,7 @@
+ #include <linux/device.h>
+ #include <linux/genhd.h>
+ #include <linux/mm.h>
++#include <linux/kernel.h>
+ 
+ #include "zram_drv.h"
+ 
+@@ -54,13 +55,12 @@ static ssize_t disksize_show(struct device *dev,
+ static ssize_t disksize_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t len)
+ {
+-	int ret;
+ 	u64 disksize;
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+-	ret = kstrtoull(buf, 10, &disksize);
+-	if (ret)
+-		return ret;
++	disksize = memparse(buf, NULL);
++	if (!disksize)
++		return -EINVAL;
+ 
+ 	down_write(&zram->init_lock);
+ 	if (zram->init_done) {
+
+
