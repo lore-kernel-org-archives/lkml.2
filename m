@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab2J3UPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 16:15:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41949 "EHLO mx1.redhat.com"
+	id S1756440Ab2J3UPW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 16:15:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32021 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934454Ab2J3UPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 16:15:13 -0400
+	id S934450Ab2J3UPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 16:15:12 -0400
 From: Jeff Moyer <jmoyer@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
         linux-scsi@vger.kernel.org
-Subject: [patch 04/10] sd: use alloc_disk_node
-Date: Tue, 30 Oct 2012 16:14:38 -0400
-Message-Id: <1351628084-29358-7-git-send-email-jmoyer@redhat.com>
+Subject: [patch 01/10] scsi: make __scsi_alloc_queue numa-aware
+Date: Tue, 30 Oct 2012 16:14:35 -0400
+Message-Id: <1351628084-29358-4-git-send-email-jmoyer@redhat.com>
 In-Reply-To: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
 References: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Pass the numa node id set in the Scsi_Host on to blk_init_queue_node
+in order to keep all allocations local to the numa node the device is
+closest to.
 
 Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
 ---
- drivers/scsi/sd.c |    2 +-
+ drivers/scsi/scsi_lib.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 12f6fdf..8deb915 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2714,7 +2714,7 @@ static int sd_probe(struct device *dev)
- 	if (!sdkp)
- 		goto out;
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index da36a3a..8662a09 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1664,7 +1664,7 @@ struct request_queue *__scsi_alloc_queue(struct Scsi_Host *shost,
+ 	struct request_queue *q;
+ 	struct device *dev = shost->dma_dev;
  
--	gd = alloc_disk(SD_MINORS);
-+	gd = alloc_disk_node(SD_MINORS, dev_to_node(dev));
- 	if (!gd)
- 		goto out_free;
+-	q = blk_init_queue(request_fn, NULL);
++	q = blk_init_queue_node(request_fn, NULL, shost->numa_node);
+ 	if (!q)
+ 		return NULL;
  
 -- 
 1.7.1
