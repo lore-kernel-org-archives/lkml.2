@@ -1,102 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934025Ab2J3QeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:34:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40705 "EHLO mx1.redhat.com"
+	id S934006Ab2J3QjQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:39:16 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:47846 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab2J3QeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:34:14 -0400
-Date: Tue, 30 Oct 2012 12:33:55 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michael.brantley@deshaw.com, hch@infradead.org, miklos@szeredi.hu,
-        pstaubach@exagrid.com
-Subject: Re: [PATCH v8 11/32] vfs: make do_unlinkat retry on ESTALE errors
-Message-ID: <20121030123355.5c404373@tlielax.poochiereds.net>
-In-Reply-To: <20121030161429.GD24618@fieldses.org>
-References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
-	<1351341219-17837-12-git-send-email-jlayton@redhat.com>
-	<20121030161429.GD24618@fieldses.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933807Ab2J3QjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 12:39:14 -0400
+Date: Tue, 30 Oct 2012 09:36:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: [PATCH tip/core/rcu 0/4] SRCU changes for 3.8
+Message-ID: <20121030163650.GA23518@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12103016-8974-0000-0000-00001057692D
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00186993; UDB=6.00042359; UTC=2012-10-30
+ 16:39:13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Oct 2012 12:14:29 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
+Hello!
 
-> On Sat, Oct 27, 2012 at 08:33:18AM -0400, Jeff Layton wrote:
-> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> > ---
-> >  fs/namei.c | 12 ++++++++++--
-> >  1 file changed, 10 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/namei.c b/fs/namei.c
-> > index 7c9bb50..467b9f1 100644
-> > --- a/fs/namei.c
-> > +++ b/fs/namei.c
-> > @@ -3446,9 +3446,13 @@ static long do_unlinkat(int dfd, const char __user *pathname)
-> >  	struct filename *name;
-> >  	struct dentry *dentry;
-> >  	struct nameidata nd;
-> > -	struct inode *inode = NULL;
-> > +	struct inode *inode;
-> > +	unsigned int try = 0;
-> > +	unsigned int lookup_flags = LOOKUP_PARENT;
-> >  
-> > -	name = user_path_parent(dfd, pathname, &nd, 0);
-> > +retry:
-> > +	inode = NULL;
-> 
-> So, you fail after "inode" was set (say vfs_unlink returned an error)
-> the first time, then before "inode" was set (lookup_hash returns an
-> error), and you end up incorrectly doing another iput() the second time
-> through if you don't reset inode here?
-> 
-> (I think I made the same mistake in another patch, actually....)
-> 
-> --b.
-> 
+This patch series contains SRCU changes allowing srcu_structs to be
+statically initialized.  The patches are as follows:
 
-Correct. That's a new delta in this patch, btw. The original patch
-didn't do that and it was causing a busy inodes on umount bug in
-testing.
+1.	Add Lai Jiangshan as author for srcu.c and srcu.h.
+	(Courtesy Lia Jiangshan.)
+2.	Export process_srcu() so that the initialization macro may
+	be invoked anywhere.  (Courtesy Lia Jiangshan.)
+3.	Add DEFINE_SRCU().  (Courtesy Lia Jiangshan.)
+4.	Add DEFINE_STATIC_SRCU().  This cannot be emulated by
+	"static DEFINE_SRCU()" due to forward-reference issues.
+	(Courtesy Lia Jiangshan.)
 
-It would occasionally hit an ESTALE error in this function and
-because "inode" wasn't reset to NULL, it would do a double-put of the
-inode and cause the counter to underflow.
+							Thanx, Paul
 
-It might be good to restructure this code to make those sorts of bugs
-less likely, but the error handling in here is already so hairy that I
-decided to punt on that for now...
+ b/include/linux/srcu.h |   34 ++++++++++++++++++++++++++++++++++
+ b/kernel/rcutorture.c  |   41 ++++++-----------------------------------
+ b/kernel/srcu.c        |    8 ++++----
+ 3 files changed, 44 insertions(+), 39 deletions(-)
 
-> > +	name = user_path_parent(dfd, pathname, &nd, try);
-> >  	if (IS_ERR(name))
-> >  		return PTR_ERR(name);
-> >  
-> > @@ -3486,6 +3490,10 @@ exit2:
-> >  exit1:
-> >  	path_put(&nd.path);
-> >  	putname(name);
-> > +	if (retry_estale(error, try++)) {
-> > +		lookup_flags |= LOOKUP_REVAL;
-> > +		goto retry;
-> > +	}
-> >  	return error;
-> >  
-> >  slashes:
-> > -- 
-> > 1.7.11.7
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
--- 
-Jeff Layton <jlayton@redhat.com>
