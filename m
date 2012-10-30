@@ -1,355 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934882Ab2J3WmZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 18:42:25 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:65408 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308Ab2J3WmY (ORCPT
+	id S934887Ab2J3Wpr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 18:45:47 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:58076 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932308Ab2J3Wpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 18:42:24 -0400
-Date: Tue, 30 Oct 2012 15:39:23 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Joerg Reisenweber <joerg@openmoko.org>,
-        Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: Re: [PATCH] New Nokia RX-51 power supply battery driver
-Message-ID: <20121030223922.GA29061@lizard>
-References: <19040462.WFXWijAIDd@pali>
+	Tue, 30 Oct 2012 18:45:45 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Arvid Brodin <Arvid.Brodin@xdin.com>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "David Rientjes" <rientjes@google.com>
+References: <50904066.4060404@xdin.com>
+Date: Tue, 30 Oct 2012 15:45:35 -0700
+In-Reply-To: <50904066.4060404@xdin.com> (Arvid Brodin's message of "Tue, 30
+	Oct 2012 21:02:33 +0000")
+Message-ID: <87ip9refzk.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <19040462.WFXWijAIDd@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18P/+LtNJXnR9zHVq77grjrYiNoqdnw4Dc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0411]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Arvid Brodin <Arvid.Brodin@xdin.com>
+X-Spam-Relay-Country: 
+Subject: Re: fs/proc/base.c: text md5sums; tgid vs tid; and INF vs ONE?
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 09:04:55PM +0100, Pali Rohár wrote:
-> I'm working on full BME replacement for Nokia N900. BME is Nokia
-> proprietary buggy userspace software which charging battery.
-[...]
-> Except Nokia RX-51 Schematics there is no available documentation
-> about battery, charging and madc channels (for n900), so all
-> information was RE.
-[...]
-> Thanks to Joerg Reisenweber and Ivaylo Dimitrov for collecting needed
-> data, help with some problems and fixing errors!
+Arvid Brodin <Arvid.Brodin@xdin.com> writes:
 
-Pali and guys, a huge thank you goes out to you, awesome work!
+> Hi,
+>
+> Below is a patch that adds a file /proc/PID/text_md5sum which when read returns the md5
+> checksum of a process' text segment. (This would be used e.g. to make sure a process'
+> code hasn't been tampered with.)
+>
+> However, I have a few questions:
+>
+> * What's the difference between the tgid_base_stuff and tid_base_stuff arrays? (One for
+> processes and one for the process' threads? I haven't been able to find any info about
+> this so I'm guessing.)
 
-The driver looks great, just a few cosmetic issues.
+Yes.  One for thread groups and one for threads.
 
-(Please include a Signed-off-by tag on the next resend.)
+> * When should I use the INF ("read") vs the ONE ("show") macro?
 
-> --- /dev/null
-> +++ kernel-power/drivers/power/rx51_battery.c
-> @@ -0,0 +1,257 @@
-> +/*
-> +    rx51_battery.c - Nokia RX-51 battery driver
-> +    Copyright (C) 2012  Pali Rohár <pali.rohar@gmail.com>
-> +
-> +    This program is free software; you can redistribute it and/or modify
-> +    it under the terms of the GNU General Public License as published by
-> +    the Free Software Foundation; either version 2 of the License, or
-> +    (at your option) any later version.
-> +
-> +    This program is distributed in the hope that it will be useful,
-> +    but WITHOUT ANY WARRANTY; without even the implied warranty of
-> +    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> +    GNU General Public License for more details.
-> +
-> +    You should have received a copy of the GNU General Public License along
-> +    with this program; if not, write to the Free Software Foundation, Inc.,
-> +    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> +*/
+proc_read depends on the caller to allocate a 4k buffer, instead of
+sizing the buffer based upon the size of the text being written.  Which
+makes proc_read an error prone and ultimately deprecated way of handling
+things.
 
-The canonical multi-line comments are like this:
+Using some variant on seq_file is preferred for new files.
 
-/*
- * 1
- * 2
- */
+> * Any other comments about the code?
 
-> +
-> +#include <linux/module.h>
-> +#include <linux/param.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/power_supply.h>
-> +#include <linux/slab.h>
-> +#include <linux/i2c/twl4030-madc.h>
-> +
-> +struct rx51_device_info {
-> +	struct device *dev;
-> +	struct power_supply bat;
-> +};
-> +
-> +/*
-> +   Read ADCIN channel value, code copied from maemo kernel
-> + */
+There are known successful attacks against md5 so using md5 for
+something new and security related is a bad idea.
 
-Ditto, style.
+Userspace can just as easily compute a security hash itself you don't
+need kernel support.
 
-> +static int rx51_battery_read_adc(int channel)
-> +{
-> +	struct twl4030_madc_request req;
-> +
-> +	req.channels = (1 << channel);
 
-Parenthesis are not necessary here.
+I recommend you checkout the code in security/ima/ looks like it can
+already do what you are trying to do.
 
-> +	req.do_avg = 1;
-> +	req.method = TWL4030_MADC_SW1;
-> +	req.func_cb = NULL;
-> +	req.type = TWL4030_MADC_WAIT;
-> +
-> +	if (twl4030_madc_conversion(&req) > 0)
-> +		return req.rbuf[channel];
-> +	else
-
-No need for 'else'.
-
-Plus, to make it look more like a conventional error-handling, I'd
-write it as 
-
-	if (twl4030_madc_conversion(&req) <= 0)
-		return -ENODATA;
-
-	return req.rbuf[channel];
-
-> +		return -ENODATA;
-> +}
-> +
-> +/*
-> +   Read ADCIN channel 12 (voltage) and convert RAW value to micro voltage
-> +   This conversion formula was extracted from maemo program bsi-read
-> + */
-
-Style.
-
-> +static int rx51_battery_read_voltage(struct rx51_device_info *di)
-> +{
-> +	int voltage = rx51_battery_read_adc(12);
-
-Need an empty line here.
-
-> +	if (voltage < 0)
-> +		return voltage;
-> +	return 1000 * (10000 * voltage / 1705);
-> +}
-> +
-> +/*
-> +   Temperature look-up tables
-> +   TEMP = (1/(t1 + 1/298) - 273.15)
-> +   Where t1 = (1/B) * ln((RAW_ADC_U * 2.5)/(R * I * 255))
-> +   Formula is based on experimental data, RX-51 CAL data, maemo program bme
-> +   and formula from da9052 driver with values R = 100, B = 3380, I = 0.00671
-> + */
-> +
-> +/*
-> +   Table1 (temperature for first 25 RAW values)
-> +   Usage: TEMP = rx51_temp_table1[RAW]
-> +     RAW is between 1 and 24
-> +     TEMP is between 201 C and 55 C
-> + */
-> +static u8 rx51_temp_table1[] = {
-> +	255, 201, 159, 138, 124, 114, 106,  99,  94,  89,  85,  82,  78,  75,
-> +	 73,  70,  68,  66,  64,  62,  61,  59,  57,  56,  55
-> +};
-> +
-> +/*
-> +   Table2 (lowest RAW value for temperature)
-> +   Usage: RAW = rx51_temp_table2[TEMP-rx51_temp_table2_first]
-> +     TEMP is between 53 C and -32 C
-> +     RAW is between 25 and 993
-> + */
-> +#define rx51_temp_table2_first 53
-> +static u16 rx51_temp_table2[] = {
-> +	 25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  39,
-> +	 40,  41,  43,  44,  46,  48,  49,  51,  53,  55,  57,  59,  61,  64,
-> +	 66,  69,  71,  74,  77,  80,  83,  86,  90,  94,  97, 101, 106, 110,
-> +	115, 119, 125, 130, 136, 141, 148, 154, 161, 168, 176, 184, 202, 211,
-> +	221, 231, 242, 254, 266, 279, 293, 308, 323, 340, 357, 375, 395, 415,
-> +	437, 460, 485, 511, 539, 568, 600, 633, 669, 706, 747, 790, 836, 885,
-> +	937, 993, 1024
-> +};
-> +
-> +/*
-> +   Read ADCIN channel 0 (battery temp) and convert value to tenths of Celsius
-> +   Use Temperature look-up tables for conversation
-> + */
-> +static int rx51_battery_read_temperature(struct rx51_device_info *di)
-> +{
-> +	int min = 0;
-> +	int max = ARRAY_SIZE(rx51_temp_table2)-1;
-
-Need spaces around '-'.
-
-> +	int raw = rx51_battery_read_adc(0);
-> +
-> +	/* Zero and negative values are undefined */
-> +	if (raw <= 0)
-> +		return INT_MAX;
-> +
-> +	/* ADC channels are 10 bit, higher value are undefined */
-> +	if (raw >= (1 << 10))
-> +		return INT_MIN;
-> +
-> +	/* First check for temperature in first direct table */
-> +	if (raw < ARRAY_SIZE(rx51_temp_table1))
-> +		return rx51_temp_table1[raw] * 100;
-> +
-> +	/* Binary search RAW value in second inverse table */
-> +	while (max-min > 1) {
-
-Spaces around '-'.
-
-> +		int mid = (max+min)/2;
-
-Need an empty line here, spaces around '+' and '/'.
-
-> +		if (rx51_temp_table2[mid] <= raw)
-> +			min = mid;
-> +		else if (rx51_temp_table2[mid] > raw)
-> +			max = mid;
-> +		if (rx51_temp_table2[mid] == raw)
-> +			break;
-> +	}
-> +
-> +	return (rx51_temp_table2_first - min) * 100;
-> +}
-> +
-> +/*
-> +   Read ADCIN channel 4 (BSI) and convert RAW value to micro Ah
-> +   This conversion formula was extracted from maemo program bsi-read
-> + */
-> +static int rx51_battery_read_capacity(struct rx51_device_info *di)
-> +{
-> +	int capacity = rx51_battery_read_adc(4);
-
-Empty line here.
-
-> +	if (capacity < 0)
-> +		return capacity;
-> +	return 1280 * (1200 * capacity)/(1024 - capacity);
-> +}
-> +
-> +/*
-> +   Return power_supply property
-> + */
-> +static int rx51_battery_get_property(struct power_supply *psy,
-> +					enum power_supply_property psp,
-> +					union power_supply_propval *val)
-> +{
-> +	struct rx51_device_info *di = container_of((psy),
-> +				struct rx51_device_info, bat);
-> +
-> +	switch (psp) {
-> +	case POWER_SUPPLY_PROP_TECHNOLOGY:
-> +		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
-> +		break;
-> +	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
-> +		val->intval = 4200000;
-> +		break;
-> +	case POWER_SUPPLY_PROP_PRESENT:
-> +		val->intval = rx51_battery_read_voltage(di) ? 1 : 0;
-> +		break;
-> +	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-> +		val->intval = rx51_battery_read_voltage(di);
-> +		break;
-> +	case POWER_SUPPLY_PROP_TEMP:
-> +		val->intval = rx51_battery_read_temperature(di);
-> +		break;
-> +	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
-> +		val->intval = rx51_battery_read_capacity(di);
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (val->intval == INT_MAX || val->intval == INT_MIN)
-> +		return -EINVAL;
-> +
-> +	return 0;
-> +}
-> +
-> +static enum power_supply_property rx51_battery_props[] = {
-> +	POWER_SUPPLY_PROP_TECHNOLOGY,
-> +	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
-> +	POWER_SUPPLY_PROP_PRESENT,
-> +	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-> +	POWER_SUPPLY_PROP_TEMP,
-> +	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
-> +};
-> +
-> +static int __devinit rx51_battery_probe(struct platform_device *pdev)
-> +{
-> +	struct rx51_device_info *di;
-> +	int ret;
-> +
-> +	di = kzalloc(sizeof(*di), GFP_KERNEL);
-> +	if (!di)
-> +		return -ENOMEM;
-> +
-> +	platform_set_drvdata(pdev, di);
-> +
-> +	di->bat.name = dev_name(&pdev->dev);
-> +	di->bat.type = POWER_SUPPLY_TYPE_BATTERY;
-> +	di->bat.properties = rx51_battery_props;
-> +	di->bat.num_properties = ARRAY_SIZE(rx51_battery_props);
-> +	di->bat.get_property = rx51_battery_get_property;
-> +
-> +	ret = power_supply_register(di->dev, &di->bat);
-> +	if (ret) {
-> +		platform_set_drvdata(pdev, NULL);
-> +		kfree(di);
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int __devexit rx51_battery_remove(struct platform_device *pdev)
-> +{
-> +	struct rx51_device_info *di = platform_get_drvdata(pdev);
-> +
-> +	power_supply_unregister(&di->bat);
-> +	platform_set_drvdata(pdev, NULL);
-> +	kfree(di);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver rx51_battery_driver = {
-> +	.probe = rx51_battery_probe,
-> +	.remove = __devexit_p(rx51_battery_remove),
-> +	.driver = {
-> +		.name = "rx51-battery",
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init rx51_battery_init(void)
-> +{
-> +	return platform_driver_register(&rx51_battery_driver);
-> +}
-> +module_init(rx51_battery_init);
-> +
-> +static void __exit rx51_battery_exit(void)
-> +{
-> +	platform_driver_unregister(&rx51_battery_driver);
-> +}
-> +module_exit(rx51_battery_exit);
-
-I guess these two calls can be replaced by module_platform_driver() macro.
-
-> +MODULE_ALIAS("platform:rx51-battery");
-> +MODULE_AUTHOR("Pali Rohár <pali.rohar@gmail.com>");
-> +MODULE_DESCRIPTION("Nokia RX-51 battery driver");
-> +MODULE_LICENSE("GPL");
-
-Otherwise, it looks very good!
-
-Thanks,
-Anton.
+Eric
