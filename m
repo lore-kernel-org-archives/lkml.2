@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757778Ab2J3Jpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 05:45:33 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:38008 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757055Ab2J3Jpa (ORCPT
+	id S1757877Ab2J3Js7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 05:48:59 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:41429 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757055Ab2J3Js6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 05:45:30 -0400
+	Tue, 30 Oct 2012 05:48:58 -0400
+Date: Tue, 30 Oct 2012 10:48:52 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
+        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] perf tools: Speed up the perf build time by simplifying
+ the perf --version string generation
+Message-ID: <20121030094852.GA21705@gmail.com>
+References: <1351261913-28250-1-git-send-email-acme@infradead.org>
+ <20121026145451.GA14379@gmail.com>
+ <20121026170503.GC20695@ghostprotocols.net>
+ <20121027131935.GA30001@gmail.com>
+ <20121030081807.GA8245@gmail.com>
+ <20121030084600.GB8245@gmail.com>
+ <20121030093513.GE25959@ghostprotocols.net>
+ <20121030094338.GA21644@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <508F9D5C.2020802@linaro.org>
-References: <5afab1ebe83e4361f1fd75bbea0c559af195bf02.1351529738.git.viresh.kumar@linaro.org>
-	<1351540778.2721.7.camel@bwh-desktop.uk.solarflarecom.com>
-	<CAKohponL_3m2KVytiWm8ZHyB5aimk8CzGrqr5J0LMy8MFGodHg@mail.gmail.com>
-	<CAKohponOKk5e2Sxyhjw-XvzVxF3tNp66rsnYCwvwHazAPAauKw@mail.gmail.com>
-	<508F8779.8070300@linaro.org>
-	<CAKohpokmfFSFsADmtOyN9JRCX8aVdNs+tDFhUQuM6sSQ+dFfUA@mail.gmail.com>
-	<508F9724.50804@linaro.org>
-	<CAKohpon8C5O4U+h3nr=8gaEQ1f-K9pqafw=5jPrhaGup_3re=g@mail.gmail.com>
-	<508F9D5C.2020802@linaro.org>
-Date: Tue, 30 Oct 2012 15:15:30 +0530
-Message-ID: <CAKohpo=X0ZNSRZHFO==j43Hq0ZheQLmER9X+adsLQErAJT5f2w@mail.gmail.com>
-Subject: Re: [PATCH] net: dsa/slave: Fix compilation warnings
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Ben Hutchings <bhutchings@solarflare.com>, netdev@vger.kernel.org,
-        linaro-dev@lists.linaro.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030094338.GA21644@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 October 2012 14:56, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-> Well, it is the same here, no ? Except, it is up to the user to disable
-> the option.
 
-I didn't wanted to add code like this:
+* Ingo Molnar <mingo@kernel.org> wrote:
 
->> +       select NET_DSA_TAG_DSA if (!NET_DSA_TAG_EDSA &&
->> !NET_DSA_TAG_TRAILER)
+> Does -l work?
+> 
+> Alternatively, please replace:
+> 
+>   git tag --list "v[0-9].[0-9]*" | tail -1
+> 
+> with:
+> 
+>   git tag | tail -1 | grep -E "v[0-9].[0-9]*"
+> 
+> which is just as fast.
 
-Why should we select NET_DSA_TAG_DSA by default? What made us
-select that?
+make that:
 
-For this reason, i went to the solution i offered.
+    git tag 2>/dev/null | tail -1 | grep -E "v[0-9].[0-9]*"
 
-Anyway, i just wanted to get rid of the warning. Whatever maintainer
-feels is better must be selected.
+this will work silently even if Git is not installed.
 
---
-viresh
+Thanks,
+
+	Ingo
