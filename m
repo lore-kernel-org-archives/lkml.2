@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab2JaH1i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 03:27:38 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38178 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab2JaH1d (ORCPT
+	id S933494Ab2JaH1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 03:27:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:54395 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755442Ab2JaH1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 03:27:33 -0400
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH 1/2] tasklet: remove tasklet_kill_immediate()
-Date: Wed, 31 Oct 2012 15:28:06 +0800
-Message-Id: <1351668487-26635-1-git-send-email-xtfeng@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 31 Oct 2012 03:27:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [PATCH v4 4/5] ARM: annotate VMALLOC_END definition with _AC
+Date: Tue, 30 Oct 2012 22:22:15 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Josh Cartwright <josh.cartwright@ni.com>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        John Linn <linnj@xilinx.com>, Nick Bowler <nbowler@elliptictech.com>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+References: <20121024200222.GA6713@beefymiracle.amer.corp.natinst.com> <20121024200431.GE6713@beefymiracle.amer.corp.natinst.com> <3c9e591c-a29f-446b-9256-bb23ff6d840d@TX2EHSMHS014.ehs.local>
+In-Reply-To: <3c9e591c-a29f-446b-9256-bb23ff6d840d@TX2EHSMHS014.ehs.local>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210302222.15656.arnd@arndb.de>
+X-Provags-ID: V02:K0:rflTO5tTv/ud7SShH+bdhcIv6tPh8hl5tw3w7G7oXNI
+ yAJPs2siq4X3/qCULmGRdQBUiH3nZXOdUmD0uKJJcOW2T7rUCc
+ Zd3XW88cx095H+q/7wOxiczbcdXhrujg5HDIPOqf7PxeocV1uH
+ Xp98Fu502dhE4GHq00HHHM/69Fw7mF+pDUipsJ0FsFzTnciaWS
+ nqSvs6qmdBERcsYEsh/+N/W8VbG1tD9TZyO3P1zfhpUy/hAJ+G
+ nH8kIUANdi/Y4YYSTW+6sLlDhaUR7rXeRTvt1H1AFkEDS06Dls
+ eqx2MWE/IXX7DKwBnT3rRG/95DZFxWbvZvevWqNqV4OEtPLF/P
+ v+yYnH4/XeJ2FaC8/Z/U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tasklet_kill_immediate() is no longer used, just remove it.
+On Saturday 27 October 2012, Michal Simek wrote:
+> > diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+> > index 08c1231..72904a2 100644
+> > --- a/arch/arm/include/asm/pgtable.h
+> > +++ b/arch/arm/include/asm/pgtable.h
+> > @@ -40,7 +40,7 @@
+> >   */
+> >  #define VMALLOC_OFFSET               (8*1024*1024)
+> >  #define VMALLOC_START                (((unsigned long)high_memory +
+> > VMALLOC_OFFSET) & ~(VMALLOC_OFFSET-1))
+> > -#define VMALLOC_END          0xff000000UL
+> > +#define VMALLOC_END          _AC(0xff000000,UL)
+> 
+> This shouldn't be the part of this series but should go to mainline through different tree.
+> Arnd, Olof: Can you take this patch to your arm-soc tree? 
+> 
+> I don't think it is a good workstyle to propose it to mainline through zynq soc tree.
+> What do you think?
 
-Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Josh Triplett <josh@joshtriplett.org>
----
- kernel/softirq.c |   32 --------------------------------
- 1 file changed, 32 deletions(-)
+The arm-soc tree is not the right place either, this is architecture code which is
+in Russell's domain. I would suggest getting an Ack from Russell if he's ok with
+it and then merging it together with your other changes into arm-soc.
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index cc96bdc..61abd86 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -762,38 +762,6 @@ static void run_ksoftirqd(unsigned int cpu)
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
--/*
-- * tasklet_kill_immediate is called to remove a tasklet which can already be
-- * scheduled for execution on @cpu.
-- *
-- * Unlike tasklet_kill, this function removes the tasklet
-- * _immediately_, even if the tasklet is in TASKLET_STATE_SCHED state.
-- *
-- * When this function is called, @cpu must be in the CPU_DEAD state.
-- */
--void tasklet_kill_immediate(struct tasklet_struct *t, unsigned int cpu)
--{
--	struct tasklet_struct **i;
--
--	BUG_ON(cpu_online(cpu));
--	BUG_ON(test_bit(TASKLET_STATE_RUN, &t->state));
--
--	if (!test_bit(TASKLET_STATE_SCHED, &t->state))
--		return;
--
--	/* CPU is dead, so no lock needed. */
--	for (i = &per_cpu(tasklet_vec, cpu).head; *i; i = &(*i)->next) {
--		if (*i == t) {
--			*i = t->next;
--			/* If this was the tail element, move the tail ptr */
--			if (*i == NULL)
--				per_cpu(tasklet_vec, cpu).tail = i;
--			return;
--		}
--	}
--	BUG();
--}
--
- static void takeover_tasklets(unsigned int cpu)
- {
- 	/* CPU is dead, so no lock needed. */
--- 
-1.7.9.5
-
+	Arnd
