@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934598Ab2J3VEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:04:15 -0400
-Received: from smtp181.dfw.emailsrvr.com ([67.192.241.181]:50893 "EHLO
-	smtp181.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934544Ab2J3VEL (ORCPT
+	id S934612Ab2J3VEW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:04:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48704 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934544Ab2J3VET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:04:11 -0400
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 2/6] clk, highbank: remove non-bypass reset mode
-Date: Tue, 30 Oct 2012 16:04:12 -0500
-Message-Id: <1351631056-25938-3-git-send-email-mark.langsdorf@calxeda.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+	Tue, 30 Oct 2012 17:04:19 -0400
+Date: Tue, 30 Oct 2012 14:04:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] mm: refactor reinsert of swap_info in sys_swapoff
+Message-Id: <20121030140417.988c2437.akpm@linux-foundation.org>
+In-Reply-To: <1351372847-13625-2-git-send-email-cesarb@cesarb.net>
+References: <1351372847-13625-1-git-send-email-cesarb@cesarb.net>
+	<1351372847-13625-2-git-send-email-cesarb@cesarb.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The highbank clock will glitch if the clock rate is reset without
-relocking the PLL. Remove the option to attempt reseting without
-relocking.
+On Sat, 27 Oct 2012 19:20:46 -0200
+Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
 
-Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
----
- drivers/clk/clk-highbank.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+> The block within sys_swapoff which re-inserts the swap_info into the
+> swap_list in case of failure of try_to_unuse() reads a few values outside
+> the swap_lock. While this is safe at that point, it is subtle code.
+> 
+> Simplify the code by moving the reading of these values to a separate
+> function, refactoring it a bit so they are read from within the
+> swap_lock. This is easier to understand, and matches better the way it
+> worked before I unified the insertion of the swap_info from both
+> sys_swapon and sys_swapoff.
+> 
+> This change should make no functional difference. The only real change
+> is moving the read of two or three structure fields to within the lock
+> (frontswap_map_get() is nothing more than a read of p->frontswap_map).
 
-diff --git a/drivers/clk/clk-highbank.c b/drivers/clk/clk-highbank.c
-index 52fecad..4f50c42 100644
---- a/drivers/clk/clk-highbank.c
-+++ b/drivers/clk/clk-highbank.c
-@@ -171,7 +171,8 @@ static int clk_pll_set_rate(struct clk_hw *hwclk, unsigned long rate,
- 
- 		writel(reg | HB_PLL_RESET, hbclk->reg);
- 		reg &= ~(HB_PLL_DIVF_MASK | HB_PLL_DIVQ_MASK);
--		reg |= (divf << HB_PLL_DIVF_SHIFT) | (divq << HB_PLL_DIVQ_SHIFT);
-+		reg |= (divf << HB_PLL_DIVF_SHIFT) |
-+			(divq << HB_PLL_DIVQ_SHIFT);
- 		writel(reg | HB_PLL_RESET, hbclk->reg);
- 		writel(reg, hbclk->reg);
- 
-@@ -182,8 +183,10 @@ static int clk_pll_set_rate(struct clk_hw *hwclk, unsigned long rate,
- 		reg |= HB_PLL_EXT_ENA;
- 		reg &= ~HB_PLL_EXT_BYPASS;
- 	} else {
-+		writel(reg | HB_PLL_EXT_BYPASS, hbclk->reg);
- 		reg &= ~HB_PLL_DIVQ_MASK;
- 		reg |= divq << HB_PLL_DIVQ_SHIFT;
-+		writel(reg | HB_PLL_EXT_BYPASS, hbclk->reg);
- 	}
- 	writel(reg, hbclk->reg);
- 
--- 
-1.7.11.7
+Your patch doesn't change this, but...  it is very unusual for any
+subsystem's ->init method to be called under a spinlock.  Because it is
+highly likely that such a method will wish to do things such as memory
+allocation.
+
+It is rare and unlikely for an ->init() method to *need* such external
+locking, because all the objects it is dealing with cannot be looked up
+by other threads because nothing has been registered anywhere yet.
+
+So either frontswap is doing something wrong here or there's some
+subtlety which escapes me.  If the former then we should try to get
+that ->init call to happen outside swap_lock.
+
+And if we can do that, perhaps we can fix the regrettable GFP_ATOMIC
+in zcache_new_pool().
 
