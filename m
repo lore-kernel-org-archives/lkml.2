@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab2J3C2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 22:28:11 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:38216 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233Ab2J3C2K (ORCPT
+	id S1753117Ab2J3C20 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 22:28:26 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:60911 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837Ab2J3C2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 22:28:10 -0400
-Date: Mon, 29 Oct 2012 19:29:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: George Zhang <georgezhang@vmware.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        pv-drivers@vmware.com
-Subject: Re: [PATCH 08/12] VMCI: resource object implementation.
-Message-ID: <20121030022905.GH1920@kroah.com>
-References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121030010453.17788.90295.stgit@promb-2n-dhcp175.eng.vmware.com>
+	Mon, 29 Oct 2012 22:28:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030010453.17788.90295.stgit@promb-2n-dhcp175.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121029215809.GA19851@kroah.com>
+References: <1351363525-17707-1-git-send-email-sj38.park@gmail.com> <20121029215809.GA19851@kroah.com>
+From: SeongJae Park <sj38.park@gmail.com>
+Date: Tue, 30 Oct 2012 11:28:03 +0900
+Message-ID: <CAEjAshonrDA6KVk3-_mgv_D+2mBN5h6hGqYB4+p4jNjhBWrgGg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] staging: csr: Remove CsrEventHandle
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 06:04:58PM -0700, George Zhang wrote:
-> +static struct vmci_resource *vmci_resource_lookup(struct vmci_handle handle)
-> +{
-> +	struct vmci_resource *r, *resource = NULL;
-> +	struct hlist_node *node;
-> +	unsigned int idx = vmci_resource_hash(handle);
-> +
-> +	BUG_ON(VMCI_HANDLE_EQUAL(handle, VMCI_INVALID_HANDLE));
+Sure, I will.
 
-You just crashed a machine, with no chance for recovery.  Not a good
-idea.  Never a good idea.  Customers just lost data, and now they are
-mad.  Make sure you at least print out your email address so they know
-who to blame :)
+Actually, I sent new patch already :)
 
-Seriously, never BUG() in a driver, warn, sure, but this just looks like
-a debugging assert().  Please remove all of these, they are sprinkled
-all over the driver code here, I'm only responding to one of them here.
-
-Even better yet, properly handle the error and keep on going, that's
-what the rest of the kernel does.  Or should :)
-
-thanks,
-
-greg k-h
+On Tue, Oct 30, 2012 at 6:58 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+> On Sun, Oct 28, 2012 at 03:45:24AM +0900, SeongJae Park wrote:
+> > No one use CsrEventHandle, No one call functions using it as parameter.
+> > So those are not need to be here.
+> >
+> > Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+> > ---
+> >  drivers/staging/csr/csr_framework_ext.h       |   61
+> > -------------------------
+> >  drivers/staging/csr/csr_framework_ext_types.h |    2 -
+> >  2 files changed, 63 deletions(-)
+>
+> Sorry, but someone already did this.  Look at the linux-next tree to see
+> the patch there that cleaned up part of this.  But, the second file you
+> changed here still applies, so can you redo this, and the 2/2 patch and
+> resend them?
+>
+> thanks,
+>
+> greg k-h
