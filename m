@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933364Ab2J3MLa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 08:11:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57387 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932741Ab2J3ML0 (ORCPT
+	id S933318Ab2J3MMf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 08:12:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41021 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932930Ab2J3MMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 08:11:26 -0400
-Date: Tue, 30 Oct 2012 12:11:23 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lrg@ti.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the sound-asoc tree
-Message-ID: <20121030121123.GN4511@opensource.wolfsonmicro.com>
-References: <20121029114848.cf0297e997cbfc9c2198fa5d@canb.auug.org.au>
- <20121029181534.GH4511@opensource.wolfsonmicro.com>
- <20121030074631.9d148cb69a06a47d3dc78e65@canb.auug.org.au>
+	Tue, 30 Oct 2012 08:12:33 -0400
+Date: Tue, 30 Oct 2012 05:11:46 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-0089fa9831f3752869143c7928adb94ac6353085@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1350743599-4805-12-git-send-email-jolsa@redhat.com>
+References: <1350743599-4805-12-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf record: Fix mmap error output condition
+Git-Commit-ID: 0089fa9831f3752869143c7928adb94ac6353085
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="20XocjIeMTCm4X0r"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20121030074631.9d148cb69a06a47d3dc78e65@canb.auug.org.au>
-X-Cookie: You will never know hunger.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 30 Oct 2012 05:11:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  0089fa9831f3752869143c7928adb94ac6353085
+Gitweb:     http://git.kernel.org/tip/0089fa9831f3752869143c7928adb94ac6353085
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Sat, 20 Oct 2012 16:33:19 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 29 Oct 2012 12:14:59 -0200
 
---20XocjIeMTCm4X0r
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+perf record: Fix mmap error output condition
 
-On Tue, Oct 30, 2012 at 07:46:31AM +1100, Stephen Rothwell wrote:
+The mmap_pages default value is not power of 2 (UINT_MAX).
 
-> Then you need to have a different branch being tested by Fenguang and
-> friends to what you have in linux-next.   The stuff that you put into
-> linux-next has to be at least build tested, so you should delay pushing
-> it up to your linux-next included branch until after that is done.
+Together with perf_evlist__mmap function returning error value different
+from EPERM, we get misleading error message: "--mmap_pages/-m value must
+be a power of two."
 
-Which is what I was doing, as I said I had thought I'd pushed up
-something different to what was actually there.
+Fixing this by adding extra check for UINT_MAX value for this error
+condition.
 
-> This case was particularly irritating because you were the developer of
-> the patch that was broken which indicates that you are not even testing
-> your own development work before pushing it out for others to work on top
-> of.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1350743599-4805-12-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-I don't treat my own patches any differently to any other patches I push
-out; in this case the issue was a mistaken fix for a merge issue cherry
-picking the code out of a working branch into the public branch. =20
-
-With a huge chunk of new device enablement like this it's just not
-possible to do anything except build testing on the branches in -next,
-there'll be at least some cross tree issues getting in the way of
-actually running anything.  At that point all the issues with time spent
-doing build tests apply; as I keep saying I will tend to do some if I
-have time but it can fall by the wayside and they're not the tests
-anyone else does.
-
---20XocjIeMTCm4X0r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQj8PYAAoJELSic+t+oim9h/oP+wTh/NVdBNYBSiT9/XiYUTyb
-pnX2mbJ7nKGVj2dsrLmFI2UZ1V47ZDmW+lAg1RFggpij/Kg4NR3uhHk1Wc8mqcdZ
-QlE4219BNKAOUVBRNqk0O+FGKAnJJ0DtA+G4yDT5SLd3Fciki5Ctj8eakPl/jmVA
-+931vsQ4joTszrc7VDAAZNndE/ZQloyBZAJC38jaok6XMAZv3HUmy9FUV7+ba2ZJ
-Y3djRj9ydpGzE0O/j/7D87BeM7NUfa4++waN/GlywqLKvBWpcLThDGW/uE8P2+Se
-qTpg5VQNaphE8EWfGg+OotP80MXOcqU+FwflcbeyZVq4dL9Hv142daO4qiHR+zTw
-oys/ocheXT2++N3jn8P8qnDjM2tWrk3TUWc3WQySVNM/MPgvNHh/3o7JkWT4MXfe
-XnqSvv4wFRuTYteZA7mDG3LEdUfOpGqd3lpdVX0tXLAyJ5mpomfE+HmBAyEdr+Km
-1MQCByZkI9nrC21r/BM9MBz9kwkyubKdU6tP8pffe88i4uZw3ChMQVtz2iBVDzxL
-Cp35y9TFpDHorWsl7Udp2KCtYFCOP548TM3UofbZ7s25aww9Yf1F91zOC/m44xl+
-kUhmnlFyCWmEFbDXFJO1BdVspRnTlwUQJMAbxhrEQn762LIhmzzoOpTQ+Hd0XBWR
-qczrb+3z/TdB8upFIFNy
-=lp3z
------END PGP SIGNATURE-----
-
---20XocjIeMTCm4X0r--
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 53c9892..5783c32 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -363,7 +363,8 @@ try_again:
+ 			       "or try again with a smaller value of -m/--mmap_pages.\n"
+ 			       "(current value: %d)\n", opts->mmap_pages);
+ 			rc = -errno;
+-		} else if (!is_power_of_2(opts->mmap_pages)) {
++		} else if (!is_power_of_2(opts->mmap_pages) &&
++			   (opts->mmap_pages != UINT_MAX)) {
+ 			pr_err("--mmap_pages/-m value must be a power of two.");
+ 			rc = -EINVAL;
+ 		} else {
