@@ -1,38 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934703Ab2J3Vdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:33:44 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60361 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164Ab2J3Vdn (ORCPT
+	id S934779Ab2J3VnH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:43:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60476 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757050Ab2J3VnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:33:43 -0400
-Date: Tue, 30 Oct 2012 21:38:50 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Lasse =?ISO-8859-1?B?S+Rya2vkaW5lbg==?= <ljkarkk2@cc.hut.fi>,
-        linux-kernel@vger.kernel.org
-Subject: Re: urandom is too slow
-Message-ID: <20121030213850.7b987ddf@pyramind.ukuu.org.uk>
-In-Reply-To: <20121030185403.GA5044@thunk.org>
-References: <508FEA5A.7010406@cc.hut.fi>
-	<20121030185403.GA5044@thunk.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Oct 2012 17:43:03 -0400
+Date: Tue, 30 Oct 2012 14:42:57 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive hashtable
+Message-ID: <20121030214257.GB2681@htj.dyndns.org>
+References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If you just want to wipe a disk, you shouldn't be using /dev/urandom for that
-> purpose.
+Hello,
 
-If you want to wipe a disk issue a security erase command via hdparm.
-There is no guarantee that simply writing crap all over it will re-use
-the same sectors of physical media, and for a flash drive it causes
-massive wear and takes forever while a security erase is normally near
-immediate.
+Just some nitpicks.
 
-Alan
+On Tue, Oct 30, 2012 at 02:45:57PM -0400, Sasha Levin wrote:
+> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
+> +#define hash_min(val, bits)							\
+> +({										\
+> +	sizeof(val) <= 4 ?							\
+> +	hash_32(val, bits) :							\
+> +	hash_long(val, bits);							\
+> +})
+
+Doesn't the above fit in 80 column.  Why is it broken into multiple
+lines?  Also, you probably want () around at least @val.  In general,
+it's a good idea to add () around any macro argument to avoid nasty
+surprises.
+
+Looks good to me otherwise.
+
+ Reviewed-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
