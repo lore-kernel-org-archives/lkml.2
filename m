@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933980Ab2J3QOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:14:09 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:45131 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933852Ab2J3QOI convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Tue, 30 Oct 2012 12:14:08 -0400
-Message-Id: <50900B1D02000078000A586C@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 30 Oct 2012 16:15:09 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Olaf Hering" <olaf@aepfle.de>
-Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "xen-devel" <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH v4] xen PVonHVM: move shared_info to
- reserved memory area
-References: <1351612057-21822-1-git-send-email-olaf@aepfle.de>
-In-Reply-To: <1351612057-21822-1-git-send-email-olaf@aepfle.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S933987Ab2J3QOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:14:39 -0400
+Received: from fieldses.org ([174.143.236.118]:38938 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753423Ab2J3QOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 12:14:37 -0400
+Date: Tue, 30 Oct 2012 12:14:29 -0400
+To: Jeff Layton <jlayton@redhat.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        michael.brantley@deshaw.com, hch@infradead.org, miklos@szeredi.hu,
+        pstaubach@exagrid.com
+Subject: Re: [PATCH v8 11/32] vfs: make do_unlinkat retry on ESTALE errors
+Message-ID: <20121030161429.GD24618@fieldses.org>
+References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
+ <1351341219-17837-12-git-send-email-jlayton@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1351341219-17837-12-git-send-email-jlayton@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.10.12 at 16:47, Olaf Hering <olaf@aepfle.de> wrote:
-> This is a respin of 00e37bdb0113a98408de42db85be002f21dbffd3
-> ("xen PVonHVM: move shared_info to MMIO before kexec").
+On Sat, Oct 27, 2012 at 08:33:18AM -0400, Jeff Layton wrote:
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/namei.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
 > 
-> Currently kexec in a PVonHVM guest fails with a triple fault because the
-> new kernel overwrites the shared info page. The exact failure depends on
-> the size of the kernel image. This patch moves the pfn from RAM into an
-> E820 reserved memory area.
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 7c9bb50..467b9f1 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -3446,9 +3446,13 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+>  	struct filename *name;
+>  	struct dentry *dentry;
+>  	struct nameidata nd;
+> -	struct inode *inode = NULL;
+> +	struct inode *inode;
+> +	unsigned int try = 0;
+> +	unsigned int lookup_flags = LOOKUP_PARENT;
+>  
+> -	name = user_path_parent(dfd, pathname, &nd, 0);
+> +retry:
+> +	inode = NULL;
 
-One thing that occurred to me only now: How is this relocation
-of the shared info going to help with the vCPU info placement?
-You can't undo this, nor can you re-register these areas to be
-put in a different location (of course, both of there could be
-implemented in the hypervisor). Yet the hypervisor writes to
-some of these areas' fields as much as it does write to the
-shared info structure itself.
+So, you fail after "inode" was set (say vfs_unlink returned an error)
+the first time, then before "inode" was set (lookup_hash returns an
+error), and you end up incorrectly doing another iput() the second time
+through if you don't reset inode here?
 
-Jan
+(I think I made the same mistake in another patch, actually....)
 
+--b.
+
+> +	name = user_path_parent(dfd, pathname, &nd, try);
+>  	if (IS_ERR(name))
+>  		return PTR_ERR(name);
+>  
+> @@ -3486,6 +3490,10 @@ exit2:
+>  exit1:
+>  	path_put(&nd.path);
+>  	putname(name);
+> +	if (retry_estale(error, try++)) {
+> +		lookup_flags |= LOOKUP_REVAL;
+> +		goto retry;
+> +	}
+>  	return error;
+>  
+>  slashes:
+> -- 
+> 1.7.11.7
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
