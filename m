@@ -1,168 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab2J3HHx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 03:07:53 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6501 "EHLO
+	id S1755669Ab2J3HHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 03:07:51 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6502 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755262Ab2J3HHO (ORCPT
+	with ESMTP id S1755320Ab2J3HHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Oct 2012 03:07:14 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 30 Oct 2012 00:07:06 -0700
+	by hqnvupgp07.nvidia.com on Mon, 29 Oct 2012 23:54:29 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>
 CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3 1/4] ARM: tegra: dts: add slink controller dt entry
-Date: Tue, 30 Oct 2012 12:35:23 +0530
-Message-ID: <1351580726-17350-2-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V3 0/4] ARM: tegra: Enable SLINK controller driver
+Date: Tue, 30 Oct 2012 12:35:22 +0530
+Message-ID: <1351580726-17350-1-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1351580726-17350-1-git-send-email-ldewangan@nvidia.com>
-References: <1351580726-17350-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add slink controller details in the dts file of
-Tegra20 and Tegra30.
+This series modify the dts file to add the slink addresses,
+make AUXDATA in board dt files, enable slink4 for tegra30-cardhu and 
+enable slink controller defconfig.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
--rename the dma request prop to nvidia,dma-request-selector.
+Changes from V1: 
+- Remove changes from clock tables.
+- Make the dma req dt property name to nvidia,dma-request-selector.
+- change the spi max frequency prop to spi-max-frequency.
 
 Changes from V2:
-- Make node name as spi@.
+- make node name to spi.
+- get rid of iomap.h.
 
- arch/arm/boot/dts/tegra20.dtsi |   41 +++++++++++++++++++++++++++
- arch/arm/boot/dts/tegra30.dtsi |   60 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 101 insertions(+), 0 deletions(-)
+Laxman Dewangan (4):
+  ARM: tegra: dts: add slink controller dt entry
+  ARM: tegra: Add OF_DEV_AUXDATA for SLINK driver in board dt
+  ARM: tegra: dts: cardhu: enable SLINK4
+  ARM: tegra: config: enable spi driver for Tegra SLINK controller
 
-diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
-index 6934bca..ecd3b4f 100644
---- a/arch/arm/boot/dts/tegra20.dtsi
-+++ b/arch/arm/boot/dts/tegra20.dtsi
-@@ -186,6 +186,47 @@
- 		status = "disabled";
- 	};
- 
-+	spi@7000d400 {
-+
-+		compatible = "nvidia,tegra20-slink";
-+		reg = <0x7000d400 0x200>;
-+		interrupts = <0 59 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 15>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi@7000d600 {
-+		compatible = "nvidia,tegra20-slink";
-+		reg = <0x7000d600 0x200>;
-+		interrupts = <0 82 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 16>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi@7000d800 {
-+		compatible = "nvidia,tegra20-slink";
-+		reg = <0x7000d480 0x200>;
-+		interrupts = <0 83 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 17>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi@7000da00 {
-+		compatible = "nvidia,tegra20-slink";
-+		reg = <0x7000da00 0x200>;
-+		interrupts = <0 93 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 18>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
- 	pmc {
- 		compatible = "nvidia,tegra20-pmc";
- 		reg = <0x7000e400 0x400>;
-diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
-index 81f5df4..ab6cfb0 100644
---- a/arch/arm/boot/dts/tegra30.dtsi
-+++ b/arch/arm/boot/dts/tegra30.dtsi
-@@ -191,6 +191,66 @@
- 		status = "disabled";
- 	};
- 
-+	spi@7000d400 {
-+		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
-+		reg = <0x7000d400 0x200>;
-+		interrupts = <0 59 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 15>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi@7000d600 {
-+		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
-+		reg = <0x7000d600 0x200>;
-+		interrupts = <0 82 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 16>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi@7000d800 {
-+		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
-+		reg = <0x7000d480 0x200>;
-+		interrupts = <0 83 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 17>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi@7000da00 {
-+		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
-+		reg = <0x7000da00 0x200>;
-+		interrupts = <0 93 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 18>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi@7000dc00 {
-+		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
-+		reg = <0x7000dc00 0x200>;
-+		interrupts = <0 94 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 27>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
-+	spi@7000de00 {
-+		compatible = "nvidia,tegra30-slink", "nvidia,tegra20-slink";
-+		reg = <0x7000de00 0x200>;
-+		interrupts = <0 79 0x04>;
-+		nvidia,dma-request-selector = <&apbdma 28>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
- 	pmc {
- 		compatible = "nvidia,tegra20-pmc", "nvidia,tegra30-pmc";
- 		reg = <0x7000e400 0x400>;
--- 
-1.7.1.1
+ arch/arm/boot/dts/tegra20.dtsi         |   41 ++++++++++++++++++++++
+ arch/arm/boot/dts/tegra30-cardhu.dtsi  |    5 +++
+ arch/arm/boot/dts/tegra30.dtsi         |   60 ++++++++++++++++++++++++++++++++
+ arch/arm/configs/tegra_defconfig       |    2 +-
+ arch/arm/mach-tegra/board-dt-tegra20.c |    8 ++++
+ arch/arm/mach-tegra/board-dt-tegra30.c |   12 ++++++
+ 6 files changed, 127 insertions(+), 1 deletions(-)
 
