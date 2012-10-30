@@ -1,157 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab2J3Faj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 01:30:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53525 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab2J3Fah (ORCPT
+	id S1754782Ab2J3Fa6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 01:30:58 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:8329 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754658Ab2J3Fa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 01:30:37 -0400
-Message-ID: <508F6619.5000109@ti.com>
-Date: Tue, 30 Oct 2012 11:01:05 +0530
-From: Sourav <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <dmitry.torokhov@gmail.com>, <linux-input@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <b-cousson@ti.com>,
-        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv5] Input: keypad: Add smsc ece1099 keypad driver
-References: <1351507129-10229-1-git-send-email-sourav.poddar@ti.com> <20121029162045.GK27566@arwen.pp.htv.fi>
-In-Reply-To: <20121029162045.GK27566@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Oct 2012 01:30:56 -0400
+X-AuditID: cbfee61a-b7fa66d0000004cf-b7-508f660fc52c
+From: Jonghwan Choi <jhbird.choi@samsung.com>
+To: "'open list'" <linux-kernel@vger.kernel.org>
+Cc: "'Amit Daniel Kachhap'" <amit.kachhap@linaro.org>,
+        "'Guenter Roeck'" <guenter.roeck@ericsson.com>,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>
+Subject: [PATCH 1/2] thermal: exynos: Fix wrong bit to control tmu core
+Date: Tue, 30 Oct 2012 14:30:54 +0900
+Message-id: <000001cdb65f$bbb93d40$332bb7c0$%choi@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac22X7ZVF4M1NdAyQSSqkck9CTHe3Q==
+Content-language: ko
+x-cr-hashedpuzzle: Ahls AvG4 CUBt HBuj J0N/ M+c2 ZMVg bKBM cfV7 ekFm fM0G fbG8
+ lY6k qni6 tT4Q
+ umX5;4;YQBtAGkAdAAuAGsAYQBjAGgAaABhAHAAQABsAGkAbgBhAHIAbwAuAG8AcgBnADsAZwB1AGUAbgB0AGUAcgAuAHIAbwBlAGMAawBAAGUAcgBpAGMAcwBzAG8AbgAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHMAYQBjAGgAaQBuAC4AawBhAG0AYQB0AEAAbABpAG4AYQByAG8ALgBvAHIAZwA=;Sosha1_v1;7;{02AAD814-2906-4C0B-8F17-43E393DC0B44};agBoAGIAaQByAGQALgBjAGgAbwBpAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Tue,
+ 30 Oct 2012 05:30:46
+ GMT;WwBQAEEAVABDAEgAIAAxAC8AMgBdACAAdABoAGUAcgBtAGEAbAA6ACAAZQB4AHkAbgBvAHMAOgAgAEYAaQB4ACAAdwByAG8AbgBnACAAYgBpAHQAIAB0AG8AIABjAG8AbgB0AHIAbwBsACAAdABtAHUAIABjAG8AcgBlAA==
+x-cr-puzzleid: {02AAD814-2906-4C0B-8F17-43E393DC0B44}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jQV3+tP4AgwubFS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGp0XfGAtus1W0v73J3MC4jLWLkYNDQsBE4vxx8S5GTiBTTOLC
+	vfVsXYxcHEIC0xkljq6ewQrhzGOS2LD+FzNIFZuArsSx9VvAmkUE9CROnogHqWEW6GeUuPfm
+	LxNIjbCAu8S7iZdYQWwWAVWJ91N2s4PYvAJ2Eo+2nWKFsAUlfky+xwJiMwtoSazfeZwJwpaX
+	2LzmLTPEceoSj/7qgoRBVv1d1ARVIiKx78U7RpC9EgJ7WCWWPTjNDvGBqcS0ReeYJzAKzUKy
+	YhaSFbOQrJiFZNYCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMGB/ExqB+PKBotDjAIc
+	jEo8vBvW9AUIsSaWFVfmHmKU4GBWEuHN9+4PEOJNSaysSi3Kjy8qzUktPsQozcGiJM7b7JES
+	ICSQnliSmp2aWpBaBJNl4uCUamA0qfkun/Oujz98qsRae53II192/69hFmJVMlgd2zx1cvb9
+	D5W+9vYsf19ejtxmt+PKgYlFCvcdHEKlGALmMm974PFP/3SzOKfM6e3ufgJKgbP6b7V8OOWo
+	EnQ4uLHgK19Ou+X1Ey3ujVIzl+R+5b96P+ztRIOakEb+5jXpApc5Y0/0ZAhzKSuxFGckGmox
+	FxUnAgDeaMboYAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
-On Monday 29 October 2012 09:50 PM, Felipe Balbi wrote:
-> Hi,
->
-> On Mon, Oct 29, 2012 at 04:08:49PM +0530, Sourav Poddar wrote:
->> +static int __devinit
->> +smsc_probe(struct platform_device *pdev)
->> +{
->> +	struct device *dev = &pdev->dev;
->> +	struct input_dev *input;
->> +	struct smsc_keypad *kp;
->> +	int ret = 0;
->> +	int i, max_keys, row_shift;
->> +	int irq;
->> +	int addr;
->> +
->> +	kp = devm_kzalloc(dev, sizeof(*kp), GFP_KERNEL);
->> +
->> +	input = devm_input_allocate_device(dev);
->> +	if (!kp || !input)
->> +		ret = -ENOMEM;
->> +
->> +	ret = smsc_keypad_parse_dt(dev, kp);
->> +	if (ret)
->> +		return ret;
->> +
->> +	/* Get the debug Device */
->> +	kp->input = input;
->> +	kp->irq = platform_get_irq(pdev, 0);
->> +	kp->dev = dev;
->> +
->> +	/* setup input device */
->> +	 __set_bit(EV_KEY, input->evbit);
->> +
->> +	/* Enable auto repeat feature of Linux input subsystem */
->> +	if (!kp->no_autorepeat)
->> +		__set_bit(EV_REP, input->evbit);
->> +
->> +	input_set_capability(input, EV_MSC, MSC_SCAN);
->> +	input->name             = "SMSC Keypad";
->> +	input->phys             = "smsc_keypad/input0";
->> +	input->dev.parent       = &pdev->dev;
->> +	input->id.bustype       = BUS_HOST;
->> +	input->id.vendor        = 0x0001;
->> +	input->id.product       = 0x0001;
->> +	input->id.version       = 0x0003;
->> +
->> +	input->open = smsc_keypad_open;
->> +	input->close = smsc_keypad_close;
->> +	input_set_drvdata(input, kp);
->> +
->> +	/* Mask all GPIO interrupts (0x37-0x3B) */
->> +	for (addr = SMSC_GPIO_INT_MASK_START;
->> +			addr < SMSC_GPIO_INT_MASK_START + 4; addr++)
->> +		smsc_write(dev, addr, 0);
->> +
->> +	/* Set all outputs high (0x05-0x09) */
->> +	for (addr = SMSC_GPIO_DATA_OUT_START;
->> +			addr < SMSC_GPIO_DATA_OUT_START + 4; addr++)
->> +		smsc_write(dev, addr, 0xff);
->> +
->> +	/* Clear all GPIO interrupts (0x32-0x36) */
->> +	for (addr = SMSC_GPIO_INT_STAT_START;
->> +			addr < SMSC_GPIO_INT_STAT_START + 4; addr++)
->> +		smsc_write(dev, addr, 0xff);
->> +
->> +	/* Configure the smsc pins as Keyboard scan Input */
->> +	for (i = 0; i < kp->rows; i++) {
->> +		addr = 0x12 + i;
->> +		smsc_write(dev, addr, SMSC_KP_KSI);
->> +	}
->> +
->> +	/* Configure the smsc pins as Keyboard scan output */
->> +	for (i = 0; i < kp->cols; i++) {
->> +		addr = 0x1a + i;
->> +		smsc_write(dev, addr, SMSC_KP_KSO);
->> +	}
->> +
->> +	smsc_write(dev, SMSC_KP_INT_STAT, SMSC_KP_SET_HIGH);
->> +	smsc_write(dev, SMSC_WKUP_CTRL, SMSC_KP_SET_LOW_PWR);
->> +	smsc_write(dev, SMSC_KP_OUT, SMSC_KSO_ALL_LOW);
->> +
->> +	row_shift = get_count_order(kp->cols);
->> +	max_keys = kp->rows << row_shift;
->> +
->> +	kp->row_shift = row_shift;
->> +	kp->keymap = devm_kzalloc(dev, max_keys * sizeof(kp->keymap[0]),
->> +					GFP_KERNEL);
->> +	if (!kp->keymap) {
->> +		dev_err(dev, "Not enough memory for keymap\n");
->> +		return -ENOMEM;
->> +	}
->> +
->> +	ret = matrix_keypad_build_keymap(NULL, NULL, kp->rows,
->> +			kp->cols, kp->keymap, input);
->> +	if (ret) {
->> +		dev_err(dev, "failed to build keymap\n");
->> +		return ret;
->> +	}
->> +
->> +	/*
->> +	* This ISR will always execute in kernel thread context because of
->> +	* the need to access the SMSC over the I2C bus.
->> +	*/
->> +	ret = devm_request_threaded_irq(dev, kp->irq, NULL, do_kp_irq,
->> +			IRQF_TRIGGER_FALLING | IRQF_ONESHOT, pdev->name, kp);
->> +	if (ret) {
->> +		dev_dbg(dev, "request_irq failed for irq no=%d\n",
->> +			irq);
->> +		return ret;
->> +	}
->> +
->> +	ret = input_register_device(input);
->> +	if (ret) {
->> +		dev_err(kp->dev,
->> +			"Unable to register twl4030 keypad device\n");
->> +		return ret;
->> +	}
->> +
->> +	return 0;
->> +}
->> +
->> +static int __devexit smsc_remove(struct platform_device *pdev)
->> +{
-> shouldn't you unregister the input device here ??
->
-As Dmitry already pointed out, I was also thinking on the same line that 
-using devm_* variants
-will automatically take care of unregistering your device.
+[0]bit is used to enable/disable tmu core. [1] bit is a reserved bit.
+
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+---
+ drivers/thermal/exynos_thermal.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/thermal/exynos_thermal.c
+b/drivers/thermal/exynos_thermal.c
+index fd03e85..6ce6667 100644
+--- a/drivers/thermal/exynos_thermal.c
++++ b/drivers/thermal/exynos_thermal.c
+@@ -53,8 +53,8 @@
+ #define EXYNOS_TMU_TRIM_TEMP_MASK      0xff
+ #define EXYNOS_TMU_GAIN_SHIFT          8
+ #define EXYNOS_TMU_REF_VOLTAGE_SHIFT   24
+-#define EXYNOS_TMU_CORE_ON             3
+-#define EXYNOS_TMU_CORE_OFF            2
++#define EXYNOS_TMU_CORE_ON             1
++#define EXYNOS_TMU_CORE_OFF            0
+ #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET     50
+
+ /* Exynos4210 specific registers */
+--
+1.7.4.1
+
