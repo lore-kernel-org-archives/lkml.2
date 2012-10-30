@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797Ab2J3Wxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 18:53:41 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47060 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738Ab2J3Wxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 18:53:39 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Date: Tue, 30 Oct 2012 23:57:41 +0100
-Message-ID: <2288906.HJczx1g3gj@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CACRpkdac=ztY0vXQ8Mu6H8fiAO4aFSSF-A6O1Q==zKOKEsJegw@mail.gmail.com>
-References: <20121025205901.GA3827@sirena.org.uk> <20121030183704.GX4511@opensource.wolfsonmicro.com> <CACRpkdac=ztY0vXQ8Mu6H8fiAO4aFSSF-A6O1Q==zKOKEsJegw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1759209Ab2J3W5G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 18:57:06 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:47146 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758339Ab2J3W5D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 18:57:03 -0400
+Date: Tue, 30 Oct 2012 23:56:59 +0100
+From: Franke <ttfranke@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Crashes in extent_io.c after "btrfs bad mapping eb" notice
+Message-ID: <20121030235659.6fc7afa4@googlemail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 30, 2012 10:51:11 PM Linus Walleij wrote:
-> On Tue, Oct 30, 2012 at 7:37 PM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
-> 
-> > More seriously the amount of time we seem to have been spending recently
-> > on changes which end up requiring us to go through essentially every
-> > driver and add code to them (often several times) doesn't seem like
-> > we're doing a good job here.
-> 
-> If this is your main concern you should be made aware that there
-> are people out there planning to supplant the existing DT probe paths
-> that are now being added to each and every ARM-related driver
-> with an ACPI probe path as ARM servers come into the picture.
+Hello,
 
-That's correct.
+I have been having some crashes like this. Since I upgraded to 3.6.4 they have become common. The crashes happen pretty randomly during normal system usage. After the syslog messages the system stays semi usable for a minute, but when I run any new program it hangs. I had to downgrade to 3.6.2 to get my system usable again.
 
-> > pinctrl is really noticable because it's
-> > new but it's not the only thing.  As a subsystem maintainer this code
-> > just makes me want to add new subsystem features to pull the code out of
-> > drivers but obviously that's not something that should be being done at
-> > the subsystem level.
-> 
-> We did manage to drag the power/voltage domain per se out
-> of the AMBA bus, and recommend that people (like us) do that
-> business using the power domains.
-> 
-> I think most people (including OMAP) have bought
-> into the concept of using the runtime PM framework and power
-> domains to control the power domain switches.
-> 
-> It's this wider concept of using the loose concept "PM resource
-> domains" to control also clocks and pins that is at stake, and so
-> far the runtime PM core people (Rafael and Magnus) has not said
-> much so I think we need some kind of indication from them as to
-> what is to happen, long-term, with drivers handling their own clocks
-> and pins. Should it be centralized or not? If it's to be centralized it
-> needs to become a large piece of infrastructure refactoring and
-> needs the attention of Linaro and the like to happen.
+Is there any way I can help find the cause of those crashes? 
 
-Well, I personally think it should be centralized somehow.  I'm not quite
-sure how to achieve that, though.
+thanks,
+Tobias Franke
 
-Thanks,
-Rafael
+logs here:
+https://www.dropbox.com/s/1f6gh4k0zl2t5zq/btrfs_hangs_3-4-6.log
 
+It starts like this:
+Oct 30 22:42:36 localhost kernel: btrfs bad mapping eb start 982689189888 len 4096, wanted 4424 17
+Oct 30 22:42:36 localhost kernel: ------------[ cut here ]------------
+Oct 30 22:42:36 localhost kernel: WARNING: at fs/btrfs/extent_io.c:4661 map_private_extent_buffer+0x83/0xc9()
+Oct 30 22:42:36 localhost kernel: Hardware name: A780L3L
+Oct 30 22:42:36 localhost kernel: Modules linked in: hwmon_vid snd_hda_codec_hdmi nvidia(PO) snd_hda_codec_realtek snd_hda_intel snd_hda_codec i2c_piix4 k10temp
+Oct 30 22:42:36 localhost kernel: Pid: 7143, comm: btrfs-endio-wri Tainted: P           O 3.6.4-gentoo #1
+Oct 30 22:42:36 localhost kernel: Call Trace:
+Oct 30 22:42:36 localhost kernel: [<ffffffff81030181>] ? warn_slowpath_common+0x78/0x8c
+Oct 30 22:42:36 localhost kernel: [<ffffffff8127dc2e>] ? map_private_extent_buffer+0x83/0xc9
+Oct 30 22:42:36 localhost kernel: [<ffffffff81249353>] ? generic_bin_search.clone.50+0xaa/0x130
+Oct 30 22:42:36 localhost kernel: [<ffffffff8124c11a>] ? btrfs_search_old_slot+0x333/0x6ad
+Oct 30 22:42:36 localhost kernel: [<ffffffff812a737d>] ? __resolve_indirect_refs+0x147/0x4b1
+Oct 30 22:42:36 localhost kernel: [<ffffffff812a70bf>] ? __add_keyed_refs.clone.6+0x9e/0x215
+Oct 30 22:42:36 localhost kernel: [<ffffffff812a6ba6>] ? __add_prelim_ref+0x3a/0xb9
+Oct 30 22:42:36 localhost kernel: [<ffffffff812a7d54>] ? find_parent_nodes+0x553/0x7ca
+Oct 30 22:42:36 localhost kernel: [<ffffffff812458b8>] ? leaf_space_used+0xaf/0xd7
+Oct 30 22:42:36 localhost kernel: [<ffffffff812a8044>] ? btrfs_find_all_roots+0x79/0xd4
+Oct 30 22:42:36 localhost kernel: [<ffffffff812aa1d0>] ? btrfs_qgroup_account_ref+0xd2/0x4a8
+Oct 30 22:42:36 localhost kernel: [<ffffffff81278482>] ? alloc_extent_state+0x58/0x9d
+Oct 30 22:42:36 localhost kernel: [<ffffffff810e8245>] ? kmem_cache_free+0x12/0xbd
+Oct 30 22:42:36 localhost kernel: [<ffffffff81253c93>] ? btrfs_delayed_refs_qgroup_accounting+0x9e/0xca
+Oct 30 22:42:36 localhost kernel: [<ffffffff81266723>] ? __btrfs_end_transaction+0x4e/0x293
+Oct 30 22:42:36 localhost kernel: [<ffffffff8126bb26>] ? btrfs_finish_ordered_io+0x2e1/0x332
+Oct 30 22:42:36 localhost kernel: [<ffffffff8103cfae>] ? run_timer_softirq+0x2c2/0x2c2
+Oct 30 22:42:36 localhost kernel: [<ffffffff81286398>] ? worker_loop+0x174/0x4c0
+Oct 30 22:42:36 localhost kernel: [<ffffffff81286224>] ? btrfs_queue_worker+0x261/0x261
+Oct 30 22:42:36 localhost kernel: [<ffffffff81286224>] ? btrfs_queue_worker+0x261/0x261
+Oct 30 22:42:36 localhost kernel: [<ffffffff8104b293>] ? kthread+0x81/0x89
+Oct 30 22:42:36 localhost kernel: [<ffffffff815de774>] ? kernel_thread_helper+0x4/0x10
+Oct 30 22:42:36 localhost kernel: [<ffffffff8104b212>] ? kthread_freezable_should_stop+0x52/0x52
+Oct 30 22:42:36 localhost kernel: [<ffffffff815de770>] ? gs_change+0xb/0xb
+Oct 30 22:42:36 localhost kernel: ---[ end trace cb2d15ce8c2d83ec ]---
+Oct 30 22:42:36 localhost kernel: ------------[ cut here ]------------
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
