@@ -1,131 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760582Ab2J3Smx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:42:53 -0400
+	id S933942Ab2J3SnI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:43:08 -0400
 Received: from mail-ie0-f174.google.com ([209.85.223.174]:42030 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760254Ab2J3Smv (ORCPT
+	with ESMTP id S932654Ab2J3SnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:42:51 -0400
+	Tue, 30 Oct 2012 14:43:05 -0400
 From: Behan Webster <behanw@converseincode.com>
 To: davem@davemloft.net
 Cc: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH 1/2] Helper macros used for replacing the use of VLAIS
-Date: Tue, 30 Oct 2012 14:42:53 -0400
-Message-Id: <1351622574-18421-2-git-send-email-behanw@converseincode.com>
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        pageexec@freemail.hu, Behan Webster <behanw@converseincode.com>
+Subject: [PATCH 2/2] Remove VLAIS usage from netfilter
+Date: Tue, 30 Oct 2012 14:42:54 -0400
+Message-Id: <1351622574-18421-3-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351622574-18421-1-git-send-email-behanw@converseincode.com>
 References: <1351622574-18421-1-git-send-email-behanw@converseincode.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jan-Simon Möller <dl9pf@gmx.de>
+
 The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
 precludes the use of compilers which don't implement VLAIS (for instance the
-Clang compiler). This new header file contains macros which can be used to
-calculate the size and offset of variables in an allocated buffer of memory
-taking into account alignment issues.
+Clang compiler). This patch instead calculates offsets into the kmalloc-ed
+memory buffer using macros from valign.h.
 
+Patch from series at
+http://lists.cs.uiuc.edu/pipermail/llvm-commits/Week-of-Mon-20120507/142707.html
+by PaX Team.
+
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Cc: pageexec@freemail.hu
+[Modified to use macros from valign.h]
 Signed-off-by: Behan Webster <behanw@converseincode.com>
 ---
- include/linux/valign.h |   87 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 87 insertions(+)
- create mode 100644 include/linux/valign.h
+ net/netfilter/xt_repldata.h |   40 ++++++++++++++++++++++++----------------
+ 1 file changed, 24 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/valign.h b/include/linux/valign.h
-new file mode 100644
-index 0000000..b39381b
---- /dev/null
-+++ b/include/linux/valign.h
-@@ -0,0 +1,87 @@
-+/*
-+ * Variable alignment macros used to break up a larger chunk of memory into
-+ * smaller variables. Meant to be used to replace the use of Variable Length
-+ * Arrays In Structures (VLAIS)
-+ *
-+ *  Copyright (C) 2012 Behan Webster <behanw@conversincode.com>
-+ */
+diff --git a/net/netfilter/xt_repldata.h b/net/netfilter/xt_repldata.h
+index 6efe4e5..d2b4232 100644
+--- a/net/netfilter/xt_repldata.h
++++ b/net/netfilter/xt_repldata.h
+@@ -5,31 +5,39 @@
+  * they serve as the hanging-off data accessed through repl.data[].
+  */
+ 
++#include <linux/valign.h>
 +
-+#ifndef _VALIGN_H_
-+#define _VALIGN_H_
-+
-+/**
-+ * truncalign() - Align a memory address by truncation
-+ * @num:	Address or size to align
-+ * @padwidth:	Number of byte upon which to align
-+ *
-+ * Truncate an address or size to a particular memory alignment.
-+ * Used by truncalign().
-+ */
-+#define truncalign(num, padwidth) ((long)(num) & ~((padwidth)-1))
-+
-+/**
-+ * padalign() - Align a memory address by padding
-+ * @num:	Address or size to align
-+ * @padwidth:	Number of byte upon which to align
-+ *
-+ * Pad out an address or size to a particular memory alignment
-+ * Used by paddedsize() and paddedstart().
-+ */
-+#define padalign(num, padwidth) \
-+	truncalign((long)(num) + ((padwidth)-1), padwidth)
-+
-+/**
-+ * paddedsize() - Calculate the size of an chunk of aligned memory
-+ * @offset:	Unaligned offset to the start of the chunk size being calculated
-+ * @num:	The number of variables in the array of "type" (can be 1)
-+ * @type:	The type of variables in the array
-+ * @nexttype:	The type of the next variable in the large piece of memory
-+ *
-+ * Calculate the size that a variable (or array) will take as a part of a
-+ * larger piece of memory.  Takes into account a potentially unaligned offset
-+ * into the larger piece of allocated memory, the alignment of the variable
-+ * type, and the alignement of the type of the variable to be used after that.
-+ *
-+ * Example: size_t l = paddedsize(1, 2, short, int);
-+ *
-+ * The example above would give you a padded size of 6 bytes: 2x 16-bit shorts,
-+ * starting at 2 bytes into the buffer (the offset of 1 byte being padded out
-+ * to 2 bytes) followed by 2 bytes of padding so that the next type (a 32-bit
-+ * int) would be 32-bit aligned. looking like this:
-+ *
-+ *   0: O.SS SS.. iiii
-+ *        \-----/ <-- 2 shorts + 2 bytes of padding = size of 6 bytes
-+ *
-+ * O = The offset
-+ * . = Padding bytes
-+ * S = 2 shorts
-+ * i = int which will theoretically be next
-+ */
-+#define paddedsize(offset, num, type, nexttype) (padalign((offset) \
-+	+ (num) * sizeof(type), __alignof__(nexttype)) - (offset))
-+
-+/**
-+ * paddedstart() - Calculate the start of a chunk of aligned memory
-+ * @ptr:	Pointer from which to calculate the start of the chunk
-+ * @offset:	Offset from the ptr to the start of the chunk being calculated
-+ * @type:	The type of variable in the chunk of memory
-+ *
-+ * Calculate the start address of a variable based on the offset from an
-+ * address, aligned based on the type of the variable specified.
-+ *
-+ * Example: char *data = kmalloc(size, GFP_KERNEL);
-+ *          long *var = paddedstart(data, 12, long);
-+ *
-+ * The example above on a 64-bit machine would return the equivalent of
-+ * &buffer[16] since a long needs to be 8 byte aligned.
-+ *
-+ *   0: OOOO OOOO OOOO .... LLLL LLLL
-+ *                          ^ <-- The start address of the long
-+ * O = The offset
-+ * . = Padding bytes
-+ * L = The long
-+ */
-+#define paddedstart(ptr, offset, type) \
-+	(type *)padalign((long)(ptr)+(offset), __alignof__(type))
-+
-+#endif
+ #define xt_alloc_initial_table(type, typ2) ({ \
+ 	unsigned int hook_mask = info->valid_hooks; \
+ 	unsigned int nhooks = hweight32(hook_mask); \
+ 	unsigned int bytes = 0, hooknum = 0, i = 0; \
+-	struct { \
+-		struct type##_replace repl; \
+-		struct type##_standard entries[nhooks]; \
+-		struct type##_error term; \
+-	} *tbl = kzalloc(sizeof(*tbl), GFP_KERNEL); \
+-	if (tbl == NULL) \
++	int replsize = paddedsize(0, 1, \
++		struct type##_replace, struct type##_standard); \
++	int entsize = paddedsize(replsize, nhooks, \
++		struct type##_standard, struct type##_error); \
++	int termsize = paddedsize(replsize+entsize, 1, \
++		struct type##_error, int); \
++	struct type##_replace *repl = kzalloc(replsize+entsize+termsize, \
++		GFP_KERNEL); \
++	if (repl == NULL) \
+ 		return NULL; \
+-	strncpy(tbl->repl.name, info->name, sizeof(tbl->repl.name)); \
+-	tbl->term = (struct type##_error)typ2##_ERROR_INIT;  \
+-	tbl->repl.valid_hooks = hook_mask; \
+-	tbl->repl.num_entries = nhooks + 1; \
+-	tbl->repl.size = nhooks * sizeof(struct type##_standard) + \
+-	                 sizeof(struct type##_error); \
++	struct type##_standard *entries = paddedstart(repl, replsize, \
++		struct type##_standard); \
++	struct type##_error *term = paddedstart(entries, entsize, \
++		struct type##_error); \
++	strncpy(repl->name, info->name, sizeof(repl->name)); \
++	*term = (struct type##_error)typ2##_ERROR_INIT;  \
++	repl->valid_hooks = hook_mask; \
++	repl->num_entries = nhooks + 1; \
++	repl->size = entsize+termsize; \
+ 	for (; hook_mask != 0; hook_mask >>= 1, ++hooknum) { \
+ 		if (!(hook_mask & 1)) \
+ 			continue; \
+-		tbl->repl.hook_entry[hooknum] = bytes; \
+-		tbl->repl.underflow[hooknum]  = bytes; \
+-		tbl->entries[i++] = (struct type##_standard) \
++		repl->hook_entry[hooknum] = bytes; \
++		repl->underflow[hooknum]  = bytes; \
++		entries[i++] = (struct type##_standard) \
+ 			typ2##_STANDARD_INIT(NF_ACCEPT); \
+ 		bytes += sizeof(struct type##_standard); \
+ 	} \
+-	tbl; \
++	repl; \
+ })
 -- 
 1.7.9.5
 
