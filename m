@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933928Ab2J3QBA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:01:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:49104 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754082Ab2J3QA6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:00:58 -0400
+	id S964799Ab2J3QEQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:04:16 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:36090 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754538Ab2J3QEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 12:04:14 -0400
+Date: Tue, 30 Oct 2012 09:03:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: nikunj@linux.vnet.ibm.com, dhaval.giani@gmail.com, a.p.zijlstra@chello.nl,
+        keescook@chromium.org, dhowells@redhat.com
+Subject: [PATCH tip/core/rcu 0/4] Documentation updates for 3.8
+Message-ID: <20121030160350.GA21837@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1210301112270.1363-100000@iolanthe.rowland.org>
-References: <CACVXFVOPDu6wVgPmvtTkokn7VV41x3XVvL4g_E0pz0mikUbvUg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1210301112270.1363-100000@iolanthe.rowland.org>
-Date: Wed, 31 Oct 2012 00:00:56 +0800
-Message-ID: <CACVXFVO5-UPNrWsySzDE5AfOv1TMqbyitQX9ViidSJPM36fqAQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
-From: Ming Lei <ming.lei@canonical.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12103016-7182-0000-0000-000002FD6AEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 11:38 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+Hello!
 
->
-> Okay, I see your point.  But acquiring the lock here doesn't solve the
-> problem.  Suppose a thread is about to reset a USB mass-storage device.
-> It acquires the lock and sees that the noio flag is clear.  But before
-> it can issue the reset, another thread sets the noio flag.
+This patch series contains documentation updates as follows:
 
-If the USB mass-storage device is being reseted, the flag should be set
-already generally.  If the flag is still unset, that means the disk/network
-device isn't added into system(or removed just now), so memory allocation
-with block I/O should be allowed during the reset. Looks it isn't one problem,
-isn't it?
+1.	Fix a broken example in memory-barriers.txt.
+2.	Fix a paper title in RTFP.txt. (Courtesy of Dhaval Giani.)
+3.	Mention kfree_rcu() in the whatisRCU.txt section covering
+	call_rcu(), and fix example code. (Courtesy of Kees Cook.)
+4.	Add two more ways of combining RCU and reference counting
+	in rcuref.txt.
 
-> I'm not sure what the best solution is.
->
->> The lock needn't to be held when the function is called inside
->> pm_runtime_set_memalloc_noio(),  so the bitfield flag should
->> be checked directly without holding power lock in dev_memalloc_noio().
->
-> Yes.
->
-> A couple of other things...  Runtime resume can be blocked by runtime
-> suspend, if a resume is requested while the suspend is in progress.
-> Therefore the runtime suspend code also needs to save-set-restore the
-> noio flag.
+							Thanx, Paul
 
-Looks the simplest approach is to handle the noio flag thing at the start and
-end of rpm_resume.
 
-> Also, we should set the noio flag at the start of
-> usb_stor_control_thread, because everything that thread does can
-> potentially block an I/O operation.
+ b/Documentation/RCU/RTFP.txt        |    2 -
+ b/Documentation/RCU/listRCU.txt     |    2 -
+ b/Documentation/RCU/rcuref.txt      |   61 ++++++++++++++++++++++++++++++++++--
+ b/Documentation/RCU/whatisRCU.txt   |   13 ++++++-
+ b/Documentation/memory-barriers.txt |    9 ++---
+ 5 files changed, 77 insertions(+), 10 deletions(-)
 
-Yes, it should be done, and all GFP_NOIO in usbcore should be converted
-into GFP_KERNEL together. And the work shouldn't be started until
-the patchset is merged.
-
-> Lastly, pm_runtime_get_memalloc_noio always returns false when
-> CONFIG_PM_RUNTIME is disabled.  But we still need to prevent I/O during
-> usb_reset_device even when there's no runtime PM.  Maybe the simplest
-> answer is always to set noio during resets.  That would also help with
-> the race described above.
-
-I have thought about this. IMO, pm_runtime_get_memalloc_noio should
-return true always if CONFIG_PM_RUNTIME is unset.
-
-Thanks,
---
-Ming Lei
