@@ -1,125 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965433Ab2J3Sd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:33:59 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64266 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965234Ab2J3Sd5 (ORCPT
+	id S1757060Ab2J3Sfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:35:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7786 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab2J3Sff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:33:57 -0400
-Subject: Re: [PATCH 2/2] irq_work: Fix racy IRQ_WORK_BUSY flag setting
-From: anish kumar <anish198519851985@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-In-Reply-To: <1351611301-3520-3-git-send-email-fweisbec@gmail.com>
-References: <1351611301-3520-1-git-send-email-fweisbec@gmail.com>
-	 <1351611301-3520-3-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 31 Oct 2012 03:33:44 +0900
-Message-ID: <1351622024.1504.13.camel@anish-Inspiron-N5050>
+	Tue, 30 Oct 2012 14:35:35 -0400
+X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=V3PaAaPhDywA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=MpoW4NFLMuQA:10 a=Ev6e3Ck_rFUU5JYsq8MA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351622134.4004.17.camel@gandalf.local.home>
+Subject: Re: [PATCH] scripts/recordmcount.pl: Support build with
+ -ffunction-sections.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Will Newton <will.newton@gmail.com>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Tue, 30 Oct 2012 14:35:34 -0400
+In-Reply-To: <CAFbHwiSwGc8g7AV5mKic3JPDktFHw0pE7kR4yXRYoL_Jsyz6fQ@mail.gmail.com>
+References: <CAFbHwiRtBaHkpZqTm6VZ=fCJcyu+dsdpo_kxMHy1egce=rTuyA@mail.gmail.com>
+	 <1351609517.8467.85.camel@gandalf.local.home>
+	 <CAFbHwiRXzWpKjtu2jQzr_COuSLg=HNit-CfkTuArrzc+xP53Og@mail.gmail.com>
+	 <1351613128.8467.109.camel@gandalf.local.home>
+	 <CAFbHwiSwGc8g7AV5mKic3JPDktFHw0pE7kR4yXRYoL_Jsyz6fQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The IRQ_WORK_BUSY flag is set right before we execute the
-> work. Once this flag value is set, the work enters a
-> claimable state again.
-> 
-> This is necessary because if we want to enqueue a work but we
-> fail the claim, we want to ensure that the CPU where that work
-> is still pending will see and handle the data we expected the
-> work to compute.
-> 
-> This might not work as expected though because IRQ_WORK_BUSY
-> isn't set atomically. By the time a CPU fails a work claim,
-> this work may well have been already executed by the CPU where
-> it was previously pending.
-> 
-> Due to the lack of appropriate memory barrier, the IRQ_WORK_BUSY
-> flag value may not be visible by the CPU trying to claim while
-> the work is executing, and that until we clear the busy bit in
-> the work flags using cmpxchg() that implies the full barrier.
-> 
-> One solution could involve a full barrier between setting
-> IRQ_WORK_BUSY flag and the work execution. This way we
-> ensure that the work execution site sees the expected data
-> and the claim site sees the IRQ_WORK_BUSY:
-> 
-> CPU 0                                 CPU 1
-> 
-> data = something                     flags = IRQ_WORK_BUSY
-> smp_mb() (implicit with cmpxchg      smp_mb()
->           on flags in claim)         execute_work (sees data from CPU
-> 0)
-> try to claim
-> 
-As I understand without the memory barrier proposed by you the situation
-would be as below:
-CPU 0                                 CPU 1
- 
-data = something                     flags = IRQ_WORK_BUSY
-smp_mb() (implicit with cmpxchg      execute_work (sees data from CPU 0)
-           on flags in claim)        
-_success_ in claiming and goes
-ahead and execute the work(wrong?)
-		                     cmpxchg cause flag to IRQ_WORK_BUSY
+On Tue, 2012-10-30 at 17:43 +0000, Will Newton wrote:
 
-Now knows the flag==IRQ_WORK_BUSY
-                                
-Am I right?
+> Ok, well we are only concerned with C compiled code, otherwise there
+> would be no calls to mcount? The only way I can think of to cause code
+> to be emitted in a section of this type is to use the section
+> attribute. A quick grep for __attribute__(__section__ or __section
+> does not turn up any sections that are named .text.* on any
+> architecture (freed or not).
+> 
+> Is there any other case I have missed? I also did a grep for .text.
+> more generally and didn't see anything that looked problematic
+> (although it is mainly .S files so not relevant).
 
-Probably a stupid question.Why do we return the bool from irq_work_queue
-when no one bothers to check the return value?Wouldn't it be better if
-this function is void as used by the users of this function or am I
-looking at the wrong code.
+If you feel confident enough, then I'm fine with it. But if any more
+network cards get bricked, I'm blaming you.
+
+ ;-)
+
 > 
-> As a shortcut, let's just use xchg() that implies a full memory
-> barrier.
+> >>
+> >> > Second, most archs today do not use recordmcount.pl. They use the new
+> >> > recordmcount.c file.
+> >>
+> >> Ok, thanks for letting me know. Is the plan to switch over to
+> >> recordmcount.c exclusively at some point?
+> >
+> > When all the archs convert.
 > 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  kernel/irq_work.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-> index 764240a..ea79365 100644
-> --- a/kernel/irq_work.c
-> +++ b/kernel/irq_work.c
-> @@ -130,9 +130,12 @@ void irq_work_run(void)
->  
->                 /*
->                  * Clear the PENDING bit, after this point the @work
-> -                * can be re-used.
-> +                * can be re-used. Use xchg to force ordering against
-> +                * data to process, such that if claiming fails on
-> +                * another CPU, we see and handle the data it wants
-> +                * us to process on the work.
->                  */
-> -               work->flags = IRQ_WORK_BUSY;
-> +               xchg(&work->flags, IRQ_WORK_BUSY);
->                 work->func(work);
->                 /*
->                  * Clear the BUSY bit and return to the free state if
-> -- 
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/ 
+> I'll rework my patch against recordmcount.c once I have it working.
+
+OK, thanks.
+
+-- Steve
+
 
