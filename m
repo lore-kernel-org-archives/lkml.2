@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934785Ab2J3Vp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:45:56 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43508 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934747Ab2J3Vpy (ORCPT
+	id S934790Ab2J3Vqt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:46:49 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:37372
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934165Ab2J3Vqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 17:45:54 -0400
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: cooloney@gmail.com, rpurdie@rpsys.net
-Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 2/2] Add documentation for tca6507 devicetree bindings.
-Date: Tue, 30 Oct 2012 22:45:34 +0100
-Message-Id: <1351633534-20817-2-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351633534-20817-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1351633534-20817-1-git-send-email-marek.belisko@open-nandra.com>
+	Tue, 30 Oct 2012 17:46:47 -0400
+Date: Tue, 30 Oct 2012 17:46:46 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: XFS status update for September 2012
+Message-ID: <20121030214646.GA12771@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- Documentation/devicetree/bindings/leds/tca6507.txt |   33 ++++++++++++++++++++
- 1 file changed, 33 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/leds/tca6507.txt
+September saw the release of Linux 3.6 which included a slightly smaller
+than usual XFS update:
 
-diff --git a/Documentation/devicetree/bindings/leds/tca6507.txt b/Documentation/devicetree/bindings/leds/tca6507.txt
-new file mode 100644
-index 0000000..cb0015b9f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/leds/tca6507.txt
-@@ -0,0 +1,33 @@
-+LEDs conected to tca6507
-+
-+Required properties:
-+- compatible : should be : "leds-tca6507".
-+
-+Each led is represented as a sub-node of the leds-tca6507 device.
-+
-+LED sub-node properties:
-+- label : label for this LED
-+- reg : number of LED line (could be from 0 to 6)
-+- linux,default-trigger : led default trigger
-+
-+Examples:
-+
-+tca6507@45 {
-+	compatible = "leds-tca6507";
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	reg = <0x45>;
-+
-+	led0: red_aux@0 {
-+		label = "red:aux";
-+		reg = <0x0>;
-+	};
-+
-+	led1: green_aux@1 {
-+		label = "green:aux";
-+		reg = <0x5>;
-+		linux,default-trigger = "default-on";
-+	};
-+
-+};
-+
--- 
-1.7.9.5
+ 51 files changed, 2607 insertions(+), 2455 deletions(-)
 
+The bulk of the changes in Linux 3.6 is made up by native support for
+discontinuous buffers, with various minor bug fixes and cleanups making up
+the rest.  In the meantime the mailing list was busy with multiple revisions
+of the sync/unmount code rewrite, and the patch series to make the inode64
+mount option remountable and the default.
+
+On the user space side xfsprogs saw new support for the preadv, pwritev and
+sync_file_range system calls in xfs_io as well as minor fixes to libxcmd and
+mkfs.xfs, xfsdump grew support for dumping and restoring 32-bit project ids
+and and saw an update to the German translation.  Xfstests saw a large number
+of fixes, and a single new test case.
