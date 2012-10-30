@@ -1,69 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759209Ab2J3W5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 18:57:06 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47146 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758339Ab2J3W5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 18:57:03 -0400
-Date: Tue, 30 Oct 2012 23:56:59 +0100
-From: Franke <ttfranke@googlemail.com>
+	id S1760124Ab2J3XBu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 19:01:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6697 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758621Ab2J3XBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 19:01:49 -0400
+Date: Wed, 31 Oct 2012 00:01:20 +0100
+From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
-Subject: Crashes in extent_io.c after "btrfs bad mapping eb" notice
-Message-ID: <20121030235659.6fc7afa4@googlemail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 03/25] perf tests: Add framework for automated
+ perf_event_attr tests
+Message-ID: <20121030230120.GA1067@krava.redhat.com>
+References: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
+ <1351634526-1516-4-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351634526-1516-4-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Oct 30, 2012 at 11:01:44PM +0100, Jiri Olsa wrote:
+> Adding automated test to check event's perf_event_attr values.
+> 
+> The idea is run perf session with kidnapping sys_perf_event_open
+> function. For each sys_perf_event_open call we store the
+> perf_event_attr data to the file to be checked later against what
+> we expect.
+> 
+> You can run this by:
+>   $ python ./tests/attr.py -d ./tests/attr/ -p ./perf -v
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  tools/perf/Makefile      |   1 +
+>  tools/perf/perf.c        |   2 +
+>  tools/perf/perf.h        |  16 ++-
+>  tools/perf/tests/attr.c  | 136 ++++++++++++++++++++
+>  tools/perf/tests/attr.py | 313 +++++++++++++++++++++++++++++++++++++++++++++++
+>  5 files changed, 466 insertions(+), 2 deletions(-)
+>  create mode 100644 tools/perf/tests/attr.c
+>  create mode 100644 tools/perf/tests/attr.py
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 2d3427f..1da87a3 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -430,6 +430,7 @@ LIB_OBJS += $(OUTPUT)arch/common.o
+>  
+>  LIB_OBJS += $(OUTPUT)tests/parse-events.o
+>  LIB_OBJS += $(OUTPUT)tests/dso-data.o
+> +LIB_OBJS += $(OUTPUT)tests/attr.o
+>  
+>  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+>  BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+> diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+> index e968373..a0ae290 100644
+> --- a/tools/perf/perf.c
+> +++ b/tools/perf/perf.c
+> @@ -484,6 +484,8 @@ int main(int argc, const char **argv)
+>  	}
+>  	cmd = argv[0];
+>  
+> +	test_attr__init();
+> +
+>  	/*
+>  	 * We use PATH to find perf commands, but we prepend some higher
+>  	 * precedence paths: the "--exec-path" option, the PERF_EXEC_PATH
+> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+> index 469fbf2..0047264 100644
+> --- a/tools/perf/perf.h
+> +++ b/tools/perf/perf.h
+> @@ -174,13 +174,25 @@ static inline unsigned long long rdclock(void)
+>  	(void) (&_min1 == &_min2);		\
+>  	_min1 < _min2 ? _min1 : _min2; })
+>  
+> +extern bool test_attr__enabled;
+> +void test_attr__init(void);
+> +void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
+> +		     int fd, int group_fd, unsigned long flags);
+> +
+>  static inline int
+>  sys_perf_event_open(struct perf_event_attr *attr,
+>  		      pid_t pid, int cpu, int group_fd,
+>  		      unsigned long flags)
+>  {
+> -	return syscall(__NR_perf_event_open, attr, pid, cpu,
+> -		       group_fd, flags);
+> +	int fd;
+> +
+> +	fd = syscall(__NR_perf_event_open, attr, pid, cpu,
+> +		     group_fd, flags);
+> +
+> +	if (unlikely(test_attr__enabled))
+> +		test_attr__open(attr, pid, cpu, fd, group_fd, flags);
+> +
+> +	return fd;
+>  }
+>  
 
-I have been having some crashes like this. Since I upgraded to 3.6.4 they have become common. The crashes happen pretty randomly during normal system usage. After the syslog messages the system stays semi usable for a minute, but when I run any new program it hangs. I had to downgrade to 3.6.2 to get my system usable again.
+SNIP
 
-Is there any way I can help find the cause of those crashes? 
+> +
+> +void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
+> +		     int fd, int group_fd, unsigned long flags)
+> +{
+> +	if (store_event(attr, pid, cpu, fd, group_fd, flags))
+> +		die("test attr FAILED");
+> +}
 
-thanks,
-Tobias Franke
+ahh crap, I forgot the errno value preservation fix.. 
 
-logs here:
-https://www.dropbox.com/s/1f6gh4k0zl2t5zq/btrfs_hangs_3-4-6.log
+I'd send it later with another fix I have for perf stat or v2 if needed ;-)
 
-It starts like this:
-Oct 30 22:42:36 localhost kernel: btrfs bad mapping eb start 982689189888 len 4096, wanted 4424 17
-Oct 30 22:42:36 localhost kernel: ------------[ cut here ]------------
-Oct 30 22:42:36 localhost kernel: WARNING: at fs/btrfs/extent_io.c:4661 map_private_extent_buffer+0x83/0xc9()
-Oct 30 22:42:36 localhost kernel: Hardware name: A780L3L
-Oct 30 22:42:36 localhost kernel: Modules linked in: hwmon_vid snd_hda_codec_hdmi nvidia(PO) snd_hda_codec_realtek snd_hda_intel snd_hda_codec i2c_piix4 k10temp
-Oct 30 22:42:36 localhost kernel: Pid: 7143, comm: btrfs-endio-wri Tainted: P           O 3.6.4-gentoo #1
-Oct 30 22:42:36 localhost kernel: Call Trace:
-Oct 30 22:42:36 localhost kernel: [<ffffffff81030181>] ? warn_slowpath_common+0x78/0x8c
-Oct 30 22:42:36 localhost kernel: [<ffffffff8127dc2e>] ? map_private_extent_buffer+0x83/0xc9
-Oct 30 22:42:36 localhost kernel: [<ffffffff81249353>] ? generic_bin_search.clone.50+0xaa/0x130
-Oct 30 22:42:36 localhost kernel: [<ffffffff8124c11a>] ? btrfs_search_old_slot+0x333/0x6ad
-Oct 30 22:42:36 localhost kernel: [<ffffffff812a737d>] ? __resolve_indirect_refs+0x147/0x4b1
-Oct 30 22:42:36 localhost kernel: [<ffffffff812a70bf>] ? __add_keyed_refs.clone.6+0x9e/0x215
-Oct 30 22:42:36 localhost kernel: [<ffffffff812a6ba6>] ? __add_prelim_ref+0x3a/0xb9
-Oct 30 22:42:36 localhost kernel: [<ffffffff812a7d54>] ? find_parent_nodes+0x553/0x7ca
-Oct 30 22:42:36 localhost kernel: [<ffffffff812458b8>] ? leaf_space_used+0xaf/0xd7
-Oct 30 22:42:36 localhost kernel: [<ffffffff812a8044>] ? btrfs_find_all_roots+0x79/0xd4
-Oct 30 22:42:36 localhost kernel: [<ffffffff812aa1d0>] ? btrfs_qgroup_account_ref+0xd2/0x4a8
-Oct 30 22:42:36 localhost kernel: [<ffffffff81278482>] ? alloc_extent_state+0x58/0x9d
-Oct 30 22:42:36 localhost kernel: [<ffffffff810e8245>] ? kmem_cache_free+0x12/0xbd
-Oct 30 22:42:36 localhost kernel: [<ffffffff81253c93>] ? btrfs_delayed_refs_qgroup_accounting+0x9e/0xca
-Oct 30 22:42:36 localhost kernel: [<ffffffff81266723>] ? __btrfs_end_transaction+0x4e/0x293
-Oct 30 22:42:36 localhost kernel: [<ffffffff8126bb26>] ? btrfs_finish_ordered_io+0x2e1/0x332
-Oct 30 22:42:36 localhost kernel: [<ffffffff8103cfae>] ? run_timer_softirq+0x2c2/0x2c2
-Oct 30 22:42:36 localhost kernel: [<ffffffff81286398>] ? worker_loop+0x174/0x4c0
-Oct 30 22:42:36 localhost kernel: [<ffffffff81286224>] ? btrfs_queue_worker+0x261/0x261
-Oct 30 22:42:36 localhost kernel: [<ffffffff81286224>] ? btrfs_queue_worker+0x261/0x261
-Oct 30 22:42:36 localhost kernel: [<ffffffff8104b293>] ? kthread+0x81/0x89
-Oct 30 22:42:36 localhost kernel: [<ffffffff815de774>] ? kernel_thread_helper+0x4/0x10
-Oct 30 22:42:36 localhost kernel: [<ffffffff8104b212>] ? kthread_freezable_should_stop+0x52/0x52
-Oct 30 22:42:36 localhost kernel: [<ffffffff815de770>] ? gs_change+0xb/0xb
-Oct 30 22:42:36 localhost kernel: ---[ end trace cb2d15ce8c2d83ec ]---
-Oct 30 22:42:36 localhost kernel: ------------[ cut here ]------------
-
+jirka
