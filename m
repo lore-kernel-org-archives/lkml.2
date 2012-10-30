@@ -1,92 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759217Ab2J3Kvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 06:51:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47860 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758201Ab2J3Kvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 06:51:47 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
-Date: Tue, 30 Oct 2012 11:57:35 +0100
-Message-ID: <2149424.HsnQpSLjK5@linux-lqwf.site>
-Organization: SUSE
-User-Agent: KMail/4.8.4 (Linux/3.7.0-rc2-12-desktop+; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <CACVXFVOPDu6wVgPmvtTkokn7VV41x3XVvL4g_E0pz0mikUbvUg@mail.gmail.com>
-References: <1351513440-9286-3-git-send-email-ming.lei@canonical.com> <Pine.LNX.4.44L0.1210291125590.22882-100000@netrider.rowland.org> <CACVXFVOPDu6wVgPmvtTkokn7VV41x3XVvL4g_E0pz0mikUbvUg@mail.gmail.com>
+	id S1759318Ab2J3KyY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 06:54:24 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:55367 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab2J3KyW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 06:54:22 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20121029224331.GA15608@polaris.bitmath.org>
+References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1351241067-9521-11-git-send-email-benjamin.tissoires@gmail.com>
+	<20121029224331.GA15608@polaris.bitmath.org>
+Date: Tue, 30 Oct 2012 11:54:20 +0100
+Message-ID: <CAN+gG=G8F3m+UUDxm0qioipyMaAFHuQzKhmqn+-2qpGUGWwk6Q@mail.gmail.com>
+Subject: Re: [PATCH v2 10/11] HID: introduce Scan Time
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 October 2012 11:21:33 Ming Lei wrote:
-> On Mon, Oct 29, 2012 at 11:41 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Mon, 29 Oct 2012, Ming Lei wrote:
-> >
-> >> The patch introduces the flag of memalloc_noio_resume in
-> >> 'struct dev_pm_info' to help PM core to teach mm not allocating
-> >> memory with GFP_KERNEL flag for avoiding probable deadlock
-> >> problem.
-> >>
-> >> As explained in the comment, any GFP_KERNEL allocation inside
-> >> runtime_resume on any one of device in the path from one block
-> >> or network device to the root device in the device tree may cause
-> >> deadlock, the introduced pm_runtime_set_memalloc_noio() sets or
-> >> clears the flag on device of the path recursively.
-> >>
-> >> This patch also introduces pm_runtime_get_memalloc_noio() because
-> >> the flag may be accessed in block device's error handling path
-> >> (for example, usb device reset)
-> >
-> >> +/*
-> >> + * pm_runtime_get_memalloc_noio - Get a device's memalloc_noio flag.
-> >> + * @dev: Device to handle.
-> >> + *
-> >> + * Return the device's memalloc_noio flag.
-> >> + *
-> >> + * The device power lock is held because bitfield is not SMP-safe.
-> >> + */
-> >> +bool pm_runtime_get_memalloc_noio(struct device *dev)
-> >> +{
-> >> +     bool ret;
-> >> +     spin_lock_irq(&dev->power.lock);
-> >> +     ret = dev->power.memalloc_noio_resume;
-> >> +     spin_unlock_irq(&dev->power.lock);
-> >> +     return ret;
-> >> +}
-> >
-> > You don't need to acquire and release a spinlock just to read the
-> > value.  Reading bitfields _is_ SMP-safe; writing them is not.
-> 
-> Thanks for your review.
-> 
-> As you pointed out before, the flag need to be checked before
-> resetting usb devices, so the lock should be held to make another
-> context(CPU) see the updated value suppose one context(CPU)
-> call pm_runtime_set_memalloc_noio() to change the flag at the
-> same time.
-> 
-> The lock needn't to be held when the function is called inside
-> pm_runtime_set_memalloc_noio(),  so the bitfield flag should
-> be checked directly without holding power lock in dev_memalloc_noio().
+On Mon, Oct 29, 2012 at 11:43 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Benjamin,
+>
+>> Win 8 digitizer devices provides the actual scan time computed by the
+>> hardware itself. The value is global to the frame and is not specific
+>> to the multitouch protocol (though only touch, not pen, should use it
+>> according to the specification).
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+>> ---
+>>  Documentation/input/event-codes.txt |  7 +++++++
+>>  drivers/hid/hid-input.c             |  4 ++++
+>>  drivers/hid/hid-multitouch.c        | 11 +++++++++--
+>>  include/linux/hid.h                 |  1 +
+>>  include/linux/input.h               |  1 +
+>>  5 files changed, 22 insertions(+), 2 deletions(-)
+>
+> This is a nice feature, useful in many other contexts. As such, I
+> think it should be defined in the context of the input subsystem, with
+> a more specific definition added to the documentation. For instance,
+> is 100us suitable? When should it start at zero, at BTN_TOUCH? Or
+> should it perhaps wrap around on unsigned integer instead? Or display
+> the difference from the last event?
 
-Hi,
+Well, the thing is that I didn't wanted to copy/paste win 8 definition
+for ScanTime. So I put it with my words and not in a very
+understandable way :)
+This allows me to forward the incoming events without having to do
+anything on them...
 
-how is this to work with power management domains?
-And I may be dense, but disks are added in slave_configure().
-This seems to be a race to me.
+- 100us: suitable, not sure, but it would be good to define a standard
+unit for time too
+- start at zero at BTN_TOUCH: no. This information allows us to do
+much better false release detection. If we reset this counter, then we
+will loose the time between the two touch/release. The spec says that
+it is up to the device to reset it after a period of time (not
+defined, but can be one second for instance). Last, BTN_TOUCH is not
+reliable for hovering devices because we will still get finger
+information without BTN_TOUCH.
+- difference from the last event: not sure how it is implemented in
+windows, but I'm not sure it's a good way of doing if the gesture
+engine needs the time from the beginning of the touch...
 
-	Regards
-		Oliver
+Anyway, I would be happy to have other comments/proposals for this event code.
 
+>
+>> diff --git a/Documentation/input/event-codes.txt b/Documentation/input/event-codes.txt
+>> index 53305bd..8f8c908 100644
+>> --- a/Documentation/input/event-codes.txt
+>> +++ b/Documentation/input/event-codes.txt
+>> @@ -174,6 +174,13 @@ A few EV_ABS codes have special meanings:
+>>      the input device may be used freely in three dimensions, consider ABS_Z
+>>      instead.
+>>
+>> +* ABS_SCAN_TIME:
+>> +  - Used when the device provides a timestamp for each frame. The unit must be
+>> +    100us, and may be reset when the device don't send any events for a
+>> +    period of time. The values increment at each frame and thus, it can roll
+>> +    back to 0 when reach logical_max. If the device does not provide this
+>> +    information, the driver must not provide it to the user space.
+>> +
+>>  * ABS_MT_<name>:
+>>    - Used to describe multitouch input events. Please see
+>>      multi-touch-protocol.txt for details.
+>> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+>> index 16cc89a..5fe7bd3 100644
+>> --- a/drivers/hid/hid-input.c
+>> +++ b/drivers/hid/hid-input.c
+>> @@ -675,6 +675,10 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
+>>                       map_key_clear(BTN_STYLUS2);
+>>                       break;
+>>
+>> +             case 0x56: /* Scan Time */
+>> +                     map_abs(ABS_SCAN_TIME);
+>> +                     break;
+>> +
+>
+> Is it not enough to map it in the case below? Or you mean this is
+> picked up by hid core?
+>
+
+in hidinput_configure_usage, it's enough to just map it.
+
+In hid-multitouch, We also just need to map it, and it will be handled
+by hid-core in the .event callback.
+
+Cheers,
+Benjamin
+
+>>               default:  goto unknown;
+>>               }
+>>               break;
+>> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+>> index c0ab1c6..21a120b 100644
+>> --- a/drivers/hid/hid-multitouch.c
+>> +++ b/drivers/hid/hid-multitouch.c
+>> @@ -447,12 +447,19 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>>                       mt_store_field(usage, td, hi);
+>>                       td->last_field_index = field->index;
+>>                       return 1;
+>> +             case HID_DG_SCANTIME:
+>> +                     hid_map_usage(hi, usage, bit, max,
+>> +                             EV_ABS, ABS_SCAN_TIME);
+>> +                     set_abs(hi->input, ABS_SCAN_TIME, field, 0);
+>> +                     td->last_field_index = field->index;
+>> +                     return 1;
+>>               case HID_DG_CONTACTCOUNT:
+>>                       td->last_field_index = field->index;
+>>                       return 1;
+>>               case HID_DG_CONTACTMAX:
+>> -                     /* we don't set td->last_slot_field as contactcount and
+>> -                      * contact max are global to the report */
+>> +                     /* we don't set td->last_slot_field as scan time,
+>> +                      * contactcount and contact max are global to the
+>> +                      * report */
+>>                       td->last_field_index = field->index;
+>>                       return -1;
+>>               case HID_DG_TOUCH:
+>> diff --git a/include/linux/hid.h b/include/linux/hid.h
+>> index 6216529..99a6418 100644
+>> --- a/include/linux/hid.h
+>> +++ b/include/linux/hid.h
+>> @@ -279,6 +279,7 @@ struct hid_item {
+>>  #define HID_DG_DEVICEINDEX   0x000d0053
+>>  #define HID_DG_CONTACTCOUNT  0x000d0054
+>>  #define HID_DG_CONTACTMAX    0x000d0055
+>> +#define HID_DG_SCANTIME              0x000d0056
+>>
+>>  /*
+>>   * HID report types --- Ouch! HID spec says 1 2 3!
+>> diff --git a/include/linux/input.h b/include/linux/input.h
+>> index ba48743..73c3a96 100644
+>> --- a/include/linux/input.h
+>> +++ b/include/linux/input.h
+>> @@ -796,6 +796,7 @@ struct input_keymap_entry {
+>>  #define ABS_TILT_X           0x1a
+>>  #define ABS_TILT_Y           0x1b
+>>  #define ABS_TOOL_WIDTH               0x1c
+>> +#define ABS_SCAN_TIME                0x1d
+>>
+>>  #define ABS_VOLUME           0x20
+>>
+>> --
+>> 1.7.11.7
+>>
+>
+> Thanks,
+> Henrik
