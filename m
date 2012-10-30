@@ -1,123 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab2J3HbF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 03:31:05 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:54755 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755265Ab2J3HbC (ORCPT
+	id S1755707Ab2J3Hgw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 03:36:52 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:36817 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab2J3Hgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 03:31:02 -0400
+	Tue, 30 Oct 2012 03:36:50 -0400
+Message-ID: <508F826A.7010302@linux.vnet.ibm.com>
+Date: Tue, 30 Oct 2012 13:01:54 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-In-Reply-To: <CAKohponL_3m2KVytiWm8ZHyB5aimk8CzGrqr5J0LMy8MFGodHg@mail.gmail.com>
-References: <5afab1ebe83e4361f1fd75bbea0c559af195bf02.1351529738.git.viresh.kumar@linaro.org>
-	<1351540778.2721.7.camel@bwh-desktop.uk.solarflarecom.com>
-	<CAKohponL_3m2KVytiWm8ZHyB5aimk8CzGrqr5J0LMy8MFGodHg@mail.gmail.com>
-Date: Tue, 30 Oct 2012 13:01:01 +0530
-Message-ID: <CAKohponOKk5e2Sxyhjw-XvzVxF3tNp66rsnYCwvwHazAPAauKw@mail.gmail.com>
-Subject: Re: [PATCH] net: dsa/slave: Fix compilation warnings
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: davem@davemloft.net, linaro-dev@lists.linaro.org, patches@linaro.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Jones <drjones@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH V2 RFC 3/3] kvm: Check system load and handle different
+ commit cases accordingly
+References: <20121029140621.15448.92083.sendpatchset@codeblue> <20121029140717.15448.83182.sendpatchset@codeblue> <1351533280.24721.46.camel@twins> <508F6C60.1050202@linux.vnet.ibm.com> <20121030063436.GA2224@turtle.usersys.redhat.com>
+In-Reply-To: <20121030063436.GA2224@turtle.usersys.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12103007-6102-0000-0000-00000275295B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 October 2012 12:15, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> And so, if we select NET_DSA from these tagging drivers, then only slave.c will
-> get compiled. Otherwise slave.c dsa.c dsa_core.c wouldn't be compiled and so
-> no warnings.
+On 10/30/2012 12:04 PM, Andrew Jones wrote:
+> On Tue, Oct 30, 2012 at 11:27:52AM +0530, Raghavendra K T wrote:
+>> On 10/29/2012 11:24 PM, Peter Zijlstra wrote:
+>>> On Mon, 2012-10-29 at 19:37 +0530, Raghavendra K T wrote:
+>>>> +/*
+>>>> + * A load of 2048 corresponds to 1:1 overcommit
+>>>> + * undercommit threshold is half the 1:1 overcommit
+>>>> + * overcommit threshold is 1.75 times of 1:1 overcommit threshold
+>>>> + */
+>>>> +#define COMMIT_THRESHOLD (FIXED_1)
+>>>> +#define UNDERCOMMIT_THRESHOLD (COMMIT_THRESHOLD >> 1)
+>>>> +#define OVERCOMMIT_THRESHOLD ((COMMIT_THRESHOLD << 1) -
+>>>> (COMMIT_THRESHOLD >> 2))
+>>>> +
+>>>> +unsigned long kvm_system_load(void)
+>>>> +{
+>>>> +       unsigned long load;
+>>>> +
+>>>> +       load = avenrun[0] + FIXED_1/200;
+>>>> +       load = load / num_online_cpus();
+>>>> +
+>>>> +       return load;
+>>>> +}
+>>>
+>>> ARGH.. no that's wrong.. very wrong.
+>>>
+>>>   1) avenrun[] EXPORT_SYMBOL says it should be removed, that's not a
+>>> joke.
+>>
+>> Okay.
+>>
+>>>   2) avenrun[] is a global load, do not ever use a global load measure
+>>
+>> This makes sense. Using a local optimization that leads to near global
+>> optimization is the way to go.
+>>
+>>>
+>>>   3) avenrun[] has nothing what so ever to do with runqueue lengths,
+>>> someone with a gazillion tasks in D state will get a huge load but the
+>>> cpu is very idle.
+>>>
+>>
+>> I used loadavg as an alternative measure. But the above condition
+>> poses a concern for that.
+>>
+>> Okay, now IIUC, usage of *any* global measure is bad?
+>>
+>> Because I was also thinking to use nrrunning()/ num_online_cpus(), to
+>> get an idea of global overcommit sense. (ofcourse since, this involves
+>> iteration over per CPU nrrunning, I wanted to calculate this
+>> periodically)
+>>
+>> The overall logic, of having overcommit_threshold,
+>> undercommit_threshold, I wanted to use for even dynamic ple_window
+>> tuning purpose.
+>>
+>> so logic was:
+>> < undercommit_threshold => 16k ple_window
+>>> overcommit_threshold  => 4k window.
+>> for in between case scale the ple_window accordingly.
+>>
+>> The alternative was to decide depending on how ple handler succeeded in
+>> yield_to. But I thought, that is too sensitive and more overhead.
+>>
+>> This topic may deserve different thread, but thought I shall table it here.
+>>
+>> So, Thinking about the alternatives to implement, logic such as
+>>
+>> (a) if(undercommitted)
+>>      just go back and spin rather than going for yield_to iteration.
+>> (b) if (overcommitted)
+>>     better to yield rather than  spinning logic
+>>
+>>     of current patches..
+>>
+>> [ ofcourse, (a) is already met to large extent by your patches..]
+>>
+>> So I think everything boils down to
+>>
+>> "how do we measure these two thresholds without much overhead in a
+>> compliant way"
+>>
+>> Ideas welcome..
+>>
+>
+> What happened to Avi's preempt notifier idea for determining
+> under/overcommit? If nobody has picked that up yet, then I'll go ahead and
+> try to prototype it.
 
-If my above explanation/assumption is correct, then please review following
-patch:
+Hi Drew,
 
---------------------------x-----------------------x----------------
+I had assumed my priority order as
+1) this patch series 2) dynamic ple window 3) preempt notifiers.
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
-Date: Mon, 29 Oct 2012 22:19:14 +0530
-Subject: [PATCH] net: dsa/slave: Fix compilation warnings
+But I do not have any problem on re-prioritizing / helping on these
+as far as we are clear on what we are looking into.
 
-Currently when none of CONFIG_NET_DSA_TAG_DSA, CONFIG_NET_DSA_TAG_EDSA and
-CONFIG_NET_DSA_TAG_TRAILER is defined, we get following compilation warnings:
+I was thinking about preempt notifier idea as a tool to refine
+candidate VCPUs. But you are right, Avi, also told we can use
+bitmap/counter itself as an indicator to decide whether we go ahead
+with yield_to at all.
 
-net/dsa/slave.c:51:12: warning: 'dsa_slave_init' defined but not used
-[-Wunused-function]
-net/dsa/slave.c:60:12: warning: 'dsa_slave_open' defined but not used
-[-Wunused-function]
-net/dsa/slave.c:98:12: warning: 'dsa_slave_close' defined but not used
-[-Wunused-function]
-net/dsa/slave.c:116:13: warning: 'dsa_slave_change_rx_flags' defined
-but not used [-Wunused-function]
-net/dsa/slave.c:127:13: warning: 'dsa_slave_set_rx_mode' defined but
-not used [-Wunused-function]
-net/dsa/slave.c:136:12: warning: 'dsa_slave_set_mac_address' defined
-but not used [-Wunused-function]
-net/dsa/slave.c:164:12: warning: 'dsa_slave_ioctl' defined but not
-used [-Wunused-function]
+IMO, only patch(3) has some conflict because of various approach we can
+try.May be we should attack the problem via all 3 solutions at once and
+decide?
 
-Earlier approach to fix this was discussed here:
+To be frank, within each of the approach, trying/analyzing all the
+  possibilities made the things slow.. (my end).
 
-lkml.org/lkml/2012/10/29/549
+Suggestions..?
 
-This is another approach to fix it. This is done by some changes in config
-options, which make more sense than the earlier approach. As, atleast one
-tagging option must always be selected for using net/dsa/ infrastructure, this
-patch selects NET_DSA from tagging configs instead of having it as an selectable
-config.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/net/dsa/Kconfig |  1 -
- net/dsa/Kconfig         | 16 +++++++++-------
- 2 files changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/dsa/Kconfig b/drivers/net/dsa/Kconfig
-index dd151d5..96eae22 100644
---- a/drivers/net/dsa/Kconfig
-+++ b/drivers/net/dsa/Kconfig
-@@ -1,5 +1,4 @@
- menu "Distributed Switch Architecture drivers"
--	depends on NET_DSA
-
- config NET_DSA_MV88E6XXX
- 	tristate
-diff --git a/net/dsa/Kconfig b/net/dsa/Kconfig
-index 274791c..f7c6cef 100644
---- a/net/dsa/Kconfig
-+++ b/net/dsa/Kconfig
-@@ -1,5 +1,5 @@
- config NET_DSA
--	tristate "Distributed Switch Architecture support"
-+	tristate
- 	default n
- 	depends on EXPERIMENTAL && NETDEVICES && !S390
- 	select PHYLIB
-@@ -8,19 +8,21 @@ config NET_DSA
- 	  the Distributed Switch Architecture.
-
-
--if NET_DSA
-+menu "Distributed Switch Architecture support"
-
- # tagging formats
- config NET_DSA_TAG_DSA
--	bool
-+	bool "Original DSA packet tagging format"
-+	select NET_DSt
- 	default n
-
- config NET_DSA_TAG_EDSA
--	bool
-+	bool "Ethertype DSA packet tagging format"
-+	select NET_DSA
- 	default n
-
- config NET_DSA_TAG_TRAILER
--	bool
-+	bool "Trailer DSA packet tagging format"
-+	select NET_DSA
- 	default n
--
--endif
-+endmenu
