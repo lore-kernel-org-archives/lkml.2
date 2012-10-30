@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759495Ab2J3PhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:37:00 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38634 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab2J3Pg7 (ORCPT
+	id S1759606Ab2J3Piu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:38:50 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:51416 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758566Ab2J3Pir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:36:59 -0400
-Date: Tue, 30 Oct 2012 16:36:55 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Sooman Jeong <77smart@hanyang.ac.kr>, linux-kernel@vger.kernel.org
-Subject: Re: Initial report on F2FS filesystem performance
-Message-ID: <20121030153655.GB12831@xo-6d-61-c0.localdomain>
-References: <1350360423154.2800.144.00.1.77smart@hanyang.ac.kr>
- <20121020192215.GB555@elf.ucw.cz>
- <E0328919-ACAA-4052-B922-952AFA375FD8@dubeyko.com>
- <20121021102638.GA14031@elf.ucw.cz>
- <1350905803450.1936.166.00.1.77smart@hanyang.ac.kr>
- <20121023000725.GA10990@elf.ucw.cz>
- <54B92072-C95C-404F-A058-CF77098855C4@dubeyko.com>
+	Tue, 30 Oct 2012 11:38:47 -0400
+Date: Tue, 30 Oct 2012 11:38:46 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
+In-Reply-To: <CACVXFVOPDu6wVgPmvtTkokn7VV41x3XVvL4g_E0pz0mikUbvUg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1210301112270.1363-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B92072-C95C-404F-A058-CF77098855C4@dubeyko.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, 30 Oct 2012, Ming Lei wrote:
 
-> >> * buffered write (1GB file), 4KByte write
-> > 
-> > Ok, f2fs is bit faster on desktop PC and a bit slower on S3. Good.
-> > 
-> > 
-> >> * write + fsync (100MB file), 4KByte write
-> > 
-> > Ok, random access on VFAT is a lot faster on S3 (and only very
-> > a bit on PC). Any idea why results are so different between PC and S3?
-> > Does F2FS need significantly more CPU? Does F2FS need significantly
-> > more RAM? (Booting PC with low mem= option my answer that).
+> >> +bool pm_runtime_get_memalloc_noio(struct device *dev)
+> >> +{
+> >> +     bool ret;
+> >> +     spin_lock_irq(&dev->power.lock);
+> >> +     ret = dev->power.memalloc_noio_resume;
+> >> +     spin_unlock_irq(&dev->power.lock);
+> >> +     return ret;
+> >> +}
+> >
+> > You don't need to acquire and release a spinlock just to read the
+> > value.  Reading bitfields _is_ SMP-safe; writing them is not.
+> 
+> Thanks for your review.
+> 
+> As you pointed out before, the flag need to be checked before
+> resetting usb devices, so the lock should be held to make another
+> context(CPU) see the updated value suppose one context(CPU)
+> call pm_runtime_set_memalloc_noio() to change the flag at the
+> same time.
 
->  Yes, I think that f2fs really needs more CPU and memory for
-> functioning. The f2fs keeps more metadata as VFAT, as I
-> understand. Moreover, it manages six active logs at runtime and GC
-> can works in background. All of it needs in more CPU power.
+Okay, I see your point.  But acquiring the lock here doesn't solve the 
+problem.  Suppose a thread is about to reset a USB mass-storage device.  
+It acquires the lock and sees that the noio flag is clear.  But before 
+it can issue the reset, another thread sets the noio flag.
 
-Thanks for info.
+I'm not sure what the best solution is.
 
-Out of curiosity, how does F2FS perform on low-end SD cards (compared
-to VFAT)? I know Kingstons and similar can have only single group open
-for writing... VFAT still works there, does F2FS?
+> The lock needn't to be held when the function is called inside
+> pm_runtime_set_memalloc_noio(),  so the bitfield flag should
+> be checked directly without holding power lock in dev_memalloc_noio().
 
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Yes.
+
+A couple of other things...  Runtime resume can be blocked by runtime
+suspend, if a resume is requested while the suspend is in progress.  
+Therefore the runtime suspend code also needs to save-set-restore the
+noio flag.
+
+Also, we should set the noio flag at the start of 
+usb_stor_control_thread, because everything that thread does can 
+potentially block an I/O operation.
+
+Lastly, pm_runtime_get_memalloc_noio always returns false when 
+CONFIG_PM_RUNTIME is disabled.  But we still need to prevent I/O during 
+usb_reset_device even when there's no runtime PM.  Maybe the simplest 
+answer is always to set noio during resets.  That would also help with 
+the race described above.
+
+Alan Stern
+
