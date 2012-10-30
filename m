@@ -1,162 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934225Ab2J3Svq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:51:46 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46116 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965462Ab2J3SrT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:47:19 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: torvalds@linux-foundation.org
-Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com,
-        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v8 05/16] mm/huge_memory: use new hashtable implementation
-Date: Tue, 30 Oct 2012 14:46:01 -0400
-Message-Id: <1351622772-16400-5-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
-References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
+	id S934234Ab2J3SwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:52:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45155 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965461Ab2J3SrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 14:47:17 -0400
+Date: Tue, 30 Oct 2012 19:48:00 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] fix and improvements for percpu-rw-semaphores
+	(was: brw_mutex: big read-write mutex)
+Message-ID: <20121030184800.GA16129@redhat.com>
+References: <20121015190958.GA4799@redhat.com> <20121015191018.GA4816@redhat.com> <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com> <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com> <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch hugemem to use the new hashtable implementation. This reduces the
-amount of generic unrelated code in the hugemem.
+On 10/22, Mikulas Patocka wrote:
+>
+> > > Ooooh. And I just noticed include/linux/percpu-rwsem.h which does
+> > > something similar. Certainly it was not in my tree when I started
+> > > this patch... percpu_down_write() doesn't allow multiple writers,
+> > > but the main problem it uses msleep(1). It should not, I think.
 
-This also removes the dymanic allocation of the hash table. The size of the table is
-constant so there's no point in paying the price of an extra dereference when accessing
-it.
+But, since we already have percpu_rw_semaphore, I do not think I can
+add another similar thing,
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- mm/huge_memory.c | 53 ++++++++++++-----------------------------------------
- 1 file changed, 12 insertions(+), 41 deletions(-)
+However percpu_rw_semaphore is sub-optimal, not sure uprobes can use
+it to block dup_mmap(). Perhaps we can improve it?
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 3c14a96..4b32238 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -19,6 +19,7 @@
- #include <linux/mman.h>
- #include <linux/pagemap.h>
- #include <linux/migrate.h>
-+#include <linux/hashtable.h>
- #include <asm/tlb.h>
- #include <asm/pgalloc.h>
- #include "internal.h"
-@@ -59,12 +60,12 @@ static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
- static unsigned int khugepaged_max_ptes_none __read_mostly = HPAGE_PMD_NR-1;
- 
- static int khugepaged(void *none);
--static int mm_slots_hash_init(void);
- static int khugepaged_slab_init(void);
- static void khugepaged_slab_free(void);
- 
--#define MM_SLOTS_HASH_HEADS 1024
--static struct hlist_head *mm_slots_hash __read_mostly;
-+#define MM_SLOTS_HASH_BITS 10
-+static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
-+
- static struct kmem_cache *mm_slot_cache __read_mostly;
- 
- /**
-@@ -545,12 +546,6 @@ static int __init hugepage_init(void)
- 	if (err)
- 		goto out;
- 
--	err = mm_slots_hash_init();
--	if (err) {
--		khugepaged_slab_free();
--		goto out;
--	}
--
- 	/*
- 	 * By default disable transparent hugepages on smaller systems,
- 	 * where the extra memory used could hurt more than TLB overhead
-@@ -1694,47 +1689,23 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
- 	kmem_cache_free(mm_slot_cache, mm_slot);
- }
- 
--static int __init mm_slots_hash_init(void)
--{
--	mm_slots_hash = kzalloc(MM_SLOTS_HASH_HEADS * sizeof(struct hlist_head),
--				GFP_KERNEL);
--	if (!mm_slots_hash)
--		return -ENOMEM;
--	return 0;
--}
--
--#if 0
--static void __init mm_slots_hash_free(void)
--{
--	kfree(mm_slots_hash);
--	mm_slots_hash = NULL;
--}
--#endif
--
- static struct mm_slot *get_mm_slot(struct mm_struct *mm)
- {
--	struct mm_slot *mm_slot;
--	struct hlist_head *bucket;
-+	struct mm_slot *slot;
- 	struct hlist_node *node;
- 
--	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
--				% MM_SLOTS_HASH_HEADS];
--	hlist_for_each_entry(mm_slot, node, bucket, hash) {
--		if (mm == mm_slot->mm)
--			return mm_slot;
--	}
-+	hash_for_each_possible(mm_slots_hash, slot, node, hash, (unsigned long) mm)
-+		if (slot->mm == mm)
-+			return slot;
-+
- 	return NULL;
- }
- 
- static void insert_to_mm_slots_hash(struct mm_struct *mm,
- 				    struct mm_slot *mm_slot)
- {
--	struct hlist_head *bucket;
--
--	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
--				% MM_SLOTS_HASH_HEADS];
- 	mm_slot->mm = mm;
--	hlist_add_head(&mm_slot->hash, bucket);
-+	hash_add(mm_slots_hash, &mm_slot->hash, (long)mm);
- }
- 
- static inline int khugepaged_test_exit(struct mm_struct *mm)
-@@ -1803,7 +1774,7 @@ void __khugepaged_exit(struct mm_struct *mm)
- 	spin_lock(&khugepaged_mm_lock);
- 	mm_slot = get_mm_slot(mm);
- 	if (mm_slot && khugepaged_scan.mm_slot != mm_slot) {
--		hlist_del(&mm_slot->hash);
-+		hash_del(&mm_slot->hash);
- 		list_del(&mm_slot->mm_node);
- 		free = 1;
- 	}
-@@ -2252,7 +2223,7 @@ static void collect_mm_slot(struct mm_slot *mm_slot)
- 
- 	if (khugepaged_test_exit(mm)) {
- 		/* free mm_slot */
--		hlist_del(&mm_slot->hash);
-+		hash_del(&mm_slot->hash);
- 		list_del(&mm_slot->mm_node);
- 
- 		/*
--- 
-1.7.12.4
+> > > But. It seems that percpu_up_write() is equally wrong? Doesn't
+> > > it need synchronize_rcu() before "p->locked = false" ?
+> > >
+> > > (add Mikulas)
+> >
+> > Mikulas said something about doing an updated patch, so I figured I
+> > would look at his next version.
+> >
+> > 							Thanx, Paul
+>
+> The best ideas proposed in this thread are:
+>
+>
+> Using heavy/light barries by Lai Jiangshan.
+
+So. down_write/up_right does msleep() and it needs to call
+synchronize_sched() 3 times.
+
+This looks too much. It is not that I am worried about the writers,
+the problem is that the new readers are blocked completely while the
+writer sleeps in msleep/synchronize_sched.
+
+Paul, Mikulas, et al. Could you please look at the new implementation
+below? Completely untested/uncompiled, just for discussion.
+
+Compared to the current implementation, down_read() is still possible
+while the writer sleeps in synchronize_sched(), but the reader uses
+rw_semaphore/atomic_inc when it detects the waiting writer.
+
+Can this work? Do you think this is better than we have now?
+
+
+Note: probably we can optimize percpu_down/up_write more, we can
+"factor out" synchronize_sched(), multiple writers can do this in
+parallel before they take ->writer_mutex to exclude each other.
+But this won't affect the readers, and this can be done later.
+
+Oleg.
+
+------------------------------------------------------------------------------
+struct percpu_rw_semaphore {
+	long __percpu		*fast_read_ctr;
+	struct mutex            writer_mutex;
+	struct rw_semaphore 	rw_sem;
+	atomit_t		slow_read_ctr;
+};
+
+static bool update_fast_ctr(struct percpu_rw_semaphore *brw, long val)
+{
+	bool success = false;
+
+	preempt_disable();
+	if (likely(!mutex_is_locked(&brw->writer_mutex))) {
+		__this_cpu_add(*brw->fast_read_ctr, val);
+		success = true;
+	}
+	preempt_enable();
+
+	return success;
+}
+
+static long clear_fast_read_ctr(struct percpu_rw_semaphore *brw)
+{
+	long sum = 0;
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
+		sum += per_cpu(*brw->fast_read_ctr, cpu);
+		per_cpu(*brw->fast_read_ctr, cpu) = 0;
+	}
+
+	return sum;
+}
+
+void percpu_down_read(struct percpu_rw_semaphore *brw)
+{
+	if (likely(update_fast_ctr(+1)))
+		return;
+
+	down_read(&brw->rw_sem);
+	atomic_inc(&brw->slow_read_ctr);
+	up_read(&brw->rw_sem);
+}
+
+void percpu_up_read(struct percpu_rw_semaphore *brw)
+{
+	if (likely(update_fast_ctr(-1)))
+		return;
+
+	if (atomic_dec_and_test(&brw->slow_read_ctr))
+		wake_up_all(&brw->write_waitq);
+}
+
+void percpu_down_write(struct percpu_rw_semaphore *brw)
+{
+	mutex_lock(&brw->writer_mutex);
+	/* ensure mutex_is_locked() is visible to the readers */
+	synchronize_sched();
+
+	/* block the new readers */
+	down_write(&brw->rw_sem);
+
+	atomic_add(&brw->slow_read_ctr, clear_fast_read_ctr(brw));
+
+	wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
+}
+
+void percpu_up_write(struct percpu_rw_semaphore *brw)
+{
+	up_write(&brw->rw_sem);
+	/* insert the barrier before the next fast-path in down_read */
+	synchronize_sched();
+
+	mutex_unlock(&brw->writer_mutex);
+}
 
