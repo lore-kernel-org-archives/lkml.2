@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758131Ab2J3KHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 06:07:46 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:51749 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab2J3KHo (ORCPT
+	id S1758102Ab2J3KJt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 06:09:49 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:62038 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756683Ab2J3KJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 06:07:44 -0400
+	Tue, 30 Oct 2012 06:09:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <20121029190554.GA15015@polaris.bitmath.org>
+In-Reply-To: <20121029192558.GA15061@polaris.bitmath.org>
 References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1351241067-9521-3-git-send-email-benjamin.tissoires@gmail.com>
-	<20121029190554.GA15015@polaris.bitmath.org>
-Date: Tue, 30 Oct 2012 11:07:42 +0100
-Message-ID: <CAN+gG=EVx_U-Ldoi9Dnbn6A7nn0mztnrYbCCCRo9SDzv=fM0PA@mail.gmail.com>
-Subject: Re: [PATCH v2 02/11] HID: core: fix unit exponent parsing
+	<1351241067-9521-4-git-send-email-benjamin.tissoires@gmail.com>
+	<20121029192558.GA15061@polaris.bitmath.org>
+Date: Tue, 30 Oct 2012 11:09:46 +0100
+Message-ID: <CAN+gG=HLmCszdxgdcmt5AgzNyt08HamCdd2BjzCaTB5k7wYcnQ@mail.gmail.com>
+Subject: Re: [PATCH v2 03/11] HID: hid-input: add usage_index argument in
+ input_mapping and event.
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: Henrik Rydberg <rydberg@euromail.se>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
@@ -25,115 +26,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
-
-On Mon, Oct 29, 2012 at 8:05 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+On Mon, Oct 29, 2012 at 8:25 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
 > Hi Benjamin,
 >
->> HID spec details special values for the HID field unit exponent.
->> Basically, the range [0x8..0xf] correspond to [-8..-1].
->>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
->> ---
+>> Currently, there is no way to know the index of the current field
+>> in the .input_mapping and .event callbacks  when this field is inside
+>> an array of HID fields.
+>> This patch forwards this index to the input_mapping and event
+>> callbacks.
 >
-> Standard two's complement, in other words?
+> I agree with the idea, but the function argument list is becoming
+> ridiculously long... Could we remove the usage pointer argument, at
+> least?
 
-yes, but for 4-bits values. The thing is that I didn't managed to
-figure out if it was allowed to give unit exponent with more than 4
-bits...
+yeah, totally agree. Let me just check whether it will not introduce
+more problems than it solves for my driver.
 
 >
->>  drivers/hid/hid-core.c  | 10 +++++++++-
->>  drivers/hid/hid-input.c | 19 +++++++++++++------
->>  2 files changed, 22 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
->> index 9904776..6bde6e4 100644
->> --- a/drivers/hid/hid-core.c
->> +++ b/drivers/hid/hid-core.c
->> @@ -315,6 +315,7 @@ static s32 item_sdata(struct hid_item *item)
->>
->>  static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
->>  {
->> +     __u32 raw_value;
->>       switch (item->tag) {
->>       case HID_GLOBAL_ITEM_TAG_PUSH:
->>
->> @@ -365,7 +366,14 @@ static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
->>               return 0;
->>
->>       case HID_GLOBAL_ITEM_TAG_UNIT_EXPONENT:
->> -             parser->global.unit_exponent = item_sdata(item);
->> +             /* Units exponent negative numbers are given through a special
->> +              * table.
->> +              * See "6.2.2.7 Global Items" for more information. */
->> +             raw_value = item_udata(item);
->> +             if ((raw_value >> 3) == 1)
->> +                     parser->global.unit_exponent = raw_value - 16;
->> +             else
->> +                     parser->global.unit_exponent = raw_value;
+>         int (*event)(struct hid_device *hdev, struct hid_field *field,
+>                         unsigned int usage_index, __s32 value);
 >
-> I beleive the function you want is snto32(value, 4).
+>
+>> @@ -1071,19 +1072,24 @@ static void hid_input_field(struct hid_device *hid, struct hid_field *field,
+>>       for (n = 0; n < count; n++) {
+>>
+>>               if (HID_MAIN_ITEM_VARIABLE & field->flags) {
+>> -                     hid_process_event(hid, field, &field->usage[n], value[n], interrupt);
+>> +                     hid_process_event(hid, field, &field->usage[n], n,
+>> +                             value[n], interrupt);
+>>                       continue;
+>>               }
+>>
+>>               if (field->value[n] >= min && field->value[n] <= max
+>>                       && field->usage[field->value[n] - min].hid
+>>                       && search(value, field->value[n], count))
+>> -                             hid_process_event(hid, field, &field->usage[field->value[n] - min], 0, interrupt);
+>> +                             hid_process_event(hid, field,
+>> +                                     &field->usage[field->value[n] - min], n,
+>> +                                     0, interrupt);
+>
+> Wrong index?
 
-but to be sure, we should still do a test against (raw_value & 0xf0)
-for values with more than 4 bits, no?
+oops, I'll have to check that.
 
-Cheers,
+Thanks,
 Benjamin
 
 >
->>               return 0;
 >>
->>       case HID_GLOBAL_ITEM_TAG_UNIT:
->> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
->> index 1b0adc3..fc9f2b5 100644
->> --- a/drivers/hid/hid-input.c
->> +++ b/drivers/hid/hid-input.c
->> @@ -215,7 +215,7 @@ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
->>                                       field->logical_minimum;
->>       __s32 physical_extents = field->physical_maximum -
->>                                       field->physical_minimum;
->> -     __s32 prev;
->> +     __s32 prev, tmp_exponent;
->>
->>       /* Check if the extents are sane */
->>       if (logical_extents <= 0 || physical_extents <= 0)
->> @@ -235,17 +235,24 @@ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
->>       case ABS_MT_TOOL_Y:
->>       case ABS_MT_TOUCH_MAJOR:
->>       case ABS_MT_TOUCH_MINOR:
->> -             if (field->unit == 0x11) {              /* If centimeters */
->> +             if (field->unit & 0xffffff00)           /* Not a length */
->> +                     return 0;
->> +             tmp_exponent = field->unit >> 4;
->> +             if ((tmp_exponent >> 3) == 1)
->> +                     tmp_exponent -= 16;
+>>               if (value[n] >= min && value[n] <= max
+>>                       && field->usage[value[n] - min].hid
+>>                       && search(field->value, value[n], count))
+>> -                             hid_process_event(hid, field, &field->usage[value[n] - min], 1, interrupt);
+>> +                             hid_process_event(hid, field,
+>> +                                     &field->usage[value[n] - min], n,
+>> +                                     1, interrupt);
 >
-> Ditto.
+> Wrong index?
 >
->> +             switch (field->unit & 0xf) {
->> +             case 0x1:                               /* If centimeters */
->>                       /* Convert to millimeters */
->> -                     unit_exponent += 1;
->> -             } else if (field->unit == 0x13) {       /* If inches */
->> +                     unit_exponent += tmp_exponent;
->> +                     break;
->> +             case 0x3:                               /* If inches */
->>                       /* Convert to millimeters */
->>                       prev = physical_extents;
->>                       physical_extents *= 254;
->>                       if (physical_extents < prev)
->>                               return 0;
->> -                     unit_exponent -= 1;
->> -             } else {
->> +                     unit_exponent += tmp_exponent - 2;
->> +             default:
->>                       return 0;
->>               }
->>               break;
->> --
->> 1.7.11.7
+>>       }
 >>
+>>       memcpy(field->value, value, count * sizeof(__s32));
 >
 > Thanks,
 > Henrik
