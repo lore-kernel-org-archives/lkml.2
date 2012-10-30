@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934893Ab2J3WDe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 18:03:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7000 "EHLO mx1.redhat.com"
+	id S965238Ab2J3WDt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 18:03:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31478 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934865Ab2J3WD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 18:03:29 -0400
+	id S934869Ab2J3WDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 18:03:45 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -14,20 +14,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 24/25] perf tests: Add attr tests under builtin test command
-Date: Tue, 30 Oct 2012 23:02:05 +0100
-Message-Id: <1351634526-1516-25-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 25/25] perf tests: Add documentation for attr tests
+Date: Tue, 30 Oct 2012 23:02:06 +0100
+Message-Id: <1351634526-1516-26-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
 References: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The test attr suite is run only if it's run under perf source
-directory, or tests are found in installed path.
-
-Otherwise tests are omitted (notification is displayed)
-and finished as successful.
+Adding documentation for attr tests.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -37,119 +33,80 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- tools/perf/Makefile             |  9 +++++++++
- tools/perf/perf.h               |  1 +
- tools/perf/tests/attr.c         | 35 +++++++++++++++++++++++++++++++++++
- tools/perf/tests/builtin-test.c |  4 ++++
- 4 files changed, 49 insertions(+)
+ tools/perf/tests/attr/README | 64 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 64 insertions(+)
+ create mode 100644 tools/perf/tests/attr/README
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 1da87a3..ba380b9 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -898,6 +898,11 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
- 		'-DPREFIX="$(prefix_SQ)"' \
- 		$<
- 
-+$(OUTPUT)tests/attr.o: $(OUTPUT)tests/attr.c $(OUTPUT)PERF-CFLAGS
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
-+		'-DBINDIR="$(bindir_SQ)"' \
-+		$<
+diff --git a/tools/perf/tests/attr/README b/tools/perf/tests/attr/README
+new file mode 100644
+index 0000000..d102957
+--- /dev/null
++++ b/tools/perf/tests/attr/README
+@@ -0,0 +1,64 @@
++The struct perf_event_attr test (attr tests) support
++====================================================
++This testing support is embedded into perf directly and is governed
++by the PERF_TEST_ATTR environment variable and hook inside the
++sys_perf_event_open function.
 +
- $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
- 
-@@ -1062,6 +1067,10 @@ install: all try-install-man
- 	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
- 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(sysconfdir_SQ)/bash_completion.d'
- 	$(INSTALL) bash_completion '$(DESTDIR_SQ)$(sysconfdir_SQ)/bash_completion.d/perf'
-+	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests'
-+	$(INSTALL) tests/attr.py '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests'
-+	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
-+	$(INSTALL) tests/attr/* '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
- 
- install-python_ext:
- 	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 0047264..054182e 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -178,6 +178,7 @@ extern bool test_attr__enabled;
- void test_attr__init(void);
- void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
- 		     int fd, int group_fd, unsigned long flags);
-+int  test_attr__run(void);
- 
- static inline int
- sys_perf_event_open(struct perf_event_attr *attr,
-diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
-index 2fe8cae..ef2505e 100644
---- a/tools/perf/tests/attr.c
-+++ b/tools/perf/tests/attr.c
-@@ -26,9 +26,12 @@
- #include <linux/kernel.h>
- #include "../perf.h"
- #include "util.h"
-+#include "exec_cmd.h"
- 
- #define ENV "PERF_TEST_ATTR"
- 
-+extern int verbose;
++The general idea is to store 'struct perf_event_attr' details for
++each event created within single perf command. Each event details
++are stored into separate text file. Once perf command is finished
++these files are checked for values we expect for command.
 +
- bool test_attr__enabled;
- 
- static char *dir;
-@@ -134,3 +137,35 @@ void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
- 	if (store_event(attr, pid, cpu, fd, group_fd, flags))
- 		die("test attr FAILED");
- }
++The attr tests consist of following parts:
 +
-+static int run_dir(const char *d, const char *perf)
-+{
-+	char cmd[3*PATH_MAX];
++tests/attr.c
++------------
++This is the sys_perf_event_open hook implementation. The hook
++is triggered when the PERF_TEST_ATTR environment variable is
++defined. It must contain name of existing directory with access
++and write permissions.
 +
-+	snprintf(cmd, 3*PATH_MAX, "python %s/attr.py -d %s/attr/ -p %s %s",
-+		 d, d, perf, verbose ? "-v" : "");
++For each sys_perf_event_open call event details are stored in
++separate file. Besides 'struct perf_event_attr' values we also
++store 'fd' and 'group_fd' values to allow checking for groups.
 +
-+	return system(cmd);
-+}
++tests/attr.py
++-------------
++This is the python script that does all the hard work. It reads
++the test definition, executes it and checks results.
 +
-+int test_attr__run(void)
-+{
-+	struct stat st;
-+	char path_perf[PATH_MAX];
-+	char path_dir[PATH_MAX];
++tests/attr/
++-----------
++Directory containing all attr test definitions.
++Following tests are defined (with perf commands):
 +
-+	/* First try developement tree tests. */
-+	if (!lstat("./tests", &st))
-+		return run_dir("./tests", "./perf");
-+
-+	/* Then installed path. */
-+	snprintf(path_dir,  PATH_MAX, "%s/tests", perf_exec_path());
-+	snprintf(path_perf, PATH_MAX, "%s/perf", BINDIR);
-+
-+	if (!lstat(path_dir, &st) &&
-+	    !lstat(path_perf, &st))
-+		return run_dir(path_dir, path_perf);
-+
-+	fprintf(stderr, " (ommitted)");
-+	return 0;
-+}
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index a04276e..8e2e7d6 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -1455,6 +1455,10 @@ static struct test {
- 		.func = test__syscall_open_tp_fields,
- 	},
- 	{
-+		.desc = "struct perf_event_attr setup",
-+		.func = test_attr__run,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
++  perf record kill                              (test-record-basic)
++  perf record -b kill                           (test-record-branch-any)
++  perf record -j any kill                       (test-record-branch-filter-any)
++  perf record -j any_call kill                  (test-record-branch-filter-any_call)
++  perf record -j any_ret kill                   (test-record-branch-filter-any_ret)
++  perf record -j hv kill                        (test-record-branch-filter-hv)
++  perf record -j ind_call kill                  (test-record-branch-filter-ind_call)
++  perf record -j k kill                         (test-record-branch-filter-k)
++  perf record -j u kill                         (test-record-branch-filter-u)
++  perf record -c 123 kill                       (test-record-count)
++  perf record -d kill                           (test-record-data)
++  perf record -F 100 kill                       (test-record-freq)
++  perf record -g -- kill                        (test-record-graph-default)
++  perf record -g dwarf -- kill                  (test-record-graph-dwarf)
++  perf record -g fp kill                        (test-record-graph-fp)
++  perf record --group -e cycles,instructions kill (test-record-group)
++  perf record -e '{cycles,instructions}' kill   (test-record-group1)
++  perf record -D kill                           (test-record-no-delay)
++  perf record -i kill                           (test-record-no-inherit)
++  perf record -n kill                           (test-record-no-samples)
++  perf record -c 100 -P kill                    (test-record-period)
++  perf record -R kill                           (test-record-raw)
++  perf stat -e cycles kill                      (test-stat-basic)
++  perf stat kill                                (test-stat-default)
++  perf stat -d kill                             (test-stat-detailed-1)
++  perf stat -dd kill                            (test-stat-detailed-2)
++  perf stat -ddd kill                           (test-stat-detailed-3)
++  perf stat --group -e cycles,instructions kill (test-stat-group)
++  perf stat -e '{cycles,instructions}' kill     (test-stat-group1)
++  perf stat -i -e cycles kill                   (test-stat-no-inherit)
 -- 
 1.7.11.7
 
