@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533Ab2J3BxT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 21:53:19 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:40056 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab2J3BxS (ORCPT
+	id S1751692Ab2J3CCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 22:02:09 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55899 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab2J3CCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 21:53:18 -0400
-Message-ID: <508F32A5.10000@ahsoftware.de>
-Date: Tue, 30 Oct 2012 02:51:33 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Mon, 29 Oct 2012 22:02:06 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Jacob Shin <jacob.shin@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: x86: Regression in 3.6.4, bisected to "Exclude E820_RESERVED
- regions..."
-References: <508E58FD.2000707@ahsoftware.de> <508E8264.8070807@ahsoftware.de> <20121029165946.GB6614@kroah.com> <508EC69F.2030505@ahsoftware.de> <20121029183250.GB4623@kroah.com> <508EDEC6.7030101@ahsoftware.de> <20121029230146.GA22320@kroah.com>
-In-Reply-To: <20121029230146.GA22320@kroah.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <200901071430.55580.jbarnes@virtuousgeek.org>
+References: <200901071430.55580.jbarnes@virtuousgeek.org>
+Date: Mon, 29 Oct 2012 19:02:05 -0700
+X-Google-Sender-Auth: f7WMYVGFQPXLwerucq9jM_eZ3wo
+Message-ID: <CAE9FiQVYZUQULpDkGJFr85o5oZTdYYegdXoQCg6V8xY9S6G2pA@mail.gmail.com>
+Subject: Re: [git pull] PCI pull request for 2.6.29
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 30.10.2012 00:01, schrieb Greg Kroah-Hartman:
+On Wed, Jan 7, 2009 at 2:30 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+>
+> Arjan van de Ven (1):
+>       resource: allow MMIO exclusivity for device drivers
+>
 
-> Can you test out 3.6.5-rc1 and see if that works properly for you or
-> not?  It should have all of the fixes in it already.
+hi, all
 
-Just in time before I receive my new "memory layout" which might not 
-have the problem with 3.6.4. ;)
+commit e8de1481fd7126ee9e93d6889da6f00c05e1e019
+Author: Arjan van de Ven <arjan@linux.intel.com>
+Date:   Wed Oct 22 19:55:31 2008 -0700
 
-3.6.5-rc1 booted just fine, thanks a lot.
+    resource: allow MMIO exclusivity for device drivers
 
-Regards,
+only user is e1000e driver. and real fix
 
-Alexander
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=4a7703582836f55a1cbad0e2c1c6ebbee3f9b3a7
 
+is already in the upsteam for https://bugzilla.redhat.com/show_bug.cgi?id=459202
+
+so wonder if e8de1481fd7126ee9e93d6889da6f00c05e1e019 should be
+reverted from upstream?
+
+Thanks
+
+Yinghai
