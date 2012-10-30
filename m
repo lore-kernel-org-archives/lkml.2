@@ -1,127 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab2J3GfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 02:35:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39809 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752397Ab2J3GfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 02:35:19 -0400
-Date: Tue, 30 Oct 2012 07:34:36 +0100
-From: Andrew Jones <drjones@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH V2 RFC 3/3] kvm: Check system load and handle different
- commit cases accordingly
-Message-ID: <20121030063436.GA2224@turtle.usersys.redhat.com>
-References: <20121029140621.15448.92083.sendpatchset@codeblue>
- <20121029140717.15448.83182.sendpatchset@codeblue>
- <1351533280.24721.46.camel@twins>
- <508F6C60.1050202@linux.vnet.ibm.com>
+	id S1755048Ab2J3Gpv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 02:45:51 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:52908 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab2J3Gpu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 02:45:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508F6C60.1050202@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351540778.2721.7.camel@bwh-desktop.uk.solarflarecom.com>
+References: <5afab1ebe83e4361f1fd75bbea0c559af195bf02.1351529738.git.viresh.kumar@linaro.org>
+	<1351540778.2721.7.camel@bwh-desktop.uk.solarflarecom.com>
+Date: Tue, 30 Oct 2012 12:15:49 +0530
+Message-ID: <CAKohponL_3m2KVytiWm8ZHyB5aimk8CzGrqr5J0LMy8MFGodHg@mail.gmail.com>
+Subject: Re: [PATCH] net: dsa/slave: Fix compilation warnings
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: davem@davemloft.net, linaro-dev@lists.linaro.org, patches@linaro.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 11:27:52AM +0530, Raghavendra K T wrote:
-> On 10/29/2012 11:24 PM, Peter Zijlstra wrote:
-> >On Mon, 2012-10-29 at 19:37 +0530, Raghavendra K T wrote:
-> >>+/*
-> >>+ * A load of 2048 corresponds to 1:1 overcommit
-> >>+ * undercommit threshold is half the 1:1 overcommit
-> >>+ * overcommit threshold is 1.75 times of 1:1 overcommit threshold
-> >>+ */
-> >>+#define COMMIT_THRESHOLD (FIXED_1)
-> >>+#define UNDERCOMMIT_THRESHOLD (COMMIT_THRESHOLD >> 1)
-> >>+#define OVERCOMMIT_THRESHOLD ((COMMIT_THRESHOLD << 1) -
-> >>(COMMIT_THRESHOLD >> 2))
-> >>+
-> >>+unsigned long kvm_system_load(void)
-> >>+{
-> >>+       unsigned long load;
-> >>+
-> >>+       load = avenrun[0] + FIXED_1/200;
-> >>+       load = load / num_online_cpus();
-> >>+
-> >>+       return load;
-> >>+}
-> >
-> >ARGH.. no that's wrong.. very wrong.
-> >
-> >  1) avenrun[] EXPORT_SYMBOL says it should be removed, that's not a
-> >joke.
-> 
-> Okay.
-> 
-> >  2) avenrun[] is a global load, do not ever use a global load measure
-> 
-> This makes sense. Using a local optimization that leads to near global
-> optimization is the way to go.
-> 
-> >
-> >  3) avenrun[] has nothing what so ever to do with runqueue lengths,
-> >someone with a gazillion tasks in D state will get a huge load but the
-> >cpu is very idle.
-> >
-> 
-> I used loadavg as an alternative measure. But the above condition
-> poses a concern for that.
-> 
-> Okay, now IIUC, usage of *any* global measure is bad?
-> 
-> Because I was also thinking to use nrrunning()/ num_online_cpus(), to
-> get an idea of global overcommit sense. (ofcourse since, this involves
-> iteration over per CPU nrrunning, I wanted to calculate this
-> periodically)
-> 
-> The overall logic, of having overcommit_threshold,
-> undercommit_threshold, I wanted to use for even dynamic ple_window
-> tuning purpose.
-> 
-> so logic was:
-> < undercommit_threshold => 16k ple_window
-> > overcommit_threshold  => 4k window.
-> for in between case scale the ple_window accordingly.
-> 
-> The alternative was to decide depending on how ple handler succeeded in
-> yield_to. But I thought, that is too sensitive and more overhead.
-> 
-> This topic may deserve different thread, but thought I shall table it here.
-> 
-> So, Thinking about the alternatives to implement, logic such as
-> 
-> (a) if(undercommitted)
->     just go back and spin rather than going for yield_to iteration.
-> (b) if (overcommitted)
->    better to yield rather than  spinning logic
-> 
->    of current patches..
-> 
-> [ ofcourse, (a) is already met to large extent by your patches..]
-> 
-> So I think everything boils down to
-> 
-> "how do we measure these two thresholds without much overhead in a
-> compliant way"
-> 
-> Ideas welcome..
-> 
+On 30 October 2012 01:29, Ben Hutchings <bhutchings@solarflare.com> wrote:
+> On Mon, 2012-10-29 at 22:27 +0530, Viresh Kumar wrote:
+>> Currently when none of CONFIG_NET_DSA_TAG_DSA, CONFIG_NET_DSA_TAG_EDSA and
+>> CONFIG_NET_DSA_TAG_TRAILER is defined, we get following compilation warnings:
+>>
+>> net/dsa/slave.c:51:12: warning: 'dsa_slave_init' defined but not used [-Wunused-function]
+>> net/dsa/slave.c:60:12: warning: 'dsa_slave_open' defined but not used [-Wunused-function]
+>> net/dsa/slave.c:98:12: warning: 'dsa_slave_close' defined but not used [-Wunused-function]
+>> net/dsa/slave.c:116:13: warning: 'dsa_slave_change_rx_flags' defined but not used [-Wunused-function]
+>> net/dsa/slave.c:127:13: warning: 'dsa_slave_set_rx_mode' defined but not used [-Wunused-function]
+>> net/dsa/slave.c:136:12: warning: 'dsa_slave_set_mac_address' defined but not used [-Wunused-function]
+>> net/dsa/slave.c:164:12: warning: 'dsa_slave_ioctl' defined but not used [-Wunused-function]
+>>
+>> Fix them by enclosing these routines under #ifdef,endif.
+> [...]
+>
+> This is not a useful configuration.  It might make more sense to make
+> NET_DSA a hidden option and have the DSA drivers (in drivers/net/dsa)
+> select it rather than depending on it.
 
-What happened to Avi's preempt notifier idea for determining
-under/overcommit? If nobody has picked that up yet, then I'll go ahead and
-try to prototype it.
+I don't have any idea about net/dsa/***. I just wanted to fix this
+awkward looking warning :)
+What i understood from your comment is: Atleast one of the tagging
+formats must be
+always enabled if we want to use net/dsa/ stuff ??
 
-Drew
+And so the functions i have enclosed under ifdefs will always be used
+if net/dsa/ is
+used.
+
+And so, if we select NET_DSA from these tagging drivers, then only slave.c will
+get compiled. Otherwise slave.c dsa.c dsa_core.c wouldn't be compiled and so
+no warnings.
+
+Correct??
+
+--
+viresh
