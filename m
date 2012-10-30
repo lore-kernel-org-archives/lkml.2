@@ -1,169 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965633Ab2J3TCO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:02:14 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:40543 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965558Ab2J3S7Q (ORCPT
+	id S965579Ab2J3TCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:02:38 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36318 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965546Ab2J3TCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:59:16 -0400
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Subject: [RFC 3/7] capebus: Beaglebone generic cape support
-Date: Wed, 31 Oct 2012 18:52:09 +0200
-Message-Id: <1351702333-8456-4-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
-References: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
+	Tue, 30 Oct 2012 15:02:36 -0400
+Date: Tue, 30 Oct 2012 22:00:09 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] zram: handle mem suffixes in disk size zram_sysfs
+ parameter
+Message-ID: <20121030190009.GD2454@swordfish>
+References: <20121030090319.GB5052@swordfish.minsk.epam.com>
+ <20121030180439.GA3350@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030180439.GA3350@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing beaglebone generic cape support.
+  zram: handle mem suffixes in disk size zram_sysfs parameter
 
-With this you can create almost any kind of cape driver
-that doesn't require complex interconnection of the parts.
+  Use memparse() to allow mem suffixes in disksize sysfs number.
+  Examples:
+       echo 256K > /sys/block/zram0/disksize
+       echo 512M > /sys/block/zram0/disksize
+       echo 1G > /sys/block/zram0/disksize
 
-Most beaglebone capes can be created with this, including
-all the display capes (DVI/VGA/LCD) with touchscreen or not,
-capes that only use i2c or spi devices, gpio-keys, leds etc.
+  Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- drivers/capebus/capes/Kconfig             |  6 ++
- drivers/capebus/capes/Makefile            |  1 +
- drivers/capebus/capes/bone-generic-cape.c | 96 +++++++++++++++++++++++++++++++
- 3 files changed, 103 insertions(+)
- create mode 100644 drivers/capebus/capes/Kconfig
- create mode 100644 drivers/capebus/capes/Makefile
- create mode 100644 drivers/capebus/capes/bone-generic-cape.c
 
-diff --git a/drivers/capebus/capes/Kconfig b/drivers/capebus/capes/Kconfig
-new file mode 100644
-index 0000000..bfe54a6
---- /dev/null
-+++ b/drivers/capebus/capes/Kconfig
-@@ -0,0 +1,6 @@
-+config CAPEBUS_BONE_GENERIC
-+	tristate "Beaglebone Generic cape driver"
-+	depends on CAPEBUS_BONE_CONTROLLER
-+	default n
-+	help
-+	  "Select this to enable a generic cape driver; LCD/DVI capes etc"
-diff --git a/drivers/capebus/capes/Makefile b/drivers/capebus/capes/Makefile
-new file mode 100644
-index 0000000..83da381
---- /dev/null
-+++ b/drivers/capebus/capes/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_CAPEBUS_BONE_GENERIC)	+= bone-generic-cape.o
-diff --git a/drivers/capebus/capes/bone-generic-cape.c b/drivers/capebus/capes/bone-generic-cape.c
-new file mode 100644
-index 0000000..70be50a
---- /dev/null
-+++ b/drivers/capebus/capes/bone-generic-cape.c
-@@ -0,0 +1,96 @@
-+/*
-+ * Generic cape support
-+ *
-+ * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
-+ * Copyright (C) 2012 Texas Instruments Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/module.h>
+ drivers/staging/zram/zram_sysfs.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index edb0ed4..de1eacf 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -15,6 +15,7 @@
+ #include <linux/device.h>
+ #include <linux/genhd.h>
+ #include <linux/mm.h>
 +#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/timer.h>
-+#include <linux/errno.h>
-+#include <linux/init.h>
-+#include <linux/delay.h>
-+#include <linux/bitops.h>
-+#include <linux/err.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinmux.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/atomic.h>
-+#include <linux/clk.h>
-+#include <asm/barrier.h>
-+#include <plat/clock.h>
-+#include <plat/omap_device.h>
-+#include <linux/clkdev.h>
-+#include <linux/input/ti_am335x_tsc.h>
-+#include <linux/platform_data/ti_am335x_adc.h>
-+#include <linux/mfd/ti_am335x_tscadc.h>
-+
-+#include <linux/capebus/capebus-bone.h>
-+
-+/* fwd decl. */
-+extern struct cape_driver bonegeneric_driver;
-+
-+static const struct of_device_id bonegeneric_of_match[] = {
-+	{
-+		.compatible = "bone-generic-cape",
-+	},	{ },
-+};
-+MODULE_DEVICE_TABLE(of, bonegeneric_of_match);
-+
-+static int bonegeneric_probe(struct cape_dev *dev,
-+		const struct cape_device_id *id)
-+{
-+	struct bone_capebus_generic_info *ginfo;
-+	int err;
-+
-+	err = bone_capebus_probe_prolog(dev, id);
-+	if (err != 0)
-+		return err;
-+
-+	ginfo = bone_capebus_probe_generic(dev, id);
-+	if (IS_ERR_OR_NULL(ginfo))
-+		return IS_ERR(ginfo) ? PTR_ERR(ginfo) : -ENODEV;
-+	dev->drv_priv = ginfo;
-+	return 0;
-+}
-+
-+static void bonegeneric_remove(struct cape_dev *dev)
-+{
-+	bone_capebus_remove_generic(dev->drv_priv);
-+}
-+
-+struct cape_driver bonegeneric_driver = {
-+	.driver = {
-+		.name		= "bonegeneric",
-+		.owner		= THIS_MODULE,
-+		.of_match_table	= bonegeneric_of_match,
-+	},
-+	.probe		= bonegeneric_probe,
-+	.remove		= bonegeneric_remove,
-+};
-+
-+module_capebus_driver(bonegeneric_driver);
-+
-+MODULE_AUTHOR("Pantelis Antoniou");
-+MODULE_DESCRIPTION("Beaglebone generic cape");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:bone-generic-cape");
--- 
-1.7.12
+ 
+ #include "zram_drv.h"
+ 
+@@ -54,13 +55,12 @@ static ssize_t disksize_show(struct device *dev,
+ static ssize_t disksize_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t len)
+ {
+-	int ret;
+ 	u64 disksize;
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+-	ret = kstrtoull(buf, 10, &disksize);
+-	if (ret)
+-		return ret;
++	disksize = memparse(buf, NULL);
++	if (!disksize)
++		return -EINVAL;
+ 
+ 	down_write(&zram->init_lock);
+ 	if (zram->init_done) {
 
