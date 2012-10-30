@@ -1,218 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934718Ab2J3VTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 17:19:05 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:62566 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934669Ab2J3VSo (ORCPT
+	id S934706Ab2J3VTB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 17:19:01 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:50808 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934674Ab2J3VSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Oct 2012 17:18:44 -0400
 From: Behan Webster <behanw@converseincode.com>
 To: balbi@ti.com, davem@davemloft.net
 Cc: linux-usb@vger.kernel.org, netfilter-devel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH V2 2/3] Remove VLAIS usage from gadget code
-Date: Tue, 30 Oct 2012 17:18:56 -0400
-Message-Id: <1351631937-21455-3-git-send-email-behanw@converseincode.com>
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        pageexec@freemail.hu, Behan Webster <behanw@converseincode.com>
+Subject: [PATCH V2 3/3] Remove VLAIS usage from netfilter
+Date: Tue, 30 Oct 2012 17:18:57 -0400
+Message-Id: <1351631937-21455-4-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351631937-21455-1-git-send-email-behanw@converseincode.com>
 References: <1351631937-21455-1-git-send-email-behanw@converseincode.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+From: Jan-Simon Möller <dl9pf@gmx.de>
 
 The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
 precludes the use of compilers which don't implement VLAIS (for instance the
 Clang compiler). This patch instead calculates offsets into the kmalloc-ed
 memory buffer using macros from valign.h.
 
+Patch from series at
+http://lists.cs.uiuc.edu/pipermail/llvm-commits/Week-of-Mon-20120507/142707.html
+by PaX Team.
+
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Cc: pageexec@freemail.hu
+[Modified to use macros from valign.h]
 Signed-off-by: Behan Webster <behanw@converseincode.com>
 ---
- drivers/usb/gadget/f_fs.c |  106 ++++++++++++++++++++++++++-------------------
- 1 file changed, 61 insertions(+), 45 deletions(-)
+ net/netfilter/xt_repldata.h |   40 ++++++++++++++++++++++++----------------
+ 1 file changed, 24 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 64c4ec1..ca6cacc 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -22,6 +22,7 @@
- #include <linux/pagemap.h>
- #include <linux/export.h>
- #include <linux/hid.h>
+diff --git a/net/netfilter/xt_repldata.h b/net/netfilter/xt_repldata.h
+index 6efe4e5..d2b4232 100644
+--- a/net/netfilter/xt_repldata.h
++++ b/net/netfilter/xt_repldata.h
+@@ -5,31 +5,39 @@
+  * they serve as the hanging-off data accessed through repl.data[].
+  */
+ 
 +#include <linux/valign.h>
- #include <asm/unaligned.h>
- 
- #include <linux/usb/composite.h>
-@@ -1875,6 +1876,15 @@ error:
- 	return ret;
- }
- 
-+static void __ffs_init_stringtabs(struct usb_gadget_strings **stringtabs,
-+	struct usb_gadget_strings *t, unsigned len)
-+{
-+		do {
-+			*stringtabs++ = t++;
-+		} while (--len);
-+		*stringtabs = NULL;
-+}
 +
- static int __ffs_data_got_strings(struct ffs_data *ffs,
- 				  char *const _data, size_t len)
- {
-@@ -1911,31 +1921,26 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
- 
- 	/* Allocate everything in one chunk so there's less maintenance. */
- 	{
--		struct {
--			struct usb_gadget_strings *stringtabs[lang_count + 1];
--			struct usb_gadget_strings stringtab[lang_count];
--			struct usb_string strings[lang_count*(needed_count+1)];
--		} *d;
--		unsigned i = 0;
--
--		d = kmalloc(sizeof *d, GFP_KERNEL);
-+		int strtabslen = paddedsize(0, lang_count+1,
-+			struct usb_gadget_strings *, struct usb_gadget_strings);
-+		int strtablen = paddedsize(strtabslen, lang_count,
-+			struct usb_gadget_strings, struct usb_string);
-+		int strlen = paddedsize(strtabslen + strtablen,
-+			lang_count*(needed_count+1), struct usb_string, int);
-+
-+		stringtabs = kmalloc(strtabslen + strtablen + strlen,
-+			GFP_KERNEL);
- 		if (unlikely(!d)) {
- 			kfree(_data);
- 			return -ENOMEM;
- 		}
- 
--		stringtabs = d->stringtabs;
--		t = d->stringtab;
--		i = lang_count;
--		do {
--			*stringtabs++ = t++;
--		} while (--i);
--		*stringtabs = NULL;
--
--		stringtabs = d->stringtabs;
--		t = d->stringtab;
--		s = d->strings;
-+		t = paddedstart(stringtabs, strtabslen,
-+			struct usb_gadget_strings);
-+		s = paddedstart(t, strtablen, struct usb_string);
- 		strings = s;
-+
-+		__ffs_init_stringtabs(stringtabs, t, lang_count);
- 	}
- 
- 	/* For each language */
-@@ -2209,17 +2214,23 @@ static int ffs_func_bind(struct usb_configuration *c,
- 
- 	int ret;
- 
--	/* Make it a single chunk, less management later on */
--	struct {
--		struct ffs_ep eps[ffs->eps_count];
--		struct usb_descriptor_header
--			*fs_descs[full ? ffs->fs_descs_count + 1 : 0];
--		struct usb_descriptor_header
--			*hs_descs[high ? ffs->hs_descs_count + 1 : 0];
--		short inums[ffs->interfaces_count];
--		char raw_descs[high ? ffs->raw_descs_length
--				    : ffs->raw_fs_descs_length];
--	} *data;
-+	struct ffs_ep *eps;
-+	struct usb_descriptor_header **fs_descs;
-+	struct usb_descriptor_header **hs_descs;
-+	short *inums;
-+	char *raw_descs;
-+
-+	int epslen = paddedsize(0, ffs->eps_count,
-+			struct ffs_ep, struct usb_descriptor_header);
-+	int fsdlen = paddedsize(epslen, full ? ffs->fs_descs_count + 1 : 0,
-+			struct usb_descriptor_header,
-+			struct usb_descriptor_header);
-+	int hsdlen = paddedsize(fsdlen, high ? ffs->hs_descs_count + 1 : 0,
-+			struct usb_descriptor_header, short);
-+	int inumlen = paddedsize(hsdlen, ffs->interfaces_count, short, char);
-+	int rawlen = paddedsize(inumlen,
-+		high ? ffs->raw_descs_length : ffs->raw_fs_descs_length,
-+		char, int);
- 
- 	ENTER();
- 
-@@ -2227,21 +2238,28 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	if (unlikely(!(full | high)))
- 		return -ENOTSUPP;
- 
--	/* Allocate */
--	data = kmalloc(sizeof *data, GFP_KERNEL);
-+	/* Allocate a single chunk, less management later on */
-+	eps = kmalloc(epslen+fsdlen+hsdlen+inumlen+rawlen, GFP_KERNEL);
- 	if (unlikely(!data))
- 		return -ENOMEM;
- 
-+	/* Calculate start of each variable in the allocated memory */
-+	fs_descs = paddedstart(eps, epslen, struct usb_descriptor_header *);
-+	hs_descs = paddedstart(fs_descs, fsdlen,
-+		struct usb_descriptor_header *);
-+	inums = paddedstart(hs_descs, hsdlen, short);
-+	raw_descs = paddedstart(inums, inumlen, char);
-+
- 	/* Zero */
--	memset(data->eps, 0, sizeof data->eps);
--	memcpy(data->raw_descs, ffs->raw_descs + 16, sizeof data->raw_descs);
--	memset(data->inums, 0xff, sizeof data->inums);
-+	memset(eps, 0, epslen);
-+	memcpy(raw_descs, ffs->raw_descs + 16, rawlen);
-+	memset(inums, 0xff, inumlen);
- 	for (ret = ffs->eps_count; ret; --ret)
--		data->eps[ret].num = -1;
-+		eps[ret].num = -1;
- 
- 	/* Save pointers */
--	func->eps             = data->eps;
--	func->interfaces_nums = data->inums;
-+	func->eps             = eps;
-+	func->interfaces_nums = inums;
- 
- 	/*
- 	 * Go through all the endpoint descriptors and allocate
-@@ -2249,10 +2267,9 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	 * numbers without worrying that it may be described later on.
- 	 */
- 	if (likely(full)) {
--		func->function.descriptors = data->fs_descs;
-+		func->function.descriptors = fs_descs;
- 		ret = ffs_do_descs(ffs->fs_descs_count,
--				   data->raw_descs,
--				   sizeof data->raw_descs,
-+				   raw_descs, rawlen,
- 				   __ffs_func_bind_do_descs, func);
- 		if (unlikely(ret < 0))
- 			goto error;
-@@ -2261,10 +2278,9 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	}
- 
- 	if (likely(high)) {
--		func->function.hs_descriptors = data->hs_descs;
-+		func->function.hs_descriptors = hs_descs;
- 		ret = ffs_do_descs(ffs->hs_descs_count,
--				   data->raw_descs + ret,
--				   (sizeof data->raw_descs) - ret,
-+				   raw_descs + ret, rawlen - ret,
- 				   __ffs_func_bind_do_descs, func);
- 	}
- 
-@@ -2275,7 +2291,7 @@ static int ffs_func_bind(struct usb_configuration *c,
- 	 */
- 	ret = ffs_do_descs(ffs->fs_descs_count +
- 			   (high ? ffs->hs_descs_count : 0),
--			   data->raw_descs, sizeof data->raw_descs,
-+			   raw_descs, rawlen,
- 			   __ffs_func_bind_do_nums, func);
- 	if (unlikely(ret < 0))
- 		goto error;
+ #define xt_alloc_initial_table(type, typ2) ({ \
+ 	unsigned int hook_mask = info->valid_hooks; \
+ 	unsigned int nhooks = hweight32(hook_mask); \
+ 	unsigned int bytes = 0, hooknum = 0, i = 0; \
+-	struct { \
+-		struct type##_replace repl; \
+-		struct type##_standard entries[nhooks]; \
+-		struct type##_error term; \
+-	} *tbl = kzalloc(sizeof(*tbl), GFP_KERNEL); \
+-	if (tbl == NULL) \
++	int replsize = paddedsize(0, 1, \
++		struct type##_replace, struct type##_standard); \
++	int entsize = paddedsize(replsize, nhooks, \
++		struct type##_standard, struct type##_error); \
++	int termsize = paddedsize(replsize+entsize, 1, \
++		struct type##_error, int); \
++	struct type##_replace *repl = kzalloc(replsize+entsize+termsize, \
++		GFP_KERNEL); \
++	if (repl == NULL) \
+ 		return NULL; \
+-	strncpy(tbl->repl.name, info->name, sizeof(tbl->repl.name)); \
+-	tbl->term = (struct type##_error)typ2##_ERROR_INIT;  \
+-	tbl->repl.valid_hooks = hook_mask; \
+-	tbl->repl.num_entries = nhooks + 1; \
+-	tbl->repl.size = nhooks * sizeof(struct type##_standard) + \
+-	                 sizeof(struct type##_error); \
++	struct type##_standard *entries = paddedstart(repl, replsize, \
++		struct type##_standard); \
++	struct type##_error *term = paddedstart(entries, entsize, \
++		struct type##_error); \
++	strncpy(repl->name, info->name, sizeof(repl->name)); \
++	*term = (struct type##_error)typ2##_ERROR_INIT;  \
++	repl->valid_hooks = hook_mask; \
++	repl->num_entries = nhooks + 1; \
++	repl->size = entsize+termsize; \
+ 	for (; hook_mask != 0; hook_mask >>= 1, ++hooknum) { \
+ 		if (!(hook_mask & 1)) \
+ 			continue; \
+-		tbl->repl.hook_entry[hooknum] = bytes; \
+-		tbl->repl.underflow[hooknum]  = bytes; \
+-		tbl->entries[i++] = (struct type##_standard) \
++		repl->hook_entry[hooknum] = bytes; \
++		repl->underflow[hooknum]  = bytes; \
++		entries[i++] = (struct type##_standard) \
+ 			typ2##_STANDARD_INIT(NF_ACCEPT); \
+ 		bytes += sizeof(struct type##_standard); \
+ 	} \
+-	tbl; \
++	repl; \
+ })
 -- 
 1.7.9.5
 
