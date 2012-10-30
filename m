@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912Ab2J3JNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 05:13:43 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34659 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751903Ab2J3JNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 05:13:40 -0400
-Message-ID: <508F9A3E.9020105@ti.com>
-Date: Tue, 30 Oct 2012 10:13:34 +0100
-From: "Cousson, Benoit" <b-cousson@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	id S1756930Ab2J3JOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 05:14:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54876 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756608Ab2J3JOp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 05:14:45 -0400
+Date: Tue, 30 Oct 2012 10:14:40 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
+        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL 0/9] perf/core improvements and fixes
+Message-ID: <20121030091440.GA10272@gmail.com>
+References: <1351261913-28250-1-git-send-email-acme@infradead.org>
+ <20121026145451.GA14379@gmail.com>
+ <20121026170503.GC20695@ghostprotocols.net>
+ <20121027131935.GA30001@gmail.com>
+ <20121030081807.GA8245@gmail.com>
+ <1351585291.4047.34.camel@twins>
 MIME-Version: 1.0
-To: Sourav <sourav.poddar@ti.com>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [RESEND/PATCHv3] arm: dts: omap5-evm: Add keypad support
-References: <1351507226-10328-1-git-send-email-sourav.poddar@ti.com> <508EB250.20607@ti.com> <508F64EC.9000809@ti.com>
-In-Reply-To: <508F64EC.9000809@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351585291.4047.34.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sourav,
 
-On 10/30/2012 6:26 AM, Sourav wrote:
-> Hi Benoit,
-> On Monday 29 October 2012 10:14 PM, Benoit Cousson wrote:
->> Hi Sourav,
->>
->> On 10/29/2012 11:40 AM, Sourav Poddar wrote:
->>> Add keypad data node in omap5-evm.
->>>
->>> Based on I2C support patch for omap5, which has been
->>> already posted as a different series.
->>>
->>> Tested on omap5430 evm with 3.7-rc1 kernel.
->>>
->>> Cc: Felipe Balbi <balbi@ti.com>
->>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>
->>> Tested on omap5430 sdp with 3.7-rc1 kernel.
->>>
->>> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
->>> ---
->>>   arch/arm/boot/dts/omap5-evm.dts |   95
->>> +++++++++++++++++++++++++++++++++++++++
->>>   1 files changed, 95 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/arm/boot/dts/omap5-evm.dts
->>> b/arch/arm/boot/dts/omap5-evm.dts
->>> index c663eba..b812d6d 100644
->>> --- a/arch/arm/boot/dts/omap5-evm.dts
->>> +++ b/arch/arm/boot/dts/omap5-evm.dts
->>> @@ -140,3 +140,98 @@
->>>   &mcbsp3 {
->>>       status = "disabled";
->>>   };
->>> +
->>> +&i2c5 {
->>> +    clock-frequency = <400000>;
->>> +
->>> +    smsc@38 {
->>> +        compatible = "smscece1099";
->>> +        reg = <0x38>;
->>> +        clock = <0x13>;
->> What does that "clock" mean?
-> This chip supports a clock control register which is used to enable the
-> interface used by the chip to communicate. Here, the interface which you
-> can are
-> SMBUS interface or BC-LINK interface.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-OK, so you should use a less generic name than "clock" and potentially 
-prefix it with "smsc," since it is not a generic attribute at all.
+> On Tue, 2012-10-30 at 09:18 +0100, Ingo Molnar wrote:
+> > > > The optimal way, I guess, would be to have some cache file 
+> > > > with the results of such feature tests, that would be created 
+> > > > and then used till the build fails using its findings, which 
+> > > > would trigger a new feature check round, followed by an 
+> > > > automatic rebuild. 
 
-BTW, cannot we use the CCF in order to control that clock? I guess it is 
-just a clock mux?
-Well, anyway we need CCF for OMAP to be merged first :-)
+I did not write that.
 
-But it might worth highlighting this is a temporary solution.
+I think making the feature tests parallel would be enough to 
+speed it all up - caching brings in a new set of problems. The 
+tests are mostly independent and the feature test makefile rules 
+could be parallelized like the object file rules.
 
->> I cannot find that in the binding documentation. BTW, did you add that
->> documentation in the driver patch?
-> Nope, I missed out on the dt binding documentation for the driver. :(
->
-> Will send a seperate patch for the bindings.
+> autoconf!! ;-)
+> 
+> /me runs
+
+hey, we build perf much faster than autoconf's 'configure' 
+script finishes running ;-)
 
 Thanks,
-Benoit
 
+	Ingo
