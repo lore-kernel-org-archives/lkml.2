@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934898Ab2J3Wts (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 18:49:48 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:59827 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500Ab2J3Wtq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 18:49:46 -0400
+	id S1757797Ab2J3Wxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 18:53:41 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:47060 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750738Ab2J3Wxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 18:53:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
+Date: Tue, 30 Oct 2012 23:57:41 +0100
+Message-ID: <2288906.HJczx1g3gj@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CACRpkdac=ztY0vXQ8Mu6H8fiAO4aFSSF-A6O1Q==zKOKEsJegw@mail.gmail.com>
+References: <20121025205901.GA3827@sirena.org.uk> <20121030183704.GX4511@opensource.wolfsonmicro.com> <CACRpkdac=ztY0vXQ8Mu6H8fiAO4aFSSF-A6O1Q==zKOKEsJegw@mail.gmail.com>
 MIME-Version: 1.0
-Date: Tue, 30 Oct 2012 23:49:45 +0100
-Message-ID: <CACRpkdZRb-RjYDdgDpGFXSLhwSC+0e5Dy=EE2Atmiwyewa-D+Q@mail.gmail.com>
-Subject: [GIT PULL] GPIO fixes for v3.7
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Andrew Lunn <andrew@lunn.ch>, Dan Carpenter <dan.carpenter@oracle.com>,
-        Jon Hunter <jon-hunter@ti.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Roland Stigge <stigge@antcom.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tuesday, October 30, 2012 10:51:11 PM Linus Walleij wrote:
+> On Tue, Oct 30, 2012 at 7:37 PM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+> 
+> > More seriously the amount of time we seem to have been spending recently
+> > on changes which end up requiring us to go through essentially every
+> > driver and add code to them (often several times) doesn't seem like
+> > we're doing a good job here.
+> 
+> If this is your main concern you should be made aware that there
+> are people out there planning to supplant the existing DT probe paths
+> that are now being added to each and every ARM-related driver
+> with an ACPI probe path as ARM servers come into the picture.
 
-here is a set of GPIO fixes accumulated since -rc1 that have been
-trickling in. Condensed description of the contents is in the tag.
+That's correct.
 
-Please pull them in!
+> > pinctrl is really noticable because it's
+> > new but it's not the only thing.  As a subsystem maintainer this code
+> > just makes me want to add new subsystem features to pull the code out of
+> > drivers but obviously that's not something that should be being done at
+> > the subsystem level.
+> 
+> We did manage to drag the power/voltage domain per se out
+> of the AMBA bus, and recommend that people (like us) do that
+> business using the power domains.
+> 
+> I think most people (including OMAP) have bought
+> into the concept of using the runtime PM framework and power
+> domains to control the power domain switches.
+> 
+> It's this wider concept of using the loose concept "PM resource
+> domains" to control also clocks and pins that is at stake, and so
+> far the runtime PM core people (Rafael and Magnus) has not said
+> much so I think we need some kind of indication from them as to
+> what is to happen, long-term, with drivers handling their own clocks
+> and pins. Should it be centralized or not? If it's to be centralized it
+> needs to become a large piece of infrastructure refactoring and
+> needs the attention of Linaro and the like to happen.
 
-Yours,
-Linus Walleij
+Well, I personally think it should be centralized somehow.  I'm not quite
+sure how to achieve that, though.
+
+Thanks,
+Rafael
 
 
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
-
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/gpio-fixes-v3.7-rc4
-
-for you to fetch changes up to 8fcff5f13773aa3898df1d13a1615d468079cb15:
-
-  GPIO: mvebu-gpio: Don't initialize the mask_cache (2012-10-30 22:34:20 +0100)
-
-----------------------------------------------------------------
-Some GPIO fixes for the v3.7 series since -rc1:
-- Fix a potential bit wrap issue in the Timberdale driver
-- Fix up the buffer allocation size in the 74x164 driver
-- Set the value in direction_output() right in the mvebu driver
-- Return proper error codes for invalid GPIOs
-- Fix an off-mode bug for the OMAP
-- Don't initialized the mask_cach on the mvebu driver
-
-----------------------------------------------------------------
-Andrew Lunn (1):
-      GPIO: mvebu-gpio: Don't initialize the mask_cache
-
-Dan Carpenter (1):
-      gpio-timberdale: fix a potential wrapping issue
-
-Jon Hunter (1):
-      gpio/omap: fix off-mode bug: clear debounce settings on free/reset
-
-Mathias Nyman (1):
-      gpiolib: Don't return -EPROBE_DEFER to sysfs, or for invalid gpios
-
-Roland Stigge (1):
-      gpio-74x164: Fix buffer allocation size
-
-Thomas Petazzoni (1):
-      gpio: mvebu: correctly set the value in direction_output()
-
- drivers/gpio/gpio-74x164.c     |  2 +-
- drivers/gpio/gpio-mvebu.c      |  4 +++-
- drivers/gpio/gpio-omap.c       | 35 +++++++++++++++++++++++++++++++++++
- drivers/gpio/gpio-timberdale.c |  4 ++--
- drivers/gpio/gpiolib.c         | 10 +++++++---
- 5 files changed, 48 insertions(+), 7 deletions(-)
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
