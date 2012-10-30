@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057Ab2J3CKF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 22:10:05 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43874 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249Ab2J3CKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 22:10:03 -0400
-Date: Mon, 29 Oct 2012 19:10:58 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: George Zhang <georgezhang@vmware.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        pv-drivers@vmware.com
-Subject: Re: [PATCH 01/12] VMCI: context implementation.
-Message-ID: <20121030021058.GB1920@kroah.com>
-References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121030010333.17788.94988.stgit@promb-2n-dhcp175.eng.vmware.com>
+	id S1752108Ab2J3CMe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 22:12:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:35130 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751249Ab2J3CMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 22:12:33 -0400
+X-IronPort-AV: E=Sophos;i="4.80,676,1344182400"; 
+   d="scan'208";a="6095349"
+Message-ID: <508F38E9.1050604@cn.fujitsu.com>
+Date: Tue, 30 Oct 2012 10:18:17 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030010333.17788.94988.stgit@promb-2n-dhcp175.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
+        paulus@samba.org, minchan.kim@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH v3 4/9] clear the memory to store struct page
+References: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com>	<1350629202-9664-5-git-send-email-wency@cn.fujitsu.com>	<508A5B66.7000309@cn.fujitsu.com> <20121029141012.4c1c2b07.akpm@linux-foundation.org>
+In-Reply-To: <20121029141012.4c1c2b07.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/30 10:11:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/30 10:11:51,
+	Serialize complete at 2012/10/30 10:11:51
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 06:03:42PM -0700, George Zhang wrote:
-> +/*
-> + * Releases the VMCI context. If this is the last reference to
-> + * the context it will be deallocated. A context is created with
-> + * a reference count of one, and on destroy, it is removed from
-> + * the context list before its reference count is
-> + * decremented. Thus, if we reach zero, we are sure that nobody
-> + * else are about to increment it (they need the entry in the
-> + * context list for that). This function musn't be called with a
-> + * lock held.
-> + */
-> +void vmci_ctx_release(struct vmci_ctx *context)
-> +{
-> +	ASSERT(context);
-> +	kref_put(&context->kref, ctx_free_ctx);
-> +}
-> +
+At 10/30/2012 05:10 AM, Andrew Morton Wrote:
+> On Fri, 26 Oct 2012 17:44:06 +0800
+> Wen Congyang <wency@cn.fujitsu.com> wrote:
+> 
+>> This patch has been acked by kosaki motohiro. Is it OK to be merged
+>> into -mm tree?
+> 
+> I'd already merged the v2 patchset when you later sent out the v3
+> patchset which contains some of the material from v2 plus more things.
+> 
+> I can drop all of v2 and remerge v3.  But I see from the discussion
+> under "[PATCH v3 6/9] memory-hotplug: update mce_bad_pages when
+> removing the memory" that you intend to send out a v4 patchset.
 
-Hm, are you _sure_ you should be calling this without a lock held?
-That's usually kref-101, you MUST hold a lock when calling put,
-otherwise you can race a kref_get() call, and all hell can break loose.
+OK, I will send out a v4 patchset. Do I need to resend the patch
+which is in -mm tree and has no comment?
 
-Because of this, some saner people (like Al Viro), have suggested that I
-force the kref_put() and kref_get() calls pass in a spinlock just to
-enforce this.
+Thanks
+Wen Congyang
 
-So, tell me what I'm missing here, and why you put the comment here
-saying that it really is supposed to be called without a lock held?  How
-is that safe?
+> 
+> This is all a bit of a mess.  Piecemeal picking-and-choosing of various
+> patches from various iterations of the same patchset is confusing and
+> error-prone.
+> 
+> Please, take a look at the current -mm tree at
+> http://ozlabs.org/~akpm/mmots/ then come up with a plan for us.  We can
+> either add new patches or we can drop old patches and replace them.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-confused,
-
-greg k-h
