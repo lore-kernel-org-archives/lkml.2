@@ -1,162 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934199Ab2J3S0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:26:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39447 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965400Ab2J3S0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:26:38 -0400
-Date: Tue, 30 Oct 2012 19:24:20 +0100
-From: chrubis@suse.cz
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Partialy mapped page stays in page cache after unmap
-Message-ID: <20121030182420.GA17171@rei.Home>
+	id S965350Ab2J3SZB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:25:01 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43067 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760206Ab2J3SY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 14:24:57 -0400
+Message-ID: <50901B72.6090201@ursulin.net>
+Date: Tue, 30 Oct 2012 18:24:50 +0000
+From: Tvrtko Ursulin <tvrtko@ursulin.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="huq684BweRXVnRxX"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Milan Broz <mbroz@redhat.com>
+CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-rt-users@vger.kernel.org, dm-crypt@saout.de,
+        linux-kernel@vger.kernel.org, okozina@redhat.com
+Subject: Re: [PATCH] Fix crypto api init for 3.6.4-rt10
+References: <5083C61C.5090807@gmail.com> <5083E4A8.3060501@ursulin.net> <5083E87B.2080908@gmail.com> <5083EC61.8070505@ursulin.net> <50844D01.9090805@gmail.com> <5084551E.5040304@ursulin.net> <508ED985.5060301@ursulin.net> <508EDD6E.7030908@gmail.com> <508EE395.9010709@ursulin.net> <508EEAF2.4090506@ursulin.net> <20121030094001.GV639@pengutronix.de> <508FA405.2050509@redhat.com> <508FF1D6.3030900@redhat.com>
+In-Reply-To: <508FF1D6.3030900@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---huq684BweRXVnRxX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi,
 
-Hi!
-I'm currently revisiting mmap related tests in LTP (Linux Test Project)
-and I've came to the tests testing that writes to the partially
-mapped page (at the end of mapping) are carried out correctly.
+On 30/10/12 15:27, Milan Broz wrote:
+> Fix crypto api for 3.6.4-rt10 (broken only in realtime patchset)
+>
+> In peterz-srcu-crypto-chain.patch the blocking notifier is changed
+> to srcu notifier and added initialization to module init fucntion.
+>
+> Later, in crypto-make-core-static-and-init-scru-early.patch, is that
+> initialization added also to core_initcall().
+>
+> This patch removes crypto_chain init from algapi initialization,
+> because this function is called later and already initialized
+> cryptomgr notifier is lost.
+>
+> This cause a failure in initialization of larval algorithms,
+> like e.g. cbc(aes).
 
-These tests fails because even after the object is unmapped and the
-file-descriptor closed the pages still stays in the page cache so if
-(possibly another process) opens and maps the file again the whole
-content of the partial page is preserved.
+Thanks for the quick fix!
 
-Strictly speaking this is not a bug at least when sticking to regular
-files as POSIX which says that the change is not written out. In this
-case the file content is correct and forcing the data to be written out
-by msync() makes the test pass. The SHM mappings seems to preserve the
-content even after calling msync() which is, in my opinion, POSIX
-violation although a minor one.
+Tvrtko
 
-Looking at the test results I have, the file based mmap test worked fine
-on 2.6.5 (or perhaps the page cache was working/setup differently and
-the test succeeded by accidend).
-
-Attached is a stripped down LTP test for the problem, uncommenting the
-msync() makes the test succeed.
-
-I would like to hear your opinions on this problems.
-
--- 
-Cyril Hrubis
-chrubis@suse.cz
-
---huq684BweRXVnRxX
-Content-Type: text/x-c; charset=us-ascii
-Content-Disposition: attachment; filename="reproducer.c"
-
-#define _XOPEN_SOURCE 600
-
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <string.h>
-#include <errno.h>
-
-int main(void)
-{
-	char tmpfname[256];
-	long page_size;
-	long total_size;
-
-	void *pa;
-	size_t len;
-	int i, fd;
-	
-	pid_t child;
-	char *ch;
-	int exit_val;
-
-	page_size = sysconf(_SC_PAGE_SIZE);
-
-	/* Size of the file to be mapped */
-	total_size = page_size / 2;
-
-	/* mmap will create a partial page */
-	len = page_size / 2;
-
-	snprintf(tmpfname, sizeof(tmpfname), "/tmp/pts_mmap_11_5_%d", getpid());
-	
-	/* Create shared file */
-	unlink(tmpfname);
-	fd = open(tmpfname, O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR);
-	if (fd == -1) {
-		printf("Error at open(): %s\n", strerror(errno));
-		return 1;
-	}
-	if (ftruncate(fd, total_size) == -1) {
-		printf("Error at ftruncate(): %s\n", strerror(errno));
-		return 1;
-	}
-
-	pa = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if (pa == MAP_FAILED) {
-		printf("Error at mmap(): %s\n", strerror(errno));
-		return 1;
-	}
-		
-	ch = (char*)pa + len + 1;
-
-	/* Check the patial page is ZERO filled */
-	for (i = 0; i < page_size/2 - 1; i++) {
-		if (ch[i] != 0) {
-			printf("Test FAILED: The partial page at the "
-			       "end of the file is not zero-filled\n");
-			return 1;
-		}
-	}
-
-	/* Write to the partial page */
-	*ch = 'b';
-	//msync(pa, len, MS_SYNC);
-	munmap(pa, len);
-	close(fd);
-
-	/* Open and map it again */
-	fd = open(tmpfname, O_RDWR, 0);
-	unlink(tmpfname);
-
-	pa = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if (pa == MAP_FAILED) {
-		printf("Error at 2nd mmap(): %s\n", strerror(errno));
-		return 1;
-	}
-
-	ch = pa + len + 1;
-	if (*ch == 'b') {
-		printf("Test FAILED: Modification of the partial page "
-		       "at the end of an object is written out\n");
-		return 1;
-	}
-	
-	close(fd);
-	munmap(pa, len);
-
-	printf("Test PASSED\n");
-	return 1;
-}
-
---huq684BweRXVnRxX--
