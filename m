@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934526Ab2J3Ufu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 16:35:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58185 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934472Ab2J3Ufs (ORCPT
+	id S934541Ab2J3Uf6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 16:35:58 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50076 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934528Ab2J3Ufx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 16:35:48 -0400
-Date: Tue, 30 Oct 2012 21:35:35 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Milan Broz <mbroz@redhat.com>, Tvrtko Ursulin <tvrtko@ursulin.net>,
-        linux-rt-users@vger.kernel.org, dm-crypt@saout.de,
-        linux-kernel@vger.kernel.org, okozina@redhat.com
-Subject: Re: [PATCH] Fix crypto api init for 3.6.4-rt10
-Message-ID: <20121030203535.GY639@pengutronix.de>
-References: <50844D01.9090805@gmail.com>
- <5084551E.5040304@ursulin.net>
- <508ED985.5060301@ursulin.net>
- <508EDD6E.7030908@gmail.com>
- <508EE395.9010709@ursulin.net>
- <508EEAF2.4090506@ursulin.net>
- <20121030094001.GV639@pengutronix.de>
- <508FA405.2050509@redhat.com>
- <508FF1D6.3030900@redhat.com>
- <alpine.LFD.2.02.1210301856390.2756@ionos>
+	Tue, 30 Oct 2012 16:35:53 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, wujianguo@huawei.com
+Subject: Re: [REGRESSION] 3.7-rc2 kernel BUG at kernel/power/snapshot.c:517!
+Date: Tue, 30 Oct 2012 21:35:48 +0100
+User-Agent: KMail/1.13.7 (Linux/3.6.1; KDE/4.8.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jiang.liu@huawei.com, akpm@linux-foundation.org
+References: <201210211712.28571.maciej.rutecki@gmail.com> <201210282212.50282.maciej.rutecki@gmail.com> <1552872.pfLgNj3qcY@vostro.rjw.lan>
+In-Reply-To: <1552872.pfLgNj3qcY@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.02.1210301856390.2756@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201210302135.48585.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, Oct 30, 2012 at 06:57:37PM +0100, Thomas Gleixner wrote:
-> On Tue, 30 Oct 2012, Milan Broz wrote:
-> 
-> > Fix crypto api for 3.6.4-rt10 (broken only in realtime patchset)
+On niedziela, 28 października 2012 o 22:45:26 Rafael J. Wysocki wrote:
+> On Sunday, October 28, 2012 10:12:49 PM Maciej Rutecki wrote:
+> > On niedziela, 21 października 2012 o 17:12:28 Maciej Rutecki wrote:
+> > > Error: kernel BUG at kernel/power/snapshot.c:517!
+> > > 
+> > > Last known good: 3.6.1
+> > > Bad: 3.7-rc2
+> > > 
+> > > Steps to reproduce:
+> > > 1. Boot system with 3.7-rc2 kernel
+> > > 2. Try suspend to disk (s2ram works OK)
+> > > 
+> > > System dies on message:
+> > > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/DSCN0280.jpg
+> > > 
+> > > lspci:
+> > > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/lspci.txt
+> > > 
+> > > dmesg:
+> > > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/dmesg-3.7-rc2.txt
 > > 
-> > In peterz-srcu-crypto-chain.patch the blocking notifier is changed
-> > to srcu notifier and added initialization to module init fucntion.
-> > 
-> > Later, in crypto-make-core-static-and-init-scru-early.patch, is that
-> > initialization added also to core_initcall().
-> > 
-> > This patch removes crypto_chain init from algapi initialization,
-> > because this function is called later and already initialized
-> > cryptomgr notifier is lost.
+> > Still present in -rc3
 > 
-> Grrr. So I forgot top zap the one Peter added. Stupid me.
->  
-> > This cause a failure in initialization of larval algorithms,
-> > like e.g. cbc(aes).
+> This appears to be a memory allocation error and I have no idea what
+> the reason of it is.
 > 
-> Thanks for spotting!
-This patch fixes booting my laptop. But now it hangs after login.
+> Any chance to bisect?
 
-thanks
-Uwe
+7f1290f2f2a4d2c3f1b7ce8e87256e052ca23125 is the first bad commit
+commit 7f1290f2f2a4d2c3f1b7ce8e87256e052ca23125
+Author: Jianguo Wu <wujianguo@huawei.com>
+Date:   Mon Oct 8 16:33:06 2012 -0700
 
+    mm: fix-up zone present pages
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+    Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+    Reported-by: Petr Tesarik <ptesarik@suse.cz>
+    Tested-by: Petr Tesarik <ptesarik@suse.cz>
+    Cc: "Luck, Tony" <tony.luck@intel.com>
+    Cc: Mel Gorman <mel@csn.ul.ie>
+    Cc: Yinghai Lu <yinghai@kernel.org>
+    Cc: Minchan Kim <minchan.kim@gmail.com>
+    Cc: Johannes Weiner <hannes@cmpxchg.org>
+    Cc: David Rientjes <rientjes@google.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+
+Description says:
+"This patch intends to fix-up zone->present_pages when memory are freed to
+    buddy system on x86_64 and IA64 platforms."
+
+but I use 32 bit kernel
+
+Revert this commit solves problem.
+
+
+Regards
+
+PS. Between Oct. 31-Nov. 4 I'm offline. 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-K�nig            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Maciej Rutecki
+http://www.mrutecki.pl
