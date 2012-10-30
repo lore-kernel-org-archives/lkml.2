@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932648Ab2J3KgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 06:36:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47307 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757604Ab2J3KgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 06:36:03 -0400
-Date: Tue, 30 Oct 2012 11:35:59 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH v3 3/6] memcg: Simplify mem_cgroup_force_empty_list error
- handling
-Message-ID: <20121030103559.GA7394@dhcp22.suse.cz>
-References: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
- <1351251453-6140-4-git-send-email-mhocko@suse.cz>
- <508E8B95.406@parallels.com>
- <20121029150022.a595b866.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029150022.a595b866.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758556Ab2J3KjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 06:39:22 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:36627 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757991Ab2J3KjV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 06:39:21 -0400
+Message-ID: <1351593554.2831.8.camel@hornet>
+Subject: Re: linux-next: manual merge of the clk tree with the arm-soc tree
+From: Pawel Moll <pawel.moll@arm.com>
+To: Mike Turquette <mturquette@ti.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 30 Oct 2012 10:39:14 +0000
+In-Reply-To: <20121030101140.18780.69840@nucleus>
+References: <20121030150627.ac1f6a3f75231ea49edf7b98@canb.auug.org.au>
+	 <20121030101140.18780.69840@nucleus>
+X-Mailer: Evolution 3.6.0-0ubuntu3
+Mime-Version: 1.0
+X-OriginalArrivalTime: 30 Oct 2012 10:39:13.0838 (UTC) FILETIME=[CDD0FCE0:01CDB68A]
+X-MC-Unique: 112103010391709201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-10-12 15:00:22, Andrew Morton wrote:
-> On Mon, 29 Oct 2012 17:58:45 +0400
-> Glauber Costa <glommer@parallels.com> wrote:
+On Tue, 2012-10-30 at 10:11 +0000, Mike Turquette wrote:
+> > diff --cc arch/arm/include/asm/hardware/sp810.h
+> > index 2cdcf44,afd7e91..0000000
+> > --- a/arch/arm/include/asm/hardware/sp810.h
+> > +++ b/arch/arm/include/asm/hardware/sp810.h
+> > @@@ -50,6 -50,14 +50,8 @@@
+> >   #define SCPCELLID2            0xFF8
+> >   #define SCPCELLID3            0xFFC
+> >   
+> >  -#define SCCTRL_TIMEREN0SEL_REFCLK     (0 << 15)
+> >  -#define SCCTRL_TIMEREN0SEL_TIMCLK     (1 << 15)
+> >  -
+> >  -#define SCCTRL_TIMEREN1SEL_REFCLK     (0 << 17)
+> >  -#define SCCTRL_TIMEREN1SEL_TIMCLK     (1 << 17)
+> >  -
+> > + #define SCCTRL_TIMERENnSEL_SHIFT(n)   (15 + ((n) * 2))
+> > + 
+> >   static inline void sysctl_soft_reset(void __iomem *base)
+> >   {
+> >         /* switch to slow mode */
 > 
-> > > + * move charges to its parent or the root cgroup if the group has no
-> > > + * parent (aka use_hierarchy==0).
-> > > + * Although this might fail (get_page_unless_zero, isolate_lru_page or
-> > > + * mem_cgroup_move_account fails) the failure is always temporary and
-> > > + * it signals a race with a page removal/uncharge or migration. In the
-> > > + * first case the page is on the way out and it will vanish from the LRU
-> > > + * on the next attempt and the call should be retried later.
-> > > + * Isolation from the LRU fails only if page has been isolated from
-> > > + * the LRU since we looked at it and that usually means either global
-> > > + * reclaim or migration going on. The page will either get back to the
-> > > + * LRU or vanish.
-> > 
-> > I just wonder for how long can it go in the worst case?
+> Pawel,
 > 
-> If the kernel is uniprocessor and the caller is SCHED_FIFO: ad infinitum!
+> Does this look OK for you?
 
-You are right, if the rmdir (resp. echo > force_empty) at SCHED_FIFO
-races with put_page (on a shared page) which gets preempted after
-put_page_testzero and before __page_cache_release then we are screwed:
+Yes, it's correct.
 
-						put_page(page)
-						  put_page_testzero
-						  <preempted and page still on LRU>
-mem_cgroup_force_empty_list
-  page = list_entry(list->prev, struct page, lru);
-  mem_cgroup_move_parent(page)
-    get_page_unless_zero <fails>
-  cond_resched() <scheduled again>
+Thanks!
 
-The race window is really small but it is definitely possible. I am not
-happy about this state and it should be probably mentioned in the
-patch description but I do not see any way around (except for hacks like
-sched_setscheduler for the current which is, ehm...) and still keep
-do_not_fail contract here.
+Paweł
 
-Can we consider this as a corner case (it is much easier to kill a
-machine with SCHED_FIFO than this anyway) or the concern is really
-strong and we should come with a solution before this can get merged?
 
--- 
-Michal Hocko
-SUSE Labs
