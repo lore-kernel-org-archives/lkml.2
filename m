@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab2J3CCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 22:02:09 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55899 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab2J3CCG (ORCPT
+	id S1751800Ab2J3CFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 22:05:05 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49884 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab2J3CFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 22:02:06 -0400
+	Mon, 29 Oct 2012 22:05:04 -0400
+Date: Tue, 30 Oct 2012 02:05:00 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Will Drewry <wad@chromium.org>,
+        Geremy Condra <gcondra@google.com>
+Subject: Re: [PATCH 2/4] arch/arm: move secure_computing into trace
+Message-ID: <20121030020500.GA2616@ZenIV.linux.org.uk>
+References: <1351557682-20983-1-git-send-email-keescook@chromium.org>
+ <1351557682-20983-3-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <200901071430.55580.jbarnes@virtuousgeek.org>
-References: <200901071430.55580.jbarnes@virtuousgeek.org>
-Date: Mon, 29 Oct 2012 19:02:05 -0700
-X-Google-Sender-Auth: f7WMYVGFQPXLwerucq9jM_eZ3wo
-Message-ID: <CAE9FiQVYZUQULpDkGJFr85o5oZTdYYegdXoQCg6V8xY9S6G2pA@mail.gmail.com>
-Subject: Re: [git pull] PCI pull request for 2.6.29
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351557682-20983-3-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 7, 2009 at 2:30 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
->
-> Arjan van de Ven (1):
->       resource: allow MMIO exclusivity for device drivers
->
+On Mon, Oct 29, 2012 at 05:41:20PM -0700, Kees Cook wrote:
+> From: Will Drewry <wad@chromium.org>
+> 
+> There is very little difference in the TIF_SECCOMP and TIF_SYSCALL_TRACE
+> path in entry-common.S. In order to add support for
+> CONFIG_HAVE_ARCH_SECCOMP_FILTER without mangling the assembly too badly,
+> seccomp was moved into the syscall_trace_enter() handler.
+> 
+> Additionally, the return value for secure_computing() is now checked
+> and a -1 value will result in the system call being skipped.
 
-hi, all
-
-commit e8de1481fd7126ee9e93d6889da6f00c05e1e019
-Author: Arjan van de Ven <arjan@linux.intel.com>
-Date:   Wed Oct 22 19:55:31 2008 -0700
-
-    resource: allow MMIO exclusivity for device drivers
-
-only user is e1000e driver. and real fix
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=4a7703582836f55a1cbad0e2c1c6ebbee3f9b3a7
-
-is already in the upsteam for https://bugzilla.redhat.com/show_bug.cgi?id=459202
-
-so wonder if e8de1481fd7126ee9e93d6889da6f00c05e1e019 should be
-reverted from upstream?
-
-Thanks
-
-Yinghai
+This is too ugly.  Just expand the calls of ptrace_syscall_trace() into
+both callers and do secure_computing() hookup in there.  And for pity
+sake, would somebody rename the damn thing?  It's *dripping* with
+marketdroidese...
