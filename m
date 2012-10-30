@@ -1,85 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761135Ab2J3BBn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 21:01:43 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:59796 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab2J3BBl (ORCPT
+	id S1761622Ab2J3BDa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 21:03:30 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:53269 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757164Ab2J3BD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 21:01:41 -0400
-Date: Tue, 30 Oct 2012 10:01:38 +0900
-From: Norbert Preining <preining@logic.at>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: drm i915 hangs on heavy io load
-Message-ID: <20121030010138.GB6976@gamma.logic.tuwien.ac.at>
-References: <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <CAPM=9txr4TzuG-BbL0bXeEK6AzkOK9pH0kh-nP=Njv53sgFZew@mail.gmail.com> <20121024003659.GA30962@gamma.logic.tuwien.ac.at> <b94cdc$72fm1r@fmsmga001.fm.intel.com> <20121028024753.GA4254@gamma.logic.tuwien.ac.at> <eeac1e$4q1mqm@AZSMGA002.ch.intel.com> <A941F80C-7EDB-4FCF-A8DE-4AE5532D2CB5@logic.at> <20121029071715.GA17023@mac.home> <20121030004958.GA6976@gamma.logic.tuwien.ac.at> <CAPM=9tw_0vDcRG25i2ypJEKT+JNqWzkXw2+jg=qj6H5M1hoJXg@mail.gmail.com>
+	Mon, 29 Oct 2012 21:03:28 -0400
+Subject: [PATCH 00/12] VMCI for Linux upstreaming
+To: linux-kernel@vger.kernel.org, georgezhang@vmware.com,
+        virtualization@lists.linux-foundation.org
+From: George Zhang <georgezhang@vmware.com>
+Cc: pv-drivers@vmware.com, gregkh@linuxfoundation.org
+Date: Mon, 29 Oct 2012 18:03:28 -0700
+Message-ID: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM=9tw_0vDcRG25i2ypJEKT+JNqWzkXw2+jg=qj6H5M1hoJXg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+* * *
+This series of VMCI linux upstreaming patches include latest udpate from
+VMware.
+    -split guest, host and core driver code into different files
+    -use EXPORT_SYMBOLS_GPL
+    -remove vmci_device_get and vmci_device_release APIs
+    -simplify the event deliver mechanism
+    -driver ioctl code cleanup
+    -sparse clean
 
-On Di, 30 Okt 2012, Dave Airlie wrote:
-> > Thanks, running now with SNA. Let us see what happens.
-> 
-> Please don't, we ain't going to find the bug any quicker changing
-> variables, if the only thing that changed on your system was the
 
-Sorry, didn't know. I supposed from the email of Chris that I should try
-it "to stress different code path" ... anyway, disabling it again.
 
-> How long does it take you to reproduce, and does it happen when in
 
-Very hard to say, most of the times it is in a few days scale.
-Though it happened also after a few hours once.
+* * *
 
-> actual use. On my laptop I've noticed I come back to it sometimes and
+In an effort to improve the out-of-the-box experience with Linux
+kernels for VMware users, VMware is working on readying the Virtual
+Machine Communication Interface (vmw_vmci) and VMCI Sockets
+(vmw_vsock) kernel modules for inclusion in the Linux kernel. The
+purpose of this post is to acquire feedback on the vmw_vmci kernel
+module. The vmw_vsock kernel module will be presented in a later post.
 
-Concerning actual use: I had instances on several occassions. Just 30min
-ago it was while working with shotwell on my photo collection, tagging
-photos. So there should not be a big disk activity or so, but a lot
-of screen redraws etc when going through the photos.
-On other times it was locked screen without screen saver.
 
-Concerning coming back: For me it never worked. I always have to reboot
-to get a working state again. Ok, to be more specific. GNome3 is dead.
-I can close the windows normally with kbd shortcuts and some mouse
-interaction, but no new windows, no moving etc.
+* * *
 
-> gnome-shell is dead. This never happened pre 3.7-rc's. But for me its
-> a 3-4 day window so far for it to die, which makes bisecting it a bit
+VMCI allows virtual machines to communicate with host kernel modules
+and the VMware hypervisors. User level applications both in a virtual
+machine and on the host can use vmw_vmci through VMCI Sockets, a socket
+address family designed to be compatible with UDP and TCP at the
+interface level. Today, VMCI and VMCI Sockets are used by the VMware
+shared folders (HGFS) and various VMware Tools components inside the
+guest for zero-config, network-less access to VMware host services. In
+addition to this, VMware's users are using VMCI Sockets for various
+applications, where network access of the virtual machine is
+restricted or non-existent. Examples of this are VMs communicating
+with device proxies for proprietary hardware running as host
+applications and automated testing of applications running within
+virtual machines.
 
-That sounds pretty much like my case, but since I often don't use
-the laptop for 2 days or so, it might be a bit longer.
+In a virtual machine, VMCI is exposed as a regular PCI device. The
+primary communication mechanisms supported are a point-to-point
+bidirectional transport based on a pair of memory-mapped queues, and
+asynchronous notifications in the form of datagrams and
+doorbells. These features are available to kernel level components
+such as HGFS and VMCI Sockets through the VMCI kernel API. In addition
+to this, the VMCI kernel API provides support for receiving events
+related to the state of the VMCI communication channels, and the
+virtual machine itself.
 
-> of a major problem. and I'm just finished bisecting the last Ironlake
-> regression that took over a month.
+Outside the virtual machine, the host side support of the VMCI kernel
+module makes the same VMCI kernel API available to VMCI endpoints on
+the host. In addition to this, the host side manages each VMCI device
+in a virtual machine through a context object. This context object
+serves to identify the virtual machine for communication, and to track
+the resource consumption of the given VMCI device. Both operations
+related to communication between the virtual machine and the host
+kernel, and those related to the management of the VMCI device state
+in the host kernel, are invoked by the user level component of the
+hypervisor through a set of ioctls on the VMCI device node.  To
+provide seamless support for nested virtualization, where a virtual
+machine may use both a VMCI PCI device to talk to its hypervisor, and
+the VMCI host side support to run nested virtual machines, the VMCI
+host and virtual machine support are combined in a single kernel
+module.
 
-Ouch ...
+For additional information about the use of VMCI and in particular
+VMCI Sockets, please refer to the VMCI Socket Programming Guide
+available at https://www.vmware.com/support/developer/vmci-sdk/.
 
-> I would suggest starting a bisect on drivers/gpu/drm/i915 from 3.6
-> final to 3.7-rc1 or maybe -rc2.
 
-Ok, thanks. I will try.
 
-Best wishes
+---
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-QUALL (vb.)
-To speak with the voice of one who requires another to do something
-for them.
-			--- Douglas Adams, The Meaning of Liff
+George Zhang (12):
+      VMCI: context implementation.
+      VMCI: datagram implementation.
+      VMCI: doorbell implementation.
+      VMCI: device driver implementaton.
+      VMCI: event handling implementation.
+      VMCI: handle array implementation.
+      VMCI: queue pairs implementation.
+      VMCI: resource object implementation.
+      VMCI: routing implementation.
+      VMCI: guest side driver implementation.
+      VMCI: host side driver implementation.
+      VMCI: Some header and config files.
+
+
+ drivers/misc/Kconfig                      |    1
+ drivers/misc/Makefile                     |    2
+ drivers/misc/vmw_vmci/Kconfig             |   16
+ drivers/misc/vmw_vmci/Makefile            |   43
+ drivers/misc/vmw_vmci/vmci_common_int.h   |   34
+ drivers/misc/vmw_vmci/vmci_context.c      | 1290 +++++++++++
+ drivers/misc/vmw_vmci/vmci_context.h      |  177 +
+ drivers/misc/vmw_vmci/vmci_datagram.c     |  520 ++++
+ drivers/misc/vmw_vmci/vmci_datagram.h     |   55
+ drivers/misc/vmw_vmci/vmci_doorbell.c     |  673 +++++
+ drivers/misc/vmw_vmci/vmci_doorbell.h     |   53
+ drivers/misc/vmw_vmci/vmci_driver.c       |  159 +
+ drivers/misc/vmw_vmci/vmci_driver.h       |   50
+ drivers/misc/vmw_vmci/vmci_event.c        |  371 +++
+ drivers/misc/vmw_vmci/vmci_event.h        |   25
+ drivers/misc/vmw_vmci/vmci_guest.c        |  765 ++++++
+ drivers/misc/vmw_vmci/vmci_handle_array.c |  162 +
+ drivers/misc/vmw_vmci/vmci_handle_array.h |   46
+ drivers/misc/vmw_vmci/vmci_host.c         | 1046 +++++++++
+ drivers/misc/vmw_vmci/vmci_queue_pair.c   | 3556 +++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_queue_pair.h   |  191 ++
+ drivers/misc/vmw_vmci/vmci_resource.c     |  237 ++
+ drivers/misc/vmw_vmci/vmci_resource.h     |   59
+ drivers/misc/vmw_vmci/vmci_route.c        |  237 ++
+ drivers/misc/vmw_vmci/vmci_route.h        |   30
+ include/linux/vmw_vmci_api.h              |   85 +
+ include/linux/vmw_vmci_defs.h             |  977 ++++++++
+ 27 files changed, 10860 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/Kconfig
+ create mode 100644 drivers/misc/vmw_vmci/Makefile
+ create mode 100644 drivers/misc/vmw_vmci/vmci_common_int.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_context.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_context.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_doorbell.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_doorbell.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_driver.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_driver.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_guest.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_handle_array.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_handle_array.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_host.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_queue_pair.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_queue_pair.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_resource.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_resource.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.h
+ create mode 100644 include/linux/vmw_vmci_api.h
+ create mode 100644 include/linux/vmw_vmci_defs.h
+
+--
+Signature
+
