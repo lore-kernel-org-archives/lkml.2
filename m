@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933995Ab2J3Q0h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 12:26:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17648 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933812Ab2J3Q0f (ORCPT
+	id S933998Ab2J3Q12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 12:27:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34827 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758531Ab2J3Q11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 12:26:35 -0400
-X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=gPGaiRUHczgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=rQ8w98ZuNmwA:10 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=t7CeM3EgAAAA:8 a=2ITF59WeXM4W8nZeUlMA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=LI9Vle30uBYA:10 a=Zh68SRI7RUMA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=2e6ZYRoF4I4A:10 a=6iqt2sy--kpHgZvv:21 a=seJcdWXrbRn7pwyi:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351614394.8467.110.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/2] irq_work: Fix racy IRQ_WORK_BUSY flag setting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Tue, 30 Oct 2012 12:26:34 -0400
-In-Reply-To: <1351611301-3520-3-git-send-email-fweisbec@gmail.com>
-References: <1351611301-3520-1-git-send-email-fweisbec@gmail.com>
-	 <1351611301-3520-3-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Oct 2012 12:27:27 -0400
+Date: Tue, 30 Oct 2012 09:27:23 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 00/12] VMCI for Linux upstreaming
+Message-ID: <20121030162723.GA16135@kroah.com>
+References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
+ <20121030021938.GC1920@kroah.com>
+ <20121030040744.GB32055@dtor-ws.eng.vmware.com>
+ <20121030154801.GC14167@kroah.com>
+ <20121030161807.GA9709@dtor-ws.eng.vmware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030161807.GA9709@dtor-ws.eng.vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-30 at 16:35 +0100, Frederic Weisbecker wrote:
-> The IRQ_WORK_BUSY flag is set right before we execute the
-> work. Once this flag value is set, the work enters a
-> claimable state again.
+On Tue, Oct 30, 2012 at 09:18:07AM -0700, Dmitry Torokhov wrote:
+> > > I think that even if we had a special directory for vmci having network
+> > > drivers in Dave's realm and pvscsi in James's is best option, so the new
+> > > directory would contain vmci and the balloon driver (vsock will go into
+> > > net/).  Given that balloon is already in drivers/misc it looked like
+> > > obvious place for VMCI as well.
+> > 
+> > I agree that the individual drivers should go in the subsystem area,
+> > it's this "hypervisor bus core" type code that I'm questioning.  Right
+> > now every hypervisor is putting that logic in a different place in the
+> > kernel, having some consistency here would be nice.
 > 
-> This is necessary because if we want to enqueue a work but we
-> fail the claim, we want to ensure that the CPU where that work
-> is still pending will see and handle the data we expected the
-> work to compute.
+> Hmm, I wonder if miscellaneous and core hypervisor drivers should end
+> up in drivers/platform:
 > 
-> This might not work as expected though because IRQ_WORK_BUSY
-> isn't set atomically. By the time a CPU fails a work claim,
-> this work may well have been already executed by the CPU where
-> it was previously pending.
-> 
-> Due to the lack of appropriate memory barrier, the IRQ_WORK_BUSY
-> flag value may not be visible by the CPU trying to claim while
-> the work is executing, and that until we clear the busy bit in
-> the work flags using cmpxchg() that implies the full barrier.
-> 
-> One solution could involve a full barrier between setting
-> IRQ_WORK_BUSY flag and the work execution. This way we
-> ensure that the work execution site sees the expected data
-> and the claim site sees the IRQ_WORK_BUSY:
-> 
-> CPU 0                                 CPU 1
-> 
-> data = something                     flags = IRQ_WORK_BUSY
-> smp_mb() (implicit with cmpxchg      smp_mb()
->           on flags in claim)         execute_work (sees data from CPU 0)
-> try to claim
-> 
-> As a shortcut, let's just use xchg() that implies a full memory
-> barrier.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> 	drivers/platform/hyperv
+> 	drivers/platform/olpc
+> 	drivers/platform/vmware
+> 	drivers/platform/xen
+> 	drivers/platform/x86
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+That makes sense to me, nice.
 
--- Steve
+> But really we'd like to get VMCI into mainline first and move to a new
+> place later if such a better place is found.
 
-> ---
->  kernel/irq_work.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-> index 764240a..ea79365 100644
-> --- a/kernel/irq_work.c
-> +++ b/kernel/irq_work.c
-> @@ -130,9 +130,12 @@ void irq_work_run(void)
->  
->  		/*
->  		 * Clear the PENDING bit, after this point the @work
-> -		 * can be re-used.
-> +		 * can be re-used. Use xchg to force ordering against
-> +		 * data to process, such that if claiming fails on
-> +		 * another CPU, we see and handle the data it wants
-> +		 * us to process on the work.
->  		 */
-> -		work->flags = IRQ_WORK_BUSY;
-> +		xchg(&work->flags, IRQ_WORK_BUSY);
->  		work->func(work);
->  		/*
->  		 * Clear the BUSY bit and return to the free state if
+Heh, no one wants to fight for something to help everyone out, they just
+want their own code accepted :)
 
-
+greg k-h
