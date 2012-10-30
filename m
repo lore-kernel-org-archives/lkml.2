@@ -1,78 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab2J3JkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 05:40:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56037 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757482Ab2J3JkH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 05:40:07 -0400
-Date: Tue, 30 Oct 2012 10:40:01 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Tvrtko Ursulin <tvrtko@ursulin.net>
-Cc: Milan Broz <gmazyland@gmail.com>, dm-crypt@saout.de,
-        linux-kernel@vger.kernel.org, okozina@redhat.com,
-        linux-rt-users@vger.kernel.org
-Subject: Re: [dm-crypt] cryptsetup not working under 3.6 - RT patch set seem
- to break it
-Message-ID: <20121030094001.GV639@pengutronix.de>
-References: <5083C61C.5090807@gmail.com>
- <5083E4A8.3060501@ursulin.net>
- <5083E87B.2080908@gmail.com>
- <5083EC61.8070505@ursulin.net>
- <50844D01.9090805@gmail.com>
- <5084551E.5040304@ursulin.net>
- <508ED985.5060301@ursulin.net>
- <508EDD6E.7030908@gmail.com>
- <508EE395.9010709@ursulin.net>
- <508EEAF2.4090506@ursulin.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <508EEAF2.4090506@ursulin.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1757535Ab2J3JlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 05:41:23 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55144 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757423Ab2J3JlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 05:41:18 -0400
+Message-ID: <1351590074.32167.1.camel@joe-AO722>
+Subject: Re: [pci:pci/misc 1/4] drivers/scsi/gdth.c:1111:41: sparse: not an
+ lvalue
+From: Joe Perches <joe@perches.com>
+To: kbuild test robot <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 30 Oct 2012 02:41:14 -0700
+In-Reply-To: <508f513a.dVOhrUH2oKbstSV1%fengguang.wu@intel.com>
+References: <508f513a.dVOhrUH2oKbstSV1%fengguang.wu@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 08:45:38PM +0000, Tvrtko Ursulin wrote:
-> On 29/10/12 20:14, Tvrtko Ursulin wrote:
-> >On 29/10/12 19:47, Milan Broz wrote:
-> >>On 10/29/2012 08:31 PM, Tvrtko Ursulin wrote:
-> >>>Just tried 3.6.4 and it is still broken. Is there anything else I could
-> >>>try to debug this?
-> >>
-> >>See response from response from Ondra on dmcrypt list - your kernel
-> >>config
-> >>is perhaps broken.
-> >
-> >I don't think that reached me - perhaps I was not copied.
-> >
-> >Weird yes, I mean no one can spot anything bad with my config...
-> >
-> >>Please use fresh checkout, run make oldconfig and try again.
-> >>(Many people use 3.6 already and there is no other report.)
-> >
-> >... and I just used it today to configure a fresh 3.6.4 (plus -rt10
-> >patches) without a problem.
-> >
-> >Unless RT patchset is the culprit. Hm.. that would be unexpected, but I
-> >guess it is worth a shot. I'll let you know what happens without -rt.
+On Tue, 2012-10-30 at 12:02 +0800, kbuild test robot wrote:
+> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/misc
+> head:   347593eb10fce5b691551d72cf63f1ea6a533f2a
+> commit: 545974a28f786eb0ed42c90b4b5df9605b1d824c [1/4] PCI: Convert pci_resource_<foo> macros to static inlines
 > 
-> Ha, this is exciting, vanilla 3.6.4 works, with -rt10 patch it does not.
-I experienced that problem, too. This is on a laptop with encrypted
-rootfs, so debugging is a bit harder here. I am just setting up another
-machine to debug that.
+> 
+> sparse warnings:
+> 
+> drivers/scsi/gdth.c:2397:31: sparse: incorrect type in assignment (different base types)
+> drivers/scsi/gdth.c:2397:31:    expected unsigned int [unsigned] [assigned] [usertype] last_block_no
+> drivers/scsi/gdth.c:2397:31:    got restricted __be32 [usertype] <noident>
+> drivers/scsi/gdth.c:2398:27: sparse: incorrect type in assignment (different base types)
+> drivers/scsi/gdth.c:2398:27:    expected unsigned int [unsigned] [assigned] [usertype] block_length
+> drivers/scsi/gdth.c:2398:27:    got restricted __be32 [usertype] <noident>
+> drivers/scsi/gdth.c:2408:33: sparse: incorrect type in assignment (different base types)
+> drivers/scsi/gdth.c:2408:33:    expected unsigned long long [unsigned] [usertype] last_block_no
+> drivers/scsi/gdth.c:2408:33:    got restricted __be64 [usertype] <noident>
+> drivers/scsi/gdth.c:2409:33: sparse: incorrect type in assignment (different base types)
+> drivers/scsi/gdth.c:2409:33:    expected unsigned int [unsigned] [usertype] block_length
+> drivers/scsi/gdth.c:2409:33:    got restricted __be32 [usertype] <noident>
+> drivers/scsi/gdth.c:2504:23: sparse: cast to restricted __be64
+> drivers/scsi/gdth.c:2504:23: sparse: cast to restricted __be64
+> drivers/scsi/gdth.c:2504:23: sparse: cast to restricted __be64
+> drivers/scsi/gdth.c:2504:23: sparse: cast to restricted __be64
+> drivers/scsi/gdth.c:2504:23: sparse: cast to restricted __be64
+> drivers/scsi/gdth.c:2504:23: sparse: cast to restricted __be64
+> drivers/scsi/gdth.c:2504:23: sparse: cast to restricted __be64
+> drivers/scsi/gdth.c:2504:23: sparse: cast to restricted __be64
+> drivers/scsi/gdth.c:2504:23: sparse: cast to restricted __be64
+> drivers/scsi/gdth.c:2504:23: sparse: cast to restricted __be64
+> drivers/scsi/gdth.c:2506:24: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2506:24: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2506:24: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2506:24: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2506:24: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2506:24: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2509:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2509:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2509:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2509:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2509:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2509:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2511:24: sparse: cast to restricted __be16
+> drivers/scsi/gdth.c:2511:24: sparse: cast to restricted __be16
+> drivers/scsi/gdth.c:2511:24: sparse: cast to restricted __be16
+> drivers/scsi/gdth.c:2511:24: sparse: cast to restricted __be16
+> drivers/scsi/gdth.c:2514:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2514:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2514:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2514:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2514:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:2514:23: sparse: cast to restricted __be32
+> drivers/scsi/gdth.c:445:5: sparse: symbol '__gdth_execute' was not declared. Should it be static?
+> + drivers/scsi/gdth.c:1111:41: sparse: not an lvalue
+> drivers/scsi/gdth.c: In function 'gdth_init_pci':
+> drivers/scsi/gdth.c:1111:34: error: lvalue required as left operand of assignment
+> --
+> + drivers/staging/telephony/ixj.c:7732:52: sparse: Expected ; at end of statement
+> + drivers/staging/telephony/ixj.c:7732:52: sparse: got pci_resource_start
+> drivers/staging/telephony/ixj.c: In function 'ixj_probe_pci':
+> drivers/staging/telephony/ixj.c:7732:13: warning: assignment makes integer from pointer without a cast [enabled by default]
+> drivers/staging/telephony/ixj.c:7732:38: error: expected ';' before 'pci_resource_start'
+> 
+> vim +1111 drivers/scsi/gdth.c
+> 
+> ^1da177e Linus Torvalds 2005-04-16  1095  
+> ^1da177e Linus Torvalds 2005-04-16  1096          ha->dma64_support = 0;
+> ^1da177e Linus Torvalds 2005-04-16  1097  
+> ^1da177e Linus Torvalds 2005-04-16  1098      } else {                                            /* MPR */
+> ^1da177e Linus Torvalds 2005-04-16  1099          TRACE2(("init_pci_mpr() dpmem %lx irq %d\n",pcistr->dpmem,ha->irq));
+> ^1da177e Linus Torvalds 2005-04-16  1100          ha->brd = ioremap(pcistr->dpmem, sizeof(gdt6m_dpram_str));
+> ^1da177e Linus Torvalds 2005-04-16  1101          if (ha->brd == NULL) {
+> ^1da177e Linus Torvalds 2005-04-16  1102              printk("GDT-PCI: Initialization error (DPMEM remap error)\n");
+> ^1da177e Linus Torvalds 2005-04-16  1103              return 0;
+> ^1da177e Linus Torvalds 2005-04-16  1104          }
+> ^1da177e Linus Torvalds 2005-04-16  1105  
+> ^1da177e Linus Torvalds 2005-04-16  1106          /* manipulate config. space to enable DPMEM, start RP controller */
+> 4c9c8d78 Jeff Garzik    2008-02-15  1107  	pci_read_config_word(pdev, PCI_COMMAND, &command);
+> ^1da177e Linus Torvalds 2005-04-16  1108          command |= 6;
+> 4c9c8d78 Jeff Garzik    2008-02-15  1109  	pci_write_config_word(pdev, PCI_COMMAND, command);
+> 4c9c8d78 Jeff Garzik    2008-02-15  1110  	if (pci_resource_start(pdev, 8) == 1UL)
+> 4c9c8d78 Jeff Garzik    2008-02-15 @1111  	    pci_resource_start(pdev, 8) = 0UL;
+> ^1da177e Linus Torvalds 2005-04-16  1112          i = 0xFEFF0001UL;
+> 4c9c8d78 Jeff Garzik    2008-02-15  1113  	pci_write_config_dword(pdev, PCI_ROM_ADDRESS, i);
+> ^1da177e Linus Torvalds 2005-04-16  1114          gdth_delay(1);
+> 4c9c8d78 Jeff Garzik    2008-02-15  1115  	pci_write_config_dword(pdev, PCI_ROM_ADDRESS,
+> 4c9c8d78 Jeff Garzik    2008-02-15  1116  			       pci_resource_start(pdev, 8));
+> ^1da177e Linus Torvalds 2005-04-16  1117          
+> ^1da177e Linus Torvalds 2005-04-16  1118          dp6m_ptr = ha->brd;
+> ^1da177e Linus Torvalds 2005-04-16  1119  
 
-Best regards
-Uwe
+Probably this is necessary, though it seems a hack-around.
+---
+ drivers/scsi/gdth.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+diff --git a/drivers/scsi/gdth.c b/drivers/scsi/gdth.c
+index 5d72274..148827f 100644
+--- a/drivers/scsi/gdth.c
++++ b/drivers/scsi/gdth.c
+@@ -1107,8 +1107,8 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
+ 	pci_read_config_word(pdev, PCI_COMMAND, &command);
+         command |= 6;
+ 	pci_write_config_word(pdev, PCI_COMMAND, command);
+-	if (pci_resource_start(pdev, 8) == 1UL)
+-	    pci_resource_start(pdev, 8) = 0UL;
++	if (pdev->resource[8].start == 1UL)
++	    pdev->resource[8].start = 0UL;
+         i = 0xFEFF0001UL;
+ 	pci_write_config_dword(pdev, PCI_ROM_ADDRESS, i);
+         gdth_delay(1);
+
+
