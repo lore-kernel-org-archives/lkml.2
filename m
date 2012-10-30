@@ -1,76 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965391Ab2J3S0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:26:32 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:33666 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933952Ab2J3S0a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:26:30 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/cQZEu/VZeb2zdI27VtaxL
-Date: Tue, 30 Oct 2012 11:26:25 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] w1-gpio: Pinctrl-fy
-Message-ID: <20121030182625.GP11908@atomide.com>
-References: <1351699058-4576-1-git-send-email-panto@antoniou-consulting.com>
+	id S934199Ab2J3S0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:26:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39447 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965400Ab2J3S0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 14:26:38 -0400
+Date: Tue, 30 Oct 2012 19:24:20 +0100
+From: chrubis@suse.cz
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Michel Lespinasse <walken@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Partialy mapped page stays in page cache after unmap
+Message-ID: <20121030182420.GA17171@rei.Home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="huq684BweRXVnRxX"
 Content-Disposition: inline
-In-Reply-To: <1351699058-4576-1-git-send-email-panto@antoniou-consulting.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pantelis Antoniou <panto@antoniou-consulting.com> [121030 11:17]:
-> Enable pinctrl for w1-gpio.
->
-> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+--huq684BweRXVnRxX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> ---
->  drivers/w1/masters/w1-gpio.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-> index 6012c4e..aec35bd 100644
-> --- a/drivers/w1/masters/w1-gpio.c
-> +++ b/drivers/w1/masters/w1-gpio.c
-> @@ -16,6 +16,8 @@
->  #include <linux/gpio.h>
->  #include <linux/of_platform.h>
->  #include <linux/of_gpio.h>
-> +#include <linux/pinctrl/consumer.h>
-> +#include <linux/err.h>
->  
->  #include "../w1.h"
->  #include "../w1_int.h"
-> @@ -85,8 +87,13 @@ static int __init w1_gpio_probe(struct platform_device *pdev)
->  {
->  	struct w1_bus_master *master;
->  	struct w1_gpio_platform_data *pdata;
-> +	struct pinctrl *pinctrl;
->  	int err;
->  
-> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-> +	if (IS_ERR(pinctrl))
-> +		dev_warn(&pdev->dev, "unable to select pin group\n");
-> +
->  	err = w1_gpio_probe_dt(pdev);
->  	if (err < 0)
->  		return err;
-> -- 
-> 1.7.12
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Hi!
+I'm currently revisiting mmap related tests in LTP (Linux Test Project)
+and I've came to the tests testing that writes to the partially
+mapped page (at the end of mapping) are carried out correctly.
+
+These tests fails because even after the object is unmapped and the
+file-descriptor closed the pages still stays in the page cache so if
+(possibly another process) opens and maps the file again the whole
+content of the partial page is preserved.
+
+Strictly speaking this is not a bug at least when sticking to regular
+files as POSIX which says that the change is not written out. In this
+case the file content is correct and forcing the data to be written out
+by msync() makes the test pass. The SHM mappings seems to preserve the
+content even after calling msync() which is, in my opinion, POSIX
+violation although a minor one.
+
+Looking at the test results I have, the file based mmap test worked fine
+on 2.6.5 (or perhaps the page cache was working/setup differently and
+the test succeeded by accidend).
+
+Attached is a stripped down LTP test for the problem, uncommenting the
+msync() makes the test succeed.
+
+I would like to hear your opinions on this problems.
+
+-- 
+Cyril Hrubis
+chrubis@suse.cz
+
+--huq684BweRXVnRxX
+Content-Type: text/x-c; charset=us-ascii
+Content-Disposition: attachment; filename="reproducer.c"
+
+#define _XOPEN_SOURCE 600
+
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <string.h>
+#include <errno.h>
+
+int main(void)
+{
+	char tmpfname[256];
+	long page_size;
+	long total_size;
+
+	void *pa;
+	size_t len;
+	int i, fd;
+	
+	pid_t child;
+	char *ch;
+	int exit_val;
+
+	page_size = sysconf(_SC_PAGE_SIZE);
+
+	/* Size of the file to be mapped */
+	total_size = page_size / 2;
+
+	/* mmap will create a partial page */
+	len = page_size / 2;
+
+	snprintf(tmpfname, sizeof(tmpfname), "/tmp/pts_mmap_11_5_%d", getpid());
+	
+	/* Create shared file */
+	unlink(tmpfname);
+	fd = open(tmpfname, O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR);
+	if (fd == -1) {
+		printf("Error at open(): %s\n", strerror(errno));
+		return 1;
+	}
+	if (ftruncate(fd, total_size) == -1) {
+		printf("Error at ftruncate(): %s\n", strerror(errno));
+		return 1;
+	}
+
+	pa = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	if (pa == MAP_FAILED) {
+		printf("Error at mmap(): %s\n", strerror(errno));
+		return 1;
+	}
+		
+	ch = (char*)pa + len + 1;
+
+	/* Check the patial page is ZERO filled */
+	for (i = 0; i < page_size/2 - 1; i++) {
+		if (ch[i] != 0) {
+			printf("Test FAILED: The partial page at the "
+			       "end of the file is not zero-filled\n");
+			return 1;
+		}
+	}
+
+	/* Write to the partial page */
+	*ch = 'b';
+	//msync(pa, len, MS_SYNC);
+	munmap(pa, len);
+	close(fd);
+
+	/* Open and map it again */
+	fd = open(tmpfname, O_RDWR, 0);
+	unlink(tmpfname);
+
+	pa = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	if (pa == MAP_FAILED) {
+		printf("Error at 2nd mmap(): %s\n", strerror(errno));
+		return 1;
+	}
+
+	ch = pa + len + 1;
+	if (*ch == 'b') {
+		printf("Test FAILED: Modification of the partial page "
+		       "at the end of an object is written out\n");
+		return 1;
+	}
+	
+	close(fd);
+	munmap(pa, len);
+
+	printf("Test PASSED\n");
+	return 1;
+}
+
+--huq684BweRXVnRxX--
