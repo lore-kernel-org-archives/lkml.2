@@ -1,85 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab2J3Pq6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:46:58 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49179 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab2J3Pq4 (ORCPT
+	id S1755407Ab2J3Prt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:47:49 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:21196 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab2J3Prs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:46:56 -0400
-Date: Tue, 30 Oct 2012 08:46:52 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: George Zhang <georgezhang@vmware.com>, pv-drivers@vmware.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 01/12] VMCI: context implementation.
-Message-ID: <20121030154652.GB14167@kroah.com>
-References: <20121030005923.17788.21797.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121030010333.17788.94988.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121030021058.GB1920@kroah.com>
- <20121030040139.GA32055@dtor-ws.eng.vmware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030040139.GA32055@dtor-ws.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 30 Oct 2012 11:47:48 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lr3c7sfw==
+X-RZG-CLASS-ID: mo00
+From: Olaf Hering <olaf@aepfle.de>
+To: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Olaf Hering <olaf@aepfle.de>
+Subject: [PATCH v4] xen PVonHVM: move shared_info to reserved memory area
+Date: Tue, 30 Oct 2012 16:47:37 +0100
+Message-Id: <1351612057-21822-1-git-send-email-olaf@aepfle.de>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 09:01:40PM -0700, Dmitry Torokhov wrote:
-> Hi Greg,
-> 
-> On Mon, Oct 29, 2012 at 07:10:58PM -0700, Greg KH wrote:
-> > On Mon, Oct 29, 2012 at 06:03:42PM -0700, George Zhang wrote:
-> > > +/*
-> > > + * Releases the VMCI context. If this is the last reference to
-> > > + * the context it will be deallocated. A context is created with
-> > > + * a reference count of one, and on destroy, it is removed from
-> > > + * the context list before its reference count is
-> > > + * decremented. Thus, if we reach zero, we are sure that nobody
-> > > + * else are about to increment it (they need the entry in the
-> > > + * context list for that). This function musn't be called with a
-> > > + * lock held.
-> > > + */
-> > > +void vmci_ctx_release(struct vmci_ctx *context)
-> > > +{
-> > > +	ASSERT(context);
-> > > +	kref_put(&context->kref, ctx_free_ctx);
-> > > +}
-> > > +
-> > 
-> > Hm, are you _sure_ you should be calling this without a lock held?
-> > That's usually kref-101, you MUST hold a lock when calling put,
-> > otherwise you can race a kref_get() call, and all hell can break loose.
-> > 
-> > Because of this, some saner people (like Al Viro), have suggested that I
-> > force the kref_put() and kref_get() calls pass in a spinlock just to
-> > enforce this.
-> > 
-> > So, tell me what I'm missing here, and why you put the comment here
-> > saying that it really is supposed to be called without a lock held?  How
-> > is that safe?
-> > 
-> 
-> Contexts are created/registered in vmci_ctx_init_ctx() and unregistered in
-> vmci_ctx_release_ctx() and these operations are protected by
-> ctx_list.lock spinlock. Context lookup (vmci_ctx_get) also uses spinlock
-> to traverse list of registered contexts and then grabs reference to the
-> [valid] context. The use of kref_put() without additional locking in
-> vmci_ctx_release() is fine as there is no chance of another thread
-> bumping count from 0 to 1.
+This is a respin of 00e37bdb0113a98408de42db85be002f21dbffd3
+("xen PVonHVM: move shared_info to MMIO before kexec").
 
-As I didn't see all callers of this holding that spinlock, it was
-confusing.  You should put this type of description somewhere so that
-other reviewers don't have the same questions.
+Currently kexec in a PVonHVM guest fails with a triple fault because the
+new kernel overwrites the shared info page. The exact failure depends on
+the size of the kernel image. This patch moves the pfn from RAM into an
+E820 reserved memory area.
 
-> I believe the comment should actually read that the function should not
-> be called from atomic contexts.
+The pfn containing the shared_info is located somewhere in RAM. This will
+cause trouble if the current kernel is doing a kexec boot into a new
+kernel. The new kernel (and its startup code) can not know where the pfn
+is, so it can not reserve the page. The hypervisor will continue to update
+the pfn, and as a result memory corruption occours in the new kernel.
 
-That might be nice to document, but could it ever happen?
+The toolstack marks the memory area FC000000-FFFFFFFF as reserved in the
+E820 map. Within that range newer toolstacks will keep 1MB starting from
+FE700000 as reserved for guest use. Older toolstacks will usually not
+allocate areas up to FE700000, so FE700000 is expected to work also with
+older toolstacks.
 
-thanks,
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+---
+v4:
+ rebase to 3.7-rc3
+v3:                                                                                                                                                                                                                                                                  
+ make xen_hvm_init_shared_info static                                                                                                                                                                                                                                
+v2:                                                                                                                                                                                                                                                                  
+ add __init to xen_hvm_set_shared_info                                                                                                                                                                                                                               
 
-greg k-h
+ arch/x86/xen/enlighten.c | 46 ++++++++++++++++++++++++++++++----------------
+ arch/x86/xen/suspend.c   |  2 +-
+ arch/x86/xen/xen-ops.h   |  2 +-
+ 3 files changed, 32 insertions(+), 18 deletions(-)
+
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 586d838..0cc41f8 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -101,7 +101,6 @@ struct shared_info xen_dummy_shared_info;
+ 
+ void *xen_initial_gdt;
+ 
+-RESERVE_BRK(shared_info_page_brk, PAGE_SIZE);
+ __read_mostly int xen_have_vector_callback;
+ EXPORT_SYMBOL_GPL(xen_have_vector_callback);
+ 
+@@ -1495,38 +1494,53 @@ asmlinkage void __init xen_start_kernel(void)
+ #endif
+ }
+ 
+-void __ref xen_hvm_init_shared_info(void)
++#ifdef CONFIG_XEN_PVHVM
++#define HVM_SHARED_INFO_ADDR 0xFE700000UL
++static struct shared_info *xen_hvm_shared_info;
++
++static void xen_hvm_connect_shared_info(unsigned long pfn)
+ {
+-	int cpu;
+ 	struct xen_add_to_physmap xatp;
+-	static struct shared_info *shared_info_page = 0;
+ 
+-	if (!shared_info_page)
+-		shared_info_page = (struct shared_info *)
+-			extend_brk(PAGE_SIZE, PAGE_SIZE);
+ 	xatp.domid = DOMID_SELF;
+ 	xatp.idx = 0;
+ 	xatp.space = XENMAPSPACE_shared_info;
+-	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
++	xatp.gpfn = pfn;
+ 	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
+ 		BUG();
+ 
+-	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
++}
++static void __init xen_hvm_set_shared_info(struct shared_info *sip)
++{
++	int cpu;
++
++	HYPERVISOR_shared_info = sip;
+ 
+ 	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
+ 	 * page, we use it in the event channel upcall and in some pvclock
+ 	 * related functions. We don't need the vcpu_info placement
+ 	 * optimizations because we don't use any pv_mmu or pv_irq op on
+-	 * HVM.
+-	 * When xen_hvm_init_shared_info is run at boot time only vcpu 0 is
+-	 * online but xen_hvm_init_shared_info is run at resume time too and
+-	 * in that case multiple vcpus might be online. */
+-	for_each_online_cpu(cpu) {
++	 * HVM. */
++	for_each_online_cpu(cpu)
+ 		per_cpu(xen_vcpu, cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
+-	}
+ }
+ 
+-#ifdef CONFIG_XEN_PVHVM
++/* Reconnect the shared_info pfn to a (new) mfn */
++void xen_hvm_resume_shared_info(void)
++{
++	xen_hvm_connect_shared_info(HVM_SHARED_INFO_ADDR >> PAGE_SHIFT);
++}
++
++/* Obtain an address to the pfn in reserved area */
++static void __init xen_hvm_init_shared_info(void)
++{
++	set_fixmap(FIX_PARAVIRT_BOOTMAP, HVM_SHARED_INFO_ADDR);
++	xen_hvm_shared_info =
++		(struct shared_info *)fix_to_virt(FIX_PARAVIRT_BOOTMAP);
++	xen_hvm_connect_shared_info(HVM_SHARED_INFO_ADDR >> PAGE_SHIFT);
++	xen_hvm_set_shared_info(xen_hvm_shared_info);
++}
++
+ static void __init init_hvm_pv_info(void)
+ {
+ 	int major, minor;
+diff --git a/arch/x86/xen/suspend.c b/arch/x86/xen/suspend.c
+index 45329c8..ae8a00c 100644
+--- a/arch/x86/xen/suspend.c
++++ b/arch/x86/xen/suspend.c
+@@ -30,7 +30,7 @@ void xen_arch_hvm_post_suspend(int suspend_cancelled)
+ {
+ #ifdef CONFIG_XEN_PVHVM
+ 	int cpu;
+-	xen_hvm_init_shared_info();
++	xen_hvm_resume_shared_info();
+ 	xen_callback_vector();
+ 	xen_unplug_emulated_devices();
+ 	if (xen_feature(XENFEAT_hvm_safe_pvclock)) {
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index a95b417..d2e73d1 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -40,7 +40,7 @@ void xen_enable_syscall(void);
+ void xen_vcpu_restore(void);
+ 
+ void xen_callback_vector(void);
+-void xen_hvm_init_shared_info(void);
++void xen_hvm_resume_shared_info(void);
+ void xen_unplug_emulated_devices(void);
+ 
+ void __init xen_build_dynamic_phys_to_machine(void);
+-- 
+1.8.0
+
