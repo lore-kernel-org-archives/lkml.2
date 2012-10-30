@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759862Ab2J3PjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 11:39:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31754 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758566Ab2J3PjP (ORCPT
+	id S933778Ab2J3Pjw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 11:39:52 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:57502 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932135Ab2J3Pju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 11:39:15 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=60KdgoBU-20A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=Gcm4EvZRSmsA:10 a=pcLIrrrKAAAA:8 a=rFMEq44me7uM0rZAdykA:9 a=QEXdDO2ut3YA:10 a=J0D9jONdvmQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351611552.8467.96.camel@gandalf.local.home>
-Subject: Re: [PATCH 01/32] nohz: Move nohz load balancer selection into idle
- logic
-From: Steven Rostedt <rostedt@goodmis.org>
-To: muming.wq@gmail.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Alex Shi <alex.shi@intel.com>
-Date: Tue, 30 Oct 2012 11:39:12 -0400
-In-Reply-To: <508F90A0.1030503@gmail.com>
-References: <20121029202711.062749374@goodmis.org>
-	 <20121029203846.797007049@goodmis.org> <508F90A0.1030503@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Tue, 30 Oct 2012 11:39:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAKohpon7KP5V3xjMG_HaNoP3x1aPT2FtivTz=41PT7neGTpTUw@mail.gmail.com>
+References: <1348731121-2515-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348731121-2515-6-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1348735450.1648.5.camel@vkoul-udesk3>
+	<1348739022.13371.157.camel@smile>
+	<1348740071.1648.25.camel@vkoul-udesk3>
+	<CAOh2x=ntwp22Z3sHf9QehVwab--ZayF-kmTpZsjbkyQYVxrzpw@mail.gmail.com>
+	<1349691428.10584.95.camel@smile>
+	<CAKohpokGsAv2cPjj2EMvmTmN1Q+LOU7mN0H9YZcGzs95mm6c-w@mail.gmail.com>
+	<1349700409.10584.118.camel@smile>
+	<CAKohpo=t_uV-S+cbeDFvSDLe0SxXVx6tvA8yGMF45-YvU_FRvw@mail.gmail.com>
+	<1351609530.11158.87.camel@smile>
+	<CAKohpon7KP5V3xjMG_HaNoP3x1aPT2FtivTz=41PT7neGTpTUw@mail.gmail.com>
+Date: Tue, 30 Oct 2012 17:39:49 +0200
+Message-ID: <CAHp75Vf6ntXh2w03jMUN+qH91UedPsCiJ3mxTe-Y3nA7mpJzLw@mail.gmail.com>
+Subject: Re: [PATCHv3 5/7] dmaengine: dw_dmac: add PCI part of the driver
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 30, 2012 at 5:19 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 30 October 2012 20:35, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+>> On Mon, 2012-10-08 at 18:57 +0530, Viresh Kumar wrote:
 
-On Tue, 2012-10-30 at 16:32 +0800, Charles Wang wrote:
-> calc_load_exit_idle depends on updated jiffies, so you shouldn't move 
-> this before tick_do_update_jiffies64.
+> For me i don't agree with your approach. So, its a NACK.
+Point taken.
 
-OK, so it should be moved to the end of the if block. Note, that was a
-change I made, as that function was added since Frederic did his code. I
-looked into the code and it seemed that it should be moved for just idle
-as well. But I agree with you that it should be after the jiffies
-update.
+> However if Arnd/Vinod or You can give me some strong points about
+> your approach, i can consider it again :)
+Fair enough.
 
-
-> And why should we do nohz_balance_enter_idle in tick_nohz_idle_exit? 
-> It's nohz_balance_exit_idle here.
-
-OK, that's my fault as well. As Frederic's original patch just moved
-select_nohz_load_balance(0). But the commit c1cc017c59 "sched/nohz:
-Clean up select_nohz_load_balancer()" replaced it with
-nohz_balance_enter_idle(cpu), and removed it on exit, there was nothing
-to replace for the current code.
-
-Knowing this patch was considered "buggy" instead of just not moving it
-(and forgetting about it), I did the change to remind myself to talk
-about it :-)
-
-My question is now, is there any reason to keep that call there? Or can
-we just remove it as well.
-
--- Steve
-
-
-> 
-> Regards,
-> Charles
-> 
-> On 10/30/2012 04:27 AM, Steven Rostedt wrote:
-> ［snipped］
->  > @@ -573,7 +573,6 @@ static void tick_nohz_restart_sched_tick(struct 
-> tick_sched *ts, ktime_t now)
->  >  	tick_do_update_jiffies64(now);
->  >  	update_cpu_load_nohz();
->  >
->  > -	calc_load_exit_idle();
->  >  	touch_softlockup_watchdog();
->  >  	/*
->  >  	 * Cancel the scheduled timer and restore the tick
->  > @@ -628,6 +627,8 @@ void tick_nohz_idle_exit(void)
->  >  		tick_nohz_stop_idle(cpu, now);
->  >
->  >  	if (ts->tick_stopped) {
->  > +		nohz_balance_enter_idle(cpu);
->  > +		calc_load_exit_idle();
->  >  		tick_nohz_restart_sched_tick(ts, now);
->  >  		tick_nohz_account_idle_ticks(ts);
->  >  	}
-
-
+-- 
+With Best Regards,
+Andy Shevchenko
