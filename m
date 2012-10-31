@@ -1,86 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935448Ab2JaLUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 07:20:00 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:52932 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934387Ab2JaLT5 (ORCPT
+	id S1422693Ab2JaLUX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 07:20:23 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:49944 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964984Ab2JaLUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 07:19:57 -0400
+	Wed, 31 Oct 2012 07:20:18 -0400
+From: Behan Webster <behanw@converseincode.com>
+To: herbert@gondor.hengli.com.au, davem@davemloft.net
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        pageexec@freemail.hu, Behan Webster <behanw@converseincode.com>
+Subject: [PATCH V2 1/2] Remove VLAIS usage from crypto/hmac.c
+Date: Wed, 31 Oct 2012 07:20:33 -0400
+Message-Id: <1351682434-6642-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <CAOJsxLF2tgLDn0pcTaisd0N4c+4Jxi=gmV1qK+7MSc6=QoyBkA@mail.gmail.com>
-References: <1347461277-25302-1-git-send-email-elezegarcia@gmail.com>
-	<tip-8781915ad2716adcd8cd5cc52cee791fc8b00fdf@git.kernel.org>
-	<CAOJsxLF2tgLDn0pcTaisd0N4c+4Jxi=gmV1qK+7MSc6=QoyBkA@mail.gmail.com>
-Date: Wed, 31 Oct 2012 08:19:57 -0300
-Message-ID: <CALF0-+Vv0mS6ENOpG4x6-922XEik5JM=4+5A+5ZWVtgZmNyJBA@mail.gmail.com>
-Subject: Re: [tip:perf/core] trace: Move trace event enable from fs_initcall
- to core_initcall
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pekka,
+From: Jan-Simon Möller <dl9pf@gmx.de>
 
-On Wed, Oct 31, 2012 at 4:04 AM, Pekka Enberg <penberg@kernel.org> wrote:
-> Hi Ezequiel,
->
-> On Thu, Sep 27, 2012 at 8:49 AM, tip-bot for Ezequiel Garcia
-> <elezegarcia@gmail.com> wrote:
->> Commit-ID:  8781915ad2716adcd8cd5cc52cee791fc8b00fdf
->> Gitweb:     http://git.kernel.org/tip/8781915ad2716adcd8cd5cc52cee791fc8b00fdf
->> Author:     Ezequiel Garcia <elezegarcia@gmail.com>
->> AuthorDate: Wed, 12 Sep 2012 11:47:57 -0300
->> Committer:  Steven Rostedt <rostedt@goodmis.org>
->> CommitDate: Mon, 24 Sep 2012 14:13:02 -0400
->>
->> trace: Move trace event enable from fs_initcall to core_initcall
->>
->> This patch splits trace event initialization in two stages:
->>  * ftrace enable
->>  * sysfs event entry creation
->>
->> This allows to capture trace events from an earlier point
->> by using 'trace_event' kernel parameter and is important
->> to trace boot-up allocations.
->>
->> Note that, in order to enable events at core_initcall,
->> it's necessary to move init_ftrace_syscalls() from
->> core_initcall to early_initcall.
->>
->> Link: http://lkml.kernel.org/r/1347461277-25302-1-git-send-email-elezegarcia@gmail.com
->>
->> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
->> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->
-> So what's still needed for perf to be able to trace early boot slab
-> allocations like kmemtrace used to be able to do?
->
+The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
+precludes the use of compilers which don't implement VLAIS (for instance the
+Clang compiler). This patch instead allocates the appropriate amount of memory
+using an char array.
 
-Steven suggested [1] it would be possible to create some sort
-of static ring buffer, and use it to trace early events.
-Later on, this static buffer should be copied into the "real" one.
+Patch from series at
+http://lists.cs.uiuc.edu/pipermail/llvm-commits/Week-of-Mon-20120507/142707.html
+by PaX Team.
 
-Since this patch, ftrace is enabled at core_initcall.
-It's an improvement, but we still loose events.
-For instance, in a probe kernel we loose 800k bytes,
-and 20k allocations, compared to accounting from boot up.
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
+Cc: pageexec@freemail.hu
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+---
+ crypto/hmac.c |   27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
-To be able to use ftrace (and therefore perf) for long run tracing,
-you need to consider ring buffer overrun.
-In my tests, I had to set a bigger buffer,
-which severely impacts performance.
+diff --git a/crypto/hmac.c b/crypto/hmac.c
+index 8d9544c..1061255 100644
+--- a/crypto/hmac.c
++++ b/crypto/hmac.c
+@@ -52,20 +52,19 @@ static int hmac_setkey(struct crypto_shash *parent,
+ 	struct hmac_ctx *ctx = align_ptr(opad + ss,
+ 					 crypto_tfm_ctx_alignment());
+ 	struct crypto_shash *hash = ctx->hash;
+-	struct {
+-		struct shash_desc shash;
+-		char ctx[crypto_shash_descsize(hash)];
+-	} desc;
++	char desc[sizeof(struct shash_desc) + crypto_shash_descsize(hash)
++		+ CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
++	struct shash_desc *shash = (struct shash_desc *)desc;
+ 	unsigned int i;
+ 
+-	desc.shash.tfm = hash;
+-	desc.shash.flags = crypto_shash_get_flags(parent) &
+-			    CRYPTO_TFM_REQ_MAY_SLEEP;
++	shash->tfm = hash;
++	shash->flags = crypto_shash_get_flags(parent)
++		& CRYPTO_TFM_REQ_MAY_SLEEP;
+ 
+ 	if (keylen > bs) {
+ 		int err;
+ 
+-		err = crypto_shash_digest(&desc.shash, inkey, keylen, ipad);
++		err = crypto_shash_digest(shash, inkey, keylen, ipad);
+ 		if (err)
+ 			return err;
+ 
+@@ -81,12 +80,12 @@ static int hmac_setkey(struct crypto_shash *parent,
+ 		opad[i] ^= 0x5c;
+ 	}
+ 
+-	return crypto_shash_init(&desc.shash) ?:
+-	       crypto_shash_update(&desc.shash, ipad, bs) ?:
+-	       crypto_shash_export(&desc.shash, ipad) ?:
+-	       crypto_shash_init(&desc.shash) ?:
+-	       crypto_shash_update(&desc.shash, opad, bs) ?:
+-	       crypto_shash_export(&desc.shash, opad);
++	return crypto_shash_init(shash) ?:
++	       crypto_shash_update(shash, ipad, bs) ?:
++	       crypto_shash_export(shash, ipad) ?:
++	       crypto_shash_init(shash) ?:
++	       crypto_shash_update(shash, opad, bs) ?:
++	       crypto_shash_export(shash, opad);
+ }
+ 
+ static int hmac_export(struct shash_desc *pdesc, void *out)
+-- 
+1.7.9.5
 
-IMHO, this makes ftrace unsuitable for very long run tests
-with "verbose" events; unless you put an user daemon
-or something popping events, preventing overrun.
-
-    Ezequiel
-
-[1] https://lkml.org/lkml/2012/8/17/253
