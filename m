@@ -1,118 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759765Ab2JaWKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 18:10:43 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:32847 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758878Ab2JaWKl (ORCPT
+	id S1760449Ab2JaWPm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 18:15:42 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64810 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411Ab2JaWPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 18:10:41 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: David Gibson <david@gibson.dropbear.id.au>, Jon Loeliger <jdl@jdl.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V5 2/2] kbuild: run the pre-processor on *.dts files
-Date: Wed, 31 Oct 2012 16:10:31 -0600
-Message-Id: <1351721431-26220-2-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1351721431-26220-1-git-send-email-swarren@wwwdotorg.org>
-References: <1351721431-26220-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	Wed, 31 Oct 2012 18:15:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <87625r5d44.fsf@sejong.aot.lge.com>
+References: <CAPhKKr8HAbAw2jdvva6oJYj747ZS0dTakz2=qJXN+NsTiu=dCg@mail.gmail.com>
+	<CAPhKKr8KNi0kU4CcbPofZT7sghumeUTRyiuywOWrd24DiF4gFQ@mail.gmail.com>
+	<871ugg76dn.fsf@sejong.aot.lge.com>
+	<CAPhKKr_S0-r-Bx9KWeFyN1KwTcLf-Rt8f55_c0bohaJh0JQ0cg@mail.gmail.com>
+	<87625r5d44.fsf@sejong.aot.lge.com>
+Date: Wed, 31 Oct 2012 18:15:39 -0400
+Message-ID: <CAPhKKr_28VwzsxBcQeXqABVtWEvw4mZ3j3gFDCOHicr=0YfBdQ@mail.gmail.com>
+Subject: Re: [BUG] perf report: different reports when run on terminal as
+ opposed to script
+From: Dhaval Giani <dhaval.giani@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo de Melo <acme@infradead.org>, mingo@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        akshay kumar <iit.akshay@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Wed, Oct 31, 2012 at 3:12 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> On Tue, 30 Oct 2012 08:05:45 -0400, Dhaval Giani wrote:
+>> On Tue, Oct 30, 2012 at 3:42 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+>>> Hi Dhaval,
+>>>
+>>> On Mon, 29 Oct 2012 12:45:53 -0400, Dhaval Giani wrote:
+>>>> On Mon, Oct 29, 2012 at 12:01 PM, Dhaval Giani <dhaval.giani@gmail.com> wrote:
+>>>>> Hi,
+>>>>>
+>>>>> As part of a class assignment I have to collect some performance
+>>>>> statistics. In order to do so I run
+>>>>>
+>>>>> perf record -g <the program I have to profile>
+>>>>>
+>>>>> And in another window, I start 200 threads of the load generator
+>>>>> (which is not recorded by perf)
+>>>>>
+>>>>> This generates me statistics that I expect to see, and I am happy. As
+>>>>> this is academia and a class assignment, I need to collect information
+>>>>> and analyze it across different setups. Which of course meant I script
+>>>>> this whole thing, which basically is
+>>>>>
+>>>>> for i in all possibilities
+>>>>> do
+>>>>> perf record -g <the program I have to profile> &
+>>>>> WAITPID=$!
+>>>>> for j in NR_THREADS
+>>>>> do
+>>>>> <start load generator> &
+>>>>> KILLPID=$!
+>>>>> done
+>>>>> wait $PID
+>>>
+>>> You meant $WAITPID, right?
+>>>
+>>
+>> yes. grrr. I changed the name here to WAITPID for it to be clear and
+>> that was a fail. (I blame the cold)
+>>
+>>>
+>>>>> kill $KILLPID
+>>>
+>>> Doesn't it kill the last load generator only?
+>>>
+>>>
+>>
+>> Well, this was a bug in me typing the pseudo code. the actual script
+>> does "$KILLPID $!"
+>
+> Okay, so I suspect that it might be affected by the autogroup scheduling
+> feature since you said running load generators in another window - I
+> guess it's a terminal.  How about running them with setsid?
+>
 
-Modify cmd_dtc to run the C pre-processor on the input .dts file before
-passing it to dtc for final compilation. This allows the use of #define
-and #include within the .dts file.
+Why would that affect the data collection for the program being
+profiled? The time spent (since it is a compute intensive program) in
+various functions shouldn't change, correct? (Unless I am missing
+something).
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-v5:
-* Update Documentation/kbuild for the new command and rule.
-v4:
-* Use -x assembler-with-cpp so pre-defined macros are set up so that
-  #included header files know to only use cpp syntax, not C syntax.
-* Define __DTS__ for similar reasons.
-* use $(CPP) not $(CC) -E, and use $(cpp_flags).
-* Save the pre-processed results so they can be easily inspected when
-  debugging build issues.
-* The use of -x assembler-with-cpp causes cpp to recognize directives in
-  column 1 only. Hence, there's no need to escape property names that
-  begin with #. Hence, there's no need for separate skeleton.dtsi and
-  skeleton.dtsip. Maintain a separate file extension and build rule so that
-  CPP-usage is opt-in. In particular, when using CPP, #include must be used
-  rather than /include/ so that dependencies work.
-v3: Pass "-x c" not "-xc" to cpp.
-v2: Place make %.dtb: %.dtsp rule into Makefile.lib.
----
- Documentation/kbuild/makefiles.txt |   23 +++++++++++++++++++++++
- scripts/Makefile.lib               |    9 +++++++++
- 2 files changed, 32 insertions(+), 0 deletions(-)
+/me goes and tries it out
 
-diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-index a0b0671..dfe6838 100644
---- a/Documentation/kbuild/makefiles.txt
-+++ b/Documentation/kbuild/makefiles.txt
-@@ -1194,6 +1194,29 @@ When kbuild executes, the following steps are followed (roughly):
- 
- 		clean-files += ... *.dtb
- 
-+    dtc_cpp
-+	This is just like dtc as describe above, except that the C pre-
-+	processor is invoked upon the .dtsp file before compiling the result
-+	with dtc.
-+
-+	In order for build dependencies to work, all files compiled using
-+	dtc_cpp must use the C pre-processor's #include functionality and not
-+	dtc's /include/ functionality.
-+
-+	Using the C pre-processor allows use of #define to create named
-+	constants. In turn, the #defines will typically appear in a header
-+	file, which may be shared with regular C code. Since the dtc language
-+	represents a data structure rather than code in C syntax, similar
-+	restrictions are placed on a header file included by a device tree
-+	file as for a header file included by an assembly language file.
-+	In particular, the C pre-processor is passed -x assembler-with-cpp,
-+	which sets macro __ASSEMBLY__. __DTS__ is also set. These allow header
-+	files to restrict their content to that compatible with device tree
-+	source.
-+
-+	A central rule exists to create $(obj)/%.dtb from $(src)/dts/%.dtsp;
-+	architecture Makefiles do no need to explicitly write out that rule.
-+
- --- 6.8 Custom kbuild commands
- 
- 	When kbuild is executing with KBUILD_VERBOSE=0, then only a shorthand
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 425578e..33432f4 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -269,6 +269,15 @@ cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile
- $(obj)/%.dtb: $(src)/dts/%.dts FORCE
- 	$(call if_changed_dep,dtc)
- 
-+dtc-tmp = $(subst $(comma),_,$(dot-target).dts)
-+
-+quiet_cmd_dtc_cpp = DTC+CPP $@
-+cmd_dtc_cpp = $(CPP) $(cpp_flags) -D__DTS__ -x assembler-with-cpp -o $(dtc-tmp) $< ; \
-+	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $(dtc-tmp)
-+
-+$(obj)/%.dtb: $(src)/dts/%.dtsp FORCE
-+	$(call if_changed_dep,dtc_cpp)
-+
- # Bzip2
- # ---------------------------------------------------------------------------
- 
--- 
-1.7.0.4
+Hmm. OK, so that doesn't help. Still the same.
 
+Thanks!
+Dhaval
