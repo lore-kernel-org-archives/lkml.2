@@ -1,41 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423143Ab2JaQEc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:04:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57545 "EHLO mx2.suse.de"
+	id S1423179Ab2JaQEs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:04:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17538 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422946Ab2JaQEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:04:30 -0400
-Date: Wed, 31 Oct 2012 17:04:26 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-In-Reply-To: <CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1210311703560.12781@pobox.suse.cz>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com> <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz> <20121029174131.GC7580@srcf.ucam.org> <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
- <CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1422946Ab2JaQEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 12:04:46 -0400
+Date: Wed, 31 Oct 2012 12:04:30 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, James Morris <jmorris@namei.org>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
+        cgroups@vger.kernel.org
+Subject: [PATCH] device_cgroup: fix unchecked cgroup parent usage
+Message-ID: <20121031160430.GD14789@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012, Josh Boyer wrote:
+In 4cef7299b4786879a3e113e84084a72b24590c5b the cgroup parent usage is
+unchecked. root will not have a parent and trying to use
+device.{allow,deny} will cause problems. For some reason my stressing
+scripts didn't test the root directory so I didn't catch it on my
+regular tests.
 
-> I have a patch that disables that.  I imagine it will be included in the
-> next submission of the patchset.
-> 
-> You can find it here in the meantime:
-> 
-> http://jwboyer.fedorapeople.org/pub/0001-hibernate-Disable-in-a-Secure-Boot-environment.patch
+Andrew, Tejun, this patch needs to make Linus tree ASAP or a revert for
+4cef7299b4786879a3e113e84084a72b24590c5b.
 
-I don't see that patch touching kernel/power/user.c, so using 's2disk' to 
-suspend machine seems to be still possible even with this patch applied, 
-right?
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Pavel Emelyanov <xemul@openvz.org>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
--- 
-Jiri Kosina
-SUSE Labs
+--- github.orig/security/device_cgroup.c	2012-10-26 17:18:01.739366780 -0400
++++ github/security/device_cgroup.c	2012-10-29 10:03:33.221918003 -0400
+@@ -352,6 +352,8 @@
+  */
+ static inline int may_allow_all(struct dev_cgroup *parent)
+ {
++	if (!parent)
++		return 1;
+ 	return parent->behavior == DEVCG_DEFAULT_ALLOW;
+ }
+ 
+@@ -376,11 +378,14 @@
+ 	int count, rc;
+ 	struct dev_exception_item ex;
+ 	struct cgroup *p = devcgroup->css.cgroup;
+-	struct dev_cgroup *parent = cgroup_to_devcgroup(p->parent);
++	struct dev_cgroup *parent = NULL;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
++	if (p->parent)
++		parent = cgroup_to_devcgroup(p->parent);
++
+ 	memset(&ex, 0, sizeof(ex));
+ 	b = buffer;
+ 
+@@ -391,11 +396,14 @@
+ 			if (!may_allow_all(parent))
+ 				return -EPERM;
+ 			dev_exception_clean(devcgroup);
++			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
++			if (!parent)
++				break;
++
+ 			rc = dev_exceptions_copy(&devcgroup->exceptions,
+ 						 &parent->exceptions);
+ 			if (rc)
+ 				return rc;
+-			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
+ 			break;
+ 		case DEVCG_DENY:
+ 			dev_exception_clean(devcgroup);
