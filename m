@@ -1,110 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422918Ab2JaOPU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 10:15:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24684 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422815Ab2JaOPQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 10:15:16 -0400
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZINjJWKk7f8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lJEFyBTRSOMA:10 a=pGLkceISAAAA:8 a=eWfoQJOYkE6zxK7xLYkA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=6qfZlBHHSjKd2DXR:21 a=HPD4q3nzEakandN2:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351692914.4004.83.camel@gandalf.local.home>
-Subject: Re: [PATCH] [RFC]IRQ CORE: irq_work_queue function return value not
- used.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: anish kumar <anish198519851985@gmail.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org,
-        akpm@linux-foundation.org, paul.gortmaker@windriver.com,
-        tglx@linutronix.de, mingo@kernel.org, fweisbec@gmail.com
-Date: Wed, 31 Oct 2012 10:15:14 -0400
-In-Reply-To: <1351692126-8944-1-git-send-email-anish198519851985@gmail.com>
-References: <1351692126-8944-1-git-send-email-anish198519851985@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S935679Ab2JaOVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 10:21:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52275 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935631Ab2JaOVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 10:21:23 -0400
+Date: Wed, 31 Oct 2012 15:19:03 +0100
+From: chrubis@suse.cz
+To: Bob Liu <lliubbo@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Subject: Re: Partialy mapped page stays in page cache after unmap
+Message-ID: <20121031141903.GA23341@rei.suse.cz>
+References: <20121030182420.GA17171@rei.Home>
+ <CAA_GA1fozH3wA+2YWrCEUN2S=3rSpJ3f829yy8TZFfuh8q-WYQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="tKW2IUtsqtDRztdT"
+Content-Disposition: inline
+In-Reply-To: <CAA_GA1fozH3wA+2YWrCEUN2S=3rSpJ3f829yy8TZFfuh8q-WYQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-31 at 23:02 +0900, anish kumar wrote:
-> From: anish kumar <anish198519851985@gmail.com>
+
+--tKW2IUtsqtDRztdT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Hi!
+> > Strictly speaking this is not a bug at least when sticking to regular
+> > files as POSIX which says that the change is not written out. In this
+> > case the file content is correct and forcing the data to be written out
+> > by msync() makes the test pass. The SHM mappings seems to preserve the
+> > content even after calling msync() which is, in my opinion, POSIX
+> > violation although a minor one.
+> >
 > 
-> As no one is using the return value of irq_work_queue function
-> it is better to just make it void.
-> 
-> This patch is just a way to understand if there is some future
-> plan to use it but in any case please let me know the reason.
-> ---
->  kernel/irq_work.c |   21 ++++++++++-----------
->  1 files changed, 10 insertions(+), 11 deletions(-)
-> 
-> diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-> index 1588e3b..4a9a44c 100644
-> --- a/kernel/irq_work.c
-> +++ b/kernel/irq_work.c
-> @@ -32,21 +32,21 @@ static DEFINE_PER_CPU(struct llist_head, irq_work_list);
->  /*
->   * Claim the entry so that no one else will poke at it.
->   */
-> -static bool irq_work_claim(struct irq_work *work)
-> +static void irq_work_claim(struct irq_work *work)
->  {
->  	unsigned long flags, nflags;
->  
->  	for (;;) {
->  		flags = work->flags;
->  		if (flags & IRQ_WORK_PENDING)
-> -			return false;
-> +			return;
->  		nflags = flags | IRQ_WORK_FLAGS;
->  		if (cmpxchg(&work->flags, flags, nflags) == flags)
->  			break;
->  		cpu_relax();
->  	}
->  
-> -	return true;
-> +	return;
->  }
->  
->  void __weak arch_irq_work_raise(void)
-> @@ -79,15 +79,14 @@ static void __irq_work_queue(struct irq_work *work)
->   *
->   * Can be re-enqueued while the callback is still in progress.
->   */
-> -bool irq_work_queue(struct irq_work *work)
-> +void irq_work_queue(struct irq_work *work)
->  {
-> -	if (!irq_work_claim(work)) {
-> -		/*
-> -		 * Already enqueued, can't do!
-> -		 */
-> -		return false;
-> -	}
-> -
-> +	/*
-> +	 * This function either will claim the entry to queue
-> +	 * the work or if the work is already queued and is in
-> +	 * pending state then it will simply return.
-> +	 */
-> +	irq_work_claim(work)
+> fsync implemented in SHM is noop_fsync.
+> May be we should extend it if needed.
 
-Um, no.
-
-If the state was already pending, we will corrupt the llist node of the
-work if we call irq_work_queue(). You must check the return value of
-irq_work_claim() and return if it fails. You can not call
-__irq_work_queue() if irq_work_claim() does not succeed.
-
-The return value of irq_work_queue() can be ignored, but not
-irq_work_claim().
-
--- Steve
-
->  	__irq_work_queue(work);
->  	return true;
->  }
+I'm entirely sure that would fix the interface correclty. The posix
+says:
 
 
+mmap:
+
+...
+The system shall always zero-fill any partial page at the end of an
+object. Further, the system shall never write out any modified portions
+of the last page of an object which are beyond its end. 
+...
+
+
+msync:
+
+...
+The effect of msync() on a shared memory object or a typed memory object
+is unspecified. 
+...
+
+Hmm, that is a little confusing and it looks like it depends on
+interpretation what 'write out' for SHM object means. And I guess that
+leaving the SHM part as it is is reasonable. Maybe worth of a note in
+manual page.
+
+
+On the other hand there seems to be several bugs in mmap() on regular
+files. For example mapping half of the page from a file doesn't fill the
+rest of the page with zeroes. And it looks like when half of page is
+mapped, the second half modified, then unmapped and then the whole page
+is mapped the content doesn't seem to be right, although this seems to
+change randomly. The reproducer for the first case attached.
+
+-- 
+Cyril Hrubis
+chrubis@suse.cz
+
+--tKW2IUtsqtDRztdT
+Content-Type: text/x-c; charset=us-ascii
+Content-Disposition: attachment; filename="reproducer1.c"
+
+#define _XOPEN_SOURCE 600
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <string.h>
+#include <errno.h>
+
+int main(void)
+{
+	char tmpfname[256];
+	long page_size;
+	void *data;
+	char *pa;
+	size_t len;
+	int fd, i, fail = 0;
+
+	page_size = sysconf(_SC_PAGE_SIZE);
+
+	snprintf(tmpfname, sizeof(tmpfname), "/tmp/test");
+	
+	/* Create file */
+	unlink(tmpfname);
+	fd = open(tmpfname, O_CREAT | O_RDWR | O_EXCL,
+		  S_IRUSR | S_IWUSR);
+	if (fd == -1) {
+		printf("Error at open(): %s\n", strerror(errno));
+		return 1;
+	}
+	
+	/* Fill it to the size of the page with 'a' */
+	data = malloc(page_size);
+	memset(data, 'a', page_size);
+	if (write(fd, data, page_size) != page_size) {
+		printf("Error at write(): %s\n", strerror(errno));
+		return 1;
+	}
+	free(data);
+
+	/* mmap half of the page */
+	pa = mmap(NULL, page_size/2, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	if (pa == MAP_FAILED) {
+		printf("Error at mmap(): %s\n", strerror(errno));
+		return 1;
+	}
+	
+	for (i = 0; i < page_size; i++) {
+		if (i > page_size/2 && pa[i] != 0)
+			fail++;
+		printf("%4i %2x\n", i, pa[i]);
+	}
+
+	close(fd);
+	munmap(pa, len);
+	
+	if (fail)
+		printf("FAILED: Page not zeroed\n");
+	else
+		printf("SUCCEDED\n");
+
+	return 0;
+}
+
+--tKW2IUtsqtDRztdT--
