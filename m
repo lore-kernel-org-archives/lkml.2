@@ -1,80 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935387Ab2JaMzi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 08:55:38 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:64299 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932632Ab2JaMze (ORCPT
+	id S1757537Ab2JaM7y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 08:59:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28515 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752767Ab2JaM7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 08:55:34 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Randy Dunlap <rdunlap@xenotime.net>, Felipe Balbi <balbi@ti.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] usb/gadget: let file storage gadget select libcomposite
-In-Reply-To: <20121031123749.GE10998@arwen.pp.htv.fi>
-Organization: http://mina86.com/
-References: <20121018144614.b61961cfae2274d52d340882@canb.auug.org.au> <50809624.30601@xenotime.net> <20121024144435.GF4368@breakpoint.cc> <xa1thapjlqv1.fsf@mina86.com> <20121024174508.GA6014@breakpoint.cc> <xa1tehknlnbr.fsf@mina86.com> <20121031123749.GE10998@arwen.pp.htv.fi>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Wed, 31 Oct 2012 13:55:03 +0100
-Message-ID: <xa1tfw4ug5so.fsf@mina86.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+	Wed, 31 Oct 2012 08:59:53 -0400
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=gPGaiRUHczgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=rQ8w98ZuNmwA:10 a=17K8tnSt_0aWmJMz494A:9 a=PUjeQqilurYA:10 a=gqFzjmDl287Zmvrk:21 a=VD62QCmyVRcDgKrC:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351688390.4004.74.camel@gandalf.local.home>
+Subject: Re: [PATCH 2/2] irq_work: Fix racy IRQ_WORK_BUSY flag setting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: anish kumar <anish198519851985@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Wed, 31 Oct 2012 08:59:50 -0400
+In-Reply-To: <1351681467.1504.20.camel@anish-Inspiron-N5050>
+References: <1351611301-3520-1-git-send-email-fweisbec@gmail.com>
+	 <1351611301-3520-3-git-send-email-fweisbec@gmail.com>
+	 <1351622024.1504.13.camel@anish-Inspiron-N5050>
+	 <CAFTL4hz7Jy69rr4Ze1pOtYPo5CFSZuTGXdY+w3jR4ZboA_8EYg@mail.gmail.com>
+	 <1351650181.4004.70.camel@gandalf.local.home>
+	 <1351681467.1504.20.camel@anish-Inspiron-N5050>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2012-10-31 at 20:04 +0900, anish kumar wrote:
 
-On Wed, Oct 31 2012, Felipe Balbi <balbi@ti.com> wrote:
-> nevertheless, I should be receiving a patch right about now removing
-> that file. Alan, care to send a patch for that ?
+> > /*
+> >  * Claim the entry so that no one else will poke at it.
+> >  */
+> > static bool irq_work_claim(struct irq_work *work)
+> > {
+> > 	unsigned long flags, nflags;
+> > 
+> > 	for (;;) {
+> > 		flags = work->flags;
+> > 		if (flags & IRQ_WORK_PENDING)
+> > 			return false;
+> > 		nflags = flags | IRQ_WORK_FLAGS;
+> nflags = 1 | 3
+> nflags = 2 | 3
+> In both cases the result would be same.If I am right then wouldn't this
+> operation be redundant?
 
-I have some other stuff to remove as well, so I can take care of it, so
-Alan can spend his time on something more important.
+Right. Actually we could change the new loop to:
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
-
---==-=-=
-Content-Type: text/plain
+	for (;;) {
+		oflags = cmpxchg(&work->flags, flags, IRQ_WORK_FLAGS);
+		if (oflags == flags)
+			break;
+		if (oflags & IRQ_WORK_PENDING)
+			return false;
+		flags = oflags;
+		cpu_relax();
+	}
 
 
---==-=-=
-Content-Type: application/pgp-signature
+> > 		if (cmpxchg(&work->flags, flags, nflags) == flags)
+> > 			break;
+> > 		cpu_relax();
+> > 	}
+> > 
+> > 	return true;
+> > }
+> > 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQkR+oAAoJECBgQBJQdR/0SN0P/jcPq110A7uPgB53vnC8vf50
-ERixs2ZrBHGeJl1SBOpZzWkI8QeMRne5DD1saInQCC6pC+RY/UT5gG68O5GdPeFM
-qG/uVxiJmrMnYnPoUIcWbQPOrtU0JzHgWxr2QqQt/BcB9Uoq66xaSJNpOQBW6qQn
-1ORwX4OxIur2GuzOHXZcCu0c66T7AyfEUWg5uu80qjDi1rF1xNesU23o+HLqSe8Q
-lGcW8LeOLio3keWPzB3b6emDaw/f4Cmu3y5xe2E6LYDOHA0eOhjCIVMJRkymtdqj
-Y7CDMiFfd/BOTt7+/y9YmBLzTfB9qvKt86AyfAhnbsaaPavMGgNk6vWjHLQ45xdS
-EVW1BWpy9PUmkCy4owapvVj4WAJE4pTmrbpfcCKvg7LmMlBBAyghUCcg0GG4LoLq
-0N/0WuMz81SNK8QGzUppmQi5+H8JQXDIB3/3O1/Gp3W40YNLhgkYqtAl7EGPQ80H
-tUtLrI1gDQRQZKiv45wlhw3+els67IegN2axQBwpfxJ5DKH8g8BHVTLRkDZaYmPo
-OGu2aLJ7Lrq+crg+gcTQBX9njgxu+4N3YYyB92LKgAOwaEVQ5Y10kLh6JvuV8JCJ
-8FPG/58hVpk/WR19FkdCsWAkIBxoLmZ0vbhOP6IarMWyN2U8D7xG/j0ev6CTXZqV
-Hp6uo9OYTpx+2+L2phl5
-=zL/m
------END PGP SIGNATURE-----
---==-=-=--
+> > 
+> > This now does:
+> > 
+> > 	CPU 1					CPU 2
+> > 	-----					-----
+> > 	(flags = 0)
+> > 	cmpxchg(flags, 0, IRQ_WORK_FLAGS)
+> > 	(flags = 3)
+> > 	[...]
+> > 	xchg(&flags, IRQ_WORK_BUSY)
+> > 	(flags = 2)
+> > 	func()
+> > 						oflags = cmpxchg(&flags, flags, nflags);
+> > 						(sees flags = 2)
+> > 						if (flags & IRQ_WORK_PENDING)
+> > 							(not true)
+> > 						(loop)						
+> > 	cmpxchg(flags, 2, 0);
+> > 	(flags = 2)
+> > 						flags = 3
+> > 
+> > 
+> > 
+> > With both patch 1 and 2 you fixed the bug.
+> This is the best explanation anyone can put forward for this problem.
 
---=-=-=--
+Frederic,
+
+Would you like to add my explanation to your change log? You can add the
+entire thing, which I think would explain a lot to people.
+
+Thanks,
+
+-- Steve
+
+
