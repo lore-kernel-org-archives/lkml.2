@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab2JaRQw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:16:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45904 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756679Ab2JaRQt (ORCPT
+	id S932132Ab2JaRRv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:17:51 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:33471 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab2JaRRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:16:49 -0400
-Date: Wed, 31 Oct 2012 10:16:44 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] cgroup: remove CGRP_WAIT_ON_RMDIR,
- cgroup_exclude_rmdir() and cgroup_release_and_wakeup_rmdir()
-Message-ID: <20121031171644.GG2945@htj.dyndns.org>
-References: <1351657365-25055-1-git-send-email-tj@kernel.org>
- <1351657365-25055-6-git-send-email-tj@kernel.org>
- <20121031162735.GF22809@dhcp22.suse.cz>
+	Wed, 31 Oct 2012 13:17:48 -0400
+Date: Wed, 31 Oct 2012 17:17:43 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Jiri Kosina <jkosina@suse.cz>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121031171743.GA17652@srcf.ucam.org>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+ <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+ <20121029174131.GC7580@srcf.ucam.org>
+ <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
+ <CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
+ <20121031155503.1aaf4c93@pyramind.ukuu.org.uk>
+ <alpine.LNX.2.00.1210311653080.12781@pobox.suse.cz>
+ <20121031170334.59833fb1@pyramind.ukuu.org.uk>
+ <20121031171048.GA17163@srcf.ucam.org>
+ <20121031172121.14cc1215@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121031162735.GF22809@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121031172121.14cc1215@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 05:27:35PM +0100, Michal Hocko wrote:
-> > ---
-> >  include/linux/cgroup.h | 21 ---------------------
-> >  kernel/cgroup.c        | 51 --------------------------------------------------
-> >  mm/memcontrol.c        | 24 +-----------------------
-> >  3 files changed, 1 insertion(+), 95 deletions(-)
+On Wed, Oct 31, 2012 at 05:21:21PM +0000, Alan Cox wrote:
+> On Wed, 31 Oct 2012 17:10:48 +0000
+> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > The kernel is signed. The kernel doesn't check the signature on the 
+> > suspend image.
 > 
-> /me likes this
+> Which doesn't matter. How are you going to create the tampered image in
+> the first place ?
 
-Amen, Michal.  The amount of code deleted isn't much but it was one
-ugly thing.  The comment in memcg around the use of exclude_rmdir was
-very depressing.
-
-Thanks.
+By booting a signed kernel, not turning on swap and writing directly to 
+the swap partition.
 
 -- 
-tejun
+Matthew Garrett | mjg59@srcf.ucam.org
