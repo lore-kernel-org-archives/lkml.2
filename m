@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760612Ab2JaUtp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 16:49:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41038 "EHLO mx2.suse.de"
+	id S1760781Ab2JaVB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 17:01:58 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:49600 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760217Ab2JaUto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 16:49:44 -0400
-Date: Wed, 31 Oct 2012 21:49:36 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] cgroup: kill
- cgroup_subsys->__DEPRECATED_clear_css_refs
-Message-ID: <20121031204936.GI1271@dhcp22.suse.cz>
-References: <1351712650-23709-1-git-send-email-tj@kernel.org>
- <1351712650-23709-2-git-send-email-tj@kernel.org>
- <20121031200859.GE1271@dhcp22.suse.cz>
- <CAOS58YPbYoMJ1+3uRfK_ZERyZoaby=FPW7uTpp8dVOSgYC8Mrw@mail.gmail.com>
- <20121031201415.GG1271@dhcp22.suse.cz>
- <20121031202400.GT2945@htj.dyndns.org>
+	id S1760591Ab2JaVB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 17:01:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Zheng, Lv" <lv.zheng@intel.com>, "Huang, Ying" <ying.huang@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        x86 list <x86@kernel.org>
+Subject: Re: [PATCH 1/5] driver core / ACPI: Move ACPI support to core device and driver types
+Date: Wed, 31 Oct 2012 22:06 +0100
+Message-ID: <4946697.LIFggnbCY6@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D5B8C0@ORSMSX108.amr.corp.intel.com>
+References: <1421417.rIOjExM5Pt@vostro.rjw.lan> <1789657.7GoIl2rp8v@vostro.rjw.lan> <3908561D78D1C84285E8C5FCA982C28F19D5B8C0@ORSMSX108.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121031202400.GT2945@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 31-10-12 13:24:00, Tejun Heo wrote:
-[...]
-> local_irq_save/restore() from cgroup_clear_css_refs() are replaced
-> with local_irq_disable/enable() for simplicity.  This is safe as
-> cgroup_rmdir() is always called with IRQ enabled.  Note that this IRQ
-> switching is necessary to ensure that css_tryget() isn't called from
-> IRQ context on the same CPU while lower context is between CSS
-> deactivation and setting CSS_REMOVED as css_tryget() would hang
-> forever in such cases waiting for CSS to be re-activated or
-> CSS_REMOVED set.  This will go away soon.
+On Wednesday, October 31, 2012 08:33:53 PM Luck, Tony wrote:
+> > By "tested" I mean "run with some new devices that use the ACPI enumeration
+> > provided here, on x86".  Sorry for being too vague.
+> 
+> Do you or Mika have access to an ia64 box to test.
 
-Much better. Thanks a lot!
+I don't.  I'm not sure about Mika.
+
+> If not, can you suggest some way that I could exercise this code w/o the new
+> devices. Or at least reassure myself that all is benign in a system full of
+> old devices.
+
+There are two parts of the new code, one that's always executed, regardless of
+whether or not there are devices using the support provided by this series, and
+the other that's executed only for those devices.
+
+All depends on what's there in acpi_platform_device_ids[] (added by patch [5/5]),
+which is empty for now (Mika has a separate patch adding some IDs in there).
+The second part of the new code will only be run and platform device objects
+will only be created by it if there is at least one entry in
+acpi_platform_device_ids[] matching a device ID of an ACPI node in the BIOS.
+
+The BIOSes of currently available ia64 systems don't contain ACPI nodes whose
+IDs will match the IDs of the new devices (ie. the ones that are going to be
+added to acpi_platform_device_ids[]), so for ia64 it should be sufficient to
+test that code as is (ie. without any new devices in the system).
+
+Thanks,
+Rafael
+
+
 -- 
-Michal Hocko
-SUSE Labs
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
