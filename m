@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062Ab2JaPxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 11:53:48 -0400
-Received: from webmail.cefet-rj.br ([200.9.149.52]:58429 "EHLO
-	webmail.cefet-rj.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757963Ab2JaPxq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 11:53:46 -0400
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Oct 2012 11:53:46 EDT
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1422848Ab2JaPzL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 11:55:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57134 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758023Ab2JaPzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 11:55:08 -0400
+Date: Wed, 31 Oct 2012 16:55:04 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Josh Boyer <jwboyer@gmail.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+In-Reply-To: <20121031155503.1aaf4c93@pyramind.ukuu.org.uk>
+Message-ID: <alpine.LNX.2.00.1210311653080.12781@pobox.suse.cz>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com> <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz> <20121029174131.GC7580@srcf.ucam.org> <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz> <CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
+ <20121031155503.1aaf4c93@pyramind.ukuu.org.uk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: Payment Sent!!
-To: linux-kernel@vger.kernel.org
-From: "Western Union Transfer" <info@westernunion.com>
-Date: Wed, 31 Oct 2012 23:46:57 +0800
-Reply-To: westernuniont12@yahoo.cn
-Message-Id: <20121031154722.BB874F08968@webmail.cefet-rj.br>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We write to inform you that we have transferred $400,000 dollars.  deposited for transfer to you by one MR Bernard Harry from BLACKBERRY MOBILE COMPANY for transfer as a winning prize from the promotion lottery held by the communication company to encourage usage and appreciate already users of their product.
- 
- The money is available for pick up by receiver(you) to be cashed on daily installment of $10,000 for 40days. We tried calling to give you the information over the phone but we could not reach you so we decided to email you the information to pick up the first $10,000  already transferred to you. for you to be able to pick the first payment,
-You will have to pay $250 to get it re-activated in your name for you to start picking up your money because we de-activate the transaction for security reason, by making the status to display pick up.
- 
- 
-Use this link to track the below information 
-https://wumt.westernunion.com/asp/orderStatus.asp?country=global
- 
- Sender's Fist name: Ronald
- Sender's Last Name: Mundy
- MTCN: 6605740058
- Question: Who Is Great
- Answer: God
- Amount: $10,000.00USD
- 
- Thanks
- Best Regards
- Mr.Mcferrin Phoenix .
- +60169162934
- western union Office,
- MALAYSIA OFFICE.
- Western Union® Money Transfer
+On Wed, 31 Oct 2012, Alan Cox wrote:
+
+> All this depends on your threat model. If I have physical access to
+> suspend/resume your machine then you already lost. If I don't have
+> physical access then I can't boot my unsigned OS to patch your S4 image
+> so it doesn't matter.
+
+Prepare (as a root) a hand-crafted image, reboot, let the kernel resume 
+from that artificial image.
+
+It can be viewed as a very obscure way of rewriting the kernel through 
+/dev/mem (which is obviously not possible when in 'secure boot' 
+environment).
+
+-- 
+Jiri Kosina
+SUSE Labs
