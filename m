@@ -1,271 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423170Ab2JaPJz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 11:09:55 -0400
-Received: from userp1050.oracle.com ([156.151.31.82]:20278 "EHLO
-	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423087Ab2JaPJt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 11:09:49 -0400
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
-        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
-        minchan@kernel.org, dan.magenheimer@oracle.com, fschmaus@gmail.com,
-        andor.damm@googlemail.com, ilendir@googlemail.com,
-        akpm@linux-foundation.org, mgorman@suse.de
-Subject: [PATCH 5/5] xen: tmem: enable Xen tmem shim to be built/loaded as a module
-Date: Wed, 31 Oct 2012 08:07:54 -0700
-Message-Id: <1351696074-29362-6-git-send-email-dan.magenheimer@oracle.com>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <1351696074-29362-1-git-send-email-dan.magenheimer@oracle.com>
-References: <1351696074-29362-1-git-send-email-dan.magenheimer@oracle.com>
-X-Source-IP: userp1040.oracle.com [156.151.31.81]
+	id S935657Ab2JaPMy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 11:12:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42206 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757655Ab2JaPMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 11:12:52 -0400
+Date: Wed, 31 Oct 2012 17:06:54 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Masanari Iida <standby24x7@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <trivial@kernel.org>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <balbi@ti.com>
+Subject: Re: [PATCH/Ver2] [trivial] usb: Fix typo in drivers/usb
+Message-ID: <20121031150654.GA26934@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1351695831-14294-1-git-send-email-standby24x7@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="opJtzjQTFsWo+cga"
+Content-Disposition: inline
+In-Reply-To: <1351695831-14294-1-git-send-email-standby24x7@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow Xen tmem shim to be built/loaded as a module.  Xen self-ballooning
-and frontswap-selfshrinking are now also "lazily" initialized when the
-Xen tmem shim is loaded as a module, unless explicitly disabled
-by module parameters.
+--opJtzjQTFsWo+cga
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Note runtime dependency disallows loading if cleancache/frontswap lazy
-initialization patches are not present.
+Hi,
 
-If built-in (not built as a module), the original mechanism of enabling via
-a kernel boot parameter is retained, but this should be considered deprecated.
+On Thu, Nov 01, 2012 at 12:03:51AM +0900, Masanari Iida wrote:
+> Correct spelling typo in debug messages within drivers/usb.
+>=20
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> Acked-by: Felipe Balbi <balbi@ti.com>
 
-Note that module unload is explicitly not yet supported.
+Greg, since now this only touches the stuff I handle, I can apply this
+myself.
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
----
- drivers/xen/Kconfig           |    4 +-
- drivers/xen/tmem.c            |   56 +++++++++++++++++++++++++++++++++--------
- drivers/xen/xen-selfballoon.c |   13 +++++----
- include/xen/tmem.h            |    8 ++++++
- 4 files changed, 62 insertions(+), 19 deletions(-)
+whatever works best for you, let me know.
 
-diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-index d4dffcd..68dd78f 100644
---- a/drivers/xen/Kconfig
-+++ b/drivers/xen/Kconfig
-@@ -144,8 +144,8 @@ config SWIOTLB_XEN
- 	select SWIOTLB
- 
- config XEN_TMEM
--	bool
--	default y if (CLEANCACHE || FRONTSWAP)
-+	tristate
-+	default m if (CLEANCACHE || FRONTSWAP)
- 	help
- 	  Shim to interface in-kernel Transcendent Memory hooks
- 	  (e.g. cleancache and frontswap) to Xen tmem hypercalls.
-diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
-index 144564e..8ba0a3f 100644
---- a/drivers/xen/tmem.c
-+++ b/drivers/xen/tmem.c
-@@ -5,6 +5,7 @@
-  * Author: Dan Magenheimer
-  */
- 
-+#include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/types.h>
- #include <linux/init.h>
-@@ -128,6 +129,7 @@ static int xen_tmem_flush_object(u32 pool_id, struct tmem_oid oid)
- 	return xen_tmem_op(TMEM_FLUSH_OBJECT, pool_id, oid, 0, 0, 0, 0, 0);
- }
- 
-+#ifndef CONFIG_XEN_TMEM_MODULE
- bool __read_mostly tmem_enabled = false;
- 
- static int __init enable_tmem(char *s)
-@@ -136,6 +138,7 @@ static int __init enable_tmem(char *s)
- 	return 1;
- }
- __setup("tmem", enable_tmem);
-+#endif
- 
- #ifdef CONFIG_CLEANCACHE
- static int xen_tmem_destroy_pool(u32 pool_id)
-@@ -227,16 +230,21 @@ static int tmem_cleancache_init_shared_fs(char *uuid, size_t pagesize)
- 	return xen_tmem_new_pool(shared_uuid, TMEM_POOL_SHARED, pagesize);
- }
- 
--static bool __initdata use_cleancache = true;
--
-+static bool disable_cleancache __read_mostly;
-+static bool disable_selfballooning __read_mostly;
-+#ifdef CONFIG_XEN_TMEM_MODULE
-+module_param(disable_cleancache, bool, S_IRUGO);
-+module_param(disable_selfballooning, bool, S_IRUGO);
-+#else
- static int __init no_cleancache(char *s)
- {
--	use_cleancache = false;
-+	disable_cleancache = true;
- 	return 1;
- }
- __setup("nocleancache", no_cleancache);
-+#endif
- 
--static struct cleancache_ops __initdata tmem_cleancache_ops = {
-+static struct cleancache_ops tmem_cleancache_ops = {
- 	.put_page = tmem_cleancache_put_page,
- 	.get_page = tmem_cleancache_get_page,
- 	.invalidate_page = tmem_cleancache_flush_page,
-@@ -353,16 +361,21 @@ static void tmem_frontswap_init(unsigned ignored)
- 		    xen_tmem_new_pool(private, TMEM_POOL_PERSIST, PAGE_SIZE);
- }
- 
--static bool __initdata use_frontswap = true;
--
-+static bool disable_frontswap __read_mostly;
-+static bool disable_frontswap_selfshrinking __read_mostly;
-+#ifdef CONFIG_XEN_TMEM_MODULE
-+module_param(disable_frontswap, bool, S_IRUGO);
-+module_param(disable_frontswap_selfshrinking, bool, S_IRUGO);
-+#else
- static int __init no_frontswap(char *s)
- {
--	use_frontswap = false;
-+	disable_frontswap = true;
- 	return 1;
- }
- __setup("nofrontswap", no_frontswap);
-+#endif
- 
--static struct frontswap_ops __initdata tmem_frontswap_ops = {
-+static struct frontswap_ops tmem_frontswap_ops = {
- 	.store = tmem_frontswap_store,
- 	.load = tmem_frontswap_load,
- 	.invalidate_page = tmem_frontswap_flush_page,
-@@ -371,12 +384,19 @@ static struct frontswap_ops __initdata tmem_frontswap_ops = {
- };
- #endif
- 
--static int __init xen_tmem_init(void)
-+static int xen_tmem_init(void)
- {
- 	if (!xen_domain())
- 		return 0;
- #ifdef CONFIG_FRONTSWAP
--	if (tmem_enabled && use_frontswap) {
-+#if defined(CONFIG_XEN_TMEM_MODULE) && !defined(FRONTSWAP_HAS_LAZY_INIT)
-+	/* This ifdef can be removed when frontswap lazy init is merged */
-+	if (!disable_frontswap) {
-+		pr_err("Xen tmem module requires frontswap lazy init\n");
-+		return -EINVAL;
-+	}
-+#endif
-+	if (tmem_enabled && !disable_frontswap) {
- 		char *s = "";
- 		struct frontswap_ops old_ops =
- 			frontswap_register_ops(&tmem_frontswap_ops);
-@@ -389,8 +409,15 @@ static int __init xen_tmem_init(void)
- 	}
- #endif
- #ifdef CONFIG_CLEANCACHE
-+#if defined(CONFIG_XEN_TMEM_MODULE) && !defined(CLEANCACHE_HAS_LAZY_INIT)
-+	/* This ifdef can be removed when cleancache lazy init is merged */
-+	if (!disable_cleancache) {
-+		pr_err("Xen tmem module requires cleancache lazy init\n");
-+		return -EINVAL;
-+	}
-+#endif
- 	BUG_ON(sizeof(struct cleancache_filekey) != sizeof(struct tmem_oid));
--	if (tmem_enabled && use_cleancache) {
-+	if (tmem_enabled && !disable_cleancache) {
- 		char *s = "";
- 		struct cleancache_ops old_ops =
- 			cleancache_register_ops(&tmem_cleancache_ops);
-@@ -400,7 +427,14 @@ static int __init xen_tmem_init(void)
- 				 "Xen Transcendent Memory%s\n", s);
- 	}
- #endif
-+#ifdef CONFIG_XEN_SELFBALLOONING
-+	xen_selfballoon_init(!disable_selfballooning,
-+				!disable_frontswap_selfshrinking);
-+#endif
- 	return 0;
- }
- 
- module_init(xen_tmem_init)
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Dan Magenheimer <dan.magenheimer@oracle.com>");
-+MODULE_DESCRIPTION("Shim to Xen transcendent memory");
-diff --git a/drivers/xen/xen-selfballoon.c b/drivers/xen/xen-selfballoon.c
-index 7d041cb..f4808aa 100644
---- a/drivers/xen/xen-selfballoon.c
-+++ b/drivers/xen/xen-selfballoon.c
-@@ -121,7 +121,7 @@ static DECLARE_DELAYED_WORK(selfballoon_worker, selfballoon_process);
- static bool frontswap_selfshrinking __read_mostly;
- 
- /* Enable/disable with kernel boot option. */
--static bool use_frontswap_selfshrink __initdata = true;
-+static bool use_frontswap_selfshrink = true;
- 
- /*
-  * The default values for the following parameters were deemed reasonable
-@@ -185,7 +185,7 @@ static int __init xen_nofrontswap_selfshrink_setup(char *s)
- __setup("noselfshrink", xen_nofrontswap_selfshrink_setup);
- 
- /* Disable with kernel boot option. */
--static bool use_selfballooning __initdata = true;
-+static bool use_selfballooning = true;
- 
- static int __init xen_noselfballooning_setup(char *s)
- {
-@@ -196,7 +196,7 @@ static int __init xen_noselfballooning_setup(char *s)
- __setup("noselfballooning", xen_noselfballooning_setup);
- #else /* !CONFIG_FRONTSWAP */
- /* Enable with kernel boot option. */
--static bool use_selfballooning __initdata = false;
-+static bool use_selfballooning;
- 
- static int __init xen_selfballooning_setup(char *s)
- {
-@@ -537,7 +537,7 @@ int register_xen_selfballooning(struct device *dev)
- }
- EXPORT_SYMBOL(register_xen_selfballooning);
- 
--static int __init xen_selfballoon_init(void)
-+int xen_selfballoon_init(bool use_selfballooning, bool use_frontswap_selfshrink)
- {
- 	bool enable = false;
- 
-@@ -571,7 +571,8 @@ static int __init xen_selfballoon_init(void)
- 
- 	return 0;
- }
-+EXPORT_SYMBOL(xen_selfballoon_init);
- 
-+#ifndef CONFIG_XEN_TMEM_MODULE
- subsys_initcall(xen_selfballoon_init);
--
--MODULE_LICENSE("GPL");
-+#endif
-diff --git a/include/xen/tmem.h b/include/xen/tmem.h
-index 591550a..f94bdd1 100644
---- a/include/xen/tmem.h
-+++ b/include/xen/tmem.h
-@@ -3,7 +3,15 @@
- 
- #include <linux/types.h>
- 
-+#ifdef CONFIG_XEN_TMEM_MODULE
-+#define tmem_enabled 1
-+#else
- /* defined in drivers/xen/tmem.c */
- extern bool tmem_enabled;
-+#endif
-+
-+#ifdef CONFIG_XEN_SELFBALLOONING
-+extern int xen_selfballoon_init(bool, bool);
-+#endif
- 
- #endif /* _XEN_TMEM_H */
--- 
-1.7.1
+--=20
+balbi
 
+--opJtzjQTFsWo+cga
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQkT6OAAoJEIaOsuA1yqREudoP/01+ExX77JZQEhRMqtwLnzo5
+IUFz9XzB/DX8ZnzyYHCyr7h1iRkGt9aMkl6forQwvStr2WYuMpSgGHLqR8iXbTIa
+WWFmxYhjaByvtAizB/9YktvioxY+av3WTWc9zst0vpK2H3zWzyoGs9Bw4En8rsVl
+yC1GYYhFQntWC7744yR19aAKGpftvw/PEiBizKnAYQZcFwmKkGkpuMVNuMumFPGC
+5YXfimG/t6KIkmR7XGbPLL8JZYRQxtprIf1ILfyMD89jJXtVkGY4zBOuKTthy4Xe
+soLkgHWY/gA3gtMNmy65pgGU4q3OyOZoWJV6SjojK/ME+QwjbyzfGC41i7OVnVpv
+ut3RRdY4K9ZSlXKr8+ol1pT46G6z1OP4udfOOHHoH9tTQMrgUJmlsaO4HtcF9G36
+ImMtZP73/E/MUAKw/7GJNRW+yavSBrPBYEY553XSEp3GNddGN6K0a5/ELeYCnJhd
+Lep/3x11FdNc4TI5b6ubuJUFC5Tqu6N0ARKNx5YYWlihrM5CZTAyi2hpX7c4x/Jk
+641PLSqI3huYw5zkkXf21pw7/JjG2dbgnb5JNTbZWPqp1+1pkTBUW/MOAImHD9Za
+HyUiUpsYd0pRpHYcT361D6U7llBaaD0h8psQKL4zCjCqRVOr0fjNp1hrOzAIc44Y
+pOSYqd3cje7zu43gXnvi
+=J3ho
+-----END PGP SIGNATURE-----
+
+--opJtzjQTFsWo+cga--
