@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759085Ab2JaBJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 21:09:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52743 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753110Ab2JaBJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 21:09:18 -0400
-Date: Wed, 31 Oct 2012 12:09:39 +1100
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        David Howells <dhowells@redhat.com>, Eric Sandeen <sandeen@redhat.com>
-Subject: [PULL REQUEST] md fixes (plus UAPI reorg) for 3.7
-Message-ID: <20121031120939.30e27e50@notabene.brown>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/k/=ydgv9JDNxOLoNUh/n=Cv"; protocol="application/pgp-signature"
+	id S964938Ab2JaBPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 21:15:52 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:37423 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932341Ab2JaBPu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 21:15:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121031005128.GA30251@umich.edu>
+References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
+ <20121030214257.GB2681@htj.dyndns.org> <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
+ <20121031005128.GA30251@umich.edu>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Tue, 30 Oct 2012 21:15:29 -0400
+Message-ID: <CA+1xoqd9CMP4_CET38LTm6vVXwbButn3hJNbcFs6Darkh1EJSg@mail.gmail.com>
+Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive hashtable
+To: Jim Rees <rees@umich.edu>
+Cc: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com,
+        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/k/=ydgv9JDNxOLoNUh/n=Cv
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 30, 2012 at 8:51 PM, Jim Rees <rees@umich.edu> wrote:
+> Sasha Levin wrote:
+>
+>   On Tue, Oct 30, 2012 at 5:42 PM, Tejun Heo <tj@kernel.org> wrote:
+>   > Hello,
+>   >
+>   > Just some nitpicks.
+>   >
+>   > On Tue, Oct 30, 2012 at 02:45:57PM -0400, Sasha Levin wrote:
+>   >> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
+>   >> +#define hash_min(val, bits)                                                  \
+>   >> +({                                                                           \
+>   >> +     sizeof(val) <= 4 ?                                                      \
+>   >> +     hash_32(val, bits) :                                                    \
+>   >> +     hash_long(val, bits);                                                   \
+>   >> +})
+>   >
+>   > Doesn't the above fit in 80 column.  Why is it broken into multiple
+>   > lines?  Also, you probably want () around at least @val.  In general,
+>   > it's a good idea to add () around any macro argument to avoid nasty
+>   > surprises.
+>
+>   It was broken to multiple lines because it looks nicer that way (IMO).
+>
+>   If we wrap it with () it's going to go over 80, so it's going to stay
+>   broken down either way :)
+>
+> I would prefer the body be all on one line too. But shouldn't this be a
+> static inline function?
 
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+We want sizeof(val), which wouldn't work in a static inline. We can
+either wrap a static inline __hash_min() with a macro and pass that
+size to it, but that's quite an overkill here, or we can add a size
+parameter to hash_min(), but it would look awkward considering how
+hash_32()/hash_64()/hash_long() look like.
 
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
 
-are available in the git repository at:
-
-  git://neil.brown.name/md tags/md-3.7-fixes
-
-for you to fetch changes up to ed30be077e705e0dff53bfc51d23feb8aeeab78f:
-
-  MD RAID10: Fix oops when creating RAID10 arrays via dm-raid.c (2012-10-31=
- 11:42:30 +1100)
-
-----------------------------------------------------------------
-Some fixes for md in 3.7
- - one recently introduced crash for dm-raid10 with discard
- - one bug in new functionality that has been around for a few releases.
- - minor bug in md's 'faulty' personality
-
- and UAPI disintegration for md.
-
-----------------------------------------------------------------
-David Howells (1):
-      UAPI: (Scripted) Disintegrate include/linux/raid
-
-Eric Sandeen (1):
-      md faulty: use disk_stack_limits()
-
-Jonathan Brassow (1):
-      MD RAID10: Fix oops when creating RAID10 arrays via dm-raid.c
-
-NeilBrown (2):
-      Merge tag 'disintegrate-raid-20121009' of git://git.infradead.org/use=
-rs/dhowells/linux-headers into for-next
-      md/raid1: Fix assembling of arrays containing Replacements.
-
- drivers/md/faulty.c                  |   5 +-
- drivers/md/raid1.c                   |   2 +-
- drivers/md/raid10.c                  |  15 ++--
- include/linux/raid/Kbuild            |   2 -
- include/linux/raid/md_u.h            | 141 +------------------------------
- include/uapi/linux/raid/Kbuild       |   2 +
- include/{ =3D> uapi}/linux/raid/md_p.h |   0
- include/uapi/linux/raid/md_u.h       | 155 +++++++++++++++++++++++++++++++=
-++++
- 8 files changed, 172 insertions(+), 150 deletions(-)
- rename include/{ =3D> uapi}/linux/raid/md_p.h (100%)
- create mode 100644 include/uapi/linux/raid/md_u.h
-
---Sig_/k/=ydgv9JDNxOLoNUh/n=Cv
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBUJB6VDnsnt1WYoG5AQJdPhAAhRaWZECYa/O+15/LemiI+bSgt2DcZDVB
-WRFfKvacrZbPpK4SYx/SkNeij69aHJ3dZg1d0ZC+TqDU+tPo58t/+f1yfKeOz1Mz
-VXfjpu1AILDaLXKZ8miQTx3yb40bwgD+Jiz0rVTe2ldvZJwRx/tUMyWSMHGQNdKn
-OdoZqZ7HRmkPQt3nOHFWLwDKV9do0D9Td/gyfRAl228kfbaaAHnbQrc1cbgyLjzx
-yrBS/1cgM7yMdeH81mlPjjv4t8lB76s/chjsnKTP1HOo5T6m+k/F0R+n3riZ9Pz/
-GlUJxkbMuz0kusNzUg+DzqZuKQmh/njOSCyTLTkSchKm/tdO7DTZab4fBxxlxCSF
-nmPbp1D4EeXKmaEvW4HHihqFMo/eG6C55sfK4DhnfZNPk8gIxqq091UfswuiQv45
-oOh2s9H3fqvQRTOr6e4E1oHj4Ynvxh46d7GyclShlPFzA1h5xgdw0eZuR9Om0AWe
-WTtFvR8CHCr8fL1Hh/t3adW/3CAJCuJoAX5FL3YGEqBEagykSAPs6+VjOPu3jbhp
-HtZsgNeyAcBh8VgYzxnW7AH3UaEw49Ebxc7dXciTZyQ+c8NIn+tuzzgVaApXcnRV
-ZXN7n1Ex/GSRYgjKL/2JlwNGLZ6CBL+LvhvSj0WgV4NNUatiV1xe7+ZnK8ZGEogZ
-nQCG9qMSJRI=
-=9GdI
------END PGP SIGNATURE-----
-
---Sig_/k/=ydgv9JDNxOLoNUh/n=Cv--
+Thanks,
+Sasha
