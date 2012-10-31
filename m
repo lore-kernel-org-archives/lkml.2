@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760665Ab2JaUIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 16:08:52 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:52451 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455Ab2JaUIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 16:08:50 -0400
-Date: Wed, 31 Oct 2012 13:08:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Shan Wei <shanwei88@gmail.com>, dipankar@in.ibm.com,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/9] rcu:  use this_cpu_ptr per-cpu helper instead of
- per_cpu_ptr(p, raw_smp_processor_id())
-Message-ID: <20121031200842.GC3027@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <50910A17.1090600@gmail.com>
- <0000013ab7eefc03-20a4ba94-f83f-4624-9dac-dfe3924277b4-000000@email.amazonses.com>
+	id S1760694Ab2JaUJG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 16:09:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39395 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760672Ab2JaUJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 16:09:02 -0400
+Date: Wed, 31 Oct 2012 21:08:59 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] cgroup: kill
+ cgroup_subsys->__DEPRECATED_clear_css_refs
+Message-ID: <20121031200859.GE1271@dhcp22.suse.cz>
+References: <1351712650-23709-1-git-send-email-tj@kernel.org>
+ <1351712650-23709-2-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0000013ab7eefc03-20a4ba94-f83f-4624-9dac-dfe3924277b4-000000@email.amazonses.com>
+In-Reply-To: <1351712650-23709-2-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12103120-7408-0000-0000-000009D080E4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 05:47:04PM +0000, Christoph Lameter wrote:
-> On Wed, 31 Oct 2012, Shan Wei wrote:
-> 
-> > Signed-off-by: Shan Wei <davidshan@tencent.com>
-> > ---
-> >  kernel/rcutree.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index 74df86b..3a21fcf 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -1960,7 +1960,7 @@ static void force_quiescent_state(struct rcu_state *rsp)
-> >  	struct rcu_node *rnp_old = NULL;
-> >
-> >  	/* Funnel through hierarchy to reduce memory contention. */
-> > -	rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
-> > +	rnp = this_cpu_ptr(rsp->rda)->mynode;
-> 
-> Do
-> 
-> 	rnp = this_cpu_read(rsp->rda->mynode);
-> 
-> instad.
+On Wed 31-10-12 12:44:03, Tejun Heo wrote:
+[...]
+> local_irq_save/restore() from cgroup_clear_css_refs() are replaced
+> with local_irq_disable/enable() for simplicity.  This is safe as
+> cgroup_rmdir() is always called with IRQ enabled.  Note that this IRQ
+> switching is necessary to make CSS deactivation and CSS_REMOVED
+> assertion atomic against css_tryget() and will be removed by future
+> changes.
 
-One thing to keep in mind -- the only purpose of this is to diffuse
-memory contention.  So there is no need to disable preemption.
-
-							Thanx, Paul
-
+local_irq_disable doesn't guarantee atomicity, because other CPUs will
+see the change in steps so this is a bit misleading. The real reason
+AFAICS is that we do not want to hang in css_tryget from IRQ context
+(does this really happen btw.?) which would interrupt cgroup_rmdir
+between we add CSS_DEACT_BIAS and the group is marked CGRP_REMOVED.
+Or am I still missing the point?
+[...]
+-- 
+Michal Hocko
+SUSE Labs
