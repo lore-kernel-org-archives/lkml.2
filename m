@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933707Ab2JaN7J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:59:09 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25067 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab2JaN7H (ORCPT
+	id S935619Ab2JaN7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:59:12 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37290 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588Ab2JaN7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:59:07 -0400
-Date: Wed, 31 Oct 2012 09:45:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>, dan.magenheimer@oracle.com
-Cc: Cesar Eduardo Barros <cesarb@cesarb.net>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/2] mm: refactor reinsert of swap_info in sys_swapoff
-Message-ID: <20121031134538.GG27288@phenom.dumpdata.com>
-References: <1351372847-13625-1-git-send-email-cesarb@cesarb.net>
- <1351372847-13625-2-git-send-email-cesarb@cesarb.net>
- <20121030140417.988c2437.akpm@linux-foundation.org>
+	Wed, 31 Oct 2012 09:59:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030140417.988c2437.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <CAD+1EGPO_UWFqQbEHqjHDYY+3iAWVLX8i6a9-w7JjfB20vzW2Q@mail.gmail.com>
+References: <20121030162004.GA3467@Super-MAGI>
+	<CAE8XmWo5YDu7iBVKH5Z2_EeAAePia24zwtfgPFJ0Cfxjz8Avwg@mail.gmail.com>
+	<CAD+1EGPO_UWFqQbEHqjHDYY+3iAWVLX8i6a9-w7JjfB20vzW2Q@mail.gmail.com>
+Date: Wed, 31 Oct 2012 21:59:06 +0800
+Message-ID: <CA+HMz3g9k9TPsCLCsHGtANdrOrRuTsuuim+vTgDR0DQFPuFFBg@mail.gmail.com>
+Subject: Re: [PATCH]Documentation: Chinese translation of Documentation/arm/kernel_user_helpers.txt
+From: Ninja Tekkaman <tekkamanninja@gmail.com>
+To: harryxiyou <harryxiyou@gmail.com>
+Cc: Dongsheng Song <dongsheng.song@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Martin <dave.martin@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9VDxLGv018694
 
-On Tue, Oct 30, 2012 at 02:04:17PM -0700, Andrew Morton wrote:
-> On Sat, 27 Oct 2012 19:20:46 -0200
-> Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
-> 
-> > The block within sys_swapoff which re-inserts the swap_info into the
-> > swap_list in case of failure of try_to_unuse() reads a few values outside
-> > the swap_lock. While this is safe at that point, it is subtle code.
-> > 
-> > Simplify the code by moving the reading of these values to a separate
-> > function, refactoring it a bit so they are read from within the
-> > swap_lock. This is easier to understand, and matches better the way it
-> > worked before I unified the insertion of the swap_info from both
-> > sys_swapon and sys_swapoff.
-> > 
-> > This change should make no functional difference. The only real change
-> > is moving the read of two or three structure fields to within the lock
-> > (frontswap_map_get() is nothing more than a read of p->frontswap_map).
-> 
-> Your patch doesn't change this, but...  it is very unusual for any
-> subsystem's ->init method to be called under a spinlock.  Because it is
-> highly likely that such a method will wish to do things such as memory
-> allocation.
-> 
-> It is rare and unlikely for an ->init() method to *need* such external
-> locking, because all the objects it is dealing with cannot be looked up
-> by other threads because nothing has been registered anywhere yet.
+Hi,  Harry Wei
 
-I don't believe it actually needs that locking. Dan, do you recall
-the details of this?
-> 
-> So either frontswap is doing something wrong here or there's some
-> subtlety which escapes me.  If the former then we should try to get
-> that ->init call to happen outside swap_lock.
+Yes, you are right, I will make a new patch.
 
-Agreed.
-> 
-> And if we can do that, perhaps we can fix the regrettable GFP_ATOMIC
-> in zcache_new_pool().
-
-Ouch. Yes.
-
-
-FYI, thanks for pulling those two patches - they looked good to me
-but I hadn't had a chance to test them so did not want to comment on them
-until that happen. Dan beat me to it and he did test them.
-
+在 2012年10月31日 下午6:42，harryxiyou <harryxiyou@gmail.com> 写道：
+> 2012/10/31 Dongsheng Song <dongsheng.song@gmail.com>:
+>> Hi,
+>
+> Hi, friend
+>>
+>> There have some misleading in the translation:
+>>
+>> -------------------------------- origin  --------------------------------
+>> User space is expected to bypass those helpers and implement those things
+>> inline (either in the code emitted directly by the compiler, or part of
+>> the implementation of a library call) when optimizing for a recent enough
+>> processor that has the necessary native support, but only if resulting
+>> binaries are already to be incompatible with earlier ARM processors due to
+>> usage of similar native instructions for other things.  In other words
+>> don't make binaries unable to run on earlier processors just for the sake
+>> of not using these kernel helpers if your compiled code is not going to
+>> use new instructions for other purpose.
+>>
+>> -------------------------------- Fu Wei  --------------------------------
+>> 当对那些拥有基本原生支持的新型处理器的代码进行优化时，用户空间最好绕
+>> 过这些辅助代码并在内联函数中实现这些操作（无论是通过编译器在代码中直
+>> 接放置，还是作为库函数调用实现的一部分），而仅在其他处理器因使用相似
+>> 的本地指令而导致二进制结果已与早期 ARM 处理不兼容的情况下才使用这些
+>> 辅助代码。也就是说，如果你编译的代码不会为了其他目的使用新的指令，则
+>> 不要仅为了不使用这些内核辅助代码而导致二进制程序无法在早期处理器上运
+>> 行。
+>> -------------------------------- me  --------------------------------
+>> 当对那些拥有原生支持的新型处理器进行代码优化时，如果已经在其它代码中
+>> 使用类似的新指令，从而导致二进制结果已与早期 ARM 处理器不兼容的情况下，
+>> 用户空间最好绕过这些辅助代码，并在内联函数中实现这些操作（无论是通过
+>> 编译器在代码中直接发出，还是作为库函数调用实现的一部分）。也就是说，
+>> 如果你编译的代码不会为了其他目的使用新指令，则不要仅为了不使用这些内核
+>> 辅助代码，导致二进制程序无法在早期处理器上运行。
+>>
+>> The attachment is my review result.
+>>
+>
+> So i think you can make a patch for your new translation.
+>
+>
+>
+> --
+> Thanks
+> Harry Wei
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
