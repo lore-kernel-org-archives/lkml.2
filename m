@@ -1,134 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760047Ab2JaCd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 22:33:57 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:37878 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759503Ab2JaCdz (ORCPT
+	id S934096Ab2JaCd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 22:33:59 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42429 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759824Ab2JaCd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 22:33:55 -0400
+	Tue, 30 Oct 2012 22:33:57 -0400
+X-AuditID: 9c930179-b7c8bae000003559-e5-50908e10aa7d
+Date: Wed, 31 Oct 2012 11:39:48 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, gaowanlong@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v3 0/3] zram/zsmalloc promotion
+Message-ID: <20121031023947.GA24883@bbox>
+References: <1351501009-15111-1-git-send-email-minchan@kernel.org>
+ <20121031010642.GN15767@bbox>
+ <20121031014209.GB2672@kroah.com>
+ <20121031020443.GP15767@bbox>
+ <20121031021618.GA1142@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1351615741-24134-5-git-send-email-hongbo.zhang@linaro.com>
-References: <1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351615741-24134-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351615741-24134-5-git-send-email-hongbo.zhang@linaro.com>
-Date: Wed, 31 Oct 2012 08:03:54 +0530
-Message-ID: <CAKohpondoFppsj38pWAzA4O=bcU81qzCP6vLBSYZ1f=oopykGA@mail.gmail.com>
-Subject: Re: [PATCH V3 4/5] Thermal: Add ST-Ericsson DB8500 thermal driver.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "hongbo.zhang" <hongbo.zhang@linaro.org>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, rui.zhang@intel.com, amit.kachhap@linaro.org,
-        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
-        linaro-kernel@lists.linaro.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121031021618.GA1142@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for late comments :(
+On Tue, Oct 30, 2012 at 07:16:18PM -0700, Greg Kroah-Hartman wrote:
+> On Wed, Oct 31, 2012 at 11:04:43AM +0900, Minchan Kim wrote:
+> > Hi Greg,
+> > 
+> > On Tue, Oct 30, 2012 at 06:42:09PM -0700, Greg Kroah-Hartman wrote:
+> > > On Wed, Oct 31, 2012 at 10:06:42AM +0900, Minchan Kim wrote:
+> > > > Thanks all,
+> > > > 
+> > > > At last, everybody who contributes to zsmalloc want to put it under /lib.
+> > > > 
+> > > > Greg,
+> > > > What should I do for promoting this dragging patchset?
+> > > 
+> > > You need to get the -mm developers to agree that this is something that
+> > > is worth accepting.  I have yet to see any compeling argument why this
+> > 
+> > I'm one of mm developers. :)
+> > Yes. I hope Andrew have a time to take a look.
+> > 
+> > > even needs to be in the kernel in the first place.
+> > 
+> > Confused. what do you mean "this"? "zsmalloc" or "zram" or "both"?
+> > If you mean "zsmalloc", I guess there were some lengthy thread about
+> > "why we need a new another allocator". Unfortunately, I didn't follow it
+> > at that time. Nitin, Pekka, Could you point out that thread? or summarize
+> > the result.
+> > 
+> > > 
+> > > I'm not moving this anywhere until you get their acceptance.
+> > 
+> > I understand you.
+> > 
+> > It's one of problem in current mm mailing list.
+> > As you know, many mm guys works for server, not embedded so they don't have
+> > big interest about embedded feature so prioirty of the feature was always
+> > low. CMA proved it and next turn is zram. Even new-comer in mm is few so
+> > review bandwidth is always low, too. :(
+> > 
+> > How can I poke them?
+> 
+> You just did.  If they ignore this, wait a week, and resend.
+> Persistance is key.
+> 
+> good luck,
 
-On 30 October 2012 22:19, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
-> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
->
-> This diver is based on the thermal management framework in thermal_sys.c. A
+Okay. I will wait.
+Greg, what do you think about LTSI?
+Is it proper feature to add it? For it, still do I need ACK from mm developers?
 
-s/diver/driver
+> 
+> greg k-h
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-> thermal zone device is created with the trip points to which cooling devices
-> can be bound, the current cooling device is cpufreq, e.g. CPU frequency is
-> clipped down to cool the CPU, and other cooling devices can be added and bound
-> to the trip points dynamically.  The platform specific PRCMU interrupts are
-> used to active thermal update when trip points are reached.
->
-> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
-> ---
->  .../devicetree/bindings/thermal/db8500-thermal.txt |  40 ++
->  drivers/thermal/Kconfig                            |  20 +
->  drivers/thermal/Makefile                           |   2 +
->  drivers/thermal/db8500_cpufreq_cooling.c           | 108 +++++
->  drivers/thermal/db8500_thermal.c                   | 531 +++++++++++++++++++++
->  include/linux/platform_data/db8500_thermal.h       |  38 ++
->  6 files changed, 739 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/thermal/db8500-thermal.txt
->  create mode 100644 drivers/thermal/db8500_cpufreq_cooling.c
->  create mode 100644 drivers/thermal/db8500_thermal.c
->  create mode 100644 include/linux/platform_data/db8500_thermal.h
->
-> diff --git a/Documentation/devicetree/bindings/thermal/db8500-thermal.txt b/Documentation/devicetree/bindings/thermal/db8500-thermal.txt
-> new file mode 100644
-> index 0000000..cab6916
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/thermal/db8500-thermal.txt
-> @@ -0,0 +1,40 @@
-> +* ST-Ericsson DB8500 Thermal
-> +
-> +** Thermal node properties:
-> +
-> +- compatible : "stericsson,db8500-thermal";
-> +- reg : address range of the thermal sensor registers;
-> +- interrupts : interrupts generated from PRCMU;
-> +- interrupt-names : "IRQ_HOTMON_LOW" and "IRQ_HOTMON_HIGH";
-
-Just mention here that below properties are optional or required.
-
-> +- num-trips : number of total trip points;
-> +- tripN-temp : temperature of trip point N, should be in ascending order;
-> +- tripN-type : type of trip point N, should be one of "active" "passive" "hot" "critical";
-> +- tripN-cdev-num : number of the cooling devices which can be bound to trip point N;
-> +- tripN-cdev-nameM : name of the No. M cooling device of trip point N;
-
-> diff --git a/drivers/thermal/db8500_thermal.c b/drivers/thermal/db8500_thermal.c
-
-> +static int db8500_thermal_match_cdev(struct thermal_cooling_device *cdev,
-> +               struct db8500_trip_point *trip_points)
-> +{
-> +       int i;
-> +       char *cdev_name;
-> +
-> +       if (!strlen(cdev->type))
-> +               return -EINVAL;
-> +
-> +       for (i = 0; i < COOLING_DEV_MAX; i++) {
-> +               cdev_name = trip_points->cdev_name[i];
-> +               if (!strcmp(cdev_name, cdev->type))
-
-You can actually remove cdev_name variable. and use
-if (!strcmp(trip_points->cdev_name[i], cdev->type))
-
-> +                       return 0;
-> +       }
-> +
-> +       return -ENODEV;
-> +}
-
-> +#ifdef CONFIG_OF
-> +static struct db8500_thsens_platform_data*
-> +               db8500_thermal_parse_dt(struct platform_device *pdev)
-> +{
-
-> +               for (j = 0; j < tmp_data; j++) {
-> +                       sprintf(prop_name, "trip%d-cdev-name%d", i, j);
-> +                       if (of_property_read_string(np, prop_name, &tmp_str))
-> +                               goto err_parse_dt;
-> +
-> +                       if (strlen(tmp_str) > THERMAL_NAME_LENGTH)
-> +                               goto err_parse_dt;
-> +
-> +                       strcpy(ptrips->trip_points[i].cdev_name[j], tmp_str);
-
-want to check if it is copied or not??
-
-> +               }
-> +       }
-> +       return ptrips;
-> +
-> +err_parse_dt:
-> +       dev_err(&pdev->dev, "Parsing device tree data error.\n");
-> +       return NULL;
-> +}
-
-After these please add my:
-
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+-- 
+Kind regards,
+Minchan Kim
