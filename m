@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759402Ab2JaRlj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:41:39 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11237 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759358Ab2JaRlc (ORCPT
+	id S1759412Ab2JaRna (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:43:30 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:34481 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758950Ab2JaRn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:41:32 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 31 Oct 2012 10:41:28 -0700
-Message-ID: <50916264.3010107@nvidia.com>
-Date: Wed, 31 Oct 2012 23:09:48 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 31 Oct 2012 13:43:28 -0400
+Date: Wed, 31 Oct 2012 17:43:27 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Shan Wei <shanwei88@gmail.com>
+cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] ftrace: use this_cpu_ptr per-cpu helper
+In-Reply-To: <50910A0A.9010209@gmail.com>
+Message-ID: <0000013ab7ebaffd-8b5d50e4-8ca9-4d40-a843-c343cbc70dbc-000000@email.amazonses.com>
+References: <50910A0A.9010209@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V4 3/4] ARM: tegra: dts: cardhu: enable SLINK4
-References: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com> <1351674176-20603-3-git-send-email-ldewangan@nvidia.com> <50915563.40904@wwwdotorg.org>
-In-Reply-To: <50915563.40904@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 October 2012 10:14 PM, Stephen Warren wrote:
-> On 10/31/2012 03:02 AM, Laxman Dewangan wrote:
->> Enable SLINK4 and connected device in Tegra30 based
->> platform Cardhu.
->> Setting maximum spi frequency to 25MHz.
->>
->> Spi serial flash is connected on CS1 of SLINK4 on
->> cardhu platform.
->> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
->> +winbond Winbond Electronics corp.
-> That should really be a separate patch that goes through the devicetree
-> branch. But I guess it's fairly trivial, so it's not a big deal.
->
+On Wed, 31 Oct 2012, Shan Wei wrote:
 
-Yes, I thought that it should be in separate change. I did same on 
-earlier for ISL29028 driver and found that this small change still not 
-get merged. Therefore I clubbed this together as it can go without any 
-issue.
-I believe it is fine to merge vendor-prefix from any tree.
+> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+> index a763888..7c9fde7 100644
+> --- a/include/trace/ftrace.h
+> +++ b/include/trace/ftrace.h
+> @@ -638,7 +638,6 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+>   *	struct trace_entry *ent;
+>   *	int __entry_size;
+>   *	int __data_size;
+> - *	int __cpu
+>   *	int pc;
+>   *
+>   *	pc = preempt_count();
+> @@ -654,7 +653,6 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+>   *	// Protect the non nmi buffer
+>   *	// This also protects the rcu read side
+>   *	local_irq_save(irq_flags);
+> - *	__cpu = smp_processor_id();
+>   *
+>   *	if (in_nmi())
+>   *		trace_buf = rcu_dereference_sched(perf_trace_buf_nmi);
+> @@ -664,7 +662,7 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+>   *	if (!trace_buf)
+>   *		goto end;
+>   *
+> - *	trace_buf = per_cpu_ptr(trace_buf, __cpu);
+> + *	trace_buf = this_cpu_ptr(trace_buf);
+>   *
+>   * 	// Avoid recursion from perf that could mess up the buffer
+>   * 	if (trace_buf->recursion++)
 
+Reviewed-by: Christoph Lameter <cl@linux.com>
 
->
->> +		spi-flash@1 {
->> +			compatible = "winbond,w25q32";
->> +			spi-max-frequency =<20000000>;
->> +			reg =<1>;
->> +		};
-> Since I have an Atmel flash on my board, I see:
->
-> [    1.282958] m25p80 spi32766.1: found at25df321a, expected w25q32
-> [    1.289103] m25p80 spi32766.1: at25df321a (4096 Kbytes)
->
-> Is there any way around that (the first log line above)?
->
-> I suppose the answer is that the DT should reflect the exact flash
-> device that's on the board, and perhaps the bootloader should be
-> adjusting the DT to reflect the correct value. That's probably complex.
->
-> Do you have any idea whether Atmel or Winbond flash is more common, so
-> we can at least minimize the number of times this message appears?
-
-I observe that most of cardhu have the winbond. All SQA machine has 
-winbond. Also I believe on A04, it is winbond.
-Better to go with winbond.
-
+Code could be further reduced by not doing the this_cpu_ptr op but using
+this_cpu_read later instead.
 
