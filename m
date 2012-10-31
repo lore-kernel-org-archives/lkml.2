@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934682Ab2JaUeC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 16:34:02 -0400
-Received: from mga14.intel.com ([143.182.124.37]:6060 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933036Ab2JaUd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 16:33:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,688,1344236400"; 
-   d="scan'208";a="211915477"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Zheng, Lv" <lv.zheng@intel.com>, "Huang, Ying" <ying.huang@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        x86 list <x86@kernel.org>
-Subject: RE: [PATCH 1/5] driver core / ACPI: Move ACPI support to core
- device and driver types
-Thread-Topic: [PATCH 1/5] driver core / ACPI: Move ACPI support to core
- device and driver types
-Thread-Index: AQHNt0r0TVxtmXQkpkGhOK26ITzdfZfUDw+AgAAmloCAAAC1gP//n91wgAB9pID//4rq8A==
-Date: Wed, 31 Oct 2012 20:33:53 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D5B8C0@ORSMSX108.amr.corp.intel.com>
-References: <1421417.rIOjExM5Pt@vostro.rjw.lan> <5091719D.9090109@zytor.com>
- <3908561D78D1C84285E8C5FCA982C28F19D5B845@ORSMSX108.amr.corp.intel.com>
- <1789657.7GoIl2rp8v@vostro.rjw.lan>
-In-Reply-To: <1789657.7GoIl2rp8v@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1760337Ab2JaUl0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 16:41:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41122 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754524Ab2JaUlY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 16:41:24 -0400
 MIME-Version: 1.0
+Date: Wed, 31 Oct 2012 15:41:23 -0500
+Message-ID: <CAFQPvXeVZ858WFYimEU5uvLNxLDd6bJMmqWihFmbCf3ntokz0A@mail.gmail.com>
+Subject: [PATCH 1/1] irq: Set CPU affinity soon after irq thread is created
+From: Sankara Muthukrishnan <sankara.m@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9VKY4Vn021612
 
-> By "tested" I mean "run with some new devices that use the ACPI enumeration
-> provided here, on x86".  Sorry for being too vague.
+From: Sankara S Muthukrishnan <sankara.m@ni.com>
 
-Do you or Mika have access to an ia64 box to test.  If not, can you suggest
-some way that I could exercise this code w/o the new devices. Or at least
-reassure myself that all is benign in a system full of old devices.
+As irq_thread_check_affinity is called ONLY inside the while loop in the
+irq thread, the core affinity is set only when an interrupt occurs.
+This patch sets the core affinity soon after the irq thread is created
+and before it waits for interrupts. In real-tiime targets that do not
+typically change the core affinity of irqs during run-time, this patch
+will save additional latency of an irq thread in setting the core
+affinity during the first interrupt occurrence for that irq.
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Sankara S Muthukrishnan <sankara.m@ni.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+---
+Hi Thomas,
+
+As we discussed in the original thread
+http://marc.info/?l=linux-kernel&m=134987001701683&w=2 , I am sending
+this patch against the current mainline.
+
+ kernel/irq/manage.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 4c69326..020b535 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -833,6 +833,8 @@ static int irq_thread(void *data)
+ 	init_task_work(&on_exit_work, irq_thread_dtor);
+ 	task_work_add(current, &on_exit_work, false);
+
++	irq_thread_check_affinity(desc, action);
++
+ 	while (!irq_wait_for_interrupt(action)) {
+ 		irqreturn_t action_ret;
+
+-- 
+1.7.11.4
