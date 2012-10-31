@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946049Ab2JaVnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 17:43:14 -0400
-Received: from smtp-03.mandic.com.br ([200.225.81.143]:37057 "EHLO
-	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759992Ab2JaVm5 (ORCPT
+	id S1946069Ab2JaVnR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 17:43:17 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:36159 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1946048Ab2JaVnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 17:42:57 -0400
-Message-ID: <50919B5D.9000100@cesarb.net>
-Date: Wed, 31 Oct 2012 19:42:53 -0200
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Wed, 31 Oct 2012 17:43:14 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+WcMfvph1S47Gli2NfMtd5
+Date: Wed, 31 Oct 2012 14:43:11 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Benoit Cousson <b-cousson@ti.com>, linux-kernel@vger.kernel.org,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org,
+        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+Message-ID: <20121031214310.GA15766@atomide.com>
+References: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com>
+ <20121031175219.GH12739@atomide.com>
+ <C9715CB7-D3E2-4CA7-8A93-2B10E8B70640@antoniou-consulting.com>
+ <20121031180935.GL12739@atomide.com>
+ <50918223.6080003@ti.com>
+ <8AD2F7AF-8315-442B-A394-1A38DAB29F52@antoniou-consulting.com>
+ <20121031212639.GQ12739@atomide.com>
+ <8B058B00-6C21-4410-A24B-75651D49F6EC@antoniou-consulting.com>
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-mm@kvack.org, ngupta@vflare.org, konrad.wilk@oracle.com,
-        minchan@kernel.org, fschmaus@gmail.com, andor.daam@googlemail.com,
-        ilendir@googlemail.com, akpm@linux-foundation.org, mgorman@suse.de
-Subject: Re: [PATCH 2/5] mm: frontswap: lazy initialization to allow tmem
- backends to build/run as modules
-References: <1351696074-29362-1-git-send-email-dan.magenheimer@oracle.com> <1351696074-29362-3-git-send-email-dan.magenheimer@oracle.com> <50915A5C.8000303@linux.vnet.ibm.com>
-In-Reply-To: <50915A5C.8000303@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8B058B00-6C21-4410-A24B-75651D49F6EC@antoniou-consulting.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 31-10-2012 15:05, Seth Jennings escreveu:
-> On 10/31/2012 10:07 AM, Dan Magenheimer wrote:
->> +#define MAX_INITIALIZABLE_SD 32
->
-> MAX_INITIALIZABLE_SD should just be MAX_SWAPFILES
->
->> +static int sds[MAX_INITIALIZABLE_SD];
->
-> Rather than store and array of enabled types indexed by type, why not
-> an array of booleans indexed by type.  Or a bitfield if you really
-> want to save space.
+* Pantelis Antoniou <panto@antoniou-consulting.com> [121031 14:38]:
+> 
+> There a a whole bunch of conflicting capes. There's no
+> way to instantiate them together. They must be instantiated
+> only after their EEPROMs are read and they are matched
+> to their corresponding cape drivers.
 
-Since it is indexed by swap_info_struct's type, and frontswap already 
-pokes directly inside the swap_info_structs, it would be even cleaner to 
-use a boolean field within the swap_info_struct.
+You don't need to instantiate the capes during __init,
+you need to just instantiate the omap internal devices
+which are always there in the hardware. These internal
+devices just need to be set to state = "disabled" until
+they are used.
 
-And if you are using a field within the swap_info_struct, you could 
-overload the already existing frontswap_map field, which should only 
-have any use if you have a frontswap module already loaded. That is, 
-move the vzalloc of the frontswap_map to within frontswap's init 
-function, and call it outside the swapfile_lock/swapon_mutex. This also 
-has the advantage of not allocating the frontswap_map when it is not 
-going to be used.
+The capes themselves should not have anything to do
+with omap_hwmod or omap_device, they just contain
+external connectors, regulators, LCD panels etc.
 
--- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+To your capebus the omap internal devices should look
+like just regular struct device entries.
+
+Regards,
+
+Tony
