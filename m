@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935821Ab2JaQUG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:20:06 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33616 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964944Ab2JaQUC (ORCPT
+	id S935825Ab2JaQX0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:23:26 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:55929 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S935728Ab2JaQXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:20:02 -0400
+	Wed, 31 Oct 2012 12:23:25 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/ksNqale1vL9RfxRIkgJgx
+Date: Wed, 31 Oct 2012 09:23:15 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Clark <rob@ti.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the staging
+ tree
+Message-ID: <20121031162314.GD12739@atomide.com>
+References: <20121031161921.3c9a46bd03f5864eed88fc87@canb.auug.org.au>
+ <20121031161614.GF31804@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1349855329.6072.72.camel@shinybook.infradead.org>
-References: <1349850366-4731-1-git-send-email-computersforpeace@gmail.com>
-	<1349850682.6072.70.camel@shinybook.infradead.org>
-	<CAN8TOE-ZLyCanBx8pqsbzY6jMQq+ysiVvdLmWvO8QdnyZg1QRg@mail.gmail.com>
-	<1349855329.6072.72.camel@shinybook.infradead.org>
-Date: Wed, 31 Oct 2012 09:20:01 -0700
-Message-ID: <CAN8TOE8yzJY67b=S=KyONe2pLYGJVe9vW4KXzsjvU7AU9aFpHg@mail.gmail.com>
-Subject: Re: [PATCH for 3.7] mtd: nand: fix Samsung SLC NAND identification regression
-From: Brian Norris <computersforpeace@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>, Marek Vasut <marex@denx.de>,
-        Robin van der Gracht <robin@protonic.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121031161614.GF31804@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+* Greg KH <greg@kroah.com> [121031 09:17]:
+> On Wed, Oct 31, 2012 at 04:19:21PM +1100, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Today's linux-next merge of the arm-soc tree got a conflict in
+> > arch/arm/mach-omap2/drm.c between commit 5e3b08749951 ("staging:
+> > drm/omap: add support for ARCH_MULTIPLATFORM") from the staging tree and
+> > commit 2a296c8f89bc ("ARM: OMAP: Make plat/omap_hwmod.h local to
+> > mach-omap2") from the arm-soc tree.
+> > 
+> > I fixed it up (see below) and can carry the fix as necessary (no action
+> > is required).
+> 
+> Looks good to me, thanks for this.
 
-On Wed, Oct 10, 2012 at 12:48 AM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Tue, 2012-10-09 at 23:39 -0700, Brian Norris wrote:
->> I can see if that's possible, but I think it's unlikely. They don't
->> even bother following standards (ONFI). Is this an obstacle to
->> merging?
->
-> No. I already pushed it.
+Yes thanks.
 
-This is a "bump" for a 3.7-rc pull request. This regression has been
-noticed by others.
-
-Thanks,
-Brian
+Tony
