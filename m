@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935252Ab2JaK2w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:28:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52849 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553Ab2JaK2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:28:48 -0400
-Date: Wed, 31 Oct 2012 12:31:00 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv2 net-next 0/8] enable/disable zero copy tx dynamically
-Message-ID: <cover.1351679008.git.mst@redhat.com>
-MIME-Version: 1.0
+	id S935386Ab2JaKc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:32:57 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:38179 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932889Ab2JaKcy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 06:32:54 -0400
+Date: Wed, 31 Oct 2012 11:32:48 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
+        eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>, avi@redhat.com
+Subject: Re: [PATCH 05/32] perf, kvm: Support the intx/intx_cp modifiers in KVM arch perfmon emulation v3
+Message-ID: <20121031103248.GX16230@one.firstfloor.org>
+References: <1351643663-23828-1-git-send-email-andi@firstfloor.org> <1351643663-23828-6-git-send-email-andi@firstfloor.org> <20121031102701.GB25650@redhat.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-Fcc: =sent
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20121031102701.GB25650@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 31, 2012 at 12:27:01PM +0200, Gleb Natapov wrote:
+> On Tue, Oct 30, 2012 at 05:33:56PM -0700, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > This is not arch perfmon, but older CPUs will just ignore it. This makes
+> > it possible to do at least some TSX measurements from a KVM guest
+> > 
+> You are ignoring my reviews.
 
-tun supports zero copy transmit since 0690899b4d4501b3505be069b9a687e68ccbe15b,
-however you can only enable this mode if you know your workload does not
-trigger heavy guest to host/host to guest traffic - otherwise you
-get a (minor) performance regression.
-This patchset addresses this problem by notifying the owner
-device when callback is invoked because of a data copy.
-This makes it possible to detect whether zero copy is appropriate
-dynamically: we start in zero copy mode, when we detect
-data copied we disable zero copy for a while.
+Huh? I nearly rewrote the patch based on your feedback.
+It's much more complicated now just for the CPUID check you wanted.
+I hope all that code is worth it.
 
-With this patch applied, I get the same performance for
-guest to host and guest to guest both with and without zero copy tx.
+If you want more changes please let me know.
 
-Changes from v1:
-  Comment fixups in patches 2 and 8 suggested by Vlad Yasevich,
-     no changes to other patches
+-Andi
 
-Michael S. Tsirkin (8):
-  skb: report completion status for zero copy skbs
-  skb: api to report errors for zero copy skbs
-  tun: report orphan frags errors to zero copy callback
-  vhost-net: cleanup macros for DMA status tracking
-  vhost: track zero copy failures using DMA length
-  vhost: move -net specific code out
-  vhost-net: select tx zero copy dynamically
-  vhost-net: reduce vq polling on tx zerocopy
-
- drivers/net/tun.c         |   1 +
- drivers/vhost/net.c       | 111 +++++++++++++++++++++++++++++++++++++++++++---
- drivers/vhost/tcm_vhost.c |   1 +
- drivers/vhost/vhost.c     |  52 +++-------------------
- drivers/vhost/vhost.h     |  11 ++---
- include/linux/skbuff.h    |   5 ++-
- net/core/skbuff.c         |  24 +++++++++-
- 7 files changed, 144 insertions(+), 61 deletions(-)
-
--- 
-MST
