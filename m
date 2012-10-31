@@ -1,125 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760807Ab2JaVeO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 17:34:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41824 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759980Ab2JaVeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 17:34:13 -0400
-Date: Thu, 1 Nov 2012 08:34:03 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: Please add swiotlb.git tree to linux-next
-Message-Id: <20121101083403.30dec16fa242e81f9761529f@canb.auug.org.au>
-In-Reply-To: <20121031125929.GA27144@phenom.dumpdata.com>
-References: <20121031125929.GA27144@phenom.dumpdata.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__1_Nov_2012_08_34_03_+1100_smMisBtzB07G1TQ6"
+	id S1760839Ab2JaVeW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 17:34:22 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58707 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759980Ab2JaVeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 17:34:19 -0400
+Date: Wed, 31 Oct 2012 17:34:15 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Martin <dave.martin@linaro.org>
+Cc: Tekkaman Ninja <tekkamanninja@gmail.com>, Harry Wei <harryxiyou@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH]Documentation: Chinese translation of
+ Documentation/arm/kernel_user_helpers.txt
+Message-ID: <20121031213415.GB17305@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Martin <dave.martin@linaro.org>,
+	Tekkaman Ninja <tekkamanninja@gmail.com>,
+	Harry Wei <harryxiyou@gmail.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Nicolas Pitre <nicolas.pitre@linaro.org>,
+	linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+References: <20121030162004.GA3467@Super-MAGI>
+ <20121030190349.GC5044@thunk.org>
+ <20121031110619.GC3780@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121031110619.GC3780@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__1_Nov_2012_08_34_03_+1100_smMisBtzB07G1TQ6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Oct 31, 2012 at 12:06:19PM +0100, Dave Martin wrote:
+> 
+> What's the best way of making sure that changes in the source document
+> propagate to translated versions?
+> 
+> It might be enough to put a note in the source document to remind people
+> to check for the extistence of translated versions and CC the relevant
+> translation maintianers with any patches affecting the source document.
 
-Hi Konrad,
+What I was suggesting was even more light-weight.  Just include at the
+very beginning or the very end of the the file the last time the
+translation was updated, and either the kernel version (i..e, v3.6) or
+the git commit ID (i.e., df981d03eeff) that was used for the source
+document.
 
-On Wed, 31 Oct 2012 08:59:29 -0400 Konrad Rzeszutek Wilk <konrad.wilk@oracl=
-e.com> wrote:
->
-> Please add:
->=20
->  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb.git #linux-=
-next
->=20
-> in the linux-next system. The branch is 'linux-next'. This would be the
-> tree and branch used for maintaining the swiotlb and its different users.
->=20
-> The Ack's have already been given per this commit:
->=20
-> commit 6e28b761c5020c4bc943c7e38da86bea8af77d5c
-> Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date:   Mon Oct 8 16:28:05 2012 -0700
->=20
->     MAINTAINERS: add Konrad as the SWIOTLB maintainer
->    =20
->     Now that I've an IA64 box on top of the other boxes (IBM with Calgary=
--X,
->     Intel VT-d, AMD Vi, and AMD GART - that can use SWIOTLB as fallback) =
-I can
->     reliably do regression testing.
->    =20
->     Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->     Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
->     Cc: Ingo Molnar <mingo@elte.hu>
->     Acked-by: "H. Peter Anvin" <hpa@zytor.com>
->     Cc: Thomas Gleixner <tglx@linutronix.de>
->     Acked-by: Tony Luck <tony.luck@intel.com>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+That way, someone who reads the file will know how "fresh" the
+document is, and the reader can do a "git log -p
+Documentation/arm/kernel_user_helpers 1234567890abcd.." to see all of
+the changes made to the file since the last time the translation was
+updated.
 
-Added from today.
+People will inevitably remember to forget to notify the translation
+maintainers, and as the number of translations go up, the more
+workload we put on the everyone else.  If we simply mark the
+translation, then the translators can poll to refresh the document at
+their leisure, or perhaps this allows anyone who is using the
+translated documentation file and who has a reasonable command of
+English to do the "git log -p ..." command and perhaps contribute a
+patch to update the translation.  So I think this approach would scale
+much better.
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Thu__1_Nov_2012_08_34_03_+1100_smMisBtzB07G1TQ6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQkZlLAAoJEECxmPOUX5FEu/4P+wRIwr3eqAhuspdhOTlsjPUa
-3HTLkznDWhwgLdcNJnkSkPK8GSzhDMBW83rvfByt2GM67F4CgikAp2Q+GmfDIoxE
-9GMHqrHGf4owY4CMXqGFi36zVCnkLyaSMow3UBxeVKkNnQMZQK764Ftitcqf1fFU
-b4CS+xMcP5EjFYmroD5N1Odc/NRo/d+blg/LbHlofQcFte2PM5Dkv/pY7jMPVTjC
-jNMuv07j5hZTFYFGgCK7PH6euaULoYdd/2iMoIVH66/OayubntDWV/DVT+7J5x52
-XqfLtSPXQXHr0QH/H0ieCSGRCeKg6zvjdeemu+AiRdL7F6tw+eIiBijZwDWNnS0l
-U8brxqLEPE9rYWqGBxdGNfeQuaud3CYWhbrIudKoxlLNu4c0uN98huBIVErcOrLi
-ae/+kvy141yvwN4HlauZfjyS4ba6z7rbKaRhUCWNcBgTT/s+dqww6Hp4kRDAjvpF
-6Sc9uN31TR4bOB6HGBAGEjhSrFX9Bz4HijU7jKzMiJFhqFxhoj7iho/GsXFbhG/m
-Y7ZE8XvkVSv+97HGwMHaT+rhJ//bjABaTXcG0jrRmH3J26J2xhQVJxoc0dN7axt0
-Mbd8smMzYG7ed6/TNoGTaxc1VcNob41Hp+c7T8Ea9888S7AZePh5j355vK9Jh/M5
-8Glar1c9jAcqoOeiIDux
-=ANYG
------END PGP SIGNATURE-----
-
---Signature=_Thu__1_Nov_2012_08_34_03_+1100_smMisBtzB07G1TQ6--
+					- Ted
