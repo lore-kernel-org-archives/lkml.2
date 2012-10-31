@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab2KHTyV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 14:54:21 -0500
-Received: from mailserver6.natinst.com ([130.164.80.6]:51861 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756783Ab2KHTyS (ORCPT
+	id S1756851Ab2KHT4F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 14:56:05 -0500
+Received: from mailserver5.natinst.com ([130.164.80.5]:47141 "EHLO
+	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756810Ab2KHTyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 14:54:18 -0500
-Message-Id: <66858505f1a9fccc34b108494e00d7b53538830a.1352400580.git.josh.cartwright@ni.com>
+	Thu, 8 Nov 2012 14:54:20 -0500
+Message-Id: <3569f4619a92904a40aecc9300aafe767ac736f7.1352400580.git.josh.cartwright@ni.com>
 In-Reply-To: <cover.1352400580.git.josh.cartwright@ni.com>
 References: <cover.1352400580.git.josh.cartwright@ni.com>
 From: Josh Cartwright <josh.cartwright@ni.com>
-Date: Wed, 31 Oct 2012 13:56:14 -0600
-Subject: [PATCH v2 5/5] ARM: zynq: add clk binding support to the ttc
-To: Michal Simek <michal.simek@xilinx.com>, John Linn <john.linn@xilinx.com>,
-        arm@kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 11/08/2012 01:54:06 PM,
-	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+Date: Wed, 31 Oct 2012 12:58:52 -0600
+Subject: [PATCH v2 2/5] clk: Add support for fundamental zynq clks
+To: Mike Turquette <mturquette@ti.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Michal Simek <michal.simek@xilinx.com>,
+        John Linn <john.linn@xilinx.com>, arm@kernel.org
+X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 11/08/2012 01:54:07 PM,
+	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
  14, 2012) at 11/08/2012 01:54:07 PM,
 	Serialize complete at 11/08/2012 01:54:07 PM
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
@@ -27,479 +29,503 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for retrieving TTC configuration from device tree.  This
-includes the ability to pull information about the driving clocks from
-the of_clk bindings.
+Provide simplified models for the necessary clocks on the zynq-7000
+platform.  Currently, the PLLs, the CPU clock network, and the basic
+peripheral clock networks (for SDIO, SMC, SPI, QSPI, UART) are modelled.
+
+OF bindings are also provided and documented.
 
 Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
 ---
- arch/arm/boot/dts/zynq-7000.dtsi |  53 ++++++++
- arch/arm/boot/dts/zynq-zc702.dts |  10 ++
- arch/arm/mach-zynq/timer.c       | 287 ++++++++++++++++++++++-----------------
- 3 files changed, 228 insertions(+), 122 deletions(-)
+ .../devicetree/bindings/clock/zynq-7000.txt        |  55 +++
+ drivers/clk/clk-zynq.c                             | 383 +++++++++++++++++++++
+ include/linux/clk/zynq.h                           |  24 ++
+ 3 files changed, 462 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/zynq-7000.txt
+ create mode 100644 drivers/clk/clk-zynq.c
+ create mode 100644 include/linux/clk/zynq.h
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index c975c2d..5914b56 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -109,5 +109,58 @@
- 				};
- 			};
- 		};
+diff --git a/Documentation/devicetree/bindings/clock/zynq-7000.txt b/Documentation/devicetree/bindings/clock/zynq-7000.txt
+new file mode 100644
+index 0000000..23ae1db
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/zynq-7000.txt
+@@ -0,0 +1,55 @@
++Device Tree Clock bindings for the Zynq 7000 EPP
 +
-+		ttc0: ttc0@f8001000 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			compatible = "xlnx,ttc";
-+			reg = <0xF8001000 0x1000>;
-+			clocks = <&cpu_clk 3>;
-+			clock-names = "cpu_1x";
-+			clock-ranges;
++The Zynq EPP has several different clk providers, each with there own bindings.
++The purpose of this document is to document their usage.
 +
-+			ttc0_0: ttc0.0 {
-+				status = "disabled";
-+				reg = <0>;
-+				interrupts = <0 10 4>;
-+			};
-+			ttc0_1: ttc0.1 {
-+				status = "disabled";
-+				reg = <1>;
-+				interrupts = <0 11 4>;
-+			};
-+			ttc0_2: ttc0.2 {
-+				status = "disabled";
-+				reg = <2>;
-+				interrupts = <0 12 4>;
-+			};
-+		};
++See clock_bindings.txt for more information on the generic clock bindings.
++See Chapter 25 of Zynq TRM for more information about Zynq clocks.
 +
-+		ttc1: ttc1@f8002000 {
-+			#interrupt-parent = <&intc>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			compatible = "xlnx,ttc";
-+			reg = <0xF8002000 0x1000>;
-+			clocks = <&cpu_clk 3>;
-+			clock-names = "cpu_1x";
-+			clock-ranges;
++== PLLs ==
 +
-+			ttc1_0: ttc1.0 {
-+				status = "disabled";
-+				reg = <0>;
-+				interrupts = <0 37 4>;
-+			};
-+			ttc1_1: ttc1.1 {
-+				status = "disabled";
-+				reg = <1>;
-+				interrupts = <0 38 4>;
-+			};
-+			ttc1_2: ttc1.2 {
-+				status = "disabled";
-+				reg = <2>;
-+				interrupts = <0 39 4>;
-+			};
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-index 86f44d5..c772942 100644
---- a/arch/arm/boot/dts/zynq-zc702.dts
-+++ b/arch/arm/boot/dts/zynq-zc702.dts
-@@ -32,3 +32,13 @@
- &ps_clk {
- 	clock-frequency = <33333330>;
- };
++Used to describe the ARM_PLL, DDR_PLL, and IO_PLL.
 +
-+&ttc0_0 {
-+	status = "ok";
-+	compatible = "xlnx,ttc-counter-clocksource";
-+};
++Required properties:
++- #clock-cells : shall be 0 (only one clock is output from this node)
++- compatible : "xlnx,zynq-pll"
++- reg : pair of u32 values, which are the address offsets within the SLCR
++        of the relevant PLL_CTRL register and PLL_CFG register respectively
++- clocks : phandle for parent clock.  should be the phandle for ps_clk
 +
-+&ttc0_1 {
-+	status = "ok";
-+	compatible = "xlnx,ttc-counter-clockevent";
-+};
-diff --git a/arch/arm/mach-zynq/timer.c b/arch/arm/mach-zynq/timer.c
-index c93cbe5..9662306 100644
---- a/arch/arm/mach-zynq/timer.c
-+++ b/arch/arm/mach-zynq/timer.c
-@@ -23,31 +23,15 @@
- #include <linux/clocksource.h>
- #include <linux/clockchips.h>
- #include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/slab.h>
-+#include <linux/clk-provider.h>
- 
- #include <mach/zynq_soc.h>
- #include "common.h"
- 
--#define IRQ_TIMERCOUNTER0	42
--
--/*
-- * This driver configures the 2 16-bit count-up timers as follows:
-- *
-- * T1: Timer 1, clocksource for generic timekeeping
-- * T2: Timer 2, clockevent source for hrtimers
-- * T3: Timer 3, <unused>
-- *
-- * The input frequency to the timer module for emulation is 2.5MHz which is
-- * common to all the timer channels (T1, T2, and T3). With a pre-scaler of 32,
-- * the timers are clocked at 78.125KHz (12.8 us resolution).
-- *
-- * The input frequency to the timer module in silicon will be 200MHz. With the
-- * pre-scaler of 32, the timers are clocked at 6.25MHz (160ns resolution).
-- */
--#define XTTCPSS_CLOCKSOURCE	0	/* Timer 1 as a generic timekeeping */
--#define XTTCPSS_CLOCKEVENT	1	/* Timer 2 as a clock event */
--
--#define XTTCPSS_TIMER_BASE		TTC0_BASE
--#define XTTCPCC_EVENT_TIMER_IRQ		(IRQ_TIMERCOUNTER0 + 1)
- /*
-  * Timer Register Offset Definitions of Timer 1, Increment base address by 4
-  * and use same offsets for Timer 2
-@@ -64,9 +48,14 @@
- 
- #define XTTCPSS_CNT_CNTRL_DISABLE_MASK	0x1
- 
--/* Setup the timers to use pre-scaling */
--
--#define TIMER_RATE (PERIPHERAL_CLOCK_RATE / 32)
-+/* Setup the timers to use pre-scaling, using a fixed value for now that will
-+ * work across most input frequency, but it may need to be more dynamic
++Optional properties:
++- clock-output-names : name of the output clock
++
++Example:
++	armpll: armpll {
++		#clock-cells = <0>;
++		compatible = "xlnx,zynq-pll";
++		clocks = <&ps_clk>;
++		reg = <0x100 0x110>;
++		clock-output-names = "armpll";
++	};
++
++== Peripheral clocks ==
++
++Describes clock node for the SDIO, SMC, SPI, QSPI, and UART clocks.
++
++Required properties:
++- #clock-cells : shall be 1
++- compatible : "xlnx,zynq-periph-clock"
++- reg : a single u32 value, describing the offset within the SLCR where
++        the CLK_CTRL register is found for this peripheral
++- clocks : phandle for parent clocks.  should hold phandles for
++           the IO_PLL, ARM_PLL, and DDR_PLL in order
++- clock-output-names : names of the output clock(s).  For peripherals that have
++                       two output clocks (for example, the UART), two clocks
++                       should be listed.
++
++Example:
++	uart_clk: uart_clk {
++		#clock-cells = <1>;
++		compatible = "xlnx,zynq-periph-clock";
++		clocks = <&iopll &armpll &ddrpll>;
++		reg = <0x154>;
++		clock-output-names = "uart0_ref_clk",
++				     "uart1_ref_clk";
++	};
+diff --git a/drivers/clk/clk-zynq.c b/drivers/clk/clk-zynq.c
+new file mode 100644
+index 0000000..de8b586
+--- /dev/null
++++ b/drivers/clk/clk-zynq.c
+@@ -0,0 +1,383 @@
++/*
++ * Copyright (c) 2012 National Instruments
++ *
++ * Josh Cartwright <josh.cartwright@ni.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
-+#define PRESCALE_EXPONENT	11	/* 2 ^ PRESCALE_EXPONENT = PRESCALE */
-+#define PRESCALE		2048	/* The exponent must match this */
-+#define CLK_CNTRL_PRESCALE	((PRESCALE_EXPONENT - 1) << 1)
-+#define CLK_CNTRL_PRESCALE_EN	1
-+#define CNT_CNTRL_RESET		(1<<4)
- 
- /**
-  * struct xttcpss_timer - This definition defines local timer structure
-@@ -74,11 +63,25 @@
-  * @base_addr:	Base address of timer
-  **/
- struct xttcpss_timer {
--	void __iomem *base_addr;
-+	void __iomem	*base_addr;
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/slab.h>
++#include <linux/kernel.h>
++#include <linux/clk-provider.h>
++
++static void __iomem *slcr_base;
++
++struct zynq_pll_clk {
++	struct clk_hw	hw;
++	void __iomem	*pll_ctrl;
++	void __iomem	*pll_cfg;
 +};
 +
-+struct xttcpss_timer_clocksource {
-+	struct xttcpss_timer	xttc;
-+	struct clocksource	cs;
- };
- 
--static struct xttcpss_timer timers[2];
--static struct clock_event_device xttcpss_clockevent;
-+#define to_xttcpss_timer_clksrc(x) \
-+		container_of(x, struct xttcpss_timer_clocksource, cs)
++#define to_zynq_pll_clk(hw)	container_of(hw, struct zynq_pll_clk, hw)
 +
-+struct xttcpss_timer_clockevent {
-+	struct xttcpss_timer		xttc;
-+	struct clock_event_device	ce;
-+	struct clk			*clk;
-+};
++#define CTRL_PLL_FDIV(x)	((x) >> 12)
 +
-+#define to_xttcpss_timer_clkevent(x) \
-+		container_of(x, struct xttcpss_timer_clockevent, ce)
- 
- /**
-  * xttcpss_set_interval - Set the timer interval value
-@@ -100,7 +103,7 @@ static void xttcpss_set_interval(struct xttcpss_timer *timer,
- 
- 	/* Reset the counter (0x10) so that it starts from 0, one-shot
- 	   mode makes this needed for timing to be right. */
--	ctrl_reg |= 0x10;
-+	ctrl_reg |= CNT_CNTRL_RESET;
- 	ctrl_reg &= ~XTTCPSS_CNT_CNTRL_DISABLE_MASK;
- 	__raw_writel(ctrl_reg, timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
- }
-@@ -115,90 +118,31 @@ static void xttcpss_set_interval(struct xttcpss_timer *timer,
-  **/
- static irqreturn_t xttcpss_clock_event_interrupt(int irq, void *dev_id)
- {
--	struct clock_event_device *evt = &xttcpss_clockevent;
--	struct xttcpss_timer *timer = dev_id;
-+	struct xttcpss_timer_clockevent *xttce = dev_id;
-+	struct xttcpss_timer *timer = &xttce->xttc;
- 
- 	/* Acknowledge the interrupt and call event handler */
- 	__raw_writel(__raw_readl(timer->base_addr + XTTCPSS_ISR_OFFSET),
- 			timer->base_addr + XTTCPSS_ISR_OFFSET);
- 
--	evt->event_handler(evt);
-+	xttce->ce.event_handler(&xttce->ce);
- 
- 	return IRQ_HANDLED;
- }
- 
--static struct irqaction event_timer_irq = {
--	.name	= "xttcpss clockevent",
--	.flags	= IRQF_DISABLED | IRQF_TIMER,
--	.handler = xttcpss_clock_event_interrupt,
--};
--
- /**
-- * xttcpss_timer_hardware_init - Initialize the timer hardware
-- *
-- * Initialize the hardware to start the clock source, get the clock
-- * event timer ready to use, and hook up the interrupt.
-- **/
--static void __init xttcpss_timer_hardware_init(void)
--{
--	/* Setup the clock source counter to be an incrementing counter
--	 * with no interrupt and it rolls over at 0xFFFF. Pre-scale
--	   it by 32 also. Let it start running now.
--	 */
--	timers[XTTCPSS_CLOCKSOURCE].base_addr = XTTCPSS_TIMER_BASE;
--
--	__raw_writel(0x0, timers[XTTCPSS_CLOCKSOURCE].base_addr +
--				XTTCPSS_IER_OFFSET);
--	__raw_writel(0x9, timers[XTTCPSS_CLOCKSOURCE].base_addr +
--				XTTCPSS_CLK_CNTRL_OFFSET);
--	__raw_writel(0x10, timers[XTTCPSS_CLOCKSOURCE].base_addr +
--				XTTCPSS_CNT_CNTRL_OFFSET);
--
--	/* Setup the clock event timer to be an interval timer which
--	 * is prescaled by 32 using the interval interrupt. Leave it
--	 * disabled for now.
--	 */
--
--	timers[XTTCPSS_CLOCKEVENT].base_addr = XTTCPSS_TIMER_BASE + 4;
--
--	__raw_writel(0x23, timers[XTTCPSS_CLOCKEVENT].base_addr +
--			XTTCPSS_CNT_CNTRL_OFFSET);
--	__raw_writel(0x9, timers[XTTCPSS_CLOCKEVENT].base_addr +
--			XTTCPSS_CLK_CNTRL_OFFSET);
--	__raw_writel(0x1, timers[XTTCPSS_CLOCKEVENT].base_addr +
--			XTTCPSS_IER_OFFSET);
--
--	/* Setup IRQ the clock event timer */
--	event_timer_irq.dev_id = &timers[XTTCPSS_CLOCKEVENT];
--	setup_irq(XTTCPCC_EVENT_TIMER_IRQ, &event_timer_irq);
--}
--
--/**
-- * __raw_readl_cycles - Reads the timer counter register
-+ * __xttc_clocksource_read - Reads the timer counter register
-  *
-  * returns: Current timer counter register value
-  **/
--static cycle_t __raw_readl_cycles(struct clocksource *cs)
-+static cycle_t __xttc_clocksource_read(struct clocksource *cs)
- {
--	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKSOURCE];
-+	struct xttcpss_timer *timer = &to_xttcpss_timer_clksrc(cs)->xttc;
- 
- 	return (cycle_t)__raw_readl(timer->base_addr +
- 				XTTCPSS_COUNT_VAL_OFFSET);
- }
- 
--
--/*
-- * Instantiate and initialize the clock source structure
-- */
--static struct clocksource clocksource_xttcpss = {
--	.name		= "xttcpss_timer1",
--	.rating		= 200,			/* Reasonable clock source */
--	.read		= __raw_readl_cycles,
--	.mask		= CLOCKSOURCE_MASK(16),
--	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
--};
--
--
- /**
-  * xttcpss_set_next_event - Sets the time interval for next event
-  *
-@@ -210,7 +154,8 @@ static struct clocksource clocksource_xttcpss = {
- static int xttcpss_set_next_event(unsigned long cycles,
- 					struct clock_event_device *evt)
- {
--	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKEVENT];
-+	struct xttcpss_timer_clockevent *xttce = to_xttcpss_timer_clkevent(evt);
-+	struct xttcpss_timer *timer = &xttce->xttc;
- 
- 	xttcpss_set_interval(timer, cycles);
- 	return 0;
-@@ -225,12 +170,15 @@ static int xttcpss_set_next_event(unsigned long cycles,
- static void xttcpss_set_mode(enum clock_event_mode mode,
- 					struct clock_event_device *evt)
- {
--	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKEVENT];
-+	struct xttcpss_timer_clockevent *xttce = to_xttcpss_timer_clkevent(evt);
-+	struct xttcpss_timer *timer = &xttce->xttc;
- 	u32 ctrl_reg;
- 
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_PERIODIC:
--		xttcpss_set_interval(timer, TIMER_RATE / HZ);
-+		xttcpss_set_interval(timer,
-+				     DIV_ROUND_CLOSEST(clk_get_rate(xttce->clk),
-+						       PRESCALE * HZ));
- 		break;
- 	case CLOCK_EVT_MODE_ONESHOT:
- 	case CLOCK_EVT_MODE_UNUSED:
-@@ -251,15 +199,106 @@ static void xttcpss_set_mode(enum clock_event_mode mode,
- 	}
- }
- 
--/*
-- * Instantiate and initialize the clock event structure
-- */
--static struct clock_event_device xttcpss_clockevent = {
--	.name		= "xttcpss_timer2",
--	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
--	.set_next_event	= xttcpss_set_next_event,
--	.set_mode	= xttcpss_set_mode,
--	.rating		= 200,
-+static void __init zynq_ttc_setup_clocksource(struct device_node *np,
-+					     void __iomem *base)
++static unsigned long zynq_pll_recalc_rate(struct clk_hw *hw,
++					  unsigned long parent_rate)
 +{
-+	struct xttcpss_timer_clocksource *ttccs;
++	struct zynq_pll_clk *pll = to_zynq_pll_clk(hw);
++	return parent_rate * CTRL_PLL_FDIV(ioread32(pll->pll_ctrl));
++}
++
++static const struct clk_ops zynq_pll_clk_ops = {
++	.recalc_rate	= zynq_pll_recalc_rate,
++};
++
++static void __init zynq_pll_clk_setup(struct device_node *np)
++{
++	struct clk_init_data init;
++	struct zynq_pll_clk *pll;
++	const char *parent_name;
 +	struct clk *clk;
-+	int err;
-+	u32 reg;
++	u32 regs[2];
++	int ret;
 +
-+	ttccs = kzalloc(sizeof(*ttccs), GFP_KERNEL);
-+	if (WARN_ON(!ttccs))
++	ret = of_property_read_u32_array(np, "reg", regs, ARRAY_SIZE(regs));
++	if (WARN_ON(ret))
 +		return;
 +
-+	err = of_property_read_u32(np, "reg", &reg);
-+	if (WARN_ON(err))
++	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
++	if (WARN_ON(!pll))
 +		return;
 +
-+	clk = of_clk_get_by_name(np, "cpu_1x");
++	pll->pll_ctrl = slcr_base + regs[0];
++	pll->pll_cfg  = slcr_base + regs[1];
++
++	of_property_read_string(np, "clock-output-names", &init.name);
++
++	init.ops = &zynq_pll_clk_ops;
++	parent_name = of_clk_get_parent_name(np, 0);
++	init.parent_names = &parent_name;
++	init.num_parents = 1;
++
++	pll->hw.init = &init;
++
++	clk = clk_register(NULL, &pll->hw);
 +	if (WARN_ON(IS_ERR(clk)))
 +		return;
 +
-+	err = clk_prepare_enable(clk);
-+	if (WARN_ON(err))
-+		return;
-+
-+	ttccs->xttc.base_addr = base + reg * 4;
-+
-+	ttccs->cs.name = np->name;
-+	ttccs->cs.rating = 200;
-+	ttccs->cs.read = __xttc_clocksource_read;
-+	ttccs->cs.mask = CLOCKSOURCE_MASK(16);
-+	ttccs->cs.flags = CLOCK_SOURCE_IS_CONTINUOUS;
-+
-+	__raw_writel(0x0,  ttccs->xttc.base_addr + XTTCPSS_IER_OFFSET);
-+	__raw_writel(CLK_CNTRL_PRESCALE | CLK_CNTRL_PRESCALE_EN,
-+		     ttccs->xttc.base_addr + XTTCPSS_CLK_CNTRL_OFFSET);
-+	__raw_writel(CNT_CNTRL_RESET,
-+		     ttccs->xttc.base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
-+
-+	err = clocksource_register_hz(&ttccs->cs, clk_get_rate(clk) / PRESCALE);
-+	if (WARN_ON(err))
++	ret = of_clk_add_provider(np, of_clk_src_simple_get, clk);
++	if (WARN_ON(ret))
 +		return;
 +}
 +
-+static void __init zynq_ttc_setup_clockevent(struct device_node *np,
-+					    void __iomem *base)
-+{
-+	struct xttcpss_timer_clockevent *ttcce;
-+	int err, irq;
-+	u32 reg;
++struct zynq_periph_clk {
++	struct clk_hw		hw;
++	struct clk_onecell_data	onecell_data;
++	struct clk		*gates[2];
++	void __iomem		*clk_ctrl;
++	spinlock_t		clkact_lock;
++};
 +
-+	ttcce = kzalloc(sizeof(*ttcce), GFP_KERNEL);
-+	if (WARN_ON(!ttcce))
-+		return;
++#define to_zynq_periph_clk(hw)	container_of(hw, struct zynq_periph_clk, hw)
++
++static const u8 periph_clk_parent_map[] = {
++	0, 0, 1, 2
++};
++#define PERIPH_CLK_CTRL_SRC(x)	(periph_clk_parent_map[((x) & 3) >> 4])
++#define PERIPH_CLK_CTRL_DIV(x)	(((x) & 0x3F00) >> 8)
++
++static unsigned long zynq_periph_recalc_rate(struct clk_hw *hw,
++					     unsigned long parent_rate)
++{
++	struct zynq_periph_clk *periph = to_zynq_periph_clk(hw);
++	return parent_rate / PERIPH_CLK_CTRL_DIV(ioread32(periph->clk_ctrl));
++}
++
++static u8 zynq_periph_get_parent(struct clk_hw *hw)
++{
++	struct zynq_periph_clk *periph = to_zynq_periph_clk(hw);
++	return PERIPH_CLK_CTRL_SRC(ioread32(periph->clk_ctrl));
++}
++
++static const struct clk_ops zynq_periph_clk_ops = {
++	.recalc_rate	= zynq_periph_recalc_rate,
++	.get_parent	= zynq_periph_get_parent,
++};
++
++static void __init zynq_periph_clk_setup(struct device_node *np)
++{
++	struct zynq_periph_clk *periph;
++	const char *parent_names[3];
++	struct clk_init_data init;
++	int clk_num = 0, err;
++	const char *name;
++	struct clk *clk;
++	u32 reg;
++	int i;
 +
 +	err = of_property_read_u32(np, "reg", &reg);
 +	if (WARN_ON(err))
 +		return;
 +
-+	ttcce->xttc.base_addr = base + reg * 4;
-+
-+	ttcce->clk = of_clk_get_by_name(np, "cpu_1x");
-+	if (WARN_ON(IS_ERR(ttcce->clk)))
++	periph = kzalloc(sizeof(*periph), GFP_KERNEL);
++	if (WARN_ON(!periph))
 +		return;
 +
-+	err = clk_prepare_enable(ttcce->clk);
++	periph->clk_ctrl = slcr_base + reg;
++	spin_lock_init(&periph->clkact_lock);
++
++	init.name = np->name;
++	init.ops = &zynq_periph_clk_ops;
++	for (i = 0; i < ARRAY_SIZE(parent_names); i++)
++		parent_names[i] = of_clk_get_parent_name(np, i);
++	init.parent_names = parent_names;
++	init.num_parents = ARRAY_SIZE(parent_names);
++
++	periph->hw.init = &init;
++
++	clk = clk_register(NULL, &periph->hw);
++	if (WARN_ON(IS_ERR(clk)))
++		return;
++
++	err = of_clk_add_provider(np, of_clk_src_simple_get, clk);
 +	if (WARN_ON(err))
 +		return;
 +
-+	irq = irq_of_parse_and_map(np, 0);
-+	if (WARN_ON(!irq))
-+		return;
-+
-+	ttcce->ce.name = np->name;
-+	ttcce->ce.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
-+	ttcce->ce.set_next_event = xttcpss_set_next_event;
-+	ttcce->ce.set_mode = xttcpss_set_mode;
-+	ttcce->ce.rating = 200;
-+	ttcce->ce.irq = irq;
-+
-+	__raw_writel(0x23, ttcce->xttc.base_addr + XTTCPSS_CNT_CNTRL_OFFSET);
-+	__raw_writel(CLK_CNTRL_PRESCALE | CLK_CNTRL_PRESCALE_EN,
-+		     ttcce->xttc.base_addr + XTTCPSS_CLK_CNTRL_OFFSET);
-+	__raw_writel(0x1,  ttcce->xttc.base_addr + XTTCPSS_IER_OFFSET);
-+
-+	err = request_irq(irq, xttcpss_clock_event_interrupt, IRQF_TIMER,
-+			  np->name, ttcce);
++	err = of_property_read_string_index(np, "clock-output-names", 0,
++					    &name);
 +	if (WARN_ON(err))
 +		return;
 +
-+	clockevents_config_and_register(&ttcce->ce,
-+					clk_get_rate(ttcce->clk) / PRESCALE,
-+					1, 0xfffe);
++	periph->gates[0] = clk_register_gate(NULL, name, np->name, 0,
++					     periph->clk_ctrl, 0, 0,
++					     &periph->clkact_lock);
++	if (WARN_ON(IS_ERR(periph->gates[0])))
++		return;
++	clk_num++;
++
++	/* some periph clks have 2 downstream gates */
++	err = of_property_read_string_index(np, "clock-output-names", 1,
++					    &name);
++	if (err != -ENODATA) {
++		periph->gates[1] = clk_register_gate(NULL, name, np->name, 0,
++						     periph->clk_ctrl, 1, 0,
++						     &periph->clkact_lock);
++		if (WARN_ON(IS_ERR(periph->gates[1])))
++			return;
++		clk_num++;
++	}
++
++	periph->onecell_data.clks = periph->gates;
++	periph->onecell_data.clk_num = clk_num;
++
++	err = of_clk_add_provider(np, of_clk_src_onecell_get,
++				  &periph->onecell_data);
++	if (WARN_ON(err))
++		return;
 +}
 +
-+static const __initconst struct of_device_id zynq_ttc_match[] = {
-+	{ .compatible = "xlnx,ttc-counter-clocksource",
-+		.data = zynq_ttc_setup_clocksource, },
-+	{ .compatible = "xlnx,ttc-counter-clockevent",
-+		.data = zynq_ttc_setup_clockevent, },
-+	{}
- };
- 
- /**
-@@ -270,21 +309,25 @@ static struct clock_event_device xttcpss_clockevent = {
-  **/
- void __init xttcpss_timer_init(void)
- {
--	xttcpss_timer_hardware_init();
--	clocksource_register_hz(&clocksource_xttcpss, TIMER_RATE);
--
--	/* Calculate the parameters to allow the clockevent to operate using
--	   integer math
--	*/
--	clockevents_calc_mult_shift(&xttcpss_clockevent, TIMER_RATE, 4);
--
--	xttcpss_clockevent.max_delta_ns =
--		clockevent_delta2ns(0xfffe, &xttcpss_clockevent);
--	xttcpss_clockevent.min_delta_ns =
--		clockevent_delta2ns(1, &xttcpss_clockevent);
--
--	/* Indicate that clock event is on 1st CPU as SMP boot needs it */
--
--	xttcpss_clockevent.cpumask = cpumask_of(0);
--	clockevents_register_device(&xttcpss_clockevent);
-+	struct device_node *np;
++/* CPU Clock domain is modelled as a mux with 4 children subclks, whose
++ * derivative rates depend on CLK_621_TRUE
++ */
 +
-+	for_each_compatible_node(np, NULL, "xlnx,ttc") {
-+		struct device_node *np_chld;
-+		void __iomem *base;
++struct zynq_cpu_clk {
++	struct clk_hw		hw;
++	struct clk_onecell_data	onecell_data;
++	struct clk		*subclks[4];
++	void __iomem		*clk_ctrl;
++	spinlock_t		clkact_lock;
++};
 +
-+		base = of_iomap(np, 0);
-+		if (WARN_ON(!base))
++#define to_zynq_cpu_clk(hw)	container_of(hw, struct zynq_cpu_clk, hw)
++
++static const u8 zynq_cpu_clk_parent_map[] = {
++	1, 1, 2, 0
++};
++#define CPU_CLK_SRCSEL(x)	(zynq_cpu_clk_parent_map[(((x) & 0x30) >> 4)])
++#define CPU_CLK_CTRL_DIV(x)	(((x) & 0x3F00) >> 8)
++
++static u8 zynq_cpu_clk_get_parent(struct clk_hw *hw)
++{
++	struct zynq_cpu_clk *cpuclk = to_zynq_cpu_clk(hw);
++	return CPU_CLK_SRCSEL(ioread32(cpuclk->clk_ctrl));
++}
++
++static unsigned long zynq_cpu_clk_recalc_rate(struct clk_hw *hw,
++					      unsigned long parent_rate)
++{
++	struct zynq_cpu_clk *cpuclk = to_zynq_cpu_clk(hw);
++	return parent_rate / CPU_CLK_CTRL_DIV(ioread32(cpuclk->clk_ctrl));
++}
++
++static const struct clk_ops zynq_cpu_clk_ops = {
++	.get_parent	= zynq_cpu_clk_get_parent,
++	.recalc_rate	= zynq_cpu_clk_recalc_rate,
++};
++
++struct zynq_cpu_subclk {
++	struct clk_hw	hw;
++	void __iomem	*clk_621;
++	enum {
++		CPU_SUBCLK_6X4X,
++		CPU_SUBCLK_3X2X,
++		CPU_SUBCLK_2X,
++		CPU_SUBCLK_1X,
++	} which;
++};
++
++#define CLK_621_TRUE(x)	((x) & 1)
++
++#define to_zynq_cpu_subclk(hw)	container_of(hw, struct zynq_cpu_subclk, hw);
++
++static unsigned long zynq_cpu_subclk_recalc_rate(struct clk_hw *hw,
++						 unsigned long parent_rate)
++{
++	unsigned long uninitialized_var(rate);
++	struct zynq_cpu_subclk *subclk;
++	bool is_621;
++
++	subclk = to_zynq_cpu_subclk(hw)
++	is_621 = CLK_621_TRUE(ioread32(subclk->clk_621));
++
++	switch (subclk->which) {
++	case CPU_SUBCLK_6X4X:
++		rate = parent_rate;
++		break;
++	case CPU_SUBCLK_3X2X:
++		rate = parent_rate / 2;
++		break;
++	case CPU_SUBCLK_2X:
++		rate = parent_rate / (is_621 ? 3 : 2);
++		break;
++	case CPU_SUBCLK_1X:
++		rate = parent_rate / (is_621 ? 6 : 4);
++		break;
++	};
++
++	return rate;
++}
++
++static const struct clk_ops zynq_cpu_subclk_ops = {
++	.recalc_rate	= zynq_cpu_subclk_recalc_rate,
++};
++
++static struct clk *zynq_cpu_subclk_setup(struct device_node *np, u8 which,
++					 void __iomem *clk_621)
++{
++	struct zynq_cpu_subclk *subclk;
++	struct clk_init_data init;
++	struct clk *clk;
++	int err;
++
++	err = of_property_read_string_index(np, "clock-output-names",
++					    which, &init.name);
++	if (WARN_ON(err))
++		goto err_read_output_name;
++
++	subclk = kzalloc(sizeof(*subclk), GFP_KERNEL);
++	if (!subclk)
++		goto err_subclk_alloc;
++
++	subclk->clk_621 = clk_621;
++	subclk->which = which;
++
++	init.ops = &zynq_cpu_subclk_ops;
++	init.parent_names = &np->name;
++	init.num_parents = 1;
++
++	subclk->hw.init = &init;
++
++	clk = clk_register(NULL, &subclk->hw);
++	if (WARN_ON(IS_ERR(clk)))
++		goto err_clk_register;
++
++	return clk;
++
++err_clk_register:
++	kfree(subclk);
++err_subclk_alloc:
++err_read_output_name:
++	return ERR_PTR(-EINVAL);
++}
++
++static void __init zynq_cpu_clk_setup(struct device_node *np)
++{
++	struct zynq_cpu_clk *cpuclk;
++	const char *parent_names[3];
++	struct clk_init_data init;
++	void __iomem *clk_621;
++	struct clk *clk;
++	u32 reg[2];
++	int err;
++	int i;
++
++	err = of_property_read_u32_array(np, "reg", reg, ARRAY_SIZE(reg));
++	if (WARN_ON(err))
++		return;
++
++	cpuclk = kzalloc(sizeof(*cpuclk), GFP_KERNEL);
++	if (WARN_ON(!cpuclk))
++		return;
++
++	cpuclk->clk_ctrl = slcr_base + reg[0];
++	clk_621 = slcr_base + reg[1];
++	spin_lock_init(&cpuclk->clkact_lock);
++
++	init.name = np->name;
++	init.ops = &zynq_cpu_clk_ops;
++	for (i = 0; i < ARRAY_SIZE(parent_names); i++)
++		parent_names[i] = of_clk_get_parent_name(np, i);
++	init.parent_names = parent_names;
++	init.num_parents = ARRAY_SIZE(parent_names);
++
++	cpuclk->hw.init = &init;
++
++	clk = clk_register(NULL, &cpuclk->hw);
++	if (WARN_ON(IS_ERR(clk)))
++		return;
++
++	err = of_clk_add_provider(np, of_clk_src_simple_get, clk);
++	if (WARN_ON(err))
++		return;
++
++	for (i = 0; i < 4; i++) {
++		cpuclk->subclks[i] = zynq_cpu_subclk_setup(np, i, clk_621);
++		if (WARN_ON(IS_ERR(cpuclk->subclks[i])))
 +			return;
-+
-+		for_each_available_child_of_node(np, np_chld) {
-+			int (*cb)(struct device_node *np, void __iomem *base);
-+			const struct of_device_id *match;
-+
-+			match = of_match_node(zynq_ttc_match, np_chld);
-+			if (match) {
-+				cb = match->data;
-+				cb(np_chld, base);
-+			}
-+		}
 +	}
- }
++
++	cpuclk->onecell_data.clks = cpuclk->subclks;
++	cpuclk->onecell_data.clk_num = i;
++
++	err = of_clk_add_provider(np, of_clk_src_onecell_get,
++				  &cpuclk->onecell_data);
++	if (WARN_ON(err))
++		return;
++}
++
++static const __initconst struct of_device_id zynq_clk_match[] = {
++	{ .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
++	{ .compatible = "xlnx,zynq-pll", .data = zynq_pll_clk_setup, },
++	{ .compatible = "xlnx,zynq-periph-clock",
++		.data = zynq_periph_clk_setup, },
++	{ .compatible = "xlnx,zynq-cpu-clock", .data = zynq_cpu_clk_setup, },
++	{}
++};
++
++void __init xilinx_zynq_clocks_init(void __iomem *slcr)
++{
++	slcr_base = slcr;
++	of_clk_init(zynq_clk_match);
++}
+diff --git a/include/linux/clk/zynq.h b/include/linux/clk/zynq.h
+new file mode 100644
+index 0000000..56be7cd
+--- /dev/null
++++ b/include/linux/clk/zynq.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (C) 2012 National Instruments
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#ifndef __LINUX_CLK_ZYNQ_H_
++#define __LINUX_CLK_ZYNQ_H_
++
++void __init xilinx_zynq_clocks_init(void __iomem *slcr);
++
++#endif
 -- 
 1.8.0
+
 
