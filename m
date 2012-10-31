@@ -1,254 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757044Ab2JaLFp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 07:05:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48821 "EHLO arroyo.ext.ti.com"
+	id S935382Ab2JaLGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 07:06:18 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35458 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752711Ab2JaLFn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 07:05:43 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: "Porter, Matt" <mporter@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Dan Williams <djbw@fb.com>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC PATCH v3 16/16] ARM: dts: add AM33XX SPI support
-Thread-Topic: [RFC PATCH v3 16/16] ARM: dts: add AM33XX SPI support
-Thread-Index: AQHNrTWmKO3CW9x0C02azABU1J7r6pfP73hQgAG1D6CAAUaIAIAABSOAgABjOmA=
-Date: Wed, 31 Oct 2012 11:03:51 +0000
-Deferred-Delivery: Wed, 31 Oct 2012 11:03:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E9D6275@DBDE01.ent.ti.com>
-References: <1350566815-409-1-git-send-email-mporter@ti.com>
- <1350566815-409-17-git-send-email-mporter@ti.com>
- <518397C60809E147AF5323E0420B992E3E9D597B@DBDE01.ent.ti.com>
- <5090FA92.1080400@ti.com> <5090FEE1.5070206@ti.com>
-In-Reply-To: <5090FEE1.5070206@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933580Ab2JaLGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 07:06:14 -0400
+Date: Wed, 31 Oct 2012 12:06:10 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Daniel Santos <daniel.santos@pobox.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v4 6/9] compiler.h, bug.h: Prevent double error messages
+ with BUILD_BUG{,_ON}
+Message-ID: <20121031110609.GD16410@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Daniel Santos <daniel.santos@pobox.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Andi Kleen <ak@linux.intel.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Christopher Li <sparse@chrisli.org>,
+	David Daney <david.daney@cavium.com>,
+	David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+	Josh Triplett <josh@joshtriplett.org>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>,
+	Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	David Rientjes <rientjes@google.com>
+References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
+ <1351457835-7553-6-git-send-email-daniel.santos@pobox.com>
+ <20121030161933.GD28499@liondog.tnic>
+ <5090B875.7030902@att.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5090B875.7030902@att.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 16:05:13, Cousson, Benoit wrote:
+On Wed, Oct 31, 2012 at 12:34:45AM -0500, Daniel Santos wrote:
+> Yes, the __build_bug_on_failed message is much more informative.  This
+> will only increase with these patches.  For example, the line
 > 
-> On 10/31/2012 11:16 AM, Benoit Cousson wrote:
-> > Hi Avinash,
-> > 
-> > On 10/30/2012 10:41 AM, Philip, Avinash wrote:
-> >> On Mon, Oct 29, 2012 at 14:40:02, Philip, Avinash wrote:
-> >>> On Thu, Oct 18, 2012 at 18:56:55, Porter, Matt wrote:
-> >>>> Adds AM33XX SPI support for am335x-bone and am335x-evm.
-> >>
-> >> Matt,
-> >>
-> >> Can you build SPI DT patch with DMA support on top of SPI DT patch
-> >> I submitted [1]. With the patch [1] SPI can work on PIO mode.
-> >> So we can have basic SPI support available in 3.8.
-> >>
-> >> Benoit,
-> >> Can you accept the SPI DT patch [1]
-> > 
-> > Yes, I've just applied it in for_3.8/dts branch
+> BUILD_BUG_ON(sizeof(*c) != 4);
 > 
-> Well, in fact I did not, it does not apply :-(
+> emits this error:
 > 
-> Can you rebase on top of the for_3.8/dts branch? I've just applied the
-> RTC patch on top that was OK.
+> arch/x86/kernel/cpu/amd.c: In function ‘early_init_amd’:
+> arch/x86/kernel/cpu/amd.c:486:2: error: call to
+> ‘__build_bug_on_failed_486’ declared with attribute error: BUILD_BUG_ON
+> failed: sizeof(*c) != 4
+> make[1]: *** [arch/x86/kernel/cpu/amd.o] Error 1
+> make: *** [arch/x86/kernel/cpu/amd.o] Error 2
+> 
+> It's true that there is some redundancy in there as well as the
+> gibberish line number embedded in the function name, but the end of the
+> line spits out the exact statement that failed.
 
-Ok.
+I guess that's as good as it gets. But it's fine IMO, it tells you
+exactly what you need to know.
 
-Thanks
-Avinash
+> But as far as rather the fallback is first or the __compiletime_error
+> function is a matter of asthetics, since it's really an either/or
+> situation.  Either the __build_bug_on_failedxxx function will be
+> declared with __attribute__((error(message))) and the fallback will
+> expand to a no-op, or the fallback will produce code that (presumably
+> always?) breaks the build.  For insurance, a link-time error will occur
+> if the fallback code fails to break the build.
 
-> 
-> Thanks,
-> Benoit
-> 
-> > 
-> >> In case if you want I will resubmit a patch with subject line modified.
-> > 
-> > No, that's fine.
-> > 
-> > Thanks,
-> > Benoit
-> > 
-> >>
-> >> Current subject line
-> >> arm/dts: AM33XX: Add SPI device tree data
-> >>
-> >> 1. https://patchwork.kernel.org/patch/1470661/
-> >>
-> >> Thanks
-> >> Avinash
-> >>
-> >>>>
-> >>>> Signed-off-by: Matt Porter <mporter@ti.com>
-> >>>> ---
-> >>>>  arch/arm/boot/dts/am335x-bone.dts |   17 +++++++++++++++
-> >>>>  arch/arm/boot/dts/am335x-evm.dts  |    9 ++++++++
-> >>>>  arch/arm/boot/dts/am33xx.dtsi     |   43 +++++++++++++++++++++++++++++++++++++
-> >>>>  3 files changed, 69 insertions(+)
-> >>>>
-> >>>> diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-> >>>> index 5510979..23edfd8 100644
-> >>>> --- a/arch/arm/boot/dts/am335x-bone.dts
-> >>>> +++ b/arch/arm/boot/dts/am335x-bone.dts
-> >>>> @@ -18,6 +18,17 @@
-> >>>>  		reg = <0x80000000 0x10000000>; /* 256 MB */
-> >>>>  	};
-> >>>>  
-> >>>> +	am3358_pinmux: pinmux@44e10800 {
-> >>>> +		spi1_pins: pinmux_spi1_pins {
-> >>>> +			pinctrl-single,pins = <
-> >>>> +				0x190 0x13	/* mcasp0_aclkx.spi1_sclk, OUTPUT_PULLUP | MODE3 */
-> >>>> +				0x194 0x33	/* mcasp0_fsx.spi1_d0, INPUT_PULLUP | MODE3 */
-> >>>> +				0x198 0x13	/* mcasp0_axr0.spi1_d1, OUTPUT_PULLUP | MODE3 */
-> >>>> +				0x19c 0x13	/* mcasp0_ahclkr.spi1_cs0, OUTPUT_PULLUP | MODE3 */
-> >>>> +			>;
-> >>>> +		};
-> >>>> +	};
-> >>>> +
-> >>>
-> >>> Change to am33xx_pinmux.
-> >>>
-> >>>>  	ocp {
-> >>>>  		uart1: serial@44e09000 {
-> >>>>  			status = "okay";
-> >>>> @@ -84,3 +95,9 @@
-> >>>>  &mmc1 {
-> >>>>  	vmmc-supply = <&ldo3_reg>;
-> >>>>  };
-> >>>> +
-> >>>> +&spi1 {
-> >>>> +	status = "okay";
-> >>>> +	pinctrl-names = "default";
-> >>>> +	pinctrl-0 = <&spi1_pins>;
-> >>>> +};
-> >>>> diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-> >>>> index d63fce8..8d5f660 100644
-> >>>> --- a/arch/arm/boot/dts/am335x-evm.dts
-> >>>> +++ b/arch/arm/boot/dts/am335x-evm.dts
-> >>>> @@ -124,3 +124,12 @@
-> >>>>  &mmc1 {
-> >>>>  	vmmc-supply = <&vmmc_reg>;
-> >>>>  };
-> >>>> +
-> >>>> +&spi0 {
-> >>>> +	status = "okay";
-> >>>> +	spi-flash@0 {
-> >>>> +		compatible = "spansion,s25fl064k", "m25p80";
-> >>>> +		spi-max-frequency = <24000000>;
-> >>>> +		reg = <0>;
-> >>>> +	};
-> >>>> +};
-> >>>
-> >>> In AM335x-evm, SPI flash available in profile #2 (am335x evm specific profiles).
-> >>> So can you drop this changes as if I understood correctly, am335x-evm.dts will be
-> >>> populated for devices present only on profile #0.
-> >>>
-> >>>> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> >>>> index 26a6af7..063ecea 100644
-> >>>> --- a/arch/arm/boot/dts/am33xx.dtsi
-> >>>> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> >>>> @@ -40,6 +40,15 @@
-> >>>>  		};
-> >>>>  	};
-> >>>>  
-> >>>> +	am3358_pinmux: pinmux@44e10800 {
-> >>>> +		compatible = "pinctrl-single";
-> >>>> +		reg = <0x44e10800 0x0238>;
-> >>>> +		#address-cells = <1>;
-> >>>> +		#size-cells = <0>;
-> >>>> +		pinctrl-single,register-width = <32>;
-> >>>> +		pinctrl-single,function-mask = <0x7f>;
-> >>>> +	};
-> >>>> +
-> >>>
-> >>> Pin ctrl support already submitted
-> >>> http://git.kernel.org/?p=linux/kernel/git/bcousson/linux-omap-dt.git;a=commitdiff;h=3e0603e905d9ba662e8c1885ecb1d28bc454e448
-> >>>
-> >>> Thanks
-> >>> Avinash
-> >>>
-> >>>>  	/*
-> >>>>  	 * XXX: Use a flat representation of the AM33XX interconnect.
-> >>>>  	 * The real AM33XX interconnect network is quite complex.Since
-> >>>> @@ -261,6 +270,40 @@
-> >>>>  			status = "disabled";
-> >>>>  		};
-> >>>>  
-> >>>> +		spi0: spi@48030000 {
-> >>>> +			compatible = "ti,omap4-mcspi";
-> >>>> +			ti,hwmods = "spi0";
-> >>>> +			#address-cells = <1>;
-> >>>> +			#size-cells = <0>;
-> >>>> +			reg = <0x48030000 0x400>;
-> >>>> +			interrupt-parent = <&intc>;
-> >>>> +			interrupt = <65>;
-> >>>> +			dmas = <&edma 16
-> >>>> +				&edma 17
-> >>>> +				&edma 18
-> >>>> +				&edma 19>;
-> >>>> +			dma-names = "tx0", "rx0", "tx1", "rx1";
-> >>>> +			ti,spi-num-cs = <2>;
-> >>>> +			status = "disabled";
-> >>>> +		};
-> >>>> +
-> >>>> +		spi1: spi@481a0000 {
-> >>>> +			compatible = "ti,omap4-mcspi";
-> >>>> +			ti,hwmods = "spi1";
-> >>>> +			#address-cells = <1>;
-> >>>> +			#size-cells = <0>;
-> >>>> +			reg = <0x481a0000 0x400>;
-> >>>> +			interrupt-parent = <&intc>;
-> >>>> +			interrupt = <125>;
-> >>>> +			dmas = <&edma 42
-> >>>> +				&edma 43
-> >>>> +				&edma 44
-> >>>> +				&edma 45>;
-> >>>> +			dma-names = "tx0", "rx0", "tx1", "rx1";
-> >>>> +			ti,spi-num-cs = <2>;
-> >>>> +			status = "disabled";
-> >>>> +		};
-> >>>> +
-> >>>>  		wdt2: wdt@44e35000 {
-> >>>>  			compatible = "ti,omap3-wdt";
-> >>>>  			ti,hwmods = "wd_timer2";
-> >>>> -- 
-> >>>> 1.7.9.5
-> >>>>
-> >>>>
-> >>>> _______________________________________________
-> >>>> linux-arm-kernel mailing list
-> >>>> linux-arm-kernel@lists.infradead.org
-> >>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> >>>>
-> >>>
-> >>>
-> >>
-> > 
-> 
-> 
+Right, but my suggestion was to have the more informative message always
+trigger first, if possible and if gcc supports it (practically, more
+and more systems will be upgrading gcc which has the error attribute
+with time) and have the less informative one be the more seldom one. The
+"fallback" naming is just a minor issue.
 
+This way, the error message would be precise on most modern toolchains.
+Older toolchains will issue something about negative array size, which
+is not really helpful so one would have to fire up an editor and
+actually look at the code :).
+
+> Realistically, a single macro could be defined in compiler*.h that
+> encapsulates the entirety of this mechanism and only exposes a "black
+> box" macro, that will simply expand to something that breaks the build
+> in the most appropriate fashion based upon the version of gcc.  In
+> essence, the new BUILD_BUG_ON_MSG macro attempts to fill that roll.
+
+Yes.
+
+> I guess I'll fix it up (and address the emails on the other patches)
+> and do a v5 then for the whole set? (is that the right way to resubmit
+> with these corrections?)
+
+Well, you could wait a couple of days first to gather feedback from
+other people and then resend. This way you give chance to people to take
+a look without them seeing too many versions of the patchset and getting
+confused.
+
+What I always do is send out the patchset, collect and discuss changes,
+add in the required changes and test it while the discussions go on.
+After they settle down (and they do in a couple of days, in most cases)
+I then send out the newly tested version out.
+
+That whole exercise takes more or less a week if you're doing other
+stuff in between :)
+
+-- 
+Regards/Gruss,
+    Boris.
