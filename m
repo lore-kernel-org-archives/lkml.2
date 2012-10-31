@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423281Ab2JaQaO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:30:14 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53194 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423219Ab2JaQaJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:30:09 -0400
-Date: Wed, 31 Oct 2012 09:30:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konstantin Ryabitsev <mricon@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: new daily bugzilla.kernel.org annoyance messages
-Message-ID: <20121031163005.GA411@kroah.com>
+	id S1758145Ab2JaQbg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:31:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59078 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750931Ab2JaQbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 12:31:35 -0400
+Date: Wed, 31 Oct 2012 17:31:34 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] cgroup: simplify cgroup removal path
+Message-ID: <20121031163134.GH22809@dhcp22.suse.cz>
+References: <1351657365-25055-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1351657365-25055-1-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Konstantin,
+Thanks for this cleanup. The code looks much better now and:
+$ git diff --stat mmotm...tj-cgroups/review-cgroup-rmdir-updates
+ block/blk-cgroup.c     |    3 +-
+ include/linux/cgroup.h |   41 +-------
+ kernel/cgroup.c        |  256 ++++++++++++------------------------------------
+ mm/hugetlb_cgroup.c    |   11 +--
+ mm/memcontrol.c        |   51 ++--------
+ 5 files changed, 75 insertions(+), 287 deletions(-)
 
-Who is in charge of bugzilla.kernel.org?  Yesterday I started getting a
-"Here is a daily list of your outstanding bugs" email, saying:
-
-	You will get this message once a day until you've dealt with these bugs!
-
-Who made this change?
-
-And how do we turn it off?
-
-Otherwise I'm just going to go and delete my bugzilla.kernel.org
-account, as that's just about the most annoying thing I've seen in a
-while.  There are plenty of reasons why you don't want to send out
-emails like this to developers and to do it every single day is pretty
-rude.
-
-thanks,
-
-greg k-h
+speaks for itself.
+-- 
+Michal Hocko
+SUSE Labs
