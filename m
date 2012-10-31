@@ -1,173 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934131Ab2JaRz0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:55:26 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:39266 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756319Ab2JaRzY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:55:24 -0400
-Subject: Re: [PATCH 1/3] ti_adc: Update with IIO map interface
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <50916563.8080704@metafoo.de>
-Date: Wed, 31 Oct 2012 19:55:18 +0200
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, "Patil, Rachna" <rachna@ti.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+	id S933478Ab2JaRzy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:55:54 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:55358 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756319Ab2JaRzw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 13:55:52 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/n8r+RdPtZBclRykIFE0W/
+Date: Wed, 31 Oct 2012 10:55:46 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Paul Walmsley <paul@pwsan.com>, "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
         Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F29A4A48-CDFA-4058-BED1-C09242B23326@antoniou-consulting.com>
-References: <1351783496-11557-1-git-send-email-panto@antoniou-consulting.com> <50916563.8080704@metafoo.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-X-Mailer: Apple Mail (2.1085)
+Subject: Re: [RFC-v2 2/7] capebus: Add beaglebone board support
+Message-ID: <20121031175546.GI12739@atomide.com>
+References: <1351783952-11804-1-git-send-email-panto@antoniou-consulting.com>
+ <1351783952-11804-3-git-send-email-panto@antoniou-consulting.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351783952-11804-3-git-send-email-panto@antoniou-consulting.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Pantelis Antoniou <panto@antoniou-consulting.com> [121031 10:41]:
+> Introduce beaglebone capebus board support.
+...
 
-On Oct 31, 2012, at 7:52 PM, Lars-Peter Clausen wrote:
+> --- /dev/null
+> +++ b/drivers/capebus/boards/Kconfig
+> @@ -0,0 +1,6 @@
+> +config CAPEBUS_BONE_CONTROLLER
+> +	bool "Beaglebone capebus board controller"
+> +	depends on CAPEBUS && ARCH_OMAP2PLUS && OF && I2C
+> +	default n
 
-> On 11/01/2012 04:24 PM, Pantelis Antoniou wrote:
->> Add an IIO map interface that consumers can use.
-> 
-> Hi,
-> 
-> Looks like you overlooked the review comments I had inline last time. I've
-> put them in again, see below.
-> 
->> 
->> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
->> ---
->> drivers/iio/adc/ti_am335x_adc.c | 60 +++++++++++++++++++++++++++++++++--------
->> 1 file changed, 49 insertions(+), 11 deletions(-)
->> 
->> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
->> index 02a43c8..8595a90 100644
->> --- a/drivers/iio/adc/ti_am335x_adc.c
->> +++ b/drivers/iio/adc/ti_am335x_adc.c
->> @@ -20,8 +20,9 @@
->> #include <linux/slab.h>
->> #include <linux/interrupt.h>
->> #include <linux/platform_device.h>
->> -#include <linux/io.h>
->> #include <linux/iio/iio.h>
->> +#include <linux/iio/machine.h>
->> +#include <linux/iio/driver.h>
->> 
->> #include <linux/mfd/ti_am335x_tscadc.h>
->> #include <linux/platform_data/ti_am335x_adc.h>
->> @@ -29,6 +30,8 @@
->> struct tiadc_device {
->> 	struct ti_tscadc_dev *mfd_tscadc;
->> 	int channels;
->> +	char *buf;
-> 
-> buf doesn't seem to be used anywhere
-> 
+The default is n, so you can remove "default n" from your
+patches.
 
-Duh
+> +++ b/drivers/capebus/boards/capebus-bone-generic.c
+> @@ -0,0 +1,237 @@
+> +/*
+> + * TI Beaglebone capebus controller - Generic devices
+> + *
+> + * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
+> + * Copyright (C) 2012 Texas Instruments Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/string.h>
+> +#include <linux/timer.h>
+> +#include <linux/errno.h>
+> +#include <linux/init.h>
+> +#include <linux/delay.h>
+> +#include <linux/bitops.h>
+> +#include <linux/err.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#include <linux/of_gpio.h>
+> +#include <video/da8xx-fb.h>
+> +#include <linux/pinctrl/pinctrl.h>
+> +#include <linux/pinctrl/pinmux.h>
+> +#include <linux/pinctrl/consumer.h>
+> +#include <linux/atomic.h>
+> +#include <linux/clk.h>
+> +#include <asm/barrier.h>
+> +#include <plat/clock.h>
+> +#include <plat/omap_device.h>
 
->> +	struct iio_map *map;
->> };
->> 
->> static unsigned int tiadc_readl(struct tiadc_device *adc, unsigned int reg)
->> @@ -72,27 +75,62 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
->> 	tiadc_writel(adc_dev, REG_SE, STPENB_STEPENB);
->> }
->> 
->> -static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
->> +static int tiadc_channel_init(struct iio_dev *indio_dev,
->> +		struct tiadc_device *adc_dev)
->> {
->> 	struct iio_chan_spec *chan_array;
->> -	int i;
->> -
->> -	indio_dev->num_channels = channels;
->> -	chan_array = kcalloc(indio_dev->num_channels,
->> -			sizeof(struct iio_chan_spec), GFP_KERNEL);
->> +	struct iio_chan_spec *chan;
->> +	char *s;
->> +	int i, len, size, ret;
->> +	int channels = adc_dev->channels;
->> 
->> +	size = channels * (sizeof(struct iio_chan_spec) + 6);
->> +	chan_array = kzalloc(size, GFP_KERNEL);
->> 	if (chan_array == NULL)
->> 		return -ENOMEM;
->> 
->> -	for (i = 0; i < (indio_dev->num_channels); i++) {
->> -		struct iio_chan_spec *chan = chan_array + i;
->> +	/* buffer space is after the array */
->> +	s = (char *)(chan_array + channels);
->> +	chan = chan_array;
->> +	for (i = 0; i < channels; i++, chan++, s += len + 1) {
->> +
->> +		len = sprintf(s, "AIN%d", i);
->> +
->> 		chan->type = IIO_VOLTAGE;
->> 		chan->indexed = 1;
->> 		chan->channel = i;
->> -		chan->info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT;
->> +		chan->datasheet_name = s;
->> +		chan->scan_type.sign = 'u';
->> +		chan->scan_type.realbits = 12;
->> +		chan->scan_type.storagebits = 32;
->> +		chan->scan_type.shift = 0;
-> 
-> The scan type assignment should go in a separate patch if possible.
+You need to check your patches to make sure you don't need
+any #include <plat/*.h> or #include <mach/*.h> as those are
+already not available for drivers in linux next.
 
-ok.
+Regards,
 
-> 
->> 	}
->> 
->> 	indio_dev->channels = chan_array;
->> +	indio_dev->num_channels = channels;
->> +
->> +	size = (channels + 1) * sizeof(struct iio_map);
->> +	adc_dev->map = kzalloc(size, GFP_KERNEL);
->> +	if (adc_dev->map == NULL) {
->> +		kfree(chan_array);
->> +		return -ENOMEM;
->> +	}
->> +
->> +	for (i = 0; i < indio_dev->num_channels; i++) {
->> +		adc_dev->map[i].adc_channel_label = chan_array[i].datasheet_name;
->> +		adc_dev->map[i].consumer_dev_name = "any";
->> +		adc_dev->map[i].consumer_channel = chan_array[i].datasheet_name;
->> +	}
->> +	adc_dev->map[i].adc_channel_label = NULL;
->> +	adc_dev->map[i].consumer_dev_name = NULL;
->> +	adc_dev->map[i].consumer_channel = NULL;
-> 
-> The map should be passed in via platform data or similar. All the fields of
-> the map depend on the specific user, so you can't use a generic map. In fact
-> if we were able to use a generic map, we wouldn't need a map at all.
-
-There's no platform data in the board I'm using. It's board-generic using
-device tree only.
-
-> 
->> +
->> +	ret = iio_map_array_register(indio_dev, adc_dev->map);
->> +	if (ret != 0) {
->> +		kfree(adc_dev->map);
->> +		kfree(chan_array);
->> +		return -ENOMEM;
->> +	}
->> 
->> 	return indio_dev->num_channels;
->> }
->> @@ -168,7 +206,7 @@ static int __devinit tiadc_probe(struct platform_device *pdev)
->> 
->> 	tiadc_step_config(adc_dev);
->> 
->> -	err = tiadc_channel_init(indio_dev, adc_dev->channels);
->> +	err = tiadc_channel_init(indio_dev, adc_dev);
->> 	if (err < 0)
->> 		goto err_free_device;
->> 
-> 
-
+Tony
