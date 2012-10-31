@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934551Ab2JaPQk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 11:16:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46804 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932178Ab2JaPQi (ORCPT
+	id S1423135Ab2JaPUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 11:20:08 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43461 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1422815Ab2JaPUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 11:16:38 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, chris.mason@fusionio.com, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] Btrfs: Fix typo in fs/btrfs
-Date: Thu,  1 Nov 2012 00:16:32 +0900
-Message-Id: <1351696592-14721-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
+	Wed, 31 Oct 2012 11:20:04 -0400
+Date: Wed, 31 Oct 2012 11:20:02 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: Oliver Neukum <oneukum@suse.de>, <linux-kernel@vger.kernel.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
+In-Reply-To: <CACVXFVNxucCVLS-=EQkmVop3LQMkeXW7RbZq4yfkiq_MUGndvg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1210311117310.1954-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in btrfs.
+On Wed, 31 Oct 2012, Ming Lei wrote:
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- fs/btrfs/ctree.h   | 2 +-
- fs/btrfs/volumes.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> The below idea may help the problem which 'memalloc_noio' flag isn't set during
+> usb_reset_device().
+> 
+> - for usb mass storage device, call pm_runtime_set_memalloc_noio(true)
+>   inside usb_stor_probe2() and uas_probe(), and call
+>   pm_runtime_set_memalloc_noio(false) inside uas_disconnect()
+>   and usb_stor_disconnect().
 
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index 926c9ff..9dda9a9 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -413,7 +413,7 @@ struct btrfs_root_backup {
- 	__le64 bytes_used;
- 	__le64 num_devices;
- 	/* future */
--	__le64 unsed_64[4];
-+	__le64 unused_64[4];
- 
- 	u8 tree_root_level;
- 	u8 chunk_root_level;
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 029b903..36b7f43 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -4287,7 +4287,7 @@ int btrfs_map_bio(struct btrfs_root *root, int rw, struct bio *bio,
- 
- 			rcu_read_lock();
- 			name = rcu_dereference(dev->name);
--			pr_debug("btrfs_map_bio: rw %d, secor=%llu, dev=%lu "
-+			pr_debug("btrfs_map_bio: rw %d, sector=%llu, dev=%lu "
- 				 "(%s id %llu), size=%u\n", rw,
- 				 (u64)bio->bi_sector, (u_long)dev->bdev->bd_dev,
- 				 name->str, dev->devid, bio->bi_size);
--- 
-1.8.0.rc3.16.g8ead1bf
+Why would you want to do that?  The probe and disconnect routines
+usually -- but not always -- run in the khubd thread.  Surely you don't
+want to prevent khubd from using GFP_KERNEL?
+
+And what if probe runs in khubd but disconnect runs in a different 
+thread?
+
+Alan Stern
 
