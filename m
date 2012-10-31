@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965754Ab2JaV1c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 17:27:32 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:65404 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933899Ab2JaV1a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 17:27:30 -0400
-Date: Wed, 31 Oct 2012 14:27:25 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH 4/8] cgroup: deactivate CSS's and mark cgroup dead before
- invoking ->pre_destroy()
-Message-ID: <20121031212725.GA2945@htj.dyndns.org>
-References: <1351712650-23709-1-git-send-email-tj@kernel.org>
- <1351712650-23709-5-git-send-email-tj@kernel.org>
- <20121031212359.GC5286@dhcp22.suse.cz>
+	id S1946031Ab2JaV2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 17:28:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60963 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933646Ab2JaV2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 17:28:13 -0400
+Message-ID: <509197D2.6000503@zytor.com>
+Date: Wed, 31 Oct 2012 14:27:46 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121031212359.GC5286@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Robert Richter <rric@kernel.org>
+CC: "Zhang, Jun" <jun.zhang@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Sometimes, there is OOPS happened when we use oprofile.
+References: <88DC34334CA3444C85D647DBFA962C270FD7E416@SHSMSX102.ccr.corp.intel.com> <20121031210522.GB4386@ivy.homofaber>
+In-Reply-To: <20121031210522.GB4386@ivy.homofaber>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Michal.
+On 10/31/2012 02:05 PM, Robert Richter wrote:
+> Jun,
+>
+> On 29.10.12 02:33:54, Zhang, Jun wrote:
+>> Sometimes, there is OOPS happened when we use oprofile. next
+>> is the call stack. From call stack, we find in
+>> call_on_stack if there is a nmi interrupt between "xchgl
+>> %%ebx,%%esp" and "call *%%edi", system will OOPS.
+>
+> this should be related and fixed with:
+>
+>   https://lkml.org/lkml/2012/9/12/269
+>
+> Ingo, HPA,
+>
+> please apply the fix of kernel_stack_pointer().
+>
 
-On Wed, Oct 31, 2012 at 10:23:59PM +0100, Michal Hocko wrote:
-> > +	for_each_subsys(cgrp->root, ss)
-> > +		if (ss->pre_destroy)
-> > +			WARN_ON_ONCE(ss->pre_destroy(cgrp));
-> 
-> Do you think that BUG_ON would be too harsh?
+Thanks for the reminder.  Ingo bounced this one to me for review while I 
+was away and it fell between the cracks.
 
-Yeah, I do think so.  In general, I think the consensus now is to
-prefer WARN_ON[_ONCE]() over BUG_ON() whenever possible.  It's not
-like we can get more information from BUG_ON()s (more likely to get
-less reporting actually by taking down the machine).  Limping machines
-are better than dead ones and there just isn't much to gain here by
-killing it.
-
-Thanks.
-
+	-hpa
 -- 
-tejun
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
