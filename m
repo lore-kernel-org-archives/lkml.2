@@ -1,183 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030223Ab2JaEYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 00:24:39 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:32779 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab2JaEWz (ORCPT
+	id S1751024Ab2JaE3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 00:29:43 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:32791 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796Ab2JaE3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 00:22:55 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
-        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/8] cgroup: kill CSS_REMOVED
-Date: Tue, 30 Oct 2012 21:22:39 -0700
-Message-Id: <1351657365-25055-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351657365-25055-1-git-send-email-tj@kernel.org>
-References: <1351657365-25055-1-git-send-email-tj@kernel.org>
+	Wed, 31 Oct 2012 00:29:41 -0400
+Subject: [GIT PULL] target fixes for v3.7-rc4
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Roland Dreier <roland@kernel.org>,
+        Bernhard Kohl <bernhard.kohl@nsn.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Oct 2012 21:29:24 -0700
+Message-ID: <1351657764.1898.20.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CSS_REMOVED is one of the several contortions which were necessary to
-support css reference draining on cgroup removal.  All css->refcnts
-which need draining should be deactivated and verified to equal zero
-atomically w.r.t. css_tryget().  If any one isn't zero, all refcnts
-needed to be re-activated and css_tryget() shouldn't fail in the
-process.
+Hello Linus!
 
-This was achieved by letting css_tryget() busy-loop until either the
-refcnt is reactivated (failed removal attempt) or CSS_REMOVED is set
-(committing to removal).
+The following are the current target pending fixes headed for v3.7-rc4
+code.  This includes the following highlights:
 
-Now that css refcnt draining is no longer used, there's no need for
-atomic rollback mechanism.  css_tryget() simply can look at the
-reference count and fail if the it's deactivated - it's never getting
-re-activated.
+- Fix long-standing qla2xxx target bug where certain fc_port_t state
+transitions could cause the internal session b-tree list to become
+out-of-sync. (Roland)
+- Fix task management double free of se_cmd descriptor in exception path
+for users of target_submit_tmr(). (nab)
+- Re-introduce simple NOP emulation of REZERO_UNIT, SEEK_6, and SEEK_10
+SCSI-2 commands in order to support legacy initiators that still require
+them.  (Bernhard)
 
-This patch removes CSS_REMOVED and updates __css_tryget() to fail if
-the refcnt is deactivated.
+Note these three patches are also CC'ed to stable.
 
-Note that this removes css_is_removed() whose only user is VM_BUG_ON()
-in memcontrol.c.  We can replace it with a check on the refcnt but
-given that the only use case is a debug assert, I think it's better to
-simply unexport it.
+Also, there a couple of outstanding (external) regressions that are
+still being tracked down for tcm_fc(FCoE) and tcm_vhost fabrics for
+v3.7.0 code, so please expect another PULL as these issues identified ->
+resolved.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/cgroup.h |  6 ------
- kernel/cgroup.c        | 31 ++++++++++++-------------------
- mm/memcontrol.c        |  7 +++----
- 3 files changed, 15 insertions(+), 29 deletions(-)
+Thank you,
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 02e09c0..a309804 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -85,7 +85,6 @@ struct cgroup_subsys_state {
- /* bits in struct cgroup_subsys_state flags field */
- enum {
- 	CSS_ROOT, /* This CSS is the root of the subsystem */
--	CSS_REMOVED, /* This CSS is dead */
- };
- 
- /* Caller must verify that the css is not for root cgroup */
-@@ -108,11 +107,6 @@ static inline void css_get(struct cgroup_subsys_state *css)
- 		__css_get(css, 1);
- }
- 
--static inline bool css_is_removed(struct cgroup_subsys_state *css)
--{
--	return test_bit(CSS_REMOVED, &css->flags);
--}
--
- /*
-  * Call css_tryget() to take a reference on a css if your existing
-  * (known-valid) reference isn't already ref-counted. Returns false if
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 033bf4b..a49cdbc 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -170,8 +170,8 @@ struct css_id {
- 	 * The css to which this ID points. This pointer is set to valid value
- 	 * after cgroup is populated. If cgroup is removed, this will be NULL.
- 	 * This pointer is expected to be RCU-safe because destroy()
--	 * is called after synchronize_rcu(). But for safe use, css_is_removed()
--	 * css_tryget() should be used for avoiding race.
-+	 * is called after synchronize_rcu(). But for safe use, css_tryget()
-+	 * should be used for avoiding race.
- 	 */
- 	struct cgroup_subsys_state __rcu *css;
- 	/*
-@@ -4088,8 +4088,6 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
- 	}
- 	prepare_to_wait(&cgroup_rmdir_waitq, &wait, TASK_INTERRUPTIBLE);
- 
--	local_irq_disable();
--
- 	/* block new css_tryget() by deactivating refcnt */
- 	for_each_subsys(cgrp->root, ss) {
- 		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
-@@ -4099,21 +4097,14 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
- 	}
- 
- 	/*
--	 * Set REMOVED.  All in-progress css_tryget() will be released.
- 	 * Put all the base refs.  Each css holds an extra reference to the
- 	 * cgroup's dentry and cgroup removal proceeds regardless of css
- 	 * refs.  On the last put of each css, whenever that may be, the
- 	 * extra dentry ref is put so that dentry destruction happens only
- 	 * after all css's are released.
- 	 */
--	for_each_subsys(cgrp->root, ss) {
--		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
--
--		set_bit(CSS_REMOVED, &css->flags);
--		css_put(css);
--	}
--
--	local_irq_enable();
-+	for_each_subsys(cgrp->root, ss)
-+		css_put(cgrp->subsys[ss->subsys_id]);
- 
- 	finish_wait(&cgroup_rmdir_waitq, &wait);
- 	clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
-@@ -4837,15 +4828,17 @@ static void check_for_release(struct cgroup *cgrp)
- /* Caller must verify that the css is not for root cgroup */
- bool __css_tryget(struct cgroup_subsys_state *css)
- {
--	do {
--		int v = css_refcnt(css);
-+	while (true) {
-+		int t, v;
- 
--		if (atomic_cmpxchg(&css->refcnt, v, v + 1) == v)
-+		v = css_refcnt(css);
-+		t = atomic_cmpxchg(&css->refcnt, v, v + 1);
-+		if (likely(t == v))
- 			return true;
-+		else if (t < 0)
-+			return false;
- 		cpu_relax();
--	} while (!test_bit(CSS_REMOVED, &css->flags));
--
--	return false;
-+	}
- }
- EXPORT_SYMBOL_GPL(__css_tryget);
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 5a1d584..6f8bd9d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2343,7 +2343,6 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
- again:
- 	if (*ptr) { /* css should be a valid one */
- 		memcg = *ptr;
--		VM_BUG_ON(css_is_removed(&memcg->css));
- 		if (mem_cgroup_is_root(memcg))
- 			goto done;
- 		if (nr_pages == 1 && consume_stock(memcg))
-@@ -2483,9 +2482,9 @@ static void __mem_cgroup_cancel_local_charge(struct mem_cgroup *memcg,
- 
- /*
-  * A helper function to get mem_cgroup from ID. must be called under
-- * rcu_read_lock(). The caller must check css_is_removed() or some if
-- * it's concern. (dropping refcnt from swap can be called against removed
-- * memcg.)
-+ * rcu_read_lock(). The caller is responsible for verifying the returned
-+ * memcg is still alive if necessary. (dropping refcnt from swap can be
-+ * called against removed memcg.)
-  */
- static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
- {
--- 
-1.7.11.7
+--nab
+
+Bernhard Kohl (1):
+  target: reintroduce some obsolete SCSI-2 commands
+
+Nicholas Bellinger (2):
+  qla2xxx: Add missing ->vport_slock while calling qlt_update_vp_map
+  target: Fix double-free of se_cmd in target_complete_tmr_failure
+
+Roland Dreier (2):
+  tcm_qla2xxx: Format VPD page 83h SCSI name string according to SPC
+  qla2xxx: Update target lookup session tables when a target session
+    changes
+
+ drivers/scsi/qla2xxx/qla_mid.c         |    3 +
+ drivers/scsi/qla2xxx/qla_target.c      |   25 +++++------
+ drivers/scsi/qla2xxx/qla_target.h      |    1 +
+ drivers/scsi/qla2xxx/tcm_qla2xxx.c     |   77 +++++++++++++++++++++++++++++++-
+ drivers/scsi/qla2xxx/tcm_qla2xxx.h     |    2 +
+ drivers/target/target_core_sbc.c       |   18 +++++++
+ drivers/target/target_core_transport.c |    1 -
+ 7 files changed, 111 insertions(+), 16 deletions(-)
 
