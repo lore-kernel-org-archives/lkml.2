@@ -1,358 +1,473 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935279Ab2JaJsz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:48:55 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34252 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934623Ab2JaJsr (ORCPT
+	id S935305Ab2JaJtP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:49:15 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:51362 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934623Ab2JaJtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:48:47 -0400
-From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Joerg Reisenweber <joerg@openmoko.org>,
-        Ivaylo Dimitrov <freemangordon@abv.bg>
-Subject: [PATCH v2] New Nokia RX-51 power supply battery driver
-Date: Wed, 31 Oct 2012 10:48:40 +0100
-Message-ID: <2562836.SjVVyiPAk1@pali>
-User-Agent: KMail/4.9.2 (Linux/3.5.0-18-generic; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121030223922.GA29061@lizard>
-References: <19040462.WFXWijAIDd@pali> <20121030223922.GA29061@lizard>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1890658.c3JUd2ba8r"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: quoted-printable
+	Wed, 31 Oct 2012 05:49:08 -0400
+X-AuditID: cbfee61a-b7fa66d0000004cf-75-5090f40490de
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
+        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
+In-reply-to: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
+Subject: [PATCH 15/17] f2fs: add recovery routines for roll-forward
+Date: Wed, 31 Oct 2012 18:48:51 +0900
+Message-id: <004c01cdb74c$eed97a80$cc8c6f80$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAAdI3A
+Content-language: en-us
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zQ12WLxMCDHbPZ7fYs/cki8XlXXPY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mq41vuKteB1RMXzq4vZGxg/uXcxcnJICJhILOvcwQhh
+	i0lcuLeerYuRi0NIYBmjxIfVb9hgit7faQWzhQQWMUrMe68AUfSPUWLNvkesXYwcHGwC2hKb
+	9xuAxEUEHjJK7H+2lB2iwVbi6f1r7CA1nAJ2EpdPRICEhQWcJXa/Wwu2mEVAVWJ1115mEJsX
+	qHzSzHZGCFtQ4sfkeywgNrOAusSkeYuYIWx5ic1r3jKDjJQAij/6qwsSFhEwkpj/6wZUubjE
+	pAcP2SHGC0h8m3yIBaJcVmLTAWaQKyUE5rFLbNhyBup3SYmDK26wTGAUn4Vk8ywkm2ch2TwL
+	yYoFjCyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MUIiSWoH48oGi0OMAhyMSjy8hv/6A4RY
+	E8uKK3MPMUpwMCuJ8CZ/mhAgxJuSWFmVWpQfX1Sak1p8iNEH6PKJzFKiyfnAKM8riTc0NjYx
+	MzE1Mbc0NTfFIawkztvskRIgJJCeWJKanZpakFoEM46Jg1OqgdF8ujvDxqsxXg+Pu6776v+u
+	XfxLFIdnk8R9w6nMM2wd/+pvEzv0471SlIm1NXcgf/BX6X+2Qvn+y2vfW7guUdnvOkGI3783
+	wcJ8b/ae40xyVxwuvpff71ES1h3vcmXqxAYeI6semfMmi9fmrj2mJHt61ymz3806oopenutX
+	ybTs2pd30OlnthJLcUaioRZzUXEiAJ9ONZTRAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t9jAV2WLxMCDB7tYLLYs/cki8XlXXPY
+	HJg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMuNb7irXgdUTF
+	86uL2RsYP7l3MXJySAiYSLy/08oGYYtJXLi3HswWEljEKDHvvUIXIxeQ/Y9RYs2+R6xdjBwc
+	bALaEpv3G4DERQQeMkrsf7aUHaLBVuLp/WvsIDWcAnYSl09EgISFBZwldr9bywhiswioSqzu
+	2ssMYvMClU+a2c4IYQtK/Jh8jwXEZhZQl5g0bxEzhC0vsXnNW2aQkRJA8Ud/dUHCIgJGEvN/
+	3YAqF5eY9OAh+wRGwVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7
+	iREcp8+kdjCubLA4xCjAwajEw2v4rz9AiDWxrLgy9xCjBAezkghv8qcJAUK8KYmVValF+fFF
+	pTmpxYcYfYAencgsJZqcD0wheSXxhsYmZkaWRmYWRibm5jiElcR5mz1SAoQE0hNLUrNTUwtS
+	i2DGMXFwSjUwXhBgP6rTfdxH4+PmlPIDE5Xc1zNNudcQuf74490dq9azX+e99757tyKvUuK8
+	ZyViB9X5uMM2HW0OPZZQuIcpVfmnj8JEhch6C7dmbjWGdp4FHD5XlffO2bkqlP/9q3M1sjyn
+	au4I6E5yDnGb/maFTKKl4AIvpvcTlwTqG13n2LNzd2b8PIZzSizFGYmGWsxFxYkA/lKFBQAD	AAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This adds roll-forward routines to recover fsynced data.
 
---nextPart1890658.c3JUd2ba8r
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="utf-8"
+- F2FS uses basically roll-back model with checkpointing.
 
-Hello, I fixed style issues and added it to Makefile and Kconfig.
+- In order to implement fsync(), there are two approaches as follows.
 
-power_supply: Add Nokia RX-51 battery driver
+1. A roll-back model with checkpointing at every fsync()
+ : This is a naive method, but suffers from very low performance.
 
-This driver exporting battery design capacity, temperature and voltage
-for battery in Nokia RX-51. This driver is needed for open source
-battery management on Nokia RX-51 (N900).
+2. A roll-forward model
+ : F2FS adopts this model where all the fsynced data should be recovered, which
+   were written after checkpointing was done. In order to figure out the data,
+   F2FS keeps a "fsync" mark in direct node blocks. In addition, F2FS remains
+   the location of next node block in each direct node block for reconstructing
+   the chain of node blocks during the recovery.
 
-Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+- In order to enhance the performance, F2FS keeps a "dentry" mark also in direct
+  node blocks. If this is set during the recovery, F2FS replays adding a dentry.
 
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/recovery.c |  375 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 375 insertions(+)
+ create mode 100644 fs/f2fs/recovery.c
+
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+new file mode 100644
+index 0000000..7a43df0
 --- /dev/null
-+++ linux/drivers/power/rx51_battery.c
-@@ -0,0 +1,251 @@
-+/*
-+ *  rx51_battery.c - Nokia RX-51 battery driver
-+ *  Copyright (C) 2012  Pali Roh=C3=A1r <pali.rohar@gmail.com>
++++ b/fs/f2fs/recovery.c
+@@ -0,0 +1,375 @@
++/**
++ * fs/f2fs/recovery.c
 + *
-+ *  This program is free software; you can redistribute it and/or modi=
-fy
-+ *  it under the terms of the GNU General Public License as published =
-by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
++ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
++ *             http://www.samsung.com/
 + *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License =
-along
-+ *  with this program; if not, write to the Free Software Foundation, =
-Inc.,
-+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
++#include <linux/fs.h>
++#include <linux/f2fs_fs.h>
++#include "f2fs.h"
++#include "node.h"
++#include "segment.h"
 +
-+#include <linux/module.h>
-+#include <linux/param.h>
-+#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
-+#include <linux/slab.h>
-+#include <linux/i2c/twl4030-madc.h>
++static struct kmem_cache *fsync_entry_slab;
 +
-+struct rx51_device_info {
-+=09struct device *dev;
-+=09struct power_supply bat;
-+};
-+
-+/*
-+ * Read ADCIN channel value, code copied from maemo kernel
-+ */
-+static int rx51_battery_read_adc(int channel)
++bool space_for_roll_forward(struct f2fs_sb_info *sbi)
 +{
-+=09struct twl4030_madc_request req;
-+
-+=09req.channels =3D 1 << channel;
-+=09req.do_avg =3D 1;
-+=09req.method =3D TWL4030_MADC_SW1;
-+=09req.func_cb =3D NULL;
-+=09req.type =3D TWL4030_MADC_WAIT;
-+
-+=09if (twl4030_madc_conversion(&req) <=3D 0)
-+=09=09return -ENODATA;
-+
-+=09return req.rbuf[channel];
++	if (sbi->last_valid_block_count + sbi->alloc_valid_block_count
++			> sbi->user_block_count)
++		return false;
++	return true;
 +}
 +
-+/*
-+ * Read ADCIN channel 12 (voltage) and convert RAW value to micro volt=
-age
-+ * This conversion formula was extracted from maemo program bsi-read
-+ */
-+static int rx51_battery_read_voltage(struct rx51_device_info *di)
++static struct fsync_inode_entry *get_fsync_inode(struct list_head *head,
++								nid_t ino)
 +{
-+=09int voltage =3D rx51_battery_read_adc(12);
++	struct list_head *this;
++	struct fsync_inode_entry *entry;
 +
-+=09if (voltage < 0)
-+=09=09return voltage;
-+
-+=09return 1000 * (10000 * voltage / 1705);
++	list_for_each(this, head) {
++		entry = list_entry(this, struct fsync_inode_entry, list);
++		if (entry->inode->i_ino == ino)
++			return entry;
++	}
++	return NULL;
 +}
 +
-+/*
-+ * Temperature look-up tables
-+ * TEMP =3D (1/(t1 + 1/298) - 273.15)
-+ * Where t1 =3D (1/B) * ln((RAW_ADC_U * 2.5)/(R * I * 255))
-+ * Formula is based on experimental data, RX-51 CAL data, maemo progra=
-m bme
-+ * and formula from da9052 driver with values R =3D 100, B =3D 3380, I=
- =3D 0.00671
-+ */
-+
-+/*
-+ * Table1 (temperature for first 25 RAW values)
-+ * Usage: TEMP =3D rx51_temp_table1[RAW]
-+ *   RAW is between 1 and 24
-+ *   TEMP is between 201 C and 55 C
-+ */
-+static u8 rx51_temp_table1[] =3D {
-+=09255, 201, 159, 138, 124, 114, 106,  99,  94,  89,  85,  82,  78,  7=
-5,
-+=09 73,  70,  68,  66,  64,  62,  61,  59,  57,  56,  55
-+};
-+
-+/*
-+ * Table2 (lowest RAW value for temperature)
-+ * Usage: RAW =3D rx51_temp_table2[TEMP-rx51_temp_table2_first]
-+ *   TEMP is between 53 C and -32 C
-+ *   RAW is between 25 and 993
-+ */
-+#define rx51_temp_table2_first 53
-+static u16 rx51_temp_table2[] =3D {
-+=09 25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  3=
-9,
-+=09 40,  41,  43,  44,  46,  48,  49,  51,  53,  55,  57,  59,  61,  6=
-4,
-+=09 66,  69,  71,  74,  77,  80,  83,  86,  90,  94,  97, 101, 106, 11=
-0,
-+=09115, 119, 125, 130, 136, 141, 148, 154, 161, 168, 176, 184, 202, 21=
-1,
-+=09221, 231, 242, 254, 266, 279, 293, 308, 323, 340, 357, 375, 395, 41=
-5,
-+=09437, 460, 485, 511, 539, 568, 600, 633, 669, 706, 747, 790, 836, 88=
-5,
-+=09937, 993, 1024
-+};
-+
-+/*
-+ * Read ADCIN channel 0 (battery temp) and convert value to tenths of =
-Celsius
-+ * Use Temperature look-up tables for conversation
-+ */
-+static int rx51_battery_read_temperature(struct rx51_device_info *di)
++static int recover_dentry(struct page *ipage, struct inode *inode)
 +{
-+=09int min =3D 0;
-+=09int max =3D ARRAY_SIZE(rx51_temp_table2) - 1;
-+=09int raw =3D rx51_battery_read_adc(0);
++	struct f2fs_node *raw_node = (struct f2fs_node *)kmap(ipage);
++	struct f2fs_inode *raw_inode = &(raw_node->i);
++	struct dentry dent, parent;
++	struct f2fs_dir_entry *de;
++	struct page *page;
++	struct inode *dir;
++	int err = 0;
 +
-+=09/* Zero and negative values are undefined */
-+=09if (raw <=3D 0)
-+=09=09return INT_MAX;
++	if (!is_dent_dnode(ipage))
++		goto out;
 +
-+=09/* ADC channels are 10 bit, higher value are undefined */
-+=09if (raw >=3D (1 << 10))
-+=09=09return INT_MIN;
++	dir = f2fs_iget(inode->i_sb, le32_to_cpu(raw_inode->i_pino));
++	if (IS_ERR(dir)) {
++		err = -EINVAL;
++		goto out;
++	}
 +
-+=09/* First check for temperature in first direct table */
-+=09if (raw < ARRAY_SIZE(rx51_temp_table1))
-+=09=09return rx51_temp_table1[raw] * 100;
++	parent.d_inode = dir;
++	dent.d_parent = &parent;
++	dent.d_name.len = le32_to_cpu(raw_inode->i_namelen);
++	dent.d_name.name = raw_inode->i_name;
 +
-+=09/* Binary search RAW value in second inverse table */
-+=09while (max - min > 1) {
-+=09=09int mid =3D (max + min) / 2;
-+=09=09if (rx51_temp_table2[mid] <=3D raw)
-+=09=09=09min =3D mid;
-+=09=09else if (rx51_temp_table2[mid] > raw)
-+=09=09=09max =3D mid;
-+=09=09if (rx51_temp_table2[mid] =3D=3D raw)
-+=09=09=09break;
-+=09}
-+
-+=09return (rx51_temp_table2_first - min) * 100;
++	de = f2fs_find_entry(dir, &dent.d_name, &page);
++	if (de) {
++		kunmap(page);
++		f2fs_put_page(page, 0);
++	} else {
++		f2fs_add_link(&dent, inode);
++	}
++	iput(dir);
++out:
++	kunmap(ipage);
++	return err;
 +}
 +
-+/*
-+ * Read ADCIN channel 4 (BSI) and convert RAW value to micro Ah
-+ * This conversion formula was extracted from maemo program bsi-read
-+ */
-+static int rx51_battery_read_capacity(struct rx51_device_info *di)
++static int recover_inode(struct inode *inode, struct page *node_page)
 +{
-+=09int capacity =3D rx51_battery_read_adc(4);
++	void *kaddr = page_address(node_page);
++	struct f2fs_node *raw_node = (struct f2fs_node *)kaddr;
++	struct f2fs_inode *raw_inode = &(raw_node->i);
 +
-+=09if (capacity < 0)
-+=09=09return capacity;
++	inode->i_mode = le32_to_cpu(raw_inode->i_mode);
++	i_size_write(inode, le64_to_cpu(raw_inode->i_size));
++	inode->i_atime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
++	inode->i_ctime.tv_sec = le64_to_cpu(raw_inode->i_ctime);
++	inode->i_mtime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
++	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
++	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
++	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
 +
-+=09return 1280 * (1200 * capacity)/(1024 - capacity);
++	return recover_dentry(node_page, inode);
 +}
 +
-+/*
-+ * Return power_supply property
-+ */
-+static int rx51_battery_get_property(struct power_supply *psy,
-+=09=09=09=09=09enum power_supply_property psp,
-+=09=09=09=09=09union power_supply_propval *val)
++static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
 +{
-+=09struct rx51_device_info *di =3D container_of((psy),
-+=09=09=09=09struct rx51_device_info, bat);
++	unsigned long long cp_ver = le64_to_cpu(sbi->ckpt->checkpoint_ver);
++	struct curseg_info *curseg;
++	struct page *page;
++	block_t blkaddr;
++	int err = 0;
 +
-+=09switch (psp) {
-+=09case POWER_SUPPLY_PROP_TECHNOLOGY:
-+=09=09val->intval =3D POWER_SUPPLY_TECHNOLOGY_LION;
-+=09=09break;
-+=09case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
-+=09=09val->intval =3D 4200000;
-+=09=09break;
-+=09case POWER_SUPPLY_PROP_PRESENT:
-+=09=09val->intval =3D rx51_battery_read_voltage(di) ? 1 : 0;
-+=09=09break;
-+=09case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+=09=09val->intval =3D rx51_battery_read_voltage(di);
-+=09=09break;
-+=09case POWER_SUPPLY_PROP_TEMP:
-+=09=09val->intval =3D rx51_battery_read_temperature(di);
-+=09=09break;
-+=09case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
-+=09=09val->intval =3D rx51_battery_read_capacity(di);
-+=09=09break;
-+=09default:
-+=09=09return -EINVAL;
-+=09}
++	/* get node pages in the current segment */
++	curseg = CURSEG_I(sbi, CURSEG_WARM_NODE);
++	blkaddr = START_BLOCK(sbi, curseg->segno) + curseg->next_blkoff;
 +
-+=09if (val->intval =3D=3D INT_MAX || val->intval =3D=3D INT_MIN)
-+=09=09return -EINVAL;
++	/* read node page */
++	page = alloc_page(GFP_F2FS_ZERO);
++	if (IS_ERR(page))
++		return PTR_ERR(page);
++	lock_page(page);
 +
-+=09return 0;
++	while (1) {
++		struct fsync_inode_entry *entry;
++
++		if (f2fs_readpage(sbi, page, blkaddr, READ_SYNC))
++			goto out;
++
++		if (cp_ver != cpver_of_node(page))
++			goto out;
++
++		if (!is_fsync_dnode(page))
++			goto next;
++
++		entry = get_fsync_inode(head, ino_of_node(page));
++		if (entry) {
++			entry->blkaddr = blkaddr;
++			if (IS_INODE(page) && is_dent_dnode(page))
++				set_inode_flag(F2FS_I(entry->inode),
++							FI_INC_LINK);
++		} else {
++			if (IS_INODE(page) && is_dent_dnode(page)) {
++				if (recover_inode_page(sbi, page)) {
++					err = -ENOMEM;
++					goto out;
++				}
++			}
++
++			/* add this fsync inode to the list */
++			entry = kmem_cache_alloc(fsync_entry_slab, GFP_NOFS);
++			if (!entry) {
++				err = -ENOMEM;
++				goto out;
++			}
++
++			INIT_LIST_HEAD(&entry->list);
++			list_add_tail(&entry->list, head);
++
++			entry->inode = f2fs_iget(sbi->sb, ino_of_node(page));
++			if (IS_ERR(entry->inode)) {
++				err = PTR_ERR(entry->inode);
++				goto out;
++			}
++			entry->blkaddr = blkaddr;
++		}
++		if (IS_INODE(page)) {
++			err = recover_inode(entry->inode, page);
++			if (err)
++				goto out;
++		}
++next:
++		/* check next segment */
++		blkaddr = next_blkaddr_of_node(page);
++		ClearPageUptodate(page);
++	}
++out:
++	unlock_page(page);
++	__free_pages(page, 0);
++	return err;
 +}
 +
-+static enum power_supply_property rx51_battery_props[] =3D {
-+=09POWER_SUPPLY_PROP_TECHNOLOGY,
-+=09POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
-+=09POWER_SUPPLY_PROP_PRESENT,
-+=09POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+=09POWER_SUPPLY_PROP_TEMP,
-+=09POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
-+};
-+
-+static int __devinit rx51_battery_probe(struct platform_device *pdev)
++static void destroy_fsync_dnodes(struct f2fs_sb_info *sbi,
++					struct list_head *head)
 +{
-+=09struct rx51_device_info *di;
-+=09int ret;
-+
-+=09di =3D kzalloc(sizeof(*di), GFP_KERNEL);
-+=09if (!di)
-+=09=09return -ENOMEM;
-+
-+=09platform_set_drvdata(pdev, di);
-+
-+=09di->bat.name =3D dev_name(&pdev->dev);
-+=09di->bat.type =3D POWER_SUPPLY_TYPE_BATTERY;
-+=09di->bat.properties =3D rx51_battery_props;
-+=09di->bat.num_properties =3D ARRAY_SIZE(rx51_battery_props);
-+=09di->bat.get_property =3D rx51_battery_get_property;
-+
-+=09ret =3D power_supply_register(di->dev, &di->bat);
-+=09if (ret) {
-+=09=09platform_set_drvdata(pdev, NULL);
-+=09=09kfree(di);
-+=09=09return ret;
-+=09}
-+
-+=09return 0;
++	struct list_head *this;
++	struct fsync_inode_entry *entry;
++	list_for_each(this, head) {
++		entry = list_entry(this, struct fsync_inode_entry, list);
++		iput(entry->inode);
++		list_del(&entry->list);
++		kmem_cache_free(fsync_entry_slab, entry);
++	}
 +}
 +
-+static int __devexit rx51_battery_remove(struct platform_device *pdev)=
++static void check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
++						block_t blkaddr)
++{
++	struct seg_entry *sentry;
++	unsigned int segno = GET_SEGNO(sbi, blkaddr);
++	unsigned short blkoff = GET_SEGOFF_FROM_SEG0(sbi, blkaddr) &
++					(sbi->blocks_per_seg - 1);
++	struct f2fs_summary sum;
++	nid_t ino;
++	void *kaddr;
++	struct inode *inode;
++	struct page *node_page;
++	block_t bidx;
++	int i;
++
++	sentry = get_seg_entry(sbi, segno);
++	if (!f2fs_test_bit(blkoff, sentry->cur_valid_map))
++		return;
++
++	/* Get the previous summary */
++	for (i = CURSEG_WARM_DATA; i <= CURSEG_COLD_DATA; i++) {
++		struct curseg_info *curseg = CURSEG_I(sbi, i);
++		if (curseg->segno == segno) {
++			sum = curseg->sum_blk->entries[blkoff];
++			break;
++		}
++	}
++	if (i > CURSEG_COLD_DATA) {
++		struct page *sum_page = get_sum_page(sbi, segno);
++		struct f2fs_summary_block *sum_node;
++		kaddr = page_address(sum_page);
++		sum_node = (struct f2fs_summary_block *)kaddr;
++		sum = sum_node->entries[blkoff];
++		f2fs_put_page(sum_page, 1);
++	}
++
++	/* Get the node page */
++	node_page = get_node_page(sbi, le32_to_cpu(sum.nid));
++	bidx = start_bidx_of_node(ofs_of_node(node_page)) +
++				le16_to_cpu(sum.ofs_in_node);
++	ino = ino_of_node(node_page);
++	f2fs_put_page(node_page, 1);
++
++	/* Deallocate previous index in the node page */
++	inode = f2fs_iget_nowait(sbi->sb, ino);
++	truncate_hole(inode, bidx, bidx + 1);
++	iput(inode);
++}
++
++static void do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
++					struct page *page, block_t blkaddr)
++{
++	unsigned int start, end;
++	struct dnode_of_data dn;
++	struct f2fs_summary sum;
++	struct node_info ni;
++
++	start = start_bidx_of_node(ofs_of_node(page));
++	if (IS_INODE(page))
++		end = start + ADDRS_PER_INODE;
++	else
++		end = start + ADDRS_PER_BLOCK;
++
++	set_new_dnode(&dn, inode, NULL, NULL, 0);
++	if (get_dnode_of_data(&dn, start, 0))
++		return;
++
++	wait_on_page_writeback(dn.node_page);
++
++	get_node_info(sbi, dn.nid, &ni);
++	BUG_ON(ni.ino != ino_of_node(page));
++	BUG_ON(ofs_of_node(dn.node_page) != ofs_of_node(page));
++
++	for (; start < end; start++) {
++		block_t src, dest;
++
++		src = datablock_addr(dn.node_page, dn.ofs_in_node);
++		dest = datablock_addr(page, dn.ofs_in_node);
++
++		if (src != dest && dest != NEW_ADDR && dest != NULL_ADDR) {
++			if (src == NULL_ADDR) {
++				int err = reserve_new_block(&dn);
++				/* We should not get -ENOSPC */
++				BUG_ON(err);
++			}
++
++			/* Check the previous node page having this index */
++			check_index_in_prev_nodes(sbi, dest);
++
++			set_summary(&sum, dn.nid, dn.ofs_in_node, ni.version);
++
++			/* write dummy data page */
++			recover_data_page(sbi, NULL, &sum, src, dest);
++			update_extent_cache(dest, &dn);
++		}
++		dn.ofs_in_node++;
++	}
++
++	/* write node page in place */
++	set_summary(&sum, dn.nid, 0, 0);
++	if (IS_INODE(dn.node_page))
++		sync_inode_page(&dn);
++
++	copy_node_footer(dn.node_page, page);
++	fill_node_footer(dn.node_page, dn.nid, ni.ino,
++					ofs_of_node(page), false);
++	set_page_dirty(dn.node_page);
++
++	recover_node_page(sbi, dn.node_page, &sum, &ni, blkaddr);
++	f2fs_put_dnode(&dn);
++}
++
++static void recover_data(struct f2fs_sb_info *sbi,
++				struct list_head *head, int type)
++{
++	unsigned long long cp_ver = le64_to_cpu(sbi->ckpt->checkpoint_ver);
++	struct curseg_info *curseg;
++	struct page *page;
++	block_t blkaddr;
++
++	/* get node pages in the current segment */
++	curseg = CURSEG_I(sbi, type);
++	blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
++
++	/* read node page */
++	page = alloc_page(GFP_NOFS | __GFP_ZERO);
++	if (IS_ERR(page))
++		return;
++	lock_page(page);
++
++	while (1) {
++		struct fsync_inode_entry *entry;
++
++		if (f2fs_readpage(sbi, page, blkaddr, READ_SYNC))
++			goto out;
++
++		if (cp_ver != cpver_of_node(page))
++			goto out;
++
++		entry = get_fsync_inode(head, ino_of_node(page));
++		if (!entry)
++			goto next;
++
++		do_recover_data(sbi, entry->inode, page, blkaddr);
++
++		if (entry->blkaddr == blkaddr) {
++			iput(entry->inode);
++			list_del(&entry->list);
++			kmem_cache_free(fsync_entry_slab, entry);
++		}
++next:
++		/* check next segment */
++		blkaddr = next_blkaddr_of_node(page);
++		ClearPageUptodate(page);
++	}
++out:
++	unlock_page(page);
++	__free_pages(page, 0);
++
++	allocate_new_segments(sbi);
++}
++
++void recover_fsync_data(struct f2fs_sb_info *sbi)
++{
++	struct list_head inode_list;
++
++	fsync_entry_slab = f2fs_kmem_cache_create("f2fs_fsync_inode_entry",
++			sizeof(struct fsync_inode_entry), NULL);
++	if (unlikely(!fsync_entry_slab))
++		return;
++
++	INIT_LIST_HEAD(&inode_list);
++
++	/* step #1: find fsynced inode numbers */
++	if (find_fsync_dnodes(sbi, &inode_list))
++		goto out;
++
++	if (list_empty(&inode_list))
++		goto out;
++
++	/* step #2: recover data */
++	sbi->por_doing = 1;
++	recover_data(sbi, &inode_list, CURSEG_WARM_NODE);
++	sbi->por_doing = 0;
++	BUG_ON(!list_empty(&inode_list));
++out:
++	destroy_fsync_dnodes(sbi, &inode_list);
++	kmem_cache_destroy(fsync_entry_slab);
++	write_checkpoint(sbi, false, false);
++}
+-- 
+1.7.9.5
 
-+{
-+=09struct rx51_device_info *di =3D platform_get_drvdata(pdev);
-+
-+=09power_supply_unregister(&di->bat);
-+=09platform_set_drvdata(pdev, NULL);
-+=09kfree(di);
-+
-+=09return 0;
-+}
-+
-+static struct platform_driver rx51_battery_driver =3D {
-+=09.probe =3D rx51_battery_probe,
-+=09.remove =3D __devexit_p(rx51_battery_remove),
-+=09.driver =3D {
-+=09=09.name =3D "rx51-battery",
-+=09=09.owner =3D THIS_MODULE,
-+=09},
-+};
-+
-+module_platform_driver(rx51_battery_driver);
-+
-+MODULE_ALIAS("platform:rx51-battery");
-+MODULE_AUTHOR("Pali Roh=C3=A1r <pali.rohar@gmail.com>");
-+MODULE_DESCRIPTION("Nokia RX-51 battery driver");
-+MODULE_LICENSE("GPL");
---- linux/drivers/power/Kconfig
-+++ linux/drivers/power/Kconfig
-@@ -245,6 +245,12 @@ config BATTERY_INTEL_MID
- =09  Say Y here to enable the battery driver on Intel MID
- =09  platforms.
-=20
-+config BATTERY_RX51
-+=09tristate "Nokia RX-51 battery driver"
-+=09depends on TWL4030_MADC
-+=09help
-+=09  Say Y here to enable support for battery information on Nokia RX-=
-51.
-+
- config CHARGER_ISP1704
- =09tristate "ISP1704 USB Charger Detection"
- =09depends on USB_OTG_UTILS
---- linux/drivers/power/Makefile
-+++ linux/drivers/power/Makefile
-@@ -37,6 +37,7 @@ obj-$(CONFIG_CHARGER_88PM860X)=09+=3D 88pm860x_charge=
-r.o
- obj-$(CONFIG_CHARGER_PCF50633)=09+=3D pcf50633-charger.o
- obj-$(CONFIG_BATTERY_JZ4740)=09+=3D jz4740-battery.o
- obj-$(CONFIG_BATTERY_INTEL_MID)=09+=3D intel_mid_battery.o
-+obj-$(CONFIG_BATTERY_RX51)=09+=3D rx51_battery.o
- obj-$(CONFIG_AB8500_BM)=09=09+=3D ab8500_charger.o ab8500_btemp.o ab85=
-00_fg.o abx500_chargalg.o
- obj-$(CONFIG_CHARGER_ISP1704)=09+=3D isp1704_charger.o
- obj-$(CONFIG_CHARGER_MAX8903)=09+=3D max8903_charger.o
 
---=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
---nextPart1890658.c3JUd2ba8r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEABECAAYFAlCQ8/gACgkQi/DJPQPkQ1LzWgCgo8Le4/DUatM2N21vQbRVDxKI
-VtYAniJkxgiHFEqfVDa1qu8pAnK/JRNK
-=jPci
------END PGP SIGNATURE-----
-
---nextPart1890658.c3JUd2ba8r--
+---
+Jaegeuk Kim
+Samsung
 
