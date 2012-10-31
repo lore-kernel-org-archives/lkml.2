@@ -1,96 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935606Ab2JaN4N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:56:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22005 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932970Ab2JaN4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:56:11 -0400
-Date: Wed, 31 Oct 2012 09:56:05 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] MODSIGN: Add modules_sign make target
-Message-ID: <20121031135605.GJ6627@hansolo.jdub.homelinux.org>
+	id S965475Ab2JaN4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:56:42 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32147 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965101Ab2JaN4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 09:56:40 -0400
+Date: Wed, 31 Oct 2012 09:42:46 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH RFC] mm: simplify frontswap_init()
+Message-ID: <20121031134246.GF27288@phenom.dumpdata.com>
+References: <5090594E.7050401@cesarb.net>
+ <1351638773-3986-1-git-send-email-cesarb@cesarb.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1351638773-3986-1-git-send-email-cesarb@cesarb.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_MODULE_SIG is set, and 'make modules_sign' is called then this
-patch will cause the modules to get a signature appended.  The make target
-is intended to be run after 'make modules_install', and will modify the
-modules in-place in the installed location.  It can be used to produce
-signed modules after they have been processed by distribution build
-scripts.
+On Tue, Oct 30, 2012 at 09:12:53PM -0200, Cesar Eduardo Barros wrote:
+> The function frontswap_init() uses the passed parameter only to check
+> for the presence of the frontswap_map. It is also passed down to
+> frontswap_ops.init(), but all implementations of it in the kernel ignore
+> the parameter.
+> 
+> Do the check for frontswap_map in the caller instead and remove the
+> parameter from frontswap_init() and frontswap_ops.init().
+> 
+> Also, __frontswap_init() was exported, but its only caller (via an
+> inline function) is mm/swapfile.c, which cannot be built as a module.
+> Remove the unnecessary export.
+> 
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+> ---
+> 
+> Not even compile tested, just a quick patch to show what I was thinking
+> of, but feel free to apply if you think it is good.
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
----
- v2: Not word-wrapped this time (hopefully)
-
- Makefile                 |  6 ++++++
- scripts/Makefile.modsign | 32 ++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+)
- create mode 100644 scripts/Makefile.modsign
-
-diff --git a/Makefile b/Makefile
-index 3d10a87..3c3ece7 100644
---- a/Makefile
-+++ b/Makefile
-@@ -985,6 +985,12 @@ _modinst_post: _modinst_
- 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.fwinst obj=firmware __fw_modinst
- 	$(call cmd,depmod)
- 
-+ifeq ($(CONFIG_MODULE_SIG), y)
-+PHONY += modules_sign
-+modules_sign:
-+	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modsign
-+endif
-+
- else # CONFIG_MODULES
- 
- # Modules not configured
-diff --git a/scripts/Makefile.modsign b/scripts/Makefile.modsign
-new file mode 100644
-index 0000000..670d5dc
---- /dev/null
-+++ b/scripts/Makefile.modsign
-@@ -0,0 +1,32 @@
-+# ==========================================================================
-+# Signing modules
-+# ==========================================================================
-+
-+PHONY := __modsign
-+__modsign:
-+
-+include scripts/Kbuild.include
-+
-+__modules := $(sort $(shell grep -h '\.ko' /dev/null $(wildcard $(MODVERDIR)/*.mod)))
-+modules := $(patsubst %.o,%.ko,$(wildcard $(__modules:.ko=.o)))
-+
-+PHONY += $(modules)
-+__modsign: $(modules)
-+	@:
-+
-+quiet_cmd_sign_ko = SIGN [M] $(2)/$(notdir $@)
-+        cmd_sign_ko = $(mod_sign_cmd) $(2)/$(notdir $@)
-+
-+# Modules built outside the kernel source tree go into extra by default
-+INSTALL_MOD_DIR ?= extra
-+ext-mod-dir = $(INSTALL_MOD_DIR)$(subst $(patsubst %/,%,$(KBUILD_EXTMOD)),,$(@D))
-+
-+modinst_dir = $(if $(KBUILD_EXTMOD),$(ext-mod-dir),kernel/$(@D))
-+
-+$(modules):
-+	$(call cmd,sign_ko,$(MODLIB)/$(modinst_dir))
-+
-+# Declare the contents of the .PHONY variable as phony.  We keep that
-+# # information in a variable se we can use it in if_changed and friends.
-+
-+.PHONY: $(PHONY)
--- 
-1.7.12.1
-
+That looks good.
+> 
+> I might write another patch to move it outside the lock later, but I
+> would have to read the frontswap code more carefully first.
+> 
+>  drivers/staging/ramster/zcache-main.c |  2 +-
+>  drivers/staging/zcache/zcache-main.c  |  2 +-
+>  drivers/xen/tmem.c                    |  2 +-
+>  include/linux/frontswap.h             |  8 ++++----
+>  mm/frontswap.c                        | 10 ++--------
+>  mm/swapfile.c                         |  3 ++-
+>  6 files changed, 11 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
+> index a09dd5c..b3f01c9 100644
+> --- a/drivers/staging/ramster/zcache-main.c
+> +++ b/drivers/staging/ramster/zcache-main.c
+> @@ -1610,7 +1610,7 @@ static void zcache_frontswap_flush_area(unsigned type)
+>  	}
+>  }
+>  
+> -static void zcache_frontswap_init(unsigned ignored)
+> +static void zcache_frontswap_init(void)
+>  {
+>  	/* a single tmem poolid is used for all frontswap "types" (swapfiles) */
+>  	if (zcache_frontswap_poolid < 0)
+> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+> index 52b43b7..cb67635 100644
+> --- a/drivers/staging/zcache/zcache-main.c
+> +++ b/drivers/staging/zcache/zcache-main.c
+> @@ -1903,7 +1903,7 @@ static void zcache_frontswap_flush_area(unsigned type)
+>  	}
+>  }
+>  
+> -static void zcache_frontswap_init(unsigned ignored)
+> +static void zcache_frontswap_init(void)
+>  {
+>  	/* a single tmem poolid is used for all frontswap "types" (swapfiles) */
+>  	if (zcache_frontswap_poolid < 0)
+> diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
+> index 144564e..7156ff0 100644
+> --- a/drivers/xen/tmem.c
+> +++ b/drivers/xen/tmem.c
+> @@ -343,7 +343,7 @@ static void tmem_frontswap_flush_area(unsigned type)
+>  		(void)xen_tmem_flush_object(pool, oswiz(type, ind));
+>  }
+>  
+> -static void tmem_frontswap_init(unsigned ignored)
+> +static void tmem_frontswap_init(void)
+>  {
+>  	struct tmem_pool_uuid private = TMEM_POOL_PRIVATE_UUID;
+>  
+> diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
+> index 3044254..6374c80 100644
+> --- a/include/linux/frontswap.h
+> +++ b/include/linux/frontswap.h
+> @@ -6,7 +6,7 @@
+>  #include <linux/bitops.h>
+>  
+>  struct frontswap_ops {
+> -	void (*init)(unsigned);
+> +	void (*init)(void);
+>  	int (*store)(unsigned, pgoff_t, struct page *);
+>  	int (*load)(unsigned, pgoff_t, struct page *);
+>  	void (*invalidate_page)(unsigned, pgoff_t);
+> @@ -22,7 +22,7 @@ extern void frontswap_writethrough(bool);
+>  #define FRONTSWAP_HAS_EXCLUSIVE_GETS
+>  extern void frontswap_tmem_exclusive_gets(bool);
+>  
+> -extern void __frontswap_init(unsigned type);
+> +extern void __frontswap_init(void);
+>  extern int __frontswap_store(struct page *page);
+>  extern int __frontswap_load(struct page *page);
+>  extern void __frontswap_invalidate_page(unsigned, pgoff_t);
+> @@ -120,10 +120,10 @@ static inline void frontswap_invalidate_area(unsigned type)
+>  		__frontswap_invalidate_area(type);
+>  }
+>  
+> -static inline void frontswap_init(unsigned type)
+> +static inline void frontswap_init(void)
+>  {
+>  	if (frontswap_enabled)
+> -		__frontswap_init(type);
+> +		__frontswap_init();
+>  }
+>  
+>  #endif /* _LINUX_FRONTSWAP_H */
+> diff --git a/mm/frontswap.c b/mm/frontswap.c
+> index 2890e67..d13661b 100644
+> --- a/mm/frontswap.c
+> +++ b/mm/frontswap.c
+> @@ -115,16 +115,10 @@ EXPORT_SYMBOL(frontswap_tmem_exclusive_gets);
+>  /*
+>   * Called when a swap device is swapon'd.
+>   */
+> -void __frontswap_init(unsigned type)
+> +void __frontswap_init(void)
+>  {
+> -	struct swap_info_struct *sis = swap_info[type];
+> -
+> -	BUG_ON(sis == NULL);
+> -	if (sis->frontswap_map == NULL)
+> -		return;
+> -	frontswap_ops.init(type);
+> +	frontswap_ops.init();
+>  }
+> -EXPORT_SYMBOL(__frontswap_init);
+>  
+>  static inline void __frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
+>  {
+> diff --git a/mm/swapfile.c b/mm/swapfile.c
+> index 088daf4..28c26bd 100644
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -1479,7 +1479,8 @@ static void enable_swap_info(struct swap_info_struct *p, int prio,
+>  {
+>  	spin_lock(&swap_lock);
+>  	_enable_swap_info(p, prio, swap_map, frontswap_map);
+> -	frontswap_init(p->type);
+> +	if (frontswap_map)
+> +		frontswap_init();
+>  	spin_unlock(&swap_lock);
+>  }
+>  
+> -- 
+> 1.7.11.7
