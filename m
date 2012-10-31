@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422832Ab2JaNVt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:21:49 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:51018 "EHLO mx2.parallels.com"
+	id S1422840Ab2JaNWV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:22:21 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34590 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935543Ab2JaNVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:21:45 -0400
-Message-ID: <509125D9.8070100@parallels.com>
-Date: Wed, 31 Oct 2012 17:21:29 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1422806Ab2JaNWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 09:22:20 -0400
+Message-ID: <509125FC.1090609@ti.com>
+Date: Wed, 31 Oct 2012 09:22:04 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <lizefan@huawei.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <bsingharora@gmail.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <cgroups@vger.kernel.org>, <containers@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/8] cgroup: kill cgroup_subsys->__DEPRECATED_clear_css_refs
-References: <1351657365-25055-1-git-send-email-tj@kernel.org> <1351657365-25055-2-git-send-email-tj@kernel.org>
-In-Reply-To: <1351657365-25055-2-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
+        <viresh.linux@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <nsekhar@ti.com>, <khilman@ti.com>, <linux@arm.linux.org.uk>,
+        <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 04/11] clk: davinci - add pll divider clock driver
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-5-git-send-email-m-karicheri2@ti.com> <CACRpkdY3ji_twCqej6Yf8grR7oovf3jeGrbQMzybk5CK5f2Y9A@mail.gmail.com>
+In-Reply-To: <CACRpkdY3ji_twCqej6Yf8grR7oovf3jeGrbQMzybk5CK5f2Y9A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/28/2012 03:26 PM, Linus Walleij wrote:
+> On Thu, Oct 25, 2012 at 6:11 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
+>
+>> pll dividers are present in the pll controller of DaVinci and Other
+>> SoCs that re-uses the same hardware IP. This has a enable bit for
+>> bypass the divider or enable the driver. This is a sub class of the
+>> clk-divider clock checks the enable bit to calculare the rate and
+>> invoke the recalculate() function of the clk-divider if enabled.
+>>
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> Looking good,
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> Yours,
+> Linus Walleij
+>
+Linus,
 
->  	}
->  	prepare_to_wait(&cgroup_rmdir_waitq, &wait, TASK_INTERRUPTIBLE);
-> -	if (!cgroup_clear_css_refs(cgrp)) {
-> -		mutex_unlock(&cgroup_mutex);
-> -		/*
-> -		 * Because someone may call cgroup_wakeup_rmdir_waiter() before
-> -		 * prepare_to_wait(), we need to check this flag.
-> -		 */
-> -		if (test_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags))
-> -			schedule();
-> -		finish_wait(&cgroup_rmdir_waitq, &wait);
-> -		clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
-> -		if (signal_pending(current))
-> -			return -EINTR;
-> -		goto again;
-> +
-> +	local_irq_disable();
-> +
-> +	/* block new css_tryget() by deactivating refcnt */
-> +	for_each_subsys(cgrp->root, ss) {
-> +		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
-> +
-> +		WARN_ON(atomic_read(&css->refcnt) < 0);
-> +		atomic_add(CSS_DEACT_BIAS, &css->refcnt);
->  	}
-> -	/* NO css_tryget() can success after here. */
-> +
-> +	/*
-> +	 * Set REMOVED.  All in-progress css_tryget() will be released.
-> +	 * Put all the base refs.  Each css holds an extra reference to the
-> +	 * cgroup's dentry and cgroup removal proceeds regardless of css
-> +	 * refs.  On the last put of each css, whenever that may be, the
-> +	 * extra dentry ref is put so that dentry destruction happens only
-> +	 * after all css's are released.
-> +	 */
-> +	for_each_subsys(cgrp->root, ss) {
-> +		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
-> +
-> +		set_bit(CSS_REMOVED, &css->flags);
-> +		css_put(css);
-> +	}
-> +
-> +	local_irq_enable();
-> +
->  	finish_wait(&cgroup_rmdir_waitq, &wait);
+Thanks. I will add your Acked-by in the next version.
 
-It seems to me that the main reason for doing this in two passes was to
-derive a global "failed" state on the first pass. Now that we can't
-fail, why can't you just loop through the subsystems just once ?
-
+Murali
