@@ -1,982 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934698Ab2JaJsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:48:47 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51332 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab2JaJsm (ORCPT
+	id S935279Ab2JaJsz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:48:55 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34252 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934623Ab2JaJsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:48:42 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-1f-5090f3f87d88
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
-        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-In-reply-to: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-Subject: [PATCH 14/17] f2fs: add garbage collection functions
-Date: Wed, 31 Oct 2012 18:48:40 +0900
-Message-id: <004b01cdb74c$e7fe90b0$b7fbb210$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAAcIMw
-Content-language: en-us
-x-cr-hashedpuzzle: GbkW V1/B fICq u5dM 1LAH 7qbJ 7zNE 9khF ABPn3A== ACBZKQ==
- AFBG8w== AF4nPw== AHpiAQ== AIWNQQ== AJkBKw==
- ALOCXQ==;9;YQByAG4AZABAAGEAcgBuAGQAYgAuAGQAZQA7AGMAaAB1AHIALgBsAGUAZQBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGMAbQAyADIANAAuAGwAZQBlAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAZwByAGUAZwBrAGgAQABsAGkAbgB1AHgAZgBvAHUAbgBkAGEAdABpAG8AbgAuAG8AcgBnADsAagBvAG8AeQBvAHUAbgBnAC4AaAB3AGEAbgBnAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AZgBzAGQAZQB2AGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAeQB0AHMAbwBAAG0AaQB0AC4AZQBkAHUAOwB2AGkAcgBvAEAAegBlAG4AaQB2AC4AbABpAG4AdQB4AC4AbwByAGcALgB1AGsA;Sosha1_v1;7;{C5E712B3-9E66-4096-9262-3A82033B3F50};agBhAGUAZwBlAHUAawAuAGsAaQBtAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Wed,
- 31 Oct 2012 09:48:22
- GMT;WwBQAEEAVABDAEgAIAAxADQALwAxADcAXQAgAGYAMgBmAHMAOgAgAGEAZABkACAAZwBhAHIAYgBhAGcAZQAgAGMAbwBsAGwAZQBjAHQAaQBvAG4AIABmAHUAbgBjAHQAaQBvAG4AcwA=
-x-cr-puzzleid: {C5E712B3-9E66-4096-9262-3A82033B3F50}
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t8zI90fnycEGCzfq2mxZ+9JFovLu+aw
-	OTB5fN4kF8AYxWWTkpqTWZZapG+XwJVxa+dploKrhxgrjrS3MTUwfp7F2MXIySEhYCKxsfMW
-	K4QtJnHh3nq2LkYuDiGBZYwSfx5vY4Ip2vmqhR0iMZ1R4lrfNyYI5x+jxMQbLUAtHBxsAtoS
-	m/cbgMRFBB4ySux/tpQdpFtIwFbi6f1r7CA1nAJ2EpdPRICEhYHCe1+8YQaxWQRUJTo3vAez
-	eYHi7x/PZYWwBSV+TL7HAmIzC6hLTJq3iBnClpfYvOYtM8hICaD4o7+6IGERASOJ7y07mCBK
-	xCUmPXgIdrOEwBV2ibb1l9kgnjGV2D//FyvEXgGJb5MPsUDMkZXYdIAZon4fu8TXLw1Qz0tK
-	HFxxg2UCo+QsJCfNQnLSLCQnzUKyewEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2MkAiU
-	3sG4qsHiEKMAB6MSD6/Bv/4AIdbEsuLK3EOMEhzMSiK8yZ8mBAjxpiRWVqUW5ccXleakFh9i
-	9AG6fCKzlGhyPjA55JXEGxobm5iZmJqYW5qam+IQVhLnbfZICRASSE8sSc1OTS1ILYIZx8TB
-	KdXAyLWz8u2CRU4vZvM6LQxztT4oc5l5w5LTAgum/7um6TzVNJh/7oL6zT0PXp8Q9nSM3b7Q
-	s+2W2v/N09oZQl9uLmactaZsZfWOpv/7V7WXKeTKiL+9LPr9l4rauck5UzSWnN40Z8ZczQr9
-	PMPdxgknZ//6OLnPxfQo6/+TM7wcbrr9iujYZeRxjkWJpTgj0VCLuag4EQC+MKhC7QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkleLIzCtJLcpLzFFi42I5/e+xoO6PzxMCDLZ8V7DYs/cki8XlXXPY
-	HJg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
-	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMuLXzNEvB1UOM
-	FUfa25gaGD/PYuxi5OSQEDCR2PmqhR3CFpO4cG89WxcjF4eQwHRGiWt935ggnH+MEhNvtABl
-	ODjYBLQlNu83AImLCDxklNj/bClYt5CArcTT+9fYQWo4BewkLp+IAAkLA4X3vnjDDGKzCKhK
-	dG54D2bzAsXfP57LCmELSvyYfI8FxGYWUJeYNG8RM4QtL7F5zVtmkJESQPFHf3VBwiICRhLf
-	W3YwQZSIS0x68JAd5BwJgSvsEm3rL7NBPGMqsX/+L9YJjMKzkKyYhWTFLCQrZiGZtYCRZRWj
-	aGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcHw/k97BuKrB4hCjAAejEg+vwb/+ACHWxLLiytxD
-	jBIczEoivMmfJgQI8aYkVlalFuXHF5XmpBYfYvQBhsBEZinR5Hxg6skriTc0NjEzsjQyszAy
-	MTfHIawkztvskRIgJJCeWJKanZpakFoEM46Jg1OqgXH1CYWTzvJRLK9OXLjO4DX3Tf996fmt
-	CjdafRbxVLDNe7Ph/DaGpB1Ljj/UKDl5aNFprsVOTl8NbCaKs08qfv1hk+NpofWBKZLXEy1+
-	9DQ/fVRxc82jvhNb53Jrqn0ob9K72n/FjfGtkHG3/47G8++f2DMc53BRzu3+UWdb/VC4qcb9
-	0KU4z/9KLMUZiYZazEXFiQBj5W+WHAMAAA==
-X-CFilter-Loop: Reflected
+	Wed, 31 Oct 2012 05:48:47 -0400
+From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        Joerg Reisenweber <joerg@openmoko.org>,
+        Ivaylo Dimitrov <freemangordon@abv.bg>
+Subject: [PATCH v2] New Nokia RX-51 power supply battery driver
+Date: Wed, 31 Oct 2012 10:48:40 +0100
+Message-ID: <2562836.SjVVyiPAk1@pali>
+User-Agent: KMail/4.9.2 (Linux/3.5.0-18-generic; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121030223922.GA29061@lizard>
+References: <19040462.WFXWijAIDd@pali> <20121030223922.GA29061@lizard>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart1890658.c3JUd2ba8r"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: quoted-printable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds on-demand and background cleaning functions.
 
-- The basic background cleaning policy is trying to do cleaning jobs as much as
-  possible whenever the system is idle. Once the background cleaning is done,
-  the cleaner sleeps an amount of time not to interfere with VFS calls. The time
-  is dynamically adjusted according to the status of whole segments, which is
-  decreased when the following conditions are satisfied.
+--nextPart1890658.c3JUd2ba8r
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
 
-  . GC is not conducted currently, and
-  . IO subsystem is idle by checking the number of requets in bdev's request
-     list, and
-  . There are enough dirty segments.
+Hello, I fixed style issues and added it to Makefile and Kconfig.
 
-  Otherwise, the time is increased incrementally until to the maximum time.
-  Note that, min and max times are 10 secs and 30 secs by default.
+power_supply: Add Nokia RX-51 battery driver
 
-- F2FS adopts a default victim selection policy where background cleaning uses
-  a cost-benefit algorithm, while on-demand cleaning uses a greedy algorithm.
+This driver exporting battery design capacity, temperature and voltage
+for battery in Nokia RX-51. This driver is needed for open source
+battery management on Nokia RX-51 (N900).
 
-- The method of moving data during the cleaning is slightly different between
-  background and on-demand cleaning schemes. In the case of background cleaning,
-  F2FS loads the data, and marks them as dirty. Then, F2FS expects that the data
-  will be moved by flusher or VM. In the case of on-demand cleaning, F2FS should
-  move the data right away.
+Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
 
-- In order to identify valid blocks in a victim segment, F2FS scans the bitmap
-  of the segment managed as an SIT entry.
-
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/gc.c |  742 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/f2fs/gc.h |  117 +++++++++
- 2 files changed, 859 insertions(+)
- create mode 100644 fs/f2fs/gc.c
- create mode 100644 fs/f2fs/gc.h
-
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-new file mode 100644
-index 0000000..46774ce
 --- /dev/null
-+++ b/fs/f2fs/gc.c
-@@ -0,0 +1,742 @@
-+/**
-+ * fs/f2fs/gc.c
++++ linux/drivers/power/rx51_battery.c
+@@ -0,0 +1,251 @@
++/*
++ *  rx51_battery.c - Nokia RX-51 battery driver
++ *  Copyright (C) 2012  Pali Roh=C3=A1r <pali.rohar@gmail.com>
 + *
-+ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
-+ *             http://www.samsung.com/
++ *  This program is free software; you can redistribute it and/or modi=
+fy
++ *  it under the terms of the GNU General Public License as published =
+by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License =
+along
++ *  with this program; if not, write to the Free Software Foundation, =
+Inc.,
++ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 + */
-+#include <linux/fs.h>
++
 +#include <linux/module.h>
-+#include <linux/backing-dev.h>
-+#include <linux/proc_fs.h>
-+#include <linux/init.h>
-+#include <linux/f2fs_fs.h>
-+#include <linux/kthread.h>
-+#include <linux/delay.h>
-+#include <linux/freezer.h>
-+#include <linux/blkdev.h>
++#include <linux/param.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++#include <linux/slab.h>
++#include <linux/i2c/twl4030-madc.h>
 +
-+#include "f2fs.h"
-+#include "node.h"
-+#include "segment.h"
-+#include "gc.h"
-+
-+static struct kmem_cache *winode_slab;
-+
-+static int gc_thread_func(void *data)
-+{
-+	struct f2fs_sb_info *sbi = data;
-+	wait_queue_head_t *wq = &sbi->gc_thread->gc_wait_queue_head;
-+	long wait_ms;
-+
-+	wait_ms = GC_THREAD_MIN_SLEEP_TIME;
-+
-+	do {
-+		if (try_to_freeze())
-+			continue;
-+		else
-+			wait_event_interruptible_timeout(*wq,
-+						kthread_should_stop(),
-+						msecs_to_jiffies(wait_ms));
-+		if (kthread_should_stop())
-+			break;
-+
-+		f2fs_balance_fs(sbi);
-+
-+		if (!test_opt(sbi, BG_GC))
-+			continue;
-+
-+		/*
-+		 * [GC triggering condition]
-+		 * 0. GC is not conducted currently.
-+		 * 1. There are enough dirty segments.
-+		 * 2. IO subsystem is idle by checking the # of writeback pages.
-+		 * 3. IO subsystem is idle by checking the # of requests in
-+		 *    bdev's request list.
-+		 *
-+		 * Note) We have to avoid triggering GCs too much frequently.
-+		 * Because it is possible that some segments can be
-+		 * invalidated soon after by user update or deletion.
-+		 * So, I'd like to wait some time to collect dirty segments.
-+		 */
-+		if (!mutex_trylock(&sbi->gc_mutex))
-+			continue;
-+
-+		if (!is_idle(sbi)) {
-+			wait_ms = increase_sleep_time(wait_ms);
-+			mutex_unlock(&sbi->gc_mutex);
-+			continue;
-+		}
-+
-+		if (has_enough_invalid_blocks(sbi))
-+			wait_ms = decrease_sleep_time(wait_ms);
-+		else
-+			wait_ms = increase_sleep_time(wait_ms);
-+
-+		sbi->bg_gc++;
-+
-+		if (f2fs_gc(sbi, 1) == GC_NONE)
-+			wait_ms = GC_THREAD_NOGC_SLEEP_TIME;
-+		else if (wait_ms == GC_THREAD_NOGC_SLEEP_TIME)
-+			wait_ms = GC_THREAD_MAX_SLEEP_TIME;
-+
-+	} while (!kthread_should_stop());
-+	return 0;
-+}
-+
-+int start_gc_thread(struct f2fs_sb_info *sbi)
-+{
-+	struct f2fs_gc_kthread *gc_th = NULL;
-+
-+	gc_th = kmalloc(sizeof(struct f2fs_gc_kthread), GFP_KERNEL);
-+	if (!gc_th)
-+		return -ENOMEM;
-+
-+	sbi->gc_thread = gc_th;
-+	init_waitqueue_head(&sbi->gc_thread->gc_wait_queue_head);
-+	sbi->gc_thread->f2fs_gc_task = kthread_run(gc_thread_func, sbi,
-+				GC_THREAD_NAME);
-+	if (IS_ERR(gc_th->f2fs_gc_task)) {
-+		kfree(gc_th);
-+		return -ENOMEM;
-+	}
-+	return 0;
-+}
-+
-+void stop_gc_thread(struct f2fs_sb_info *sbi)
-+{
-+	struct f2fs_gc_kthread *gc_th = sbi->gc_thread;
-+	if (!gc_th)
-+		return;
-+	kthread_stop(gc_th->f2fs_gc_task);
-+	kfree(gc_th);
-+	sbi->gc_thread = NULL;
-+}
-+
-+static int select_gc_type(int gc_type)
-+{
-+	return (gc_type == BG_GC) ? GC_CB : GC_GREEDY;
-+}
-+
-+static void select_policy(struct f2fs_sb_info *sbi, int gc_type,
-+			int type, struct victim_sel_policy *p)
-+{
-+	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
-+
-+	if (p->alloc_mode) {
-+		p->gc_mode = GC_GREEDY;
-+		p->dirty_segmap = dirty_i->dirty_segmap[type];
-+		p->ofs_unit = 1;
-+	} else {
-+		p->gc_mode = select_gc_type(gc_type);
-+		p->dirty_segmap = dirty_i->dirty_segmap[DIRTY];
-+		p->ofs_unit = sbi->segs_per_sec;
-+	}
-+	p->offset = sbi->last_victim[p->gc_mode];
-+}
-+
-+static unsigned int get_max_cost(struct f2fs_sb_info *sbi,
-+				struct victim_sel_policy *p)
-+{
-+	if (p->gc_mode == GC_GREEDY)
-+		return (1 << sbi->log_blocks_per_seg) * p->ofs_unit;
-+	else if (p->gc_mode == GC_CB)
-+		return UINT_MAX;
-+	else /* No other gc_mode */
-+		return 0;
-+}
-+
-+static unsigned int check_bg_victims(struct f2fs_sb_info *sbi)
-+{
-+	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
-+	unsigned int segno;
-+
-+	/*
-+	 * If the gc_type is FG_GC, we can select victim segments
-+	 * selected by background GC before.
-+	 * Those segments guarantee they have small valid blocks.
-+	 */
-+	segno = find_next_bit(dirty_i->victim_segmap[BG_GC],
-+						TOTAL_SEGS(sbi), 0);
-+	if (segno < TOTAL_SEGS(sbi)) {
-+		clear_bit(segno, dirty_i->victim_segmap[BG_GC]);
-+		return segno;
-+	}
-+	return NULL_SEGNO;
-+}
-+
-+static unsigned int get_cb_cost(struct f2fs_sb_info *sbi, unsigned int segno)
-+{
-+	struct sit_info *sit_i = SIT_I(sbi);
-+	unsigned int secno = GET_SECNO(sbi, segno);
-+	unsigned int start = secno * sbi->segs_per_sec;
-+	unsigned long long mtime = 0;
-+	unsigned int vblocks;
-+	unsigned char age = 0;
-+	unsigned char u;
-+	unsigned int i;
-+
-+	for (i = 0; i < sbi->segs_per_sec; i++)
-+		mtime += get_seg_entry(sbi, start + i)->mtime;
-+	vblocks = get_valid_blocks(sbi, segno, sbi->segs_per_sec);
-+
-+	mtime = div_u64(mtime, sbi->segs_per_sec);
-+	vblocks = div_u64(vblocks, sbi->segs_per_sec);
-+
-+	u = (vblocks * 100) >> sbi->log_blocks_per_seg;
-+
-+	/* Handle if the system time is changed by user */
-+	if (mtime < sit_i->min_mtime)
-+		sit_i->min_mtime = mtime;
-+	if (mtime > sit_i->max_mtime)
-+		sit_i->max_mtime = mtime;
-+	if (sit_i->max_mtime != sit_i->min_mtime)
-+		age = 100 - div64_u64(100 * (mtime - sit_i->min_mtime),
-+				sit_i->max_mtime - sit_i->min_mtime);
-+
-+	return UINT_MAX - ((100 * (100 - u) * age) / (100 + u));
-+}
-+
-+static unsigned int get_gc_cost(struct f2fs_sb_info *sbi, unsigned int segno,
-+					struct victim_sel_policy *p)
-+{
-+	if (p->alloc_mode == SSR)
-+		return get_seg_entry(sbi, segno)->ckpt_valid_blocks;
-+
-+	/* alloc_mode == LFS */
-+	if (p->gc_mode == GC_GREEDY)
-+		return get_valid_blocks(sbi, segno, sbi->segs_per_sec);
-+	else
-+		return get_cb_cost(sbi, segno);
-+}
-+
-+/**
-+ * This function is called from two pathes.
-+ * One is garbage collection and the other is SSR segment selection.
-+ * When it is called during GC, it just gets a victim segment
-+ * and it does not remove it from dirty seglist.
-+ * When it is called from SSR segment selection, it finds a segment
-+ * which has minimum valid blocks and removes it from dirty seglist.
-+ */
-+static int get_victim_by_default(struct f2fs_sb_info *sbi,
-+		unsigned int *result, int gc_type, int type, char alloc_mode)
-+{
-+	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
-+	struct victim_sel_policy p;
-+	unsigned int segno;
-+	int nsearched = 0;
-+
-+	p.alloc_mode = alloc_mode;
-+	select_policy(sbi, gc_type, type, &p);
-+
-+	p.min_segno = NULL_SEGNO;
-+	p.min_cost = get_max_cost(sbi, &p);
-+
-+	mutex_lock(&dirty_i->seglist_lock);
-+
-+	if (p.alloc_mode == LFS && gc_type == FG_GC) {
-+		p.min_segno = check_bg_victims(sbi);
-+		if (p.min_segno != NULL_SEGNO)
-+			goto got_it;
-+	}
-+
-+	while (1) {
-+		unsigned long cost;
-+
-+		segno = find_next_bit(p.dirty_segmap,
-+						TOTAL_SEGS(sbi), p.offset);
-+		if (segno >= TOTAL_SEGS(sbi)) {
-+			if (sbi->last_victim[p.gc_mode]) {
-+				sbi->last_victim[p.gc_mode] = 0;
-+				p.offset = 0;
-+				continue;
-+			}
-+			break;
-+		}
-+		p.offset = ((segno / p.ofs_unit) * p.ofs_unit) + p.ofs_unit;
-+
-+		if (test_bit(segno, dirty_i->victim_segmap[FG_GC]))
-+			continue;
-+		if (gc_type == BG_GC &&
-+				test_bit(segno, dirty_i->victim_segmap[BG_GC]))
-+			continue;
-+		if (IS_CURSEC(sbi, GET_SECNO(sbi, segno)))
-+			continue;
-+
-+		cost = get_gc_cost(sbi, segno, &p);
-+
-+		if (p.min_cost > cost) {
-+			p.min_segno = segno;
-+			p.min_cost = cost;
-+		}
-+
-+		if (cost == get_max_cost(sbi, &p))
-+			continue;
-+
-+		if (nsearched++ >= MAX_VICTIM_SEARCH) {
-+			sbi->last_victim[p.gc_mode] = segno;
-+			break;
-+		}
-+	}
-+got_it:
-+	if (p.min_segno != NULL_SEGNO) {
-+		*result = (p.min_segno / p.ofs_unit) * p.ofs_unit;
-+		if (p.alloc_mode == LFS) {
-+			int i;
-+			for (i = 0; i < p.ofs_unit; i++)
-+				set_bit(*result + i,
-+					dirty_i->victim_segmap[gc_type]);
-+		}
-+	}
-+	mutex_unlock(&dirty_i->seglist_lock);
-+
-+	return (p.min_segno == NULL_SEGNO) ? 0 : 1;
-+}
-+
-+static const struct victim_selection default_v_ops = {
-+	.get_victim = get_victim_by_default,
++struct rx51_device_info {
++=09struct device *dev;
++=09struct power_supply bat;
 +};
 +
-+static struct inode *find_gc_inode(nid_t ino, struct list_head *ilist)
-+{
-+	struct list_head *this;
-+	struct inode_entry *ie;
-+
-+	list_for_each(this, ilist) {
-+		ie = list_entry(this, struct inode_entry, list);
-+		if (ie->inode->i_ino == ino)
-+			return ie->inode;
-+	}
-+	return NULL;
-+}
-+
-+static void add_gc_inode(struct inode *inode, struct list_head *ilist)
-+{
-+	struct list_head *this;
-+	struct inode_entry *new_ie, *ie;
-+
-+	list_for_each(this, ilist) {
-+		ie = list_entry(this, struct inode_entry, list);
-+		if (ie->inode == inode) {
-+			iput(inode);
-+			return;
-+		}
-+	}
-+repeat:
-+	new_ie = kmem_cache_alloc(winode_slab, GFP_NOFS);
-+	if (!new_ie) {
-+		cond_resched();
-+		goto repeat;
-+	}
-+	new_ie->inode = inode;
-+	list_add_tail(&new_ie->list, ilist);
-+}
-+
-+static void put_gc_inode(struct list_head *ilist)
-+{
-+	struct inode_entry *ie, *next_ie;
-+	list_for_each_entry_safe(ie, next_ie, ilist, list) {
-+		iput(ie->inode);
-+		list_del(&ie->list);
-+		kmem_cache_free(winode_slab, ie);
-+	}
-+}
-+
-+static int check_valid_map(struct f2fs_sb_info *sbi,
-+				unsigned int segno, int offset)
-+{
-+	struct sit_info *sit_i = SIT_I(sbi);
-+	struct seg_entry *sentry;
-+	int ret;
-+
-+	mutex_lock(&sit_i->sentry_lock);
-+	sentry = get_seg_entry(sbi, segno);
-+	ret = f2fs_test_bit(offset, sentry->cur_valid_map);
-+	mutex_unlock(&sit_i->sentry_lock);
-+	return ret ? GC_OK : GC_NEXT;
-+}
-+
-+/**
-+ * This function compares node address got in summary with that in NAT.
-+ * On validity, copy that node with cold status, otherwise (invalid node)
-+ * ignore that.
++/*
++ * Read ADCIN channel value, code copied from maemo kernel
 + */
-+static int gc_node_segment(struct f2fs_sb_info *sbi,
-+		struct f2fs_summary *sum, unsigned int segno, int gc_type)
++static int rx51_battery_read_adc(int channel)
 +{
-+	bool initial = true;
-+	struct f2fs_summary *entry;
-+	int off;
++=09struct twl4030_madc_request req;
 +
-+next_step:
-+	entry = sum;
-+	for (off = 0; off < sbi->blocks_per_seg; off++, entry++) {
-+		nid_t nid = le32_to_cpu(entry->nid);
-+		struct page *node_page;
-+		int err;
++=09req.channels =3D 1 << channel;
++=09req.do_avg =3D 1;
++=09req.method =3D TWL4030_MADC_SW1;
++=09req.func_cb =3D NULL;
++=09req.type =3D TWL4030_MADC_WAIT;
 +
-+		/*
-+		 * It makes sure that free segments are able to write
-+		 * all the dirty node pages before CP after this CP.
-+		 * So let's check the space of dirty node pages.
-+		 */
-+		if (should_do_checkpoint(sbi)) {
-+			mutex_lock(&sbi->cp_mutex);
-+			block_operations(sbi);
-+			return GC_BLOCKED;
-+		}
++=09if (twl4030_madc_conversion(&req) <=3D 0)
++=09=09return -ENODATA;
 +
-+		err = check_valid_map(sbi, segno, off);
-+		if (err == GC_ERROR)
-+			return err;
-+		else if (err == GC_NEXT)
-+			continue;
-+
-+		if (initial) {
-+			ra_node_page(sbi, nid);
-+			continue;
-+		}
-+		node_page = get_node_page(sbi, nid);
-+		if (IS_ERR(node_page))
-+			continue;
-+
-+		/* set page dirty and write it */
-+		if (!PageWriteback(node_page))
-+			set_page_dirty(node_page);
-+		f2fs_put_page(node_page, 1);
-+		stat_inc_node_blk_count(sbi, 1);
-+	}
-+	if (initial) {
-+		initial = false;
-+		goto next_step;
-+	}
-+
-+	if (gc_type == FG_GC) {
-+		struct writeback_control wbc = {
-+			.sync_mode = WB_SYNC_ALL,
-+			.nr_to_write = LONG_MAX,
-+			.for_reclaim = 0,
-+		};
-+		sync_node_pages(sbi, 0, &wbc);
-+	}
-+	return GC_DONE;
++=09return req.rbuf[channel];
 +}
 +
-+/**
-+ * Calculate start block index that this node page contains
++/*
++ * Read ADCIN channel 12 (voltage) and convert RAW value to micro volt=
+age
++ * This conversion formula was extracted from maemo program bsi-read
 + */
-+block_t start_bidx_of_node(unsigned int node_ofs)
++static int rx51_battery_read_voltage(struct rx51_device_info *di)
 +{
-+	block_t start_bidx;
-+	unsigned int bidx, indirect_blks;
-+	int dec;
++=09int voltage =3D rx51_battery_read_adc(12);
 +
-+	indirect_blks = 2 * NIDS_PER_BLOCK + 4;
++=09if (voltage < 0)
++=09=09return voltage;
 +
-+	start_bidx = 1;
-+	if (node_ofs == 0) {
-+		start_bidx = 0;
-+	} else if (node_ofs <= 2) {
-+		bidx = node_ofs - 1;
-+	} else if (node_ofs <= indirect_blks) {
-+		dec = (node_ofs - 4) / (NIDS_PER_BLOCK + 1);
-+		bidx = node_ofs - 2 - dec;
-+	} else {
-+		dec = (node_ofs - indirect_blks - 3) / (NIDS_PER_BLOCK + 1);
-+		bidx = node_ofs - 5 - dec;
-+	}
-+
-+	if (start_bidx)
-+		start_bidx = bidx * ADDRS_PER_BLOCK + ADDRS_PER_INODE;
-+	return start_bidx;
++=09return 1000 * (10000 * voltage / 1705);
 +}
 +
-+static int check_dnode(struct f2fs_sb_info *sbi, struct f2fs_summary *sum,
-+		struct node_info *dni, block_t blkaddr, unsigned int *nofs)
-+{
-+	struct page *node_page;
-+	nid_t nid;
-+	unsigned int ofs_in_node;
-+	block_t source_blkaddr;
-+
-+	nid = le32_to_cpu(sum->nid);
-+	ofs_in_node = le16_to_cpu(sum->ofs_in_node);
-+
-+	node_page = get_node_page(sbi, nid);
-+	if (IS_ERR(node_page))
-+		return GC_NEXT;
-+
-+	get_node_info(sbi, nid, dni);
-+
-+	if (sum->version != dni->version) {
-+		f2fs_put_page(node_page, 1);
-+		return GC_NEXT;
-+	}
-+
-+	*nofs = ofs_of_node(node_page);
-+	source_blkaddr = datablock_addr(node_page, ofs_in_node);
-+	f2fs_put_page(node_page, 1);
-+
-+	if (source_blkaddr != blkaddr)
-+		return GC_NEXT;
-+	return GC_OK;
-+}
-+
-+static void move_data_page(struct inode *inode, struct page *page, int gc_type)
-+{
-+	if (page->mapping != inode->i_mapping)
-+		goto out;
-+
-+	if (inode != page->mapping->host)
-+		goto out;
-+
-+	if (PageWriteback(page))
-+		goto out;
-+
-+	if (gc_type == BG_GC) {
-+		set_page_dirty(page);
-+		set_cold_data(page);
-+	} else {
-+		struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+		mutex_lock_op(sbi, DATA_WRITE);
-+		if (clear_page_dirty_for_io(page) &&
-+			S_ISDIR(inode->i_mode)) {
-+			dec_page_count(sbi, F2FS_DIRTY_DENTS);
-+			inode_dec_dirty_dents(inode);
-+		}
-+		set_cold_data(page);
-+		do_write_data_page(page);
-+		mutex_unlock_op(sbi, DATA_WRITE);
-+		clear_cold_data(page);
-+	}
-+out:
-+	f2fs_put_page(page, 1);
-+}
-+
-+/**
-+ * This function tries to get parent node of victim data block, and identifies
-+ * data block validity. If the block is valid, copy that with cold status and
-+ * modify parent node.
-+ * If the parent node is not valid or the data block address is different,
-+ * the victim data block is ignored.
++/*
++ * Temperature look-up tables
++ * TEMP =3D (1/(t1 + 1/298) - 273.15)
++ * Where t1 =3D (1/B) * ln((RAW_ADC_U * 2.5)/(R * I * 255))
++ * Formula is based on experimental data, RX-51 CAL data, maemo progra=
+m bme
++ * and formula from da9052 driver with values R =3D 100, B =3D 3380, I=
+ =3D 0.00671
 + */
-+static int gc_data_segment(struct f2fs_sb_info *sbi, struct f2fs_summary *sum,
-+		struct list_head *ilist, unsigned int segno, int gc_type)
-+{
-+	struct super_block *sb = sbi->sb;
-+	struct f2fs_summary *entry;
-+	block_t start_addr;
-+	int err, off;
-+	int phase = 0;
 +
-+	start_addr = START_BLOCK(sbi, segno);
-+
-+next_step:
-+	entry = sum;
-+	for (off = 0; off < sbi->blocks_per_seg; off++, entry++) {
-+		struct page *data_page;
-+		struct inode *inode;
-+		struct node_info dni; /* dnode info for the data */
-+		unsigned int ofs_in_node, nofs;
-+		block_t start_bidx;
-+
-+		/*
-+		 * It makes sure that free segments are able to write
-+		 * all the dirty node pages before CP after this CP.
-+		 * So let's check the space of dirty node pages.
-+		 */
-+		if (should_do_checkpoint(sbi)) {
-+			mutex_lock(&sbi->cp_mutex);
-+			block_operations(sbi);
-+			err = GC_BLOCKED;
-+			goto stop;
-+		}
-+
-+		err = check_valid_map(sbi, segno, off);
-+		if (err == GC_ERROR)
-+			goto stop;
-+		else if (err == GC_NEXT)
-+			continue;
-+
-+		if (phase == 0) {
-+			ra_node_page(sbi, le32_to_cpu(entry->nid));
-+			continue;
-+		}
-+
-+		/* Get an inode by ino with checking validity */
-+		err = check_dnode(sbi, entry, &dni, start_addr + off, &nofs);
-+		if (err == GC_ERROR)
-+			goto stop;
-+		else if (err == GC_NEXT)
-+			continue;
-+
-+		if (phase == 1) {
-+			ra_node_page(sbi, dni.ino);
-+			continue;
-+		}
-+
-+		start_bidx = start_bidx_of_node(nofs);
-+		ofs_in_node = le16_to_cpu(entry->ofs_in_node);
-+
-+		if (phase == 2) {
-+			inode = f2fs_iget_nowait(sb, dni.ino);
-+			if (IS_ERR(inode))
-+				continue;
-+
-+			data_page = find_data_page(inode,
-+					start_bidx + ofs_in_node);
-+			if (IS_ERR(data_page))
-+				goto next_iput;
-+
-+			f2fs_put_page(data_page, 0);
-+			add_gc_inode(inode, ilist);
-+		} else {
-+			inode = find_gc_inode(dni.ino, ilist);
-+			if (inode) {
-+				data_page = get_lock_data_page(inode,
-+						start_bidx + ofs_in_node);
-+				if (IS_ERR(data_page))
-+					continue;
-+				move_data_page(inode, data_page, gc_type);
-+				stat_inc_data_blk_count(sbi, 1);
-+			}
-+		}
-+		continue;
-+next_iput:
-+		iput(inode);
-+	}
-+	if (++phase < 4)
-+		goto next_step;
-+	err = GC_DONE;
-+stop:
-+	if (gc_type == FG_GC)
-+		f2fs_submit_bio(sbi, DATA, true);
-+	return err;
-+}
-+
-+static int __get_victim(struct f2fs_sb_info *sbi, unsigned int *victim,
-+						int gc_type, int type)
-+{
-+	struct sit_info *sit_i = SIT_I(sbi);
-+	int ret;
-+	mutex_lock(&sit_i->sentry_lock);
-+	ret = DIRTY_I(sbi)->v_ops->get_victim(sbi, victim, gc_type, type, LFS);
-+	mutex_unlock(&sit_i->sentry_lock);
-+	return ret;
-+}
-+
-+static int do_garbage_collect(struct f2fs_sb_info *sbi, unsigned int segno,
-+				struct list_head *ilist, int gc_type)
-+{
-+	struct page *sum_page;
-+	struct f2fs_summary_block *sum;
-+	int ret = GC_DONE;
-+
-+	/* read segment summary of victim */
-+	sum_page = get_sum_page(sbi, segno);
-+	if (IS_ERR(sum_page))
-+		return GC_ERROR;
-+
-+	/*
-+	 * CP needs to lock sum_page. In this time, we don't need
-+	 * to lock this page, because this summary page is not gone anywhere.
-+	 * Also, this page is not gonna be updated before GC is done.
-+	 */
-+	unlock_page(sum_page);
-+	sum = page_address(sum_page);
-+
-+	switch (GET_SUM_TYPE((&sum->footer))) {
-+	case SUM_TYPE_NODE:
-+		ret = gc_node_segment(sbi, sum->entries, segno, gc_type);
-+		break;
-+	case SUM_TYPE_DATA:
-+		ret = gc_data_segment(sbi, sum->entries, ilist, segno, gc_type);
-+		break;
-+	}
-+	stat_inc_seg_count(sbi, GET_SUM_TYPE((&sum->footer)));
-+	stat_inc_call_count(sbi->stat_info);
-+
-+	f2fs_put_page(sum_page, 0);
-+	return ret;
-+}
-+
-+int f2fs_gc(struct f2fs_sb_info *sbi, int nGC)
-+{
-+	unsigned int segno;
-+	int old_free_secs, cur_free_secs;
-+	int gc_status, nfree;
-+	struct list_head ilist;
-+	int gc_type = BG_GC;
-+
-+	INIT_LIST_HEAD(&ilist);
-+gc_more:
-+	nfree = 0;
-+	gc_status = GC_NONE;
-+
-+	if (has_not_enough_free_secs(sbi))
-+		old_free_secs = reserved_sections(sbi);
-+	else
-+		old_free_secs = free_sections(sbi);
-+
-+	while (sbi->sb->s_flags & MS_ACTIVE) {
-+		int i;
-+		if (has_not_enough_free_secs(sbi))
-+			gc_type = FG_GC;
-+
-+		cur_free_secs = free_sections(sbi) + nfree;
-+
-+		/* We got free space successfully. */
-+		if (nGC < cur_free_secs - old_free_secs)
-+			break;
-+
-+		if (!__get_victim(sbi, &segno, gc_type, NO_CHECK_TYPE))
-+			break;
-+
-+		for (i = 0; i < sbi->segs_per_sec; i++) {
-+			/*
-+			 * do_garbage_collect will give us three gc_status:
-+			 * GC_ERROR, GC_DONE, and GC_BLOCKED.
-+			 * If GC is finished uncleanly, we have to return
-+			 * the victim to dirty segment list.
-+			 */
-+			gc_status = do_garbage_collect(sbi, segno + i,
-+					&ilist, gc_type);
-+			if (gc_status != GC_DONE)
-+				goto stop;
-+			nfree++;
-+		}
-+	}
-+stop:
-+	if (has_not_enough_free_secs(sbi) || gc_status == GC_BLOCKED) {
-+		write_checkpoint(sbi, (gc_status == GC_BLOCKED), false);
-+		if (nfree)
-+			goto gc_more;
-+	}
-+	mutex_unlock(&sbi->gc_mutex);
-+
-+	put_gc_inode(&ilist);
-+	BUG_ON(!list_empty(&ilist));
-+	return gc_status;
-+}
-+
-+void build_gc_manager(struct f2fs_sb_info *sbi)
-+{
-+	DIRTY_I(sbi)->v_ops = &default_v_ops;
-+}
-+
-+int create_gc_caches(void)
-+{
-+	winode_slab = f2fs_kmem_cache_create("f2fs_gc_inodes",
-+			sizeof(struct inode_entry), NULL);
-+	if (!winode_slab)
-+		return -ENOMEM;
-+	return 0;
-+}
-+
-+void destroy_gc_caches(void)
-+{
-+	kmem_cache_destroy(winode_slab);
-+}
-diff --git a/fs/f2fs/gc.h b/fs/f2fs/gc.h
-new file mode 100644
-index 0000000..cf42a55
---- /dev/null
-+++ b/fs/f2fs/gc.h
-@@ -0,0 +1,117 @@
-+/**
-+ * fs/f2fs/gc.h
-+ *
-+ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
-+ *             http://www.samsung.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++/*
++ * Table1 (temperature for first 25 RAW values)
++ * Usage: TEMP =3D rx51_temp_table1[RAW]
++ *   RAW is between 1 and 24
++ *   TEMP is between 201 C and 55 C
 + */
-+#define GC_THREAD_NAME	"f2fs_gc_task"
-+#define GC_THREAD_MIN_WB_PAGES		1	/*
-+						 * a threshold to determine
-+						 * whether IO subsystem is idle
-+						 * or not
-+						 */
-+#define GC_THREAD_MIN_SLEEP_TIME	10000 /* milliseconds */
-+#define GC_THREAD_MAX_SLEEP_TIME	30000
-+#define GC_THREAD_NOGC_SLEEP_TIME	10000
-+#define LIMIT_INVALID_BLOCK	40 /* percentage over total user space */
-+#define LIMIT_FREE_BLOCK	40 /* percentage over invalid + free space */
-+
-+/* Search max. number of dirty segments to select a victim segment */
-+#define MAX_VICTIM_SEARCH	20
-+
-+enum {
-+	GC_NONE = 0,
-+	GC_ERROR,
-+	GC_OK,
-+	GC_NEXT,
-+	GC_BLOCKED,
-+	GC_DONE,
++static u8 rx51_temp_table1[] =3D {
++=09255, 201, 159, 138, 124, 114, 106,  99,  94,  89,  85,  82,  78,  7=
+5,
++=09 73,  70,  68,  66,  64,  62,  61,  59,  57,  56,  55
 +};
 +
-+struct f2fs_gc_kthread {
-+	struct task_struct *f2fs_gc_task;
-+	wait_queue_head_t gc_wait_queue_head;
-+};
-+
-+struct inode_entry {
-+	struct list_head list;
-+	struct inode *inode;
-+};
-+
-+/**
-+ * inline functions
++/*
++ * Table2 (lowest RAW value for temperature)
++ * Usage: RAW =3D rx51_temp_table2[TEMP-rx51_temp_table2_first]
++ *   TEMP is between 53 C and -32 C
++ *   RAW is between 25 and 993
 + */
-+static inline block_t free_user_blocks(struct f2fs_sb_info *sbi)
++#define rx51_temp_table2_first 53
++static u16 rx51_temp_table2[] =3D {
++=09 25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  3=
+9,
++=09 40,  41,  43,  44,  46,  48,  49,  51,  53,  55,  57,  59,  61,  6=
+4,
++=09 66,  69,  71,  74,  77,  80,  83,  86,  90,  94,  97, 101, 106, 11=
+0,
++=09115, 119, 125, 130, 136, 141, 148, 154, 161, 168, 176, 184, 202, 21=
+1,
++=09221, 231, 242, 254, 266, 279, 293, 308, 323, 340, 357, 375, 395, 41=
+5,
++=09437, 460, 485, 511, 539, 568, 600, 633, 669, 706, 747, 790, 836, 88=
+5,
++=09937, 993, 1024
++};
++
++/*
++ * Read ADCIN channel 0 (battery temp) and convert value to tenths of =
+Celsius
++ * Use Temperature look-up tables for conversation
++ */
++static int rx51_battery_read_temperature(struct rx51_device_info *di)
 +{
-+	if (free_segments(sbi) < overprovision_segments(sbi))
-+		return 0;
-+	else
-+		return (free_segments(sbi) - overprovision_segments(sbi))
-+			<< sbi->log_blocks_per_seg;
++=09int min =3D 0;
++=09int max =3D ARRAY_SIZE(rx51_temp_table2) - 1;
++=09int raw =3D rx51_battery_read_adc(0);
++
++=09/* Zero and negative values are undefined */
++=09if (raw <=3D 0)
++=09=09return INT_MAX;
++
++=09/* ADC channels are 10 bit, higher value are undefined */
++=09if (raw >=3D (1 << 10))
++=09=09return INT_MIN;
++
++=09/* First check for temperature in first direct table */
++=09if (raw < ARRAY_SIZE(rx51_temp_table1))
++=09=09return rx51_temp_table1[raw] * 100;
++
++=09/* Binary search RAW value in second inverse table */
++=09while (max - min > 1) {
++=09=09int mid =3D (max + min) / 2;
++=09=09if (rx51_temp_table2[mid] <=3D raw)
++=09=09=09min =3D mid;
++=09=09else if (rx51_temp_table2[mid] > raw)
++=09=09=09max =3D mid;
++=09=09if (rx51_temp_table2[mid] =3D=3D raw)
++=09=09=09break;
++=09}
++
++=09return (rx51_temp_table2_first - min) * 100;
 +}
 +
-+static inline block_t limit_invalid_user_blocks(struct f2fs_sb_info *sbi)
++/*
++ * Read ADCIN channel 4 (BSI) and convert RAW value to micro Ah
++ * This conversion formula was extracted from maemo program bsi-read
++ */
++static int rx51_battery_read_capacity(struct rx51_device_info *di)
 +{
-+	return (long)(sbi->user_block_count * LIMIT_INVALID_BLOCK) / 100;
++=09int capacity =3D rx51_battery_read_adc(4);
++
++=09if (capacity < 0)
++=09=09return capacity;
++
++=09return 1280 * (1200 * capacity)/(1024 - capacity);
 +}
 +
-+static inline block_t limit_free_user_blocks(struct f2fs_sb_info *sbi)
++/*
++ * Return power_supply property
++ */
++static int rx51_battery_get_property(struct power_supply *psy,
++=09=09=09=09=09enum power_supply_property psp,
++=09=09=09=09=09union power_supply_propval *val)
 +{
-+	block_t reclaimable_user_blocks = sbi->user_block_count -
-+		written_block_count(sbi);
-+	return (long)(reclaimable_user_blocks * LIMIT_FREE_BLOCK) / 100;
++=09struct rx51_device_info *di =3D container_of((psy),
++=09=09=09=09struct rx51_device_info, bat);
++
++=09switch (psp) {
++=09case POWER_SUPPLY_PROP_TECHNOLOGY:
++=09=09val->intval =3D POWER_SUPPLY_TECHNOLOGY_LION;
++=09=09break;
++=09case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
++=09=09val->intval =3D 4200000;
++=09=09break;
++=09case POWER_SUPPLY_PROP_PRESENT:
++=09=09val->intval =3D rx51_battery_read_voltage(di) ? 1 : 0;
++=09=09break;
++=09case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++=09=09val->intval =3D rx51_battery_read_voltage(di);
++=09=09break;
++=09case POWER_SUPPLY_PROP_TEMP:
++=09=09val->intval =3D rx51_battery_read_temperature(di);
++=09=09break;
++=09case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
++=09=09val->intval =3D rx51_battery_read_capacity(di);
++=09=09break;
++=09default:
++=09=09return -EINVAL;
++=09}
++
++=09if (val->intval =3D=3D INT_MAX || val->intval =3D=3D INT_MIN)
++=09=09return -EINVAL;
++
++=09return 0;
 +}
 +
-+static inline long increase_sleep_time(long wait)
++static enum power_supply_property rx51_battery_props[] =3D {
++=09POWER_SUPPLY_PROP_TECHNOLOGY,
++=09POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
++=09POWER_SUPPLY_PROP_PRESENT,
++=09POWER_SUPPLY_PROP_VOLTAGE_NOW,
++=09POWER_SUPPLY_PROP_TEMP,
++=09POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
++};
++
++static int __devinit rx51_battery_probe(struct platform_device *pdev)
 +{
-+	wait += GC_THREAD_MIN_SLEEP_TIME;
-+	if (wait > GC_THREAD_MAX_SLEEP_TIME)
-+		wait = GC_THREAD_MAX_SLEEP_TIME;
-+	return wait;
++=09struct rx51_device_info *di;
++=09int ret;
++
++=09di =3D kzalloc(sizeof(*di), GFP_KERNEL);
++=09if (!di)
++=09=09return -ENOMEM;
++
++=09platform_set_drvdata(pdev, di);
++
++=09di->bat.name =3D dev_name(&pdev->dev);
++=09di->bat.type =3D POWER_SUPPLY_TYPE_BATTERY;
++=09di->bat.properties =3D rx51_battery_props;
++=09di->bat.num_properties =3D ARRAY_SIZE(rx51_battery_props);
++=09di->bat.get_property =3D rx51_battery_get_property;
++
++=09ret =3D power_supply_register(di->dev, &di->bat);
++=09if (ret) {
++=09=09platform_set_drvdata(pdev, NULL);
++=09=09kfree(di);
++=09=09return ret;
++=09}
++
++=09return 0;
 +}
 +
-+static inline long decrease_sleep_time(long wait)
-+{
-+	wait -= GC_THREAD_MIN_SLEEP_TIME;
-+	if (wait <= GC_THREAD_MIN_SLEEP_TIME)
-+		wait = GC_THREAD_MIN_SLEEP_TIME;
-+	return wait;
-+}
-+
-+static inline bool has_enough_invalid_blocks(struct f2fs_sb_info *sbi)
-+{
-+	block_t invalid_user_blocks = sbi->user_block_count -
-+					written_block_count(sbi);
-+	/*
-+	 * Background GC is triggered with the following condition.
-+	 * 1. There are a number of invalid blocks.
-+	 * 2. There is not enough free space.
-+	 */
-+	if (invalid_user_blocks > limit_invalid_user_blocks(sbi) &&
-+			free_user_blocks(sbi) < limit_free_user_blocks(sbi))
-+		return true;
-+	return false;
-+}
-+
-+static inline int is_idle(struct f2fs_sb_info *sbi)
-+{
-+	struct block_device *bdev = sbi->sb->s_bdev;
-+	struct request_queue *q = bdev_get_queue(bdev);
-+	struct request_list *rl = &q->root_rl;
-+	return !(rl->count[BLK_RW_SYNC]) && !(rl->count[BLK_RW_ASYNC]);
-+}
-+
-+static inline bool should_do_checkpoint(struct f2fs_sb_info *sbi)
-+{
-+	unsigned int pages_per_sec = sbi->segs_per_sec *
-+					(1 << sbi->log_blocks_per_seg);
-+	int node_secs = ((get_pages(sbi, F2FS_DIRTY_NODES) + pages_per_sec - 1)
-+			>> sbi->log_blocks_per_seg) / sbi->segs_per_sec;
-+	int dent_secs = ((get_pages(sbi, F2FS_DIRTY_DENTS) + pages_per_sec - 1)
-+			>> sbi->log_blocks_per_seg) / sbi->segs_per_sec;
-+	return free_sections(sbi) <= (node_secs + 2 * dent_secs + 2);
-+}
--- 
-1.7.9.5
++static int __devexit rx51_battery_remove(struct platform_device *pdev)=
 
++{
++=09struct rx51_device_info *di =3D platform_get_drvdata(pdev);
++
++=09power_supply_unregister(&di->bat);
++=09platform_set_drvdata(pdev, NULL);
++=09kfree(di);
++
++=09return 0;
++}
++
++static struct platform_driver rx51_battery_driver =3D {
++=09.probe =3D rx51_battery_probe,
++=09.remove =3D __devexit_p(rx51_battery_remove),
++=09.driver =3D {
++=09=09.name =3D "rx51-battery",
++=09=09.owner =3D THIS_MODULE,
++=09},
++};
++
++module_platform_driver(rx51_battery_driver);
++
++MODULE_ALIAS("platform:rx51-battery");
++MODULE_AUTHOR("Pali Roh=C3=A1r <pali.rohar@gmail.com>");
++MODULE_DESCRIPTION("Nokia RX-51 battery driver");
++MODULE_LICENSE("GPL");
+--- linux/drivers/power/Kconfig
++++ linux/drivers/power/Kconfig
+@@ -245,6 +245,12 @@ config BATTERY_INTEL_MID
+ =09  Say Y here to enable the battery driver on Intel MID
+ =09  platforms.
+=20
++config BATTERY_RX51
++=09tristate "Nokia RX-51 battery driver"
++=09depends on TWL4030_MADC
++=09help
++=09  Say Y here to enable support for battery information on Nokia RX-=
+51.
++
+ config CHARGER_ISP1704
+ =09tristate "ISP1704 USB Charger Detection"
+ =09depends on USB_OTG_UTILS
+--- linux/drivers/power/Makefile
++++ linux/drivers/power/Makefile
+@@ -37,6 +37,7 @@ obj-$(CONFIG_CHARGER_88PM860X)=09+=3D 88pm860x_charge=
+r.o
+ obj-$(CONFIG_CHARGER_PCF50633)=09+=3D pcf50633-charger.o
+ obj-$(CONFIG_BATTERY_JZ4740)=09+=3D jz4740-battery.o
+ obj-$(CONFIG_BATTERY_INTEL_MID)=09+=3D intel_mid_battery.o
++obj-$(CONFIG_BATTERY_RX51)=09+=3D rx51_battery.o
+ obj-$(CONFIG_AB8500_BM)=09=09+=3D ab8500_charger.o ab8500_btemp.o ab85=
+00_fg.o abx500_chargalg.o
+ obj-$(CONFIG_CHARGER_ISP1704)=09+=3D isp1704_charger.o
+ obj-$(CONFIG_CHARGER_MAX8903)=09+=3D max8903_charger.o
 
+--=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+--nextPart1890658.c3JUd2ba8r
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
----
-Jaegeuk Kim
-Samsung
+iEYEABECAAYFAlCQ8/gACgkQi/DJPQPkQ1LzWgCgo8Le4/DUatM2N21vQbRVDxKI
+VtYAniJkxgiHFEqfVDa1qu8pAnK/JRNK
+=jPci
+-----END PGP SIGNATURE-----
 
+--nextPart1890658.c3JUd2ba8r--
 
