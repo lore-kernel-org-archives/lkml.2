@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab2JaAku (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:40:50 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:47295 "EHLO ogre.sisk.pl"
+	id S933119Ab2JaAkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:40:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:35074 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933321Ab2JaAkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:40:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com
-Subject: Re: [PATCH] cpufreq: Avoid calling cpufreq driver's target() routine if target_freq == policy->cur
-Date: Wed, 31 Oct 2012 01:44:50 +0100
-Message-ID: <11869950.r5dVYWTkdx@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <5056958.0bPciFrxt5@vostro.rjw.lan>
-References: <1d7b6e421a335255da956804b43ce3517538409c.1351244153.git.viresh.kumar@linaro.org> <5056958.0bPciFrxt5@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1759116Ab2JaAef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 20:34:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
+   d="scan'208";a="234886222"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
+        eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 17/32] perf, tools: Handle XBEGIN like a jump
+Date: Tue, 30 Oct 2012 17:34:08 -0700
+Message-Id: <1351643663-23828-18-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
+References: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 26, 2012 01:17:12 PM Rafael J. Wysocki wrote:
-> On Friday, October 26, 2012 03:06:26 PM Viresh Kumar wrote:
-> > Avoid calling cpufreq driver's target() routine if new frequency is same as
-> > policies current frequency.
-> > 
-> > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> 
-> Looks reasonable.
-> 
-> Any objection from anyone?
+From: Andi Kleen <ak@linux.intel.com>
 
-OK, no objections.
+So that the browser still shows the abort label
 
-Applied to the linux-next branch of linux-pm.git as v3.8 material.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/util/annotate.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Thanks,
-Rafael
-
-
-> > ---
-> >  drivers/cpufreq/cpufreq.c | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> > 
-> > diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> > index 261ef65..28dc134 100644
-> > --- a/drivers/cpufreq/cpufreq.c
-> > +++ b/drivers/cpufreq/cpufreq.c
-> > @@ -1476,6 +1476,10 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
-> >  
-> >  	pr_debug("target for CPU %u: %u kHz, relation %u\n", policy->cpu,
-> >  		target_freq, relation);
-> > +
-> > +	if (target_freq == policy->cur)
-> > +		return 0;
-> > +
-> >  	if (cpu_online(policy->cpu) && cpufreq_driver->target)
-> >  		retval = cpufreq_driver->target(policy, target_freq, relation);
-> >  
-> > 
-> 
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 7a34dd1..b14d4df 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -401,6 +401,8 @@ static struct ins instructions[] = {
+ 	{ .name = "testb", .ops  = &mov_ops, },
+ 	{ .name = "testl", .ops  = &mov_ops, },
+ 	{ .name = "xadd",  .ops  = &mov_ops, },
++	{ .name = "xbeginl", .ops  = &jump_ops, },
++	{ .name = "xbeginq", .ops  = &jump_ops, },
+ };
+ 
+ static int ins__cmp(const void *name, const void *insp)
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.7.6
+
