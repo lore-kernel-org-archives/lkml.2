@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934936Ab2JaDqn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 23:46:43 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:53942 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932436Ab2JaDql (ORCPT
+	id S934943Ab2JaDtP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 23:49:15 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:51245 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756536Ab2JaDtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 23:46:41 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        joe.korty@ccur.com, "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 2/2] rcu: Separate accounting of callbacks from callback-free CPUs
-Date: Tue, 30 Oct 2012 20:46:31 -0700
-Message-Id: <1351655191-2648-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <1351655191-2648-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20121031034552.GA1999@linux.vnet.ibm.com>
- <1351655191-2648-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12103103-7606-0000-0000-000004F21D2B
+	Tue, 30 Oct 2012 23:49:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121031032431.GG2616@ZenIV.linux.org.uk>
+References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
+ <20121030214257.GB2681@htj.dyndns.org> <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
+ <1351646186.4004.41.camel@gandalf.local.home> <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
+ <20121031022418.GE2616@ZenIV.linux.org.uk> <CA+55aFyU30Z2JS9XJ4KTordbAw-2EBVD7xF4K3eAhKVRCJw8YA@mail.gmail.com>
+ <20121031032431.GG2616@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 30 Oct 2012 20:48:51 -0700
+X-Google-Sender-Auth: 2ARbhLXHunNig-ySM8I4e1qWeRw
+Message-ID: <CA+55aFxfAMyyPdxNB-GQhhErrWpaUHGOmvov1HR290YjRdoxeg@mail.gmail.com>
+Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive hashtable
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+On Tue, Oct 30, 2012 at 8:24 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Oh, well... there go my blackmail plans ;-)  Seriously, though, I'm at loss
+> regarding several embedded architectures - arch/score, in particular,
+> seems to be completely orphaned.
 
-Currently, callback invocations from callback-free CPUs are accounted to
-the CPU that registered the callback, but using the same field that is
-used for normal callbacks.  This makes it impossible to determine from
-debugfs output whether callbacks are in fact being diverted.  This commit
-therefore adds a separate ->n_nocbs_invoked field in the rcu_data structure
-in which diverted callback invocations are counted.  RCU's debugfs tracing
-still displays normal callback invocations using ci=, but displayed
-diverted callbacks with nci=.
+Don't worry about it. Do a best-effort, and if nobody ever reacts
+about some odd-ball architecture, whatever.
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutree.h        |    1 +
- kernel/rcutree_plugin.h |    2 +-
- kernel/rcutree_trace.c  |    5 +++--
- 3 files changed, 5 insertions(+), 3 deletions(-)
+We won't start deleting architectures over something like this, but it
+might be another sign down the road that some arch code can be removed
+entirely.
 
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 79954bb..db9bec8 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -287,6 +287,7 @@ struct rcu_data {
- 	long		qlen_last_fqs_check;
- 					/* qlen at last check for QS forcing */
- 	unsigned long	n_cbs_invoked;	/* count of RCU cbs invoked. */
-+	unsigned long	n_nocbs_invoked; /* count of no-CBs RCU cbs invoked. */
- 	unsigned long   n_cbs_orphaned; /* RCU cbs orphaned by dying CPU */
- 	unsigned long   n_cbs_adopted;  /* RCU cbs adopted from dying CPU */
- 	unsigned long	n_force_qs_snap;
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index ea960c4..31d3a95 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -2406,7 +2406,7 @@ static int rcu_nocb_kthread(void *arg)
- 		trace_rcu_batch_end(rdp->rsp->name, c, !!list, 0, 0, 1);
- 		ACCESS_ONCE(rdp->nocb_p_count) -= c;
- 		ACCESS_ONCE(rdp->nocb_p_count_lazy) -= cl;
--		rdp->n_cbs_invoked += c;
-+		rdp->n_nocbs_invoked += c;
- 	}
- 	return 0;
- }
-diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index 5e9ca3e..167375d 100644
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -146,8 +146,9 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
- 		   per_cpu(rcu_cpu_kthread_loops, rdp->cpu) & 0xffff);
- #endif /* #ifdef CONFIG_RCU_BOOST */
- 	seq_printf(m, " b=%ld", rdp->blimit);
--	seq_printf(m, " ci=%lu co=%lu ca=%lu\n",
--		   rdp->n_cbs_invoked, rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
-+	seq_printf(m, " ci=%lu nci=%lu co=%lu ca=%lu\n",
-+		   rdp->n_cbs_invoked, rdp->n_nocbs_invoked,
-+		   rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
- }
- 
- static int show_rcudata(struct seq_file *m, void *v)
--- 
-1.7.8
+So it's not arch/score I'd worry about. It's all the *other* architectures..
 
+             Linus
