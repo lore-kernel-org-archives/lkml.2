@@ -1,50 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab2JaRK5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:10:57 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:53536 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab2JaRKy (ORCPT
+	id S1757083Ab2JaRLa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:11:30 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35769 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539Ab2JaRL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:10:54 -0400
-Date: Wed, 31 Oct 2012 17:10:48 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jiri Kosina <jkosina@suse.cz>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121031171048.GA17163@srcf.ucam.org>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
- <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
- <20121029174131.GC7580@srcf.ucam.org>
- <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
- <CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
- <20121031155503.1aaf4c93@pyramind.ukuu.org.uk>
- <alpine.LNX.2.00.1210311653080.12781@pobox.suse.cz>
- <20121031170334.59833fb1@pyramind.ukuu.org.uk>
+	Wed, 31 Oct 2012 13:11:26 -0400
+Message-ID: <50915A91.1040001@linux.vnet.ibm.com>
+Date: Wed, 31 Oct 2012 22:36:25 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121031170334.59833fb1@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Avi Kivity <avi@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V2 RFC 2/3] kvm: Handle yield_to failure return code for
+ potential undercommit case
+References: <20121029140621.15448.92083.sendpatchset@codeblue> <20121029140702.15448.56932.sendpatchset@codeblue> <50911BC3.6080305@redhat.com> <50911C7D.5080307@linux.vnet.ibm.com> <50912463.3040201@linux.vnet.ibm.com> <50912A72.6050307@redhat.com>
+In-Reply-To: <50912A72.6050307@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12103117-5816-0000-0000-000005253B34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 05:03:34PM +0000, Alan Cox wrote:
-> On Wed, 31 Oct 2012 16:55:04 +0100 (CET)
-> Jiri Kosina <jkosina@suse.cz> wrote:
-> > Prepare (as a root) a hand-crafted image, reboot, let the kernel resume 
-> > from that artificial image.
-> 
-> It's not signed. It won't reboot from that image.
+On 10/31/2012 07:11 PM, Avi Kivity wrote:
+> On 10/31/2012 03:15 PM, Raghavendra K T wrote:
+>> On 10/31/2012 06:11 PM, Raghavendra K T wrote:
+>>> On 10/31/2012 06:08 PM, Avi Kivity wrote:
+>>>> On 10/29/2012 04:07 PM, Raghavendra K T wrote:
+>>>>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>>>>>
+>>>>> Also we do not update last boosted vcpu in failure cases.
+>>>>>
+>>>>>    #endif
+>>>>> +
+>>>>>    void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>>>>>    {
+>>>>>        struct kvm *kvm = me->kvm;
+>>>>> @@ -1727,11 +1727,12 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>>>>>                    continue;
+>>>>>                if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
+>>>>>                    continue;
+>>>>> -            if (kvm_vcpu_yield_to(vcpu)) {
+>>>>> +
+>>>>> +            yielded = kvm_vcpu_yield_to(vcpu);
+>>>>> +            if (yielded > 0)
+>>>>>                    kvm->last_boosted_vcpu = i;
+>>>>> -                yielded = 1;
+>>>>> +            if (yielded)
+>>>>>                    break;
+>>>>> -            }
+>>>>>            }
+>>>>
+>>>> If yielded == -ESRCH, should we not try to yield to another vcpu?
+>>>>
+>>>
+>>>    Yes. plan is to abort the iteration. since it means we are mostly
+>>> undercommitted.
+>>
+>> Sorry if it was ambiguous. I wanted to say we do not want to continue
+>> yield to another vcpu..
+>>
+>
+>
+> Why not?  We found that this particular vcpu is running and therefore
+> likely not a lock holder.  That says nothing about other vcpus.  The
+> next in line might be runnable-but-not-running on another runqueue.
 
-The kernel is signed. The kernel doesn't check the signature on the 
-suspend image.
+Agree that next in the line might be runnable-not-running.  But here we
+are optimistic that, that is not the case and we save time by
+returning back instead of iterating, thinking we are mostly in
+undercommitted case and each vcpu has dedicated cpu.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Probably an alternative we have here is to look for say 2-3 successive
+failures before breaking out?
+
