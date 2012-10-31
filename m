@@ -1,61 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935531Ab2JaM3t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 08:29:49 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:33408 "EHLO relay.sw.ru"
+	id S1422786Ab2JaMaL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 08:30:11 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52391 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935465Ab2JaM3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 08:29:44 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <cgroups@vger.kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 0/2] cgroup hook after successful create
-Date: Wed, 31 Oct 2012 16:29:12 +0400
-Message-Id: <1351686554-22592-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.11.7
-CC: Tejun Heo <tj@kernel.org>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Li Zefan <lizefan@huawei.com>
+	id S935514Ab2JaMaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 08:30:04 -0400
+Message-ID: <509119AE.6050505@ti.com>
+Date: Wed, 31 Oct 2012 17:59:34 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
+        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 01/11] clk: davinci - add main PLL clock driver
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-2-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1351181518-11882-2-git-send-email-m-karicheri2@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Murali,
 
-cgroups that use css_id only have this number assigned after ->create()
-returns.  This means it is not possible to use this number for anything during
-cgroup initialization.
+On 10/25/2012 9:41 PM, Murali Karicheri wrote:
+> This is the driver for the main PLL clock hardware found on DM SoCs.
+> This driver borrowed code from arch/arm/mach-davinci/clock.c and
+> implemented the driver as per common clock provider API. The main PLL
+> hardware typically has a multiplier, a pre-divider and a post-divider.
+> Some of the SoCs has the divider fixed meaning they can not be
+> configured through a register. HAS_PREDIV and HAS_POSTDIV flags are used
+> to tell the driver if a hardware has these dividers present or not.
+> Driver is configured through the struct clk_pll_data that has the
+> SoC specific clock data.
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> ---
 
-There are situations in which it may come handy: in the kmemcg-slab patchset,
-for instance, each memcg that has a limit on kernel memory will use its css_id
-as an index in an array of per-memcg kmem_caches. This array increases in size
-(in bulks, of course) as the maximum possible index grows, so we need to be
-aware of that early.
+> diff --git a/drivers/clk/davinci/clk-pll.c b/drivers/clk/davinci/clk-pll.c
 
-This could be achieved with a hook called after ->create(). Such a hook exists:
-this is ->post_clone(). However, this is called only for cgroups that set the
-clone_children flag. I believe a more general hook is useful, and the following
-two patches generalize post_clone() into a hook that is always called after
-create.
+> +static unsigned long clk_pllclk_recalc(struct clk_hw *hw,
+> +					unsigned long parent_rate)
+> +{
+> +	struct clk_pll *pll = to_clk_pll(hw);
+> +	struct clk_pll_data *pll_data = pll->pll_data;
+> +	u32 mult = 1, prediv = 1, postdiv = 1;
 
-As I mentioned, I intend to do memory allocations from that hook so it can fail
-(in patch 2, for simplicity).
+No need to initialize mult here. I gave this comment last time around as
+well.
 
-I consider a general hook acceptable and useful, and is the simplest solution to
-the problem I face. Let me know what you guys think of it.
+> +	unsigned long rate = parent_rate;
+> +
+> +	mult = readl(pll_data->reg_pllm);
+> +
+> +	/*
+> +	 * if fixed_multiplier is non zero, multiply pllm value by this
+> +	 * value.
+> +	 */
+> +	if (pll_data->fixed_multiplier)
+> +		mult =  pll_data->fixed_multiplier *
+> +				(mult & pll_data->pllm_mask);
+> +	else
+> +		mult = (mult & pll_data->pllm_mask) + 1;
 
-Glauber Costa (2):
-  generalize post_clone into post_create
-  allow post_create to fail
+Hmm, this is interpreting the 'mult' register field differently in both
+cases. In one case it is 'actual multiplier - 1' and in other case it is
+the 'actual multiplier' itself. Can we be sure that the mult register
+definition will change whenever there is a fixed multiplier in the PLL
+block? I don't think any of the existing DaVinci devices have a fixed
+multiplier. Is this on keystone?
 
- Documentation/cgroups/cgroups.txt | 13 +++++++------
- include/linux/cgroup.h            |  7 ++++++-
- kernel/cgroup.c                   | 12 +++++-------
- kernel/cpuset.c                   | 19 +++++++++++--------
- 4 files changed, 29 insertions(+), 22 deletions(-)
+> +struct clk *clk_register_davinci_pll(struct device *dev, const char *name,
+> +			const char *parent_name,
+> +			struct clk_pll_data *pll_data)
+> +{
+> +	struct clk_init_data init;
+> +	struct clk_pll *pll;
+> +	struct clk *clk;
+> +
+> +	if (!pll_data)
+> +		return ERR_PTR(-ENODEV);
 
--- 
-1.7.11.7
+-EINVAL? Clearly you are treating NULL value as an invalid argument here.
 
+Thanks,
+Sekhar
