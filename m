@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161095Ab2JaJEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:04:54 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6600 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161066Ab2JaJEu (ORCPT
+	id S935250Ab2JaJFd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:05:33 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11312 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161066Ab2JaJEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:04:50 -0400
+	Wed, 31 Oct 2012 05:04:55 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 31 Oct 2012 02:04:44 -0700
+	by hqnvupgp05.nvidia.com on Wed, 31 Oct 2012 02:04:49 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>
 CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V4 2/4] ARM: tegra: Add OF_DEV_AUXDATA for SLINK driver in board dt
-Date: Wed, 31 Oct 2012 14:32:53 +0530
-Message-ID: <1351674176-20603-2-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V4 4/4] ARM: tegra: config: enable spi driver for Tegra SLINK controller
+Date: Wed, 31 Oct 2012 14:32:55 +0530
+Message-ID: <1351674176-20603-4-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com>
 References: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com>
@@ -25,82 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add OF_DEV_AUXDATA for slink driver for Tegra20 and Tegra30
-board dt files.
-Set the parent clock of slink controller to PLLP and configure
-clock to 100MHz.
+Also enable the MTD, MTD_M25P80 and MTD_CHAR driver to enable
+SPI flash.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
-Changes from V1:
-- Revert the changes in clock table to get the driver name.
+No change from V1 and V2.
 
 Changes from V2:
-- Get rid of the iomap.h
+- enable MTD, MTD_M25P80 and MTD_CHAR drivers.
 
-Changes from V3:
-- None
+ arch/arm/configs/tegra_defconfig |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
- arch/arm/mach-tegra/board-dt-tegra20.c |    8 ++++++++
- arch/arm/mach-tegra/board-dt-tegra30.c |   12 ++++++++++++
- 2 files changed, 20 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
-index 2053f74..5a19589 100644
---- a/arch/arm/mach-tegra/board-dt-tegra20.c
-+++ b/arch/arm/mach-tegra/board-dt-tegra20.c
-@@ -90,6 +90,10 @@ struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
- 		       &tegra_ehci3_pdata),
- 	OF_DEV_AUXDATA("nvidia,tegra20-apbdma", TEGRA_APB_DMA_BASE, "tegra-apbdma", NULL),
- 	OF_DEV_AUXDATA("nvidia,tegra20-pwm", TEGRA_PWFM_BASE, "tegra-pwm", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-slink", 0x7000D400, "spi_tegra.0", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-slink", 0x7000D600, "spi_tegra.1", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-slink", 0x7000D800, "spi_tegra.2", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-slink", 0x7000DA00, "spi_tegra.3", NULL),
- 	{}
- };
- 
-@@ -109,6 +113,10 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
- 	{ "sdmmc1",	"pll_p",	48000000,	false},
- 	{ "sdmmc3",	"pll_p",	48000000,	false},
- 	{ "sdmmc4",	"pll_p",	48000000,	false},
-+	{ "sbc1",	"pll_p",	100000000,	false },
-+	{ "sbc2",	"pll_p",	100000000,	false },
-+	{ "sbc3",	"pll_p",	100000000,	false },
-+	{ "sbc4",	"pll_p",	100000000,	false },
- 	{ NULL,		NULL,		0,		0},
- };
- 
-diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
-index 9e6f79a..b26cfef 100644
---- a/arch/arm/mach-tegra/board-dt-tegra30.c
-+++ b/arch/arm/mach-tegra/board-dt-tegra30.c
-@@ -52,6 +52,12 @@ struct of_dev_auxdata tegra30_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("nvidia,tegra30-ahub", 0x70080000, "tegra30-ahub", NULL),
- 	OF_DEV_AUXDATA("nvidia,tegra30-apbdma", 0x6000a000, "tegra-apbdma", NULL),
- 	OF_DEV_AUXDATA("nvidia,tegra30-pwm", TEGRA_PWFM_BASE, "tegra-pwm", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000D400, "spi_tegra.0", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000D600, "spi_tegra.1", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000D800, "spi_tegra.2", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000DA00, "spi_tegra.3", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000DC00, "spi_tegra.4", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000DE00, "spi_tegra.5", NULL),
- 	{}
- };
- 
-@@ -71,6 +77,12 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
- 	{ "sdmmc1",	"pll_p",	48000000,	false},
- 	{ "sdmmc3",	"pll_p",	48000000,	false},
- 	{ "sdmmc4",	"pll_p",	48000000,	false},
-+	{ "sbc1",	"pll_p",	100000000,	false},
-+	{ "sbc2",	"pll_p",	100000000,	false},
-+	{ "sbc3",	"pll_p",	100000000,	false},
-+	{ "sbc4",	"pll_p",	100000000,	false},
-+	{ "sbc5",	"pll_p",	100000000,	false},
-+	{ "sbc6",	"pll_p",	100000000,	false},
- 	{ NULL,		NULL,		0,		0},
- };
- 
+diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+index fb29680..9dac09b 100644
+--- a/arch/arm/configs/tegra_defconfig
++++ b/arch/arm/configs/tegra_defconfig
+@@ -80,6 +80,9 @@ CONFIG_RFKILL_GPIO=y
+ CONFIG_DEVTMPFS=y
+ CONFIG_DEVTMPFS_MOUNT=y
+ # CONFIG_FIRMWARE_IN_KERNEL is not set
++CONFIG_MTD=y
++CONFIG_MTD_CHAR=y
++CONFIG_MTD_M25P80=y
+ CONFIG_PROC_DEVICETREE=y
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_AD525X_DPOT=y
+@@ -117,7 +120,7 @@ CONFIG_I2C_MUX=y
+ CONFIG_I2C_MUX_PINCTRL=y
+ CONFIG_I2C_TEGRA=y
+ CONFIG_SPI=y
+-CONFIG_SPI_TEGRA=y
++CONFIG_SPI_TEGRA20_SLINK=y
+ CONFIG_GPIO_PCA953X_IRQ=y
+ CONFIG_GPIO_TPS6586X=y
+ CONFIG_GPIO_TPS65910=y
 -- 
 1.7.1.1
 
