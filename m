@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935586Ab2JaRj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:39:58 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:31370 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932935Ab2JaRjz (ORCPT
+	id S1759402Ab2JaRlj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:41:39 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11237 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759358Ab2JaRlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:39:55 -0400
-Date: Wed, 31 Oct 2012 17:39:54 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Shan Wei <shanwei88@gmail.com>
-cc: jesse@nicira.com, dev@openvswitch.org, NetDev <netdev@vger.kernel.org>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 4/9] net: openvswitch: use this_cpu_ptr per-cpu helper
-In-Reply-To: <50910A04.5000003@gmail.com>
-Message-ID: <0000013ab7e86f8a-4adb8b81-19be-4264-96f1-924aaf3819f2-000000@email.amazonses.com>
-References: <50910A04.5000003@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 31 Oct 2012 13:41:32 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 31 Oct 2012 10:41:28 -0700
+Message-ID: <50916264.3010107@nvidia.com>
+Date: Wed, 31 Oct 2012 23:09:48 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V4 3/4] ARM: tegra: dts: cardhu: enable SLINK4
+References: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com> <1351674176-20603-3-git-send-email-ldewangan@nvidia.com> <50915563.40904@wwwdotorg.org>
+In-Reply-To: <50915563.40904@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012, Shan Wei wrote:
-
-> --- a/net/openvswitch/datapath.c
-> +++ b/net/openvswitch/datapath.c
-> @@ -208,7 +208,7 @@ void ovs_dp_process_received_packet(struct vport *p, struct sk_buff *skb)
->  	int error;
->  	int key_len;
+On Wednesday 31 October 2012 10:14 PM, Stephen Warren wrote:
+> On 10/31/2012 03:02 AM, Laxman Dewangan wrote:
+>> Enable SLINK4 and connected device in Tegra30 based
+>> platform Cardhu.
+>> Setting maximum spi frequency to 25MHz.
+>>
+>> Spi serial flash is connected on CS1 of SLINK4 on
+>> cardhu platform.
+>> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> +winbond Winbond Electronics corp.
+> That should really be a separate patch that goes through the devicetree
+> branch. But I guess it's fairly trivial, so it's not a big deal.
 >
-> -	stats = per_cpu_ptr(dp->stats_percpu, smp_processor_id());
-> +	stats = this_cpu_ptr(dp->stats_percpu);
 
-Well this is an improvement and may be ok if the preemption is disabled at
-this point. There is another possibility here to use this_cpu_read/add/inc
-instead of determining the pointer to the local cpu first and then
-performing operations on the fields. The pointer relocation with
-this_cpu_xxx ops is implicit in the instructions and safe against changing
-of processors. It would also save us the determination of a pointer to the
-current cpus stats structure.
+Yes, I thought that it should be in separate change. I did same on 
+earlier for ISL29028 driver and found that this small change still not 
+get merged. Therefore I clubbed this together as it can go without any 
+issue.
+I believe it is fine to merge vendor-prefix from any tree.
+
+
+>
+>> +		spi-flash@1 {
+>> +			compatible = "winbond,w25q32";
+>> +			spi-max-frequency =<20000000>;
+>> +			reg =<1>;
+>> +		};
+> Since I have an Atmel flash on my board, I see:
+>
+> [    1.282958] m25p80 spi32766.1: found at25df321a, expected w25q32
+> [    1.289103] m25p80 spi32766.1: at25df321a (4096 Kbytes)
+>
+> Is there any way around that (the first log line above)?
+>
+> I suppose the answer is that the DT should reflect the exact flash
+> device that's on the board, and perhaps the bootloader should be
+> adjusting the DT to reflect the correct value. That's probably complex.
+>
+> Do you have any idea whether Atmel or Winbond flash is more common, so
+> we can at least minimize the number of times this message appears?
+
+I observe that most of cardhu have the winbond. All SQA machine has 
+winbond. Also I believe on A04, it is winbond.
+Better to go with winbond.
+
 
