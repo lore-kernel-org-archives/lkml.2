@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423243Ab2JaQFa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:05:30 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:30598 "EHLO
+	id S1423257Ab2JaQFh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:05:37 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:30631 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423001Ab2JaQF0 (ORCPT
+	with ESMTP id S1423237Ab2JaQFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:05:26 -0400
+	Wed, 31 Oct 2012 12:05:30 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>
 CC: <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
         <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
         <linux-kernel@vger.kernel.org>, <manabian@gmail.com>,
         <David.Laight@ACULAB.COM>, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v4 03/10] net/macb: change debugging messages
-Date: Wed, 31 Oct 2012 17:04:52 +0100
-Message-ID: <a351d176ce8c7fe18b336f3dde97cf7beae41bfe.1351690694.git.nicolas.ferre@atmel.com>
+Subject: [PATCH v4 04/10] net/macb: remove macb_get_drvinfo()
+Date: Wed, 31 Oct 2012 17:04:53 +0100
+Message-ID: <4a584a0782c6d6625254d8339e2554f9646ecc16.1351690694.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <cover.1351690694.git.nicolas.ferre@atmel.com>
 References: <cover.1351690694.git.nicolas.ferre@atmel.com>
@@ -25,113 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Havard Skinnemoen <havard@skinnemoen.net>
+This function has little meaning so remove it altogether and
+let ethtool core fill in the fields automatically.
 
-Convert some noisy netdev_dbg() statements to netdev_vdbg(). Defining
-DEBUG will no longer fill up the logs; VERBOSE_DEBUG still does.
-Add one more verbose debug for ISR status.
-
-Signed-off-by: Havard Skinnemoen <havard@skinnemoen.net>
-[nicolas.ferre@atmel.com: split patch in topics, add ISR status]
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Reviewed-by: Ben Hutchings <bhutchings@solarflare.com>
 Tested-by: Joachim Eastwood <manabian@gmail.com>
 ---
- drivers/net/ethernet/cadence/macb.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ drivers/net/ethernet/cadence/macb.c | 11 -----------
+ 1 file changed, 11 deletions(-)
 
 diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index e7f554d..b161d73 100644
+index b161d73..4db52f3 100644
 --- a/drivers/net/ethernet/cadence/macb.c
 +++ b/drivers/net/ethernet/cadence/macb.c
-@@ -314,7 +314,7 @@ static void macb_tx(struct macb *bp)
- 	status = macb_readl(bp, TSR);
- 	macb_writel(bp, TSR, status);
+@@ -1225,20 +1225,9 @@ static int macb_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+ 	return phy_ethtool_sset(phydev, cmd);
+ }
  
--	netdev_dbg(bp->dev, "macb_tx status = %02lx\n", (unsigned long)status);
-+	netdev_vdbg(bp->dev, "macb_tx status = %02lx\n", (unsigned long)status);
- 
- 	if (status & (MACB_BIT(UND) | MACB_BIT(TSR_RLE))) {
- 		int i;
-@@ -381,7 +381,7 @@ static void macb_tx(struct macb *bp)
- 		if (!(bufstat & MACB_BIT(TX_USED)))
- 			break;
- 
--		netdev_dbg(bp->dev, "skb %u (data %p) TX complete\n",
-+		netdev_vdbg(bp->dev, "skb %u (data %p) TX complete\n",
- 			   tail, skb->data);
- 		dma_unmap_single(&bp->pdev->dev, rp->mapping, skb->len,
- 				 DMA_TO_DEVICE);
-@@ -407,7 +407,7 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
- 
- 	len = MACB_BFEXT(RX_FRMLEN, bp->rx_ring[last_frag].ctrl);
- 
--	netdev_dbg(bp->dev, "macb_rx_frame frags %u - %u (len %u)\n",
-+	netdev_vdbg(bp->dev, "macb_rx_frame frags %u - %u (len %u)\n",
- 		   first_frag, last_frag, len);
- 
- 	skb = netdev_alloc_skb(bp->dev, len + RX_OFFSET);
-@@ -454,7 +454,7 @@ static int macb_rx_frame(struct macb *bp, unsigned int first_frag,
- 
- 	bp->stats.rx_packets++;
- 	bp->stats.rx_bytes += len;
--	netdev_dbg(bp->dev, "received skb of length %u, csum: %08x\n",
-+	netdev_vdbg(bp->dev, "received skb of length %u, csum: %08x\n",
- 		   skb->len, skb->csum);
- 	netif_receive_skb(skb);
- 
-@@ -536,7 +536,7 @@ static int macb_poll(struct napi_struct *napi, int budget)
- 
- 	work_done = 0;
- 
--	netdev_dbg(bp->dev, "poll: status = %08lx, budget = %d\n",
-+	netdev_vdbg(bp->dev, "poll: status = %08lx, budget = %d\n",
- 		   (unsigned long)status, budget);
- 
- 	work_done = macb_rx(bp, budget);
-@@ -575,6 +575,8 @@ static irqreturn_t macb_interrupt(int irq, void *dev_id)
- 			break;
- 		}
- 
-+		netdev_vdbg(bp->dev, "isr = 0x%08lx\n", (unsigned long)status);
-+
- 		if (status & MACB_RX_INT_FLAGS) {
- 			/*
- 			 * There's no point taking any more interrupts
-@@ -586,7 +588,7 @@ static irqreturn_t macb_interrupt(int irq, void *dev_id)
- 			macb_writel(bp, IDR, MACB_RX_INT_FLAGS);
- 
- 			if (napi_schedule_prep(&bp->napi)) {
--				netdev_dbg(bp->dev, "scheduling RX softirq\n");
-+				netdev_vdbg(bp->dev, "scheduling RX softirq\n");
- 				__napi_schedule(&bp->napi);
- 			}
- 		}
-@@ -648,8 +650,8 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	u32 ctrl;
- 	unsigned long flags;
- 
--#ifdef DEBUG
--	netdev_dbg(bp->dev,
-+#if defined(DEBUG) && defined(VERBOSE_DEBUG)
-+	netdev_vdbg(bp->dev,
- 		   "start_xmit: len %u head %p data %p tail %p end %p\n",
- 		   skb->len, skb->head, skb->data,
- 		   skb_tail_pointer(skb), skb_end_pointer(skb));
-@@ -671,12 +673,12 @@ static int macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	}
- 
- 	entry = bp->tx_head;
--	netdev_dbg(bp->dev, "Allocated ring entry %u\n", entry);
-+	netdev_vdbg(bp->dev, "Allocated ring entry %u\n", entry);
- 	mapping = dma_map_single(&bp->pdev->dev, skb->data,
- 				 len, DMA_TO_DEVICE);
- 	bp->tx_skb[entry].skb = skb;
- 	bp->tx_skb[entry].mapping = mapping;
--	netdev_dbg(bp->dev, "Mapped skb data %p to DMA addr %08lx\n",
-+	netdev_vdbg(bp->dev, "Mapped skb data %p to DMA addr %08lx\n",
- 		   skb->data, (unsigned long)mapping);
- 
- 	ctrl = MACB_BF(TX_FRMLEN, len);
+-static void macb_get_drvinfo(struct net_device *dev,
+-			     struct ethtool_drvinfo *info)
+-{
+-	struct macb *bp = netdev_priv(dev);
+-
+-	strcpy(info->driver, bp->pdev->dev.driver->name);
+-	strcpy(info->version, "$Revision: 1.14 $");
+-	strcpy(info->bus_info, dev_name(&bp->pdev->dev));
+-}
+-
+ const struct ethtool_ops macb_ethtool_ops = {
+ 	.get_settings		= macb_get_settings,
+ 	.set_settings		= macb_set_settings,
+-	.get_drvinfo		= macb_get_drvinfo,
+ 	.get_link		= ethtool_op_get_link,
+ 	.get_ts_info		= ethtool_op_get_ts_info,
+ };
 -- 
 1.8.0
 
