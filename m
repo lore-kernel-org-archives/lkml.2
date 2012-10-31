@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935213Ab2JaJE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:04:56 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6599 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161031Ab2JaJEu (ORCPT
+	id S935241Ab2JaJFB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:05:01 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11321 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935214Ab2JaJE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:04:50 -0400
+	Wed, 31 Oct 2012 05:04:57 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 31 Oct 2012 01:52:02 -0700
+	by hqnvupgp06.nvidia.com on Wed, 31 Oct 2012 02:04:52 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>
 CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
 Subject: [PATCH V4 0/4] ARM: tegra: Enable SLINK controller driver
-Date: Wed, 31 Oct 2012 14:32:52 +0530
-Message-ID: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com>
+Date: Wed, 31 Oct 2012 14:32:56 +0530
+Message-ID: <1351674176-20603-5-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com>
+References: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
