@@ -1,50 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab2JaIOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 04:14:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63711 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab2JaIOt (ORCPT
+	id S935064Ab2JaISd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 04:18:33 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:59117 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932520Ab2JaIS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 04:14:49 -0400
-From: ycnian@gmail.com
-To: Trond.Myklebust@netapp.com
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yanchuan Nian <ycnian@gmail.com>
-Subject: [PATCH] nfs: Check whether a layout pointer is NULL before free it
-Date: Wed, 31 Oct 2012 16:05:48 +0800
-Message-Id: <1351670748-21927-1-git-send-email-ycnian@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Wed, 31 Oct 2012 04:18:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <1351662932-22279-2-git-send-email-daniel@numascale-asia.com>
+References: <1351662932-22279-1-git-send-email-daniel@numascale-asia.com>
+	<1351662932-22279-2-git-send-email-daniel@numascale-asia.com>
+Date: Wed, 31 Oct 2012 09:18:26 +0100
+Message-ID: <CAPVoSvTz4=dabySPCjjR3yED_QnC_OwhJUZjQty6zYH4=FKVgg@mail.gmail.com>
+Subject: Re: [PATCH 2/4] AMD64 EDAC: Add support for >255 memory controllers
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Steffen Persvold <sp@numascale.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanchuan Nian <ycnian@gmail.com>
+On Wed, Oct 31, 2012 at 6:55 AM, Daniel J Blueman
+<daniel@numascale-asia.com> wrote:
+> As the AMD64 last-level-cache ID is 16-bits and federated systems
+> eg using Numascale's NumaConnect/NumaChip can have more than 255 memory
+> controllers, use 16-bits to store the ID.
+>
+> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+> ---
+>  drivers/edac/amd64_edac.c |   18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+> index 18d404a..9920dfd 100644
+> --- a/drivers/edac/amd64_edac.c
+> +++ b/drivers/edac/amd64_edac.c
+> @@ -942,7 +942,7 @@ static u64 get_error_address(struct mce *m)
+>                 struct amd64_pvt *pvt;
+>                 u64 cc6_base, tmp_addr;
+>                 u32 tmp;
+> -               u8 mce_nid, intlv_en;
+> +               u16 mce_nid, intlv_en;
 
-The new layout pointer in pnfs_find_alloc_layout() may be NULL because of 
-out of memory. we must do some check work, otherwise pnfs_free_layout_hdr()
-will go wrong because it can not deal with a NULL pointer.
+Is the change of intlv_en to u16 intentional?
+I assume its not, because...
 
-Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
----
- fs/nfs/pnfs.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+>                 if ((addr & GENMASK(24, 47)) >> 24 != 0x00fdf7)
+>                         return addr;
+> @@ -1499,7 +1499,7 @@ static int f1x_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
+>         u8 channel;
+>         bool high_range = false;
+>
+> -       u8 node_id    = dram_dst_node(pvt, range);
+> +       u16 node_id   = dram_dst_node(pvt, range);
+>         u8 intlv_en   = dram_intlv_en(pvt, range);
 
-diff --git a/fs/nfs/pnfs.c b/fs/nfs/pnfs.c
-index fe624c9..2878f97 100644
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -925,8 +925,8 @@ pnfs_find_alloc_layout(struct inode *ino,
- 	if (likely(nfsi->layout == NULL)) {	/* Won the race? */
- 		nfsi->layout = new;
- 		return new;
--	}
--	pnfs_free_layout_hdr(new);
-+	} else if (new != NULL)
-+		pnfs_free_layout_hdr(new);
- out_existing:
- 	pnfs_get_layout_hdr(nfsi->layout);
- 	return nfsi->layout;
--- 
-1.7.4.4
+... here you keep it at u8.
 
+>         u32 intlv_sel = dram_intlv_sel(pvt, range);
+>
+> @@ -2306,7 +2306,7 @@ out:
+>         return ret;
+>  }
+>
+> -static int toggle_ecc_err_reporting(struct ecc_settings *s, u8 nid, bool on)
+> +static int toggle_ecc_err_reporting(struct ecc_settings *s, u16 nid, bool on)
+>  {
+>         cpumask_var_t cmask;
+>         int cpu;
+> @@ -2344,7 +2344,7 @@ static int toggle_ecc_err_reporting(struct ecc_settings *s, u8 nid, bool on)
+>         return 0;
+>  }
+>
+> -static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
+> +static bool enable_ecc_error_reporting(struct ecc_settings *s, u16 nid,
+>                                        struct pci_dev *F3)
+>  {
+>         bool ret = true;
+> @@ -2396,7 +2396,7 @@ static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
+>         return ret;
+>  }
+>
+> -static void restore_ecc_error_reporting(struct ecc_settings *s, u8 nid,
+> +static void restore_ecc_error_reporting(struct ecc_settings *s, u16 nid,
+>                                         struct pci_dev *F3)
+>  {
+>         u32 value, mask = 0x3;          /* UECC/CECC enable */
+> @@ -2435,7 +2435,7 @@ static const char *ecc_msg =
+>         "'ecc_enable_override'.\n"
+>         " (Note that use of the override may cause unknown side effects.)\n";
+>
+> -static bool ecc_enabled(struct pci_dev *F3, u8 nid)
+> +static bool ecc_enabled(struct pci_dev *F3, u16 nid)
+>  {
+>         u32 value;
+>         u8 ecc_en = 0;
+> @@ -2556,7 +2556,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
+>         struct mem_ctl_info *mci = NULL;
+>         struct edac_mc_layer layers[2];
+>         int err = 0, ret;
+> -       u8 nid = get_node_id(F2);
+> +       u16 nid = get_node_id(F2);
+>
+>         ret = -ENOMEM;
+>         pvt = kzalloc(sizeof(struct amd64_pvt), GFP_KERNEL);
+> @@ -2647,7 +2647,7 @@ err_ret:
+>  static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
+>                                              const struct pci_device_id *mc_type)
+>  {
+> -       u8 nid = get_node_id(pdev);
+> +       u16 nid = get_node_id(pdev);
+>         struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
+>         struct ecc_settings *s;
+>         int ret = 0;
+> @@ -2697,7 +2697,7 @@ static void __devexit amd64_remove_one_instance(struct pci_dev *pdev)
+>  {
+>         struct mem_ctl_info *mci;
+>         struct amd64_pvt *pvt;
+> -       u8 nid = get_node_id(pdev);
+> +       u16 nid = get_node_id(pdev);
+>         struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
+>         struct ecc_settings *s = ecc_stngs[nid];
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
