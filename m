@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760404Ab2JaToz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 15:44:55 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36498 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760214Ab2JaTow (ORCPT
+	id S1760432Ab2JaTpA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 15:45:00 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:38296 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760407Ab2JaTo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 15:44:52 -0400
+	Wed, 31 Oct 2012 15:44:57 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
         bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 4/8] cgroup: deactivate CSS's and mark cgroup dead before invoking ->pre_destroy()
-Date: Wed, 31 Oct 2012 12:44:06 -0700
-Message-Id: <1351712650-23709-5-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 6/8] memcg: make mem_cgroup_reparent_charges non failing
+Date: Wed, 31 Oct 2012 12:44:08 -0700
+Message-Id: <1351712650-23709-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351712650-23709-1-git-send-email-tj@kernel.org>
 References: <1351712650-23709-1-git-send-email-tj@kernel.org>
@@ -23,166 +22,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because ->pre_destroy() could fail and can't be called under
-cgroup_mutex, cgroup destruction did something very ugly.
+From: Michal Hocko <mhocko@suse.cz>
 
-  1. Grab cgroup_mutex and verify it can be destroyed; fail otherwise.
+Now that pre_destroy callbacks are called from the context where neither
+any task can attach the group nor any children group can be added there
+is no other way to fail from mem_cgroup_pre_destroy.
+mem_cgroup_pre_destroy doesn't have to take a reference to memcg's css
+because all css' are marked dead already.
 
-  2. Release cgroup_mutex and call ->pre_destroy().
+tj: Remove now unused local variable @cgrp from
+    mem_cgroup_reparent_charges().
 
-  3. Re-grab cgroup_mutex and verify it can still be destroyed; fail
-     otherwise.
-
-  4. Continue destroying.
-
-In addition to being ugly, it has been always broken in various ways.
-For example, memcg ->pre_destroy() expects the cgroup to be inactive
-after it's done but tasks can be attached and detached between #2 and
-#3 and the conditions that memcg verified in ->pre_destroy() might no
-longer hold by the time control reaches #3.
-
-Now that ->pre_destroy() is no longer allowed to fail.  We can switch
-to the following.
-
-  1. Grab cgroup_mutex and verify it can be destroyed; fail otherwise.
-
-  2. Deactivate CSS's and mark the cgroup removed thus preventing any
-     further operations which can invalidate the verification from #1.
-
-  3. Release cgroup_mutex and call ->pre_destroy().
-
-  4. Re-grab cgroup_mutex and continue destroying.
-
-After this change, controllers can safely assume that ->pre_destroy()
-will only be called only once for a given cgroup and, once
-->pre_destroy() is called, the cgroup will stay dormant till it's
-destroyed.
-
-This removes the only reason ->pre_destroy() can fail - new task being
-attached or child cgroup being created inbetween.  Error out path is
-removed and ->pre_destroy() invocation is open coded in
-cgroup_rmdir().
-
-v2: cgroup_call_pre_destroy() removal moved to this patch per Michal.
-    Commit message updated per Glauber.
-
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Glauber Costa <glommer@parallels.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@parallels.com>
 ---
- kernel/cgroup.c | 65 +++++++++++++++++----------------------------------------
- 1 file changed, 19 insertions(+), 46 deletions(-)
+ mm/memcontrol.c | 19 ++++++-------------
+ 1 file changed, 6 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index f22e3cd..66204a6 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -851,27 +851,6 @@ static struct inode *cgroup_new_inode(umode_t mode, struct super_block *sb)
- 	return inode;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 930edfa..6678f99 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3740,14 +3740,11 @@ static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+  *
+  * Caller is responsible for holding css reference on the memcg.
+  */
+-static int mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
++static void mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
+ {
+-	struct cgroup *cgrp = memcg->css.cgroup;
+ 	int node, zid;
+ 
+ 	do {
+-		if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
+-			return -EBUSY;
+ 		/* This is for making all *used* pages to be on LRU. */
+ 		lru_add_drain_all();
+ 		drain_all_stock_sync(memcg);
+@@ -3773,8 +3770,6 @@ static int mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
+ 		 * charge before adding to the LRU.
+ 		 */
+ 	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0);
+-
+-	return 0;
  }
  
--/*
-- * Call subsys's pre_destroy handler.
-- * This is called before css refcnt check.
-- */
--static int cgroup_call_pre_destroy(struct cgroup *cgrp)
--{
--	struct cgroup_subsys *ss;
--	int ret = 0;
--
--	for_each_subsys(cgrp->root, ss) {
--		if (!ss->pre_destroy)
--			continue;
--
--		ret = ss->pre_destroy(cgrp);
--		if (WARN_ON_ONCE(ret))
--			break;
--	}
+ /*
+@@ -3811,7 +3806,9 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
+ 
+ 	}
+ 	lru_add_drain();
+-	return mem_cgroup_reparent_charges(memcg);
++	mem_cgroup_reparent_charges(memcg);
++
++	return 0;
+ }
+ 
+ static int mem_cgroup_force_empty_write(struct cgroup *cont, unsigned int event)
+@@ -5008,13 +5005,9 @@ free_out:
+ static int mem_cgroup_pre_destroy(struct cgroup *cont)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+-	int ret;
+ 
+-	css_get(&memcg->css);
+-	ret = mem_cgroup_reparent_charges(memcg);
+-	css_put(&memcg->css);
 -
 -	return ret;
--}
--
- static void cgroup_diput(struct dentry *dentry, struct inode *inode)
- {
- 	/* is dentry a directory ? if so, kfree() associated cgroup */
-@@ -4078,19 +4057,6 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
- 	DEFINE_WAIT(wait);
- 	struct cgroup_event *event, *tmp;
- 	struct cgroup_subsys *ss;
--	int ret;
--
--	/* the vfs holds both inode->i_mutex already */
--	mutex_lock(&cgroup_mutex);
--	if (atomic_read(&cgrp->count) != 0) {
--		mutex_unlock(&cgroup_mutex);
--		return -EBUSY;
--	}
--	if (!list_empty(&cgrp->children)) {
--		mutex_unlock(&cgroup_mutex);
--		return -EBUSY;
--	}
--	mutex_unlock(&cgroup_mutex);
++	mem_cgroup_reparent_charges(memcg);
++	return 0;
+ }
  
- 	/*
- 	 * In general, subsystem has no css->refcnt after pre_destroy(). But
-@@ -4103,16 +4069,7 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
- 	 */
- 	set_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
- 
--	/*
--	 * Call pre_destroy handlers of subsys. Notify subsystems
--	 * that rmdir() request comes.
--	 */
--	ret = cgroup_call_pre_destroy(cgrp);
--	if (ret) {
--		clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
--		return ret;
--	}
--
-+	/* the vfs holds both inode->i_mutex already */
- 	mutex_lock(&cgroup_mutex);
- 	parent = cgrp->parent;
- 	if (atomic_read(&cgrp->count) || !list_empty(&cgrp->children)) {
-@@ -4122,13 +4079,30 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
- 	}
- 	prepare_to_wait(&cgroup_rmdir_waitq, &wait, TASK_INTERRUPTIBLE);
- 
--	/* block new css_tryget() by deactivating refcnt */
-+	/*
-+	 * Block new css_tryget() by deactivating refcnt and mark @cgrp
-+	 * removed.  This makes future css_tryget() and child creation
-+	 * attempts fail thus maintaining the removal conditions verified
-+	 * above.
-+	 */
- 	for_each_subsys(cgrp->root, ss) {
- 		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
- 
- 		WARN_ON(atomic_read(&css->refcnt) < 0);
- 		atomic_add(CSS_DEACT_BIAS, &css->refcnt);
- 	}
-+	set_bit(CGRP_REMOVED, &cgrp->flags);
-+
-+	/*
-+	 * Tell subsystems to initate destruction.  pre_destroy() should be
-+	 * called with cgroup_mutex unlocked.  See 3fa59dfbc3 ("cgroup: fix
-+	 * potential deadlock in pre_destroy") for details.
-+	 */
-+	mutex_unlock(&cgroup_mutex);
-+	for_each_subsys(cgrp->root, ss)
-+		if (ss->pre_destroy)
-+			WARN_ON_ONCE(ss->pre_destroy(cgrp));
-+	mutex_lock(&cgroup_mutex);
- 
- 	/*
- 	 * Put all the base refs.  Each css holds an extra reference to the
-@@ -4144,7 +4118,6 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
- 	clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
- 
- 	raw_spin_lock(&release_list_lock);
--	set_bit(CGRP_REMOVED, &cgrp->flags);
- 	if (!list_empty(&cgrp->release_list))
- 		list_del_init(&cgrp->release_list);
- 	raw_spin_unlock(&release_list_lock);
+ static void mem_cgroup_destroy(struct cgroup *cont)
 -- 
 1.7.11.7
 
