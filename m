@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423179Ab2JaQEs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:04:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17538 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422946Ab2JaQEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:04:46 -0400
-Date: Wed, 31 Oct 2012 12:04:30 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, James Morris <jmorris@namei.org>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
-        cgroups@vger.kernel.org
-Subject: [PATCH] device_cgroup: fix unchecked cgroup parent usage
-Message-ID: <20121031160430.GD14789@redhat.com>
+	id S1423197Ab2JaQFF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:05:05 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:30433 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422946Ab2JaQFC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 12:05:02 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>
+CC: <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
+        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
+        <linux-kernel@vger.kernel.org>, <manabian@gmail.com>,
+        <David.Laight@ACULAB.COM>, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v4 00/10] net/macb: driver enhancement concerning GEM support, ring logic and cleanup
+Date: Wed, 31 Oct 2012 17:04:49 +0100
+Message-ID: <cover.1351690694.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In 4cef7299b4786879a3e113e84084a72b24590c5b the cgroup parent usage is
-unchecked. root will not have a parent and trying to use
-device.{allow,deny} will cause problems. For some reason my stressing
-scripts didn't test the root directory so I didn't catch it on my
-regular tests.
+This is an enhancement work that began several years ago. I try to catchup with
+some performance improvement that has been implemented then by Havard.
+The ring index logic and the TX error path modification are the biggest changes
+but some cleanup/debugging have been added along the way.
+The GEM revision will benefit from the Gigabit support.
+Newer pinctrl infrastructure support is added but it is optional.
 
-Andrew, Tejun, this patch needs to make Linus tree ASAP or a revert for
-4cef7299b4786879a3e113e84084a72b24590c5b.
+The series has been tested on several Atmel AT91 SoC with the two MACB/GEM
+flavors.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: James Morris <jmorris@namei.org>
-Cc: Pavel Emelyanov <xemul@openvz.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+v4: - remove unneeded device tree header includes
+    - modified the computation of available entries in ring buffer
+v3: - rebased on net-next to take into account current effor to merge
+      at91_ether with macb drivers
+    - add additional patch to use the new pinctrl infrastructure
+v2: - modify the tx error handling: now uses a workqueue
+    - information provided by ethtool -i were not accurate: removed
 
---- github.orig/security/device_cgroup.c	2012-10-26 17:18:01.739366780 -0400
-+++ github/security/device_cgroup.c	2012-10-29 10:03:33.221918003 -0400
-@@ -352,6 +352,8 @@
-  */
- static inline int may_allow_all(struct dev_cgroup *parent)
- {
-+	if (!parent)
-+		return 1;
- 	return parent->behavior == DEVCG_DEFAULT_ALLOW;
- }
- 
-@@ -376,11 +378,14 @@
- 	int count, rc;
- 	struct dev_exception_item ex;
- 	struct cgroup *p = devcgroup->css.cgroup;
--	struct dev_cgroup *parent = cgroup_to_devcgroup(p->parent);
-+	struct dev_cgroup *parent = NULL;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
-+	if (p->parent)
-+		parent = cgroup_to_devcgroup(p->parent);
-+
- 	memset(&ex, 0, sizeof(ex));
- 	b = buffer;
- 
-@@ -391,11 +396,14 @@
- 			if (!may_allow_all(parent))
- 				return -EPERM;
- 			dev_exception_clean(devcgroup);
-+			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
-+			if (!parent)
-+				break;
-+
- 			rc = dev_exceptions_copy(&devcgroup->exceptions,
- 						 &parent->exceptions);
- 			if (rc)
- 				return rc;
--			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
- 			break;
- 		case DEVCG_DENY:
- 			dev_exception_clean(devcgroup);
+
+Havard Skinnemoen (4):
+  net/macb: memory barriers cleanup
+  net/macb: change debugging messages
+  net/macb: clean up ring buffer logic
+  net/macb: Offset first RX buffer by two bytes
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+  net/macb: add pinctrl consumer support
+
+Nicolas Ferre (4):
+  net/macb: remove macb_get_drvinfo()
+  net/macb: tx status is more than 8 bits now
+  net/macb: ethtool interface: add register dump feature
+  net/macb: better manage tx errors
+
+Patrice Vilchez (1):
+  net/macb: Add support for Gigabit Ethernet mode
+
+ drivers/net/ethernet/cadence/at91_ether.c |   6 +-
+ drivers/net/ethernet/cadence/macb.c       | 448 +++++++++++++++++++++---------
+ drivers/net/ethernet/cadence/macb.h       |  30 +-
+ 3 files changed, 337 insertions(+), 147 deletions(-)
+
+-- 
+1.8.0
+
