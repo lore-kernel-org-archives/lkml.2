@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935619Ab2JaN7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:59:12 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37290 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588Ab2JaN7I (ORCPT
+	id S935544Ab2JaOC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 10:02:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35645 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647Ab2JaOCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:59:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAD+1EGPO_UWFqQbEHqjHDYY+3iAWVLX8i6a9-w7JjfB20vzW2Q@mail.gmail.com>
-References: <20121030162004.GA3467@Super-MAGI>
-	<CAE8XmWo5YDu7iBVKH5Z2_EeAAePia24zwtfgPFJ0Cfxjz8Avwg@mail.gmail.com>
-	<CAD+1EGPO_UWFqQbEHqjHDYY+3iAWVLX8i6a9-w7JjfB20vzW2Q@mail.gmail.com>
-Date: Wed, 31 Oct 2012 21:59:06 +0800
-Message-ID: <CA+HMz3g9k9TPsCLCsHGtANdrOrRuTsuuim+vTgDR0DQFPuFFBg@mail.gmail.com>
-Subject: Re: [PATCH]Documentation: Chinese translation of Documentation/arm/kernel_user_helpers.txt
-From: Ninja Tekkaman <tekkamanninja@gmail.com>
-To: harryxiyou <harryxiyou@gmail.com>
-Cc: Dongsheng Song <dongsheng.song@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dave Martin <dave.martin@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 31 Oct 2012 10:02:25 -0400
+From: anish kumar <anish198519851985@gmail.com>
+To: rostedt@goodmis.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        akpm@linux-foundation.org, paul.gortmaker@windriver.com,
+        tglx@linutronix.de, mingo@kernel.org, fweisbec@gmail.com
+Cc: anish kumar <anish198519851985@gmail.com>
+Subject: [PATCH] [RFC]IRQ CORE: irq_work_queue function return value not used.
+Date: Wed, 31 Oct 2012 23:02:06 +0900
+Message-Id: <1351692126-8944-1-git-send-email-anish198519851985@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9VDxLGv018694
 
-Hi,  Harry Wei
+From: anish kumar <anish198519851985@gmail.com>
 
-Yes, you are right, I will make a new patch.
+As no one is using the return value of irq_work_queue function
+it is better to just make it void.
 
-在 2012年10月31日 下午6:42，harryxiyou <harryxiyou@gmail.com> 写道：
-> 2012/10/31 Dongsheng Song <dongsheng.song@gmail.com>:
->> Hi,
->
-> Hi, friend
->>
->> There have some misleading in the translation:
->>
->> -------------------------------- origin  --------------------------------
->> User space is expected to bypass those helpers and implement those things
->> inline (either in the code emitted directly by the compiler, or part of
->> the implementation of a library call) when optimizing for a recent enough
->> processor that has the necessary native support, but only if resulting
->> binaries are already to be incompatible with earlier ARM processors due to
->> usage of similar native instructions for other things.  In other words
->> don't make binaries unable to run on earlier processors just for the sake
->> of not using these kernel helpers if your compiled code is not going to
->> use new instructions for other purpose.
->>
->> -------------------------------- Fu Wei  --------------------------------
->> 当对那些拥有基本原生支持的新型处理器的代码进行优化时，用户空间最好绕
->> 过这些辅助代码并在内联函数中实现这些操作（无论是通过编译器在代码中直
->> 接放置，还是作为库函数调用实现的一部分），而仅在其他处理器因使用相似
->> 的本地指令而导致二进制结果已与早期 ARM 处理不兼容的情况下才使用这些
->> 辅助代码。也就是说，如果你编译的代码不会为了其他目的使用新的指令，则
->> 不要仅为了不使用这些内核辅助代码而导致二进制程序无法在早期处理器上运
->> 行。
->> -------------------------------- me  --------------------------------
->> 当对那些拥有原生支持的新型处理器进行代码优化时，如果已经在其它代码中
->> 使用类似的新指令，从而导致二进制结果已与早期 ARM 处理器不兼容的情况下，
->> 用户空间最好绕过这些辅助代码，并在内联函数中实现这些操作（无论是通过
->> 编译器在代码中直接发出，还是作为库函数调用实现的一部分）。也就是说，
->> 如果你编译的代码不会为了其他目的使用新指令，则不要仅为了不使用这些内核
->> 辅助代码，导致二进制程序无法在早期处理器上运行。
->>
->> The attachment is my review result.
->>
->
-> So i think you can make a patch for your new translation.
->
->
->
-> --
-> Thanks
-> Harry Wei
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+This patch is just a way to understand if there is some future
+plan to use it but in any case please let me know the reason.
+---
+ kernel/irq_work.c |   21 ++++++++++-----------
+ 1 files changed, 10 insertions(+), 11 deletions(-)
+
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 1588e3b..4a9a44c 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -32,21 +32,21 @@ static DEFINE_PER_CPU(struct llist_head, irq_work_list);
+ /*
+  * Claim the entry so that no one else will poke at it.
+  */
+-static bool irq_work_claim(struct irq_work *work)
++static void irq_work_claim(struct irq_work *work)
+ {
+ 	unsigned long flags, nflags;
+ 
+ 	for (;;) {
+ 		flags = work->flags;
+ 		if (flags & IRQ_WORK_PENDING)
+-			return false;
++			return;
+ 		nflags = flags | IRQ_WORK_FLAGS;
+ 		if (cmpxchg(&work->flags, flags, nflags) == flags)
+ 			break;
+ 		cpu_relax();
+ 	}
+ 
+-	return true;
++	return;
+ }
+ 
+ void __weak arch_irq_work_raise(void)
+@@ -79,15 +79,14 @@ static void __irq_work_queue(struct irq_work *work)
+  *
+  * Can be re-enqueued while the callback is still in progress.
+  */
+-bool irq_work_queue(struct irq_work *work)
++void irq_work_queue(struct irq_work *work)
+ {
+-	if (!irq_work_claim(work)) {
+-		/*
+-		 * Already enqueued, can't do!
+-		 */
+-		return false;
+-	}
+-
++	/*
++	 * This function either will claim the entry to queue
++	 * the work or if the work is already queued and is in
++	 * pending state then it will simply return.
++	 */
++	irq_work_claim(work)
+ 	__irq_work_queue(work);
+ 	return true;
+ }
+-- 
+1.7.1
+
