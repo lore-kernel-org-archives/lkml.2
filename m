@@ -1,206 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965296Ab2J3SQw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:16:52 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:59051 "EHLO
+	id S965253Ab2J3SQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:16:50 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:59054 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932932Ab2J3SMn (ORCPT
+	by vger.kernel.org with ESMTP id S934046Ab2J3SMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Oct 2012 14:12:43 -0400
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
+To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        "Patil, Rachna" <rachna@ti.com>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org
-Subject: [PATCH] ti_tscadc: Update with IIO map interface & deal with partial activation
-Date: Wed, 31 Oct 2012 17:55:38 +0200
-Message-Id: <1351698938-3839-1-git-send-email-panto@antoniou-consulting.com>
+        spi-devel-general@lists.sourceforge.net,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
+Subject: [PATCH] spi: Export OF interfaces.
+Date: Wed, 31 Oct 2012 17:57:33 +0200
+Message-Id: <1351699053-4533-1-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an IIO map interface that consumers can use.
-Also make sure the mfd device doesn't activate a driver which
-the configuration doesn't require.
+Export an interface that other in-kernel users can utilize.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- drivers/iio/adc/ti_am335x_adc.c      | 53 ++++++++++++++++++++++++++++++------
- drivers/mfd/ti_am335x_tscadc.c       | 30 ++++++++++++++------
- include/linux/mfd/ti_am335x_tscadc.h |  8 ++----
- 3 files changed, 68 insertions(+), 23 deletions(-)
+ drivers/spi/spi.c       | 31 +++++++++++++++++++++++--------
+ include/linux/spi/spi.h | 18 ++++++++++++++++++
+ 2 files changed, 41 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-index 02a43c8..d48fd79 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -20,8 +20,9 @@
- #include <linux/slab.h>
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
--#include <linux/io.h>
- #include <linux/iio/iio.h>
-+#include <linux/iio/machine.h>
-+#include <linux/iio/driver.h>
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 84c2861..f8de2f2 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -801,14 +801,17 @@ err_init_queue:
+ /*-------------------------------------------------------------------------*/
  
- #include <linux/mfd/ti_am335x_tscadc.h>
- #include <linux/platform_data/ti_am335x_adc.h>
-@@ -29,6 +30,8 @@
- struct tiadc_device {
- 	struct ti_tscadc_dev *mfd_tscadc;
- 	int channels;
-+	char *buf;
-+	struct iio_map *map;
- };
- 
- static unsigned int tiadc_readl(struct tiadc_device *adc, unsigned int reg)
-@@ -75,25 +78,57 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
- static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
+ #if defined(CONFIG_OF) && !defined(CONFIG_SPARC)
++
+ /**
+- * of_register_spi_devices() - Register child devices onto the SPI bus
++ * of_register_node_spi_devices() - Register child devices onto the SPI bus
+  * @master:	Pointer to spi_master device
++ * @parent_node: Pointer to the device node containg the devices
+  *
+  * Registers an spi_device for each child node of master node which has a 'reg'
+  * property.
+  */
+-static void of_register_spi_devices(struct spi_master *master)
++void of_register_node_spi_devices(struct spi_master *master,
++		struct device_node *parent_node)
  {
- 	struct iio_chan_spec *chan_array;
--	int i;
--
--	indio_dev->num_channels = channels;
--	chan_array = kcalloc(indio_dev->num_channels,
--			sizeof(struct iio_chan_spec), GFP_KERNEL);
-+	struct iio_chan_spec *chan;
-+	char *s;
-+	int i, len, size, ret;
+ 	struct spi_device *spi;
+ 	struct device_node *nc;
+@@ -816,10 +819,10 @@ static void of_register_spi_devices(struct spi_master *master)
+ 	int rc;
+ 	int len;
  
-+	size = indio_dev->num_channels * (sizeof(struct iio_chan_spec) + 6);
-+	chan_array = kzalloc(size, GFP_KERNEL);
- 	if (chan_array == NULL)
- 		return -ENOMEM;
+-	if (!master->dev.of_node)
++	if (!parent_node)
+ 		return;
  
--	for (i = 0; i < (indio_dev->num_channels); i++) {
--		struct iio_chan_spec *chan = chan_array + i;
-+	/* buffer space is after the array */
-+	s = (char *)(chan_array + indio_dev->num_channels);
-+	chan = chan_array;
-+	for (i = 0; i < indio_dev->num_channels; i++, chan++, s += len + 1) {
-+
-+		len = sprintf(s, "AIN%d", i);
-+
- 		chan->type = IIO_VOLTAGE;
- 		chan->indexed = 1;
- 		chan->channel = i;
--		chan->info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT;
-+		chan->datasheet_name = s;
-+		chan->scan_type.sign = 'u';
-+		chan->scan_type.realbits = 12;
-+		chan->scan_type.storagebits = 32;
-+		chan->scan_type.shift = 0;
+-	for_each_child_of_node(master->dev.of_node, nc) {
++	for_each_child_of_node(parent_node, nc) {
+ 		/* Alloc an spi_device */
+ 		spi = spi_alloc_device(master);
+ 		if (!spi) {
+@@ -884,8 +887,20 @@ static void of_register_spi_devices(struct spi_master *master)
+ 
  	}
+ }
+-#else
+-static void of_register_spi_devices(struct spi_master *master) { }
++EXPORT_SYMBOL_GPL(of_register_node_spi_devices);
++
++/**
++ * of_register_spi_devices() - Register child devices onto the SPI bus
++ * @master:	Pointer to spi_master device
++ *
++ * Registers an spi_device for each child node of master node which has a 'reg'
++ * property.
++ */
++void of_register_spi_devices(struct spi_master *master)
++{
++	of_register_node_spi_devices(master, master->dev.of_node);
++}
++EXPORT_SYMBOL_GPL(of_register_spi_devices);
+ #endif
  
- 	indio_dev->channels = chan_array;
- 
-+	size = (indio_dev->num_channels + 1) * sizeof(struct iio_map);
-+	adc_dev->map = kzalloc(size, GFP_KERNEL);
-+	if (adc_dev->map == NULL) {
-+		kfree(chan_array);
-+		return -ENOMEM;
-+	}
-+
-+	for (i = 0; i < indio_dev->num_channels; i++) {
-+		adc_dev->map[i].adc_channel_label = chan_array[i].datasheet_name;
-+		adc_dev->map[i].consumer_dev_name = "any";
-+		adc_dev->map[i].consumer_channel = chan_array[i].datasheet_name;
-+	}
-+	adc_dev->map[i].adc_channel_label = NULL;
-+	adc_dev->map[i].consumer_dev_name = NULL;
-+	adc_dev->map[i].consumer_channel = NULL;
-+
-+	ret = iio_map_array_register(indio_dev, adc_dev->map);
-+	if (ret != 0) {
-+		kfree(adc_dev->map);
-+		kfree(chan_array);
-+		return -ENOMEM;
-+	}
-+
- 	return indio_dev->num_channels;
+ static void spi_master_release(struct device *dev)
+@@ -896,12 +911,12 @@ static void spi_master_release(struct device *dev)
+ 	kfree(master);
  }
  
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index e947dd8..cbb8b70c 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -176,26 +176,38 @@ static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
- 	ctrl |= CNTRLREG_TSCSSENB;
- 	tscadc_writel(tscadc, REG_CTRL, ctrl);
- 
-+	tscadc->used_cells = 0;
-+	tscadc->tsc_cell = -1;
-+	tscadc->adc_cell = -1;
-+
- 	/* TSC Cell */
--	cell = &tscadc->cells[TSC_CELL];
--	cell->name = "tsc";
--	cell->platform_data = tscadc;
--	cell->pdata_size = sizeof(*tscadc);
-+	if (tsc_wires > 0) {
-+		tscadc->tsc_cell = tscadc->used_cells;
-+		cell = &tscadc->cells[tscadc->used_cells++];
-+		cell->name = "tsc";
-+		cell->platform_data = tscadc;
-+		cell->pdata_size = sizeof(*tscadc);
-+	}
- 
- 	/* ADC Cell */
--	cell = &tscadc->cells[ADC_CELL];
--	cell->name = "tiadc";
--	cell->platform_data = tscadc;
--	cell->pdata_size = sizeof(*tscadc);
-+	if (adc_channels > 0) {
-+		tscadc->adc_cell = tscadc->used_cells;
-+		cell = &tscadc->cells[tscadc->used_cells++];
-+		cell->name = "tiadc";
-+		cell->platform_data = tscadc;
-+		cell->pdata_size = sizeof(*tscadc);
-+	}
- 
- 	err = mfd_add_devices(&pdev->dev, pdev->id, tscadc->cells,
--			TSCADC_CELLS, NULL, 0, NULL);
-+			tscadc->used_cells, NULL, 0, NULL);
- 	if (err < 0)
- 		goto err_disable_clk;
- 
- 	device_init_wakeup(&pdev->dev, true);
- 	platform_set_drvdata(pdev, tscadc);
- 
-+	dev_info(&pdev->dev, "Initialized OK.\n");
-+
- 	return 0;
- 
- err_disable_clk:
-diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index 9624fea..50a245f 100644
---- a/include/linux/mfd/ti_am335x_tscadc.h
-+++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -128,11 +128,6 @@
- 
- #define TSCADC_CELLS		2
- 
--enum tscadc_cells {
--	TSC_CELL,
--	ADC_CELL,
--};
+-static struct class spi_master_class = {
++struct class spi_master_class = {
+ 	.name		= "spi_master",
+ 	.owner		= THIS_MODULE,
+ 	.dev_release	= spi_master_release,
+ };
 -
- struct mfd_tscadc_board {
- 	struct tsc_data *tsc_init;
- 	struct adc_data *adc_init;
-@@ -143,6 +138,9 @@ struct ti_tscadc_dev {
- 	struct regmap *regmap_tscadc;
- 	void __iomem *tscadc_base;
- 	int irq;
-+	int used_cells;	/* 0-2 */
-+	int tsc_cell;	/* -1 if not used */
-+	int adc_cell;	/* -1 if not used */
- 	struct mfd_cell cells[TSCADC_CELLS];
++EXPORT_SYMBOL_GPL(spi_master_class);
  
- 	/* tsc device */
+ 
+ /**
+diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+index fa702ae..618aa5e 100644
+--- a/include/linux/spi/spi.h
++++ b/include/linux/spi/spi.h
+@@ -30,6 +30,8 @@
+  */
+ extern struct bus_type spi_bus_type;
+ 
++extern struct class spi_master_class;
++
+ /**
+  * struct spi_device - Master side proxy for an SPI slave device
+  * @dev: Driver model representation of the device.
+@@ -856,4 +858,20 @@ spi_unregister_device(struct spi_device *spi)
+ extern const struct spi_device_id *
+ spi_get_device_id(const struct spi_device *sdev);
+ 
++#if defined(CONFIG_OF) && !defined(CONFIG_SPARC)
++
++void of_register_node_spi_devices(struct spi_master *master,
++		struct device_node *parent_node);
++
++void of_register_spi_devices(struct spi_master *master);
++
++#else
++
++static inline void of_register_node_spi_devices(struct spi_master *master,
++		struct device_node *parent_node) { }
++
++static inline void of_register_spi_devices(struct spi_master *master) { }
++
++#endif
++
+ #endif /* __LINUX_SPI_H */
 -- 
 1.7.12
 
