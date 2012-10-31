@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935324Ab2JaJ4h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:56:37 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:46824 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab2JaJ4d (ORCPT
+	id S1756532Ab2JaJ5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:57:44 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:35764 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751847Ab2JaJ5l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:56:33 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/ll2s7qFK2M
-X-RZG-CLASS-ID: mo00
-Date: Wed, 31 Oct 2012 10:56:31 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Pasi =?utf-8?B?S8Okcmtrw6RpbmVu?= <pasik@iki.fi>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [Xen-devel] [PATCH] xen PVonHVM: require at least Xen 3.4 as dom0
-Message-ID: <20121031095631.GA27937@aepfle.de>
-References: <1351613105-24408-1-git-send-email-olaf@aepfle.de>
- <20121030181732.GZ8912@reaktio.net>
+	Wed, 31 Oct 2012 05:57:41 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121030181732.GZ8912@reaktio.net>
-User-Agent: Mutt/1.5.21.rev5555 (2012-07-20)
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v3 06/10] net/macb: clean up ring buffer logic
+Date: Wed, 31 Oct 2012 09:48:09 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7081@saturn3.aculab.com>
+In-Reply-To: <5090FFF5.6020109@atmel.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH v3 06/10] net/macb: clean up ring buffer logic
+thread-index: Ac23S5WaFhtsqL9BT8i/Rgf2M/dCTQAARJdg
+References: <cover.1351591858.git.nicolas.ferre@atmel.com> <75eb5df193c504e68ebff7d6a6a88d9a1cc678cb.1351591858.git.nicolas.ferre@atmel.com> <AE90C24D6B3A694183C094C60CF0A2F6026B707D@saturn3.aculab.com> <CACiLriQnQcoXFqrqNt3nkY47nR8FnXbqWjtPRp250gueHSMDmQ@mail.gmail.com> <5090F67C.9020104@atmel.com> <5090FFF5.6020109@atmel.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Nicolas Ferre" <nicolas.ferre@atmel.com>,
+        =?Windows-1252?Q?H=E5vard_Skinnemoen?= <havard@skinnemoen.net>
+Cc: <netdev@vger.kernel.org>, <manabian@gmail.com>,
+        <patrice.vilchez@atmel.com>, <linux-kernel@vger.kernel.org>,
+        <bhutchings@solarflare.com>, <plagnioj@jcrosoft.com>,
+        <davem@davemloft.net>, <linux-arm-kernel@lists.infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, Pasi Kärkkäinen wrote:
+> 	return (TX_RING_SIZE - (bp->tx_head - bp->tx_tail) & (TX_RING_SIZE - 1));
 
-> On Tue, Oct 30, 2012 at 05:05:05PM +0100, Olaf Hering wrote:
-> > The XenPVHVM extensions have not been tested much on very old
-> > hypervisors. At least Xen 3.4 gets some testing with the pvops kernel.
+Is equivalent to:
 
-> IIRC upstream Linux PVonHVM drivers do work OK today on RHEL5 Xen, 
-> which advertises itself as Xen 3.1.2-based..
+	return (bp->tx_tail - bp->tx_head) & (TX_RING_SIZE - 1));
 
-Konrad,
+	David
 
-based on this info, please drop this patch.
-It does not fix a real bug.
 
-Olaf
+
