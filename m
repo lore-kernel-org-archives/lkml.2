@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934943Ab2JaDtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 23:49:15 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:51245 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756536Ab2JaDtN (ORCPT
+	id S1759827Ab2JaDvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 23:51:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34742 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756234Ab2JaDvr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 23:49:13 -0400
+	Tue, 30 Oct 2012 23:51:47 -0400
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+CC: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        "Porter, Matt" <mporter@ti.com>, "Dill, Russ" <russ.dill@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: RE: [PATCH] da8xx: Fix revision check on the da8xx driver
+Thread-Topic: [PATCH] da8xx: Fix revision check on the da8xx driver
+Thread-Index: AQHNtsqfCgc9UO0H5UCB7Zm0ApPz9pfSxjAA
+Date: Wed, 31 Oct 2012 03:51:35 +0000
+Message-ID: <A73F36158E33644199EB82C5EC81C7BC3E9E10D6@DBDE01.ent.ti.com>
+References: <1351698984-4007-1-git-send-email-panto@antoniou-consulting.com>
+In-Reply-To: <1351698984-4007-1-git-send-email-panto@antoniou-consulting.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20121031032431.GG2616@ZenIV.linux.org.uk>
-References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
- <20121030214257.GB2681@htj.dyndns.org> <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
- <1351646186.4004.41.camel@gandalf.local.home> <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
- <20121031022418.GE2616@ZenIV.linux.org.uk> <CA+55aFyU30Z2JS9XJ4KTordbAw-2EBVD7xF4K3eAhKVRCJw8YA@mail.gmail.com>
- <20121031032431.GG2616@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 30 Oct 2012 20:48:51 -0700
-X-Google-Sender-Auth: 2ARbhLXHunNig-ySM8I4e1qWeRw
-Message-ID: <CA+55aFxfAMyyPdxNB-GQhhErrWpaUHGOmvov1HR290YjRdoxeg@mail.gmail.com>
-Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive hashtable
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 8:24 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Oh, well... there go my blackmail plans ;-)  Seriously, though, I'm at loss
-> regarding several embedded architectures - arch/score, in particular,
-> seems to be completely orphaned.
+On Wed, Oct 31, 2012 at 21:26:24, Pantelis Antoniou wrote:
+> The revision check fails for the beaglebone; Add new revision ID.
+> 
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> ---
+>  drivers/video/da8xx-fb.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+> index 80665f6..866d804 100644
+> --- a/drivers/video/da8xx-fb.c
+> +++ b/drivers/video/da8xx-fb.c
+> @@ -1283,6 +1283,7 @@ static int __devinit fb_probe(struct platform_device *device)
+>  		lcd_revision = LCD_VERSION_1;
+>  		break;
+>  	case 0x4F200800:
+> +	case 0x4F201000:
 
-Don't worry about it. Do a best-effort, and if nobody ever reacts
-about some odd-ball architecture, whatever.
+Thanks for Correcting. This is the LCDC revision on am335x silicon in comparison
+with to one read(0x4F200800) on emulator platform.
 
-We won't start deleting architectures over something like this, but it
-might be another sign down the road that some arch code can be removed
-entirely.
+Acked-by: Manjunathappa, Prakash <prakash.pm@ti.com>
 
-So it's not arch/score I'd worry about. It's all the *other* architectures..
+>  		lcd_revision = LCD_VERSION_2;
+>  		break;
+>  	default:
+> -- 
+> 1.7.12
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-             Linus
