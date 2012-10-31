@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423056Ab2JaOyl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 10:54:41 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:54324 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423026Ab2JaOyd (ORCPT
+	id S965684Ab2JaOyq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 10:54:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36513 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964937Ab2JaOym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 10:54:33 -0400
+	Wed, 31 Oct 2012 10:54:42 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Tero Kristo <t-kristo@ti.com>, <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: [PATCH] MFD: twl-core: Fix chip ID for the twl6030-pwm module
+Date: Wed, 31 Oct 2012 15:54:37 +0100
+Message-ID: <1351695277-8629-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.12.4
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
-	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
-	<20121029174131.GC7580@srcf.ucam.org>
-	<alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
-Date: Wed, 31 Oct 2012 10:54:32 -0400
-Message-ID: <CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-From: Josh Boyer <jwboyer@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 10:50 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Mon, 29 Oct 2012, Matthew Garrett wrote:
->
->> > > This is pretty much identical to the first patchset, but with the capability
->> > > renamed (CAP_COMPROMISE_KERNEL) and the kexec patch dropped. If anyone wants
->> > > to deploy these then they should disable kexec until support for signed
->> > > kexec payloads has been merged.
->> >
->> > Apparently your patchset currently doesn't handle device firmware loading,
->> > nor do you seem to mention in in the comments.
->>
->> Correct.
->>
->> > I believe signed firmware loading should be put on plate as well, right?
->>
->> I think that's definitely something that should be covered. I hadn't
->> worried about it immediately as any attack would be limited to machines
->> with a specific piece of hardware, and the attacker would need to expend
->> a significant amount of reverse engineering work on the firmware - and
->> we'd probably benefit from them doing that in the long run...
->
-> Now -- how about resuming from S4?
->
-> Reading stored memory image (potentially tampered before reboot) from disk
-> is basically DMA-ing arbitrary data over the whole RAM. I am currently not
-> able to imagine a scenario how this could be made "secure" (without
-> storing private keys to sign the hibernation image on the machine itself
-> which, well, doesn't sound secure either).
+The correct chip id is 1 since the PWM module is on address 0x49. With the
+current TWL6030_MODULE_ID1 the kernel will crash early since:
+#define TWL6030_MODULE_ID1 0x0E
+and
+static struct twl_client twl_modules[4];
 
-I have a patch that disables that.  I imagine it will be included in the
-next submission of the patchset.
+Down in the stack we try to get the module by:
+struct twl_client	*twl = &twl_modules[chip];
 
-You can find it here in the meantime:
+Which obviously going to do nasty things.
 
-http://jwboyer.fedorapeople.org/pub/0001-hibernate-Disable-in-a-Secure-Boot-environment.patch
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+Hi Samuel,
 
-josh
+Can you push this patch to 3.7?
+Without this if the user enables the twl6030-pwm driver the kernel will not
+going to boot on OMAP4.
+
+Thank you,
+Peter
+
+ drivers/mfd/twl-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 2624668..d7577cb 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -672,7 +672,7 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
+ 	}
+ 
+ 	if (IS_ENABLED(CONFIG_PWM_TWL6030) && twl_class_is_6030()) {
+-		child = add_child(TWL6030_MODULE_ID1, "twl6030-pwm", NULL, 0,
++		child = add_child(SUB_CHIP_ID1, "twl6030-pwm", NULL, 0,
+ 				  false, 0, 0);
+ 		if (IS_ERR(child))
+ 			return PTR_ERR(child);
+-- 
+1.7.12.4
+
