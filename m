@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933267Ab2JaRf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:35:29 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14233 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759114Ab2JaRfX (ORCPT
+	id S965504Ab2JaRfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:35:51 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:26973 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965098Ab2JaRfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:35:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 31 Oct 2012 10:35:21 -0700
-Message-ID: <509160F5.9070400@nvidia.com>
-Date: Wed, 31 Oct 2012 23:03:41 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 31 Oct 2012 13:35:47 -0400
+Date: Wed, 31 Oct 2012 17:35:46 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Shan Wei <shanwei88@gmail.com>
+cc: steffen.klassert@secunet.com, David Miller <davem@davemloft.net>,
+        NetDev <netdev@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/9] net: xfrm: use this_cpu_ptr per-cpu helper
+In-Reply-To: <509109F9.3030904@gmail.com>
+Message-ID: <0000013ab7e4a640-60bd5b38-a1fc-4730-b918-4109211ffea0-000000@email.amazonses.com>
+References: <509109F9.3030904@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 0/4] ARM: tegra: Enable SLINK controller driver
-References: <1351580726-17350-1-git-send-email-ldewangan@nvidia.com> <509038BA.30600@wwwdotorg.org> <5090E69C.4080108@nvidia.com> <50914C82.5010704@wwwdotorg.org>
-In-Reply-To: <50914C82.5010704@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 October 2012 09:36 PM, Stephen Warren wrote:
-> On 10/31/2012 02:51 AM, Laxman Dewangan wrote:
->
-> I had forgotten about this from when I tested the older SPI driver that
-> we ripped out; I had at least compared the registers between U-Boot and
-> the kernel with that driver, so I'm pretty sure I didn't make that
-> mistake with the old driver.
->
-> So, I'll apply your patch series, and send one to add the flash device
-> to the Cardhu .dts.
+On Wed, 31 Oct 2012, Shan Wei wrote:
 
-Great  to hear that the spi driver work for you now.
+> -
+>  	list_for_each_entry(pos, &ipcomp_tfms_list, list) {
+>  		struct crypto_comp *tfm;
+>
+>  		tfms = pos->tfms;
+> -		tfm = *per_cpu_ptr(tfms, cpu);
+> +
+> +		/* This can be any valid CPU ID so we don't need locking. */
+> +		tfm = *this_cpu_ptr(tfms);
 
-Thanks,
-Laxman
+It would be better to use
+
+	this_cpu_read(tfms)
+
+since that would also make it atomic vs interrupts. The above code (both
+original and modified) could determine a pointer to a per cpu structure
+and then take an interrupt which would move the task. On return we would
+be accessing the per cpu variable of another processor.
+
