@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab2JaGw0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 02:52:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52689 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754098Ab2JaGwY (ORCPT
+	id S1753475Ab2JaG4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 02:56:11 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47156 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab2JaG4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 02:52:24 -0400
-Date: Tue, 30 Oct 2012 23:52:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Yuanhan Liu <yuanhan.liu@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] kfifo: round up the fifo size power of 2
-Message-Id: <20121030235210.4dfc6ef7.akpm@linux-foundation.org>
-In-Reply-To: <1351665033.23165.6.camel@wall-e>
-References: <1351238218-22648-1-git-send-email-yuanhan.liu@linux.intel.com>
-	<20121029135935.bb8b0b2a.akpm@linux-foundation.org>
-	<20121031055916.GC29509@yliu-dev.sh.intel.com>
-	<1351665033.23165.6.camel@wall-e>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Oct 2012 02:56:08 -0400
+X-AuditID: 9c93016f-b7c7bae000000eb7-e8-5090cb8576c8
+Date: Wed, 31 Oct 2012 16:02:02 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, gaowanlong@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v3 0/3] zram/zsmalloc promotion
+Message-ID: <20121031070202.GR15767@bbox>
+References: <1351501009-15111-1-git-send-email-minchan@kernel.org>
+ <20121031010642.GN15767@bbox>
+ <20121031014209.GB2672@kroah.com>
+ <20121031020443.GP15767@bbox>
+ <20121031021618.GA1142@kroah.com>
+ <20121031023947.GA24883@bbox>
+ <20121031024307.GA9210@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121031024307.GA9210@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012 07:30:33 +0100 Stefani Seibold <stefani@seibold.net> wrote:
-
-> > Yes, and I guess the same to give them a 64-element one.
-> > 
-> > > 
-> > > If there's absolutely no prospect that the kfifo code will ever support
-> > > 100-byte fifos then I guess we should rework the API so that the caller
-> > > has to pass in log2 of the size, not the size itself.  That way there
-> > > will be no surprises and no mistakes.
-> > > 
-> > > That being said, the power-of-2 limitation isn't at all intrinsic to a
-> > > fifo, so we shouldn't do this.  Ideally, we'd change the kfifo
-> > > implementation so it does what the caller asked it to do!
-> > 
-> > I'm fine with removing the power-of-2 limitation. Stefani, what's your
-> > comment on that?
-> > 
+On Tue, Oct 30, 2012 at 07:43:07PM -0700, Greg Kroah-Hartman wrote:
+> On Wed, Oct 31, 2012 at 11:39:48AM +0900, Minchan Kim wrote:
+> > Greg, what do you think about LTSI?
+> > Is it proper feature to add it? For it, still do I need ACK from mm developers?
 > 
-> You can't remove the power-of-2-limitation, since this would result in a
-> performance decrease (bit wise and vs. modulo operation).
+> It's already in LTSI, as it's in the 3.4 kernel, right?
 
-Probably an insignificant change in performance.
+Right. But as I look, it seems to be based on 3.4.11 which doesn't have
+recent bug fix and enhances and current 3.4.16 also doesn't include it.
 
-It could be made much smaller by just never doing the modulus operation
-- instead do
+Just out of curiosity.
 
-	if (++index == max)
-		index = 0;
+Is there any rule about update period in long-term kernel?
+I mean how often you release long-term kernel.
 
-this does introduce one problem: it's no longer possible to distinguish
-the "full" and "empty" states by comparing the head and tail indices. 
-But that is soluble.
+Is there any rule about update period in LTSI kernel based on long-term kernel?
+If I get the answer on above two quesion, I can expect later what LTSI kernel
+version include feature I need.
 
-> Andrew is right, this is an API miss design.  So it would be good to
-> rework the kfifo_init () and kfifo_alloc() to pass in log2 of the size,
-> not the size itself.
+Another question.
+For example, There is A feature in mainline and A has no problem but
+someone invents new wheel "B" which is better than A so it replace A totally
+in recent mainline. As following stable-kernel rule, it's not a real bug fix
+so I guess stable kernel will never replace A with B. It means LTSI never get
+a chance to use new wheel. Right?
 
-The power-of-2 thing is just a restriction in the current
-implementation - it's not a good idea to cement that into the
-interface.  Of course, it could later be uncemented if the
-implementation's restriction was later relaxed.
+Thanks.
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
