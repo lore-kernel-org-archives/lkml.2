@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab2JaH7A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 03:59:00 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:4721 "EHLO song.cn.fujitsu.com"
+	id S935044Ab2JaH7H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 03:59:07 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50724 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932520Ab2JaH6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932544Ab2JaH6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Oct 2012 03:58:37 -0400
 X-IronPort-AV: E=Sophos;i="4.80,687,1344182400"; 
-   d="scan'208";a="6107049"
+   d="scan'208";a="6107050"
 From: Wen Congyang <wency@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         linux-doc@vger.kernel.org
@@ -18,17 +18,17 @@ Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
         Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
         "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-Subject: [PART3 Patch 10/14] kthread: use N_MEMORY instead N_HIGH_MEMORY
-Date: Wed, 31 Oct 2012 16:04:08 +0800
-Message-Id: <1351670652-9932-11-git-send-email-wency@cn.fujitsu.com>
+Subject: [PART3 Patch 12/14] vmscan: use N_MEMORY instead N_HIGH_MEMORY
+Date: Wed, 31 Oct 2012 16:04:10 +0800
+Message-Id: <1351670652-9932-13-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1351670652-9932-1-git-send-email-wency@cn.fujitsu.com>
 References: <1351670652-9932-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/10/31 15:57:43,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 15:57:44,
-	Serialize complete at 2012/10/31 15:57:44
+ 2012/10/31 15:57:45,
+	Serialize complete at 2012/10/31 15:57:45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -42,23 +42,33 @@ The code here need to handle with the nodes which have memory, we should
 use N_MEMORY instead.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Hillf Danton <dhillf@gmail.com>
 ---
- kernel/kthread.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/vmscan.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 29fb60c..691dc2e 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -428,7 +428,7 @@ int kthreadd(void *unused)
- 	set_task_comm(tsk, "kthreadd");
- 	ignore_signals(tsk);
- 	set_cpus_allowed_ptr(tsk, cpu_all_mask);
--	set_mems_allowed(node_states[N_HIGH_MEMORY]);
-+	set_mems_allowed(node_states[N_MEMORY]);
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 2624edc..98a2e11 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3135,7 +3135,7 @@ static int __devinit cpu_callback(struct notifier_block *nfb,
+ 	int nid;
  
- 	current->flags |= PF_NOFREEZE;
+ 	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN) {
+-		for_each_node_state(nid, N_HIGH_MEMORY) {
++		for_each_node_state(nid, N_MEMORY) {
+ 			pg_data_t *pgdat = NODE_DATA(nid);
+ 			const struct cpumask *mask;
  
+@@ -3191,7 +3191,7 @@ static int __init kswapd_init(void)
+ 	int nid;
+ 
+ 	swap_setup();
+-	for_each_node_state(nid, N_HIGH_MEMORY)
++	for_each_node_state(nid, N_MEMORY)
+  		kswapd_run(nid);
+ 	hotcpu_notifier(cpu_callback, 0);
+ 	return 0;
 -- 
 1.8.0
 
