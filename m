@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933301Ab2JaQob (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:44:31 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50735 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969Ab2JaQo3 (ORCPT
+	id S1758255Ab2JaQpH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:45:07 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:49951 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933Ab2JaQpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:44:29 -0400
-Message-ID: <50915563.40904@wwwdotorg.org>
-Date: Wed, 31 Oct 2012 10:44:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 31 Oct 2012 12:45:05 -0400
+X-Auth-Info: sIwPE7NLPlc3rg3+UdYFurcaLTsmA+q9AiJ/oemau44=
+From: Marek Vasut <marex@denx.de>
+To: Brian Norris <computersforpeace@gmail.com>
+Subject: Re: [PATCH for 3.7] mtd: nand: fix Samsung SLC NAND identification regression
+Date: Wed, 31 Oct 2012 17:45:00 +0100
+User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.4; x86_64; ; )
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Robin van der Gracht <robin@protonic.nl>
+References: <1349850366-4731-1-git-send-email-computersforpeace@gmail.com> <1349855329.6072.72.camel@shinybook.infradead.org> <CAN8TOE8yzJY67b=S=KyONe2pLYGJVe9vW4KXzsjvU7AU9aFpHg@mail.gmail.com>
+In-Reply-To: <CAN8TOE8yzJY67b=S=KyONe2pLYGJVe9vW4KXzsjvU7AU9aFpHg@mail.gmail.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 3/4] ARM: tegra: dts: cardhu: enable SLINK4
-References: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com> <1351674176-20603-3-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1351674176-20603-3-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201210311745.00677.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 03:02 AM, Laxman Dewangan wrote:
-> Enable SLINK4 and connected device in Tegra30 based
-> platform Cardhu.
-> Setting maximum spi frequency to 25MHz.
+Dear Brian Norris,
+
+> Hi David,
 > 
-> Spi serial flash is connected on CS1 of SLINK4 on
-> cardhu platform.
+> On Wed, Oct 10, 2012 at 12:48 AM, David Woodhouse <dwmw2@infradead.org> wrote:
+> > On Tue, 2012-10-09 at 23:39 -0700, Brian Norris wrote:
+> >> I can see if that's possible, but I think it's unlikely. They don't
+> >> even bother following standards (ONFI). Is this an obstacle to
+> >> merging?
+> > 
+> > No. I already pushed it.
+> 
+> This is a "bump" for a 3.7-rc pull request. This regression has been
+> noticed by others.
 
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+[whine] my nand doesn't work ;-)
 
-> +winbond Winbond Electronics corp.
+Thanks for keeping eye on this, Brian.
 
-That should really be a separate patch that goes through the devicetree
-branch. But I guess it's fairly trivial, so it's not a big deal.
-
-> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-
-> +		spi-flash@1 {
-> +			compatible = "winbond,w25q32";
-> +			spi-max-frequency = <20000000>;
-> +			reg = <1>;
-> +		};
-
-Since I have an Atmel flash on my board, I see:
-
-[    1.282958] m25p80 spi32766.1: found at25df321a, expected w25q32
-[    1.289103] m25p80 spi32766.1: at25df321a (4096 Kbytes)
-
-Is there any way around that (the first log line above)?
-
-I suppose the answer is that the DT should reflect the exact flash
-device that's on the board, and perhaps the bootloader should be
-adjusting the DT to reflect the correct value. That's probably complex.
-
-Do you have any idea whether Atmel or Winbond flash is more common, so
-we can at least minimize the number of times this message appears?
+Best regards,
+Marek Vasut
