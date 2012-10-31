@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934241Ab2J3TAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 15:00:41 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:40563 "EHLO
+	id S934259Ab2J3TBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 15:01:08 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:40547 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965502Ab2J3S7Y (ORCPT
+	by vger.kernel.org with ESMTP id S965587Ab2J3S7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:59:24 -0400
+	Tue, 30 Oct 2012 14:59:19 -0400
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
 To: Tony Lindgren <tony@atomide.com>
 Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
@@ -14,9 +14,9 @@ Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
         Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Subject: [RFC 6/7] capebus: Document DT bindings
-Date: Wed, 31 Oct 2012 18:52:12 +0200
-Message-Id: <1351702333-8456-7-git-send-email-panto@antoniou-consulting.com>
+Subject: [RFC 4/7] capebus: Beaglebone geiger cape support
+Date: Wed, 31 Oct 2012 18:52:10 +0200
+Message-Id: <1351702333-8456-5-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
 References: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
@@ -24,473 +24,554 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Describe capebus DT bindings in detail.
+Support beaglebone's geiger cape.
+
+The geiger cape allows you to measure the amount of
+ionising radiation in your area, and as an example
+of how to create a complex non-generic cape driver.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- .../capebus/bone-capebus-slot-override.txt         | 28 +++++++
- .../devicetree/bindings/capebus/bone-capebus.txt   | 50 +++++++++++
- .../bindings/capebus/bone-geiger-cape.txt          | 78 +++++++++++++++++
- .../bindings/capebus/bone-generic-cape.txt         | 97 ++++++++++++++++++++++
- .../devicetree/bindings/capebus/da8xx-dt.txt       | 31 +++++++
- .../devicetree/bindings/capebus/i2c-dt.txt         | 42 ++++++++++
- .../devicetree/bindings/capebus/spi-dt.txt         | 37 +++++++++
- .../devicetree/bindings/capebus/ti-tscadc-dt.txt   | 34 ++++++++
- 8 files changed, 397 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/capebus/bone-capebus-slot-override.txt
- create mode 100644 Documentation/devicetree/bindings/capebus/bone-capebus.txt
- create mode 100644 Documentation/devicetree/bindings/capebus/bone-geiger-cape.txt
- create mode 100644 Documentation/devicetree/bindings/capebus/bone-generic-cape.txt
- create mode 100644 Documentation/devicetree/bindings/capebus/da8xx-dt.txt
- create mode 100644 Documentation/devicetree/bindings/capebus/i2c-dt.txt
- create mode 100644 Documentation/devicetree/bindings/capebus/spi-dt.txt
- create mode 100644 Documentation/devicetree/bindings/capebus/ti-tscadc-dt.txt
+ drivers/capebus/capes/Kconfig            |   7 +
+ drivers/capebus/capes/Makefile           |   1 +
+ drivers/capebus/capes/bone-geiger-cape.c | 506 +++++++++++++++++++++++++++++++
+ 3 files changed, 514 insertions(+)
+ create mode 100644 drivers/capebus/capes/bone-geiger-cape.c
 
-diff --git a/Documentation/devicetree/bindings/capebus/bone-capebus-slot-override.txt b/Documentation/devicetree/bindings/capebus/bone-capebus-slot-override.txt
+diff --git a/drivers/capebus/capes/Kconfig b/drivers/capebus/capes/Kconfig
+index bfe54a6..0418bef 100644
+--- a/drivers/capebus/capes/Kconfig
++++ b/drivers/capebus/capes/Kconfig
+@@ -4,3 +4,10 @@ config CAPEBUS_BONE_GENERIC
+ 	default n
+ 	help
+ 	  "Select this to enable a generic cape driver; LCD/DVI capes etc"
++
++config CAPEBUS_BONE_GEIGER
++	tristate "Beaglebone Geiger cape driver"
++	depends on CAPEBUS_BONE_CONTROLLER
++	default n
++	help
++	  "Select this to enable a driver for the geiger cape"
+diff --git a/drivers/capebus/capes/Makefile b/drivers/capebus/capes/Makefile
+index 83da381..d6f94ce 100644
+--- a/drivers/capebus/capes/Makefile
++++ b/drivers/capebus/capes/Makefile
+@@ -1 +1,2 @@
+ obj-$(CONFIG_CAPEBUS_BONE_GENERIC)	+= bone-generic-cape.o
++obj-$(CONFIG_CAPEBUS_BONE_GEIGER)	+= bone-geiger-cape.o
+diff --git a/drivers/capebus/capes/bone-geiger-cape.c b/drivers/capebus/capes/bone-geiger-cape.c
 new file mode 100644
-index 0000000..733d977
+index 0000000..880eaae
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/capebus/bone-capebus-slot-override.txt
-@@ -0,0 +1,28 @@
-+* Beagle bone capebus slot override bindings
++++ b/drivers/capebus/capes/bone-geiger-cape.c
+@@ -0,0 +1,506 @@
++/*
++ * Driver for beaglebone Geiger cape
++ *
++ */
 +
-+The beagle bone capebus node can have slot override nodes. These nodes describe
-+  an override that will take place in the specified slot.
-+  Many boards during the prototype phase don't have an EEPROM (or are even
-+  wired in such a way that an eeprom cannot be added). In that case you can
-+  specify an override that will make everything work as if a real EEPROM was
-+  there.
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/timer.h>
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/delay.h>
++#include <linux/bitops.h>
++#include <linux/err.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
++#include <linux/pinctrl/pinctrl.h>
++#include <linux/pinctrl/pinmux.h>
++#include <linux/pinctrl/consumer.h>
++#include <linux/atomic.h>
++#include <linux/clk.h>
++#include <linux/interrupt.h>
++#include <asm/barrier.h>
++#include <plat/clock.h>
++#include <plat/omap_device.h>
++#include <linux/clkdev.h>
++#include <linux/pwm.h>
++#include <linux/math64.h>
++#include <linux/atomic.h>
++#include <linux/leds.h>
++#include <linux/input/ti_am335x_tsc.h>
++#include <linux/platform_data/ti_am335x_adc.h>
++#include <linux/mfd/ti_am335x_tscadc.h>
++#include <plat/omap_device.h>
++#include <linux/iio/iio.h>
++#include <linux/iio/machine.h>
++#include <linux/iio/consumer.h>
 +
-+Required properties:
-+- compatible: Override node must have the form "bone-capebus-slot-override"
-+- slot: Identifies the slot# to override.
-+- board-name: The cape's name as if provided by the board-name EEPROM field
++#include <linux/capebus/capebus-bone.h>
 +
-+Optional properties:
-+- version: The cape's version as if provided by the version EEPROM field.
-+- manufacturer: The cape's manufacturer as if provided by the manufacturer
-+  EEPROM field.
++/* fwd decl. */
++extern struct cape_driver bonegeiger_driver;
 +
-+Example:
-+
-+override@1 {
-+	compatible = "bone-capebus-slot-override";
-+	slot = <1>;
-+	board-name = "Adafruit 1.8 Cape";
-+	version = "00A0";
-+	manufacturer = "Adafruit";
++struct bone_geiger_info {
++	struct cape_dev *dev;
++	struct bone_capebus_generic_info *geninfo;
++	struct pwm_device *pwm_dev;
++	int pwm_frequency;
++	int pwm_duty_cycle;
++	int run;
++	atomic64_t counter;
++	int event_gpio;
++	int event_irq;
++	struct led_trigger *event_led;		/* event detect */
++	struct led_trigger *run_led;		/* running      */
++	unsigned long event_blink_delay;
++	struct sysfs_dirent *counter_sd;	/* notifier */
++	const char *vsense_name;
++	unsigned int vsense_scale;
++	struct iio_channel *vsense_channel;
 +};
-diff --git a/Documentation/devicetree/bindings/capebus/bone-capebus.txt b/Documentation/devicetree/bindings/capebus/bone-capebus.txt
-new file mode 100644
-index 0000000..6d8a08d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/capebus/bone-capebus.txt
-@@ -0,0 +1,50 @@
-+* Beagle bone capebus bindings
 +
-+The beaglebone capebus implementation is using a single capebus
-+node contained in the root node. A beaglebone cape is identified
-+at by reading an EEPROM at on of 4 possible addresses on the I2C2 bus.
-+
-+Required properties:
-+- compatible: Every beaglebone compatible capebus node shall have the 
-+  form "bone-capebus";
-+- slots: An array of phandles pointing to the I2C node of an EEPROM that 
-+  contains the cape information.
-+
-+Optional properties:
-+
-+The child nodes of the capebus node can contain either cape nodes
-+or override nodes. Those cape nodes are described in their respective
-+binding files.
-+
-+- override nodes: Describe an override that will take place in the specified
-+  slot. Many boards during the prototype phase don't have an EEPROM (or are even
-+  wired in such a way that an eeprom cannot be added). In that case you can
-+  specify an override that will make everything work as if a real EEPROM was
-+  there.
-+
-+Override node required properties:
-+- compatible: For override node must have the form "bone-capebus-slot-override"
-+- slot: Identifies the slot# to override.
-+- board-name: The cape's name as if provided by the board-name EEPROM field
-+
-+Override node optional properties:
-+- version: The cape's version as if provided by the version EEPROM field.
-+- manufacturer: The cape's manufacturer as if provided by the manufacturer
-+  EEPROM field.
-+
-+Example:
-+
-+capebus: capebus@0 {
-+	compatible = "bone-capebus";
-+
-+	slots = <&cape_eeprom_0 &cape_eeprom_1 &cape_eeprom_2 &cape_eeprom_3>;
-+
-+	[cape-nodes]
-+	[override-nodes]
-+
-+	bone_adafruit_cape: cape@5 {
-+		compatible = "bone-generic-cape";
-+		// read the bone-generic-cape bindings for the rest
-+		...
-+	};
++static const struct of_device_id bonegeiger_of_match[] = {
++	{
++		.compatible = "bone-geiger-cape",
++	},
++	{ },
 +};
-diff --git a/Documentation/devicetree/bindings/capebus/bone-geiger-cape.txt b/Documentation/devicetree/bindings/capebus/bone-geiger-cape.txt
-new file mode 100644
-index 0000000..a2ed81c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/capebus/bone-geiger-cape.txt
-@@ -0,0 +1,78 @@
-+* Beagle bone geiger cape
++MODULE_DEVICE_TABLE(of, bonegeiger_of_match);
 +
-+  A geiger cape is your run of the mill particle detector measuring
-+  ionizing radiation. It is also the first example of how a non-generic
-+  cape can be supported by capebus.
++static int bonegeiger_start(struct cape_dev *dev)
++{
++	struct bone_geiger_info *info = dev->drv_priv;
++	int duty, period;
 +
-+  The geiger cape can not be created via instantiation of a generic cape 
-+  since the component need to work together.
++	if (info->run != 0)
++		return 0;
 +
-+Required properties:
-+- compatible: Generic cape nodes must have the form "bone-geiger-cape"
-+- board-name: The cape's name as if provided by the board-name EEPROM field
-+- pwms: Pointer to the PWM we require
-+- pwm-names: Name of the PWM.
-+- pwm-frequency: Frequency of the PWM in Hz
-+- pwm-duty-cycle: Duty cycle in percent
-+- event-blink-delay: Blink delay of the event led
-+- gpios: GPIO on which an event is detected
-+- vsense-name: Name of the analog input for vsense
-+- vsense-scale: Vsense scale to convert to mVolts
-+- ti-tscadc-dt compatible node for the ADC configuration
-+- gpio-leds compatible node for the LED configuration
++	/* checks */
++	if (info->pwm_frequency < 1000 || info->pwm_frequency > 50000) {
++		dev_err(&dev->dev, "Cowardly refusing to use a "
++				"frequency of %d\n",
++				info->pwm_frequency);
++		return -EINVAL;
++	}
++	if (info->pwm_duty_cycle > 80) {
++		dev_err(&dev->dev, "Cowardly refusing to use a "
++				"duty cycle of %d\n",
++				info->pwm_duty_cycle);
++		return -EINVAL;
++	}
 +
-+Optional properties:
++	period = div_u64(1000000000LLU, info->pwm_frequency);
++	duty = (period * info->pwm_duty_cycle) / 100;
 +
-+The geiger cape supports the standard pinctrl properties.
++	dev_info(&dev->dev, "starting geiger tube with "
++			"duty=%duns period=%dus\n",
++			duty, period);
 +
-+Example:
++	pwm_config(info->pwm_dev, duty, period);
++	pwm_enable(info->pwm_dev);
 +
-+bone_geiger_cape: cape@1 {
-+	compatible = "bone-geiger-cape";
-+	board-name = "Geiger Cape";
++	info->run = 1;
++	led_trigger_event(info->run_led, LED_FULL);
 +
-+	/* note that these can't be versioned... */
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&bone_geiger_cape_pins>;
++	return 0;
++}
 +
-+	pwms = <&ehrpwm1 0 500000 0>;
-+	pwm-names = "bone-geiger-cape";
++static int bonegeiger_stop(struct cape_dev *dev)
++{
++	struct bone_geiger_info *info = dev->drv_priv;
 +
-+	pwm-frequency  = <20000>;	/* 20KHz */
-+	pwm-duty-cycle = <60>;		/* 60% */
++	if (info->run == 0)
++		return 0;
 +
-+	event-blink-delay = <30>;	/* 30ms */
++	dev_info(&dev->dev, "disabling geiger tube\n");
++	pwm_config(info->pwm_dev, 0, 50000);	/* 0% duty cycle, 20KHz */
++	pwm_disable(info->pwm_dev);
 +
-+	gpios = <&gpio4 17 0>;		/* pulse */
++	info->run = 0;
++	led_trigger_event(info->run_led, LED_OFF);
 +
-+	vsense-name = "AIN5";		/* analog vsense */
-+	vsense-scale = <37325>;		/* scaling */
++	return 0;
++}
 +
-+	tscadc {
-+		compatible = "ti-tscadc-dt";
++static ssize_t bonegeiger_show_run(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct cape_dev *cdev = to_cape_dev(dev);
++	struct bone_geiger_info *info = cdev->drv_priv;
 +
-+		ti,hwmods = "adc_tsc";
++	return sprintf(buf, "%d\n", info->run);
++}
 +
-+		adc-channels = <8>;
-+	};
++static ssize_t bonegeiger_store_run(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
++{
++	struct cape_dev *cdev = to_cape_dev(dev);
++	int run, err;
 +
-+	gpio-leds {
-+		compatible = "gpio-leds";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&bone_geiger_cape_led_pins>;
++	if (sscanf(buf, "%i", &run) != 1)
++		return -EINVAL;
 +
-+		geiger-led0 {
-+			label = "geiger:green:usr0";
-+			gpios = <&gpio3 23 0>;
-+			linux,default-trigger = "geiger-run";
-+			default-state = "off";
-+		};
++	if (run)
++		err = bonegeiger_start(cdev);
++	else
++		err = bonegeiger_stop(cdev);
 +
-+		geiger-led1 {
-+			label = "geiger:red:usr1";
-+			gpios = <&gpio3 25 0>;
-+			linux,default-trigger = "geiger-event";
-+			default-state = "off";
-+		};
-+	};
++	return err ? err : count;
++}
++
++static ssize_t bonegeiger_show_counter(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct cape_dev *cdev = to_cape_dev(dev);
++	struct bone_geiger_info *info = cdev->drv_priv;
++
++	return sprintf(buf, "%llu\n", atomic64_read(&info->counter));
++}
++
++static ssize_t bonegeiger_store_counter(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
++{
++	struct cape_dev *cdev = to_cape_dev(dev);
++	struct bone_geiger_info *info = cdev->drv_priv;
++
++	atomic64_set(&info->counter, 0);	/* just reset */
++	return count;
++}
++
++static ssize_t bonegeiger_show_vsense(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct cape_dev *cdev = to_cape_dev(dev);
++	struct bone_geiger_info *info = cdev->drv_priv;
++	int ret, val;
++	u32 mvolts;
++
++	ret = iio_read_channel_raw(info->vsense_channel, &val);
++	if (ret < 0)
++		return ret;
++
++	/* V = (1800 / 4096) * val * scale) = (1.8 * val * scale / 4096) */
++	mvolts = div_u64(1800 * info->vsense_scale * (u64)val, 4096 * 100);
++
++	return sprintf(buf, "%d\n", mvolts);
++}
++
++static DEVICE_ATTR(run, S_IRUGO | S_IWUSR,
++		bonegeiger_show_run, bonegeiger_store_run);
++static DEVICE_ATTR(counter, S_IRUGO | S_IWUSR,
++		bonegeiger_show_counter, bonegeiger_store_counter);
++static DEVICE_ATTR(vsense, S_IRUGO,
++		bonegeiger_show_vsense, NULL);
++
++static int bonegeiger_sysfs_register(struct cape_dev *cdev)
++{
++	int err;
++
++	err = device_create_file(&cdev->dev, &dev_attr_run);
++	if (err != 0)
++		goto err_no_run;
++
++	err = device_create_file(&cdev->dev, &dev_attr_counter);
++	if (err != 0)
++		goto err_no_counter;
++
++	err = device_create_file(&cdev->dev, &dev_attr_vsense);
++	if (err != 0)
++		goto err_no_vsense;
++
++	return 0;
++
++err_no_vsense:
++	device_remove_file(&cdev->dev, &dev_attr_counter);
++err_no_counter:
++	device_remove_file(&cdev->dev, &dev_attr_run);
++err_no_run:
++	return err;
++}
++
++static void bonegeiger_sysfs_unregister(struct cape_dev *cdev)
++{
++	device_remove_file(&cdev->dev, &dev_attr_vsense);
++	device_remove_file(&cdev->dev, &dev_attr_counter);
++	device_remove_file(&cdev->dev, &dev_attr_run);
++}
++
++static irqreturn_t bonegeiger_irq_handler(int irq, void *dev_id)
++{
++	struct cape_dev *dev = dev_id;
++	struct bone_geiger_info *info = dev->drv_priv;
++
++	atomic64_inc(&info->counter);
++
++	led_trigger_blink_oneshot(info->event_led,
++		  &info->event_blink_delay, &info->event_blink_delay, 0);
++
++	sysfs_notify_dirent(info->counter_sd);
++
++	return IRQ_HANDLED;
++}
++
++static int bonegeiger_probe(struct cape_dev *dev, const struct cape_device_id *id)
++{
++	char boardbuf[33];
++	char versionbuf[5];
++	const char *board_name;
++	const char *version;
++	struct bone_geiger_info *info;
++	struct pinctrl *pinctrl;
++	struct device_node *node, *pwm_node;
++	phandle phandle;
++	u32 val;
++	int err;
++
++	/* boiler plate probing */
++	err = bone_capebus_probe_prolog(dev, id);
++	if (err != 0)
++		return err;
++
++	/* get the board name (after check of cntrlboard match) */
++	board_name = bone_capebus_id_get_field(id, BONE_CAPEBUS_BOARD_NAME,
++			boardbuf, sizeof(boardbuf));
++	/* get the board version */
++	version = bone_capebus_id_get_field(id, BONE_CAPEBUS_VERSION,
++			versionbuf, sizeof(versionbuf));
++	/* should never happen; but check anyway */
++	if (board_name == NULL || version == NULL)
++		return -ENODEV;
++
++	dev->drv_priv = devm_kzalloc(&dev->dev, sizeof(*info), GFP_KERNEL);
++	if (dev->drv_priv == NULL) {
++		dev_err(&dev->dev, "Failed to allocate info\n");
++		err = -ENOMEM;
++		goto err_no_mem;
++	}
++	info = dev->drv_priv;
++
++	pinctrl = devm_pinctrl_get_select_default(&dev->dev);
++	if (IS_ERR(pinctrl))
++		dev_warn(&dev->dev,
++			"pins are not configured from the driver\n");
++
++	node = capebus_of_find_property_node(dev, "version", version, "pwms");
++	if (node == NULL) {
++		dev_err(&dev->dev, "unable to find pwms property\n");
++		err = -ENODEV;
++		goto err_no_pwm;
++	}
++
++	err = of_property_read_u32(node, "pwms", &val);
++	if (err != 0) {
++		dev_err(&dev->dev, "unable to read pwm handle\n");
++		goto err_no_pwm;
++	}
++	phandle = val;
++
++	pwm_node = of_find_node_by_phandle(phandle);
++	if (pwm_node == NULL) {
++		dev_err(&dev->dev, "Failed to pwm node\n");
++		err = -EINVAL;
++		goto err_no_pwm;
++	}
++
++	err = capebus_of_platform_device_enable(pwm_node);
++	of_node_put(pwm_node);
++	if (err != 0) {
++		dev_err(&dev->dev, "Failed to pwm node\n");
++		goto err_no_pwm;
++	}
++
++	info->pwm_dev = of_pwm_request(node, NULL);
++	of_node_put(node);
++	if (IS_ERR(info->pwm_dev)) {
++		dev_err(&dev->dev, "unable to request PWM\n");
++		err = PTR_ERR(info->pwm_dev);
++		goto err_no_pwm;
++	}
++
++	if (capebus_of_property_read_u32(dev,
++				"version", version,
++				"pwm-frequency", &val) != 0) {
++		val = 20000;
++		dev_warn(&dev->dev, "Could not read pwm-frequency property; "
++				"using default %u\n",
++				val);
++	}
++	info->pwm_frequency = val;
++
++	if (capebus_of_property_read_u32(dev,
++				"version", version,
++				"pwm-duty-cycle", &val) != 0) {
++		val = 60;
++		dev_warn(&dev->dev, "Could not read pwm-duty-cycle property; "
++				"using default %u\n",
++				val);
++	}
++	info->pwm_duty_cycle = val;
++
++	node = capebus_of_find_property_node(dev, "gpios", version, "pwms");
++	info->event_gpio = of_get_gpio_flags(node, 0, NULL);
++	of_node_put(node);
++	if (IS_ERR_VALUE(info->event_gpio)) {
++		dev_err(&dev->dev, "unable to get event GPIO\n");
++		err = info->event_gpio;
++		goto err_no_gpio;
++	}
++
++	err = gpio_request_one(info->event_gpio,
++			GPIOF_DIR_IN | GPIOF_EXPORT,
++			"bone-geiger-cape-event");
++	if (err != 0) {
++		dev_err(&dev->dev, "failed to request event GPIO\n");
++		goto err_no_gpio;
++	}
++
++	atomic64_set(&info->counter, 0);
++
++	info->event_irq = gpio_to_irq(info->event_gpio);
++	if (IS_ERR_VALUE(info->event_irq)) {
++		dev_err(&dev->dev, "unable to get event GPIO IRQ\n");
++		err = info->event_irq;
++		goto err_no_irq;
++	}
++
++	err = request_irq(info->event_irq, bonegeiger_irq_handler,
++			IRQF_TRIGGER_RISING | IRQF_SHARED,
++			"bone-geiger-irq", dev);
++	if (err != 0) {
++		dev_err(&dev->dev, "unable to request irq\n");
++		goto err_no_irq;
++	}
++
++	err = bonegeiger_sysfs_register(dev);
++	if (err != 0) {
++		dev_err(&dev->dev, "unable to register sysfs\n");
++		goto err_no_sysfs;
++	}
++
++	info->counter_sd = sysfs_get_dirent(dev->dev.kobj.sd, NULL, "counter");
++	if (info->counter_sd == NULL) {
++		dev_err(&dev->dev, "unable to get dirent of counter\n");
++		err = -ENODEV;
++		goto err_no_counter_dirent;
++	}
++
++	led_trigger_register_simple("geiger-event", &info->event_led);
++	led_trigger_register_simple("geiger-run", &info->run_led);
++
++	/* pick up the generics; tsc & leds */
++	info->geninfo = bone_capebus_probe_generic(dev, id);
++	if (info->geninfo == NULL) {
++		dev_err(&dev->dev, "Could not probe generic\n");
++		goto err_no_generic;
++	}
++
++	led_trigger_event(info->run_led, LED_OFF);
++
++	/* default */
++	if (capebus_of_property_read_u32(dev,
++				"version", version,
++				"event-blink-delay", &val) != 0) {
++		val = 30;
++		dev_warn(&dev->dev, "Could not read event-blink-delay "
++				"property; using default %u\n",
++					val);
++	}
++	info->event_blink_delay = val;
++
++	/* default */
++	if (capebus_of_property_read_string(dev,
++				"version", version,
++				"vsense-name", &info->vsense_name) != 0) {
++		info->vsense_name = "AIN5";
++		dev_warn(&dev->dev, "Could not read vsense-name property; "
++				"using default %u\n",
++					val);
++	}
++
++	if (capebus_of_property_read_u32(dev,
++				"version", version,
++				"vsense-scale", &info->vsense_scale) != 0) {
++		info->vsense_scale = 37325;	/* 373.25 */
++		dev_warn(&dev->dev, "Could not read vsense-scale property; "
++				"using default %u\n",
++					info->vsense_scale);
++	}
++
++	info->vsense_channel = iio_channel_get(NULL, info->vsense_name);
++	if (IS_ERR(info->vsense_channel)) {
++		dev_err(&dev->dev, "Could not get AIN5 analog input\n");
++		err = PTR_ERR(info->vsense_channel);
++		goto err_no_vsense;
++	}
++
++	dev_info(&dev->dev, "ready\n");
++
++	err = bonegeiger_start(dev);
++	if (err != 0) {
++		dev_err(&dev->dev, "Could not start geiger device\n");
++		goto err_no_start;
++	}
++
++	return 0;
++
++err_no_start:
++	iio_channel_release(info->vsense_channel);
++err_no_vsense:
++	bone_capebus_remove_generic(info->geninfo);
++err_no_generic:
++	led_trigger_unregister_simple(info->run_led);
++	led_trigger_unregister_simple(info->event_led);
++	sysfs_put(info->counter_sd);
++err_no_counter_dirent:
++	bonegeiger_sysfs_unregister(dev);
++err_no_sysfs:
++	free_irq(info->event_irq, dev);
++err_no_irq:
++	gpio_free(info->event_gpio);
++err_no_gpio:
++	pwm_put(info->pwm_dev);
++err_no_pwm:
++	devm_kfree(&dev->dev, info);
++err_no_mem:
++	return err;
++}
++
++static void bonegeiger_remove(struct cape_dev *dev)
++{
++	struct bone_geiger_info *info = dev->drv_priv;
++
++	dev_info(&dev->dev, "Removing geiger cape driver...\n");
++
++	bonegeiger_stop(dev);
++
++	iio_channel_release(info->vsense_channel);
++	bone_capebus_remove_generic(info->geninfo);
++	led_trigger_unregister_simple(info->run_led);
++	led_trigger_unregister_simple(info->event_led);
++	sysfs_put(info->counter_sd);
++	bonegeiger_sysfs_unregister(dev);
++	free_irq(info->event_irq, dev);
++	gpio_free(info->event_gpio);
++	pwm_put(info->pwm_dev);
++}
++
++struct cape_driver bonegeiger_driver = {
++	.driver = {
++		.name		= "bonegeiger",
++		.owner		= THIS_MODULE,
++		.of_match_table	= bonegeiger_of_match,
++	},
++	.probe		= bonegeiger_probe,
++	.remove		= bonegeiger_remove,
 +};
-diff --git a/Documentation/devicetree/bindings/capebus/bone-generic-cape.txt b/Documentation/devicetree/bindings/capebus/bone-generic-cape.txt
-new file mode 100644
-index 0000000..71ad2f4
---- /dev/null
-+++ b/Documentation/devicetree/bindings/capebus/bone-generic-cape.txt
-@@ -0,0 +1,97 @@
-+* Beagle bone generic cape
 +
-+  A generic cape is one form of cape that doesn't require any per-cape
-+  driver for it to function. It is enough for the cape's node to be
-+  instantiated in the right manner and the functions that the cape provides
-+  will be available to Linux. A large number of capes fall in this category
-+  like LCD/DVI/VGA capes, audio capes, capes with a number of gpio buttons,
-+  capes with standard I2C/SPI/W1 parts etc.
-+  All that's required is to describe the parts of the cape in the DT and 
-+  how they utilize the SoC peripherals and it will work, without having
-+  to write any other driver, or modify the board support package.
++module_capebus_driver(bonegeiger_driver);
 +
-+  As a sidenote, a large part of the complexity of capes have to do
-+  with version management. A cape as it goes through various steps of evolution
-+  changes. These changes are codified by the version field on the EEPROM.
-+  It is important that version management can be kept as simple as possible.
-+
-+  The generic concept works by instantiating the child nodes that are
-+  contained in the cape node. By default nodes that are present in the
-+  root of the node are activated for any version. Version nodes can 
-+  contain per-version changes. In the example the da8xx-dt node differs
-+  in the way it's instantiated, and this is expressed by the version nodes.
-+
-+Required properties:
-+- compatible: Generic cape nodes must have the form "bone-generic-cape"
-+- board-name: The cape's name as if provided by the board-name EEPROM field
-+
-+Optional properties:
-+- version: Only valid in a version node, and it contains the list of compatible
-+  versions this node contains.
-+
-+The standard supported nodes of the generic cape are:
-+
-+gpio-leds, tps65217-backlight, gpio-keys, w1-gpio, pwm-backlight
-+
-+The following nodes are supported via a capebus specific bridge devices, and
-+their bindings described in their respective files:
-+
-+ti-tscadc-dt, da8xx-dt, i2c-dt, spi-dt
-+
-+Example:
-+
-+bone_dvi_cape: cape@0 {
-+
-+	compatible = "bone-generic-cape";
-+	board-name = "BeagleBone DVI-D CAPE";
-+
-+	/* hacky, since this is not a proper DT platform device */
-+	/* but until we have DT bindings... */
-+	version@00A0 {
-+		version = "00A0";
-+		dvi {
-+			compatible = "da8xx-dt";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&bone_dvi_cape_dvi_00A0_pins>;
-+			ti,hwmods = "lcdc";
-+
-+			disp-pll = <560000000>;
-+			panel-type = "1024x768@60";
-+			powerdn-gpio = <&gpio2 7 0>;
-+		};
-+	};
-+
-+	version@00A1 {
-+		version = "00A1", "01";
-+		dvi {
-+			compatible = "da8xx-dt";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&bone_dvi_cape_dvi_00A1_pins>;
-+			ti,hwmods = "lcdc";
-+
-+			disp-pll = <560000000>;
-+			panel-type = "1024x768@60";
-+			powerdn-gpio = <&gpio2 31 0>;
-+		};
-+	};
-+
-+	gpio-leds {
-+		compatible = "gpio-leds";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&bone_dvi_cape_led_pins>;
-+
-+		dvi-led0 {
-+			label = "dvi:green:usr0";
-+			gpios = <&gpio2 18 0>;
-+			linux,default-trigger = "heartbeat";
-+			default-state = "off";
-+		};
-+
-+		dvi-led1 {
-+			label = "dvi:green:usr1";
-+			gpios = <&gpio2 19 0>;
-+			linux,default-trigger = "mmc0";
-+			default-state = "off";
-+		};
-+	};
-+};
-diff --git a/Documentation/devicetree/bindings/capebus/da8xx-dt.txt b/Documentation/devicetree/bindings/capebus/da8xx-dt.txt
-new file mode 100644
-index 0000000..0b84063
---- /dev/null
-+++ b/Documentation/devicetree/bindings/capebus/da8xx-dt.txt
-@@ -0,0 +1,31 @@
-+* DA8XX DT bindins
-+
-+  This is an adapter device for use in device tree cases, since the
-+  drivers DT bindings are not yet ready. It is bound to get away once
-+  they are in place. Note that there is no capebus prefix, since there's
-+  not really any dependence on capebus; the drivers can be moved out of
-+  capebus if need be.
-+
-+Required properties:
-+- compatible: Must have the form "da8xx-dt"
-+- ti,hwmods: Must have the form "lcdc" (until hwmod DT is complete)
-+- disp-pll: PLL value
-+- panel-type: Name of the panel type connected
-+
-+Optional properties:
-+powerdn-gpio: GPIO controlling power
-+
-+Note that the pinctrl bindings are supported.
-+
-+Example:
-+
-+dvi {
-+	compatible = "da8xx-dt";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&bone_dvi_cape_dvi_00A0_pins>;
-+	ti,hwmods = "lcdc";
-+
-+	disp-pll = <560000000>;
-+	panel-type = "1024x768@60";
-+	powerdn-gpio = <&gpio2 7 0>;
-+};
-diff --git a/Documentation/devicetree/bindings/capebus/i2c-dt.txt b/Documentation/devicetree/bindings/capebus/i2c-dt.txt
-new file mode 100644
-index 0000000..79a042a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/capebus/i2c-dt.txt
-@@ -0,0 +1,42 @@
-+* I2C DT bindings
-+
-+  This is an adapter device for use in device tree cases.
-+  What we want to do is to add a number of I2C devices connected
-+  to a specified i2c adapter node, and instantiate them on
-+  successful cape match. Not only that, normally I2C adapters
-+  are disabled in the DT tree, so in that case we enable them
-+  first and then go about our business.
-+
-+Required properties:
-+- compatible: Must have the form "i2c-dt"
-+- parent: The phandle of the i2c adapter node
-+- #address-cells: The same as the parent i2c adapter node
-+- #size-cells: The same as the parent i2c adapter node
-+
-+Example:
-+
-+i2c2-devices {
-+	compatible = "i2c-dt";
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+
-+	parent = <&i2c2>;
-+
-+	/* Ambient light sensor */
-+	tsl2550@39 {
-+		compatible = "tsl,tsl2550";
-+		reg = <0x39>;
-+	};
-+
-+	/* Humidity Sensor */
-+	sht21@40 {
-+		compatible = "sensiron,sht21";
-+		reg = <0x40>;
-+	};
-+
-+	/* Barometric pressure sensor */
-+	bmp085@77 {
-+		compatible = "bosch,bmp085";
-+		reg = <0x77>;
-+	};
-+};
-diff --git a/Documentation/devicetree/bindings/capebus/spi-dt.txt b/Documentation/devicetree/bindings/capebus/spi-dt.txt
-new file mode 100644
-index 0000000..fd70fc4
---- /dev/null
-+++ b/Documentation/devicetree/bindings/capebus/spi-dt.txt
-@@ -0,0 +1,37 @@
-+* SPI DT bindings
-+
-+  This is an adapter device for use in device tree cases.
-+  What we want to do is to add a number of SPI devices connected
-+  to a specified spi node, and instantiate them on
-+  successful cape match. Not only that, normally SPI nodes
-+  are disabled in the DT tree, so in that case we enable them
-+  first and then go about our business.
-+
-+Required properties:
-+- compatible: Must have the form "spi-dt"
-+- parent: The phandle of the spi node
-+- #address-cells: The same as the parent spi node
-+- #size-cells: The same as the parent spi node
-+
-+Example:
-+
-+spi1-devices {
-+	compatible = "spi-dt";
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+
-+	parent = <&spi1>;
-+
-+	lcd@0 {
-+		compatible = "adafruit,tft-lcd-1.8-red", "sitronix,st7735";
-+		spi-max-frequency = <8000000>;
-+		reg = <0>;
-+		spi-cpol;
-+		spi-cpha;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&lcd_pins>;
-+		st7735-rst = <&gpio4 19 0>;
-+		st7735-dc = <&gpio4 21 0>;
-+	};
-+
-+};
-diff --git a/Documentation/devicetree/bindings/capebus/ti-tscadc-dt.txt b/Documentation/devicetree/bindings/capebus/ti-tscadc-dt.txt
-new file mode 100644
-index 0000000..44ad4f2
---- /dev/null
-+++ b/Documentation/devicetree/bindings/capebus/ti-tscadc-dt.txt
-@@ -0,0 +1,34 @@
-+* TI's TSCADC Device Tree adapter
-+
-+  This is an adapter device for use in device tree cases, since the
-+  drivers DT bindings are not yet ready. It is bound to get away once
-+  they are in place. Note that there is no capebus prefix, since there's
-+  not really any dependence on capebus; the drivers can be moved out of
-+  capebus if need be.
-+
-+Required properties:
-+- compatible: Must have the form "ti-tscadc-dt"
-+- ti,hwmods: Must have the form "adc_tsc" (until hwmod DT is complete)
-+
-+Optional properties:
-+- adc-channels: Number of ADC channels the driver should provide.
-+- tsc-wires: Number of touchscreen wires
-+- tsc-x-plate-resistance: Touchscreen X plate resistance value
-+- tsc-steps: Touchscreen steps
-+
-+Note if either adc-channels or tsc-wires are missing their respective
-+values are set to 0.
-+
-+Example:
-+
-+tscadc {
-+	compatible = "ti-tscadc-dt";
-+
-+	ti,hwmods = "adc_tsc";
-+
-+	tsc-wires = <4>;
-+	tsc-x-plate-resistance = <200>;
-+	tsc-steps = <6>;
-+
-+	adc-channels = <4>;
-+};
++MODULE_AUTHOR("Pantelis Antoniou");
++MODULE_DESCRIPTION("Beaglebone geiger cape");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:bone-geiger-cape");
 -- 
 1.7.12
 
