@@ -1,514 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab2JaJjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:39:08 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:49740 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab2JaJjB convert rfc822-to-8bit (ORCPT
+	id S1756182Ab2JaJju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:39:50 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:20480 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab2JaJjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:39:01 -0400
-X-AuditID: cbfee61a-b7fa66d0000004cf-a6-5090f1b3732d
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
-        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-In-reply-to: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-Subject: [PATCH 01/17] f2fs: add document
-Date: Wed, 31 Oct 2012 18:38:57 +0900
-Message-id: <003f01cdb74b$8cbd9f80$a638de80$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAADI2A
-Content-language: en-us
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zA93NHycEGLScVbXYs/cki8XlXXPY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4MqYeHkCY8GR3YwVB9v8Ghjf9jF2MXJySAiYSBxc+4YF
-	whaTuHBvPVsXIxeHkMAyRonPV47DFV18tYQZIjGdUaL/aguU849R4vy/L+xdjBwcbALaEpv3
-	G4DERQQeMkrsf7aUHaRbSMBW4un9a2A1nAJ2EpdPRICEhQU0JTpefGEBCbMIqEq8/5kIEuYF
-	qp6w5SgrhC0o8WPyPbDjmAXUJSbNW8QMYWtLPHl3gRWkVQIo/uivLogpImAksavRDKJCXGLS
-	g4dg+1kEBCS+TT7EAlEtK7HpANjtEgKL2CU+3brKBPGhpMTBFTdYJjCKz0KyeBaSxbOQLJ6F
-	ZMUCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGRJLWDcWWDxSFGAQ5GJR5ew3/9AUKs
-	iWXFlbmHGCU4mJVEeBuuTwgQ4k1JrKxKLcqPLyrNSS0+xOgDdPlEZinR5HxglOeVxBsaG5uY
-	mZiamFuampviEFYS5232SAkQEkhPLEnNTk0tSC2CGcfEwSnVwDi1VnX+9mCNuWV3Fu6rOxkb
-	Wz3z2veZsy1f1gvxnk5sL/ezOc4Q7b3IY+lWkVdSZpz/d/d3fZ1bcNjQk73xV8irq7PkJNgX
-	/u8O2OuwrXnl9W7hiVJFMem7HhptX5fNe/B2m+Xbcq1XLL4HbtxS3XvpQ9HFMiVXhbW9/f9D
-	XWIPXFKTlxOuv6fEUpyRaKjFXFScCAAD7qSP0QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t9jQd2NHycEGPz6ZmOxZ+9JFovLu+aw
-	OTB5fN4kF8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
-	oOuWmQM0WkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYMfHyBMaCI7sZ
-	Kw62+TUwvu1j7GLk5JAQMJG4+GoJM4QtJnHh3nq2LkYuDiGB6YwS/VdbmCGcf4wS5/99Ye9i
-	5OBgE9CW2LzfACQuIvCQUWL/s6XsIN1CArYST+9fA6vhFLCTuHwiAiQsLKAp0fHiCwtImEVA
-	VeL9z0SQMC9Q9YQtR1khbEGJH5PvsYDYzALqEpPmLWKGsLUlnry7wArSKgEUf/RXF8QUETCS
-	2NVoBlEhLjHpwUP2CYyCs5AMmoVk0Cwkg2YhaVnAyLKKUTS1ILmgOCk911CvODG3uDQvXS85
-	P3cTIzhOn0ntYFzZYHGIUYCDUYmH1/Bff4AQa2JZcWXuIUYJDmYlEd6G6xMChHhTEiurUovy
-	44tKc1KLDzH6AL05kVlKNDkfmELySuINjU3MjCyNzCyMTMzNcQgrifM2e6QECAmkJ5akZqem
-	FqQWwYxj4uCUamA04l0yeWPjq8jCb3eZrr22WuNu9jKUQ0bq6BmXRZOLbm5b9PDeuRu3FnlO
-	OXb39NtCFaX1+4+onMkrWTHPZd5RnSRP/p/J+Ysy3FMmXBdS141tvtUoUdv1KObXjA6d9ABh
-	yzkKeQbrzbepeAt78856v/piZd3ZiRNuKdzrunk2K5/rnolbRFuMEktxRqKhFnNRcSIAvnoZ
-	IAADAAA=
-X-CFilter-Loop: Reflected
+	Wed, 31 Oct 2012 05:39:46 -0400
+Message-ID: <5090FFF5.6020109@atmel.com>
+Date: Wed, 31 Oct 2012 11:39:49 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <havard@skinnemoen.net>,
+        David Laight <David.Laight@aculab.com>
+CC: <netdev@vger.kernel.org>, <manabian@gmail.com>,
+        <patrice.vilchez@atmel.com>, <linux-kernel@vger.kernel.org>,
+        <bhutchings@solarflare.com>, <plagnioj@jcrosoft.com>,
+        <davem@davemloft.net>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 06/10] net/macb: clean up ring buffer logic
+References: <cover.1351591858.git.nicolas.ferre@atmel.com> <75eb5df193c504e68ebff7d6a6a88d9a1cc678cb.1351591858.git.nicolas.ferre@atmel.com> <AE90C24D6B3A694183C094C60CF0A2F6026B707D@saturn3.aculab.com> <CACiLriQnQcoXFqrqNt3nkY47nR8FnXbqWjtPRp250gueHSMDmQ@mail.gmail.com> <5090F67C.9020104@atmel.com>
+In-Reply-To: <5090F67C.9020104@atmel.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a document describing the mount options, proc entries, usage, and
-design of Flash-Friendly File System, namely F2FS.
+On 10/31/2012 10:59 AM, Nicolas Ferre :
+> On 10/30/2012 07:22 PM, H�vard Skinnemoen :
+>> On Tue, Oct 30, 2012 at 4:12 AM, David Laight <David.Laight@aculab.com> wrote:
+>>>> Instead of masking head and tail every time we increment them, just let them
+>>>> wrap through UINT_MAX and mask them when subscripting. Add simple accessor
+>>>> functions to do the subscripting properly to minimize the chances of messing
+>>>> this up.
+>>> ...
+>>>> +static unsigned int macb_tx_ring_avail(struct macb *bp)
+>>>> +{
+>>>> +     return TX_RING_SIZE - (bp->tx_head - bp->tx_tail);
+>>>> +}
+>>>
+>>> That one doesn't look quite right to me.
+>>> Surely it should be masking with 'TX_RING_SIZE - 1'
+>>
+>> Why is that? head and tail can never be more than TX_RING_SIZE apart,
+>> so it shouldn't make any difference.
+> 
+> Absolutely.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- Documentation/filesystems/00-INDEX |    2 +
- Documentation/filesystems/f2fs.txt |  417 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 419 insertions(+)
- create mode 100644 Documentation/filesystems/f2fs.txt
+Well not so absolute, after having thinking twice ;-)
 
-diff --git a/Documentation/filesystems/00-INDEX b/Documentation/filesystems/00-INDEX
-index 8c624a1..ce5fd46 100644
---- a/Documentation/filesystems/00-INDEX
-+++ b/Documentation/filesystems/00-INDEX
-@@ -48,6 +48,8 @@ ext4.txt
- 	- info, mount options and specifications for the Ext4 filesystem.
- files.txt
- 	- info on file management in the Linux kernel.
-+f2fs.txt
-+	- info and mount options for the F2FS filesystem.
- fuse.txt
- 	- info on the Filesystem in User SpacE including mount options.
- gfs2.txt
-diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
-new file mode 100644
-index 0000000..6ce5407
---- /dev/null
-+++ b/Documentation/filesystems/f2fs.txt
-@@ -0,0 +1,417 @@
-+================================================================================
-+WHAT IS Flash-Friendly File System (F2FS)?
-+================================================================================
-+
-+NAND flash memory-based storage devices, such as SSD, eMMC, and SD cards, have
-+been equipped on a variety systems ranging from mobile to server systems. Since
-+they are known to have different characteristics from the conventional rotating
-+disks, a file system, an upper layer to the storage device, should adapt to the
-+changes from the sketch in the design level.
-+
-+F2FS is a file system exploiting NAND flash memory-based storage devices, which
-+is based on Log-structured File System (LFS). The design has been focused on
-+addressing the fundamental issues in LFS, which are snowball effect of wandering
-+tree and high cleaning overhead.
-+
-+Since a NAND flash memory-based storage device shows different characteristic
-+according to its internal geometry or flash memory management scheme, namely FTL,
-+F2FS and its tools support various parameters not only for configuring on-disk
-+layout, but also for selecting allocation and cleaning algorithms.
-+
-+The file system formatting tool, "mkfs.f2fs", is available from the following
-+download page:		http://sourceforge.net/projects/f2fs-tools/
-+
-+================================================================================
-+BACKGROUND AND DESIGN ISSUES
-+================================================================================
-+
-+Log-structured File System (LFS)
-+--------------------------------
-+"A log-structured file system writes all modifications to disk sequentially in
-+a log-like structure, thereby speeding up  both file writing and crash recovery.
-+The log is the only structure on disk; it contains indexing information so that
-+files can be read back from the log efficiently. In order to maintain large free
-+areas on disk for fast writing, we divide  the log into segments and use a
-+segment cleaner to compress the live information from heavily fragmented
-+segments." from Rosenblum, M. and Ousterhout, J. K., 1992, "The design and
-+implementation of a log-structured file system", ACM Trans. Computer Systems
-+10, 1, 26–52.
-+
-+Wandering Tree Problem
-+----------------------
-+In LFS, when a file data is updated and written to the end of log, its direct
-+pointer block is updated due to the changed location. Then the indirect pointer
-+block is also updated due to the direct pointer block update. In this manner,
-+the upper index structures such as inode, inode map, and checkpoint block are
-+also updated recursively. This problem is called as wandering tree problem [1],
-+and in order to enhance the performance, it should eliminate or relax the update
-+propagation as much as possible.
-+
-+[1] Bityutskiy, A. 2005. JFFS3 design issues. http://www.linux-mtd.infradead.org/
-+
-+Cleaning Overhead
-+-----------------
-+Since LFS is based on out-of-place writes, it produces so many obsolete blocks
-+scattered across the whole storage. In order to serve new empty log space, it
-+needs to reclaim these obsolete blocks seamlessly to users. This job is called
-+as a cleaning process.
-+
-+The process consists of three operations as follows.
-+1. A victim segment is selected through referencing segment usage table.
-+2. It loads parent index structures of all the data in the victim identified by
-+   segment summary blocks.
-+3. It checks the cross-reference between the data and its parent index structure.
-+4. It moves valid data selectively.
-+
-+This cleaning job may cause unexpected long delays, so the most important goal
-+is to hide the latencies to users. And also definitely, it should reduce the
-+amount of valid data to be moved, and move them quickly as well.
-+
-+================================================================================
-+KEY FEATURES
-+================================================================================
-+
-+Flash Awareness
-+---------------
-+- Enlarge the random write area for better performance, but provide the high
-+  spatial locality
-+- Align FS data structures to the operational units in FTL as best efforts
-+
-+Wandering Tree Problem
-+----------------------
-+- Use a term, “node”, that represents inodes as well as various pointer blocks
-+- Introduce Node Address Table (NAT) containing the locations of all the “node”
-+  blocks; this will cut off the update propagation.
-+
-+Cleaning Overhead
-+-----------------
-+- Support a background cleaning process
-+- Support greedy and cost-benefit algorithms for victim selection policies
-+- Support multi-head logs for static/dynamic hot and cold data separation
-+- Introduce adaptive logging for efficient block allocation
-+
-+================================================================================
-+MOUNT OPTIONS
-+================================================================================
-+
-+background_gc_off      Turn off cleaning operations, namely garbage collection,
-+		       triggered in background when I/O subsystem is idle.
-+disable_roll_forward   Disable the roll-forward recovery routine
-+discard                Issue discard/TRIM commands when a segment is cleaned.
-+no_heap                Disable heap-style segment allocation which finds free
-+                       segments for data from the beginning of main area, while
-+		       for node from the end of main area.
-+nouser_xattr           Disable Extended User Attributes. Note: xattr is enabled
-+                       by default if CONFIG_F2FS_FS_XATTR is selected.
-+noacl                  Disable POSIX Access Control List. Note: acl is enabled
-+                       by default if CONFIG_F2FS_FS_POSIX_ACL is selected.
-+active_logs=%u         Support configuring the number of active logs. In the
-+                       current design, f2fs supports only 2, 4, and 6 logs.
-+                       Default number is 6.
-+disable_ext_identify   Disable the extension list configured by mkfs, so f2fs
-+                       does not aware of cold files such as media files.
-+
-+================================================================================
-+DEBUGFS ENTRIES
-+================================================================================
-+
-+/sys/kernel/debug/f2fs/ contains information about all the partitions mounted as
-+f2fs. Each file shows the whole f2fs information.
-+
-+/sys/kernel/debug/f2fs/status includes:
-+ - major file system information managed by f2fs currently
-+ - average SIT information about whole segments
-+ - current memory footprint consumed by f2fs.
-+
-+================================================================================
-+USAGE
-+================================================================================
-+
-+1. Download userland tools and compile them.
-+
-+2. Skip, if f2fs was compiled statically inside kernel.
-+   Otherwise, insert the f2fs.ko module.
-+ # insmod f2fs.ko
-+
-+3. Create a directory trying to mount
-+ # mkdir /mnt/f2fs
-+
-+4. Format the block device, and then mount as f2fs
-+ # mkfs.f2fs -l label /dev/block_device
-+ # mount -t f2fs /dev/block_device /mnt/f2fs
-+
-+Format options
-+--------------
-+-l [label]   : Give a volume label, up to 256 unicode name.
-+-a [0 or 1]  : Split start location of each area for heap-based allocation.
-+               1 is set by default, which performs this.
-+-o [int]     : Set overprovision ratio in percent over volume size.
-+               5 is set by default.
-+-s [int]     : Set the number of segments per section.
-+               1 is set by default.
-+-z [int]     : Set the number of sections per zone.
-+               1 is set by default.
-+-e [str]     : Set basic extension list. e.g. "mp3,gif,mov"
-+
-+================================================================================
-+DESIGN
-+================================================================================
-+
-+On-disk Layout
-+--------------
-+
-+F2FS divides the whole volume into a number of segments, each of which is fixed
-+to 2MB in size. A section is composed of consecutive segments, and a zone
-+consists of a set of sections. By default, section and zone sizes are set to one
-+segment size identically, but users can easily modify the sizes by mkfs.
-+
-+F2FS splits the entire volume into six areas, and all the areas except superblock
-+consists of multiple segments as described below.
-+
-+                                            align with the zone size <-|
-+                 |-> align with the segment size
-+     _________________________________________________________________________
-+    |            |            |    Node     |   Segment   |   Segment  |      |
-+    | Superblock | Checkpoint |   Address   |    Info.    |   Summary  | Main |
-+    |    (SB)    |   (CP)     | Table (NAT) | Table (SIT) | Area (SSA) |      |
-+    |____________|_____2______|______N______|______N______|______N_____|__N___|
-+                                                                       .      .
-+                                                             .                .
-+                                                 .                            .
-+                                    ._________________________________________.
-+                                    |_Segment_|_..._|_Segment_|_..._|_Segment_|
-+                                    .           .
-+                                    ._________._________
-+                                    |_section_|__...__|_
-+                                    .            .
-+		                    .________.
-+	                            |__zone__|
-+
-+- Superblock (SB)
-+ : It is located at the beginning of the partition, and there exist two copies
-+   to avoid file system crash. It contains basic partition information and some
-+   default parameters of f2fs.
-+
-+- Checkpoint (CP)
-+ : It contains file system information, bitmaps for valid NAT/SIT sets, orphan
-+   inode lists, and summary entries of current active segments.
-+
-+- Node Address Table (NAT)
-+ : It is composed of a block address table for all the node blocks stored in
-+   Main area.
-+
-+- Segment Information Table (SIT)
-+ : It contains segment information such as valid block count and bitmap for the
-+   validity of all the blocks.
-+
-+- Segment Summary Area (SSA)
-+ : It contains summary entries which contains the owner information of all the
-+   data and node blocks stored in Main area.
-+
-+- Main Area
-+ : It contains file and directory data including their indices.
-+
-+In order to avoid misalignment between file system and flash-based storage, F2FS
-+aligns the start block address of CP with the segment size. Also, it aligns the
-+start block address of Main area with the zone size by reserving some segments
-+in SSA area.
-+
-+Reference the following survey for additional technical details.
-+https://wiki.linaro.org/WorkingGroups/Kernel/Projects/FlashCardSurvey
-+
-+File System Metadata Structure
-+------------------------------
-+
-+F2FS adopts the checkpointing scheme to maintain file system consistency. At
-+mount time, F2FS first tries to find the last valid checkpoint data by scanning
-+CP area. In order to reduce the scanning time, F2FS uses only two copies of CP.
-+One of them always indicates the last valid data, which is called as shadow copy
-+mechanism. In addition to CP, NAT and SIT also adopt the shadow copy mechanism.
-+
-+For file system consistency, each CP points to which NAT and SIT copies are
-+valid, as shown as below.
-+
-+  +--------+----------+---------+
-+  |   CP   |    NAT   |   SIT   |
-+  +--------+----------+---------+
-+  .         .          .          .
-+  .            .              .              .
-+  .               .                 .                 .
-+  +-------+-------+--------+--------+--------+--------+
-+  | CP #0 | CP #1 | NAT #0 | NAT #1 | SIT #0 | SIT #1 |
-+  +-------+-------+--------+--------+--------+--------+
-+     |             ^                          ^
-+     |             |                          |
-+     `----------------------------------------'
-+
-+Index Structure
-+---------------
-+
-+The key data structure to manage the data locations is a "node". Similar to
-+traditional file structures, F2FS has three types of node: inode, direct node,
-+indirect node. F2FS assigns 4KB to an inode block which contains 929 data block
-+indices, two direct node pointers, two indirect node pointers, and one double
-+indirect node pointer as described below. One direct node block contains 1018
-+data blocks, and one indirect node block contains also 1018 node blocks. Thus,
-+one inode block (i.e., a file) covers:
-+
-+  4KB * (923 + 2 * 1018 + 2 * 1018 * 1018 + 1018 * 1018 * 1018) := 3.94TB.
-+
-+   Inode block (4KB)
-+     |- data (923)
-+     |- direct node (2)
-+     |          `- data (1018)
-+     |- indirect node (2)
-+     |            `- direct node (1018)
-+     |                       `- data (1018)
-+     `- double indirect node (1)
-+                         `- indirect node (1018)
-+			              `- direct node (1018)
-+	                                         `- data (1018)
-+
-+Note that, all the node blocks are mapped by NAT which means the location of
-+each node is translated by the NAT table. In the consideration of the wandering
-+tree problem, F2FS is able to cut off the propagation of node updates caused by
-+leaf data writes.
-+
-+Directory Structure
-+-------------------
-+
-+A directory entry occupies 11 bytes, which consists of the following attributes.
-+
-+- hash		hash value of the file name
-+- ino		inode number
-+- len		the length of file name
-+- type		file type such as directory, symlink, etc
-+
-+A dentry block consists of 214 dentry slots and file names. Therein a bitmap is
-+used to represent whether each dentry is valid or not. A dentry block occupies
-+4KB with the following composition.
-+
-+  Dentry Block(4 K) = bitmap (27 bytes) + reserved (3 bytes) +
-+	              dentries(11 * 214 bytes) + file name (8 * 214 bytes)
-+
-+                         [Bucket]
-+             +--------------------------------+
-+             |dentry block 1 | dentry block 2 |
-+             +--------------------------------+
-+             .               .
-+       .                             .
-+  .       [Dentry Block Structure: 4KB]       .
-+  +--------+----------+----------+------------+
-+  | bitmap | reserved | dentries | file names |
-+  +--------+----------+----------+------------+
-+  [Dentry Block: 4KB] .   .
-+		 .               .
-+            .                          .
-+            +------+------+-----+------+
-+            | hash | ino  | len | type |
-+            +------+------+-----+------+
-+            [Dentry Structure: 11 bytes]
-+
-+F2FS implements multi-level hash tables for directory structure. Each level has
-+a hash table with dedicated number of hash buckets as shown below. Note that
-+"A(2B)" means a bucket includes 2 data blocks.
-+
-+----------------------
-+A : bucket
-+B : block
-+N : MAX_DIR_HASH_DEPTH
-+----------------------
-+
-+level #0   | A(2B)
-+           |
-+level #1   | A(2B) - A(2B)
-+           |
-+level #2   | A(2B) - A(2B) - A(2B) - A(2B)
-+     .     |   .       .       .       .
-+level #N/2 | A(2B) - A(2B) - A(2B) - A(2B) - A(2B) - ... - A(2B)
-+     .     |   .       .       .       .
-+level #N   | A(4B) - A(4B) - A(4B) - A(4B) - A(4B) - ... - A(4B)
-+
-+The number of blocks and buckets are determined by,
-+
-+                            ,- 2, if n < MAX_DIR_HASH_DEPTH / 2,
-+  # of blocks in level #n = |
-+                            `- 4, Otherwise
-+
-+                             ,- 2^n, if n < MAX_DIR_HASH_DEPTH / 2,
-+  # of buckets in level #n = |
-+                             `- 2^((MAX_DIR_HASH_DEPTH / 2) - 1), Otherwise
-+
-+When F2FS finds a file name in a directory, at first a hash value of the file
-+name is calculated. Then, F2FS scans the hash table in level #0 to find the
-+dentry consisting of the file name and its inode number. If not found, F2FS
-+scans the next hash table in level #1. In this way, F2FS scans hash tables in
-+each levels incrementally from 1 to N. In each levels F2FS needs to scan only
-+one bucket determined by the following equation, which shows O(log(# of files))
-+complexity.
-+
-+  bucket number to scan in level #n = (hash value) % (# of buckets in level #n)
-+
-+In the case of file creation, F2FS finds empty consecutive slots that cover the
-+file name. F2FS searches the empty slots in the hash tables of whole levels from
-+1 to N in the same way as the lookup operation.
-+
-+The following figure shows an example of two cases holding children.
-+       --------------> Dir <--------------
-+       |                                 |
-+    child                             child
-+
-+    child - child                     [hole] - child
-+
-+    child - child - child             [hole] - [hole] - child
-+
-+   Case 1:                           Case 2:
-+   Number of children = 6,           Number of children = 3,
-+   File size = 7                     File size = 7
-+
-+Default Block Allocation
-+------------------------
-+
-+At runtime, F2FS manages six active logs inside "Main" area: Hot/Warm/Cold node
-+and Hot/Warm/Cold data.
-+
-+- Hot node	contains direct node blocks of directories.
-+- Warm node	contains direct node blocks except hot node blocks.
-+- Cold node	contains indirect node blocks
-+- Hot data	contains dentry blocks
-+- Warm data	contains data blocks except hot and cold data blocks
-+- Cold data	contains multimedia data or migrated data blocks
-+
-+LFS has two schemes for free space management: threaded log and copy-and-compac-
-+tion. The copy-and-compaction scheme which is known as cleaning, is well-suited
-+for devices showing very good sequential write performance, since free segments
-+are served all the time for writing new data. However, it suffers from cleaning
-+overhead under high utilization. Contrarily, the threaded log scheme suffers
-+from random writes, but no cleaning process is needed. F2FS adopts a hybrid
-+scheme where the copy-and-compaction scheme is adopted by default, but the
-+policy is dynamically changed to the threaded log scheme according to the file
-+system status.
-+
-+In order to align F2FS with underlying flash-based storage, F2FS allocates a
-+segment in a unit of section. F2FS expects that the section size would be the
-+same as the unit size of garbage collection in FTL. Furthermore, with respect
-+to the mapping granularity in FTL, F2FS allocates each section of the active
-+logs from different zones as much as possible, since FTL can write the data in
-+the active logs into one allocation unit according to its mapping granularity.
-+
-+Cleaning process
-+----------------
-+
-+F2FS does cleaning both on demand and in the background. On-demand cleaning is
-+triggered when there are not enough free segments to serve VFS calls. Background
-+cleaner is operated by a kernel thread, and triggers the cleaning job when the
-+system is idle.
-+
-+F2FS supports two victim selection policies: greedy and cost-benefit algorithms.
-+In the greedy algorithm, F2FS selects a victim segment having the smallest number
-+of valid blocks. In the cost-benefit algorithm, F2FS selects a victim segment
-+according to the segment age and the number of valid blocks in order to address
-+log block thrashing problem in the greedy algorithm. F2FS adopts the greedy
-+algorithm for on-demand cleaner, while background cleaner adopts cost-benefit
-+algorithm.
-+
-+In order to identify whether the data in the victim segment are valid or not,
-+F2FS manages a bitmap. Each bit represents the validity of a block, and the
-+bitmap is composed of a bit stream covering whole blocks in main area.
+We should move to:
+
+static unsigned int macb_tx_ring_avail(struct macb *bp)
+{
+	return (TX_RING_SIZE - (bp->tx_head - bp->tx_tail) & (TX_RING_SIZE - 1));
+}
+
+Thanks David!
+
+(sorry for the noise) Bye,
 -- 
-1.7.9.5
-
-
-
-
----
-Jaegeuk Kim
-Samsung
-
+Nicolas Ferre
