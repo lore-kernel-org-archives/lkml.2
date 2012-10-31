@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab2JaFvj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 01:51:39 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:33273 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975Ab2JaFvg (ORCPT
+	id S1753474Ab2JaFvt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 01:51:49 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53260 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab2JaFvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 01:51:36 -0400
-Date: Tue, 30 Oct 2012 22:51:31 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Russ Dill <Russ.Dill@ti.com>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>, "Patil, Rachna" <rachna@ti.com>,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
-        Matt Porter <mporter@ti.com>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] ti_tscadc: Match mfd sub devices to regmap interface
-Message-ID: <20121031055131.GB31983@core.coreip.homeip.net>
-References: <1351698945-3881-1-git-send-email-panto@antoniou-consulting.com>
- <CA+Bv8XbCweGxKg-VsM2=g5KJEbLZhUA8F=iAG2st7c0JRLH58g@mail.gmail.com>
+	Wed, 31 Oct 2012 01:51:42 -0400
+X-AuditID: 9c93016f-b7c7bae000000eb7-47-5090bc6b57e8
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
+        ming.m.lin@intel.com
+Subject: Re: [Patch v1 07/10] perf tools: add mem access sampling core support
+References: <1351523752-4215-1-git-send-email-eranian@google.com>
+	<1351523752-4215-8-git-send-email-eranian@google.com>
+Date: Wed, 31 Oct 2012 14:51:39 +0900
+In-Reply-To: <1351523752-4215-8-git-send-email-eranian@google.com> (Stephane
+	Eranian's message of "Mon, 29 Oct 2012 16:15:49 +0100")
+Message-ID: <87ip9r5gus.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+Bv8XbCweGxKg-VsM2=g5KJEbLZhUA8F=iAG2st7c0JRLH58g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 09:41:00PM -0700, Russ Dill wrote:
-> On Wed, Oct 31, 2012 at 8:55 AM, Pantelis Antoniou
-> <panto@antoniou-consulting.com> wrote:
-> > The MFD parent device now uses a regmap, instead of direct
-> > memory access. Use the same method in the sub devices to avoid
-> > nasty surprises.
-> >
-> > Also rework the channel initialization of tiadc a bit.
-> >
-> > Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> > ---
-> >  drivers/iio/adc/ti_am335x_adc.c           | 27 +++++++++++++++++++--------
-> >  drivers/input/touchscreen/ti_am335x_tsc.c | 16 +++++++++++++---
-> >  drivers/mfd/ti_am335x_tscadc.c            |  7 +++++--
-> >  3 files changed, 37 insertions(+), 13 deletions(-)
-> >
-> > diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
-> > index d48fd79..5f325c1 100644
-> > --- a/drivers/iio/adc/ti_am335x_adc.c
-> > +++ b/drivers/iio/adc/ti_am335x_adc.c
-> > @@ -23,7 +23,9 @@
-> >  #include <linux/iio/iio.h>
-> >  #include <linux/iio/machine.h>
-> >  #include <linux/iio/driver.h>
-> > +#include <linux/regmap.h>
-> >
-> > +#include <linux/io.h>
-> >  #include <linux/mfd/ti_am335x_tscadc.h>
-> >  #include <linux/platform_data/ti_am335x_adc.h>
-> >
-> > @@ -36,13 +38,17 @@ struct tiadc_device {
-> >
-> >  static unsigned int tiadc_readl(struct tiadc_device *adc, unsigned int reg)
-> >  {
-> > -       return readl(adc->mfd_tscadc->tscadc_base + reg);
-> > +       unsigned int val;
-> > +
-> > +       val = (unsigned int)-1;
-> > +       regmap_read(adc->mfd_tscadc->regmap_tscadc, reg, &val);
-> > +       return val;
-> >  }
-> 
-> Would it be cleaner to instead do:
-> 
-> static unsigned int tiadc_readl(struct tiadc_device *adc, unsigned int reg)
-> {
->        unsigned int val;
-> 
->        return regmap_read(adc->mfd_tscadc->regmap_tscadc, reg, &val) ? : val;
-> }
-> 
-> or
->        int ret;
-> 
->        ret = regmap_read(adc->mfd_tscadc->regmap_tscadc, reg, &val);
->        return ret < 0 ret ? : val;
+On Mon, 29 Oct 2012 16:15:49 +0100, Stephane Eranian wrote:
+> This patch adds the sorting and histogram support
+> functions to enable profiling of memory accesses.
+>
+> The following sorting orders are added:
+>  - symbol_daddr: data address symbol (or raw address)
+>  - dso_daddr: data address shared object
+>  - cost: access cost
+>  - locked: access uses locked transaction
+>  - tlb : TLB access
+>  - mem : memory level of the access (L1, L2, L3, RAM, ...)
+>  - snoop: access snoop mode
+>
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+[snip]
+> +/* --sort daddr_sym */
+> +static int64_t
+> +sort__daddr_cmp(struct hist_entry *left, struct hist_entry *right)
+> +{
+> +	struct addr_map_symbol *l = &left->mem_info->daddr;
+> +	struct addr_map_symbol *r = &right->mem_info->daddr;
+> +
+> +	return (int64_t)(r->addr - l->addr);
+> +}
 
-Also the function should not be returning unsigned int if it returns
-errors.
+Doesn't it need to compare symbol (start address) if any, before doing
+it with raw addresses?
 
-Thanks.
-
--- 
-Dmitry
+Thanks,
+Namhyung
