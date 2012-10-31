@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506Ab2JaAj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:39:28 -0400
-Received: from mga14.intel.com ([143.182.124.37]:15557 "EHLO mga14.intel.com"
+	id S1760676Ab2JaAj0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:39:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31172 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759133Ab2JaAef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759155Ab2JaAef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Oct 2012 20:34:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
-   d="scan'208";a="162644797"
+   d="scan'208";a="234886220"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 24/32] perf, tools: Add arbitary aliases and support names with -
-Date: Tue, 30 Oct 2012 17:34:15 -0700
-Message-Id: <1351643663-23828-25-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 14/32] perf, core: Add a concept of a weightened sample
+Date: Tue, 30 Oct 2012 17:34:05 -0700
+Message-Id: <1351643663-23828-15-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
 References: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
@@ -26,36 +26,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-- Add missing scanner symbol for arbitrary aliases inside the config
-region.
-- looks nicer than _, so allow - in the event names. Used for various
-of the arch perfmon and Haswell events.
+For some events it's useful to weight sample with a hardware
+provided number. This expresses how expensive the action the
+sample represent was.  This allows the profiler to scale
+the samples to be more informative to the programmer.
+
+There is already the period which is used similarly, but it means
+something different, so I chose to not overload it. Instead
+a new sample type for WEIGHT is added.
+
+Can be used for multiple things. Initially it is used for TSX abort costs
+and profiling by memory latencies (so to make expensive load appear higher
+up in the histograms)  The concept is quite generic and can be extended
+to many other kinds of events or architectures, as long as the hardware
+provides suitable auxillary values. In principle it could be also
+used for software tracpoints.
+
+This adds the generic glue. A new optional sample format for a 64bit
+weight value.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/util/parse-events.l |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ include/linux/perf_event.h      |    2 ++
+ include/uapi/linux/perf_event.h |    8 ++++++--
+ kernel/events/core.c            |    6 ++++++
+ 3 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index c87efc1..66959fa 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -81,6 +81,7 @@ num_dec		[0-9]+
- num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
- name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
-+name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
- modifier_event	[ukhpGH]{1,8}
- modifier_bp	[rwx]{1,3}
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 91052e1..c9686c8 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -588,6 +588,7 @@ struct perf_sample_data {
+ 	struct perf_branch_stack	*br_stack;
+ 	struct perf_regs_user		regs_user;
+ 	u64				stack_user_size;
++	u64				weight;
+ };
  
-@@ -168,6 +169,7 @@ period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
- branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
- ,			{ return ','; }
- "/"			{ BEGIN(INITIAL); return '/'; }
-+{name_minus}		{ return str(yyscanner, PE_NAME); }
+ static inline void perf_sample_data_init(struct perf_sample_data *data,
+@@ -601,6 +602,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
+ 	data->regs_user.regs = NULL;
+ 	data->stack_user_size = 0;
++	data->weight = 0;
  }
  
- mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 8e38823..809a5fd 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -132,8 +132,10 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
++	PERF_SAMPLE_WEIGHT			= 1U << 14,
++
++	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+ 
+-	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
+ };
+ 
+ /*
+@@ -201,8 +203,9 @@ enum perf_event_read_format {
+ 	PERF_FORMAT_TOTAL_TIME_RUNNING		= 1U << 1,
+ 	PERF_FORMAT_ID				= 1U << 2,
+ 	PERF_FORMAT_GROUP			= 1U << 3,
++	PERF_FORMAT_WEIGHT			= 1U << 4,
+ 
+-	PERF_FORMAT_MAX = 1U << 4,		/* non-ABI */
++	PERF_FORMAT_MAX = 1U << 5,		/* non-ABI */
+ };
+ 
+ #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
+@@ -562,6 +565,7 @@ enum perf_event_type {
+ 	 *	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
+ 	 *	{ u32			cpu, res; } && PERF_SAMPLE_CPU
+ 	 *	{ u64			period;   } && PERF_SAMPLE_PERIOD
++	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+ 	 *
+ 	 *	{ struct read_format	values;	  } && PERF_SAMPLE_READ
+ 	 *
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index dbccf83..d633581 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -952,6 +952,9 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_PERIOD)
+ 		size += sizeof(data->period);
+ 
++	if (sample_type & PERF_SAMPLE_WEIGHT)
++		size += sizeof(data->weight);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		size += event->read_size;
+ 
+@@ -4080,6 +4083,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 	if (sample_type & PERF_SAMPLE_PERIOD)
+ 		perf_output_put(handle, data->period);
+ 
++	if (sample_type & PERF_SAMPLE_WEIGHT)
++		perf_output_put(handle, data->weight);
++
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		perf_output_read(handle, event);
+ 
 -- 
 1.7.7.6
 
