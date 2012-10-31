@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab2JaKmI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:42:08 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:49638 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab2JaKmD (ORCPT
+	id S1756575Ab2JaKoT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:44:19 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:44942 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752283Ab2JaKoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:42:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE8XmWo5YDu7iBVKH5Z2_EeAAePia24zwtfgPFJ0Cfxjz8Avwg@mail.gmail.com>
-References: <20121030162004.GA3467@Super-MAGI>
-	<CAE8XmWo5YDu7iBVKH5Z2_EeAAePia24zwtfgPFJ0Cfxjz8Avwg@mail.gmail.com>
-Date: Wed, 31 Oct 2012 18:42:02 +0800
-Message-ID: <CAD+1EGPO_UWFqQbEHqjHDYY+3iAWVLX8i6a9-w7JjfB20vzW2Q@mail.gmail.com>
-Subject: Re: [PATCH]Documentation: Chinese translation of Documentation/arm/kernel_user_helpers.txt
-From: harryxiyou <harryxiyou@gmail.com>
-To: Dongsheng Song <dongsheng.song@gmail.com>
-Cc: Tekkaman Ninja <tekkamanninja@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dave Martin <dave.martin@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 31 Oct 2012 06:44:17 -0400
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
+        Hansjoerg Lipp <hjlipp@web.de>, Tilman Schmidt <tilman@imap.cc>,
+        Karsten Keil <isdn@linux-pingi.de>,
+        gigaset307x-common@lists.sourceforge.net
+Subject: [PATCH] isdn/gigaset: use tasklet_kill in device remove/release process
+Date: Wed, 31 Oct 2012 18:44:51 +0800
+Message-Id: <1351680291-27202-1-git-send-email-xtfeng@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9VAgAiW017926
 
-2012/10/31 Dongsheng Song <dongsheng.song@gmail.com>:
-> Hi,
+Some driver uses tasklet_disable in device remove/release process,
+tasklet_disable will inc tasklet->count and return. If the tasklet
+is not handled yet under some softirq pressure, the tasklet will be
+placed on the tasklet_vec, never have a chance to be excuted. This might
+lead to a heavy loaded ksoftirqd, wakeup with pending_softirq, but
+tasklet is disabled. tasklet_kill should be used in this case.
 
-Hi, friend
->
-> There have some misleading in the translation:
->
-> -------------------------------- origin  --------------------------------
-> User space is expected to bypass those helpers and implement those things
-> inline (either in the code emitted directly by the compiler, or part of
-> the implementation of a library call) when optimizing for a recent enough
-> processor that has the necessary native support, but only if resulting
-> binaries are already to be incompatible with earlier ARM processors due to
-> usage of similar native instructions for other things.  In other words
-> don't make binaries unable to run on earlier processors just for the sake
-> of not using these kernel helpers if your compiled code is not going to
-> use new instructions for other purpose.
->
-> -------------------------------- Fu Wei  --------------------------------
-> 当对那些拥有基本原生支持的新型处理器的代码进行优化时，用户空间最好绕
-> 过这些辅助代码并在内联函数中实现这些操作（无论是通过编译器在代码中直
-> 接放置，还是作为库函数调用实现的一部分），而仅在其他处理器因使用相似
-> 的本地指令而导致二进制结果已与早期 ARM 处理不兼容的情况下才使用这些
-> 辅助代码。也就是说，如果你编译的代码不会为了其他目的使用新的指令，则
-> 不要仅为了不使用这些内核辅助代码而导致二进制程序无法在早期处理器上运
-> 行。
-> -------------------------------- me  --------------------------------
-> 当对那些拥有原生支持的新型处理器进行代码优化时，如果已经在其它代码中
-> 使用类似的新指令，从而导致二进制结果已与早期 ARM 处理器不兼容的情况下，
-> 用户空间最好绕过这些辅助代码，并在内联函数中实现这些操作（无论是通过
-> 编译器在代码中直接发出，还是作为库函数调用实现的一部分）。也就是说，
-> 如果你编译的代码不会为了其他目的使用新指令，则不要仅为了不使用这些内核
-> 辅助代码，导致二进制程序无法在早期处理器上运行。
->
-> The attachment is my review result.
->
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: Hansjoerg Lipp <hjlipp@web.de>
+Cc: Tilman Schmidt <tilman@imap.cc>
+Cc: Karsten Keil <isdn@linux-pingi.de>
+Cc: gigaset307x-common@lists.sourceforge.net 
+---
+ drivers/isdn/gigaset/interface.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-So i think you can make a patch for your new translation.
-
-
-
+diff --git a/drivers/isdn/gigaset/interface.c b/drivers/isdn/gigaset/interface.c
+index 67abf3f..284c7f3 100644
+--- a/drivers/isdn/gigaset/interface.c
++++ b/drivers/isdn/gigaset/interface.c
+@@ -544,7 +544,6 @@ void gigaset_if_free(struct cardstate *cs)
+ 	if (!drv->have_tty)
+ 		return;
+ 
+-	tasklet_disable(&cs->if_wake_tasklet);
+ 	tasklet_kill(&cs->if_wake_tasklet);
+ 	cs->tty_dev = NULL;
+ 	tty_unregister_device(drv->tty, cs->minor_index);
 -- 
-Thanks
-Harry Wei
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+1.7.9.5
+
