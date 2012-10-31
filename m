@@ -1,79 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935556Ab2JaNej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:34:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60010 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932588Ab2JaNeg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:34:36 -0400
-Date: Wed, 31 Oct 2012 15:28:38 +0200
+	id S1757297Ab2JaNfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:35:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60487 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753386Ab2JaNfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 09:35:51 -0400
+Date: Wed, 31 Oct 2012 15:29:51 +0200
 From: Felipe Balbi <balbi@ti.com>
-To: Behan Webster <behanw@converseincode.com>
-CC: <balbi@ti.com>, <davem@davemloft.net>, <linux-usb@vger.kernel.org>,
-        <netfilter-devel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 2/3] Remove VLAIS usage from gadget code
-Message-ID: <20121031132838.GQ10998@arwen.pp.htv.fi>
+To: Virupax SADASHIVPETIMATH <virupax.sadashivpetimath@stericsson.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Rajaram REGUPATHY <ragupathy.rajaram@stericsson.com>,
+        Praveena NADAHALLY <praveen.nadahally@stericsson.com>,
+        Shuai WEN <shuai.wen@stericsson.com>
+Subject: Re: [PATCH] usb:musb: Dequeue urbs on device unplug
+Message-ID: <20121031132951.GR10998@arwen.pp.htv.fi>
 Reply-To: <balbi@ti.com>
-References: <1351631937-21455-1-git-send-email-behanw@converseincode.com>
- <1351631937-21455-3-git-send-email-behanw@converseincode.com>
+References: <1349843763-24716-1-git-send-email-virupax.sadashivpetimath@stericsson.com>
+ <20121015121836.GN24333@arwen.pp.htv.fi>
+ <A3217089E06965468FCEC60ADC3A8F925CBF1878ED@EXDCVYMBSTM006.EQ1STM.local>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gV1yUYniiDLxW66s"
+	protocol="application/pgp-signature"; boundary="IpljlC28XhFjURzf"
 Content-Disposition: inline
-In-Reply-To: <1351631937-21455-3-git-send-email-behanw@converseincode.com>
+In-Reply-To: <A3217089E06965468FCEC60ADC3A8F925CBF1878ED@EXDCVYMBSTM006.EQ1STM.local>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---gV1yUYniiDLxW66s
+--IpljlC28XhFjURzf
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 hi,
 
-On Tue, Oct 30, 2012 at 05:18:56PM -0400, Behan Webster wrote:
-> The use of variable length arrays in structs (VLAIS) in the Linux Kernel =
-code
-> precludes the use of compilers which don't implement VLAIS (for instance =
-the
-> Clang compiler). This patch instead calculates offsets into the kmalloc-ed
-> memory buffer using macros from valign.h.
+On Mon, Oct 22, 2012 at 06:51:39AM +0200, Virupax SADASHIVPETIMATH wrote:
+> > -----Original Message-----
+> > From: Felipe Balbi [mailto:balbi@ti.com]
+> > Sent: Monday, October 15, 2012 5:49 PM
+> > To: Virupax SADASHIVPETIMATH
+> > Cc: balbi@ti.com; stern@rowland.harvard.edu; linux-usb@vger.kernel.org;
+> > linux-kernel@vger.kernel.org; linus.walleij@linaro.org; Rajaram REGUPAT=
+HY;
+> > Praveena NADAHALLY
+> > Subject: Re: [PATCH] usb:musb: Dequeue urbs on device unplug
+> >=20
+> > Hi,
+> >=20
+> > On Wed, Oct 10, 2012 at 10:06:03AM +0530, Virupax Sadashivpetimath wrot=
+e:
+> > > Flush queued urbs on receiving device disconnect interrupt. This is
+> > > required for successful disconnect and successive enumeration of the
+> > > device.
+> > >
+> > > In a failure case khubd hangs on usb-storage thread for completion.
+> > > Seen in the below trace.
+> > >
+> > > [ 1355.764526] SysRq : Show Blocked State
+> > > [ 1355.768341]   task                PC stack   pid father
+> > > [ 1355.773620] khubd           D c06a1fbc     0   503      2 0x000000=
+00
+> > > [ 1355.780151] [<c06a1fbc>] (__schedule+0x3f0/0x8ec) from [<c06a26a0>]
+> > > (schedule+0x58/0x70) [ 1355.788330] [<c06a26a0>] (schedule+0x58/0x70)
+> > > from [<c06a2af8>] (schedule_timeout+0x1d8/0x31c) [ 1355.796997]
+> > > [<c06a2af8>] (schedule_timeout+0x1d8/0x31c) from [<c06a1994>]
+> > > (wait_for_common+0xd8/0x180) [ 1355.806396] [<c06a1994>]
+> > > (wait_for_common+0xd8/0x180) from [<c06a1b14>]
+> > > (wait_for_completion+0x20/0x24) [ 1355.815887] [<c06a1b14>]
+> > I would like to get some Tested-bys here.
 >=20
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> Can you please add=20
+>=20
+> Tested-by: <shuai.wen@stericsson.com>
 
-this won't apply after the current cleanups I applied to gadget code
-=66rom Sebastian.
+as soon as you reply telling me how you tested. Which kind of testcases
+did you run ?
 
-If someone takes this patch, it will generate a series of annoying,
-hard-to-figure-out conflicts (at least judging by the looks of
-$SUBJECT).
+thanks
 
 --=20
 balbi
 
---gV1yUYniiDLxW66s
+--IpljlC28XhFjURzf
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQkSeGAAoJEIaOsuA1yqREkmkP/0p2f4qdD0jfl3t5fmKjbEbs
-xMWmFQw/lE0VH8EVzgYVLqOD63TeBnztKlNXZ4Riwl9ntk2pMx72+9HihYYE36OI
-wXppqGbAcFfMtUFlu3jBGPlh4CcSYLI2tG2OCukkqOfK2tjE1tUnTZf7lPVC3SYA
-kCy5P4WCGDwUXIaOh47k+ocPtS/JlM33oDc68lPsIFQwKf1JurUASOSbr3+cdr6J
-rLt1aoeofuKfngzG8YQQPKgIrsRVqhaHP1uQawLW8zUOFr1UYQKf5oImXAYd3zCD
-Z8Dy8fzmwboFt41RkFfV7e95XWYlsgXIuXjV8vcO7/vPDQygpHti/bSKUcMPgyf2
-/Ks1bIfNuFBqCPGV5YGyWNst4LuFxG1vWgr0AdzSw0COG6MjrV4axuoL9o/RyPPq
-Sg88NT3n8LLOG8u71e2ETRC5IaTWtuD3kUsPXkCpw/MP2A4UOxqcwEcrhZvYHtph
-yRvKAHb3aUCsSXMW1na/AWnJzWK9l1qiiDAHK9UP72Net+UGFiPxSKj3w2ixONcp
-05oxmKLB/DIb90F2oSfqIWNMlXgxTpykhaOCzWcKdMA8GY6Dhw7xuboprhgwzC3n
-AjfF1Pfqds7MkbeGo2YxvyO9WNjwqhb/znsZTishd95Nvr4PIdKK3EeIs+E40cVp
-y5HOH7YV0wUxl8ja6UV1
-=lsOs
+iQIcBAEBAgAGBQJQkSfPAAoJEIaOsuA1yqREih0P/iEGB1Ofb9ze0CrfPJuTHf7E
+xA88qDxv7WLI59qS8kJy/QTRXGB7O36pLMDomt/FzcUJTDSuK87ZLfLzP5tc+X6T
+svW21pXe7ONNQs1qWnx8BQFI5VA0hqfYYV3Yo4KJr1nMHJo5gyj20V5vzAUcmC8J
+MBwJURhCC7oR50HTbc7rVeK1WN5Ul1LOuG4AY+QUVgKYaOIW5cvY91/VnAU27mO1
+Zdip/8nLAGjveuuK5OQnoxk38feDFYibuIeMQ8bqaERUk3hQHlXQrWRT4ivMj2p2
+vP6De0keja2rps3MGPd6CN9ef8G0P6lpbxVA3KkqZb0D5hDbGaYTYHti5fEfRIPF
+IHsEMFnOGpBjpqyYatCdERfZvyNIDgISp6vnXwhjUyVB6Okd0QlCt4XxUo6sxlzh
+ENKF0f12L+W8L7dWnG+DaJMaJZejRa1MRUG94J1OWuLJ5sdAhjhsBcD2XAgdiQgz
+n4V3dwx0CtfGDZqyWqwKyDF3aEKf4NjsqOsk974/ZJQrSu5ePkxjydoJPeMdk276
+bMIwq0NRxOMWQg/A1RfGlQlDEuvq6mG7Lg/PMfQYbleSzZHQfAjhFEjt81vSwwkh
+g8OYZdIiFtLZ6suo8Us1nJFmbgRrBAFIUYK0rjpswzOWLsYifzlcHcYu45xdTxLL
+u9/aD5p1Xh2cehvzOWqC
+=UHsH
 -----END PGP SIGNATURE-----
 
---gV1yUYniiDLxW66s--
+--IpljlC28XhFjURzf--
