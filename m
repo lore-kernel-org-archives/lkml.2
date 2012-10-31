@@ -1,156 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935679Ab2JaOVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 10:21:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52275 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935631Ab2JaOVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 10:21:23 -0400
-Date: Wed, 31 Oct 2012 15:19:03 +0100
-From: chrubis@suse.cz
-To: Bob Liu <lliubbo@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: Partialy mapped page stays in page cache after unmap
-Message-ID: <20121031141903.GA23341@rei.suse.cz>
-References: <20121030182420.GA17171@rei.Home>
- <CAA_GA1fozH3wA+2YWrCEUN2S=3rSpJ3f829yy8TZFfuh8q-WYQ@mail.gmail.com>
+	id S935685Ab2JaOXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 10:23:55 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33511 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935666Ab2JaOXx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 10:23:53 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="tKW2IUtsqtDRztdT"
-Content-Disposition: inline
-In-Reply-To: <CAA_GA1fozH3wA+2YWrCEUN2S=3rSpJ3f829yy8TZFfuh8q-WYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87a9v35dsa.fsf@sejong.aot.lge.com>
+References: <1351523752-4215-1-git-send-email-eranian@google.com>
+	<1351523752-4215-11-git-send-email-eranian@google.com>
+	<87a9v35dsa.fsf@sejong.aot.lge.com>
+Date: Wed, 31 Oct 2012 15:23:52 +0100
+Message-ID: <CABPqkBRWnHfFc2p7R_PKHVD72ZGro9fZ2bBHac=H0sEkyt4FEA@mail.gmail.com>
+Subject: Re: [Patch v1 10/10] perf tools: add new mem command for memory
+ access profiling
+From: Stephane Eranian <eranian@google.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Lin Ming <ming.m.lin@intel.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 31, 2012 at 7:57 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> On Mon, 29 Oct 2012 16:15:52 +0100, Stephane Eranian wrote:
+>> This new command is a wrapper on top of perf record and
+>> perf report to make it easier to configure for memory
+>> access profiling.
+>
+> So this new command will be run only on speicific (PEBS > 2?) Intel
+> machines, right?  Is there anything we can do for others?  Or at least
+> it might emit a warning message..
+>
+>>
+>> To record loads:
+>> $ perf mem -t load rec .....
+>>
+>> To record stores:
+>> $ perf mem -t store rec .....
+>>
+>> To get the report:
+>> $ perf mem -t load rep
+>>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>> ---
+> [snip]
+>> +perf-mem(1)
+>> +===========
+>> +
+>> +NAME
+>> +----
+>> +perf-mem - Profile memory accesses
+>> +
+>> +SYNOPSIS
+>> +--------
+>> +[verse]
+>> +'perf mem' -t load record <command>
+>> +'perf mem' -t store record <command>
+>> +'perf mem' -t load report
+>> +'perf mem' -t store report
+>
+> Is '-t' option mandatory?  AFAISC it seems optional and defaults to load.
+>
+Yes, defaults to load. Fixed.
 
---tKW2IUtsqtDRztdT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> And is <command> for record also mandatory?  Doesn't 'perf record' make
+> it optional?
+>
+> If so, the above can be written like you did in 'mem_usage':
+>
+> 'perf mem' [<options>] (record [<command>] | report)
+>
+Fixed.
 
-Hi!
-> > Strictly speaking this is not a bug at least when sticking to regular
-> > files as POSIX which says that the change is not written out. In this
-> > case the file content is correct and forcing the data to be written out
-> > by msync() makes the test pass. The SHM mappings seems to preserve the
-> > content even after calling msync() which is, in my opinion, POSIX
-> > violation although a minor one.
-> >
-> 
-> fsync implemented in SHM is noop_fsync.
-> May be we should extend it if needed.
+>
+>> +
+>> +DESCRIPTION
+>> +-----------
+>> +"perf mem -t <TYPE> record" runs a command and gathers memory operation data
+>> +from it, into perf.data. Perf record options are accepted and are passed through.
+>> +
+>> +"perf mem -t <TYPE> report" displays the result. It invokes perf report with the
+>> +right set of options to display a memory access profile.
+>> +
+>> +OPTIONS
+>> +-------
+>> +<command>...::
+>> +     Any command you can specify in a shell.
+>> +
+>> +-t::
+>> +--type=::
+>> +     Select the memory operation type: load or store
+>
+> It'd better saying it defaults to load.
+>
+Done.
 
-I'm entirely sure that would fix the interface correclty. The posix
-says:
+>> +
+>> +-R::
+>> +--dump-raw-samples=::
+>> +     Dump the raw decoded samples on the screen in a format that is easy to parse with
+>> +     one sample per line.
+>
+> Didn't we usually use -D switch for this?
+>
+Using -D to be consistent with report.
 
+>> +
+>> +-x::
+>> +--field-separator::
+>> +     Specify the field separator used when dump raw samples (-R option). By default,
+>> +     The separator is the space character.
+>
+> And using -t for this will make it consistent with perf report IMHO.
+>
+>> +
+No it's -x there too.
 
-mmap:
+>> +-C::
+>> +--cpu-list::
+>> +     Restrict dump of raw samples to those provided via this option. Note that the same
+>> +     option can be passed in record mode. It will be interpreted the same way as perf
+>> +     record.
+>> +
+>> +SEE ALSO
+>> +--------
+>> +linkperf:perf-record[1], linkperf:perf-report[1]
+> [snip]
+>> +#define MEM_OPERATION_LOAD   "load"
+>> +#define MEM_OPERATION_STORE  "store"
+>> +
+>> +static char const    *input_name             = "perf.data";
+>
+> We have a global 'input_name' as of commit 70cb4e963f77 ("perf tools:
+> Add a global variable 'const char *input_name'").
+>
+>
+Yes. Fixed.
 
-...
-The system shall always zero-fill any partial page at the end of an
-object. Further, the system shall never write out any modified portions
-of the last page of an object which are beyond its end. 
-...
+>> +static const char    *mem_operation          = MEM_OPERATION_LOAD;
+>> +static const char    *csv_sep                = NULL;
+>
+> Why not use symbol_conf.field_sep?
+>
+Done.
 
+>> +
+>> +struct perf_mem {
+>> +     struct perf_tool        tool;
+>> +     char const              *input_name;
+>> +     symbol_filter_t         annotate_init;
+>> +     bool                    hide_unresolved;
+>> +     bool                    dump_raw;
+>> +     const char              *cpu_list;
+>> +     DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+>> +};
+>> +
+>> +static const char * const mem_usage[] = {
+>> +     "perf mem [<options>] {record <command> |report}",
+>> +     NULL
+>> +};
+> [snip]
+>> +static int report_raw_events(struct perf_mem *mem)
+>> +{
+>> +     int err = -EINVAL;
+>> +     int ret;
+>> +     struct perf_session *session = perf_session__new(input_name, O_RDONLY,
+>> +                                                      0, false, &mem->tool);
+>> +
+>> +     if (mem->cpu_list) {
+>> +             ret = perf_session__cpu_bitmap(session, mem->cpu_list,
+>> +                                            mem->cpu_bitmap);
+>> +             if (ret)
+>> +                     goto out_delete;
+>> +     }
+>> +
+>> +     if (symbol__init() < 0)
+>> +             return -1;
+>> +
+>> +     if (session == NULL)
+>> +             return -ENOMEM;
+>
+> This check should be moved before perf_session__cpu_bitmap() calls.
+>
+Yes.
 
-msync:
-
-...
-The effect of msync() on a shared memory object or a typed memory object
-is unspecified. 
-...
-
-Hmm, that is a little confusing and it looks like it depends on
-interpretation what 'write out' for SHM object means. And I guess that
-leaving the SHM part as it is is reasonable. Maybe worth of a note in
-manual page.
-
-
-On the other hand there seems to be several bugs in mmap() on regular
-files. For example mapping half of the page from a file doesn't fill the
-rest of the page with zeroes. And it looks like when half of page is
-mapped, the second half modified, then unmapped and then the whole page
-is mapped the content doesn't seem to be right, although this seems to
-change randomly. The reproducer for the first case attached.
-
--- 
-Cyril Hrubis
-chrubis@suse.cz
-
---tKW2IUtsqtDRztdT
-Content-Type: text/x-c; charset=us-ascii
-Content-Disposition: attachment; filename="reproducer1.c"
-
-#define _XOPEN_SOURCE 600
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <string.h>
-#include <errno.h>
-
-int main(void)
-{
-	char tmpfname[256];
-	long page_size;
-	void *data;
-	char *pa;
-	size_t len;
-	int fd, i, fail = 0;
-
-	page_size = sysconf(_SC_PAGE_SIZE);
-
-	snprintf(tmpfname, sizeof(tmpfname), "/tmp/test");
-	
-	/* Create file */
-	unlink(tmpfname);
-	fd = open(tmpfname, O_CREAT | O_RDWR | O_EXCL,
-		  S_IRUSR | S_IWUSR);
-	if (fd == -1) {
-		printf("Error at open(): %s\n", strerror(errno));
-		return 1;
-	}
-	
-	/* Fill it to the size of the page with 'a' */
-	data = malloc(page_size);
-	memset(data, 'a', page_size);
-	if (write(fd, data, page_size) != page_size) {
-		printf("Error at write(): %s\n", strerror(errno));
-		return 1;
-	}
-	free(data);
-
-	/* mmap half of the page */
-	pa = mmap(NULL, page_size/2, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if (pa == MAP_FAILED) {
-		printf("Error at mmap(): %s\n", strerror(errno));
-		return 1;
-	}
-	
-	for (i = 0; i < page_size; i++) {
-		if (i > page_size/2 && pa[i] != 0)
-			fail++;
-		printf("%4i %2x\n", i, pa[i]);
-	}
-
-	close(fd);
-	munmap(pa, len);
-	
-	if (fail)
-		printf("FAILED: Page not zeroed\n");
-	else
-		printf("SUCCEDED\n");
-
-	return 0;
-}
-
---tKW2IUtsqtDRztdT--
+Thanks.
