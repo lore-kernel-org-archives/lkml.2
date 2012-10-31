@@ -1,130 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab2JaFXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 01:23:46 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:39294 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab2JaFXn (ORCPT
+	id S1752311Ab2JaFec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 01:34:32 -0400
+Received: from nm1.access.bullet.mail.sp2.yahoo.com ([98.139.44.128]:32605
+	"EHLO nm1.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751858Ab2JaFe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 01:23:43 -0400
-Message-ID: <5090B5D8.3000209@numascale-asia.com>
-Date: Wed, 31 Oct 2012 13:23:36 +0800
-From: Daniel J Blueman <daniel@numascale-asia.com>
-Organization: Numascale Asia
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 31 Oct 2012 01:34:28 -0400
+X-Yahoo-Newman-Id: 133205.65212.bm@smtp109.sbc.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: cp6ZTScVM1ncP4Pg1imsuXyxdSirQm6kKFoDC0Md8Qyfajv
+ uJuN3rhJwroWECjLeiqXxe1RDDvZDB45NcE2dph8bF8mwml_mMvHozaCOkmq
+ B42DmRbgCc7wR9rwINvrb0zlyiSbHr0K0EP5pS9mlKneuKWFwAcafrq1rmIT
+ EuWvSNDcJnmtR.59dtm_5I0zRPphYO6u8C2ur.2I9m6Ew1K4c.J_QfCLF5SF
+ ts72xCVE5XbLkw916U3Qp5tek9dClMMYFi8dSHwjjPDUtLezYcolycRwh9Ws
+ 8xIAELydVyjni8yADk9xQFrOyseFzLLPrxVHjjD9_8XlblO_zvcJE1VCgNFl
+ wC2SwpSalQdcJVvP0YwwzTq48Y8GygiM2LSBD0xEfVc0bfMmDPqk3GBRd20d
+ _p9vwgOjmo_zkPqfg33cb9COtyVGntFT7fsqqOcsrTcMyF_qcuOdEVvBWWwj
+ v.gBrwBs3bKlG7HX2guAS2NpBSQ--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <5090B875.7030902@att.net>
+Date: Wed, 31 Oct 2012 00:34:45 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Herrmann <herrmann.der.user@gmail.com>,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH v3] Add support for AMD64 EDAC on multiple PCI domains
-References: <1351153972-14019-1-git-send-email-daniel@numascale-asia.com> <20121025110353.GA2623@aftab.osrc.amd.com> <508E1F64.3080806@numascale-asia.com> <508E4463.3080503@numascale-asia.com> <20121029103217.GD4326@liondog.tnic>
-In-Reply-To: <20121029103217.GD4326@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Borislav Petkov <bp@alien8.de>, Daniel Santos <daniel.santos@pobox.com>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v4 6/9] compiler.h, bug.h: Prevent double error messages
+ with BUILD_BUG{,_ON}
+References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com> <1351457835-7553-6-git-send-email-daniel.santos@pobox.com> <20121030161933.GD28499@liondog.tnic>
+In-Reply-To: <20121030161933.GD28499@liondog.tnic>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/10/2012 18:32, Borislav Petkov wrote:
-> + Andreas.
->
-> Dude, look at this boot log below:
->
-> http://quora.org/2012/16-server-boot-2.txt
->
-> That's 192 F10h's!
-
-We were booting 384 a while back, but I'll let you know when reach 4096!
-
-> On Mon, Oct 29, 2012 at 04:54:59PM +0800, Daniel J Blueman wrote:
->>> A number of other callers lookup the PCI device based on index
->>> 0..amd_nb_num(), but we can't easily allocate contiguous northbridge IDs
->> >from the PCI device in the first place.
+On 10/30/2012 11:19 AM, Borislav Petkov wrote:
+> On Sun, Oct 28, 2012 at 03:57:12PM -0500, danielfsantos@att.net wrote:
+>> Prior to the introduction of __attribute__((error("msg"))) in gcc 4.3,
+>> creating compile-time errors required a little trickery.
+>> BUILD_BUG{,_ON} uses this attribute when available to generate
+>> compile-time errors, but also uses the negative-sized array trick for
+>> older compilers, resulting in two error messages in some cases.  The
+>> reason it's "some" cases is that as of gcc 4.4, the negative-sized array
+>> will not create an error in some situations, like inline functions.
 >>
->>> OTOH we can simply this code by changing amd_get_node_id to generate a
->>> linear northbridge ID from the index of the matching entry in the
->>> northbridge array.
->>>
->>> I'll get a patch together to see if there are any snags.
->
-> I suspected that after we have this nice approach, you guys would come
-> with non-contiguous node numbers. Maan, can't you build your systems so
-> that software people can have it easy at least for once??!
-
-It depends on the definition of node, of course. The only changes we're 
-considering is compliance with the Intel x2apic spec with using the 
-upper 16-bits of the APIC ID as the server ("cluster") ID, since there 
-are optimisations in Linux for this.
-
->> This really is a lot less intrusive [1] and boots well on top of
->> 3.7-rc3 on one of our 16-server/192-core/512GB systems [2].
+>> This patch replaces the negative-sized array code with the new
+>> __compiletime_error_fallback() macro which expands to the same thing
+>> unless the the error attribute is available, in which case it expands to
+>> do{}while(0), resulting in exactly one compile-time error on all
+>> versions of gcc.
 >>
->> If you're happy with this simpler approach for now, I'll present
->> this and a separate patch cleaning up the inconsistent use of
->> unsigned and u8 node ID variables to u16?
->
-> Sure, bring it on.
-
-Yes, I've prepared a patch series and it tests out well.
-
->> diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
->> index b3341e9..b88fc7a 100644
->> --- a/arch/x86/include/asm/amd_nb.h
->> +++ b/arch/x86/include/asm/amd_nb.h
->> @@ -81,6 +81,18 @@ static inline struct amd_northbridge
->> *node_to_amd_nb(int node)
->>          return (node < amd_northbridges.num) ?
->> &amd_northbridges.nb[node] : NULL;
->>   }
+>> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+>> ---
+>>  include/linux/bug.h      |    4 ++--
+>>  include/linux/compiler.h |    7 +++++++
+>>  2 files changed, 9 insertions(+), 2 deletions(-)
 >>
->> +static inline u8 get_node_id(struct pci_dev *pdev)
->> +{
->> +       int i;
->> +
->> +       for (i = 0; i != amd_nb_num(); i++)
->> +               if (pci_domain_nr(node_to_amd_nb(i)->misc->bus) ==
->> pci_domain_nr(pdev->bus) &&
->> +                   PCI_SLOT(node_to_amd_nb(i)->misc->devfn) ==
->> PCI_SLOT(pdev->devfn))
->> +                       return i;
+>> diff --git a/include/linux/bug.h b/include/linux/bug.h
+>> index 03259d7..da03dc1 100644
+>> --- a/include/linux/bug.h
+>> +++ b/include/linux/bug.h
+>> @@ -57,13 +57,13 @@ struct pt_regs;
+>>   * track down.
+>>   */
+>>  #ifndef __OPTIMIZE__
+>> -#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+>> +#define BUILD_BUG_ON(condition) __compiletime_error_fallback(condition)
+>>  #else
+>>  #define BUILD_BUG_ON(condition)						\
+>>  	do {								\
+>>  		extern void __build_bug_on_failed(void)			\
+>>  			__compiletime_error("BUILD_BUG_ON failed");	\
+>> -		((void)sizeof(char[1 - 2*!!(condition)]));		\
+>> +		__compiletime_error_fallback(condition);		\
+>>  		if (condition)						\
+>>  			__build_bug_on_failed();			\
+> If we're defining a fallback, shouldn't it come second? I.e.:
 >
-> Looks ok, can you send the whole patch please?
+> 		if (condition)
+> 			__build_bug_on_failed();
+> 		__compiletime_error_fallback(condition);
 >
->> +       BUG();
+> Also, the error message from __build_bug_on_failed is much more
+> informative:
 >
-> I'm not sure about this - maybe WARN()? Are we absolutely sure we
-> unconditionally should panic after not finding an NB descriptor?
-
-It looks like the only way we could be looking up a non-existent NB 
-descriptor is if the array or variable in hand was corrupted. Maybe 
-better to panic immediately debugging to be elusive later.
-
-I've tweaked this to warn and return the first Northbridge ID to avoid 
-further issues, but even that isn't ideal.
-
-> Btw, this shouldn't happen on those CPUs:
+> arch/x86/kernel/cpu/amd.c: In function ‘early_init_amd’:
+> arch/x86/kernel/cpu/amd.c:486:2: error: call to ‘__build_bug_on_failed’ declared with attribute error: BUILD_BUG_ON failed
+> make[1]: *** [arch/x86/kernel/cpu/amd.o] Error 1
+> make[1]: *** Waiting for unfinished jobs....
+> make: *** [arch/x86/kernel/cpu/] Error 2
 >
-> [   39.279131] TSC synchronization [CPU#0 -> CPU#12]:
-> [   39.287223] Measured 22750019569 cycles TSC warp between CPUs, turning off TSC clock.
-> [    0.030000] tsc: Marking TSC unstable due to check_tsc_sync_source failed
+> than
 >
-> I guess TSCs are not starting at the same moment on all boards.
+> arch/x86/kernel/cpu/amd.c: In function ‘early_init_amd’:
+> arch/x86/kernel/cpu/amd.c:486:2: error: size of unnamed array is negative
+> make[1]: *** [arch/x86/kernel/cpu/amd.o] Error 1
+> make[1]: *** Waiting for unfinished jobs....
+> make: *** [arch/x86/kernel/cpu/] Error 2
+Yes, the __build_bug_on_failed message is much more informative.  This
+will only increase with these patches.  For example, the line
 
-As these are physically separate servers (off-the-shelf servers in fact, 
-a key benefit of NumaConnect), the TSC clocks diverge. Later, I'll be 
-cooking up a patch series to keep them in sync, allowing fast TSC use.
+BUILD_BUG_ON(sizeof(*c) != 4);
 
-> You definitely need ucode on those too:
+emits this error:
+
+arch/x86/kernel/cpu/amd.c: In function ‘early_init_amd’:
+arch/x86/kernel/cpu/amd.c:486:2: error: call to
+‘__build_bug_on_failed_486’ declared with attribute error: BUILD_BUG_ON
+failed: sizeof(*c) != 4
+make[1]: *** [arch/x86/kernel/cpu/amd.o] Error 1
+make: *** [arch/x86/kernel/cpu/amd.o] Error 2
+
+It's true that there is some redundancy in there as well as the
+gibberish line number embedded in the function name, but the end of the
+line spits out the exact statement that failed.
+
+But as far as rather the fallback is first or the __compiletime_error
+function is a matter of asthetics, since it's really an either/or
+situation.  Either the __build_bug_on_failedxxx function will be
+declared with __attribute__((error(message))) and the fallback will
+expand to a no-op, or the fallback will produce code that (presumably
+always?) breaks the build.  For insurance, a link-time error will occur
+if the fallback code fails to break the build.
+
+Realistically, a single macro could be defined in compiler*.h that
+encapsulates the entirety of this mechanism and only exposes a "black
+box" macro, that will simply expand to something that breaks the build
+in the most appropriate fashion based upon the version of gcc.  In
+essence, the new BUILD_BUG_ON_MSG macro attempts to fill that roll.
 >
-> [  113.392460] microcode: CPU0: patch_level=0x00000000
+> Finally, you need to do:
+>
+> 	bool __cond = !!(condition);
+>
+> and use __cond so that condition doesn't get evaluated multiple times
+> (possibly with side effects).
+>
+> Thanks.
+Big problem!  Very good catch, thank you!  All good programmers know not
+use expressions that can have side effects in an assert-type macro, but
+this it should certainly be as dummy proof as possible.  That will force
+others to get a really *really* good dummy if they want to break it!
 
-Good tip!
+Thank you for this! I suppose another justification for having a single
+"black box" macro that does this in one place and addresses all of these
+tricky issues.
 
-Thanks,
-   Daniel
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale Asia
+I guess I'll fix it up (and address the emails on the other patches) and
+do a v5 then for the whole set? (is that the right way to resubmit with
+these corrections?)
+
+Thanks
+Daniel
