@@ -1,89 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935185Ab2JaIx0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 04:53:26 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10522 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935102Ab2JaIxX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 04:53:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 31 Oct 2012 01:40:38 -0700
-Message-ID: <5090E69C.4080108@nvidia.com>
-Date: Wed, 31 Oct 2012 14:21:40 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 0/4] ARM: tegra: Enable SLINK controller driver
-References: <1351580726-17350-1-git-send-email-ldewangan@nvidia.com> <509038BA.30600@wwwdotorg.org>
-In-Reply-To: <509038BA.30600@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S935194Ab2JaIzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 04:55:23 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:44711 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934894Ab2JaIzT convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Wed, 31 Oct 2012 04:55:19 -0400
+Message-Id: <5090F5AA02000078000A5A0B@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 31 Oct 2012 08:55:54 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] xen/hypercall: fix hypercall fallback code for
+ very old hypervisors
+References: <1351519698-11069-1-git-send-email-konrad.wilk@oracle.com>
+ <1351519698-11069-2-git-send-email-konrad.wilk@oracle.com>
+ <20121030154450.GA3000@phenom.dumpdata.com>
+In-Reply-To: <20121030154450.GA3000@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 31 October 2012 01:59 AM, Stephen Warren wrote:
-> On 10/30/2012 01:05 AM, Laxman Dewangan wrote:
->> This series modify the dts file to add the slink addresses,
->> make AUXDATA in board dt files, enable slink4 for tegra30-cardhu and
->> enable slink controller defconfig.
-> This series only instantiates the SPI controller, and not any SPI
-> devices. I tried to solve this:
->
->> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
->> index 700f0a3..3689853 100644
->> --- a/arch/arm/boot/dts/tegra30-cardhu.dtsi
->> +++ b/arch/arm/boot/dts/tegra30-cardhu.dtsi
->> @@ -278,6 +278,11 @@
->>          spi@7000da00 {
->>                  status = "okay";
->>                  spi-max-frequency =<25000000>;
->> +               flash@0 {
->> +                       reg =<0>;
->> +                       compatible = "atmel,at25df321a";
->> +                       spi-max-frequency =<25000000>;
->> +               };
->>          };
->>
->>          ahub {
-> However, this didn't work. Has the driver been tested? I'm seeing the
-> exact same problems I saw with the old driver, namely that the SPI flash
-> chip can't be identified; I think the ID bytes are read back as 0, and
-> hence drivers/mtd/devices/m25p80.c falls back to identifying the device
-> as mr25h256. Attempting to hexdump -C /dev/mtd0 gives me 32K of zeros,
-> whereas the device is 4M and full of non-zero data according to U-Boot.
->
-> Do you know what the problem is here? Can you please update the patch
-> series so that the SPI flash is instantiated and works correctly?
+>>> On 30.10.12 at 16:44, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Mon, Oct 29, 2012 at 10:08:17AM -0400, Konrad Rzeszutek Wilk wrote:
+>> From: Jan Beulich <jbeulich@suse.com>
+>> 
+>> While copying the argument structures in HYPERVISOR_event_channel_op()
+>> and HYPERVISOR_physdev_op() into the local variable is sufficiently
+>> safe even if the actual structure is smaller than the container one,
+>> copying back eventual output values the same way isn't: This may
+>> collide with on-stack variables (particularly "rc") which may change
+>> between the first and second memcpy() (i.e. the second memcpy() could
+>> discard that change).
+>> 
+>> Move the fallback code into out-of-line functions, and handle all of
+>> the operations known by this old a hypervisor individually: Some don't
+>> require copying back anything at all, and for the rest use the
+>> individual argument structures' sizes rather than the container's.
+>> 
+>> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+>> [v2: Reduce #define/#undef usage in HYPERVISOR_physdev_op_compat().]
+>> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> And it looks like I get 
+> 
+> ERROR: "HYPERVISOR_event_channel_op_compat" [drivers/xen/xen-evtchn.ko] 
+> undefined!
+> 
+> when I build xen-evtchn as module. Jan did you encounter this issue on 
+> 2.6.18?
 
-I will send the new patch series for taking care of the issue.
+No - the event channel driver there can't be built as a module, and
+for the forward ported kernels I apparently never tried to build with
+a compat setting of 3.0.2 or less (and I didn't care that much either
+because the oldest we're actually concerned about is 3.0.4 to cover
+some of those very old EC2 systems; I'll add the export at the right
+point nevertheless).
 
-In Cardhu, there is 2 different type of flash, Winbond and Atmel.
-There is hw rework require in Cardhu A02 to enable the serial flash and 
-it is already taken care in Cardhu A04. I will forward the hw rework 
-details to you in internal mail communication.
+Jan
 
-Also Serial flash is in CS1, not in CS0. So even if you have hw rework, 
-above change will not work.
-
-I had tested on different way earlier (dynamic allocating master for 
-serial flash) and also tested on above method.
-For this I enable MTD, MTD_CHAR and MTD_M25P80.
-Debug prints as:
-[    1.279424] m25p_probe
-[    1.282536] m25p80 spi32766.1: w25q32 (4096 Kbytes)
-[    1.287418] mtd .name = spi32766.1, .size = 0x400000 (4MiB) 
-.erasesize = 0x00
-001000 (4KiB) .numeraseregions = 0
-[    1.298120] m25p_probe() returns 0
-
-
+>> ---
+>>  arch/x86/include/asm/xen/hypercall.h |   21 +++------
+>>  drivers/xen/Makefile                 |    2 +-
+>>  drivers/xen/fallback.c               |   78 
+> ++++++++++++++++++++++++++++++++++
+>>  3 files changed, 86 insertions(+), 15 deletions(-)
+>>  create mode 100644 drivers/xen/fallback.c
+>> 
+>> diff --git a/arch/x86/include/asm/xen/hypercall.h 
+> b/arch/x86/include/asm/xen/hypercall.h
+>> index 59c226d..c812360 100644
+>> --- a/arch/x86/include/asm/xen/hypercall.h
+>> +++ b/arch/x86/include/asm/xen/hypercall.h
+>> @@ -359,18 +359,14 @@ HYPERVISOR_update_va_mapping(unsigned long va, pte_t 
+> new_val,
+>>  		return _hypercall4(int, update_va_mapping, va,
+>>  				   new_val.pte, new_val.pte >> 32, flags);
+>>  }
+>> +int __must_check HYPERVISOR_event_channel_op_compat(int, void *);
+>>  
+>>  static inline int
+>>  HYPERVISOR_event_channel_op(int cmd, void *arg)
+>>  {
+>>  	int rc = _hypercall2(int, event_channel_op, cmd, arg);
+>> -	if (unlikely(rc == -ENOSYS)) {
+>> -		struct evtchn_op op;
+>> -		op.cmd = cmd;
+>> -		memcpy(&op.u, arg, sizeof(op.u));
+>> -		rc = _hypercall1(int, event_channel_op_compat, &op);
+>> -		memcpy(arg, &op.u, sizeof(op.u));
+>> -	}
+>> +	if (unlikely(rc == -ENOSYS))
+>> +		rc = HYPERVISOR_event_channel_op_compat(cmd, arg);
+>>  	return rc;
+>>  }
+>>  
+>> @@ -386,17 +382,14 @@ HYPERVISOR_console_io(int cmd, int count, char *str)
+>>  	return _hypercall3(int, console_io, cmd, count, str);
+>>  }
+>>  
+>> +int __must_check HYPERVISOR_physdev_op_compat(int, void *);
+>> +
+>>  static inline int
+>>  HYPERVISOR_physdev_op(int cmd, void *arg)
+>>  {
+>>  	int rc = _hypercall2(int, physdev_op, cmd, arg);
+>> -	if (unlikely(rc == -ENOSYS)) {
+>> -		struct physdev_op op;
+>> -		op.cmd = cmd;
+>> -		memcpy(&op.u, arg, sizeof(op.u));
+>> -		rc = _hypercall1(int, physdev_op_compat, &op);
+>> -		memcpy(arg, &op.u, sizeof(op.u));
+>> -	}
+>> +	if (unlikely(rc == -ENOSYS))
+>> +		rc = HYPERVISOR_physdev_op_compat(cmd, arg);
+>>  	return rc;
+>>  }
+>>  
+>> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+>> index 0e863703..46de6cd 100644
+>> --- a/drivers/xen/Makefile
+>> +++ b/drivers/xen/Makefile
+>> @@ -2,7 +2,7 @@ ifneq ($(CONFIG_ARM),y)
+>>  obj-y	+= manage.o balloon.o
+>>  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+>>  endif
+>> -obj-y	+= grant-table.o features.o events.o
+>> +obj-y	+= grant-table.o features.o events.o fallback.o
+>>  obj-y	+= xenbus/
+>>  
+>>  nostackp := $(call cc-option, -fno-stack-protector)
+>> diff --git a/drivers/xen/fallback.c b/drivers/xen/fallback.c
+>> new file mode 100644
+>> index 0000000..0bdc468
+>> --- /dev/null
+>> +++ b/drivers/xen/fallback.c
+>> @@ -0,0 +1,78 @@
+>> +#include <linux/kernel.h>
+>> +#include <linux/string.h>
+>> +#include <linux/bug.h>
+>> +#include <asm/hypervisor.h>
+>> +#include <asm/xen/hypercall.h>
+>> +
+>> +int HYPERVISOR_event_channel_op_compat(int cmd, void *arg)
+>> +{
+>> +	struct evtchn_op op;
+>> +	int rc;
+>> +
+>> +	op.cmd = cmd;
+>> +	memcpy(&op.u, arg, sizeof(op.u));
+>> +	rc = _hypercall1(int, event_channel_op_compat, &op);
+>> +
+>> +	switch (cmd) {
+>> +	case EVTCHNOP_close:
+>> +	case EVTCHNOP_send:
+>> +	case EVTCHNOP_bind_vcpu:
+>> +	case EVTCHNOP_unmask:
+>> +		/* no output */
+>> +		break;
+>> +
+>> +#define COPY_BACK(eop) \
+>> +	case EVTCHNOP_##eop: \
+>> +		memcpy(arg, &op.u.eop, sizeof(op.u.eop)); \
+>> +		break
+>> +
+>> +	COPY_BACK(bind_interdomain);
+>> +	COPY_BACK(bind_virq);
+>> +	COPY_BACK(bind_pirq);
+>> +	COPY_BACK(status);
+>> +	COPY_BACK(alloc_unbound);
+>> +	COPY_BACK(bind_ipi);
+>> +#undef COPY_BACK
+>> +
+>> +	default:
+>> +		WARN_ON(rc != -ENOSYS);
+>> +		break;
+>> +	}
+>> +
+>> +	return rc;
+>> +}
+>> +
+>> +int HYPERVISOR_physdev_op_compat(int cmd, void *arg)
+>> +{
+>> +	struct physdev_op op;
+>> +	int rc;
+>> +
+>> +	op.cmd = cmd;
+>> +	memcpy(&op.u, arg, sizeof(op.u));
+>> +	rc = _hypercall1(int, physdev_op_compat, &op);
+>> +
+>> +	switch (cmd) {
+>> +	case PHYSDEVOP_IRQ_UNMASK_NOTIFY:
+>> +	case PHYSDEVOP_set_iopl:
+>> +	case PHYSDEVOP_set_iobitmap:
+>> +	case PHYSDEVOP_apic_write:
+>> +		/* no output */
+>> +		break;
+>> +
+>> +#define COPY_BACK(pop, fld) \
+>> +	case PHYSDEVOP_##pop: \
+>> +		memcpy(arg, &op.u.fld, sizeof(op.u.fld)); \
+>> +		break
+>> +
+>> +	COPY_BACK(irq_status_query, irq_status_query);
+>> +	COPY_BACK(apic_read, apic_op);
+>> +	COPY_BACK(ASSIGN_VECTOR, irq_op);
+>> +#undef COPY_BACK
+>> +
+>> +	default:
+>> +		WARN_ON(rc != -ENOSYS);
+>> +		break;
+>> +	}
+>> +
+>> +	return rc;
+>> +}
+>> -- 
+>> 1.7.7.6
 
 
