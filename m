@@ -1,111 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab2JaM3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 08:29:40 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:21951 "EHLO relay.sw.ru"
+	id S1422791Ab2JaMbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 08:31:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11813 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757251Ab2JaM32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 08:29:28 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <cgroups@vger.kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 2/2] allow post_create to fail
-Date: Wed, 31 Oct 2012 16:29:14 +0400
-Message-Id: <1351686554-22592-3-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351686554-22592-1-git-send-email-glommer@parallels.com>
-References: <1351686554-22592-1-git-send-email-glommer@parallels.com>
+	id S933531Ab2JaMbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 08:31:42 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAGXu5jK22D_15jYopqaegYAGSHO2x0asXogXCnZGfMw2KwUVNw@mail.gmail.com>
+References: <CAGXu5jK22D_15jYopqaegYAGSHO2x0asXogXCnZGfMw2KwUVNw@mail.gmail.com> <20121030191927.11000.68420.stgit@warthog.procyon.org.uk> <20121030192148.11000.3582.stgit@warthog.procyon.org.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: dhowells@redhat.com, rusty@rustcorp.com.au, pjones@redhat.com,
+        jwboyer@redhat.com, mjg@redhat.com, dmitry.kasatkin@intel.com,
+        zohar@linux.vnet.ibm.com, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 16/23] pefile: Parse a PE binary to find a key and a signature contained therein
+Date: Wed, 31 Oct 2012 12:31:29 +0000
+Message-ID: <30574.1351686689@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialization in post_create can theoretically fail (although it won't
-in cpuset). The comment in cgroup.c even seem to indicate that the
-possibility of failure was the intention.
+Kees Cook <keescook@chromium.org> wrote:
 
-It is not terribly complicated, so let us just allow it to fail.
+> Which means this loop will walk past the end of the memory (loop is
+> bounded by n_sections, so secs[loop] can go past datalen). While
+> data_addr and raw_data_size will stay bounded, the read of sec->name
+> can be out of bounds.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Tejun Heo <tj@kernel.org>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Li Zefan <lizefan@huawei.com>
+Assuming n_sections is checked, sec->name can't be out of bounds because it's
+a char array, not a pointer.
+
+> (Also, do you want a "break" in there after the first .keylist is found, or
+> is this intentionally "use last key list"?)
+
+Actually, no I don't.  The loop also checks the limits on each section - which
+I need to do since I have to individually digest the sections later.
+
+Attached is a patch I'm applying to pefile_parse_binary() to be more rigorous
+about the checking of values in the PE binary.
+
+David
 ---
- include/linux/cgroup.h | 2 +-
- kernel/cgroup.c        | 7 +++++--
- kernel/cpuset.c        | 8 ++++----
- 3 files changed, 10 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 7f422ba..34cb906 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -477,7 +477,7 @@ struct cgroup_subsys {
- 	void (*fork)(struct task_struct *task);
- 	void (*exit)(struct cgroup *cgrp, struct cgroup *old_cgrp,
- 		     struct task_struct *task);
--	void (*post_create)(struct cgroup *cgrp);
-+	int (*post_create)(struct cgroup *cgrp);
- 	void (*bind)(struct cgroup *root);
+diff --git a/crypto/asymmetric_keys/pefile_parser.c b/crypto/asymmetric_keys/pefile_parser.c
+index efae278..fb80cf0 100644
+--- a/crypto/asymmetric_keys/pefile_parser.c
++++ b/crypto/asymmetric_keys/pefile_parser.c
+@@ -42,8 +42,8 @@ static int pefile_parse_binary(struct key_preparsed_payload *prep,
  
- 	int subsys_id;
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 40caab1..20a1422 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3963,8 +3963,11 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 				goto err_destroy;
- 		}
- 		/* At error, ->destroy() callback has to free assigned ID. */
--		if (ss->post_create)
--			ss->post_create(cgrp);
-+		if (ss->post_create) {
-+			err = ss->post_create(cgrp);
-+			if (err)
-+				goto err_destroy;
-+		}
+ #define chkaddr(base, x, s)						\
+ 	do {								\
+-		if ((x) < base || (s) >= datalen || (x) > datalen - (s))	\
+-			return -ERANGE;					\
++		if ((x) < base || (s) >= datalen || (x) > datalen - (s)) \
++			return -ELIBBAD;				\
+ 	} while(0)
  
- 		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
- 		    parent->parent) {
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index ca97af8..e7623ae 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1799,19 +1799,19 @@ static struct cftype files[] = {
-  * (and likewise for mems) to the new cgroup. Called with cgroup_mutex
-  * held.
-  */
--static void cpuset_post_create(struct cgroup *cgroup)
-+static int cpuset_post_create(struct cgroup *cgroup)
- {
- 	struct cgroup *parent, *child;
- 	struct cpuset *cs, *parent_cs;
+ 	chkaddr(0, 0, sizeof(*mz));
+@@ -88,7 +88,13 @@ static int pefile_parse_binary(struct key_preparsed_payload *prep,
+ 	pr_devel("checksum @ %x\n", ctx->image_checksum_offset);
+ 	pr_devel("header size = %x\n", ctx->header_size);
  
- 	if (!clone_children(cgroup))
--		return;
-+		return 0;
+-	chkaddr(0, cursor, sizeof(*ddir));
++	if (cursor >= ctx->header_size || ctx->header_size >= datalen)
++		return -ELIBBAD;
++
++	if (ctx->n_data_dirents > (ctx->header_size - cursor) / sizeof(*dde) ||
++	    ctx->n_data_dirents < sizeof(*ddir) / sizeof(*dde))
++		return -ELIBBAD;
++
+ 	ddir = prep->data + cursor;
+ 	cursor += sizeof(*dde) * ctx->n_data_dirents;
  
- 	parent = cgroup->parent;
- 	list_for_each_entry(child, &parent->children, sibling) {
- 		cs = cgroup_cs(child);
- 		if (is_mem_exclusive(cs) || is_cpu_exclusive(cs))
--			return;
-+			return 0;
+@@ -101,7 +107,7 @@ static int pefile_parse_binary(struct key_preparsed_payload *prep,
+ 		return -EKEYREJECTED;
  	}
- 	cs = cgroup_cs(cgroup);
- 	parent_cs = cgroup_cs(parent);
-@@ -1820,7 +1820,7 @@ static void cpuset_post_create(struct cgroup *cgroup)
- 	cs->mems_allowed = parent_cs->mems_allowed;
- 	cpumask_copy(cs->cpus_allowed, parent_cs->cpus_allowed);
- 	mutex_unlock(&callback_mutex);
--	return;
-+	return 0;
- }
  
- /*
--- 
-1.7.11.7
-
+-	chkaddr(cursor, ddir->certs.virtual_address, ddir->certs.size);
++	chkaddr(ctx->header_size, ddir->certs.virtual_address, ddir->certs.size);
+ 	ctx->sig_offset = ddir->certs.virtual_address;
+ 	ctx->sig_len = ddir->certs.size;
+ 	pr_devel("cert = %x @%x [%*ph]\n",
+@@ -112,7 +118,8 @@ static int pefile_parse_binary(struct key_preparsed_payload *prep,
+ 	 * section containing the list of keys.
+ 	 */
+ 	ctx->n_sections = pe->sections;
+-	chkaddr(0, cursor, sizeof(*sec) * ctx->n_sections);
++	if (ctx->n_sections > (ctx->header_size - cursor) / sizeof(*sec))
++		return -ELIBBAD;
+ 	ctx->secs = secs = prep->data + cursor;
+ 	cursor += sizeof(*sec) * ctx->n_sections;
+ 
