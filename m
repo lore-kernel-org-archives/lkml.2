@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab2KHTyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 14:54:15 -0500
-Received: from mailserver5.natinst.com ([130.164.80.5]:47061 "EHLO
+	id S1756803Ab2KHTyR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 14:54:17 -0500
+Received: from mailserver5.natinst.com ([130.164.80.5]:47086 "EHLO
 	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756750Ab2KHTyM (ORCPT
+	with ESMTP id S1756783Ab2KHTyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 14:54:12 -0500
-Message-Id: <052ad319f1599baa9a2fc840726a98f573e08672.1352400580.git.josh.cartwright@ni.com>
+	Thu, 8 Nov 2012 14:54:15 -0500
+Message-Id: <80ce7f830bd3fd131da4aff9e33d6c0dc2c359a8.1352400580.git.josh.cartwright@ni.com>
 In-Reply-To: <cover.1352400580.git.josh.cartwright@ni.com>
 References: <cover.1352400580.git.josh.cartwright@ni.com>
 From: Josh Cartwright <josh.cartwright@ni.com>
-To: Michal Simek <michal.simek@xilinx.com>, John Linn <john.linn@xilinx.com>,
-        arm@kernel.org
-Date: Wed, 31 Oct 2012 12:24:48 -0600
-Subject: [PATCH v2 1/5] ARM: zynq: dts: split up device tree
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Wed, 31 Oct 2012 13:28:49 -0600
+Subject: [PATCH v2 4/5] serial: xilinx_uartps: get clock rate info from dts
+To: Alan Cox <alan@linux.intel.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
+        John Linn <john.linn@xilinx.com>, arm@kernel.org
 X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
  14, 2012) at 11/08/2012 01:54:07 PM,
 	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
@@ -27,123 +29,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The purpose of the created zynq-7000.dtsi file is to describe the
-hardware common to all Zynq 7000-based boards.  Also, get rid of the
-zynq-ep107 device tree, since it is not hardware anyone can purchase.
-
-Add a zc702 dts file based on the zynq-7000.dtsi.  Add it to the
-dts/Makefile so it is built with the 'dtbs' target.
+Add support for specifying clock information for the uart clk via the
+device tree.  This eliminates the need to hardcode rates in the device
+tree.
 
 Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
 ---
- arch/arm/boot/dts/Makefile                         |  1 +
- .../boot/dts/{zynq-ep107.dts => zynq-7000.dtsi}    | 19 +++-----------
- arch/arm/boot/dts/zynq-zc702.dts                   | 30 ++++++++++++++++++++++
- arch/arm/mach-zynq/common.c                        |  3 ++-
- 4 files changed, 36 insertions(+), 17 deletions(-)
- rename arch/arm/boot/dts/{zynq-ep107.dts => zynq-7000.dtsi} (79%)
- create mode 100644 arch/arm/boot/dts/zynq-zc702.dts
+ arch/arm/boot/dts/zynq-7000.dtsi   |  4 ++--
+ drivers/tty/serial/xilinx_uartps.c | 30 +++++++++++++++++-------------
+ 2 files changed, 19 insertions(+), 15 deletions(-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index f37cf9f..76ed11e 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -103,5 +103,6 @@ dtb-$(CONFIG_ARCH_VEXPRESS) += vexpress-v2p-ca5s.dtb \
- dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
- 	wm8505-ref.dtb \
- 	wm8650-mid.dtb
-+dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
- 
- endif
-diff --git a/arch/arm/boot/dts/zynq-ep107.dts b/arch/arm/boot/dts/zynq-7000.dtsi
-similarity index 79%
-rename from arch/arm/boot/dts/zynq-ep107.dts
-rename to arch/arm/boot/dts/zynq-7000.dtsi
-index 5caf100..8b30e59 100644
---- a/arch/arm/boot/dts/zynq-ep107.dts
+diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+index bb3085c..c975c2d 100644
+--- a/arch/arm/boot/dts/zynq-7000.dtsi
 +++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -10,29 +10,16 @@
-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  * GNU General Public License for more details.
-  */
-+/include/ "skeleton.dtsi"
+@@ -44,14 +44,14 @@
+ 			compatible = "xlnx,xuartps";
+ 			reg = <0xE0000000 0x1000>;
+ 			interrupts = <0 27 4>;
+-			clock = <50000000>;
++			clocks = <&uart_clk 0>;
+ 		};
  
--/dts-v1/;
- / {
--	model = "Xilinx Zynq EP107";
--	compatible = "xlnx,zynq-ep107";
--	#address-cells = <1>;
--	#size-cells = <1>;
--	interrupt-parent = <&intc>;
+ 		uart1: uart@e0001000 {
+ 			compatible = "xlnx,xuartps";
+ 			reg = <0xE0001000 0x1000>;
+ 			interrupts = <0 50 4>;
+-			clock = <50000000>;
++			clocks = <&uart_clk 1>;
+ 		};
+ 
+ 		slcr: slcr@f8000000 {
+diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
+index 23efe17..adfecbc 100644
+--- a/drivers/tty/serial/xilinx_uartps.c
++++ b/drivers/tty/serial/xilinx_uartps.c
+@@ -17,6 +17,7 @@
+ #include <linux/tty.h>
+ #include <linux/tty_flip.h>
+ #include <linux/console.h>
++#include <linux/clk.h>
+ #include <linux/irq.h>
+ #include <linux/io.h>
+ #include <linux/of.h>
+@@ -944,18 +945,20 @@ static int __devinit xuartps_probe(struct platform_device *pdev)
+ 	int rc;
+ 	struct uart_port *port;
+ 	struct resource *res, *res2;
+-	int clk = 0;
++	struct clk *clk;
+ 
+-	const unsigned int *prop;
 -
--	memory {
--		device_type = "memory";
--		reg = <0x0 0x10000000>;
--	};
--
--	chosen {
--		bootargs = "console=ttyPS0,9600 root=/dev/ram rw initrd=0x800000,8M earlyprintk";
--		linux,stdout-path = &uart0;
--	};
-+	compatible = "xlnx,zynq-7000";
+-	prop = of_get_property(pdev->dev.of_node, "clock", NULL);
+-	if (prop)
+-		clk = be32_to_cpup(prop);
++	clk = of_clk_get(pdev->dev.of_node, 0);
+ 	if (!clk) {
+ 		dev_err(&pdev->dev, "no clock specified\n");
+ 		return -ENODEV;
+ 	}
  
- 	amba {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-+		interrupt-parent = <&intc>;
- 		ranges;
++	rc = clk_prepare_enable(clk);
++	if (rc) {
++		dev_err(&pdev->dev, "could not enable clock\n");
++		return -EBUSY;
++	}
++
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res)
+ 		return -ENODEV;
+@@ -978,7 +981,8 @@ static int __devinit xuartps_probe(struct platform_device *pdev)
+ 		port->mapbase = res->start;
+ 		port->irq = res2->start;
+ 		port->dev = &pdev->dev;
+-		port->uartclk = clk;
++		port->uartclk = clk_get_rate(clk);
++		port->private_data = clk;
+ 		dev_set_drvdata(&pdev->dev, port);
+ 		rc = uart_add_one_port(&xuartps_uart_driver, port);
+ 		if (rc) {
+@@ -1000,14 +1004,14 @@ static int __devinit xuartps_probe(struct platform_device *pdev)
+ static int __devexit xuartps_remove(struct platform_device *pdev)
+ {
+ 	struct uart_port *port = dev_get_drvdata(&pdev->dev);
+-	int rc = 0;
++	struct clk *clk = port->private_data;
++	int rc;
  
- 		intc: interrupt-controller@f8f01000 {
-diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-new file mode 100644
-index 0000000..e25a307
---- /dev/null
-+++ b/arch/arm/boot/dts/zynq-zc702.dts
-@@ -0,0 +1,30 @@
-+/*
-+ *  Copyright (C) 2011 Xilinx
-+ *  Copyright (C) 2012 National Instruments Corp.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+/dts-v1/;
-+/include/ "zynq-7000.dtsi"
-+
-+/ {
-+	model = "Zynq ZC702 Development Board";
-+	compatible = "xlnx,zynq-zc702", "xlnx,zynq-7000";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x0 0x40000000>;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttyPS1,115200 earlyprintk";
-+	};
-+
-+};
-diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index f0eef84..5441323 100644
---- a/arch/arm/mach-zynq/common.c
-+++ b/arch/arm/mach-zynq/common.c
-@@ -115,7 +115,8 @@ static void __init xilinx_map_io(void)
+ 	/* Remove the xuartps port from the serial core */
+-	if (port) {
+-		rc = uart_remove_one_port(&xuartps_uart_driver, port);
+-		dev_set_drvdata(&pdev->dev, NULL);
+-		port->mapbase = 0;
+-	}
++	rc = uart_remove_one_port(&xuartps_uart_driver, port);
++	dev_set_drvdata(&pdev->dev, NULL);
++	port->mapbase = 0;
++	clk_disable_unprepare(clk);
+ 	return rc;
  }
- 
- static const char *xilinx_dt_match[] = {
--	"xlnx,zynq-ep107",
-+	"xlnx,zynq-zc702",
-+	"xlnx,zynq-7000",
- 	NULL
- };
  
 -- 
 1.8.0
