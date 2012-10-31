@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933459Ab2JaAld (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:41:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31172 "EHLO mga02.intel.com"
+	id S933321Ab2JaAlc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:41:32 -0400
+Received: from mga14.intel.com ([143.182.124.37]:31104 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759085Ab2JaAee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759097Ab2JaAee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Oct 2012 20:34:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
-   d="scan'208";a="213257356"
+   d="scan'208";a="162644794"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 13/32] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v3
-Date: Tue, 30 Oct 2012 17:34:04 -0700
-Message-Id: <1351643663-23828-14-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 15/32] perf, x86: Support weight samples for PEBS
+Date: Tue, 30 Oct 2012 17:34:06 -0700
+Message-Id: <1351643663-23828-16-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
 References: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
@@ -26,83 +26,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-With checkpointed counters there can be a situation where the counter
-is overflowing, aborts the transaction, is set back to a non overflowing
-checkpoint, causes interupt. The interrupt doesn't see the overflow
-because it has been checkpointed.  This is then a spurious PMI, typically with a
-ugly NMI message.  It can also lead to excessive aborts.
+When a weighted sample is requested, first try to report the TSX abort cost
+on Haswell. If that is not available report the memory latency. This
+allows profiling both by abort cost and by memory latencies.
 
-Avoid this problem by:
-- Using the full counter width for counting counters (previous patch)
-- Forbid sampling for checkpointed counters. It's not too useful anyways,
-checkpointing is mainly for counting.
-- On a PMI always set back checkpointed counters to zero.
+Memory latencies requires enabling a different PEBS mode (LL).
+When both address and weight is requested address wins.
 
-v2: Add unlikely. Add comment
-v3: Allow large sampling periods with CP for KVM
+The LL mode only works for memory related PEBS events, so add a
+separate event constraint table for those.
+
+I only did this for Haswell for now, but it could be added
+for several other Intel CPUs too by just adding the right
+table for them.
+
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   34 ++++++++++++++++++++++++++++++++
- 1 files changed, 34 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h          |    4 ++
+ arch/x86/kernel/cpu/perf_event_intel.c    |    4 ++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   47 +++++++++++++++++++++++++++-
+ 3 files changed, 53 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index ce2a863..d55e502 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -168,6 +168,7 @@ struct cpu_hw_events {
+ 	u64				perf_ctr_virt_mask;
+ 
+ 	void				*kfree_on_online;
++	u8				*memory_latency_events;
+ };
+ 
+ #define __EVENT_CONSTRAINT(c, n, m, w, o) {\
+@@ -390,6 +391,7 @@ struct x86_pmu {
+ 	struct event_constraint *pebs_constraints;
+ 	void		(*pebs_aliases)(struct perf_event *event);
+ 	int 		max_pebs_events;
++	struct event_constraint *memory_lat_events;
+ 
+ 	/*
+ 	 * Intel LBR
+@@ -599,6 +601,8 @@ extern struct event_constraint intel_ivb_pebs_event_constraints[];
+ 
+ extern struct event_constraint intel_hsw_pebs_event_constraints[];
+ 
++extern struct event_constraint intel_hsw_memory_latency_events[];
++
+ struct event_constraint *intel_pebs_constraints(struct perf_event *event);
+ 
+ void intel_pmu_pebs_enable(struct perf_event *event);
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index bc21bce..9b4dda5 100644
+index 9b4dda5..20caf0a 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1079,6 +1079,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
- int intel_pmu_save_and_restart(struct perf_event *event)
- {
- 	x86_perf_event_update(event);
-+	/*
-+	 * For a checkpointed counter always reset back to 0.  This
-+	 * avoids a situation where the counter overflows, aborts the
-+	 * transaction and is then set back to shortly before the
-+	 * overflow, and overflows and aborts again.
-+	 */
-+	if (unlikely(event->hw.config & HSW_INTX_CHECKPOINTED)) {
-+		/* No race with NMIs because the counter should not be armed */
-+		wrmsrl(event->hw.event_base, 0);
-+		local64_set(&event->hw.prev_count, 0);
-+	}
- 	return x86_perf_event_set_period(event);
- }
+@@ -1624,6 +1624,9 @@ static int hsw_hw_config(struct perf_event *event)
  
-@@ -1162,6 +1173,15 @@ again:
- 		x86_pmu.drain_pebs(regs);
- 	}
+ 	if (ret)
+ 		return ret;
++	/* PEBS cannot capture both */
++	if (event->attr.sample_type & PERF_SAMPLE_ADDR)
++		event->attr.sample_type &= ~PERF_SAMPLE_WEIGHT;
+ 	if (!boot_cpu_has(X86_FEATURE_RTM) && !boot_cpu_has(X86_FEATURE_HLE))
+ 		return 0;
+ 	event->hw.config |= event->attr.config & (HSW_INTX|HSW_INTX_CHECKPOINTED);
+@@ -2230,6 +2233,7 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.hw_config = hsw_hw_config;
+ 		x86_pmu.get_event_constraints = hsw_get_event_constraints;
+ 		x86_pmu.format_attrs = intel_hsw_formats_attr;
++		x86_pmu.memory_lat_events = intel_hsw_memory_latency_events;
+ 		pr_cont("Haswell events, ");
+ 		break;
  
-+	/*
-+ 	 * To avoid spurious interrupts with perf stat always reset checkpointed
-+ 	 * counters.
-+ 	 *
-+	 * XXX move somewhere else.
-+	 */
-+	if (cpuc->events[2] && (cpuc->events[2]->hw.config & HSW_INTX_CHECKPOINTED))
-+		status |= (1ULL << 2);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index aa0f5fa..3094caa 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -456,6 +456,17 @@ struct event_constraint intel_hsw_pebs_event_constraints[] = {
+ 	EVENT_CONSTRAINT_END
+ };
+ 
++/* Subset of PEBS events supporting memory latency. Not used for scheduling */
 +
- 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
- 		struct perf_event *event = cpuc->events[bit];
- 
-@@ -1615,6 +1635,20 @@ static int hsw_hw_config(struct perf_event *event)
- 	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
- 	      event->attr.precise_ip > 0))
- 		return -EIO;
-+	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
-+		/*
-+		 * Sampling of checkpointed events can cause situations where
-+		 * the CPU constantly aborts because of a overflow, which is
-+		 * then checkpointed back and ignored. Forbid checkpointing
-+		 * for sampling.
-+		 *
-+		 * But still allow a long sampling period, so that perf stat
-+		 * from KVM works.
-+		 */
-+		if (event->attr.sample_period > 0 &&
-+		    event->attr.sample_period < 0x7fffffff)
-+			return -EIO;
-+	}
- 	return 0;
++struct event_constraint intel_hsw_memory_latency_events[] = {
++	INTEL_EVENT_CONSTRAINT(0xcd, 0), /* MEM_TRANS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd0, 0), /* MEM_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd1, 0), /* MEM_LOAD_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd2, 0), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd3, 0), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
++	EVENT_CONSTRAINT_END
++};
++
+ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+ {
+ 	struct event_constraint *c;
+@@ -473,6 +484,21 @@ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+ 	return &emptyconstraint;
  }
+ 
++static bool is_memory_lat_event(struct perf_event *event)
++{
++	struct event_constraint *c;
++
++	if (x86_pmu.intel_cap.pebs_format < 1)
++		return false;
++	if (!x86_pmu.memory_lat_events)
++		return false;
++	for_each_event_constraint(c, x86_pmu.memory_lat_events) {
++		if ((event->hw.config & c->cmask) == c->code)
++			return true;
++	}
++	return false;
++}
++
+ void intel_pmu_pebs_enable(struct perf_event *event)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+@@ -480,7 +506,12 @@ void intel_pmu_pebs_enable(struct perf_event *event)
+ 
+ 	hwc->config &= ~ARCH_PERFMON_EVENTSEL_INT;
+ 
+-	cpuc->pebs_enabled |= 1ULL << hwc->idx;
++	/* When weight is requested enable LL instead of normal PEBS */
++	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) &&
++		is_memory_lat_event(event))
++		cpuc->pebs_enabled |= 1ULL << (32 + hwc->idx);
++	else
++		cpuc->pebs_enabled |= 1ULL << hwc->idx;
+ }
+ 
+ void intel_pmu_pebs_disable(struct perf_event *event)
+@@ -488,7 +519,11 @@ void intel_pmu_pebs_disable(struct perf_event *event)
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+-	cpuc->pebs_enabled &= ~(1ULL << hwc->idx);
++	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) &&
++		is_memory_lat_event(event))
++		cpuc->pebs_enabled &= ~(1ULL << (32 + hwc->idx));
++	else
++		cpuc->pebs_enabled &= ~(1ULL << hwc->idx);
+ 	if (cpuc->enabled)
+ 		wrmsrl(MSR_IA32_PEBS_ENABLE, cpuc->pebs_enabled);
+ 
+@@ -634,6 +669,14 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 		x86_pmu.intel_cap.pebs_format >= 2)
+ 		data.addr = ((struct pebs_record_v2 *)pebs)->nhm.dla;
+ 
++	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) &&
++	    x86_pmu.intel_cap.pebs_format >= 2) {
++		data.weight = ((struct pebs_record_v2 *)pebs)->tsx_tuning &
++				0xffffffff;
++		if (!data.weight)
++			data.weight = ((struct pebs_record_v2 *)pebs)->nhm.lat;
++	}
++
+ 	if (has_branch_stack(event))
+ 		data.br_stack = &cpuc->lbr_stack;
  
 -- 
 1.7.7.6
