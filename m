@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423052Ab2JaQAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:00:35 -0400
-Received: from tundra.namei.org ([65.99.196.166]:54960 "EHLO tundra.namei.org"
+	id S935747Ab2JaQBQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:01:16 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47164 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935692Ab2JaQAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:00:33 -0400
-Date: Thu, 1 Nov 2012 02:56:14 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, benh@kernel.crashing.org,
-        adlai@linux.vnet.ibm.com
-Subject: Re: [PULL] IBM vTPM driver update
-In-Reply-To: <20121030211613.GA15631@ennui.austin.ibm.com>
-Message-ID: <alpine.LRH.2.02.1211010255350.12284@tundra.namei.org>
-References: <20121030211613.GA15631@ennui.austin.ibm.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S935716Ab2JaQBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 12:01:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,687,1344236400"; 
+   d="scan'208";a="162920069"
+From: Feng Tang <feng.tang@intel.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org
+Cc: Feng Tang <feng.tang@intel.com>
+Subject: [PATCH 1/3] perf browser: Don't show scripts menu for 'perf top'
+Date: Thu,  1 Nov 2012 00:00:55 +0800
+Message-Id: <1351699257-5102-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Oct 2012, Kent Yoder wrote:
+As 'perf top' has no data files to run scripts against. Also add
+a is_report_browser() helper function to judge whether the running
+browser is for 'perf report'.
 
-> Hi James,
-> 
->  Please pull as an update for 3.7.
-> 
-> Thanks,
-> Kent
-> 
-> The following changes since commit 8f0d8163b50e01f398b14bcd4dc039ac5ab18d64:
-> 
->   Linux 3.7-rc3 (2012-10-28 12:24:48 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://github.com/shpedoikal/linux.git tpmdd-v3.7-rc3
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ tools/perf/ui/browsers/hists.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-I get massive merge conflicts pulling this into my -next branch.
-
-
-
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index fe62284..082078a 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1127,6 +1127,12 @@ static inline void free_popup_options(char **options, int n)
+ 	}
+ }
+ 
++/* Check whether the browser is for 'top' or 'report' */
++static inline bool is_report_browser(void *timer)
++{
++	return timer == NULL;
++}
++
+ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 				    const char *helpline, const char *ev_name,
+ 				    bool left_exits,
+@@ -1214,7 +1220,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 			}
+ 			continue;
+ 		case 'r':
+-			goto do_scripts;
++			if (is_report_browser(timer))
++				goto do_scripts;
++			continue;
+ 		case K_F1:
+ 		case 'h':
+ 		case '?':
+@@ -1233,7 +1241,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 					"E             Expand all callchains\n"
+ 					"d             Zoom into current DSO\n"
+ 					"t             Zoom into current Thread\n"
+-					"r             Run available scripts\n"
++					"r             Run available scripts('perf report' only)\n"
+ 					"P             Print histograms to perf.hist.N\n"
+ 					"V             Verbose (DSO names in callchains, etc)\n"
+ 					"/             Filter symbol by name");
 -- 
-James Morris
-<jmorris@namei.org>
+1.7.9.5
+
