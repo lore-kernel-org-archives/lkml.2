@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab2JaRIk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:08:40 -0400
-Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:44974 "EHLO
-	homiemail-a45.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752966Ab2JaRIh (ORCPT
+	id S1756204Ab2JaRKs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:10:48 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46423 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752966Ab2JaRKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:08:37 -0400
-Message-ID: <50915B12.5070205@shealevy.com>
-Date: Wed, 31 Oct 2012 13:08:34 -0400
-From: Shea Levy <shea@shealevy.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20121020 Thunderbird/15.0.1
+	Wed, 31 Oct 2012 13:10:45 -0400
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com> <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz> <20121029174131.GC7580@srcf.ucam.org> <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz> <CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com> <20121031155503.1aaf4c93@pyramind.ukuu.org.uk> <20121031155635.GA14294@srcf.ucam.org> <20121031170820.2b26802a@pyramind.ukuu.org.uk>
-In-Reply-To: <20121031170820.2b26802a@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <50915A87.4070504@parallels.com>
+References: <1351657365-25055-1-git-send-email-tj@kernel.org>
+	<1351657365-25055-3-git-send-email-tj@kernel.org>
+	<20121031153926.GC22809@dhcp22.suse.cz>
+	<20121031165739.GE2945@htj.dyndns.org>
+	<50915A87.4070504@parallels.com>
+Date: Wed, 31 Oct 2012 10:10:44 -0700
+X-Google-Sender-Auth: f_1ksL48sD05NsitZqMMcQKAJR0
+Message-ID: <CAOS58YP=CjTPFdETLRXnc3gXEzX2=EEe2dMdSh3Eov7zRfV4Qg@mail.gmail.com>
+Subject: Re: [PATCH 2/8] cgroup: kill CSS_REMOVED
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, lizefan@huawei.com, hannes@cmpxchg.org,
+        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 01:08 PM, Alan Cox wrote:
-> On Wed, 31 Oct 2012 15:56:35 +0000
-> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->
->> 1) Gain root.
->> 2) Modify swap partition directly.
->> 3) Force reboot.
->> 4) Win.
->>
->> Root should not have the ability to elevate themselves to running
->> arbitrary kernel code. Therefore, the above attack needs to be
->> impossible.
-> To protect swap you need to basically disallow any unencrypted swap (as
-> he OS can't prove any given swap device is local and inside the case) and
-> disallow the use of most disk management tools (so you'll need to write a
-> few new management interfaces or implement the BPF based command filters
-> that have been discussed for years).
+Hello, Glauber.
 
-Can any kernel memory get swapped? If not all root can do is mess with 
-the memory of other userspace processes, which isn't a use-case that 
-secure boot cares about from my understanding.
-
-> In addition of course there is no requirement that a device returns
-> the data you put on it so subverted removable media is a potential issue.
-> Or indeed just cheap memory sticks that do it anyway ;)
+On Wed, Oct 31, 2012 at 10:06 AM, Glauber Costa <glommer@parallels.com> wrote:
+> This is not the topic of this thread, but since you brought it:
+> If you take a look at the description patch in the patch I sent, the
+> problem I outlined is that at create time, we don't know anything about
+> which will the css_id be - and I would like to avoid creating yet
+> another index.
 >
-> Oh and of course the file systems in default mode don't guarantee this so
-> you'll need to fix ext3, ext4 8)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-efi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Is there any way you would suggest of handling this ? Any chance of us
+> allocating the css_id earlier then?
 
+I only glanced the patch description but the problem I'm trying to
+solve is locking - currently we don't have a place where a controller
+can tell a cgroup is becoming online; thus it has nothing to
+synchronized against and tell that a cgroup is alive or not.  As for
+css_id allocation, maybe you can deal with that in ->post_create() or
+maybe we can allocate css_id earlier (but where would it be stored?).
+I'll look into it.
+
+Thanks.
+
+-- 
+tejun
