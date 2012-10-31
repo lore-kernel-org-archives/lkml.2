@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422777Ab2JaLW4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 07:22:56 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63014 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935416Ab2JaLWv (ORCPT
+	id S965463Ab2JaLXD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 07:23:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59813 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422778Ab2JaLW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 07:22:51 -0400
-Message-ID: <50910A04.5000003@gmail.com>
-Date: Wed, 31 Oct 2012 19:22:44 +0800
+	Wed, 31 Oct 2012 07:22:57 -0400
+Message-ID: <50910A0A.9010209@gmail.com>
+Date: Wed, 31 Oct 2012 19:22:50 +0800
 From: Shan Wei <shanwei88@gmail.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: jesse@nicira.com, dev@openvswitch.org, NetDev <netdev@vger.kernel.org>,
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         Kernel-Maillist <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, cl@linux-foundation.org
-Subject: [PATCH 4/9] net: openvswitch: use this_cpu_ptr per-cpu helper
+        cl@linux-foundation.org
+Subject: [PATCH 5/9] ftrace: use this_cpu_ptr per-cpu helper
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,55 +26,38 @@ From: Shan Wei <davidshan@tencent.com>
 
 Signed-off-by: Shan Wei <davidshan@tencent.com>
 ---
- net/openvswitch/datapath.c |    4 ++--
- net/openvswitch/vport.c    |    5 ++---
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ include/trace/ftrace.h |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
-index 4c4b62c..77d16a5 100644
---- a/net/openvswitch/datapath.c
-+++ b/net/openvswitch/datapath.c
-@@ -208,7 +208,7 @@ void ovs_dp_process_received_packet(struct vport *p, struct sk_buff *skb)
- 	int error;
- 	int key_len;
- 
--	stats = per_cpu_ptr(dp->stats_percpu, smp_processor_id());
-+	stats = this_cpu_ptr(dp->stats_percpu);
- 
- 	/* Extract flow from 'skb' into 'key'. */
- 	error = ovs_flow_extract(skb, p->port_no, &key, &key_len);
-@@ -282,7 +282,7 @@ int ovs_dp_upcall(struct datapath *dp, struct sk_buff *skb,
- 	return 0;
- 
- err:
--	stats = per_cpu_ptr(dp->stats_percpu, smp_processor_id());
-+	stats = this_cpu_ptr(dp->stats_percpu);
- 
- 	u64_stats_update_begin(&stats->sync);
- 	stats->n_lost++;
-diff --git a/net/openvswitch/vport.c b/net/openvswitch/vport.c
-index 03779e8..70af0be 100644
---- a/net/openvswitch/vport.c
-+++ b/net/openvswitch/vport.c
-@@ -333,8 +333,7 @@ void ovs_vport_receive(struct vport *vport, struct sk_buff *skb)
- {
- 	struct vport_percpu_stats *stats;
- 
--	stats = per_cpu_ptr(vport->percpu_stats, smp_processor_id());
--
-+	stats = this_cpu_ptr(vport->percpu_stats);
- 	u64_stats_update_begin(&stats->sync);
- 	stats->rx_packets++;
- 	stats->rx_bytes += skb->len;
-@@ -359,7 +358,7 @@ int ovs_vport_send(struct vport *vport, struct sk_buff *skb)
- 	if (likely(sent)) {
- 		struct vport_percpu_stats *stats;
- 
--		stats = per_cpu_ptr(vport->percpu_stats, smp_processor_id());
-+		stats = this_cpu_ptr(vport->percpu_stats);
- 
- 		u64_stats_update_begin(&stats->sync);
- 		stats->tx_packets++;
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index a763888..7c9fde7 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -638,7 +638,6 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+  *	struct trace_entry *ent;
+  *	int __entry_size;
+  *	int __data_size;
+- *	int __cpu
+  *	int pc;
+  *
+  *	pc = preempt_count();
+@@ -654,7 +653,6 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+  *	// Protect the non nmi buffer
+  *	// This also protects the rcu read side
+  *	local_irq_save(irq_flags);
+- *	__cpu = smp_processor_id();
+  *
+  *	if (in_nmi())
+  *		trace_buf = rcu_dereference_sched(perf_trace_buf_nmi);
+@@ -664,7 +662,7 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+  *	if (!trace_buf)
+  *		goto end;
+  *
+- *	trace_buf = per_cpu_ptr(trace_buf, __cpu);
++ *	trace_buf = this_cpu_ptr(trace_buf);
+  *
+  * 	// Avoid recursion from perf that could mess up the buffer
+  * 	if (trace_buf->recursion++)
 -- 
 1.7.1
 
