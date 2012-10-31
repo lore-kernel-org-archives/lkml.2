@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935386Ab2JaKc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:32:57 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:38179 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932889Ab2JaKcy (ORCPT
+	id S1422657Ab2JaKeP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:34:15 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:42302 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933030Ab2JaKeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:32:54 -0400
-Date: Wed, 31 Oct 2012 11:32:48 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
-        eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, avi@redhat.com
-Subject: Re: [PATCH 05/32] perf, kvm: Support the intx/intx_cp modifiers in KVM arch perfmon emulation v3
-Message-ID: <20121031103248.GX16230@one.firstfloor.org>
-References: <1351643663-23828-1-git-send-email-andi@firstfloor.org> <1351643663-23828-6-git-send-email-andi@firstfloor.org> <20121031102701.GB25650@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121031102701.GB25650@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	Wed, 31 Oct 2012 06:34:13 -0400
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
+        Chas Williams <chas@cmf.nrl.navy.mil>,
+        linux-atm-general@lists.sourceforge.net
+Subject: [PATCH] atm: he: use tasklet_kill in device remove/release process
+Date: Wed, 31 Oct 2012 18:34:47 +0800
+Message-Id: <1351679687-27049-1-git-send-email-xtfeng@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 12:27:01PM +0200, Gleb Natapov wrote:
-> On Tue, Oct 30, 2012 at 05:33:56PM -0700, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > This is not arch perfmon, but older CPUs will just ignore it. This makes
-> > it possible to do at least some TSX measurements from a KVM guest
-> > 
-> You are ignoring my reviews.
+Some driver uses tasklet_disable in device remove/release process,
+tasklet_disable will inc tasklet->count and return. If the tasklet
+is not handled yet under some softirq pressure, the tasklet will be
+placed on the tasklet_vec, never have a chance to be excuted. This might
+lead to a heavy loaded ksoftirqd, wakeup with pending_softirq, but
+tasklet is disabled. tasklet_kill should be used in this case.
 
-Huh? I nearly rewrote the patch based on your feedback.
-It's much more complicated now just for the CPUID check you wanted.
-I hope all that code is worth it.
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: Chas Williams <chas@cmf.nrl.navy.mil>
+Cc: linux-atm-general@lists.sourceforge.net
+---
+ drivers/atm/he.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-If you want more changes please let me know.
-
--Andi
+diff --git a/drivers/atm/he.c b/drivers/atm/he.c
+index b182c2f..1dfcc9a 100644
+--- a/drivers/atm/he.c
++++ b/drivers/atm/he.c
+@@ -1556,7 +1556,7 @@ he_stop(struct he_dev *he_dev)
+ 		gen_cntl_0 &= ~(INT_PROC_ENBL | INIT_ENB);
+ 		pci_write_config_dword(pci_dev, GEN_CNTL_0, gen_cntl_0);
+ 
+-		tasklet_disable(&he_dev->tasklet);
++		tasklet_kill(&he_dev->tasklet);
+ 
+ 		/* disable recv and transmit */
+ 
+-- 
+1.7.9.5
 
