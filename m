@@ -1,126 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab2JaBdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 21:33:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30556 "EHLO mx1.redhat.com"
+	id S1758394Ab2JaBfm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 21:35:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:12208 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756075Ab2JaBdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 21:33:06 -0400
-Date: Tue, 30 Oct 2012 22:18:22 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: x86@kernel.org, kexec@lists.infradead.org, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86/kexec: VMCLEAR vmcss on all cpus if necessary
-Message-ID: <20121031001822.GA21986@amt.cnet>
-References: <5080E813.7030302@cn.fujitsu.com>
- <5080E8BF.3020506@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5080E8BF.3020506@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753757Ab2JaBfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 21:35:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
+   d="scan'208";a="211528788"
+Message-ID: <1351647337.31033.13.camel@yhuang-dev>
+Subject: Re: [PATCH 2/9] uuid: use random32_get_bytes()
+From: Huang Ying <ying.huang@intel.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, chris.mason@fusionio.com,
+        linux-btrfs@vger.kernel.org
+Date: Wed, 31 Oct 2012 09:35:37 +0800
+In-Reply-To: <20121030044818.GA5972@thunk.org>
+References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
+	 <1351408746-8623-2-git-send-email-akinobu.mita@gmail.com>
+	 <20121029205200.GD7098@thunk.org> <1351561798.7817.352.camel@yhuang-dev>
+	 <20121030044818.GA5972@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 01:44:31PM +0800, Zhang Yanfei wrote:
-> This patch provides a way to VMCLEAR vmcss related to guests
-> on all cpus before executing the VMXOFF when doing kdump. This
-> is used to ensure the VMCSs in the vmcore updated and
-> non-corrupted.
+On Tue, 2012-10-30 at 00:48 -0400, Theodore Ts'o wrote:
+> On Tue, Oct 30, 2012 at 09:49:58AM +0800, Huang Ying wrote:
+> > The uuid_le/be_gen() in lib/uuid.c has set UUID variants to be DCE,
+> > that is done in __uuid_gen_common() with "b[8] = (b[8] & 0x3F) | 0x80".
 > 
-> Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kexec.h |    2 ++
->  arch/x86/kernel/crash.c      |   27 +++++++++++++++++++++++++++
->  2 files changed, 29 insertions(+), 0 deletions(-)
+> Oh, I see, I missed that.
 > 
-> diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
-> index 317ff17..fc05440 100644
-> --- a/arch/x86/include/asm/kexec.h
-> +++ b/arch/x86/include/asm/kexec.h
-> @@ -163,6 +163,8 @@ struct kimage_arch {
->  };
->  #endif
->  
-> +extern void (*crash_clear_loaded_vmcss)(void);
-> +
->  #endif /* __ASSEMBLY__ */
->  
->  #endif /* _ASM_X86_KEXEC_H */
-> diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-> index 13ad899..7289976 100644
-> --- a/arch/x86/kernel/crash.c
-> +++ b/arch/x86/kernel/crash.c
-> @@ -16,6 +16,7 @@
->  #include <linux/delay.h>
->  #include <linux/elf.h>
->  #include <linux/elfcore.h>
-> +#include <linux/module.h>
->  
->  #include <asm/processor.h>
->  #include <asm/hardirq.h>
-> @@ -30,6 +31,22 @@
->  
->  int in_crash_kexec;
->  
-> +/*
-> + * This is used to VMCLEAR vmcss loaded on all
-> + * cpus. And when loading kvm_intel module, the
-> + * function pointer will be made valid.
-> + */
-> +void (*crash_clear_loaded_vmcss)(void) = NULL;
-> +EXPORT_SYMBOL_GPL(crash_clear_loaded_vmcss);
-> +
-> +static void cpu_emergency_clear_loaded_vmcss(void)
-> +{
-> +	if (crash_clear_loaded_vmcss &&
-> +	    cpu_has_vmx() && cpu_vmx_enabled()) {
-> +		crash_clear_loaded_vmcss();
-> +	}
-> +}
-> +
-
-Are all this checks necessary? 
-
-if (crash_clear_loaded_vmcss)
-	crash_clear_loaded_vmcss();
-
-Should be enough ? (callback only set if kvm-vmx module loaded).
-
->  #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
->  
->  static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
-> @@ -46,6 +63,11 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
->  #endif
->  	crash_save_cpu(regs, cpu);
->  
-> +	/*
-> +	 * VMCLEAR vmcss loaded on all cpus if needed.
-> +	 */
-> +	cpu_emergency_clear_loaded_vmcss();
-> +
->  	/* Disable VMX or SVM if needed.
->  	 *
->  	 * We need to disable virtualization on all CPUs.
-> @@ -88,6 +110,11 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
->  
->  	kdump_nmi_shootdown_cpus();
->  
-> +	/*
-> +	 * VMCLEAR vmcss loaded on this cpu if needed.
-> +	 */
-> +	cpu_emergency_clear_loaded_vmcss();
-> +
->  	/* Booting kdump kernel with VMX or SVM enabled won't work,
->  	 * because (among other limitations) we can't disable paging
->  	 * with the virt flags.
-> -- 
-> 1.7.1
+> > To deal with random number generation issue, how about use
+> > get_random_bytes() in __uuid_gen_common()?
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> We already have generate_random_uuid() in drivers/char/random.c, and
+> no users for lib/uuid.c's equivalent uuid_be_gen().  So here's a
+> counter-proposal, why don't we drop lib/uuid.c, and include in
+> drivers/char/random.c:
+> 
+> /*
+>  * Generate random GUID
+>  *
+>  * GUID's is like UUID's, but they uses the non-standard little-endian
+>  * layout, compared to what is defined in RFC-4112; it is primarily
+>  * used by the EFI specification.
+>  */
+> void generate_random_guid(unsigned char uuid_out[16])
+> {
+> 	get_random_bytes(uuid_out, 16);
+> 	/* Set UUID version to 4 --- truly random generation */
+> 	uuid_out[7] = (uuid_out[7] & 0x0F) | 0x40;
+> 	/* Set the UUID variant to DCE */
+> 	uuid_out[8] = (uuid_out[8] & 0x3F) | 0x80;
+> }
+> EXPORT_SYMBOL(generate_random_guid);
+> 
+> I really don't think it's worth it to have a __uuid_gen_common once we
+> are using get_random_bytes(), since there isn't much code to be
+> factored out, and it's simpler just to have two functions in one place.
+
+The intention of lib/uuid.c is to unify various UUID related code, and
+put them in same place.  In addition to UUID generation, it provide some
+other utility and may provide/collect more in the future.  So do you
+think it is a good idea to put generate_rand_uuid/guid into lib/uuid.c
+and maybe change the name/prototype to make it consistent with other
+uuid definitions?
+
+> Using UUID vs. GUID I think makes things much clearer, since the EFI
+> specification talks about GUID's, not UUID's, and that way we don't
+> have to worry about people getting confused about whether they should
+> be using the little-endian versus big-endian variant.  (And I'd love
+> to ask to whoever wrote the EFI specification what on *Earth* were
+> they thinking when they decided to diverge from the rest of the
+> world....)
+
+I think that is a good idea.  From Wikipedia, GUID is in native byte
+order, while UUID is in internet byte order.
+
+Best Regards,
+Huang Ying
+
+
