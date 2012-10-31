@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423067Ab2JaPBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 11:01:53 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37786 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423015Ab2JaPBu (ORCPT
+	id S1423093Ab2JaPCM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 11:02:12 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41372 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423015Ab2JaPCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 11:01:50 -0400
+	Wed, 31 Oct 2012 11:02:07 -0400
+Date: Wed, 31 Oct 2012 15:02:01 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121031150201.GA12394@srcf.ucam.org>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+ <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+ <20121029174131.GC7580@srcf.ucam.org>
+ <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20121030143107.ee1f959b.akpm@linux-foundation.org>
-References: <1351451576-2611-1-git-send-email-js1304@gmail.com>
-	<1351451576-2611-3-git-send-email-js1304@gmail.com>
-	<20121030143107.ee1f959b.akpm@linux-foundation.org>
-Date: Thu, 1 Nov 2012 00:01:50 +0900
-Message-ID: <CAAmzW4McRv5c4gVi7Ltn72jq7Kcmu8OSKLmcw-3iVKtb_PXejQ@mail.gmail.com>
-Subject: Re: [PATCH 2/5] mm, highmem: remove useless pool_lock
-From: JoonSoo Kim <js1304@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
+On Wed, Oct 31, 2012 at 03:50:00PM +0100, Jiri Kosina wrote:
 
-2012/10/31 Andrew Morton <akpm@linux-foundation.org>:
-> On Mon, 29 Oct 2012 04:12:53 +0900
-> Joonsoo Kim <js1304@gmail.com> wrote:
->
->> The pool_lock protects the page_address_pool from concurrent access.
->> But, access to the page_address_pool is already protected by kmap_lock.
->> So remove it.
->
-> Well, there's a set_page_address() call in mm/page_alloc.c which
-> doesn't have lock_kmap().  it doesn't *need* lock_kmap() because it's
-> init-time code and we're running single-threaded there.  I hope!
->
-> But this exception should be double-checked and mentioned in the
-> changelog, please.  And it's a reason why we can't add
-> assert_spin_locked(&kmap_lock) to set_page_address(), which is
-> unfortunate.
+> Reading stored memory image (potentially tampered before reboot) from disk 
+> is basically DMA-ing arbitrary data over the whole RAM. I am currently not 
+> able to imagine a scenario how this could be made "secure" (without 
+> storing private keys to sign the hibernation image on the machine itself 
+> which, well, doesn't sound secure either).
 
-set_page_address() in mm/page_alloc.c is invoked only when
-WANT_PAGE_VIRTUAL is defined.
-And in this case, set_page_address()'s definition is not in highmem.c,
-but in include/linux/mm.h.
-So, we don't need to worry about set_page_address() call in mm/page_alloc.c
+shim generates a public and private key. It hands the kernel the private 
+key in a boot parameter and stores the public key in a boot variable. On 
+suspend, the kernel signs the suspend image with that private key and 
+discards it. On the next boot, shim generates a new key pair and hands 
+the new private key to the kernel along with the old public key. The 
+kernel verifies the suspend image before resuming it. The only way to 
+subvert this would be to be able to access kernel memory directly, which 
+means the attacker has already won.
 
-> The irq-disabling in this code is odd.  If ARCH_NEEDS_KMAP_HIGH_GET=n,
-> we didn't need irq-safe locking in set_page_address().  I guess we'll
-> need to retain it in page_address() - I expect some callers have IRQs
-> disabled.
+Now someone just needs to write it.
 
-As Minchan described, if we don't disable irq when we take a lock for pas->lock,
-it would be deadlock with page_address().
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
