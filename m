@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935282Ab2JaJQN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:16:13 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49292 "EHLO song.cn.fujitsu.com"
+	id S935269Ab2JaJQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:16:10 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65222 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932139Ab2JaJQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:16:05 -0400
+	id S935235Ab2JaJQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 05:16:06 -0400
 X-IronPort-AV: E=Sophos;i="4.80,687,1344182400"; 
-   d="scan'208";a="6107690"
+   d="scan'208";a="6107691"
 From: Wen Congyang <wency@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         linux-doc@vger.kernel.org
@@ -18,9 +18,9 @@ Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
         Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
         David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
         "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-Subject: [PART5 Patch 4/5] memblock: limit memory address from memblock
-Date: Wed, 31 Oct 2012 17:21:42 +0800
-Message-Id: <1351675303-11786-5-git-send-email-wency@cn.fujitsu.com>
+Subject: [PART5 Patch 5/5] memblock: compare current_limit with end variable at memblock_find_in_range_node()
+Date: Wed, 31 Oct 2012 17:21:43 +0800
+Message-Id: <1351675303-11786-6-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1351675303-11786-1-git-send-email-wency@cn.fujitsu.com>
 References: <1351675303-11786-1-git-send-email-wency@cn.fujitsu.com>
@@ -35,72 +35,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Setting kernelcore_max_pfn means all memory which is bigger than
-the boot parameter is allocated as ZONE_MOVABLE. So memory which
-is allocated by memblock also should be limited by the parameter.
+memblock_find_in_range_node() does not compare memblock.current_limit
+with end variable. Thus even if memblock.current_limit is smaller than
+end variable, the function allocates memory address that is bigger than
+memblock.current_limit.
 
-The patch limits memory from memblock.
+The patch adds the check to "memblock_find_in_range_node()"
 
 Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- include/linux/memblock.h | 1 +
- mm/memblock.c            | 5 ++++-
- mm/page_alloc.c          | 6 +++++-
- 3 files changed, 10 insertions(+), 2 deletions(-)
+ mm/memblock.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index d452ee1..3e52911 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -42,6 +42,7 @@ struct memblock {
- 
- extern struct memblock memblock;
- extern int memblock_debug;
-+extern phys_addr_t memblock_limit;
- 
- #define memblock_dbg(fmt, ...) \
- 	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 6259055..ee2e307 100644
+index ee2e307..50ab53c 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -957,7 +957,10 @@ void __init_memblock memblock_trim_memory(phys_addr_t align)
- 
- void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+@@ -100,11 +100,12 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 					phys_addr_t align, int nid)
  {
--	memblock.current_limit = limit;
-+	if (!memblock_limit || (memblock_limit > limit))
-+		memblock.current_limit = limit;
-+	else
-+		memblock.current_limit = memblock_limit;
- }
+ 	phys_addr_t this_start, this_end, cand;
++	phys_addr_t current_limit = memblock.current_limit;
+ 	u64 i;
  
- static void __init_memblock memblock_dump(struct memblock_type *type, char *name)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9c35fe5..26f007bd 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -205,6 +205,8 @@ static unsigned long __initdata required_kernelcore;
- static unsigned long __initdata required_movablecore;
- static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
+ 	/* pump up @end */
+-	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+-		end = memblock.current_limit;
++	if ((end == MEMBLOCK_ALLOC_ACCESSIBLE) || (end > current_limit))
++		end = current_limit;
  
-+phys_addr_t memblock_limit;
-+
- /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
- int movable_zone;
- EXPORT_SYMBOL(movable_zone);
-@@ -4987,7 +4989,9 @@ static int __init cmdline_parse_core(char *p, unsigned long *core)
-  */
- static int __init cmdline_parse_kernelcore_max_addr(char *p)
- {
--	return cmdline_parse_core(p, &required_kernelcore_max_pfn);
-+	cmdline_parse_core(p, &required_kernelcore_max_pfn);
-+	memblock_limit = required_kernelcore_max_pfn << PAGE_SHIFT;
-+	return 0;
- }
- early_param("kernelcore_max_addr", cmdline_parse_kernelcore_max_addr);
- #endif
+ 	/* avoid allocating the first page */
+ 	start = max_t(phys_addr_t, start, PAGE_SIZE);
 -- 
 1.8.0
 
