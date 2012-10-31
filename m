@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935482Ab2JaNjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:39:32 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57351 "EHLO arroyo.ext.ti.com"
+	id S935573Ab2JaNlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:41:12 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60752 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756605Ab2JaNja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:39:30 -0400
-Date: Wed, 31 Oct 2012 15:33:26 +0200
+	id S1756605Ab2JaNlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 09:41:10 -0400
+Date: Wed, 31 Oct 2012 15:35:14 +0200
 From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-CC: Dmytro Milinevskyy <milinevskyy@gmail.com>, Felipe Balbi <balbi@ti.com>,
+To: Dmytro Milinevskyy <milinevskyy@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH] usb: gadget: ncm: correct endianess conversion
-Message-ID: <20121031133326.GT10998@arwen.pp.htv.fi>
+Message-ID: <20121031133514.GU10998@arwen.pp.htv.fi>
 Reply-To: <balbi@ti.com>
-References: <1349729943-28995-1-git-send-email-milinevskyy@gmail.com>
- <20121024135834.GA4368@breakpoint.cc>
- <CAOUdcc9PwMg34n_W14ctgW2qqP1P+STan6JBH3uyO+y+jWZ0FQ@mail.gmail.com>
- <20121028174829.GA3761@breakpoint.cc>
+References: <508FA17B.7060308@gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="w3FC1ngOohd+pYSp"
+	protocol="application/pgp-signature"; boundary="cbsCxbAnPLQXdgdB"
 Content-Disposition: inline
-In-Reply-To: <20121028174829.GA3761@breakpoint.cc>
+In-Reply-To: <508FA17B.7060308@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---w3FC1ngOohd+pYSp
+--cbsCxbAnPLQXdgdB
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, Oct 28, 2012 at 06:48:29PM +0100, Sebastian Andrzej Siewior wrote:
-> On Sun, Oct 28, 2012 at 06:30:02PM +0100, Dmytro Milinevskyy wrote:
-> > I was trying to keep 2 tabs but checkpatch didn't accept long line
-> > that's why I killed extra tab.
->=20
-> Then move them to the code section instead to initialize them in the
-> declaration section.
->=20
-> > >How does it work? Is the test on host side not strict enough?
-> > The host part(cdc_ncm) does not check this field.
-> > However I agree that at least on device side this should be corrected.
-> Good.
->=20
-> > Felipe, do you want me to send another patch or resend previous one
-> > with this correction?
-> If it hasn't been applied yet resend it.
+Hi,
 
-I think I hasn't applied this one yet, so resending is the way to go.
+On Tue, Oct 30, 2012 at 10:44:27AM +0100, Dmytro Milinevskyy wrote:
+> Convert USB descriptor's fields to CPU byte order before using locally in=
+ USB NCM gadget driver.
+> Tested on MIPS32 big-endian device.
+>=20
+> Signed-off-by: Dmytro Milinevskyy <milinevskyy@gmail.com>
+> ---
+>  drivers/usb/gadget/f_ncm.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+>=20
+> diff --git a/drivers/usb/gadget/f_ncm.c b/drivers/usb/gadget/f_ncm.c
+> index b651b52..0b9e2ad 100644
+> --- a/drivers/usb/gadget/f_ncm.c
+> +++ b/drivers/usb/gadget/f_ncm.c
+> @@ -102,7 +102,7 @@ static inline unsigned ncm_bitrate(struct usb_gadget =
+*g)
+>  				 USB_CDC_NCM_NTB32_SUPPORTED)
+>  static struct usb_cdc_ncm_ntb_parameters ntb_parameters =3D {
+> -	.wLength =3D sizeof ntb_parameters,
+> +	.wLength =3D cpu_to_le16(sizeof(ntb_parameters)),
+>  	.bmNtbFormatsSupported =3D cpu_to_le16(FORMATS_SUPPORTED),
+>  	.dwNtbInMaxSize =3D cpu_to_le32(NTB_DEFAULT_IN_SIZE),
+>  	.wNdpInDivisor =3D cpu_to_le16(4),
+> @@ -869,15 +869,15 @@ static struct sk_buff *ncm_wrap_ntb(struct gether *=
+port,
+>  	struct sk_buff	*skb2;
+>  	int		ncb_len =3D 0;
+>  	__le16		*tmp;
+> -	int		div =3D ntb_parameters.wNdpInDivisor;
+> -	int		rem =3D ntb_parameters.wNdpInPayloadRemainder;
+> -	int		pad;
+> -	int		ndp_align =3D ntb_parameters.wNdpInAlignment;
+> -	int		ndp_pad;
+> +	int		div, rem, pad, ndp_align, ndp_pad;
+
+I would not combine them in a single line. Keep them one per line.
+
+cheers
 
 --=20
 balbi
 
---w3FC1ngOohd+pYSp
+--cbsCxbAnPLQXdgdB
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQkSimAAoJEIaOsuA1yqREfJcP+wWHp1Ew9Hh9gAp0w6YC9cIq
-WIADd9Am5RLnSEhoHRSXz05qjxCfRAft9RKIldTCTjBtRyuxZNQw2ys7t2Yisyg3
-zhDoZNY2hpF0VtS02oIoamUErz2Z4PSlhoWvCIpi6fSsv45QIQUcyAJptQl9H5yD
-UMfPeOc5ZcK9lsuNXlW07BMxEPSaSnwCXiNyZ3UBdf4MUYDe9BqnM5C2JcFUZX/q
-6clga+7NrPXF4lc+MvY5qKnW9znDpWzMZuUHjr0j/qMKctLcYNitSjJbhpNZl59R
-f5oEbY4nOYUtT79umSnw9bHMn8w0HZil9s+q+2eJfbr/o6Dq/h+NC1WmDObVdkdE
-GO7t07A4aABnwh1LBZBSQ+DG1NqlP2et31hQEl2Vx+BkHvDLo89xr6UYtdSaEQew
-52APud1ArB63UvmdCSk7TA/LoDUOV16pYY368+ytXT3dz9ANI6WmRlQLaOJDaIpp
-UkO7ayM2i6EbQ2gkkxJ8zPXCSGuj+cWXYN5DKv2aMQkPOTgIB6Z+J9kiiq4OLLT2
-T414S6KLkdVj14KQrEbCAgLljY4V8k2odRjuxLGnpTHadX6h0XTAsKUKwcSd0azs
-u9dv7yHlDL9pP49/RI1/e9izvH2kgbxJQpqW1XW5Re8djhQbEzAvHN7npdN8Iy2m
-wsv+DA804kDXsG9wg6On
-=Ru8d
+iQIcBAEBAgAGBQJQkSkSAAoJEIaOsuA1yqREitUQAIMw5znrJjA/MFB1Pd7swBHc
+aUQWoV3njUsKagv35DnQ6JB38UusKGbt2SAli1j7oTwKGHhE9czDan8+8JU/dEGl
+rRVV0OFWEq0B+Ez2Kv4VG5g6+9r0Bh1MJkRysQWdCHvRiFFfrv6XXz8zgQjK5TRl
+Ua1qSRLm672PlOM21IOrmFH+edM+l1e3MVNPdc178HjNUm7zbD+ptKRqv5bjaD5G
+6RdtBP1o4Vgjr1sZ9CTL6Y4TMDoSigyNXH7NdhHi5BhRRPdESh8qyyGaaKicpEY0
+2gZSKJUmgeDsvOpJOfL6zI+M60cfiAUvvtf1Mlr4cbkdGs9NtlQeg1+cfMu5S26q
+6YFQ8qHLIdfmKVx9Ry4kwD0kPWapEViPClOVYyTNY3e0CehqHSEm4shDCQks5fNl
+UZg8ejccAdD93KN+nLFsTEfOsUpOhYQ+blqgah2b+Od18Bv2mOutMU5LTc4VJOlI
+/B6YuKb/qWwIbAlTlg/MaSInsGt8xgtlJ/dxB0QHPKn3NbaCQAcbS4LjYOL3Mykg
+kdGuh54Uj/Xx1hskF4yulrewmrh8axN42J3mIErcmfsiw/9AvNsyFdLy37yEv9YZ
+sso6KeGFCtQneCz0nUSRQMhHxvlfdMsOcbxyxpo8HNLpfXOv+x6xgL256TUOyHSd
+zs/G1RruL2nuSrobUKhN
+=GeIb
 -----END PGP SIGNATURE-----
 
---w3FC1ngOohd+pYSp--
+--cbsCxbAnPLQXdgdB--
