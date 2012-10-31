@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759067Ab2JaApI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:45:08 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:63290 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758476Ab2JaApB (ORCPT
+	id S1758894Ab2JaAq6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:46:58 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:55948 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755406Ab2JaAqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:45:01 -0400
+	Tue, 30 Oct 2012 20:46:55 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH 5/5] fat: add mutex lock to fat_build_inode
+References: <1351389223-2628-1-git-send-email-linkinjeon@gmail.com>
+	<20121029164936.2022db6c.akpm@linux-foundation.org>
+	<CAKYAXd_eA3naT84qnVpPGcc9t4ysc45GqKk5xktXyQWaFp2MOQ@mail.gmail.com>
+Date: Wed, 31 Oct 2012 09:46:49 +0900
+In-Reply-To: <CAKYAXd_eA3naT84qnVpPGcc9t4ysc45GqKk5xktXyQWaFp2MOQ@mail.gmail.com>
+	(Namjae Jeon's message of "Tue, 30 Oct 2012 13:24:26 +0900")
+Message-ID: <87390va2o6.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1351642073.4004.38.camel@gandalf.local.home>
-References: <20121029202711.062749374@goodmis.org>
-	<20121029203847.242305452@goodmis.org>
-	<1351618787.8467.136.camel@gandalf.local.home>
-	<CAFTL4hyD=JU6UgayiXZ-UfusWEn9Rjsy7qTHN8NQZ4pL2HV-=Q@mail.gmail.com>
-	<1351642073.4004.38.camel@gandalf.local.home>
-Date: Wed, 31 Oct 2012 01:45:00 +0100
-Message-ID: <CAFTL4hxbenHe-8deFnx3hy9yAC_tojrgOcz5U93sQEZGty7Jxg@mail.gmail.com>
-Subject: Re: [PATCH 04/32] x86: New cpuset nohz irq vector
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/31 Steven Rostedt <rostedt@goodmis.org>:
-> On Wed, 2012-10-31 at 00:51 +0100, Frederic Weisbecker wrote:
->
->> > Probably just use irq_work for self ipis, and normal ipis for other
->> > CPUs.
+Namjae Jeon <linkinjeon@gmail.com> writes:
+
+> 2012/10/30, Andrew Morton <akpm@linux-foundation.org>:
+>> On Sun, 28 Oct 2012 10:53:43 +0900
+>> Namjae Jeon <linkinjeon@gmail.com> wrote:
 >>
->> Right. And that's one more reason why we want to know if the arch
->> implements irq work with self ipis or not. If the arch can't, then we
->> just don't stop the tick.
->
-> We can just allow certain archs to have cpuset/nohz. Make it depend on
-> features that you want (or makes nohz easier to implement).
-
-Right.
-
+>>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>>
+>>> fat_nfs_get_inode does not hold i_mutex of parent directory.So add
+>>> lock to fat_build_inode.
 >>
->> > Also, what reason do we have to force a task out of nohz? IOW, do we
->> > really need this?
->>
->> When a posix CPU timer is enqueued, when a new task is enqueued, etc...
->
-> I was thinking about something other than itself. That is, who would
-> enqueue a posix cpu timer on the cpu other than the task running with
-> nohz on that cpu?
+> Hi. Andrew.
+>> Well..  why?  Presumably this patch fixes some race.  A good
+>> description of that race would be useful - partly because others may
+>> then be able to suggest alternative ways of fixing that bug.
+> We are making use of fat_build_inode to build the inode using 'i_pos'.
+> Since, this function is local to FAT and when mounted over NFS. We can
+> make use of FAT parallely from local NFS Server and mounted from NFS
+> client. So, in order to avoid race to multiple regeneration for the
+> same 'i_pos' - we have introduced this locking.
 
-If the posix cpu timer is process wide (ie: whole threadgroup) this can happen.
+This lock fixes the NFS patches. FAT inode is embedded into
+directory. So usual local ->lookup path is exclusive by
+inode->i_mutex. But NFS patches (current -mm, IIRC) introduce the new
+path for FH => inode lookup.
 
-> A new task would send the schedule ipi too. Which would enqueue the task
-> and take the cpu out of nohz, no?
-
-Not if it's enqueued locally. And in this case we don't want to
-restart the tick from the ttwu path in order to avoid funny locking
-scenario. So a self IPI would do the trick.
-
->> irq work should be just fine. No need to add more overhead on the
->> schedule ipi I think.
->
-> irq_work can send the work to another CPU right? This part I wasn't sure
-> about.
-
-"Claiming" a work itself can be a cross CPU competition: multiple CPUs
-may want to queue the work at the same time, only one should succeed.
-Once claimed though, the work can only been enqueued locally.
+So, this lock is introduced.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
