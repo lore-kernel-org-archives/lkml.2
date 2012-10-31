@@ -1,232 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab2JaRHg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:07:36 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:37818 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab2JaRHe (ORCPT
+	id S1755675Ab2JaRIk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:08:40 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:44974 "EHLO
+	homiemail-a45.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752966Ab2JaRIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:07:34 -0400
-Message-ID: <50915A5C.8000303@linux.vnet.ibm.com>
-Date: Wed, 31 Oct 2012 12:05:32 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 31 Oct 2012 13:08:37 -0400
+Message-ID: <50915B12.5070205@shealevy.com>
+Date: Wed, 31 Oct 2012 13:08:34 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20121020 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
-        konrad.wilk@oracle.com, minchan@kernel.org, fschmaus@gmail.com,
-        andor.daam@googlemail.com, ilendir@googlemail.com,
-        akpm@linux-foundation.org, mgorman@suse.de
-Subject: Re: [PATCH 2/5] mm: frontswap: lazy initialization to allow tmem
- backends to build/run as modules
-References: <1351696074-29362-1-git-send-email-dan.magenheimer@oracle.com> <1351696074-29362-3-git-send-email-dan.magenheimer@oracle.com>
-In-Reply-To: <1351696074-29362-3-git-send-email-dan.magenheimer@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com> <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz> <20121029174131.GC7580@srcf.ucam.org> <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz> <CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com> <20121031155503.1aaf4c93@pyramind.ukuu.org.uk> <20121031155635.GA14294@srcf.ucam.org> <20121031170820.2b26802a@pyramind.ukuu.org.uk>
+In-Reply-To: <20121031170820.2b26802a@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12103117-5518-0000-0000-000008DECB61
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 10:07 AM, Dan Magenheimer wrote:
-> With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
-> built/loaded as modules rather than built-in and enabled by a boot parameter,
-> this patch provides "lazy initialization", allowing backends to register to
-> frontswap even after swapon was run. Before a backend registers all calls
-> to init are recorded and the creation of tmem_pools delayed until a backend
-> registers or until a frontswap put is attempted.
-> 
-> Signed-off-by: Stefan Hengelein <ilendir@googlemail.com>
-> Signed-off-by: Florian Schmaus <fschmaus@gmail.com>
-> Signed-off-by: Andor Daam <andor.daam@googlemail.com>
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> ---
->  include/linux/frontswap.h |    1 +
->  mm/frontswap.c            |   70 +++++++++++++++++++++++++++++++++++++++-----
->  2 files changed, 63 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
-> index 3044254..ef6ada6 100644
-> --- a/include/linux/frontswap.h
-> +++ b/include/linux/frontswap.h
-> @@ -23,6 +23,7 @@ extern void frontswap_writethrough(bool);
->  extern void frontswap_tmem_exclusive_gets(bool);
-> 
->  extern void __frontswap_init(unsigned type);
-> +#define FRONTSWAP_HAS_LAZY_INIT
->  extern int __frontswap_store(struct page *page);
->  extern int __frontswap_load(struct page *page);
->  extern void __frontswap_invalidate_page(unsigned, pgoff_t);
-> diff --git a/mm/frontswap.c b/mm/frontswap.c
-> index 2890e67..523a19b 100644
-> --- a/mm/frontswap.c
-> +++ b/mm/frontswap.c
-> @@ -80,6 +80,19 @@ static inline void inc_frontswap_succ_stores(void) { }
->  static inline void inc_frontswap_failed_stores(void) { }
->  static inline void inc_frontswap_invalidates(void) { }
->  #endif
-> +
-> +/*
-> + * When no backend is registered all calls to init are registered and
-> + * remembered but fail to create tmem_pools. When a backend registers with
-> + * frontswap the previous calls to init are executed to create tmem_pools
-> + * and set the respective poolids.
-> + * While no backend is registered all "puts", "gets" and "flushes" are
-> + * ignored or fail.
-> + */
-> +#define MAX_INITIALIZABLE_SD 32
+On 10/31/2012 01:08 PM, Alan Cox wrote:
+> On Wed, 31 Oct 2012 15:56:35 +0000
+> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>
+>> 1) Gain root.
+>> 2) Modify swap partition directly.
+>> 3) Force reboot.
+>> 4) Win.
+>>
+>> Root should not have the ability to elevate themselves to running
+>> arbitrary kernel code. Therefore, the above attack needs to be
+>> impossible.
+> To protect swap you need to basically disallow any unencrypted swap (as
+> he OS can't prove any given swap device is local and inside the case) and
+> disallow the use of most disk management tools (so you'll need to write a
+> few new management interfaces or implement the BPF based command filters
+> that have been discussed for years).
 
-MAX_INITIALIZABLE_SD should just be MAX_SWAPFILES
+Can any kernel memory get swapped? If not all root can do is mess with 
+the memory of other userspace processes, which isn't a use-case that 
+secure boot cares about from my understanding.
 
-> +static int sds[MAX_INITIALIZABLE_SD];
-
-Rather than store and array of enabled types indexed by type, why not
-an array of booleans indexed by type.  Or a bitfield if you really
-want to save space.
-
-> +static int backend_registered;
-
-(backend_registered) is equivalent to checking (frontswap_ops != NULL)
-right?
-
-> +
->  /*
->   * Register operations for frontswap, returning previous thus allowing
->   * detection of multiple backends and possible nesting.
-> @@ -87,9 +100,16 @@ static inline void inc_frontswap_invalidates(void) { }
->  struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
->  {
->  	struct frontswap_ops old = frontswap_ops;
-> +	int i;
-> 
->  	frontswap_ops = *ops;
->  	frontswap_enabled = true;
-> +
-> +	backend_registered = 1;
-> +	for (i = 0; i < MAX_INITIALIZABLE_SD; i++) {
-> +		if (sds[i] != -1)
-> +			(*frontswap_ops.init)(sds[i]);
-> +	}
->  	return old;
->  }
->  EXPORT_SYMBOL(frontswap_register_ops);
-> @@ -122,7 +142,10 @@ void __frontswap_init(unsigned type)
->  	BUG_ON(sis == NULL);
->  	if (sis->frontswap_map == NULL)
->  		return;
-> -	frontswap_ops.init(type);
-> +	if (backend_registered) {
-> +		(*frontswap_ops.init)(type);
-> +		sds[type] = type;
-
-This is weird, storing the type in an array indexed by type.  Hence my
-suggestion above about an array of booleans or a bitfield.
-
-> +	}
->  }
->  EXPORT_SYMBOL(__frontswap_init);
-> 
-> @@ -147,10 +170,20 @@ int __frontswap_store(struct page *page)
->  	struct swap_info_struct *sis = swap_info[type];
->  	pgoff_t offset = swp_offset(entry);
-> 
-> +	if (!backend_registered) {
-> +		inc_frontswap_failed_stores();
-> +		return ret;
-> +	}
-> +
->  	BUG_ON(!PageLocked(page));
->  	BUG_ON(sis == NULL);
->  	if (frontswap_test(sis, offset))
->  		dup = 1;
-> +	if (type < MAX_INITIALIZABLE_SD && sds[type] == -1) {
-> +		/* lazy init call to handle post-boot insmod backends*/
-> +		(*frontswap_ops.init)(type);
-> +		sds[type] = type;
-> +	}
->  	ret = frontswap_ops.store(type, offset, page);
->  	if (ret == 0) {
->  		frontswap_set(sis, offset);
-> @@ -186,6 +219,9 @@ int __frontswap_load(struct page *page)
->  	struct swap_info_struct *sis = swap_info[type];
->  	pgoff_t offset = swp_offset(entry);
-> 
-> +	if (!backend_registered)
-> +		return ret;
-> +
->  	BUG_ON(!PageLocked(page));
->  	BUG_ON(sis == NULL);
->  	if (frontswap_test(sis, offset))
-> @@ -209,6 +245,9 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
->  {
->  	struct swap_info_struct *sis = swap_info[type];
-> 
-> +	if (!backend_registered)
-> +		return;
-> +
->  	BUG_ON(sis == NULL);
->  	if (frontswap_test(sis, offset)) {
->  		frontswap_ops.invalidate_page(type, offset);
-> @@ -225,13 +264,23 @@ EXPORT_SYMBOL(__frontswap_invalidate_page);
->  void __frontswap_invalidate_area(unsigned type)
->  {
->  	struct swap_info_struct *sis = swap_info[type];
-> -
-> -	BUG_ON(sis == NULL);
-> -	if (sis->frontswap_map == NULL)
-> -		return;
-> -	frontswap_ops.invalidate_area(type);
-> -	atomic_set(&sis->frontswap_pages, 0);
-> -	memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-> +	int i;
-> +
-> +	if (backend_registered) {
-> +		BUG_ON(sis == NULL);
-> +		if (sis->frontswap_map == NULL)
-> +			return;
-> +		(*frontswap_ops.invalidate_area)(type);
-> +		atomic_set(&sis->frontswap_pages, 0);
-> +		memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-> +	} else {
-> +		for (i = 0; i < MAX_INITIALIZABLE_SD; i++) {
-> +			if (sds[i] == type) {
-
-Additional weirdness with sds.  It seems this whole for loop could
-just be reduced to:
-
-sds[type] = -1;
-
-> +				sds[i] = -1;
-> +				break;
-> +			}
-> +		}
-> +	}
->  }
->  EXPORT_SYMBOL(__frontswap_invalidate_area);
-> 
-> @@ -353,6 +402,7 @@ EXPORT_SYMBOL(frontswap_curr_pages);
-> 
->  static int __init init_frontswap(void)
->  {
-> +	int i;
->  #ifdef CONFIG_DEBUG_FS
->  	struct dentry *root = debugfs_create_dir("frontswap", NULL);
->  	if (root == NULL)
-> @@ -364,6 +414,10 @@ static int __init init_frontswap(void)
->  	debugfs_create_u64("invalidates", S_IRUGO,
->  				root, &frontswap_invalidates);
->  #endif
-> +	for (i = 0; i < MAX_INITIALIZABLE_SD; i++)
-> +		sds[i] = -1;
-> +
-> +	frontswap_enabled = 1;
-
-If frontswap_enabled is going to be on all the time, then what point
-does it serve?  By extension, can all of the static inline wrappers in
-frontswap.h be done away with?
-
---
-Seth
+> In addition of course there is no requirement that a device returns
+> the data you put on it so subverted removable media is a potential issue.
+> Or indeed just cheap memory sticks that do it anyway ;)
+>
+> Oh and of course the file systems in default mode don't guarantee this so
+> you'll need to fix ext3, ext4 8)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-efi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
