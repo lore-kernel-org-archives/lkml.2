@@ -1,38 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab2JaAdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:33:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53520 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632Ab2JaAdI (ORCPT
+	id S1758033Ab2JaAdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:33:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15455 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756493Ab2JaAdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:33:08 -0400
-Date: Wed, 31 Oct 2012 01:33:02 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter LaDow <petela@gocougs.wsu.edu>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org, netfilter@vger.kernel.org
-Subject: Re: Process Hang in __read_seqcount_begin
-In-Reply-To: <CAN8Q1Ef1_OOTpqSrvPB6ja3A3e9-Lky-iceH4NKjWLw8HcW2AA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1210310130240.2756@ionos>
-References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com> <1350925299.8609.978.camel@edumazet-glaptop> <CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com> <CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
- <CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com> <1351053164.6537.95.camel@edumazet-glaptop> <CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com> <1351270087.30380.9.camel@edumazet-glaptop>
- <CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com> <1351285552.30380.20.camel@edumazet-glaptop> <CAN8Q1Ecx-pDR=NBQm4O=VaynQsxBU1wku9e_kcKkWB=xU0OtMA@mail.gmail.com> <alpine.LFD.2.02.1210262351330.2756@ionos>
- <CAN8Q1Ef1_OOTpqSrvPB6ja3A3e9-Lky-iceH4NKjWLw8HcW2AA@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 30 Oct 2012 20:33:16 -0400
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=xeYwfR7OzYsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=xevd-OzywMUA:10 a=BbwCCoxnAAAA:8 a=VwQbUJbxAAAA:8 a=0kNQ-MfBMuU_7YX1S3UA:9 a=oviIBxwnDvQA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121031003314.510366648@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 30 Oct 2012 20:32:59 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 1/4] hrtimer: Raise softirq if hrtimer irq stalled
+References: <20121031003258.811955127@goodmis.org>
+Content-Disposition: inline; filename=0001-hrtimer-Raise-softirq-if-hrtimer-irq-stalled.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Oct 2012, Peter LaDow wrote:
-> Anyway, based on earlier discussion, is there any reason not to use a
-> lock (presuming any solution properly takes into account possible
-> recursion)?  I understand that the mainline is protected, but perhaps
-> in the RT version we can use seqlock (and prevent a recursive lock)?
+From: Watanabe <shunsuke.watanabe@tel.com>
 
-Have you tried 3.6.3-rt9?
+When the hrtimer stall detection hits the softirq is not raised.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable-rt@vger.kernel.org
+---
+ kernel/hrtimer.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 7327846..87b4917 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1527,11 +1527,7 @@ retry:
+ 	if (expires_next.tv64 == KTIME_MAX ||
+ 	    !tick_program_event(expires_next, 0)) {
+ 		cpu_base->hang_detected = 0;
+-
+-		if (raise)
+-			raise_softirq_irqoff(HRTIMER_SOFTIRQ);
+-
+-		return;
++		goto out;
+ 	}
+ 
+ 	/*
+@@ -1575,6 +1571,9 @@ retry:
+ 	tick_program_event(expires_next, 1);
+ 	printk_once(KERN_WARNING "hrtimer: interrupt took %llu ns\n",
+ 		    ktime_to_ns(delta));
++out:
++	if (raise)
++		raise_softirq_irqoff(HRTIMER_SOFTIRQ);
+ }
+ 
+ /*
+-- 
+1.7.10.4
+
+
