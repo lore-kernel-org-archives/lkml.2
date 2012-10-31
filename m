@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934708Ab2JaJph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:45:37 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:50763 "EHLO
+	id S1756637Ab2JaJqO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:46:14 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:50838 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844Ab2JaJpc (ORCPT
+	with ESMTP id S1752766Ab2JaJqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:45:32 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-96-5090f33b188c
+	Wed, 31 Oct 2012 05:46:11 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-49-5090f36181b5
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
@@ -15,66 +15,64 @@ To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         jooyoung.hwang@samsung.com
 References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
 In-reply-to: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-Subject: [PATCH 09/17] f2fs: add address space operations for data
-Date: Wed, 31 Oct 2012 18:45:30 +0900
-Message-id: <004601cdb74c$772fef00$658fcd00$%kim@samsung.com>
+Subject: [PATCH 10/17] f2fs: add core inode operations
+Date: Wed, 31 Oct 2012 18:46:09 +0900
+Message-id: <004701cdb74c$8e0da9b0$aa28fd10$%kim@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAAVnUg
+Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAAWzGA
 Content-language: en-us
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zY13rzxMCDO69ErbYs/cki8XlXXPY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mo4c7+gYNtUxoo9e76zNTBerOhi5OSQEDCR2DjvFhuE
-	LSZx4d56IJuLQ0hgGaPEy9nrWGGK7q5pZYRILGKUeLZ2LzOE849RYtecDUAOBwebgLbE5v0G
-	IHERgYeMEvufLWUH6RYSsJV4ev8aO0gNp4CdxOUTESBhYQEnibN9TWAlLAKqEt/nTwMr4QUq
-	X7FMFyTMKyAo8WPyPRYQm1lAXWLSvEXMELa8xOY1b8G2SgDFH/0FKxcRMJLYOX0vK0SJuMSk
-	Bw+hpgtIfJt8iAWiXFZi0wGw4yUE5rFLzP28gQXiRUmJgytusExgFJ+FZPMsJJtnIdk8C8mK
-	BYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzFCIkl6B+OqBotDjAIcjEo8vAb/+gOEWBPL
-	iitzDzFKcDArifAmf5oQIMSbklhZlVqUH19UmpNafIjRB+jyicxSosn5wCjPK4k3NDY2MTMx
-	NTG3NDU3xSGsJM7b7JESICSQnliSmp2aWpBaBDOOiYNTqoHRLXFnbfHPShPJVSVrwu+c5Nx9
-	Y4/MPwHzBh8xXo4nMZP/Rrx6tpllneLcE0kPw7WXvD7pYPHtW8LS1gNuux+5zJ0dJX2nnOE7
-	56+Ld+MbluYva2Esm7D3v0fFG+0YPWbWuTFaIl86Nqw/I/pP4OIJia12aeVs+V/PK+g0XNmi
-	vzVaLNDyYmC0EktxRqKhFnNRcSIAFVNsUNECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t9jAV3rzxMCDK618lns2XuSxeLyrjls
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmnLlfULBtKmPF
-	nj3f2RoYL1Z0MXJySAiYSNxd08oIYYtJXLi3nq2LkYtDSGARo8SztXuZIZx/jBK75mwAcjg4
-	2AS0JTbvNwCJiwg8ZJTY/2wpO0i3kICtxNP719hBajgF7CQun4gACQsLOEmc7WsCK2ERUJX4
-	Pn8aWAkvUPmKZbogYV4BQYkfk++xgNjMAuoSk+YtYoaw5SU2r3kLtlUCKP7oL1i5iICRxM7p
-	e1khSsQlJj14yD6BUXAWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefn
-	bmIEx+kz6R2MqxosDjEKcDAq8fAa/OsPEGJNLCuuzD3EKMHBrCTCm/xpQoAQb0piZVVqUX58
-	UWlOavEhRh+gPycyS4km5wNTSF5JvKGxiZmRpZGZhZGJuTkOYSVx3maPlAAhgfTEktTs1NSC
-	1CKYcUwcnFINjAEVTB3F21iPxzExSvZHaMjsdLbuFDX7fnXlD+Nasd07JIKKWq70e50wCNTc
-	9s37kXKR9rfptuebT3ZN5p/8v3kix6aT176w/zcQXe04J+3wXhXN07ZfxFefOrr9Rr+e/1Tz
-	XD2th/wrbQwe8dYcaeeLaXr6VmXbx33P/I3XG7z4d+pBpJqQgRJLcUaioRZzUXEiABT3KtQA	AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zfd3EzxMCDG7u0LPYs/cki8XlXXPY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mq4eXsle8ENh4rvE7cwNzDOMuti5OSQEDCRWHz8AiuE
+	LSZx4d56ti5GLg4hgWWMEhOPf2eEKeqbcpQFIjGdUWLy1w+sEM4/RoktP5uYuxg5ONgEtCU2
+	7zcAiYsIPGSU2P9sKTtIt5CArcTT+9fYQWo4BewkLp+IAAkLC5hJ9E76yAJiswioSjSe6mED
+	sXmByp9dbGOEsAUlfky+B1bDLKAuMWneImYIW15i85q3YGslgOKP/uqChEUEjCSONv+GKheX
+	mPTgITvEeAGJb5MPsUCUy0psOsAMcqWEwCJ2iR/Hu5ghfpSUOLjiBssERvFZSDbPQrJ5FpLN
+	s5CsWMDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjJJakdzCuarA4xCjAwajEw2vwrz9A
+	iDWxrLgy9xCjBAezkghv8qcJAUK8KYmVValF+fFFpTmpxYcYfYAun8gsJZqcD4zzvJJ4Q2Nj
+	EzMTUxNzS1NzUxzCSuK8zR4pAUIC6YklqdmpqQWpRTDjmDg4pRoY14f+sdzvZsHwWGuZXt60
+	qyl7H7hqlO5WLDptknDw+T5Z/12WbBYa14XnCiRdebItly9Y/Zumx8zCphKZLzt717k8NncU
+	kl5pZp1a2sm+Jq5+7jSTgpLSt0GhWz56NNh85Vz8Qy03oPbo2iaNTXc4Fzj/vXvm6G4dPUnx
+	6gzj/dvT9rT8tuVTYinOSDTUYi4qTgQAW7/20dICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t9jQd3EzxMCDH5eVbPYs/cki8XlXXPY
+	HJg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMuHl7JXvBDYeK
+	7xO3MDcwzjLrYuTkkBAwkeibcpQFwhaTuHBvPVsXIxeHkMB0RonJXz+wQjj/GCW2/Gxi7mLk
+	4GAT0JbYvN8AJC4i8JBRYv+zpewg3UICthJP719jB6nhFLCTuHwiAiQsLGAm0TvpI9gCFgFV
+	icZTPWwgNi9Q+bOLbYwQtqDEj8n3wGqYBdQlJs1bxAxhy0tsXvMWbK0EUPzRX12QsIiAkcTR
+	5t9Q5eISkx48ZJ/AKDgLyaRZSCbNQjJpFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNz
+	NzGCI/WZ9A7GVQ0WhxgFOBiVeHgN/vUHCLEmlhVX5h5ilOBgVhLhTf40IUCINyWxsiq1KD++
+	qDQntfgQow/QoxOZpUST84FJJK8k3tDYxMzI0sjMwsjE3ByHsJI4b7NHSoCQQHpiSWp2ampB
+	ahHMOCYOTqkGxnWbJ1wv+md1xL7RQPvBn7V2l8/bnD35vVbTqaNA+taCS8f/h2nfDbu4pqcs
+	c0ds3+krCxrM2tc0lFgEHU40klY8IVk5mz9MauaL5ub5uhO33I5NOHrZ6f8P2b7e6v9x/87a
+	ftEq9+C8vH3/ymnBlazHmw4+tl9/oNRlrtenZyzc75oXnz4ZfkOJpTgj0VCLuag4EQAvYeUR
+	AQMAAA==
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds address space operations for data.
+This adds core functions to get, read, write, and evict an inode.
 
-- F2FS supports readpages(), writepages(), and direct_IO().
-
-- Because of out-of-place writes, f2fs_direct_IO() does not write data in place.
-
+Signed-off-by: Changman Lee <cm224.lee@samsung.com>
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/data.c |  701 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 701 insertions(+)
- create mode 100644 fs/f2fs/data.c
+ fs/f2fs/inode.c |  266 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 266 insertions(+)
+ create mode 100644 fs/f2fs/inode.c
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
 new file mode 100644
-index 0000000..c2fd0a8
+index 0000000..94f13d2
 --- /dev/null
-+++ b/fs/f2fs/data.c
-@@ -0,0 +1,701 @@
++++ b/fs/f2fs/inode.c
+@@ -0,0 +1,266 @@
 +/**
-+ * fs/f2fs/data.c
++ * fs/f2fs/inode.c
 + *
 + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
 + *             http://www.samsung.com/
@@ -86,694 +84,259 @@ index 0000000..c2fd0a8
 +#include <linux/fs.h>
 +#include <linux/f2fs_fs.h>
 +#include <linux/buffer_head.h>
-+#include <linux/mpage.h>
 +#include <linux/writeback.h>
-+#include <linux/backing-dev.h>
-+#include <linux/blkdev.h>
-+#include <linux/bio.h>
 +
 +#include "f2fs.h"
 +#include "node.h"
-+#include "segment.h"
 +
-+/**
-+ * Lock ordering for the change of data block address:
-+ * ->data_page
-+ *  ->node_page
-+ *    update block addresses in the node page
-+ */
-+static void __set_data_blkaddr(struct dnode_of_data *dn, block_t new_addr)
++struct f2fs_iget_args {
++	u64 ino;
++	int on_free;
++};
++
++void f2fs_set_inode_flags(struct inode *inode)
++{
++	unsigned int flags = F2FS_I(inode)->i_flags;
++
++	inode->i_flags &= ~(S_SYNC | S_APPEND | S_IMMUTABLE |
++			S_NOATIME | S_DIRSYNC);
++
++	if (flags & FS_SYNC_FL)
++		inode->i_flags |= S_SYNC;
++	if (flags & FS_APPEND_FL)
++		inode->i_flags |= S_APPEND;
++	if (flags & FS_IMMUTABLE_FL)
++		inode->i_flags |= S_IMMUTABLE;
++	if (flags & FS_NOATIME_FL)
++		inode->i_flags |= S_NOATIME;
++	if (flags & FS_DIRSYNC_FL)
++		inode->i_flags |= S_DIRSYNC;
++}
++
++static int f2fs_iget_test(struct inode *inode, void *data)
++{
++	struct f2fs_iget_args *args = data;
++
++	if (inode->i_ino != args->ino)
++		return 0;
++	if (inode->i_state & (I_FREEING | I_WILL_FREE)) {
++		args->on_free = 1;
++		return 0;
++	}
++	return 1;
++}
++
++struct inode *f2fs_iget_nowait(struct super_block *sb, unsigned long ino)
++{
++	struct f2fs_iget_args args = {
++		.ino = ino,
++		.on_free = 0
++	};
++	struct inode *inode = ilookup5(sb, ino, f2fs_iget_test, &args);
++
++	if (inode)
++		return inode;
++	if (!args.on_free)
++		return f2fs_iget(sb, ino);
++	return ERR_PTR(-ENOENT);
++}
++
++static int do_read_inode(struct inode *inode)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	struct f2fs_inode_info *fi = F2FS_I(inode);
++	struct page *node_page;
++	struct f2fs_node *rn;
++	struct f2fs_inode *ri;
++
++	/* Check if ino is within scope */
++	check_nid_range(sbi, inode->i_ino);
++
++	node_page = get_node_page(sbi, inode->i_ino);
++	if (IS_ERR(node_page))
++		return PTR_ERR(node_page);
++
++	rn = page_address(node_page);
++	ri = &(rn->i);
++
++	inode->i_mode = le16_to_cpu(ri->i_mode);
++	i_uid_write(inode, le32_to_cpu(ri->i_uid));
++	i_gid_write(inode, le32_to_cpu(ri->i_gid));
++	set_nlink(inode, le32_to_cpu(ri->i_links));
++	inode->i_size = le64_to_cpu(ri->i_size);
++	inode->i_blocks = le64_to_cpu(ri->i_blocks);
++
++	inode->i_atime.tv_sec = le64_to_cpu(ri->i_atime);
++	inode->i_ctime.tv_sec = le64_to_cpu(ri->i_ctime);
++	inode->i_mtime.tv_sec = le64_to_cpu(ri->i_mtime);
++	inode->i_atime.tv_nsec = le32_to_cpu(ri->i_atime_nsec);
++	inode->i_ctime.tv_nsec = le32_to_cpu(ri->i_ctime_nsec);
++	inode->i_mtime.tv_nsec = le32_to_cpu(ri->i_mtime_nsec);
++	inode->i_generation = le32_to_cpu(ri->i_generation);
++
++	fi->i_current_depth = le32_to_cpu(ri->i_current_depth);
++	fi->i_xattr_nid = le32_to_cpu(ri->i_xattr_nid);
++	fi->i_flags = le32_to_cpu(ri->i_flags);
++	fi->flags = 0;
++	fi->data_version = le64_to_cpu(F2FS_CKPT(sbi)->checkpoint_ver) - 1;
++	fi->i_advise = ri->i_advise;
++	get_extent_info(&fi->ext, ri->i_ext);
++	f2fs_put_page(node_page, 1);
++	return 0;
++}
++
++struct inode *f2fs_iget(struct super_block *sb, unsigned long ino)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(sb);
++	struct inode *inode;
++	int ret;
++
++	inode = iget_locked(sb, ino);
++	if (!inode)
++		return ERR_PTR(-ENOMEM);
++	if (!(inode->i_state & I_NEW))
++		return inode;
++	if (ino == F2FS_NODE_INO(sbi) || ino == F2FS_META_INO(sbi))
++		goto make_now;
++
++	ret = do_read_inode(inode);
++	if (ret)
++		goto bad_inode;
++
++	if (!sbi->por_doing && inode->i_nlink == 0) {
++		ret = -ENOENT;
++		goto bad_inode;
++	}
++
++make_now:
++	if (ino == F2FS_NODE_INO(sbi)) {
++		inode->i_mapping->a_ops = &f2fs_node_aops;
++		mapping_set_gfp_mask(inode->i_mapping, GFP_F2FS_ZERO);
++	} else if (ino == F2FS_META_INO(sbi)) {
++		inode->i_mapping->a_ops = &f2fs_meta_aops;
++		mapping_set_gfp_mask(inode->i_mapping, GFP_F2FS_ZERO);
++	} else if (S_ISREG(inode->i_mode)) {
++		inode->i_op = &f2fs_file_inode_operations;
++		inode->i_fop = &f2fs_file_operations;
++		inode->i_mapping->a_ops = &f2fs_dblock_aops;
++	} else if (S_ISDIR(inode->i_mode)) {
++		inode->i_op = &f2fs_dir_inode_operations;
++		inode->i_fop = &f2fs_dir_operations;
++		inode->i_mapping->a_ops = &f2fs_dblock_aops;
++		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER_MOVABLE |
++				__GFP_ZERO);
++	} else if (S_ISLNK(inode->i_mode)) {
++		inode->i_op = &f2fs_symlink_inode_operations;
++		inode->i_mapping->a_ops = &f2fs_dblock_aops;
++	} else if (S_ISCHR(inode->i_mode) || S_ISBLK(inode->i_mode) ||
++			S_ISFIFO(inode->i_mode) || S_ISSOCK(inode->i_mode)) {
++		inode->i_op = &f2fs_special_inode_operations;
++		init_special_inode(inode, inode->i_mode, inode->i_rdev);
++	} else {
++		ret = -EIO;
++		goto bad_inode;
++	}
++	unlock_new_inode(inode);
++
++	return inode;
++
++bad_inode:
++	iget_failed(inode);
++	return ERR_PTR(ret);
++}
++
++void update_inode(struct inode *inode, struct page *node_page)
 +{
 +	struct f2fs_node *rn;
-+	__le32 *addr_array;
-+	struct page *node_page = dn->node_page;
-+	unsigned int ofs_in_node = dn->ofs_in_node;
++	struct f2fs_inode *ri;
 +
 +	wait_on_page_writeback(node_page);
 +
-+	rn = (struct f2fs_node *)page_address(node_page);
++	rn = page_address(node_page);
++	ri = &(rn->i);
 +
-+	/* Get physical address of data block */
-+	addr_array = blkaddr_in_node(rn);
-+	addr_array[ofs_in_node] = cpu_to_le32(new_addr);
++	ri->i_mode = cpu_to_le16(inode->i_mode);
++	ri->i_advise = F2FS_I(inode)->i_advise;
++	ri->i_uid = cpu_to_le32(i_uid_read(inode));
++	ri->i_gid = cpu_to_le32(i_gid_read(inode));
++	ri->i_links = cpu_to_le32(inode->i_nlink);
++	ri->i_size = cpu_to_le64(i_size_read(inode));
++	ri->i_blocks = cpu_to_le64(inode->i_blocks);
++	set_raw_extent(&F2FS_I(inode)->ext, &ri->i_ext);
++
++	ri->i_atime = cpu_to_le64(inode->i_atime.tv_sec);
++	ri->i_ctime = cpu_to_le64(inode->i_ctime.tv_sec);
++	ri->i_mtime = cpu_to_le64(inode->i_mtime.tv_sec);
++	ri->i_atime_nsec = cpu_to_le32(inode->i_atime.tv_nsec);
++	ri->i_ctime_nsec = cpu_to_le32(inode->i_ctime.tv_nsec);
++	ri->i_mtime_nsec = cpu_to_le32(inode->i_mtime.tv_nsec);
++	ri->i_current_depth = cpu_to_le32(F2FS_I(inode)->i_current_depth);
++	ri->i_xattr_nid = cpu_to_le32(F2FS_I(inode)->i_xattr_nid);
++	ri->i_flags = cpu_to_le32(F2FS_I(inode)->i_flags);
++	ri->i_generation = cpu_to_le32(inode->i_generation);
 +	set_page_dirty(node_page);
 +}
 +
-+int reserve_new_block(struct dnode_of_data *dn)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(dn->inode->i_sb);
-+
-+	if (is_inode_flag_set(F2FS_I(dn->inode), FI_NO_ALLOC))
-+		return -EPERM;
-+	if (!inc_valid_block_count(sbi, dn->inode, 1))
-+		return -ENOSPC;
-+
-+	__set_data_blkaddr(dn, NEW_ADDR);
-+	dn->data_blkaddr = NEW_ADDR;
-+	sync_inode_page(dn);
-+	return 0;
-+}
-+
-+static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
-+					struct buffer_head *bh_result)
-+{
-+	struct f2fs_inode_info *fi = F2FS_I(inode);
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	pgoff_t start_fofs, end_fofs;
-+	block_t start_blkaddr;
-+
-+	read_lock(&fi->ext.ext_lock);
-+	if (fi->ext.len == 0) {
-+		read_unlock(&fi->ext.ext_lock);
-+		return 0;
-+	}
-+
-+	sbi->total_hit_ext++;
-+	start_fofs = fi->ext.fofs;
-+	end_fofs = fi->ext.fofs + fi->ext.len - 1;
-+	start_blkaddr = fi->ext.blk_addr;
-+
-+	if (pgofs >= start_fofs && pgofs <= end_fofs) {
-+		unsigned int blkbits = inode->i_sb->s_blocksize_bits;
-+		size_t count;
-+
-+		clear_buffer_new(bh_result);
-+		map_bh(bh_result, inode->i_sb,
-+				start_blkaddr + pgofs - start_fofs);
-+		count = end_fofs - pgofs + 1;
-+		if (count < (UINT_MAX >> blkbits))
-+			bh_result->b_size = (count << blkbits);
-+		else
-+			bh_result->b_size = UINT_MAX;
-+
-+		sbi->read_hit_ext++;
-+		read_unlock(&fi->ext.ext_lock);
-+		return 1;
-+	}
-+	read_unlock(&fi->ext.ext_lock);
-+	return 0;
-+}
-+
-+void update_extent_cache(block_t blk_addr, struct dnode_of_data *dn)
-+{
-+	struct f2fs_inode_info *fi = F2FS_I(dn->inode);
-+	pgoff_t fofs, start_fofs, end_fofs;
-+	block_t start_blkaddr, end_blkaddr;
-+
-+	BUG_ON(blk_addr == NEW_ADDR);
-+	fofs = start_bidx_of_node(ofs_of_node(dn->node_page)) + dn->ofs_in_node;
-+
-+	/* Update the page address in the parent node */
-+	__set_data_blkaddr(dn, blk_addr);
-+
-+	write_lock(&fi->ext.ext_lock);
-+
-+	start_fofs = fi->ext.fofs;
-+	end_fofs = fi->ext.fofs + fi->ext.len - 1;
-+	start_blkaddr = fi->ext.blk_addr;
-+	end_blkaddr = fi->ext.blk_addr + fi->ext.len - 1;
-+
-+	/* Drop and initialize the matched extent */
-+	if (fi->ext.len == 1 && fofs == start_fofs)
-+		fi->ext.len = 0;
-+
-+	/* Initial extent */
-+	if (fi->ext.len == 0) {
-+		if (blk_addr != NULL_ADDR) {
-+			fi->ext.fofs = fofs;
-+			fi->ext.blk_addr = blk_addr;
-+			fi->ext.len = 1;
-+		}
-+		goto end_update;
-+	}
-+
-+	/* Frone merge */
-+	if (fofs == start_fofs - 1 && blk_addr == start_blkaddr - 1) {
-+		fi->ext.fofs--;
-+		fi->ext.blk_addr--;
-+		fi->ext.len++;
-+		goto end_update;
-+	}
-+
-+	/* Back merge */
-+	if (fofs == end_fofs + 1 && blk_addr == end_blkaddr + 1) {
-+		fi->ext.len++;
-+		goto end_update;
-+	}
-+
-+	/* Split the existing extent */
-+	if (fi->ext.len > 1 &&
-+		fofs >= start_fofs && fofs <= end_fofs) {
-+		if ((end_fofs - fofs) < (fi->ext.len >> 1)) {
-+			fi->ext.len = fofs - start_fofs;
-+		} else {
-+			fi->ext.fofs = fofs + 1;
-+			fi->ext.blk_addr = start_blkaddr +
-+					fofs - start_fofs + 1;
-+			fi->ext.len -= fofs - start_fofs + 1;
-+		}
-+		goto end_update;
-+	}
-+	write_unlock(&fi->ext.ext_lock);
-+	return;
-+
-+end_update:
-+	write_unlock(&fi->ext.ext_lock);
-+	sync_inode_page(dn);
-+	return;
-+}
-+
-+struct page *find_data_page(struct inode *inode, pgoff_t index)
++int f2fs_write_inode(struct inode *inode, struct writeback_control *wbc)
 +{
 +	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct address_space *mapping = inode->i_mapping;
-+	struct dnode_of_data dn;
-+	struct page *page;
-+	int err;
++	struct page *node_page;
++	bool need_lock = false;
 +
-+	page = find_get_page(mapping, index);
-+	if (page && PageUptodate(page))
-+		return page;
-+	f2fs_put_page(page, 0);
-+
-+	set_new_dnode(&dn, inode, NULL, NULL, 0);
-+	err = get_dnode_of_data(&dn, index, RDONLY_NODE);
-+	if (err)
-+		return ERR_PTR(err);
-+	f2fs_put_dnode(&dn);
-+
-+	if (dn.data_blkaddr == NULL_ADDR)
-+		return ERR_PTR(-ENOENT);
-+
-+	/* By fallocate(), there is no cached page, but with NEW_ADDR */
-+	if (dn.data_blkaddr == NEW_ADDR)
-+		return ERR_PTR(-EINVAL);
-+
-+	page = grab_cache_page(mapping, index);
-+	if (!page)
-+		return ERR_PTR(-ENOMEM);
-+
-+	err = f2fs_readpage(sbi, page, dn.data_blkaddr, READ_SYNC);
-+	if (err) {
-+		f2fs_put_page(page, 1);
-+		return ERR_PTR(err);
-+	}
-+	unlock_page(page);
-+	return page;
-+}
-+
-+/**
-+ * If it tries to access a hole, return an error.
-+ * Because, the callers, functions in dir.c and GC, should be able to know
-+ * whether this page exists or not.
-+ */
-+struct page *get_lock_data_page(struct inode *inode, pgoff_t index)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct address_space *mapping = inode->i_mapping;
-+	struct dnode_of_data dn;
-+	struct page *page;
-+	int err;
-+
-+	set_new_dnode(&dn, inode, NULL, NULL, 0);
-+	err = get_dnode_of_data(&dn, index, RDONLY_NODE);
-+	if (err)
-+		return ERR_PTR(err);
-+	f2fs_put_dnode(&dn);
-+
-+	if (dn.data_blkaddr == NULL_ADDR)
-+		return ERR_PTR(-ENOENT);
-+
-+	page = grab_cache_page(mapping, index);
-+	if (!page)
-+		return ERR_PTR(-ENOMEM);
-+
-+	if (PageUptodate(page))
-+		return page;
-+
-+	BUG_ON(dn.data_blkaddr == NEW_ADDR);
-+	BUG_ON(dn.data_blkaddr == NULL_ADDR);
-+
-+	err = f2fs_readpage(sbi, page, dn.data_blkaddr, READ_SYNC);
-+	if (err) {
-+		f2fs_put_page(page, 1);
-+		return ERR_PTR(err);
-+	}
-+	return page;
-+}
-+
-+/**
-+ * Caller ensures that this data page is never allocated.
-+ * A new zero-filled data page is allocated in the page cache.
-+ */
-+struct page *get_new_data_page(struct inode *inode, pgoff_t index,
-+						bool new_i_size)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct address_space *mapping = inode->i_mapping;
-+	struct page *page;
-+	struct dnode_of_data dn;
-+	int err;
-+
-+	set_new_dnode(&dn, inode, NULL, NULL, 0);
-+	err = get_dnode_of_data(&dn, index, 0);
-+	if (err)
-+		return ERR_PTR(err);
-+
-+	if (dn.data_blkaddr == NULL_ADDR) {
-+		if (reserve_new_block(&dn)) {
-+			f2fs_put_dnode(&dn);
-+			return ERR_PTR(-ENOSPC);
-+		}
-+	}
-+	f2fs_put_dnode(&dn);
-+
-+	page = grab_cache_page(mapping, index);
-+	if (!page)
-+		return ERR_PTR(-ENOMEM);
-+
-+	if (PageUptodate(page))
-+		return page;
-+
-+	if (dn.data_blkaddr == NEW_ADDR) {
-+		zero_user_segment(page, 0, PAGE_CACHE_SIZE);
-+	} else {
-+		err = f2fs_readpage(sbi, page, dn.data_blkaddr, READ_SYNC);
-+		if (err) {
-+			f2fs_put_page(page, 1);
-+			return ERR_PTR(err);
-+		}
-+	}
-+	SetPageUptodate(page);
-+
-+	if (new_i_size &&
-+		i_size_read(inode) < ((index + 1) << PAGE_CACHE_SHIFT)) {
-+		i_size_write(inode, ((index + 1) << PAGE_CACHE_SHIFT));
-+		mark_inode_dirty_sync(inode);
-+	}
-+	return page;
-+}
-+
-+static void read_end_io(struct bio *bio, int err)
-+{
-+	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
-+	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
-+
-+	do {
-+		struct page *page = bvec->bv_page;
-+
-+		if (--bvec >= bio->bi_io_vec)
-+			prefetchw(&bvec->bv_page->flags);
-+
-+		if (uptodate) {
-+			SetPageUptodate(page);
-+		} else {
-+			ClearPageUptodate(page);
-+			SetPageError(page);
-+		}
-+		unlock_page(page);
-+	} while (bvec >= bio->bi_io_vec);
-+	kfree(bio->bi_private);
-+	bio_put(bio);
-+}
-+
-+/**
-+ * Fill the locked page with data located in the block address.
-+ * Read operation is synchronous, and caller must unlock the page.
-+ */
-+int f2fs_readpage(struct f2fs_sb_info *sbi, struct page *page,
-+					block_t blk_addr, int type)
-+{
-+	struct block_device *bdev = sbi->sb->s_bdev;
-+	bool sync = (type == READ_SYNC);
-+	struct bio *bio;
-+
-+	/* This page can be already read by other threads */
-+	if (PageUptodate(page)) {
-+		if (!sync)
-+			unlock_page(page);
-+		return 0;
-+	}
-+
-+	down_read(&sbi->bio_sem);
-+
-+	/* Allocate a new bio */
-+	bio = f2fs_bio_alloc(bdev, blk_addr << (sbi->log_blocksize - 9),
-+				1, GFP_NOFS | __GFP_HIGH);
-+
-+	/* Initialize the bio */
-+	bio->bi_end_io = read_end_io;
-+	if (bio_add_page(bio, page, PAGE_CACHE_SIZE, 0) < PAGE_CACHE_SIZE) {
-+		kfree(bio->bi_private);
-+		bio_put(bio);
-+		up_read(&sbi->bio_sem);
-+		return -EFAULT;
-+	}
-+
-+	submit_bio(type, bio);
-+	up_read(&sbi->bio_sem);
-+
-+	/* wait for read completion if sync */
-+	if (sync) {
-+		lock_page(page);
-+		if (PageError(page))
-+			return -EIO;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * This function should be used by the data read flow only where it
-+ * does not check the "create" flag that indicates block allocation.
-+ * The reason for this special functionality is to exploit VFS readahead
-+ * mechanism.
-+ */
-+static int get_data_block_ro(struct inode *inode, sector_t iblock,
-+			struct buffer_head *bh_result, int create)
-+{
-+	unsigned int blkbits = inode->i_sb->s_blocksize_bits;
-+	unsigned maxblocks = bh_result->b_size >> blkbits;
-+	struct dnode_of_data dn;
-+	pgoff_t pgofs;
-+	int err;
-+
-+	/* Get the page offset from the block offset(iblock) */
-+	pgofs =	(pgoff_t)(iblock >> (PAGE_CACHE_SHIFT - blkbits));
-+
-+	if (check_extent_cache(inode, pgofs, bh_result))
++	if (inode->i_ino == F2FS_NODE_INO(sbi) ||
++			inode->i_ino == F2FS_META_INO(sbi))
 +		return 0;
 +
-+	/* When reading holes, we need its node page */
-+	set_new_dnode(&dn, inode, NULL, NULL, 0);
-+	err = get_dnode_of_data(&dn, pgofs, RDONLY_NODE);
-+	if (err)
-+		return (err == -ENOENT) ? 0 : err;
++	node_page = get_node_page(sbi, inode->i_ino);
++	if (IS_ERR(node_page))
++		return PTR_ERR(node_page);
 +
-+	/* It does not support data allocation */
-+	BUG_ON(create);
-+
-+	if (dn.data_blkaddr != NEW_ADDR && dn.data_blkaddr != NULL_ADDR) {
-+		int i;
-+		unsigned int end_offset;
-+
-+		end_offset = IS_INODE(dn.node_page) ?
-+				ADDRS_PER_INODE :
-+				ADDRS_PER_BLOCK;
-+
-+		clear_buffer_new(bh_result);
-+
-+		/* Give more consecutive addresses for the read ahead */
-+		for (i = 0; i < end_offset - dn.ofs_in_node; i++)
-+			if (((datablock_addr(dn.node_page,
-+							dn.ofs_in_node + i))
-+				!= (dn.data_blkaddr + i)) || maxblocks == i)
-+				break;
-+		map_bh(bh_result, inode->i_sb, dn.data_blkaddr);
-+		bh_result->b_size = (i << blkbits);
-+	}
-+	f2fs_put_dnode(&dn);
-+	return 0;
-+}
-+
-+static int f2fs_read_data_page(struct file *file, struct page *page)
-+{
-+	return mpage_readpage(page, get_data_block_ro);
-+}
-+
-+static int f2fs_read_data_pages(struct file *file,
-+			struct address_space *mapping,
-+			struct list_head *pages, unsigned nr_pages)
-+{
-+	return mpage_readpages(mapping, pages, nr_pages, get_data_block_ro);
-+}
-+
-+int do_write_data_page(struct page *page)
-+{
-+	struct inode *inode = page->mapping->host;
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	block_t old_blk_addr, new_blk_addr;
-+	struct dnode_of_data dn;
-+	int err = 0;
-+
-+	set_new_dnode(&dn, inode, NULL, NULL, 0);
-+	err = get_dnode_of_data(&dn, page->index, RDONLY_NODE);
-+	if (err)
-+		return err;
-+
-+	old_blk_addr = dn.data_blkaddr;
-+
-+	/* This page is already truncated */
-+	if (old_blk_addr == NULL_ADDR)
-+		goto out_writepage;
-+
-+	set_page_writeback(page);
-+
-+	/*
-+	 * If current allocation needs SSR,
-+	 * it had better in-place writes for updated data.
-+	 */
-+	if (old_blk_addr != NEW_ADDR && !is_cold_data(page) &&
-+				need_inplace_update(inode)) {
-+		rewrite_data_page(F2FS_SB(inode->i_sb), page,
-+						old_blk_addr);
-+	} else {
-+		write_data_page(inode, page, &dn,
-+				old_blk_addr, &new_blk_addr);
-+		update_extent_cache(new_blk_addr, &dn);
-+		F2FS_I(inode)->data_version =
-+			le64_to_cpu(F2FS_CKPT(sbi)->checkpoint_ver);
-+	}
-+out_writepage:
-+	f2fs_put_dnode(&dn);
-+	return err;
-+}
-+
-+static int f2fs_write_data_page(struct page *page,
-+					struct writeback_control *wbc)
-+{
-+	struct inode *inode = page->mapping->host;
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	loff_t i_size = i_size_read(inode);
-+	const pgoff_t end_index = ((unsigned long long) i_size)
-+							>> PAGE_CACHE_SHIFT;
-+	unsigned offset;
-+	int err = 0;
-+
-+	if (page->index < end_index)
-+		goto out;
-+
-+	/*
-+	 * If the offset is out-of-range of file size,
-+	 * this page does not have to be written to disk.
-+	 */
-+	offset = i_size & (PAGE_CACHE_SIZE - 1);
-+	if ((page->index >= end_index + 1) || !offset) {
-+		if (S_ISDIR(inode->i_mode)) {
-+			dec_page_count(sbi, F2FS_DIRTY_DENTS);
-+			inode_dec_dirty_dents(inode);
++	if (!PageDirty(node_page)) {
++		need_lock = true;
++		f2fs_put_page(node_page, 1);
++		mutex_lock(&sbi->write_inode);
++		node_page = get_node_page(sbi, inode->i_ino);
++		if (IS_ERR(node_page)) {
++			mutex_unlock(&sbi->write_inode);
++			return PTR_ERR(node_page);
 +		}
-+		goto unlock_out;
 +	}
-+
-+	zero_user_segment(page, offset, PAGE_CACHE_SIZE);
-+out:
-+	if (sbi->por_doing)
-+		goto redirty_out;
-+
-+	if (wbc->for_reclaim && !S_ISDIR(inode->i_mode) && !is_cold_data(page))
-+		goto redirty_out;
-+
-+	mutex_lock_op(sbi, DATA_WRITE);
-+	if (S_ISDIR(inode->i_mode)) {
-+		dec_page_count(sbi, F2FS_DIRTY_DENTS);
-+		inode_dec_dirty_dents(inode);
-+	}
-+	err = do_write_data_page(page);
-+	if (err && err != -ENOENT) {
-+		wbc->pages_skipped++;
-+		set_page_dirty(page);
-+	}
-+	mutex_unlock_op(sbi, DATA_WRITE);
-+
-+	if (wbc->for_reclaim)
-+		f2fs_submit_bio(sbi, DATA, true);
-+
-+	if (err == -ENOENT)
-+		goto unlock_out;
-+
-+	clear_cold_data(page);
-+	unlock_page(page);
-+
-+	if (!wbc->for_reclaim && !S_ISDIR(inode->i_mode))
-+		f2fs_balance_fs(sbi);
++	update_inode(inode, node_page);
++	f2fs_put_page(node_page, 1);
++	if (need_lock)
++		mutex_unlock(&sbi->write_inode);
 +	return 0;
-+
-+unlock_out:
-+	unlock_page(page);
-+	return (err == -ENOENT) ? 0 : err;
-+
-+redirty_out:
-+	wbc->pages_skipped++;
-+	set_page_dirty(page);
-+	return AOP_WRITEPAGE_ACTIVATE;
 +}
 +
-+#define MAX_DESIRED_PAGES_WP	4096
-+
-+int f2fs_write_data_pages(struct address_space *mapping,
-+			    struct writeback_control *wbc)
++/**
++ * Called at the last iput() if i_nlink is zero
++ */
++void f2fs_evict_inode(struct inode *inode)
 +{
-+	struct inode *inode = mapping->host;
 +	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	int ret;
-+	long excess_nrtw = 0, desired_nrtw;
 +
-+	if (wbc->nr_to_write < MAX_DESIRED_PAGES_WP) {
-+		desired_nrtw = MAX_DESIRED_PAGES_WP;
-+		excess_nrtw = desired_nrtw - wbc->nr_to_write;
-+		wbc->nr_to_write = desired_nrtw;
-+	}
++	truncate_inode_pages(&inode->i_data, 0);
 +
-+	if (!S_ISDIR(inode->i_mode))
-+		mutex_lock(&sbi->writepages);
-+	ret = generic_writepages(mapping, wbc);
-+	if (!S_ISDIR(inode->i_mode))
-+		mutex_unlock(&sbi->writepages);
-+	f2fs_submit_bio(sbi, DATA, (wbc->sync_mode == WB_SYNC_ALL));
++	if (inode->i_ino == F2FS_NODE_INO(sbi) ||
++			inode->i_ino == F2FS_META_INO(sbi))
++		goto no_delete;
 +
++	BUG_ON(atomic_read(&F2FS_I(inode)->dirty_dents));
 +	remove_dirty_dir_inode(inode);
 +
-+	wbc->nr_to_write -= excess_nrtw;
-+	return ret;
++	if (inode->i_nlink || is_bad_inode(inode))
++		goto no_delete;
++
++	set_inode_flag(F2FS_I(inode), FI_NO_ALLOC);
++	i_size_write(inode, 0);
++
++	if (F2FS_HAS_BLOCKS(inode))
++		f2fs_truncate(inode);
++
++	remove_inode_page(inode);
++no_delete:
++	clear_inode(inode);
 +}
-+
-+static int f2fs_write_begin(struct file *file, struct address_space *mapping,
-+		loff_t pos, unsigned len, unsigned flags,
-+		struct page **pagep, void **fsdata)
-+{
-+	struct inode *inode = mapping->host;
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct page *page;
-+	pgoff_t index = ((unsigned long long) pos) >> PAGE_CACHE_SHIFT;
-+	struct dnode_of_data dn;
-+	int err = 0;
-+
-+	/* for nobh_write_end */
-+	*fsdata = NULL;
-+
-+	f2fs_balance_fs(sbi);
-+
-+	page = grab_cache_page_write_begin(mapping, index, flags);
-+	if (!page)
-+		return -ENOMEM;
-+	*pagep = page;
-+
-+	mutex_lock_op(sbi, DATA_NEW);
-+
-+	set_new_dnode(&dn, inode, NULL, NULL, 0);
-+	err = get_dnode_of_data(&dn, index, 0);
-+	if (err) {
-+		mutex_unlock_op(sbi, DATA_NEW);
-+		f2fs_put_page(page, 1);
-+		return err;
-+	}
-+
-+	if (dn.data_blkaddr == NULL_ADDR) {
-+		err = reserve_new_block(&dn);
-+		if (err) {
-+			f2fs_put_dnode(&dn);
-+			mutex_unlock_op(sbi, DATA_NEW);
-+			f2fs_put_page(page, 1);
-+			return err;
-+		}
-+	}
-+	f2fs_put_dnode(&dn);
-+
-+	mutex_unlock_op(sbi, DATA_NEW);
-+
-+	if ((len == PAGE_CACHE_SIZE) || PageUptodate(page))
-+		return 0;
-+
-+	if ((pos & PAGE_CACHE_MASK) >= i_size_read(inode)) {
-+		unsigned start = pos & (PAGE_CACHE_SIZE - 1);
-+		unsigned end = start + len;
-+
-+		/* Reading beyond i_size is simple: memset to zero */
-+		zero_user_segments(page, 0, start, end, PAGE_CACHE_SIZE);
-+		return 0;
-+	}
-+
-+	if (dn.data_blkaddr == NEW_ADDR) {
-+		zero_user_segment(page, 0, PAGE_CACHE_SIZE);
-+	} else {
-+		err = f2fs_readpage(sbi, page, dn.data_blkaddr, READ_SYNC);
-+		if (err) {
-+			f2fs_put_page(page, 1);
-+			return err;
-+		}
-+	}
-+	SetPageUptodate(page);
-+	clear_cold_data(page);
-+	return 0;
-+}
-+
-+static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
-+		const struct iovec *iov, loff_t offset, unsigned long nr_segs)
-+{
-+	struct file *file = iocb->ki_filp;
-+	struct inode *inode = file->f_mapping->host;
-+
-+	if (rw == WRITE)
-+		return 0;
-+
-+	/* Needs synchronization with the cleaner */
-+	return blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
-+						  get_data_block_ro);
-+}
-+
-+static void f2fs_invalidate_data_page(struct page *page, unsigned long offset)
-+{
-+	struct inode *inode = page->mapping->host;
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	if (S_ISDIR(inode->i_mode) && PageDirty(page)) {
-+		dec_page_count(sbi, F2FS_DIRTY_DENTS);
-+		inode_dec_dirty_dents(inode);
-+	}
-+	ClearPagePrivate(page);
-+}
-+
-+static int f2fs_release_data_page(struct page *page, gfp_t wait)
-+{
-+	ClearPagePrivate(page);
-+	return 0;
-+}
-+
-+static int f2fs_set_data_page_dirty(struct page *page)
-+{
-+	struct address_space *mapping = page->mapping;
-+	struct inode *inode = mapping->host;
-+
-+	SetPageUptodate(page);
-+	if (!PageDirty(page)) {
-+		__set_page_dirty_nobuffers(page);
-+		set_dirty_dir_page(inode, page);
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+const struct address_space_operations f2fs_dblock_aops = {
-+	.readpage	= f2fs_read_data_page,
-+	.readpages	= f2fs_read_data_pages,
-+	.writepage	= f2fs_write_data_page,
-+	.writepages	= f2fs_write_data_pages,
-+	.write_begin	= f2fs_write_begin,
-+	.write_end	= nobh_write_end,
-+	.set_page_dirty	= f2fs_set_data_page_dirty,
-+	.invalidatepage	= f2fs_invalidate_data_page,
-+	.releasepage	= f2fs_release_data_page,
-+	.direct_IO	= f2fs_direct_IO,
-+};
 -- 
 1.7.9.5
 
