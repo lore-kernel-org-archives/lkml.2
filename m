@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935905Ab2JaSVj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 14:21:39 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35779 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935867Ab2JaSVf (ORCPT
+	id S1945999Ab2JaSWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 14:22:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33369 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423220Ab2JaSWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 14:21:35 -0400
-Date: Wed, 31 Oct 2012 11:21:32 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Wen Congyang <wency@cn.fujitsu.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-Subject: Re: [PART6 Patch] mempolicy: fix is_valid_nodemask()
-In-Reply-To: <1351675458-11859-2-git-send-email-wency@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1210311119000.8809@chino.kir.corp.google.com>
-References: <1351675458-11859-1-git-send-email-wency@cn.fujitsu.com> <1351675458-11859-2-git-send-email-wency@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 31 Oct 2012 14:22:39 -0400
+Date: Wed, 31 Oct 2012 11:22:06 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>,
+        skinsbursky@parallels.com, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, baggins@pld-linux.org,
+        arekm@pld-linux.org
+Subject: Re: [PATCH] lockd: fix races in per-net NSM client handling
+Message-ID: <20121031182206.GB1542@kroah.com>
+References: <1689813.hptKgzjpAu@localhost>
+ <20121031174946.GA13591@kroah.com>
+ <20121031180550.GD30432@elie.Belkin>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121031180550.GD30432@elie.Belkin>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012, Wen Congyang wrote:
+On Wed, Oct 31, 2012 at 11:05:51AM -0700, Jonathan Nieder wrote:
+> Hi,
+> 
+> Greg KH wrote:
+> > On Wed, Oct 31, 2012 at 06:27:36PM +0100, Paweł Sikora wrote:
+> 
+> >> the patch metioned in https://lkml.org/lkml/2012/10/24/175 seems to fix
+> >> the 3.6.3 oops (while 3.6.2 works fine) at 16-cores opteron server.
+> >> please queue this path for 3.6.$next.
+> >
+> > Is it in Linus's tree already?  If so, what is the git commit id?
+> 
+> One of
+> 
+>   a4ee8d978e47 LOCKD: fix races in nsm_client_get
+>   e498daa81295 LOCKD: Clear ln->nsm_clnt only when ln->nsm_users is zero
+> 
+> both of which were included in v3.6.5.
 
-> From: Lai Jiangshan <laijs@cn.fujitsu.com>
-> 
-> is_valid_nodemask() is introduced by 19770b32. but it does not match
-> its comments, because it does not check the zone which > policy_zone.
-> 
-> Also in b377fd, this commits told us, if highest zone is ZONE_MOVABLE,
-> we should also apply memory policies to it. so ZONE_MOVABLE should be valid zone
-> for policies. is_valid_nodemask() need to be changed to match it.
-> 
-> Fix: check all zones, even its zoneid > policy_zone.
-> Use nodes_intersects() instead open code to check it.
-> 
+Ok, Paweł, does 3.6.5 work properly for you?
 
-This changes the semantics of MPOL_BIND to be considerably different than 
-what it is today: slab allocations are no longer bound by such a policy 
-which isn't consistent with what userspace expects or is specified by 
-set_mempolicy() and there's no way, with your patch, to actually specify 
-that we don't care about ZONE_MOVABLE and that the slab allocations 
-_should_ actually be allocated on movable-only zones.  You have to respect 
-cases where people aren't interested in node hotplug and not cause a 
-regression.
+thanks,
+
+greg k-h
