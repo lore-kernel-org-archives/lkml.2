@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934505Ab2JaPlL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 11:41:11 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43492 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757942Ab2JaPlI (ORCPT
+	id S935637Ab2JaPs0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 11:48:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52384 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757942Ab2JaPsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 11:41:08 -0400
-Date: Wed, 31 Oct 2012 11:41:07 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: Oliver Neukum <oneukum@suse.de>, <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
-In-Reply-To: <Pine.LNX.4.44L0.1210311117310.1954-100000@iolanthe.rowland.org>
-Message-ID: <Pine.LNX.4.44L0.1210311139300.1954-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 31 Oct 2012 11:48:25 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH/Resend] [trivial] net: sctp: Fix typo in net/sctp
+Date: Thu,  1 Nov 2012 00:48:19 +0900
+Message-Id: <1351698499-15192-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012, Alan Stern wrote:
+Correct spelling typo in net/sctp/socket.c
 
-> On Wed, 31 Oct 2012, Ming Lei wrote:
-> 
-> > The below idea may help the problem which 'memalloc_noio' flag isn't set during
-> > usb_reset_device().
-> > 
-> > - for usb mass storage device, call pm_runtime_set_memalloc_noio(true)
-> >   inside usb_stor_probe2() and uas_probe(), and call
-> >   pm_runtime_set_memalloc_noio(false) inside uas_disconnect()
-> >   and usb_stor_disconnect().
-> 
-> Why would you want to do that?  The probe and disconnect routines
-> usually -- but not always -- run in the khubd thread.  Surely you don't
-> want to prevent khubd from using GFP_KERNEL?
-> 
-> And what if probe runs in khubd but disconnect runs in a different 
-> thread?
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+---
+ net/sctp/socket.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Sorry, I misread your message.  You are setting the device's flag, not 
-the thread's flag.
-
-This still doesn't help in this case where CONFIG_PM_RUNTIME is 
-disabled.  I think it will be simpler to set the noio flag during every 
-device reset.
-
-Alan Stern
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 59d16ea..a60d1f8 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -974,7 +974,7 @@ SCTP_STATIC int sctp_setsockopt_bindx(struct sock* sk,
+ 	void *addr_buf;
+ 	struct sctp_af *af;
+ 
+-	SCTP_DEBUG_PRINTK("sctp_setsocktopt_bindx: sk %p addrs %p"
++	SCTP_DEBUG_PRINTK("sctp_setsockopt_bindx: sk %p addrs %p"
+ 			  " addrs_size %d opt %d\n", sk, addrs, addrs_size, op);
+ 
+ 	if (unlikely(addrs_size <= 0))
+-- 
+1.8.0.rc3.16.g8ead1bf
 
