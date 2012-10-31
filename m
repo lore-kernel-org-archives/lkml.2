@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab2JaRDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:03:19 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33421 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab2JaRDR (ORCPT
+	id S1754011Ab2JaREi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:04:38 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:35209 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab2JaREg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:03:17 -0400
-Date: Wed, 31 Oct 2012 17:08:20 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Josh Boyer <jwboyer@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121031170820.2b26802a@pyramind.ukuu.org.uk>
-In-Reply-To: <20121031155635.GA14294@srcf.ucam.org>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
-	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
-	<20121029174131.GC7580@srcf.ucam.org>
-	<alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
-	<CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
-	<20121031155503.1aaf4c93@pyramind.ukuu.org.uk>
-	<20121031155635.GA14294@srcf.ucam.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Oct 2012 13:04:36 -0400
+Date: Wed, 31 Oct 2012 10:04:31 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8] cgroup: use cgroup_lock_live_group(parent) in
+ cgroup_create()
+Message-ID: <20121031170431.GF2945@htj.dyndns.org>
+References: <1351657365-25055-1-git-send-email-tj@kernel.org>
+ <1351657365-25055-4-git-send-email-tj@kernel.org>
+ <20121031155514.GD22809@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121031155514.GD22809@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012 15:56:35 +0000
-Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+Hey, Michal.
 
-> 1) Gain root.
-> 2) Modify swap partition directly.
-> 3) Force reboot.
-> 4) Win.
+On Wed, Oct 31, 2012 at 04:55:14PM +0100, Michal Hocko wrote:
+> > +	/*
+> > +	 * Only live parents can have children.  Note that the liveliness
+> > +	 * check isn't strictly necessary because cgroup_mkdir() and
+> > +	 * cgroup_rmdir() are fully synchronized by i_mutex; however, do it
+> > +	 * anyway so that locking is contained inside cgroup proper and we
+> > +	 * don't get nasty surprises if we ever grow another caller.
+> > +	 */
+> > +	if (!cgroup_lock_live_group(parent)) {
+> > +		err = -ENODEV;
+> > +		goto err_free;
+> > +	}
+> > +
 > 
-> Root should not have the ability to elevate themselves to running 
-> arbitrary kernel code. Therefore, the above attack needs to be 
-> impossible.
+> I think this should be moved up before we try to allocate any memory.
+> Or is your motivation to keep cgroup_lock held for shorter time?
+> I could agree with that but a small comment would be helpful.
 
-To protect swap you need to basically disallow any unencrypted swap (as
-he OS can't prove any given swap device is local and inside the case) and
-disallow the use of most disk management tools (so you'll need to write a
-few new management interfaces or implement the BPF based command filters
-that have been discussed for years).
+Then I have to change the error out path more and I'm not sure I wanna
+call deactivate_super() under cgroup_mutex.  It's just simpler this
+way.
 
-In addition of course there is no requirement that a device returns
-the data you put on it so subverted removable media is a potential issue.
-Or indeed just cheap memory sticks that do it anyway ;)
+Thanks.
 
-Oh and of course the file systems in default mode don't guarantee this so
-you'll need to fix ext3, ext4 8)
-
+-- 
+tejun
