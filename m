@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935857Ab2JaSMq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 14:12:46 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:40208 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933431Ab2JaSMo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 14:12:44 -0400
-Subject: Re: [PATCH 1/3] ti_adc: Update with IIO map interface
-Mime-Version: 1.0 (Apple Message framework v1085)
+	id S964863Ab2JaSPN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 14:15:13 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:51644 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932875Ab2JaSPL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 14:15:11 -0400
+Date: Wed, 31 Oct 2012 16:15:02 -0200
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Jeff Cook <jeff@deserettechnology.com>
+Cc: linux-bluetooth@vger.kernel.org, marcel@holtmann.org,
+        johan.hedberg@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Bluetooth: Add support for BCM20702A0 [0b05, 17b5]
+Message-ID: <20121031181502.GA1679@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Jeff Cook <jeff@deserettechnology.com>,
+	linux-bluetooth@vger.kernel.org, marcel@holtmann.org,
+	johan.hedberg@gmail.com, linux-kernel@vger.kernel.org
+References: <5087B517.9090703@deserettechnology.com>
+ <1351335688-17936-1-git-send-email-jeff@deserettechnology.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <509168EF.9040000@metafoo.de>
-Date: Wed, 31 Oct 2012 20:12:40 +0200
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, "Patil, Rachna" <rachna@ti.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C105B6BF-8407-4484-826A-A979E16B6B44@antoniou-consulting.com>
-References: <1351783496-11557-1-git-send-email-panto@antoniou-consulting.com> <50916563.8080704@metafoo.de> <F29A4A48-CDFA-4058-BED1-C09242B23326@antoniou-consulting.com> <509168EF.9040000@metafoo.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-X-Mailer: Apple Mail (2.1085)
+Content-Disposition: inline
+In-Reply-To: <1351335688-17936-1-git-send-email-jeff@deserettechnology.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jeff,
 
-On Oct 31, 2012, at 8:07 PM, Lars-Peter Clausen wrote:
+* Jeff Cook <jeff@deserettechnology.com> [2012-10-27 05:01:28 -0600]:
 
-> On 10/31/2012 06:55 PM, Pantelis Antoniou wrote:
->> [...]
->>>> 	}
->>>> 
->>>> 	indio_dev->channels = chan_array;
->>>> +	indio_dev->num_channels = channels;
->>>> +
->>>> +	size = (channels + 1) * sizeof(struct iio_map);
->>>> +	adc_dev->map = kzalloc(size, GFP_KERNEL);
->>>> +	if (adc_dev->map == NULL) {
->>>> +		kfree(chan_array);
->>>> +		return -ENOMEM;
->>>> +	}
->>>> +
->>>> +	for (i = 0; i < indio_dev->num_channels; i++) {
->>>> +		adc_dev->map[i].adc_channel_label = chan_array[i].datasheet_name;
->>>> +		adc_dev->map[i].consumer_dev_name = "any";
->>>> +		adc_dev->map[i].consumer_channel = chan_array[i].datasheet_name;
->>>> +	}
->>>> +	adc_dev->map[i].adc_channel_label = NULL;
->>>> +	adc_dev->map[i].consumer_dev_name = NULL;
->>>> +	adc_dev->map[i].consumer_channel = NULL;
->>> 
->>> The map should be passed in via platform data or similar. All the fields of
->>> the map depend on the specific user, so you can't use a generic map. In fact
->>> if we were able to use a generic map, we wouldn't need a map at all.
->> 
->> There's no platform data in the board I'm using. It's board-generic using
->> device tree only.
+> Vendor-specific ID for BCM20702A0.
+> Support for bluetooth over Asus Wi-Fi GO!, included with Asus P8Z77-V
+> Deluxe.
 > 
-> That's the 'or similar' ;) Unfortunately we do not have a device tree
-> binding for IIO yet. But I think we should aim at a interface similar like
-> we have in other subsystems like the clk, regulator or dma framework.
+> T:  Bus=07 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
+> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=0b05 ProdID=17b5 Rev=01.12
+> S:  Manufacturer=Broadcom Corp
+> S:  Product=BCM20702A0
+> S:  SerialNumber=94DBC98AC113
+> C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+> I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+> I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+> I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
 > 
-> - Lars
+> Signed-off-by: Jeff Cook <jeff@deserettechnology.com>
+> ---
+>  drivers/bluetooth/btusb.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+> index 654e248..1d7b126 100644
+> --- a/drivers/bluetooth/btusb.c
+> +++ b/drivers/bluetooth/btusb.c
+> @@ -96,6 +96,7 @@ static struct usb_device_id btusb_table[] = {
+>  	{ USB_DEVICE(0x0c10, 0x0000) },
+>  
+>  	/* Broadcom BCM20702A0 */
+> +	{ USB_DEVICE(0x0b05, 0x17b5) },
+>  	{ USB_DEVICE(0x0489, 0xe042) },
+>  	{ USB_DEVICE(0x413c, 0x8197) },
 
-So in the meantime no-one can use IIO ADC in any OF only platform.
+This patch doesn't apply on bluetooth.git can you please rebase it on of it.
+You can find the bluetooth.git tree at:
 
-In the meantime, this is pretty reasonable IMO. This is only for a specific 
-board with known channel mappings.
+http://git.kernel.org/?p=linux/kernel/git/bluetooth/bluetooth.git;a=summary
 
-I'm not out to fix IIO, I'm out to fix a single board.
-
-Regards
-
--- Pantelis 
+	Gustavo
