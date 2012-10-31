@@ -1,78 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab2JaWDK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 18:03:10 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:43701 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750738Ab2JaWDI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 18:03:08 -0400
-Subject: Re: [RFC 0/7] Capebus; a bus for SoCs using simple expansion connectors
-Mime-Version: 1.0 (Apple Message framework v1085)
+	id S1756274Ab2JaWEk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 18:04:40 -0400
+Received: from shrek-modem2.podlesie.net ([83.13.132.46]:53230 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751928Ab2JaWEj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 18:04:39 -0400
+Date: Wed, 31 Oct 2012 23:04:35 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+Cc: davem@davemloft.net, dwmw2@infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
+Message-ID: <20121031220435.GA25157@shrek.podlesie.net>
+References: <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
+ <201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
+ <20121030182001.GA30373@shrek.podlesie.net>
+ <20121031094147.GA1004@shrek.podlesie.net>
+ <20121031160352.68353ecc@thirdoffive.cmf.nrl.navy.mil>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <CA+Bv8XZEpw=811-EMCMFKgZ7z03=U-KxaXBh4oMphdzwO18f8Q@mail.gmail.com>
-Date: Thu, 1 Nov 2012 00:03:02 +0200
-Cc: Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        linux-omap@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2EA1A7B9-5457-4CD3-92E2-F97D7E46D29D@antoniou-consulting.com>
-References: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com> <CA+Bv8XZEpw=811-EMCMFKgZ7z03=U-KxaXBh4oMphdzwO18f8Q@mail.gmail.com>
-To: Russ Dill <Russ.Dill@ti.com>
-X-Mailer: Apple Mail (2.1085)
+Content-Disposition: inline
+In-Reply-To: <20121031160352.68353ecc@thirdoffive.cmf.nrl.navy.mil>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russ,
-
-On Oct 31, 2012, at 11:56 PM, Russ Dill wrote:
-
-> On Wed, Oct 31, 2012 at 9:52 AM, Pantelis Antoniou
-> <panto@antoniou-consulting.com> wrote:
->> Capebus is created to address the problem of many SoCs that can provide a
->> multitude of hardware interfaces but in order to keep costs down the main
->> boards only support a limited number of them. The rest are typically brought
->> out to pin connectors on to which other boards, named capes are connected and
->> allow those peripherals to be used.
->> 
->> These capes connect to the SoC interfaces but might also contain various other
->> parts that may need some kind of driver to work.
->> 
->> Since SoCs have limited pins and pin muxing options, not all capes can work
->> together so some kind of resource tracking (at least for the pins in use) is
->> required.
->> 
->> Before capebus all of this took place in the board support file, and frankly
->> for boards with too many capes it was becoming unmanageable.
->> 
->> Capebus provides a virtual bus, which along with a board specific controller,
->> cape drivers can be written using the standard Linux device model.
->> 
->> The core capebus infrastructure is not depended on any specific board.
->> However capebus needs a board controller to provide services to the cape devices
->> it controls. Services like addressing and resource reservation are provided
->> by the board controller.
->> 
->> Capebus at the moment only support TI's Beaglebone platform.
->> 
->> This RFC introduces the core concept; most supporting patches
->> have been posted to the relevant places.
+On Wed, Oct 31, 2012 at 04:03:52PM -0400, chas williams - CONTRACTOR wrote:
 > 
-> There are quite a few TODOs in the code, any chance you could
-> summarize them in the next header email?
+> reversing the order of the push and close certainly seems like the right
+> thing to do. i would like to see if it would fix your problem.  making
+> the minimal change to get something working would be preferred before
+> adding additional complexity.  i am just surprised we havent seen this
+> bug before.
 
-Yes,
+Yes, it fixes the problem and it's probably the best fix for original
+issue.
 
-Most of them deal with dealing properly with removal of the board driver and the core
-capebus stuff. And of course PM is not yet handled properly.
+There are also some minor potential issues in pppoatm driver:
 
-After I get on with this part of the review, I plan to fill in the docs and 
-flesh out the TODOs more.
+	- locking issues, but now only between pppoatm_send() and
+	  vcc_sendmsg() and maybe some other functions,
 
-Regards
+	- missing check for SS_CONNECTED in pppoatm_ioctl,
 
--- Pantelis
+	- problem described in comment in pppoatm_may_send() when
+	  sk->sk_sndbuf < MTU, sk_wmem_alloc_get() should be added
+	  there
+
+but I think that for now the patch that changes the order of push
+and close is sufficient.
+
+I probably saw that bug a log time ago (around 2.6.30), but it was
+too rare to see what caused panic, but after 
+9d02daf754238adac48fa075ee79e7edd3d79ed3 (pppoatm: Fix excessive queue bloat)
+this bug occurs much more frequently.
+
+Thanks.
+
+Krzysiek
+
+-- >8 --
+Subject: [PATCH] atm: detach protocol before closing vcc
+
+The vcc_destroy_socket() closes vcc before the protocol is detached
+from vcc by calling vcc->push() with NULL skb. This leaves some time
+window, where the protocol may call vcc->send() on closed vcc.
+
+It happens at least with pppoatm protocol and usbatm driver, and causes
+an Oops:
+
+Oops: 0000 [#1] PREEMPT
+Pid: 0, comm: swapper Not tainted 3.6.0-krzysiek-00001-gb7cd93b-dirty #60    /AK32
+EIP: 0060:[<c01413c6>] EFLAGS: 00010082 CPU: 0
+EIP is at __wake_up_common+0x16/0x70
+EAX: 30707070 EBX: 00000292 ECX: 00000001 EDX: dca75fc0
+ESI: 00000000 EDI: de7f500f EBP: df409f24 ESP: df409f08
+ DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+CR0: 8005003b CR2: 30707070 CR3: 1c920000 CR4: 000007d0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process swapper (pid: 0, ti=df408000 task=c07bd4e0 task.ti=c07b0000)
+Stack:
+ 00000000 00000001 00000001 dca75fc0 00000292 00000000 de7f500f df409f3c
+ c0143299 00000000 00000000 dc84f000 dc84f000 df409f4c c0602bf0 00000000
+ dc84f000 df409f58 c0604301 dc840cc0 df409fb4 c04672e5 c076a240 00000000
+Call Trace:
+ [<c0143299>] __wake_up+0x29/0x50
+ [<c0602bf0>] vcc_write_space+0x40/0x80
+ [<c0604301>] atm_pop_raw+0x21/0x30
+ [<c04672e5>] usbatm_tx_process+0x2a5/0x380
+ [<c0126cf9>] tasklet_action+0x39/0x70
+ [<c0126f1f>] __do_softirq+0x7f/0x120
+ [<c0126ea0>] ? local_bh_enable_ip+0xa0/0xa0
+ <IRQ>
+
+Now the protocol is detached before vcc is closed.
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+---
+ net/atm/common.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/atm/common.c b/net/atm/common.c
+index 0c0ad93..a0e4411 100644
+--- a/net/atm/common.c
++++ b/net/atm/common.c
+@@ -171,10 +171,10 @@ static void vcc_destroy_socket(struct sock *sk)
+ 	set_bit(ATM_VF_CLOSE, &vcc->flags);
+ 	clear_bit(ATM_VF_READY, &vcc->flags);
+ 	if (vcc->dev) {
+-		if (vcc->dev->ops->close)
+-			vcc->dev->ops->close(vcc);
+ 		if (vcc->push)
+ 			vcc->push(vcc, NULL); /* atmarpd has no push */
++		if (vcc->dev->ops->close)
++			vcc->dev->ops->close(vcc);
+ 
+ 		while ((skb = skb_dequeue(&sk->sk_receive_queue)) != NULL) {
+ 			atm_return(vcc, skb->truesize);
+-- 
+1.8.0.172.g62af90c
 
