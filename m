@@ -1,106 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965413Ab2JaL0c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 07:26:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:14146 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S935399Ab2JaL0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 07:26:25 -0400
-X-IronPort-AV: E=Sophos;i="4.80,687,1344182400"; 
-   d="scan'208";a="6108772"
-Message-ID: <50910C39.70305@cn.fujitsu.com>
-Date: Wed, 31 Oct 2012 19:32:09 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1422745Ab2JaLa3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 07:30:29 -0400
+Received: from shrek-modem2.podlesie.net ([83.13.132.46]:40627 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932896Ab2JaLaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 07:30:24 -0400
+Date: Wed, 31 Oct 2012 12:30:22 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
+Message-ID: <20121031113021.GA24093@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+ <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
+ <1351589868.17077.34.camel@shinybook.infradead.org>
+ <20121030190725.GA14044@shrek.podlesie.net>
+ <20121030195224.GA2153@shrek.podlesie.net>
+ <1351678578.8774.8.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Jiang Liu <liuj97@gmail.com>,
-        Len Brown <len.brown@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, rjw@sisk.pl,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [Patch v4 0/8] bugfix for memory hotplug
-References: <1351682594-17347-1-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1351682594-17347-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 19:25:38,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 19:25:39,
-	Serialize complete at 2012/10/31 19:25:39
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351678578.8774.8.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/31/2012 07:23 PM, Wen Congyang Wrote:
-> The last version is here:
->     https://lkml.org/lkml/2012/10/19/56
+On Wed, Oct 31, 2012 at 10:16:18AM +0000, David Woodhouse wrote:
 > 
-> Note: patch 1-3 are in -mm tree and I don't touch them. The other patches
-> except patch6 are also in mm tree. Patch 6 is not touched.
+> Does this break the pvcc->blocked handling that coordinates with
+> pppoatm_pop()?
 > 
-> Changes from v3 to v4:
->   Patch4: use dynamically allocated memory instead of static array.
->   Patch5: merge [patchv3 2-3] into a single patch, and update it as we use
->           dynamically allocated memory
->   Patch7: merge [patchv3 5-6] into a single patch
->   Patch8: merge [patchv3 9] and its fix into a patch
+> If we have one packet in flight, so pppoatm_may_send() permits a new one
+> to be queued... but they're *large* packets to sk_wmem_alloc doesn't
+> permit it. Immediately after the check, pppoatm_pop() runs and leaves
+> the queue empty. We return zero, blocking the queue??? which never gets
+> woken because we didn't set the BLOCKED flag and thus the tasklet never
+> runs.
+> 
+> In fact, I think we need the BLOCKED handling for the
+> sock_owned_by_user() case too? When the VCC is actually closed, I
+> suppose that's not recoverable and we don't care about waking the queue
+> anyway? But any time we end up returning zero from pppoatm_send(), we
+> *need* to ensure that a wakeup will happen in future unless the socket
+> is actually dead.
+> 
 
-Note:
-The patch from Michal Hocko <mhocko@suse.cz> is not merged into patch8
+Yes, original patch had also the same problem with sock_owned_by_user(),
+so I just incorrectly assumed that we can do "goto nospace" after
+pppoatm_may_send(), but ppooatm_may_send() must be the last test.
 
-Thanks
-Wen Congyang
+So I just moved all other tests earlier and and now pppoatm_may_send()
+is also protected by ATM socket lock as you suggested earlier.
 
-> 
-> Changes from v2 to v3:
->   Merge the bug fix from ishimatsu to this patchset(Patch 1-3)
->   Patch 3: split it from patch as it fixes another bug.
->   Patch 4: new patch, and fix bad-page state when hotadding a memory
->            device after hotremoving it. I forgot to post this patch in v2.
->   Patch 6: update it according to Dave Hansen's comment.
-> 
-> Changes from v1 to v2:
->   Patch 1: updated according to kosaki's suggestion
-> 
->   Patch 2: new patch, and update mce_bad_pages when removing memory.
-> 
->   Patch 4: new patch, and fix a NR_FREE_PAGES mismatch, and this bug
->            cause oom in my test.
-> 
->   Patch 5: new patch, and fix a new bug. When repeating to online/offline
->            pages, the free pages will continue to decrease. 
-> 
-> Wen Congyang (6):
->   memory-hotplug: auto offline page_cgroup when onlining memory block
->     failed
->   memory-hotplug: fix NR_FREE_PAGES mismatch
->   numa: convert static memory to dynamically allocated memory for per
->     node device
->   clear the memory to store struct page
->   memory-hotplug: current hwpoison doesn't support memory offline
->   memory-hotplug: allocate zone's pcp before onlining pages
-> 
-> Yasuaki Ishimatsu (2):
->   memory hotplug: suppress "Device memoryX does not have a release()
->     function" warning
->   suppress "Device nodeX does not have a release() function" warning
-> 
->  arch/powerpc/kernel/sysfs.c    |  4 +--
->  drivers/base/memory.c          |  9 ++++++-
->  drivers/base/node.c            | 56 ++++++++++++++++++++++++++++++------------
->  include/linux/node.h           |  2 +-
->  include/linux/page-isolation.h | 10 +++++---
->  mm/hugetlb.c                   |  4 +--
->  mm/memory-failure.c            |  2 +-
->  mm/memory_hotplug.c            | 13 +++++++---
->  mm/page_alloc.c                | 37 +++++++++++++++++++++-------
->  mm/page_cgroup.c               |  3 +++
->  mm/page_isolation.c            | 27 ++++++++++++++------
->  mm/sparse.c                    | 25 ++++++++++++++++++-
->  12 files changed, 144 insertions(+), 48 deletions(-)
-> 
+Krzysiek
+
+-- >8 --
+Subject: [PATCH] pppoatm: fix race condition with destroying of vcc
+
+The pppoatm_send() calls vcc->send() and now also checks for
+some vcc flags that indicate destroyed vcc without proper locking.
+
+The vcc_sendmsg() uses lock_sock(sk). This lock is used by
+vcc_release(), so vcc_destroy_socket() will not be called between
+check and during ->send(). The vcc_release_async() sets ATM_VF_CLOSE,
+but it should be safe to call ->send() after it, because
+vcc->dev->ops->close() is not called.
+
+The pppoatm_send() is called with BH disabled, so bh_lock_sock()
+should be used instead of lock_sock().
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+---
+ net/atm/pppoatm.c | 27 +++++++++++++++++++--------
+ 1 file changed, 19 insertions(+), 8 deletions(-)
+
+diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
+index 0dcb5dc..eb76bd3 100644
+--- a/net/atm/pppoatm.c
++++ b/net/atm/pppoatm.c
+@@ -270,11 +270,22 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ {
+ 	struct pppoatm_vcc *pvcc = chan_to_pvcc(chan);
+ 	struct atm_vcc *vcc;
++	int ret;
+ 
+ 	ATM_SKB(skb)->vcc = pvcc->atmvcc;
+ 	pr_debug("(skb=0x%p, vcc=0x%p)\n", skb, pvcc->atmvcc);
+ 	if (skb->data[0] == '\0' && (pvcc->flags & SC_COMP_PROT))
+ 		(void) skb_pull(skb, 1);
++
++	vcc = ATM_SKB(skb)->vcc;
++	bh_lock_sock(sk_atm(vcc));
++	if (sock_owned_by_user(sk_atm(vcc)))
++		goto nospace;
++	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
++			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
++			|| !test_bit(ATM_VF_READY, &vcc->flags))
++		goto nospace;
++
+ 	switch (pvcc->encaps) {		/* LLC encapsulation needed */
+ 	case e_llc:
+ 		if (skb_headroom(skb) < LLC_LEN) {
+@@ -287,8 +298,10 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ 			}
+ 			consume_skb(skb);
+ 			skb = n;
+-			if (skb == NULL)
++			if (skb == NULL) {
++				bh_unlock_sock(sk_atm(vcc));
+ 				return DROP_PACKET;
++			}
+ 		} else if (!pppoatm_may_send(pvcc, skb->truesize))
+ 			goto nospace;
+ 		memcpy(skb_push(skb, LLC_LEN), pppllc, LLC_LEN);
+@@ -298,24 +311,22 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ 			goto nospace;
+ 		break;
+ 	case e_autodetect:
++		bh_unlock_sock(sk_atm(vcc));
+ 		pr_debug("Trying to send without setting encaps!\n");
+ 		kfree_skb(skb);
+ 		return 1;
+ 	}
+ 
+-	vcc = ATM_SKB(skb)->vcc;
+-	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
+-			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
+-			|| !test_bit(ATM_VF_READY, &vcc->flags))
+-		goto nospace;
+-
+ 	atomic_add(skb->truesize, &sk_atm(ATM_SKB(skb)->vcc)->sk_wmem_alloc);
+ 	ATM_SKB(skb)->atm_options = ATM_SKB(skb)->vcc->atm_options;
+ 	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n",
+ 		 skb, ATM_SKB(skb)->vcc, ATM_SKB(skb)->vcc->dev);
+-	return ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb)
++	ret = ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb)
+ 	    ? DROP_PACKET : 1;
++	bh_unlock_sock(sk_atm(vcc));
++	return ret;
+ nospace:
++	bh_unlock_sock(sk_atm(vcc));
+ 	/*
+ 	 * We don't have space to send this SKB now, but we might have
+ 	 * already applied SC_COMP_PROT compression, so may need to undo
+-- 
+1.8.0.172.g62af90c
 
