@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab2JaFTf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 01:19:35 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53881 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab2JaFTc (ORCPT
+	id S1752028Ab2JaFVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 01:21:24 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63255 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab2JaFVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 01:19:32 -0400
-Date: Wed, 31 Oct 2012 16:19:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Clark <rob@ti.com>, Greg KH <greg@kroah.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: linux-next: manual merge of the arm-soc tree with the staging tree
-Message-Id: <20121031161921.3c9a46bd03f5864eed88fc87@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__31_Oct_2012_16_19_21_+1100_0=2cAiRBVlzRDUJU"
+	Wed, 31 Oct 2012 01:21:23 -0400
+X-AuditID: 9c930179-b7c8bae000003559-d6-5090b551b7c6
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
+        ming.m.lin@intel.com
+Subject: Re: [Patch v1 06/10] perf/x86: add support for PEBS Precise Store
+References: <1351523752-4215-1-git-send-email-eranian@google.com>
+	<1351523752-4215-7-git-send-email-eranian@google.com>
+Date: Wed, 31 Oct 2012 14:21:21 +0900
+In-Reply-To: <1351523752-4215-7-git-send-email-eranian@google.com> (Stephane
+	Eranian's message of "Mon, 29 Oct 2012 16:15:48 +0100")
+Message-ID: <87pq3z5i9a.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__31_Oct_2012_16_19_21_+1100_0=2cAiRBVlzRDUJU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 29 Oct 2012 16:15:48 +0100, Stephane Eranian wrote:
+> This patch adds support for PEBS Precise Store
+> which is available on Intel Sandy Bridge and
+> Ivy Bridge processors.
+>
+> To use Precise store, the proper PEBS event
+> must be used: mem_trans_retired:precise_stores.
+> For the perf tool, the generic mem-stores event
+> exported via sysfs can be used directly.
 
-Hi all,
+Just trivial nitpicks..
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-omap2/drm.c between commit 5e3b08749951 ("staging:
-drm/omap: add support for ARCH_MULTIPLATFORM") from the staging tree and
-commit 2a296c8f89bc ("ARM: OMAP: Make plat/omap_hwmod.h local to
-mach-omap2") from the arm-soc tree.
+>
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+[snip]
+> @@ -486,6 +524,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
+>  	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+>  	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+>  	INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+> +	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+>  	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+>  	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+>  	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+> @@ -500,6 +539,7 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
+>          INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+>          INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+>          INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+> +	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+White-space damaged?  Oh, it seems already broken with spaces.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/mach-omap2/drm.c
-index 49a7ffb,6282cc8..0000000
---- a/arch/arm/mach-omap2/drm.c
-+++ b/arch/arm/mach-omap2/drm.c
-@@@ -23,11 -23,9 +23,11 @@@
-  #include <linux/init.h>
-  #include <linux/platform_device.h>
-  #include <linux/dma-mapping.h>
- +#include <linux/platform_data/omap_drm.h>
- =20
-- #include <plat/omap_device.h>
-- #include <plat/omap_hwmod.h>
-+ #include "omap_device.h"
-+ #include "omap_hwmod.h"
- +#include <plat/cpu.h>
- =20
-  #if defined(CONFIG_DRM_OMAP) || (CONFIG_DRM_OMAP_MODULE)
- =20
+>          INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+>          INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+>          INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+[snip]
+> @@ -672,7 +715,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+>  	/*
+>  	 * if PEBS-LL or PreciseStore
+>  	 */
+> -	if (fll) {
+> +	if (fll || fst) {
+>  		if (sample_type & PERF_SAMPLE_ADDR)
+>  			data.addr = pebs->dla;
+>  
+> @@ -688,6 +731,8 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+>  		if (sample_type & PERF_SAMPLE_DSRC) {
+>  			if (fll)
+>  				data.dsrc.val = load_latency_data(pebs->dse);
+> +			else if (fst)
 
---Signature=_Wed__31_Oct_2012_16_19_21_+1100_0=2cAiRBVlzRDUJU
-Content-Type: application/pgp-signature
+Looks like it can be converted to a plain 'else'.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQkLTZAAoJEECxmPOUX5FELHgP/3XnqeaxsRJMmFNnRedaTjER
-zjSW0j5+5Uj0/caKmEDvVKNNy9s2p5Db/dvylH1xP1dkvcrjj6cJDOU25193FL8z
-iSnNlu6l0lU7FedHOZvjlRuHD9cbVsAza/RHuGYusD2/Lo8+0n9zj6yWrntm4DDm
-9JyAv2eywLDuOuJUqD2kIwnMWiUhWoQbnE/fZScK9BovA2k8ZGcXbXFtvjtfDf75
-KWOk26vBnq+eYgPiW7kEhTXHhSySMByxhst+Y2GtplGwhhB1JWfygXbva91I2LLg
-YP0kVj77bAjOeY7K9UOZdk2HyqsdFdh3Hqq28yFvgp8J2jkoqmO0g0qfV8FfSaFi
-hYWqCnuP/JL9+k9yHDiXcPgZi+/7ZgX01KkHVUdQGvLnZZgWQ1b2/joGcAHRxR/+
-wco62CZWmiEOCJ6ChHt1j25GX1gtHTUVyBk8ITH/6mM39zdb7WjdfqSEiV40dkmB
-NZuX6yquUvPskPZIr6XF/ih92QyXmy4hp4ozmMZzXgkXTV9wdPoBGK0FZz+X8LTG
-/WhFlS2kxiomY46zVrxstBMgXfdVZCfoOnV2kbpfngA7L5xfIHeNyonITiUGzqqk
-BbJbHCdOJ2t4HkxwnP6MyGoff5WV0FMDGXnV/mssBf2lnR8bNiqrQmmzeyg7nPCR
-+IugNL1ltfT1nk4Bob8L
-=hURv
------END PGP SIGNATURE-----
-
---Signature=_Wed__31_Oct_2012_16_19_21_+1100_0=2cAiRBVlzRDUJU--
+Thanks,
+Namhyung
