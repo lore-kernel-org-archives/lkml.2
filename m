@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab2JaHY5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 03:24:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42674 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932093Ab2JaHYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 03:24:53 -0400
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>, <afzal@ti.com>,
-        <tony@atomide.com>, <broonie@opensource.wolfsonmicro.com>,
-        <rmk+kernel@arm.linux.org.uk>, <gregkh@linuxfoundation.org>
-CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <ivan.djelic@parrot.com>,
-        "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH v2 0/3] mtd: nand: OMAP: ELM error correction support for BCH ecc
-Date: Wed, 31 Oct 2012 12:38:24 +0530
-Message-ID: <1351667307-447-1-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S934111Ab2JaHZa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 03:25:30 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40845 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932833Ab2JaHZV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 03:25:21 -0400
+Date: Wed, 31 Oct 2012 09:25:17 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Christoph Lameter <cl@linux.com>
+cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org
+Subject: Re: [PATCH 06/16] mm/slob: use min_t() to compare
+ ARCH_SLAB_MINALIGN
+In-Reply-To: <0000013a31d206df-8822ffd8-055d-4e9b-9b81-a8ec130ccc9d-000000@email.amazonses.com>
+Message-ID: <alpine.LFD.2.02.1210310925110.2281@tux.localdomain>
+References: <1349448930-23976-1-git-send-email-arnd@arndb.de> <1349448930-23976-7-git-send-email-arnd@arndb.de> <0000013a31d206df-8822ffd8-055d-4e9b-9b81-a8ec130ccc9d-000000@email.amazonses.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support to use ELM as BCH 4 & 8 bit error correction module. Also performance
-enhancement by adding single shot read_page and write_page functions for the
-nand flashes with page size less than 4 KB.
+On Fri, 5 Oct 2012, Christoph Lameter wrote:
 
-ELM module can be used to correct errors reported by BCH 4, 8 & 16 bit
-ECC scheme. For now only 4 & 8 bit support is added.
+> On Fri, 5 Oct 2012, Arnd Bergmann wrote:
+> 
+> > Without this patch, building ARM collie_defconfig results in:
+> >
+> > mm/slob.c: In function '__kmalloc_node':
+> > mm/slob.c:431:152: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> > mm/slob.c: In function 'kfree':
+> > mm/slob.c:484:153: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> > mm/slob.c: In function 'ksize':
+> > mm/slob.c:503:153: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> 
+> Acked-by: Christoph Lameter <cl@linux.com>
 
-BCH 4 & 8 bit error detection support is already available in mainline
-kernel and works with software error correction.
-
-This series is based on [1] and tested with RFC: OMAP GPMC bindings
-patch series
-
-1. linux-next/20121030
-
-Changes since v1:
-	- Erased page is identified by checking byte [13/7] in read
-	  ecc. To filter out bit flips in OOB area, check 0 bits in
-	  the byte greater than 4.
-	- GPMC ecc engine configuration moves to omap2.c NAND driver.
-
-Philip, Avinash (3):
-  mtd: nand: omap2: Update nerrors using ecc.strength
-  mtd: devices: elm: Add support for ELM error correction
-  mtd: nand: omap2: Support for hardware BCH error correction
-
- Documentation/devicetree/bindings/mtd/elm.txt |   18 +
- drivers/mtd/devices/Makefile                  |    4 +-
- drivers/mtd/devices/elm.c                     |  420 +++++++++++++++++++
- drivers/mtd/nand/omap2.c                      |  542 +++++++++++++++++++++++--
- include/linux/platform_data/elm.h             |   54 +++
- include/linux/platform_data/mtd-nand-omap2.h  |    1 +
- 6 files changed, 997 insertions(+), 42 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mtd/elm.txt
- create mode 100644 drivers/mtd/devices/elm.c
- create mode 100644 include/linux/platform_data/elm.h
-
+Applied, thanks!
