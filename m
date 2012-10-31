@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935467Ab2JaLtc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 07:49:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:24144 "EHLO song.cn.fujitsu.com"
+	id S933211Ab2JaLsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 07:48:30 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55903 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932765Ab2JaLsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 07:48:31 -0400
+	id S1756883Ab2JaLsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 07:48:23 -0400
 X-IronPort-AV: E=Sophos;i="4.80,687,1344182400"; 
-   d="scan'208";a="6108905"
+   d="scan'208";a="6108899"
 From: Wen Congyang <wency@cn.fujitsu.com>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org
@@ -16,340 +16,85 @@ Cc: Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, rjw@sisk.pl,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [Patch v4 7/8] memory-hotplug: current hwpoison doesn't support memory offline
-Date: Wed, 31 Oct 2012 19:23:13 +0800
-Message-Id: <1351682594-17347-8-git-send-email-wency@cn.fujitsu.com>
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Greg KH <greg@kroah.com>
+Subject: [Patch v4 1/8] memory hotplug: suppress "Device memoryX does not have a release() function" warning
+Date: Wed, 31 Oct 2012 19:23:07 +0800
+Message-Id: <1351682594-17347-2-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1351682594-17347-1-git-send-email-wency@cn.fujitsu.com>
 References: <1351682594-17347-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 19:16:45,
+ 2012/10/31 19:16:44,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 19:16:57,
-	Serialize complete at 2012/10/31 19:16:57
+ 2012/10/31 19:16:51,
+	Serialize complete at 2012/10/31 19:16:51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hwpoisoned may be set when we offline a page by the sysfs interface
-/sys/devices/system/memory/soft_offline_page or
-/sys/devices/system/memory/hard_offline_page.
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-If a page is hwpisoned page, we may meet the following problems
-when we offlining/removing the memory:
-1. the pages can't be offlined.
-   If the page is hwpoisoned pages, it can't be freed when it is
-   onlined, and will not in free list. So we can't offline these
-   pages again. So we should skip such page when offlining pages.
+When calling remove_memory_block(), the function shows following message
+at device_release().
 
-2. mce_bad_pages is wrong after removing a memory.
-   When we hotremove a memory device, we will free the memory to
-   store struct page.  If the page is hwpoisoned page, we should
-   decrease mce_bad_pages.
+"Device 'memory528' does not have a release() function, it is broken and
+must be fixed."
 
-Cc: David Rientjes <rientjes@google.com>
+The reason is memory_block's device struct does not have a release()
+function.
+
+So the patch registers memory_block_release() to the device's release()
+function for suppressing the warning message.  Additionally, the patch
+moves kfree(mem) into the release function since the release function is
+prepared as a means to free a memory_block struct.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/page-isolation.h | 10 ++++++----
- mm/memory-failure.c            |  2 +-
- mm/memory_hotplug.c            |  5 +++--
- mm/page_alloc.c                | 27 +++++++++++++++++++++++----
- mm/page_isolation.c            | 27 ++++++++++++++++++++-------
- mm/sparse.c                    | 22 ++++++++++++++++++++++
- 6 files changed, 75 insertions(+), 18 deletions(-)
+ drivers/base/memory.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index 76a9539..a92061e 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -2,7 +2,8 @@
- #define __LINUX_PAGEISOLATION_H
- 
- 
--bool has_unmovable_pages(struct zone *zone, struct page *page, int count);
-+bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
-+			 bool skip_hwpoisoned_pages);
- void set_pageblock_migratetype(struct page *page, int migratetype);
- int move_freepages_block(struct zone *zone, struct page *page,
- 				int migratetype);
-@@ -21,7 +22,7 @@ int move_freepages(struct zone *zone,
-  */
- int
- start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
--			 unsigned migratetype);
-+			 unsigned migratetype, bool skip_hwpoisoned_pages);
- 
- /*
-  * Changes MIGRATE_ISOLATE to MIGRATE_MOVABLE.
-@@ -34,12 +35,13 @@ undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
- /*
-  * Test all pages in [start_pfn, end_pfn) are isolated or not.
-  */
--int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
-+int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
-+			bool skip_hwpoisoned_pages);
- 
- /*
-  * Internal functions. Changes pageblock's migrate type.
-  */
--int set_migratetype_isolate(struct page *page);
-+int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages);
- void unset_migratetype_isolate(struct page *page, unsigned migratetype);
- struct page *alloc_migrate_target(struct page *page, unsigned long private,
- 				int **resultp);
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 6c5899b..1abffee 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1385,7 +1385,7 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
- 	 * Isolate the page, so that it doesn't get reallocated if it
- 	 * was free.
- 	 */
--	set_migratetype_isolate(p);
-+	set_migratetype_isolate(p, true);
- 	/*
- 	 * When the target page is a free hugepage, just remove it
- 	 * from free hugepage list.
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 56b758a..72f4fef 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -854,7 +854,7 @@ check_pages_isolated_cb(unsigned long start_pfn, unsigned long nr_pages,
- {
- 	int ret;
- 	long offlined = *(long *)data;
--	ret = test_pages_isolated(start_pfn, start_pfn + nr_pages);
-+	ret = test_pages_isolated(start_pfn, start_pfn + nr_pages, true);
- 	offlined = nr_pages;
- 	if (!ret)
- 		*(long *)data += offlined;
-@@ -901,7 +901,8 @@ static int __ref __offline_pages(unsigned long start_pfn,
- 	nr_pages = end_pfn - start_pfn;
- 
- 	/* set above range as isolated */
--	ret = start_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
-+	ret = start_isolate_page_range(start_pfn, end_pfn,
-+				       MIGRATE_MOVABLE, true);
- 	if (ret)
- 		goto out;
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a7cd2d1..027afd0 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5577,7 +5577,8 @@ void set_pageblock_flags_group(struct page *page, unsigned long flags,
-  * MIGRATE_MOVABLE block might include unmovable pages. It means you can't
-  * expect this function should be exact.
-  */
--bool has_unmovable_pages(struct zone *zone, struct page *page, int count)
-+bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
-+			 bool skip_hwpoisoned_pages)
- {
- 	unsigned long pfn, iter, found;
- 	int mt;
-@@ -5612,6 +5613,13 @@ bool has_unmovable_pages(struct zone *zone, struct page *page, int count)
- 			continue;
- 		}
- 
-+		/*
-+		 * The HWPoisoned page may be not in buddy system, and
-+		 * page_count() is not 0.
-+		 */
-+		if (skip_hwpoisoned_pages && PageHWPoison(page))
-+			continue;
-+
- 		if (!PageLRU(page))
- 			found++;
- 		/*
-@@ -5654,7 +5662,7 @@ bool is_pageblock_removable_nolock(struct page *page)
- 			zone->zone_start_pfn + zone->spanned_pages <= pfn)
- 		return false;
- 
--	return !has_unmovable_pages(zone, page, 0);
-+	return !has_unmovable_pages(zone, page, 0, true);
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 86c8821..7eb1211 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -70,6 +70,13 @@ void unregister_memory_isolate_notifier(struct notifier_block *nb)
  }
+ EXPORT_SYMBOL(unregister_memory_isolate_notifier);
  
- #ifdef CONFIG_CMA
-@@ -5825,7 +5833,8 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	 */
- 
- 	ret = start_isolate_page_range(pfn_max_align_down(start),
--				       pfn_max_align_up(end), migratetype);
-+				       pfn_max_align_up(end), migratetype,
-+				       false);
- 	if (ret)
- 		return ret;
- 
-@@ -5864,7 +5873,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	}
- 
- 	/* Make sure the range is really isolated. */
--	if (test_pages_isolated(outer_start, end)) {
-+	if (test_pages_isolated(outer_start, end, false)) {
- 		pr_warn("alloc_contig_range test_pages_isolated(%lx, %lx) failed\n",
- 		       outer_start, end);
- 		ret = -EBUSY;
-@@ -5979,6 +5988,16 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
- 			continue;
- 		}
- 		page = pfn_to_page(pfn);
-+		/*
-+		 * The HWPoisoned page may be not in buddy system, and
-+		 * page_count() is not 0.
-+		 */
-+		if (unlikely(!PageBuddy(page) && PageHWPoison(page))) {
-+			pfn++;
-+			SetPageReserved(page);
-+			continue;
-+		}
-+
- 		BUG_ON(page_count(page));
- 		BUG_ON(!PageBuddy(page));
- 		order = page_order(page);
-diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-index f2f5b48..9d2264e 100644
---- a/mm/page_isolation.c
-+++ b/mm/page_isolation.c
-@@ -30,7 +30,7 @@ static void restore_pageblock_isolate(struct page *page, int migratetype)
- 	zone->nr_pageblock_isolate--;
- }
- 
--int set_migratetype_isolate(struct page *page)
-+int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages)
- {
- 	struct zone *zone;
- 	unsigned long flags, pfn;
-@@ -66,7 +66,8 @@ int set_migratetype_isolate(struct page *page)
- 	 * FIXME: Now, memory hotplug doesn't call shrink_slab() by itself.
- 	 * We just check MOVABLE pages.
- 	 */
--	if (!has_unmovable_pages(zone, page, arg.pages_found))
-+	if (!has_unmovable_pages(zone, page, arg.pages_found,
-+				 skip_hwpoisoned_pages))
- 		ret = 0;
- 
- 	/*
-@@ -134,7 +135,7 @@ __first_valid_page(unsigned long pfn, unsigned long nr_pages)
-  * Returns 0 on success and -EBUSY if any part of range cannot be isolated.
-  */
- int start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
--			     unsigned migratetype)
-+			     unsigned migratetype, bool skip_hwpoisoned_pages)
- {
- 	unsigned long pfn;
- 	unsigned long undo_pfn;
-@@ -147,7 +148,8 @@ int start_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
- 	     pfn < end_pfn;
- 	     pfn += pageblock_nr_pages) {
- 		page = __first_valid_page(pfn, pageblock_nr_pages);
--		if (page && set_migratetype_isolate(page)) {
-+		if (page &&
-+		    set_migratetype_isolate(page, skip_hwpoisoned_pages)) {
- 			undo_pfn = pfn;
- 			goto undo;
- 		}
-@@ -190,7 +192,8 @@ int undo_isolate_page_range(unsigned long start_pfn, unsigned long end_pfn,
-  * Returns 1 if all pages in the range are isolated.
-  */
- static int
--__test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
-+__test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn,
-+				  bool skip_hwpoisoned_pages)
- {
- 	struct page *page;
- 
-@@ -220,6 +223,14 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
- 		else if (page_count(page) == 0 &&
- 			get_freepage_migratetype(page) == MIGRATE_ISOLATE)
- 			pfn += 1;
-+		else if (skip_hwpoisoned_pages && PageHWPoison(page)) {
-+			/*
-+			 * The HWPoisoned page may be not in buddy
-+			 * system, and page_count() is not 0.
-+			 */
-+			pfn++;
-+			continue;
-+		}
- 		else
- 			break;
- 	}
-@@ -228,7 +239,8 @@ __test_page_isolated_in_pageblock(unsigned long pfn, unsigned long end_pfn)
- 	return 1;
- }
- 
--int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
-+int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
-+			bool skip_hwpoisoned_pages)
- {
- 	unsigned long pfn, flags;
- 	struct page *page;
-@@ -251,7 +263,8 @@ int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
- 	/* Check all pages are free or Marked as ISOLATED */
- 	zone = page_zone(page);
- 	spin_lock_irqsave(&zone->lock, flags);
--	ret = __test_page_isolated_in_pageblock(start_pfn, end_pfn);
-+	ret = __test_page_isolated_in_pageblock(start_pfn, end_pfn,
-+						skip_hwpoisoned_pages);
- 	spin_unlock_irqrestore(&zone->lock, flags);
- 	return ret ? 0 : -EBUSY;
- }
-diff --git a/mm/sparse.c b/mm/sparse.c
-index 0021265..b2d37c6 100644
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -774,6 +774,27 @@ out:
- 	return ret;
- }
- 
-+#ifdef CONFIG_MEMORY_FAILURE
-+static void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
++static void memory_block_release(struct device *dev)
 +{
-+	int i;
++	struct memory_block *mem = container_of(dev, struct memory_block, dev);
 +
-+	if (!memmap)
-+		return;
-+
-+	for (i = 0; i < PAGES_PER_SECTION; i++) {
-+		if (PageHWPoison(&memmap[i])) {
-+			atomic_long_sub(1, &mce_bad_pages);
-+			ClearPageHWPoison(&memmap[i]);
-+		}
-+	}
++	kfree(mem);
 +}
-+#else
-+static inline void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
-+{
-+}
-+#endif
 +
- void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
- {
- 	struct page *memmap = NULL;
-@@ -787,6 +808,7 @@ void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
- 		ms->pageblock_flags = NULL;
- 	}
+ /*
+  * register_memory - Setup a sysfs device for a memory block
+  */
+@@ -80,6 +87,7 @@ int register_memory(struct memory_block *memory)
  
-+	clear_hwpoisoned_pages(memmap, PAGES_PER_SECTION);
- 	free_section_usemap(memmap, usemap);
- }
- #endif
+ 	memory->dev.bus = &memory_subsys;
+ 	memory->dev.id = memory->start_section_nr / sections_per_block;
++	memory->dev.release = memory_block_release;
+ 
+ 	error = device_register(&memory->dev);
+ 	return error;
+@@ -635,7 +643,6 @@ int remove_memory_block(unsigned long node_id, struct mem_section *section,
+ 		mem_remove_simple_file(mem, phys_device);
+ 		mem_remove_simple_file(mem, removable);
+ 		unregister_memory(mem);
+-		kfree(mem);
+ 	} else
+ 		kobject_put(&mem->dev.kobj);
+ 
 -- 
 1.8.0
 
