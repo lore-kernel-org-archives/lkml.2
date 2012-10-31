@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757358Ab2JaQ6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:58:34 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33408 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341Ab2JaQ6a (ORCPT
+	id S1753314Ab2JaQ7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:59:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45139 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115Ab2JaQ7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:58:30 -0400
-Date: Wed, 31 Oct 2012 17:03:34 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Josh Boyer <jwboyer@gmail.com>, Matthew Garrett <mjg@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121031170334.59833fb1@pyramind.ukuu.org.uk>
-In-Reply-To: <alpine.LNX.2.00.1210311653080.12781@pobox.suse.cz>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
-	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
-	<20121029174131.GC7580@srcf.ucam.org>
-	<alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
-	<CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
-	<20121031155503.1aaf4c93@pyramind.ukuu.org.uk>
-	<alpine.LNX.2.00.1210311653080.12781@pobox.suse.cz>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Oct 2012 12:59:08 -0400
+From: Joonsoo Kim <js1304@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Joonsoo Kim <js1304@gmail.com>
+Subject: [PATCH v2 0/5] minor clean-up and optimize highmem related code
+Date: Thu,  1 Nov 2012 01:56:32 +0900
+Message-Id: <1351702597-10795-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Yes>
+References: <Yes>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012 16:55:04 +0100 (CET)
-Jiri Kosina <jkosina@suse.cz> wrote:
+This patchset clean-up and optimize highmem related code.
 
-> On Wed, 31 Oct 2012, Alan Cox wrote:
-> 
-> > All this depends on your threat model. If I have physical access to
-> > suspend/resume your machine then you already lost. If I don't have
-> > physical access then I can't boot my unsigned OS to patch your S4 image
-> > so it doesn't matter.
-> 
-> Prepare (as a root) a hand-crafted image, reboot, let the kernel resume 
-> from that artificial image.
+Change from v1
+Rebase on v3.7-rc3
+[4] Instead of returning index of last flushed entry, return first index.
+And update last_pkmap_nr to this index to optimize more.
 
-It's not signed. It won't reboot from that image.
+Summary for v1
+[1] is just clean-up and doesn't introduce any functional change.
+[2-3] are for clean-up and optimization.
+These eliminate an useless lock opearation and list management.
+[4-5] is for optimization related to flush_all_zero_pkmaps().
 
-Alan
+Joonsoo Kim (5):
+  mm, highmem: use PKMAP_NR() to calculate an index of pkmap
+  mm, highmem: remove useless pool_lock
+  mm, highmem: remove page_address_pool list
+  mm, highmem: makes flush_all_zero_pkmaps() return index of first
+    flushed entry
+  mm, highmem: get virtual address of the page using PKMAP_ADDR()
+
+ include/linux/highmem.h |    1 +
+ mm/highmem.c            |  108 ++++++++++++++++++++++-------------------------
+ 2 files changed, 51 insertions(+), 58 deletions(-)
+
+-- 
+1.7.9.5
+
