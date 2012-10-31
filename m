@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760523Ab2JaUsD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 16:48:03 -0400
-Received: from void.printf.net ([89.145.121.20]:38480 "EHLO void.printf.net"
+	id S1760612Ab2JaUtp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 16:49:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41038 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759678Ab2JaUsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 16:48:01 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Trey Ramsay <tramsay@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Rich Rattanni <rattanni@gmail.com>,
-        Radovan Lekanovic <lekanovic@gmail.com>
-Subject: Re: drivers/mmc/card/block.c infinite loop in mmc_blk_err_check waiting on R1_READY_FOR_DATA
-References: <50917DB7.6040503@linux.vnet.ibm.com>
-Date: Wed, 31 Oct 2012 16:47:52 -0400
-In-Reply-To: <50917DB7.6040503@linux.vnet.ibm.com> (Trey Ramsay's message of
-	"Wed, 31 Oct 2012 14:36:23 -0500")
-Message-ID: <87k3u6id1j.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1760217Ab2JaUto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 16:49:44 -0400
+Date: Wed, 31 Oct 2012 21:49:36 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] cgroup: kill
+ cgroup_subsys->__DEPRECATED_clear_css_refs
+Message-ID: <20121031204936.GI1271@dhcp22.suse.cz>
+References: <1351712650-23709-1-git-send-email-tj@kernel.org>
+ <1351712650-23709-2-git-send-email-tj@kernel.org>
+ <20121031200859.GE1271@dhcp22.suse.cz>
+ <CAOS58YPbYoMJ1+3uRfK_ZERyZoaby=FPW7uTpp8dVOSgYC8Mrw@mail.gmail.com>
+ <20121031201415.GG1271@dhcp22.suse.cz>
+ <20121031202400.GT2945@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121031202400.GT2945@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed 31-10-12 13:24:00, Tejun Heo wrote:
+[...]
+> local_irq_save/restore() from cgroup_clear_css_refs() are replaced
+> with local_irq_disable/enable() for simplicity.  This is safe as
+> cgroup_rmdir() is always called with IRQ enabled.  Note that this IRQ
+> switching is necessary to ensure that css_tryget() isn't called from
+> IRQ context on the same CPU while lower context is between CSS
+> deactivation and setting CSS_REMOVED as css_tryget() would hang
+> forever in such cases waiting for CSS to be re-activated or
+> CSS_REMOVED set.  This will go away soon.
 
-On Wed, Oct 31 2012, Trey Ramsay wrote:
-> In the 3.7-rc3 kernel, there is an infinite loop in the
-> mmc_blk_err_check() function in drivers/mmc/card/block.c that can be
-> caused bad hardware. This loop has moved around a little, but appears
-> to have been around in the kernel since v2.6.12.  The code will loop
-> forever on write if the card isn't ready for data or if it's in
-> program mode.  I did some searching and saw that it was reported to
-> linux-mmc@vger.kernel.org
-> http://permalink.gmane.org/gmane.linux.kernel.mmc/2021 back in May but
-> didn't see a response.  Should there be a maximum retry count or a
-> timeout to prevent an infinite loop?
-
-Yes, a (long) timeout is a good idea, and there are three different
-places where we use this type of loop waiting for R1_STATE_PRG to drop.
-I'll add this to my TODO list, but feel free to fix it if you want to.
-
-Thanks,
-
-- Chris.
+Much better. Thanks a lot!
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Michal Hocko
+SUSE Labs
