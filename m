@@ -1,129 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422820Ab2JaNVQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:21:16 -0400
-Received: from mo5.mail-out.ovh.net ([178.32.228.5]:59784 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935537Ab2JaNVO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:21:14 -0400
-Date: Wed, 31 Oct 2012 14:19:03 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, linux-input@vger.kernel.org,
-        Sourav Poddar <sourav.poddar@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Message-ID: <20121031131903.GF19021@game.jcrosoft.org>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
- <20121024161429.GA16350@core.coreip.homeip.net>
- <CACRpkdai3NocZQnW6YRF+k6GXUSx3P_Ge=F-tkuivrFm6tBbLg@mail.gmail.com>
- <4099134.xWUIfbbahk@dtor-d630.eng.vmware.com>
- <CACRpkdaiLXVeUg1quuw3XPTenbKOjn+aWbGQezpcyvzQCtCWow@mail.gmail.com>
+	id S1422832Ab2JaNVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:21:49 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:51018 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935543Ab2JaNVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 09:21:45 -0400
+Message-ID: <509125D9.8070100@parallels.com>
+Date: Wed, 31 Oct 2012 17:21:29 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaiLXVeUg1quuw3XPTenbKOjn+aWbGQezpcyvzQCtCWow@mail.gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 3091721145440447453
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -90
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrvdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenfghrlhcuvffnffculddutddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucffohhmrghinhepmhgrrhgtrdhinhhfohdpohiilhgrsghsrdhorhhgnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -90
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrvdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenfghrlhcuvffnffculddutddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucffohhmrghinhepmhgrrhgtrdhinhhfohdpohiilhgrsghsrdhorhhgnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+To: Tejun Heo <tj@kernel.org>
+CC: <lizefan@huawei.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <bsingharora@gmail.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <cgroups@vger.kernel.org>, <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/8] cgroup: kill cgroup_subsys->__DEPRECATED_clear_css_refs
+References: <1351657365-25055-1-git-send-email-tj@kernel.org> <1351657365-25055-2-git-send-email-tj@kernel.org>
+In-Reply-To: <1351657365-25055-2-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21:12 Sun 28 Oct     , Linus Walleij wrote:
-> On Wed, Oct 24, 2012 at 7:28 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> 
-> >> drivers/spi/spi-pl022.c
-> >
-> > Default/sleep transitions could be moved into bus code.
-> 
-> No that's not a good idea as long as we have both the platform bus
-> and the AMBA bus doing essentially the same thing. We will then be
-> having two copies of the same code in two different busses running
-> out of sync. There may be other busses too.
-> 
-> But I could prepare static helpers in <linux/pinctrl/consumer.h>
-> that any bus could use. Or any driver. Probably any driver,
-> because of this:
-> 
-> As noted the bus cannot really execute the pinctrl calls to
-> e.g. put a drivers pins into "sleep". Since if e.g. the bus is walking
-> the suspend() ladder, shall it put the pins into sleep *before*
-> or *after* calling the suspend() hook in the driver?
-> 
-> The answer is that it does not know. Because drivers have
-> different needs. Depending on how the hardware and
-> system is done.
-> 
-> I already tried to make this point:
-> 
-> pinctrl_set_state(state_sleep);
-> clk_disable();
-> power_off_voltage_domain();
-> 
-> May for some drivers have to be:
-> 
-> clk_disable();
-> power_off_voltage_domain();
-> pinctrl_set_state(state_sleep);
-> 
-> (etc)
-> 
-> I'm not making this up, it is a very real phenomenon on the
-> Ux500 and I don't think we are unique.
-I agree with Linus
 
-you can not handle pinctrl as bus levell
+>  	}
+>  	prepare_to_wait(&cgroup_rmdir_waitq, &wait, TASK_INTERRUPTIBLE);
+> -	if (!cgroup_clear_css_refs(cgrp)) {
+> -		mutex_unlock(&cgroup_mutex);
+> -		/*
+> -		 * Because someone may call cgroup_wakeup_rmdir_waiter() before
+> -		 * prepare_to_wait(), we need to check this flag.
+> -		 */
+> -		if (test_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags))
+> -			schedule();
+> -		finish_wait(&cgroup_rmdir_waitq, &wait);
+> -		clear_bit(CGRP_WAIT_ON_RMDIR, &cgrp->flags);
+> -		if (signal_pending(current))
+> -			return -EINTR;
+> -		goto again;
+> +
+> +	local_irq_disable();
+> +
+> +	/* block new css_tryget() by deactivating refcnt */
+> +	for_each_subsys(cgrp->root, ss) {
+> +		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
+> +
+> +		WARN_ON(atomic_read(&css->refcnt) < 0);
+> +		atomic_add(CSS_DEACT_BIAS, &css->refcnt);
+>  	}
+> -	/* NO css_tryget() can success after here. */
+> +
+> +	/*
+> +	 * Set REMOVED.  All in-progress css_tryget() will be released.
+> +	 * Put all the base refs.  Each css holds an extra reference to the
+> +	 * cgroup's dentry and cgroup removal proceeds regardless of css
+> +	 * refs.  On the last put of each css, whenever that may be, the
+> +	 * extra dentry ref is put so that dentry destruction happens only
+> +	 * after all css's are released.
+> +	 */
+> +	for_each_subsys(cgrp->root, ss) {
+> +		struct cgroup_subsys_state *css = cgrp->subsys[ss->subsys_id];
+> +
+> +		set_bit(CSS_REMOVED, &css->flags);
+> +		css_put(css);
+> +	}
+> +
+> +	local_irq_enable();
+> +
+>  	finish_wait(&cgroup_rmdir_waitq, &wait);
 
-as each driver need different requirement before enabling the pin
+It seems to me that the main reason for doing this in two passes was to
+derive a global "failed" state on the first pass. Now that we can't
+fail, why can't you just loop through the subsystems just once ?
 
-as example you may need to clock the ip before muxing the pin and invertly
-
-on some IP the pinctrl is optionnal, on other mandatory
-
-you can not expect every driver to have the same need and requirement
-
-yes we will have a few code duplication
-
-but today it's few lines and those few lines will be place at different init
-stage on the drivers ditto for remove or sleep/idle
-
-
-> 
-> Moving this handling to bus code or anywhere else
-> invariably implies that resource acquisition/release order
-> does not matter, and my point is that it does.
-
-100% agreed
-
-Best Regards,
-J.
-> 
-> >> drivers/i2c/busses/i2c-nomadik.c
-> >
-> > Don't see pinctrl in linux-next.
-> 
-> This code is here:
-> http://marc.info/?l=linux-i2c&m=134986995731695&w=2
-> 
-> Yours,
-> Linus Walleij
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
