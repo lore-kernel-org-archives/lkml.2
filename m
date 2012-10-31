@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758726Ab2JaRVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:21:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32970 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754786Ab2JaRVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:21:45 -0400
-Date: Wed, 31 Oct 2012 18:21:39 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-In-Reply-To: <20121031172121.14cc1215@pyramind.ukuu.org.uk>
-Message-ID: <alpine.LNX.2.00.1210311821150.22374@pobox.suse.cz>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com> <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz> <20121029174131.GC7580@srcf.ucam.org> <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz> <CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
- <20121031155503.1aaf4c93@pyramind.ukuu.org.uk> <alpine.LNX.2.00.1210311653080.12781@pobox.suse.cz> <20121031170334.59833fb1@pyramind.ukuu.org.uk> <20121031171048.GA17163@srcf.ucam.org> <20121031172121.14cc1215@pyramind.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1758705Ab2JaRWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:22:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43285 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234Ab2JaRWl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 13:22:41 -0400
+Date: Wed, 31 Oct 2012 10:22:37 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] cgroup: kill
+ cgroup_subsys->__DEPRECATED_clear_css_refs
+Message-ID: <20121031172237.GI2945@htj.dyndns.org>
+References: <1351657365-25055-1-git-send-email-tj@kernel.org>
+ <1351657365-25055-2-git-send-email-tj@kernel.org>
+ <20121031143751.GA22809@dhcp22.suse.cz>
+ <20121031164123.GD2945@htj.dyndns.org>
+ <20121031164855.GI22809@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121031164855.GI22809@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012, Alan Cox wrote:
+Hey, Michal.
 
-> > > > Prepare (as a root) a hand-crafted image, reboot, let the kernel resume 
-> > > > from that artificial image.
-> > > 
-> > > It's not signed. It won't reboot from that image.
-> > 
-> > The kernel is signed. The kernel doesn't check the signature on the 
-> > suspend image.
+On Wed, Oct 31, 2012 at 05:48:55PM +0100, Michal Hocko wrote:
+> > The WARN_ON_ONCE() is just moved from the original
+> > cgroup_call_pre_destroy().  We can add an error out there but that
+> > makes future changes difficult.  It's a chicken and egg problem.  You
+> > gotta break the loop somewhere.
 > 
-> Which doesn't matter. How are you going to create the tampered image in
-> the first place ?
+> I do not think this is that hard. You can simply change the return path
+> on pre_destroy error by BUG_ON in "cgroup: deactivate CSS's and mark
+> cgroup dead before invoking ->pre_destroy()". There is no chicke&egg
+> problem here because once the group is marked dead and css frozen then
+> the existing callbacks cannot possibly fail.
+> Or am I missing your point?
 
-Editing the suspend partition/file directly when trusted kernel is booted.
+I want to be able to move code verbatim in the later patch when
+relocating ->pre_destroy() invocations.  Hmmm... alright, I'll make it
+break out of pre_destroy() here and change it to WARN_ON_ONCE() later
+on.
+
+Thanks.
 
 -- 
-Jiri Kosina
-SUSE Labs
+tejun
