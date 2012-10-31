@@ -1,82 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758360Ab2JaBmX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 21:42:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:44997 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab2JaBmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 21:42:22 -0400
-X-IronPort-AV: E=Sophos;i="4.80,684,1344182400"; 
-   d="scan'208";a="6102877"
-Message-ID: <50908354.5070608@cn.fujitsu.com>
-Date: Wed, 31 Oct 2012 09:48:04 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S932934Ab2JaBob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 21:44:31 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64377 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab2JaBo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 21:44:29 -0400
+Date: Tue, 30 Oct 2012 18:45:27 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: lenb@kernel.org, rjw@sisk.pl
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: ACPI errors with 3.7-rc3
+Message-ID: <20121031014527.GA2984@kroah.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Hu Tao <hutao@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>
-Subject: Re: [PATCH v11] kvm: notify host when the guest is panicked
-References: <0a2274eccf1b1dd420f16359f7e1de74fa2f9fbe.1351131144.git.hutao@cn.fujitsu.com> <20121031011256.GC12325@amt.cnet>
-In-Reply-To: <20121031011256.GC12325@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 09:41:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 09:41:37,
-	Serialize complete at 2012/10/31 09:41:37
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/31/2012 09:12 AM, Marcelo Tosatti Wrote:
-> On Thu, Oct 25, 2012 at 11:42:32AM +0800, Hu Tao wrote:
->> We can know the guest is panicked when the guest runs on xen.
->> But we do not have such feature on kvm.
->>
->> Another purpose of this feature is: management app(for example:
->> libvirt) can do auto dump when the guest is panicked. If management
->> app does not do auto dump, the guest's user can do dump by hand if
->> he sees the guest is panicked.
->>
->> We have three solutions to implement this feature:
->> 1. use vmcall
->> 2. use I/O port
->> 3. use virtio-serial.
->>
->> We have decided to avoid touching hypervisor. The reason why I choose
->> choose the I/O port is:
->> 1. it is easier to implememt
->> 2. it does not depend any virtual device
->> 3. it can work when starting the kernel
-> 
-> It has been asked earlier why a simple virtio device is not usable
-> for this (with no response IIRC).
+Hi Len and Rafael,
 
-1. We can't use virtio device when the kernel is booting.
-2. The virtio's driver can be built as a module, and if it is not loaded
-   and the kernel is panicked, there is no way to notify the host.
-3. I/O port is more reliable than virtio device.
-   If virtio's driver has some bug, and it cause kernel panicked, we can't
-   use it. The I/O port is more reliable because it only depends on notifier
-   chain(If we use virtio device, it also depends on notifier chain).
+With 3.7-rc3, I'm seeing a constant stream of these errors in the kernel
+log for my MacBook Pro:
 
-Thanks
-Wen Congyang
+[30443.430133] ACPI: EC: input buffer is not empty, aborting transaction
+[30443.430145] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20120913/evregion-501)
+[30443.430162] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88045cc64618), AE_TIME (20120913/psparse-536)
+[30443.430179] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff88045cc64988), AE_TIME (20120913/psparse-536)
+[30443.430188] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff88045cc648c0), AE_TIME (20120913/psparse-536)
+[30443.430202] ACPI Exception: AE_TIME, Evaluating _BST (20120913/battery-464)
 
-> 
-> Also, there is no high level documentation: purpose of the interface,
-> how a management application should use it, etc.
-> 
-> 
+They never showed up before in 3.7-rc2.
 
+Anything I should try out to resolve this?
+
+thanks,
+
+greg k-h
