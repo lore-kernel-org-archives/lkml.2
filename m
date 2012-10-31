@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab2JaWAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 18:00:53 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:35049 "EHLO
+	id S1752864Ab2JaWDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 18:03:10 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:43701 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752864Ab2JaWAv convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1750738Ab2JaWDI convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 18:00:51 -0400
-Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+	Wed, 31 Oct 2012 18:03:08 -0400
+Subject: Re: [RFC 0/7] Capebus; a bus for SoCs using simple expansion connectors
 Mime-Version: 1.0 (Apple Message framework v1085)
 Content-Type: text/plain; charset=us-ascii
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20121031214310.GA15766@atomide.com>
-Date: Thu, 1 Nov 2012 00:00:45 +0200
-Cc: Benoit Cousson <b-cousson@ti.com>, linux-kernel@vger.kernel.org,
+In-Reply-To: <CA+Bv8XZEpw=811-EMCMFKgZ7z03=U-KxaXBh4oMphdzwO18f8Q@mail.gmail.com>
+Date: Thu, 1 Nov 2012 00:03:02 +0200
+Cc: Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>
+        linux-omap@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
-Message-Id: <E08E316D-E7C5-4AFC-8C82-6423E5128FAA@antoniou-consulting.com>
-References: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com> <20121031175219.GH12739@atomide.com> <C9715CB7-D3E2-4CA7-8A93-2B10E8B70640@antoniou-consulting.com> <20121031180935.GL12739@atomide.com> <50918223.6080003@ti.com> <8AD2F7AF-8315-442B-A394-1A38DAB29F52@antoniou-consulting.com> <20121031212639.GQ12739@atomide.com> <8B058B00-6C21-4410-A24B-75651D49F6EC@antoniou-consulting.com> <20121031214310.GA15766@atomide.com>
-To: Tony Lindgren <tony@atomide.com>
+Message-Id: <2EA1A7B9-5457-4CD3-92E2-F97D7E46D29D@antoniou-consulting.com>
+References: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com> <CA+Bv8XZEpw=811-EMCMFKgZ7z03=U-KxaXBh4oMphdzwO18f8Q@mail.gmail.com>
+To: Russ Dill <Russ.Dill@ti.com>
 X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+Hi Russ,
 
-On Oct 31, 2012, at 11:43 PM, Tony Lindgren wrote:
+On Oct 31, 2012, at 11:56 PM, Russ Dill wrote:
 
-> * Pantelis Antoniou <panto@antoniou-consulting.com> [121031 14:38]:
+> On Wed, Oct 31, 2012 at 9:52 AM, Pantelis Antoniou
+> <panto@antoniou-consulting.com> wrote:
+>> Capebus is created to address the problem of many SoCs that can provide a
+>> multitude of hardware interfaces but in order to keep costs down the main
+>> boards only support a limited number of them. The rest are typically brought
+>> out to pin connectors on to which other boards, named capes are connected and
+>> allow those peripherals to be used.
 >> 
->> There a a whole bunch of conflicting capes. There's no
->> way to instantiate them together. They must be instantiated
->> only after their EEPROMs are read and they are matched
->> to their corresponding cape drivers.
+>> These capes connect to the SoC interfaces but might also contain various other
+>> parts that may need some kind of driver to work.
+>> 
+>> Since SoCs have limited pins and pin muxing options, not all capes can work
+>> together so some kind of resource tracking (at least for the pins in use) is
+>> required.
+>> 
+>> Before capebus all of this took place in the board support file, and frankly
+>> for boards with too many capes it was becoming unmanageable.
+>> 
+>> Capebus provides a virtual bus, which along with a board specific controller,
+>> cape drivers can be written using the standard Linux device model.
+>> 
+>> The core capebus infrastructure is not depended on any specific board.
+>> However capebus needs a board controller to provide services to the cape devices
+>> it controls. Services like addressing and resource reservation are provided
+>> by the board controller.
+>> 
+>> Capebus at the moment only support TI's Beaglebone platform.
+>> 
+>> This RFC introduces the core concept; most supporting patches
+>> have been posted to the relevant places.
 > 
-> You don't need to instantiate the capes during __init,
-> you need to just instantiate the omap internal devices
-> which are always there in the hardware. These internal
-> devices just need to be set to state = "disabled" until
-> they are used.
-> 
+> There are quite a few TODOs in the code, any chance you could
+> summarize them in the next header email?
 
-If you set the device's node state to disable the device
-doesn't get registered; i.e. the device's probe method will not be
-called.
+Yes,
 
-The devices are instantiated by the call to 
+Most of them deal with dealing properly with removal of the board driver and the core
+capebus stuff. And of course PM is not yet handled properly.
 
-	of_platform_populate(NULL, omap_dt_match_table, NULL, NULL);
-
-in omap_generic_init() (arch/arm/mach-omap2/board-generic.c)
-
-Which for each child of the root node will call of_platform_bus_create
-which in turn will call of_platform_device_create_pdata.
-
-First check in there is
-
-       if (!of_device_is_available(np))
-                return NULL;
- 
-of_device_is_available() will return 0 in any case status is neither
-"okay" or "ok".
-
-So when device's node is 'disabled' of_platform_device_create_pdata()
-will not create the device.
-
-Now, of course it is possible to re-trigger the platform's probe method
-to be called, and in fact I do so in the capebus patches.
-
-Since the bus drives of things like i2c & spi must be disabled if not
-used by any cape, they are "disabled" by default, and are activated when
-referenced by a cape.
-
-In the file drivers/capebus/capebus-driver.c, there are two functions.
-
-The first, capebus_of_platform_device_enable() will check if the referenced
-device node is disabled, and after enabling it (with capebus_of_device_node_enable())
-will call of_platform_device_create(), but now this time the instantiation
-will be successful.
-
-The problem is that now, we're way past the point in the boot sequence
-that omap_build_device has been freed; calling the probe method will now lead
-to a crash.
-
-> The capes themselves should not have anything to do
-> with omap_hwmod or omap_device, they just contain
-> external connectors, regulators, LCD panels etc.
-> 
-> To your capebus the omap internal devices should look
-> like just regular struct device entries.
-> 
-> Regards,
-> 
-> Tony
+After I get on with this part of the review, I plan to fill in the docs and 
+flesh out the TODOs more.
 
 Regards
 
