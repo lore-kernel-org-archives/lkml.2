@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760877Ab2JaV4X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 17:56:23 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:40497 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760596Ab2JaV4W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 17:56:22 -0400
+	id S1760895Ab2JaV4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 17:56:53 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:4472 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760596Ab2JaV4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 17:56:51 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <50919E88.8060900@broadcom.com>
+Date: Wed, 31 Oct 2012 22:56:24 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028
+ Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
-References: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
-Date: Wed, 31 Oct 2012 14:56:20 -0700
-X-Google-Sender-Auth: 2r1SY8joBBW3GecHOaOqRNP1jpM
-Message-ID: <CA+Bv8XZEpw=811-EMCMFKgZ7z03=U-KxaXBh4oMphdzwO18f8Q@mail.gmail.com>
-Subject: Re: [RFC 0/7] Capebus; a bus for SoCs using simple expansion connectors
-From: Russ Dill <Russ.Dill@ti.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: "Steven Rostedt" <rostedt@goodmis.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: x86_64: undefined symbol 'mcount' in 3.7-rc1
+References: <507F13DE.2010601@broadcom.com>
+ <1351709060.4004.91.camel@gandalf.local.home>
+In-Reply-To: <1351709060.4004.91.camel@gandalf.local.home>
+X-WSS-ID: 7C8F41AE3QC2269569-01-01
+Content-Type: text/plain;
+ charset=iso-8859-15;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 9:52 AM, Pantelis Antoniou
-<panto@antoniou-consulting.com> wrote:
-> Capebus is created to address the problem of many SoCs that can provide a
-> multitude of hardware interfaces but in order to keep costs down the main
-> boards only support a limited number of them. The rest are typically brought
-> out to pin connectors on to which other boards, named capes are connected and
-> allow those peripherals to be used.
+On 10/31/2012 07:44 PM, Steven Rostedt wrote:
+> On Wed, 2012-10-17 at 22:23 +0200, Arend van Spriel wrote:
+>> Hi Steven,
+>>
+>> I have nightly test machines upgraded to 3.7-rc1 and on the 64-bit
+>> platform I get MODPOST warning on 'mcount'.
+>>
+>> It is conditionally exported in x8664_ksyms_64.c:
+>> #ifdef CONFIG_FUNCTION_TRACER
+>> /* mcount is defined in assembly */
+>> EXPORT_SYMBOL(mcount);
+>> #endif
+>>
+>> #ifdef CONFIG_FUNCTION_TRACER
+>> #ifdef CC_USING_FENTRY
+>> # define MCOUNT_ADDR           ((long)(__fentry__))
+>> #else
+>> # define MCOUNT_ADDR           ((long)(mcount))
+>> #endif
+>> #define MCOUNT_INSN_SIZE       5 /* sizeof mcount call */
+>>
+>> I have built the kernel on x86 machine with gcc 4.6.3 and the modules
+>> are built during the test execution on test machine which has gcc 4.4.5.
+>> Reading commit below
+>>
+>> commit d57c5d51a30152f3175d2344cb6395f08bf8ee0c
+>> Author: Steven Rostedt <srostedt@redhat.com>
+>> Date:   Wed Feb 9 13:32:18 2011 -0500
+>>
+>>       ftrace/x86: Add support for -mfentry to x86_64
+>>
+>> I suppose the gcc version mismatch is causing my problem. Is that a
+>> correct assumption?
 >
-> These capes connect to the SoC interfaces but might also contain various other
-> parts that may need some kind of driver to work.
+> Yes.
 >
-> Since SoCs have limited pins and pin muxing options, not all capes can work
-> together so some kind of resource tracking (at least for the pins in use) is
-> required.
+> gcc 4.6.0 added a new option to gcc called '-mfentry'. The kernel build
+> checks to see if this option is supported and if so it will use it. What
+> this option does (when added to -pg), will not do the mcount calling but
+> instead call fentry. The two have different semantics and are not
+> compatible. When you built your kernel, the build process detected that
+> -mfentry is supported and used that.
 >
-> Before capebus all of this took place in the board support file, and frankly
-> for boards with too many capes it was becoming unmanageable.
+> Now when you built your modules with gcc 4.4.5, -mfentry was not
+> supported and it used the mcount feature instead. In general, it's not a
+> good idea to use two different gcc's to build the kernel and modules.
 >
-> Capebus provides a virtual bus, which along with a board specific controller,
-> cape drivers can be written using the standard Linux device model.
+> But if you really need to, then you should disable function tracing of
+> your modules, where the -pg and -mfentry wont be used.
 >
-> The core capebus infrastructure is not depended on any specific board.
-> However capebus needs a board controller to provide services to the cape devices
-> it controls. Services like addressing and resource reservation are provided
-> by the board controller.
->
-> Capebus at the moment only support TI's Beaglebone platform.
->
-> This RFC introduces the core concept; most supporting patches
-> have been posted to the relevant places.
+> -- Steve
 
-There are quite a few TODOs in the code, any chance you could
-summarize them in the next header email?
+Thanks Steve(n)
+
+I just upgraded the test machine to have the same gcc as the machine 
+building the kernels.
+
+Gr. AvS
+
