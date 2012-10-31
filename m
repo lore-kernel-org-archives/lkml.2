@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab2JaH0k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 03:26:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63329 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab2JaH0g (ORCPT
+	id S932093Ab2JaH1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 03:27:38 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:38178 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab2JaH1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 03:26:36 -0400
-Date: Wed, 31 Oct 2012 00:26:30 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Zhouping Liu <zliu@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Wed, 31 Oct 2012 03:27:33 -0400
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>, CAI Qian <caiqian@redhat.com>
-Subject: Re: [PATCH 00/31] numa/core patches
-In-Reply-To: <20121031004838.GA1657@cmpxchg.org>
-Message-ID: <alpine.LNX.2.00.1210302350140.5084@eggly.anvils>
-References: <20121025121617.617683848@chello.nl> <508A52E1.8020203@redhat.com> <1351242480.12171.48.camel@twins> <20121028175615.GC29827@cmpxchg.org> <508F73C5.7050409@redhat.com> <20121031004838.GA1657@cmpxchg.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH 1/2] tasklet: remove tasklet_kill_immediate()
+Date: Wed, 31 Oct 2012 15:28:06 +0800
+Message-Id: <1351668487-26635-1-git-send-email-xtfeng@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Oct 2012, Johannes Weiner wrote:
-> On Tue, Oct 30, 2012 at 02:29:25PM +0800, Zhouping Liu wrote:
-> > On 10/29/2012 01:56 AM, Johannes Weiner wrote:
-> > >On Fri, Oct 26, 2012 at 11:08:00AM +0200, Peter Zijlstra wrote:
-> > >>On Fri, 2012-10-26 at 17:07 +0800, Zhouping Liu wrote:
-> > >>>[  180.918591] RIP: 0010:[<ffffffff8118c39a>]  [<ffffffff8118c39a>] mem_cgroup_prepare_migration+0xba/0xd0
-> > >>>[  182.681450]  [<ffffffff81183b60>] do_huge_pmd_numa_page+0x180/0x500
-> > >>>[  182.775090]  [<ffffffff811585c9>] handle_mm_fault+0x1e9/0x360
-> > >>>[  182.863038]  [<ffffffff81632b62>] __do_page_fault+0x172/0x4e0
-> > >>>[  182.950574]  [<ffffffff8101c283>] ? __switch_to_xtra+0x163/0x1a0
-> > >>>[  183.041512]  [<ffffffff8101281e>] ? __switch_to+0x3ce/0x4a0
-> > >>>[  183.126832]  [<ffffffff8162d686>] ? __schedule+0x3c6/0x7a0
-> > >>>[  183.211216]  [<ffffffff81632ede>] do_page_fault+0xe/0x10
-> > >>>[  183.293705]  [<ffffffff8162f518>] page_fault+0x28/0x30
-> > >>Johannes, this looks like the thp migration memcg hookery gone bad,
-> > >>could you have a look at this?
-> > >Oops.  Here is an incremental fix, feel free to fold it into #31.
-> > Hello Johannes,
-> > 
-> > maybe I don't think the below patch completely fix this issue, as I
-> > found a new error(maybe similar with this):
-> > 
-> > [88099.923724] ------------[ cut here ]------------
-> > [88099.924036] kernel BUG at mm/memcontrol.c:1134!
-> > [88099.924036] invalid opcode: 0000 [#1] SMP
-> > [88099.924036] Modules linked in: lockd sunrpc kvm_amd kvm
-> > amd64_edac_mod edac_core ses enclosure serio_raw bnx2 pcspkr shpchp
-> > joydev i2c_piix4 edac_mce_amd k8temp dcdbas ata_generic pata_acpi
-> > megaraid_sas pata_serverworks usb_storage radeon i2c_algo_bit
-> > drm_kms_helper ttm drm i2c_core
-> > [88099.924036] CPU 7
-> > [88099.924036] Pid: 3441, comm: stress Not tainted 3.7.0-rc2Jons+ #3
-> > Dell Inc. PowerEdge 6950/0WN213
-> > [88099.924036] RIP: 0010:[<ffffffff81188e97>] [<ffffffff81188e97>]
-> > mem_cgroup_update_lru_size+0x27/0x30
-> 
-> Thanks a lot for your testing efforts, I really appreciate it.
-> 
-> I'm looking into it, but I don't expect power to get back for several
-> days where I live, so it's hard to reproduce it locally.
-> 
-> But that looks like an LRU accounting imbalance that I wasn't able to
-> tie to this patch yet.  Do you see weird numbers for the lru counters
-> in /proc/vmstat even without this memory cgroup patch?  Ccing Hugh as
-> well.
+tasklet_kill_immediate() is no longer used, just remove it.
 
-Sorry, I didn't get very far with it tonight.
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Josh Triplett <josh@joshtriplett.org>
+---
+ kernel/softirq.c |   32 --------------------------------
+ 1 file changed, 32 deletions(-)
 
-Almost certain to be a page which was added to lru while it looked like
-a 4k page, but taken off lru as a 2M page: we are taking a 2M page off
-lru here, it's likely to be the page in question, but not necessarily.
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index cc96bdc..61abd86 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -762,38 +762,6 @@ static void run_ksoftirqd(unsigned int cpu)
+ }
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+-/*
+- * tasklet_kill_immediate is called to remove a tasklet which can already be
+- * scheduled for execution on @cpu.
+- *
+- * Unlike tasklet_kill, this function removes the tasklet
+- * _immediately_, even if the tasklet is in TASKLET_STATE_SCHED state.
+- *
+- * When this function is called, @cpu must be in the CPU_DEAD state.
+- */
+-void tasklet_kill_immediate(struct tasklet_struct *t, unsigned int cpu)
+-{
+-	struct tasklet_struct **i;
+-
+-	BUG_ON(cpu_online(cpu));
+-	BUG_ON(test_bit(TASKLET_STATE_RUN, &t->state));
+-
+-	if (!test_bit(TASKLET_STATE_SCHED, &t->state))
+-		return;
+-
+-	/* CPU is dead, so no lock needed. */
+-	for (i = &per_cpu(tasklet_vec, cpu).head; *i; i = &(*i)->next) {
+-		if (*i == t) {
+-			*i = t->next;
+-			/* If this was the tail element, move the tail ptr */
+-			if (*i == NULL)
+-				per_cpu(tasklet_vec, cpu).tail = i;
+-			return;
+-		}
+-	}
+-	BUG();
+-}
+-
+ static void takeover_tasklets(unsigned int cpu)
+ {
+ 	/* CPU is dead, so no lock needed. */
+-- 
+1.7.9.5
 
-There's quite a few put_page()s in do_huge_pmd_numa_page(), and it
-would help if we could focus on the one which is giving the trouble,
-but I don't know which that is.  Zhouping, if you can, please would
-you do an "objdump -ld vmlinux >bigfile" of your kernel, then extract
-from bigfile just the lines from "<do_huge_pmd_numa_page>:" to whatever
-is the next function, and post or mail privately just that disassembly.
-That should be good to identify which of the put_page()s is involved.
-
-do_huge_pmd_numa_page() does look a bit worrying, but I've not pinned
-the misaccounting seen to the aspects which have worried me so far.
-Where is a check for page_mapcount(page) being 1?  And surely it's
-unsafe to to be migrating the page when it was found !PageLRU?  It's
-quite likely to be sitting in a pagevec or on a local list somewhere,
-about to be added to lru at any moment.
-
-Hugh
