@@ -1,171 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab2JaFec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 01:34:32 -0400
-Received: from nm1.access.bullet.mail.sp2.yahoo.com ([98.139.44.128]:32605
-	"EHLO nm1.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751858Ab2JaFe2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 01:34:28 -0400
-X-Yahoo-Newman-Id: 133205.65212.bm@smtp109.sbc.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: cp6ZTScVM1ncP4Pg1imsuXyxdSirQm6kKFoDC0Md8Qyfajv
- uJuN3rhJwroWECjLeiqXxe1RDDvZDB45NcE2dph8bF8mwml_mMvHozaCOkmq
- B42DmRbgCc7wR9rwINvrb0zlyiSbHr0K0EP5pS9mlKneuKWFwAcafrq1rmIT
- EuWvSNDcJnmtR.59dtm_5I0zRPphYO6u8C2ur.2I9m6Ew1K4c.J_QfCLF5SF
- ts72xCVE5XbLkw916U3Qp5tek9dClMMYFi8dSHwjjPDUtLezYcolycRwh9Ws
- 8xIAELydVyjni8yADk9xQFrOyseFzLLPrxVHjjD9_8XlblO_zvcJE1VCgNFl
- wC2SwpSalQdcJVvP0YwwzTq48Y8GygiM2LSBD0xEfVc0bfMmDPqk3GBRd20d
- _p9vwgOjmo_zkPqfg33cb9COtyVGntFT7fsqqOcsrTcMyF_qcuOdEVvBWWwj
- v.gBrwBs3bKlG7HX2guAS2NpBSQ--
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <5090B875.7030902@att.net>
-Date: Wed, 31 Oct 2012 00:34:45 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Daniel Santos <daniel.santos@pobox.com>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v4 6/9] compiler.h, bug.h: Prevent double error messages
- with BUILD_BUG{,_ON}
-References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com> <1351457835-7553-6-git-send-email-daniel.santos@pobox.com> <20121030161933.GD28499@liondog.tnic>
-In-Reply-To: <20121030161933.GD28499@liondog.tnic>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752439Ab2JaFf0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 01:35:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52986 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751858Ab2JaFfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 01:35:21 -0400
+X-IronPort-AV: E=Sophos;i="4.80,686,1344182400"; 
+   d="scan'208";a="6105341"
+From: Wen Congyang <wency@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org
+Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+Subject: [PART1 Patch 1/3] mm, memory-hotplug: dynamic configure movable memory and portion memory
+Date: Wed, 31 Oct 2012 13:40:34 +0800
+Message-Id: <1351662036-7435-2-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1351662036-7435-1-git-send-email-wency@cn.fujitsu.com>
+References: <1351662036-7435-1-git-send-email-wency@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/31 13:34:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/31 13:34:08,
+	Serialize complete at 2012/10/31 13:34:08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2012 11:19 AM, Borislav Petkov wrote:
-> On Sun, Oct 28, 2012 at 03:57:12PM -0500, danielfsantos@att.net wrote:
->> Prior to the introduction of __attribute__((error("msg"))) in gcc 4.3,
->> creating compile-time errors required a little trickery.
->> BUILD_BUG{,_ON} uses this attribute when available to generate
->> compile-time errors, but also uses the negative-sized array trick for
->> older compilers, resulting in two error messages in some cases.  The
->> reason it's "some" cases is that as of gcc 4.4, the negative-sized array
->> will not create an error in some situations, like inline functions.
->>
->> This patch replaces the negative-sized array code with the new
->> __compiletime_error_fallback() macro which expands to the same thing
->> unless the the error attribute is available, in which case it expands to
->> do{}while(0), resulting in exactly one compile-time error on all
->> versions of gcc.
->>
->> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
->> ---
->>  include/linux/bug.h      |    4 ++--
->>  include/linux/compiler.h |    7 +++++++
->>  2 files changed, 9 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/bug.h b/include/linux/bug.h
->> index 03259d7..da03dc1 100644
->> --- a/include/linux/bug.h
->> +++ b/include/linux/bug.h
->> @@ -57,13 +57,13 @@ struct pt_regs;
->>   * track down.
->>   */
->>  #ifndef __OPTIMIZE__
->> -#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
->> +#define BUILD_BUG_ON(condition) __compiletime_error_fallback(condition)
->>  #else
->>  #define BUILD_BUG_ON(condition)						\
->>  	do {								\
->>  		extern void __build_bug_on_failed(void)			\
->>  			__compiletime_error("BUILD_BUG_ON failed");	\
->> -		((void)sizeof(char[1 - 2*!!(condition)]));		\
->> +		__compiletime_error_fallback(condition);		\
->>  		if (condition)						\
->>  			__build_bug_on_failed();			\
-> If we're defining a fallback, shouldn't it come second? I.e.:
->
-> 		if (condition)
-> 			__build_bug_on_failed();
-> 		__compiletime_error_fallback(condition);
->
-> Also, the error message from __build_bug_on_failed is much more
-> informative:
->
-> arch/x86/kernel/cpu/amd.c: In function ‘early_init_amd’:
-> arch/x86/kernel/cpu/amd.c:486:2: error: call to ‘__build_bug_on_failed’ declared with attribute error: BUILD_BUG_ON failed
-> make[1]: *** [arch/x86/kernel/cpu/amd.o] Error 1
-> make[1]: *** Waiting for unfinished jobs....
-> make: *** [arch/x86/kernel/cpu/] Error 2
->
-> than
->
-> arch/x86/kernel/cpu/amd.c: In function ‘early_init_amd’:
-> arch/x86/kernel/cpu/amd.c:486:2: error: size of unnamed array is negative
-> make[1]: *** [arch/x86/kernel/cpu/amd.o] Error 1
-> make[1]: *** Waiting for unfinished jobs....
-> make: *** [arch/x86/kernel/cpu/] Error 2
-Yes, the __build_bug_on_failed message is much more informative.  This
-will only increase with these patches.  For example, the line
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-BUILD_BUG_ON(sizeof(*c) != 4);
+Add online_movable and online_kernel for logic memory hotplug.
+This is the dynamic version of "movablecore" & "kernelcore".
 
-emits this error:
+We have the same reason to introduce it as to introduce "movablecore" & "kernelcore".
+It has the same motive as "movablecore" & "kernelcore", but it is dynamic/running-time:
 
-arch/x86/kernel/cpu/amd.c: In function ‘early_init_amd’:
-arch/x86/kernel/cpu/amd.c:486:2: error: call to
-‘__build_bug_on_failed_486’ declared with attribute error: BUILD_BUG_ON
-failed: sizeof(*c) != 4
-make[1]: *** [arch/x86/kernel/cpu/amd.o] Error 1
-make: *** [arch/x86/kernel/cpu/amd.o] Error 2
+o	We can configure memory as kernelcore or movablecore after boot.
 
-It's true that there is some redundancy in there as well as the
-gibberish line number embedded in the function name, but the end of the
-line spits out the exact statement that failed.
+	Userspace workload is increased, we need more hugepage, we can't
+	use "online_movable" to add memory and allow the system use more
+	THP(transparent-huge-page), vice-verse when kernel workload is increase.
 
-But as far as rather the fallback is first or the __compiletime_error
-function is a matter of asthetics, since it's really an either/or
-situation.  Either the __build_bug_on_failedxxx function will be
-declared with __attribute__((error(message))) and the fallback will
-expand to a no-op, or the fallback will produce code that (presumably
-always?) breaks the build.  For insurance, a link-time error will occur
-if the fallback code fails to break the build.
+	Also help for virtualization to dynamic configure host/guest's memory,
+	to save/(reduce waste) memory.
 
-Realistically, a single macro could be defined in compiler*.h that
-encapsulates the entirety of this mechanism and only exposes a "black
-box" macro, that will simply expand to something that breaks the build
-in the most appropriate fashion based upon the version of gcc.  In
-essence, the new BUILD_BUG_ON_MSG macro attempts to fill that roll.
->
-> Finally, you need to do:
->
-> 	bool __cond = !!(condition);
->
-> and use __cond so that condition doesn't get evaluated multiple times
-> (possibly with side effects).
->
-> Thanks.
-Big problem!  Very good catch, thank you!  All good programmers know not
-use expressions that can have side effects in an assert-type macro, but
-this it should certainly be as dummy proof as possible.  That will force
-others to get a really *really* good dummy if they want to break it!
+	Memory capacity on Demand
 
-Thank you for this! I suppose another justification for having a single
-"black box" macro that does this in one place and addresses all of these
-tricky issues.
+o	When a new node is physically online after boot, we need to use
+	"online_movable" or "online_kernel" to configure/portion it
+	as we expected when we logic-online it.
 
-I guess I'll fix it up (and address the emails on the other patches) and
-do a v5 then for the whole set? (is that the right way to resubmit with
-these corrections?)
+	This configuration also helps for physically-memory-migrate.
 
-Thanks
-Daniel
+o	all benefit as the same as existed "movablecore" & "kernelcore".
+
+o	Preparing for movable-node, which is very important for power-saving,
+	hardware partitioning and high-available-system(hardware fault management).
+
+	(Note, we don't introduce movable-node here.)
+
+Action behavior:
+When a memoryblock/memorysection is onlined by "online_movable", the kernel
+will not have directly reference to the page of the memoryblock,
+thus we can remove that memory any time when needed.
+
+When it is online by "online_kernel", the kernel can use it.
+When it is online by "online", the zone type doesn't changed.
+
+Current constraints:
+Only the memoryblock which is adjacent to the ZONE_MOVABLE
+can be online from ZONE_NORMAL to ZONE_MOVABLE.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ Documentation/memory-hotplug.txt |  14 +++++-
+ drivers/base/memory.c            |  27 +++++++----
+ include/linux/memory_hotplug.h   |  13 ++++-
+ mm/memory_hotplug.c              | 101 ++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 142 insertions(+), 13 deletions(-)
+
+diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+index 6e6cbc7..c6f993d 100644
+--- a/Documentation/memory-hotplug.txt
++++ b/Documentation/memory-hotplug.txt
+@@ -161,7 +161,8 @@ a recent addition and not present on older kernels.
+ 		    in the memory block.
+ 'state'           : read-write
+                     at read:  contains online/offline state of memory.
+-                    at write: user can specify "online", "offline" command
++                    at write: user can specify "online_kernel",
++                    "online_movable", "online", "offline" command
+                     which will be performed on al sections in the block.
+ 'phys_device'     : read-only: designed to show the name of physical memory
+                     device.  This is not well implemented now.
+@@ -255,6 +256,17 @@ For onlining, you have to write "online" to the section's state file as:
+ 
+ % echo online > /sys/devices/system/memory/memoryXXX/state
+ 
++This onlining will not change the ZONE type of the target memory section,
++If the memory section is in ZONE_NORMAL, you can change it to ZONE_MOVABLE:
++
++% echo online_movable > /sys/devices/system/memory/memoryXXX/state
++(NOTE: current limit: this memory section must be adjacent to ZONE_MOVABLE)
++
++And if the memory section is in ZONE_MOVABLE, you can change it to ZONE_NORMAL:
++
++% echo online_kernel > /sys/devices/system/memory/memoryXXX/state
++(NOTE: current limit: this memory section must be adjacent to ZONE_NORMAL)
++
+ After this, section memoryXXX's state will be 'online' and the amount of
+ available memory will be increased.
+ 
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 86c8821..15a1dd7 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -246,7 +246,7 @@ static bool pages_correctly_reserved(unsigned long start_pfn,
+  * OK to have direct references to sparsemem variables in here.
+  */
+ static int
+-memory_block_action(unsigned long phys_index, unsigned long action)
++memory_block_action(unsigned long phys_index, unsigned long action, int online_type)
+ {
+ 	unsigned long start_pfn;
+ 	unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
+@@ -261,7 +261,7 @@ memory_block_action(unsigned long phys_index, unsigned long action)
+ 			if (!pages_correctly_reserved(start_pfn, nr_pages))
+ 				return -EBUSY;
+ 
+-			ret = online_pages(start_pfn, nr_pages);
++			ret = online_pages(start_pfn, nr_pages, online_type);
+ 			break;
+ 		case MEM_OFFLINE:
+ 			ret = offline_pages(start_pfn, nr_pages);
+@@ -276,7 +276,8 @@ memory_block_action(unsigned long phys_index, unsigned long action)
+ }
+ 
+ static int __memory_block_change_state(struct memory_block *mem,
+-		unsigned long to_state, unsigned long from_state_req)
++		unsigned long to_state, unsigned long from_state_req,
++		int online_type)
+ {
+ 	int ret = 0;
+ 
+@@ -288,7 +289,7 @@ static int __memory_block_change_state(struct memory_block *mem,
+ 	if (to_state == MEM_OFFLINE)
+ 		mem->state = MEM_GOING_OFFLINE;
+ 
+-	ret = memory_block_action(mem->start_section_nr, to_state);
++	ret = memory_block_action(mem->start_section_nr, to_state, online_type);
+ 
+ 	if (ret) {
+ 		mem->state = from_state_req;
+@@ -311,12 +312,14 @@ out:
+ }
+ 
+ static int memory_block_change_state(struct memory_block *mem,
+-		unsigned long to_state, unsigned long from_state_req)
++		unsigned long to_state, unsigned long from_state_req,
++		int online_type)
+ {
+ 	int ret;
+ 
+ 	mutex_lock(&mem->state_mutex);
+-	ret = __memory_block_change_state(mem, to_state, from_state_req);
++	ret = __memory_block_change_state(mem, to_state, from_state_req,
++					  online_type);
+ 	mutex_unlock(&mem->state_mutex);
+ 
+ 	return ret;
+@@ -330,10 +333,14 @@ store_mem_state(struct device *dev,
+ 
+ 	mem = container_of(dev, struct memory_block, dev);
+ 
+-	if (!strncmp(buf, "online", min((int)count, 6)))
+-		ret = memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE);
++	if (!strncmp(buf, "online_kernel", min((int)count, 13)))
++		ret = memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE, ONLINE_KERNEL);
++	else if (!strncmp(buf, "online_movable", min((int)count, 14)))
++		ret = memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE, ONLINE_MOVABLE);
++	else if (!strncmp(buf, "online", min((int)count, 6)))
++		ret = memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE, ONLINE_KEEP);
+ 	else if(!strncmp(buf, "offline", min((int)count, 7)))
+-		ret = memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE);
++		ret = memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
+ 
+ 	if (ret)
+ 		return ret;
+@@ -669,7 +676,7 @@ int offline_memory_block(struct memory_block *mem)
+ 
+ 	mutex_lock(&mem->state_mutex);
+ 	if (mem->state != MEM_OFFLINE)
+-		ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE);
++		ret = __memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE, -1);
+ 	mutex_unlock(&mem->state_mutex);
+ 
+ 	return ret;
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 95573ec..4a45c4e 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -26,6 +26,13 @@ enum {
+ 	MEMORY_HOTPLUG_MAX_BOOTMEM_TYPE = NODE_INFO,
+ };
+ 
++/* Types for control the zone type of onlined memory */
++enum {
++	ONLINE_KEEP,
++	ONLINE_KERNEL,
++	ONLINE_MOVABLE,
++};
++
+ /*
+  * pgdat resizing functions
+  */
+@@ -46,6 +53,10 @@ void pgdat_resize_init(struct pglist_data *pgdat)
+ }
+ /*
+  * Zone resizing functions
++ *
++ * Note: any attempt to resize a zone should has pgdat_resize_lock()
++ * zone_span_writelock() both held. This ensure the size of a zone
++ * can't be changed while pgdat_resize_lock() held.
+  */
+ static inline unsigned zone_span_seqbegin(struct zone *zone)
+ {
+@@ -71,7 +82,7 @@ extern int zone_grow_free_lists(struct zone *zone, unsigned long new_nr_pages);
+ extern int zone_grow_waitqueues(struct zone *zone, unsigned long nr_pages);
+ extern int add_one_highpage(struct page *page, int pfn, int bad_ppro);
+ /* VM interface that may be used by firmware interface */
+-extern int online_pages(unsigned long, unsigned long);
++extern int online_pages(unsigned long, unsigned long, int);
+ extern void __offline_isolated_pages(unsigned long, unsigned long);
+ 
+ typedef void (*online_page_callback_t)(struct page *page);
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index dfa6a91..4900025 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -221,6 +221,89 @@ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
+ 	zone_span_writeunlock(zone);
+ }
+ 
++static void resize_zone(struct zone *zone, unsigned long start_pfn,
++		unsigned long end_pfn)
++{
++
++	zone_span_writelock(zone);
++
++	zone->zone_start_pfn = start_pfn;
++	zone->spanned_pages = end_pfn - start_pfn;
++
++	zone_span_writeunlock(zone);
++}
++
++static void fix_zone_id(struct zone *zone, unsigned long start_pfn,
++		unsigned long end_pfn)
++{
++	enum zone_type zid = zone_idx(zone);
++	int nid = zone->zone_pgdat->node_id;
++	unsigned long pfn;
++
++	for (pfn = start_pfn; pfn < end_pfn; pfn++)
++		set_page_links(pfn_to_page(pfn), zid, nid, pfn);
++}
++
++static int move_pfn_range_left(struct zone *z1, struct zone *z2,
++		unsigned long start_pfn, unsigned long end_pfn)
++{
++	unsigned long flags;
++
++	pgdat_resize_lock(z1->zone_pgdat, &flags);
++
++	/* can't move pfns which are higher than @z2 */
++	if (end_pfn > z2->zone_start_pfn + z2->spanned_pages)
++		goto out_fail;
++	/* the move out part mast at the left most of @z2 */
++	if (start_pfn > z2->zone_start_pfn)
++		goto out_fail;
++	/* must included/overlap */
++	if (end_pfn <= z2->zone_start_pfn)
++		goto out_fail;
++
++	resize_zone(z1, z1->zone_start_pfn, end_pfn);
++	resize_zone(z2, end_pfn, z2->zone_start_pfn + z2->spanned_pages);
++
++	pgdat_resize_unlock(z1->zone_pgdat, &flags);
++
++	fix_zone_id(z1, start_pfn, end_pfn);
++
++	return 0;
++out_fail:
++	pgdat_resize_unlock(z1->zone_pgdat, &flags);
++	return -1;
++}
++
++static int move_pfn_range_right(struct zone *z1, struct zone *z2,
++		unsigned long start_pfn, unsigned long end_pfn)
++{
++	unsigned long flags;
++
++	pgdat_resize_lock(z1->zone_pgdat, &flags);
++
++	/* can't move pfns which are lower than @z1 */
++	if (z1->zone_start_pfn > start_pfn)
++		goto out_fail;
++	/* the move out part mast at the right most of @z1 */
++	if (z1->zone_start_pfn + z1->spanned_pages >  end_pfn)
++		goto out_fail;
++	/* must included/overlap */
++	if (start_pfn >= z1->zone_start_pfn + z1->spanned_pages)
++		goto out_fail;
++
++	resize_zone(z1, z1->zone_start_pfn, start_pfn);
++	resize_zone(z2, start_pfn, z2->zone_start_pfn + z2->spanned_pages);
++
++	pgdat_resize_unlock(z1->zone_pgdat, &flags);
++
++	fix_zone_id(z2, start_pfn, end_pfn);
++
++	return 0;
++out_fail:
++	pgdat_resize_unlock(z1->zone_pgdat, &flags);
++	return -1;
++}
++
+ static void grow_pgdat_span(struct pglist_data *pgdat, unsigned long start_pfn,
+ 			    unsigned long end_pfn)
+ {
+@@ -515,7 +598,7 @@ static void node_states_set_node(int node, struct memory_notify *arg)
+ }
+ 
+ 
+-int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
++int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_type)
+ {
+ 	unsigned long onlined_pages = 0;
+ 	struct zone *zone;
+@@ -532,6 +615,22 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
+ 	 */
+ 	zone = page_zone(pfn_to_page(pfn));
+ 
++	if (online_type == ONLINE_KERNEL && zone_idx(zone) == ZONE_MOVABLE) {
++		if (move_pfn_range_left(zone - 1, zone, pfn, pfn + nr_pages)) {
++			unlock_memory_hotplug();
++			return -1;
++		}
++	}
++	if (online_type == ONLINE_MOVABLE && zone_idx(zone) == ZONE_MOVABLE - 1) {
++		if (move_pfn_range_right(zone, zone + 1, pfn, pfn + nr_pages)) {
++			unlock_memory_hotplug();
++			return -1;
++		}
++	}
++
++	/* Previous code may changed the zone of the pfn range */
++	zone = page_zone(pfn_to_page(pfn));
++
+ 	arg.start_pfn = pfn;
+ 	arg.nr_pages = nr_pages;
+ 	node_states_check_changes_online(nr_pages, zone, &arg);
+-- 
+1.8.0
+
