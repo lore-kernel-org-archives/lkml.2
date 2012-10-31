@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab2JaRAE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:00:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45139 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab2JaQ7N (ORCPT
+	id S1752644Ab2JaRBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:01:45 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:42637 "EHLO
+	homiemail-a47.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750992Ab2JaRBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:59:13 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH v2 2/5] mm, highmem: remove useless pool_lock
-Date: Thu,  1 Nov 2012 01:56:34 +0900
-Message-Id: <1351702597-10795-3-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351702597-10795-1-git-send-email-js1304@gmail.com>
-References: <Yes>
- <1351702597-10795-1-git-send-email-js1304@gmail.com>
+	Wed, 31 Oct 2012 13:01:43 -0400
+Message-ID: <50915975.8030503@shealevy.com>
+Date: Wed, 31 Oct 2012 13:01:41 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20121020 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Jiri Kosina <jkosina@suse.cz>, Josh Boyer <jwboyer@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com> <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz> <20121029174131.GC7580@srcf.ucam.org> <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz> <CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com> <20121031155503.1aaf4c93@pyramind.ukuu.org.uk> <alpine.LNX.2.00.1210311653080.12781@pobox.suse.cz> <20121031170334.59833fb1@pyramind.ukuu.org.uk>
+In-Reply-To: <20121031170334.59833fb1@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pool_lock protects the page_address_pool from concurrent access.
-But, access to the page_address_pool is already protected by kmap_lock.
-So remove it.
+On 10/31/2012 01:03 PM, Alan Cox wrote:
+> On Wed, 31 Oct 2012 16:55:04 +0100 (CET)
+> Jiri Kosina <jkosina@suse.cz> wrote:
+>
+>> On Wed, 31 Oct 2012, Alan Cox wrote:
+>>
+>>> All this depends on your threat model. If I have physical access to
+>>> suspend/resume your machine then you already lost. If I don't have
+>>> physical access then I can't boot my unsigned OS to patch your S4 image
+>>> so it doesn't matter.
+>> Prepare (as a root) a hand-crafted image, reboot, let the kernel resume
+>> from that artificial image.
+> It's not signed. It won't reboot from that image.
 
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
+So then to hibernate the kernel must have a signing key?
 
-diff --git a/mm/highmem.c b/mm/highmem.c
-index b3b3d68..017bad1 100644
---- a/mm/highmem.c
-+++ b/mm/highmem.c
-@@ -328,7 +328,6 @@ struct page_address_map {
-  * page_address_map freelist, allocated from page_address_maps.
-  */
- static struct list_head page_address_pool;	/* freelist */
--static spinlock_t pool_lock;			/* protects page_address_pool */
- 
- /*
-  * Hash table bucket
-@@ -395,11 +394,9 @@ void set_page_address(struct page *page, void *virtual)
- 	if (virtual) {		/* Add */
- 		BUG_ON(list_empty(&page_address_pool));
- 
--		spin_lock_irqsave(&pool_lock, flags);
- 		pam = list_entry(page_address_pool.next,
- 				struct page_address_map, list);
- 		list_del(&pam->list);
--		spin_unlock_irqrestore(&pool_lock, flags);
- 
- 		pam->page = page;
- 		pam->virtual = virtual;
-@@ -413,9 +410,7 @@ void set_page_address(struct page *page, void *virtual)
- 			if (pam->page == page) {
- 				list_del(&pam->list);
- 				spin_unlock_irqrestore(&pas->lock, flags);
--				spin_lock_irqsave(&pool_lock, flags);
- 				list_add_tail(&pam->list, &page_address_pool);
--				spin_unlock_irqrestore(&pool_lock, flags);
- 				goto done;
- 			}
- 		}
-@@ -438,7 +433,6 @@ void __init page_address_init(void)
- 		INIT_LIST_HEAD(&page_address_htable[i].lh);
- 		spin_lock_init(&page_address_htable[i].lock);
- 	}
--	spin_lock_init(&pool_lock);
- }
- 
- #endif	/* defined(CONFIG_HIGHMEM) && !defined(WANT_PAGE_VIRTUAL) */
--- 
-1.7.9.5
+> Alan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-efi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
