@@ -1,35 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097Ab2JaFt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 01:49:26 -0400
-Received: from exprod5og106.obsmtp.com ([64.18.0.182]:36682 "HELO
-	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752965Ab2JaFtX (ORCPT
+	id S1753280Ab2JaFtu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 01:49:50 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:50428 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910Ab2JaFtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 01:49:23 -0400
-From: Ritesh Majumdar <r.majumdar@globallogic.com>
+	Wed, 31 Oct 2012 01:49:46 -0400
+Date: Wed, 31 Oct 2012 05:49:44 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+cc: Tony Lindgren <tony@atomide.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        "Porter, Matt" <mporter@ti.com>, "Dill, Russ" <russ.dill@ti.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: RE: [PATCH] omap2-clk: Add missing lcdc clock definition
+In-Reply-To: <79CD15C6BA57404B839C016229A409A83EB529E4@DBDE01.ent.ti.com>
+Message-ID: <alpine.DEB.2.00.1210310547560.8340@utopia.booyaka.com>
+References: <1351698962-3923-1-git-send-email-panto@antoniou-consulting.com> <20121030181837.GM11908@atomide.com> <alpine.DEB.2.00.1210302324530.6152@utopia.booyaka.com> <79CD15C6BA57404B839C016229A409A83EB529E4@DBDE01.ent.ti.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac23K3fJ97PcRt1ySZeBbs4J2M+GNQ==
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
-Date: Wed, 31 Oct 2012 11:19:18 +0530
-Message-ID: <55629fbb6de9caab984bcefb1adfce25@mail.gmail.com>
-Subject: Incomplete vmcore file
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 31 Oct 2012, Hiremath, Vaibhav wrote:
 
-I am using kernel version 2.6.34.4 and trying to enable kernel crash using
-kexec (kdump). Every time the crash occurs, the size of the dump file
-(vmcore) is incomplete (around 20 MB).OS is installed with 8 GB of RAM.
-Due to this gdb/crash fails to analyze the core dump.
+> As far as lck clock node is concerned, we had deliberately dropped all leaf-
+> node clocks from the clock tree, please refer to the description mentioned 
+> in -
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-May/101987.html
 
-Does anyone know where to look for this issue? Is there any known issue
-with this kernel version or any fix available?
+Ach, should have remembered that :-(  Indeed there is an LCDC hwmod:
 
-Regards,
-Ritesh.
+static struct omap_hwmod am33xx_lcdc_hwmod = {
+	.name		= "lcdc",
+	.class		= &am33xx_lcdc_hwmod_class,
+	.clkdm_name	= "lcdc_clkdm",
+	.mpu_irqs	= am33xx_lcdc_irqs,
+	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
+	.main_clk	= "lcd_gclk",
+	.prcm		= {
+		.omap4	= {
+			.clkctrl_offs	= AM33XX_CM_PER_LCDC_CLKCTRL_OFFSET,
+			.modulemode	= MODULEMODE_SWCTRL,
+		},
+	},
+};
+
+> >From LCDC driver perspective, driver is using,
+> 
+> fb_clk = clk_get(&device->dev, NULL);
+> 
+> This I feel needs to be corrected for valid name as per Spec (mostly I would 
+> vote for "fck") and then every platform should make sure that it returns 
+> valid clock-node for it.
+> 
+> Change in Driver would be,
+> 
+> fb_clk = clk_get(&device->dev, "fck");
+
+Indeed.
+
+
+- Paul
