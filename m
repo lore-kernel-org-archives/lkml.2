@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934841Ab2JaPVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 11:21:53 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41237 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933033Ab2JaPVw (ORCPT
+	id S1757870Ab2JaPZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 11:25:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33341 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438Ab2JaPZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 11:21:52 -0400
-Message-ID: <5091420D.8050603@gmail.com>
-Date: Wed, 31 Oct 2012 10:21:49 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 31 Oct 2012 11:25:44 -0400
+Message-ID: <509142F5.4010307@wwwdotorg.org>
+Date: Wed, 31 Oct 2012 09:25:41 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: srinivas.kandagatla@st.com
+To: Alex Courbot <acourbot@nvidia.com>
 CC: Grant Likely <grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: DT: of_platform_populate Vs of_platform_bus_probe.
-References: <50913BC3.7090103@st.com>
-In-Reply-To: <50913BC3.7090103@st.com>
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: How about a gpio_get(device *, char *) function?
+References: <38620644.IyR5R8rjKP@percival>
+In-Reply-To: <38620644.IyR5R8rjKP@percival>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 09:54 AM, Srinivas KANDAGATLA wrote:
-> Hi All, 
-> I have few queries on of_platform_populate and of_platform_bus_probe functions.
+On 10/31/2012 03:04 AM, Alex Courbot wrote:
+> Hi,
 > 
-> Use-case is, I want to explicitly register platform devices from some nodes at post-core or late-init level(like child@1).
-> And I don't want of_platform_populate to register platform devices for that node again, so I pass "simple-bus" in match-table.
-> Problem is that exiting code for of_platform_populate probes it.
-> 
-> Looking at the function documentation, which states
-> of_platform_bus_probe will only create children of the root which are
-> selected by the @matches argument.
-> 
-> of_platform_populate walks the device tree and creates devices from
-> nodes.  It differs in that it follows the modern convention of requiring
-> all device nodes to have a 'compatible' property, and it is suitable for
-> creating devices which are children of the root node.
-> 
-> Lets say If we call of_platform_populate(NULL, match_table, NULL, NULL)
-> on a device trees like the below with
-> struct of_device_id match_table[] = {
->     { .compatible = "simple-bus", }
->     {}
-> };
-> 
-> parent@0{
->     compatible    = "xxx,parent1", "simple-bus";
->     ...
->     child@0 {
->         compatible    = "xxx,child0", "simple-bus";
+> Would anyone be opposed to having a gpio_get() function that works similarly 
+> to e.g. regulator_get() and clk_get()?
 
-Well simple-bus here is generally not right unless you want to create
-devices for children of child@0.
+One major stumbling block is that with device tree, each individual
+binding gets to decide on the specific naming of the propert{y,ies} that
+define the GPIO(s) for the device, and so there's no way to provide a
+generic implementation of that function.
 
->         ...
->     };
->     child@1 {
->         compatible    = "xxx,child1";
->         ...
->     };
->     child@2 {
->         compatible    = "xxx,child2", "simple-bus";
->         ...
->     };
-> };
-> 
-> of_platform_bus_probe would create platform-devices for parent@0,
-> child@0 and child@2
-> where as
-> of_platform_populate would create platform-devices for parent@0,
-> child@0, child@1 and child@2 nodes.
-> 
-> So the question is
-> why do we need to have @matches argument to of_platform_populate in the
-> first place, if it creates all the devices by walking the dt nodes?
+Related, I've always wished that DT nodes looked like:
 
-The matches is for matching buses, not child devices. It is assumed you
-want to create devices for all 1st level children.
+device {
+    reg = <...>;
+    compatible = <...>;
+    resources {
+        pwms = <...>;
+        regulators = <...>;
+        clocks = <...>;
+        gpios = <...>;
+        other-devices = <...>; /* for custom API dependencies */
+    };
+    config {
+        /* device-specific properties */
+    };
+    child-busses {
+        0 = { ... };
+        1 = { ... };
+    };
+};
 
-> It is bit confusing, As some platforms use of_platform_populate(NULL,
-> of_default_bus_match_table, NULL, NULL) assuming that only matching
-> nodes will end up having platform device.
-> Also
-> some platforms use of_platform_bus_probe(NULL, match_table, NULL), 
-> where match table is of_default_bus_match_table.
-
-There should be no new users of of_platform_bus_probe. It is there for
-historical reasons on PPC.
-
-> 
-> Am not 100% sure what is the right solution, but I think lot of platforms would want behavior like of_platform_bus_probe which takes lookups aswell.
-> If the suggestion is to use of_platform_bus_probe, Which I can't use as It does not take Auxdata(lookups).
-
-of_platform_populate is what you should use.
-
-Rob
+... specifically so that all resource allocation, and perhaps even child
+bus enumeration, could be completely standardized in the DT/device core.
+This could also feed into deferred probe, which could then be purely
+implemented inside the DT/driver core. However, that'd require something
+incompatible like "device tree 2.0"
