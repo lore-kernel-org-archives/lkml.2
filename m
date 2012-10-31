@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760654Ab2JaAir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:38:47 -0400
+	id S933025Ab2JaAja (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:39:30 -0400
 Received: from mga02.intel.com ([134.134.136.20]:21748 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759169Ab2JaAeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:34:36 -0400
+	id S1759123Ab2JaAef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 20:34:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
-   d="scan'208";a="213257359"
+   d="scan'208";a="213257358"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 19/32] perf, core: Add generic transaction flags v2
-Date: Tue, 30 Oct 2012 17:34:10 -0700
-Message-Id: <1351643663-23828-20-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 18/32] perf, x86: Support for printing PMU state on spurious PMIs v3
+Date: Tue, 30 Oct 2012 17:34:09 -0700
+Message-Id: <1351643663-23828-19-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
 References: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
@@ -26,124 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a generic qualifier for transaction events, as a new sample
-type that returns a flag word. This is particularly useful
-for qualifying aborts: to distinguish aborts which happen
-due to asynchronous events (like conflicts caused by another
-CPU) versus instructions that lead to an abort.
+I had some problems with spurious PMIs, so print the PMU state
+on a spurious one. This will not interact well with other NMI users.
+Disabled by default, has to be explicitely enabled through sysfs.
 
-The tuning strategies are very different for those cases,
-so it's important to distinguish them easily and early.
+Optional, but useful for debugging.
 
-Since it's inconvenient and inflexible to filter for this
-in the kernel we report all the events out and allow
-some post processing in user space.
-
-The flags are based on the Intel TSX events, but should be fairly
-generic and mostly applicable to other architectures too. In addition
-to various flag words there's also reserved space to report an
-program supplied abort code. For TSX this is used to distinguish specific
-classes of aborts, like a lock busy abort when doing lock elision.
-
-This adds the perf core glue needed for reporting the new flag word out.
-
-v2: Add MEM/MISC
+v2: Move to /sys/devices/cpu
+v3: Print in more cases
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/perf_event.h      |    2 ++
- include/uapi/linux/perf_event.h |   26 ++++++++++++++++++++++++--
- kernel/events/core.c            |    6 ++++++
- 3 files changed, 32 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c       |    3 +++
+ arch/x86/kernel/cpu/perf_event.h       |    2 ++
+ arch/x86/kernel/cpu/perf_event_intel.c |   11 ++++++-----
+ 3 files changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index c9686c8..c32fba3 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -589,6 +589,7 @@ struct perf_sample_data {
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
- 	u64				weight;
-+	u64				transaction;
- };
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index ec3c549..57bb4ce 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -38,6 +38,7 @@
+ #include "perf_event.h"
  
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -603,6 +604,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
- 	data->weight = 0;
-+	data->transaction = 0;
+ struct x86_pmu x86_pmu __read_mostly;
++int	       print_spurious_pmi __read_mostly;
+ 
+ DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events) = {
+ 	.enabled = 1,
+@@ -1758,9 +1759,11 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
  }
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 809a5fd..e7b1a48 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -133,9 +133,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
- 	PERF_SAMPLE_WEIGHT			= 1U << 14,
-+	PERF_SAMPLE_TRANSACTION			= 1U << 15,
+ static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
++static DEVICE_INT_ATTR(print_spurious_pmi, 0644, print_spurious_pmi);
  
--	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+ static struct attribute *x86_pmu_attrs[] = {
+ 	&dev_attr_rdpmc.attr,
++	&dev_attr_print_spurious_pmi.attr.attr,
+ 	NULL,
+ };
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index d55e502..2ef5b20 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -664,3 +664,5 @@ static inline struct intel_shared_regs *allocate_shared_regs(int cpu)
+ }
+ 
+ #endif /* CONFIG_CPU_SUP_INTEL */
++
++extern int print_spurious_pmi;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 20caf0a..dc2f2a1 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1146,11 +1146,8 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	intel_pmu_disable_all();
+ 	handled = intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+-	if (!status) {
+-		intel_pmu_enable_all(0);
+-		return handled;
+-	}
 -
-+	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
- };
++	if (!status)
++		goto done;
+ 	loops = 0;
+ again:
+ 	intel_pmu_ack_status(status);
+@@ -1210,6 +1207,10 @@ again:
+ 		goto again;
  
- /*
-@@ -179,6 +179,28 @@ enum perf_sample_regs_abi {
- };
- 
- /*
-+ * Values for the transaction event qualifier, mostly for abort events.
-+ */
-+enum {
-+	PERF_SAMPLE_TXN_ELISION     = (1 << 0), /* From elision */
-+	PERF_SAMPLE_TXN_TRANSACTION = (1 << 1), /* From transaction */
-+	PERF_SAMPLE_TXN_SYNC        = (1 << 2), /* Instruction is related */
-+	PERF_SAMPLE_TXN_ASYNC       = (1 << 3), /* Instruction not related */
-+	PERF_SAMPLE_TXN_RETRY       = (1 << 4), /* Retry possible */
-+	PERF_SAMPLE_TXN_CONFLICT    = (1 << 5), /* Conflict abort */
-+	PERF_SAMPLE_TXN_CAPACITY    = (1 << 6), /* Capacity abort */
-+	PERF_SAMPLE_TXN_MEMORY      = (1 << 7), /* Memory related abort */
-+	PERF_SAMPLE_TXN_MISC        = (1 << 8), /* Misc aborts */
-+
-+	PERF_SAMPLE_TXN_MAX	    = (1 << 9),  /* non-ABI */
-+
-+	/* bits 24..31 are reserved for the abort code */
-+
-+	PERF_SAMPLE_TXN_ABORT_MASK  = 0xff000000,
-+	PERF_SAMPLE_TXN_ABORT_SHIFT = 24,
-+};
-+
-+/*
-  * The format of the data returned by read() on a perf event fd,
-  * as specified by attr.read_format:
-  *
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d633581..534810d 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -955,6 +955,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		size += sizeof(data->weight);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		size += sizeof(data->transaction);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
- 
-@@ -4086,6 +4089,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		perf_output_put(handle, data->weight);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		perf_output_put(handle, data->transaction);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		perf_output_read(handle, event);
- 
+ done:
++	if (!handled && print_spurious_pmi) {
++		pr_debug("Spurious PMI\n");
++		perf_event_print_debug();
++	}
+ 	intel_pmu_enable_all(0);
+ 	return handled;
+ }
 -- 
 1.7.7.6
 
