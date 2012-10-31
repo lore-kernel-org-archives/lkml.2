@@ -1,473 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935305Ab2JaJtP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:49:15 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51362 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934623Ab2JaJtI (ORCPT
+	id S935316Ab2JaJta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:49:30 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:32776 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935266Ab2JaJtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:49:08 -0400
-X-AuditID: cbfee61a-b7fa66d0000004cf-75-5090f40490de
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
-        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-In-reply-to: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-Subject: [PATCH 15/17] f2fs: add recovery routines for roll-forward
-Date: Wed, 31 Oct 2012 18:48:51 +0900
-Message-id: <004c01cdb74c$eed97a80$cc8c6f80$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAAdI3A
-Content-language: en-us
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zQ12WLxMCDHbPZ7fYs/cki8XlXXPY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mq41vuKteB1RMXzq4vZGxg/uXcxcnJICJhILOvcwQhh
-	i0lcuLeerYuRi0NIYBmjxIfVb9hgit7faQWzhQQWMUrMe68AUfSPUWLNvkesXYwcHGwC2hKb
-	9xuAxEUEHjJK7H+2lB2iwVbi6f1r7CA1nAJ2EpdPRICEhQWcJXa/Wwu2mEVAVWJ1115mEJsX
-	qHzSzHZGCFtQ4sfkeywgNrOAusSkeYuYIWx5ic1r3jKDjJQAij/6qwsSFhEwkpj/6wZUubjE
-	pAcP2SHGC0h8m3yIBaJcVmLTAWaQKyUE5rFLbNhyBup3SYmDK26wTGAUn4Vk8ywkm2ch2TwL
-	yYoFjCyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MUIiSWoH48oGi0OMAhyMSjy8hv/6A4RY
-	E8uKK3MPMUpwMCuJ8CZ/mhAgxJuSWFmVWpQfX1Sak1p8iNEH6PKJzFKiyfnAKM8riTc0NjYx
-	MzE1Mbc0NTfFIawkztvskRIgJJCeWJKanZpakFoEM46Jg1OqgdF8ujvDxqsxXg+Pu6776v+u
-	XfxLFIdnk8R9w6nMM2wd/+pvEzv0471SlIm1NXcgf/BX6X+2Qvn+y2vfW7guUdnvOkGI3783
-	wcJ8b/ae40xyVxwuvpff71ES1h3vcmXqxAYeI6semfMmi9fmrj2mJHt61ymz3806oopenutX
-	ybTs2pd30OlnthJLcUaioRZzUXEiAJ9ONZTRAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t9jAV2WLxMCDB7tYLLYs/cki8XlXXPY
-	HJg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
-	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMuNb7irXgdUTF
-	86uL2RsYP7l3MXJySAiYSLy/08oGYYtJXLi3HswWEljEKDHvvUIXIxeQ/Y9RYs2+R6xdjBwc
-	bALaEpv3G4DERQQeMkrsf7aUHaLBVuLp/WvsIDWcAnYSl09EgISFBZwldr9bywhiswioSqzu
-	2ssMYvMClU+a2c4IYQtK/Jh8jwXEZhZQl5g0bxEzhC0vsXnNW2aQkRJA8Ud/dUHCIgJGEvN/
-	3YAqF5eY9OAh+wRGwVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7
-	iREcp8+kdjCubLA4xCjAwajEw2v4rz9AiDWxrLgy9xCjBAezkghv8qcJAUK8KYmVValF+fFF
-	pTmpxYcYfYAencgsJZqcD0wheSXxhsYmZkaWRmYWRibm5jiElcR5mz1SAoQE0hNLUrNTUwtS
-	i2DGMXFwSjUwXhBgP6rTfdxH4+PmlPIDE5Xc1zNNudcQuf74490dq9azX+e99757tyKvUuK8
-	ZyViB9X5uMM2HW0OPZZQuIcpVfmnj8JEhch6C7dmbjWGdp4FHD5XlffO2bkqlP/9q3M1sjyn
-	au4I6E5yDnGb/maFTKKl4AIvpvcTlwTqG13n2LNzd2b8PIZzSizFGYmGWsxFxYkA/lKFBQAD	AAA=
-X-CFilter-Loop: Reflected
+	Wed, 31 Oct 2012 05:49:23 -0400
+Date: Wed, 31 Oct 2012 09:54:04 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        =?UTF-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
+        General Discussion of SQLite Database 
+	<sqlite-users@sqlite.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        drh@hwaci.com
+Subject: Re: [sqlite] light weight write barriers
+Message-ID: <20121031095404.0ac18a4b@pyramind.ukuu.org.uk>
+In-Reply-To: <5090532D.4050902@vlnb.net>
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
+	<m2fw5mtffg.fsf_-_@firstfloor.org>
+	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
+	<5086F5A7.9090406@vlnb.net>
+	<20121025051445.GA9860@thunk.org>
+	<508B3EED.2080003@vlnb.net>
+	<20121027044456.GA2764@thunk.org>
+	<5090532D.4050902@vlnb.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds roll-forward routines to recover fsynced data.
+> I don't want to flame on this topic, but you are not right here. As far as I can 
+> see, a big chunk of Linux storage and file system developers are/were employed by 
+> the "gold-plated storage" manufacturers, starting from FusionIO, SGI and Oracle.
+> 
+> You know, RedHat from recent times also stepped to this market, at least I saw 
+> their advertisement on SDC 2012. So, you can add here all RedHat employees.
 
-- F2FS uses basically roll-back model with checkpointing.
+Booleans generally should be reserved for logic operators. Most of the
+Linux companies work on both low and high end storage. The two are not
+mutually exclusive nor do they divide neatly by market. Many big clouds
+use cheap low end drives by the crate, some high end desktops are using
+SAS although given you can get six 2.5" hotplug drives in a 5.25" bay I'm
+not sure personally there is much point
 
-- In order to implement fsync(), there are two approaches as follows.
+(and I used to have fibrechannel on my Thinkpad 600 when docked 8))
 
-1. A roll-back model with checkpointing at every fsync()
- : This is a naive method, but suffers from very low performance.
+> Our discussion started not from "value-for-money", but from a constant demand to 
+> perform ordered commands without full queue draining, which is ignored by the 
+> Linux storage developers for YEARS as not useful, right?
 
-2. A roll-forward model
- : F2FS adopts this model where all the fsynced data should be recovered, which
-   were written after checkpointing was done. In order to figure out the data,
-   F2FS keeps a "fsync" mark in direct node blocks. In addition, F2FS remains
-   the location of next node block in each direct node block for reconstructing
-   the chain of node blocks during the recovery.
+Send patches with benchmarks demonstrating it is useful. It's really
+quite simple. Code talks.
 
-- In order to enhance the performance, F2FS keeps a "dentry" mark also in direct
-  node blocks. If this is set during the recovery, F2FS replays adding a dentry.
-
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/recovery.c |  375 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 375 insertions(+)
- create mode 100644 fs/f2fs/recovery.c
-
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-new file mode 100644
-index 0000000..7a43df0
---- /dev/null
-+++ b/fs/f2fs/recovery.c
-@@ -0,0 +1,375 @@
-+/**
-+ * fs/f2fs/recovery.c
-+ *
-+ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
-+ *             http://www.samsung.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/fs.h>
-+#include <linux/f2fs_fs.h>
-+#include "f2fs.h"
-+#include "node.h"
-+#include "segment.h"
-+
-+static struct kmem_cache *fsync_entry_slab;
-+
-+bool space_for_roll_forward(struct f2fs_sb_info *sbi)
-+{
-+	if (sbi->last_valid_block_count + sbi->alloc_valid_block_count
-+			> sbi->user_block_count)
-+		return false;
-+	return true;
-+}
-+
-+static struct fsync_inode_entry *get_fsync_inode(struct list_head *head,
-+								nid_t ino)
-+{
-+	struct list_head *this;
-+	struct fsync_inode_entry *entry;
-+
-+	list_for_each(this, head) {
-+		entry = list_entry(this, struct fsync_inode_entry, list);
-+		if (entry->inode->i_ino == ino)
-+			return entry;
-+	}
-+	return NULL;
-+}
-+
-+static int recover_dentry(struct page *ipage, struct inode *inode)
-+{
-+	struct f2fs_node *raw_node = (struct f2fs_node *)kmap(ipage);
-+	struct f2fs_inode *raw_inode = &(raw_node->i);
-+	struct dentry dent, parent;
-+	struct f2fs_dir_entry *de;
-+	struct page *page;
-+	struct inode *dir;
-+	int err = 0;
-+
-+	if (!is_dent_dnode(ipage))
-+		goto out;
-+
-+	dir = f2fs_iget(inode->i_sb, le32_to_cpu(raw_inode->i_pino));
-+	if (IS_ERR(dir)) {
-+		err = -EINVAL;
-+		goto out;
-+	}
-+
-+	parent.d_inode = dir;
-+	dent.d_parent = &parent;
-+	dent.d_name.len = le32_to_cpu(raw_inode->i_namelen);
-+	dent.d_name.name = raw_inode->i_name;
-+
-+	de = f2fs_find_entry(dir, &dent.d_name, &page);
-+	if (de) {
-+		kunmap(page);
-+		f2fs_put_page(page, 0);
-+	} else {
-+		f2fs_add_link(&dent, inode);
-+	}
-+	iput(dir);
-+out:
-+	kunmap(ipage);
-+	return err;
-+}
-+
-+static int recover_inode(struct inode *inode, struct page *node_page)
-+{
-+	void *kaddr = page_address(node_page);
-+	struct f2fs_node *raw_node = (struct f2fs_node *)kaddr;
-+	struct f2fs_inode *raw_inode = &(raw_node->i);
-+
-+	inode->i_mode = le32_to_cpu(raw_inode->i_mode);
-+	i_size_write(inode, le64_to_cpu(raw_inode->i_size));
-+	inode->i_atime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
-+	inode->i_ctime.tv_sec = le64_to_cpu(raw_inode->i_ctime);
-+	inode->i_mtime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
-+	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
-+	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
-+	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
-+
-+	return recover_dentry(node_page, inode);
-+}
-+
-+static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
-+{
-+	unsigned long long cp_ver = le64_to_cpu(sbi->ckpt->checkpoint_ver);
-+	struct curseg_info *curseg;
-+	struct page *page;
-+	block_t blkaddr;
-+	int err = 0;
-+
-+	/* get node pages in the current segment */
-+	curseg = CURSEG_I(sbi, CURSEG_WARM_NODE);
-+	blkaddr = START_BLOCK(sbi, curseg->segno) + curseg->next_blkoff;
-+
-+	/* read node page */
-+	page = alloc_page(GFP_F2FS_ZERO);
-+	if (IS_ERR(page))
-+		return PTR_ERR(page);
-+	lock_page(page);
-+
-+	while (1) {
-+		struct fsync_inode_entry *entry;
-+
-+		if (f2fs_readpage(sbi, page, blkaddr, READ_SYNC))
-+			goto out;
-+
-+		if (cp_ver != cpver_of_node(page))
-+			goto out;
-+
-+		if (!is_fsync_dnode(page))
-+			goto next;
-+
-+		entry = get_fsync_inode(head, ino_of_node(page));
-+		if (entry) {
-+			entry->blkaddr = blkaddr;
-+			if (IS_INODE(page) && is_dent_dnode(page))
-+				set_inode_flag(F2FS_I(entry->inode),
-+							FI_INC_LINK);
-+		} else {
-+			if (IS_INODE(page) && is_dent_dnode(page)) {
-+				if (recover_inode_page(sbi, page)) {
-+					err = -ENOMEM;
-+					goto out;
-+				}
-+			}
-+
-+			/* add this fsync inode to the list */
-+			entry = kmem_cache_alloc(fsync_entry_slab, GFP_NOFS);
-+			if (!entry) {
-+				err = -ENOMEM;
-+				goto out;
-+			}
-+
-+			INIT_LIST_HEAD(&entry->list);
-+			list_add_tail(&entry->list, head);
-+
-+			entry->inode = f2fs_iget(sbi->sb, ino_of_node(page));
-+			if (IS_ERR(entry->inode)) {
-+				err = PTR_ERR(entry->inode);
-+				goto out;
-+			}
-+			entry->blkaddr = blkaddr;
-+		}
-+		if (IS_INODE(page)) {
-+			err = recover_inode(entry->inode, page);
-+			if (err)
-+				goto out;
-+		}
-+next:
-+		/* check next segment */
-+		blkaddr = next_blkaddr_of_node(page);
-+		ClearPageUptodate(page);
-+	}
-+out:
-+	unlock_page(page);
-+	__free_pages(page, 0);
-+	return err;
-+}
-+
-+static void destroy_fsync_dnodes(struct f2fs_sb_info *sbi,
-+					struct list_head *head)
-+{
-+	struct list_head *this;
-+	struct fsync_inode_entry *entry;
-+	list_for_each(this, head) {
-+		entry = list_entry(this, struct fsync_inode_entry, list);
-+		iput(entry->inode);
-+		list_del(&entry->list);
-+		kmem_cache_free(fsync_entry_slab, entry);
-+	}
-+}
-+
-+static void check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
-+						block_t blkaddr)
-+{
-+	struct seg_entry *sentry;
-+	unsigned int segno = GET_SEGNO(sbi, blkaddr);
-+	unsigned short blkoff = GET_SEGOFF_FROM_SEG0(sbi, blkaddr) &
-+					(sbi->blocks_per_seg - 1);
-+	struct f2fs_summary sum;
-+	nid_t ino;
-+	void *kaddr;
-+	struct inode *inode;
-+	struct page *node_page;
-+	block_t bidx;
-+	int i;
-+
-+	sentry = get_seg_entry(sbi, segno);
-+	if (!f2fs_test_bit(blkoff, sentry->cur_valid_map))
-+		return;
-+
-+	/* Get the previous summary */
-+	for (i = CURSEG_WARM_DATA; i <= CURSEG_COLD_DATA; i++) {
-+		struct curseg_info *curseg = CURSEG_I(sbi, i);
-+		if (curseg->segno == segno) {
-+			sum = curseg->sum_blk->entries[blkoff];
-+			break;
-+		}
-+	}
-+	if (i > CURSEG_COLD_DATA) {
-+		struct page *sum_page = get_sum_page(sbi, segno);
-+		struct f2fs_summary_block *sum_node;
-+		kaddr = page_address(sum_page);
-+		sum_node = (struct f2fs_summary_block *)kaddr;
-+		sum = sum_node->entries[blkoff];
-+		f2fs_put_page(sum_page, 1);
-+	}
-+
-+	/* Get the node page */
-+	node_page = get_node_page(sbi, le32_to_cpu(sum.nid));
-+	bidx = start_bidx_of_node(ofs_of_node(node_page)) +
-+				le16_to_cpu(sum.ofs_in_node);
-+	ino = ino_of_node(node_page);
-+	f2fs_put_page(node_page, 1);
-+
-+	/* Deallocate previous index in the node page */
-+	inode = f2fs_iget_nowait(sbi->sb, ino);
-+	truncate_hole(inode, bidx, bidx + 1);
-+	iput(inode);
-+}
-+
-+static void do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
-+					struct page *page, block_t blkaddr)
-+{
-+	unsigned int start, end;
-+	struct dnode_of_data dn;
-+	struct f2fs_summary sum;
-+	struct node_info ni;
-+
-+	start = start_bidx_of_node(ofs_of_node(page));
-+	if (IS_INODE(page))
-+		end = start + ADDRS_PER_INODE;
-+	else
-+		end = start + ADDRS_PER_BLOCK;
-+
-+	set_new_dnode(&dn, inode, NULL, NULL, 0);
-+	if (get_dnode_of_data(&dn, start, 0))
-+		return;
-+
-+	wait_on_page_writeback(dn.node_page);
-+
-+	get_node_info(sbi, dn.nid, &ni);
-+	BUG_ON(ni.ino != ino_of_node(page));
-+	BUG_ON(ofs_of_node(dn.node_page) != ofs_of_node(page));
-+
-+	for (; start < end; start++) {
-+		block_t src, dest;
-+
-+		src = datablock_addr(dn.node_page, dn.ofs_in_node);
-+		dest = datablock_addr(page, dn.ofs_in_node);
-+
-+		if (src != dest && dest != NEW_ADDR && dest != NULL_ADDR) {
-+			if (src == NULL_ADDR) {
-+				int err = reserve_new_block(&dn);
-+				/* We should not get -ENOSPC */
-+				BUG_ON(err);
-+			}
-+
-+			/* Check the previous node page having this index */
-+			check_index_in_prev_nodes(sbi, dest);
-+
-+			set_summary(&sum, dn.nid, dn.ofs_in_node, ni.version);
-+
-+			/* write dummy data page */
-+			recover_data_page(sbi, NULL, &sum, src, dest);
-+			update_extent_cache(dest, &dn);
-+		}
-+		dn.ofs_in_node++;
-+	}
-+
-+	/* write node page in place */
-+	set_summary(&sum, dn.nid, 0, 0);
-+	if (IS_INODE(dn.node_page))
-+		sync_inode_page(&dn);
-+
-+	copy_node_footer(dn.node_page, page);
-+	fill_node_footer(dn.node_page, dn.nid, ni.ino,
-+					ofs_of_node(page), false);
-+	set_page_dirty(dn.node_page);
-+
-+	recover_node_page(sbi, dn.node_page, &sum, &ni, blkaddr);
-+	f2fs_put_dnode(&dn);
-+}
-+
-+static void recover_data(struct f2fs_sb_info *sbi,
-+				struct list_head *head, int type)
-+{
-+	unsigned long long cp_ver = le64_to_cpu(sbi->ckpt->checkpoint_ver);
-+	struct curseg_info *curseg;
-+	struct page *page;
-+	block_t blkaddr;
-+
-+	/* get node pages in the current segment */
-+	curseg = CURSEG_I(sbi, type);
-+	blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
-+
-+	/* read node page */
-+	page = alloc_page(GFP_NOFS | __GFP_ZERO);
-+	if (IS_ERR(page))
-+		return;
-+	lock_page(page);
-+
-+	while (1) {
-+		struct fsync_inode_entry *entry;
-+
-+		if (f2fs_readpage(sbi, page, blkaddr, READ_SYNC))
-+			goto out;
-+
-+		if (cp_ver != cpver_of_node(page))
-+			goto out;
-+
-+		entry = get_fsync_inode(head, ino_of_node(page));
-+		if (!entry)
-+			goto next;
-+
-+		do_recover_data(sbi, entry->inode, page, blkaddr);
-+
-+		if (entry->blkaddr == blkaddr) {
-+			iput(entry->inode);
-+			list_del(&entry->list);
-+			kmem_cache_free(fsync_entry_slab, entry);
-+		}
-+next:
-+		/* check next segment */
-+		blkaddr = next_blkaddr_of_node(page);
-+		ClearPageUptodate(page);
-+	}
-+out:
-+	unlock_page(page);
-+	__free_pages(page, 0);
-+
-+	allocate_new_segments(sbi);
-+}
-+
-+void recover_fsync_data(struct f2fs_sb_info *sbi)
-+{
-+	struct list_head inode_list;
-+
-+	fsync_entry_slab = f2fs_kmem_cache_create("f2fs_fsync_inode_entry",
-+			sizeof(struct fsync_inode_entry), NULL);
-+	if (unlikely(!fsync_entry_slab))
-+		return;
-+
-+	INIT_LIST_HEAD(&inode_list);
-+
-+	/* step #1: find fsynced inode numbers */
-+	if (find_fsync_dnodes(sbi, &inode_list))
-+		goto out;
-+
-+	if (list_empty(&inode_list))
-+		goto out;
-+
-+	/* step #2: recover data */
-+	sbi->por_doing = 1;
-+	recover_data(sbi, &inode_list, CURSEG_WARM_NODE);
-+	sbi->por_doing = 0;
-+	BUG_ON(!list_empty(&inode_list));
-+out:
-+	destroy_fsync_dnodes(sbi, &inode_list);
-+	kmem_cache_destroy(fsync_entry_slab);
-+	write_checkpoint(sbi, false, false);
-+}
--- 
-1.7.9.5
-
-
-
-
----
-Jaegeuk Kim
-Samsung
-
+Alan
