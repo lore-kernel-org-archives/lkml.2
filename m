@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025Ab2JaAja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:39:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21748 "EHLO mga02.intel.com"
+	id S932506Ab2JaAj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:39:28 -0400
+Received: from mga14.intel.com ([143.182.124.37]:15557 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759123Ab2JaAef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759133Ab2JaAef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Oct 2012 20:34:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
-   d="scan'208";a="213257358"
+   d="scan'208";a="162644797"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 18/32] perf, x86: Support for printing PMU state on spurious PMIs v3
-Date: Tue, 30 Oct 2012 17:34:09 -0700
-Message-Id: <1351643663-23828-19-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 24/32] perf, tools: Add arbitary aliases and support names with -
+Date: Tue, 30 Oct 2012 17:34:15 -0700
+Message-Id: <1351643663-23828-25-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
 References: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
@@ -26,84 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-I had some problems with spurious PMIs, so print the PMU state
-on a spurious one. This will not interact well with other NMI users.
-Disabled by default, has to be explicitely enabled through sysfs.
+- Add missing scanner symbol for arbitrary aliases inside the config
+region.
+- looks nicer than _, so allow - in the event names. Used for various
+of the arch perfmon and Haswell events.
 
-Optional, but useful for debugging.
-
-v2: Move to /sys/devices/cpu
-v3: Print in more cases
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c       |    3 +++
- arch/x86/kernel/cpu/perf_event.h       |    2 ++
- arch/x86/kernel/cpu/perf_event_intel.c |   11 ++++++-----
- 3 files changed, 11 insertions(+), 5 deletions(-)
+ tools/perf/util/parse-events.l |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index ec3c549..57bb4ce 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -38,6 +38,7 @@
- #include "perf_event.h"
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index c87efc1..66959fa 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -81,6 +81,7 @@ num_dec		[0-9]+
+ num_hex		0x[a-fA-F0-9]+
+ num_raw_hex	[a-fA-F0-9]+
+ name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
++name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
+ modifier_event	[ukhpGH]{1,8}
+ modifier_bp	[rwx]{1,3}
  
- struct x86_pmu x86_pmu __read_mostly;
-+int	       print_spurious_pmi __read_mostly;
- 
- DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events) = {
- 	.enabled = 1,
-@@ -1758,9 +1759,11 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
+@@ -168,6 +169,7 @@ period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
+ branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
+ ,			{ return ','; }
+ "/"			{ BEGIN(INITIAL); return '/'; }
++{name_minus}		{ return str(yyscanner, PE_NAME); }
  }
  
- static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-+static DEVICE_INT_ATTR(print_spurious_pmi, 0644, print_spurious_pmi);
- 
- static struct attribute *x86_pmu_attrs[] = {
- 	&dev_attr_rdpmc.attr,
-+	&dev_attr_print_spurious_pmi.attr.attr,
- 	NULL,
- };
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index d55e502..2ef5b20 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -664,3 +664,5 @@ static inline struct intel_shared_regs *allocate_shared_regs(int cpu)
- }
- 
- #endif /* CONFIG_CPU_SUP_INTEL */
-+
-+extern int print_spurious_pmi;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 20caf0a..dc2f2a1 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1146,11 +1146,8 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
- 	intel_pmu_disable_all();
- 	handled = intel_pmu_drain_bts_buffer();
- 	status = intel_pmu_get_status();
--	if (!status) {
--		intel_pmu_enable_all(0);
--		return handled;
--	}
--
-+	if (!status)
-+		goto done;
- 	loops = 0;
- again:
- 	intel_pmu_ack_status(status);
-@@ -1210,6 +1207,10 @@ again:
- 		goto again;
- 
- done:
-+	if (!handled && print_spurious_pmi) {
-+		pr_debug("Spurious PMI\n");
-+		perf_event_print_debug();
-+	}
- 	intel_pmu_enable_all(0);
- 	return handled;
- }
+ mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
 -- 
 1.7.7.6
 
