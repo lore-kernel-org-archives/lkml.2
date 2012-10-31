@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab2JaRb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:31:57 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:22892 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753278Ab2JaRby (ORCPT
+	id S933716Ab2JaRda (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:33:30 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14077 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932851Ab2JaRd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:31:54 -0400
-Date: Wed, 31 Oct 2012 17:31:52 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Shan Wei <shanwei88@gmail.com>
-cc: David Miller <davem@davemloft.net>, timo.teras@iki.fi,
-        steffen.klassert@secunet.com, NetDev <netdev@vger.kernel.org>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/9] net: core: use this_cpu_ptr per-cpu helper
-In-Reply-To: <509109E1.6040607@gmail.com>
-Message-ID: <0000013ab7e116c8-fac51ac3-c4a4-46b8-9d55-fb4df4019e30-000000@email.amazonses.com>
-References: <509109E1.6040607@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 31 Oct 2012 13:33:27 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 31 Oct 2012 10:33:21 -0700
+Message-ID: <5091607D.8010907@nvidia.com>
+Date: Wed, 31 Oct 2012 23:01:41 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V4 0/4] ARM: tegra: Enable SLINK controller driver
+References: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com> <50915203.8030505@wwwdotorg.org>
+In-Reply-To: <50915203.8030505@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012, Shan Wei wrote:
+On Wednesday 31 October 2012 09:59 PM, Stephen Warren wrote:
+> On 10/31/2012 03:02 AM, Laxman Dewangan wrote:
+>> This series modify the dts file to add the slink addresses,
+>> make AUXDATA in board dt files, enable slink4 for tegra30-cardhu and
+>> enable slink controller defconfig.
+> I don't appear to have received patch 1/4 this time around. I'll assume
+> it's identical to V3, since I don't think anything needed to change there...
 
-> +++ b/net/core/flow.c
-> @@ -327,11 +327,9 @@ static void flow_cache_flush_tasklet(unsigned long data)
->  static void flow_cache_flush_per_cpu(void *data)
->  {
->  	struct flow_flush_info *info = data;
-> -	int cpu;
->  	struct tasklet_struct *tasklet;
->
-> -	cpu = smp_processor_id();
-> -	tasklet = &per_cpu_ptr(info->cache->percpu, cpu)->flush_tasklet;
-> +	tasklet = &this_cpu_ptr(info->cache->percpu)->flush_tasklet;
->  	tasklet->data = (unsigned long)info;
->  	tasklet_schedule(tasklet);
->  }
->
-
-Reviewed-by: Christoph Lameter <cl@linux.com>
-
+Yes, it is identical to V3, no change on the 1/4.
+Only change in 3/4 and 4/4. I realize later that you already applied the 
+2/4 yesterday.
