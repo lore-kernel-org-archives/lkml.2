@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935453Ab2JaLRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 07:17:04 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:44834 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933211Ab2JaLRA (ORCPT
+	id S935448Ab2JaLUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 07:20:00 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:52932 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934387Ab2JaLT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 07:17:00 -0400
-Subject: Re: [PATCH 2/2] irq_work: Fix racy IRQ_WORK_BUSY flag setting
-From: anish kumar <anish198519851985@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-In-Reply-To: <1351622752.4004.21.camel@gandalf.local.home>
-References: <1351611301-3520-1-git-send-email-fweisbec@gmail.com>
-	 <1351611301-3520-3-git-send-email-fweisbec@gmail.com>
-	 <1351622024.1504.13.camel@anish-Inspiron-N5050>
-	 <1351622752.4004.21.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 31 Oct 2012 20:06:26 +0900
-Message-ID: <1351681586.1504.22.camel@anish-Inspiron-N5050>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Oct 2012 07:19:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOJsxLF2tgLDn0pcTaisd0N4c+4Jxi=gmV1qK+7MSc6=QoyBkA@mail.gmail.com>
+References: <1347461277-25302-1-git-send-email-elezegarcia@gmail.com>
+	<tip-8781915ad2716adcd8cd5cc52cee791fc8b00fdf@git.kernel.org>
+	<CAOJsxLF2tgLDn0pcTaisd0N4c+4Jxi=gmV1qK+7MSc6=QoyBkA@mail.gmail.com>
+Date: Wed, 31 Oct 2012 08:19:57 -0300
+Message-ID: <CALF0-+Vv0mS6ENOpG4x6-922XEik5JM=4+5A+5ZWVtgZmNyJBA@mail.gmail.com>
+Subject: Re: [tip:perf/core] trace: Move trace event enable from fs_initcall
+ to core_initcall
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org, Tim Bird <tim.bird@am.sony.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-30 at 14:45 -0400, Steven Rostedt wrote:
-> On Wed, 2012-10-31 at 03:33 +0900, anish kumar wrote:
-> 
-> > > CPU 0                                 CPU 1
-> > > 
-> > > data = something                     flags = IRQ_WORK_BUSY
-> > > smp_mb() (implicit with cmpxchg      smp_mb()
-> > >           on flags in claim)         execute_work (sees data from CPU
-> > > 0)
-> > > try to claim
-> > > 
-> > As I understand without the memory barrier proposed by you the situation
-> > would be as below:
-> > CPU 0                                 CPU 1
-> >  
-> > data = something                     flags = IRQ_WORK_BUSY
-> > smp_mb() (implicit with cmpxchg      execute_work (sees data from CPU 0)
-> >            on flags in claim)        
-> > _success_ in claiming and goes
-> 
-> Correct, because it would see the stale value of flags.
-> 
-> > ahead and execute the work(wrong?)
-> > 		                     cmpxchg cause flag to IRQ_WORK_BUSY
-> > 
-> > Now knows the flag==IRQ_WORK_BUSY
-> >                                 
-> > Am I right?
-> 
-> right.
-> 
-> > 
-> > Probably a stupid question.Why do we return the bool from irq_work_queue
-> > when no one bothers to check the return value?Wouldn't it be better if
-> > this function is void as used by the users of this function or am I
-> > looking at the wrong code.
-> 
-> Not a stupid question, as I was asking that to myself just earlier
-> today. But forgot to mention it as well. Especially, because it makes it
-> look like there's a bug in the code. Maybe someday someone will care if
-> their work was finished by itself, or some other CPU.
-> 
-> Probably should just nix the return value.
-Can I send a patch to fix this?
-> 
-> -- Steve
-> 
-> 
+Hi Pekka,
 
+On Wed, Oct 31, 2012 at 4:04 AM, Pekka Enberg <penberg@kernel.org> wrote:
+> Hi Ezequiel,
+>
+> On Thu, Sep 27, 2012 at 8:49 AM, tip-bot for Ezequiel Garcia
+> <elezegarcia@gmail.com> wrote:
+>> Commit-ID:  8781915ad2716adcd8cd5cc52cee791fc8b00fdf
+>> Gitweb:     http://git.kernel.org/tip/8781915ad2716adcd8cd5cc52cee791fc8b00fdf
+>> Author:     Ezequiel Garcia <elezegarcia@gmail.com>
+>> AuthorDate: Wed, 12 Sep 2012 11:47:57 -0300
+>> Committer:  Steven Rostedt <rostedt@goodmis.org>
+>> CommitDate: Mon, 24 Sep 2012 14:13:02 -0400
+>>
+>> trace: Move trace event enable from fs_initcall to core_initcall
+>>
+>> This patch splits trace event initialization in two stages:
+>>  * ftrace enable
+>>  * sysfs event entry creation
+>>
+>> This allows to capture trace events from an earlier point
+>> by using 'trace_event' kernel parameter and is important
+>> to trace boot-up allocations.
+>>
+>> Note that, in order to enable events at core_initcall,
+>> it's necessary to move init_ftrace_syscalls() from
+>> core_initcall to early_initcall.
+>>
+>> Link: http://lkml.kernel.org/r/1347461277-25302-1-git-send-email-elezegarcia@gmail.com
+>>
+>> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+>> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>
+> So what's still needed for perf to be able to trace early boot slab
+> allocations like kmemtrace used to be able to do?
+>
 
+Steven suggested [1] it would be possible to create some sort
+of static ring buffer, and use it to trace early events.
+Later on, this static buffer should be copied into the "real" one.
+
+Since this patch, ftrace is enabled at core_initcall.
+It's an improvement, but we still loose events.
+For instance, in a probe kernel we loose 800k bytes,
+and 20k allocations, compared to accounting from boot up.
+
+To be able to use ftrace (and therefore perf) for long run tracing,
+you need to consider ring buffer overrun.
+In my tests, I had to set a bigger buffer,
+which severely impacts performance.
+
+IMHO, this makes ftrace unsuitable for very long run tests
+with "verbose" events; unless you put an user daemon
+or something popping events, preventing overrun.
+
+    Ezequiel
+
+[1] https://lkml.org/lkml/2012/8/17/253
