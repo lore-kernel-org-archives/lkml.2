@@ -1,60 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422921Ab2JaNwG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:52:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50733 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422848Ab2JaNv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:51:59 -0400
-Date: Wed, 31 Oct 2012 14:51:54 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?David_H=E4rdeman?= <david@hardeman.nu>
-Cc: mchehab@infradead.org, sfr@canb.auug.org.au, bonbons@linux-vserver.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid-picolcd_cir: fix compilation
-In-Reply-To: <20121031082208.7522.22716.stgit@zeus.hardeman.nu>
-Message-ID: <alpine.LNX.2.00.1210311451340.12781@pobox.suse.cz>
-References: <20121031082208.7522.22716.stgit@zeus.hardeman.nu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757709Ab2JaNwW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:52:22 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49870 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753879Ab2JaNwS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 09:52:18 -0400
+Date: Wed, 31 Oct 2012 09:39:39 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: akpm@linux-foundation.org, Joerg Roedel <joerg.roedel@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Subject: Re: dma_mapping_error() interfaces
+Message-ID: <20121031133939.GD27288@phenom.dumpdata.com>
+References: <1351194980.2432.88.camel@lorien2>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351194980.2432.88.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012, David Härdeman wrote:
-
-> Commit c003ab1bedf0 ("[media] rc-core: add separate defines for
-> protocol bitmaps and numbers") overlooked hid-picolcd.
+On Thu, Oct 25, 2012 at 01:56:20PM -0600, Shuah Khan wrote:
+> I am working on changing dma_mapping_error() interfaces to add call to
+> debug_dma_mapping_error() interface. I found several dma_mapping_error()
+> defines in various arch specific dma-mapping.h files.
 > 
-> This patch (against git.linuxtv.org/media_tree.git, branch
-> staging/for_v3.8) fixes the compilation breakage.
+> Majority of these arch specific defines look identical - simply
 > 
-> Signed-off-by: David Härdeman <david@hardeman.nu>
-> ---
->  drivers/hid/hid-picolcd_cir.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> static inline int dma_mapping_error(struct device *dev, dma_ addr_t
+> dma_addr)
+> {
+>        struct dma_map_ops *dma_ops = get_dma_ops(dev);
 > 
-> diff --git a/drivers/hid/hid-picolcd_cir.c b/drivers/hid/hid-picolcd_cir.c
-> index 13ca919..a79e95b 100644
-> --- a/drivers/hid/hid-picolcd_cir.c
-> +++ b/drivers/hid/hid-picolcd_cir.c
-> @@ -116,7 +116,7 @@ int picolcd_init_cir(struct picolcd_data *data, struct hid_report *report)
->  
->  	rdev->priv             = data;
->  	rdev->driver_type      = RC_DRIVER_IR_RAW;
-> -	rdev->allowed_protos   = RC_TYPE_ALL;
-> +	rdev->allowed_protos   = RC_BIT_ALL;
->  	rdev->open             = picolcd_cir_open;
->  	rdev->close            = picolcd_cir_close;
->  	rdev->input_name       = data->hdev->name;
+>        if (dma_ops->mapping_error)
+>                 return dma_ops->mapping_error(dev, dma_addr);
+> }
+> 
+> Maybe a generic dma_mapping_error() could be added to augment the
+> existing dma_map_page() and dma_map_single() generic interfaces in
+> include/asm-generic/dma-mapping-common.h (Future work)
+> 
+> For the most part, architecture specific
+> dma_map_page()/dma_map_single(), dma_unmap_page() interfaces are
+> implemented as a pair, however arch/m68k/include/asm/dma-mapping.h is an
+> exception. In this case generic dma_map_page()/dma_map_single() are
+> used, and arch specific dma_unmap_page() is defined. Couple of issues,
+> unmap routines do nothing. Maybe just fine for this architecture.
 
-This has been reported by Stephen a few days ago already ... Mauro, any 
-plans to have that fixed up in media tree please?
+Could you CC the maintainer of said architecture and find out? Perhaps
+this was intended.. or just a bug.
 
-Thanks,
 
--- 
-Jiri Kosina
-SUSE Labs
+> However, when dma_debug is enabled, debug is lopsided and debug entries
+> don't get releases.
+> 
+> For the present here is what I am planning to do:
+> 
+> Change dma_mapping_error() defines to add debug_dma_mapping_error() on
+> architectures that use the generic dma_map_page() and dma_map_single()
+> interfaces from include/asm-generic/dma-mapping-common.h to debug
+> inconsistency between invoking dma-debug at mapping time and missing
+> debug at error check time. Inconsistency will result in false warnings.
+> The following fall into this category.
+> 
+> arch/alpha/include/asm/dma-mapping.h
+> arch/arm/include/asm/dma-mapping.h
+> arch/arm64/include/asm/dma-mapping.h
+> arch/c6x/include/asm/dma-mapping.h
+> arch/frv/include/asm/dma-mapping.h
+> arch/hexagon/include/asm/dma-mapping.h
+> arch/ia64/include/asm/dma-mapping.h
+> arch/m68k/include/asm/dma-mapping.h
+> arch/microblaze/include/asm/dma-mapping.h
+> arch/mips/include/asm/dma-mapping.h
+> arch/powerpc/include/asm/dma-mapping.h
+> arch/sh/include/asm/dma-mapping.h
+> arch/sparc/include/asm/dma-mapping.h
+
+Sounds good.
+> 
+> Leave dma_mapping_error() defines as is in arch header files that also
+> define dma_map_page() and dma_map_single() and not call
+> debug_dma_map_page() interface. The following fall into this category.
+> 
+> arch/avr32/include/asm/dma-mapping.h
+> arch/blackfin/include/asm/dma-mapping.h
+> arch/cris/include/asm/dma-mapping.h
+> arch/mn10300/include/asm/dma-mapping.h
+> arch/parisc/include/asm/dma-mapping.h
+> arch/xtensa/include/asm/dma-mapping.h
+
+Any reason to skip those?
+
+> 
+> - There is this inconsistency now with the debug_dma_mapping_error()
+> interface in linux-next. If this is unacceptable, I will send a patch
+> that marks dma debug entries checked for mapping errors in the interim
+> (an easy change to initialize the flag to have been checked) while I get
+> the existing dma_mapping_error() interface patches done.
+> 
+> Comments, concerns.
+> 
+> Thanks,
+> -- Shuah
+> 
+> 
+> 
+> - 
+> 
