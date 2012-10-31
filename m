@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab2JaGBt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 02:01:49 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57855 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab2JaGBs (ORCPT
+	id S1753194Ab2JaGPW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 02:15:22 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:44950 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab2JaGPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 02:01:48 -0400
-X-AuditID: 9c930197-b7c0bae00000042f-ed-5090beca25f8
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
-        ming.m.lin@intel.com
-Subject: Re: [Patch v1 08/10] perf report: add support for mem access profiling
-References: <1351523752-4215-1-git-send-email-eranian@google.com>
-	<1351523752-4215-9-git-send-email-eranian@google.com>
-Date: Wed, 31 Oct 2012 15:01:45 +0900
-In-Reply-To: <1351523752-4215-9-git-send-email-eranian@google.com> (Stephane
-	Eranian's message of "Mon, 29 Oct 2012 16:15:50 +0100")
-Message-ID: <87ehkf5gdy.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 31 Oct 2012 02:15:20 -0400
+Message-ID: <5090C0DD.4070505@linux.vnet.ibm.com>
+Date: Wed, 31 Oct 2012 11:40:37 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V2 RFC 3/3] kvm: Check system load and handle different
+ commit cases accordingly
+References: <20121029140621.15448.92083.sendpatchset@codeblue> <20121029140717.15448.83182.sendpatchset@codeblue> <1351533280.24721.46.camel@twins> <508F6C60.1050202@linux.vnet.ibm.com> <1351584858.4047.32.camel@twins>
+In-Reply-To: <1351584858.4047.32.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12103106-9574-0000-0000-000005184005
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Oct 2012 16:15:50 +0100, Stephane Eranian wrote:
-> This patch adds the --mem-mode option to perf report.
+On 10/30/2012 01:44 PM, Peter Zijlstra wrote:
+> On Tue, 2012-10-30 at 11:27 +0530, Raghavendra K T wrote:
+>> Okay, now IIUC, usage of *any* global measure is bad?
 >
-> This mode requires a perf.data file created with memory
-> access samples.
->
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
-[snip]
-> +	cost = mi->cost;
-> +	if (!cost)
-> +		cost = 1;
-> +
-> +	/*
-> +	 * The report shows the percentage of total branches captured
-> +	 * and not events sampled. Thus we use a pseudo period of 1.
+> Yep, people like to carve up their machines, esp. now that they're
+> somewhat bigger than they used to be. This can result in very asymmetric
+> loads, no global measure can ever deal with that.
 
-But cost won't be 1 anymore if PERF_SAMPLE_COST set, right?
+Thanks for explaining the concerns. Very True and if load is very 
+asymmetric due to power optimization etc constraints. This may affect.
 
 
-> +	 * Only in the newt browser we are doing integrated annotation,
-> +	 * so we don't allocated the extra space needed because the stdio
-> +	 * code will not use it.
-
-Yes, and gtk too.
-
-
-> +	 */
-> +	he = __hists__add_mem_entry(&evsel->hists, al, parent, mi,
-> +				    cost);
-> +	if (!he)
-> +		return -ENOMEM;
-> +
-> +	if (sort__has_sym && he->ms.sym && use_browser > 0) {
-
-So I'd rather write 'use_browser == 1' instead of '> 0'.
-
-
-> +		struct annotation *notes = symbol__annotation(he->ms.sym);
-> +
-> +		assert(evsel != NULL);
-> +
-> +		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
-> +			goto out;
-> +
-> +		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-> +		if (err)
-> +			goto out;
-> +	}
-> +
-> +	if (sort__has_sym && he->mem_info->daddr.sym && use_browser > 0) {
-
-Ditto.
-
-Thanks,
-Namhyung
