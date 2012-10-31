@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935112Ab2JaIau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 04:30:50 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:44645 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935090Ab2JaIaq (ORCPT
+	id S935119Ab2JaIcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 04:32:14 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:53964 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935090Ab2JaIcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 04:30:46 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm: platform: Don't initialize driver-private data
-Date: Wed, 31 Oct 2012 09:31:27 +0100
-Message-ID: <1397581.cKqVYz2Abn@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121031082607.GA1835@avionic-0098.mockup.avionic-design.de>
-References: <1350324222-26885-1-git-send-email-thierry.reding@avionic-design.de> <15899660.S8avMzQBpd@avalon> <20121031082607.GA1835@avionic-0098.mockup.avionic-design.de>
+	Wed, 31 Oct 2012 04:32:11 -0400
+X-IronPort-AV: E=Sophos;i="4.80,685,1344211200"; 
+   d="scan'208";a="212957791"
+Message-ID: <1351672212.20470.7.camel@hastur.hellion.org.uk>
+Subject: Re: [Xen-devel] [PATCH] xen PVonHVM: require at least Xen 3.4 as
+ dom0
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: Pasi =?ISO-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 31 Oct 2012 09:30:12 +0100
+In-Reply-To: <20121030182859.GA8775@aepfle.de>
+References: <1351613105-24408-1-git-send-email-olaf@aepfle.de>
+	 <20121030181732.GZ8912@reaktio.net> <20121030182859.GA8775@aepfle.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1478522.qdvyXi9Zmx"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.16.67]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---nextPart1478522.qdvyXi9Zmx
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-
-Hi Thierry,
-
-On Wednesday 31 October 2012 09:26:07 Thierry Reding wrote:
-> On Fri, Oct 26, 2012 at 04:06:27PM +0200, Laurent Pinchart wrote:
-> > On Monday 15 October 2012 20:03:42 Thierry Reding wrote:
-> > > Platform device drivers usually use the driver-private data for their
-> > > own purposes. Having it overwritten by drm_platform_init() is confusing
-> > > and error-prone.
+On Tue, 2012-10-30 at 18:28 +0000, Olaf Hering wrote:
+> On Tue, Oct 30, Pasi Kärkkäinen wrote:
+> 
+> > On Tue, Oct 30, 2012 at 05:05:05PM +0100, Olaf Hering wrote:
+> > > The XenPVHVM extensions have not been tested much on very old
+> > > hypervisors. At least Xen 3.4 gets some testing with the pvops kernel.
+> > > 
+> > > Require at least Xen 3.4 for the PVonHVM extensions. If an older
+> > > hypervisor is detected the extensions will be disabled and the guest
+> > > will only see emulated hardware.
+> > > 
+> > > Signed-off-by: Olaf Hering <olaf@aepfle.de>
+> > >
 > > 
-> > If you want to push drivers that way, you should get rid of the
-> > pci_set_drvdata() call in core DRM as well. This would push device driver
-> > data handling down to all drivers, so I'm not convinced it would actually
-> > make things simpler.
+> > IIRC upstream Linux PVonHVM drivers do work OK today on RHEL5 Xen, 
+> > which advertises itself as Xen 3.1.2-based..
 > 
-> I think the problem doesn't exist for PCI-based DRM drivers, so I didn't
-> look at it. The issue only arises once the DRM needs to glue together
-> multiple devices, as is usual with the drivers for embedded devices,
-> where the drivers are based on platform devices.
+> If thats the case, and a combination thats supposed to work, the patch
+> can be dropped if the hvmloader does really leave room at
+> FE700000-FE800000.
+
+If I understand correctly this requirements comes from the need to
+support moving the shared info page in order to support kexec?
+
+So could we do something more fine grained and limit only the kexec
+support (and therefore the movement of the SI into that range) to 3.4+?
+
+Ian.
+
 > 
-> I agree, though, that for consistency it would be nicer not to do this
-> for the PCI-based DRM drivers either. If David agrees I can take a look
-> at converting the other drivers along with the change to the DRM core.
+> Olaf
 > 
-> Pushing the handling of the driver-private data down to the drivers may
-> not make things easier, but at least it would be consistent with other
-> drivers. I didn't mention this in the patch description but it actually
-> took me a day to track down why the driver kept crashing until I figured
-> out that drm_platform_init() actually modified the pointer.
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
 
-So we either need your patch, or a documentation update :-)
-
-The patch itself is fine, I'll let others comment on the approach.
-
--- 
-Regards,
-
-Laurent Pinchart
-
---nextPart1478522.qdvyXi9Zmx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQEcBAABAgAGBQJQkOHnAAoJEIkPb2GL7hl1hdAH/0Uxeyzm5szL/zv2HGu4gLdM
-I/lffgB8SHAPUDUW9x4NWRQeo8+JVmlQSPscJgBt0liQybgKyGu7wOcdq0OJIdQM
-PGc3w462GzSqkMBpG5eTAnbM/B4JN0VY93kCJ9gJuZODaPCNc9378/nfpQzQVzx7
-1Jvfk1VysRBWE3l9ia4yM0AaIX20KEhd0adgE4FeP0cnjOFT126ttO+kY3fhPBsN
-IiVwQLSdZYjW1H68P6+Hg7n6KeYq/gvNv0RH+xt0sHW18E3BKxNzs2vBnM7tKW1f
-7fHQTaKb5nEJ2nkqK1d3bW0SsgeaOYD1/lTA1mY30DvtGbEH3cceMyq+LBlDEFU=
-=//5v
------END PGP SIGNATURE-----
-
---nextPart1478522.qdvyXi9Zmx--
 
