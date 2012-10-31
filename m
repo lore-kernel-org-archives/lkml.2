@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760676Ab2JaAj0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:39:26 -0400
+	id S1759135Ab2JaAef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:34:35 -0400
 Received: from mga02.intel.com ([134.134.136.20]:31172 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759155Ab2JaAef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:34:35 -0400
+	id S1758878Ab2JaAeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 20:34:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
-   d="scan'208";a="234886220"
+   d="scan'208";a="234886215"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 14/32] perf, core: Add a concept of a weightened sample
-Date: Tue, 30 Oct 2012 17:34:05 -0700
-Message-Id: <1351643663-23828-15-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 03/32] perf, x86: Basic Haswell PEBS support v3
+Date: Tue, 30 Oct 2012 17:33:54 -0700
+Message-Id: <1351643663-23828-4-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
 References: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
@@ -26,111 +26,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-For some events it's useful to weight sample with a hardware
-provided number. This expresses how expensive the action the
-sample represent was.  This allows the profiler to scale
-the samples to be more informative to the programmer.
+Add basic PEBS support for Haswell.
+The constraints are similar to SandyBridge with a few new events.
 
-There is already the period which is used similarly, but it means
-something different, so I chose to not overload it. Instead
-a new sample type for WEIGHT is added.
-
-Can be used for multiple things. Initially it is used for TSX abort costs
-and profiling by memory latencies (so to make expensive load appear higher
-up in the histograms)  The concept is quite generic and can be extended
-to many other kinds of events or architectures, as long as the hardware
-provides suitable auxillary values. In principle it could be also
-used for software tracpoints.
-
-This adds the generic glue. A new optional sample format for a 64bit
-weight value.
-
+v2: Readd missing pebs_aliases
+v3: Readd missing hunk. Fix some constraints.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/perf_event.h      |    2 ++
- include/uapi/linux/perf_event.h |    8 ++++++--
- kernel/events/core.c            |    6 ++++++
- 3 files changed, 14 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h          |    2 ++
+ arch/x86/kernel/cpu/perf_event_intel.c    |    6 ++++--
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   29 +++++++++++++++++++++++++++++
+ 3 files changed, 35 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 91052e1..c9686c8 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -588,6 +588,7 @@ struct perf_sample_data {
- 	struct perf_branch_stack	*br_stack;
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
-+	u64				weight;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 8941899..1567b0d 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -596,6 +596,8 @@ extern struct event_constraint intel_snb_pebs_event_constraints[];
+ 
+ extern struct event_constraint intel_ivb_pebs_event_constraints[];
+ 
++extern struct event_constraint intel_hsw_pebs_event_constraints[];
++
+ struct event_constraint *intel_pebs_constraints(struct perf_event *event);
+ 
+ void intel_pmu_pebs_enable(struct perf_event *event);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 3a08534..634f639 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -826,7 +826,8 @@ static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
+ 		return true;
+ 
+ 	/* implicit branch sampling to correct PEBS skid */
+-	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
++	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
++	    x86_pmu.intel_cap.pebs_format < 2)
+ 		return true;
+ 
+ 	return false;
+@@ -2127,8 +2128,9 @@ __init int intel_pmu_init(void)
+ 		intel_pmu_lbr_init_nhm();
+ 
+ 		x86_pmu.event_constraints = intel_hsw_event_constraints;
+-
++		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
+ 		x86_pmu.extra_regs = intel_snb_extra_regs;
++		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+ 		/* all extra regs are per-cpu when HT is on */
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+ 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 9d0dae0..16d7c58 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -427,6 +427,35 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
+         EVENT_CONSTRAINT_END
  };
  
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -601,6 +602,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
-+	data->weight = 0;
- }
- 
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 8e38823..809a5fd 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -132,8 +132,10 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
-+	PERF_SAMPLE_WEIGHT			= 1U << 14,
++struct event_constraint intel_hsw_pebs_event_constraints[] = {
++	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
++	INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
++	INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
++	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
++	INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
++	INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
++	INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
++	INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
++	INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
++	INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
++	INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
++	INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
++	INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
++	INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
++	INTEL_UEVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
++	INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
++	INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
++	INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
++	INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
++	INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
++	INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
++	INTEL_UEVENT_CONSTRAINT(0x02d3, 0xf), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
++	INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
++	INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
 +
-+	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
- 
--	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
- };
- 
- /*
-@@ -201,8 +203,9 @@ enum perf_event_read_format {
- 	PERF_FORMAT_TOTAL_TIME_RUNNING		= 1U << 1,
- 	PERF_FORMAT_ID				= 1U << 2,
- 	PERF_FORMAT_GROUP			= 1U << 3,
-+	PERF_FORMAT_WEIGHT			= 1U << 4,
- 
--	PERF_FORMAT_MAX = 1U << 4,		/* non-ABI */
-+	PERF_FORMAT_MAX = 1U << 5,		/* non-ABI */
- };
- 
- #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
-@@ -562,6 +565,7 @@ enum perf_event_type {
- 	 *	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
- 	 *	{ u32			cpu, res; } && PERF_SAMPLE_CPU
- 	 *	{ u64			period;   } && PERF_SAMPLE_PERIOD
-+	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
- 	 *
- 	 *	{ struct read_format	values;	  } && PERF_SAMPLE_READ
- 	 *
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index dbccf83..d633581 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -952,6 +952,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_PERIOD)
- 		size += sizeof(data->period);
- 
-+	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		size += sizeof(data->weight);
++	EVENT_CONSTRAINT_END
++};
 +
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
- 
-@@ -4080,6 +4083,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_PERIOD)
- 		perf_output_put(handle, data->period);
- 
-+	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		perf_output_put(handle, data->weight);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		perf_output_read(handle, event);
- 
+ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+ {
+ 	struct event_constraint *c;
 -- 
 1.7.7.6
 
