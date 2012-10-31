@@ -1,40 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759516Ab2JaRtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:49:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60323 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759382Ab2JaRtu (ORCPT
+	id S1759582Ab2JaRuR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:50:17 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:40638 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758928Ab2JaRuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:49:50 -0400
-Date: Wed, 31 Oct 2012 10:49:46 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
-Cc: skinsbursky@parallels.com, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, baggins@pld-linux.org,
-        arekm@pld-linux.org
-Subject: Re: [PATCH] lockd: fix races in per-net NSM client handling
-Message-ID: <20121031174946.GA13591@kroah.com>
-References: <1689813.hptKgzjpAu@localhost>
+	Wed, 31 Oct 2012 13:50:15 -0400
+Date: Wed, 31 Oct 2012 17:50:14 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Shan Wei <shanwei88@gmail.com>
+cc: rostedt@goodmis.org, fweisbec@gmail.com,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>, mingo@redhat.com
+Subject: Re: [PATCH 8/9] trace: use this_cpu_ptr per-cpu helper
+In-Reply-To: <50910A1E.3040009@gmail.com>
+Message-ID: <0000013ab7f1e47a-68c5ce3c-06bb-48f8-93f7-1ce012b36a75-000000@email.amazonses.com>
+References: <50910A1E.3040009@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1689813.hptKgzjpAu@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 06:27:36PM +0100, Paweł Sikora wrote:
-> Hi,
-> 
-> the patch metioned in https://lkml.org/lkml/2012/10/24/175 seems to fix
-> the 3.6.3 oops (while 3.6.2 works fine) at 16-cores opteron server.
-> please queue this path for 3.6.$next.
+On Wed, 31 Oct 2012, Shan Wei wrote:
 
-Is it in Linus's tree already?  If so, what is the git commit id?
+> From: Shan Wei <davidshan@tencent.com>
+>
+>
+> Signed-off-by: Shan Wei <davidshan@tencent.com>
+> ---
+>  kernel/trace/blktrace.c |    2 +-
+>  kernel/trace/trace.c    |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+> index c0bd030..71259e2 100644
+> --- a/kernel/trace/blktrace.c
+> +++ b/kernel/trace/blktrace.c
+> @@ -147,7 +147,7 @@ void __trace_note_message(struct blk_trace *bt, const char *fmt, ...)
+>  		return;
+>
+>  	local_irq_save(flags);
+> -	buf = per_cpu_ptr(bt->msg_data, smp_processor_id());
+> +	buf = this_cpu_ptr(bt->msg_data);
+>  	va_start(args, fmt);
+>  	n = vscnprintf(buf, BLK_TN_MAX_MSG, fmt, args);
+>  	va_end(args);
 
-thanks,
+Ok
 
-greg k-h
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 31e4f55..81ae35b 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -1513,7 +1513,7 @@ static char *get_trace_buf(void)
+>  	if (!percpu_buffer)
+>  		return NULL;
+>
+> -	buffer = per_cpu_ptr(percpu_buffer, smp_processor_id());
+> +	buffer = this_cpu_ptr(percpu_buffer);
+>
+>  	return buffer->buffer;
+
+
+Just do a
+
+	return this_cpu_read(percpu_buffer->buffer);
+
+and get rid of the this_cpu_ptr op
