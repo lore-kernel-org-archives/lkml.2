@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934123Ab2J3SMo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:12:44 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:59039 "EHLO
+	id S934197Ab2J3SQL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:16:11 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:59055 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965163Ab2J3SMl (ORCPT
+	by vger.kernel.org with ESMTP id S934048Ab2J3SMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:12:41 -0400
-X-Greylist: delayed 614 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 14:12:40 EDT
+	Tue, 30 Oct 2012 14:12:44 -0400
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Tony Lindgren <tony@atomide.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
 Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
-        linux-omap@vger.kernel.org, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>
-Subject: [PATCH] i2c: pinctrl-ify i2c-omap.c
-Date: Wed, 31 Oct 2012 17:55:30 +0200
-Message-Id: <1351698930-3797-1-git-send-email-panto@antoniou-consulting.com>
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org
+Subject: [PATCH] pwm: export of_pwm_request
+Date: Wed, 31 Oct 2012 17:57:10 +0200
+Message-Id: <1351699030-4401-1-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable pinctrl for i2c-omap.
+No need to hide of_pwm_request, it's useful to other in-kernel users.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- drivers/i2c/busses/i2c-omap.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/pwm/core.c  | 6 +++++-
+ include/linux/pwm.h | 7 +++++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index db31eae..4c38aa0 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -44,6 +44,8 @@
- #include <linux/i2c-omap.h>
- #include <linux/pm_runtime.h>
- #include <linux/pm_qos.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/err.h>
+diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+index f5acdaa..f8c7e6b 100644
+--- a/drivers/pwm/core.c
++++ b/drivers/pwm/core.c
+@@ -457,7 +457,7 @@ static struct pwm_chip *of_node_to_pwmchip(struct device_node *np)
+  * becomes mandatory for devices that look up the PWM device via the con_id
+  * parameter.
+  */
+-static struct pwm_device *of_pwm_request(struct device_node *np,
++struct pwm_device *of_pwm_request(struct device_node *np,
+ 					 const char *con_id)
+ {
+ 	struct pwm_device *pwm = NULL;
+@@ -466,6 +466,9 @@ static struct pwm_device *of_pwm_request(struct device_node *np,
+ 	int index = 0;
+ 	int err;
  
- /* I2C controller revisions */
- #define OMAP_I2C_OMAP1_REV_2		0x20
-@@ -1064,6 +1066,7 @@ omap_i2c_probe(struct platform_device *pdev)
- 	const struct of_device_id *match;
- 	int irq;
- 	int r;
-+	struct pinctrl *pinctrl;
- 
- 	/* NOTE: driver uses the static register mapping */
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-@@ -1202,6 +1205,13 @@ omap_i2c_probe(struct platform_device *pdev)
- 
- 	of_i2c_register_devices(adap);
- 
-+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-+	if (IS_ERR(pinctrl))
-+		dev_warn(dev->dev, "unable to select pin group\n");
++	if (!np)
++		return ERR_PTR(-ENODEV);
 +
-+	dev_info(dev->dev, "bus %d rev%d.%d.%d at %d kHz\n", adap->nr,
-+		 dev->dtrev, dev->rev >> 4, dev->rev & 0xf, dev->speed);
-+
- 	pm_runtime_mark_last_busy(dev->dev);
- 	pm_runtime_put_autosuspend(dev->dev);
+ 	if (con_id) {
+ 		index = of_property_match_string(np, "pwm-names", con_id);
+ 		if (index < 0)
+@@ -516,6 +519,7 @@ put:
  
+ 	return pwm;
+ }
++EXPORT_SYMBOL(of_pwm_request);
+ 
+ /**
+  * pwm_add_table() - register PWM device consumers
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index 112b314..fafbb1c 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -171,6 +171,7 @@ struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
+ 					 unsigned int index,
+ 					 const char *label);
+ 
++struct pwm_device *of_pwm_request(struct device_node *np, const char *consumer);
+ struct pwm_device *pwm_get(struct device *dev, const char *consumer);
+ void pwm_put(struct pwm_device *pwm);
+ 
+@@ -204,6 +205,12 @@ static inline struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
+ 	return ERR_PTR(-ENODEV);
+ }
+ 
++static inline struct pwm_device *of_pwm_request(struct device_node *np,
++					 const char *consumer)
++{
++	return ERR_PTR(-ENODEV);
++}
++
+ static inline struct pwm_device *pwm_get(struct device *dev,
+ 					 const char *consumer)
+ {
 -- 
 1.7.12
 
