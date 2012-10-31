@@ -1,108 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965799Ab2JaOtc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 10:49:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48020 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965759Ab2JaOtY (ORCPT
+	id S965814Ab2JaOth (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 10:49:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43899 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965797Ab2JaOtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 10:49:24 -0400
+	Wed, 31 Oct 2012 10:49:32 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
-        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <ak@linux.intel.com>, Andrew Vagin <avagin@openvz.org>,
+        Borislav Petkov <bp@amd64.org>, David Ahern <dsahern@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Irina Tirdea <irina.tirdea@intel.com>, Jiri Olsa <jolsa@redhat.com>,
+        Joonsoo Kim <js1304@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, arnaldo.melo@gmail.com,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3/6] perf tools: Speed up the perf build time by simplifying the perf --version string generation
-Date: Wed, 31 Oct 2012 12:49:00 -0200
-Message-Id: <1351694943-7188-4-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 0/6] perf/core improvements and fixes
+Date: Wed, 31 Oct 2012 12:48:57 -0200
+Message-Id: <1351694943-7188-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1351694943-7188-1-git-send-email-acme@infradead.org>
-References: <1351694943-7188-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+Hi Ingo,
 
-Building perf is pretty slow on trees that have a lot of commits
-relative to the nearest Git tag. This slowness manifests itself during
-version string generation:
+	Please consider pulling,
 
- $ perf stat --null --repeat 3 --sync --pre "rm -f PERF-VERSION-FILE" util/PERF-VERSION-GEN
- PERF_VERSION = 3.7.rc3.1458.g5399b3b
- PERF_VERSION = 3.7.rc3.1458.g5399b3b
- PERF_VERSION = 3.7.rc3.1458.g5399b3b
+- Arnaldo
 
- Performance counter stats for 'util/PERF-VERSION-GEN' (3 runs):
+The following changes since commit 95d18aa2b6c05351181934b3bc34ce038cc7b637:
 
-       2.857503976 seconds time elapsed                                          ( +-  0.22% )
+  perf/x86: Fix sparse warnings (2012-10-30 10:10:52 +0100)
 
-The build can be even slower than that, when one over NFS volumes.
+are available in the git repository at:
 
-The reason for the slowness is that util/PERF-VERSION-GEN uses "git
-describe" to generate the string, which has to count the "number of
-commits distance" from the nearest tag - the ".1458." count in the
-output above. For that Git had to extract and decompress 1458 Git
-objects, which takes time and bandwidth.
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
 
-But this "number of commits" value is mostly irrelevant in practice. We
-either want to know an approximate tag name, or we want to know the
-precise sha1.
+for you to fetch changes up to ffadcf090d468e9c4938b718649f38dd10cfdb02:
 
-So this patch simplifies the version string to:
+  perf annotate: Handle XBEGIN like a jump (2012-10-31 12:18:26 -0200)
 
- PERF_VERSION = 3.7.rc3.g5399b3b.dirty
+----------------------------------------------------------------
+perf/core improvements and fixes
 
-which speeds up the version string generation script by an order of
-magnitude:
+. Handle XBEGIN like a jump in the annotate browser, from Andi Kleen
 
- $ perf stat --null --repeat 3 --sync --pre "rm -f PERF-VERSION-FILE" util/PERF-VERSION-GEN
- PERF_VERSION = 3.7.rc3.g5399b3b.dirty
- PERF_VERSION = 3.7.rc3.g5399b3b.dirty
- PERF_VERSION = 3.7.rc3.g5399b3b.dirty
+. Build speedups for --version, from Ingo Molnar.
 
- Performance counter stats for 'util/PERF-VERSION-GEN' (3 runs):
+. Add info about cross compiling for Android ARM, from Joonsoo Kim.
 
-       0.307633559 seconds time elapsed                                          ( +-  0.84% )
+. Warn about missing libelf, from Namhyung Kim.
 
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Borislav Petkov <bp@amd64.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20121030084600.GB8245@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/PERF-VERSION-GEN |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index 95264f3..f6e8ee2 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -12,7 +12,7 @@ LF='
- # First check if there is a .git to get the version from git describe
- # otherwise try to get the version from the kernel makefile
- if test -d ../../.git -o -f ../../.git &&
--	VN=$(git describe --match 'v[0-9].[0-9]*' --abbrev=4 HEAD 2>/dev/null) &&
-+	VN=$(echo $(git tag -l "v[0-9].[0-9]*" | tail -1)"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD) 2>/dev/null) &&
- 	case "$VN" in
- 	*$LF*) (exit 1) ;;
- 	v[0-9]*)
--- 
-1.7.9.2.358.g22243
+----------------------------------------------------------------
+Andi Kleen (1):
+      perf annotate: Handle XBEGIN like a jump
 
+Arnaldo Carvalho de Melo (1):
+      perf tools: Handle --version string generation on machines without git
+
+Ingo Molnar (2):
+      perf tools: Speed up the perf build time by simplifying the perf --version string generation
+      perf tools: Further speed up the perf build
+
+Joonsoo Kim (1):
+      perf tools: Add info about cross compiling for Android ARM
+
+Namhyung Kim (1):
+      perf tools: Warn about missing libelf
+
+ tools/perf/Documentation/android.txt |    5 ++++-
+ tools/perf/Makefile                  |    2 ++
+ tools/perf/util/PERF-VERSION-GEN     |   14 +++++---------
+ tools/perf/util/annotate.c           |    2 ++
+ 4 files changed, 13 insertions(+), 10 deletions(-)
