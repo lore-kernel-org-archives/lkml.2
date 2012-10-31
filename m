@@ -1,150 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935070Ab2JaIU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 04:20:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58065 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934975Ab2JaIUV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 04:20:21 -0400
-Message-ID: <5090DF3F.5030600@numascale-asia.com>
-Date: Wed, 31 Oct 2012 16:20:15 +0800
-From: Daniel J Blueman <daniel@numascale-asia.com>
-Organization: Numascale Asia
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S935088Ab2JaIVf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 04:21:35 -0400
+Received: from mail.cs.tut.fi ([130.230.4.42]:58847 "HELO mail.cs.tut.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932520Ab2JaIV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 04:21:28 -0400
+X-Greylist: delayed 605 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Oct 2012 04:21:18 EDT
+Message-ID: <5090DD1A.8010801@tut.fi>
+Date: Wed, 31 Oct 2012 10:11:06 +0200
+From: Janne Kulmala <janne.t.kulmala@tut.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-CC: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Steffen Persvold <sp@numascale.com>, x86@kernel.org,
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Stefani Seibold <stefani@seibold.net>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] AMD64 EDAC: Add support for >255 memory controllers
-References: <1351662932-22279-1-git-send-email-daniel@numascale-asia.com> <1351662932-22279-2-git-send-email-daniel@numascale-asia.com> <CAPVoSvTz4=dabySPCjjR3yED_QnC_OwhJUZjQty6zYH4=FKVgg@mail.gmail.com>
-In-Reply-To: <CAPVoSvTz4=dabySPCjjR3yED_QnC_OwhJUZjQty6zYH4=FKVgg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] kfifo: round up the fifo size power of 2
+References: <1351238218-22648-1-git-send-email-yuanhan.liu@linux.intel.com> <20121029135935.bb8b0b2a.akpm@linux-foundation.org> <20121031055916.GC29509@yliu-dev.sh.intel.com> <1351665033.23165.6.camel@wall-e> <20121030235210.4dfc6ef7.akpm@linux-foundation.org>
+In-Reply-To: <20121030235210.4dfc6ef7.akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/10/2012 16:18, Torsten Kaiser wrote:
-> On Wed, Oct 31, 2012 at 6:55 AM, Daniel J Blueman
-> <daniel@numascale-asia.com> wrote:
->> As the AMD64 last-level-cache ID is 16-bits and federated systems
->> eg using Numascale's NumaConnect/NumaChip can have more than 255 memory
->> controllers, use 16-bits to store the ID.
->>
->> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
->> ---
->>   drivers/edac/amd64_edac.c |   18 +++++++++---------
->>   1 file changed, 9 insertions(+), 9 deletions(-)
->>
->> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
->> index 18d404a..9920dfd 100644
->> --- a/drivers/edac/amd64_edac.c
->> +++ b/drivers/edac/amd64_edac.c
->> @@ -942,7 +942,7 @@ static u64 get_error_address(struct mce *m)
->>                  struct amd64_pvt *pvt;
->>                  u64 cc6_base, tmp_addr;
->>                  u32 tmp;
->> -               u8 mce_nid, intlv_en;
->> +               u16 mce_nid, intlv_en;
+On 10/31/2012 08:52 AM, Andrew Morton wrote:
+> On Wed, 31 Oct 2012 07:30:33 +0100 Stefani Seibold <stefani@seibold.net> wrote:
 >
-> Is the change of intlv_en to u16 intentional?
-> I assume its not, because...
-
-It's unintentional. Elsewhere, intlv_en is declared as unsigned, so 
-perhaps that should be cleaned up later too.
-
-I'll issue an updated patch.
-
->>                  if ((addr & GENMASK(24, 47)) >> 24 != 0x00fdf7)
->>                          return addr;
->> @@ -1499,7 +1499,7 @@ static int f1x_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
->>          u8 channel;
->>          bool high_range = false;
+>>> Yes, and I guess the same to give them a 64-element one.
+>>>
+>>>>
+>>>> If there's absolutely no prospect that the kfifo code will ever support
+>>>> 100-byte fifos then I guess we should rework the API so that the caller
+>>>> has to pass in log2 of the size, not the size itself.  That way there
+>>>> will be no surprises and no mistakes.
+>>>>
+>>>> That being said, the power-of-2 limitation isn't at all intrinsic to a
+>>>> fifo, so we shouldn't do this.  Ideally, we'd change the kfifo
+>>>> implementation so it does what the caller asked it to do!
+>>>
+>>> I'm fine with removing the power-of-2 limitation. Stefani, what's your
+>>> comment on that?
+>>>
 >>
->> -       u8 node_id    = dram_dst_node(pvt, range);
->> +       u16 node_id   = dram_dst_node(pvt, range);
->>          u8 intlv_en   = dram_intlv_en(pvt, range);
+>> You can't remove the power-of-2-limitation, since this would result in a
+>> performance decrease (bit wise and vs. modulo operation).
 >
-> ... here you keep it at u8.
+> Probably an insignificant change in performance.
 >
->>          u32 intlv_sel = dram_intlv_sel(pvt, range);
->>
->> @@ -2306,7 +2306,7 @@ out:
->>          return ret;
->>   }
->>
->> -static int toggle_ecc_err_reporting(struct ecc_settings *s, u8 nid, bool on)
->> +static int toggle_ecc_err_reporting(struct ecc_settings *s, u16 nid, bool on)
->>   {
->>          cpumask_var_t cmask;
->>          int cpu;
->> @@ -2344,7 +2344,7 @@ static int toggle_ecc_err_reporting(struct ecc_settings *s, u8 nid, bool on)
->>          return 0;
->>   }
->>
->> -static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
->> +static bool enable_ecc_error_reporting(struct ecc_settings *s, u16 nid,
->>                                         struct pci_dev *F3)
->>   {
->>          bool ret = true;
->> @@ -2396,7 +2396,7 @@ static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
->>          return ret;
->>   }
->>
->> -static void restore_ecc_error_reporting(struct ecc_settings *s, u8 nid,
->> +static void restore_ecc_error_reporting(struct ecc_settings *s, u16 nid,
->>                                          struct pci_dev *F3)
->>   {
->>          u32 value, mask = 0x3;          /* UECC/CECC enable */
->> @@ -2435,7 +2435,7 @@ static const char *ecc_msg =
->>          "'ecc_enable_override'.\n"
->>          " (Note that use of the override may cause unknown side effects.)\n";
->>
->> -static bool ecc_enabled(struct pci_dev *F3, u8 nid)
->> +static bool ecc_enabled(struct pci_dev *F3, u16 nid)
->>   {
->>          u32 value;
->>          u8 ecc_en = 0;
->> @@ -2556,7 +2556,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
->>          struct mem_ctl_info *mci = NULL;
->>          struct edac_mc_layer layers[2];
->>          int err = 0, ret;
->> -       u8 nid = get_node_id(F2);
->> +       u16 nid = get_node_id(F2);
->>
->>          ret = -ENOMEM;
->>          pvt = kzalloc(sizeof(struct amd64_pvt), GFP_KERNEL);
->> @@ -2647,7 +2647,7 @@ err_ret:
->>   static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
->>                                               const struct pci_device_id *mc_type)
->>   {
->> -       u8 nid = get_node_id(pdev);
->> +       u16 nid = get_node_id(pdev);
->>          struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
->>          struct ecc_settings *s;
->>          int ret = 0;
->> @@ -2697,7 +2697,7 @@ static void __devexit amd64_remove_one_instance(struct pci_dev *pdev)
->>   {
->>          struct mem_ctl_info *mci;
->>          struct amd64_pvt *pvt;
->> -       u8 nid = get_node_id(pdev);
->> +       u16 nid = get_node_id(pdev);
->>          struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
->>          struct ecc_settings *s = ecc_stngs[nid];
->>
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> It could be made much smaller by just never doing the modulus operation
+> - instead do
+>
+> 	if (++index == max)
+> 		index = 0;
+>
 
+This can not be done, since the index manipulation kfifo does not use locks.
+
+> this does introduce one problem: it's no longer possible to distinguish
+> the "full" and "empty" states by comparing the head and tail indices.
+> But that is soluble.
+>
+>> Andrew is right, this is an API miss design.  So it would be good to
+>> rework the kfifo_init () and kfifo_alloc() to pass in log2 of the size,
+>> not the size itself.
+>
+> The power-of-2 thing is just a restriction in the current
+> implementation - it's not a good idea to cement that into the
+> interface.  Of course, it could later be uncemented if the
+> implementation's restriction was later relaxed.
+
+The index is just increased, and the access side masks the bottom bits 
+from that to obtain the actual position. This exploit integer wrapping 
+and the index will always wrap correctly to the begin of the fifo.
+
+Using modulus and non-power-of-two size would produce wrong results and 
+require adding locking.
 
 -- 
-Daniel J Blueman
-Principal Software Engineer, Numascale Asia
+Janne Kulmala <janne.t.kulmala@tut.fi>
