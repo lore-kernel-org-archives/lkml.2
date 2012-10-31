@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760279Ab2JaTl0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 15:41:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37386 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760213Ab2JaTlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 15:41:14 -0400
-Date: Wed, 31 Oct 2012 20:41:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1] percpu_rw_semaphore: reimplement to not block the
-	readers unnecessarily
-Message-ID: <20121031194135.GA504@redhat.com>
-References: <20121015191018.GA4816@redhat.com> <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com> <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com> <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com>
+	id S1760263Ab2JaTnZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 15:43:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38466 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760208Ab2JaTnW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 15:43:22 -0400
+Message-ID: <50917F52.600@kernel.org>
+Date: Wed, 31 Oct 2012 15:43:14 -0400
+From: Konstantin Ryabitsev <mricon@kernel.org>
+Organization: Linux Foundation/Kernel.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030184800.GA16129@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: new daily bugzilla.kernel.org annoyance messages
+References: <20121031163005.GA411@kroah.com> <5091535C.9050103@kernel.org> <20121031164504.GB1119@kroah.com> <20121031170159.582acdf6@pyramind.ukuu.org.uk>
+In-Reply-To: <20121031170159.582acdf6@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.4.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig72A4499BA88DA6B212ACDCCE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30, Oleg Nesterov wrote:
->
-> So. down_write/up_right does msleep() and it needs to call
-> synchronize_sched() 3 times.
->
-> This looks too much. It is not that I am worried about the writers,
-> the problem is that the new readers are blocked completely while the
-> writer sleeps in msleep/synchronize_sched.
->
-> Paul, Mikulas, et al. Could you please look at the new implementation
-> below? Completely untested/uncompiled, just for discussion.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig72A4499BA88DA6B212ACDCCE
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I tried to test it, seems to work...
+On 31/10/12 01:01 PM, Alan Cox wrote:
+> Is there any chance of also setting it so that anyone who is assigned a=
 
-But. I guess the only valid test is: pass the review from Paul/Peter.
+> bug can close it not just a few people with magical powers and the file=
+r ?
 
-Todo:
-	- add the lockdep annotations
+I'm not that adept at bugzilla admin bits yet (clearly), but if I'm
+reading the docs correctly, the assignee should be allowed to do pretty
+much anything with the bugs:
 
-	- we can speedup the down_write-right-aftet-up_write case
+"By default, assignees, QA owners and users with editbugs privileges can
+edit all fields of bugs, except group restrictions (unless they are
+members of the groups they are trying to change)."
 
-What do you all think?
+Is that not the case?
 
-Oleg.
+Regards,
+--=20
+Konstantin Ryabitsev
+Systems Administrator
+Linux Foundation, kernel.org
+Montr=C3=A9al, Qu=C3=A9bec
 
+
+--------------enig72A4499BA88DA6B212ACDCCE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
+
+iQGcBAEBAgAGBQJQkX9SAAoJEI6WedmufEle76IL/RieMJUclb3oBnRNX2bNjOLn
+jb3TyhmCbriOx/X/0V2ddjwtz/Re6fiWXMiAEsd+SgyedZCN0AXmaFkR6GgVwPiZ
+Xp/i+4s/IXnIjtJP4OK0LIZ1qO3QkBIltjpZoeP49veUvA+Nyzm7zHqCTjKgikyD
+C1kNsgiUecBvkYbJHEbFq8CX8OK/lOVfq7j+KeCAH4Zhs+JoJY0b3gCNGSy8+5w6
+LqCi96y6H4g4qpKIeAUm2Pa1m6lLN7/07K6hq+zt0FUAlSd5HNPi4YoagnZhWKXH
+wt0cAG+TA9RragpFZcm018L997FmWntan7th5bE2tz5zd43nuqIl27eLa4lshjHm
+vUirEqkENKxHd19EeYt0jhH2Kv7GDGOPz7/jsrwHd6uAP74waqD9bXgIa6Wtlbbe
+AbY9kpFXMexAQsVfl74TeTzWTl7UwyoKyH856Qehuu0nsD1gq1u7ajka8e12N8xR
+esePAefzKRhwbxMhuhdecjvceUGszxcEH3YwM5cCLg==
+=gZVZ
+-----END PGP SIGNATURE-----
+
+--------------enig72A4499BA88DA6B212ACDCCE--
