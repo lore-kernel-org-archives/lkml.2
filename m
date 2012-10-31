@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933485Ab2JaReG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:34:06 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:60384 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932851Ab2JaReC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:34:02 -0400
-Message-ID: <509160F9.1010007@parallels.com>
-Date: Wed, 31 Oct 2012 21:33:45 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <lizefan@huawei.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <bsingharora@gmail.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET] cgroup: simplify cgroup removal path
-References: <1351657365-25055-1-git-send-email-tj@kernel.org> <50912C6D.6020000@parallels.com> <20121031171849.GH2945@htj.dyndns.org> <50915EB6.3060704@parallels.com> <20121031172617.GK2945@htj.dyndns.org>
-In-Reply-To: <20121031172617.GK2945@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1758903Ab2JaReU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:34:20 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33505 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755428Ab2JaReO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 13:34:14 -0400
+Date: Wed, 31 Oct 2012 17:39:19 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121031173919.4fc63ddd@pyramind.ukuu.org.uk>
+In-Reply-To: <20121031171743.GA17652@srcf.ucam.org>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+	<20121029174131.GC7580@srcf.ucam.org>
+	<alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
+	<CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
+	<20121031155503.1aaf4c93@pyramind.ukuu.org.uk>
+	<alpine.LNX.2.00.1210311653080.12781@pobox.suse.cz>
+	<20121031170334.59833fb1@pyramind.ukuu.org.uk>
+	<20121031171048.GA17163@srcf.ucam.org>
+	<20121031172121.14cc1215@pyramind.ukuu.org.uk>
+	<20121031171743.GA17652@srcf.ucam.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [46.39.244.6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 09:26 PM, Tejun Heo wrote:
-> On Wed, Oct 31, 2012 at 09:24:06PM +0400, Glauber Costa wrote:
->>> Note both in the commit messages.
->>
->> I am sorry, but I can't find anything that may be related to this in the
->> commit messages. Can you be more specific ?
+On Wed, 31 Oct 2012 17:17:43 +0000
+Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+
+> On Wed, Oct 31, 2012 at 05:21:21PM +0000, Alan Cox wrote:
+> > On Wed, 31 Oct 2012 17:10:48 +0000
+> > Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > > The kernel is signed. The kernel doesn't check the signature on the 
+> > > suspend image.
+> > 
+> > Which doesn't matter. How are you going to create the tampered image in
+> > the first place ?
 > 
-> Eh.. 'd', missing there.  I meant that I noted both in the updated
-> commit messages, so they will be mentioned in commit messages on the
-> next posting of this series.
-> 
+> By booting a signed kernel, not turning on swap and writing directly to 
+> the swap partition.
 
-Ahhh! All right.
-
-
+Ok so the actual problem is that you are signing kernels that allow the
+user to skip the S4 resume check ?
