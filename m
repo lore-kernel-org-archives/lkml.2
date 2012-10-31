@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935924Ab2JaVgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 17:36:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:43964 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759903Ab2JaVgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 17:36:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,688,1344236400"; 
-   d="scan'208";a="211939610"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Zheng, Lv" <lv.zheng@intel.com>, "Huang, Ying" <ying.huang@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        x86 list <x86@kernel.org>
-Subject: RE: [PATCH 1/5] driver core / ACPI: Move ACPI support to core
- device and driver types
-Thread-Topic: [PATCH 1/5] driver core / ACPI: Move ACPI support to core
- device and driver types
-Thread-Index: AQHNt0r0TVxtmXQkpkGhOK26ITzdfZfUDw+AgAAmloCAAAC1gP//n91wgAB9pID//4rq8IAAfwwA//+SjzA=
-Date: Wed, 31 Oct 2012 21:36:36 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D5B9DE@ORSMSX108.amr.corp.intel.com>
-References: <1421417.rIOjExM5Pt@vostro.rjw.lan>
- <1789657.7GoIl2rp8v@vostro.rjw.lan>
- <3908561D78D1C84285E8C5FCA982C28F19D5B8C0@ORSMSX108.amr.corp.intel.com>
- <4946697.LIFggnbCY6@vostro.rjw.lan>
-In-Reply-To: <4946697.LIFggnbCY6@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S935930Ab2JaVhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 17:37:12 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61585 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933664Ab2JaVhH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 17:37:07 -0400
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: introduce managed input devices (add devres support)
+Date: Wed, 31 Oct 2012 14:37:01 -0700
+Message-ID: <5132958.JXBGbd4rj1@dtor-d630.eng.vmware.com>
+User-Agent: KMail/4.9.2 (Linux/3.7.0-rc3+; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121031210532.GX2945@htj.dyndns.org>
+References: <20121023053513.GA15642@core.coreip.homeip.net> <20121031210532.GX2945@htj.dyndns.org>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9VLalAR021782
 
-> The BIOSes of currently available ia64 systems don't contain ACPI nodes whose
-> IDs will match the IDs of the new devices (ie. the ones that are going to be
-> added to acpi_platform_device_ids[]), so for ia64 it should be sufficient to
-> test that code as is (ie. without any new devices in the system).
+On Wednesday, October 31, 2012 02:05:32 PM Tejun Heo wrote:
+> Hello, Dmitry.
+> 
+> On Mon, Oct 22, 2012 at 10:35:14PM -0700, Dmitry Torokhov wrote:
+> > There is a demand from driver's writers to use managed devices framework
+> > for their drivers. Unfortunately up to this moment input devices did not
+> > provide support for managed devices and that lead to mixing two styles
+> > of resource management which usually introduced more bugs, such as
+> > manually unregistering input device but relying in devres to free
+> > interrupt handler which (unless device is properly shut off) can cause
+> > ISR to reference already freed memory.
+> > 
+> > This change introduces devm_input_allocate_device() that will allocate
+> > managed instance of input device so that driver writers who prefer
+> > using devm_* framework do not have to mix 2 styles.
+> 
+> It generally looks good to me although it's a bit unusual to use
+> devres on device.  Given the way input_dev is used, it probably makes
+> sense, I guess.
+> 
+> One thing tho.  If possible and there aren't too many, wouldn't it be
+> better to convert all to use devres.  Having two different lifetime
+> fules tends to lead to gotchas.
 
-Ok - built cleanly on ia64.  Boots too. Just one new console message:
+Not all drivers use devres for rest of their resources so it makes sense
+to have unmanaged versions (like we have request_irq/devm_request_irq).
+Besides:
 
-ACPI: bus type platform registered
+[dtor@dtor-ws vmci]$ grep -r input_allocate_device drivers/ | wc -l
+298
 
-that seems pretty harmless.
+so I'd rather not ;)
 
-Acked-by: Tony Luck <tony.luck@intel.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks.
+
+-- 
+Dmitry
+
