@@ -1,132 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400Ab2JaR5I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:57:08 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:56696 "EHLO smtp4-g21.free.fr"
+	id S1759460Ab2JaSDF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 14:03:05 -0400
+Received: from mail.agmk.net ([91.192.224.71]:49090 "EHLO mail.agmk.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754260Ab2JaR5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:57:05 -0400
-From: Philippe Reynes <tremyfr@yahoo.fr>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: s.hauer@pengutronix.de, julien.boibessot@armadeus.com,
-        eric.jarrige@armadeus.org, Philippe Reynes <tremyfr@yahoo.fr>
-Subject: [PATCH v3] Add device tree file for the armadeus apf27
-Date: Wed, 31 Oct 2012 18:56:33 +0100
-Message-Id: <1351706193-9021-1-git-send-email-tremyfr@yahoo.fr>
-X-Mailer: git-send-email 1.7.4.4
+	id S1757790Ab2JaSDD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 14:03:03 -0400
+From: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: skinsbursky@parallels.com, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, baggins@pld-linux.org,
+        arekm@pld-linux.org
+Subject: Re: [PATCH] lockd: fix races in per-net NSM client handling
+Date: Wed, 31 Oct 2012 19:02:57 +0100
+Message-ID: <4005626.trvd4a4buj@localhost>
+User-Agent: KMail/4.9.1 (Linux/3.6.4; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121031174946.GA13591@kroah.com>
+References: <1689813.hptKgzjpAu@localhost> <20121031174946.GA13591@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Philippe Reynes <tremyfr@yahoo.fr>
-Signed-off-by: Eric Jarrige <eric.jarrige@armadeus.org>
----
+On Wednesday 31 of October 2012 10:49:46 Greg KH wrote:
+> On Wed, Oct 31, 2012 at 06:27:36PM +0100, Paweł Sikora wrote:
+> > Hi,
+> > 
+> > the patch metioned in https://lkml.org/lkml/2012/10/24/175 seems to fix
+> > the 3.6.3 oops (while 3.6.2 works fine) at 16-cores opteron server.
+> > please queue this path for 3.6.$next.
+> 
+> Is it in Linus's tree already?  If so, what is the git commit id?
 
-v3: set 26M clock to 0 (not used)
-v2: avoid enable again the watchdog
+the mainstream contains some lock deamon fixes already:
 
- arch/arm/boot/dts/imx27-apf27.dts |   92 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 92 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/boot/dts/imx27-apf27.dts
+* e498daa LOCKD: Clear ln->nsm_clnt only when ln->nsm_users is zero
+* a4ee8d9 LOCKD: fix races in nsm_client_get
 
-diff --git a/arch/arm/boot/dts/imx27-apf27.dts b/arch/arm/boot/dts/imx27-apf27.dts
-new file mode 100644
-index 0000000..bf07d8d
---- /dev/null
-+++ b/arch/arm/boot/dts/imx27-apf27.dts
-@@ -0,0 +1,92 @@
-+/*
-+ * Copyright 2012 Philippe Reynes <tremyfr@yahoo.fr>
-+ * Copyright 2012 Armadeus Systems <support@armadeus.com>
-+ *
-+ * Based on code which is: Copyright 2012 Sascha Hauer, Pengutronix
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+/dts-v1/;
-+/include/ "imx27.dtsi"
-+
-+/ {
-+	model = "Armadeus apf27";
-+	compatible = "armadeus,imx27-apf27", "fsl,imx27";
-+
-+	memory {
-+		reg = <0xa0000000 0x04000000>;
-+	};
-+
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		osc26m {
-+			compatible = "fsl,imx-osc26m", "fixed-clock";
-+			clock-frequency = <0>;
-+		};
-+	};
-+
-+	soc {
-+		aipi@10000000 {
-+			serial@1000a000 {
-+				status = "okay";
-+			};
-+
-+			ethernet@1002b000 {
-+				status = "okay";
-+			};
-+
-+		};
-+
-+		nand@d8000000 {
-+			status = "okay";
-+			nand-bus-width = <16>;
-+			nand-ecc-mode = "hw";
-+			nand-on-flash-bbt;
-+
-+			partition@0 {
-+				label = "u-boot";
-+				reg = <0x0 0x100000>;
-+			};
-+
-+			partition@100000 {
-+				label = "env";
-+				reg = <0x100000 0x80000>;
-+			};
-+
-+			partition@180000 {
-+				label = "env2";
-+				reg = <0x180000 0x80000>;
-+			};
-+
-+			partition@200000 {
-+				label = "firmware";
-+				reg = <0x200000 0x80000>;
-+			};
-+
-+			partition@280000 {
-+				label = "dtb";
-+				reg = <0x280000 0x80000>;
-+			};
-+
-+			partition@300000 {
-+				label = "kernel";
-+				reg = <0x300000 0x500000>;
-+			};
-+
-+			partition@800000 {
-+				label = "rootfs";
-+				reg = <0x800000 0xf800000>;
-+			};
-+		};
-+
-+	};
-+
-+};
--- 
-1.7.4.4
+but i don't know where is the right fix. Stanislav, could you put some light on this?
+
+BR,
+Paweł.
 
