@@ -1,117 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760966Ab2JaWnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 18:43:32 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:8717 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760858Ab2JaWna (ORCPT
+	id S1760977Ab2JaWpb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 18:45:31 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43807 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760923Ab2JaWp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 18:43:30 -0400
-Message-ID: <1351722950.19172.86.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 RESEND] ACPI: Add ACPI CPU hot-remove support
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, imammedo@redhat.com,
-        vijaymohan.pandarathil@hp.com, prarit@redhat.com, bhelgaas@google.com
-Date: Wed, 31 Oct 2012 16:35:50 -0600
-In-Reply-To: <6242557.1QFHiVDrMN@vostro.rjw.lan>
-References: <1350673793-19248-1-git-send-email-toshi.kani@hp.com>
-	 <6242557.1QFHiVDrMN@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 31 Oct 2012 18:45:29 -0400
+Date: Wed, 31 Oct 2012 23:45:23 +0100
+From: Robert Richter <rric@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Zhang, Jun" <jun.zhang@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] Sometimes, there is OOPS happened when we use oprofile.
+Message-ID: <20121031224523.GF4386@ivy.homofaber>
+References: <88DC34334CA3444C85D647DBFA962C270FD7E416@SHSMSX102.ccr.corp.intel.com>
+ <20121031210522.GB4386@ivy.homofaber>
+ <5091991D.4020202@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5091991D.4020202@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-31 at 23:27 +0100, Rafael J. Wysocki wrote:
-> On Friday, October 19, 2012 01:09:53 PM Toshi Kani wrote:
-> > Added CPU hot-remove support through an ACPI eject notification.
-> > It calls acpi_bus_hot_remove_device(), which shares the same code
-> > path with the sysfs eject operation.  acpi_os_hotplug_execute()
-> > serializes hot-remove operations between ACPI hot-remove and sysfs
-> > eject requests.
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> > Tested-by: IgorMammedov <imammedo@redhat.com>
-> > Tested-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
-> > Tested-by: Prarit Bhargava <prarit@redhat.com>
+On 31.10.12 14:33:17, H. Peter Anvin wrote:
+> I'm vaguely concerned about the following:
 > 
-> This doesn't build with modular processor driver.
-
-Hi Rafael,
-
-Thanks for pointing this out!  I will fix the issue and send an updated
-version.
-
--Toshi
-
-
+> + * To always return a non-null
+> + * stack pointer we fall back to regs as stack if no previous stack
+> + * exists.
 > 
-> Thanks,
-> Rafael
-> 
-> 
-> > ---
-> > v2: Rebased to the current Linus's tree.
-> > ---
-> >  drivers/acpi/processor_driver.c | 27 +++++++++++++++++----------
-> >  1 file changed, 17 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-> > index e78c2a5..1cc9652 100644
-> > --- a/drivers/acpi/processor_driver.c
-> > +++ b/drivers/acpi/processor_driver.c
-> > @@ -694,8 +694,8 @@ int acpi_processor_device_add(acpi_handle handle, struct acpi_device **device)
-> >  static void acpi_processor_hotplug_notify(acpi_handle handle,
-> >  					  u32 event, void *data)
-> >  {
-> > -	struct acpi_processor *pr;
-> >  	struct acpi_device *device = NULL;
-> > +	struct acpi_eject_event *ej_event = NULL;
-> >  	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
-> >  	int result;
-> >  
-> > @@ -727,20 +727,27 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
-> >  				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
-> >  
-> >  		if (acpi_bus_get_device(handle, &device)) {
-> > -			printk(KERN_ERR PREFIX
-> > -				    "Device don't exist, dropping EJECT\n");
-> > +			pr_err(PREFIX "Device don't exist, dropping EJECT\n");
-> >  			break;
-> >  		}
-> > -		pr = acpi_driver_data(device);
-> > -		if (!pr) {
-> > -			printk(KERN_ERR PREFIX
-> > -				    "Driver data is NULL, dropping EJECT\n");
-> > +		if (!acpi_driver_data(device)) {
-> > +			pr_err(PREFIX "Driver data is NULL, dropping EJECT\n");
-> >  			break;
-> >  		}
-> >  
-> > -		/* REVISIT: update when eject is supported */
-> > -		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-> > -		break;
-> > +		ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-> > +		if (!ej_event) {
-> > +			pr_err(PREFIX "No memory, dropping EJECT\n");
-> > +			break;
-> > +		}
-> > +
-> > +		ej_event->handle = handle;
-> > +		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-> > +		acpi_os_hotplug_execute(acpi_bus_hot_remove_device,
-> > +					(void *)ej_event);
-> > +
-> > +		/* eject is performed asynchronously */
-> > +		return;
-> >  
-> >  	default:
-> >  		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-> > 
+> The logic being that if there is no stack pointer and the stack is
+> too empty, to simply assume regs point to the top of the stack?  Is
+> this possible to ever be actually seen?
 
+I discussed this with Steven too (https://lkml.org/lkml/2012/9/6/322)
+and we both had a bad feeling with returning a null pointer by
+kernel_stack_pointer() (implemented in version 1 of this patch). It
+could be null if tinfo->previous_esp is null (last stack). Not sure
+when this may happen.
 
+So using regs as fallback seemed to be ok as this was in for years:
+
+ 7b6c6c7 x86, 32-bit: fix kernel_trap_sp()
+
+-Robert
