@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933860Ab2JaKsL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:48:11 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37677 "EHLO
+	id S1756928Ab2JaKwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:52:19 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:45747 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab2JaKsI (ORCPT
+	with ESMTP id S1752894Ab2JaKwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:48:08 -0400
+	Wed, 31 Oct 2012 06:52:17 -0400
 From: Xiaotian Feng <xtfeng@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
-        Ben Dooks <ben-linux@fluff.org>, Chris Ball <cjb@laptop.org>,
-        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org
-Subject: [PATCH] mmc: s3cmci: use tasklet_kill in device remove/release process
-Date: Wed, 31 Oct 2012 18:48:45 +0800
-Message-Id: <1351680525-27253-1-git-send-email-xtfeng@gmail.com>
+        Matt Porter <mporter@kernel.crashing.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>
+Subject: [PATCH] rapidio/tsi721: use tasklet_kill in device remove/release process
+Date: Wed, 31 Oct 2012 18:52:49 +0800
+Message-Id: <1351680769-27306-1-git-send-email-xtfeng@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,27 +28,26 @@ lead to a heavy loaded ksoftirqd, wakeup with pending_softirq, but
 tasklet is disabled. tasklet_kill should be used in this case.
 
 Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Chris Ball <cjb@laptop.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-mmc@vger.kernel.org
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Andrew Morton <akpm@linux-foundation.org> 
 ---
- drivers/mmc/host/s3cmci.c |    2 +-
+ drivers/rapidio/devices/tsi721_dma.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/host/s3cmci.c b/drivers/mmc/host/s3cmci.c
-index 4638dda..d70d0cc 100644
---- a/drivers/mmc/host/s3cmci.c
-+++ b/drivers/mmc/host/s3cmci.c
-@@ -1830,7 +1830,7 @@ static int __devexit s3cmci_remove(struct platform_device *pdev)
+diff --git a/drivers/rapidio/devices/tsi721_dma.c b/drivers/rapidio/devices/tsi721_dma.c
+index 92e06a5..a098fbc 100644
+--- a/drivers/rapidio/devices/tsi721_dma.c
++++ b/drivers/rapidio/devices/tsi721_dma.c
+@@ -589,7 +589,7 @@ static void tsi721_free_chan_resources(struct dma_chan *dchan)
+ 	BUG_ON(!list_empty(&bdma_chan->active_list));
+ 	BUG_ON(!list_empty(&bdma_chan->queue));
  
- 	clk_put(host->clk);
+-	tasklet_disable(&bdma_chan->tasklet);
++	tasklet_kill(&bdma_chan->tasklet);
  
--	tasklet_disable(&host->pio_tasklet);
-+	tasklet_kill(&host->pio_tasklet);
- 
- 	if (s3cmci_host_usedma(host))
- 		s3c2410_dma_free(host->dma, &s3cmci_dma_client);
+ 	spin_lock_bh(&bdma_chan->lock);
+ 	list_splice_init(&bdma_chan->free_list, &list);
 -- 
 1.7.9.5
 
