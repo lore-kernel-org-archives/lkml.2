@@ -1,79 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760263Ab2JaTnZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 15:43:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38466 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760208Ab2JaTnW (ORCPT
+	id S1760290Ab2JaToT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 15:44:19 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:33331 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760208Ab2JaToR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 15:43:22 -0400
-Message-ID: <50917F52.600@kernel.org>
-Date: Wed, 31 Oct 2012 15:43:14 -0400
-From: Konstantin Ryabitsev <mricon@kernel.org>
-Organization: Linux Foundation/Kernel.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: new daily bugzilla.kernel.org annoyance messages
-References: <20121031163005.GA411@kroah.com> <5091535C.9050103@kernel.org> <20121031164504.GB1119@kroah.com> <20121031170159.582acdf6@pyramind.ukuu.org.uk>
-In-Reply-To: <20121031170159.582acdf6@pyramind.ukuu.org.uk>
-X-Enigmail-Version: 1.4.5
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig72A4499BA88DA6B212ACDCCE"
+	Wed, 31 Oct 2012 15:44:17 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
+        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHSET RESEND v2] cgroup: simplify cgroup removal path
+Date: Wed, 31 Oct 2012 12:44:02 -0700
+Message-Id: <1351712650-23709-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig72A4499BA88DA6B212ACDCCE
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+(Resending because the previous posting went out with patches from v1)
 
-On 31/10/12 01:01 PM, Alan Cox wrote:
-> Is there any chance of also setting it so that anyone who is assigned a=
+Hello, guys.
 
-> bug can close it not just a few people with magical powers and the file=
-r ?
+Changes from the last posting[L] are,
 
-I'm not that adept at bugzilla admin bits yet (clearly), but if I'm
-reading the docs correctly, the assignee should be allowed to do pretty
-much anything with the bugs:
+* cgroup_call_pre_destroy() removal moved from 0001 to 0004 per
+  Michal.
 
-"By default, assignees, QA owners and users with editbugs privileges can
-edit all fields of bugs, except group restrictions (unless they are
-members of the groups they are trying to change)."
+* Comment and commit message updates per Glauber and Michal.
 
-Is that not the case?
+Original head message follows.
 
-Regards,
---=20
-Konstantin Ryabitsev
-Systems Administrator
-Linux Foundation, kernel.org
-Montr=C3=A9al, Qu=C3=A9bec
+cgroup removal path is quite ugly.  A lot of the ugliness comes from
+the weird design which allows ->pre_destroy() to fail and the feature
+to drain existing CSS reference counts before committing to removal.
+Both mean that it should be possible to roll-back cgroup destruction
+after some or all ->pre_destroy() invocations.
 
+This weird design has never really worked.  To list a couple examples.
 
---------------enig72A4499BA88DA6B212ACDCCE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+ * Some ->pre_destroy() implementations aren't side-effect free.
+   Roll-back happens after a lot of state is already lost.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
+ * Some ->pre_destroy() implementations (naturally) assume that the
+   cgroup being destroyed would stay quiescent between successful
+   ->pre_destroy() and its destruction.  Unfortunately, any operation
+   can happen inbetween and the cgroup could be in a very different
+   state by the time it actually gets destroyed.
 
-iQGcBAEBAgAGBQJQkX9SAAoJEI6WedmufEle76IL/RieMJUclb3oBnRNX2bNjOLn
-jb3TyhmCbriOx/X/0V2ddjwtz/Re6fiWXMiAEsd+SgyedZCN0AXmaFkR6GgVwPiZ
-Xp/i+4s/IXnIjtJP4OK0LIZ1qO3QkBIltjpZoeP49veUvA+Nyzm7zHqCTjKgikyD
-C1kNsgiUecBvkYbJHEbFq8CX8OK/lOVfq7j+KeCAH4Zhs+JoJY0b3gCNGSy8+5w6
-LqCi96y6H4g4qpKIeAUm2Pa1m6lLN7/07K6hq+zt0FUAlSd5HNPi4YoagnZhWKXH
-wt0cAG+TA9RragpFZcm018L997FmWntan7th5bE2tz5zd43nuqIl27eLa4lshjHm
-vUirEqkENKxHd19EeYt0jhH2Kv7GDGOPz7/jsrwHd6uAP74waqD9bXgIa6Wtlbbe
-AbY9kpFXMexAQsVfl74TeTzWTl7UwyoKyH856Qehuu0nsD1gq1u7ajka8e12N8xR
-esePAefzKRhwbxMhuhdecjvceUGszxcEH3YwM5cCLg==
-=gZVZ
------END PGP SIGNATURE-----
+It's just such an unusual design which unnecessarily contains weird
+code path combinations which are tricky to hit, reproduce and expect.
+Moreover, the design's deficiencies attracts kludges on top as
+workarounds and we end up with stuff like cgroup_exclude_rmdir() and
+cgroup_release_and_wakeup_rmdir() which really make me want to cry.
 
---------------enig72A4499BA88DA6B212ACDCCE--
+Now that memcg has moved away from failable ->pre_destroy(), we can do
+away with all these.  I tested some basic operations and some corner
+cases but am still a bit scared.  Would love to get acks from Li and
+memcg people.
+
+This patchset contains the following eight patches.
+
+ 0001-cgroup-kill-cgroup_subsys-__DEPRECATED_clear_css_ref.patch
+ 0002-cgroup-kill-CSS_REMOVED.patch
+ 0003-cgroup-use-cgroup_lock_live_group-parent-in-cgroup_c.patch
+ 0004-cgroup-deactivate-CSS-s-and-mark-cgroup-dead-before-.patch
+ 0005-cgroup-remove-CGRP_WAIT_ON_RMDIR-cgroup_exclude_rmdi.patch
+ 0006-memcg-make-mem_cgroup_reparent_charges-non-failing.patch
+ 0007-hugetlb-do-not-fail-in-hugetlb_cgroup_pre_destroy.patch
+ 0008-cgroup-make-pre_destroy-return-void.patch
+
+0001-0002 remove now unused ->pre_destroy() failure handling and do
+follow-up simplification.
+
+0003-0004 update removal path such that each ->pre_destroy() is
+guaranteed to be invoked once per removal and the cgroup being
+destroyed stays quiescent until destruction is complete.
+
+0005 removes the scary CGRP_WAIT_ON_RMDIR mechanism.
+
+0006-0008 are follow-up clean-ups.  0006 and 0007 are from Michal's
+patchset[1].
+
+This patchset is on top of
+
+  v3.6 (a0d271cbfe)
++ [1] the first three patches of
+      "memcg/cgroup: do not fail fail on pre_destroy callbacks" patchset
+
+and available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-rmdir-updates
+
+Thanks.
+
+ block/blk-cgroup.c     |    3 
+ include/linux/cgroup.h |   41 -------
+ kernel/cgroup.c        |  256 +++++++++++--------------------------------------
+ mm/hugetlb_cgroup.c    |   11 --
+ mm/memcontrol.c        |   51 +--------
+ 5 files changed, 75 insertions(+), 287 deletions(-)
+
+--
+tejun
+
+[L] http://www.spinics.net/lists/linux-containers/msg26157.html
+[1] http://thread.gmane.org/gmane.linux.kernel.cgroups/4757
