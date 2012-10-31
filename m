@@ -1,621 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423065Ab2JaOzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 10:55:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17154 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423015Ab2JaOzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 10:55:09 -0400
-Date: Wed, 31 Oct 2012 15:52:47 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCHv2 03/25] perf tests: Add framework for automated
- perf_event_attr tests
-Message-ID: <20121031145247.GB1027@krava.brq.redhat.com>
-References: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
- <1351634526-1516-4-git-send-email-jolsa@redhat.com>
- <20121030230120.GA1067@krava.redhat.com>
- <20121031142600.GB28061@ghostprotocols.net>
+	id S1423076Ab2JaOz3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 10:55:29 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:58228
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964937Ab2JaOz0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 10:55:26 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1202h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 31 Oct 2012 23:20:37 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: yongd <yongd@marvell.com>
+CC: Chris Ball <cjb@laptop.org>, Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, Daniel Drake <dsd@laptop.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Wilson Callan <wilson.callan@savantsystems.com>,
+        Ben Dooks <ben-linux@fluff.org>, <zhangfei.gao@marvell.com>,
+        <kevin.liu@marvell.com>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/3] mmc: esdhc: enable polling to detect card by
+ itself
+Message-ID: <20121031152030.GE8100@S2100-06.ap.freescale.net>
+References: <1351589403-26398-1-git-send-email-yongd@marvell.com>
+ <1351589403-26398-2-git-send-email-yongd@marvell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20121031142600.GB28061@ghostprotocols.net>
+In-Reply-To: <1351589403-26398-2-git-send-email-yongd@marvell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 07:26:00AM -0700, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Oct 31, 2012 at 12:01:20AM +0100, Jiri Olsa escreveu:
-> > On Tue, Oct 30, 2012 at 11:01:44PM +0100, Jiri Olsa wrote:
-> > > Adding automated test to check event's perf_event_attr values.
-> > 
-> > SNIP
-> > 
-> > > +
-> > > +void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
-> > > +		     int fd, int group_fd, unsigned long flags)
-> > > +{
-> > > +	if (store_event(attr, pid, cpu, fd, group_fd, flags))
-> > > +		die("test attr FAILED");
-> > > +}
-> > 
-> > ahh crap, I forgot the errno value preservation fix.. 
-> > 
-> > I'd send it later with another fix I have for perf stat or v2 if needed ;-)
+On Tue, Oct 30, 2012 at 05:30:01PM +0800, yongd wrote:
+> In the current code logic, sdhci_add_host() will enable the polling
+> method (set MMC_CAP_NEEDS_POLL) for a removable card (MMC_CAP_
+> NONREMOVABLE is not set) whose host's internal card detection method
+> is disabled for some reason (SDHCI_QUIRK_BROKEN_CARD_DETECTION is set).
 > 
-> Send just a v2 for this specific patch.
+> However, this is improper since we can have some other card detection
+> methods besides host internal card detection and polling method. For
+> example, if the card detection type is ESDHC_CD_GPIO (external gpio pin
+> for CD), we should keep SDHCI_QUIRK_BROKEN_CARD_DETECTION set, or host
+> internal card detection interrupt will still be enabled. So, here comes
+> the 1st change in this patch to keep SDHCI_QUIRK_BROKEN_CARD_DETECTION
+> set for ESDHC_CD_GPIO type. But, after the 1st change, just as above
+> said, sdhci_add_host() will still enable polling for such a card.This
+> is redundant.
+> 
+This actually results in an unpleasant rather than redundant behavior.
+Right after this patch gets applied and before patch #3 gets applied,
+driver sdhci-esdhc-imx will use polling even for ESDHC_CD_GPIO case.
 
-attached, might cause some hunks moving a little in 
-  perf tests: Add attr tests under builtin test command
+> On the other hand, for the card with ESDHC_CD_NONE detection type(no CD,
+> neither controller nor gpio, so use polling), we currently rely on
+> sdhci_add_host() to enable polling for us.
+> 
+> Here propose the 2nd change in this patch for such an embarrassing case.
 
-but should be no problem..
+Besides above, this is another sign that the patch (and series) should
+be better partitioned.
 
-whole v2 patchset available here:
-git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git
-perf/test5
+> 1st, this patch will de-couple polling enabling with sdhci_add_host() by
+> doing this in host driver itself, just as some other vendors. 2nd, one
+> more patch will remove such improper MMC_CAP_NEEDS_POLL enabling in
+> sdhci_add_host().
+> 
+> Change-Id: Ia7525009d8fd188e3f0169f225e4a76ff9e94b47
 
-thanks,
-jirka
+Remove this, please.
 
+> Signed-off-by: yongd <yongd@marvell.com>
+> ---
+>  drivers/mmc/host/sdhci-esdhc-imx.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mmc/host/sdhci-esdhc-imx.c b/drivers/mmc/host/sdhci-esdhc-imx.c
+> index effc2ac..ff201a5 100644
+> --- a/drivers/mmc/host/sdhci-esdhc-imx.c
+> +++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+> @@ -557,7 +557,7 @@ static int __devinit sdhci_esdhc_imx_probe(struct platform_device *pdev)
+>  			dev_err(mmc_dev(host->mmc), "request irq error\n");
+>  			goto no_card_detect_irq;
+>  		}
+> -		/* fall through */
+> +		break;
 
----
-Adding automated test to check event's perf_event_attr values.
+The current sdhci-esdhc-imx implementation clears flag
+SDHCI_QUIRK_BROKEN_CARD_DETECTION even for ESDHC_CD_GPIO case
+and then emulate flag SDHCI_CARD_PRESENT by reading CD gpio state in
+esdhc_readl_le().  Obviously, simply setting the flag for gpio case
+does not provide an equal behavior as before.
 
-The idea is run perf session with kidnapping sys_perf_event_open
-function. For each sys_perf_event_open call we store the
-perf_event_attr data to the file to be checked later against what
-we expect.
+Shawn
 
-You can run this by:
-  $ python ./tests/attr.py -d ./tests/attr/ -p ./perf -v
-
-v2 changes:
-  - preserve errno value in the hook
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
----
- tools/perf/Makefile      |   1 +
- tools/perf/perf.c        |   2 +
- tools/perf/perf.h        |  16 ++-
- tools/perf/tests/attr.c  | 140 +++++++++++++++++++++
- tools/perf/tests/attr.py | 313 +++++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 470 insertions(+), 2 deletions(-)
- create mode 100644 tools/perf/tests/attr.c
- create mode 100644 tools/perf/tests/attr.py
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2d3427f..1da87a3 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -430,6 +430,7 @@ LIB_OBJS += $(OUTPUT)arch/common.o
- 
- LIB_OBJS += $(OUTPUT)tests/parse-events.o
- LIB_OBJS += $(OUTPUT)tests/dso-data.o
-+LIB_OBJS += $(OUTPUT)tests/attr.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index e968373..a0ae290 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -484,6 +484,8 @@ int main(int argc, const char **argv)
- 	}
- 	cmd = argv[0];
- 
-+	test_attr__init();
-+
- 	/*
- 	 * We use PATH to find perf commands, but we prepend some higher
- 	 * precedence paths: the "--exec-path" option, the PERF_EXEC_PATH
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 469fbf2..0047264 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -174,13 +174,25 @@ static inline unsigned long long rdclock(void)
- 	(void) (&_min1 == &_min2);		\
- 	_min1 < _min2 ? _min1 : _min2; })
- 
-+extern bool test_attr__enabled;
-+void test_attr__init(void);
-+void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
-+		     int fd, int group_fd, unsigned long flags);
-+
- static inline int
- sys_perf_event_open(struct perf_event_attr *attr,
- 		      pid_t pid, int cpu, int group_fd,
- 		      unsigned long flags)
- {
--	return syscall(__NR_perf_event_open, attr, pid, cpu,
--		       group_fd, flags);
-+	int fd;
-+
-+	fd = syscall(__NR_perf_event_open, attr, pid, cpu,
-+		     group_fd, flags);
-+
-+	if (unlikely(test_attr__enabled))
-+		test_attr__open(attr, pid, cpu, fd, group_fd, flags);
-+
-+	return fd;
- }
- 
- #define MAX_COUNTERS			256
-diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
-new file mode 100644
-index 0000000..55e9a87
---- /dev/null
-+++ b/tools/perf/tests/attr.c
-@@ -0,0 +1,140 @@
-+
-+/*
-+ * The struct perf_event_attr test support.
-+ *
-+ * This test is embedded inside into perf directly and is governed
-+ * by the PERF_TEST_ATTR environment variable and hook inside
-+ * sys_perf_event_open function.
-+ *
-+ * The general idea is to store 'struct perf_event_attr' details for
-+ * each event created within single perf command. Each event details
-+ * are stored into separate text file. Once perf command is finished
-+ * these files can be checked for values we expect for command.
-+ *
-+ * Besides 'struct perf_event_attr' values we also store 'fd' and
-+ * 'group_fd' values to allow checking for groups created.
-+ *
-+ * This all is triggered by setting PERF_TEST_ATTR environment variable.
-+ * It must contain name of existing directory with access and write
-+ * permissions. All the event text files are stored there.
-+ */
-+
-+#include <stdlib.h>
-+#include <stdio.h>
-+#include <inttypes.h>
-+#include <linux/types.h>
-+#include <linux/kernel.h>
-+#include "../perf.h"
-+#include "util.h"
-+
-+#define ENV "PERF_TEST_ATTR"
-+
-+bool test_attr__enabled;
-+
-+static char *dir;
-+
-+void test_attr__init(void)
-+{
-+	dir = getenv(ENV);
-+	test_attr__enabled = (dir != NULL);
-+}
-+
-+#define BUFSIZE 1024
-+
-+#define WRITE_ASS(str, fmt, data)					\
-+do {									\
-+	char buf[BUFSIZE];						\
-+	size_t size;							\
-+									\
-+	size = snprintf(buf, BUFSIZE, #str "=%"fmt "\n", data);		\
-+	if (1 != fwrite(buf, size, 1, file)) {				\
-+		perror("test attr - failed to write event file");	\
-+		fclose(file);						\
-+		return -1;						\
-+	}								\
-+									\
-+} while (0)
-+
-+static int store_event(struct perf_event_attr *attr, pid_t pid, int cpu,
-+		       int fd, int group_fd, unsigned long flags)
-+{
-+	FILE *file;
-+	char path[PATH_MAX];
-+
-+	snprintf(path, PATH_MAX, "%s/event-%d-%llu-%d", dir,
-+		 attr->type, attr->config, fd);
-+
-+	file = fopen(path, "w+");
-+	if (!file) {
-+		perror("test attr - failed to open event file");
-+		return -1;
-+	}
-+
-+	if (fprintf(file, "[event-%d-%llu-%d]\n",
-+		    attr->type, attr->config, fd) < 0) {
-+		perror("test attr - failed to write event file");
-+		fclose(file);
-+		return -1;
-+	}
-+
-+	/* syscall arguments */
-+	WRITE_ASS(fd,       "d", fd);
-+	WRITE_ASS(group_fd, "d", group_fd);
-+	WRITE_ASS(cpu,      "d", cpu);
-+	WRITE_ASS(pid,      "d", pid);
-+	WRITE_ASS(flags,   "lu", flags);
-+
-+	/* struct perf_event_attr */
-+	WRITE_ASS(type,   PRIu32,  attr->type);
-+	WRITE_ASS(size,   PRIu32,  attr->size);
-+	WRITE_ASS(config,  "llu",  attr->config);
-+	WRITE_ASS(sample_period, "llu", attr->sample_period);
-+	WRITE_ASS(sample_type,   "llu", attr->sample_type);
-+	WRITE_ASS(read_format,   "llu", attr->read_format);
-+	WRITE_ASS(disabled,       "d", attr->disabled);
-+	WRITE_ASS(inherit,        "d", attr->inherit);
-+	WRITE_ASS(pinned,         "d", attr->pinned);
-+	WRITE_ASS(exclusive,      "d", attr->exclusive);
-+	WRITE_ASS(exclude_user,   "d", attr->exclude_user);
-+	WRITE_ASS(exclude_kernel, "d", attr->exclude_kernel);
-+	WRITE_ASS(exclude_hv,     "d", attr->exclude_hv);
-+	WRITE_ASS(exclude_idle,   "d", attr->exclude_idle);
-+	WRITE_ASS(mmap,           "d", attr->mmap);
-+	WRITE_ASS(comm,           "d", attr->comm);
-+	WRITE_ASS(freq,           "d", attr->freq);
-+	WRITE_ASS(inherit_stat,   "d", attr->inherit_stat);
-+	WRITE_ASS(enable_on_exec, "d", attr->enable_on_exec);
-+	WRITE_ASS(task,           "d", attr->task);
-+	WRITE_ASS(watermask,      "d", attr->watermark);
-+	WRITE_ASS(precise_ip,     "d", attr->precise_ip);
-+	WRITE_ASS(mmap_data,      "d", attr->mmap_data);
-+	WRITE_ASS(sample_id_all,  "d", attr->sample_id_all);
-+	WRITE_ASS(exclude_host,   "d", attr->exclude_host);
-+	WRITE_ASS(exclude_guest,  "d", attr->exclude_guest);
-+	WRITE_ASS(exclude_callchain_kernel, "d",
-+		  attr->exclude_callchain_kernel);
-+	WRITE_ASS(exclude_callchain_user, "d",
-+		  attr->exclude_callchain_user);
-+	WRITE_ASS(wakeup_events, PRIu32, attr->wakeup_events);
-+	WRITE_ASS(bp_type, PRIu32, attr->bp_type);
-+	WRITE_ASS(config1, "llu", attr->config1);
-+	WRITE_ASS(config2, "llu", attr->config2);
-+	WRITE_ASS(branch_sample_type, "llu", attr->branch_sample_type);
-+	WRITE_ASS(sample_regs_user,   "llu", attr->sample_regs_user);
-+	WRITE_ASS(sample_stack_user,  PRIu32, attr->sample_stack_user);
-+	WRITE_ASS(optional, "d", 0);
-+
-+	fclose(file);
-+	return 0;
-+}
-+
-+void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
-+		     int fd, int group_fd, unsigned long flags)
-+{
-+	int errno_saved = errno;
-+
-+	if (store_event(attr, pid, cpu, fd, group_fd, flags))
-+		die("test attr FAILED");
-+
-+	errno = errno_saved;
-+}
-diff --git a/tools/perf/tests/attr.py b/tools/perf/tests/attr.py
-new file mode 100644
-index 0000000..e98c726
---- /dev/null
-+++ b/tools/perf/tests/attr.py
-@@ -0,0 +1,313 @@
-+#! /usr/bin/python
-+
-+import os
-+import sys
-+import glob
-+import optparse
-+import tempfile
-+import logging
-+import shutil
-+import ConfigParser
-+
-+class Fail(Exception):
-+    def __init__(self, test, msg):
-+        self.msg = msg
-+        self.test = test
-+    def getMsg(self):
-+        return '\'%s\' - %s' % (self.test.path, self.msg)
-+
-+class Unsup(Exception):
-+    def __init__(self, test):
-+        self.test = test
-+    def getMsg(self):
-+        return '\'%s\'' % self.test.path
-+
-+class Event(dict):
-+    terms = [
-+        'flags',
-+        'type',
-+        'size',
-+        'config',
-+        'sample_period',
-+        'sample_type',
-+        'read_format',
-+        'disabled',
-+        'inherit',
-+        'pinned',
-+        'exclusive',
-+        'exclude_user',
-+        'exclude_kernel',
-+        'exclude_hv',
-+        'exclude_idle',
-+        'mmap',
-+        'comm',
-+        'freq',
-+        'inherit_stat',
-+        'enable_on_exec',
-+        'task',
-+        'watermask',
-+        'precise_ip',
-+        'mmap_data',
-+        'sample_id_all',
-+        'exclude_host',
-+        'exclude_guest',
-+        'exclude_callchain_kernel',
-+        'exclude_callchain_user',
-+        'wakeup_events',
-+        'bp_type',
-+        'config1',
-+        'config2',
-+        'branch_sample_type',
-+        'sample_regs_user',
-+        'sample_stack_user',
-+    ]
-+
-+    def add(self, data):
-+        for key, val in data:
-+            log.debug("      %s = %s" % (key, val))
-+            self[key] = val
-+
-+    def __init__(self, name, data, base):
-+        log.info("    Event %s" % name);
-+        self.name  = name;
-+        self.group = ''
-+        self.add(base)
-+        self.add(data)
-+
-+    def compare_data(self, a, b):
-+        a_list = a.split('|')
-+        b_list = b.split('|')
-+
-+        for a_item in a_list:
-+            for b_item in b_list:
-+                if (a_item == b_item):
-+                    return True
-+                elif (a_item == '*') or (b_item == '*'):
-+                    return True
-+
-+        return False
-+
-+    def equal(self, other):
-+        for t in Event.terms:
-+            log.debug("      [%s] %s %s" % (t, self[t], other[t]));
-+            if not self.has_key(t) or not other.has_key(t):
-+                return False
-+            if not self.compare_data(self[t], other[t]):
-+                return False
-+        return True
-+
-+    def is_optional(self):
-+        if self['optional'] == '1':
-+            return True
-+        else:
-+            return False
-+
-+class Test(object):
-+    def __init__(self, path, options):
-+        parser = ConfigParser.SafeConfigParser()
-+        parser.read(path)
-+
-+        log.warning("running '%s'" % path)
-+
-+        self.path     = path
-+        self.test_dir = options.test_dir
-+        self.perf     = options.perf
-+        self.command  = parser.get('config', 'command')
-+        self.args     = parser.get('config', 'args')
-+
-+        try:
-+            self.ret  = parser.get('config', 'ret')
-+        except:
-+            self.ret  = 0
-+
-+        self.expect   = {}
-+        self.result   = {}
-+        log.info("  loading expected events");
-+        self.load_events(path, self.expect)
-+
-+    def is_event(self, name):
-+        if name.find("event") == -1:
-+            return False
-+        else:
-+            return True
-+
-+    def load_events(self, path, events):
-+        parser_event = ConfigParser.SafeConfigParser()
-+        parser_event.read(path)
-+
-+        for section in filter(self.is_event, parser_event.sections()):
-+
-+            parser_items = parser_event.items(section);
-+            base_items   = {}
-+
-+            if (':' in section):
-+                base = section[section.index(':') + 1:]
-+                parser_base = ConfigParser.SafeConfigParser()
-+                parser_base.read(self.test_dir + '/' + base)
-+                base_items = parser_base.items('event')
-+
-+            e = Event(section, parser_items, base_items)
-+            events[section] = e
-+
-+    def run_cmd(self, tempdir):
-+        cmd = "PERF_TEST_ATTR=%s %s %s -o %s/perf.data %s" % (tempdir,
-+              self.perf, self.command, tempdir, self.args)
-+        ret = os.WEXITSTATUS(os.system(cmd))
-+
-+        log.info("  running '%s' ret %d " % (cmd, ret))
-+
-+        if ret != int(self.ret):
-+            raise Unsup(self)
-+
-+    def compare(self, expect, result):
-+        match = {}
-+
-+        log.info("  compare");
-+
-+        # For each expected event find all matching
-+        # events in result. Fail if there's not any.
-+        for exp_name, exp_event in expect.items():
-+            exp_list = []
-+            log.debug("    matching [%s]" % exp_name)
-+            for res_name, res_event in result.items():
-+                log.debug("      to [%s]" % res_name)
-+                if (exp_event.equal(res_event)):
-+                    exp_list.append(res_name)
-+                    log.debug("    ->OK")
-+                else:
-+                    log.debug("    ->FAIL");
-+
-+            log.info("    match: [%s] optional(%d) matches %s" %
-+                      (exp_name, exp_event.is_optional(), str(exp_list)))
-+
-+            # we did not any matching event - fail
-+            if (not exp_list) and (not exp_event.is_optional()):
-+                raise Fail(self, 'match failure');
-+
-+            match[exp_name] = exp_list
-+
-+        # For each defined group in the expected events
-+        # check we match the same group in the result.
-+        for exp_name, exp_event in expect.items():
-+            group = exp_event.group
-+
-+            if (group == ''):
-+                continue
-+
-+            # XXX group matching does not account for
-+            # optional events as above matching does
-+            for res_name in match[exp_name]:
-+                res_group = result[res_name].group
-+                if res_group not in match[group]:
-+                    raise Fail(self, 'group failure')
-+
-+                log.info("    group: [%s] matches group leader %s" %
-+                         (exp_name, str(match[group])))
-+
-+        log.info("  matched")
-+
-+    def resolve_groups(self, events):
-+        for name, event in events.items():
-+            group_fd = event['group_fd'];
-+            if group_fd == '-1':
-+                continue;
-+
-+            for iname, ievent in events.items():
-+                if (ievent['fd'] == group_fd):
-+                    event.group = iname
-+                    log.debug('[%s] has group leader [%s]' % (name, iname))
-+                    break;
-+
-+    def run(self):
-+        tempdir = tempfile.mkdtemp();
-+
-+        # run the test script
-+        self.run_cmd(tempdir);
-+
-+        # load events expectation for the test
-+        log.info("  loading result events");
-+        for f in glob.glob(tempdir + '/event*'):
-+            self.load_events(f, self.result);
-+
-+        # resolve group_fd to event names
-+        self.resolve_groups(self.expect);
-+        self.resolve_groups(self.result);
-+
-+        # do the expectation - results matching - both ways
-+        self.compare(self.expect, self.result)
-+        self.compare(self.result, self.expect)
-+
-+        # cleanup
-+        shutil.rmtree(tempdir)
-+
-+
-+def run_tests(options):
-+    for f in glob.glob(options.test_dir + '/' + options.test):
-+        try:
-+            Test(f, options).run()
-+        except Unsup, obj:
-+            log.warning("unsupp  %s" % obj.getMsg())
-+
-+def setup_log(verbose):
-+    global log
-+    level = logging.CRITICAL
-+
-+    if verbose == 1:
-+        level = logging.WARNING
-+    if verbose == 2:
-+        level = logging.INFO
-+    if verbose >= 3:
-+        level = logging.DEBUG
-+
-+    log = logging.getLogger('test')
-+    log.setLevel(level)
-+    ch  = logging.StreamHandler()
-+    ch.setLevel(level)
-+    formatter = logging.Formatter('%(message)s')
-+    ch.setFormatter(formatter)
-+    log.addHandler(ch)
-+
-+USAGE = '''%s [OPTIONS]
-+  -d dir  # tests dir
-+  -p path # perf binary
-+  -t test # single test
-+  -v      # verbose level
-+''' % sys.argv[0]
-+
-+def main():
-+    parser = optparse.OptionParser(usage=USAGE)
-+
-+    parser.add_option("-t", "--test",
-+                      action="store", type="string", dest="test")
-+    parser.add_option("-d", "--test-dir",
-+                      action="store", type="string", dest="test_dir")
-+    parser.add_option("-p", "--perf",
-+                      action="store", type="string", dest="perf")
-+    parser.add_option("-v", "--verbose",
-+                      action="count", dest="verbose")
-+
-+    options, args = parser.parse_args()
-+    if args:
-+        parser.error('FAILED wrong arguments %s' %  ' '.join(args))
-+        return -1
-+
-+    setup_log(options.verbose)
-+
-+    if not options.test_dir:
-+        print 'FAILED no -d option specified'
-+        sys.exit(-1)
-+
-+    if not options.test:
-+        options.test = 'test*'
-+
-+    try:
-+        run_tests(options)
-+
-+    except Fail, obj:
-+        print "FAILED %s" % obj.getMsg();
-+        sys.exit(-1)
-+
-+    sys.exit(0)
-+
-+if __name__ == '__main__':
-+    main()
--- 
-1.7.11.7
+>  
+>  	case ESDHC_CD_CONTROLLER:
+>  		/* we have a working card_detect back */
+> @@ -569,6 +569,7 @@ static int __devinit sdhci_esdhc_imx_probe(struct platform_device *pdev)
+>  		break;
+>  
+>  	case ESDHC_CD_NONE:
+> +		host->mmc->caps = MMC_CAP_NEEDS_POLL;
+>  		break;
+>  	}
+>  
+> -- 
+> 1.7.9.5
+> 
 
