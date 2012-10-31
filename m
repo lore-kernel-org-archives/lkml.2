@@ -1,67 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760863Ab2JaV6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 17:58:32 -0400
-Received: from exprod7og116.obsmtp.com ([64.18.2.219]:54180 "EHLO
-	exprod7og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760677Ab2JaV6a (ORCPT
+	id S1752233Ab2JaV7k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 17:59:40 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62264 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab2JaV7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 17:58:30 -0400
-Message-ID: <50919EED.3020601@genband.com>
-Date: Wed, 31 Oct 2012 15:58:05 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Wed, 31 Oct 2012 17:59:38 -0400
 MIME-Version: 1.0
-To: Oliver Neukum <oneukum@suse.de>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Jiri Kosina <jkosina@suse.cz>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com> <20121031171743.GA17652@srcf.ucam.org> <20121031173919.4fc63ddd@pyramind.ukuu.org.uk> <2548314.3caaFsMVg6@linux-lqwf.site>
-In-Reply-To: <2548314.3caaFsMVg6@linux-lqwf.site>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 31 Oct 2012 21:58:06.0288 (UTC) FILETIME=[CEA95D00:01CDB7B2]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19326.001
-X-TM-AS-Result: No--19.560000-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+In-Reply-To: <20121031143524.0509665d.akpm@linux-foundation.org>
+References: <1351560594-18366-1-git-send-email-minchan@kernel.org> <20121031143524.0509665d.akpm@linux-foundation.org>
+From: Paul Turner <pjt@google.com>
+Date: Wed, 31 Oct 2012 14:59:07 -0700
+Message-ID: <CAPM31RKm89s6PaAnfySUD-f+eGdoZP6=9DHy58tx_4Zi8Z9WPQ@mail.gmail.com>
+Subject: Re: [RFC v2] Support volatile range for anon vma
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, John Stultz <john.stultz@linaro.org>,
+        Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, sanjay@google.com,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 02:14 PM, Oliver Neukum wrote:
-> On Wednesday 31 October 2012 17:39:19 Alan Cox wrote:
->> On Wed, 31 Oct 2012 17:17:43 +0000
->> Matthew Garrett<mjg59@srcf.ucam.org>  wrote:
->>
->>> On Wed, Oct 31, 2012 at 05:21:21PM +0000, Alan Cox wrote:
->>>> On Wed, 31 Oct 2012 17:10:48 +0000
->>>> Matthew Garrett<mjg59@srcf.ucam.org>  wrote:
->>>>> The kernel is signed. The kernel doesn't check the signature on the
->>>>> suspend image.
->>>>
->>>> Which doesn't matter. How are you going to create the tampered image in
->>>> the first place ?
->>>
->>> By booting a signed kernel, not turning on swap and writing directly to
->>> the swap partition.
->>
->> Ok so the actual problem is that you are signing kernels that allow the
->> user to skip the S4 resume check ?
+On Wed, Oct 31, 2012 at 2:35 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
 >
-> No. The problem is principal in nature.
+> On Tue, 30 Oct 2012 10:29:54 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
 >
-> swapoff /dev/sdb6 ; dd if=/tmp/malicious_image of=/dev/sdb6 ; sync ; reboot
+> > This patch introudces new madvise behavior MADV_VOLATILE and
+> > MADV_NOVOLATILE for anonymous pages. It's different with
+> > John Stultz's version which considers only tmpfs while this patch
+> > considers only anonymous pages so this cannot cover John's one.
+> > If below idea is proved as reasonable, I hope we can unify both
+> > concepts by madvise/fadvise.
+> >
+> > Rationale is following as.
+> > Many allocators call munmap(2) when user call free(3) if ptr is
+> > in mmaped area. But munmap isn't cheap because it have to clean up
+> > all pte entries and unlinking a vma so overhead would be increased
+> > linearly by mmaped area's size.
 >
-> That would do it on my system.
-> Maybe in theory you could solve this by the kernel invalidating images
-> it hasn't written itself and forbidding to change the resume partition from the
-> kernel command line, but that would break user space hibernation.
+> Presumably the userspace allocator will internally manage memory in
+> large chunks, so the munmap() call frequency will be much lower than
+> the free() call frequency.  So the performance gains from this change
+> might be very small.
 
-If the resuming kernel refuses to resume from images it didn't create 
-itself, why do you need to forbid changing the resume partition from the 
-kernel command line?
+I don't think I strictly understand the motivation from a
+malloc-standpoint here.
 
-Chris
+These days we (tcmalloc) use madvise(..., MADV_DONTNEED) when we want
+to perform discards on Linux.    For any reasonable allocator (short
+of binding malloc --> mmap, free --> unmap) this seems a better
+choice.
+
+Note also from a performance stand-point I doubt any allocator (which
+case about performance) is going to want to pay the cost of even a
+null syscall about typical malloc/free usage (consider: a tcmalloc
+malloc/free pairis currently <20ns).  Given then that this cost is
+amortized once you start doing discards on larger blocks MADV_DONTNEED
+seems a preferable interface:
+- You don't need to reconstruct an arena when you do want to allocate
+since there's no munmap/mmap for the region to change about
+- There are no syscalls involved in later reallocating the block.
+
+The only real additional cost is address-space.  Are you strongly
+concerned about the 32-bit case?
+
+>
+> The whole point of the patch is to improve performance, but we have no
+> evidence that it was successful in doing that!  I do think we'll need
+> good quantitative testing results before proceeding with such a patch,
+> please.
+>
+> Also, it is very desirable that we involve the relevant userspace
+> (glibc, etc) developers in this.  And I understand that the google
+> tcmalloc project will probably have interest in this - I've cc'ed
+> various people@google in the hope that they can provide input (please).
+>
+> Also, it is a userspace API change.  Please cc mtk.manpages@gmail.com.
+>
+> Also, I assume that you have userspace test code.  At some stage,
+> please consider adding a case to tools/testing/selftests.  Such a test
+> would require to creation of memory pressure, which is rather contrary
+> to the selftests' current philosopy of being a bunch of short-running
+> little tests.  Perhaps you can come up with something.  But I suggest
+> that such work be done later, once it becomes clearer that this code is
+> actually headed into the kernel.
+>
+> > Allocator should call madvise(MADV_NOVOLATILE) before reusing for
+> > allocating that area to user. Otherwise, accessing of volatile range
+> > will meet SIGBUS error.
+>
+> Well, why?  It would be easy enough for the fault handler to give
+> userspace a new, zeroed page at that address.
+
+Note: MADV_DONTNEED already has this (nice) property.
+
+>
+> Or we could simply leave the old page in place at that address.  If the
+> page gets touched, we clear MADV_NOVOLATILE on its VMA and give the
+> page (or all the not-yet-reclaimed pages) back to userspace at their
+> old addresses.
+>
+> Various options suggest themselves here.  You've chosen one of them but
+> I would like to see a pretty exhaustive description of the reasoning
+> behind that decision.
+>
+> Also, I wonder about the interaction with other vma manipulation
+> operations.  For example, can a VMA get split when in the MADV_VOLATILE
+> state?  If so, what happens?
+>
+> Also, I see no reason why the code shouldn't work OK with nonlinear VMAs,
+> but I bet this wasn't tested ;)
+>
+> > --- a/mm/madvise.c
+> > +++ b/mm/madvise.c
+> > @@ -86,6 +86,22 @@ static long madvise_behavior(struct vm_area_struct * vma,
+> >               if (error)
+> >                       goto out;
+> >               break;
+> > +     case MADV_VOLATILE:
+> > +             if (vma->vm_flags & VM_LOCKED) {
+> > +                     error = -EINVAL;
+> > +                     goto out;
+> > +             }
+> > +             new_flags |= VM_VOLATILE;
+> > +             vma->purged = false;
+> > +             break;
+> > +     case MADV_NOVOLATILE:
+> > +             if (!(vma->vm_flags & VM_VOLATILE)) {
+> > +                     error = -EINVAL;
+> > +                     goto out;
+>
+> I wonder if this really should return an error.  Other madvise()
+> options don't do this, and running MADV_NOVOLATILE against a
+> not-volatile area seems pretty benign and has clearly defined before-
+> and after- states.
+>
+> > +             }
+> > +
+> > +             new_flags &= ~VM_VOLATILE;
+> > +             break;
+> >       }
+> >
+> >       if (new_flags == vma->vm_flags) {
+>
