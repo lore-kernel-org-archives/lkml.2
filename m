@@ -1,86 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab2JaFVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 01:21:24 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63255 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab2JaFVX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 01:21:23 -0400
-X-AuditID: 9c930179-b7c8bae000003559-d6-5090b551b7c6
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
-        ming.m.lin@intel.com
-Subject: Re: [Patch v1 06/10] perf/x86: add support for PEBS Precise Store
-References: <1351523752-4215-1-git-send-email-eranian@google.com>
-	<1351523752-4215-7-git-send-email-eranian@google.com>
-Date: Wed, 31 Oct 2012 14:21:21 +0900
-In-Reply-To: <1351523752-4215-7-git-send-email-eranian@google.com> (Stephane
-	Eranian's message of "Mon, 29 Oct 2012 16:15:48 +0100")
-Message-ID: <87pq3z5i9a.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1751799Ab2JaFWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 01:22:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50919 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750787Ab2JaFWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 01:22:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,685,1344236400"; 
+   d="scan'208";a="234964605"
+From: "Zhang, Jun" <jun.zhang@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] To crash dump, we need keep other memory type except
+ E820_RAM, because other type come from BIOS or firmware is used by other
+ code(for example: PCI_MMCONFIG).
+Thread-Topic: [PATCH] To crash dump, we need keep other memory type except
+ E820_RAM, because other type come from BIOS or firmware is used by other
+ code(for example: PCI_MMCONFIG).
+Thread-Index: AQHNtyGZvXZpwJ+vEU+IHHefPsjXLZfS3+3Q
+Date: Wed, 31 Oct 2012 05:22:16 +0000
+Message-ID: <88DC34334CA3444C85D647DBFA962C270FD7EB3A@SHSMSX102.ccr.corp.intel.com>
+References: <88DC34334CA3444C85D647DBFA962C270FD7EAD3@SHSMSX102.ccr.corp.intel.com>
+ <50909120.3040101@zytor.com>
+ <88DC34334CA3444C85D647DBFA962C270FD7EB0B@SHSMSX102.ccr.corp.intel.com>
+ <5090AB3C.5050405@zytor.com>
+In-Reply-To: <5090AB3C.5050405@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9V5MRkX016585
 
-On Mon, 29 Oct 2012 16:15:48 +0100, Stephane Eranian wrote:
-> This patch adds support for PEBS Precise Store
-> which is available on Intel Sandy Bridge and
-> Ivy Bridge processors.
+Hello, Anvin
+  You are right. Thanks!
+
+Hello, All
+  Please review it again. Thanks!
+
+>From bf7506ac7e9ce0df0b915164dbb7a6d858ef2e40 Mon Sep 17 00:00:00 2001
+From: jzha144 <jun.zhang@intel.com>
+Date: Wed, 31 Oct 2012 08:51:18 +0800
+Subject: [PATCH] When we are doing a crash dump, we still need non-E820_RAM
+ memory type address information in order to do I/O. so only
+ remove all RAM ranges which need to be dumped.
+
+Signed-off-by: jzha144 <jun.zhang@intel.com>
+---
+ arch/x86/kernel/e820.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index df06ade..77be839 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -851,6 +851,15 @@ static int __init parse_memmap_opt(char *p)
+ 		 * reset.
+ 		 */
+ 		saved_max_pfn = e820_end_of_ram_pfn();
++
++		/*
++		 * We are doing a crash dump, so remove all RAM ranges
++		 * as they are the ones that need to be dumped.
++		 * We still need all non-RAM information in order to do I/O.
++		 */
++		e820_remove_range(0, ULLONG_MAX, E820_RAM, 1);
++		userdef = 1;
++		return 0;
+ #endif
+ 		e820.nr_map = 0;
+ 		userdef = 1;
+-- 
+1.7.6
+
+Best Regards!
+Zhang, jun
+
+-----Original Message-----
+From: H. Peter Anvin [mailto:hpa@zytor.com] 
+Sent: Wednesday, October 31, 2012 12:38 PM
+To: Zhang, Jun
+Cc: Thomas Gleixner; Ingo Molnar; x86@kernel.org; Andrew Morton; Fleming, Matt; Paul Gortmaker; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] To crash dump, we need keep other memory type except E820_RAM, because other type come from BIOS or firmware is used by other code(for example: PCI_MMCONFIG).
+
+On 10/30/2012 08:39 PM, Zhang, Jun wrote:
+> Hello, Anvin
+> Thanks!
 >
-> To use Precise store, the proper PEBS event
-> must be used: mem_trans_retired:precise_stores.
-> For the perf tool, the generic mem-stores event
-> exported via sysfs can be used directly.
+> Hello, all
+> Next is my the latest version, please review it.
+> Thanks!
 
-Just trivial nitpicks..
+You're still starting in the wrong end which is confusing for the reader.
 
+What you probably want to say is something more like:
+
+"We are doing a crash dump, so remove all RAM ranges as they are the ones that need to be dumped.  We still need all non-RAM information in order to do I/O."
+
+At that point it should be pretty obvious that the patch is wrong.  What if we are *not* doing a crash dump?  Just because crash dump is compiled in doesn't mean that that is what we are doing right now.
+
+	-hpa
+
+>  From 141546c77ff7be523a9e72f5259df4a6827f2c1a Mon Sep 17 00:00:00 
+> 2001
+> From: jzha144 <jun.zhang@intel.com>
+> Date: Wed, 31 Oct 2012 08:51:18 +0800
+> Subject: [PATCH] If we are doing a crash dump, we still need non-E820_RAM
+>   memory type address information, which come from BIOS or
+>   firmware. for example: PCI_MMCONFIG check this address.
 >
-> Signed-off-by: Stephane Eranian <eranian@google.com>
+> Signed-off-by: jzha144 <jun.zhang@intel.com>
 > ---
-[snip]
-> @@ -486,6 +524,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
->  	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
->  	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
->  	INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-> +	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
->  	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
->  	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
->  	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-> @@ -500,6 +539,7 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
->          INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
->          INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
->          INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-> +	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+>   arch/x86/kernel/e820.c |    9 +++++++++
+>   1 files changed, 9 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c index 
+> df06ade..f8672d0 100644
+> --- a/arch/x86/kernel/e820.c
+> +++ b/arch/x86/kernel/e820.c
+> @@ -851,6 +851,15 @@ static int __init parse_memmap_opt(char *p)
+>   		 * reset.
+>   		 */
+>   		saved_max_pfn = e820_end_of_ram_pfn();
+> +
+> +		/*
+> +		 * If we are doing a crash dump, we still need non-E820_RAM
+> +		 * memory type address information. so we only remove
+> +		 * E820_RAM type.
+> +		 */
+> +		e820_remove_range(0, ULLONG_MAX, E820_RAM, 1);
+> +		userdef = 1;
+> +		return 0;
+>   #endif
+>   		e820.nr_map = 0;
+>   		userdef = 1;
+>
 
-White-space damaged?  Oh, it seems already broken with spaces.
 
+--
+H. Peter Anvin, Intel Open Source Technology Center I work for Intel.  I don't speak on their behalf.
 
->          INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
->          INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
->          INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-[snip]
-> @@ -672,7 +715,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
->  	/*
->  	 * if PEBS-LL or PreciseStore
->  	 */
-> -	if (fll) {
-> +	if (fll || fst) {
->  		if (sample_type & PERF_SAMPLE_ADDR)
->  			data.addr = pebs->dla;
->  
-> @@ -688,6 +731,8 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
->  		if (sample_type & PERF_SAMPLE_DSRC) {
->  			if (fll)
->  				data.dsrc.val = load_latency_data(pebs->dse);
-> +			else if (fst)
-
-Looks like it can be converted to a plain 'else'.
-
-Thanks,
-Namhyung
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
