@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935241Ab2JaJFB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:05:01 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11321 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935214Ab2JaJE5 (ORCPT
+	id S1161095Ab2JaJEy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:04:54 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6600 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161066Ab2JaJEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:04:57 -0400
+	Wed, 31 Oct 2012 05:04:50 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 31 Oct 2012 02:04:52 -0700
+	by hqnvupgp06.nvidia.com on Wed, 31 Oct 2012 02:04:44 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>
 CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V4 0/4] ARM: tegra: Enable SLINK controller driver
-Date: Wed, 31 Oct 2012 14:32:56 +0530
-Message-ID: <1351674176-20603-5-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V4 2/4] ARM: tegra: Add OF_DEV_AUXDATA for SLINK driver in board dt
+Date: Wed, 31 Oct 2012 14:32:53 +0530
+Message-ID: <1351674176-20603-2-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com>
 References: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com>
@@ -25,35 +25,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series modify the dts file to add the slink addresses,
-make AUXDATA in board dt files, enable slink4 for tegra30-cardhu and 
-enable slink controller defconfig.
+Add OF_DEV_AUXDATA for slink driver for Tegra20 and Tegra30
+board dt files.
+Set the parent clock of slink controller to PLLP and configure
+clock to 100MHz.
 
-Changes from V1: 
-- Remove changes from clock tables.
-- Make the dma req dt property name to nvidia,dma-request-selector.
-- change the spi max frequency prop to spi-max-frequency.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Changes from V1:
+- Revert the changes in clock table to get the driver name.
 
-Changes from V2: 
-- make node name to spi.
-- get rid of iomap.h.
+Changes from V2:
+- Get rid of the iomap.h
 
 Changes from V3:
-- Enable spi flash connected on slink4-cs1.
-- Enable require defconfigs.
+- None
 
-Laxman Dewangan (4):
-  ARM: tegra: dts: add slink controller dt entry
-  ARM: tegra: Add OF_DEV_AUXDATA for SLINK driver in board dt
-  ARM: tegra: dts: cardhu: enable SLINK4
-  ARM: tegra: config: enable spi driver for Tegra SLINK controller
+ arch/arm/mach-tegra/board-dt-tegra20.c |    8 ++++++++
+ arch/arm/mach-tegra/board-dt-tegra30.c |   12 ++++++++++++
+ 2 files changed, 20 insertions(+), 0 deletions(-)
 
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- arch/arm/boot/dts/tegra20.dtsi                     |   41 +++++++++++++
- arch/arm/boot/dts/tegra30-cardhu.dtsi              |   10 +++
- arch/arm/boot/dts/tegra30.dtsi                     |   60 ++++++++++++++++++++
- arch/arm/configs/tegra_defconfig                   |    5 +-
- arch/arm/mach-tegra/board-dt-tegra20.c             |    8 +++
- arch/arm/mach-tegra/board-dt-tegra30.c             |   12 ++++
- 7 files changed, 136 insertions(+), 1 deletions(-)
+diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
+index 2053f74..5a19589 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra20.c
++++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+@@ -90,6 +90,10 @@ struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
+ 		       &tegra_ehci3_pdata),
+ 	OF_DEV_AUXDATA("nvidia,tegra20-apbdma", TEGRA_APB_DMA_BASE, "tegra-apbdma", NULL),
+ 	OF_DEV_AUXDATA("nvidia,tegra20-pwm", TEGRA_PWFM_BASE, "tegra-pwm", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-slink", 0x7000D400, "spi_tegra.0", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-slink", 0x7000D600, "spi_tegra.1", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-slink", 0x7000D800, "spi_tegra.2", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra20-slink", 0x7000DA00, "spi_tegra.3", NULL),
+ 	{}
+ };
+ 
+@@ -109,6 +113,10 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
+ 	{ "sdmmc1",	"pll_p",	48000000,	false},
+ 	{ "sdmmc3",	"pll_p",	48000000,	false},
+ 	{ "sdmmc4",	"pll_p",	48000000,	false},
++	{ "sbc1",	"pll_p",	100000000,	false },
++	{ "sbc2",	"pll_p",	100000000,	false },
++	{ "sbc3",	"pll_p",	100000000,	false },
++	{ "sbc4",	"pll_p",	100000000,	false },
+ 	{ NULL,		NULL,		0,		0},
+ };
+ 
+diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
+index 9e6f79a..b26cfef 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra30.c
++++ b/arch/arm/mach-tegra/board-dt-tegra30.c
+@@ -52,6 +52,12 @@ struct of_dev_auxdata tegra30_auxdata_lookup[] __initdata = {
+ 	OF_DEV_AUXDATA("nvidia,tegra30-ahub", 0x70080000, "tegra30-ahub", NULL),
+ 	OF_DEV_AUXDATA("nvidia,tegra30-apbdma", 0x6000a000, "tegra-apbdma", NULL),
+ 	OF_DEV_AUXDATA("nvidia,tegra30-pwm", TEGRA_PWFM_BASE, "tegra-pwm", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000D400, "spi_tegra.0", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000D600, "spi_tegra.1", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000D800, "spi_tegra.2", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000DA00, "spi_tegra.3", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000DC00, "spi_tegra.4", NULL),
++	OF_DEV_AUXDATA("nvidia,tegra30-slink", 0x7000DE00, "spi_tegra.5", NULL),
+ 	{}
+ };
+ 
+@@ -71,6 +77,12 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
+ 	{ "sdmmc1",	"pll_p",	48000000,	false},
+ 	{ "sdmmc3",	"pll_p",	48000000,	false},
+ 	{ "sdmmc4",	"pll_p",	48000000,	false},
++	{ "sbc1",	"pll_p",	100000000,	false},
++	{ "sbc2",	"pll_p",	100000000,	false},
++	{ "sbc3",	"pll_p",	100000000,	false},
++	{ "sbc4",	"pll_p",	100000000,	false},
++	{ "sbc5",	"pll_p",	100000000,	false},
++	{ "sbc6",	"pll_p",	100000000,	false},
+ 	{ NULL,		NULL,		0,		0},
+ };
+ 
+-- 
+1.7.1.1
 
