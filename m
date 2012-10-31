@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084Ab2JaHKO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 03:10:14 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:44188 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560Ab2JaHKG (ORCPT
+	id S1755023Ab2JaHMb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 03:12:31 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47620 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096Ab2JaHMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 03:10:06 -0400
-Date: Wed, 31 Oct 2012 10:10:05 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: linux-kernel@vger.kernel.org, smatch@vger.kernel.org,
-        Ed Cashin <ecashin@coraid.com>
-Subject: Smatch 1.57 released
-Message-ID: <20121031071005.GE6667@mwanda>
-References: <8D458972-B1BB-4BB2-8C91-3489A8D24428@coraid.com>
- <20121030175330.GD6667@mwanda>
- <A607CE07-5C1C-445B-B2CA-DA3B25237F5E@coraid.com>
+	Wed, 31 Oct 2012 03:12:30 -0400
+X-AuditID: 9c93016f-b7c7bae000000eb7-3d-5090cf5b605b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Dhaval Giani <dhaval.giani@gmail.com>
+Cc: Arnaldo de Melo <acme@infradead.org>, mingo@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        akshay kumar <iit.akshay@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] perf report: different reports when run on terminal as opposed to script
+References: <CAPhKKr8HAbAw2jdvva6oJYj747ZS0dTakz2=qJXN+NsTiu=dCg@mail.gmail.com>
+	<CAPhKKr8KNi0kU4CcbPofZT7sghumeUTRyiuywOWrd24DiF4gFQ@mail.gmail.com>
+	<871ugg76dn.fsf@sejong.aot.lge.com>
+	<CAPhKKr_S0-r-Bx9KWeFyN1KwTcLf-Rt8f55_c0bohaJh0JQ0cg@mail.gmail.com>
+Date: Wed, 31 Oct 2012 16:12:27 +0900
+In-Reply-To: <CAPhKKr_S0-r-Bx9KWeFyN1KwTcLf-Rt8f55_c0bohaJh0JQ0cg@mail.gmail.com>
+	(Dhaval Giani's message of "Tue, 30 Oct 2012 08:05:45 -0400")
+Message-ID: <87625r5d44.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A607CE07-5C1C-445B-B2CA-DA3B25237F5E@coraid.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Smatch is a C static analysis tool, but with a lot of kernel
-specific checks.  It's been 8 months since I did a Smatch release so
-probably another one was due.
+On Tue, 30 Oct 2012 08:05:45 -0400, Dhaval Giani wrote:
+> On Tue, Oct 30, 2012 at 3:42 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+>> Hi Dhaval,
+>>
+>> On Mon, 29 Oct 2012 12:45:53 -0400, Dhaval Giani wrote:
+>>> On Mon, Oct 29, 2012 at 12:01 PM, Dhaval Giani <dhaval.giani@gmail.com> wrote:
+>>>> Hi,
+>>>>
+>>>> As part of a class assignment I have to collect some performance
+>>>> statistics. In order to do so I run
+>>>>
+>>>> perf record -g <the program I have to profile>
+>>>>
+>>>> And in another window, I start 200 threads of the load generator
+>>>> (which is not recorded by perf)
+>>>>
+>>>> This generates me statistics that I expect to see, and I am happy. As
+>>>> this is academia and a class assignment, I need to collect information
+>>>> and analyze it across different setups. Which of course meant I script
+>>>> this whole thing, which basically is
+>>>>
+>>>> for i in all possibilities
+>>>> do
+>>>> perf record -g <the program I have to profile> &
+>>>> WAITPID=$!
+>>>> for j in NR_THREADS
+>>>> do
+>>>> <start load generator> &
+>>>> KILLPID=$!
+>>>> done
+>>>> wait $PID
+>>
+>> You meant $WAITPID, right?
+>>
+>
+> yes. grrr. I changed the name here to WAITPID for it to be clear and
+> that was a fail. (I blame the cold)
+>
+>>
+>>>> kill $KILLPID
+>>
+>> Doesn't it kill the last load generator only?
+>>
+>>
+>
+> Well, this was a bug in me typing the pseudo code. the actual script
+> does "$KILLPID $!"
 
-The main interesting thing right now is the value tracking across
-function boundaries with the database.  But also there was a some
-work done with array out of bounds detection.  And internally there
-was a fix so it should run faster and use less memory.  Along with
-lots of other small fixes.
+Okay, so I suspect that it might be affected by the autogroup scheduling
+feature since you said running load generators in another window - I
+guess it's a terminal.  How about running them with setsid?
 
-The way to use Smatch is:
-	git clone git://repo.or.cz/smatch.git
-	cd smatch
-	make
-	cd ~/path/to/kernel
+Thanks,
+Namhyung
 
-	[ This next step is optional if you want to build the
-	  database.  If you build it several times the database
-	  becomes more complete. ]
-	~/path/to/smatch/smatch_scripts/build_kernel_data.sh
-
-	~/path/to/smatch/smatch_scripts/test_kernel.sh
-
-It creates warns.txt file with all the warnings.  Or alternatively
-if you just want to check one file then the command is:
-
-	~/progs/smatch/devel/smatch_scripts/kchecker drivers/file.c
-
-regards,
-dan carpenter
