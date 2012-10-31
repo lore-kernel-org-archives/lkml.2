@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965630Ab2J3S7V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:59:21 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:40528 "EHLO
+	id S965658Ab2J3S73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:59:29 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:40556 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965502Ab2J3S7M (ORCPT
+	by vger.kernel.org with ESMTP id S965633Ab2J3S7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:59:12 -0400
+	Tue, 30 Oct 2012 14:59:22 -0400
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
 To: Tony Lindgren <tony@atomide.com>
 Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
@@ -14,9 +14,9 @@ Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
         Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Subject: [RFC 1/7] capebus: Core capebus support
-Date: Wed, 31 Oct 2012 18:52:07 +0200
-Message-Id: <1351702333-8456-2-git-send-email-panto@antoniou-consulting.com>
+Subject: [RFC 5/7] capebus: Beaglebone capebus DT update
+Date: Wed, 31 Oct 2012 18:52:11 +0200
+Message-Id: <1351702333-8456-6-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
 References: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com>
@@ -24,1397 +24,750 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing capebus; a bus that allows small boards (capes) to connect
-to a complex SoC using simple expansion connectors.
-
-Up to now to support these kind of boards, one had to hack the board files,
-and do all sort of gymnastics to handle all the different cases of
-conflict resolution.
-
-Capebus provides abstractions that keep the pain to a minimum.
-
-This part of the series is introducing the core capebus functionality
-dealing with the basic bus & driver probe functions.
+Update the common beaglebone's DTS with the required DT
+entries for all known working capes as of now.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- drivers/Kconfig                  |   2 +
- drivers/Makefile                 |   3 +
- drivers/capebus/Kconfig          |  17 ++
- drivers/capebus/Makefile         |   8 +
- drivers/capebus/capebus-driver.c | 608 +++++++++++++++++++++++++++++++++++++++
- drivers/capebus/capebus-probe.c  | 320 +++++++++++++++++++++
- drivers/capebus/capebus-sysfs.c  |  52 ++++
- include/linux/capebus.h          | 298 +++++++++++++++++++
- 8 files changed, 1308 insertions(+)
- create mode 100644 drivers/capebus/Kconfig
- create mode 100644 drivers/capebus/Makefile
- create mode 100644 drivers/capebus/capebus-driver.c
- create mode 100644 drivers/capebus/capebus-probe.c
- create mode 100644 drivers/capebus/capebus-sysfs.c
- create mode 100644 include/linux/capebus.h
+ arch/arm/boot/dts/am335x-bone-common.dtsi | 689 ++++++++++++++++++++++++++++--
+ 1 file changed, 659 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index dbdefa3..bfbe1d1 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -156,4 +156,6 @@ source "drivers/pwm/Kconfig"
+diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+index 99240a5..46d5f27 100644
+--- a/arch/arm/boot/dts/am335x-bone-common.dtsi
++++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+@@ -51,6 +51,143 @@
+ 				0x60 0x17	/* gpmc_a8.gpio1_24, OUTPUT_PULLUP | MODE7 */
+ 			>;
+ 		};
++		i2c2_pins: pinmux_i2c2_pins {
++			pinctrl-single,pins = <
++				0x178 0x73 	/* uart1_ctsn.i2c2_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE3 */
++				0x17c 0x73	/* uart1_rtsn.i2c2_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE3 */
++			>;
++		};
++
++		bone_dvi_cape_led_pins: pinmux_bone_dvi_cape_led_pins {
++			pinctrl-single,pins = <
++				0x48 0x07	/* gpmc_a2.gpio1_18, OUTPUT | MODE7 */
++				0x4c 0x07	/* gpmc_a3.gpio1_19, OUTPUT | MODE7 */
++			>;
++		};
++
++		bone_dvi_cape_dvi_00A0_pins: pinmux_bone_dvi_cape_dvi_00A0_pins {
++			pinctrl-single,pins = <
++				0x1c 0x07	/* gpmc_ad7.gpio1_7, OUTPUT | MODE7 - DVIPDn */
++
++				0xa0 0x08	/* lcd_data0.lcd_data0, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xa4 0x08	/* lcd_data1.lcd_data1, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xa8 0x08	/* lcd_data2.lcd_data2, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xac 0x08	/* lcd_data3.lcd_data3, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xb0 0x08	/* lcd_data4.lcd_data4, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xb4 0x08	/* lcd_data5.lcd_data5, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xb8 0x08	/* lcd_data6.lcd_data6, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xbc 0x08	/* lcd_data7.lcd_data7, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xc0 0x08	/* lcd_data8.lcd_data8, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xc4 0x08	/* lcd_data9.lcd_data9, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xc8 0x08	/* lcd_data10.lcd_data10, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xcc 0x08	/* lcd_data11.lcd_data11, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xd0 0x08	/* lcd_data12.lcd_data12, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xd4 0x08	/* lcd_data13.lcd_data13, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xd8 0x08	/* lcd_data14.lcd_data14, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xdc 0x08	/* lcd_data15.lcd_data15, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xe0 0x00	/* lcd_vsync.lcd_vsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++				0xe4 0x00	/* lcd_hsync.lcd_hsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++				0xe8 0x00	/* lcd_pclk.lcd_pclk, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++				0xec 0x00	/* lcd_ac_bias_en.lcd_ac_bias_en, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++			>;
++		};
++
++		bone_dvi_cape_dvi_00A1_pins: pinmux_bone_dvi_cape_dvi_00A1_pins {
++			pinctrl-single,pins = <
++				0x84 0x07	/* gpmc_csn2.gpio1_31, OUTPUT | MODE7 - DVIPDn */
++
++				0xa0 0x08	/* lcd_data0.lcd_data0, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xa4 0x08	/* lcd_data1.lcd_data1, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xa8 0x08	/* lcd_data2.lcd_data2, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xac 0x08	/* lcd_data3.lcd_data3, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xb0 0x08	/* lcd_data4.lcd_data4, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xb4 0x08	/* lcd_data5.lcd_data5, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xb8 0x08	/* lcd_data6.lcd_data6, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xbc 0x08	/* lcd_data7.lcd_data7, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xc0 0x08	/* lcd_data8.lcd_data8, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xc4 0x08	/* lcd_data9.lcd_data9, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xc8 0x08	/* lcd_data10.lcd_data10, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xcc 0x08	/* lcd_data11.lcd_data11, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xd0 0x08	/* lcd_data12.lcd_data12, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xd4 0x08	/* lcd_data13.lcd_data13, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xd8 0x08	/* lcd_data14.lcd_data14, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xdc 0x08	/* lcd_data15.lcd_data15, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xe0 0x00	/* lcd_vsync.lcd_vsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++				0xe4 0x00	/* lcd_hsync.lcd_hsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++				0xe8 0x00	/* lcd_pclk.lcd_pclk, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++				0xec 0x00	/* lcd_ac_bias_en.lcd_ac_bias_en, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++			>;
++		};
++
++		bone_geiger_cape_led_pins: pinmux_bone_geiger_cape_led_pins {
++			pinctrl-single,pins = <
++				0xe4 0x07	/* lcd_hsync.gpio2_23, OUTPUT | MODE7 */
++				0xec 0x07	/* lcd_ac_bias_en.gpio2_25, OUTPUT | MODE7 */
++			>;
++		};
++
++		bone_geiger_cape_pins: pinmux_bone_geiger_cape_pins {
++			pinctrl-single,pins = <
++				0x48 0x06       /* gpmc_a2.ehrpwm1a, OMAP_MUX_MODE6 | AM33XX_PIN_OUTPUT */
++				/* 0x19c 0x34 */	/* mcasp0_ahclkr.eCAP2_in_PWM2_out, OMAP_MUX_MODE4 | INPUT_PULLUP */
++				0x19c 0x37 	/* mcasp0_ahclkr.gpio3_17, OMAP_MUX_MODE4 | INPUT_PULLUP */
++			>;
++		};
++
++		bone_lcd3_cape_led_00A0_pins: pinmux_bone_lcd3_cape_led_00A0_pins {
++			pinctrl-single,pins = <
++				0x48 0x07	/* gpmc_a2.gpio1_18, OUTPUT | MODE7 */
++				0x4c 0x07	/* gpmc_a3.gpio1_19, OUTPUT | MODE7 */
++			>;
++		};
++
++		bone_lcd3_cape_lcd_pins: pinmux_bone_lcd3_cape_lcd_pins {
++			pinctrl-single,pins = <
++				0xa0 0x08	/* lcd_data0.lcd_data0, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xa4 0x08	/* lcd_data1.lcd_data1, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xa8 0x08	/* lcd_data2.lcd_data2, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xac 0x08	/* lcd_data3.lcd_data3, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xb0 0x08	/* lcd_data4.lcd_data4, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xb4 0x08	/* lcd_data5.lcd_data5, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xb8 0x08	/* lcd_data6.lcd_data6, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xbc 0x08	/* lcd_data7.lcd_data7, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xc0 0x08	/* lcd_data8.lcd_data8, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xc4 0x08	/* lcd_data9.lcd_data9, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xc8 0x08	/* lcd_data10.lcd_data10, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xcc 0x08	/* lcd_data11.lcd_data11, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xd0 0x08	/* lcd_data12.lcd_data12, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xd4 0x08	/* lcd_data13.lcd_data13, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xd8 0x08	/* lcd_data14.lcd_data14, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xdc 0x08	/* lcd_data15.lcd_data15, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
++				0xe0 0x00	/* lcd_vsync.lcd_vsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++				0xe4 0x00	/* lcd_hsync.lcd_hsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++				0xe8 0x00	/* lcd_pclk.lcd_pclk, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++				0xec 0x00	/* lcd_ac_bias_en.lcd_ac_bias_en, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
++			>;
++		};
++
++		bone_lcd3_cape_keys_00A0_pins: pinmux_bone_lcd3_cape_keys_00A0_pins {
++			pinctrl-single,pins = <
++				0x040 0x2f	/* gpmc_a0.gpio1_16, INPUT | PULLDIS | MODE7 */
++				0x044 0x2f	/* gpmc_a1.gpio1_17, INPUT | PULLDIS | MODE7 */
++				0x1a4 0x2f	/* mcasp0_fsr.gpio3_19, INPUT | PULLDIS | MODE7 */
++				0x078 0x2f	/* gpmc_ben1.gpio1_28, INPUT | PULLDIS | MODE7 */
++				0x164 0x2f	/* ecap0_in_pwm0_out.gpio0_7, INPUT | PULLDIS | MODE7 */
++			>;
++		};
++
++		pwm_bl_pins: pinmux_pwm_bl_pins {
++			pinctrl-single,pins = <
++				0x4c 0x06	/* gpmc_a3.ehrpwm1b, OMAP_MUX_MODE6 | AM33XX_PIN_OUTPUT */
++				// 0x48 0x06       /* gpmc_a2.ehrpwm1a, OMAP_MUX_MODE6 | AM33XX_PIN_OUTPUT */
++			>;
++	       };
++
++		weather_cape_w1_pins: pinmux_weather_cape_w1_pins {
++			pinctrl-single,pins = <
++				0x0c 0x37       /* gpmc_ad3.gpio1_3, OMAP_PIN_INPUT_PULLUP | OMAP_MUX_MODE7 - w1-gpio */
++			>;
++		};
+ 	};
  
- source "drivers/irqchip/Kconfig"
+ 	ocp {
+@@ -92,16 +229,6 @@
+ 			};
+ 		};
  
-+source "drivers/capebus/Kconfig"
-+
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index a16a8d0..d7a103b 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -145,3 +145,6 @@ obj-$(CONFIG_EXTCON)		+= extcon/
- obj-$(CONFIG_MEMORY)		+= memory/
- obj-$(CONFIG_IIO)		+= iio/
- obj-$(CONFIG_VME_BUS)		+= vme/
-+
-+# Capebus
-+obj-$(CONFIG_CAPEBUS)		+= capebus/
-diff --git a/drivers/capebus/Kconfig b/drivers/capebus/Kconfig
-new file mode 100644
-index 0000000..cea1b68
---- /dev/null
-+++ b/drivers/capebus/Kconfig
-@@ -0,0 +1,17 @@
-+#
-+# Capebus core support
-+#
-+
-+menu "CAPEBUS support"
-+
-+config CAPEBUS
-+	bool "Capebus support"
-+	default n
-+	help
-+	  Enable to support capebus devices.
-+
-+source "drivers/capebus/boards/Kconfig"
-+
-+source "drivers/capebus/capes/Kconfig"
-+
-+endmenu
-diff --git a/drivers/capebus/Makefile b/drivers/capebus/Makefile
-new file mode 100644
-index 0000000..45aa303
---- /dev/null
-+++ b/drivers/capebus/Makefile
-@@ -0,0 +1,8 @@
-+#
-+# Makefile for CAPEBUS devices
-+#
-+
-+obj-$(CONFIG_CAPEBUS)		+= capebus-probe.o \
-+					   capebus-driver.o capebus-sysfs.o
-+obj-$(CONFIG_CAPEBUS)		+= boards/
-+obj-$(CONFIG_CAPEBUS)		+= capes/
-diff --git a/drivers/capebus/capebus-driver.c b/drivers/capebus/capebus-driver.c
-new file mode 100644
-index 0000000..82b1d1b
---- /dev/null
-+++ b/drivers/capebus/capebus-driver.c
-@@ -0,0 +1,608 @@
-+/*
-+ * Capebus driver infrastructure
-+ *
-+ * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
-+ * Copyright (C) 2012 Texas Instruments Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/mempolicy.h>
-+#include <linux/string.h>
-+#include <linux/slab.h>
-+#include <linux/cpu.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/suspend.h>
-+
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_platform.h>
-+
-+#include <linux/capebus.h>
-+
-+/**
-+ * capebus_match_device - Tell if a cape device structure has a
-+ *                        matching cape device id structure
-+ * @drv: the cape driver to match against
-+ * @dev: the cape device structure to match against
-+ *
-+ * Used by a driver to check whether a cape device present in the
-+ * system is in its list of supported devices.  Returns the matching
-+ * cape_device_id structure or %NULL if there is no match.
-+ */
-+static const struct cape_device_id *capebus_match_device(
-+		struct cape_driver *drv, struct cape_dev *dev)
-+{
-+	struct cape_bus *bus = dev->bus;
-+	struct cape_slot *slot = dev->slot;
-+
-+	BUG_ON(bus == NULL);
-+	BUG_ON(slot == NULL);
-+	BUG_ON(bus->ops == NULL);
-+	BUG_ON(bus->ops->get_dev_id == NULL);
-+
-+	return bus->ops->get_dev_id(slot);
-+}
-+
-+/**
-+ * capebus_device_probe - check if a driver wants to claim a
-+ *                          specific cape device
-+ * @dev: cape device being probed
-+ *
-+ * returns 0 on success, else error.
-+ * side-effect: cape_dev->driver is set to drv when drv claims cape_dev.
-+ */
-+static int capebus_device_probe(struct device *dev)
-+{
-+	const struct cape_device_id *id;
-+	int error = 0;
-+	struct cape_driver *drv;
-+	struct cape_dev *cape_dev;
-+	struct device *parent;
-+
-+	drv = to_cape_driver(dev->driver);
-+	cape_dev = to_cape_dev(dev);
-+	cape_dev = capebus_dev_get(cape_dev);
-+
-+	/* sanity checks */
-+	if (cape_dev == NULL ||
-+		cape_dev->bus == NULL || cape_dev->bus->ops == NULL ||
-+		cape_dev->driver != NULL || drv->probe == NULL) {
-+		error = -EINVAL;
-+		goto err_no_sanity;
-+	}
-+
-+	id = capebus_match_device(drv, cape_dev);
-+	if (!id) {
-+		error = -ENODEV;
-+		goto err_no_match;
-+	}
-+
-+	/* The parent device must be in active state when probing */
-+	parent = cape_dev->dev.parent;
-+	if (parent)
-+		pm_runtime_get_sync(parent);
-+
-+	/* Unbound cape devices are always set to disabled and suspended.
-+	 * During probe, the device is set to enabled and active and the
-+	 * usage count is incremented.  If the driver supports runtime PM,
-+	 * it should call pm_runtime_put_noidle() in its probe routine and
-+	 * pm_runtime_get_noresume() in its remove routine.
-+	 */
-+	pm_runtime_get_noresume(&cape_dev->dev);
-+	pm_runtime_set_active(&cape_dev->dev);
-+	pm_runtime_enable(&cape_dev->dev);
-+
-+	/* call the driver's probe method */
-+	error = drv->probe(cape_dev, id);
-+
-+	/* release the parent no matter what */
-+	if (parent)
-+		pm_runtime_put(parent);
-+
-+	if (error != 0)
-+		goto err_probe_fail;
-+
-+	/* call the probed bus method */
-+	if (cape_dev->bus->ops->dev_probed != NULL) {
-+		error = cape_dev->bus->ops->dev_probed(cape_dev);
-+		if (error != 0)
-+			goto err_dev_probed_fail;
-+	}
-+
-+	/* all is fine... */
-+	cape_dev->driver = drv;
-+	cape_dev->added = 1;
-+
-+	return 0;
-+
-+err_dev_probed_fail:
-+	if (drv->remove) {
-+		pm_runtime_get_sync(&cape_dev->dev);
-+		drv->remove(cape_dev);
-+		pm_runtime_put_noidle(&cape_dev->dev);
-+	}
-+err_probe_fail:
-+	pm_runtime_disable(&cape_dev->dev);
-+	pm_runtime_set_suspended(&cape_dev->dev);
-+	pm_runtime_put_noidle(&cape_dev->dev);
-+err_no_match:
-+	/* nothing */
-+err_no_sanity:
-+	capebus_dev_put(cape_dev);
-+	return error;
-+}
-+
-+static int capebus_device_remove(struct device *dev)
-+{
-+	struct cape_dev *cape_dev = to_cape_dev(dev);
-+	struct cape_driver *drv = cape_dev->driver;
-+
-+	if (drv) {
-+		/* call the removed bus method (if added prev.) */
-+		if (cape_dev->added) {
-+			BUG_ON(cape_dev->bus == NULL);
-+			BUG_ON(cape_dev->bus->ops == NULL);
-+			if (cape_dev->bus->ops->dev_removed)
-+				cape_dev->bus->ops->dev_removed(cape_dev);
-+			cape_dev->added = 0;
-+		}
-+		if (drv->remove) {
-+			pm_runtime_get_sync(dev);
-+			drv->remove(cape_dev);
-+			pm_runtime_put_noidle(dev);
-+		}
-+		cape_dev->driver = NULL;
-+	}
-+
-+	/* Undo the runtime PM settings in local_capebus_probe() */
-+	pm_runtime_disable(dev);
-+	pm_runtime_set_suspended(dev);
-+	pm_runtime_put_noidle(dev);
-+
-+	capebus_dev_put(cape_dev);
-+	return 0;
-+}
-+
-+static void capebus_device_shutdown(struct device *dev)
-+{
-+	struct cape_dev *cape_dev = to_cape_dev(dev);
-+	struct cape_driver *drv = cape_dev->driver;
-+
-+	if (drv && drv->shutdown)
-+		drv->shutdown(cape_dev);
-+
-+	capebus_disable_device(cape_dev);
-+
-+	if (!device_may_wakeup(dev))
-+		capebus_enable_wake(cape_dev, false);
-+}
-+
-+static int capebus_bus_match(struct device *dev, struct device_driver *drv);
-+static int capebus_device_probe(struct device *dev);
-+static int capebus_device_remove(struct device *dev);
-+static void capebus_device_shutdown(struct device *dev);
-+
-+struct bus_type capebus_bus_type = {
-+	.name		= "capebus",
-+	.match		= capebus_bus_match,
-+	.probe		= capebus_device_probe,
-+	.remove		= capebus_device_remove,
-+	.shutdown	= capebus_device_shutdown,
-+	.dev_attrs	= capebus_dev_attrs,
-+	.bus_attrs	= capebus_bus_attrs,
-+	.pm		= NULL,	/* No PM for now */
-+};
-+EXPORT_SYMBOL(capebus_bus_type);
-+
-+/**
-+ * __capebus_register_driver - register a new capebus driver
-+ * @drv: the driver structure to register
-+ * @owner: owner module of drv
-+ * @mod_name: module name string
-+ *
-+ * Adds the driver structure to the list of registered drivers.
-+ * Returns a negative value on error, otherwise 0.
-+ * If no error occurred, the driver remains registered even if
-+ * no device was claimed during registration.
-+ */
-+int __capebus_register_driver(struct cape_driver *drv, struct module *owner,
-+			  const char *mod_name)
-+{
-+	/* initialize common driver fields */
-+	drv->driver.bus = &capebus_bus_type;
-+	drv->driver.owner = owner;
-+	drv->driver.mod_name = mod_name;
-+
-+	/* register with core */
-+	return driver_register(&drv->driver);
-+}
-+EXPORT_SYMBOL(__capebus_register_driver);
-+
-+/**
-+ * capebus_unregister_driver - unregister a capebus driver
-+ * @drv: the driver structure to unregister
-+ *
-+ * Deletes the driver structure from the list of registered cape drivers,
-+ * gives it a chance to clean up by calling its remove() function for
-+ * each device it was responsible for, and marks those devices as
-+ * driverless.
-+ */
-+
-+void
-+capebus_unregister_driver(struct cape_driver *drv)
-+{
-+	/* TODO: not really working properly */
-+	driver_unregister(&drv->driver);
-+}
-+EXPORT_SYMBOL(capebus_unregister_driver);
-+
-+/**
-+ * capebus_bus_match - Tell if a cape device structure has a matching
-+ *                     cape device id structure
-+ * @dev: the cape device structure to match against
-+ * @drv: the device driver to search for matching cape device id structures
-+ *
-+ * Used by a driver to check whether a cape device present in the
-+ * system is in its list of supported devices. Returns the matching
-+ * cape_device_id structure or %NULL if there is no match.
-+ */
-+static int capebus_bus_match(struct device *dev, struct device_driver *drv)
-+{
-+	struct cape_dev *cape_dev = to_cape_dev(dev);
-+	struct cape_driver *cape_drv = to_cape_driver(drv);
-+	const struct cape_device_id *found_id;
-+
-+	found_id = capebus_match_device(cape_drv, cape_dev);
-+	if (found_id)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+/**
-+ * capebus_dev_get - increments the reference count of the capebus
-+ *                   device structure
-+ * @dev: the device being referenced
-+ *
-+ * Each live reference to a device should be refcounted.
-+ *
-+ * Drivers for cape devices should normally record such references in
-+ * their probe() methods, when they bind to a device, and release
-+ * them by calling capebus_dev_put(), in their disconnect() methods.
-+ *
-+ * A pointer to the device with the incremented reference counter is returned.
-+ */
-+struct cape_dev *capebus_dev_get(struct cape_dev *dev)
-+{
-+	if (dev)
-+		get_device(&dev->dev);
-+	return dev;
-+}
-+EXPORT_SYMBOL(capebus_dev_get);
-+
-+/**
-+ * capebus_dev_put - release a use of the capebus device structure
-+ * @dev: device that's been disconnected
-+ *
-+ * Must be called when a user of a device is finished with it.  When the last
-+ * user of the device calls this function, the memory of the device is freed.
-+ */
-+void capebus_dev_put(struct cape_dev *dev)
-+{
-+	if (dev)
-+		put_device(&dev->dev);
-+}
-+EXPORT_SYMBOL(capebus_dev_put);
-+
-+static int __init capebus_driver_init(void)
-+{
-+	return bus_register(&capebus_bus_type);
-+}
-+
-+postcore_initcall(capebus_driver_init);
-+
-+const struct of_device_id *
-+capebus_of_match_device(struct cape_dev *cdev,
-+		const char *property, const char *value)
-+{
-+	struct cape_bus *bus = cdev->bus;
-+	struct device *dev = &cdev->dev;
-+	struct device_node *pnode = cape_bus_to_parent_of_node(bus);
-+	struct device_node *node;
-+	const struct of_device_id *match;
-+	const char* cp;
-+	int cplen, l;
-+
-+	dev_dbg(dev, "Iterating on parent of node "
-+			"name='%s' type='%s' full_name='%s'\n",
-+			pnode->name, pnode->type, pnode->full_name);
-+
-+	match = NULL;
-+	for_each_child_of_node(pnode, node) {
-+
-+		dev->of_node = node;
-+		match = of_match_device(dev->driver->of_match_table, dev);
-+		if (!match)
-+			goto next_node;
-+
-+		cp = of_get_property(node, property, &cplen);
-+		if (cp == NULL)
-+			goto next_node;
-+
-+		while (cplen > 0) {
-+			if (of_compat_cmp(cp, value, strlen(value)) == 0)
-+				break;
-+			l = strlen(cp) + 1;
-+			cp += l;
-+			cplen -= l;
-+		}
-+
-+		/* matched */
-+		if (cplen > 0)
-+			break;
-+next_node:
-+		match = NULL;
-+		dev->of_node = NULL;
-+	}
-+
-+	if (match == NULL) {
-+		dev_dbg(dev, "Failed to find matching child-node\n");
-+		return NULL;
-+	}
-+
-+	dev_dbg(dev, "Found matching child node "
-+			"name='%s' type='%s' "
-+			"full_name='%s' (compatible='%s')\n",
-+		node->name, node->type, node->full_name,
-+		match->compatible);
-+
-+	return match;
-+}
-+EXPORT_SYMBOL(capebus_of_match_device);
-+
-+struct device_node *
-+capebus_of_compatible_device_property_match(struct cape_dev *dev,
-+		const struct of_device_id *matches,
-+		const char *prop, const char *prop_value)
-+{
-+	const struct of_device_id *match;
-+	struct device_node *node, *cnode;
-+	const char* cp;
-+	int cplen, l;
-+
-+	if (prop == NULL || prop_value == NULL)
-+		goto try_non_property;
-+
-+	/* at first try secondary match */
-+	for_each_child_of_node(dev->dev.of_node, node) {
-+
-+		cp = of_get_property(node, prop, &cplen);
-+		if (cp == NULL)
-+			continue;
-+
-+		while (cplen > 0) {
-+			if (of_compat_cmp(cp, prop_value,
-+						strlen(prop_value)) == 0)
-+				break;
-+			l = strlen(cp) + 1;
-+			cp += l;
-+			cplen -= l;
-+		}
-+
-+		/* not matched */
-+		if (cplen <= 0)
-+			continue;
-+
-+		/* now iterate in the children nodes */
-+		for_each_child_of_node(node, cnode) {
-+
-+			match = of_match_node(matches, cnode);
-+			if (match) {
-+				/* release reference to parent, keep this one */
-+				of_node_put(node);
-+				return cnode;
-+			}
-+		}
-+	}
-+
-+try_non_property:
-+	for_each_child_of_node(dev->dev.of_node, node) {
-+
-+		match = of_match_node(matches, node);
-+		if (match)
-+			return node;
-+	}
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL(capebus_of_compatible_device_property_match);
-+
-+struct platform_device *
-+capebus_of_platform_compatible_device_create(struct cape_dev *dev,
-+		const struct of_device_id *matches,
-+		const char *pdev_name,
-+		const char *prop, const char *prop_value)
-+{
-+	struct device_node *node;
-+	struct platform_device *pdev;
-+
-+	node = capebus_of_compatible_device_property_match(dev, matches, prop,
-+			prop_value);
-+	if (node == NULL)
-+		return ERR_PTR(-ENXIO);
-+
-+	pdev = of_platform_device_create(node, pdev_name, dev->bus->dev.parent);
-+
-+	/* release the reference to the node */
-+	of_node_put(node);
-+	node = NULL;
-+
-+	if (pdev == NULL) {
-+		dev_err(&dev->dev, "Failed to create platform device '%s'\n",
-+				pdev_name);
-+		return ERR_PTR(-ENODEV);
-+	}
-+
-+	return pdev;
-+}
-+EXPORT_SYMBOL(capebus_of_platform_compatible_device_create);
-+
-+struct device_node *
-+capebus_of_find_property_node(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+		const char *name)
-+{
-+	struct device_node *node;
-+	const char* cp;
-+	int cplen, l;
-+	struct property *pp;
-+
-+	node = NULL;
-+	if (prop == NULL || prop_value == NULL)
-+		goto find_direct;
-+
-+	/* at first try secondary match */
-+	for_each_child_of_node(dev->dev.of_node, node) {
-+
-+		cp = of_get_property(node, prop, &cplen);
-+		if (cp == NULL)
-+			continue;
-+
-+		while (cplen > 0) {
-+			if (of_compat_cmp(cp, prop_value,
-+						strlen(prop_value)) == 0)
-+				break;
-+			l = strlen(cp) + 1;
-+			cp += l;
-+			cplen -= l;
-+		}
-+
-+		/* not matched */
-+		if (cplen <= 0)
-+			continue;
-+
-+		/* found ? */
-+		pp = of_find_property(node, name, NULL);
-+		if (pp != NULL)
-+			return node;
-+	}
-+find_direct:
-+	pp = of_find_property(dev->dev.of_node, name, NULL);
-+	if (pp == NULL)
-+		return NULL;
-+
-+	return of_node_get(dev->dev.of_node);
-+}
-+EXPORT_SYMBOL_GPL(capebus_of_find_property_node);
-+
-+struct property *
-+capebus_of_find_property(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+		const char *name, int *lenp)
-+{
-+	struct device_node *node;
-+	struct property *pp;
-+
-+	node = capebus_of_find_property_node(dev, prop, prop_value, name);
-+	if (node == NULL)
-+		return NULL;
-+
-+	pp = of_find_property(node, name, lenp);
-+
-+	of_node_put(node);
-+
-+	return pp;
-+}
-+EXPORT_SYMBOL_GPL(capebus_of_find_property);
-+
-+const void *capebus_of_get_property(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+		const char *name, int *lenp)
-+{
-+	struct property *pp;
-+
-+	pp = capebus_of_find_property(dev, prop, prop_value, name, lenp);
-+	return pp ? pp->value : NULL;
-+}
-+EXPORT_SYMBOL_GPL(capebus_of_get_property);
-+
-+/* node exists, but it's not available? make it so */
-+int capebus_of_device_node_enable(struct device_node *node)
-+{
-+	struct property *prop;
-+	int ret;
-+
-+	prop = kzalloc(sizeof(*prop), GFP_KERNEL);
-+	if (prop == NULL)
-+		goto err_no_prop_mem;
-+
-+	prop->name = kstrdup("status", GFP_KERNEL);
-+	if (prop->name == NULL)
-+		goto err_no_name_mem;
-+
-+	prop->value = kstrdup("okay", GFP_KERNEL);
-+	if (prop->value == NULL)
-+		goto err_no_value_mem;
-+
-+	prop->length = strlen(prop->value) + 1;
-+	set_bit(OF_DYNAMIC, &prop->_flags);
-+
-+	ret = prom_update_property(node, prop);
-+	if (ret != 0)
-+		goto err_update_failed;
-+
-+	return 0;
-+
-+err_update_failed:
-+	kfree(prop->value);
-+err_no_value_mem:
-+	kfree(prop->name);
-+err_no_name_mem:
-+	kfree(prop);
-+err_no_prop_mem:
-+	return -ENOMEM;
-+}
-+EXPORT_SYMBOL_GPL(capebus_of_device_node_enable);
-+
-+/* Make sure this node is activated (even if it was disabled) */
-+int capebus_of_platform_device_enable(struct device_node *node)
-+{
-+	struct platform_device *pdev, *ppdev;
-+	int ret;
-+
-+	if (of_device_is_available(node))
-+		return 0;
-+
-+	ret = capebus_of_device_node_enable(node);
-+	if (ret != 0)
-+		return ret;
-+
-+	/* now we need to find the parent of the node */
-+	ppdev = of_find_device_by_node(node->parent);
-+
-+	pdev = of_platform_device_create(node, NULL,
-+			ppdev ? &ppdev->dev : NULL);
-+	if (IS_ERR_OR_NULL(pdev)) {
-+		ret = pdev ? PTR_ERR(pdev) : -ENODEV;
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(capebus_of_platform_device_enable);
-diff --git a/drivers/capebus/capebus-probe.c b/drivers/capebus/capebus-probe.c
-new file mode 100644
-index 0000000..b46e915
---- /dev/null
-+++ b/drivers/capebus/capebus-probe.c
-@@ -0,0 +1,320 @@
-+/*
-+ * Capebus bus infrastructure
-+ *
-+ * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
-+ * Copyright (C) 2012 Texas Instruments Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_i2c.h>
-+#include <linux/of_device.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/err.h>
-+#include <linux/list.h>
-+#include <linux/mutex.h>
-+#include <linux/slab.h>
-+
-+#include <linux/capebus.h>
-+
-+LIST_HEAD(cape_buses);
-+EXPORT_SYMBOL(cape_buses);
-+
-+DEFINE_MUTEX(cape_buses_mutex);
-+EXPORT_SYMBOL(cape_buses_mutex);
-+
-+/*
-+ * Cape Bus Class
-+ */
-+static void release_capebus_dev(struct device *dev)
-+{
-+	struct cape_dev *cape_dev = to_cape_dev(dev);
-+
-+	kfree(cape_dev);
-+}
-+
-+static struct class capebus_class = {
-+	.name		= "capebus",
-+	.dev_release	= &release_capebus_dev,
+-		i2c1: i2c@44e0b000 {
+-			status = "okay";
+-			clock-frequency = <400000>;
+-
+-			tps: tps@24 {
+-				reg = <0x24>;
+-			};
+-
+-		};
+-
+ 		gpevt {
+ 			compatible = "gpevt";
+ 			pinctrl-names = "default";
+@@ -110,15 +237,117 @@
+ 			dma-names = "gpioevt";
+ 			gpio-evt = <&gpio3 2 0>;
+ 		};
++
++	};
++
++	capebus: capebus@0 {
++			compatible = "bone-capebus";
++
++			bone_dvi_cape: cape@0 {
++				compatible = "bone-generic-cape";
++			};
++
++			bone_geiger_cape: cape@1 {
++				compatible = "bone-geiger-cape";
++			};
++
++			bone_lcd3_cape: cape@2 {
++				compatible = "bone-generic-cape";
++			};
++
++			bone_lcd7_cape: cape@3 {
++				compatible = "bone-lcd7-cape";
++			};
++
++			bone_weather_cape: cape@4 {
++				compatible = "bone-generic-cape";
++			};
++
++			bone_adafruit_cape: cape@5 {
++				compatible = "bone-generic-cape";
++			};
++
++			/* overrides; no EEPROM (prototyping) */
++//			override@3 {
++//				compatible = "bone-capebus-slot-override";
++//				slot = <3>;
++//				board-name = "Geiger Cape";
++//				version = "00A0";
++//				manufacturer = "Geiger Inc";
++//				/* TODO: Add the rest */
++//			};
++
++//			override@2 {
++//				compatible = "bone-capebus-slot-override";
++//				slot = <2>;
++//				board-name = "Weather Cape";
++//				version = "00A0";
++//				manufacturer = "CCO Inc";
++//				/* TODO: Add the rest */
++//			};
++
++//			override@1 {
++//				compatible = "bone-capebus-slot-override";
++//				slot = <1>;
++//				board-name = "Adafruit 1.8 Cape";
++//				version = "00A0";
++//				manufacturer = "Adafruit";
++//				/* TODO: Add the rest */
++//			};
++
++//			override@0 {
++//				compatible = "bone-capebus-slot-override";
++//				slot = <0>;
++//				board-name = "BeagleBone Weather CAPE";
++//				version = "00A0";
++//				manufacturer = "Beagleboardtoys";
++//				/* TODO: Add the rest */
++//			};
+ 	};
+ 
+-	backlight {
+-			compatible	= "pwm-backlight"; 
+-			pwms = <&ehrpwm1 0 500000 0>;
+-			pwm-names = "st7735fb";
+-			brightness-levels = <0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100>;
+-			default-brightness-level = <50>; /* index to the array above */ 
+-		};
 +};
 +
-+static int __init capebus_class_init(void)
-+{
-+	return class_register(&capebus_class);
-+}
-+postcore_initcall(capebus_class_init);
++&i2c0 {
++	status = "okay";
++	clock-frequency = <400000>;
 +
-+static struct cape_bus *cape_bus_find(const char *name, int busno)
-+{
-+	struct cape_bus *bus;
-+	int found;
++	tps: tps@24 {
++		reg = <0x24>;
++	};
 +
-+	if (busno < 0)
-+		return NULL;
-+
-+	found = 0;
-+	cape_bus_for_each(bus) {
-+		if (strcmp(name, bus->name) == 0 && bus->busno == busno) {
-+			found = 1;
-+			break;
-+		}
-+	}
-+	return found ? bus : NULL;
-+}
-+
-+static int cape_bus_pick_busno(const char *name, int busno)
-+{
-+	struct cape_bus *bus;
-+
-+	BUG_ON(name == NULL);
-+
-+	/* fixed id */
-+	if (busno >= 0)
-+		return busno;
-+
-+	/* dynamic id */
-+	busno = -1;
-+	cape_bus_for_each(bus) {
-+		/* name must match */
-+		if (strcmp(name, bus->name) != 0)
-+			continue;
-+		busno = max(busno, bus->busno);
-+	}
-+	return busno + 1;
-+}
-+
-+int cape_bus_register(struct cape_bus *bus, const char *name, int busno,
-+		struct device *parent, struct cape_bus_ops *ops)
-+{
-+	struct cape_bus *b2;
-+	int r;
-+
-+	if (name == NULL)
-+		return -EINVAL;
-+
-+	INIT_LIST_HEAD(&bus->node);
-+	INIT_LIST_HEAD(&bus->devices);
-+	INIT_LIST_HEAD(&bus->slots);
-+
-+	/* do everything under lock */
-+	mutex_lock(&cape_buses_mutex);
-+
-+	b2 = cape_bus_find(name, busno);
-+	if (b2 != NULL) {
-+		if (parent != NULL)
-+			dev_err(parent, "capebus %s:%d in use\n", name, busno);
-+		else
-+			pr_err("capebus %s:%d in use\n", name, busno);
-+		r = -EBUSY;
-+		goto err_unlock;
-+	}
-+	bus->name = name;
-+	bus->busno = cape_bus_pick_busno(name, busno);
-+	bus->ops = ops;
-+
-+	bus->dev.class = &capebus_class;
-+	bus->dev.parent = parent;
-+	dev_set_name(&bus->dev, "%s:%d", bus->name, bus->busno);
-+	r = device_register(&bus->dev);
-+	if (r != 0) {
-+		if (parent != NULL)
-+			dev_err(parent, "capebus #%d failed to register dev\n",
-+					bus->busno);
-+		else
-+			pr_err("capebus #%d failed to register dev\n",
-+					bus->busno);
-+		goto err_unlock;
-+	}
-+
-+	list_add_tail(&bus->node, &cape_buses);
-+	mutex_unlock(&cape_buses_mutex);
-+
-+	dev_info(&bus->dev, "Registered\n");
-+
-+	return 0;
-+err_unlock:
-+	mutex_unlock(&cape_buses_mutex);
-+	return r;
-+}
-+
-+int cape_bus_deregister(struct cape_bus *bus)
-+{
-+	return -EINVAL;	/* not yet supported */
-+}
-+
-+/* must have cape_buses_mutex */
-+struct cape_slot *cape_slot_find(struct cape_bus *bus, int slotno)
-+{
-+	struct cape_slot *slot;
-+	int found;
-+
-+	found = 0;
-+	cape_slot_for_each(bus, slot) {
-+		if (slot->slotno == slotno) {
-+			found = 1;
-+			break;
-+		}
-+	}
-+	return found ? slot : NULL;
-+}
-+
-+/**
-+ * cape_bus_release_dev - free a cape device structure when all users
-+ *                        of it are finished.
-+ * @dev: device that's been disconnected
-+ *
-+ * Will be called only by the device core when all users of this cape device are
-+ * done.
-+ */
-+static void cape_bus_release_dev(struct device *dev)
-+{
-+	struct cape_dev *cdev;
-+
-+	cdev = to_cape_dev(dev);
-+	/* cape_release_capabilities(cdev); TODO */
-+	/* cape_release_of_node(cdev); TODO */
-+	kfree(cdev);
-+}
-+
-+/* mutex lock must be held */
-+static struct cape_dev *cape_bus_scan_slot(struct cape_slot *slot)
-+{
-+	struct cape_bus *bus = slot->bus;
-+	struct cape_dev *dev;
-+	const struct cape_device_id *id;
-+
-+	/* get the ID (if a device exists) */
-+	id = bus->ops->get_dev_id(slot);
-+	if (id == NULL)
-+		return ERR_PTR(-ENODEV);
-+
-+	/* slot must not have a device yet */
-+	dev = slot->dev;
-+	if (dev == NULL) {
-+		dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-+		if (dev == NULL) {
-+			dev_info(&bus->dev, "Failed to allocate cape device "
-+					"for slot #%d\n", slot->slotno);
-+			return ERR_PTR(-ENOMEM);
-+		}
-+
-+		INIT_LIST_HEAD(&dev->bus_list);
-+		dev->bus = bus;
-+		dev->slot = slot;
-+	}
-+
-+	dev->id = id;
-+	dev->text_id = bus->ops->get_text_dev_id(slot);
-+
-+	/* capebus_set_of_node(dev); TODO */
-+
-+	return dev;
-+}
-+
-+int cape_bus_scan_one_slot(struct cape_bus *bus, struct cape_slot *slot)
-+{
-+	struct cape_dev *dev;
-+	int r;
-+
-+	mutex_lock(&cape_buses_mutex);
-+
-+	dev = slot->dev;
-+	if (dev == NULL) {
-+
-+		dev = cape_bus_scan_slot(slot);
-+		if (IS_ERR(dev)) {
-+			r = PTR_ERR(dev);
-+			goto err_out;
-+		}
-+
-+		dev_info(&bus->dev, "Slot #%d id='%s'\n", slot->slotno,
-+				dev->text_id ? dev->text_id : "");
-+
-+		slot->dev = dev;
-+
-+		dev->dev.release = cape_bus_release_dev;
-+		dev->dev.parent = &dev->bus->dev;
-+		dev->dev.bus = &capebus_bus_type;
-+		dev_set_name(&dev->dev, "%s-%d:%d",
-+			     dev->bus->name, dev->bus->busno,
-+			     dev->slot->slotno);
-+
-+		list_add_tail(&dev->bus_list, &bus->devices);
-+
-+	} else {
-+		dev_info(&bus->dev, "Slot #%d id='%s' - rescan\n", slot->slotno,
-+				dev->text_id ? dev->text_id : "");
-+
-+		if (dev->added) {
-+			r = -EEXIST;
-+			goto err_out;
-+		}
-+	}
-+
-+	r = device_register(&dev->dev);
-+	if (r != 0) {
-+		dev_info(&bus->dev, "Slot #%d id='%s' - "
-+				"Failed to register\n",
-+				slot->slotno,
-+				dev->text_id ? dev->text_id : "");
-+		r = 0;
-+	} else {
-+		if (dev->bus->ops->dev_registered)
-+			dev->bus->ops->dev_registered(dev);
-+	}
-+
-+err_out:
-+	mutex_unlock(&cape_buses_mutex);
-+
-+	return r;
-+}
-+
-+int cape_bus_register_slot(struct cape_bus *bus, struct cape_slot *slot,
-+		int slotno)
-+{
-+	struct cape_slot *s2;
-+	int r;
-+
-+	r = 0;
-+
-+	/* invalid (slot must always be numbered - no hotplug) */
-+	if (slotno < 0) {
-+		dev_err(&bus->dev, "Slot registration #%d failed\n", slotno);
-+		return -EINVAL;
-+	}
-+
-+	mutex_lock(&cape_buses_mutex);
-+	s2 = cape_slot_find(bus, slotno);
-+	if (s2 != NULL) {
-+		dev_err(&bus->dev, "Slot #%d already exists\n", slotno);
-+		mutex_unlock(&cape_buses_mutex);
-+		return -EINVAL;
-+	}
-+
-+	INIT_LIST_HEAD(&slot->node);
-+	slot->bus = bus;
-+	list_add(&slot->node, &bus->slots);
-+	slot->slotno = slotno;
-+	slot->dev = NULL;
-+	mutex_unlock(&cape_buses_mutex);
-+
-+	dev_info(&bus->dev, "Slot #%d registered\n", slot->slotno);
-+
-+	return cape_bus_scan_one_slot(bus, slot);
-+}
-diff --git a/drivers/capebus/capebus-sysfs.c b/drivers/capebus/capebus-sysfs.c
-new file mode 100644
-index 0000000..81c21fe
---- /dev/null
-+++ b/drivers/capebus/capebus-sysfs.c
-@@ -0,0 +1,52 @@
-+/*
-+ * drivers/capebus/capebus-sysfs.c
-+ *
-+ * sysfs for capebus devices
-+ *
-+ * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
-+ * Copyright (C) 2012 Texas Instruments Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ * Modeled after PCI's pci-sysfs.c
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/stat.h>
-+#include <linux/export.h>
-+#include <linux/fs.h>
-+#include <linux/slab.h>
-+#include <linux/pm_runtime.h>
-+
-+#include <linux/capebus.h>
-+
-+static ssize_t id_show(struct device *dev,
-+			       struct device_attribute *attr, char *buf)
-+{
-+	struct cape_dev *cdev;
-+
-+	cdev = to_cape_dev(dev);
-+	return sprintf(buf, "%s\n", cdev->text_id);
-+}
-+
-+struct device_attribute capebus_dev_attrs[] = {
-+	__ATTR_RO(id),
-+	__ATTR_NULL,
++	baseboard_eeprom: baseboard_eeprom@50 {
++		compatible = "at,24c256";
++		reg = <0x50>;
++	};
 +};
 +
-+struct bus_attribute capebus_bus_attrs[] = {
-+	__ATTR_NULL
-+};
-diff --git a/include/linux/capebus.h b/include/linux/capebus.h
-new file mode 100644
-index 0000000..7524401
---- /dev/null
-+++ b/include/linux/capebus.h
-@@ -0,0 +1,298 @@
-+/*
-+ * capebus.h
-+ *
-+ * Cape bus defines and function prototypes
-+ *
-+ * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
-+ * Copyright (C) 2012 Texas Instruments Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+#ifndef LINUX_CAPEBUS_H
-+#define LINUX_CAPEBUS_H
++&i2c2 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c2_pins>;
 +
-+#include <linux/list.h>
-+#include <linux/device.h>
-+#include <linux/spinlock.h>
-+#include <linux/types.h>
-+#include <linux/atomic.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
++	clock-frequency = <100000>;
 +
-+struct cape_device_id {
-+	const char *cntrlboard;	/* controlling board; i.e. "beaglebone" */
-+	int len;		/* opaque addressing data */
-+	const void *data;
-+};
++	/* OK, I know these are cape but for now it will do */
++	cape_eeprom_0: cape_eeprom_0@54 {
++		compatible = "at,24c256";
++		reg = <0x54>;
++	};
 +
-+struct cape_dev;
-+struct cape_bus;
-+struct cape_slot;
++	cape_eeprom_1: cape_eeprom_1@55 {
++		compatible = "at,24c256";
++		reg = <0x55>;
++	};
 +
-+struct cape_slot {
-+	struct list_head	node;
-+	struct cape_bus 	*bus;	/* the bus this slot is on */
-+	int 			slotno;	/* index of this slot */
-+	struct cape_dev		*dev;	/* the device (if found) */
-+};
++	cape_eeprom_2: cape_eeprom_2@56 {
++		compatible = "at,24c256";
++		reg = <0x56>;
++	};
 +
-+struct cape_driver {
-+	struct list_head node;
-+	int (*probe)(struct cape_dev *dev, const struct cape_device_id *id);
-+	void (*remove)(struct cape_dev *dev);
-+	int  (*suspend) (struct cape_dev *dev, pm_message_t state);
-+	int  (*suspend_late) (struct cape_dev *dev, pm_message_t state);
-+	int  (*resume_early) (struct cape_dev *dev);
-+	int  (*resume) (struct cape_dev *dev);
-+	void (*shutdown) (struct cape_dev *dev);
-+	struct device_driver driver;
++	cape_eeprom_3: cape_eeprom_3@57 {
++		compatible = "at,24c256";
++		reg = <0x57>;
++	};
+ };
+ 
+ /include/ "tps65217.dtsi"
+@@ -165,6 +394,7 @@
+ 			regulator-always-on;
+ 		};
+ 	};
++
+ };
+ 
+ &mmc1 {
+@@ -172,21 +402,8 @@
+ };
+ 
+ &spi1 {
+-	status = "okay";
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&spi1_pins>;
+-
+-	lcd@0 {
+-		compatible = "adafruit,tft-lcd-1.8-green", "sitronix,st7735";
+-		spi-max-frequency = <8000000>;
+-		reg = <0>;
+-		spi-cpol;
+-		spi-cpha;
+-		pinctrl-names = "default";
+-		pinctrl-0 = <&lcd_pins>;
+-		st7735-rst = <&gpio4 19 0>;
+-		st7735-dc = <&gpio4 21 0>;
+-	};
+ };
+ 
+ &edma {
+@@ -200,3 +417,415 @@
+ &cpsw_emac1 {
+ 	phy_id = "4a101000.mdio:01";
+ };
++
++&ehrpwm1 {
++	status = "okay";
 +};
 +
-+/*
-+ * capebus_register_driver must be a macro so that
-+ * KBUILD_MODNAME can be expanded
-+ */
-+#define capebus_register_driver(driver)		\
-+	__capebus_register_driver(driver, THIS_MODULE, KBUILD_MODNAME)
-+
-+int __capebus_register_driver(struct cape_driver *drv, struct module *owner,
-+			  const char *mod_name);
-+
-+void capebus_unregister_driver(struct cape_driver *dev);
-+
-+/**
-+ * module_capebus_driver() - Helper macro for registering a capebus driver
-+ * @__capebus_driver: capebus_driver struct
-+ *
-+ * Helper macro for capebus drivers which do not do anything special in module
-+ * init/exit. This eliminates a lot of boilerplate. Each module may only
-+ * use this macro once, and calling it replaces module_init() and module_exit()
-+ */
-+#define module_capebus_driver(__capebus_driver) \
-+	module_driver(__capebus_driver, capebus_register_driver, \
-+		       capebus_unregister_driver)
-+
-+#define	to_cape_driver(n) container_of(n, struct cape_driver, driver)
-+
-+struct cape_bus_ops {
-+	const struct cape_device_id *(*get_dev_id)(struct cape_slot *slot);
-+	const char *(*get_text_dev_id)(struct cape_slot *slot);
-+	int (*dev_probed)(struct cape_dev *dev);	/* probed succesfully */
-+	void (*dev_removed)(struct cape_dev *dev);	/* removed */
-+	int (*dev_registered)(struct cape_dev *dev);	/* registered OK */
++&capebus {
++	slots = <&cape_eeprom_0 &cape_eeprom_1 &cape_eeprom_2 &cape_eeprom_3>;
 +};
 +
-+struct cape_bus {
-+	struct list_head	node;
-+	const char		*name;
-+	struct list_head	devices;
-+	struct cape_dev		*self;
-+	struct list_head	slots;
-+	struct cape_bus_ops	*ops;
-+	int			busno;
-+	struct device		dev;
-+	/* TODO: resources.... */
++&bone_dvi_cape {
++	board-name = "BeagleBone DVI-D CAPE";
++
++	/* hacky, since this is not a proper DT platform device */
++	/* but until we have DT bindings... */
++	version@00A0 {
++		version = "00A0";
++		dvi {
++			compatible = "da8xx-dt";
++			pinctrl-names = "default";
++			pinctrl-0 = <&bone_dvi_cape_dvi_00A0_pins>;
++			ti,hwmods = "lcdc";
++
++			disp-pll = <560000000>;
++			panel-type = "1024x768@60";
++			powerdn-gpio = <&gpio2 7 0>;
++		};
++	};
++
++	version@00A1 {
++		version = "00A1", "01";
++		dvi {
++			compatible = "da8xx-dt";
++			pinctrl-names = "default";
++			pinctrl-0 = <&bone_dvi_cape_dvi_00A1_pins>;
++			ti,hwmods = "lcdc";
++
++			disp-pll = <560000000>;
++			panel-type = "1024x768@60";
++			powerdn-gpio = <&gpio2 31 0>;
++		};
++	};
++
++	gpio-leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&bone_dvi_cape_led_pins>;
++
++		dvi-led0 {
++			label = "dvi:green:usr0";
++			gpios = <&gpio2 18 0>;
++			linux,default-trigger = "heartbeat";
++			default-state = "off";
++		};
++
++		dvi-led1 {
++			label = "dvi:green:usr1";
++			gpios = <&gpio2 19 0>;
++			linux,default-trigger = "mmc0";
++			default-state = "off";
++		};
++	};
 +};
 +
-+#define	to_cape_bus(n) container_of(n, struct cape_bus, dev)
++&bone_geiger_cape {
++	board-name = "Geiger Cape";
 +
-+#define cape_bus_to_parent_of_node(n) ((n)->dev.parent->of_node)
++	/* note that these can't be versioned... */
++	pinctrl-names = "default";
++	pinctrl-0 = <&bone_geiger_cape_pins>;
 +
-+struct cape_dev {
-+	struct list_head	bus_list;	/* node in per-bus list     */
-+	struct cape_bus		*bus;		/* bus this device is on    */
-+	struct cape_slot	*slot;		/* cape slot of this device */
-+	struct cape_driver	*driver;	/* driver of this device    */
-+	struct device		dev;
-+	atomic_t		enable_cnt;	/* capebus_enable_device    */
-+						/* has been called          */
-+	const struct cape_device_id *id;
-+	const char 		*text_id;
-+	unsigned int		added : 1;	/* device has been added    */
-+	void			*drv_priv;	/* driver private data      */
++	pwms = <&ehrpwm1 0 500000 0>;
++	pwm-names = "bone-geiger-cape";
++
++	pwm-frequency  = <20000>;	/* 20KHz */
++	pwm-duty-cycle = <60>;		/* 60% */
++
++	event-blink-delay = <30>;	/* 30ms */
++
++	gpios = <&gpio4 17 0>;		/* pulse */
++
++	vsense-name = "AIN5";		/* analog vsense */
++	vsense-scale = <37325>;		/* scaling */
++
++	tscadc {
++		compatible = "ti-tscadc-dt";
++
++		ti,hwmods = "adc_tsc";
++
++		adc-channels = <8>;
++	};
++
++	gpio-leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&bone_geiger_cape_led_pins>;
++
++		geiger-led0 {
++			label = "geiger:green:usr0";
++			gpios = <&gpio3 23 0>;
++			linux,default-trigger = "geiger-run";
++			default-state = "off";
++		};
++
++		geiger-led1 {
++			label = "geiger:red:usr1";
++			gpios = <&gpio3 25 0>;
++			linux,default-trigger = "geiger-event";
++			default-state = "off";
++		};
++	};
 +};
 +
-+#define	to_cape_dev(n) container_of(n, struct cape_dev, dev)
++&bone_lcd3_cape {
++	board-name = "BeagleBone LCD3 CAPE";
 +
-+struct cape_dev *capebus_dev_get(struct cape_dev *dev);
-+void capebus_dev_put(struct cape_dev *dev);
++	/* hacky, since this is not a proper DT platform device */
++	/* but until we have DT bindings... */
++	lcd3 {
++		compatible = "da8xx-dt";
++		pinctrl-names = "default";
++		pinctrl-0 = <&bone_lcd3_cape_lcd_pins>;
 +
-+/* must have cape_buses_mutex */
-+#define cape_bus_for_each(_bus) \
-+	list_for_each_entry(_bus, &cape_buses, node)
++		ti,hwmods = "lcdc";
 +
-+#define cape_bus_for_each_safe(_bus, _busn) \
-+	list_for_each_entry_safe(_bus, _busn, &cape_buses, node)
++		disp-pll = <16000000>;
++		panel-type = "CDTech_S035Q01";
++	};
 +
-+int cape_bus_register(struct cape_bus *bus, const char *name, int busno,
-+		struct device *parent, struct cape_bus_ops *ops);
++	/* same thing as above */
++	tscadc {
++		compatible = "ti-tscadc-dt";
 +
-+/* must have cape_buses_mutex */
-+#define cape_slot_for_each(_bus, _slot) \
-+	list_for_each_entry(_slot, &(_bus)->slots, node)
++		ti,hwmods = "adc_tsc";
 +
-+#define cape_slot_for_each_safe(_bus, _slot, _slotn) \
-+	list_for_each_entry_safe(_slot, _slotn, &(_bus)->slots, node)
++		tsc-wires = <4>;
++		tsc-x-plate-resistance = <200>;
++		tsc-steps = <6>;
 +
-+int cape_bus_register_slot(struct cape_bus *bus,
-+		struct cape_slot *slot, int slotno);
++		adc-channels = <4>;
++	};
 +
-+int cape_bus_scan_one_slot(struct cape_bus *bus, struct cape_slot *slot);
-+int cape_bus_scan(struct cape_bus *bus);
++	version@00A0 {
++		version = "00A0";
 +
-+extern struct list_head cape_buses;
-+extern struct mutex cape_buses_mutex;
++		backlight {
++			compatible = "tps65217-backlight";
++			isel = <1>;
++			fdim = <200>;
 +
-+static inline int capebus_is_enabled(struct cape_dev *cdev)
-+{
-+	return atomic_read(&cdev->enable_cnt) > 0;
-+}
++			tps = <&tps>;	/* link to the tps */
++			brightness = <100>;
++		};
 +
-+static inline int capebus_enable_device(struct cape_dev *cdev)
-+{
-+	if (atomic_add_return(1, &cdev->enable_cnt) > 1)
-+		return 0;		/* already enabled */
++		gpio-leds {
++			compatible = "gpio-leds";
++			pinctrl-names = "default";
++			pinctrl-0 = <&bone_lcd3_cape_led_00A0_pins>;
 +
-+	/* XXX do enable */
++			lcd3-led0 {
++				label = "lcd3:green:usr0";
++				gpios = <&gpio2 18 0>;
++				linux,default-trigger = "heartbeat";
++				default-state = "off";
++			};
 +
-+	return 0;
-+}
++			lcd3-led1 {
++				label = "lcd3:green:usr1";
++				gpios = <&gpio2 19 0>;
++				linux,default-trigger = "cpu0";
++				default-state = "off";
++			};
++		};
 +
-+static inline void capebus_disable_device(struct cape_dev *cdev)
-+{
-+	if (atomic_sub_return(1, &cdev->enable_cnt) != 0)
-+		return;
++		gpio_keys {
++			compatible = "gpio-keys";
++			pinctrl-names = "default";
++			pinctrl-0 = <&bone_lcd3_cape_keys_00A0_pins>;
 +
-+	/* callback to disable device? */
-+}
++			#address-cells = <1>;
++			#size-cells = <0>;
 +
-+static inline int capebus_enable_wake(struct cape_dev *dev, int what)
-+{
-+	return 0;
-+}
++			button@1 {
++				debounce_interval = <50>;
++				linux,code = <105>;
++				label = "left";
++				gpios = <&gpio2 16 0x0>;
++				gpio-key,wakeup;
++				autorepeat;
++			};
++			button@2 {
++				debounce_interval = <50>;
++				linux,code = <106>;
++				label = "right";
++				gpios = <&gpio2 17 0x0>;
++				gpio-key,wakeup;
++				autorepeat;
++			};
++			button@3 {
++				debounce_interval = <50>;
++				linux,code = <103>;
++				label = "up";
++				gpios = <&gpio4 19 0x0>;
++				gpio-key,wakeup;
++				autorepeat;
++			};
++			button@4 {
++				debounce_interval = <50>;
++				linux,code = <108>;
++				label = "down";
++				gpios = <&gpio2 28 0x0>;
++				gpio-key,wakeup;
++				autorepeat;
++			};
++			button@5 {
++				debounce_interval = <50>;
++				linux,code = <28>;
++				label = "enter";
++				gpios = <&gpio1 7 0x0>;
++				gpio-key,wakeup;
++			};
++		};
++	};
++};
 +
-+extern struct device_attribute capebus_dev_attrs[];
-+extern struct bus_attribute capebus_bus_attrs[];
++&bone_lcd7_cape {
++	board-name = "BeagleBone LCD7 CAPE";
 +
-+extern struct bus_type capebus_bus_type;
++	/* hacky, since this is not a proper DT platform device */
++	/* but until we have DT bindings... */
++	lcd7 {
++		compatible = "da8xx-dt";
++		pinctrl-names = "default";
++		pinctrl-0 = <&bone_lcd3_cape_lcd_pins>;
 +
-+const struct of_device_id *
-+capebus_of_match_device(struct cape_dev *cdev,
-+		const char *property, const char *value);
++		ti,hwmods = "lcdc";
 +
-+struct device_node *
-+capebus_of_compatible_device_property_match(struct cape_dev *dev,
-+		const struct of_device_id *matches,
-+		const char *prop, const char *prop_value);
++		disp-pll = <60000000>;
++		panel-type = "TFC_S9700RTWV35TR_01B";
++	};
 +
-+struct platform_device *
-+capebus_of_platform_compatible_device_create(struct cape_dev *dev,
-+		const struct of_device_id *matches,
-+		const char *pdev_name,
-+		const char *prop, const char *prop_value);
++	/* same thing as above */
++	tscadc {
++		compatible = "ti-tscadc-dt";
 +
-+/* of tree support */
++		ti,hwmods = "adc_tsc";
 +
-+struct device_node *
-+capebus_of_find_property_node(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+		const char *name);
++		tsc-wires = <4>;
++		tsc-x-plate-resistance = <200>;
++		tsc-steps = <6>;
 +
-+struct property *
-+capebus_of_find_property(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+		const char *name, int *lenp);
++		adc-channels = <4>;
++	};
 +
-+const void *capebus_of_get_property(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+		const char *name, int *lenp);
++	version@00A0 {
++		version = "00A0";
 +
-+static inline int capebus_of_property_read_u32_array(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+		const char *name, u32 *out_values, size_t sz)
-+{
-+	struct device_node *node;
-+	int ret;
++		backlight {
++			compatible = "tps65217-backlight";
++			isel = <1>;
++			fdim = <200>;
 +
-+	node = capebus_of_find_property_node(dev, prop, prop_value, name);
-+	ret = of_property_read_u32_array(node, name, out_values, sz);
-+	of_node_put(node);
-+	return ret;
-+}
++			tps = <&tps>;	/* link to the tps */
++			brightness = <100>;
++		};
 +
-+static inline int capebus_of_property_read_u32(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+	       const char *name, u32 *out_value)
-+{
-+	return capebus_of_property_read_u32_array(dev, prop,
-+			prop_value, name, out_value, 1);
-+}
++		gpio-leds {
++			compatible = "gpio-leds";
++			pinctrl-names = "default";
++			pinctrl-0 = <&bone_lcd3_cape_led_00A0_pins>;
 +
-+static inline bool capebus_of_property_read_bool(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+		const char *name)
-+{
-+	struct device_node *node;
-+	bool ret;
++			lcd3-led0 {
++				label = "lcd3:green:usr0";
++				gpios = <&gpio2 18 0>;
++				linux,default-trigger = "heartbeat";
++				default-state = "off";
++			};
 +
-+	node = capebus_of_find_property_node(dev, prop, prop_value, name);
-+	ret = of_property_read_bool(node, name);
-+	of_node_put(node);
-+	return ret;
-+}
++			lcd3-led1 {
++				label = "lcd3:green:usr1";
++				gpios = <&gpio2 19 0>;
++				linux,default-trigger = "cpu0";
++				default-state = "off";
++			};
++		};
 +
-+static inline int capebus_of_property_read_string(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+		const char *name, const char **out_string)
-+{
-+	struct device_node *node;
-+	int ret;
++		gpio_keys {
++			compatible = "gpio-keys";
++			pinctrl-names = "default";
++			pinctrl-0 = <&bone_lcd3_cape_keys_00A0_pins>;
 +
-+	node = capebus_of_find_property_node(dev, prop, prop_value, name);
-+	ret = of_property_read_string(node, name, out_string);
-+	of_node_put(node);
-+	return ret;
-+}
++			#address-cells = <1>;
++			#size-cells = <0>;
 +
-+static inline int capebus_of_property_read_string_index(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+		const char *name, int index, const char **out_string)
-+{
-+	struct device_node *node;
-+	int ret;
++			button@1 {
++				debounce_interval = <50>;
++				linux,code = <105>;
++				label = "left";
++				gpios = <&gpio2 16 0x0>;
++				gpio-key,wakeup;
++				autorepeat;
++			};
++			button@2 {
++				debounce_interval = <50>;
++				linux,code = <106>;
++				label = "right";
++				gpios = <&gpio2 17 0x0>;
++				gpio-key,wakeup;
++				autorepeat;
++			};
++			button@3 {
++				debounce_interval = <50>;
++				linux,code = <103>;
++				label = "up";
++				gpios = <&gpio4 19 0x0>;
++				gpio-key,wakeup;
++				autorepeat;
++			};
++			button@4 {
++				debounce_interval = <50>;
++				linux,code = <108>;
++				label = "down";
++				gpios = <&gpio2 28 0x0>;
++				gpio-key,wakeup;
++				autorepeat;
++			};
++			button@5 {
++				debounce_interval = <50>;
++				linux,code = <28>;
++				label = "enter";
++				gpios = <&gpio1 7 0x0>;
++				gpio-key,wakeup;
++			};
++		};
++	};
++};
 +
-+	node = capebus_of_find_property_node(dev, prop, prop_value, name);
-+	ret = of_property_read_string_index(node, name, index, out_string);
-+	of_node_put(node);
-+	return ret;
-+}
++&bone_weather_cape {
++	board-name = "BeagleBone Weather CAPE";
 +
-+static inline int capebus_of_property_read_u64(struct cape_dev *dev,
-+		const char *prop, const char *prop_value,
-+		const char *name, u64 *out_value)
-+{
-+	struct device_node *node;
-+	int ret;
++	i2c2-devices {
++		compatible = "i2c-dt";
++		#address-cells = <1>;
++		#size-cells = <0>;
 +
-+	node = capebus_of_find_property_node(dev, prop, prop_value, name);
-+	ret = of_property_read_u64(node, name, out_value);
-+	of_node_put(node);
-+	return ret;
-+}
++		parent = <&i2c2>;
 +
-+int capebus_of_device_node_enable(struct device_node *node);
-+int capebus_of_platform_device_enable(struct device_node *node);
++		/* Ambient light sensor */
++		tsl2550@39 {
++			compatible = "tsl,tsl2550";
++			reg = <0x39>;
++		};
 +
-+#endif
++		/* Humidity Sensor */
++		sht21@40 {
++			compatible = "sensiron,sht21";
++			reg = <0x40>;
++		};
++
++		/* Barometric pressure sensor */
++		bmp085@77 {
++			compatible = "bosch,bmp085";
++			reg = <0x77>;
++		};
++	};
++
++	onewire@0 {
++		compatible	= "w1-gpio";
++		pinctrl-names	= "default";
++		pinctrl-0	= <&weather_cape_w1_pins>;
++		status		= "okay";
++
++		gpios = <&gpio2 3 0>;
++	};
++
++};
++
++&bone_adafruit_cape {
++	board-name = "Adafruit 1.8 Cape";
++
++	backlight {
++		compatible	= "pwm-backlight";
++		pinctrl-names	= "default";
++		pinctrl-0	= <&pwm_bl_pins>;
++
++		pwms = <&ehrpwm1 1 500000 0>;
++		pwm-names = "st7735fb";
++		brightness-levels = <0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100>;
++		default-brightness-level = <50>; /* index to the array above */
++	};
++
++	spi1-devices {
++		compatible = "spi-dt";
++
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		parent = <&spi1>;
++
++		lcd@0 {
++			compatible = "adafruit,tft-lcd-1.8-red", "sitronix,st7735";
++			spi-max-frequency = <8000000>;
++			reg = <0>;
++			spi-cpol;
++			spi-cpha;
++			pinctrl-names = "default";
++			pinctrl-0 = <&lcd_pins>;
++			st7735-rst = <&gpio4 19 0>;
++			st7735-dc = <&gpio4 21 0>;
++		};
++
++	};
++};
 -- 
 1.7.12
 
