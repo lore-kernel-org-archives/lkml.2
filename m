@@ -1,102 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935833Ab2JaQGe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:06:34 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50712 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935754Ab2JaQGa (ORCPT
+	id S1423261Ab2JaQG5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:06:57 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:30809 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935769Ab2JaQFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:06:30 -0400
-Message-ID: <50914C82.5010704@wwwdotorg.org>
-Date: Wed, 31 Oct 2012 10:06:26 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 31 Oct 2012 12:05:53 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>
+CC: <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
+        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
+        <linux-kernel@vger.kernel.org>, <manabian@gmail.com>,
+        <David.Laight@ACULAB.COM>, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v4 08/10] net/macb: better manage tx errors
+Date: Wed, 31 Oct 2012 17:04:57 +0100
+Message-ID: <9146955236335d47b748b56fd1d3c5f050eb089e.1351690694.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <cover.1351690694.git.nicolas.ferre@atmel.com>
+References: <cover.1351690694.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3 0/4] ARM: tegra: Enable SLINK controller driver
-References: <1351580726-17350-1-git-send-email-ldewangan@nvidia.com> <509038BA.30600@wwwdotorg.org> <5090E69C.4080108@nvidia.com>
-In-Reply-To: <5090E69C.4080108@nvidia.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 02:51 AM, Laxman Dewangan wrote:
-> On Wednesday 31 October 2012 01:59 AM, Stephen Warren wrote:
->> On 10/30/2012 01:05 AM, Laxman Dewangan wrote:
->>> This series modify the dts file to add the slink addresses,
->>> make AUXDATA in board dt files, enable slink4 for tegra30-cardhu and
->>> enable slink controller defconfig.
->> This series only instantiates the SPI controller, and not any SPI
->> devices. I tried to solve this:
->>
->>> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi
->>> b/arch/arm/boot/dts/tegra30-cardhu.dtsi
->>> index 700f0a3..3689853 100644
->>> --- a/arch/arm/boot/dts/tegra30-cardhu.dtsi
->>> +++ b/arch/arm/boot/dts/tegra30-cardhu.dtsi
->>> @@ -278,6 +278,11 @@
->>>          spi@7000da00 {
->>>                  status = "okay";
->>>                  spi-max-frequency =<25000000>;
->>> +               flash@0 {
->>> +                       reg =<0>;
->>> +                       compatible = "atmel,at25df321a";
->>> +                       spi-max-frequency =<25000000>;
->>> +               };
->>>          };
->>>
->>>          ahub {
->> However, this didn't work. Has the driver been tested? I'm seeing the
->> exact same problems I saw with the old driver, namely that the SPI flash
->> chip can't be identified; I think the ID bytes are read back as 0, and
->> hence drivers/mtd/devices/m25p80.c falls back to identifying the device
->> as mr25h256. Attempting to hexdump -C /dev/mtd0 gives me 32K of zeros,
->> whereas the device is 4M and full of non-zero data according to U-Boot.
->>
->> Do you know what the problem is here? Can you please update the patch
->> series so that the SPI flash is instantiated and works correctly?
-> 
-> I will send the new patch series for taking care of the issue.
-> 
-> In Cardhu, there is 2 different type of flash, Winbond and Atmel.
-> There is hw rework require in Cardhu A02 to enable the serial flash and
-> it is already taken care in Cardhu A04. I will forward the hw rework
-> details to you in internal mail communication.
+Handle all TX errors, not only underruns. TX error management is
+deferred to a dedicated workqueue.
+Reinitialize the TX ring after treating all remaining frames, and
+restart the controller when everything has been cleaned up properly.
+Napi is not stopped during this task as the driver only handles
+napi for RX for now.
+With this sequence, we do not need a special check during the xmit
+method as the packets will be caught by TX disable during workqueue
+execution.
 
-U-Boot appears able to identify the flash chip on my board:
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Tested-by: Joachim Eastwood <manabian@gmail.com>
+---
+ drivers/net/ethernet/cadence/macb.c | 166 ++++++++++++++++++++++++------------
+ drivers/net/ethernet/cadence/macb.h |   1 +
+ 2 files changed, 113 insertions(+), 54 deletions(-)
 
-SF: Detected AT25DF321A with page size 256, total 4 MiB
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index 78488b4..d5b52ff 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -44,6 +44,16 @@
+ 
+ #define MACB_RX_INT_FLAGS	(MACB_BIT(RCOMP) | MACB_BIT(RXUBR)	\
+ 				 | MACB_BIT(ISR_ROVR))
++#define MACB_TX_ERR_FLAGS	(MACB_BIT(ISR_TUND)			\
++					| MACB_BIT(ISR_RLE)		\
++					| MACB_BIT(TXERR))
++#define MACB_TX_INT_FLAGS	(MACB_TX_ERR_FLAGS | MACB_BIT(TCOMP))
++
++/*
++ * Graceful stop timeouts in us. We should allow up to
++ * 1 frame time (10 Mbits/s, full-duplex, ignoring collisions)
++ */
++#define MACB_HALT_TIMEOUT	1230
+ 
+ /* Ring buffer accessors */
+ static unsigned int macb_tx_ring_wrap(unsigned int index)
+@@ -339,66 +349,113 @@ static void macb_update_stats(struct macb *bp)
+ 		*p += __raw_readl(reg);
+ }
+ 
+-static void macb_tx(struct macb *bp)
++static int macb_halt_tx(struct macb *bp)
+ {
+-	unsigned int tail;
+-	unsigned int head;
+-	u32 status;
++	unsigned long	halt_time, timeout;
++	u32		status;
+ 
+-	status = macb_readl(bp, TSR);
+-	macb_writel(bp, TSR, status);
++	macb_writel(bp, NCR, macb_readl(bp, NCR) | MACB_BIT(THALT));
+ 
+-	netdev_vdbg(bp->dev, "macb_tx status = 0x%03lx\n", (unsigned long)status);
++	timeout = jiffies + usecs_to_jiffies(MACB_HALT_TIMEOUT);
++	do {
++		halt_time = jiffies;
++		status = macb_readl(bp, TSR);
++		if (!(status & MACB_BIT(TGO)))
++			return 0;
+ 
+-	if (status & (MACB_BIT(UND) | MACB_BIT(TSR_RLE))) {
+-		int i;
+-		netdev_err(bp->dev, "TX %s, resetting buffers\n",
+-			   status & MACB_BIT(UND) ?
+-			   "underrun" : "retry limit exceeded");
++		usleep_range(10, 250);
++	} while (time_before(halt_time, timeout));
+ 
+-		/* Transfer ongoing, disable transmitter, to avoid confusion */
+-		if (status & MACB_BIT(TGO))
+-			macb_writel(bp, NCR, macb_readl(bp, NCR) & ~MACB_BIT(TE));
++	return -ETIMEDOUT;
++}
+ 
+-		head = bp->tx_head;
++static void macb_tx_error_task(struct work_struct *work)
++{
++	struct macb	*bp = container_of(work, struct macb, tx_error_task);
++	struct macb_tx_skb	*tx_skb;
++	struct sk_buff		*skb;
++	unsigned int		tail;
+ 
+-		/*Mark all the buffer as used to avoid sending a lost buffer*/
+-		for (i = 0; i < TX_RING_SIZE; i++)
+-			bp->tx_ring[i].ctrl = MACB_BIT(TX_USED);
++	netdev_vdbg(bp->dev, "macb_tx_error_task: t = %u, h = %u\n",
++		    bp->tx_tail, bp->tx_head);
+ 
+-		/* Add wrap bit */
+-		bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
++	/* Make sure nobody is trying to queue up new packets */
++	netif_stop_queue(bp->dev);
+ 
+-		/* free transmit buffer in upper layer*/
+-		for (tail = bp->tx_tail; tail != head; tail++) {
+-			struct macb_tx_skb	*tx_skb;
+-			struct sk_buff		*skb;
++	/*
++	 * Stop transmission now
++	 * (in case we have just queued new packets)
++	 */
++	if (macb_halt_tx(bp))
++		/* Just complain for now, reinitializing TX path can be good */
++		netdev_err(bp->dev, "BUG: halt tx timed out\n");
+ 
+-			rmb();
++	/* No need for the lock here as nobody will interrupt us anymore */
+ 
+-			tx_skb = macb_tx_skb(bp, tail);
+-			skb = tx_skb->skb;
++	/*
++	 * Treat frames in TX queue including the ones that caused the error.
++	 * Free transmit buffers in upper layer.
++	 */
++	for (tail = bp->tx_tail; tail != bp->tx_head; tail++) {
++		struct macb_dma_desc	*desc;
++		u32			ctrl;
+ 
+-			dma_unmap_single(&bp->pdev->dev, tx_skb->mapping,
+-						skb->len, DMA_TO_DEVICE);
+-			tx_skb->skb = NULL;
+-			dev_kfree_skb_irq(skb);
+-		}
++		desc = macb_tx_desc(bp, tail);
++		ctrl = desc->ctrl;
++		tx_skb = macb_tx_skb(bp, tail);
++		skb = tx_skb->skb;
+ 
+-		bp->tx_head = bp->tx_tail = 0;
++		if (ctrl & MACB_BIT(TX_USED)) {
++			netdev_vdbg(bp->dev, "txerr skb %u (data %p) TX complete\n",
++				    macb_tx_ring_wrap(tail), skb->data);
++			bp->stats.tx_packets++;
++			bp->stats.tx_bytes += skb->len;
++		} else {
++			/*
++			 * "Buffers exhausted mid-frame" errors may only happen
++			 * if the driver is buggy, so complain loudly about those.
++			 * Statistics are updated by hardware.
++			 */
++			if (ctrl & MACB_BIT(TX_BUF_EXHAUSTED))
++				netdev_err(bp->dev,
++					   "BUG: TX buffers exhausted mid-frame\n");
+ 
+-		/* Enable the transmitter again */
+-		if (status & MACB_BIT(TGO))
+-			macb_writel(bp, NCR, macb_readl(bp, NCR) | MACB_BIT(TE));
++			desc->ctrl = ctrl | MACB_BIT(TX_USED);
++		}
++
++		dma_unmap_single(&bp->pdev->dev, tx_skb->mapping, skb->len,
++				 DMA_TO_DEVICE);
++		tx_skb->skb = NULL;
++		dev_kfree_skb(skb);
+ 	}
+ 
+-	if (!(status & MACB_BIT(COMP)))
+-		/*
+-		 * This may happen when a buffer becomes complete
+-		 * between reading the ISR and scanning the
+-		 * descriptors.  Nothing to worry about.
+-		 */
+-		return;
++	/* Make descriptor updates visible to hardware */
++	wmb();
++
++	/* Reinitialize the TX desc queue */
++	macb_writel(bp, TBQP, bp->tx_ring_dma);
++	/* Make TX ring reflect state of hardware */
++	bp->tx_head = bp->tx_tail = 0;
++
++	/* Now we are ready to start transmission again */
++	netif_wake_queue(bp->dev);
++
++	/* Housework before enabling TX IRQ */
++	macb_writel(bp, TSR, macb_readl(bp, TSR));
++	macb_writel(bp, IER, MACB_TX_INT_FLAGS);
++}
++
++static void macb_tx_interrupt(struct macb *bp)
++{
++	unsigned int tail;
++	unsigned int head;
++	u32 status;
++
++	status = macb_readl(bp, TSR);
++	macb_writel(bp, TSR, status);
++
++	netdev_vdbg(bp->dev, "macb_tx_interrupt status = 0x%03lx\n",
++		(unsigned long)status);
+ 
+ 	head = bp->tx_head;
+ 	for (tail = bp->tx_tail; tail != head; tail++) {
+@@ -638,9 +695,14 @@ static irqreturn_t macb_interrupt(int irq, void *dev_id)
+ 			}
+ 		}
+ 
+-		if (status & (MACB_BIT(TCOMP) | MACB_BIT(ISR_TUND) |
+-			    MACB_BIT(ISR_RLE)))
+-			macb_tx(bp);
++		if (unlikely(status & (MACB_TX_ERR_FLAGS))) {
++			macb_writel(bp, IDR, MACB_TX_INT_FLAGS);
++			schedule_work(&bp->tx_error_task);
++			break;
++		}
++
++		if (status & MACB_BIT(TCOMP))
++			macb_tx_interrupt(bp);
+ 
+ 		/*
+ 		 * Link change detection isn't possible with RMII, so we'll
+@@ -970,13 +1032,8 @@ static void macb_init_hw(struct macb *bp)
+ 	macb_writel(bp, NCR, MACB_BIT(RE) | MACB_BIT(TE) | MACB_BIT(MPE));
+ 
+ 	/* Enable interrupts */
+-	macb_writel(bp, IER, (MACB_BIT(RCOMP)
+-			      | MACB_BIT(RXUBR)
+-			      | MACB_BIT(ISR_TUND)
+-			      | MACB_BIT(ISR_RLE)
+-			      | MACB_BIT(TXERR)
+-			      | MACB_BIT(TCOMP)
+-			      | MACB_BIT(ISR_ROVR)
++	macb_writel(bp, IER, (MACB_RX_INT_FLAGS
++			      | MACB_TX_INT_FLAGS
+ 			      | MACB_BIT(HRESP)));
+ 
+ }
+@@ -1428,6 +1485,7 @@ static int __init macb_probe(struct platform_device *pdev)
+ 	bp->dev = dev;
+ 
+ 	spin_lock_init(&bp->lock);
++	INIT_WORK(&bp->tx_error_task, macb_tx_error_task);
+ 
+ 	bp->pclk = clk_get(&pdev->dev, "pclk");
+ 	if (IS_ERR(bp->pclk)) {
+diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+index 232dca6..4235ab8 100644
+--- a/drivers/net/ethernet/cadence/macb.h
++++ b/drivers/net/ethernet/cadence/macb.h
+@@ -538,6 +538,7 @@ struct macb {
+ 	struct clk		*hclk;
+ 	struct net_device	*dev;
+ 	struct napi_struct	napi;
++	struct work_struct	tx_error_task;
+ 	struct net_device_stats	stats;
+ 	union {
+ 		struct macb_stats	macb;
+-- 
+1.8.0
 
-So I guess I have the rework.
-
-> Also Serial flash is in CS1, not in CS0. So even if you have hw rework,
-> above change will not work.
-
-Presumably that simply requires changing from:
-
-              flash@0 {
-                      reg = <0>;
-
-to:
-
-              flash@1 {
-                      reg = <1>;
-
-Aha, indeed that does appear to solve the issue; I can see the U-Boot
-environment block when I run "hexdump -C /dev/mtd0" now.
-
-I had forgotten about this from when I tested the older SPI driver that
-we ripped out; I had at least compared the registers between U-Boot and
-the kernel with that driver, so I'm pretty sure I didn't make that
-mistake with the old driver.
-
-So, I'll apply your patch series, and send one to add the flash device
-to the Cardhu .dts.
