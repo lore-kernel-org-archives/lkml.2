@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935549Ab2JaNEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:04:20 -0400
-Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:19939
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932864Ab2JaNER (ORCPT
+	id S935551Ab2JaNMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:12:09 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:38235 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932673Ab2JaNMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:04:17 -0400
-X-Greylist: delayed 908 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Oct 2012 09:04:17 EDT
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202h1d1ah1d2ahzzz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537hbe9i1155h)
-Subject: [alsa-devel] Query about alsa ucm (use case manager) config files
-From: Ashish Chavan <ashish.chavan@kpitcummins.com>
-To: lrg <lrg@ti.com>, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel <alsa-devel@alsa-project.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 31 Oct 2012 18:29:32 +0530
-Message-ID: <1351688372.28030.18.camel@matrix>
+	Wed, 31 Oct 2012 09:12:07 -0400
+Date: Wed, 31 Oct 2012 08:59:29 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: sfr@canb.auug.org.au, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Please add swiotlb.git tree to linux-next
+Message-ID: <20121031125929.GA27144@phenom.dumpdata.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.20.243]
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-   I am just curious to know if there is any centralized repository for
-alsa use case manager configuration files. I tried searching and could
-only find alsa-ucm-conf.git repo at alsa project git server, which is
-actually an empty repo!
+Hello,
 
-How people share/reuse ucm configuration files for a specific codec?
-In near future, I will be developing few ucm configuration files for
-some codecs and wish to share them with rest of the world. I think even
-though ucm configs are board/machine specific, it makes sense to share
-them. Is there any other, more visible place to put these config files
-than board specific distributions?
+Please add:
 
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb.git #linux-next
+
+in the linux-next system. The branch is 'linux-next'. This would be the
+tree and branch used for maintaining the swiotlb and its different users.
+
+The Ack's have already been given per this commit:
+
+commit 6e28b761c5020c4bc943c7e38da86bea8af77d5c
+Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date:   Mon Oct 8 16:28:05 2012 -0700
+
+    MAINTAINERS: add Konrad as the SWIOTLB maintainer
+    
+    Now that I've an IA64 box on top of the other boxes (IBM with Calgary-X,
+    Intel VT-d, AMD Vi, and AMD GART - that can use SWIOTLB as fallback) I can
+    reliably do regression testing.
+    
+    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+    Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Acked-by: "H. Peter Anvin" <hpa@zytor.com>
+    Cc: Thomas Gleixner <tglx@linutronix.de>
+    Acked-by: Tony Luck <tony.luck@intel.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
