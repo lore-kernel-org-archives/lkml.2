@@ -1,177 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965475Ab2JaN4m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:56:42 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32147 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965101Ab2JaN4k (ORCPT
+	id S965558Ab2JaN4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:56:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41599 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965482Ab2JaN4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:56:40 -0400
-Date: Wed, 31 Oct 2012 09:42:46 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH RFC] mm: simplify frontswap_init()
-Message-ID: <20121031134246.GF27288@phenom.dumpdata.com>
-References: <5090594E.7050401@cesarb.net>
- <1351638773-3986-1-git-send-email-cesarb@cesarb.net>
+	Wed, 31 Oct 2012 09:56:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351638773-3986-1-git-send-email-cesarb@cesarb.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <CAE8XmWo5YDu7iBVKH5Z2_EeAAePia24zwtfgPFJ0Cfxjz8Avwg@mail.gmail.com>
+References: <20121030162004.GA3467@Super-MAGI>
+	<CAE8XmWo5YDu7iBVKH5Z2_EeAAePia24zwtfgPFJ0Cfxjz8Avwg@mail.gmail.com>
+Date: Wed, 31 Oct 2012 21:56:48 +0800
+Message-ID: <CA+HMz3gBWkZVq+pcOqX5yrccGHiRw6NqJY7P5d+T_ir=Qzj_9Q@mail.gmail.com>
+Subject: Re: [PATCH]Documentation: Chinese translation of Documentation/arm/kernel_user_helpers.txt
+From: Ninja Tekkaman <tekkamanninja@gmail.com>
+To: Dongsheng Song <dongsheng.song@gmail.com>
+Cc: Harry Wei <harryxiyou@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Martin <dave.martin@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9VDuwer018672
 
-On Tue, Oct 30, 2012 at 09:12:53PM -0200, Cesar Eduardo Barros wrote:
-> The function frontswap_init() uses the passed parameter only to check
-> for the presence of the frontswap_map. It is also passed down to
-> frontswap_ops.init(), but all implementations of it in the kernel ignore
-> the parameter.
-> 
-> Do the check for frontswap_map in the caller instead and remove the
-> parameter from frontswap_init() and frontswap_ops.init().
-> 
-> Also, __frontswap_init() was exported, but its only caller (via an
-> inline function) is mm/swapfile.c, which cannot be built as a module.
-> Remove the unnecessary export.
-> 
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-> ---
-> 
-> Not even compile tested, just a quick patch to show what I was thinking
-> of, but feel free to apply if you think it is good.
+Hi, Dongsheng
+Thanks for your help!
+I will make a new one ,and add your name.
 
-That looks good.
-> 
-> I might write another patch to move it outside the lock later, but I
-> would have to read the frontswap code more carefully first.
-> 
->  drivers/staging/ramster/zcache-main.c |  2 +-
->  drivers/staging/zcache/zcache-main.c  |  2 +-
->  drivers/xen/tmem.c                    |  2 +-
->  include/linux/frontswap.h             |  8 ++++----
->  mm/frontswap.c                        | 10 ++--------
->  mm/swapfile.c                         |  3 ++-
->  6 files changed, 11 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
-> index a09dd5c..b3f01c9 100644
-> --- a/drivers/staging/ramster/zcache-main.c
-> +++ b/drivers/staging/ramster/zcache-main.c
-> @@ -1610,7 +1610,7 @@ static void zcache_frontswap_flush_area(unsigned type)
->  	}
->  }
->  
-> -static void zcache_frontswap_init(unsigned ignored)
-> +static void zcache_frontswap_init(void)
->  {
->  	/* a single tmem poolid is used for all frontswap "types" (swapfiles) */
->  	if (zcache_frontswap_poolid < 0)
-> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-> index 52b43b7..cb67635 100644
-> --- a/drivers/staging/zcache/zcache-main.c
-> +++ b/drivers/staging/zcache/zcache-main.c
-> @@ -1903,7 +1903,7 @@ static void zcache_frontswap_flush_area(unsigned type)
->  	}
->  }
->  
-> -static void zcache_frontswap_init(unsigned ignored)
-> +static void zcache_frontswap_init(void)
->  {
->  	/* a single tmem poolid is used for all frontswap "types" (swapfiles) */
->  	if (zcache_frontswap_poolid < 0)
-> diff --git a/drivers/xen/tmem.c b/drivers/xen/tmem.c
-> index 144564e..7156ff0 100644
-> --- a/drivers/xen/tmem.c
-> +++ b/drivers/xen/tmem.c
-> @@ -343,7 +343,7 @@ static void tmem_frontswap_flush_area(unsigned type)
->  		(void)xen_tmem_flush_object(pool, oswiz(type, ind));
->  }
->  
-> -static void tmem_frontswap_init(unsigned ignored)
-> +static void tmem_frontswap_init(void)
->  {
->  	struct tmem_pool_uuid private = TMEM_POOL_PRIVATE_UUID;
->  
-> diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
-> index 3044254..6374c80 100644
-> --- a/include/linux/frontswap.h
-> +++ b/include/linux/frontswap.h
-> @@ -6,7 +6,7 @@
->  #include <linux/bitops.h>
->  
->  struct frontswap_ops {
-> -	void (*init)(unsigned);
-> +	void (*init)(void);
->  	int (*store)(unsigned, pgoff_t, struct page *);
->  	int (*load)(unsigned, pgoff_t, struct page *);
->  	void (*invalidate_page)(unsigned, pgoff_t);
-> @@ -22,7 +22,7 @@ extern void frontswap_writethrough(bool);
->  #define FRONTSWAP_HAS_EXCLUSIVE_GETS
->  extern void frontswap_tmem_exclusive_gets(bool);
->  
-> -extern void __frontswap_init(unsigned type);
-> +extern void __frontswap_init(void);
->  extern int __frontswap_store(struct page *page);
->  extern int __frontswap_load(struct page *page);
->  extern void __frontswap_invalidate_page(unsigned, pgoff_t);
-> @@ -120,10 +120,10 @@ static inline void frontswap_invalidate_area(unsigned type)
->  		__frontswap_invalidate_area(type);
->  }
->  
-> -static inline void frontswap_init(unsigned type)
-> +static inline void frontswap_init(void)
->  {
->  	if (frontswap_enabled)
-> -		__frontswap_init(type);
-> +		__frontswap_init();
->  }
->  
->  #endif /* _LINUX_FRONTSWAP_H */
-> diff --git a/mm/frontswap.c b/mm/frontswap.c
-> index 2890e67..d13661b 100644
-> --- a/mm/frontswap.c
-> +++ b/mm/frontswap.c
-> @@ -115,16 +115,10 @@ EXPORT_SYMBOL(frontswap_tmem_exclusive_gets);
->  /*
->   * Called when a swap device is swapon'd.
->   */
-> -void __frontswap_init(unsigned type)
-> +void __frontswap_init(void)
->  {
-> -	struct swap_info_struct *sis = swap_info[type];
-> -
-> -	BUG_ON(sis == NULL);
-> -	if (sis->frontswap_map == NULL)
-> -		return;
-> -	frontswap_ops.init(type);
-> +	frontswap_ops.init();
->  }
-> -EXPORT_SYMBOL(__frontswap_init);
->  
->  static inline void __frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
->  {
-> diff --git a/mm/swapfile.c b/mm/swapfile.c
-> index 088daf4..28c26bd 100644
-> --- a/mm/swapfile.c
-> +++ b/mm/swapfile.c
-> @@ -1479,7 +1479,8 @@ static void enable_swap_info(struct swap_info_struct *p, int prio,
->  {
->  	spin_lock(&swap_lock);
->  	_enable_swap_info(p, prio, swap_map, frontswap_map);
-> -	frontswap_init(p->type);
-> +	if (frontswap_map)
-> +		frontswap_init();
->  	spin_unlock(&swap_lock);
->  }
->  
-> -- 
-> 1.7.11.7
+在 2012年10月31日 下午1:06，Dongsheng Song <dongsheng.song@gmail.com> 写道：
+> Hi,
+>
+> There have some misleading in the translation:
+>
+> -------------------------------- origin  --------------------------------
+> User space is expected to bypass those helpers and implement those things
+> inline (either in the code emitted directly by the compiler, or part of
+> the implementation of a library call) when optimizing for a recent enough
+> processor that has the necessary native support, but only if resulting
+> binaries are already to be incompatible with earlier ARM processors due to
+> usage of similar native instructions for other things.  In other words
+> don't make binaries unable to run on earlier processors just for the sake
+> of not using these kernel helpers if your compiled code is not going to
+> use new instructions for other purpose.
+>
+> -------------------------------- Fu Wei  --------------------------------
+> 当对那些拥有基本原生支持的新型处理器的代码进行优化时，用户空间最好绕
+> 过这些辅助代码并在内联函数中实现这些操作（无论是通过编译器在代码中直
+> 接放置，还是作为库函数调用实现的一部分），而仅在其他处理器因使用相似
+> 的本地指令而导致二进制结果已与早期 ARM 处理不兼容的情况下才使用这些
+> 辅助代码。也就是说，如果你编译的代码不会为了其他目的使用新的指令，则
+> 不要仅为了不使用这些内核辅助代码而导致二进制程序无法在早期处理器上运
+> 行。
+> -------------------------------- me  --------------------------------
+> 当对那些拥有原生支持的新型处理器进行代码优化时，如果已经在其它代码中
+> 使用类似的新指令，从而导致二进制结果已与早期 ARM 处理器不兼容的情况下，
+> 用户空间最好绕过这些辅助代码，并在内联函数中实现这些操作（无论是通过
+> 编译器在代码中直接发出，还是作为库函数调用实现的一部分）。也就是说，
+> 如果你编译的代码不会为了其他目的使用新指令，则不要仅为了不使用这些内核
+> 辅助代码，导致二进制程序无法在早期处理器上运行。
+>
+> The attachment is my review result.
+>
+> --
+> Dongsheng
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
