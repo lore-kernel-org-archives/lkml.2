@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423045Ab2JaPzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 11:55:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57151 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422913Ab2JaPzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 11:55:17 -0400
-Date: Wed, 31 Oct 2012 16:55:14 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] cgroup: use cgroup_lock_live_group(parent) in
- cgroup_create()
-Message-ID: <20121031155514.GD22809@dhcp22.suse.cz>
-References: <1351657365-25055-1-git-send-email-tj@kernel.org>
- <1351657365-25055-4-git-send-email-tj@kernel.org>
+	id S1758089Ab2JaP4o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 11:56:44 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:47826 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757974Ab2JaP4m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 11:56:42 -0400
+Date: Wed, 31 Oct 2012 15:56:35 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Josh Boyer <jwboyer@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121031155635.GA14294@srcf.ucam.org>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+ <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+ <20121029174131.GC7580@srcf.ucam.org>
+ <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
+ <CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
+ <20121031155503.1aaf4c93@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351657365-25055-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121031155503.1aaf4c93@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 30-10-12 21:22:40, Tejun Heo wrote:
-> This patch makes cgroup_create() fail if @parent is marked removed.
-> This is to prepare for further updates to cgroup_rmdir() path.
-> 
-> Note that this change isn't strictly necessary.  cgroup can only be
-> created via mkdir and the removed marking and dentry removal happen
-> without releasing cgroup_mutex, so cgroup_create() can never race with
-> cgroup_rmdir().  Even after the scheduled updates to cgroup_rmdir(),
-> cgroup_mkdir() and cgroup_rmdir() are synchronized by i_mutex
-> rendering the added liveliness check unnecessary.
-> 
-> Do it anyway such that locking is contained inside cgroup proper and
-> we don't get nasty surprises if we ever grow another caller of
-> cgroup_create().
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+1) Gain root.
+2) Modify swap partition directly.
+3) Force reboot.
+4) Win.
 
-Looks good. Just a nit bellow
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  kernel/cgroup.c | 16 +++++++++++++---
->  1 file changed, 13 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index a49cdbc..b3010ae 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -3906,6 +3906,18 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
->  	if (!cgrp)
->  		return -ENOMEM;
->  
-> +	/*
-> +	 * Only live parents can have children.  Note that the liveliness
-> +	 * check isn't strictly necessary because cgroup_mkdir() and
-> +	 * cgroup_rmdir() are fully synchronized by i_mutex; however, do it
-> +	 * anyway so that locking is contained inside cgroup proper and we
-> +	 * don't get nasty surprises if we ever grow another caller.
-> +	 */
-> +	if (!cgroup_lock_live_group(parent)) {
-> +		err = -ENODEV;
-> +		goto err_free;
-> +	}
-> +
-
-I think this should be moved up before we try to allocate any memory.
-Or is your motivation to keep cgroup_lock held for shorter time?
-I could agree with that but a small comment would be helpful.
+Root should not have the ability to elevate themselves to running 
+arbitrary kernel code. Therefore, the above attack needs to be 
+impossible.
 
 -- 
-Michal Hocko
-SUSE Labs
+Matthew Garrett | mjg59@srcf.ucam.org
