@@ -1,155 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934921Ab2JaBAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 21:00:54 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58685 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934901Ab2JaBAv (ORCPT
+	id S934930Ab2JaBCp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 21:02:45 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:57712 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755419Ab2JaBCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 21:00:51 -0400
-X-AuditID: 9c930197-b7c0bae00000042f-7b-5090783ee47d
-Date: Wed, 31 Oct 2012 10:06:42 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, gaowanlong@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v3 0/3] zram/zsmalloc promotion
-Message-ID: <20121031010642.GN15767@bbox>
-References: <1351501009-15111-1-git-send-email-minchan@kernel.org>
+	Tue, 30 Oct 2012 21:02:42 -0400
+X-Originating-IP: 217.70.178.139
+X-Originating-IP: 50.43.39.152
+Date: Tue, 30 Oct 2012 18:02:32 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Borislav Petkov <bp@alien8.de>, Daniel Santos <daniel.santos@pobox.com>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v4 9/9] bug.h: Convert BUILD_BUG{,_ON} to use
+ BUILD_BUG_ON_MSG
+Message-ID: <20121031010232.GA18229@leaf>
+References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
+ <1351457835-7553-9-git-send-email-daniel.santos@pobox.com>
+ <20121030191905.GG28499@liondog.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351501009-15111-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <20121030191905.GG28499@liondog.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks all,
+On Tue, Oct 30, 2012 at 08:19:05PM +0100, Borislav Petkov wrote:
+> On Sun, Oct 28, 2012 at 03:57:15PM -0500, danielfsantos@att.net wrote:
+> > Remove duplicate code by converting BUILD_BUG and BUILD_BUG_ON to just
+> > call BUILD_BUG_ON_MSG.  This not only reduces source code bloat, but
+> > also prevents the possibility of code being changed for one macro and
+> > not for the other (which was previously the case for BUILD_BUG and
+> > BUILD_BUG_ON).
+> > 
+> > Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+> > ---
+> >  include/linux/bug.h |   17 +++--------------
+> >  1 files changed, 3 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/include/linux/bug.h b/include/linux/bug.h
+> > index 3bc1ddf..b58ba51 100644
+> > --- a/include/linux/bug.h
+> > +++ b/include/linux/bug.h
+> > @@ -81,14 +81,8 @@ struct pt_regs;
+> >  #ifndef __OPTIMIZE__
+> >  #define BUILD_BUG_ON(condition) __compiletime_error_fallback(condition)
+> >  #else
+> > -#define BUILD_BUG_ON(condition)						\
+> > -	do {								\
+> > -		extern void __build_bug_on_failed(void)			\
+> > -			__compiletime_error("BUILD_BUG_ON failed");	\
+> > -		__compiletime_error_fallback(condition);		\
+> > -		if (condition)						\
+> > -			__build_bug_on_failed();			\
+> > -	} while(0)
+> > +#define BUILD_BUG_ON(condition) \
+> > +	BUILD_BUG_ON_MSG(condition, "BUILD_BUG_ON failed: " #condition)
+> 
+> Concatenating "condition" might not be very informative in all cases.
+> For example:
+> 
+> BUILD_BUG_ON(1);
+> 
+> Having __LINE__ is good enough IMHO.
 
-At last, everybody who contributes to zsmalloc want to put it under /lib.
+While it doesn't always help, it may help sometimes.  Worst case,
+BUILD_BUG_ON(1) gives you no less information than it did before; best
+case, it gives you useful data.
 
-Greg,
-What should I do for promoting this dragging patchset?
-
-On Mon, Oct 29, 2012 at 05:56:46PM +0900, Minchan Kim wrote:
-> This patchset promotes zram/zsmalloc from staging.
-> Both are very clean and zram have been used by many embedded product
-> for a long time.
-> It's time to go out of staging.
-> 
-> Greg, Jens is already OK that zram is located under driver/blocks/.
-> The issue remained is where we put zsmalloc.
-> The candidate is two under mm/ or under lib/
-> Konrad and Nitin wanted to put zsmalloc into lib/ instead of mm/.
-> 
-> Quote from Nitin
-> "
-> I think mm/ directory should only contain the code which is intended
-> for global use such as the slab allocator, page reclaim code etc.
-> zsmalloc is used by only one (or possibly two) drivers, so lib/ seems
-> to be the right place.
-> "
-> 
-> Quote from Konrand
-> "
-> I like the idea of keeping it in /lib or /mm. Actually 'lib' sounds more
-> appropriate since it is dealing with storing a bunch of pages in a nice
-> layout for great density purposes.
-> "
-> 
-> In fact, there is some history about that.
-> 
-> Why I put zsmalloc into under mm firstly was that Andrew had a concern
-> about using strut page's some fields freely in zsmalloc so he wanted
-> to maintain it in mm/ if I remember correctly.
-> 
-> So I and Nitin tried to ask the opinion to akpm several times
-> (at least 6 and even I sent such patch a few month ago) but didn't get
-> any reply from him so I guess he doesn't have any concern about that
-> any more.
-> 
-> In point of view that it's an another slab-like allocator,
-> it might be proper under mm but it's not popular as current mm's
-> allocators(/SLUB/SLOB and page allocator).
-> 
-> Frankly speaking, I don't care whether we put it to mm/ or lib/.
-> It seems contributors(ex, Nitin and Konrad) like lib/ and Andrew is still
-> silent. That's why I am biased into lib/ now.
-> 
-> If someone yell we should keep it to mm/ by logical claim, I can change
-> my mind easily. Please raise your hand.
-> 
-> If Andrew doesn't have a concern about that any more, I would like to
-> locate it into /lib.
-> 
-> This patchset is based on next-20121029
-> 
-> Minchan Kim (3):
->   zsmalloc: promote to lib/
->   zram: promote zram from staging
->   zram: select ZSMALLOC when ZRAM is configured
-> 
->  drivers/block/Kconfig                    |    1 +
->  drivers/block/Makefile                   |    1 +
->  drivers/block/zram/Kconfig               |   26 +
->  drivers/block/zram/Makefile              |    3 +
->  drivers/block/zram/zram.txt              |   76 +++
->  drivers/block/zram/zram_drv.c            |  793 ++++++++++++++++++++++
->  drivers/block/zram/zram_drv.h            |  119 ++++
->  drivers/block/zram/zram_sysfs.c          |  225 +++++++
->  drivers/staging/Kconfig                  |    4 -
->  drivers/staging/Makefile                 |    1 -
->  drivers/staging/zcache/zcache-main.c     |    4 +-
->  drivers/staging/zram/Kconfig             |   25 -
->  drivers/staging/zram/Makefile            |    3 -
->  drivers/staging/zram/zram.txt            |   76 ---
->  drivers/staging/zram/zram_drv.c          |  793 ----------------------
->  drivers/staging/zram/zram_drv.h          |  120 ----
->  drivers/staging/zram/zram_sysfs.c        |  225 -------
->  drivers/staging/zsmalloc/Kconfig         |   10 -
->  drivers/staging/zsmalloc/Makefile        |    3 -
->  drivers/staging/zsmalloc/zsmalloc-main.c | 1064 ------------------------------
->  drivers/staging/zsmalloc/zsmalloc.h      |   43 --
->  include/linux/zsmalloc.h                 |   43 ++
->  lib/Kconfig                              |   18 +
->  lib/Makefile                             |    1 +
->  lib/zsmalloc.c                           | 1064 ++++++++++++++++++++++++++++++
->  25 files changed, 2372 insertions(+), 2369 deletions(-)
->  create mode 100644 drivers/block/zram/Kconfig
->  create mode 100644 drivers/block/zram/Makefile
->  create mode 100644 drivers/block/zram/zram.txt
->  create mode 100644 drivers/block/zram/zram_drv.c
->  create mode 100644 drivers/block/zram/zram_drv.h
->  create mode 100644 drivers/block/zram/zram_sysfs.c
->  delete mode 100644 drivers/staging/zram/Kconfig
->  delete mode 100644 drivers/staging/zram/Makefile
->  delete mode 100644 drivers/staging/zram/zram.txt
->  delete mode 100644 drivers/staging/zram/zram_drv.c
->  delete mode 100644 drivers/staging/zram/zram_drv.h
->  delete mode 100644 drivers/staging/zram/zram_sysfs.c
->  delete mode 100644 drivers/staging/zsmalloc/Kconfig
->  delete mode 100644 drivers/staging/zsmalloc/Makefile
->  delete mode 100644 drivers/staging/zsmalloc/zsmalloc-main.c
->  delete mode 100644 drivers/staging/zsmalloc/zsmalloc.h
->  create mode 100644 include/linux/zsmalloc.h
->  create mode 100644 lib/zsmalloc.c
-> 
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+- Josh Triplett
