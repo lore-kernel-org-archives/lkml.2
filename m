@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab2JaFvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 01:51:49 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53260 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab2JaFvm (ORCPT
+	id S1753512Ab2JaFz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 01:55:56 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63911 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab2JaFzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 01:51:42 -0400
-X-AuditID: 9c93016f-b7c7bae000000eb7-47-5090bc6b57e8
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, acme@redhat.com, jolsa@redhat.com,
-        ming.m.lin@intel.com
-Subject: Re: [Patch v1 07/10] perf tools: add mem access sampling core support
-References: <1351523752-4215-1-git-send-email-eranian@google.com>
-	<1351523752-4215-8-git-send-email-eranian@google.com>
-Date: Wed, 31 Oct 2012 14:51:39 +0900
-In-Reply-To: <1351523752-4215-8-git-send-email-eranian@google.com> (Stephane
-	Eranian's message of "Mon, 29 Oct 2012 16:15:49 +0100")
-Message-ID: <87ip9r5gus.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 31 Oct 2012 01:55:53 -0400
+Date: Tue, 30 Oct 2012 22:55:49 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Roland Stigge <stigge@antcom.de>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca
+Subject: Re: [PATCH] Input: select INPUT_MATRIXKMAP for lpc32xx-keys
+Message-ID: <20121031055549.GE31983@core.coreip.homeip.net>
+References: <1351323648-18645-1-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351323648-18645-1-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Oct 2012 16:15:49 +0100, Stephane Eranian wrote:
-> This patch adds the sorting and histogram support
-> functions to enable profiling of memory accesses.
->
-> The following sorting orders are added:
->  - symbol_daddr: data address symbol (or raw address)
->  - dso_daddr: data address shared object
->  - cost: access cost
->  - locked: access uses locked transaction
->  - tlb : TLB access
->  - mem : memory level of the access (L1, L2, L3, RAM, ...)
->  - snoop: access snoop mode
->
-> Signed-off-by: Stephane Eranian <eranian@google.com>
+On Sat, Oct 27, 2012 at 09:40:48AM +0200, Roland Stigge wrote:
+> This patch adds a "select" dependency of KEYBOARD_LPC32XX on INPUT_MATRIXKMAP,
+> as the other drivers are doing in this regard. This fixes the following compile
+> error if KEYBOARD_LPC32XX is enabled but INPUT_MATRIXKMAP is not:
+> 
+> drivers/input/keyboard/lpc32xx-keys.c:230: undefined reference to
+> `matrix_keypad_build_keymap'
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+
+Applied, thank you Roland.
+
+> 
 > ---
-[snip]
-> +/* --sort daddr_sym */
-> +static int64_t
-> +sort__daddr_cmp(struct hist_entry *left, struct hist_entry *right)
-> +{
-> +	struct addr_map_symbol *l = &left->mem_info->daddr;
-> +	struct addr_map_symbol *r = &right->mem_info->daddr;
-> +
-> +	return (int64_t)(r->addr - l->addr);
-> +}
+>  drivers/input/keyboard/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- linux-2.6.orig/drivers/input/keyboard/Kconfig
+> +++ linux-2.6/drivers/input/keyboard/Kconfig
+> @@ -335,6 +335,7 @@ config KEYBOARD_LOCOMO
+>  config KEYBOARD_LPC32XX
+>  	tristate "LPC32XX matrix key scanner support"
+>  	depends on ARCH_LPC32XX && OF
+> +	select INPUT_MATRIXKMAP
+>  	help
+>  	  Say Y here if you want to use NXP LPC32XX SoC key scanner interface,
+>  	  connected to a key matrix.
 
-Doesn't it need to compare symbol (start address) if any, before doing
-it with raw addresses?
-
-Thanks,
-Namhyung
+-- 
+Dmitry
