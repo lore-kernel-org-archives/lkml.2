@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422758Ab2JaLWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 07:22:50 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:48864 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935456Ab2JaLWq (ORCPT
+	id S1422777Ab2JaLW4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 07:22:56 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:63014 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935416Ab2JaLWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 07:22:46 -0400
-From: Behan Webster <behanw@converseincode.com>
-To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>, pageexec@freemail.hu,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH V2] Remove VLAIS usage from libcrc32c.c
-Date: Wed, 31 Oct 2012 07:23:05 -0400
-Message-Id: <1351682585-6772-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 31 Oct 2012 07:22:51 -0400
+Message-ID: <50910A04.5000003@gmail.com>
+Date: Wed, 31 Oct 2012 19:22:44 +0800
+From: Shan Wei <shanwei88@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: jesse@nicira.com, dev@openvswitch.org, NetDev <netdev@vger.kernel.org>,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, cl@linux-foundation.org
+Subject: [PATCH 4/9] net: openvswitch: use this_cpu_ptr per-cpu helper
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+From: Shan Wei <davidshan@tencent.com>
 
-The use of variable length arrays in structs (VLAIS) in the Linux Kernel code
-precludes the use of compilers which don't implement VLAIS (for instance the
-Clang compiler). This patch instead allocates the appropriate amount of memory
-using an char array.
-
-Patch from series at
-http://lists.cs.uiuc.edu/pipermail/llvm-commits/Week-of-Mon-20120507/142707.html
-by PaX Team.
-
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Cc: pageexec@freemail.hu
-[Use shash_desc_ctx() to calculate address of ctx]
-Signed-off-by: Behan Webster <behanw@converseincode.com>
+Signed-off-by: Shan Wei <davidshan@tencent.com>
 ---
- lib/libcrc32c.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ net/openvswitch/datapath.c |    4 ++--
+ net/openvswitch/vport.c    |    5 ++---
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/lib/libcrc32c.c b/lib/libcrc32c.c
-index 244f548..c155b3f 100644
---- a/lib/libcrc32c.c
-+++ b/lib/libcrc32c.c
-@@ -41,20 +41,20 @@ static struct crypto_shash *tfm;
+diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
+index 4c4b62c..77d16a5 100644
+--- a/net/openvswitch/datapath.c
++++ b/net/openvswitch/datapath.c
+@@ -208,7 +208,7 @@ void ovs_dp_process_received_packet(struct vport *p, struct sk_buff *skb)
+ 	int error;
+ 	int key_len;
  
- u32 crc32c(u32 crc, const void *address, unsigned int length)
+-	stats = per_cpu_ptr(dp->stats_percpu, smp_processor_id());
++	stats = this_cpu_ptr(dp->stats_percpu);
+ 
+ 	/* Extract flow from 'skb' into 'key'. */
+ 	error = ovs_flow_extract(skb, p->port_no, &key, &key_len);
+@@ -282,7 +282,7 @@ int ovs_dp_upcall(struct datapath *dp, struct sk_buff *skb,
+ 	return 0;
+ 
+ err:
+-	stats = per_cpu_ptr(dp->stats_percpu, smp_processor_id());
++	stats = this_cpu_ptr(dp->stats_percpu);
+ 
+ 	u64_stats_update_begin(&stats->sync);
+ 	stats->n_lost++;
+diff --git a/net/openvswitch/vport.c b/net/openvswitch/vport.c
+index 03779e8..70af0be 100644
+--- a/net/openvswitch/vport.c
++++ b/net/openvswitch/vport.c
+@@ -333,8 +333,7 @@ void ovs_vport_receive(struct vport *vport, struct sk_buff *skb)
  {
--	struct {
--		struct shash_desc shash;
--		char ctx[crypto_shash_descsize(tfm)];
--	} desc;
-+	char desc[sizeof(struct shash_desc) + crypto_shash_descsize(tfm)
-+		+ CRYPTO_MINALIGN] CRYPTO_MINALIGN_ATTR;
-+	struct shash_desc *shash = (struct shash_desc *)desc;
-+	u32 *ctx = (u32 *)shash_desc_ctx(shash);
- 	int err;
+ 	struct vport_percpu_stats *stats;
  
--	desc.shash.tfm = tfm;
--	desc.shash.flags = 0;
--	*(u32 *)desc.ctx = crc;
-+	shash->tfm = tfm;
-+	shash->flags = 0;
-+	*ctx = crc;
+-	stats = per_cpu_ptr(vport->percpu_stats, smp_processor_id());
+-
++	stats = this_cpu_ptr(vport->percpu_stats);
+ 	u64_stats_update_begin(&stats->sync);
+ 	stats->rx_packets++;
+ 	stats->rx_bytes += skb->len;
+@@ -359,7 +358,7 @@ int ovs_vport_send(struct vport *vport, struct sk_buff *skb)
+ 	if (likely(sent)) {
+ 		struct vport_percpu_stats *stats;
  
--	err = crypto_shash_update(&desc.shash, address, length);
-+	err = crypto_shash_update(shash, address, length);
- 	BUG_ON(err);
+-		stats = per_cpu_ptr(vport->percpu_stats, smp_processor_id());
++		stats = this_cpu_ptr(vport->percpu_stats);
  
--	return *(u32 *)desc.ctx;
-+	return *ctx;
- }
- 
- EXPORT_SYMBOL(crc32c);
+ 		u64_stats_update_begin(&stats->sync);
+ 		stats->tx_packets++;
 -- 
-1.7.9.5
+1.7.1
 
