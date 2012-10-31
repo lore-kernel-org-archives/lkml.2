@@ -1,45 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423230Ab2JaQQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:16:18 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:37048 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935768Ab2JaQQQ (ORCPT
+	id S1423199Ab2JaQS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:18:57 -0400
+Received: from s15333296.onlinehome-server.info ([217.160.17.100]:49792 "EHLO
+	s15333296.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935676Ab2JaQS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:16:16 -0400
-X-Sasl-enc: HQ40vrfD9AjZrrRw2AOhDdC1bszd14ivnW//p//tjaET 1351700175
-Date: Wed, 31 Oct 2012 09:16:14 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Clark <rob@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the staging
- tree
-Message-ID: <20121031161614.GF31804@kroah.com>
-References: <20121031161921.3c9a46bd03f5864eed88fc87@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121031161921.3c9a46bd03f5864eed88fc87@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 31 Oct 2012 12:18:56 -0400
+From: Andre Przywara <osp@andrep.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>, osp@andrep.de
+Subject: [PATCH] x86/amd: disable way access filter on affected CPUs
+Date: Wed, 31 Oct 2012 17:20:50 +0100
+Message-Id: <1351700450-9277-1-git-send-email-osp@andrep.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20121026145623.GA15912@gmail.com>
+References: <20121026145623.GA15912@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 04:19:21PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/mach-omap2/drm.c between commit 5e3b08749951 ("staging:
-> drm/omap: add support for ARCH_MULTIPLATFORM") from the staging tree and
-> commit 2a296c8f89bc ("ARM: OMAP: Make plat/omap_hwmod.h local to
-> mach-omap2") from the arm-soc tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+From: Andre Przywara <andre.przywara@amd.com>
 
-Looks good to me, thanks for this.
+The Way Access Filter in recent AMD CPUs may hurt the performance of
+some workloads, caused by aliasing issues in the L1 cache.
+This patch disables it on the affected CPUs.
 
-greg k-h
+The issue is similar to that one of last year:
+http://lkml.indiana.edu/hypermail/linux/kernel/1107.3/00041.html
+This new patch does not replace the old one, we just need another
+quirk for newer CPUs.
+
+The performance penalty without the patch depends on the
+circumstances, but is a bit less than the last year's 3%.
+
+The workloads affected would be those that access code from the same
+physical page under different virtual addresses, so different
+processes using the same libraries with ASLR or multiple instances of
+PIE-binaries. The code needs to be accessed simultaneously from both
+cores of the same compute unit.
+
+More details can be found here:
+http://developer.amd.com/Assets/SharedL1InstructionCacheonAMD15hCPU.pdf
+
+CPUs affected are anything with the core known as Piledriver.
+That includes the new parts of the AMD A-Series (aka Trinity) and the
+just released new CPUs of the FX-Series (aka Vishera).
+The model numbering is a bit odd here: FX CPUs have model 2,
+A-Series has model 10h, with possible extensions to 1Fh. Hence the
+range of model ids.
+
+Signed-off-by: Andre Przywara <osp@andrep.de>
+---
+ arch/x86/kernel/cpu/amd.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index f7e98a2..1b7d165 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -631,6 +631,20 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		}
+ 	}
+ 
++	/*
++	 * The way access filter has a performance penalty on some workloads.
++	 * Disable it on the affected CPUs.
++	 */
++	if ((c->x86 == 0x15) &&
++	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
++		u64 val;
++
++		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
++			val |= 0x1E;
++			wrmsrl_safe(0xc0011021, val);
++		}
++	}
++
+ 	cpu_detect_cache_sizes(c);
+ 
+ 	/* Multi core CPU? */
+-- 
+1.7.1
+
