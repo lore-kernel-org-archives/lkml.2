@@ -1,133 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964917Ab2JaBxy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 21:53:54 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:48781 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753809Ab2JaBxw convert rfc822-to-8bit (ORCPT
+	id S1758223Ab2JaB6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 21:58:51 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48167 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527Ab2JaB6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 21:53:52 -0400
-X-IronPort-AV: E=Sophos;i="4.80,684,1344182400"; 
-   d="scan'208";a="6103066"
-Message-ID: <5090845C.6060508@cn.fujitsu.com>
-Date: Wed, 31 Oct 2012 09:52:28 +0800
-From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	Tue, 30 Oct 2012 21:58:50 -0400
+X-AuditID: 9c930179-b7c8bae000003559-85-509085d7c071
+Date: Wed, 31 Oct 2012 11:04:43 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, gaowanlong@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v3 0/3] zram/zsmalloc promotion
+Message-ID: <20121031020443.GP15767@bbox>
+References: <1351501009-15111-1-git-send-email-minchan@kernel.org>
+ <20121031010642.GN15767@bbox>
+ <20121031014209.GB2672@kroah.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: x86@kernel.org, kexec@lists.infradead.org, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86/kexec: VMCLEAR vmcss on all cpus if necessary
-References: <5080E813.7030302@cn.fujitsu.com> <5080E8BF.3020506@cn.fujitsu.com> <20121031001822.GA21986@amt.cnet>
-In-Reply-To: <20121031001822.GA21986@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 09:53:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 09:53:07
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121031014209.GB2672@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年10月31日 08:18, Marcelo Tosatti 写道:
-> On Fri, Oct 19, 2012 at 01:44:31PM +0800, Zhang Yanfei wrote:
->> This patch provides a way to VMCLEAR vmcss related to guests
->> on all cpus before executing the VMXOFF when doing kdump. This
->> is used to ensure the VMCSs in the vmcore updated and
->> non-corrupted.
->>
->> Signed-off-by: zhangyanfei <zhangyanfei@cn.fujitsu.com>
->> ---
->>  arch/x86/include/asm/kexec.h |    2 ++
->>  arch/x86/kernel/crash.c      |   27 +++++++++++++++++++++++++++
->>  2 files changed, 29 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
->> index 317ff17..fc05440 100644
->> --- a/arch/x86/include/asm/kexec.h
->> +++ b/arch/x86/include/asm/kexec.h
->> @@ -163,6 +163,8 @@ struct kimage_arch {
->>  };
->>  #endif
->>  
->> +extern void (*crash_clear_loaded_vmcss)(void);
->> +
->>  #endif /* __ASSEMBLY__ */
->>  
->>  #endif /* _ASM_X86_KEXEC_H */
->> diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
->> index 13ad899..7289976 100644
->> --- a/arch/x86/kernel/crash.c
->> +++ b/arch/x86/kernel/crash.c
->> @@ -16,6 +16,7 @@
->>  #include <linux/delay.h>
->>  #include <linux/elf.h>
->>  #include <linux/elfcore.h>
->> +#include <linux/module.h>
->>  
->>  #include <asm/processor.h>
->>  #include <asm/hardirq.h>
->> @@ -30,6 +31,22 @@
->>  
->>  int in_crash_kexec;
->>  
->> +/*
->> + * This is used to VMCLEAR vmcss loaded on all
->> + * cpus. And when loading kvm_intel module, the
->> + * function pointer will be made valid.
->> + */
->> +void (*crash_clear_loaded_vmcss)(void) = NULL;
->> +EXPORT_SYMBOL_GPL(crash_clear_loaded_vmcss);
->> +
->> +static void cpu_emergency_clear_loaded_vmcss(void)
->> +{
->> +	if (crash_clear_loaded_vmcss &&
->> +	    cpu_has_vmx() && cpu_vmx_enabled()) {
->> +		crash_clear_loaded_vmcss();
->> +	}
->> +}
->> +
-> 
-> Are all this checks necessary? 
-> 
-> if (crash_clear_loaded_vmcss)
-> 	crash_clear_loaded_vmcss();
-> 
-> Should be enough ? (callback only set if kvm-vmx module loaded).
+Hi Greg,
 
-Hmm, it is enough. Thanks.
+On Tue, Oct 30, 2012 at 06:42:09PM -0700, Greg Kroah-Hartman wrote:
+> On Wed, Oct 31, 2012 at 10:06:42AM +0900, Minchan Kim wrote:
+> > Thanks all,
+> > 
+> > At last, everybody who contributes to zsmalloc want to put it under /lib.
+> > 
+> > Greg,
+> > What should I do for promoting this dragging patchset?
+> 
+> You need to get the -mm developers to agree that this is something that
+> is worth accepting.  I have yet to see any compeling argument why this
+
+I'm one of mm developers. :)
+Yes. I hope Andrew have a time to take a look.
+
+> even needs to be in the kernel in the first place.
+
+Confused. what do you mean "this"? "zsmalloc" or "zram" or "both"?
+If you mean "zsmalloc", I guess there were some lengthy thread about
+"why we need a new another allocator". Unfortunately, I didn't follow it
+at that time. Nitin, Pekka, Could you point out that thread? or summarize
+the result.
 
 > 
->>  #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
->>  
->>  static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
->> @@ -46,6 +63,11 @@ static void kdump_nmi_callback(int cpu, struct pt_regs *regs)
->>  #endif
->>  	crash_save_cpu(regs, cpu);
->>  
->> +	/*
->> +	 * VMCLEAR vmcss loaded on all cpus if needed.
->> +	 */
->> +	cpu_emergency_clear_loaded_vmcss();
->> +
->>  	/* Disable VMX or SVM if needed.
->>  	 *
->>  	 * We need to disable virtualization on all CPUs.
->> @@ -88,6 +110,11 @@ void native_machine_crash_shutdown(struct pt_regs *regs)
->>  
->>  	kdump_nmi_shootdown_cpus();
->>  
->> +	/*
->> +	 * VMCLEAR vmcss loaded on this cpu if needed.
->> +	 */
->> +	cpu_emergency_clear_loaded_vmcss();
->> +
->>  	/* Booting kdump kernel with VMX or SVM enabled won't work,
->>  	 * because (among other limitations) we can't disable paging
->>  	 * with the virt flags.
->> -- 
->> 1.7.1
->>
+> I'm not moving this anywhere until you get their acceptance.
 
+I understand you.
+
+It's one of problem in current mm mailing list.
+As you know, many mm guys works for server, not embedded so they don't have
+big interest about embedded feature so prioirty of the feature was always
+low. CMA proved it and next turn is zram. Even new-comer in mm is few so
+review bandwidth is always low, too. :(
+
+How can I poke them?
+The only thing I can do is just (wait, repost) * 5?
+Sigh. :(
+
+> 
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
