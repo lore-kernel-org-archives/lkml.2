@@ -1,110 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab2JaFIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 01:08:35 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51690 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab2JaFIc (ORCPT
+	id S1752040Ab2JaFJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 01:09:41 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40407 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750884Ab2JaFJi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 01:08:32 -0400
-X-AuditID: 9c930197-b7c0bae00000042f-d9-5090b24eb492
-Date: Wed, 31 Oct 2012 14:14:26 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <js1304@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 2/5] mm, highmem: remove useless pool_lock
-Message-ID: <20121031051426.GQ15767@bbox>
-References: <Yes>
- <1351451576-2611-1-git-send-email-js1304@gmail.com>
- <1351451576-2611-3-git-send-email-js1304@gmail.com>
- <20121030143107.ee1f959b.akpm@linux-foundation.org>
+	Wed, 31 Oct 2012 01:09:38 -0400
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
+CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        "Porter, Matt" <mporter@ti.com>, "Dill, Russ" <russ.dill@ti.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
+Subject: RE: [PATCH] omap2-clk: Add missing lcdc clock definition
+Thread-Topic: [PATCH] omap2-clk: Add missing lcdc clock definition
+Thread-Index: AQHNtvYG6t4YD4tdv0iN86NxZoH7IpfS0m0g
+Date: Wed, 31 Oct 2012 05:09:31 +0000
+Message-ID: <79CD15C6BA57404B839C016229A409A83EB529E4@DBDE01.ent.ti.com>
+References: <1351698962-3923-1-git-send-email-panto@antoniou-consulting.com>
+ <20121030181837.GM11908@atomide.com>
+ <alpine.DEB.2.00.1210302324530.6152@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.00.1210302324530.6152@utopia.booyaka.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.133.105]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121030143107.ee1f959b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-
-On Tue, Oct 30, 2012 at 02:31:07PM -0700, Andrew Morton wrote:
-> On Mon, 29 Oct 2012 04:12:53 +0900
-> Joonsoo Kim <js1304@gmail.com> wrote:
+On Wed, Oct 31, 2012 at 04:56:40, Paul Walmsley wrote:
+> + Vaibhav Hiremath
 > 
-> > The pool_lock protects the page_address_pool from concurrent access.
-> > But, access to the page_address_pool is already protected by kmap_lock.
-> > So remove it.
+> On Tue, 30 Oct 2012, Tony Lindgren wrote:
 > 
-> Well, there's a set_page_address() call in mm/page_alloc.c which
-> doesn't have lock_kmap().  it doesn't *need* lock_kmap() because it's
-> init-time code and we're running single-threaded there.  I hope!
+> > * Pantelis Antoniou <panto@antoniou-consulting.com> [121030 11:04]:
+> > > Looks like the lcdc clock definition got dropped.
+> > > It is required for the LCD controller to work. Reintroduce.
+> > 
+> > This looks like a regression, can you also add the commit
+> > causing it?
 > 
-> But this exception should be double-checked and mentioned in the
-> changelog, please.  And it's a reason why we can't add
-> assert_spin_locked(&kmap_lock) to set_page_address(), which is
-> unfortunate.
+> Looks like probably a new "feature," in that this clock didn't exist in 
+> the original check-in.  Would be good to get Vaibhav's opinion on this; 
+> also the common clock patches will need to be updated.
 > 
 
-The exception is vaild only in m68k and sparc and they will use not
-set_page_address of highmem.c but page->virtual. So I think we can add
-such lock check in set_page_address in highmem.c.
+Thanks Paul for looping me in, something went wrong with my l-o subscription, 
+so I didn't receive these Patches. 
 
-But I'm not sure we really need it because set_page_address is used in
-few places so isn't it enough adding a just wording to avoid unnecessary
-overhead?
+As far as lck clock node is concerned, we had deliberately dropped all leaf-
+node clocks from the clock tree, please refer to the description mentioned 
+in -
+http://lists.infradead.org/pipermail/linux-arm-kernel/2012-May/101987.html
 
-/* NOTE : Caller should hold kmap_lock by lock_kmap() */
+
+>From LCDC driver perspective, driver is using,
+
+fb_clk = clk_get(&device->dev, NULL);
+
+This I feel needs to be corrected for valid name as per Spec (mostly I would 
+vote for "fck") and then every platform should make sure that it returns 
+valid clock-node for it.
+
+Change in Driver would be,
+
+fb_clk = clk_get(&device->dev, "fck");
+
+
+Thanks,
+Vaibhav
 
 > 
-> The irq-disabling in this code is odd.  If ARCH_NEEDS_KMAP_HIGH_GET=n,
-> we didn't need irq-safe locking in set_page_address().  I guess we'll
-
-What lock you mean in set_page_address?
-We have two locks in there, pool_lock and pas->lock.
-By this patchset, we don't need pool_lock any more.
-Remained thing is pas->lock.
-
-If we make the lock irq-unsafe, it would be deadlock with page_addresss
-if it is called in irq context. Currenntly, page_address is used
-lots of places and not sure it's called only process context.
-Was there any rule that we have to use page_addresss in only
-process context?
-
-> need to retain it in page_address() - I expect some callers have IRQs
-> disabled.
+> - Paul
 > 
-> 
-> ARCH_NEEDS_KMAP_HIGH_GET is a nasty looking thing.  It's ARM:
-> 
-> /*
->  * The reason for kmap_high_get() is to ensure that the currently kmap'd
->  * page usage count does not decrease to zero while we're using its
->  * existing virtual mapping in an atomic context.  With a VIVT cache this
->  * is essential to do, but with a VIPT cache this is only an optimization
->  * so not to pay the price of establishing a second mapping if an existing
->  * one can be used.  However, on platforms without hardware TLB maintenance
->  * broadcast, we simply cannot use ARCH_NEEDS_KMAP_HIGH_GET at all since
->  * the locking involved must also disable IRQs which is incompatible with
->  * the IPI mechanism used by global TLB operations.
->  */
-> #define ARCH_NEEDS_KMAP_HIGH_GET
-> #if defined(CONFIG_SMP) && defined(CONFIG_CPU_TLB_V6)
-> #undef ARCH_NEEDS_KMAP_HIGH_GET
-> #if defined(CONFIG_HIGHMEM) && defined(CONFIG_CPU_CACHE_VIVT)
-> #error "The sum of features in your kernel config cannot be supported together"
-> #endif
-> #endif
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
--- 
-Kind regards,
-Minchan Kim
