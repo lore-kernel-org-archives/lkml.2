@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab2JaJsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:48:13 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:35287 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab2JaJsK (ORCPT
+	id S934698Ab2JaJsr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:48:47 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:51332 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab2JaJsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:48:10 -0400
-X-AuditID: cbfee61a-b7fa66d0000004cf-99-5090f3d997c6
+	Wed, 31 Oct 2012 05:48:42 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-1f-5090f3f87d88
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
@@ -15,1150 +15,960 @@ To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         jooyoung.hwang@samsung.com
 References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
 In-reply-to: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-Subject: [PATCH 13/17] f2fs: add xattr and acl functionalities
-Date: Wed, 31 Oct 2012 18:48:08 +0900
-Message-id: <004a01cdb74c$d52f0b40$7f8d21c0$%kim@samsung.com>
+Subject: [PATCH 14/17] f2fs: add garbage collection functions
+Date: Wed, 31 Oct 2012 18:48:40 +0900
+Message-id: <004b01cdb74c$e7fe90b0$b7fbb210$%kim@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAAbHmg
+Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAAcIMw
 Content-language: en-us
-x-cr-hashedpuzzle: GFee Ps6S QjV4 T0Tn b6gV fK2j h81c km0V tUjj /Len ABK66A==
- ABQGfw== ADoPQw== AEiElQ== AEjwQw==
- AFQEnQ==;9;YQByAG4AZABAAGEAcgBuAGQAYgAuAGQAZQA7AGMAaAB1AHIALgBsAGUAZQBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGMAbQAyADIANAAuAGwAZQBlAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAZwByAGUAZwBrAGgAQABsAGkAbgB1AHgAZgBvAHUAbgBkAGEAdABpAG8AbgAuAG8AcgBnADsAagBvAG8AeQBvAHUAbgBnAC4AaAB3AGEAbgBnAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AZgBzAGQAZQB2AGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAeQB0AHMAbwBAAG0AaQB0AC4AZQBkAHUAOwB2AGkAcgBvAEAAegBlAG4AaQB2AC4AbABpAG4AdQB4AC4AbwByAGcALgB1AGsA;Sosha1_v1;7;{929D2B1B-9D47-4808-8553-BE95D2C3D3E1};agBhAGUAZwBlAHUAawAuAGsAaQBtAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Wed,
- 31 Oct 2012 09:47:54
- GMT;WwBQAEEAVABDAEgAIAAxADMALwAxADcAXQAgAGYAMgBmAHMAOgAgAGEAZABkACAAeABhAHQAdAByACAAYQBuAGQAIABhAGMAbAAgAGYAdQBuAGMAdABpAG8AbgBhAGwAaQB0AGkAZQBzAA==
-x-cr-puzzleid: {929D2B1B-9D47-4808-8553-BE95D2C3D3E1}
+x-cr-hashedpuzzle: GbkW V1/B fICq u5dM 1LAH 7qbJ 7zNE 9khF ABPn3A== ACBZKQ==
+ AFBG8w== AF4nPw== AHpiAQ== AIWNQQ== AJkBKw==
+ ALOCXQ==;9;YQByAG4AZABAAGEAcgBuAGQAYgAuAGQAZQA7AGMAaAB1AHIALgBsAGUAZQBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGMAbQAyADIANAAuAGwAZQBlAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAZwByAGUAZwBrAGgAQABsAGkAbgB1AHgAZgBvAHUAbgBkAGEAdABpAG8AbgAuAG8AcgBnADsAagBvAG8AeQBvAHUAbgBnAC4AaAB3AGEAbgBnAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AZgBzAGQAZQB2AGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAeQB0AHMAbwBAAG0AaQB0AC4AZQBkAHUAOwB2AGkAcgBvAEAAegBlAG4AaQB2AC4AbABpAG4AdQB4AC4AbwByAGcALgB1AGsA;Sosha1_v1;7;{C5E712B3-9E66-4096-9262-3A82033B3F50};agBhAGUAZwBlAHUAawAuAGsAaQBtAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Wed,
+ 31 Oct 2012 09:48:22
+ GMT;WwBQAEEAVABDAEgAIAAxADQALwAxADcAXQAgAGYAMgBmAHMAOgAgAGEAZABkACAAZwBhAHIAYgBhAGcAZQAgAGMAbwBsAGwAZQBjAHQAaQBvAG4AIABmAHUAbgBjAHQAaQBvAG4AcwA=
+x-cr-puzzleid: {C5E712B3-9E66-4096-9262-3A82033B3F50}
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t8zY92bnycEGKxpYrXYs/cki8XlXXPY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mr4NesgU8H054wV+zvmMDUwHt3J2MXIySEhYCKxYvNV
-	dghbTOLCvfVsXYxcHEICyxglVr1ZyQZT1DR9AiNEYhGjxOzd76Gcf4wSTz+/Amrn4GAT0JbY
-	vN8AJC4i8JBRYv+zpWBjhQRsJZ7evwZWwylgJ3H5RARIWBjIbNndCnYFi4CqRPuTr6wgNi9Q
-	+e+WSWwQtqDEj8n3WEBsZgF1iUnzFjFD2PISm9e8ZQYZKQEUf/RXFyQsImAksf/LLHaIEnGJ
-	SQ8esoOcIyFwgV3i3bvLUM+YSuz4/IoFYq+AxLfJh1gg5shKbDrADFG/j11iwdX5zBD1khIH
-	V9xgmcAoOQvJSbOQnDQLyUmzkOxewMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyMkAqV2
-	MK5ssDjEKMDBqMTDa/ivP0CINbGsuDL3EKMEB7OSCG/ypwkBQrwpiZVVqUX58UWlOanFhxh9
-	gC6fyCwlmpwPTA55JfGGxsYmZiamJuaWpuamOISVxHmbPVIChATSE0tSs1NTC1KLYMYxcXBK
-	NTBqbp6ykIPn8xs+4Yb/k3Xa2Z9XLrByzd0QssRsS1birneN10TLwnQqhRWTPk0rzrp5a29C
-	rbedyQT/1x9mVp9hqv2zpF2/5OuM5dMm7LzOWdkifHgC75s5L13yV0vFVLU/Ypfj/rjlP1uJ
-	htsvr4/vfKL7xD20xP4/YLz0d+E0Ey7mU9HvZZ4psRRnJBpqMRcVJwIAxUkR2u0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkleLIzCtJLcpLzFFi42I5/e+xgO6NzxMCDA6strbYs/cki8XlXXPY
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t8zI90fnycEGCzfq2mxZ+9JFovLu+aw
+	OTB5fN4kF8AYxWWTkpqTWZZapG+XwJVxa+dploKrhxgrjrS3MTUwfp7F2MXIySEhYCKxsfMW
+	K4QtJnHh3nq2LkYuDiGBZYwSfx5vY4Ip2vmqhR0iMZ1R4lrfNyYI5x+jxMQbLUAtHBxsAtoS
+	m/cbgMRFBB4ySux/tpQdpFtIwFbi6f1r7CA1nAJ2EpdPRICEhYHCe1+8YQaxWQRUJTo3vAez
+	eYHi7x/PZYWwBSV+TL7HAmIzC6hLTJq3iBnClpfYvOYtM8hICaD4o7+6IGERASOJ7y07mCBK
+	xCUmPXgIdrOEwBV2ibb1l9kgnjGV2D//FyvEXgGJb5MPsUDMkZXYdIAZon4fu8TXLw1Qz0tK
+	HFxxg2UCo+QsJCfNQnLSLCQnzUKyewEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2MkAiU
+	3sG4qsHiEKMAB6MSD6/Bv/4AIdbEsuLK3EOMEhzMSiK8yZ8mBAjxpiRWVqUW5ccXleakFh9i
+	9AG6fCKzlGhyPjA55JXEGxobm5iZmJqYW5qam+IQVhLnbfZICRASSE8sSc1OTS1ILYIZx8TB
+	KdXAyLWz8u2CRU4vZvM6LQxztT4oc5l5w5LTAgum/7um6TzVNJh/7oL6zT0PXp8Q9nSM3b7Q
+	s+2W2v/N09oZQl9uLmactaZsZfWOpv/7V7WXKeTKiL+9LPr9l4rauck5UzSWnN40Z8ZczQr9
+	PMPdxgknZ//6OLnPxfQo6/+TM7wcbrr9iujYZeRxjkWJpTgj0VCLuag4EQC+MKhC7QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkleLIzCtJLcpLzFFi42I5/e+xoO6PzxMCDLZ8V7DYs/cki8XlXXPY
 	HJg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
-	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM+DXrIFPB9OeM
-	Ffs75jA1MB7dydjFyMkhIWAi0TR9ApQtJnHh3nq2LkYuDiGBRYwSs3e/Z4Rw/jFKPP38ir2L
-	kYODTUBbYvN+A5C4iMBDRon9z5ayg3QLCdhKPL1/DayGU8BO4vKJCJCwMJDZsrsVbAGLgKpE
-	+5OvrCA2L1D575ZJbBC2oMSPyfdYQGxmAXWJSfMWMUPY8hKb17xlBhkpARR/9FcXJCwiYCSx
-	/8ssdogScYlJDx6yg5wjIXCBXeLdu8tsEM+YSuz4/IplAqPwLCQrZiFZMQvJillIZi1gZFnF
-	KJpakFxQnJSea6hXnJhbXJqXrpecn7uJERzfz6R2MK5ssDjEKMDBqMTDa/ivP0CINbGsuDL3
-	EKMEB7OSCG/ypwkBQrwpiZVVqUX58UWlOanFhxh9gCEwkVlKNDkfmHrySuINjU3MjCyNzCyM
-	TMzNcQgrifM2e6QECAmkJ5akZqemFqQWwYxj4uCUamBsV939TXODWnBymbWIXfzfdwLRApwT
-	N66d9uM8V9sEqz8rzLpVVRLsWspDZeac9NOqPXiZ7c7a90dqVra/KFCZ7vbmr9WbNi1JrXN7
-	fR2mpqglCmhM1G8uYFmoYRyz3LJWW+0ds8K0pIVpc5NnW7+8vujNol/BdsfFnCdN2tRwPO5i
-	w6zGdeVKLMUZiYZazEXFiQA+y2ZgHAMAAA==
+	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMuLXzNEvB1UOM
+	FUfa25gaGD/PYuxi5OSQEDCR2PmqhR3CFpO4cG89WxcjF4eQwHRGiWt935ggnH+MEhNvtABl
+	ODjYBLQlNu83AImLCDxklNj/bClYt5CArcTT+9fYQWo4BewkLp+IAAkLA4X3vnjDDGKzCKhK
+	dG54D2bzAsXfP57LCmELSvyYfI8FxGYWUJeYNG8RM4QtL7F5zVtmkJESQPFHf3VBwiICRhLf
+	W3YwQZSIS0x68JAd5BwJgSvsEm3rL7NBPGMqsX/+L9YJjMKzkKyYhWTFLCQrZiGZtYCRZRWj
+	aGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcHw/k97BuKrB4hCjAAejEg+vwb/+ACHWxLLiytxD
+	jBIczEoivMmfJgQI8aYkVlalFuXHF5XmpBYfYvQBhsBEZinR5Hxg6skriTc0NjEzsjQyszAy
+	MTfHIawkztvskRIgJJCeWJKanZpakFoEM46Jg1OqgXH1CYWTzvJRLK9OXLjO4DX3Tf996fmt
+	CjdafRbxVLDNe7Ph/DaGpB1Ljj/UKDl5aNFprsVOTl8NbCaKs08qfv1hk+NpofWBKZLXEy1+
+	9DQ/fVRxc82jvhNb53Jrqn0ob9K72n/FjfGtkHG3/47G8++f2DMc53BRzu3+UWdb/VC4qcb9
+	0KU4z/9KLMUZiYZazEXFiQBj5W+WHAMAAA==
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This implements xattr and acl functionalities.
+This adds on-demand and background cleaning functions.
 
-- F2FS uses a node page to contain use extended attributes.
+- The basic background cleaning policy is trying to do cleaning jobs as much as
+  possible whenever the system is idle. Once the background cleaning is done,
+  the cleaner sleeps an amount of time not to interfere with VFS calls. The time
+  is dynamically adjusted according to the status of whole segments, which is
+  decreased when the following conditions are satisfied.
 
-Signed-off-by: Changman Lee <cm224.lee@samsung.com>
+  . GC is not conducted currently, and
+  . IO subsystem is idle by checking the number of requets in bdev's request
+     list, and
+  . There are enough dirty segments.
+
+  Otherwise, the time is increased incrementally until to the maximum time.
+  Note that, min and max times are 10 secs and 30 secs by default.
+
+- F2FS adopts a default victim selection policy where background cleaning uses
+  a cost-benefit algorithm, while on-demand cleaning uses a greedy algorithm.
+
+- The method of moving data during the cleaning is slightly different between
+  background and on-demand cleaning schemes. In the case of background cleaning,
+  F2FS loads the data, and marks them as dirty. Then, F2FS expects that the data
+  will be moved by flusher or VM. In the case of on-demand cleaning, F2FS should
+  move the data right away.
+
+- In order to identify valid blocks in a victim segment, F2FS scans the bitmap
+  of the segment managed as an SIT entry.
+
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/acl.c   |  465 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/f2fs/acl.h   |   57 +++++++
- fs/f2fs/xattr.c |  389 ++++++++++++++++++++++++++++++++++++++++++++++
- fs/f2fs/xattr.h |  145 +++++++++++++++++
- 4 files changed, 1056 insertions(+)
- create mode 100644 fs/f2fs/acl.c
- create mode 100644 fs/f2fs/acl.h
- create mode 100644 fs/f2fs/xattr.c
- create mode 100644 fs/f2fs/xattr.h
+ fs/f2fs/gc.c |  742 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/f2fs/gc.h |  117 +++++++++
+ 2 files changed, 859 insertions(+)
+ create mode 100644 fs/f2fs/gc.c
+ create mode 100644 fs/f2fs/gc.h
 
-diff --git a/fs/f2fs/acl.c b/fs/f2fs/acl.c
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
 new file mode 100644
-index 0000000..dff2a2b
+index 0000000..46774ce
 --- /dev/null
-+++ b/fs/f2fs/acl.c
-@@ -0,0 +1,465 @@
++++ b/fs/f2fs/gc.c
+@@ -0,0 +1,742 @@
 +/**
-+ * fs/f2fs/acl.c
++ * fs/f2fs/gc.c
 + *
 + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
 + *             http://www.samsung.com/
-+ *
-+ * Portions of this code from linux/fs/ext2/acl.c
-+ *
-+ * Copyright (C) 2001-2003 Andreas Gruenbacher, <agruen@suse.de>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
-+#include <linux/f2fs_fs.h>
-+#include "f2fs.h"
-+#include "xattr.h"
-+#include "acl.h"
-+
-+#define get_inode_mode(i)	((is_inode_flag_set(F2FS_I(i), FI_ACL_MODE)) ? \
-+					(F2FS_I(i)->i_acl_mode) : ((i)->i_mode))
-+
-+static inline size_t f2fs_acl_size(int count)
-+{
-+	if (count <= 4) {
-+		return sizeof(struct f2fs_acl_header) +
-+			count * sizeof(struct f2fs_acl_entry_short);
-+	} else {
-+		return sizeof(struct f2fs_acl_header) +
-+			4 * sizeof(struct f2fs_acl_entry_short) +
-+			(count - 4) * sizeof(struct f2fs_acl_entry);
-+	}
-+}
-+
-+static inline int f2fs_acl_count(size_t size)
-+{
-+	ssize_t s;
-+	size -= sizeof(struct f2fs_acl_header);
-+	s = size - 4 * sizeof(struct f2fs_acl_entry_short);
-+	if (s < 0) {
-+		if (size % sizeof(struct f2fs_acl_entry_short))
-+			return -1;
-+		return size / sizeof(struct f2fs_acl_entry_short);
-+	} else {
-+		if (s % sizeof(struct f2fs_acl_entry))
-+			return -1;
-+		return s / sizeof(struct f2fs_acl_entry) + 4;
-+	}
-+}
-+
-+static struct posix_acl *f2fs_acl_from_disk(const char *value, size_t size)
-+{
-+	int i, count;
-+	struct posix_acl *acl;
-+	struct f2fs_acl_header *hdr = (struct f2fs_acl_header *)value;
-+	struct f2fs_acl_entry *entry = (struct f2fs_acl_entry *)(hdr + 1);
-+	const char *end = value + size;
-+
-+	if (hdr->a_version != cpu_to_le32(F2FS_ACL_VERSION))
-+		return ERR_PTR(-EINVAL);
-+
-+	count = f2fs_acl_count(size);
-+	if (count < 0)
-+		return ERR_PTR(-EINVAL);
-+	if (count == 0)
-+		return NULL;
-+
-+	acl = posix_acl_alloc(count, GFP_KERNEL);
-+	if (!acl)
-+		return ERR_PTR(-ENOMEM);
-+
-+	for (i = 0; i < count; i++) {
-+
-+		if ((char *)entry > end)
-+			goto fail;
-+
-+		acl->a_entries[i].e_tag  = le16_to_cpu(entry->e_tag);
-+		acl->a_entries[i].e_perm = le16_to_cpu(entry->e_perm);
-+
-+		switch (acl->a_entries[i].e_tag) {
-+		case ACL_USER_OBJ:
-+		case ACL_GROUP_OBJ:
-+		case ACL_MASK:
-+		case ACL_OTHER:
-+			acl->a_entries[i].e_id = ACL_UNDEFINED_ID;
-+			entry = (struct f2fs_acl_entry *)((char *)entry +
-+					sizeof(struct f2fs_acl_entry_short));
-+			break;
-+
-+		case ACL_USER:
-+			acl->a_entries[i].e_uid =
-+				make_kuid(&init_user_ns,
-+						le32_to_cpu(entry->e_id));
-+			entry = (struct f2fs_acl_entry *)((char *)entry +
-+					sizeof(struct f2fs_acl_entry));
-+			break;
-+		case ACL_GROUP:
-+			acl->a_entries[i].e_gid =
-+				make_kgid(&init_user_ns,
-+						le32_to_cpu(entry->e_id));
-+			entry = (struct f2fs_acl_entry *)((char *)entry +
-+					sizeof(struct f2fs_acl_entry));
-+			break;
-+		default:
-+			goto fail;
-+		}
-+	}
-+	if ((char *)entry != end)
-+		goto fail;
-+	return acl;
-+fail:
-+	posix_acl_release(acl);
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+static void *f2fs_acl_to_disk(const struct posix_acl *acl, size_t *size)
-+{
-+	struct f2fs_acl_header *f2fs_acl;
-+	struct f2fs_acl_entry *entry;
-+	int i;
-+
-+	f2fs_acl = kmalloc(sizeof(struct f2fs_acl_header) + acl->a_count *
-+			sizeof(struct f2fs_acl_entry), GFP_KERNEL);
-+	if (!f2fs_acl)
-+		return ERR_PTR(-ENOMEM);
-+
-+	f2fs_acl->a_version = cpu_to_le32(F2FS_ACL_VERSION);
-+	entry = (struct f2fs_acl_entry *)(f2fs_acl + 1);
-+
-+	for (i = 0; i < acl->a_count; i++) {
-+
-+		entry->e_tag  = cpu_to_le16(acl->a_entries[i].e_tag);
-+		entry->e_perm = cpu_to_le16(acl->a_entries[i].e_perm);
-+
-+		switch (acl->a_entries[i].e_tag) {
-+		case ACL_USER:
-+			entry->e_id = cpu_to_le32(
-+					from_kuid(&init_user_ns,
-+						acl->a_entries[i].e_uid));
-+			entry = (struct f2fs_acl_entry *)((char *)entry +
-+					sizeof(struct f2fs_acl_entry));
-+			break;
-+		case ACL_GROUP:
-+			entry->e_id = cpu_to_le32(
-+					from_kgid(&init_user_ns,
-+						acl->a_entries[i].e_gid));
-+			entry = (struct f2fs_acl_entry *)((char *)entry +
-+					sizeof(struct f2fs_acl_entry));
-+			break;
-+		case ACL_USER_OBJ:
-+		case ACL_GROUP_OBJ:
-+		case ACL_MASK:
-+		case ACL_OTHER:
-+			entry = (struct f2fs_acl_entry *)((char *)entry +
-+					sizeof(struct f2fs_acl_entry_short));
-+			break;
-+		default:
-+			goto fail;
-+		}
-+	}
-+	*size = f2fs_acl_size(acl->a_count);
-+	return (void *)f2fs_acl;
-+
-+fail:
-+	kfree(f2fs_acl);
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+struct posix_acl *f2fs_get_acl(struct inode *inode, int type)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	int name_index = F2FS_XATTR_INDEX_POSIX_ACL_DEFAULT;
-+	void *value = NULL;
-+	struct posix_acl *acl;
-+	int retval;
-+
-+	if (!test_opt(sbi, POSIX_ACL))
-+		return NULL;
-+
-+	acl = get_cached_acl(inode, type);
-+	if (acl != ACL_NOT_CACHED)
-+		return acl;
-+
-+	if (type == ACL_TYPE_ACCESS)
-+		name_index = F2FS_XATTR_INDEX_POSIX_ACL_ACCESS;
-+
-+	retval = f2fs_getxattr(inode, name_index, "", NULL, 0);
-+	if (retval > 0) {
-+		value = kmalloc(retval, GFP_KERNEL);
-+		if (!value)
-+			return ERR_PTR(-ENOMEM);
-+		retval = f2fs_getxattr(inode, name_index, "", value, retval);
-+	}
-+
-+	if (retval < 0) {
-+		if (retval == -ENODATA)
-+			acl = NULL;
-+		else
-+			acl = ERR_PTR(retval);
-+	} else {
-+		acl = f2fs_acl_from_disk(value, retval);
-+	}
-+	kfree(value);
-+	if (!IS_ERR(acl))
-+		set_cached_acl(inode, type, acl);
-+
-+	return acl;
-+}
-+
-+static int f2fs_set_acl(struct inode *inode, int type, struct posix_acl *acl)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct f2fs_inode_info *fi = F2FS_I(inode);
-+	int name_index;
-+	void *value = NULL;
-+	size_t size = 0;
-+	int error;
-+
-+	if (!test_opt(sbi, POSIX_ACL))
-+		return 0;
-+	if (S_ISLNK(inode->i_mode))
-+		return -EOPNOTSUPP;
-+
-+	switch (type) {
-+	case ACL_TYPE_ACCESS:
-+		name_index = F2FS_XATTR_INDEX_POSIX_ACL_ACCESS;
-+		if (acl) {
-+			error = posix_acl_equiv_mode(acl, &inode->i_mode);
-+			if (error < 0)
-+				return error;
-+			set_acl_inode(fi, inode->i_mode);
-+			if (error == 0)
-+				acl = NULL;
-+		}
-+		break;
-+
-+	case ACL_TYPE_DEFAULT:
-+		name_index = F2FS_XATTR_INDEX_POSIX_ACL_DEFAULT;
-+		if (!S_ISDIR(inode->i_mode))
-+			return acl ? -EACCES : 0;
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	if (acl) {
-+		value = f2fs_acl_to_disk(acl, &size);
-+		if (IS_ERR(value)) {
-+			cond_clear_inode_flag(fi, FI_ACL_MODE);
-+			return (int)PTR_ERR(value);
-+		}
-+	}
-+
-+	error = f2fs_setxattr(inode, name_index, "", value, size);
-+
-+	kfree(value);
-+	if (!error)
-+		set_cached_acl(inode, type, acl);
-+
-+	cond_clear_inode_flag(fi, FI_ACL_MODE);
-+	return error;
-+}
-+
-+int f2fs_init_acl(struct inode *inode, struct inode *dir)
-+{
-+	struct posix_acl *acl = NULL;
-+	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
-+	int error = 0;
-+
-+	if (!S_ISLNK(inode->i_mode)) {
-+		if (test_opt(sbi, POSIX_ACL)) {
-+			acl = f2fs_get_acl(dir, ACL_TYPE_DEFAULT);
-+			if (IS_ERR(acl))
-+				return PTR_ERR(acl);
-+		}
-+		if (!acl)
-+			inode->i_mode &= ~current_umask();
-+	}
-+
-+	if (test_opt(sbi, POSIX_ACL) && acl) {
-+
-+		if (S_ISDIR(inode->i_mode)) {
-+			error = f2fs_set_acl(inode, ACL_TYPE_DEFAULT, acl);
-+			if (error)
-+				goto cleanup;
-+		}
-+		error = posix_acl_create(&acl, GFP_KERNEL, &inode->i_mode);
-+		if (error < 0)
-+			return error;
-+		if (error > 0)
-+			error = f2fs_set_acl(inode, ACL_TYPE_ACCESS, acl);
-+	}
-+cleanup:
-+	posix_acl_release(acl);
-+	return error;
-+}
-+
-+int f2fs_acl_chmod(struct inode *inode)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct posix_acl *acl;
-+	int error;
-+	mode_t mode = get_inode_mode(inode);
-+
-+	if (!test_opt(sbi, POSIX_ACL))
-+		return 0;
-+	if (S_ISLNK(mode))
-+		return -EOPNOTSUPP;
-+
-+	acl = f2fs_get_acl(inode, ACL_TYPE_ACCESS);
-+	if (IS_ERR(acl) || !acl)
-+		return PTR_ERR(acl);
-+
-+	error = posix_acl_chmod(&acl, GFP_KERNEL, mode);
-+	if (error)
-+		return error;
-+	error = f2fs_set_acl(inode, ACL_TYPE_ACCESS, acl);
-+	posix_acl_release(acl);
-+	return error;
-+}
-+
-+static size_t f2fs_xattr_list_acl(struct dentry *dentry, char *list,
-+		size_t list_size, const char *name, size_t name_len, int type)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
-+	const char *xname = POSIX_ACL_XATTR_DEFAULT;
-+	size_t size;
-+
-+	if (!test_opt(sbi, POSIX_ACL))
-+		return 0;
-+
-+	if (type == ACL_TYPE_ACCESS)
-+		xname = POSIX_ACL_XATTR_ACCESS;
-+
-+	size = strlen(xname) + 1;
-+	if (list && size <= list_size)
-+		memcpy(list, xname, size);
-+	return size;
-+}
-+
-+static int f2fs_xattr_get_acl(struct dentry *dentry, const char *name,
-+		void *buffer, size_t size, int type)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
-+	struct posix_acl *acl;
-+	int error;
-+
-+	if (strcmp(name, "") != 0)
-+		return -EINVAL;
-+	if (!test_opt(sbi, POSIX_ACL))
-+		return -EOPNOTSUPP;
-+
-+	acl = f2fs_get_acl(dentry->d_inode, type);
-+	if (IS_ERR(acl))
-+		return PTR_ERR(acl);
-+	if (!acl)
-+		return -ENODATA;
-+	error = posix_acl_to_xattr(&init_user_ns, acl, buffer, size);
-+	posix_acl_release(acl);
-+
-+	return error;
-+}
-+
-+static int f2fs_xattr_set_acl(struct dentry *dentry, const char *name,
-+		const void *value, size_t size, int flags, int type)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
-+	struct inode *inode = dentry->d_inode;
-+	struct posix_acl *acl = NULL;
-+	int error;
-+
-+	if (strcmp(name, "") != 0)
-+		return -EINVAL;
-+	if (!test_opt(sbi, POSIX_ACL))
-+		return -EOPNOTSUPP;
-+	if (!inode_owner_or_capable(inode))
-+		return -EPERM;
-+
-+	if (value) {
-+		acl = posix_acl_from_xattr(&init_user_ns, value, size);
-+		if (IS_ERR(acl))
-+			return PTR_ERR(acl);
-+		if (acl) {
-+			error = posix_acl_valid(acl);
-+			if (error)
-+				goto release_and_out;
-+		}
-+	} else {
-+		acl = NULL;
-+	}
-+
-+	error = f2fs_set_acl(inode, type, acl);
-+
-+release_and_out:
-+	posix_acl_release(acl);
-+	return error;
-+}
-+
-+const struct xattr_handler f2fs_xattr_acl_default_handler = {
-+	.prefix = POSIX_ACL_XATTR_DEFAULT,
-+	.flags = ACL_TYPE_DEFAULT,
-+	.list = f2fs_xattr_list_acl,
-+	.get = f2fs_xattr_get_acl,
-+	.set = f2fs_xattr_set_acl,
-+};
-+
-+const struct xattr_handler f2fs_xattr_acl_access_handler = {
-+	.prefix = POSIX_ACL_XATTR_ACCESS,
-+	.flags = ACL_TYPE_ACCESS,
-+	.list = f2fs_xattr_list_acl,
-+	.get = f2fs_xattr_get_acl,
-+	.set = f2fs_xattr_set_acl,
-+};
-+
-+static size_t f2fs_xattr_advise_list(struct dentry *dentry, char *list,
-+		size_t list_size, const char *name, size_t name_len, int type)
-+{
-+	const char *xname = F2FS_SYSTEM_ADVISE_PREFIX;
-+	size_t size;
-+
-+	if (type != F2FS_XATTR_INDEX_ADVISE)
-+		return 0;
-+
-+	size = strlen(xname) + 1;
-+	if (list && size <= list_size)
-+		memcpy(list, xname, size);
-+	return size;
-+}
-+
-+static int f2fs_xattr_advise_get(struct dentry *dentry, const char *name,
-+		void *buffer, size_t size, int type)
-+{
-+	struct inode *inode = dentry->d_inode;
-+
-+	if (strcmp(name, "") != 0)
-+		return -EINVAL;
-+
-+	*((char *)buffer) = F2FS_I(inode)->i_advise;
-+	return sizeof(char);
-+}
-+
-+static int f2fs_xattr_advise_set(struct dentry *dentry, const char *name,
-+		const void *value, size_t size, int flags, int type)
-+{
-+	struct inode *inode = dentry->d_inode;
-+
-+	if (strcmp(name, "") != 0)
-+		return -EINVAL;
-+	if (!inode_owner_or_capable(inode))
-+		return -EPERM;
-+	if (value == NULL)
-+		return -EINVAL;
-+
-+	F2FS_I(inode)->i_advise |= *(char *)value;
-+	return 0;
-+}
-+
-+const struct xattr_handler f2fs_xattr_advise_handler = {
-+	.prefix = F2FS_SYSTEM_ADVISE_PREFIX,
-+	.flags	= F2FS_XATTR_INDEX_ADVISE,
-+	.list   = f2fs_xattr_advise_list,
-+	.get    = f2fs_xattr_advise_get,
-+	.set    = f2fs_xattr_advise_set,
-+};
-diff --git a/fs/f2fs/acl.h b/fs/f2fs/acl.h
-new file mode 100644
-index 0000000..c97675e
---- /dev/null
-+++ b/fs/f2fs/acl.h
-@@ -0,0 +1,57 @@
-+/**
-+ * fs/f2fs/acl.h
-+ *
-+ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
-+ *             http://www.samsung.com/
-+ *
-+ * Portions of this code from linux/fs/ext2/acl.h
-+ *
-+ * Copyright (C) 2001-2003 Andreas Gruenbacher, <agruen@suse.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __F2FS_ACL_H__
-+#define __F2FS_ACL_H__
-+
-+#include <linux/posix_acl_xattr.h>
-+
-+#define F2FS_ACL_VERSION	0x0001
-+
-+struct f2fs_acl_entry {
-+	__le16 e_tag;
-+	__le16 e_perm;
-+	__le32 e_id;
-+};
-+
-+struct f2fs_acl_entry_short {
-+	__le16 e_tag;
-+	__le16 e_perm;
-+};
-+
-+struct f2fs_acl_header {
-+	__le32 a_version;
-+};
-+
-+#ifdef CONFIG_F2FS_FS_POSIX_ACL
-+
-+extern struct posix_acl *f2fs_get_acl(struct inode *inode, int type);
-+extern int f2fs_acl_chmod(struct inode *inode);
-+extern int f2fs_init_acl(struct inode *inode, struct inode *dir);
-+#else
-+#define f2fs_check_acl	NULL
-+#define f2fs_get_acl	NULL
-+#define f2fs_set_acl	NULL
-+
-+static inline int f2fs_acl_chmod(struct inode *inode)
-+{
-+	return 0;
-+}
-+
-+static inline int f2fs_init_acl(struct inode *inode, struct inode *dir)
-+{
-+	return 0;
-+}
-+#endif
-+#endif /* __F2FS_ACL_H__ */
-diff --git a/fs/f2fs/xattr.c b/fs/f2fs/xattr.c
-new file mode 100644
-index 0000000..aca50fe
---- /dev/null
-+++ b/fs/f2fs/xattr.c
-@@ -0,0 +1,389 @@
-+/**
-+ * fs/f2fs/xattr.c
-+ *
-+ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
-+ *             http://www.samsung.com/
-+ *
-+ * Portions of this code from linux/fs/ext2/xattr.c
-+ *
-+ * Copyright (C) 2001-2003 Andreas Gruenbacher <agruen@suse.de>
-+ *
-+ * Fix by Harrison Xing <harrison@mountainviewdata.com>.
-+ * Extended attributes for symlinks and special files added per
-+ *  suggestion of Luka Renko <luka.renko@hermes.si>.
-+ * xattr consolidation Copyright (c) 2004 James Morris <jmorris@redhat.com>,
-+ *  Red Hat Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/rwsem.h>
-+#include <linux/f2fs_fs.h>
-+#include "f2fs.h"
-+#include "xattr.h"
-+
-+static size_t f2fs_xattr_generic_list(struct dentry *dentry, char *list,
-+		size_t list_size, const char *name, size_t name_len, int type)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
-+	int total_len, prefix_len = 0;
-+	const char *prefix = NULL;
-+
-+	switch (type) {
-+	case F2FS_XATTR_INDEX_USER:
-+		if (!test_opt(sbi, XATTR_USER))
-+			return -EOPNOTSUPP;
-+		prefix = XATTR_USER_PREFIX;
-+		prefix_len = XATTR_USER_PREFIX_LEN;
-+		break;
-+	case F2FS_XATTR_INDEX_TRUSTED:
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+		prefix = XATTR_TRUSTED_PREFIX;
-+		prefix_len = XATTR_TRUSTED_PREFIX_LEN;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	total_len = prefix_len + name_len + 1;
-+	if (list && total_len <= list_size) {
-+		memcpy(list, prefix, prefix_len);
-+		memcpy(list+prefix_len, name, name_len);
-+		list[prefix_len + name_len] = '\0';
-+	}
-+	return total_len;
-+}
-+
-+static int f2fs_xattr_generic_get(struct dentry *dentry, const char *name,
-+		void *buffer, size_t size, int type)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
-+
-+	switch (type) {
-+	case F2FS_XATTR_INDEX_USER:
-+		if (!test_opt(sbi, XATTR_USER))
-+			return -EOPNOTSUPP;
-+		break;
-+	case F2FS_XATTR_INDEX_TRUSTED:
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	if (strcmp(name, "") == 0)
-+		return -EINVAL;
-+	return f2fs_getxattr(dentry->d_inode, type, name,
-+			buffer, size);
-+}
-+
-+static int f2fs_xattr_generic_set(struct dentry *dentry, const char *name,
-+		const void *value, size_t size, int flags, int type)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
-+
-+	switch (type) {
-+	case F2FS_XATTR_INDEX_USER:
-+		if (!test_opt(sbi, XATTR_USER))
-+			return -EOPNOTSUPP;
-+		break;
-+	case F2FS_XATTR_INDEX_TRUSTED:
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	if (strcmp(name, "") == 0)
-+		return -EINVAL;
-+
-+	return f2fs_setxattr(dentry->d_inode, type, name, value, size);
-+}
-+
-+const struct xattr_handler f2fs_xattr_user_handler = {
-+	.prefix	= XATTR_USER_PREFIX,
-+	.flags	= F2FS_XATTR_INDEX_USER,
-+	.list	= f2fs_xattr_generic_list,
-+	.get	= f2fs_xattr_generic_get,
-+	.set	= f2fs_xattr_generic_set,
-+};
-+
-+const struct xattr_handler f2fs_xattr_trusted_handler = {
-+	.prefix	= XATTR_TRUSTED_PREFIX,
-+	.flags	= F2FS_XATTR_INDEX_TRUSTED,
-+	.list	= f2fs_xattr_generic_list,
-+	.get	= f2fs_xattr_generic_get,
-+	.set	= f2fs_xattr_generic_set,
-+};
-+
-+static const struct xattr_handler *f2fs_xattr_handler_map[] = {
-+	[F2FS_XATTR_INDEX_USER] = &f2fs_xattr_user_handler,
-+#ifdef CONFIG_F2FS_FS_POSIX_ACL
-+	[F2FS_XATTR_INDEX_POSIX_ACL_ACCESS] = &f2fs_xattr_acl_access_handler,
-+	[F2FS_XATTR_INDEX_POSIX_ACL_DEFAULT] = &f2fs_xattr_acl_default_handler,
-+#endif
-+	[F2FS_XATTR_INDEX_TRUSTED] = &f2fs_xattr_trusted_handler,
-+	[F2FS_XATTR_INDEX_ADVISE] = &f2fs_xattr_advise_handler,
-+};
-+
-+const struct xattr_handler *f2fs_xattr_handlers[] = {
-+	&f2fs_xattr_user_handler,
-+#ifdef CONFIG_F2FS_FS_POSIX_ACL
-+	&f2fs_xattr_acl_access_handler,
-+	&f2fs_xattr_acl_default_handler,
-+#endif
-+	&f2fs_xattr_trusted_handler,
-+	&f2fs_xattr_advise_handler,
-+	NULL,
-+};
-+
-+static inline const struct xattr_handler *f2fs_xattr_handler(int name_index)
-+{
-+	const struct xattr_handler *handler = NULL;
-+
-+	if (name_index > 0 && name_index < ARRAY_SIZE(f2fs_xattr_handler_map))
-+		handler = f2fs_xattr_handler_map[name_index];
-+	return handler;
-+}
-+
-+int f2fs_getxattr(struct inode *inode, int name_index, const char *name,
-+		void *buffer, size_t buffer_size)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct f2fs_inode_info *fi = F2FS_I(inode);
-+	struct f2fs_xattr_entry *entry;
-+	struct page *page;
-+	void *base_addr;
-+	int error = 0, found = 0;
-+	int value_len, name_len;
-+
-+	if (name == NULL)
-+		return -EINVAL;
-+	name_len = strlen(name);
-+
-+	if (!fi->i_xattr_nid)
-+		return -ENODATA;
-+
-+	page = get_node_page(sbi, fi->i_xattr_nid);
-+	base_addr = page_address(page);
-+
-+	list_for_each_xattr(entry, base_addr) {
-+		if (entry->e_name_index != name_index)
-+			continue;
-+		if (entry->e_name_len != name_len)
-+			continue;
-+		if (!memcmp(entry->e_name, name, name_len)) {
-+			found = 1;
-+			break;
-+		}
-+	}
-+	if (!found) {
-+		error = -ENODATA;
-+		goto cleanup;
-+	}
-+
-+	value_len = le16_to_cpu(entry->e_value_size);
-+
-+	if (buffer && value_len > buffer_size) {
-+		error = -ERANGE;
-+		goto cleanup;
-+	}
-+
-+	if (buffer) {
-+		char *pval = entry->e_name + entry->e_name_len;
-+		memcpy(buffer, pval, value_len);
-+	}
-+	error = value_len;
-+
-+cleanup:
-+	f2fs_put_page(page, 1);
-+	return error;
-+}
-+
-+ssize_t f2fs_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size)
-+{
-+	struct inode *inode = dentry->d_inode;
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct f2fs_inode_info *fi = F2FS_I(inode);
-+	struct f2fs_xattr_entry *entry;
-+	struct page *page;
-+	void *base_addr;
-+	int error = 0;
-+	size_t rest = buffer_size;
-+
-+	if (!fi->i_xattr_nid)
-+		return 0;
-+
-+	page = get_node_page(sbi, fi->i_xattr_nid);
-+	base_addr = page_address(page);
-+
-+	list_for_each_xattr(entry, base_addr) {
-+		const struct xattr_handler *handler =
-+			f2fs_xattr_handler(entry->e_name_index);
-+		size_t size;
-+
-+		if (!handler)
-+			continue;
-+
-+		size = handler->list(dentry, buffer, rest, entry->e_name,
-+				entry->e_name_len, handler->flags);
-+		if (buffer && size > rest) {
-+			error = -ERANGE;
-+			goto cleanup;
-+		}
-+
-+		if (buffer)
-+			buffer += size;
-+		rest -= size;
-+	}
-+	error = buffer_size - rest;
-+cleanup:
-+	f2fs_put_page(page, 1);
-+	return error;
-+}
-+
-+int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
-+					const void *value, size_t value_len)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct f2fs_inode_info *fi = F2FS_I(inode);
-+	struct f2fs_xattr_header *header = NULL;
-+	struct f2fs_xattr_entry *here, *last;
-+	struct page *page;
-+	void *base_addr;
-+	int error, found, free, name_len, newsize;
-+	char *pval;
-+
-+	if (name == NULL)
-+		return -EINVAL;
-+	name_len = strlen(name);
-+
-+	if (value == NULL)
-+		value_len = 0;
-+
-+	if (name_len > 255 || value_len > MAX_VALUE_LEN)
-+		return -ERANGE;
-+
-+	mutex_lock_op(sbi, NODE_NEW);
-+	if (!fi->i_xattr_nid) {
-+		/* Allocate new attribute block */
-+		struct dnode_of_data dn;
-+
-+		if (!alloc_nid(sbi, &fi->i_xattr_nid)) {
-+			mutex_unlock_op(sbi, NODE_NEW);
-+			return -ENOSPC;
-+		}
-+		set_new_dnode(&dn, inode, NULL, NULL, fi->i_xattr_nid);
-+		mark_inode_dirty(inode);
-+
-+		page = new_node_page(&dn, XATTR_NODE_OFFSET);
-+		if (IS_ERR(page)) {
-+			alloc_nid_failed(sbi, fi->i_xattr_nid);
-+			fi->i_xattr_nid = 0;
-+			mutex_unlock_op(sbi, NODE_NEW);
-+			return PTR_ERR(page);
-+		}
-+
-+		alloc_nid_done(sbi, fi->i_xattr_nid);
-+		base_addr = page_address(page);
-+		header = XATTR_HDR(base_addr);
-+		header->h_magic = cpu_to_le32(F2FS_XATTR_MAGIC);
-+		header->h_refcount = cpu_to_le32(1);
-+	} else {
-+		/* The inode already has an extended attribute block. */
-+		page = get_node_page(sbi, fi->i_xattr_nid);
-+		if (IS_ERR(page)) {
-+			mutex_unlock_op(sbi, NODE_NEW);
-+			return PTR_ERR(page);
-+		}
-+
-+		base_addr = page_address(page);
-+		header = XATTR_HDR(base_addr);
-+	}
-+
-+	if (le32_to_cpu(header->h_magic) != F2FS_XATTR_MAGIC) {
-+		error = -EIO;
-+		goto cleanup;
-+	}
-+
-+	/* find entry with wanted name. */
-+	found = 0;
-+	list_for_each_xattr(here, base_addr) {
-+		if (here->e_name_index != name_index)
-+			continue;
-+		if (here->e_name_len != name_len)
-+			continue;
-+		if (!memcmp(here->e_name, name, name_len)) {
-+			found = 1;
-+			break;
-+		}
-+	}
-+
-+	last = here;
-+
-+	while (!IS_XATTR_LAST_ENTRY(last))
-+		last = XATTR_NEXT_ENTRY(last);
-+
-+	newsize = XATTR_ALIGN(sizeof(struct f2fs_xattr_entry) +
-+			name_len + value_len);
-+
-+	/* 1. Check space */
-+	if (value) {
-+		/* If value is NULL, it is remove operation.
-+		 * In case of update operation, we caculate free.
-+		 */
-+		free = MIN_OFFSET - ((char *)last - (char *)header);
-+		if (found)
-+			free = free - ENTRY_SIZE(here);
-+
-+		if (free < newsize) {
-+			error = -ENOSPC;
-+			goto cleanup;
-+		}
-+	}
-+
-+	/* 2. Remove old entry */
-+	if (found) {
-+		/* If entry is found, remove old entry.
-+		 * If not found, remove operation is not needed.
-+		 */
-+		struct f2fs_xattr_entry *next = XATTR_NEXT_ENTRY(here);
-+		int oldsize = ENTRY_SIZE(here);
-+
-+		memmove(here, next, (char *)last - (char *)next);
-+		last = (struct f2fs_xattr_entry *)((char *)last - oldsize);
-+		memset(last, 0, oldsize);
-+	}
-+
-+	/* 3. Write new entry */
-+	if (value) {
-+		/* Before we come here, old entry is removed.
-+		 * We just write new entry. */
-+		memset(last, 0, newsize);
-+		last->e_name_index = name_index;
-+		last->e_name_len = name_len;
-+		memcpy(last->e_name, name, name_len);
-+		pval = last->e_name + name_len;
-+		memcpy(pval, value, value_len);
-+		last->e_value_size = cpu_to_le16(value_len);
-+	}
-+
-+	set_page_dirty(page);
-+	f2fs_put_page(page, 1);
-+
-+	if (is_inode_flag_set(fi, FI_ACL_MODE)) {
-+		inode->i_mode = fi->i_acl_mode;
-+		inode->i_ctime = CURRENT_TIME;
-+		clear_inode_flag(fi, FI_ACL_MODE);
-+	}
-+	f2fs_write_inode(inode, NULL);
-+	mutex_unlock_op(sbi, NODE_NEW);
-+
-+	return 0;
-+cleanup:
-+	f2fs_put_page(page, 1);
-+	mutex_unlock_op(sbi, NODE_NEW);
-+	return error;
-+}
-diff --git a/fs/f2fs/xattr.h b/fs/f2fs/xattr.h
-new file mode 100644
-index 0000000..29b0a08
---- /dev/null
-+++ b/fs/f2fs/xattr.h
-@@ -0,0 +1,145 @@
-+/**
-+ * fs/f2fs/xattr.h
-+ *
-+ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
-+ *             http://www.samsung.com/
-+ *
-+ * Portions of this code from linux/fs/ext2/xattr.h
-+ *
-+ * On-disk format of extended attributes for the ext2 filesystem.
-+ *
-+ * (C) 2001 Andreas Gruenbacher, <a.gruenbacher@computer.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __F2FS_XATTR_H__
-+#define __F2FS_XATTR_H__
-+
++#include <linux/fs.h>
++#include <linux/module.h>
++#include <linux/backing-dev.h>
++#include <linux/proc_fs.h>
 +#include <linux/init.h>
-+#include <linux/xattr.h>
++#include <linux/f2fs_fs.h>
++#include <linux/kthread.h>
++#include <linux/delay.h>
++#include <linux/freezer.h>
++#include <linux/blkdev.h>
 +
-+/* Magic value in attribute blocks */
-+#define F2FS_XATTR_MAGIC                0xF2F52011
++#include "f2fs.h"
++#include "node.h"
++#include "segment.h"
++#include "gc.h"
 +
-+/* Maximum number of references to one attribute block */
-+#define F2FS_XATTR_REFCOUNT_MAX         1024
++static struct kmem_cache *winode_slab;
 +
-+/* Name indexes */
-+#define F2FS_SYSTEM_ADVISE_PREFIX		"system.advise"
-+#define F2FS_XATTR_INDEX_USER			1
-+#define F2FS_XATTR_INDEX_POSIX_ACL_ACCESS	2
-+#define F2FS_XATTR_INDEX_POSIX_ACL_DEFAULT	3
-+#define F2FS_XATTR_INDEX_TRUSTED		4
-+#define F2FS_XATTR_INDEX_LUSTRE			5
-+#define F2FS_XATTR_INDEX_SECURITY		6
-+#define F2FS_XATTR_INDEX_ADVISE			7
++static int gc_thread_func(void *data)
++{
++	struct f2fs_sb_info *sbi = data;
++	wait_queue_head_t *wq = &sbi->gc_thread->gc_wait_queue_head;
++	long wait_ms;
 +
-+struct f2fs_xattr_header {
-+	__le32  h_magic;        /* magic number for identification */
-+	__le32  h_refcount;     /* reference count */
-+	__u32   h_reserved[4];  /* zero right now */
-+};
++	wait_ms = GC_THREAD_MIN_SLEEP_TIME;
 +
-+struct f2fs_xattr_entry {
-+	__u8    e_name_index;
-+	__u8    e_name_len;
-+	__le16  e_value_size;   /* size of attribute value */
-+	char    e_name[0];      /* attribute name */
-+};
++	do {
++		if (try_to_freeze())
++			continue;
++		else
++			wait_event_interruptible_timeout(*wq,
++						kthread_should_stop(),
++						msecs_to_jiffies(wait_ms));
++		if (kthread_should_stop())
++			break;
 +
-+#define XATTR_HDR(ptr)		((struct f2fs_xattr_header *)(ptr))
-+#define XATTR_ENTRY(ptr)	((struct f2fs_xattr_entry *)(ptr))
-+#define XATTR_FIRST_ENTRY(ptr)	(XATTR_ENTRY(XATTR_HDR(ptr)+1))
-+#define XATTR_ROUND		(3)
++		f2fs_balance_fs(sbi);
 +
-+#define XATTR_ALIGN(size)	((size + XATTR_ROUND) & ~XATTR_ROUND)
++		if (!test_opt(sbi, BG_GC))
++			continue;
 +
-+#define ENTRY_SIZE(entry) (XATTR_ALIGN(sizeof(struct f2fs_xattr_entry) + \
-+			entry->e_name_len + le16_to_cpu(entry->e_value_size)))
++		/*
++		 * [GC triggering condition]
++		 * 0. GC is not conducted currently.
++		 * 1. There are enough dirty segments.
++		 * 2. IO subsystem is idle by checking the # of writeback pages.
++		 * 3. IO subsystem is idle by checking the # of requests in
++		 *    bdev's request list.
++		 *
++		 * Note) We have to avoid triggering GCs too much frequently.
++		 * Because it is possible that some segments can be
++		 * invalidated soon after by user update or deletion.
++		 * So, I'd like to wait some time to collect dirty segments.
++		 */
++		if (!mutex_trylock(&sbi->gc_mutex))
++			continue;
 +
-+#define XATTR_NEXT_ENTRY(entry)	((struct f2fs_xattr_entry *)((char *)(entry) +\
-+			ENTRY_SIZE(entry)))
++		if (!is_idle(sbi)) {
++			wait_ms = increase_sleep_time(wait_ms);
++			mutex_unlock(&sbi->gc_mutex);
++			continue;
++		}
 +
-+#define IS_XATTR_LAST_ENTRY(entry) (*(__u32 *)(entry) == 0)
++		if (has_enough_invalid_blocks(sbi))
++			wait_ms = decrease_sleep_time(wait_ms);
++		else
++			wait_ms = increase_sleep_time(wait_ms);
 +
-+#define list_for_each_xattr(entry, addr) \
-+		for (entry = XATTR_FIRST_ENTRY(addr);\
-+				!IS_XATTR_LAST_ENTRY(entry);\
-+				entry = XATTR_NEXT_ENTRY(entry))
++		sbi->bg_gc++;
 +
++		if (f2fs_gc(sbi, 1) == GC_NONE)
++			wait_ms = GC_THREAD_NOGC_SLEEP_TIME;
++		else if (wait_ms == GC_THREAD_NOGC_SLEEP_TIME)
++			wait_ms = GC_THREAD_MAX_SLEEP_TIME;
 +
-+#define MIN_OFFSET	XATTR_ALIGN(PAGE_SIZE - \
-+			sizeof(struct node_footer) - \
-+			sizeof(__u32))
++	} while (!kthread_should_stop());
++	return 0;
++}
 +
-+#define MAX_VALUE_LEN	(MIN_OFFSET - sizeof(struct f2fs_xattr_header) - \
-+			sizeof(struct f2fs_xattr_entry))
++int start_gc_thread(struct f2fs_sb_info *sbi)
++{
++	struct f2fs_gc_kthread *gc_th = NULL;
++
++	gc_th = kmalloc(sizeof(struct f2fs_gc_kthread), GFP_KERNEL);
++	if (!gc_th)
++		return -ENOMEM;
++
++	sbi->gc_thread = gc_th;
++	init_waitqueue_head(&sbi->gc_thread->gc_wait_queue_head);
++	sbi->gc_thread->f2fs_gc_task = kthread_run(gc_thread_func, sbi,
++				GC_THREAD_NAME);
++	if (IS_ERR(gc_th->f2fs_gc_task)) {
++		kfree(gc_th);
++		return -ENOMEM;
++	}
++	return 0;
++}
++
++void stop_gc_thread(struct f2fs_sb_info *sbi)
++{
++	struct f2fs_gc_kthread *gc_th = sbi->gc_thread;
++	if (!gc_th)
++		return;
++	kthread_stop(gc_th->f2fs_gc_task);
++	kfree(gc_th);
++	sbi->gc_thread = NULL;
++}
++
++static int select_gc_type(int gc_type)
++{
++	return (gc_type == BG_GC) ? GC_CB : GC_GREEDY;
++}
++
++static void select_policy(struct f2fs_sb_info *sbi, int gc_type,
++			int type, struct victim_sel_policy *p)
++{
++	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
++
++	if (p->alloc_mode) {
++		p->gc_mode = GC_GREEDY;
++		p->dirty_segmap = dirty_i->dirty_segmap[type];
++		p->ofs_unit = 1;
++	} else {
++		p->gc_mode = select_gc_type(gc_type);
++		p->dirty_segmap = dirty_i->dirty_segmap[DIRTY];
++		p->ofs_unit = sbi->segs_per_sec;
++	}
++	p->offset = sbi->last_victim[p->gc_mode];
++}
++
++static unsigned int get_max_cost(struct f2fs_sb_info *sbi,
++				struct victim_sel_policy *p)
++{
++	if (p->gc_mode == GC_GREEDY)
++		return (1 << sbi->log_blocks_per_seg) * p->ofs_unit;
++	else if (p->gc_mode == GC_CB)
++		return UINT_MAX;
++	else /* No other gc_mode */
++		return 0;
++}
++
++static unsigned int check_bg_victims(struct f2fs_sb_info *sbi)
++{
++	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
++	unsigned int segno;
++
++	/*
++	 * If the gc_type is FG_GC, we can select victim segments
++	 * selected by background GC before.
++	 * Those segments guarantee they have small valid blocks.
++	 */
++	segno = find_next_bit(dirty_i->victim_segmap[BG_GC],
++						TOTAL_SEGS(sbi), 0);
++	if (segno < TOTAL_SEGS(sbi)) {
++		clear_bit(segno, dirty_i->victim_segmap[BG_GC]);
++		return segno;
++	}
++	return NULL_SEGNO;
++}
++
++static unsigned int get_cb_cost(struct f2fs_sb_info *sbi, unsigned int segno)
++{
++	struct sit_info *sit_i = SIT_I(sbi);
++	unsigned int secno = GET_SECNO(sbi, segno);
++	unsigned int start = secno * sbi->segs_per_sec;
++	unsigned long long mtime = 0;
++	unsigned int vblocks;
++	unsigned char age = 0;
++	unsigned char u;
++	unsigned int i;
++
++	for (i = 0; i < sbi->segs_per_sec; i++)
++		mtime += get_seg_entry(sbi, start + i)->mtime;
++	vblocks = get_valid_blocks(sbi, segno, sbi->segs_per_sec);
++
++	mtime = div_u64(mtime, sbi->segs_per_sec);
++	vblocks = div_u64(vblocks, sbi->segs_per_sec);
++
++	u = (vblocks * 100) >> sbi->log_blocks_per_seg;
++
++	/* Handle if the system time is changed by user */
++	if (mtime < sit_i->min_mtime)
++		sit_i->min_mtime = mtime;
++	if (mtime > sit_i->max_mtime)
++		sit_i->max_mtime = mtime;
++	if (sit_i->max_mtime != sit_i->min_mtime)
++		age = 100 - div64_u64(100 * (mtime - sit_i->min_mtime),
++				sit_i->max_mtime - sit_i->min_mtime);
++
++	return UINT_MAX - ((100 * (100 - u) * age) / (100 + u));
++}
++
++static unsigned int get_gc_cost(struct f2fs_sb_info *sbi, unsigned int segno,
++					struct victim_sel_policy *p)
++{
++	if (p->alloc_mode == SSR)
++		return get_seg_entry(sbi, segno)->ckpt_valid_blocks;
++
++	/* alloc_mode == LFS */
++	if (p->gc_mode == GC_GREEDY)
++		return get_valid_blocks(sbi, segno, sbi->segs_per_sec);
++	else
++		return get_cb_cost(sbi, segno);
++}
 +
 +/**
-+ * On-disk structure of f2fs_xattr
-+ * We use only 1 block for xattr.
++ * This function is called from two pathes.
++ * One is garbage collection and the other is SSR segment selection.
++ * When it is called during GC, it just gets a victim segment
++ * and it does not remove it from dirty seglist.
++ * When it is called from SSR segment selection, it finds a segment
++ * which has minimum valid blocks and removes it from dirty seglist.
++ */
++static int get_victim_by_default(struct f2fs_sb_info *sbi,
++		unsigned int *result, int gc_type, int type, char alloc_mode)
++{
++	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
++	struct victim_sel_policy p;
++	unsigned int segno;
++	int nsearched = 0;
++
++	p.alloc_mode = alloc_mode;
++	select_policy(sbi, gc_type, type, &p);
++
++	p.min_segno = NULL_SEGNO;
++	p.min_cost = get_max_cost(sbi, &p);
++
++	mutex_lock(&dirty_i->seglist_lock);
++
++	if (p.alloc_mode == LFS && gc_type == FG_GC) {
++		p.min_segno = check_bg_victims(sbi);
++		if (p.min_segno != NULL_SEGNO)
++			goto got_it;
++	}
++
++	while (1) {
++		unsigned long cost;
++
++		segno = find_next_bit(p.dirty_segmap,
++						TOTAL_SEGS(sbi), p.offset);
++		if (segno >= TOTAL_SEGS(sbi)) {
++			if (sbi->last_victim[p.gc_mode]) {
++				sbi->last_victim[p.gc_mode] = 0;
++				p.offset = 0;
++				continue;
++			}
++			break;
++		}
++		p.offset = ((segno / p.ofs_unit) * p.ofs_unit) + p.ofs_unit;
++
++		if (test_bit(segno, dirty_i->victim_segmap[FG_GC]))
++			continue;
++		if (gc_type == BG_GC &&
++				test_bit(segno, dirty_i->victim_segmap[BG_GC]))
++			continue;
++		if (IS_CURSEC(sbi, GET_SECNO(sbi, segno)))
++			continue;
++
++		cost = get_gc_cost(sbi, segno, &p);
++
++		if (p.min_cost > cost) {
++			p.min_segno = segno;
++			p.min_cost = cost;
++		}
++
++		if (cost == get_max_cost(sbi, &p))
++			continue;
++
++		if (nsearched++ >= MAX_VICTIM_SEARCH) {
++			sbi->last_victim[p.gc_mode] = segno;
++			break;
++		}
++	}
++got_it:
++	if (p.min_segno != NULL_SEGNO) {
++		*result = (p.min_segno / p.ofs_unit) * p.ofs_unit;
++		if (p.alloc_mode == LFS) {
++			int i;
++			for (i = 0; i < p.ofs_unit; i++)
++				set_bit(*result + i,
++					dirty_i->victim_segmap[gc_type]);
++		}
++	}
++	mutex_unlock(&dirty_i->seglist_lock);
++
++	return (p.min_segno == NULL_SEGNO) ? 0 : 1;
++}
++
++static const struct victim_selection default_v_ops = {
++	.get_victim = get_victim_by_default,
++};
++
++static struct inode *find_gc_inode(nid_t ino, struct list_head *ilist)
++{
++	struct list_head *this;
++	struct inode_entry *ie;
++
++	list_for_each(this, ilist) {
++		ie = list_entry(this, struct inode_entry, list);
++		if (ie->inode->i_ino == ino)
++			return ie->inode;
++	}
++	return NULL;
++}
++
++static void add_gc_inode(struct inode *inode, struct list_head *ilist)
++{
++	struct list_head *this;
++	struct inode_entry *new_ie, *ie;
++
++	list_for_each(this, ilist) {
++		ie = list_entry(this, struct inode_entry, list);
++		if (ie->inode == inode) {
++			iput(inode);
++			return;
++		}
++	}
++repeat:
++	new_ie = kmem_cache_alloc(winode_slab, GFP_NOFS);
++	if (!new_ie) {
++		cond_resched();
++		goto repeat;
++	}
++	new_ie->inode = inode;
++	list_add_tail(&new_ie->list, ilist);
++}
++
++static void put_gc_inode(struct list_head *ilist)
++{
++	struct inode_entry *ie, *next_ie;
++	list_for_each_entry_safe(ie, next_ie, ilist, list) {
++		iput(ie->inode);
++		list_del(&ie->list);
++		kmem_cache_free(winode_slab, ie);
++	}
++}
++
++static int check_valid_map(struct f2fs_sb_info *sbi,
++				unsigned int segno, int offset)
++{
++	struct sit_info *sit_i = SIT_I(sbi);
++	struct seg_entry *sentry;
++	int ret;
++
++	mutex_lock(&sit_i->sentry_lock);
++	sentry = get_seg_entry(sbi, segno);
++	ret = f2fs_test_bit(offset, sentry->cur_valid_map);
++	mutex_unlock(&sit_i->sentry_lock);
++	return ret ? GC_OK : GC_NEXT;
++}
++
++/**
++ * This function compares node address got in summary with that in NAT.
++ * On validity, copy that node with cold status, otherwise (invalid node)
++ * ignore that.
++ */
++static int gc_node_segment(struct f2fs_sb_info *sbi,
++		struct f2fs_summary *sum, unsigned int segno, int gc_type)
++{
++	bool initial = true;
++	struct f2fs_summary *entry;
++	int off;
++
++next_step:
++	entry = sum;
++	for (off = 0; off < sbi->blocks_per_seg; off++, entry++) {
++		nid_t nid = le32_to_cpu(entry->nid);
++		struct page *node_page;
++		int err;
++
++		/*
++		 * It makes sure that free segments are able to write
++		 * all the dirty node pages before CP after this CP.
++		 * So let's check the space of dirty node pages.
++		 */
++		if (should_do_checkpoint(sbi)) {
++			mutex_lock(&sbi->cp_mutex);
++			block_operations(sbi);
++			return GC_BLOCKED;
++		}
++
++		err = check_valid_map(sbi, segno, off);
++		if (err == GC_ERROR)
++			return err;
++		else if (err == GC_NEXT)
++			continue;
++
++		if (initial) {
++			ra_node_page(sbi, nid);
++			continue;
++		}
++		node_page = get_node_page(sbi, nid);
++		if (IS_ERR(node_page))
++			continue;
++
++		/* set page dirty and write it */
++		if (!PageWriteback(node_page))
++			set_page_dirty(node_page);
++		f2fs_put_page(node_page, 1);
++		stat_inc_node_blk_count(sbi, 1);
++	}
++	if (initial) {
++		initial = false;
++		goto next_step;
++	}
++
++	if (gc_type == FG_GC) {
++		struct writeback_control wbc = {
++			.sync_mode = WB_SYNC_ALL,
++			.nr_to_write = LONG_MAX,
++			.for_reclaim = 0,
++		};
++		sync_node_pages(sbi, 0, &wbc);
++	}
++	return GC_DONE;
++}
++
++/**
++ * Calculate start block index that this node page contains
++ */
++block_t start_bidx_of_node(unsigned int node_ofs)
++{
++	block_t start_bidx;
++	unsigned int bidx, indirect_blks;
++	int dec;
++
++	indirect_blks = 2 * NIDS_PER_BLOCK + 4;
++
++	start_bidx = 1;
++	if (node_ofs == 0) {
++		start_bidx = 0;
++	} else if (node_ofs <= 2) {
++		bidx = node_ofs - 1;
++	} else if (node_ofs <= indirect_blks) {
++		dec = (node_ofs - 4) / (NIDS_PER_BLOCK + 1);
++		bidx = node_ofs - 2 - dec;
++	} else {
++		dec = (node_ofs - indirect_blks - 3) / (NIDS_PER_BLOCK + 1);
++		bidx = node_ofs - 5 - dec;
++	}
++
++	if (start_bidx)
++		start_bidx = bidx * ADDRS_PER_BLOCK + ADDRS_PER_INODE;
++	return start_bidx;
++}
++
++static int check_dnode(struct f2fs_sb_info *sbi, struct f2fs_summary *sum,
++		struct node_info *dni, block_t blkaddr, unsigned int *nofs)
++{
++	struct page *node_page;
++	nid_t nid;
++	unsigned int ofs_in_node;
++	block_t source_blkaddr;
++
++	nid = le32_to_cpu(sum->nid);
++	ofs_in_node = le16_to_cpu(sum->ofs_in_node);
++
++	node_page = get_node_page(sbi, nid);
++	if (IS_ERR(node_page))
++		return GC_NEXT;
++
++	get_node_info(sbi, nid, dni);
++
++	if (sum->version != dni->version) {
++		f2fs_put_page(node_page, 1);
++		return GC_NEXT;
++	}
++
++	*nofs = ofs_of_node(node_page);
++	source_blkaddr = datablock_addr(node_page, ofs_in_node);
++	f2fs_put_page(node_page, 1);
++
++	if (source_blkaddr != blkaddr)
++		return GC_NEXT;
++	return GC_OK;
++}
++
++static void move_data_page(struct inode *inode, struct page *page, int gc_type)
++{
++	if (page->mapping != inode->i_mapping)
++		goto out;
++
++	if (inode != page->mapping->host)
++		goto out;
++
++	if (PageWriteback(page))
++		goto out;
++
++	if (gc_type == BG_GC) {
++		set_page_dirty(page);
++		set_cold_data(page);
++	} else {
++		struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++		mutex_lock_op(sbi, DATA_WRITE);
++		if (clear_page_dirty_for_io(page) &&
++			S_ISDIR(inode->i_mode)) {
++			dec_page_count(sbi, F2FS_DIRTY_DENTS);
++			inode_dec_dirty_dents(inode);
++		}
++		set_cold_data(page);
++		do_write_data_page(page);
++		mutex_unlock_op(sbi, DATA_WRITE);
++		clear_cold_data(page);
++	}
++out:
++	f2fs_put_page(page, 1);
++}
++
++/**
++ * This function tries to get parent node of victim data block, and identifies
++ * data block validity. If the block is valid, copy that with cold status and
++ * modify parent node.
++ * If the parent node is not valid or the data block address is different,
++ * the victim data block is ignored.
++ */
++static int gc_data_segment(struct f2fs_sb_info *sbi, struct f2fs_summary *sum,
++		struct list_head *ilist, unsigned int segno, int gc_type)
++{
++	struct super_block *sb = sbi->sb;
++	struct f2fs_summary *entry;
++	block_t start_addr;
++	int err, off;
++	int phase = 0;
++
++	start_addr = START_BLOCK(sbi, segno);
++
++next_step:
++	entry = sum;
++	for (off = 0; off < sbi->blocks_per_seg; off++, entry++) {
++		struct page *data_page;
++		struct inode *inode;
++		struct node_info dni; /* dnode info for the data */
++		unsigned int ofs_in_node, nofs;
++		block_t start_bidx;
++
++		/*
++		 * It makes sure that free segments are able to write
++		 * all the dirty node pages before CP after this CP.
++		 * So let's check the space of dirty node pages.
++		 */
++		if (should_do_checkpoint(sbi)) {
++			mutex_lock(&sbi->cp_mutex);
++			block_operations(sbi);
++			err = GC_BLOCKED;
++			goto stop;
++		}
++
++		err = check_valid_map(sbi, segno, off);
++		if (err == GC_ERROR)
++			goto stop;
++		else if (err == GC_NEXT)
++			continue;
++
++		if (phase == 0) {
++			ra_node_page(sbi, le32_to_cpu(entry->nid));
++			continue;
++		}
++
++		/* Get an inode by ino with checking validity */
++		err = check_dnode(sbi, entry, &dni, start_addr + off, &nofs);
++		if (err == GC_ERROR)
++			goto stop;
++		else if (err == GC_NEXT)
++			continue;
++
++		if (phase == 1) {
++			ra_node_page(sbi, dni.ino);
++			continue;
++		}
++
++		start_bidx = start_bidx_of_node(nofs);
++		ofs_in_node = le16_to_cpu(entry->ofs_in_node);
++
++		if (phase == 2) {
++			inode = f2fs_iget_nowait(sb, dni.ino);
++			if (IS_ERR(inode))
++				continue;
++
++			data_page = find_data_page(inode,
++					start_bidx + ofs_in_node);
++			if (IS_ERR(data_page))
++				goto next_iput;
++
++			f2fs_put_page(data_page, 0);
++			add_gc_inode(inode, ilist);
++		} else {
++			inode = find_gc_inode(dni.ino, ilist);
++			if (inode) {
++				data_page = get_lock_data_page(inode,
++						start_bidx + ofs_in_node);
++				if (IS_ERR(data_page))
++					continue;
++				move_data_page(inode, data_page, gc_type);
++				stat_inc_data_blk_count(sbi, 1);
++			}
++		}
++		continue;
++next_iput:
++		iput(inode);
++	}
++	if (++phase < 4)
++		goto next_step;
++	err = GC_DONE;
++stop:
++	if (gc_type == FG_GC)
++		f2fs_submit_bio(sbi, DATA, true);
++	return err;
++}
++
++static int __get_victim(struct f2fs_sb_info *sbi, unsigned int *victim,
++						int gc_type, int type)
++{
++	struct sit_info *sit_i = SIT_I(sbi);
++	int ret;
++	mutex_lock(&sit_i->sentry_lock);
++	ret = DIRTY_I(sbi)->v_ops->get_victim(sbi, victim, gc_type, type, LFS);
++	mutex_unlock(&sit_i->sentry_lock);
++	return ret;
++}
++
++static int do_garbage_collect(struct f2fs_sb_info *sbi, unsigned int segno,
++				struct list_head *ilist, int gc_type)
++{
++	struct page *sum_page;
++	struct f2fs_summary_block *sum;
++	int ret = GC_DONE;
++
++	/* read segment summary of victim */
++	sum_page = get_sum_page(sbi, segno);
++	if (IS_ERR(sum_page))
++		return GC_ERROR;
++
++	/*
++	 * CP needs to lock sum_page. In this time, we don't need
++	 * to lock this page, because this summary page is not gone anywhere.
++	 * Also, this page is not gonna be updated before GC is done.
++	 */
++	unlock_page(sum_page);
++	sum = page_address(sum_page);
++
++	switch (GET_SUM_TYPE((&sum->footer))) {
++	case SUM_TYPE_NODE:
++		ret = gc_node_segment(sbi, sum->entries, segno, gc_type);
++		break;
++	case SUM_TYPE_DATA:
++		ret = gc_data_segment(sbi, sum->entries, ilist, segno, gc_type);
++		break;
++	}
++	stat_inc_seg_count(sbi, GET_SUM_TYPE((&sum->footer)));
++	stat_inc_call_count(sbi->stat_info);
++
++	f2fs_put_page(sum_page, 0);
++	return ret;
++}
++
++int f2fs_gc(struct f2fs_sb_info *sbi, int nGC)
++{
++	unsigned int segno;
++	int old_free_secs, cur_free_secs;
++	int gc_status, nfree;
++	struct list_head ilist;
++	int gc_type = BG_GC;
++
++	INIT_LIST_HEAD(&ilist);
++gc_more:
++	nfree = 0;
++	gc_status = GC_NONE;
++
++	if (has_not_enough_free_secs(sbi))
++		old_free_secs = reserved_sections(sbi);
++	else
++		old_free_secs = free_sections(sbi);
++
++	while (sbi->sb->s_flags & MS_ACTIVE) {
++		int i;
++		if (has_not_enough_free_secs(sbi))
++			gc_type = FG_GC;
++
++		cur_free_secs = free_sections(sbi) + nfree;
++
++		/* We got free space successfully. */
++		if (nGC < cur_free_secs - old_free_secs)
++			break;
++
++		if (!__get_victim(sbi, &segno, gc_type, NO_CHECK_TYPE))
++			break;
++
++		for (i = 0; i < sbi->segs_per_sec; i++) {
++			/*
++			 * do_garbage_collect will give us three gc_status:
++			 * GC_ERROR, GC_DONE, and GC_BLOCKED.
++			 * If GC is finished uncleanly, we have to return
++			 * the victim to dirty segment list.
++			 */
++			gc_status = do_garbage_collect(sbi, segno + i,
++					&ilist, gc_type);
++			if (gc_status != GC_DONE)
++				goto stop;
++			nfree++;
++		}
++	}
++stop:
++	if (has_not_enough_free_secs(sbi) || gc_status == GC_BLOCKED) {
++		write_checkpoint(sbi, (gc_status == GC_BLOCKED), false);
++		if (nfree)
++			goto gc_more;
++	}
++	mutex_unlock(&sbi->gc_mutex);
++
++	put_gc_inode(&ilist);
++	BUG_ON(!list_empty(&ilist));
++	return gc_status;
++}
++
++void build_gc_manager(struct f2fs_sb_info *sbi)
++{
++	DIRTY_I(sbi)->v_ops = &default_v_ops;
++}
++
++int create_gc_caches(void)
++{
++	winode_slab = f2fs_kmem_cache_create("f2fs_gc_inodes",
++			sizeof(struct inode_entry), NULL);
++	if (!winode_slab)
++		return -ENOMEM;
++	return 0;
++}
++
++void destroy_gc_caches(void)
++{
++	kmem_cache_destroy(winode_slab);
++}
+diff --git a/fs/f2fs/gc.h b/fs/f2fs/gc.h
+new file mode 100644
+index 0000000..cf42a55
+--- /dev/null
++++ b/fs/f2fs/gc.h
+@@ -0,0 +1,117 @@
++/**
++ * fs/f2fs/gc.h
 + *
-+ * +--------------------+
-+ * | f2fs_xattr_header  |
-+ * |                    |
-+ * +--------------------+
-+ * | f2fs_xattr_entry   |
-+ * | .e_name_index = 1  |
-+ * | .e_name_len = 3    |
-+ * | .e_value_size = 14 |
-+ * | .e_name = "foo"    |
-+ * | "value_of_xattr"   |<- value_offs = e_name + e_name_len
-+ * +--------------------+
-+ * | f2fs_xattr_entry   |
-+ * | .e_name_index = 4  |
-+ * | .e_name = "bar"    |
-+ * +--------------------+
-+ * |                    |
-+ * |        Free        |
-+ * |                    |
-+ * +--------------------+<- MIN_OFFSET
-+ * |   node_footer      |
-+ * | (nid, ino, offset) |
-+ * +--------------------+
++ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
++ *             http://www.samsung.com/
 + *
-+ **/
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#define GC_THREAD_NAME	"f2fs_gc_task"
++#define GC_THREAD_MIN_WB_PAGES		1	/*
++						 * a threshold to determine
++						 * whether IO subsystem is idle
++						 * or not
++						 */
++#define GC_THREAD_MIN_SLEEP_TIME	10000 /* milliseconds */
++#define GC_THREAD_MAX_SLEEP_TIME	30000
++#define GC_THREAD_NOGC_SLEEP_TIME	10000
++#define LIMIT_INVALID_BLOCK	40 /* percentage over total user space */
++#define LIMIT_FREE_BLOCK	40 /* percentage over invalid + free space */
 +
-+#ifdef CONFIG_F2FS_FS_XATTR
-+extern const struct xattr_handler f2fs_xattr_user_handler;
-+extern const struct xattr_handler f2fs_xattr_trusted_handler;
-+extern const struct xattr_handler f2fs_xattr_acl_access_handler;
-+extern const struct xattr_handler f2fs_xattr_acl_default_handler;
-+extern const struct xattr_handler f2fs_xattr_advise_handler;
++/* Search max. number of dirty segments to select a victim segment */
++#define MAX_VICTIM_SEARCH	20
 +
-+extern const struct xattr_handler *f2fs_xattr_handlers[];
++enum {
++	GC_NONE = 0,
++	GC_ERROR,
++	GC_OK,
++	GC_NEXT,
++	GC_BLOCKED,
++	GC_DONE,
++};
 +
-+extern int f2fs_setxattr(struct inode *inode, int name_index, const char *name,
-+		const void *value, size_t value_len);
-+extern int f2fs_getxattr(struct inode *inode, int name_index, const char *name,
-+		void *buffer, size_t buffer_size);
-+extern ssize_t f2fs_listxattr(struct dentry *dentry, char *buffer,
-+		size_t buffer_size);
++struct f2fs_gc_kthread {
++	struct task_struct *f2fs_gc_task;
++	wait_queue_head_t gc_wait_queue_head;
++};
 +
-+#else
++struct inode_entry {
++	struct list_head list;
++	struct inode *inode;
++};
 +
-+#define f2fs_xattr_handlers	NULL
-+static inline int f2fs_setxattr(struct inode *inode, int name_index,
-+	const char *name, const void *value, size_t value_len)
++/**
++ * inline functions
++ */
++static inline block_t free_user_blocks(struct f2fs_sb_info *sbi)
 +{
-+	return -EOPNOTSUPP;
++	if (free_segments(sbi) < overprovision_segments(sbi))
++		return 0;
++	else
++		return (free_segments(sbi) - overprovision_segments(sbi))
++			<< sbi->log_blocks_per_seg;
 +}
-+static inline int f2fs_getxattr(struct inode *inode, int name_index,
-+		const char *name, void *buffer, size_t buffer_size)
-+{
-+	return -EOPNOTSUPP;
-+}
-+static inline ssize_t f2fs_listxattr(struct dentry *dentry, char *buffer,
-+		size_t buffer_size)
-+{
-+	return -EOPNOTSUPP;
-+}
-+#endif
 +
-+#endif /* __F2FS_XATTR_H__ */
++static inline block_t limit_invalid_user_blocks(struct f2fs_sb_info *sbi)
++{
++	return (long)(sbi->user_block_count * LIMIT_INVALID_BLOCK) / 100;
++}
++
++static inline block_t limit_free_user_blocks(struct f2fs_sb_info *sbi)
++{
++	block_t reclaimable_user_blocks = sbi->user_block_count -
++		written_block_count(sbi);
++	return (long)(reclaimable_user_blocks * LIMIT_FREE_BLOCK) / 100;
++}
++
++static inline long increase_sleep_time(long wait)
++{
++	wait += GC_THREAD_MIN_SLEEP_TIME;
++	if (wait > GC_THREAD_MAX_SLEEP_TIME)
++		wait = GC_THREAD_MAX_SLEEP_TIME;
++	return wait;
++}
++
++static inline long decrease_sleep_time(long wait)
++{
++	wait -= GC_THREAD_MIN_SLEEP_TIME;
++	if (wait <= GC_THREAD_MIN_SLEEP_TIME)
++		wait = GC_THREAD_MIN_SLEEP_TIME;
++	return wait;
++}
++
++static inline bool has_enough_invalid_blocks(struct f2fs_sb_info *sbi)
++{
++	block_t invalid_user_blocks = sbi->user_block_count -
++					written_block_count(sbi);
++	/*
++	 * Background GC is triggered with the following condition.
++	 * 1. There are a number of invalid blocks.
++	 * 2. There is not enough free space.
++	 */
++	if (invalid_user_blocks > limit_invalid_user_blocks(sbi) &&
++			free_user_blocks(sbi) < limit_free_user_blocks(sbi))
++		return true;
++	return false;
++}
++
++static inline int is_idle(struct f2fs_sb_info *sbi)
++{
++	struct block_device *bdev = sbi->sb->s_bdev;
++	struct request_queue *q = bdev_get_queue(bdev);
++	struct request_list *rl = &q->root_rl;
++	return !(rl->count[BLK_RW_SYNC]) && !(rl->count[BLK_RW_ASYNC]);
++}
++
++static inline bool should_do_checkpoint(struct f2fs_sb_info *sbi)
++{
++	unsigned int pages_per_sec = sbi->segs_per_sec *
++					(1 << sbi->log_blocks_per_seg);
++	int node_secs = ((get_pages(sbi, F2FS_DIRTY_NODES) + pages_per_sec - 1)
++			>> sbi->log_blocks_per_seg) / sbi->segs_per_sec;
++	int dent_secs = ((get_pages(sbi, F2FS_DIRTY_DENTS) + pages_per_sec - 1)
++			>> sbi->log_blocks_per_seg) / sbi->segs_per_sec;
++	return free_sections(sbi) <= (node_secs + 2 * dent_secs + 2);
++}
 -- 
 1.7.9.5
 
