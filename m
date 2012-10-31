@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757083Ab2JaRLa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:11:30 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:35769 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753539Ab2JaRL0 (ORCPT
+	id S1757807Ab2JaRLp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:11:45 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:50425 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756139Ab2JaRLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:11:26 -0400
-Message-ID: <50915A91.1040001@linux.vnet.ibm.com>
-Date: Wed, 31 Oct 2012 22:36:25 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	Wed, 31 Oct 2012 13:11:43 -0400
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH V2 RFC 2/3] kvm: Handle yield_to failure return code for
- potential undercommit case
-References: <20121029140621.15448.92083.sendpatchset@codeblue> <20121029140702.15448.56932.sendpatchset@codeblue> <50911BC3.6080305@redhat.com> <50911C7D.5080307@linux.vnet.ibm.com> <50912463.3040201@linux.vnet.ibm.com> <50912A72.6050307@redhat.com>
-In-Reply-To: <50912A72.6050307@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12103117-5816-0000-0000-000005253B34
+In-Reply-To: <CAAmzW4OboOMD+yrAim4-H_LBC439iYat=gwfxcn5M1gvcRyz=w@mail.gmail.com>
+References: <1351451576-2611-1-git-send-email-js1304@gmail.com>
+	<20121029021219.GK15767@bbox>
+	<CAAmzW4OboOMD+yrAim4-H_LBC439iYat=gwfxcn5M1gvcRyz=w@mail.gmail.com>
+Date: Thu, 1 Nov 2012 02:11:42 +0900
+Message-ID: <CAAmzW4N+Pe_+MdLCjfVyw5Lih=vPeJj-+hLQuikp33OV_0SoiA@mail.gmail.com>
+Subject: Re: [PATCH 0/5] minor clean-up and optimize highmem related code
+From: JoonSoo Kim <js1304@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 07:11 PM, Avi Kivity wrote:
-> On 10/31/2012 03:15 PM, Raghavendra K T wrote:
->> On 10/31/2012 06:11 PM, Raghavendra K T wrote:
->>> On 10/31/2012 06:08 PM, Avi Kivity wrote:
->>>> On 10/29/2012 04:07 PM, Raghavendra K T wrote:
->>>>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>>>>
->>>>> Also we do not update last boosted vcpu in failure cases.
->>>>>
->>>>>    #endif
->>>>> +
->>>>>    void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->>>>>    {
->>>>>        struct kvm *kvm = me->kvm;
->>>>> @@ -1727,11 +1727,12 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->>>>>                    continue;
->>>>>                if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
->>>>>                    continue;
->>>>> -            if (kvm_vcpu_yield_to(vcpu)) {
->>>>> +
->>>>> +            yielded = kvm_vcpu_yield_to(vcpu);
->>>>> +            if (yielded > 0)
->>>>>                    kvm->last_boosted_vcpu = i;
->>>>> -                yielded = 1;
->>>>> +            if (yielded)
->>>>>                    break;
->>>>> -            }
->>>>>            }
->>>>
->>>> If yielded == -ESRCH, should we not try to yield to another vcpu?
->>>>
+Hello, Andrew.
+
+2012/10/29 JoonSoo Kim <js1304@gmail.com>:
+> Hi, Minchan.
+>
+> 2012/10/29 Minchan Kim <minchan@kernel.org>:
+>> Hi Joonsoo,
+>>
+>> On Mon, Oct 29, 2012 at 04:12:51AM +0900, Joonsoo Kim wrote:
+>>> This patchset clean-up and optimize highmem related code.
 >>>
->>>    Yes. plan is to abort the iteration. since it means we are mostly
->>> undercommitted.
+>>> [1] is just clean-up and doesn't introduce any functional change.
+>>> [2-3] are for clean-up and optimization.
+>>> These eliminate an useless lock opearation and list management.
+>>> [4-5] is for optimization related to flush_all_zero_pkmaps().
+>>>
+>>> Joonsoo Kim (5):
+>>>   mm, highmem: use PKMAP_NR() to calculate an index of pkmap
+>>>   mm, highmem: remove useless pool_lock
+>>>   mm, highmem: remove page_address_pool list
+>>>   mm, highmem: makes flush_all_zero_pkmaps() return index of last
+>>>     flushed entry
+>>>   mm, highmem: get virtual address of the page using PKMAP_ADDR()
 >>
->> Sorry if it was ambiguous. I wanted to say we do not want to continue
->> yield to another vcpu..
->>
+>> This patchset looks awesome to me.
+>> If you have a plan to respin, please CCed Peter.
 >
->
-> Why not?  We found that this particular vcpu is running and therefore
-> likely not a lock holder.  That says nothing about other vcpus.  The
-> next in line might be runnable-but-not-running on another runqueue.
+> Thanks for review.
+> I will wait more review and respin, the day after tomorrow.
+> Version 2 will include fix about your comment.
 
-Agree that next in the line might be runnable-not-running.  But here we
-are optimistic that, that is not the case and we save time by
-returning back instead of iterating, thinking we are mostly in
-undercommitted case and each vcpu has dedicated cpu.
+Could you pick up second version of this patchset?
 
-Probably an alternative we have here is to look for say 2-3 successive
-failures before breaking out?
-
+[3] is changed to leave one blank line.
+[4] is changed in order to further optimize according to Minchan's comment.
+It return first index of flushed entry, instead of last index.
+Others doesn't changed.
