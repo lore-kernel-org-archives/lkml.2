@@ -1,96 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422665Ab2JaK3W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:29:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39428 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935381Ab2JaK3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:29:15 -0400
-Date: Wed, 31 Oct 2012 12:31:31 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv2 net-next 5/8] vhost: track zero copy failures using DMA
- length
-Message-ID: <f2d45f8c115b02bbe5191ca63319520a509e06d6.1351679008.git.mst@redhat.com>
-References: <cover.1351679008.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1351679008.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
-To: unlisted-recipients:; (no To-header on input)
+	id S1422707Ab2JaK3e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:29:34 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63682 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422641Ab2JaK3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 06:29:20 -0400
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH] drivers/net: use tasklet_kill in device remove/close process
+Date: Wed, 31 Oct 2012 18:29:57 +0800
+Message-Id: <1351679397-26994-1-git-send-email-xtfeng@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will be used to disable zerocopy when error rate
-is high.
+Some driver uses tasklet_disable in device remove/close process,
+tasklet_disable will inc tasklet->count and return. If the tasklet
+is not handled yet because some softirq pressure, the tasklet will
+placed on the tasklet_vec, never have a chance to excute. This might
+lead to ksoftirqd heavy loaded, wakeup with pending_softirq, but
+tasklet is disabled. tasklet_kill should be used in this case.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org 
 ---
- drivers/vhost/vhost.c | 7 ++++---
- drivers/vhost/vhost.h | 4 ++++
- 2 files changed, 8 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/jme.c                        |    8 ++++----
+ drivers/net/ethernet/marvell/skge.c               |    2 +-
+ drivers/net/ethernet/micrel/ksz884x.c             |    4 ++--
+ drivers/net/ethernet/xilinx/xilinx_axienet_main.c |    2 +-
+ drivers/net/wireless/b43legacy/pio.c              |    2 +-
+ 5 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 906fd9f..5affce3 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -425,7 +425,7 @@ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
- 	int j = 0;
+diff --git a/drivers/net/ethernet/jme.c b/drivers/net/ethernet/jme.c
+index 8ddf9ca..76a91f6 100644
+--- a/drivers/net/ethernet/jme.c
++++ b/drivers/net/ethernet/jme.c
+@@ -1948,10 +1948,10 @@ jme_close(struct net_device *netdev)
  
- 	for (i = vq->done_idx; i != vq->upend_idx; i = (i + 1) % UIO_MAXIOV) {
--		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN)) {
-+		if (VHOST_DMA_IS_DONE(vq->heads[i].len)) {
- 			vq->heads[i].len = VHOST_DMA_CLEAR_LEN;
- 			vhost_add_used_and_signal(vq->dev, vq,
- 						  vq->heads[i].id, 0);
-@@ -1600,13 +1600,14 @@ void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *ubufs)
- 	kfree(ubufs);
- }
+ 	JME_NAPI_DISABLE(jme);
  
--void vhost_zerocopy_callback(struct ubuf_info *ubuf, int zerocopy_status)
-+void vhost_zerocopy_callback(struct ubuf_info *ubuf, int status)
+-	tasklet_disable(&jme->linkch_task);
+-	tasklet_disable(&jme->txclean_task);
+-	tasklet_disable(&jme->rxclean_task);
+-	tasklet_disable(&jme->rxempty_task);
++	tasklet_kill(&jme->linkch_task);
++	tasklet_kill(&jme->txclean_task);
++	tasklet_kill(&jme->rxclean_task);
++	tasklet_kill(&jme->rxempty_task);
+ 
+ 	jme_disable_rx_engine(jme);
+ 	jme_disable_tx_engine(jme);
+diff --git a/drivers/net/ethernet/marvell/skge.c b/drivers/net/ethernet/marvell/skge.c
+index 9b9c2ac..d19a143 100644
+--- a/drivers/net/ethernet/marvell/skge.c
++++ b/drivers/net/ethernet/marvell/skge.c
+@@ -4026,7 +4026,7 @@ static void __devexit skge_remove(struct pci_dev *pdev)
+ 	dev0 = hw->dev[0];
+ 	unregister_netdev(dev0);
+ 
+-	tasklet_disable(&hw->phy_task);
++	tasklet_kill(&hw->phy_task);
+ 
+ 	spin_lock_irq(&hw->hw_lock);
+ 	hw->intr_mask = 0;
+diff --git a/drivers/net/ethernet/micrel/ksz884x.c b/drivers/net/ethernet/micrel/ksz884x.c
+index 318fee9..e558edd 100644
+--- a/drivers/net/ethernet/micrel/ksz884x.c
++++ b/drivers/net/ethernet/micrel/ksz884x.c
+@@ -5407,8 +5407,8 @@ static int netdev_close(struct net_device *dev)
+ 		/* Delay for receive task to stop scheduling itself. */
+ 		msleep(2000 / HZ);
+ 
+-		tasklet_disable(&hw_priv->rx_tasklet);
+-		tasklet_disable(&hw_priv->tx_tasklet);
++		tasklet_kill(&hw_priv->rx_tasklet);
++		tasklet_kill(&hw_priv->tx_tasklet);
+ 		free_irq(dev->irq, hw_priv->dev);
+ 
+ 		transmit_cleanup(hw_priv, 0);
+diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+index 0793299..1d04754 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
++++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+@@ -990,7 +990,7 @@ static int axienet_stop(struct net_device *ndev)
+ 	axienet_setoptions(ndev, lp->options &
+ 			   ~(XAE_OPTION_TXEN | XAE_OPTION_RXEN));
+ 
+-	tasklet_disable(&lp->dma_err_tasklet);
++	tasklet_kill(&lp->dma_err_tasklet);
+ 
+ 	free_irq(lp->tx_irq, ndev);
+ 	free_irq(lp->rx_irq, ndev);
+diff --git a/drivers/net/wireless/b43legacy/pio.c b/drivers/net/wireless/b43legacy/pio.c
+index 192251a..282eede 100644
+--- a/drivers/net/wireless/b43legacy/pio.c
++++ b/drivers/net/wireless/b43legacy/pio.c
+@@ -382,7 +382,7 @@ static void cancel_transfers(struct b43legacy_pioqueue *queue)
  {
- 	struct vhost_ubuf_ref *ubufs = ubuf->ctx;
- 	struct vhost_virtqueue *vq = ubufs->vq;
+ 	struct b43legacy_pio_txpacket *packet, *tmp_packet;
  
- 	vhost_poll_queue(&vq->poll);
- 	/* set len to mark this desc buffers done DMA */
--	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
-+	vq->heads[ubuf->desc].len = status ?
-+		VHOST_DMA_FAILED_LEN : VHOST_DMA_DONE_LEN;
- 	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
- }
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index ad72a1f..6fdf31d 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -17,6 +17,8 @@
-  * For transmit, used buffer len is unused; we override it to track buffer
-  * status internally; used for zerocopy tx only.
-  */
-+/* Lower device DMA failed */
-+#define VHOST_DMA_FAILED_LEN	3
- /* Lower device DMA done */
- #define VHOST_DMA_DONE_LEN	2
- /* Lower device DMA in progress */
-@@ -24,6 +26,8 @@
- /* Buffer unused */
- #define VHOST_DMA_CLEAR_LEN	0
+-	tasklet_disable(&queue->txtask);
++	tasklet_kill(&queue->txtask);
  
-+#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
-+
- struct vhost_device;
- 
- struct vhost_work;
+ 	list_for_each_entry_safe(packet, tmp_packet, &queue->txrunning, list)
+ 		free_txpacket(packet, 0);
 -- 
-MST
+1.7.9.5
 
