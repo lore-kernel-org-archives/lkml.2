@@ -1,49 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423135Ab2JaPUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 11:20:08 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43461 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1422815Ab2JaPUE (ORCPT
+	id S934841Ab2JaPVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 11:21:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41237 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933033Ab2JaPVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 11:20:04 -0400
-Date: Wed, 31 Oct 2012 11:20:02 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: Oliver Neukum <oneukum@suse.de>, <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH v3 2/6] PM / Runtime: introduce pm_runtime_set[get]_memalloc_noio()
-In-Reply-To: <CACVXFVNxucCVLS-=EQkmVop3LQMkeXW7RbZq4yfkiq_MUGndvg@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1210311117310.1954-100000@iolanthe.rowland.org>
+	Wed, 31 Oct 2012 11:21:52 -0400
+Message-ID: <5091420D.8050603@gmail.com>
+Date: Wed, 31 Oct 2012 10:21:49 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: srinivas.kandagatla@st.com
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: DT: of_platform_populate Vs of_platform_bus_probe.
+References: <50913BC3.7090103@st.com>
+In-Reply-To: <50913BC3.7090103@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012, Ming Lei wrote:
-
-> The below idea may help the problem which 'memalloc_noio' flag isn't set during
-> usb_reset_device().
+On 10/31/2012 09:54 AM, Srinivas KANDAGATLA wrote:
+> Hi All, 
+> I have few queries on of_platform_populate and of_platform_bus_probe functions.
 > 
-> - for usb mass storage device, call pm_runtime_set_memalloc_noio(true)
->   inside usb_stor_probe2() and uas_probe(), and call
->   pm_runtime_set_memalloc_noio(false) inside uas_disconnect()
->   and usb_stor_disconnect().
+> Use-case is, I want to explicitly register platform devices from some nodes at post-core or late-init level(like child@1).
+> And I don't want of_platform_populate to register platform devices for that node again, so I pass "simple-bus" in match-table.
+> Problem is that exiting code for of_platform_populate probes it.
+> 
+> Looking at the function documentation, which states
+> of_platform_bus_probe will only create children of the root which are
+> selected by the @matches argument.
+> 
+> of_platform_populate walks the device tree and creates devices from
+> nodes.  It differs in that it follows the modern convention of requiring
+> all device nodes to have a 'compatible' property, and it is suitable for
+> creating devices which are children of the root node.
+> 
+> Lets say If we call of_platform_populate(NULL, match_table, NULL, NULL)
+> on a device trees like the below with
+> struct of_device_id match_table[] = {
+>     { .compatible = "simple-bus", }
+>     {}
+> };
+> 
+> parent@0{
+>     compatible    = "xxx,parent1", "simple-bus";
+>     ...
+>     child@0 {
+>         compatible    = "xxx,child0", "simple-bus";
 
-Why would you want to do that?  The probe and disconnect routines
-usually -- but not always -- run in the khubd thread.  Surely you don't
-want to prevent khubd from using GFP_KERNEL?
+Well simple-bus here is generally not right unless you want to create
+devices for children of child@0.
 
-And what if probe runs in khubd but disconnect runs in a different 
-thread?
+>         ...
+>     };
+>     child@1 {
+>         compatible    = "xxx,child1";
+>         ...
+>     };
+>     child@2 {
+>         compatible    = "xxx,child2", "simple-bus";
+>         ...
+>     };
+> };
+> 
+> of_platform_bus_probe would create platform-devices for parent@0,
+> child@0 and child@2
+> where as
+> of_platform_populate would create platform-devices for parent@0,
+> child@0, child@1 and child@2 nodes.
+> 
+> So the question is
+> why do we need to have @matches argument to of_platform_populate in the
+> first place, if it creates all the devices by walking the dt nodes?
 
-Alan Stern
+The matches is for matching buses, not child devices. It is assumed you
+want to create devices for all 1st level children.
 
+> It is bit confusing, As some platforms use of_platform_populate(NULL,
+> of_default_bus_match_table, NULL, NULL) assuming that only matching
+> nodes will end up having platform device.
+> Also
+> some platforms use of_platform_bus_probe(NULL, match_table, NULL), 
+> where match table is of_default_bus_match_table.
+
+There should be no new users of of_platform_bus_probe. It is there for
+historical reasons on PPC.
+
+> 
+> Am not 100% sure what is the right solution, but I think lot of platforms would want behavior like of_platform_bus_probe which takes lookups aswell.
+> If the suggestion is to use of_platform_bus_probe, Which I can't use as It does not take Auxdata(lookups).
+
+of_platform_populate is what you should use.
+
+Rob
