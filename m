@@ -1,219 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965269Ab2J3SMv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:12:51 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:59040 "EHLO
+	id S965285Ab2J3SMw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:12:52 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:59057 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965210Ab2J3SMl (ORCPT
+	by vger.kernel.org with ESMTP id S934073Ab2J3SMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:12:41 -0400
+	Tue, 30 Oct 2012 14:12:45 -0400
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Richard Purdie <rpurdie@rpsys.net>
+To: Wolfram Sang <w.sang@pengutronix.de>
 Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
         Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
         Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Subject: [PATCH] tps65217: Allow placement elsewhere than parent mfd device
-Date: Wed, 31 Oct 2012 17:57:04 +0200
-Message-Id: <1351699024-4356-1-git-send-email-panto@antoniou-consulting.com>
+Subject: [PATCH] i2c-EEPROM: Export memory accessor
+Date: Wed, 31 Oct 2012 17:56:49 +0200
+Message-Id: <1351699009-4217-1-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code expect the configuration of the backlight to stay
-constant after initialization. This patch allows to move it around.
+Various platforms need access to the EEPROM in other
+places besides their platform registration callbacks.
+Export the memory accessor to the i2c_client and implement
+it for the at24 driver.
+
+And before you ask, no, the platform callback can't be used
+for anything that depends on DT.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- drivers/video/backlight/tps65217_bl.c | 103 ++++++++++++++++++++++++++++++----
- 1 file changed, 92 insertions(+), 11 deletions(-)
+ drivers/misc/eeprom/at24.c |  5 +++++
+ include/linux/i2c.h        | 24 ++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+)
 
-diff --git a/drivers/video/backlight/tps65217_bl.c b/drivers/video/backlight/tps65217_bl.c
-index 7088163..69c1dfe 100644
---- a/drivers/video/backlight/tps65217_bl.c
-+++ b/drivers/video/backlight/tps65217_bl.c
-@@ -24,8 +24,11 @@
- #include <linux/module.h>
- #include <linux/platform_device.h>
- #include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/of_i2c.h>
+diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
+index ab1ad41..4f88ae65 100644
+--- a/drivers/misc/eeprom/at24.c
++++ b/drivers/misc/eeprom/at24.c
+@@ -609,6 +609,9 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
  
- struct tps65217_bl {
-+	struct i2c_client *i2c_client;
- 	struct tps65217 *tps;
- 	struct device *dev;
- 	struct backlight_device *bl;
-@@ -98,8 +101,6 @@ static int tps65217_bl_update_status(struct backlight_device *bl)
- 			return rc;
+ 	at24->client[0] = client;
+ 
++	/* export accessor */
++	client->macc = &at24->macc;
++
+ 	/* use dummy devices for multiple-address chips */
+ 	for (i = 1; i < num_addresses; i++) {
+ 		at24->client[i] = i2c_new_dummy(client->adapter,
+@@ -619,6 +622,7 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 			err = -EADDRINUSE;
+ 			goto err_clients;
  		}
- 
--		dev_dbg(tps65217_bl->dev, "brightness set to %d\n", brightness);
--
- 		if (!tps65217_bl->is_enabled)
- 			rc = tps65217_bl_enable(tps65217_bl);
- 	} else {
-@@ -187,14 +188,69 @@ static int tps65217_bl_hw_init(struct tps65217_bl *tps65217_bl,
- 
- #ifdef CONFIG_OF
- static struct tps65217_bl_pdata *
--tps65217_bl_parse_dt(struct platform_device *pdev)
-+tps65217_bl_parse_dt(struct platform_device *pdev, struct tps65217 **tpsp,
-+		int *brightnessp)
- {
--	struct tps65217 *tps = dev_get_drvdata(pdev->dev.parent);
--	struct device_node *node = of_node_get(tps->dev->of_node);
-+	struct i2c_client *i2c_client;
-+	struct tps65217 *tps;
-+	struct device_node *node, *rnode, *pnode;
- 	struct tps65217_bl_pdata *pdata, *err;
-+	u32 tps_handle;
- 	u32 val;
- 
--	node = of_find_node_by_name(node, "backlight");
-+	tps = NULL;
-+	node = NULL;
-+	*brightnessp = 0;
-+
-+	/* our node (compatible) */
-+	pnode = pdev->dev.of_node;
-+	if (pnode != NULL &&
-+		of_property_read_u32(pnode, "tps", &tps_handle) == 0) {
-+		/* we are not instantiated from the mfd */
-+		node = of_find_node_by_phandle(tps_handle);
-+		if (node == NULL) {
-+			dev_err(&pdev->dev, "failed to find the tps node\n");
-+			err = ERR_PTR(-EINVAL);
-+			goto err;
-+		}
-+		i2c_client = of_find_i2c_device_by_node(node);
-+		if (i2c_client == NULL) {
-+			dev_err(&pdev->dev, "failed to find the i2c device "
-+					"of tps node\n");
-+			err = ERR_PTR(-EINVAL);
-+			goto err;
-+		}
-+		/* yeah this is gross; the whole concept is */
-+		tps = i2c_get_clientdata(i2c_client);
-+		if (tps == NULL) {
-+			dev_err(&pdev->dev, "failed to get tps structure\n");
-+			err = ERR_PTR(-EINVAL);
-+			goto err;
-+		}
-+
-+		/* read default brightness */
-+		val = 0;
-+		of_property_read_u32(pnode, "brightness", &val);
-+		if (val >= 100)
-+			val = 100;
-+
-+		*brightnessp = val;
-+
-+		/* no need for this anymore */
-+		of_node_put(node);
-+
-+		dev_info(&pdev->dev, "got tps=%p from handle 0x%x\n", tps, tps_handle);
-+	}
-+
-+	if (tps == NULL)
-+		tps = dev_get_drvdata(pdev->dev.parent);
-+
-+	rnode = of_node_get(tps->dev->of_node);
-+
-+	node = of_find_node_by_name(rnode, "backlight");
-+	of_node_put(rnode);
-+	rnode = NULL;
-+
- 	if (!node)
- 		return ERR_PTR(-ENODEV);
- 
-@@ -247,6 +303,7 @@ tps65217_bl_parse_dt(struct platform_device *pdev)
- 
- 	of_node_put(node);
- 
-+	*tpsp = tps;
- 	return pdata;
- 
- err:
-@@ -254,9 +311,16 @@ err:
- 
- 	return err;
- }
-+
-+static struct of_device_id tps65217_backlight_of_match[] = {
-+	{ .compatible = "tps65217-backlight" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, tps65217_backlight_of_match);
- #else
- static struct tps65217_bl_pdata *
--tps65217_bl_parse_dt(struct platform_device *pdev)
-+tps65217_bl_parse_dt(struct platform_device *pdev, struct tps65217 **tpsp,
-+		int *brightnessp)
- {
- 	return NULL;
- }
-@@ -265,13 +329,16 @@ tps65217_bl_parse_dt(struct platform_device *pdev)
- static int tps65217_bl_probe(struct platform_device *pdev)
- {
- 	int rc;
--	struct tps65217 *tps = dev_get_drvdata(pdev->dev.parent);
-+	struct tps65217 *tps;
- 	struct tps65217_bl *tps65217_bl;
- 	struct tps65217_bl_pdata *pdata;
- 	struct backlight_properties bl_props;
-+	int brightness = 0;
- 
--	if (tps->dev->of_node) {
--		pdata = tps65217_bl_parse_dt(pdev);
-+	tps = NULL;
-+
-+	if (pdev->dev.of_node) {
-+		pdata = tps65217_bl_parse_dt(pdev, &tps, &brightness);
- 		if (IS_ERR(pdata))
- 			return PTR_ERR(pdata);
- 	} else {
-@@ -281,6 +348,14 @@ static int tps65217_bl_probe(struct platform_device *pdev)
- 		}
- 
- 		pdata = pdev->dev.platform_data;
-+
-+		/* get the parent device */
-+		tps = dev_get_drvdata(pdev->dev.parent);
-+	}
-+
-+	if (tps == NULL) {
-+		dev_err(&pdev->dev, "failed to find tps\n");
-+		return -EINVAL;
++		at24->client[i]->macc = &at24->macc;
  	}
  
- 	tps65217_bl = devm_kzalloc(&pdev->dev, sizeof(*tps65217_bl),
-@@ -311,9 +386,14 @@ static int tps65217_bl_probe(struct platform_device *pdev)
- 		return PTR_ERR(tps65217_bl->bl);
+ 	err = sysfs_create_bin_file(&client->dev.kobj, &at24->bin);
+@@ -637,6 +641,7 @@ static int at24_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 			   I2C_SMBUS_WORD_DATA ? "word" : "byte");
  	}
  
--	tps65217_bl->bl->props.brightness = 0;
-+	tps65217_bl->bl->props.brightness = brightness;
- 	platform_set_drvdata(pdev, tps65217_bl);
- 
-+	/* update with initial settings */
-+	tps65217_bl_update_status(tps65217_bl->bl);
 +
-+	dev_info(&pdev->dev, "OK.\n");
-+
- 	return 0;
- }
+ 	/* export data to kernel code */
+ 	if (chip.setup)
+ 		chip.setup(&at24->macc, chip.context);
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index 800de22..e20ad4e 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -33,6 +33,7 @@
+ #include <linux/of.h>		/* for struct device_node */
+ #include <linux/swab.h>		/* for swab16 */
+ #include <uapi/linux/i2c.h>
++#include <linux/memory.h>
  
-@@ -332,6 +412,7 @@ static struct platform_driver tps65217_bl_driver = {
- 	.driver		= {
- 		.owner	= THIS_MODULE,
- 		.name	= "tps65217-bl",
-+		.of_match_table	= of_match_ptr(tps65217_backlight_of_match),
- 	},
+ extern struct bus_type i2c_bus_type;
+ extern struct device_type i2c_adapter_type;
+@@ -229,9 +230,32 @@ struct i2c_client {
+ 	struct device dev;		/* the device structure		*/
+ 	int irq;			/* irq issued by device		*/
+ 	struct list_head detected;
++
++	/* export accessor */
++	struct memory_accessor *macc;
  };
+ #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
+ 
++static inline ssize_t i2c_memory_read(struct i2c_client *client, char *buf, off_t offset,
++		size_t count)
++{
++	struct memory_accessor *macc = client->macc;
++
++	if (macc == NULL || macc->read == NULL)
++		return -ENODEV;
++	return (*client->macc->read)(macc, buf, offset, count);
++}
++
++static inline ssize_t i2c_memory_write(struct i2c_client *client, const char *buf, off_t offset,
++		size_t count)
++{
++	struct memory_accessor *macc = client->macc;
++
++	if (macc == NULL || macc->write == NULL)
++		return -ENODEV;
++	return (*client->macc->write)(macc, buf, offset, count);
++}
++
+ extern struct i2c_client *i2c_verify_client(struct device *dev);
+ extern struct i2c_adapter *i2c_verify_adapter(struct device *dev);
  
 -- 
 1.7.12
