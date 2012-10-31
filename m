@@ -1,88 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758558Ab2JaAek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:34:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5810 "EHLO mga01.intel.com"
+	id S1759938Ab2JaAf3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:35:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:35074 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755430Ab2JaAea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:34:30 -0400
+	id S1759636Ab2JaAek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 20:34:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
-   d="scan'208";a="240548335"
+   d="scan'208";a="234886229"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
-        eranian@google.com, mingo@kernel.org, namhyung@kernel.org
-Subject: perf PMU support for Haswell v5
-Date: Tue, 30 Oct 2012 17:33:51 -0700
-Message-Id: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
+        eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 28/32] perf, x86: Add Haswell TSX event aliases v2
+Date: Tue, 30 Oct 2012 17:34:19 -0700
+Message-Id: <1351643663-23828-29-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
+References: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Updated version for the latest master tree and various fixes,
-addressing review feedback.  See end for details.
+From: Andi Kleen <ak@linux.intel.com>
 
-This should be ready for merging now.
+Add infrastructure to generate event aliases in /sys/devices/cpu/events/
 
-Arnaldo, especially needs attention from you for the user space part.]
+And use this to set up user friendly aliases for the common TSX events.
+TSX tuning relies heavily on the PMU, so it's important to be user friendly.
 
-This adds perf PMU support for the upcoming Haswell core. The patchkit 
-is fairly large, mainly due to various enhancement for TSX. TSX tuning
-relies heavily on the PMU, so I tried hard to make all facilities 
-easily available. In addition it also has some other enhancements.
+This replaces the generic transaction events in an earlier version
+of this patchkit.
 
-This includes changes to the core perf code, to the x86 specific part,
-to the perf user land tools and to KVM
+tx-start/commit/abort  to count RTM transactions
+el-start/commit/abort  to count HLE ("elision") transactions
+tx-conflict/overflow   to count conflict/overflow for both combined.
 
-Available at 
-git://git.kernel.org/pub/scm/linux/kernel/ak/linux-misc.git hsw/pmu3
+The general abort events exist in precise and non precise variants
+Since the common case is sampling plain "tx-aborts" in precise.
 
-High level overview:
+This is very important because abort sampling only really works
+with PEBS enabled, otherwise it would report the IP after the abort,
+not the abort point. But counting with PEBS has more overhead,
+so also have tx/el-abort-count aliases that do not enable PEBS
+for perf stat.
 
-- Basic Haswell PMU support
-- Easy high level TSX measurement in perf stat -T
-- Transaction events and attributes implemented with sysfs enumeration
-- Export arch perfmon events in sysfs 
-- Generic weightend profiling for memory latency and transaction abort costs.
-- Support for address profiling
-- Support for filtering events inside/outside transactions
-- KVM support to do this from guests
-- Support for filtering/sorting/bucketing transaction abort types based on 
-PEBS information
-- LBR support for transactions
+It would be nice to switch automatically between those two, like in the
+previous version, but that would need more new infrastructure for sysfs
+first.
 
-For more details on the Haswell PMU please see the SDM. For more details on TSX
-please see http://halobates.de/adding-lock-elision-to-linux.pdf
+There is an tx-abort<->tx-aborts alias too, because I found myself
+using both variants.
 
-Some of the added features could be added to older CPUs too. I plan
-to do this, but in separate patches.
+Also added friendly aliases for cpu/cycles,intx=1/ and
+cpu/cycles,intx=1,intx_cp=1/ and the same for instructions.
+These will be used by perf stat -T, and are also useful for users directly.
 
-Review appreciated.
+So for example to get transactional cycles can use "perf stat -e cycles-t"
 
-v2: Removed generic transaction events and qualifiers and use sysfs
-enumeration. Also export arch perfmon, so that the qualifiers work.
-Fixed various issues this exposed. Don't use a special macro for the
-TSX constraints anymore. Address other review feedback.
-Added pdir event in sysfs.
+v2: Move to new sysfs infrastructure
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |   47 ++++++++++++++++++++++++++++++++
+ 1 files changed, 47 insertions(+), 0 deletions(-)
 
-v3: Fix various bugs and address review comments.
-tx-aborts instead of cpu/tx-aborts/ works now (with some limitations)
-cpu/instructions,intx=1/ works now
-
-v4:
-Addressed all review feedback (I hope). See changelog in individual patches.
-KVM support now works again with more changes.
-Forbid some more flag combinations that don't work well.
-
-v5:
-Rebased on latest perf/core. New method for sysfs events.
-Obsolete patches dropped. Added one patch from Stephane.
-Fixed generic aliases inside cpu//
-Improved transaction flags decoding
-Addressed all review feedback (except for two minor items in
-perf tools from Namhyung)
-
--Andi
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index dc2f2a1..e8fb4e2 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2010,6 +2010,52 @@ static __init void intel_nehalem_quirk(void)
+ 	}
+ }
+ 
++/* Haswell special events */
++EVENT_ATTR_STR(tx-start,       tx_start,       "event=0xc9,umask=0x1");
++EVENT_ATTR_STR(tx-commit,      tx_commit,      "event=0xc9,umask=0x2");
++EVENT_ATTR_STR(tx-abort,       tx_abort,       "event=0xc9,umask=0x4,precise=2");
++EVENT_ATTR_STR(tx-abort-count, tx_abort_count, "event=0xc9,umask=0x4");
++/* alias */
++EVENT_ATTR_STR(tx-aborts,      tx_aborts,      "event=0xc9,umask=0x4,precise=2");
++EVENT_ATTR_STR(tx-capacity,    tx_capacity,    "event=0x54,umask=0x2");
++EVENT_ATTR_STR(tx-conflict,    tx_conflict,    "event=0x54,umask=0x1");
++EVENT_ATTR_STR(el-start,       el_start,       "event=0xc8,umask=0x1");
++EVENT_ATTR_STR(el-commit,      el_commit,      "event=0xc8,umask=0x2");
++EVENT_ATTR_STR(el-abort,       el_abort,       "event=0xc8,umask=0x4,precise=2");
++EVENT_ATTR_STR(el-abort-count, el_abort_count, "event=0xc8,umask=0x4");
++/* alias */
++EVENT_ATTR_STR(el-aborts,      el_aborts,      "event=0xc8,umask=0x4,precise=2");
++/* shared with tx-* */
++EVENT_ATTR_STR(el-capacity,    el_capacity,    "event=0x54,umask=0x2");
++/* shared with tx-* */
++EVENT_ATTR_STR(el-conflict,    el_conflict,    "event=0x54,umask=0x1");
++EVENT_ATTR_STR(cycles-t,       cycles_t,       "event=0x3c,intx=1");
++EVENT_ATTR_STR(cycles-ct,      cycles_ct,      "event=0x3c,intx=1,intx_cp=1");
++EVENT_ATTR_STR(instructions-t, instructions_t, "event=0xc0,intx=1");
++EVENT_ATTR_STR(instructions-ct,instructions_ct,"event=0xc0,intx=1,intx_cp=1");
++
++static struct attribute *hsw_events_attrs[] = {
++	EVENT_PTR(tx_start),
++	EVENT_PTR(tx_commit),
++	EVENT_PTR(tx_abort),
++	EVENT_PTR(tx_aborts),
++	EVENT_PTR(tx_abort_count),
++	EVENT_PTR(tx_capacity),
++	EVENT_PTR(tx_conflict),
++	EVENT_PTR(el_start),
++	EVENT_PTR(el_commit),
++	EVENT_PTR(el_abort),
++	EVENT_PTR(el_aborts),
++	EVENT_PTR(el_abort_count),
++	EVENT_PTR(el_capacity),
++	EVENT_PTR(el_conflict),
++	EVENT_PTR(cycles_t),
++	EVENT_PTR(cycles_ct),
++	EVENT_PTR(instructions_t),
++	EVENT_PTR(instructions_ct),
++	NULL
++};
++
+ __init int intel_pmu_init(void)
+ {
+ 	union cpuid10_edx edx;
+@@ -2235,6 +2281,7 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.get_event_constraints = hsw_get_event_constraints;
+ 		x86_pmu.format_attrs = intel_hsw_formats_attr;
+ 		x86_pmu.memory_lat_events = intel_hsw_memory_latency_events;
++		x86_pmu.cpu_events = hsw_events_attrs;
+ 		pr_cont("Haswell events, ");
+ 		break;
+ 
+-- 
+1.7.7.6
 
