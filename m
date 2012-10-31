@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759254Ab2JaAeh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:34:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:15557 "EHLO mga14.intel.com"
+	id S1760481Ab2JaAi3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:38:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31172 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758865Ab2JaAeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:34:31 -0400
+	id S1759198Ab2JaAeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 20:34:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
-   d="scan'208";a="211509847"
+   d="scan'208";a="213257360"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 06/32] perf, x86: Support PERF_SAMPLE_ADDR on Haswell
-Date: Tue, 30 Oct 2012 17:33:57 -0700
-Message-Id: <1351643663-23828-7-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 20/32] perf, x86: Add Haswell specific transaction flag reporting
+Date: Tue, 30 Oct 2012 17:34:11 -0700
+Message-Id: <1351643663-23828-21-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
 References: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
@@ -26,25 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Haswell supplies the address for every PEBS memory event, so always fill it in
-when the user requested it.  It will be 0 when not useful (no memory access)
+In the PEBS handler report the transaction flags using the new
+generic transaction flags facility. Most of them come from
+the "tsx_tuning" field in PEBSv2, but the abort code is derived
+from the RAX register reported in the PEBS record.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 16d7c58..aa0f5fa 100644
+index 3094caa..4b657c2 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -630,6 +630,10 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	else
- 		regs.flags &= ~PERF_EFLAGS_EXACT;
+@@ -677,6 +677,15 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 			data.weight = ((struct pebs_record_v2 *)pebs)->nhm.lat;
+ 	}
  
-+	if ((event->attr.sample_type & PERF_SAMPLE_ADDR) &&
-+		x86_pmu.intel_cap.pebs_format >= 2)
-+		data.addr = ((struct pebs_record_v2 *)pebs)->nhm.dla;
++	if ((event->attr.sample_type & PERF_SAMPLE_TRANSACTION) &&
++	    x86_pmu.intel_cap.pebs_format >= 2) {
++		data.transaction =
++		     ((struct pebs_record_v2 *)pebs)->tsx_tuning >> 32;
++		if ((data.transaction & PERF_SAMPLE_TXN_TRANSACTION) &&
++		    (pebs->ax & 1))
++			data.transaction |= pebs->ax & 0xff000000;
++	}
 +
  	if (has_branch_stack(event))
  		data.br_stack = &cpuc->lbr_stack;
