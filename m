@@ -1,131 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935052Ab2JaIDh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 04:03:37 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:51026 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755137Ab2JaIDe (ORCPT
+	id S964782Ab2JaIFe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 04:05:34 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52205 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934972Ab2JaIFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 04:03:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <1351507779-26847-1-git-send-email-glommer@parallels.com>
-References: <1351507779-26847-1-git-send-email-glommer@parallels.com>
-Date: Wed, 31 Oct 2012 10:03:32 +0200
-X-Google-Sender-Auth: EdDiZLnuvIhU-2IdQVmQLlj823A
-Message-ID: <CAOJsxLEG+gZk=TLyfhJqMb8xjxV4wnyF9wnZWPPOo8Hpc7N45A@mail.gmail.com>
-Subject: Re: [PATCH] slab: annotate on-slab caches nodelist locks
-From: Pekka Enberg <penberg@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
-        JoonSoo Kim <js1304@gmail.com>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 31 Oct 2012 04:05:25 -0400
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
+        Tony Lindgren <tony@atomide.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        Josh <joshua.taylor0@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-input@vger.kernel.org
+Subject: [PATCH 1/3] input: do not use tasklet_disable before tasklet_kill
+Date: Wed, 31 Oct 2012 16:05:59 +0800
+Message-Id: <1351670761-26749-1-git-send-email-xtfeng@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding Peter and Michael to CC.)
+If tasklet_disable() is called before related tasklet handled,
+tasklet_kill will never be finished. tasklet_kill is enough.
 
-On Mon, Oct 29, 2012 at 12:49 PM, Glauber Costa <glommer@parallels.com> wrote:
-> We currently provide lockdep annotation for kmalloc caches, and also
-> caches that have SLAB_DEBUG_OBJECTS enabled. The reason for this is that
-> we can quite frequently nest in the l3->list_lock lock, which is not
-> something trivial to avoid.
->
-> My proposal with this patch, is to extend this to caches whose slab
-> management object lives within the slab as well ("on_slab"). The need
-> for this arose in the context of testing kmemcg-slab patches. With such
-> patchset, we can have per-memcg kmalloc caches. So the same path that
-> led to nesting between kmalloc caches will could then lead to in-memcg
-> nesting. Because they are not annotated, lockdep will trigger.
->
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: David Rientjes <rientjes@google.com>
-> CC: JoonSoo Kim <js1304@gmail.com>
->
-> ---
-> Instead of "on_slab", I considered checking the memcg cache's root
-> cache, and annotating that only in case this is a kmalloc cache.
-> I ended up annotating on_slab caches, because given how frequently
-> those locks can nest, it seemed like a safe choice to go. I was
-> a little bit inspired by the key's name as well, that indicated
-> this could work for all on_slab caches. Let me know if you guys
-> want a different test condition for this.
-> ---
->  mm/slab.c | 30 +++++++++++++++++++++++++++++-
->  1 file changed, 29 insertions(+), 1 deletion(-)
->
-> diff --git a/mm/slab.c b/mm/slab.c
-> index 9b7f6b63..ef1c8b3 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -654,6 +654,26 @@ static void init_node_lock_keys(int q)
->         }
->  }
->
-> +static void on_slab_lock_classes_node(struct kmem_cache *cachep, int q)
-> +{
-> +       struct kmem_list3 *l3;
-> +       l3 = cachep->nodelists[q];
-> +       if (!l3)
-> +               return;
-> +
-> +       slab_set_lock_classes(cachep, &on_slab_l3_key,
-> +                       &on_slab_alc_key, q);
-> +}
-> +
-> +static inline void on_slab_lock_classes(struct kmem_cache *cachep)
-> +{
-> +       int node;
-> +
-> +       VM_BUG_ON(OFF_SLAB(cachep));
-> +       for_each_node(node)
-> +               on_slab_lock_classes_node(cachep, node);
-> +}
-> +
->  static inline void init_lock_keys(void)
->  {
->         int node;
-> @@ -670,6 +690,10 @@ static inline void init_lock_keys(void)
->  {
->  }
->
-> +static inline void on_slab_lock_classes(struct kmem_cache *cachep)
-> +{
-> +}
-> +
->  static void slab_set_debugobj_lock_classes_node(struct kmem_cache *cachep, int node)
->  {
->  }
-> @@ -1397,6 +1421,9 @@ static int __cpuinit cpuup_prepare(long cpu)
->                 free_alien_cache(alien);
->                 if (cachep->flags & SLAB_DEBUG_OBJECTS)
->                         slab_set_debugobj_lock_classes_node(cachep, node);
-> +               else if (!OFF_SLAB(cachep) &&
-> +                        !(cachep->flags & SLAB_DESTROY_BY_RCU))
-> +                       on_slab_lock_classes_node(cachep, node);
->         }
->         init_node_lock_keys(node);
->
-> @@ -2554,7 +2581,8 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
->                 WARN_ON_ONCE(flags & SLAB_DESTROY_BY_RCU);
->
->                 slab_set_debugobj_lock_classes(cachep);
-> -       }
-> +       } else if (!OFF_SLAB(cachep) && !(flags & SLAB_DESTROY_BY_RCU))
-> +               on_slab_lock_classes(cachep);
->
->         return 0;
->  }
-> --
-> 1.7.11.7
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com> 
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>
+Cc: Josh <joshua.taylor0@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-input@vger.kernel.org
+---
+ drivers/input/keyboard/omap-keypad.c |    3 +--
+ drivers/input/serio/hil_mlc.c        |    1 -
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/input/keyboard/omap-keypad.c b/drivers/input/keyboard/omap-keypad.c
+index 4a5fcc8..6c52447 100644
+--- a/drivers/input/keyboard/omap-keypad.c
++++ b/drivers/input/keyboard/omap-keypad.c
+@@ -362,12 +362,11 @@ static int __devexit omap_kp_remove(struct platform_device *pdev)
+ 	struct omap_kp *omap_kp = platform_get_drvdata(pdev);
+ 
+ 	/* disable keypad interrupt handling */
+-	tasklet_disable(&kp_tasklet);
++	tasklet_kill(&kp_tasklet);
+ 	omap_writew(1, OMAP1_MPUIO_BASE + OMAP_MPUIO_KBD_MASKIT);
+ 	free_irq(omap_kp->irq, omap_kp);
+ 
+ 	del_timer_sync(&omap_kp->timer);
+-	tasklet_kill(&kp_tasklet);
+ 
+ 	/* unregister everything */
+ 	input_unregister_device(omap_kp->input);
+diff --git a/drivers/input/serio/hil_mlc.c b/drivers/input/serio/hil_mlc.c
+index bfd3865..7fc1700 100644
+--- a/drivers/input/serio/hil_mlc.c
++++ b/drivers/input/serio/hil_mlc.c
+@@ -1011,7 +1011,6 @@ static void __exit hil_mlc_exit(void)
+ {
+ 	del_timer_sync(&hil_mlcs_kicker);
+ 
+-	tasklet_disable(&hil_mlcs_tasklet);
+ 	tasklet_kill(&hil_mlcs_tasklet);
+ }
+ 
+-- 
+1.7.9.5
+
