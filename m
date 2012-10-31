@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935405Ab2JaK3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:29:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44236 "EHLO mx1.redhat.com"
+	id S935426Ab2JaKa6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:30:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44977 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935380Ab2JaK3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:29:13 -0400
-Date: Wed, 31 Oct 2012 12:31:26 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv2 net-next 4/8] vhost-net: cleanup macros for DMA status
- tracking
-Message-ID: <1c1b753592d4397451d1ab394fb654c752ed8569.1351679008.git.mst@redhat.com>
-References: <cover.1351679008.git.mst@redhat.com>
+	id S935273Ab2JaKaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 06:30:52 -0400
+Message-ID: <5090FE6B.4030001@redhat.com>
+Date: Wed, 31 Oct 2012 18:33:15 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1351679008.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
-To: unlisted-recipients:; (no To-header on input)
+To: Rick Jones <rick.jones2@hp.com>
+CC: mst@redhat.com, davem@davemloft.net,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        rusty@rustcorp.com.au, krkumar2@in.ibm.com, kvm@vger.kernel.org
+Subject: Re: [rfc net-next v6 0/3] Multiqueue virtio-net
+References: <1351591403-23065-1-git-send-email-jasowang@redhat.com> <509024F4.8080408@hp.com>
+In-Reply-To: <509024F4.8080408@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Better document macros for DMA tracking. Add an
-explicit one for DMA in progress instead of
-relying on user supplying len != 1.
+On 10/31/2012 03:05 AM, Rick Jones wrote:
+> On 10/30/2012 03:03 AM, Jason Wang wrote:
+>> Hi all:
+>>
+>> This series is an update version of multiqueue virtio-net driver 
+>> based on
+>> Krishna Kumar's work to let virtio-net use multiple rx/tx queues to 
+>> do the
+>> packets reception and transmission. Please review and comments.
+>>
+>> Changes from v5:
+>> - Align the implementation with the RFC spec update v4
+>> - Switch the mode between single mode and multiqueue mode without reset
+>> - Remove the 256 limitation of queues
+>> - Use helpers to do the mapping between virtqueues and tx/rx queues
+>> - Use commbined channels instead of separated rx/tx queus when do the 
+>> queue
+>> number configuartion
+>> - Other coding style comments from Michael
+>>
+>> Reference:
+>> - A protype implementation of qemu-kvm support could by found in
+>> git://github.com/jasowang/qemu-kvm-mq.git
+>> - V5 could be found at http://lwn.net/Articles/505388/
+>> - V4 could be found at https://lkml.org/lkml/2012/6/25/120
+>> - V2 could be found at http://lwn.net/Articles/467283/
+>> - Michael virtio-spec: 
+>> http://www.spinics.net/lists/netdev/msg209986.html
+>>
+>> Perf Numbers:
+>>
+>> - Pktgen test shows the receiving capability of the multiqueue 
+>> virtio-net were
+>>    dramatically improved.
+>> - Netperf result shows latency were greately improved according to 
+>> the test
+>> result.
+>
+> I suppose it is technically correct to say that latency was improved, 
+> but usually for aggregate request/response tests I tend to talk about 
+> the aggregate transactions per second.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/vhost/net.c   |  3 ++-
- drivers/vhost/vhost.c |  2 +-
- drivers/vhost/vhost.h | 12 +++++++++---
- 3 files changed, 12 insertions(+), 5 deletions(-)
+Sure.
+>
+> Do you have a hypothesis as to why the improvement dropped going to 20 
+> concurrent sessions from 10?
+>
+> rick jones 
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 072cbba..f80ae5f 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -237,7 +237,8 @@ static void handle_tx(struct vhost_net *net)
- 			} else {
- 				struct ubuf_info *ubuf = &vq->ubuf_info[head];
- 
--				vq->heads[vq->upend_idx].len = len;
-+				vq->heads[vq->upend_idx].len =
-+					VHOST_DMA_IN_PROGRESS;
- 				ubuf->callback = vhost_zerocopy_callback;
- 				ubuf->ctx = vq->ubufs;
- 				ubuf->desc = vq->upend_idx;
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 92308b6..906fd9f 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -1606,7 +1606,7 @@ void vhost_zerocopy_callback(struct ubuf_info *ubuf, int zerocopy_status)
- 	struct vhost_virtqueue *vq = ubufs->vq;
- 
- 	vhost_poll_queue(&vq->poll);
--	/* set len = 1 to mark this desc buffers done DMA */
-+	/* set len to mark this desc buffers done DMA */
- 	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
- 	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
- }
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index eb7263c3..ad72a1f 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -13,9 +13,15 @@
- #include <linux/virtio_ring.h>
- #include <linux/atomic.h>
- 
--/* This is for zerocopy, used buffer len is set to 1 when lower device DMA
-- * done */
--#define VHOST_DMA_DONE_LEN	1
-+/*
-+ * For transmit, used buffer len is unused; we override it to track buffer
-+ * status internally; used for zerocopy tx only.
-+ */
-+/* Lower device DMA done */
-+#define VHOST_DMA_DONE_LEN	2
-+/* Lower device DMA in progress */
-+#define VHOST_DMA_IN_PROGRESS	1
-+/* Buffer unused */
- #define VHOST_DMA_CLEAR_LEN	0
- 
- struct vhost_device;
--- 
-MST
-
+I'm investigating this issuse currently, but with no much ideas. The 
+aggregate transactions per second scales pretty well even with 20 
+cocurrent sessions when doing test between a local host and a local vm. 
+Looks like some bottleneck were reached when doing testing over 10gb or 
+vms as even if I increase the number of sessions, the result would not 
+increase.
