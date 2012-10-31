@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab2JaDWw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 23:22:52 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43513 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab2JaDWv (ORCPT
+	id S1756623Ab2JaDYq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 23:24:46 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59193 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab2JaDYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 23:22:51 -0400
+	Tue, 30 Oct 2012 23:24:44 -0400
+Date: Wed, 31 Oct 2012 03:24:31 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive hashtable
+Message-ID: <20121031032431.GG2616@ZenIV.linux.org.uk>
+References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
+ <20121030214257.GB2681@htj.dyndns.org>
+ <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
+ <1351646186.4004.41.camel@gandalf.local.home>
+ <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
+ <20121031022418.GE2616@ZenIV.linux.org.uk>
+ <CA+55aFyU30Z2JS9XJ4KTordbAw-2EBVD7xF4K3eAhKVRCJw8YA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121030173859.GA5032@kroah.com>
-References: <1351563973-20392-1-git-send-email-sj38.park@gmail.com> <20121030173859.GA5032@kroah.com>
-From: SeongJae Park <sj38.park@gmail.com>
-Date: Wed, 31 Oct 2012 12:22:30 +0900
-Message-ID: <CAEjAshq_08hrqcJDDSs6ht887socCBtCztoTjcnf-CdwXa7X6g@mail.gmail.com>
-Subject: Re: [PATCH] staging: csr: Remove struct CsrEvent
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyU30Z2JS9XJ4KTordbAw-2EBVD7xF4K3eAhKVRCJw8YA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry and Thank you about that.
+On Tue, Oct 30, 2012 at 07:48:19PM -0700, Linus Torvalds wrote:
+> On Tue, Oct 30, 2012 at 7:24 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > BTW, how serious have you been back at KS when you were talking about
+> > pull requests killing a thousand of lines of code being acceptable
+> > at any point in the cycle?
+> 
+> Well... I'm absolutely a lot more open to pull requests that kill code
+> than not, but I have to admit to being a bit more worried about stuff
+> like your execve/fork patches that touch very low-level code.
+> 
+> So I think I'll punt that for 3.8 anyway.
 
-I will not forget it next time.
+Oh, well... there go my blackmail plans ;-)  Seriously, though, I'm at loss
+regarding several embedded architectures - arch/score, in particular,
+seems to be completely orphaned.  As far as I can see, it's
+	* abandoned by hw vendor (seems like they were planning to push
+it game consoles, but that was just before the recession, and...)
+	* abandoned by primary maintainer, who isn't employed by said
+hw vendor anymore, so his old address had been bouncy for several years.
+He had bothered to update it in gcc tree, but hadn't been active there
+either for almost as long.  And new address in gcc tree is of form
+<name>+gcc@gmail.com, so using it for kernel-related mail would seem to
+be a lousy idea.
+	* the second maintainer seems to be nearly MIA as well - all I can
+find is Acked-by on one commit.  Cc'ed on the kernel_execve() thread, but...
+no signs of life whatsoever.
+	* a lot of asm glue is in "apparently never worked" state, starting
+with ptrace hookup (it's clearly started its life as a mips clone, but uses
+different registers for passing return value, etc.  TIF_SYSCALL_TRACE side of
+that thing still assumes MIPS ABI *and* is suffering obvious bitrot)
 
-Thanks and Regards.
-SeongJae Park.
-
-On Wed, Oct 31, 2012 at 2:38 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->
-> On Tue, Oct 30, 2012 at 11:26:13AM +0900, SeongJae Park wrote:
-> > Nobody use struct CsrEvent. So, remove it.
-> > Signed-off-by: SeongJae Park <sj38.park@gmail.com>
->
-> Please put a blank line between your changelog text and your
-> signed-off-by line, otherwise I have to edit it and do it by hand.  I've
-> fixed it up this time.
->
-> thanks,
->
-> greg k-h
+Sigh...
