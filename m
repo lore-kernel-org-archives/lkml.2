@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760895Ab2JaV4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 17:56:53 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:4472 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760596Ab2JaV4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 17:56:51 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <50919E88.8060900@broadcom.com>
-Date: Wed, 31 Oct 2012 22:56:24 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028
- Thunderbird/16.0.2
+	id S1760863Ab2JaV6c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 17:58:32 -0400
+Received: from exprod7og116.obsmtp.com ([64.18.2.219]:54180 "EHLO
+	exprod7og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760677Ab2JaV6a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 17:58:30 -0400
+Message-ID: <50919EED.3020601@genband.com>
+Date: Wed, 31 Oct 2012 15:58:05 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-To: "Steven Rostedt" <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: x86_64: undefined symbol 'mcount' in 3.7-rc1
-References: <507F13DE.2010601@broadcom.com>
- <1351709060.4004.91.camel@gandalf.local.home>
-In-Reply-To: <1351709060.4004.91.camel@gandalf.local.home>
-X-WSS-ID: 7C8F41AE3QC2269569-01-01
-Content-Type: text/plain;
- charset=iso-8859-15;
- format=flowed
+To: Oliver Neukum <oneukum@suse.de>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Jiri Kosina <jkosina@suse.cz>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com> <20121031171743.GA17652@srcf.ucam.org> <20121031173919.4fc63ddd@pyramind.ukuu.org.uk> <2548314.3caaFsMVg6@linux-lqwf.site>
+In-Reply-To: <2548314.3caaFsMVg6@linux-lqwf.site>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 31 Oct 2012 21:58:06.0288 (UTC) FILETIME=[CEA95D00:01CDB7B2]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19326.001
+X-TM-AS-Result: No--19.560000-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 07:44 PM, Steven Rostedt wrote:
-> On Wed, 2012-10-17 at 22:23 +0200, Arend van Spriel wrote:
->> Hi Steven,
+On 10/31/2012 02:14 PM, Oliver Neukum wrote:
+> On Wednesday 31 October 2012 17:39:19 Alan Cox wrote:
+>> On Wed, 31 Oct 2012 17:17:43 +0000
+>> Matthew Garrett<mjg59@srcf.ucam.org>  wrote:
 >>
->> I have nightly test machines upgraded to 3.7-rc1 and on the 64-bit
->> platform I get MODPOST warning on 'mcount'.
+>>> On Wed, Oct 31, 2012 at 05:21:21PM +0000, Alan Cox wrote:
+>>>> On Wed, 31 Oct 2012 17:10:48 +0000
+>>>> Matthew Garrett<mjg59@srcf.ucam.org>  wrote:
+>>>>> The kernel is signed. The kernel doesn't check the signature on the
+>>>>> suspend image.
+>>>>
+>>>> Which doesn't matter. How are you going to create the tampered image in
+>>>> the first place ?
+>>>
+>>> By booting a signed kernel, not turning on swap and writing directly to
+>>> the swap partition.
 >>
->> It is conditionally exported in x8664_ksyms_64.c:
->> #ifdef CONFIG_FUNCTION_TRACER
->> /* mcount is defined in assembly */
->> EXPORT_SYMBOL(mcount);
->> #endif
->>
->> #ifdef CONFIG_FUNCTION_TRACER
->> #ifdef CC_USING_FENTRY
->> # define MCOUNT_ADDR           ((long)(__fentry__))
->> #else
->> # define MCOUNT_ADDR           ((long)(mcount))
->> #endif
->> #define MCOUNT_INSN_SIZE       5 /* sizeof mcount call */
->>
->> I have built the kernel on x86 machine with gcc 4.6.3 and the modules
->> are built during the test execution on test machine which has gcc 4.4.5.
->> Reading commit below
->>
->> commit d57c5d51a30152f3175d2344cb6395f08bf8ee0c
->> Author: Steven Rostedt <srostedt@redhat.com>
->> Date:   Wed Feb 9 13:32:18 2011 -0500
->>
->>       ftrace/x86: Add support for -mfentry to x86_64
->>
->> I suppose the gcc version mismatch is causing my problem. Is that a
->> correct assumption?
+>> Ok so the actual problem is that you are signing kernels that allow the
+>> user to skip the S4 resume check ?
 >
-> Yes.
+> No. The problem is principal in nature.
 >
-> gcc 4.6.0 added a new option to gcc called '-mfentry'. The kernel build
-> checks to see if this option is supported and if so it will use it. What
-> this option does (when added to -pg), will not do the mcount calling but
-> instead call fentry. The two have different semantics and are not
-> compatible. When you built your kernel, the build process detected that
-> -mfentry is supported and used that.
+> swapoff /dev/sdb6 ; dd if=/tmp/malicious_image of=/dev/sdb6 ; sync ; reboot
 >
-> Now when you built your modules with gcc 4.4.5, -mfentry was not
-> supported and it used the mcount feature instead. In general, it's not a
-> good idea to use two different gcc's to build the kernel and modules.
->
-> But if you really need to, then you should disable function tracing of
-> your modules, where the -pg and -mfentry wont be used.
->
-> -- Steve
+> That would do it on my system.
+> Maybe in theory you could solve this by the kernel invalidating images
+> it hasn't written itself and forbidding to change the resume partition from the
+> kernel command line, but that would break user space hibernation.
 
-Thanks Steve(n)
+If the resuming kernel refuses to resume from images it didn't create 
+itself, why do you need to forbid changing the resume partition from the 
+kernel command line?
 
-I just upgraded the test machine to have the same gcc as the machine 
-building the kernels.
-
-Gr. AvS
-
+Chris
