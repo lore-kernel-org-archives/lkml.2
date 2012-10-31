@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759467Ab2JaBgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 21:36:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7930 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475Ab2JaBgf (ORCPT
+	id S1760177Ab2JaBgq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 21:36:46 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:56514 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475Ab2JaBgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 21:36:35 -0400
-X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=6MWR2sRkvj8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SlKO6I3lSDoA:10 a=HK0Deuo6WE_9kiz5a7UA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351647390.4004.47.camel@gandalf.local.home>
-Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive
- hashtable
-From: Steven Rostedt <rostedt@goodmis.org>
+	Tue, 30 Oct 2012 21:36:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
+References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
+ <20121030214257.GB2681@htj.dyndns.org> <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
+ <1351646186.4004.41.camel@gandalf.local.home> <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Tue, 30 Oct 2012 21:36:21 -0400
+Message-ID: <CA+1xoqd8vAn+N1JuhpXRjSr74OPtnnw_1UBhf8=c4WDC3jOirw@mail.gmail.com>
+Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive hashtable
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
+Cc: Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
         akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
         mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
@@ -27,49 +29,25 @@ Cc: Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
         venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
         edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Date: Tue, 30 Oct 2012 21:36:30 -0400
-In-Reply-To: <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
-References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
-	 <20121030214257.GB2681@htj.dyndns.org>
-	 <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
-	 <1351646186.4004.41.camel@gandalf.local.home>
-	 <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-30 at 18:25 -0700, Linus Torvalds wrote:
-> On Tue, Oct 30, 2012 at 6:16 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > ({                                                                    \
-> >         sizeof(val) <= 4 ? hash_32(val, bits) : hash_long(val, bits); \
-> > })
-> >
-> > Is the better way to go. We are C programmers, we like to see the ?: on
-> > a single line if possible. The way you have it, looks like three
-> > statements run consecutively.
-> 
-> If we're C programmers, why use the non-standard statement-expression
-> at all? And split it onto three lines when it's just a single one?
+Hi Linus,
 
-I like the blue color over the pink. Anyway, I was just expressing an
-opinion and really didn't care if it was changed or not.
-
-
-> 
 > But whatever. This series has gotten way too much bike-shedding
 > anyway. I think it should just be applied, since it does remove lines
 > of code overall. I'd even possibly apply it to mainline, but it seems
 > to be against linux-next.
 
-I would think this change is a bit too big for an -rc4 release, but
-you're the boss.  I've already given my ack for my code that this set
-touches. Let it go to Stephen's repo then.
+Yup, I switched to using -next because I've been running my
+trinity/KVM tools tests with it.
 
--- Steve
+I can either rebase that on top of mainline, or we can ask maintainers
+to take it to their own trees if you take only 01/16 into mainline.
+What would you prefer?
 
 
+Thanks,
+Sasha
