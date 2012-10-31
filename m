@@ -1,194 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935039Ab2JaH6y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 03:58:54 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64976 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932551Ab2JaH6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 03:58:38 -0400
-X-IronPort-AV: E=Sophos;i="4.80,687,1344182400"; 
-   d="scan'208";a="6107051"
-From: Wen Congyang <wency@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org
-Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-Subject: [PART3 Patch 13/14] page_alloc: use N_MEMORY instead N_HIGH_MEMORY change the node_states initialization
-Date: Wed, 31 Oct 2012 16:04:11 +0800
-Message-Id: <1351670652-9932-14-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1351670652-9932-1-git-send-email-wency@cn.fujitsu.com>
-References: <1351670652-9932-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 15:57:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 15:57:45,
-	Serialize complete at 2012/10/31 15:57:45
+	id S935047Ab2JaH7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 03:59:46 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63679 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932121Ab2JaH7l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 03:59:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1350386231-770-1-git-send-email-matthieu.castet@parrot.com>
+References: <1350386231-770-1-git-send-email-matthieu.castet@parrot.com>
+Date: Wed, 31 Oct 2012 09:59:40 +0200
+X-Google-Sender-Auth: 08paSUQIyRbAQS_kElBNSuLoZzw
+Message-ID: <CAOJsxLHQy7pshnskn+wMp=1D9+9wGQZBhFD+kjtbCSJvoW7q2Q@mail.gmail.com>
+Subject: Re: [PATCH] slab : allow SLAB_RED_ZONE and SLAB_STORE_USER to work on arm
+From: Pekka Enberg <penberg@kernel.org>
+To: Matthieu CASTET <matthieu.castet@parrot.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Matthieu CASTET <castet.matthieu@free.fr>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Shiyong Li <shi-yong.li@motorola.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Hi,
 
-N_HIGH_MEMORY stands for the nodes that has normal or high memory.
-N_MEMORY stands for the nodes that has any memory.
+(Adding more people to CC.)
 
-The code here need to handle with the nodes which have memory, we should
-use N_MEMORY instead.
+On Tue, Oct 16, 2012 at 2:17 PM, Matthieu CASTET
+<matthieu.castet@parrot.com> wrote:
+> From: Matthieu CASTET <castet.matthieu@free.fr>
+>
+> on cortexA8 (omap3) ralign is 64 and __alignof__(unsigned long long) is 8.
+> So we always disable debug.
+>
+> This patch is based on 5c5e3b33b7cb959a401f823707bee006caadd76e, but fix
+> case were align < sizeof(unsigned long long).
+>
+> Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
+> CC: Russell King <rmk@arm.linux.org.uk>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> ---
+>  mm/slab.c |    8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
+>
+> diff --git a/mm/slab.c b/mm/slab.c
+> index c685475..8427901 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -2462,9 +2462,6 @@ __kmem_cache_create (const char *name, size_t size, size_t align,
+>         if (ralign < align) {
+>                 ralign = align;
+>         }
+> -       /* disable debug if necessary */
+> -       if (ralign > __alignof__(unsigned long long))
+> -               flags &= ~(SLAB_RED_ZONE | SLAB_STORE_USER);
+>         /*
+>          * 4) Store it.
+>          */
+> @@ -2491,8 +2488,9 @@ __kmem_cache_create (const char *name, size_t size, size_t align,
+>          */
+>         if (flags & SLAB_RED_ZONE) {
+>                 /* add space for red zone words */
+> -               cachep->obj_offset += sizeof(unsigned long long);
+> -               size += 2 * sizeof(unsigned long long);
+> +               int offset = max(align, sizeof(unsigned long long));
+> +               cachep->obj_offset += offset;
+> +               size += offset + sizeof(unsigned long long);
+>         }
+>         if (flags & SLAB_STORE_USER) {
+>                 /* user store requires one word storage behind the end of
 
-Since we introduced N_MEMORY, we update the initialization of node_states.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- arch/x86/mm/init_64.c |  4 +++-
- mm/page_alloc.c       | 40 ++++++++++++++++++++++------------------
- 2 files changed, 25 insertions(+), 19 deletions(-)
-
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 3baff25..2ead3c8 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -630,7 +630,9 @@ void __init paging_init(void)
- 	 *	 numa support is not compiled in, and later node_set_state
- 	 *	 will not set it back.
- 	 */
--	node_clear_state(0, N_NORMAL_MEMORY);
-+	node_clear_state(0, N_MEMORY);
-+	if (N_MEMORY != N_NORMAL_MEMORY)
-+		node_clear_state(0, N_NORMAL_MEMORY);
- 
- 	zone_sizes_init();
- }
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5b74de6..f1f44d5 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1692,7 +1692,7 @@ bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
-  *
-  * If the zonelist cache is present in the passed in zonelist, then
-  * returns a pointer to the allowed node mask (either the current
-- * tasks mems_allowed, or node_states[N_HIGH_MEMORY].)
-+ * tasks mems_allowed, or node_states[N_MEMORY].)
-  *
-  * If the zonelist cache is not available for this zonelist, does
-  * nothing and returns NULL.
-@@ -1721,7 +1721,7 @@ static nodemask_t *zlc_setup(struct zonelist *zonelist, int alloc_flags)
- 
- 	allowednodes = !in_interrupt() && (alloc_flags & ALLOC_CPUSET) ?
- 					&cpuset_current_mems_allowed :
--					&node_states[N_HIGH_MEMORY];
-+					&node_states[N_MEMORY];
- 	return allowednodes;
- }
- 
-@@ -3194,7 +3194,7 @@ static int find_next_best_node(int node, nodemask_t *used_node_mask)
- 		return node;
- 	}
- 
--	for_each_node_state(n, N_HIGH_MEMORY) {
-+	for_each_node_state(n, N_MEMORY) {
- 
- 		/* Don't want a node to appear more than once */
- 		if (node_isset(n, *used_node_mask))
-@@ -3336,7 +3336,7 @@ static int default_zonelist_order(void)
-  	 * local memory, NODE_ORDER may be suitable.
-          */
- 	average_size = total_size /
--				(nodes_weight(node_states[N_HIGH_MEMORY]) + 1);
-+				(nodes_weight(node_states[N_MEMORY]) + 1);
- 	for_each_online_node(nid) {
- 		low_kmem_size = 0;
- 		total_size = 0;
-@@ -4687,7 +4687,7 @@ unsigned long __init find_min_pfn_with_active_regions(void)
- /*
-  * early_calculate_totalpages()
-  * Sum pages in active regions for movable zone.
-- * Populate N_HIGH_MEMORY for calculating usable_nodes.
-+ * Populate N_MEMORY for calculating usable_nodes.
-  */
- static unsigned long __init early_calculate_totalpages(void)
- {
-@@ -4700,7 +4700,7 @@ static unsigned long __init early_calculate_totalpages(void)
- 
- 		totalpages += pages;
- 		if (pages)
--			node_set_state(nid, N_HIGH_MEMORY);
-+			node_set_state(nid, N_MEMORY);
- 	}
-   	return totalpages;
- }
-@@ -4717,9 +4717,9 @@ static void __init find_zone_movable_pfns_for_nodes(void)
- 	unsigned long usable_startpfn;
- 	unsigned long kernelcore_node, kernelcore_remaining;
- 	/* save the state before borrow the nodemask */
--	nodemask_t saved_node_state = node_states[N_HIGH_MEMORY];
-+	nodemask_t saved_node_state = node_states[N_MEMORY];
- 	unsigned long totalpages = early_calculate_totalpages();
--	int usable_nodes = nodes_weight(node_states[N_HIGH_MEMORY]);
-+	int usable_nodes = nodes_weight(node_states[N_MEMORY]);
- 
- 	/*
- 	 * If movablecore was specified, calculate what size of
-@@ -4754,7 +4754,7 @@ static void __init find_zone_movable_pfns_for_nodes(void)
- restart:
- 	/* Spread kernelcore memory as evenly as possible throughout nodes */
- 	kernelcore_node = required_kernelcore / usable_nodes;
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		unsigned long start_pfn, end_pfn;
- 
- 		/*
-@@ -4846,23 +4846,27 @@ restart:
- 
- out:
- 	/* restore the node_state */
--	node_states[N_HIGH_MEMORY] = saved_node_state;
-+	node_states[N_MEMORY] = saved_node_state;
- }
- 
--/* Any regular memory on that node ? */
--static void __init check_for_regular_memory(pg_data_t *pgdat)
-+/* Any regular or high memory on that node ? */
-+static void check_for_memory(pg_data_t *pgdat, int nid)
- {
--#ifdef CONFIG_HIGHMEM
- 	enum zone_type zone_type;
- 
--	for (zone_type = 0; zone_type <= ZONE_NORMAL; zone_type++) {
-+	if (N_MEMORY == N_NORMAL_MEMORY)
-+		return;
-+
-+	for (zone_type = 0; zone_type <= ZONE_MOVABLE - 1; zone_type++) {
- 		struct zone *zone = &pgdat->node_zones[zone_type];
- 		if (zone->present_pages) {
--			node_set_state(zone_to_nid(zone), N_NORMAL_MEMORY);
-+			node_set_state(nid, N_HIGH_MEMORY);
-+			if (N_NORMAL_MEMORY != N_HIGH_MEMORY &&
-+			    zone_type <= ZONE_NORMAL)
-+				node_set_state(nid, N_NORMAL_MEMORY);
- 			break;
- 		}
- 	}
--#endif
- }
- 
- /**
-@@ -4945,8 +4949,8 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
- 
- 		/* Any memory on that node */
- 		if (pgdat->node_present_pages)
--			node_set_state(nid, N_HIGH_MEMORY);
--		check_for_regular_memory(pgdat);
-+			node_set_state(nid, N_MEMORY);
-+		check_for_memory(pgdat, nid);
- 	}
- }
- 
--- 
-1.8.0
-
+This piece of code tends to break in peculiar ways every time someone
+touches it. I could use some more convincing in the changelog this
+time it won't...
