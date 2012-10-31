@@ -1,169 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965229Ab2J3SMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:12:47 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:59042 "EHLO
+	id S965273Ab2J3SNz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:13:55 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:59049 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965212Ab2J3SMl (ORCPT
+	by vger.kernel.org with ESMTP id S934095Ab2J3SMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 14:12:41 -0400
+	Tue, 30 Oct 2012 14:12:46 -0400
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>
+To: Jonathan Cameron <jic23@cam.ac.uk>
 Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org
-Subject: [PATCH] w1-gpio: Simplify & get rid of defines
-Date: Wed, 31 Oct 2012 17:57:44 +0200
-Message-Id: <1351699064-4619-1-git-send-email-panto@antoniou-consulting.com>
+        "Patil, Rachna" <rachna@ti.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
+Subject: [PATCH] ti_tscadc: Match mfd sub devices to regmap interface
+Date: Wed, 31 Oct 2012 17:55:45 +0200
+Message-Id: <1351698945-3881-1-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no reason to have the OF defines; it complicates the driver.
-There's also no need for the funky platform_driver_probe.
+The MFD parent device now uses a regmap, instead of direct
+memory access. Use the same method in the sub devices to avoid
+nasty surprises.
 
-Add a few warnings in case there's a failure; helps us find out
-what went wrong.
+Also rework the channel initialization of tiadc a bit.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- drivers/w1/masters/w1-gpio.c | 58 ++++++++++++++++++++------------------------
- 1 file changed, 26 insertions(+), 32 deletions(-)
+ drivers/iio/adc/ti_am335x_adc.c           | 27 +++++++++++++++++++--------
+ drivers/input/touchscreen/ti_am335x_tsc.c | 16 +++++++++++++---
+ drivers/mfd/ti_am335x_tscadc.c            |  7 +++++--
+ 3 files changed, 37 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-index aec35bd..85b363a 100644
---- a/drivers/w1/masters/w1-gpio.c
-+++ b/drivers/w1/masters/w1-gpio.c
-@@ -18,6 +18,7 @@
- #include <linux/of_gpio.h>
- #include <linux/pinctrl/consumer.h>
- #include <linux/err.h>
-+#include <linux/of.h>
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index d48fd79..5f325c1 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -23,7 +23,9 @@
+ #include <linux/iio/iio.h>
+ #include <linux/iio/machine.h>
+ #include <linux/iio/driver.h>
++#include <linux/regmap.h>
  
- #include "../w1.h"
- #include "../w1_int.h"
-@@ -46,7 +47,6 @@ static u8 w1_gpio_read_bit(void *data)
- 	return gpio_get_value(pdata->pin) ? 1 : 0;
++#include <linux/io.h>
+ #include <linux/mfd/ti_am335x_tscadc.h>
+ #include <linux/platform_data/ti_am335x_adc.h>
+ 
+@@ -36,13 +38,17 @@ struct tiadc_device {
+ 
+ static unsigned int tiadc_readl(struct tiadc_device *adc, unsigned int reg)
+ {
+-	return readl(adc->mfd_tscadc->tscadc_base + reg);
++	unsigned int val;
++
++	val = (unsigned int)-1;
++	regmap_read(adc->mfd_tscadc->regmap_tscadc, reg, &val);
++	return val;
  }
  
--#ifdef CONFIG_OF
- static struct of_device_id w1_gpio_dt_ids[] = {
- 	{ .compatible = "w1-gpio" },
- 	{}
-@@ -57,11 +57,6 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
+ static void tiadc_writel(struct tiadc_device *adc, unsigned int reg,
+ 					unsigned int val)
  {
- 	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
- 	struct device_node *np = pdev->dev.of_node;
--	const struct of_device_id *of_id =
--			of_match_device(w1_gpio_dt_ids, &pdev->dev);
--
--	if (!of_id)
--		return 0;
- 
- 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
- 	if (!pdata)
-@@ -76,12 +71,6 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
- 
- 	return 0;
+-	writel(val, adc->mfd_tscadc->tscadc_base + reg);
++	regmap_write(adc->mfd_tscadc->regmap_tscadc, reg, val);
  }
--#else
--static int w1_gpio_probe_dt(struct platform_device *pdev)
--{
--	return 0;
--}
--#endif
  
- static int __init w1_gpio_probe(struct platform_device *pdev)
+ static void tiadc_step_config(struct tiadc_device *adc_dev)
+@@ -75,22 +81,24 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
+ 	tiadc_writel(adc_dev, REG_SE, STPENB_STEPENB);
+ }
+ 
+-static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
++static int tiadc_channel_init(struct iio_dev *indio_dev,
++		struct tiadc_device *adc_dev)
  {
-@@ -94,28 +83,41 @@ static int __init w1_gpio_probe(struct platform_device *pdev)
- 	if (IS_ERR(pinctrl))
- 		dev_warn(&pdev->dev, "unable to select pin group\n");
+ 	struct iio_chan_spec *chan_array;
+ 	struct iio_chan_spec *chan;
+ 	char *s;
+ 	int i, len, size, ret;
++	int channels = adc_dev->channels;
  
--	err = w1_gpio_probe_dt(pdev);
--	if (err < 0)
--		return err;
-+	if (of_have_populated_dt()) {
-+		err = w1_gpio_probe_dt(pdev);
-+		if (err < 0) {
-+			dev_err(&pdev->dev, "Failed to parse DT\n");
-+			return err;
-+		}
-+	}
- 
- 	pdata = pdev->dev.platform_data;
- 
--	if (!pdata)
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "No configuration data\n");
- 		return -ENXIO;
-+	}
- 
- 	master = kzalloc(sizeof(struct w1_bus_master), GFP_KERNEL);
--	if (!master)
-+	if (!master) {
-+		dev_err(&pdev->dev, "Out of memory\n");
+-	size = indio_dev->num_channels * (sizeof(struct iio_chan_spec) + 6);
++	size = channels * (sizeof(struct iio_chan_spec) + 6);
+ 	chan_array = kzalloc(size, GFP_KERNEL);
+ 	if (chan_array == NULL)
  		return -ENOMEM;
-+	}
  
- 	err = gpio_request(pdata->pin, "w1");
--	if (err)
-+	if (err) {
-+		dev_err(&pdev->dev, "gpio_request (pin) failed\n");
- 		goto free_master;
-+	}
+ 	/* buffer space is after the array */
+-	s = (char *)(chan_array + indio_dev->num_channels);
++	s = (char *)(chan_array + channels);
+ 	chan = chan_array;
+-	for (i = 0; i < indio_dev->num_channels; i++, chan++, s += len + 1) {
++	for (i = 0; i < channels; i++, chan++, s += len + 1) {
  
- 	if (gpio_is_valid(pdata->ext_pullup_enable_pin)) {
- 		err = gpio_request_one(pdata->ext_pullup_enable_pin,
- 				       GPIOF_INIT_LOW, "w1 pullup");
--		if (err < 0)
-+		if (err < 0) {
-+			dev_err(&pdev->dev, "gpio_request_one "
-+					"(ext_pullup_enable_pin) failed\n");
- 			goto free_gpio;
-+		}
+ 		len = sprintf(s, "AIN%d", i);
+ 
+@@ -105,8 +113,9 @@ static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
  	}
  
- 	master->data = pdata;
-@@ -130,8 +132,10 @@ static int __init w1_gpio_probe(struct platform_device *pdev)
- 	}
+ 	indio_dev->channels = chan_array;
++	indio_dev->num_channels = channels;
  
- 	err = w1_add_master_device(master);
+-	size = (indio_dev->num_channels + 1) * sizeof(struct iio_map);
++	size = (channels + 1) * sizeof(struct iio_map);
+ 	adc_dev->map = kzalloc(size, GFP_KERNEL);
+ 	if (adc_dev->map == NULL) {
+ 		kfree(chan_array);
+@@ -203,7 +212,7 @@ static int __devinit tiadc_probe(struct platform_device *pdev)
+ 
+ 	tiadc_step_config(adc_dev);
+ 
+-	err = tiadc_channel_init(indio_dev, adc_dev->channels);
++	err = tiadc_channel_init(indio_dev, adc_dev);
+ 	if (err < 0)
+ 		goto err_free_device;
+ 
+@@ -213,6 +222,8 @@ static int __devinit tiadc_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, indio_dev);
+ 
++	dev_info(&pdev->dev, "Initialized\n");
++
+ 	return 0;
+ 
+ err_free_channels:
+diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+index 7a26810..d09e1a7 100644
+--- a/drivers/input/touchscreen/ti_am335x_tsc.c
++++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+@@ -26,6 +26,7 @@
+ #include <linux/io.h>
+ #include <linux/input/ti_am335x_tsc.h>
+ #include <linux/delay.h>
++#include <linux/regmap.h>
+ 
+ #include <linux/mfd/ti_am335x_tscadc.h>
+ 
+@@ -64,13 +65,17 @@ struct titsc {
+ 
+ static unsigned int titsc_readl(struct titsc *ts, unsigned int reg)
+ {
+-	return readl(ts->mfd_tscadc->tscadc_base + reg);
++	unsigned int val;
++
++	val = (unsigned int)-1;
++	regmap_read(ts->mfd_tscadc->regmap_tscadc, reg, &val);
++	return val;
+ }
+ 
+ static void titsc_writel(struct titsc *tsc, unsigned int reg,
+ 					unsigned int val)
+ {
+-	writel(val, tsc->mfd_tscadc->tscadc_base + reg);
++	regmap_write(tsc->mfd_tscadc->regmap_tscadc, reg, val);
+ }
+ 
+ /*
+@@ -455,10 +460,15 @@ static int __devinit titsc_probe(struct platform_device *pdev)
+ 
+ 	/* register to the input system */
+ 	err = input_register_device(input_dev);
 -	if (err)
 +	if (err) {
-+		dev_err(&pdev->dev, "w1_add_master device failed\n");
- 		goto free_gpio_ext_pu;
++		dev_err(&pdev->dev, "Failed to register input device\n");
+ 		goto err_free_irq;
 +	}
  
- 	if (pdata->enable_external_pullup)
- 		pdata->enable_external_pullup(1);
-@@ -205,23 +209,13 @@ static struct platform_driver w1_gpio_driver = {
- 		.owner	= THIS_MODULE,
- 		.of_match_table = of_match_ptr(w1_gpio_dt_ids),
- 	},
-+	.probe = w1_gpio_probe,
- 	.remove	= __exit_p(w1_gpio_remove),
- 	.suspend = w1_gpio_suspend,
- 	.resume = w1_gpio_resume,
- };
+ 	platform_set_drvdata(pdev, ts_dev);
++
++	dev_info(&pdev->dev, "Initialized OK\n");
++
+ 	return 0;
  
--static int __init w1_gpio_init(void)
--{
--	return platform_driver_probe(&w1_gpio_driver, w1_gpio_probe);
--}
--
--static void __exit w1_gpio_exit(void)
--{
--	platform_driver_unregister(&w1_gpio_driver);
--}
--
--module_init(w1_gpio_init);
--module_exit(w1_gpio_exit);
-+module_platform_driver(w1_gpio_driver);
+ err_free_irq:
+diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+index cbb8b70c..4a7041c 100644
+--- a/drivers/mfd/ti_am335x_tscadc.c
++++ b/drivers/mfd/ti_am335x_tscadc.c
+@@ -31,6 +31,7 @@ static unsigned int tscadc_readl(struct ti_tscadc_dev *tsadc, unsigned int reg)
+ {
+ 	unsigned int val;
  
- MODULE_DESCRIPTION("GPIO w1 bus master driver");
- MODULE_AUTHOR("Ville Syrjala <syrjala@sci.fi>");
++	val = (unsigned int)-1;
+ 	regmap_read(tsadc->regmap_tscadc, reg, &val);
+ 	return val;
+ }
+@@ -68,7 +69,7 @@ static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
+ 	int			irq;
+ 	int			err, ctrl;
+ 	int			clk_value, clock_rate;
+-	int			tsc_wires, adc_channels = 0, total_channels;
++	int			tsc_wires = 0, adc_channels = 0, total_channels;
+ 
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "Could not find platform data\n");
+@@ -78,7 +79,9 @@ static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
+ 	if (pdata->adc_init)
+ 		adc_channels = pdata->adc_init->adc_channels;
+ 
+-	tsc_wires = pdata->tsc_init->wires;
++	if (pdata->tsc_init)
++		tsc_wires = pdata->tsc_init->wires;
++
+ 	total_channels = tsc_wires + adc_channels;
+ 
+ 	if (total_channels > 8) {
 -- 
 1.7.12
 
