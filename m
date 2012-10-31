@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422978Ab2JaOpA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 10:45:00 -0400
-Received: from aserp1050.oracle.com ([141.146.126.70]:18534 "EHLO
-	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965266Ab2JaOo6 convert rfc822-to-8bit (ORCPT
+	id S965615Ab2JaOtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 10:49:12 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:43587 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965266Ab2JaOtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 10:44:58 -0400
-MIME-Version: 1.0
-Message-ID: <c0d68556-54e7-479a-a7ae-6ca6f136d62d@default>
-Date: Wed, 31 Oct 2012 07:42:39 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: RE: [PATCH 0/2] mm: do not call frontswap_init() during swapoff
-References: <<1351372847-13625-1-git-send-email-cesarb@cesarb.net>>
-In-Reply-To: <<1351372847-13625-1-git-send-email-cesarb@cesarb.net>>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6661.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: aserp1040.oracle.com [141.146.126.69]
+	Wed, 31 Oct 2012 10:49:08 -0400
+From: Edgar Neukirchner <edgar.neukirchner@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Edgar Neukirchner <edgar.neukirchner@gmail.com>
+Subject: [PATCH] Staging: rtl8192e: rtllib_tx.c: fixed an asterisk coding style issue
+Date: Wed, 31 Oct 2012 15:48:58 +0100
+Message-Id: <1351694938-2354-1-git-send-email-edgar.neukirchner@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Cesar Eduardo Barros [mailto:cesarb@cesarb.net]
-> Sent: Saturday, October 27, 2012 3:21 PM
-> To: linux-mm@kvack.org
-> Cc: linux-kernel@vger.kernel.org; Konrad Rzeszutek Wilk; Dan Magenheimer; Andrew Morton; Mel Gorman;
-> Rik van Riel; KAMEZAWA Hiroyuki; Johannes Weiner; Cesar Eduardo Barros
-> Subject: [PATCH 0/2] mm: do not call frontswap_init() during swapoff
-> 
-> The call to frontswap_init() was added in a place where it is called not
-> only from sys_swapon, but also from sys_swapoff. This pair of patches
-> fixes that.
-> 
-> The first patch moves the acquisition of swap_lock from enable_swap_info
-> to two separate helpers, one for sys_swapon and one for sys_swapoff. As
-> a bonus, it also makes the code for sys_swapoff less subtle.
-> 
-> The second patch moves the call to frontswap_init() from the common code
-> to the helper used only by sys_swapon.
-> 
-> Compile-tested only, but should be safe.
-> 
-> Cesar Eduardo Barros (2):
->   mm: refactor reinsert of swap_info in sys_swapoff
->   mm: do not call frontswap_init() during swapoff
-> 
->  mm/swapfile.c | 26 +++++++++++++++++---------
->  1 file changed, 17 insertions(+), 9 deletions(-)
+Fixed coding style issue
 
-Belated but, I'm told, better late than never.
+Signed-off-by: Edgar Neukirchner <edgar.neukirchner@gmail.com>
+---
+ drivers/staging/rtl8192e/rtllib_tx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Minimally tested to ensure that frontswap continues
-to work properly with some disk swap activity, not
-exhaustively tested for swap in general.
+diff --git a/drivers/staging/rtl8192e/rtllib_tx.c b/drivers/staging/rtl8192e/rtllib_tx.c
+index 42900ee..759d7c7 100644
+--- a/drivers/staging/rtl8192e/rtllib_tx.c
++++ b/drivers/staging/rtl8192e/rtllib_tx.c
+@@ -287,7 +287,7 @@ static void rtllib_tx_query_agg_cap(struct rtllib_device *ieee,
+ {
+ 	struct rt_hi_throughput *pHTInfo = ieee->pHTInfo;
+ 	struct tx_ts_record *pTxTs = NULL;
+-	struct rtllib_hdr_1addr* hdr = (struct rtllib_hdr_1addr *)skb->data;
++	struct rtllib_hdr_1addr *hdr = (struct rtllib_hdr_1addr *)skb->data;
+ 
+ 	if (rtllib_act_scanning(ieee, false))
+ 		return;
+-- 
+1.7.11.7
 
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
