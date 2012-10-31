@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935903Ab2JaSRR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 14:17:17 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63888 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935878Ab2JaSQz (ORCPT
+	id S1945997Ab2JaSRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 14:17:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33705 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935862Ab2JaSQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 14:16:55 -0400
+	Wed, 31 Oct 2012 14:16:50 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
         bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH 8/8] cgroup: make ->pre_destroy() return void
-Date: Wed, 31 Oct 2012 11:16:31 -0700
-Message-Id: <1351707391-22287-9-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 6/8] memcg: make mem_cgroup_reparent_charges non failing
+Date: Wed, 31 Oct 2012 11:16:29 -0700
+Message-Id: <1351707391-22287-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351707391-22287-1-git-send-email-tj@kernel.org>
 References: <1351707391-22287-1-git-send-email-tj@kernel.org>
@@ -23,106 +22,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All ->pre_destory() implementations return 0 now, which is the only
-allowed return value.  Make it return void.
+From: Michal Hocko <mhocko@suse.cz>
 
+Now that pre_destroy callbacks are called from the context where neither
+any task can attach the group nor any children group can be added there
+is no other way to fail from mem_cgroup_pre_destroy.
+mem_cgroup_pre_destroy doesn't have to take a reference to memcg's css
+because all css' are marked dead already.
+
+tj: Remove now unused local variable @cgrp from
+    mem_cgroup_reparent_charges().
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Glauber Costa <glommer@parallels.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c     | 3 +--
- include/linux/cgroup.h | 2 +-
- kernel/cgroup.c        | 2 +-
- mm/hugetlb_cgroup.c    | 4 +---
- mm/memcontrol.c        | 3 +--
- 5 files changed, 5 insertions(+), 9 deletions(-)
+ mm/memcontrol.c | 19 ++++++-------------
+ 1 file changed, 6 insertions(+), 13 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index f3b44a6..a7816f3 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -600,7 +600,7 @@ struct cftype blkcg_files[] = {
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 1033b2b..47c4680 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3740,14 +3740,11 @@ static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
   *
-  * This is the blkcg counterpart of ioc_release_fn().
+  * Caller is responsible for holding css reference on the memcg.
   */
--static int blkcg_pre_destroy(struct cgroup *cgroup)
-+static void blkcg_pre_destroy(struct cgroup *cgroup)
+-static int mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
++static void mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
  {
- 	struct blkcg *blkcg = cgroup_to_blkcg(cgroup);
+-	struct cgroup *cgrp = memcg->css.cgroup;
+ 	int node, zid;
  
-@@ -622,7 +622,6 @@ static int blkcg_pre_destroy(struct cgroup *cgroup)
- 	}
- 
- 	spin_unlock_irq(&blkcg->lock);
--	return 0;
- }
- 
- static void blkcg_destroy(struct cgroup *cgroup)
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 47868a8..adb2adc 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -436,7 +436,7 @@ int cgroup_taskset_size(struct cgroup_taskset *tset);
- 
- struct cgroup_subsys {
- 	struct cgroup_subsys_state *(*create)(struct cgroup *cgrp);
--	int (*pre_destroy)(struct cgroup *cgrp);
-+	void (*pre_destroy)(struct cgroup *cgrp);
- 	void (*destroy)(struct cgroup *cgrp);
- 	int (*can_attach)(struct cgroup *cgrp, struct cgroup_taskset *tset);
- 	void (*cancel_attach)(struct cgroup *cgrp, struct cgroup_taskset *tset);
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index c5f6fb2..83cd7d0 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4054,7 +4054,7 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
- 	mutex_unlock(&cgroup_mutex);
- 	for_each_subsys(cgrp->root, ss)
- 		if (ss->pre_destroy)
--			WARN_ON_ONCE(ss->pre_destroy(cgrp));
-+			ss->pre_destroy(cgrp);
- 	mutex_lock(&cgroup_mutex);
- 
- 	/*
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index dc595c6..0d3a1a3 100644
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -155,7 +155,7 @@ out:
-  * Force the hugetlb cgroup to empty the hugetlb resources by moving them to
-  * the parent cgroup.
-  */
--static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
-+static void hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
- {
- 	struct hstate *h;
- 	struct page *page;
-@@ -172,8 +172,6 @@ static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
- 		}
- 		cond_resched();
- 	} while (hugetlb_cgroup_have_usage(cgroup));
+ 	do {
+-		if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
+-			return -EBUSY;
+ 		/* This is for making all *used* pages to be on LRU. */
+ 		lru_add_drain_all();
+ 		drain_all_stock_sync(memcg);
+@@ -3773,8 +3770,6 @@ static int mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
+ 		 * charge before adding to the LRU.
+ 		 */
+ 	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0);
 -
 -	return 0;
  }
  
- int hugetlb_cgroup_charge_cgroup(int idx, unsigned long nr_pages,
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 47c4680..af05a60 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5002,12 +5002,11 @@ free_out:
- 	return ERR_PTR(error);
+ /*
+@@ -3811,7 +3806,9 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
+ 
+ 	}
+ 	lru_add_drain();
+-	return mem_cgroup_reparent_charges(memcg);
++	mem_cgroup_reparent_charges(memcg);
++
++	return 0;
  }
  
--static int mem_cgroup_pre_destroy(struct cgroup *cont)
-+static void mem_cgroup_pre_destroy(struct cgroup *cont)
+ static int mem_cgroup_force_empty_write(struct cgroup *cont, unsigned int event)
+@@ -5008,13 +5005,9 @@ free_out:
+ static int mem_cgroup_pre_destroy(struct cgroup *cont)
  {
  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+-	int ret;
  
- 	mem_cgroup_reparent_charges(memcg);
--	return 0;
+-	css_get(&memcg->css);
+-	ret = mem_cgroup_reparent_charges(memcg);
+-	css_put(&memcg->css);
+-
+-	return ret;
++	mem_cgroup_reparent_charges(memcg);
++	return 0;
  }
  
  static void mem_cgroup_destroy(struct cgroup *cont)
