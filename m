@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422657Ab2JaKeP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:34:15 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:42302 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933030Ab2JaKeN (ORCPT
+	id S1422685Ab2JaKfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:35:42 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13164 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756035Ab2JaKfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:34:13 -0400
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
-        Chas Williams <chas@cmf.nrl.navy.mil>,
-        linux-atm-general@lists.sourceforge.net
-Subject: [PATCH] atm: he: use tasklet_kill in device remove/release process
-Date: Wed, 31 Oct 2012 18:34:47 +0800
-Message-Id: <1351679687-27049-1-git-send-email-xtfeng@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 31 Oct 2012 06:35:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 31 Oct 2012 03:35:37 -0700
+Message-ID: <5090FE97.7070303@nvidia.com>
+Date: Wed, 31 Oct 2012 16:03:59 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@opensource.wolfsonmicro.com" 
+	<patches@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] regulator: core: Move regulator release to avoid deadlock
+References: <20121029093333.GA17941@opensource.wolfsonmicro.com> <20121029161416.GE4511@opensource.wolfsonmicro.com>
+In-Reply-To: <20121029161416.GE4511@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some driver uses tasklet_disable in device remove/release process,
-tasklet_disable will inc tasklet->count and return. If the tasklet
-is not handled yet under some softirq pressure, the tasklet will be
-placed on the tasklet_vec, never have a chance to be excuted. This might
-lead to a heavy loaded ksoftirqd, wakeup with pending_softirq, but
-tasklet is disabled. tasklet_kill should be used in this case.
+On Monday 29 October 2012 09:44 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
+>
+> On Mon, Oct 29, 2012 at 09:33:33AM +0000, Charles Keepax wrote:
+>> regulator_put function was called whilst holding the
+>> regulator_list_mutex, which is also locked from regulator_put. This
+>> causes deadlock when failing to register a regulator.
+> Applied, thanks.
 
-Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Cc: Chas Williams <chas@cmf.nrl.navy.mil>
-Cc: linux-atm-general@lists.sourceforge.net
----
- drivers/atm/he.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This patch create the crash in following case:
+- If there is of rail supply and supply does not found. In this case it 
+goes to scrub and rdev->supply at this point shows NULL but when call 
+the function device_unregister(&rdev->dev), the rdev->supply becomes 
+random pointer.
 
-diff --git a/drivers/atm/he.c b/drivers/atm/he.c
-index b182c2f..1dfcc9a 100644
---- a/drivers/atm/he.c
-+++ b/drivers/atm/he.c
-@@ -1556,7 +1556,7 @@ he_stop(struct he_dev *he_dev)
- 		gen_cntl_0 &= ~(INT_PROC_ENBL | INIT_ENB);
- 		pci_write_config_dword(pci_dev, GEN_CNTL_0, gen_cntl_0);
- 
--		tasklet_disable(&he_dev->tasklet);
-+		tasklet_kill(&he_dev->tasklet);
- 
- 		/* disable recv and transmit */
- 
--- 
-1.7.9.5
-
+What happen if we do the device_unregister() outside the mutex lock?
