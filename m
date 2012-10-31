@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933862Ab2JaHZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 03:25:24 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42695 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932368Ab2JaHZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 03:25:16 -0400
+	id S933885Ab2JaH0B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 03:26:01 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42249 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932421Ab2JaHZS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 03:25:18 -0400
 From: "Philip, Avinash" <avinashphilip@ti.com>
 To: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>, <afzal@ti.com>,
         <tony@atomide.com>, <broonie@opensource.wolfsonmicro.com>,
@@ -13,10 +14,12 @@ To: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>, <afzal@ti.com>,
 CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <ivan.djelic@parrot.com>,
-        "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH v2 3/3] mtd: nand: omap2: Support for hardware BCH error correction
-Date: Wed, 31 Oct 2012 12:38:27 +0530
-Message-ID: <1351667307-447-4-git-send-email-avinashphilip@ti.com>
+        "Philip, Avinash" <avinashphilip@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: [PATCH v2 2/3] mtd: devices: elm: Add support for ELM error correction
+Date: Wed, 31 Oct 2012 12:38:26 +0530
+Message-ID: <1351667307-447-3-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1351667307-447-1-git-send-email-avinashphilip@ti.com>
 References: <1351667307-447-1-git-send-email-avinashphilip@ti.com>
@@ -26,691 +29,556 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ELM module can be used for hardware error correction of BCH 4 & 8 bit.
-Also support read & write page in one shot by adding custom read_page &
-write_page methods. This helps in optimizing code for NAND flashes with
-page size less than 4 KB.
-
-New structure member "is_elm_used" is added to know the status of
-whether the ELM module is used for error correction or not.
-
-Note:
-ECC layout uses 1 extra bytes for 512 byte of data to handle erased
-pages. Extra byte programmed to zero for programmed pages. Also BCH8
-requires 14 byte ecc to maintain compatibility with RBL ECC layout.
-This results a common ecc layout across RBL, U-boot & Linux with BCH8.
+The ELM hardware module can be used to speedup BCH 4/8/16 ECC scheme
+error correction.
+For now only 4 & 8 bit support is added
 
 Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
 ---
 Changes since v1:
-	- Incorporated GPMC modification to nand driver
-	- Erased page detects by checking OOB byte at fixed offset.
+	- change build attribute to CONFIG_MTD_NAND_OMAP_BCH
+	- Reduced indentation using by passing elm_info , offset
+	  to elm_read & elm_write
+	- Removed syndrome manipulation functions.
 
-:100644 100644 a02be29... 89bddc4... M	drivers/mtd/nand/omap2.c
-:100644 100644 d4fce31... b732089... M	include/linux/platform_data/elm.h
-:100644 100644 24d32ca... db8c68b... M	include/linux/platform_data/mtd-nand-omap2.h
- drivers/mtd/nand/omap2.c                     |  532 ++++++++++++++++++++++++--
- include/linux/platform_data/elm.h            |    2 +-
- include/linux/platform_data/mtd-nand-omap2.h |    1 +
- 3 files changed, 496 insertions(+), 39 deletions(-)
+:000000 100644 0000000... b88ee83... A	Documentation/devicetree/bindings/mtd/elm.txt
+:100644 100644 395733a... 369a194... M	drivers/mtd/devices/Makefile
+:000000 100644 0000000... bb36018... A	drivers/mtd/devices/elm.c
+:000000 100644 0000000... d4fce31... A	include/linux/platform_data/elm.h
+ Documentation/devicetree/bindings/mtd/elm.txt |   18 +
+ drivers/mtd/devices/Makefile                  |    4 +-
+ drivers/mtd/devices/elm.c                     |  418 +++++++++++++++++++++++++
+ include/linux/platform_data/elm.h             |   54 ++++
+ 4 files changed, 493 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-index a02be29..89bddc4 100644
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -25,6 +25,7 @@
+diff --git a/Documentation/devicetree/bindings/mtd/elm.txt b/Documentation/devicetree/bindings/mtd/elm.txt
+new file mode 100644
+index 0000000..b88ee83
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mtd/elm.txt
+@@ -0,0 +1,18 @@
++Error location module
++
++Required properties:
++- compatible: Must be "ti,elm"
++- reg: physical base address and size of the registers map.
++- interrupts: Interrupt number for the elm.
++- interrupt-parent: The parent interrupt controller
++
++Optional properties:
++- ti,hwmods: Name of the hwmod associated to the elm
++
++Example:
++elm: elm@0 {
++	compatible	= "ti,elm";
++	reg = <0x48080000 0x2000>;
++	interrupt-parent = <&intc>;
++	interrupts = <4>;
++};
+diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
+index 395733a..369a194 100644
+--- a/drivers/mtd/devices/Makefile
++++ b/drivers/mtd/devices/Makefile
+@@ -17,8 +17,10 @@ obj-$(CONFIG_MTD_LART)		+= lart.o
+ obj-$(CONFIG_MTD_BLOCK2MTD)	+= block2mtd.o
+ obj-$(CONFIG_MTD_DATAFLASH)	+= mtd_dataflash.o
+ obj-$(CONFIG_MTD_M25P80)	+= m25p80.o
++obj-$(CONFIG_MTD_NAND_OMAP_BCH)	+= elm.o
+ obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
+ obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
+ obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
  
- #ifdef CONFIG_MTD_NAND_OMAP_BCH
- #include <linux/bch.h>
+-CFLAGS_docg3.o			+= -I$(src)
+\ No newline at end of file
++
++CFLAGS_docg3.o			+= -I$(src)
+diff --git a/drivers/mtd/devices/elm.c b/drivers/mtd/devices/elm.c
+new file mode 100644
+index 0000000..bb36018
+--- /dev/null
++++ b/drivers/mtd/devices/elm.c
+@@ -0,0 +1,418 @@
++/*
++ * Error Location Module
++ *
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/platform_device.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/pm_runtime.h>
 +#include <linux/platform_data/elm.h>
- #endif
- 
- #include <plat-omap/dma-omap.h>
-@@ -121,6 +122,30 @@
- #define BCH8_MAX_ERROR		8	/* upto 8 bit correctable */
- #define BCH4_MAX_ERROR		4	/* upto 4 bit correctable */
- 
-+#define SECTOR_BYTES		512
-+/* 4 bit padding to make byte aligned, 56 = 52 + 4 */
-+#define BCH4_BIT_PAD		4
-+#define BCH8_ECC_MAX		((SECTOR_BYTES + BCH8_ECC_OOB_BYTES) * 8)
-+#define BCH4_ECC_MAX		((SECTOR_BYTES + BCH4_ECC_OOB_BYTES) * 8)
 +
-+/* GPMC ecc engine settings for read */
-+#define BCH_WRAPMODE_1		1	/* BCH wrap mode 1 */
-+#define BCH8R_ECC_SIZE0		0x1a	/* ecc_size0 = 26 */
-+#define BCH8R_ECC_SIZE1		0x2	/* ecc_size1 = 2 */
-+#define BCH4R_ECC_SIZE0		0xd	/* ecc_size0 = 13 */
-+#define BCH4R_ECC_SIZE1		0x3	/* ecc_size1 = 3 */
++#define ELM_IRQSTATUS			0x018
++#define ELM_IRQENABLE			0x01c
++#define ELM_LOCATION_CONFIG		0x020
++#define ELM_PAGE_CTRL			0x080
++#define ELM_SYNDROME_FRAGMENT_0		0x400
++#define ELM_SYNDROME_FRAGMENT_6		0x418
++#define ELM_LOCATION_STATUS		0x800
++#define ELM_ERROR_LOCATION_0		0x880
 +
-+/* GPMC ecc engine settings for write */
-+#define BCH_WRAPMODE_6		6	/* BCH wrap mode 6 */
-+#define BCH_ECC_SIZE0		0x0	/* ecc_size0 = 0, no oob protection */
-+#define BCH_ECC_SIZE1		0x20	/* ecc_size1 = 32 */
++/* ELM Interrupt Status Register */
++#define INTR_STATUS_PAGE_VALID		BIT(8)
 +
-+#ifdef CONFIG_MTD_NAND_OMAP_BCH
-+static u_char bch8_vector[] = {0xf3, 0xdb, 0x14, 0x16, 0x8b, 0xd2, 0xbe, 0xcc,
-+	0xac, 0x6b, 0xff, 0x99, 0x7b};
-+static u_char bch4_vector[] = {0x00, 0x6b, 0x31, 0xdd, 0x41, 0xbc, 0x10};
-+#endif
++/* ELM Interrupt Enable Register */
++#define INTR_EN_PAGE_MASK		BIT(8)
 +
- /* oob info generated runtime depending on ecc algorithm and layout selected */
- static struct nand_ecclayout omap_oobinfo;
- /* Define some generic bad / good block scan pattern which are used
-@@ -160,6 +185,8 @@ struct omap_nand_info {
- #ifdef CONFIG_MTD_NAND_OMAP_BCH
- 	struct bch_control             *bch;
- 	struct nand_ecclayout           ecclayout;
-+	bool				is_elm_used;
-+	struct device			*elm_dev;
- #endif
- };
- 
-@@ -1035,6 +1062,12 @@ static int omap_dev_ready(struct mtd_info *mtd)
-  * omap3_enable_hwecc_bch - Program OMAP3 GPMC to perform BCH ECC correction
-  * @mtd: MTD device structure
-  * @mode: Read/Write mode
-+ * When using BCH, sector size is hardcoded to 512 bytes.
-+ * Using wrapping mode 6 both for reading and writing if ELM module not uses
-+ * for error correction.
-+ * On writing,
-+ * eccsize0 = 0  (no additional protected byte in spare area)
-+ * eccsize1 = 32 (skip 32 nibbles = 16 bytes per sector in spare area)
-  */
- static void omap3_enable_hwecc_bch(struct mtd_info *mtd, int mode)
- {
-@@ -1043,32 +1076,59 @@ static void omap3_enable_hwecc_bch(struct mtd_info *mtd, int mode)
- 	struct omap_nand_info *info = container_of(mtd, struct omap_nand_info,
- 						   mtd);
- 	struct nand_chip *chip = mtd->priv;
--	u32 val;
-+	u32 val, wr_mode;
-+	unsigned int ecc_size1, ecc_size0;
++/* ELM Location Configuration Register */
++#define ECC_BCH_LEVEL_MASK		0x3
 +
-+	/* Using wrapping mode 6 for writing */
-+	wr_mode = BCH_WRAPMODE_6;
- 
--	nerrors = info->nand.ecc.strength;
--	dev_width = (chip->options & NAND_BUSWIDTH_16) ? 1 : 0;
--	nsectors = 1;
- 	/*
--	 * Program GPMC to perform correction on one 512-byte sector at a time.
--	 * Using 4 sectors at a time (i.e. ecc.size = 2048) is also possible and
--	 * gives a slight (5%) performance gain (but requires additional code).
-+	 * ECC engine enabled for valid ecc_size0 nibbles
-+	 * & disabled for ecc_size1 nibbles.
- 	 */
-+	ecc_size0 = BCH_ECC_SIZE0;
-+	ecc_size1 = BCH_ECC_SIZE1;
- 
--	writel(ECC1, info->reg.gpmc_ecc_control);
-+	 /* Perform ecc calculation on 512-byte sector */
-+	nsectors = 1;
++/* ELM syndrome */
++#define ELM_SYNDROME_VALID		BIT(16)
 +
-+	/* update number of error correction */
-+	nerrors = info->nand.ecc.strength;
- 
- 	/*
--	 * When using BCH, sector size is hardcoded to 512 bytes.
--	 * Here we are using wrapping mode 6 both for reading and writing, with:
--	 *  size0 = 0  (no additional protected byte in spare area)
--	 *  size1 = 32 (skip 32 nibbles = 16 bytes per sector in spare area)
-+	 * Perform multi sector reading/writing for
-+	 * NAND flashes with page size < 4096
- 	 */
--	val = (32 << ECCSIZE1_SHIFT) | (0 << ECCSIZE0_SHIFT);
-+	if (info->is_elm_used && (mtd->writesize <= 4096)) {
-+		if (mode == NAND_ECC_READ) {
-+			/* Using wrapping mode 1 for reading */
-+			wr_mode = BCH_WRAPMODE_1;
++/* ELM_LOCATION_STATUS Register */
++#define ECC_CORRECTABLE_MASK		BIT(8)
++#define ECC_NB_ERRORS_MASK		0x1f
 +
-+			/*
-+			 * ECC engine enabled for ecc_size0 nibbles
-+			 * & disabled for ecc_size1 nibbles.
-+			 */
-+			ecc_size0 = (nerrors == 8) ?
-+				BCH8R_ECC_SIZE0 : BCH4R_ECC_SIZE0;
-+			ecc_size1 = (nerrors == 8) ?
-+				BCH8R_ECC_SIZE1 : BCH4R_ECC_SIZE1;
-+		}
++/* ELM_ERROR_LOCATION_0-15 Registers */
++#define ECC_ERROR_LOCATION_MASK		0x1fff
 +
-+		/* Perform ecc calculation for one page (< 4096) */
-+		nsectors = info->nand.ecc.steps;
-+	}
++#define ELM_ECC_SIZE			0x7ff
 +
-+	dev_width = (chip->options & NAND_BUSWIDTH_16) ? 1 : 0;
++#define SYNDROME_FRAGMENT_REG_SIZE	0x40
++#define ERROR_LOCATION_SIZE		0x100
 +
-+	writel(ECC1, info->reg.gpmc_ecc_control);
++struct elm_info {
++	struct device *dev;
++	void __iomem *elm_base;
++	struct completion elm_completion;
++	struct list_head list;
++	enum bch_ecc bch_type;
++};
 +
-+	val = (ecc_size1 << ECCSIZE1_SHIFT) | (ecc_size0 << ECCSIZE0_SHIFT);
- 	writel(val, info->reg.gpmc_ecc_size_config);
- 
- 	/* BCH configuration */
- 	val = ((1                        << 16) | /* enable BCH */
- 	       (((nerrors == 8) ? 1 : 0) << 12) | /* 8 or 4 bits */
--	       (0x06                     <<  8) | /* wrap mode = 6 */
-+	       (wr_mode                  <<  8) | /* wrap mode */
- 	       (dev_width                <<  7) | /* bus width */
- 	       (((nsectors-1) & 0x7)     <<  4) | /* number of sectors */
- 	       (info->gpmc_cs            <<  1) | /* ECC CS */
-@@ -1166,6 +1226,280 @@ static int omap3_calculate_ecc_bch8(struct mtd_info *mtd, const u_char *dat,
- }
- 
- /**
-+ * omap3_calculate_ecc_bch - Generate bytes of ECC bytes
-+ * @mtd:	MTD device structure
-+ * @dat:	The pointer to data on which ecc is computed
-+ * @ecc_code:	The ecc_code buffer
-+ *
-+ * support reading og BCH4/8 ecc vectors for the page
-+ */
-+static int omap3_calculate_ecc_bch(struct mtd_info *mtd, const u_char *dat,
-+				    u_char *ecc_code)
++static LIST_HEAD(elm_devices);
++
++static void elm_write_reg(struct elm_info *info, int offset, u32 val)
 +{
-+	struct omap_nand_info *info = container_of(mtd, struct omap_nand_info,
-+						   mtd);
-+	unsigned long nsectors, bch_val1, bch_val2, bch_val3, bch_val4;
-+	int i, eccbchtsel;
++	writel(val, info->elm_base + offset);
++}
 +
-+	nsectors = ((readl(info->reg.gpmc_ecc_config) >> 4) & 0x7) + 1;
-+	/*
-+	 * find BCH scheme used
-+	 * 0 -> BCH4
-+	 * 1 -> BCH8
-+	 */
-+	eccbchtsel = ((readl(info->reg.gpmc_ecc_config) >> 12) & 0x3);
-+
-+	for (i = 0; i < nsectors; i++) {
-+
-+		/* Read hw-computed remainder */
-+		bch_val1 = readl(info->reg.gpmc_bch_result0[i]);
-+		bch_val2 = readl(info->reg.gpmc_bch_result1[i]);
-+		if (eccbchtsel) {
-+			bch_val3 = readl(info->reg.gpmc_bch_result2[i]);
-+			bch_val4 = readl(info->reg.gpmc_bch_result3[i]);
-+		}
-+
-+		if (eccbchtsel) {
-+			/* BCH8 ecc scheme */
-+			*ecc_code++ = (bch_val4 & 0xFF);
-+			*ecc_code++ = ((bch_val3 >> 24) & 0xFF);
-+			*ecc_code++ = ((bch_val3 >> 16) & 0xFF);
-+			*ecc_code++ = ((bch_val3 >> 8) & 0xFF);
-+			*ecc_code++ = (bch_val3 & 0xFF);
-+			*ecc_code++ = ((bch_val2 >> 24) & 0xFF);
-+			*ecc_code++ = ((bch_val2 >> 16) & 0xFF);
-+			*ecc_code++ = ((bch_val2 >> 8) & 0xFF);
-+			*ecc_code++ = (bch_val2 & 0xFF);
-+			*ecc_code++ = ((bch_val1 >> 24) & 0xFF);
-+			*ecc_code++ = ((bch_val1 >> 16) & 0xFF);
-+			*ecc_code++ = ((bch_val1 >> 8) & 0xFF);
-+			*ecc_code++ = (bch_val1 & 0xFF);
-+			/*
-+			 * Setting 14th byte to zero to handle
-+			 * erased page & maintain compatibility
-+			 * with RBL
-+			 */
-+			*ecc_code++ = 0x0;
-+		} else {
-+			/* BCH4 ecc scheme */
-+			*ecc_code++ = ((bch_val2 >> 12) & 0xFF);
-+			*ecc_code++ = ((bch_val2 >> 4) & 0xFF);
-+			*ecc_code++ = ((bch_val2 & 0xF) << 4) |
-+				((bch_val1 >> 28) & 0xF);
-+			*ecc_code++ = ((bch_val1 >> 20) & 0xFF);
-+			*ecc_code++ = ((bch_val1 >> 12) & 0xFF);
-+			*ecc_code++ = ((bch_val1 >> 4) & 0xFF);
-+			*ecc_code++ = ((bch_val1 & 0xF) << 4);
-+			/*
-+			 * Setting 8th byte to zero to handle
-+			 * erased page
-+			 */
-+			*ecc_code++ = 0x0;
-+		}
-+	}
-+
-+	return 0;
++static u32 elm_read_reg(struct elm_info *info, int offset)
++{
++	return readl(info->elm_base + offset);
 +}
 +
 +/**
-+ * erased_sector_bitflips - count bit flips
-+ * @data:	data sector buffer
-+ * @oob:	oob buffer
-+ * @info:	omap_nand_info
-+ *
-+ * Check the bit flips in erased page falls below correctable level.
-+ * If falls below, report the page as erased with correctable bit
-+ * flip, else report as uncorrectable page.
++ * elm_config - Configure ELM module
++ * @info:	elm info
 + */
-+static int erased_sector_bitflips(u_char *data, u_char *oob,
-+		struct omap_nand_info *info)
++static void elm_config(struct elm_info *info)
 +{
-+	int flip_bits = 0, i;
++	u32 reg_val;
 +
-+	for (i = 0; i < info->nand.ecc.size; i++) {
-+		flip_bits += hweight8(~data[i]);
-+		if (flip_bits > info->nand.ecc.strength)
-+			return 0;
-+	}
-+
-+	for (i = 0; i < info->nand.ecc.bytes - 1; i++) {
-+		flip_bits += hweight8(~oob[i]);
-+		if (flip_bits > info->nand.ecc.strength)
-+			return 0;
-+	}
-+
-+	/*
-+	 * Bit flips falls in correctable level.
-+	 * Fill data araea with 0xFF
-+	 */
-+	memset(data, 0xFF, info->nand.ecc.size);
-+
-+	return flip_bits;
++	reg_val = (info->bch_type & ECC_BCH_LEVEL_MASK) | (ELM_ECC_SIZE << 16);
++	elm_write_reg(info, ELM_LOCATION_CONFIG, reg_val);
 +}
 +
 +/**
-+ * omap_elm_correct_data - corrects page data area in case error reported
-+ * @mtd:	MTD device structure
-+ * @data:	page data
-+ * @read_ecc:	ecc read from nand flash
-+ * @calc_ecc:	ecc read from HW ECC registers
++ * elm_configure_page_mode - Enable/Disable page mode
++ * @info:	elm info
++ * @index:	index number of syndrome fragment vector
++ * @enable:	enable/disable flag for page mode
 + *
-+ * Calculated ecc vector reported as zero in case of non-error pages.
-+ * In case of error/erased pages non-zero error vector is reported.
-+ * In case of non-zero ecc vector, check read_ecc at fixed offset
-+ * (x = 13/7 in case of BCH8/4 == 0) to find page programmed or not.
-+ * To handle bit flips in this data, count the number of 0's in
-+ * read_ecc[x] and check if it greater than 4. If it is less, it is
-+ * programmed page, else erased page.
-+ *
-+ * 1. If page is erased, check with standard ecc vector (ecc vector
-+ * for erased page to find any bit flip). If check fails, bit flip
-+ * is present in erased page. Count the bit flips in erased page and
-+ * if it falls under correctable level, report page with 0xFF and
-+ * update the correctable bit information.
-+ * 2. If error is reported on programmed page, update elm error
-+ * vector and correct the page with ELM error correction routine.
-+ *
++ * Enable page mode for syndrome fragment index
 + */
-+static int omap_elm_correct_data(struct mtd_info *mtd, u_char *data,
-+				u_char *read_ecc, u_char *calc_ecc)
++static void elm_configure_page_mode(struct elm_info *info, int index,
++		bool enable)
 +{
-+	struct omap_nand_info *info = container_of(mtd, struct omap_nand_info,
-+			mtd);
-+	int eccsteps = info->nand.ecc.steps;
-+	int i , j, stat = 0;
-+	int eccsize, eccflag, ecc_vector_size;
-+	struct elm_errorvec err_vec[ERROR_VECTOR_MAX];
-+	u_char *ecc_vec = calc_ecc;
-+	u_char *erased_ecc_vec;
-+	enum bch_ecc type;
-+	bool is_error_reported = false;
++	u32 reg_val;
 +
-+	/* Initialize elm error vector to zero */
-+	memset(err_vec, 0, sizeof(err_vec));
++	reg_val = elm_read_reg(info, ELM_PAGE_CTRL);
++	if (enable)
++		reg_val |= BIT(index);	/* enable page mode */
++	else
++		reg_val &= ~BIT(index);	/* disable page mode */
 +
-+	if (info->nand.ecc.strength == BCH8_MAX_ERROR) {
-+		type = BCH8_ECC;
-+		ecc_vector_size = BCH8_SIZE;
-+		eccsize = BCH8_ECC_OOB_BYTES;
-+		erased_ecc_vec = bch8_vector;
-+	} else {
-+		type = BCH4_ECC;
-+		ecc_vector_size = BCH4_SIZE;
-+		eccsize = BCH4_ECC_OOB_BYTES;
-+		erased_ecc_vec = bch4_vector;
-+	}
++	elm_write_reg(info, ELM_PAGE_CTRL, reg_val);
++}
 +
-+	for (i = 0; i < eccsteps ; i++) {
-+		eccflag = 0;	/* initialize eccflag */
++/**
++ * elm_load_syndrome - Load ELM syndrome reg
++ * @info:	elm info
++ * @err_vec:	elm error vectors
++ * @ecc:	buffer with calculated ecc
++ *
++ * Load syndrome fragment registers with calculated ecc in reverse order.
++ */
++static void elm_load_syndrome(struct elm_info *info,
++		struct elm_errorvec *err_vec, u8 *ecc)
++{
++	int i, offset;
++	u32 val;
 +
-+		/*
-+		 * Check any error reported,
-+		 * In case of error, non zero ecc reported.
-+		 */
++	for (i = 0; i < ERROR_VECTOR_MAX; i++) {
 +
-+		for (j = 0; (j < eccsize); j++) {
-+			if (calc_ecc[j] != 0) {
-+				eccflag = 1; /* non zero ecc, error present */
-+				break;
-+			}
-+		}
-+
-+		if (eccflag == 1) {
-+
-+			/*
-+			 * Check data area is programmed by counting
-+			 * number of 0's at fixed offset in spare area.
-+			 * Checking count of 0's against 4(threshold set
-+			 * to 4 to allow half bit flips at byte offset,
-+			 * worst case)
-+			 * In case programmed page expects at least 4
-+			 * zeros in byte.
-+			 * If zeros are less than 4 for programmed page /
-+			 * zeros are more than 4 erased page, either
-+			 * case page reported as uncorrectable.
-+			 */
-+			if (hweight8(~read_ecc[eccsize]) >= 4) {
-+				/*
-+				 * Update elm error vector as
-+				 * data area is programmed
-+				 */
-+				err_vec[i].error_reported = true;
-+				is_error_reported = true;
-+			} else {
-+				/* Error reported in erased page */
-+				int bitflip_count;
-+				u_char *buf = &data[info->nand.ecc.size * i];
-+
-+				if (memcmp(calc_ecc, erased_ecc_vec, eccsize)) {
-+					bitflip_count = erased_sector_bitflips(
-+							buf, read_ecc, info);
-+
-+					if (bitflip_count)
-+						stat += bitflip_count;
-+					else
-+						return -EINVAL;
-+				}
-+			}
-+		}
-+
-+		/* Update the ecc vector */
-+		calc_ecc = calc_ecc + ecc_vector_size;
-+		read_ecc = read_ecc + ecc_vector_size;
-+	}
-+
-+	/* Check if any error reported */
-+	if (!is_error_reported)
-+		return stat;
-+
-+	/* Decode BCH error using ELM module */
-+	elm_decode_bch_error_page(info->elm_dev, ecc_vec, err_vec);
-+
-+	for (i = 0; i < eccsteps; i++) {
++		/* Check error reported */
 +		if (err_vec[i].error_reported) {
-+			for (j = 0; j < err_vec[i].error_count; j++) {
-+				u32 bit_pos, byte_pos, error_max, pos;
++			elm_configure_page_mode(info, i, true);
++			offset = ELM_SYNDROME_FRAGMENT_0 +
++				SYNDROME_FRAGMENT_REG_SIZE * i;
 +
-+				if (type == BCH8_ECC)
-+					error_max = BCH8_ECC_MAX;
-+				else
-+					error_max = BCH4_ECC_MAX;
++			/* BCH8 */
++			if (info->bch_type) {
 +
-+				if (info->nand.ecc.strength == BCH8_MAX_ERROR)
-+					pos = err_vec[i].error_loc[j];
-+				else
-+					/* Add 4 to take care 4 bit padding */
-+					pos = err_vec[i].error_loc[j] +
-+						BCH4_BIT_PAD;
++				/* syndrome fragment 0 = ecc[9-12B] */
++				val = cpu_to_be32(*(u32 *) &ecc[9]);
++				elm_write_reg(info, offset, val);
 +
-+				/* Calculate bit position of error */
-+				bit_pos = pos % 8;
++				/* syndrome fragment 1 = ecc[5-8B] */
++				offset += 4;
++				val = cpu_to_be32(*(u32 *) &ecc[5]);
++				elm_write_reg(info, offset, val);
 +
-+				/* Calculate byte position of error */
-+				byte_pos = (error_max - pos - 1) / 8;
++				/* syndrome fragment 2 = ecc[1-4B] */
++				offset += 4;
++				val = cpu_to_be32(*(u32 *) &ecc[1]);
++				elm_write_reg(info, offset, val);
 +
-+				if (pos < error_max)
-+					data[byte_pos] ^= 1 << bit_pos;
-+				/* else, not interested to correct ecc */
++				/* syndrome fragment 3 = ecc[0B] */
++				offset += 4;
++				val = ecc[0];
++				elm_write_reg(info, offset, val);
++			} else {
++				/* syndrome fragment 0 = ecc[20-52b] bits */
++				val = (cpu_to_be32(*(u32 *) &ecc[3]) >> 4) |
++					((ecc[2] & 0xf) << 28);
++				elm_write_reg(info, offset, val);
++
++				/* sydrome fragment 1 = ecc[0-20b] bits */
++				offset += 4;
++				val = cpu_to_be32(*(u32 *) &ecc[0]) >> 12;
++				elm_write_reg(info, offset, val);
 +			}
 +		}
 +
-+		/* Update number of correctable errors */
-+		stat += err_vec[i].error_count;
++		/* Update ecc pointer with ecc byte size */
++		ecc += info->bch_type ? BCH8_SIZE : BCH4_SIZE;
++	}
++}
 +
-+		/* Update page data with sector size */
-+		data += info->nand.ecc.size;
++/**
++ * elm_start_processing - start elm syndrome processing
++ * @info:	elm info
++ * @err_vec:	elm error vectors
++ *
++ * Set syndrome valid bit for syndrome fragment registers for which
++ * elm syndrome fragment registers are loaded. This enables elm module
++ * to start processing syndrome vectors.
++ */
++static void elm_start_processing(struct elm_info *info,
++		struct elm_errorvec *err_vec)
++{
++	int i, offset;
++	u32 reg_val;
++
++	/*
++	 * Set syndrome vector valid so that ELM module
++	 * will process it for vectors error is reported
++	 */
++	for (i = 0; i < ERROR_VECTOR_MAX; i++) {
++		if (err_vec[i].error_reported) {
++			offset = ELM_SYNDROME_FRAGMENT_6 +
++				SYNDROME_FRAGMENT_REG_SIZE * i;
++			reg_val = elm_read_reg(info, offset);
++			reg_val |= ELM_SYNDROME_VALID;
++			elm_write_reg(info, offset, reg_val);
++		}
++	}
++}
++
++/**
++ * elm_error_correction - locate correctable error position
++ * @info:	elm info
++ * @err_vec:	elm error vectors
++ *
++ * On completion of processing by elm module, error location status
++ * register updated with correctable/uncorrectable error information.
++ * In case of correctable errors, number of errors located from
++ * elm location status register & read the positions from
++ * elm error location register.
++ */
++static void elm_error_correction(struct elm_info *info,
++		struct elm_errorvec *err_vec)
++{
++	int i, j, errors = 0;
++	int offset;
++	u32 reg_val;
++
++	for (i = 0; i < ERROR_VECTOR_MAX; i++) {
++
++		/* Check error reported */
++		if (err_vec[i].error_reported) {
++			offset = ELM_LOCATION_STATUS + ERROR_LOCATION_SIZE * i;
++			reg_val = elm_read_reg(info, offset);
++
++			/* Check correctable error or not */
++			if (reg_val & ECC_CORRECTABLE_MASK) {
++				offset = ELM_ERROR_LOCATION_0 +
++					ERROR_LOCATION_SIZE * i;
++
++				/* Read count of correctable errors */
++				err_vec[i].error_count = reg_val &
++					ECC_NB_ERRORS_MASK;
++
++				/* Update the error locations in error vector */
++				for (j = 0; j < err_vec[i].error_count; j++) {
++
++					reg_val = elm_read_reg(info, offset);
++					err_vec[i].error_loc[j] = reg_val &
++						ECC_ERROR_LOCATION_MASK;
++
++					/* Update error location register */
++					offset += 4;
++				}
++
++				errors += err_vec[i].error_count;
++			} else {
++				err_vec[i].error_uncorrectable = true;
++			}
++
++			/* Clearing interrupts for processed error vectors */
++			elm_write_reg(info, ELM_IRQSTATUS, BIT(i));
++
++			/* Disable page mode */
++			elm_configure_page_mode(info, i, false);
++		}
++	}
++}
++
++/**
++ * elm_decode_bch_error_page - Locate error position
++ * @dev:	device pointer
++ * @ecc_calc:	calculated ECC bytes from GPMC
++ * @err_vec:	elm error vectors
++ *
++ * Called with one or more error reported vectors & vectors with
++ * error reported is updated in err_vec[].error_reported
++ *
++ */
++void elm_decode_bch_error_page(struct device *dev, u8 *ecc_calc,
++		struct elm_errorvec *err_vec)
++{
++	struct elm_info *info = dev_get_drvdata(dev);
++	u32 reg_val;
++
++	/* Enable page mode interrupt */
++	reg_val = elm_read_reg(info, ELM_IRQSTATUS);
++	elm_write_reg(info, ELM_IRQSTATUS, reg_val & INTR_STATUS_PAGE_VALID);
++	elm_write_reg(info, ELM_IRQENABLE, INTR_EN_PAGE_MASK);
++
++	/* Load valid ecc byte to syndrome fragment register */
++	elm_load_syndrome(info, err_vec, ecc_calc);
++
++	/* Enable syndrome processing for which syndrome fragment is updated */
++	elm_start_processing(info, err_vec);
++
++	/* Wait for ELM module to finish locating error correction */
++	wait_for_completion(&info->elm_completion);
++
++	/* Disable page mode interrupt */
++	reg_val = elm_read_reg(info, ELM_IRQENABLE);
++	elm_write_reg(info, ELM_IRQENABLE, reg_val & ~INTR_EN_PAGE_MASK);
++	elm_error_correction(info, err_vec);
++}
++EXPORT_SYMBOL(elm_decode_bch_error_page);
++
++static irqreturn_t elm_isr(int this_irq, void *dev_id)
++{
++	u32 reg_val;
++	struct elm_info *info = dev_id;
++
++	reg_val = elm_read_reg(info, ELM_IRQSTATUS);
++
++	/* All error vectors processed */
++	if (reg_val & INTR_STATUS_PAGE_VALID) {
++		elm_write_reg(info, ELM_IRQSTATUS,
++				reg_val & INTR_STATUS_PAGE_VALID);
++		complete(&info->elm_completion);
++		return IRQ_HANDLED;
 +	}
 +
-+	for (i = 0; i < eccsteps; i++)
-+		/* Return error if uncorrectable error present */
-+		if (err_vec[i].error_uncorrectable)
-+			return -EINVAL;
-+
-+	return stat;
++	return IRQ_NONE;
 +}
 +
-+/**
-  * omap3_correct_data_bch - Decode received data and correct errors
-  * @mtd: MTD device structure
-  * @data: page data
-@@ -1198,6 +1532,89 @@ static int omap3_correct_data_bch(struct mtd_info *mtd, u_char *data,
- }
- 
- /**
-+ * omap_write_page_bch - BCH ecc based write page function for entire page
-+ * @mtd:		mtd info structure
-+ * @chip:		nand chip info structure
-+ * @buf:		data buffer
-+ * @oob_required:	must write chip->oob_poi to OOB
-+ *
-+ * Custom write page method evolved to support multi sector writing in one shot
-+ */
-+static int omap_write_page_bch(struct mtd_info *mtd, struct nand_chip *chip,
-+				  const uint8_t *buf, int oob_required)
++struct device *elm_request(enum bch_ecc bch_type)
 +{
-+	int i;
-+	uint8_t *ecc_calc = chip->buffers->ecccalc;
-+	uint32_t *eccpos = chip->ecc.layout->eccpos;
++	struct elm_info *info;
 +
-+	/* Enable GPMC ecc engine */
-+	chip->ecc.hwctl(mtd, NAND_ECC_WRITE);
++	list_for_each_entry(info, &elm_devices, list) {
++		if (info && info->dev) {
++				info->bch_type = bch_type;
++				elm_config(info);
++				return info->dev;
++		}
++	}
 +
-+	/* Write data */
-+	chip->write_buf(mtd, buf, mtd->writesize);
++	return NULL;
++}
++EXPORT_SYMBOL(elm_request);
 +
-+	/* Update ecc vector from GPMC result registers */
-+	chip->ecc.calculate(mtd, buf, &ecc_calc[0]);
++static int __devinit elm_probe(struct platform_device *pdev)
++{
++	int ret = 0;
++	struct resource *res, *irq;
++	struct elm_info *info;
 +
-+	for (i = 0; i < chip->ecc.total; i++)
-+		chip->oob_poi[eccpos[i]] = ecc_calc[i];
++	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
++	if (!info) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
++	}
 +
-+	/* Write ecc vector to OOB area */
-+	chip->write_buf(mtd, chip->oob_poi, mtd->oobsize);
++	info->dev = &pdev->dev;
++
++	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (!irq) {
++		dev_err(&pdev->dev, "no irq resource defined\n");
++		return -ENODEV;
++	}
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "no memory resource defined\n");
++		return -ENODEV;
++	}
++
++	info->elm_base = devm_request_and_ioremap(&pdev->dev, res);
++	if (!info->elm_base)
++		return -EADDRNOTAVAIL;
++
++	ret = devm_request_irq(&pdev->dev, irq->start, elm_isr, 0,
++			pdev->name, info);
++	if (ret) {
++		dev_err(&pdev->dev, "failure requesting irq %i\n", irq->start);
++		return ret;
++	}
++
++	pm_runtime_enable(&pdev->dev);
++	if (pm_runtime_get_sync(&pdev->dev)) {
++		ret = -EINVAL;
++		pm_runtime_disable(&pdev->dev);
++		dev_err(&pdev->dev, "can't enable clock\n");
++		return ret;
++	}
++
++	init_completion(&info->elm_completion);
++	INIT_LIST_HEAD(&info->list);
++	list_add(&info->list, &elm_devices);
++	platform_set_drvdata(pdev, info);
++	return ret;
++}
++
++static int __devexit elm_remove(struct platform_device *pdev)
++{
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++	platform_set_drvdata(pdev, NULL);
 +	return 0;
 +}
 +
-+/**
-+ * omap_read_page_bch - BCH ecc based page read function for entire page
-+ * @mtd:		mtd info structure
-+ * @chip:		nand chip info structure
-+ * @buf:		buffer to store read data
-+ * @oob_required:	caller requires OOB data read to chip->oob_poi
-+ * @page:		page number to read
-+ *
-+ * For BCH ecc scheme, GPMC used for syndrome calculation and ELM module
-+ * used for error correction.
-+ * Custom method evolved to support ELM error correction & multi sector
-+ * reading. On reading page data area is read along with OOB data with
-+ * ecc engine enabled. ecc vector updated after read of OOB data.
-+ * For non error pages ecc vector reported as zero.
-+ */
-+static int omap_read_page_bch(struct mtd_info *mtd, struct nand_chip *chip,
-+				uint8_t *buf, int oob_required, int page)
-+{
-+	uint8_t *ecc_calc = chip->buffers->ecccalc;
-+	uint8_t *ecc_code = chip->buffers->ecccode;
-+	uint32_t *eccpos = chip->ecc.layout->eccpos;
-+	uint8_t *oob = &chip->oob_poi[eccpos[0]];
-+	uint32_t oob_pos = mtd->writesize + chip->ecc.layout->eccpos[0];
-+	int stat;
 +
-+	/* Enable GPMC ecc engine */
-+	chip->ecc.hwctl(mtd, NAND_ECC_READ);
-+
-+	/* Read data */
-+	chip->read_buf(mtd, buf, mtd->writesize);
-+
-+	/* Read oob bytes */
-+	chip->cmdfunc(mtd, NAND_CMD_RNDOUT, oob_pos, -1);
-+	chip->read_buf(mtd, oob, chip->ecc.total);
-+
-+	/* Calculate ecc bytes */
-+	chip->ecc.calculate(mtd, buf, ecc_calc);
-+
-+	memcpy(ecc_code, &chip->oob_poi[eccpos[0]], chip->ecc.total);
-+
-+	stat = chip->ecc.correct(mtd, buf, ecc_code, ecc_calc);
-+
-+	if (stat < 0)
-+		mtd->ecc_stats.failed++;
-+	else
-+		mtd->ecc_stats.corrected += stat;
-+
-+	return 0;
-+}
-+
-+/**
-  * omap3_free_bch - Release BCH ecc resources
-  * @mtd: MTD device structure
-  */
-@@ -1236,30 +1653,55 @@ static int omap3_init_bch(struct mtd_info *mtd, int ecc_opt)
- 		goto fail;
- 	}
- 
--	/* software bch library is only used to detect and locate errors */
--	info->bch = init_bch(13, max_errors, 0x201b /* hw polynomial */);
--	if (!info->bch)
--		goto fail;
--
--	info->nand.ecc.size    = 512;
--	info->nand.ecc.hwctl   = omap3_enable_hwecc_bch;
--	info->nand.ecc.correct = omap3_correct_data_bch;
--	info->nand.ecc.mode    = NAND_ECC_HW;
-+	info->nand.ecc.size = 512;
-+	info->nand.ecc.hwctl = omap3_enable_hwecc_bch;
-+	info->nand.ecc.mode = NAND_ECC_HW;
-+	info->nand.ecc.strength = max_errors;
-+	if (info->is_elm_used && (mtd->writesize <= 4096)) {
-+		enum bch_ecc bch_type;
- 
--	/*
--	 * The number of corrected errors in an ecc block that will trigger
--	 * block scrubbing defaults to the ecc strength (4 or 8).
--	 * Set mtd->bitflip_threshold here to define a custom threshold.
--	 */
-+		if (max_errors == BCH8_MAX_ERROR) {
-+			bch_type = BCH8_ECC;
-+			info->nand.ecc.bytes = BCH8_SIZE;
-+		} else {
-+			bch_type = BCH4_ECC;
-+			info->nand.ecc.bytes = BCH4_SIZE;
-+		}
- 
--	if (max_errors == 8) {
--		info->nand.ecc.strength  = 8;
--		info->nand.ecc.bytes     = 13;
--		info->nand.ecc.calculate = omap3_calculate_ecc_bch8;
-+		info->nand.ecc.correct = omap_elm_correct_data;
-+		info->nand.ecc.calculate = omap3_calculate_ecc_bch;
-+		info->nand.ecc.read_page = omap_read_page_bch;
-+		info->nand.ecc.write_page = omap_write_page_bch;
-+		info->elm_dev = elm_request(bch_type);
-+		if (!info->elm_dev) {
-+			pr_err("Request to elm module failed\n");
-+			goto fail;
-+		}
- 	} else {
--		info->nand.ecc.strength  = 4;
--		info->nand.ecc.bytes     = 7;
--		info->nand.ecc.calculate = omap3_calculate_ecc_bch4;
-+		/*
-+		 * software bch library is only used to detect and
-+		 * locate errors
-+		 */
-+		info->bch = init_bch(13, max_errors,
-+				0x201b /* hw polynomial */);
-+		if (!info->bch)
-+			goto fail;
-+
-+		info->nand.ecc.correct = omap3_correct_data_bch;
-+
-+		/*
-+		 * The number of corrected errors in an ecc block that will
-+		 * trigger block scrubbing defaults to the ecc strength (4 or 8)
-+		 * Set mtd->bitflip_threshold here to define a custom threshold.
-+		 */
-+
-+		if (max_errors == 8) {
-+			info->nand.ecc.bytes = 13;
-+			info->nand.ecc.calculate = omap3_calculate_ecc_bch8;
-+		} else {
-+			info->nand.ecc.bytes = 7;
-+			info->nand.ecc.calculate = omap3_calculate_ecc_bch4;
-+		}
- 	}
- 
- 	pr_info("enabling NAND BCH ecc with %d-bit correction\n", max_errors);
-@@ -1275,7 +1717,7 @@ fail:
-  */
- static int omap3_init_bch_tail(struct mtd_info *mtd)
- {
--	int i, steps;
-+	int i, steps, offset;
- 	struct omap_nand_info *info = container_of(mtd, struct omap_nand_info,
- 						   mtd);
- 	struct nand_ecclayout *layout = &info->ecclayout;
-@@ -1297,11 +1739,22 @@ static int omap3_init_bch_tail(struct mtd_info *mtd)
- 		goto fail;
- 	}
- 
-+	/* ECC layout compatible with RBL for BCH8 */
-+	if (info->is_elm_used && (info->nand.ecc.bytes == BCH8_SIZE))
-+		offset = 2;
-+	else
-+		offset = mtd->oobsize - layout->eccbytes;
-+
- 	/* put ecc bytes at oob tail */
- 	for (i = 0; i < layout->eccbytes; i++)
--		layout->eccpos[i] = mtd->oobsize-layout->eccbytes+i;
-+		layout->eccpos[i] = offset + i;
-+
-+
-+	if (info->is_elm_used && (info->nand.ecc.bytes == BCH8_SIZE))
-+		layout->oobfree[0].offset = 2 + layout->eccbytes * steps;
-+	else
-+		layout->oobfree[0].offset = 2;
- 
--	layout->oobfree[0].offset = 2;
- 	layout->oobfree[0].length = mtd->oobsize-2-layout->eccbytes;
- 	info->nand.ecc.layout = layout;
- 
-@@ -1365,6 +1818,9 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
- 	info->nand.options	= pdata->devsize;
- 	info->nand.options	|= NAND_SKIP_BBTSCAN;
- 
-+#ifdef CONFIG_MTD_NAND_OMAP_BCH
-+	info->is_elm_used	= pdata->is_elm_used;
++#ifdef CONFIG_OF
++static const struct of_device_id elm_of_match[] = {
++	{ .compatible = "ti,elm" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, elm_of_match);
 +#endif
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (res == NULL) {
- 		err = -EINVAL;
++
++static struct platform_driver elm_driver = {
++	.driver	= {
++		.name	= "elm",
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(elm_of_match),
++	},
++	.probe	= elm_probe,
++	.remove	= __devexit_p(elm_remove),
++};
++
++module_platform_driver(elm_driver);
++
++MODULE_DESCRIPTION("ELM driver for BCH error correction");
++MODULE_AUTHOR("Texas Instruments");
++MODULE_ALIAS("platform: elm");
++MODULE_LICENSE("GPL v2");
 diff --git a/include/linux/platform_data/elm.h b/include/linux/platform_data/elm.h
-index d4fce31..b732089 100644
---- a/include/linux/platform_data/elm.h
+new file mode 100644
+index 0000000..d4fce31
+--- /dev/null
 +++ b/include/linux/platform_data/elm.h
-@@ -30,7 +30,8 @@ enum bch_ecc {
- #define BCH4_ECC_OOB_BYTES		7
- /* RBL requires 14 byte even though BCH8 uses only 13 byte */
- #define BCH8_SIZE			(BCH8_ECC_OOB_BYTES + 1)
--#define BCH4_SIZE			(BCH4_ECC_OOB_BYTES)
-+/* Uses 1 extra byte to handle erased pages */
-+#define BCH4_SIZE			(BCH4_ECC_OOB_BYTES + 1)
- 
- /**
-  * struct elm_errorvec - error vector for elm
-diff --git a/include/linux/platform_data/mtd-nand-omap2.h b/include/linux/platform_data/mtd-nand-omap2.h
-index 24d32ca..db8c68b 100644
---- a/include/linux/platform_data/mtd-nand-omap2.h
-+++ b/include/linux/platform_data/mtd-nand-omap2.h
-@@ -60,6 +60,7 @@ struct omap_nand_platform_data {
- 	int			devsize;
- 	enum omap_ecc           ecc_opt;
- 	struct gpmc_nand_regs	reg;
-+	bool			is_elm_used;
- };
- 
- #endif
+@@ -0,0 +1,54 @@
++/*
++ * BCH Error Location Module
++ *
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __ELM_H
++#define __ELM_H
++
++enum bch_ecc {
++	BCH4_ECC = 0,
++	BCH8_ECC,
++};
++
++/* ELM support 8 error syndrome process */
++#define ERROR_VECTOR_MAX		8
++
++#define BCH8_ECC_OOB_BYTES		13
++#define BCH4_ECC_OOB_BYTES		7
++/* RBL requires 14 byte even though BCH8 uses only 13 byte */
++#define BCH8_SIZE			(BCH8_ECC_OOB_BYTES + 1)
++#define BCH4_SIZE			(BCH4_ECC_OOB_BYTES)
++
++/**
++ * struct elm_errorvec - error vector for elm
++ * @error_reported:		set true for vectors error is reported
++ *
++ * @error_count:		number of correctable errors in the sector
++ * @error_uncorrectable:	number of uncorrectable errors
++ * @error_loc:			buffer for error location
++ *
++ */
++struct elm_errorvec {
++	bool error_reported;
++	bool error_uncorrectable;
++	int error_count;
++	int error_loc[ERROR_VECTOR_MAX];
++};
++
++void elm_decode_bch_error_page(struct device *dev, u8 *ecc_calc,
++		struct elm_errorvec *err_vec);
++struct device *elm_request(enum bch_ecc bch_type);
++#endif /* __ELM_H */
 -- 
 1.7.0.4
 
