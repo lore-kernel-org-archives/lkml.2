@@ -1,37 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761070Ab2JaWyG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 18:54:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44287 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760753Ab2JaWyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 18:54:03 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20121024111959.GD13010@gmail.com>
-References: <20121024111959.GD13010@gmail.com> <20121024103559.GB10691@gmail.com> <20121022120558.14413.78980.stgit@warthog.procyon.org.uk> <22333.1351077173@warthog.procyon.org.uk>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: dhowells@redhat.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/2] x86: Provide a comment in uapi/asm/hw_breakpoint.h
-Date: Wed, 31 Oct 2012 22:53:41 +0000
-Message-ID: <20164.1351724021@warthog.procyon.org.uk>
+	id S1761089Ab2JaW42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 18:56:28 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:54823 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754606Ab2JaW40 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 18:56:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPM31RKm89s6PaAnfySUD-f+eGdoZP6=9DHy58tx_4Zi8Z9WPQ@mail.gmail.com>
+References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
+ <20121031143524.0509665d.akpm@linux-foundation.org> <CAPM31RKm89s6PaAnfySUD-f+eGdoZP6=9DHy58tx_4Zi8Z9WPQ@mail.gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 31 Oct 2012 18:56:05 -0400
+Message-ID: <CAHGf_=om34CQoPqgmVE5v8oVxntaJQ-bvFeEPMnfe_R+uvxqrQ@mail.gmail.com>
+Subject: Re: [RFC v2] Support volatile range for anon vma
+To: Paul Turner <pjt@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, John Stultz <john.stultz@linaro.org>,
+        Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, sanjay@google.com,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar <mingo@kernel.org> wrote:
+>> > Allocator should call madvise(MADV_NOVOLATILE) before reusing for
+>> > allocating that area to user. Otherwise, accessing of volatile range
+>> > will meet SIGBUS error.
+>>
+>> Well, why?  It would be easy enough for the fault handler to give
+>> userspace a new, zeroed page at that address.
+>
+> Note: MADV_DONTNEED already has this (nice) property.
 
-> Just wanted to inquire about the current status of it, as I'd 
-> rather not pull anything that introduces breakages and is still 
-> work in progress. Once it's all sorted out I'll have a look.
+I don't think I strictly understand this patch. but maybe I can answer why
+userland and malloc folks don't like MADV_DONTNEED.
 
-Should I pull the x86 disintegration and perf fixes onto a tree derived from
-tipbot since there are a lot of perf changes in there?
+glibc malloc discard freed memory by using MADV_DONTNEED
+as tcmalloc. and it is often a source of large performance decrease.
+because of MADV_DONTNEED discard memory immediately and
+right after malloc() call fall into page fault and pagesize memset() path.
+then, using DONTNEED increased zero fill and cache miss rate.
 
-David
+At called free() time, malloc don't have a knowledge when next big malloc()
+is called. then, immediate discarding may or may not get good performance
+gain. (Ah, ok, the rate is not 5:5. then usually it is worth. but not everytime)
+
+
+In past, several developers tryied to avoid such situation, likes
+
+- making zero page daemon and avoid pagesize zero fill at page fault
+- making new vma or page flags and mark as discardable w/o swap and
+  vmscan treat it. (like this and/or MADV_FREE)
+- making new process option and avoid page zero fill from page fault path.
+  (yes, it is big incompatibility and insecure. but some embedded folks thought
+   they are acceptable downside)
+- etc
+
+
+btw, I'm not sure this patch is better for malloc because current MADV_DONTNEED
+don't need mmap_sem and works very effectively when a lot of threads case.
+taking mmap_sem might bring worse performance than DONTNEED. dunno.
