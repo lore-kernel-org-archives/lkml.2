@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758796Ab2JaRYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:24:25 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:50402 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754234Ab2JaRYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:24:23 -0400
-Message-ID: <50915EB6.3060704@parallels.com>
-Date: Wed, 31 Oct 2012 21:24:06 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S932651Ab2JaRZb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:25:31 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36615 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759130Ab2JaRZ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 13:25:27 -0400
+Date: Wed, 31 Oct 2012 10:25:22 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, lizefan@huawei.com, hannes@cmpxchg.org,
+        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/8] cgroup: kill CSS_REMOVED
+Message-ID: <20121031172522.GJ2945@htj.dyndns.org>
+References: <1351657365-25055-1-git-send-email-tj@kernel.org>
+ <1351657365-25055-3-git-send-email-tj@kernel.org>
+ <20121031153926.GC22809@dhcp22.suse.cz>
+ <20121031165739.GE2945@htj.dyndns.org>
+ <50915A87.4070504@parallels.com>
+ <CAOS58YP=CjTPFdETLRXnc3gXEzX2=EEe2dMdSh3Eov7zRfV4Qg@mail.gmail.com>
+ <50915DB7.5020706@parallels.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <lizefan@huawei.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <bsingharora@gmail.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET] cgroup: simplify cgroup removal path
-References: <1351657365-25055-1-git-send-email-tj@kernel.org> <50912C6D.6020000@parallels.com> <20121031171849.GH2945@htj.dyndns.org>
-In-Reply-To: <20121031171849.GH2945@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [46.39.244.6]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50915DB7.5020706@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 09:18 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Oct 31, 2012 at 05:49:33PM +0400, Glauber Costa wrote:
->> The only think that drew my attention is that you are changing the
->> local_irq_save callsite to local_irq_disable. It shouldn't be a problem,
->> since this is never expected to be called in interrupt context.
->>
->> Still... it makes me wonder if that disabled-interrupt block is still
->> needed? According to the changelogs, it was introduced in e7c5ec919 for
->> the css_tryget mechanism. But css_tryget itself will never scan
->> subsystems, so if we can no longer fail, we should be able to just ditch
->> it. Unless I am missing something
-> 
-> Note both in the commit messages.
-> 
+Hello,
 
-I am sorry, but I can't find anything that may be related to this in the
-commit messages. Can you be more specific ?
+On Wed, Oct 31, 2012 at 09:19:51PM +0400, Glauber Costa wrote:
+> I don't see post_create failing as a huge problem. The natural
+> synchronization point would be "right after post_create" - then you can
+> definitely tell that it is online. Although this can be viewed a bit as
+> "exposing internals", creating is different then destroying: When you
+> create, you may not have all data yet. When destroying, you do - and
+> want to get rid of it. So this kind of bootstrapping is pretty standard
+> and common.
 
+More proper names for these callbacks would be,
 
+	->allocate()
+	->online()
+	->offline()
+	->free()
+
+And I may rename them.  I don't wanna make ->online() failable.  Why
+can't you just allocate everything from ->allocate() and use it from
+->online()?
+
+Thanks.
+
+-- 
+tejun
