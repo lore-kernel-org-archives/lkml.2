@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934409Ab2JaRwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:52:24 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:48615 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759233Ab2JaRwW (ORCPT
+	id S1422982Ab2JaRwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:52:30 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53906 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759382Ab2JaRw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:52:22 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/grV67YZTUEN6xZmm4xV+0
-Date: Wed, 31 Oct 2012 10:52:19 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
-Message-ID: <20121031175219.GH12739@atomide.com>
-References: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com>
+	Wed, 31 Oct 2012 13:52:27 -0400
+Date: Wed, 31 Oct 2012 18:52:26 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>, git@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
+        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: 'git describe' is very slow on development trees with lots of
+ commits
+Message-ID: <20121031175226.GB20660@elf.ucw.cz>
+References: <1351261913-28250-1-git-send-email-acme@infradead.org>
+ <20121026145451.GA14379@gmail.com>
+ <508AA709.7010202@gmail.com>
+ <20121027133352.GB30001@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121027133352.GB30001@gmail.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pantelis Antoniou <panto@antoniou-consulting.com> [121031 10:26]:
-> It is painless to move the adapter DT devices to arch/arm/mach-omap2
+Hi!
+
+> (Cc:-ed the Git development list.)
 > 
-> However I got bit by the __init at omap_build_device family functions.
-> If you don't remove it, crashes every time you instantiate a device
-> at runtime, or you load the cape driver as a module.
+> * David Ahern <dsahern@gmail.com> wrote:
+> 
+> > PERF-VERSION-GEN and specifically the git commands are the 
+> > cause of more delay than the config checks, especially when 
+> > doing the build in a VM with the kernel source on an NFS 
+> > mount.
+> 
+> Yes, I have noticed that too.
+....
+> The cost on this pretty fast machine is about 1 msecs per commit 
+> - which adds up to about 2.5 seconds during much of the 
+> development cycle.
 
-Hmm I think you misunderstood me. You only need to create the
-platform_device under arch/arm/mach-omap2. The device creation
-happens only at __init, so omap_build_device can stay as __init.
-The driver itself should be under drivers.
+Well... I noticed my builds when little changed are very slow... and
+it was due to the computation of version string. Ouch.
 
-But is this bus on non-device-tree omaps? If not, just make it
-device tree only.
+pavel@amd:~/mainline-altera/linux$ time git describe
+fixes-for-linus-506-g71ca8691
+0.68user 0.22system 27.82 (0m27.820s) elapsed 3.26%CPU
+pavel@amd:~/mainline-altera/linux$ 
 
-Regards,
+(Cached it is more reasonable 3 seconds, but it keeps going out of
+cache all the time. Uncached clean build is 3 minutes, cached is 9
+seconds + time to do git describe).
 
-Tony
+Thikpad X60.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
