@@ -1,215 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751764Ab2JaFHJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 01:07:09 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62347 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab2JaFHG (ORCPT
+	id S1751833Ab2JaFIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 01:08:35 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51690 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884Ab2JaFIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 01:07:06 -0400
+	Wed, 31 Oct 2012 01:08:32 -0400
+X-AuditID: 9c930197-b7c0bae00000042f-d9-5090b24eb492
+Date: Wed, 31 Oct 2012 14:14:26 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joonsoo Kim <js1304@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 2/5] mm, highmem: remove useless pool_lock
+Message-ID: <20121031051426.GQ15767@bbox>
+References: <Yes>
+ <1351451576-2611-1-git-send-email-js1304@gmail.com>
+ <1351451576-2611-3-git-send-email-js1304@gmail.com>
+ <20121030143107.ee1f959b.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20121030162004.GA3467@Super-MAGI>
-References: <20121030162004.GA3467@Super-MAGI>
-From: Dongsheng Song <dongsheng.song@gmail.com>
-Date: Wed, 31 Oct 2012 13:06:45 +0800
-Message-ID: <CAE8XmWo5YDu7iBVKH5Z2_EeAAePia24zwtfgPFJ0Cfxjz8Avwg@mail.gmail.com>
-Subject: Re: [PATCH]Documentation: Chinese translation of Documentation/arm/kernel_user_helpers.txt
-To: Tekkaman Ninja <tekkamanninja@gmail.com>
-Cc: Harry Wei <harryxiyou@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dave Martin <dave.martin@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Content-Type: multipart/mixed; boundary=047d7b33d58ca90a6d04cd53dffa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030143107.ee1f959b.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b33d58ca90a6d04cd53dffa
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: base64
+Hi Andrew,
 
-SGksCgpUaGVyZSBoYXZlIHNvbWUgbWlzbGVhZGluZyBpbiB0aGUgdHJhbnNsYXRpb246CgotLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSBvcmlnaW4gIC0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tClVzZXIgc3BhY2UgaXMgZXhwZWN0ZWQgdG8gYnlwYXNzIHRob3NlIGhlbHBl
-cnMgYW5kIGltcGxlbWVudCB0aG9zZSB0aGluZ3MKaW5saW5lIChlaXRoZXIgaW4gdGhlIGNvZGUg
-ZW1pdHRlZCBkaXJlY3RseSBieSB0aGUgY29tcGlsZXIsIG9yIHBhcnQgb2YKdGhlIGltcGxlbWVu
-dGF0aW9uIG9mIGEgbGlicmFyeSBjYWxsKSB3aGVuIG9wdGltaXppbmcgZm9yIGEgcmVjZW50IGVu
-b3VnaApwcm9jZXNzb3IgdGhhdCBoYXMgdGhlIG5lY2Vzc2FyeSBuYXRpdmUgc3VwcG9ydCwgYnV0
-IG9ubHkgaWYgcmVzdWx0aW5nCmJpbmFyaWVzIGFyZSBhbHJlYWR5IHRvIGJlIGluY29tcGF0aWJs
-ZSB3aXRoIGVhcmxpZXIgQVJNIHByb2Nlc3NvcnMgZHVlIHRvCnVzYWdlIG9mIHNpbWlsYXIgbmF0
-aXZlIGluc3RydWN0aW9ucyBmb3Igb3RoZXIgdGhpbmdzLiAgSW4gb3RoZXIgd29yZHMKZG9uJ3Qg
-bWFrZSBiaW5hcmllcyB1bmFibGUgdG8gcnVuIG9uIGVhcmxpZXIgcHJvY2Vzc29ycyBqdXN0IGZv
-ciB0aGUgc2FrZQpvZiBub3QgdXNpbmcgdGhlc2Uga2VybmVsIGhlbHBlcnMgaWYgeW91ciBjb21w
-aWxlZCBjb2RlIGlzIG5vdCBnb2luZyB0bwp1c2UgbmV3IGluc3RydWN0aW9ucyBmb3Igb3RoZXIg
-cHVycG9zZS4KCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tIEZ1IFdlaSAgLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0K5b2T5a+56YKj5Lqb5oul5pyJ5Z+65pys5Y6f55Sf
-5pSv5oyB55qE5paw5Z6L5aSE55CG5Zmo55qE5Luj56CB6L+b6KGM5LyY5YyW5pe277yM55So5oi3
-56m66Ze05pyA5aW957uVCui/h+i/meS6m+i+heWKqeS7o+eggeW5tuWcqOWGheiBlOWHveaVsOS4
-reWunueOsOi/meS6m+aTjeS9nO+8iOaXoOiuuuaYr+mAmui/h+e8luivkeWZqOWcqOS7o+eggeS4
-reebtArmjqXmlL7nva7vvIzov5jmmK/kvZzkuLrlupPlh73mlbDosIPnlKjlrp7njrDnmoTkuIDp
-g6jliIbvvInvvIzogIzku4XlnKjlhbbku5blpITnkIblmajlm6Dkvb/nlKjnm7jkvLwK55qE5pys
-5Zyw5oyH5Luk6ICM5a+86Ie05LqM6L+b5Yi257uT5p6c5bey5LiO5pep5pyfIEFSTSDlpITnkIbk
-uI3lhbzlrrnnmoTmg4XlhrXkuIvmiY3kvb/nlKjov5nkupsK6L6F5Yqp5Luj56CB44CC5Lmf5bCx
-5piv6K+077yM5aaC5p6c5L2g57yW6K+R55qE5Luj56CB5LiN5Lya5Li65LqG5YW25LuW55uu55qE
-5L2/55So5paw55qE5oyH5Luk77yM5YiZCuS4jeimgeS7heS4uuS6huS4jeS9v+eUqOi/meS6m+WG
-heaguOi+heWKqeS7o+eggeiAjOWvvOiHtOS6jOi/m+WItueoi+W6j+aXoOazleWcqOaXqeacn+Wk
-hOeQhuWZqOS4iui/kArooYzjgIIKLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0gbWUg
-IC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCuW9k+WvuemCo+S6m+aLpeacieWOn+eU
-n+aUr+aMgeeahOaWsOWei+WkhOeQhuWZqOi/m+ihjOS7o+eggeS8mOWMluaXtu+8jOWmguaenOW3
-sue7j+WcqOWFtuWug+S7o+eggeS4rQrkvb/nlKjnsbvkvLznmoTmlrDmjIfku6TvvIzku47ogIzl
-r7zoh7Tkuozov5vliLbnu5Pmnpzlt7LkuI7ml6nmnJ8gQVJNIOWkhOeQhuWZqOS4jeWFvOWuueea
-hOaDheWGteS4i++8jArnlKjmiLfnqbrpl7TmnIDlpb3nu5Xov4fov5nkupvovoXliqnku6PnoIHv
-vIzlubblnKjlhoXogZTlh73mlbDkuK3lrp7njrDov5nkupvmk43kvZzvvIjml6DorrrmmK/pgJro
-v4cK57yW6K+R5Zmo5Zyo5Luj56CB5Lit55u05o6l5Y+R5Ye677yM6L+Y5piv5L2c5Li65bqT5Ye9
-5pWw6LCD55So5a6e546w55qE5LiA6YOo5YiG77yJ44CC5Lmf5bCx5piv6K+077yMCuWmguaenOS9
-oOe8luivkeeahOS7o+eggeS4jeS8muS4uuS6huWFtuS7luebrueahOS9v+eUqOaWsOaMh+S7pO+8
-jOWImeS4jeimgeS7heS4uuS6huS4jeS9v+eUqOi/meS6m+WGheaguArovoXliqnku6PnoIHvvIzl
-r7zoh7Tkuozov5vliLbnqIvluo/ml6Dms5XlnKjml6nmnJ/lpITnkIblmajkuIrov5DooYzjgIIK
-ClRoZSBhdHRhY2htZW50IGlzIG15IHJldmlldyByZXN1bHQuCgotLQpEb25nc2hlbmcK
---047d7b33d58ca90a6d04cd53dffa
-Content-Type: text/plain; charset=UTF-8; name="kernel_user_helpers.txt"
-Content-Disposition: attachment; filename="kernel_user_helpers.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h8xze02p0
+On Tue, Oct 30, 2012 at 02:31:07PM -0700, Andrew Morton wrote:
+> On Mon, 29 Oct 2012 04:12:53 +0900
+> Joonsoo Kim <js1304@gmail.com> wrote:
+> 
+> > The pool_lock protects the page_address_pool from concurrent access.
+> > But, access to the page_address_pool is already protected by kmap_lock.
+> > So remove it.
+> 
+> Well, there's a set_page_address() call in mm/page_alloc.c which
+> doesn't have lock_kmap().  it doesn't *need* lock_kmap() because it's
+> init-time code and we're running single-threaded there.  I hope!
+> 
+> But this exception should be double-checked and mentioned in the
+> changelog, please.  And it's a reason why we can't add
+> assert_spin_locked(&kmap_lock) to set_page_address(), which is
+> unfortunate.
+> 
 
-Q2hpbmVzZSB0cmFuc2xhdGVkIHZlcnNpb24gb2YgRG9jdW1lbnRhdGlvbi9hcm0va2VybmVsX3Vz
-ZXJfaGVscGVycy50eHQKCklmIHlvdSBoYXZlIGFueSBjb21tZW50IG9yIHVwZGF0ZSB0byB0aGUg
-Y29udGVudCwgcGxlYXNlIGNvbnRhY3QgdGhlCm9yaWdpbmFsIGRvY3VtZW50IG1haW50YWluZXIg
-ZGlyZWN0bHkuICBIb3dldmVyLCBpZiB5b3UgaGF2ZSBhIHByb2JsZW0KY29tbXVuaWNhdGluZyBp
-biBFbmdsaXNoIHlvdSBjYW4gYWxzbyBhc2sgdGhlIENoaW5lc2UgbWFpbnRhaW5lciBmb3IKaGVs
-cC4gIENvbnRhY3QgdGhlIENoaW5lc2UgbWFpbnRhaW5lciBpZiB0aGlzIHRyYW5zbGF0aW9uIGlz
-IG91dGRhdGVkCm9yIGlmIHRoZXJlIGlzIGEgcHJvYmxlbSB3aXRoIHRoZSB0cmFuc2xhdGlvbi4K
-Ck1haW50YWluZXI6IE5pY29sYXMgUGl0cmUgPG5pY29sYXMucGl0cmVAbGluYXJvLm9yZz4KCQlE
-YXZlIE1hcnRpbiA8ZGF2ZS5tYXJ0aW5AbGluYXJvLm9yZz4KQ2hpbmVzZSBtYWludGFpbmVyOiBG
-dSBXZWkgPHRla2thbWFubmluamFAZ21haWwuY29tPgotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KRG9jdW1lbnRhdGlv
-bi9hcm0va2VybmVsX3VzZXJfaGVscGVycy50eHQg55qE5Lit5paH57+76K+RCgrlpoLmnpzmg7Po
-r4TorrrmiJbmm7TmlrDmnKzmlofnmoTlhoXlrrnvvIzor7fnm7TmjqXogZTns7vljp/mlofmoaPn
-moTnu7TmiqTogIXjgILlpoLmnpzkvaDkvb/nlKjoi7HmlocK5Lqk5rWB5pyJ5Zuw6Zq+55qE6K+d
-77yM5Lmf5Y+v5Lul5ZCR5Lit5paH54mI57u05oqk6ICF5rGC5Yqp44CC5aaC5p6c5pys57+76K+R
-5pu05paw5LiN5Y+K5pe25oiW6ICF57+7CuivkeWtmOWcqOmXrumimO+8jOivt+iBlOezu+S4reaW
-h+eJiOe7tOaKpOiAheOAggroi7HmlofniYjnu7TmiqTogIXvvJogTmljb2xhcyBQaXRyZSA8bmlj
-b2xhcy5waXRyZUBsaW5hcm8ub3JnPgoJCURhdmUgTWFydGluIDxkYXZlLm1hcnRpbkBsaW5hcm8u
-b3JnPgrkuK3mlofniYjnu7TmiqTogIXvvJog5YKF54KcIEZ1IFdlaSA8dGVra2FtYW5uaW5qYUBn
-bWFpbC5jb20+CuS4reaWh+eJiOe/u+ivkeiAhe+8miDlgoXngpwgRnUgV2VpIDx0ZWtrYW1hbm5p
-bmphQGdtYWlsLmNvbT4K5Lit5paH54mI5qCh6K+R6ICF77yaIOWui+WGrOeUnyBEb25nc2hlbmcg
-U29uZyA8ZG9uZ3NobmVnLnNvbmdAZ21haWwuY29tPgoKCuS7peS4i+S4uuato+aWhwotLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0K5YaF5qC45o+Q5L6b55qE55So5oi356m66Ze06L6F5Yqp5Luj56CBCj09PT09PT09PT09
-PT09PT09PT09PT0KCuWcqOWGheaguOWGheWtmOepuumXtOeahOWbuuWumuWcsOWdgOWkhO+8jOac
-ieS4gOS4quWPr+S7jueUqOaIt+epuumXtOiuv+mXrueahOeUseWGheaguOaPkOS+mwrnmoTku6Pn
-oIHmrrXjgILlroPnlKjkuo7lkJHnlKjmiLfnqbrpl7Tmj5Dkvpvlm6DlnKjorrjlpJogQVJNIENQ
-VSDkuK3mnKrlrp7njrDnmoTnibnmgKflkowv5oiWCuaMh+S7pOiAjOmcgOWGheaguOaPkOS+m+W4
-ruWKqeeahOafkOS6m+aTjeS9nOOAgui/meS6m+S7o+eggeebtOaOpeWcqOeUqOaIt+aooeW8j+S4
-i+aJp+ihjOeahOaDs+azleaYrwrkuLrkuobojrflvpfmnIDkvbPnmoTmlYjnjofvvIzkvYbpgqPk
-upvkuI7lhoXmoLjorqHmlbDlmajogZTns7vov4fkuo7ntKflr4bnmoTpg6jliIbvvIzliJnooqvn
-lZnnu5nkuobnlKgK5oi35bqT5a6e546w44CC5LqL5a6e5LiK77yM5q2k5Luj56CB55Sa6Iez5Y+v
-6IO95Zug5LiN5ZCM55qEIENQVSDogIzlvILvvIzov5nlj5blhrPkuo7lhbblj6/nlKjnmoTmjIcK
-5Luk6ZuG77yM5oiW6ICF5a6D5piv5ZCm5pivIFNNUCDns7vnu5/jgILmjaLlj6Xor53or7TvvIzl
-hoXmoLjkv53nlZnlnKjkuI3kvZzlh7rorablkYrnmoTmg4XlhrXkuIvmoLnmja4K6ZyA6KaB5pu0
-5pS56L+Z5Lqb5Luj56CB55qE5p2D5Yip44CC5Y+q5pyJ5pys5paH5qGj5o+P6L+w55qE5YWl5Y+j
-5Y+K5YW257uT5p6c5piv5L+d6K+B56iz5a6a55qE44CCCgrov5nkuI7lrozlhajmiJDnhp/nmoQg
-VkRTTyDlrp7njrDkuI3lkIzvvIjkvYbkuI3mjpLpmaTvvInvvIzogIwgVkRTTyDlj6/pmLvmraLm
-n5AK5Lqb5rGH57yW5oqA5ben6YCa6L+H5bi46YeP6auY5pWI6Lez6L2s5Yiw6YKj5Lqb5Luj56CB
-5q6144CC5bm25LiU55Sx5LqO6YKj5Lqb5Luj56CB5q615Zyo6L+UCuWbnueUqOaIt+S7o+eggeWJ
-jeS7heS9v+eUqOWwkemHj+eahOS7o+eggeWRqOacn++8jOWImeS4gOS4qiBWRFNPIOmXtOaOpei/
-nOeoi+iwg+eUqOWwhuS8muWcqArov5nkupvnroDljZXnmoTmk43kvZzkuIrlop7liqDkuIDkuKrl
-j6/mtYvph4/nmoTlvIDplIDjgIIKCuW9k+WvuemCo+S6m+aLpeacieWOn+eUn+aUr+aMgeeahOaW
-sOWei+WkhOeQhuWZqOi/m+ihjOS7o+eggeS8mOWMluaXtu+8jOWmguaenOW3sue7j+WcqOWFtuWu
-g+S7o+eggeS4rQrkvb/nlKjnsbvkvLznmoTmlrDmjIfku6TvvIzku47ogIzlr7zoh7Tkuozov5vl
-iLbnu5Pmnpzlt7LkuI7ml6nmnJ8gQVJNIOWkhOeQhuWZqOS4jeWFvOWuueeahOaDheWGteS4i++8
-jArnlKjmiLfnqbrpl7TmnIDlpb3nu5Xov4fov5nkupvovoXliqnku6PnoIHvvIzlubblnKjlhoXo
-gZTlh73mlbDkuK3lrp7njrDov5nkupvmk43kvZzvvIjml6DorrrmmK/pgJrov4cK57yW6K+R5Zmo
-5Zyo5Luj56CB5Lit55u05o6l5Y+R5Ye677yM6L+Y5piv5L2c5Li65bqT5Ye95pWw6LCD55So5a6e
-546w55qE5LiA6YOo5YiG77yJ44CC5Lmf5bCx5piv6K+077yMCuWmguaenOS9oOe8luivkeeahOS7
-o+eggeS4jeS8muS4uuS6huWFtuS7luebrueahOS9v+eUqOaWsOaMh+S7pO+8jOWImeS4jeimgeS7
-heS4uuS6huS4jeS9v+eUqOi/meS6m+WGheaguArovoXliqnku6PnoIHvvIzlr7zoh7Tkuozov5vl
-iLbnqIvluo/ml6Dms5XlnKjml6nmnJ/lpITnkIblmajkuIrov5DooYzjgIIKCuaWsOeahOi+heWK
-qeS7o+eggeWPr+iDvemaj+edgOaXtumXtOeahOaOqOenu+iAjOWinuWKoO+8jOaJgOS7peaWsOWG
-heaguOS4reeahOafkOS6m+i+heWKqeS7o+eggeWcqOaXpwrlhoXmoLjkuK3lj6/og73kuI3lrZjl
-nKjjgILlm6DmraTvvIznqIvluo/lv4XpobvlnKjlr7nku7vkvZXovoXliqnku6PnoIHosIPnlKjl
-gYforr7mmK/lronlhajkuYvliY3vvIwK5qOA5rWLIF9fa3VzZXJfaGVscGVyX3ZlcnNpb24g55qE
-5YC877yI6KeB5LiL5paH77yJ44CC55CG5oOz5oOF5Ya15LiL77yM6L+Z56eN5qOA5rWL5bqU6K+l
-CuWPquWcqOi/m+eoi+WQr+WKqOaXtuaJp+ihjOS4gOasoe+8m+WmguaenOWGheaguOeJiOacrOS4
-jeaUr+aMgeaJgOmcgOi+heWKqeS7o+egge+8jOWImeivpei/m+eoi+WPr+WwveaXqQrkuK3mraLm
-iafooYzjgIIKCmt1c2VyX2hlbHBlcl92ZXJzaW9uCi0tLS0tLS0tLS0tLS0tLS0tLS0tCgrkvY3n
-va46CTB4ZmZmZjBmZmMKCuWPguiAg+WjsOaYjjoKCiAgZXh0ZXJuIGludDMyX3QgX19rdXNlcl9o
-ZWxwZXJfdmVyc2lvbjsKCuWumuS5iToKCiAg6L+Z5Liq5Yy65Z+f5YyF5ZCr5LqG5b2T5YmN6L+Q
-6KGM5YaF5qC45a6e546w55qE6L6F5Yqp5Luj56CB54mI5pys5Y+344CC55So5oi356m66Ze05Y+v
-5Lul6YCa6L+H6K+7CiAg5Y+W5q2k54mI5pys5Y+35Lul56Gu5a6a54m55a6a55qE6L6F5Yqp5Luj
-56CB5piv5ZCm5a2Y5Zyo44CCCgrkvb/nlKjojIPkvos6CgojZGVmaW5lIF9fa3VzZXJfaGVscGVy
-X3ZlcnNpb24gKCooaW50MzJfdCAqKTB4ZmZmZjBmZmMpCgp2b2lkIGNoZWNrX2t1c2VyX3ZlcnNp
-b24odm9pZCkKewoJaWYgKF9fa3VzZXJfaGVscGVyX3ZlcnNpb24gPCAyKSB7CgkJZnByaW50Zihz
-dGRlcnIsICJjYW4ndCBkbyBhdG9taWMgb3BlcmF0aW9ucywga2VybmVsIHRvbyBvbGRcbiIpOwoJ
-CWFib3J0KCk7Cgl9Cn0KCuazqOaEjzoKCiAg55So5oi356m66Ze05Y+v5Lul5YGH6K6+6L+Z5Liq
-5Z+f55qE5YC85LiN5Lya5Zyo5Lu75L2V5Y2V5Liq6L+b56iL55qE55Sf5a2Y5pyf5YaF5pS55Y+Y
-44CC5Lmf5bCxCiAg5piv6K+077yM6L+Z5Liq5Z+f5Y+v5Lul5LuF5Zyo5bqT55qE5Yid5aeL5YyW
-6Zi25q615oiW6L+b56iL5ZCv5Yqo6Zi25q616K+75Y+W5LiA5qyh44CCCgprdXNlcl9nZXRfdGxz
-Ci0tLS0tLS0tLS0tLS0KCuS9jee9rjoJMHhmZmZmMGZlMAoK5Y+C6ICD5Y6f5Z6LOgoKICB2b2lk
-ICogX19rdXNlcl9nZXRfdGxzKHZvaWQpOwoK6L6T5YWlOgoKICBsciA9IOi/lOWbnuWcsOWdgAoK
-6L6T5Ye6OgoKICByMCA9IFRMUyDlgLwKCuiiq+evoeaUueeahOWvhOWtmOWZqDoKCiAg5pegCgrl
-rprkuYk6CgogIOiOt+WPluS5i+WJjemAmui/hyBfX0FSTV9OUl9zZXRfdGxzIOezu+e7n+iwg+eU
-qOiuvue9rueahCBUTFMg5YC844CCCgrkvb/nlKjojIPkvos6Cgp0eXBlZGVmIHZvaWQgKiAoX19r
-dXNlcl9nZXRfdGxzX3QpKHZvaWQpOwojZGVmaW5lIF9fa3VzZXJfZ2V0X3RscyAoKihfX2t1c2Vy
-X2dldF90bHNfdCAqKTB4ZmZmZjBmZTApCgp2b2lkIGZvbygpCnsKCXZvaWQgKnRscyA9IF9fa3Vz
-ZXJfZ2V0X3RscygpOwoJcHJpbnRmKCJUTFMgPSAlcFxuIiwgdGxzKTsKfQoK5rOo5oSPOgoKICAt
-IOS7heWcqCBfX2t1c2VyX2hlbHBlcl92ZXJzaW9uID49IDEg5pe277yM5q2k6L6F5Yqp5Luj56CB
-5a2Y5ZyoCiAgICDvvIjku47lhoXmoLjniYjmnKwgMi42LjEyIOW8gOWni++8ieOAggoKa3VzZXJf
-Y21weGNoZwotLS0tLS0tLS0tLS0tCgrkvY3nva46CTB4ZmZmZjBmYzAKCuWPguiAg+WOn+WeizoK
-CiAgaW50IF9fa3VzZXJfY21weGNoZyhpbnQzMl90IG9sZHZhbCwgaW50MzJfdCBuZXd2YWwsIHZv
-bGF0aWxlIGludDMyX3QgKnB0cik7CgrovpPlhaU6CgogIHIwID0gb2xkdmFsCiAgcjEgPSBuZXd2
-YWwKICByMiA9IHB0cgogIGxyID0g6L+U5Zue5Zyw5Z2ACgrovpPlh7o6CgogIHIwID0g5oiQ5Yqf
-5Luj56CBICjpm7bmiJbpnZ7pm7YpCiAgQyBmbGFnID0g5aaC5p6cIHIwID09IDAg5YiZ572uIDHv
-vIzlpoLmnpwgcjAgIT0gMCDliJnmuIXpm7bjgIIKCuiiq+evoeaUueeahOWvhOWtmOWZqDoKCiAg
-cjMsIGlwLCBmbGFncwoK5a6a5LmJOgoKICDku4XlnKggKnB0ciDkuLogb2xkdmFsIOaXtuWOn+Wt
-kOS/neWtmCBuZXd2YWwg5LqOICpwdHIg5Lit44CCCiAg5aaC5p6cICpwdHIg6KKr5pS55Y+Y77yM
-5YiZ6L+U5Zue5YC85Li66Zu277yM5ZCm5YiZ5Li66Z2e6Zu25YC844CCCiAg5aaC5p6cICpwdHIg
-6KKr5pS55Y+Y77yM5YiZIEMgZmxhZyDkuZ/kvJrooqvnva4gMe+8jOS7peWunueOsOiwg+eUqOS7
-o+eggeS4reeahOaxh+e8lgogIOS8mOWMluOAggoK5L2/55So6IyD5L6LOgoKdHlwZWRlZiBpbnQg
-KF9fa3VzZXJfY21weGNoZ190KShpbnQgb2xkdmFsLCBpbnQgbmV3dmFsLCB2b2xhdGlsZSBpbnQg
-KnB0cik7CiNkZWZpbmUgX19rdXNlcl9jbXB4Y2hnICgqKF9fa3VzZXJfY21weGNoZ190ICopMHhm
-ZmZmMGZjMCkKCmludCBhdG9taWNfYWRkKHZvbGF0aWxlIGludCAqcHRyLCBpbnQgdmFsKQp7Cglp
-bnQgb2xkLCBuZXc7CgoJZG8gewoJCW9sZCA9ICpwdHI7CgkJbmV3ID0gb2xkICsgdmFsOwoJfSB3
-aGlsZShfX2t1c2VyX2NtcHhjaGcob2xkLCBuZXcsIHB0cikpOwoKCXJldHVybiBuZXc7Cn0KCuaz
-qOaEjzoKCiAgLSDov5nkuKrkvovnqIvlt7LmoLnmja7pnIDopoHljIXlkKvkuoblhoXlrZjlsY/p
-mpzjgIIKCiAgLSDku4XlnKggX19rdXNlcl9oZWxwZXJfdmVyc2lvbiA+PSAyIOaXtu+8jOatpOi+
-heWKqeS7o+eggeWtmOWcqAogICAg77yI5LuO5YaF5qC454mI5pysIDIuNi4xMiDlvIDlp4vvvInj
-gIIKCmt1c2VyX21lbW9yeV9iYXJyaWVyCi0tLS0tLS0tLS0tLS0tLS0tLS0tCgrkvY3nva46CTB4
-ZmZmZjBmYTAKCuWPguiAg+WOn+WeizoKCiAgdm9pZCBfX2t1c2VyX21lbW9yeV9iYXJyaWVyKHZv
-aWQpOwoK6L6T5YWlOgoKICBsciA9IOi/lOWbnuWcsOWdgAoK6L6T5Ye6OgoKICDml6AKCuiiq+ev
-oeaUueeahOWvhOWtmOWZqDoKCiAg5pegCgrlrprkuYk6CgogIOW6lOeUqOS6juS7u+S9lemcgOim
-geWGheWtmOWxj+manOS7pemYsuatouaJi+WKqOaVsOaNruS/ruaUueW4puadpeeahOS4gOiHtOaA
-p+mXrumimO+8jOS7peWPigogIF9fa3VzZXJfY21weGNoZyDkuK3jgIIKCuS9v+eUqOiMg+S+izoK
-CnR5cGVkZWYgdm9pZCAoX19rdXNlcl9kbWJfdCkodm9pZCk7CiNkZWZpbmUgX19rdXNlcl9kbWIg
-KCooX19rdXNlcl9kbWJfdCAqKTB4ZmZmZjBmYTApCgrms6jmhI86CgogIC0g5LuF5ZyoIF9fa3Vz
-ZXJfaGVscGVyX3ZlcnNpb24gPj0gMyDml7bvvIzmraTovoXliqnku6PnoIHlrZjlnKgKICAgIO+8
-iOS7juWGheaguOeJiOacrCAyLjYuMTUg5byA5aeL77yJ44CCCgprdXNlcl9jbXB4Y2hnNjQKLS0t
-LS0tLS0tLS0tLS0tCgrkvY3nva46CTB4ZmZmZjBmNjAKCuWPguiAg+WOn+WeizoKCiAgaW50IF9f
-a3VzZXJfY21weGNoZzY0KGNvbnN0IGludDY0X3QgKm9sZHZhbCwKICAgICAgICAgICAgICAgICAg
-ICAgICAgY29uc3QgaW50NjRfdCAqbmV3dmFsLAogICAgICAgICAgICAgICAgICAgICAgICB2b2xh
-dGlsZSBpbnQ2NF90ICpwdHIpOwoK6L6T5YWlOgoKICByMCA9IOaMh+WQkSBvbGR2YWwKICByMSA9
-IOaMh+WQkSBuZXd2YWwKICByMiA9IOaMh+WQkeebruagh+WAvAogIGxyID0g6L+U5Zue5Zyw5Z2A
-CgrovpPlh7o6CgogIHIwID0g5oiQ5Yqf5Luj56CBICjpm7bmiJbpnZ7pm7YpCiAgQyBmbGFnID0g
-5aaC5p6cIHIwID09IDAg5YiZ572uIDHvvIzlpoLmnpwgcjAgIT0gMCDliJnmuIXpm7bjgIIKCuii
-q+evoeaUueeahOWvhOWtmOWZqDoKCiAgcjMsIGxyLCBmbGFncwoK5a6a5LmJOgoKICDku4XlnKgg
-KnB0ciDnrYnkuo4gKm9sZHZhbCDmjIflkJHnmoQgNjQg5L2N5YC85pe277yM5Y6f5a2Q5L+d5a2Y
-ICpuZXd2YWwKICDmjIflkJHnmoQgNjQg5L2N5YC85LqOICpwdHIg5Lit44CC5aaC5p6cICpwdHIg
-6KKr5pS55Y+Y77yM5YiZ6L+U5Zue5YC85Li66Zu277yMCiAg5ZCm5YiZ5Li66Z2e6Zu25YC844CC
-CgogIOWmguaenCAqcHRyIOiiq+aUueWPmO+8jOWImSBDIGZsYWcg5Lmf5Lya6KKr572uIDHvvIzk
-u6Xlrp7njrDosIPnlKjku6PnoIHkuK3nmoTmsYfnvJYKICDkvJjljJbjgIIKCuS9v+eUqOiMg+S+
-izoKCnR5cGVkZWYgaW50IChfX2t1c2VyX2NtcHhjaGc2NF90KShjb25zdCBpbnQ2NF90ICpvbGR2
-YWwsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBjb25zdCBpbnQ2NF90ICpuZXd2
-YWwsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB2b2xhdGlsZSBpbnQ2NF90ICpw
-dHIpOwojZGVmaW5lIF9fa3VzZXJfY21weGNoZzY0ICgqKF9fa3VzZXJfY21weGNoZzY0X3QgKikw
-eGZmZmYwZjYwKQoKaW50NjRfdCBhdG9taWNfYWRkNjQodm9sYXRpbGUgaW50NjRfdCAqcHRyLCBp
-bnQ2NF90IHZhbCkKewoJaW50NjRfdCBvbGQsIG5ldzsKCglkbyB7CgkJb2xkID0gKnB0cjsKCQlu
-ZXcgPSBvbGQgKyB2YWw7Cgl9IHdoaWxlKF9fa3VzZXJfY21weGNoZzY0KCZvbGQsICZuZXcsIHB0
-cikpOwoKCXJldHVybiBuZXc7Cn0KCuazqOaEjzoKCiAgLSDov5nkuKrkvovnqIvlt7LmoLnmja7p
-nIDopoHljIXlkKvkuoblhoXlrZjlsY/pmpzjgIIKCiAgLSDnlLHkuo7ov5nkuKrov4fnqIvnmoTk
-u6PnoIHplb/luqbvvIjmraTovoXliqnku6PnoIHot6jotoogMiDkuKrluLjop4TnmoQga3VzZXIg
-4oCc5qe94oCd77yJ77yMCiAgICDlm6DmraQgMHhmZmZmMGY4MCDkuI3ooqvkvZzkuLrmnInmlYjn
-moTlhaXlj6PngrnjgIIKCiAgLSDku4XlnKggX19rdXNlcl9oZWxwZXJfdmVyc2lvbiA+PSA1IOaX
-tu+8jOatpOi+heWKqeS7o+eggeWtmOWcqAogICAg77yI5LuO5YaF5qC454mI5pysIDMuMSDlvIDl
-p4vvvInjgIIK
---047d7b33d58ca90a6d04cd53dffa--
+The exception is vaild only in m68k and sparc and they will use not
+set_page_address of highmem.c but page->virtual. So I think we can add
+such lock check in set_page_address in highmem.c.
+
+But I'm not sure we really need it because set_page_address is used in
+few places so isn't it enough adding a just wording to avoid unnecessary
+overhead?
+
+/* NOTE : Caller should hold kmap_lock by lock_kmap() */
+
+> 
+> The irq-disabling in this code is odd.  If ARCH_NEEDS_KMAP_HIGH_GET=n,
+> we didn't need irq-safe locking in set_page_address().  I guess we'll
+
+What lock you mean in set_page_address?
+We have two locks in there, pool_lock and pas->lock.
+By this patchset, we don't need pool_lock any more.
+Remained thing is pas->lock.
+
+If we make the lock irq-unsafe, it would be deadlock with page_addresss
+if it is called in irq context. Currenntly, page_address is used
+lots of places and not sure it's called only process context.
+Was there any rule that we have to use page_addresss in only
+process context?
+
+> need to retain it in page_address() - I expect some callers have IRQs
+> disabled.
+> 
+> 
+> ARCH_NEEDS_KMAP_HIGH_GET is a nasty looking thing.  It's ARM:
+> 
+> /*
+>  * The reason for kmap_high_get() is to ensure that the currently kmap'd
+>  * page usage count does not decrease to zero while we're using its
+>  * existing virtual mapping in an atomic context.  With a VIVT cache this
+>  * is essential to do, but with a VIPT cache this is only an optimization
+>  * so not to pay the price of establishing a second mapping if an existing
+>  * one can be used.  However, on platforms without hardware TLB maintenance
+>  * broadcast, we simply cannot use ARCH_NEEDS_KMAP_HIGH_GET at all since
+>  * the locking involved must also disable IRQs which is incompatible with
+>  * the IPI mechanism used by global TLB operations.
+>  */
+> #define ARCH_NEEDS_KMAP_HIGH_GET
+> #if defined(CONFIG_SMP) && defined(CONFIG_CPU_TLB_V6)
+> #undef ARCH_NEEDS_KMAP_HIGH_GET
+> #if defined(CONFIG_HIGHMEM) && defined(CONFIG_CPU_CACHE_VIVT)
+> #error "The sum of features in your kernel config cannot be supported together"
+> #endif
+> #endif
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
