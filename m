@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933382Ab2JaAmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:42:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21748 "EHLO mga02.intel.com"
+	id S934567Ab2JaAnK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:43:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13634 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759060Ab2JaAed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:34:33 -0400
+	id S1758947Ab2JaAeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 20:34:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
-   d="scan'208";a="213257355"
+   d="scan'208";a="240548339"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 09/32] perf, x86: Support LBR filtering by INTX/NOTX/ABORT v2
-Date: Tue, 30 Oct 2012 17:34:00 -0700
-Message-Id: <1351643663-23828-10-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 32/32] perf, tools: List kernel supplied event aliases in perf list v2
+Date: Tue, 30 Oct 2012 17:34:23 -0700
+Message-Id: <1351643663-23828-33-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
 References: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
@@ -26,120 +26,193 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add LBR filtering for branch in transaction, branch not in transaction
-or transaction abort. This is exposed as new sample types.
+List the kernel supplied pmu event aliases in perf list
 
-v2: Rename ABORT to ABORTTX
+It's better when the users can actually see them.
+
+v2: Fix pattern matching
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   31 +++++++++++++++++++++++++--
- include/uapi/linux/perf_event.h            |    5 +++-
- 2 files changed, 32 insertions(+), 4 deletions(-)
+ tools/perf/Documentation/perf-list.txt |    4 +-
+ tools/perf/builtin-list.c              |    3 +
+ tools/perf/util/parse-events.c         |    5 ++-
+ tools/perf/util/pmu.c                  |   72 ++++++++++++++++++++++++++++++++
+ tools/perf/util/pmu.h                  |    3 +
+ 5 files changed, 85 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index ad5af13..5455a00 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -85,9 +85,13 @@ enum {
- 	X86_BR_JMP      = 1 << 9, /* jump */
- 	X86_BR_IRQ      = 1 << 10,/* hw interrupt or trap or fault */
- 	X86_BR_IND_CALL = 1 << 11,/* indirect calls */
-+	X86_BR_ABORT    = 1 << 12,/* transaction abort */
-+	X86_BR_INTX     = 1 << 13,/* in transaction */
-+	X86_BR_NOTX     = 1 << 14,/* not in transaction */
- };
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index d1e39dc..826f3d6 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -8,7 +8,7 @@ perf-list - List all symbolic event types
+ SYNOPSIS
+ --------
+ [verse]
+-'perf list' [hw|sw|cache|tracepoint|event_glob]
++'perf list' [hw|sw|cache|tracepoint|pmu|event_glob]
  
- #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
-+#define X86_BR_ANYTX (X86_BR_NOTX | X86_BR_INTX)
+ DESCRIPTION
+ -----------
+@@ -104,6 +104,8 @@ To limit the list use:
+   'subsys_glob:event_glob' to filter by tracepoint subsystems such as sched,
+   block, etc.
  
- #define X86_BR_ANY       \
- 	(X86_BR_CALL    |\
-@@ -99,6 +103,7 @@ enum {
- 	 X86_BR_JCC     |\
- 	 X86_BR_JMP	 |\
- 	 X86_BR_IRQ	 |\
-+	 X86_BR_ABORT	 |\
- 	 X86_BR_IND_CALL)
- 
- #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
-@@ -347,6 +352,16 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- 
- 	if (br_type & PERF_SAMPLE_BRANCH_IND_CALL)
- 		mask |= X86_BR_IND_CALL;
++. 'pmu' to print the kernel supplied PMU events.
 +
-+	if (br_type & PERF_SAMPLE_BRANCH_ABORTTX)
-+		mask |= X86_BR_ABORT;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_INTX)
-+		mask |= X86_BR_INTX;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_NOTX)
-+		mask |= X86_BR_NOTX;
-+
- 	/*
- 	 * stash actual user request into reg, it may
- 	 * be used by fixup code for some CPU
-@@ -393,7 +408,8 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
- 	/*
- 	 * no LBR on this PMU
- 	 */
--	if (!x86_pmu.lbr_nr || x86_pmu.intel_cap.lbr_format > LBR_FORMAT_MAX_KNOWN)
-+	if (!x86_pmu.lbr_nr ||
-+	    x86_pmu.intel_cap.lbr_format > LBR_FORMAT_MAX_KNOWN)
- 		return -EOPNOTSUPP;
+ . If none of the above is matched, it will apply the supplied glob to all
+   events, printing the ones that match.
  
- 	/*
-@@ -421,7 +437,7 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
-  * decoded (e.g., text page not present), then X86_BR_NONE is
-  * returned.
-  */
--static int branch_type(unsigned long from, unsigned long to)
-+static int branch_type(unsigned long from, unsigned long to, int abort)
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index 1948ece..e79f423 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -13,6 +13,7 @@
+ 
+ #include "util/parse-events.h"
+ #include "util/cache.h"
++#include "util/pmu.h"
+ 
+ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
  {
- 	struct insn insn;
- 	void *addr;
-@@ -441,6 +457,9 @@ static int branch_type(unsigned long from, unsigned long to)
- 	if (from == 0 || to == 0)
- 		return X86_BR_NONE;
+@@ -37,6 +38,8 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			else if (strcmp(argv[i], "cache") == 0 ||
+ 				 strcmp(argv[i], "hwcache") == 0)
+ 				print_hwcache_events(NULL, false);
++			else if (strcmp(argv[i], "pmu") == 0)
++				print_pmu_events(NULL, false);
+ 			else if (strcmp(argv[i], "--raw-dump") == 0)
+ 				print_events(NULL, true);
+ 			else {
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 70cbd1c..2834f12 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -1069,6 +1069,8 @@ int print_hwcache_events(const char *event_glob, bool name_only)
+ 		}
+ 	}
  
-+	if (abort)
-+		return X86_BR_ABORT | to_plm;
++	if (printed)
++		printf("\n");
+ 	return printed;
+ }
+ 
+@@ -1123,11 +1125,12 @@ void print_events(const char *event_glob, bool name_only)
+ 
+ 	print_hwcache_events(event_glob, name_only);
+ 
++	print_pmu_events(event_glob, name_only);
 +
- 	if (from_plm == X86_BR_USER) {
- 		/*
- 		 * can happen if measuring at the user level only
-@@ -577,7 +596,13 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
- 		from = cpuc->lbr_entries[i].from;
- 		to = cpuc->lbr_entries[i].to;
+ 	if (event_glob != NULL)
+ 		return;
  
--		type = branch_type(from, to);
-+		type = branch_type(from, to, cpuc->lbr_entries[i].abort);
-+		if (type != X86_BR_NONE && (br_sel & X86_BR_ANYTX)) {
-+			if (cpuc->lbr_entries[i].intx)
-+				type |= X86_BR_INTX;
-+			else
-+				type |= X86_BR_NOTX;
+ 	if (!name_only) {
+-		printf("\n");
+ 		printf("  %-50s [%s]\n",
+ 		       "rNNN",
+ 		       event_type_descriptors[PERF_TYPE_RAW]);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 18e8480..fbd5ca0 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -552,6 +552,78 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
+ 		set_bit(b, bits);
+ }
+ 
++static char *format_alias(char *buf, int len, struct perf_pmu *pmu,
++			  struct perf_pmu__alias *alias)
++{
++	snprintf(buf, len, "%s/%s/", pmu->name, alias->name);
++	return buf;
++}
++
++static char *format_alias_or(char *buf, int len, struct perf_pmu *pmu,
++			     struct perf_pmu__alias *alias)
++{
++	snprintf(buf, len, "%s OR %s/%s/", alias->name, pmu->name, alias->name);
++	return buf;
++}
++
++static int cmp_string(const void *a, const void *b)
++{
++	const char * const *as = a;
++	const char * const *bs = b;
++	return strcmp(*as, *bs);
++}
++
++void print_pmu_events(const char *event_glob, bool name_only)
++{
++	struct perf_pmu *pmu;
++	struct perf_pmu__alias *alias;
++	char buf[1024];
++	int printed = 0;
++	int len, j;
++	char **aliases;
++
++	pmu = NULL;
++	len = 0;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry (alias, &pmu->aliases, list)
++			len++;
++	aliases = malloc(sizeof(char *) * len);
++	if (!aliases)
++		return;
++	pmu = NULL;
++	j = 0;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry (alias, &pmu->aliases, list) {
++			char *name = format_alias(buf, sizeof buf, pmu, alias);
++			bool is_cpu = !strcmp(pmu->name, "cpu");
++
++			if (event_glob != NULL &&
++			    !(strglobmatch(name, event_glob) ||
++			      (!is_cpu && strglobmatch(alias->name, event_glob))))
++				continue;
++			aliases[j] = name;
++			if (is_cpu && !name_only)
++				aliases[j] = format_alias_or(buf, sizeof buf,
++							      pmu, alias);
++			aliases[j] = strdup(aliases[j]);
++			j++;
 +		}
++	len = j;
++	qsort(aliases, len, sizeof(char *), cmp_string);
++	for (j = 0; j < len; j++) {
++		if (name_only) {
++			printf("%s ", aliases[j]);
++			continue;
++		}
++		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
++		free(aliases[j]);
++		printed++;
++	}
++	if (printed)
++		printf("\n");
++	free(aliases);
++}
++
+ /* Simulated format definitions. */
+ static struct test_format {
+ 	const char *name;
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 39f3aba..da53c2a 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -3,6 +3,7 @@
  
- 		/* if type does not correspond, then discard */
- 		if (type == X86_BR_NONE || (br_sel & type) != type) {
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 4f63c05..8e38823 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -155,8 +155,11 @@ enum perf_branch_sample_type {
- 	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << 4, /* any call branch */
- 	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << 5, /* any return branch */
- 	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << 6, /* indirect calls */
-+	PERF_SAMPLE_BRANCH_ABORTTX	= 1U << 7, /* transaction aborts */
-+	PERF_SAMPLE_BRANCH_INTX		= 1U << 8, /* in transaction (flag) */
-+	PERF_SAMPLE_BRANCH_NOTX		= 1U << 9, /* not in transaction (flag) */
+ #include <linux/bitops.h>
+ #include "../../../include/uapi/linux/perf_event.h"
++#include <stdbool.h>
  
--	PERF_SAMPLE_BRANCH_MAX		= 1U << 7, /* non-ABI */
-+	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
- };
+ enum {
+ 	PERF_PMU_FORMAT_VALUE_CONFIG,
+@@ -49,5 +50,7 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to);
  
- #define PERF_SAMPLE_BRANCH_PLM_ALL \
+ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
+ 
++void print_pmu_events(const char *event_glob, bool name_only);
++
+ int perf_pmu__test(void);
+ #endif /* __PMU_H */
 -- 
 1.7.7.6
 
