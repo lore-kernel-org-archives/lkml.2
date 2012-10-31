@@ -1,69 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935243Ab2JaK1o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:27:44 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:13071 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932340Ab2JaK1k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:27:40 -0400
-X-IronPort-AV: E=Sophos;i="4.80,687,1344211200"; 
-   d="scan'208";a="212967125"
-Message-ID: <1351679139.25014.10.camel@hastur.hellion.org.uk>
-Subject: Re: [Xen-devel] [PATCH] xen PVonHVM: require at least Xen 3.4 as
- dom0
-From: Ian Campbell <ian.campbell@citrix.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: Pasi =?ISO-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Wed, 31 Oct 2012 11:25:39 +0100
-In-Reply-To: <20121031092925.GA22587@aepfle.de>
-References: <1351613105-24408-1-git-send-email-olaf@aepfle.de>
-	 <20121030181732.GZ8912@reaktio.net> <20121030182859.GA8775@aepfle.de>
-	 <1351672212.20470.7.camel@hastur.hellion.org.uk>
-	 <20121031092925.GA22587@aepfle.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	id S1756799Ab2JaK2z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:28:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13417 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756035Ab2JaK2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 06:28:49 -0400
+Date: Wed, 31 Oct 2012 12:31:06 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2 net-next 1/8] skb: report completion status for zero copy
+ skbs
+Message-ID: <0dc176ed796ff5ac7164b6c18cc75d64c2a2317e.1351679008.git.mst@redhat.com>
+References: <cover.1351679008.git.mst@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1351679008.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-31 at 09:29 +0000, Olaf Hering wrote:
-> On Wed, Oct 31, Ian Campbell wrote:
-> 
-> > If I understand correctly this requirements comes from the need to
-> > support moving the shared info page in order to support kexec?
-> > 
-> > So could we do something more fine grained and limit only the kexec
-> > support (and therefore the movement of the SI into that range) to 3.4+?
-> 
-> Its not strictly about kexec. The other patch I sent out will place the
-> shared info page at 0xFE700000.
+Even if skb is marked for zero copy, net core might still decide
+to copy it later which is somewhat slower than a copy in user context:
+besides copying the data we need to pin/unpin the pages.
 
-Right, but it does this only in order to support kexec, right? Is there
-any other reason to relocate the shinfo in this way?
+Add a parameter reporting such cases through zero copy callback:
+if this happens a lot, device can take this into account
+and switch to copying in user context.
 
->  If that range is not within a
-> E820_Reserved area and if the old hvmloader makes allocations within
-> that range, that other patch needs to be changed so that the shared info
-> page is done either at 0xFE700000 or within RESERVE_BRK (as it is done
-> currently).
+This patch updates all users but ignores the passed value for now:
+it will be used by follow-up patches.
 
-Can it not do both, depending on the detected version of Xen? That's
-what I was trying to suggest.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/vhost/vhost.c  | 2 +-
+ drivers/vhost/vhost.h  | 2 +-
+ include/linux/skbuff.h | 4 +++-
+ net/core/skbuff.c      | 4 ++--
+ 4 files changed, 7 insertions(+), 5 deletions(-)
 
-> Is the source code of that old RHEL available somewhere, did they patch
-> hvmloader at all? Providing a E820 map from a guest which was started on
-> such old dom0 would be a good start.
-
-IIRC The .src.rpm's are available on ftp.redhat.com, or you could
-probaly find the centos versions.
-
-Ian.
-
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 99ac2cb..92308b6 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -1600,7 +1600,7 @@ void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *ubufs)
+ 	kfree(ubufs);
+ }
+ 
+-void vhost_zerocopy_callback(struct ubuf_info *ubuf)
++void vhost_zerocopy_callback(struct ubuf_info *ubuf, int zerocopy_status)
+ {
+ 	struct vhost_ubuf_ref *ubufs = ubuf->ctx;
+ 	struct vhost_virtqueue *vq = ubufs->vq;
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 1125af3..eb7263c3 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -191,7 +191,7 @@ bool vhost_enable_notify(struct vhost_dev *, struct vhost_virtqueue *);
+ 
+ int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+ 		    unsigned int log_num, u64 len);
+-void vhost_zerocopy_callback(struct ubuf_info *);
++void vhost_zerocopy_callback(struct ubuf_info *, int);
+ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq);
+ 
+ #define vq_err(vq, fmt, ...) do {                                  \
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 6a2c34e..8bac11b 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -235,11 +235,13 @@ enum {
+ /*
+  * The callback notifies userspace to release buffers when skb DMA is done in
+  * lower device, the skb last reference should be 0 when calling this.
++ * The zerocopy_status argument is 0 if zero copy transmit occurred,
++ * 1 on successful data copy; < 0 on out of memory error.
+  * The ctx field is used to track device context.
+  * The desc field is used to track userspace buffer index.
+  */
+ struct ubuf_info {
+-	void (*callback)(struct ubuf_info *);
++	void (*callback)(struct ubuf_info *, int zerocopy_status);
+ 	void *ctx;
+ 	unsigned long desc;
+ };
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 6e04b1f..eb31f6e 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -519,7 +519,7 @@ static void skb_release_data(struct sk_buff *skb)
+ 
+ 			uarg = skb_shinfo(skb)->destructor_arg;
+ 			if (uarg->callback)
+-				uarg->callback(uarg);
++				uarg->callback(uarg, 0);
+ 		}
+ 
+ 		if (skb_has_frag_list(skb))
+@@ -797,7 +797,7 @@ int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask)
+ 	for (i = 0; i < num_frags; i++)
+ 		skb_frag_unref(skb, i);
+ 
+-	uarg->callback(uarg);
++	uarg->callback(uarg, 1);
+ 
+ 	/* skb frags point to kernel buffers */
+ 	for (i = num_frags - 1; i >= 0; i--) {
+-- 
+MST
 
