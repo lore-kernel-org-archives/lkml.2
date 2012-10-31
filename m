@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934780Ab2JaJtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:49:52 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:35425 "EHLO
+	id S934791Ab2JaJub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:50:31 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:35567 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab2JaJtp (ORCPT
+	with ESMTP id S1752788Ab2JaJu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:49:45 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-2a-5090f42d0a90
+	Wed, 31 Oct 2012 05:50:27 -0400
+X-AuditID: cbfee61a-b7fa66d0000004cf-38-5090f461c67d
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
@@ -15,429 +15,175 @@ To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         jooyoung.hwang@samsung.com
 References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
 In-reply-to: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-Subject: [PATCH 16/17] f2fs: move proc files to debugfs
-Date: Wed, 31 Oct 2012 18:49:32 +0900
-Message-id: <004d01cdb74d$07583b00$1608b100$%kim@samsung.com>
+Subject: [PATCH 17/17] f2fs: update Kconfig and Makefile
+Date: Wed, 31 Oct 2012 18:50:25 +0900
+Message-id: <005201cdb74d$26e57870$74b06950$%kim@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAAeOig
+Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAAfv7A
 Content-language: en-us
+x-cr-hashedpuzzle: CqDJ IQ8u OCmg ZxjD is8A wVHG 1czy ABmWmQ== ACv1qw==
+ AC5L9w== ADlejA== AEOMyA== AFRPuQ== AF0SYQ== AHRlQw==
+ AKH+uA==;9;YQByAG4AZABAAGEAcgBuAGQAYgAuAGQAZQA7AGMAaAB1AHIALgBsAGUAZQBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGMAbQAyADIANAAuAGwAZQBlAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAZwByAGUAZwBrAGgAQABsAGkAbgB1AHgAZgBvAHUAbgBkAGEAdABpAG8AbgAuAG8AcgBnADsAagBvAG8AeQBvAHUAbgBnAC4AaAB3AGEAbgBnAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAbABpAG4AdQB4AC0AZgBzAGQAZQB2AGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAeQB0AHMAbwBAAG0AaQB0AC4AZQBkAHUAOwB2AGkAcgBvAEAAegBlAG4AaQB2AC4AbABpAG4AdQB4AC4AbwByAGcALgB1AGsA;Sosha1_v1;7;{7DE02567-0ABB-4074-9BF7-676E677F4678};agBhAGUAZwBlAHUAawAuAGsAaQBtAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Wed,
+ 31 Oct 2012 09:50:07
+ GMT;WwBQAEEAVABDAEgAIAAxADcALwAxADcAXQAgAGYAMgBmAHMAOgAgAHUAcABkAGEAdABlACAASwBjAG8AbgBmAGkAZwAgAGEAbgBkACAATQBhAGsAZQBmAGkAbABlAA==
+x-cr-puzzleid: {7DE02567-0ABB-4074-9BF7-676E677F4678}
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zA13dLxMCDB4f57DYs/cki8XlXXPY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mp49f8bY8HhtIr9248yNjAuD+li5OSQEDCRuDd/CxuE
-	LSZx4d56IJuLQ0hgGaPE+ofzmWCKTp39xgqRWMQo8ftRPxOE849R4uzf7UAOBwebgLbE5v0G
-	IHERgYeMEvufLWUH6RYSsJV4ev8aO0gNp4CdxOUTESBhYQFziXf7J4BtZhFQlVh95iQziM0L
-	VH73yURWCFtQ4sfkeywgNrOAusSkeYuYIWx5ic1r3jKDjJQAij/6qwsSFhEwktiwazI7RIm4
-	xKQHD9khxgtIfJt8iAWiXFZi0wFmkCslBBaxS2zcuxDqR0mJgytusExgFJ+FZPMsJJtnIdk8
-	C8mKBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzFCYkl6B+OqBotDjAIcjEo8vAb/+gOE
-	WBPLiitzDzFKcDArifAmf5oQIMSbklhZlVqUH19UmpNafIjRB+jyicxSosn5wDjPK4k3NDY2
-	MTMxNTG3NDU3xSGsJM7b7JESICSQnliSmp2aWpBaBDOOiYNTqoGxYRU/d6aqXY99dv6beecP
-	y148/7O4T/GAxvFLMTHz+pTS34vv9FTu2T19zxffup9HilfwFzDaJbOcrvDcOslx18Q4D9by
-	B+09Jo5Va3e5Leh/KzPHPk2zjEejwJcrKGXDmkJ+4+yYnEUunxUiNty63HjeOOHq9s9uP1wO
-	tz9oSng+4f2OSGUlluKMREMt5qLiRAAdqw/00gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t9jAV3dLxMCDL72M1rs2XuSxeLyrjls
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmvPr/jbHgcFrF
-	/u1HGRsYl4d0MXJySAiYSJw6+40VwhaTuHBvPVsXIxeHkMAiRonfj/qZIJx/jBJn/24Hcjg4
-	2AS0JTbvNwCJiwg8ZJTY/2wpO0i3kICtxNP719hBajgF7CQun4gACQsLmEu82z+BDcRmEVCV
-	WH3mJDOIzQtUfvfJRFYIW1Dix+R7LCA2s4C6xKR5i5ghbHmJzWveMoOMlACKP/qrCxIWETCS
-	2LBrMjtEibjEpAcP2ScwCs5CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS9
-	5PzcTYzgSH0mvYNxVYPFIUYBDkYlHl6Df/0BQqyJZcWVuYcYJTiYlUR4kz9NCBDiTUmsrEot
-	yo8vKs1JLT7E6AP06ERmKdHkfGASySuJNzQ2MTOyNDKzMDIxN8chrCTO2+yREiAkkJ5Ykpqd
-	mlqQWgQzjomDU6qBMULyusfGwMk/98pZb0p5dkrheB578cQNHUFS2p+4K+wPRd7iEDh+IkRi
-	U63Ikskxzpo+iu4z/G0j3rj4TheXXPKjuy/obaByVXan5trHAufmc83h3V7yrF7/xiSuxgXL
-	p+/aNa9JUXzLGqUTMz4Fl7DrLCzec2jG79Bdjw/u3eHBXDhr5b27f5VYijMSDbWYi4oTARyg
-	ljcBAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zQ93ELxMCDE6/sLbYs/cki8XlXXPY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mro3nuPtWCdYsXdk4fZGxhfS3UxcnJICJhIzGl8yA5h
+	i0lcuLeerYuRi0NIYBmjROfJXawwRbOPX2SGSCxilFjTPYMJwvnHKPFi+TGgdg4ONgFtic37
+	DUDiIgIPGSX2P1sKNlZIwFbi6f1rYDWcAnYSl09EgISFBSwk+ueuYgaxWQRUJVZN38MIYvMC
+	lf+ZNpUdwhaU+DH5HguIzSygLjFp3iJmCFteYvOat8wgIyWA4o/+6oKERQSMJF7/eM0OUSIu
+	MekByGNcQCVn2CV+r3oD9YypxJltZ6D2Ckh8m3yIBWKOrMSmA8wQ9fuA6ld/Z4Kol5Q4uOIG
+	ywRGyVlITpqF5KRZSE6ahWT3AkaWVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxgh0Se1g3Fl
+	g8UhRgEORiUeXsN//QFCrIllxZW5hxglOJiVRHiTP00IEOJNSaysSi3Kjy8qzUktPsToA3T5
+	RGYp0eR8YGLIK4k3NDY2MTMxNTG3NDU3xSGsJM7b7JESICSQnliSmp2aWpBaBDOOiYNTqoHx
+	UNKKQI3Nn54vfOx7KiUmZvOch/uTPt/Q04tr32A9werOmjuG/Cf2dj678ET1fJ6a1ry5D2In
+	iiWoF7IGFcofP9s+d2el3BLBw8xt2yb+tk1b83aG2YMpSZ/uCn7c87M+kz1bNq1Q9cMdK89Z
+	HjGW0UqR/WtKDa6VNW0//qFLMfG6XXowT+0UJZbijERDLeai4kQAHcANpusCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42I5/e+xgG7ilwkBBh3bzC327D3JYnF51xw2
+	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
+	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzuvfeYy1Yp1hx
+	9+Rh9gbG11JdjJwcEgImErOPX2SGsMUkLtxbz9bFyMUhJLCIUWJN9wwmCOcfo8SL5cfYuxg5
+	ONgEtCU27zcAiYsIPGSU2P9sKTtIt5CArcTT+9fAajgF7CQun4gACQsLWEj0z10FtoBFQFVi
+	1fQ9jCA2L1D5n2lT2SFsQYkfk++xgNjMAuoSk+YtYoaw5SU2r3nLDDJSAij+6K8uSFhEwEji
+	9Y/X7BAl4hKTHjxkBzlHQuAMu8TvVW9YIZ4xlTiz7QzzBEbhWUhWzEKyYhaSFbOQzFrAyLKK
+	UTS1ILmgOCk911CvODG3uDQvXS85P3cTIzi2n0ntYFzZYHGIUYCDUYmH1/Bff4AQa2JZcWXu
+	IUYJDmYlEd7kTxMChHhTEiurUovy44tKc1KLDzH6AENgIrOUaHI+MO3klcQbGpuYGVkamVkY
+	mZib4xBWEudt9kgJEBJITyxJzU5NLUgtghnHxMEp1cA4XSNgrQXPbMYTXv0/k8w7lv57WX0p
+	rsghTUYluiaMY+4Ku5dXpnSKPDf4ckok7SgLf7husNHmPQY2SxYmM4Wui3IVzFZc4Vy5s+rf
+	TyHGlW+ywhq2OXZ/SWCM2lmfYu2S73g53PNs827NtWan5NRjt3GsZy7wY5879WnjSx31218P
+	iUaHrVFiKc5INNRiLipOBACGkfhWGgMAAA==
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves all of the f2fs debugging files into debugfs. The files are
-located in /sys/kernel/debug/f2fs/
+This adds Makefile and Kconfig for f2fs, and updates Makefile and Kconfig files
+in the fs directory.
+In addition, add F2FS_SUPER_MAGIC in magic.h.
 
-Note, I think we are generating all of the same information in each of
-the files for every unique f2fs filesystem in the machine.  This copies
-the functionality that was present in the proc files, but this should be
-fixed up in the future.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Acked-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/debug.c |  361 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 361 insertions(+)
- create mode 100644 fs/f2fs/debug.c
+ fs/Kconfig                 |    1 +
+ fs/Makefile                |    1 +
+ fs/f2fs/Kconfig            |   52 ++++++++++++++++++++++++++++++++++++++++++++
+ fs/f2fs/Makefile           |    7 ++++++
+ include/uapi/linux/magic.h |    1 +
+ 5 files changed, 62 insertions(+)
+ create mode 100644 fs/f2fs/Kconfig
+ create mode 100644 fs/f2fs/Makefile
 
-diff --git a/fs/f2fs/debug.c b/fs/f2fs/debug.c
+diff --git a/fs/Kconfig b/fs/Kconfig
+index f95ae3a..e352b37 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -220,6 +220,7 @@ source "fs/pstore/Kconfig"
+ source "fs/sysv/Kconfig"
+ source "fs/ufs/Kconfig"
+ source "fs/exofs/Kconfig"
++source "fs/f2fs/Kconfig"
+ 
+ endif # MISC_FILESYSTEMS
+ 
+diff --git a/fs/Makefile b/fs/Makefile
+index 1d7af79..9d53192 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -123,6 +123,7 @@ obj-$(CONFIG_DEBUG_FS)		+= debugfs/
+ obj-$(CONFIG_OCFS2_FS)		+= ocfs2/
+ obj-$(CONFIG_BTRFS_FS)		+= btrfs/
+ obj-$(CONFIG_GFS2_FS)           += gfs2/
++obj-$(CONFIG_F2FS_FS)		+= f2fs/
+ obj-y				+= exofs/ # Multiple modules
+ obj-$(CONFIG_CEPH_FS)		+= ceph/
+ obj-$(CONFIG_PSTORE)		+= pstore/
+diff --git a/fs/f2fs/Kconfig b/fs/f2fs/Kconfig
 new file mode 100644
-index 0000000..a56181c
+index 0000000..37a6b8e
 --- /dev/null
-+++ b/fs/f2fs/debug.c
-@@ -0,0 +1,361 @@
-+/**
-+ * f2fs debugging statistics
-+ *
-+ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
-+ *             http://www.samsung.com/
-+ * Copyright (c) 2012 Linux Foundation
-+ * Copyright (c) 2012 Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++++ b/fs/f2fs/Kconfig
+@@ -0,0 +1,52 @@
++config F2FS_FS
++	tristate "F2FS filesystem support (EXPERIMENTAL)"
++	help
++	  F2FS is based on Log-structured File System (LFS), which supports
++	  versatile "flash-friendly" features. The design has been focused on
++	  addressing the fundamental issues in LFS, which are snowball effect
++	  of wandering tree and high cleaning overhead.
 +
-+#include <linux/fs.h>
-+#include <linux/backing-dev.h>
-+#include <linux/proc_fs.h>
-+#include <linux/f2fs_fs.h>
-+#include <linux/blkdev.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
++	  Since flash-based storages show different characteristics according to
++	  the internal geometry or flash memory management schemes aka FTL, F2FS
++	  and tools support various parameters not only for configuring on-disk
++	  layout, but also for selecting allocation and cleaning algorithms.
 +
-+#include "f2fs.h"
-+#include "node.h"
-+#include "segment.h"
-+#include "gc.h"
++	  If unsure, say N.
 +
-+static LIST_HEAD(f2fs_stat_list);
-+static struct dentry *debugfs_root;
++config F2FS_STAT_FS
++	bool "F2FS Status Information"
++	depends on F2FS_FS && DEBUG_FS
++	default y
++	help
++	  /sys/kernel/debug/f2fs/ contains information about all the partitions
++	  mounted as f2fs. Each file shows the whole f2fs information.
 +
-+void update_general_status(struct f2fs_sb_info *sbi)
-+{
-+	struct f2fs_stat_info *si = sbi->stat_info;
-+	int i;
++	  /sys/kernel/debug/f2fs/status includes:
++	    - major file system information managed by f2fs currently
++	    - average SIT information about whole segments
++	    - current memory footprint consumed by f2fs.
 +
-+	/* valid check of the segment numbers */
-+	si->hit_ext = sbi->read_hit_ext;
-+	si->total_ext = sbi->total_hit_ext;
-+	si->ndirty_node = get_pages(sbi, F2FS_DIRTY_NODES);
-+	si->ndirty_dent = get_pages(sbi, F2FS_DIRTY_DENTS);
-+	si->ndirty_dirs = sbi->n_dirty_dirs;
-+	si->ndirty_meta = get_pages(sbi, F2FS_DIRTY_META);
-+	si->total_count = (int)sbi->user_block_count / sbi->blocks_per_seg;
-+	si->rsvd_segs = reserved_segments(sbi);
-+	si->overp_segs = overprovision_segments(sbi);
-+	si->valid_count = valid_user_blocks(sbi);
-+	si->valid_node_count = valid_node_count(sbi);
-+	si->valid_inode_count = valid_inode_count(sbi);
-+	si->utilization = utilization(sbi);
++config F2FS_FS_XATTR
++	bool "F2FS extended attributes"
++	depends on F2FS_FS
++	default y
++	help
++	  Extended attributes are name:value pairs associated with inodes by
++	  the kernel or by users (see the attr(5) manual page, or visit
++	  <http://acl.bestbits.at/> for details).
 +
-+	si->free_segs = free_segments(sbi);
-+	si->free_secs = free_sections(sbi);
-+	si->prefree_count = prefree_segments(sbi);
-+	si->dirty_count = dirty_segments(sbi);
-+	si->node_pages = sbi->node_inode->i_mapping->nrpages;
-+	si->meta_pages = sbi->meta_inode->i_mapping->nrpages;
-+	si->nats = NM_I(sbi)->nat_cnt;
-+	si->sits = SIT_I(sbi)->dirty_sentries;
-+	si->fnids = NM_I(sbi)->fcnt;
-+	si->bg_gc = sbi->bg_gc;
-+	si->util_free = (int)(free_user_blocks(sbi) >> sbi->log_blocks_per_seg)
-+		* 100 / (int)(sbi->user_block_count >> sbi->log_blocks_per_seg)
-+		/ 2;
-+	si->util_valid = (int)(written_block_count(sbi) >>
-+						sbi->log_blocks_per_seg)
-+		* 100 / (int)(sbi->user_block_count >> sbi->log_blocks_per_seg)
-+		/ 2;
-+	si->util_invalid = 50 - si->util_free - si->util_valid;
-+	for (i = CURSEG_HOT_DATA; i <= CURSEG_COLD_NODE; i++) {
-+		struct curseg_info *curseg = CURSEG_I(sbi, i);
-+		si->curseg[i] = curseg->segno;
-+		si->cursec[i] = curseg->segno / sbi->segs_per_sec;
-+		si->curzone[i] = si->cursec[i] / sbi->secs_per_zone;
-+	}
++	  If unsure, say N.
 +
-+	for (i = 0; i < 2; i++) {
-+		si->segment_count[i] = sbi->segment_count[i];
-+		si->block_count[i] = sbi->block_count[i];
-+	}
-+}
++config F2FS_FS_POSIX_ACL
++	bool "F2FS Access Control Lists"
++	depends on F2FS_FS_XATTR
++	select FS_POSIX_ACL
++	default y
++	help
++	  Posix Access Control Lists (ACLs) support permissions for users and
++	  gourps beyond the owner/group/world scheme.
 +
-+/**
-+ * This function calculates BDF of every segments
-+ */
-+static void update_sit_info(struct f2fs_sb_info *sbi)
-+{
-+	struct f2fs_stat_info *si = sbi->stat_info;
-+	unsigned int blks_per_sec, hblks_per_sec, total_vblocks, bimodal, dist;
-+	struct sit_info *sit_i = SIT_I(sbi);
-+	unsigned int segno, vblocks;
-+	int ndirty = 0;
++	  To learn more about Access Control Lists, visit the POSIX ACLs for
++	  Linux website <http://acl.bestbits.at/>.
 +
-+	bimodal = 0;
-+	total_vblocks = 0;
-+	blks_per_sec = sbi->segs_per_sec * (1 << sbi->log_blocks_per_seg);
-+	hblks_per_sec = blks_per_sec / 2;
-+	mutex_lock(&sit_i->sentry_lock);
-+	for (segno = 0; segno < TOTAL_SEGS(sbi); segno += sbi->segs_per_sec) {
-+		vblocks = get_valid_blocks(sbi, segno, sbi->segs_per_sec);
-+		dist = abs(vblocks - hblks_per_sec);
-+		bimodal += dist * dist;
++	  If you don't know what Access Control Lists are, say N
+diff --git a/fs/f2fs/Makefile b/fs/f2fs/Makefile
+new file mode 100644
+index 0000000..27a0820
+--- /dev/null
++++ b/fs/f2fs/Makefile
+@@ -0,0 +1,7 @@
++obj-$(CONFIG_F2FS_FS) += f2fs.o
 +
-+		if (vblocks > 0 && vblocks < blks_per_sec) {
-+			total_vblocks += vblocks;
-+			ndirty++;
-+		}
-+	}
-+	mutex_unlock(&sit_i->sentry_lock);
-+	dist = sbi->total_sections * hblks_per_sec * hblks_per_sec / 100;
-+	si->bimodal = bimodal / dist;
-+	if (si->dirty_count)
-+		si->avg_vblocks = total_vblocks / ndirty;
-+	else
-+		si->avg_vblocks = 0;
-+}
-+
-+/**
-+ * This function calculates memory footprint.
-+ */
-+static void update_mem_info(struct f2fs_sb_info *sbi)
-+{
-+	struct f2fs_stat_info *si = sbi->stat_info;
-+	unsigned npages;
-+
-+	if (si->base_mem)
-+		goto get_cache;
-+
-+	si->base_mem = sizeof(struct f2fs_sb_info) + sbi->sb->s_blocksize;
-+	si->base_mem += 2 * sizeof(struct f2fs_inode_info);
-+	si->base_mem += sizeof(*sbi->ckpt);
-+
-+	/* build sm */
-+	si->base_mem += sizeof(struct f2fs_sm_info);
-+
-+	/* build sit */
-+	si->base_mem += sizeof(struct sit_info);
-+	si->base_mem += TOTAL_SEGS(sbi) * sizeof(struct seg_entry);
-+	si->base_mem += f2fs_bitmap_size(TOTAL_SEGS(sbi));
-+	si->base_mem += 2 * SIT_VBLOCK_MAP_SIZE * TOTAL_SEGS(sbi);
-+	if (sbi->segs_per_sec > 1)
-+		si->base_mem += sbi->total_sections *
-+			sizeof(struct sec_entry);
-+	si->base_mem += __bitmap_size(sbi, SIT_BITMAP);
-+
-+	/* build free segmap */
-+	si->base_mem += sizeof(struct free_segmap_info);
-+	si->base_mem += f2fs_bitmap_size(TOTAL_SEGS(sbi));
-+	si->base_mem += f2fs_bitmap_size(sbi->total_sections);
-+
-+	/* build curseg */
-+	si->base_mem += sizeof(struct curseg_info) * NR_CURSEG_TYPE;
-+	si->base_mem += PAGE_CACHE_SIZE * NR_CURSEG_TYPE;
-+
-+	/* build dirty segmap */
-+	si->base_mem += sizeof(struct dirty_seglist_info);
-+	si->base_mem += NR_DIRTY_TYPE * f2fs_bitmap_size(TOTAL_SEGS(sbi));
-+	si->base_mem += 2 * f2fs_bitmap_size(TOTAL_SEGS(sbi));
-+
-+	/* buld nm */
-+	si->base_mem += sizeof(struct f2fs_nm_info);
-+	si->base_mem += __bitmap_size(sbi, NAT_BITMAP);
-+
-+	/* build gc */
-+	si->base_mem += sizeof(struct f2fs_gc_kthread);
-+
-+get_cache:
-+	/* free nids */
-+	si->cache_mem = NM_I(sbi)->fcnt;
-+	si->cache_mem += NM_I(sbi)->nat_cnt;
-+	npages = sbi->node_inode->i_mapping->nrpages;
-+	si->cache_mem += npages << PAGE_CACHE_SHIFT;
-+	npages = sbi->meta_inode->i_mapping->nrpages;
-+	si->cache_mem += npages << PAGE_CACHE_SHIFT;
-+	si->cache_mem += sbi->n_orphans * sizeof(struct orphan_inode_entry);
-+	si->cache_mem += sbi->n_dirty_dirs * sizeof(struct dir_inode_entry);
-+}
-+
-+static int stat_show(struct seq_file *s, void *v)
-+{
-+	struct f2fs_stat_info *si, *next;
-+	int i = 0;
-+	int j;
-+
-+	list_for_each_entry_safe(si, next, &f2fs_stat_list, stat_list) {
-+
-+		mutex_lock(&si->stat_lock);
-+		if (!si->sbi) {
-+			mutex_unlock(&si->stat_lock);
-+			continue;
-+		}
-+		update_general_status(si->sbi);
-+
-+		seq_printf(s, "\n=====[ partition info. #%d ]=====\n", i++);
-+		seq_printf(s, "[SB: 1] [CP: 2] [NAT: %d] [SIT: %d] ",
-+			   si->nat_area_segs, si->sit_area_segs);
-+		seq_printf(s, "[SSA: %d] [MAIN: %d",
-+			   si->ssa_area_segs, si->main_area_segs);
-+		seq_printf(s, "(OverProv:%d Resv:%d)]\n\n",
-+			   si->overp_segs, si->rsvd_segs);
-+		seq_printf(s, "Utilization: %d%% (%d valid blocks)\n",
-+			   si->utilization, si->valid_count);
-+		seq_printf(s, "  - Node: %u (Inode: %u, ",
-+			   si->valid_node_count, si->valid_inode_count);
-+		seq_printf(s, "Other: %u)\n  - Data: %u\n",
-+			   si->valid_node_count - si->valid_inode_count,
-+			   si->valid_count - si->valid_node_count);
-+		seq_printf(s, "\nMain area: %d segs, %d secs %d zones\n",
-+			   si->main_area_segs, si->main_area_sections,
-+			   si->main_area_zones);
-+		seq_printf(s, "  - COLD  data: %d, %d, %d\n",
-+			   si->curseg[CURSEG_COLD_DATA],
-+			   si->cursec[CURSEG_COLD_DATA],
-+			   si->curzone[CURSEG_COLD_DATA]);
-+		seq_printf(s, "  - WARM  data: %d, %d, %d\n",
-+			   si->curseg[CURSEG_WARM_DATA],
-+			   si->cursec[CURSEG_WARM_DATA],
-+			   si->curzone[CURSEG_WARM_DATA]);
-+		seq_printf(s, "  - HOT   data: %d, %d, %d\n",
-+			   si->curseg[CURSEG_HOT_DATA],
-+			   si->cursec[CURSEG_HOT_DATA],
-+			   si->curzone[CURSEG_HOT_DATA]);
-+		seq_printf(s, "  - Dir   dnode: %d, %d, %d\n",
-+			   si->curseg[CURSEG_HOT_NODE],
-+			   si->cursec[CURSEG_HOT_NODE],
-+			   si->curzone[CURSEG_HOT_NODE]);
-+		seq_printf(s, "  - File   dnode: %d, %d, %d\n",
-+			   si->curseg[CURSEG_WARM_NODE],
-+			   si->cursec[CURSEG_WARM_NODE],
-+			   si->curzone[CURSEG_WARM_NODE]);
-+		seq_printf(s, "  - Indir nodes: %d, %d, %d\n",
-+			   si->curseg[CURSEG_COLD_NODE],
-+			   si->cursec[CURSEG_COLD_NODE],
-+			   si->curzone[CURSEG_COLD_NODE]);
-+		seq_printf(s, "\n  - Valid: %d\n  - Dirty: %d\n",
-+			   si->main_area_segs - si->dirty_count -
-+			   si->prefree_count - si->free_segs,
-+			   si->dirty_count);
-+		seq_printf(s, "  - Prefree: %d\n  - Free: %d (%d)\n\n",
-+			   si->prefree_count, si->free_segs, si->free_secs);
-+		seq_printf(s, "GC calls: %d (BG: %d)\n",
-+			   si->call_count, si->bg_gc);
-+		seq_printf(s, "  - data segments : %d\n", si->data_segs);
-+		seq_printf(s, "  - node segments : %d\n", si->node_segs);
-+		seq_printf(s, "Try to move %d blocks\n", si->tot_blks);
-+		seq_printf(s, "  - data blocks : %d\n", si->data_blks);
-+		seq_printf(s, "  - node blocks : %d\n", si->node_blks);
-+		seq_printf(s, "\nExtent Hit Ratio: %d / %d\n",
-+			   si->hit_ext, si->total_ext);
-+		seq_printf(s, "\nBalancing F2FS Async:\n");
-+		seq_printf(s, "  - nodes %4d in %4d\n",
-+			   si->ndirty_node, si->node_pages);
-+		seq_printf(s, "  - dents %4d in dirs:%4d\n",
-+			   si->ndirty_dent, si->ndirty_dirs);
-+		seq_printf(s, "  - meta %4d in %4d\n",
-+			   si->ndirty_meta, si->meta_pages);
-+		seq_printf(s, "  - NATs %5d > %lu\n",
-+			   si->nats, NM_WOUT_THRESHOLD);
-+		seq_printf(s, "  - SITs: %5d\n  - free_nids: %5d\n",
-+			   si->sits, si->fnids);
-+		seq_printf(s, "\nDistribution of User Blocks:");
-+		seq_printf(s, " [ valid | invalid | free ]\n");
-+		seq_printf(s, "  [");
-+
-+		for (j = 0; j < si->util_valid; j++)
-+			seq_printf(s, "-");
-+		seq_printf(s, "|");
-+
-+		for (j = 0; j < si->util_invalid; j++)
-+			seq_printf(s, "-");
-+		seq_printf(s, "|");
-+
-+		for (j = 0; j < si->util_free; j++)
-+			seq_printf(s, "-");
-+		seq_printf(s, "]\n\n");
-+		seq_printf(s, "SSR: %u blocks in %u segments\n",
-+			   si->block_count[SSR], si->segment_count[SSR]);
-+		seq_printf(s, "LFS: %u blocks in %u segments\n",
-+			   si->block_count[LFS], si->segment_count[LFS]);
-+
-+		/* segment usage info */
-+		update_sit_info(si->sbi);
-+		seq_printf(s, "\nBDF: %u, avg. vblocks: %u\n",
-+			   si->bimodal, si->avg_vblocks);
-+
-+		/* memory footprint */
-+		update_mem_info(si->sbi);
-+		seq_printf(s, "\nMemory: %u KB = static: %u + cached: %u\n",
-+				(si->base_mem + si->cache_mem) >> 10,
-+				si->base_mem >> 10, si->cache_mem >> 10);
-+		mutex_unlock(&si->stat_lock);
-+	}
-+	return 0;
-+}
-+
-+static int stat_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, stat_show, inode->i_private);
-+}
-+
-+static const struct file_operations stat_fops = {
-+	.open = stat_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+
-+static int init_stats(struct f2fs_sb_info *sbi)
-+{
-+	struct f2fs_super_block *raw_super = F2FS_RAW_SUPER(sbi);
-+	struct f2fs_stat_info *si;
-+
-+	sbi->stat_info = kzalloc(sizeof(struct f2fs_stat_info), GFP_KERNEL);
-+	if (!sbi->stat_info)
-+		return -ENOMEM;
-+
-+	si = sbi->stat_info;
-+	mutex_init(&si->stat_lock);
-+	list_add_tail(&si->stat_list, &f2fs_stat_list);
-+
-+	si->all_area_segs = le32_to_cpu(raw_super->segment_count);
-+	si->sit_area_segs = le32_to_cpu(raw_super->segment_count_sit);
-+	si->nat_area_segs = le32_to_cpu(raw_super->segment_count_nat);
-+	si->ssa_area_segs = le32_to_cpu(raw_super->segment_count_ssa);
-+	si->main_area_segs = le32_to_cpu(raw_super->segment_count_main);
-+	si->main_area_sections = le32_to_cpu(raw_super->section_count);
-+	si->main_area_zones = si->main_area_sections /
-+				le32_to_cpu(raw_super->secs_per_zone);
-+	si->sbi = sbi;
-+	return 0;
-+}
-+
-+int f2fs_build_stats(struct f2fs_sb_info *sbi)
-+{
-+	int retval;
-+
-+	retval = init_stats(sbi);
-+	if (retval)
-+		return retval;
-+
-+	if (!debugfs_root)
-+		debugfs_root = debugfs_create_dir("f2fs", NULL);
-+
-+	debugfs_create_file("status", S_IRUGO, debugfs_root, NULL, &stat_fops);
-+	return 0;
-+}
-+
-+void f2fs_destroy_stats(struct f2fs_sb_info *sbi)
-+{
-+	struct f2fs_stat_info *si = sbi->stat_info;
-+
-+	list_del(&si->stat_list);
-+	mutex_lock(&si->stat_lock);
-+	si->sbi = NULL;
-+	mutex_unlock(&si->stat_lock);
-+	kfree(sbi->stat_info);
-+}
-+
-+void destroy_root_stats(void)
-+{
-+	debugfs_remove_recursive(debugfs_root);
-+	debugfs_root = NULL;
-+}
++f2fs-y		:= dir.o file.o inode.o namei.o hash.o super.o
++f2fs-y		+= checkpoint.o gc.o data.o node.o segment.o recovery.o
++f2fs-$(CONFIG_F2FS_STAT_FS) += debug.o
++f2fs-$(CONFIG_F2FS_FS_XATTR) += xattr.o
++f2fs-$(CONFIG_F2FS_FS_POSIX_ACL) += acl.o
+diff --git a/include/uapi/linux/magic.h b/include/uapi/linux/magic.h
+index e15192c..66353ff 100644
+--- a/include/uapi/linux/magic.h
++++ b/include/uapi/linux/magic.h
+@@ -23,6 +23,7 @@
+ #define EXT4_SUPER_MAGIC	0xEF53
+ #define BTRFS_SUPER_MAGIC	0x9123683E
+ #define NILFS_SUPER_MAGIC	0x3434
++#define F2FS_SUPER_MAGIC	0xF2F52010
+ #define HPFS_SUPER_MAGIC	0xf995e849
+ #define ISOFS_SUPER_MAGIC	0x9660
+ #define JFFS2_SUPER_MAGIC	0x72b6
 -- 
 1.7.9.5
 
@@ -447,4 +193,5 @@ index 0000000..a56181c
 ---
 Jaegeuk Kim
 Samsung
+
 
