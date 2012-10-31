@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760144Ab2JaTOC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 15:14:02 -0400
-Received: from smtprelay-b31.telenor.se ([213.150.131.20]:51190 "EHLO
-	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756718Ab2JaTN7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 15:13:59 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjXBABN4kVBV5h1yPGdsb2JhbABEilG4BAICgQEZAQEBAR8ZDSeCHgEBBAE6HBMBDxAIAxEDAQIvFCUKDA4TiAAKu1oUi2QKER+BDYQTYQOVdYV5jTo
-X-IronPort-AV: E=Sophos;i="4.80,688,1344204000"; 
-   d="scan'208";a="142995599"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 31 Oct 2012 20:18:49 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 11/11] HID: hid-multitouch: get rid of usbhid
- depedency for general path
-Message-ID: <20121031191849.GA1780@polaris.bitmath.org>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
- <1351241067-9521-12-git-send-email-benjamin.tissoires@gmail.com>
- <20121029225748.GA15632@polaris.bitmath.org>
- <CAN+gG=GNucfg4-wCBZQtz0yJDjpTD_56Js3d68nm8VFi1UhZAA@mail.gmail.com>
+	id S1760126Ab2JaTQH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 15:16:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37253 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759779Ab2JaTQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 15:16:04 -0400
+Date: Wed, 31 Oct 2012 20:16:02 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/8] cgroup: kill CSS_REMOVED
+Message-ID: <20121031191602.GB1271@dhcp22.suse.cz>
+References: <1351657365-25055-1-git-send-email-tj@kernel.org>
+ <1351657365-25055-3-git-send-email-tj@kernel.org>
+ <20121031153926.GC22809@dhcp22.suse.cz>
+ <20121031165739.GE2945@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAN+gG=GNucfg4-wCBZQtz0yJDjpTD_56Js3d68nm8VFi1UhZAA@mail.gmail.com>
+In-Reply-To: <20121031165739.GE2945@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > In my drawer, I have a patchset that aims to remove all usbhid
-> > dependence, from all the drivers. Perhaps the attached patch is
-> > something to consider here?
+On Wed 31-10-12 09:57:39, Tejun Heo wrote:
+> Hey, Michal.
 > 
-> yep, removing usbhid dependencies is a good thing.
-> See my review below :)
+> On Wed, Oct 31, 2012 at 04:39:26PM +0100, Michal Hocko wrote:
+> > >  	prepare_to_wait(&cgroup_rmdir_waitq, &wait, TASK_INTERRUPTIBLE);
+> > >  
+> > > -	local_irq_disable();
+> > > -
+> > 
+> > OK, so the new charges shouldn't come from the IRQ context so we cannot
+> > race with css_tryget but why did we need this in the first place?
+> > A separate patch which removes this with an explanation would be nice.
 > 
-> > From 5d9a791e0a9e41bcea0fcb286e2849b403675f37 Mon Sep 17 00:00:00 2001
-> > From: Henrik Rydberg <rydberg@euromail.se>
-> > Date: Mon, 2 Jul 2012 20:38:21 +0200
-> > Subject: [PATCH 3/7] hid: extend interface with report requests
-> >
-> > ---
-> >  drivers/hid/usbhid/hid-core.c | 14 ++++++++++++++
-> >  include/linux/hid.h           | 33 +++++++++++++++++++++++++++++++++
-> >  2 files changed, 47 insertions(+)
-> >
-> > diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-> > index de1f9ac..3c618da 100644
-> > --- a/drivers/hid/usbhid/hid-core.c
-> > +++ b/drivers/hid/usbhid/hid-core.c
-> > @@ -1251,6 +1251,18 @@ static int usbhid_power(struct hid_device *hid, int lvl)
-> >         return r;
-> >  }
-> >
-> > +static void usbhid_send(struct hid_device *hid, struct hid_report *rep, int req)
-> > +{
-> > +       switch (req) {
-> > +       case HID_REQ_GET_REPORT:
-> > +               usbhid_submit_report(hid, rep, USB_DIR_IN);
-> > +               break;
-> > +       case HID_REQ_SET_REPORT:
-> > +               usbhid_submit_report(hid, rep, USB_DIR_OUT);
-> > +               break;
-> > +       }
-> > +}
-> > +
-> >  static struct hid_ll_driver usb_hid_driver = {
-> >         .parse = usbhid_parse,
-> >         .start = usbhid_start,
-> > @@ -1259,6 +1271,8 @@ static struct hid_ll_driver usb_hid_driver = {
-> >         .close = usbhid_close,
-> >         .power = usbhid_power,
-> >         .hidinput_input_event = usb_hidinput_input_event,
-> > +       .send = usbhid_send,
-> 
-> the name here is a little bit misleading. You are using "send" to also
-> "get" reports...
-> Maybe "hid_request" is a better name. This will allows us to add the
-> missing function:
-> Get_Descriptor, Set_Descriptor, Get_Report Request, Set_Report
-> Request, Get_Idle, Set_Idle, Get_Protocol, Set_Protocol and maybe
-> others - even WAIT for instance :)
+> The change is actually tied to this one.  Because css_tryget() busy
+> loops on DEACT_BIAS && !CSS_REMOVED and css_tryget() may happen from
+> an IRQ context, we need to disable IRQ while deactivating refcnts and
+> setting CSS_REMOVED.  I'll mention it in the commit message.
 
-Sounds good, I'll ponder this a bit.
+OK
 
+> > > @@ -2343,7 +2343,6 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+> > >  again:
+> > >  	if (*ptr) { /* css should be a valid one */
+> > >  		memcg = *ptr;
+> > > -		VM_BUG_ON(css_is_removed(&memcg->css));
+> > 
+> > All the callers seem to be fine but this was a safety net that something
+> > didn't leak out. Can we keep it and test that the reference counter has
+> > been disabled already (css_refcnt(&memcg->css) < 0 - I do not care
+> > whether open coded or wrapped innsude css_is_removed albeit helper
+> > sounds nicer)?
 > 
-> > +       .wait = usbhid_wait_io,
-> 
-> is it really necessary to wait for IO? (I think it will not be one
-> line for hid over i2c...).
+> I don't think that's a good idea.  In general, I think too much of
+> cgroup internals are exposed to controllers.  People try to implement
+> weird behaviors and expose cgroup internals for that, which in turn
+> attracts more weirdness, and there seems to be a pattern - cgroup core
+> is unnecessarily coupled with VFS locking like controllers are
+> unnecessarily coupled with cgroup internal locking.  I really wanna
+> move away from such pattern.  I mean, you can't even know
+> css_is_removed() isn't gonna change while the function is in progress.
 
-We can certainly skip it for the scope of your patchset, but last time
-I checked, it was needed in quite a few places.
+Sure, it cannot detect races but this wasn't the intention of the check.
+The more important part is that memcg can outlive css and we want to
+catch bugs when we try to charge to an already dead memcg.
 
-Thanks,
-Henrik
+[...]
+-- 
+Michal Hocko
+SUSE Labs
