@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab2JaXOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 19:14:11 -0400
-Received: from mailserver5.natinst.com ([130.164.80.5]:57359 "EHLO
-	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611Ab2JaXMz (ORCPT
+	id S1755113Ab2JaXOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 19:14:44 -0400
+Received: from mailserver6.natinst.com ([130.164.80.6]:53361 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753798Ab2JaXMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 19:12:55 -0400
-Message-Id: <23a299ee5e89cfd17bb9affd8fbb9f41b79cfd46.1351721190.git.josh.cartwright@ni.com>
+	Wed, 31 Oct 2012 19:12:52 -0400
+Message-Id: <3ec3531d21c247ac3dcc76d91ff6be13ebfc733b.1351721190.git.josh.cartwright@ni.com>
 In-Reply-To: <cover.1351721190.git.josh.cartwright@ni.com>
 References: <cover.1351721190.git.josh.cartwright@ni.com>
 From: Josh Cartwright <josh.cartwright@ni.com>
-Date: Wed, 31 Oct 2012 13:28:49 -0600
-Subject: [PATCH 7/8] serial: xilinx_uartps: get clock rate info from dts
+Date: Wed, 31 Oct 2012 11:11:59 -0600
+Subject: [PATCH 1/8] ARM: zynq: move arm-specific sys_timer out of ttc
 To: Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>,
         Russell King <linux@arm.linux.org.uk>,
@@ -25,7 +25,7 @@ Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
         Michal Simek <monstr@monstr.eu>
 X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/31/2012 06:12:27 PM,
+ 14, 2012) at 10/31/2012 06:12:28 PM,
 	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
  14, 2012) at 10/31/2012 06:12:28 PM,
 	Serialize complete at 10/31/2012 06:12:28 PM
@@ -35,107 +35,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for specifying clock information for the uart clk via the
-device tree.  This eliminates the need to hardcode rates in the device
-tree.
+Move the sys_timer definition out of ttc driver and make it part of the
+common zynq code.  This is preparation for renaming and COMMON_CLK
+support.
 
 Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
 ---
- arch/arm/boot/dts/zynq-7000.dtsi   |  4 ++--
- drivers/tty/serial/xilinx_uartps.c | 30 +++++++++++++++++-------------
- 2 files changed, 19 insertions(+), 15 deletions(-)
+ arch/arm/mach-zynq/common.c | 13 +++++++++++++
+ arch/arm/mach-zynq/common.h |  4 +---
+ arch/arm/mach-zynq/timer.c  | 10 +---------
+ 3 files changed, 15 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index bb3085c..5fb763f 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -44,14 +44,14 @@
- 			compatible = "xlnx,xuartps";
- 			reg = <0xE0000000 0x1000>;
- 			interrupts = <0 27 4>;
--			clock = <50000000>;
-+			clocks = <&uart_clk 0>;
- 		};
+diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+index ba8d14f..6f058258 100644
+--- a/arch/arm/mach-zynq/common.c
++++ b/arch/arm/mach-zynq/common.c
+@@ -25,6 +25,7 @@
  
- 		uart1: uart@e0001000 {
- 			compatible = "xlnx,xuartps";
- 			reg = <0xE0001000 0x1000>;
- 			interrupts = <0 50 4>;
--			clock = <50000000>;
-+			clocks = <&uart_clk 0>;
- 		};
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
++#include <asm/mach/time.h>
+ #include <asm/mach-types.h>
+ #include <asm/page.h>
+ #include <asm/hardware/gic.h>
+@@ -93,6 +94,18 @@ static struct map_desc io_desc[] __initdata = {
  
- 		slcr: slcr@f8000000 {
-diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index 23efe17..adfecbc 100644
---- a/drivers/tty/serial/xilinx_uartps.c
-+++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -17,6 +17,7 @@
- #include <linux/tty.h>
- #include <linux/tty_flip.h>
- #include <linux/console.h>
-+#include <linux/clk.h>
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/of.h>
-@@ -944,18 +945,20 @@ static int __devinit xuartps_probe(struct platform_device *pdev)
- 	int rc;
- 	struct uart_port *port;
- 	struct resource *res, *res2;
--	int clk = 0;
-+	struct clk *clk;
+ };
  
--	const unsigned int *prop;
--
--	prop = of_get_property(pdev->dev.of_node, "clock", NULL);
--	if (prop)
--		clk = be32_to_cpup(prop);
-+	clk = of_clk_get(pdev->dev.of_node, 0);
- 	if (!clk) {
- 		dev_err(&pdev->dev, "no clock specified\n");
- 		return -ENODEV;
- 	}
- 
-+	rc = clk_prepare_enable(clk);
-+	if (rc) {
-+		dev_err(&pdev->dev, "could not enable clock\n");
-+		return -EBUSY;
-+	}
++static void __init xilinx_zynq_timer_init(void)
++{
++	xttcpss_timer_init();
++}
 +
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res)
- 		return -ENODEV;
-@@ -978,7 +981,8 @@ static int __devinit xuartps_probe(struct platform_device *pdev)
- 		port->mapbase = res->start;
- 		port->irq = res2->start;
- 		port->dev = &pdev->dev;
--		port->uartclk = clk;
-+		port->uartclk = clk_get_rate(clk);
-+		port->private_data = clk;
- 		dev_set_drvdata(&pdev->dev, port);
- 		rc = uart_add_one_port(&xuartps_uart_driver, port);
- 		if (rc) {
-@@ -1000,14 +1004,14 @@ static int __devinit xuartps_probe(struct platform_device *pdev)
- static int __devexit xuartps_remove(struct platform_device *pdev)
++/*
++ * Instantiate and initialize the system timer structure
++ */
++static struct sys_timer xttcpss_sys_timer = {
++	.init		= xilinx_zynq_timer_init,
++};
++
+ /**
+  * xilinx_map_io() - Create memory mappings needed for early I/O.
+  */
+diff --git a/arch/arm/mach-zynq/common.h b/arch/arm/mach-zynq/common.h
+index a009644..954b91c 100644
+--- a/arch/arm/mach-zynq/common.h
++++ b/arch/arm/mach-zynq/common.h
+@@ -17,8 +17,6 @@
+ #ifndef __MACH_ZYNQ_COMMON_H__
+ #define __MACH_ZYNQ_COMMON_H__
+ 
+-#include <asm/mach/time.h>
+-
+-extern struct sys_timer xttcpss_sys_timer;
++void __init xttcpss_timer_init(void);
+ 
+ #endif
+diff --git a/arch/arm/mach-zynq/timer.c b/arch/arm/mach-zynq/timer.c
+index c2c96cc..c93cbe5 100644
+--- a/arch/arm/mach-zynq/timer.c
++++ b/arch/arm/mach-zynq/timer.c
+@@ -24,7 +24,6 @@
+ #include <linux/clockchips.h>
+ #include <linux/io.h>
+ 
+-#include <asm/mach/time.h>
+ #include <mach/zynq_soc.h>
+ #include "common.h"
+ 
+@@ -269,7 +268,7 @@ static struct clock_event_device xttcpss_clockevent = {
+  * Initializes the timer hardware and register the clock source and clock event
+  * timers with Linux kernal timer framework
+  **/
+-static void __init xttcpss_timer_init(void)
++void __init xttcpss_timer_init(void)
  {
- 	struct uart_port *port = dev_get_drvdata(&pdev->dev);
--	int rc = 0;
-+	struct clk *clk = port->private_data;
-+	int rc;
- 
- 	/* Remove the xuartps port from the serial core */
--	if (port) {
--		rc = uart_remove_one_port(&xuartps_uart_driver, port);
--		dev_set_drvdata(&pdev->dev, NULL);
--		port->mapbase = 0;
--	}
-+	rc = uart_remove_one_port(&xuartps_uart_driver, port);
-+	dev_set_drvdata(&pdev->dev, NULL);
-+	port->mapbase = 0;
-+	clk_disable_unprepare(clk);
- 	return rc;
+ 	xttcpss_timer_hardware_init();
+ 	clocksource_register_hz(&clocksource_xttcpss, TIMER_RATE);
+@@ -289,10 +288,3 @@ static void __init xttcpss_timer_init(void)
+ 	xttcpss_clockevent.cpumask = cpumask_of(0);
+ 	clockevents_register_device(&xttcpss_clockevent);
  }
- 
+-
+-/*
+- * Instantiate and initialize the system timer structure
+- */
+-struct sys_timer xttcpss_sys_timer = {
+-	.init		= xttcpss_timer_init,
+-};
 -- 
 1.8.0
 
