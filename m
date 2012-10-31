@@ -1,108 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935158Ab2JaItB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 04:49:01 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:46791
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935082Ab2JaIsu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 04:48:50 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 7
-X-BigFish: VPS7(zzbb2dI98dI9371I542M1432I4015Izz1202h1d1ah1d2ahzz8275bhz30ih95h668h839h944hd24hf0ah119dh1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1307i1155h)
-From: Michal Simek <michal.simek@xilinx.com>
-To: Arnd Bergmann <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>
-CC: Josh Cartwright <josh.cartwright@ni.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: RE: [PATCH] ARM: zynq: move ttc timer code to drivers/clocksource
-Thread-Topic: [PATCH] ARM: zynq: move ttc timer code to drivers/clocksource
-Thread-Index: AQHNtgckRb0BKXknFkGtijVPDl8z5ZfRuW+AgAC4kwCAAKngYA==
-Date: Wed, 31 Oct 2012 08:48:38 +0000
-References: <20121029185630.GA26149@beefymiracle.amer.corp.natinst.com>
- <508FBBA5.2080707@monstr.eu> <201210302236.43473.arnd@arndb.de>
-In-Reply-To: <201210302236.43473.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.26.162]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <2b8e9679-dade-4448-8c16-362de455ead0@AM1EHSMHS002.ehs.local>
-X-OriginatorOrg: xilinx.com
+	id S935172Ab2JaItR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 04:49:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36374 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935123Ab2JaIs4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 04:48:56 -0400
+From: Daniel J Blueman <daniel@numascale-asia.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>
+Subject: [PATCH 2/4, v2] AMD64 EDAC: Add support for >255 memory controllers
+Date: Wed, 31 Oct 2012 16:48:12 +0800
+Message-Id: <1351673292-31359-1-git-send-email-daniel@numascale-asia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351662932-22279-2-git-send-email-daniel@numascale-asia.com>
+References: <1351662932-22279-2-git-send-email-daniel@numascale-asia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As the AMD64 last-level-cache ID is 16-bits and federated systems
+eg using Numascale's NumaConnect/NumaChip can have more than 255 memory
+controllers, use 16-bits to store the ID.
 
+v2: Avoid change to intlv_en variable
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Tuesday, October 30, 2012 11:37 PM
-> To: monstr@monstr.eu
-> Cc: Josh Cartwright; Michal Simek; linux-arm-kernel@lists.infradead.org; linux-
-> kernel@vger.kernel.org; arm@kernel.org; Thomas Gleixner
-> Subject: Re: [PATCH] ARM: zynq: move ttc timer code to drivers/clocksource
-> 
-> On Tuesday 30 October 2012, Michal Simek wrote:
-> > On 10/29/2012 07:56 PM, Josh Cartwright wrote:
-> > > Suggested cleanup by Arnd Bergmann.  Move the ttc timer.c code to
-> > > drivers/clocksource, and out of the mach-zynq directory.
-> > >
-> > > The common.h (which only held the timer declaration) was renamed to
-> > > xilinx_ttc.h and moved into include/linux.
-> > >
-> > > Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
-> > > Cc: Arnd Bergmann <arnd@arndb.de>
-> > > ---
-> > >   arch/arm/mach-zynq/Makefile      |   2 +-
-> > >   arch/arm/mach-zynq/common.c      |   2 +-
-> > >   arch/arm/mach-zynq/common.h      |  24 ----
-> > >   arch/arm/mach-zynq/timer.c       | 298 ---------------------------------------
-> > >   drivers/clocksource/Makefile     |   1 +
-> > >   drivers/clocksource/xilinx_ttc.c | 297
-> ++++++++++++++++++++++++++++++++++++++
-> > >   include/linux/xilinx_ttc.h       |  24 ++++
-> > >   7 files changed, 324 insertions(+), 324 deletions(-)
-> 
-> When you submit a patch that moves files around, please use the '-M' flag to git-
-> format-patch so we can see the actual changes instead of a file being removed
-> and another one added.
-> 
-> > >   delete mode 100644 arch/arm/mach-zynq/common.h
-> > >   delete mode 100644 arch/arm/mach-zynq/timer.c
-> > >   create mode 100644 drivers/clocksource/xilinx_ttc.c
-> > >   create mode 100644 include/linux/xilinx_ttc.h
-> >
-> > Really?
-> > If yes. shouldn't be there any better naming convention especially for
-> > headers. linux/clocksource/xilinx_ttc.h.
-> 
-> Moving it is certainly the right direction, but I think we need a better way to
-> handle those forward declarations. "struct sys_timer" is actually an ARM specific
-> structure, so we might just want to add all the forward declarations for the
-> timers into arch/arm/include/asm/mach/time.h. It's not ideal to do it like that,
-> but I think it's much better than having a new globally visible header for each
-> timer that is used on ARM.
-> 
-> Eventually, we might want to do something similar to what we are discussing for
-> the top-level IRQ controllers at the moment, where we just autodetect them
-> from DT if possible, so we don't need to have any pointer to the timer from arch
-> code at all.
+Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+---
+ drivers/edac/amd64_edac.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-Ok. It means that it is not big deal to keep timer as is in mach and when we
-have any generic solution we can follow it. This patch just move the code out
-of mach-zynq. 
-It should be done across architecture because for example timer I use for microblaze
-can be used by zynq too, also by Xilinx ppc. 
-
-Thanks,
-Michal
-
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index 18d404a..28b2005 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -942,7 +942,8 @@ static u64 get_error_address(struct mce *m)
+ 		struct amd64_pvt *pvt;
+ 		u64 cc6_base, tmp_addr;
+ 		u32 tmp;
+-		u8 mce_nid, intlv_en;
++		u16 mce_nid;
++		u8 intlv_en;
+ 
+ 		if ((addr & GENMASK(24, 47)) >> 24 != 0x00fdf7)
+ 			return addr;
+@@ -1499,7 +1500,7 @@ static int f1x_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
+ 	u8 channel;
+ 	bool high_range = false;
+ 
+-	u8 node_id    = dram_dst_node(pvt, range);
++	u16 node_id   = dram_dst_node(pvt, range);
+ 	u8 intlv_en   = dram_intlv_en(pvt, range);
+ 	u32 intlv_sel = dram_intlv_sel(pvt, range);
+ 
+@@ -2306,7 +2307,7 @@ out:
+ 	return ret;
+ }
+ 
+-static int toggle_ecc_err_reporting(struct ecc_settings *s, u8 nid, bool on)
++static int toggle_ecc_err_reporting(struct ecc_settings *s, u16 nid, bool on)
+ {
+ 	cpumask_var_t cmask;
+ 	int cpu;
+@@ -2344,7 +2345,7 @@ static int toggle_ecc_err_reporting(struct ecc_settings *s, u8 nid, bool on)
+ 	return 0;
+ }
+ 
+-static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
++static bool enable_ecc_error_reporting(struct ecc_settings *s, u16 nid,
+ 				       struct pci_dev *F3)
+ {
+ 	bool ret = true;
+@@ -2396,7 +2397,7 @@ static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
+ 	return ret;
+ }
+ 
+-static void restore_ecc_error_reporting(struct ecc_settings *s, u8 nid,
++static void restore_ecc_error_reporting(struct ecc_settings *s, u16 nid,
+ 					struct pci_dev *F3)
+ {
+ 	u32 value, mask = 0x3;		/* UECC/CECC enable */
+@@ -2435,7 +2436,7 @@ static const char *ecc_msg =
+ 	"'ecc_enable_override'.\n"
+ 	" (Note that use of the override may cause unknown side effects.)\n";
+ 
+-static bool ecc_enabled(struct pci_dev *F3, u8 nid)
++static bool ecc_enabled(struct pci_dev *F3, u16 nid)
+ {
+ 	u32 value;
+ 	u8 ecc_en = 0;
+@@ -2556,7 +2557,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
+ 	struct mem_ctl_info *mci = NULL;
+ 	struct edac_mc_layer layers[2];
+ 	int err = 0, ret;
+-	u8 nid = get_node_id(F2);
++	u16 nid = get_node_id(F2);
+ 
+ 	ret = -ENOMEM;
+ 	pvt = kzalloc(sizeof(struct amd64_pvt), GFP_KERNEL);
+@@ -2647,7 +2648,7 @@ err_ret:
+ static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
+ 					     const struct pci_device_id *mc_type)
+ {
+-	u8 nid = get_node_id(pdev);
++	u16 nid = get_node_id(pdev);
+ 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
+ 	struct ecc_settings *s;
+ 	int ret = 0;
+@@ -2697,7 +2698,7 @@ static void __devexit amd64_remove_one_instance(struct pci_dev *pdev)
+ {
+ 	struct mem_ctl_info *mci;
+ 	struct amd64_pvt *pvt;
+-	u8 nid = get_node_id(pdev);
++	u16 nid = get_node_id(pdev);
+ 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
+ 	struct ecc_settings *s = ecc_stngs[nid];
+ 
+-- 
+1.7.9.5
 
