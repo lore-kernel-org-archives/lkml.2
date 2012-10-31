@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932920Ab2JaB0K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 21:26:10 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45040 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab2JaB0I (ORCPT
+	id S965186Ab2JaB0Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 21:26:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:21031 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932938Ab2JaB0U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 21:26:08 -0400
+	Tue, 30 Oct 2012 21:26:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
+   d="scan'208,223";a="162657201"
+From: "Zhang, Jun" <jun.zhang@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Zhang, Jun" <jun.zhang@intel.com>
+Subject: [PATCH] To crash dump, we need keep other memory type except
+ E820_RAM, because other type come from BIOS or firmware is used by other
+ code(for example: PCI_MMCONFIG).
+Thread-Topic: [PATCH] To crash dump, we need keep other memory type except
+ E820_RAM, because other type come from BIOS or firmware is used by other
+ code(for example: PCI_MMCONFIG).
+Thread-Index: Ac23BrhkFa+d0QQyRK2qvGnFwxZ/4g==
+Date: Wed, 31 Oct 2012 01:26:16 +0000
+Message-ID: <88DC34334CA3444C85D647DBFA962C270FD7EAD3@SHSMSX102.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1351646186.4004.41.camel@gandalf.local.home>
-References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
- <20121030214257.GB2681@htj.dyndns.org> <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
- <1351646186.4004.41.camel@gandalf.local.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 30 Oct 2012 18:25:46 -0700
-X-Google-Sender-Auth: wWDM1WiVdO6qdwE02jwZSm4jV8U
-Message-ID: <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
-Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive hashtable
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 6:16 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> ({                                                                    \
->         sizeof(val) <= 4 ? hash_32(val, bits) : hash_long(val, bits); \
-> })
->
-> Is the better way to go. We are C programmers, we like to see the ?: on
-> a single line if possible. The way you have it, looks like three
-> statements run consecutively.
+>From aebc336baa7ec2d4ccb6f21166770c7d2ee26cba Mon Sep 17 00:00:00 2001
+From: jzha144 <jun.zhang@intel.com>
+Date: Wed, 31 Oct 2012 08:51:18 +0800
+Subject: [PATCH] To crash dump, we need keep other memory type except
+ E820_RAM, because other type come from BIOS or firmware is
+ used by other code(for example: PCI_MMCONFIG).
 
-If we're C programmers, why use the non-standard statement-expression
-at all? And split it onto three lines when it's just a single one?
+Signed-off-by: jzha144 <jun.zhang@intel.com>
+---
+ arch/x86/kernel/e820.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-But whatever. This series has gotten way too much bike-shedding
-anyway. I think it should just be applied, since it does remove lines
-of code overall. I'd even possibly apply it to mainline, but it seems
-to be against linux-next.
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index df06ade..8760427 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -851,6 +851,15 @@ static int __init parse_memmap_opt(char *p)
+ 		 * reset.
+ 		 */
+ 		saved_max_pfn = e820_end_of_ram_pfn();
++
++		/*
++		 * To CRASH DUMP, only remove E820_RAM.
++		 *  some other memory typecome from BIOS or firmware,
++		 * it must be same with system kernel.
++		 */
++		e820_remove_range(0, ULLONG_MAX, E820_RAM, 1);
++		userdef = 1;
++		return 0;
+ #endif
+ 		e820.nr_map = 0;
+ 		userdef = 1;
+-- 
+1.7.6
 
-             Linus
