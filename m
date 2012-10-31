@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935811Ab2JaQI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:08:26 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:30674 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423176Ab2JaQFg (ORCPT
+	id S935790Ab2JaQKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:10:34 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:56177 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935724Ab2JaQKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:05:36 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <netdev@vger.kernel.org>, <davem@davemloft.net>, <havard@skinnemoen.net>
-CC: <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
-        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <manabian@gmail.com>,
-        <David.Laight@ACULAB.COM>, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v4 05/10] net/macb: tx status is more than 8 bits now
-Date: Wed, 31 Oct 2012 17:04:54 +0100
-Message-ID: <76a3a1fb6ad2fbf5e4d8d447afe7cd5c0eb24b8b.1351690694.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <cover.1351690694.git.nicolas.ferre@atmel.com>
-References: <cover.1351690694.git.nicolas.ferre@atmel.com>
+	Wed, 31 Oct 2012 12:10:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <alpine.LNX.2.00.1210311703560.12781@pobox.suse.cz>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+	<20121029174131.GC7580@srcf.ucam.org>
+	<alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
+	<CA+5PVA63EHiXbGAox+FmJPvztSj_i7QgnDG8vdj=p0xE+dqgGQ@mail.gmail.com>
+	<alpine.LNX.2.00.1210311703560.12781@pobox.suse.cz>
+Date: Wed, 31 Oct 2012 12:10:31 -0400
+Message-ID: <CA+5PVA7KK1aKAOroSSJ2Zo14AeAD2P-_oiKK1Yct0e--40bsPw@mail.gmail.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+From: Josh Boyer <jwboyer@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some revision of GEM, TSR status register has more information.
+On Wed, Oct 31, 2012 at 12:04 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Wed, 31 Oct 2012, Josh Boyer wrote:
+>
+>> I have a patch that disables that.  I imagine it will be included in the
+>> next submission of the patchset.
+>>
+>> You can find it here in the meantime:
+>>
+>> http://jwboyer.fedorapeople.org/pub/0001-hibernate-Disable-in-a-Secure-Boot-environment.patch
+>
+> I don't see that patch touching kernel/power/user.c, so using 's2disk' to
+> suspend machine seems to be still possible even with this patch applied,
+> right?
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Tested-by: Joachim Eastwood <manabian@gmail.com>
----
- drivers/net/ethernet/cadence/macb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Oh, yes.  Good catch.  I'll add similar checks there as well in the next
+revision.  Thanks!
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 4db52f3..cd6d431 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -314,7 +314,7 @@ static void macb_tx(struct macb *bp)
- 	status = macb_readl(bp, TSR);
- 	macb_writel(bp, TSR, status);
- 
--	netdev_vdbg(bp->dev, "macb_tx status = %02lx\n", (unsigned long)status);
-+	netdev_vdbg(bp->dev, "macb_tx status = 0x%03lx\n", (unsigned long)status);
- 
- 	if (status & (MACB_BIT(UND) | MACB_BIT(TSR_RLE))) {
- 		int i;
--- 
-1.8.0
-
+josh
