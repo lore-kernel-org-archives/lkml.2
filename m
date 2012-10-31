@@ -1,62 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935351Ab2JaKVk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:21:40 -0400
-Received: from smtp.tele.fi ([192.89.123.25]:58393 "EHLO smtp.tele.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933255Ab2JaKVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:21:38 -0400
-X-Originating-Ip: [194.89.68.22]
-Date: Wed, 31 Oct 2012 12:21:28 +0200
-From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: Ian Campbell <ian.campbell@citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] [PATCH] xen PVonHVM: require at least Xen 3.4 as
- dom0
-Message-ID: <20121031102128.GA8912@reaktio.net>
-References: <1351613105-24408-1-git-send-email-olaf@aepfle.de>
- <20121030181732.GZ8912@reaktio.net>
- <20121030182859.GA8775@aepfle.de>
- <1351672212.20470.7.camel@hastur.hellion.org.uk>
- <20121031092925.GA22587@aepfle.de>
+	id S935365Ab2JaKWQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:22:16 -0400
+Received: from shrek-modem2.podlesie.net ([83.13.132.46]:57446 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933180Ab2JaKWN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 06:22:13 -0400
+Date: Wed, 31 Oct 2012 11:22:10 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: "Chas Williams (CONTRACTOR)" <chas@cmf.nrl.navy.mil>
+Cc: davem@davemloft.net, dwmw2@infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
+Message-ID: <20121031102210.GA15077@shrek.podlesie.net>
+References: <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
+ <201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
+ <20121030182001.GA30373@shrek.podlesie.net>
+ <20121031094147.GA1004@shrek.podlesie.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121031092925.GA22587@aepfle.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121031094147.GA1004@shrek.podlesie.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 10:29:25AM +0100, Olaf Hering wrote:
-> On Wed, Oct 31, Ian Campbell wrote:
+On Wed, Oct 31, 2012 at 10:41:47AM +0100, Krzysztof Mazur wrote:
 > 
-> > If I understand correctly this requirements comes from the need to
-> > support moving the shared info page in order to support kexec?
-> > 
-> > So could we do something more fine grained and limit only the kexec
-> > support (and therefore the movement of the SI into that range) to 3.4+?
-> 
-> Its not strictly about kexec. The other patch I sent out will place the
-> shared info page at 0xFE700000. If that range is not within a
-> E820_Reserved area and if the old hvmloader makes allocations within
-> that range, that other patch needs to be changed so that the shared info
-> page is done either at 0xFE700000 or within RESERVE_BRK (as it is done
-> currently).
-> 
-> Is the source code of that old RHEL available somewhere, did they patch
-> hvmloader at all? Providing a E820 map from a guest which was started on
-> such old dom0 would be a good start.
+> I think that we should add a wrapper to vcc->send(), based on
+> fixed pppoatm_send(), that performs required checks and takes the ATM socket
+> lock.
 > 
 
-http://ftp.redhat.com/pub/redhat/linux/enterprise/5Server/en/os/SRPMS/xen-3.0.3-135.el5_8.5.src.rpm
-That's the userland, actual Xen hypervisor is in the kernel src.rpm.
+I'm sending initial version of such wrapper and update to pppoatm.
+Untested but the code is just copied from pppoatm_send.
 
-I can provide a dmesg from a guest later today.
+In final series I will fix some old &sk_atm(ATM_SKB(skb)->vcc)-like
+code from original version, before moving to vcc_send_bh(), but
+it's just an initial idea for some comments.
 
--- Pasi
+Krzysiek
 
+diff --git a/net/atm/common.c b/net/atm/common.c
+index 0c0ad93..e0602d2 100644
+--- a/net/atm/common.c
++++ b/net/atm/common.c
+@@ -558,6 +558,32 @@ int vcc_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *msg,
+ 	return copied;
+ }
+ 
++int vcc_send_bh(struct atm_vcc *vcc, struct sk_buff *skb)
++{
++	int ret;
++
++	bh_lock_sock(sk_atm(vcc));
++	ret = -EAGAIN;
++	if (sock_owned_by_user(sk_atm(vcc)))
++		goto out;
++	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
++			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
++			|| !test_bit(ATM_VF_READY, &vcc->flags))
++		goto out;
++
++	if (sk_wmem_alloc_get(sk_atm(vcc)) && !atm_may_send(vcc, skb->truesize))
++		goto out;
++
++	atomic_add(skb->truesize, &sk_atm(ATM_SKB(skb)->vcc)->sk_wmem_alloc);
++	ATM_SKB(skb)->atm_options = ATM_SKB(skb)->vcc->atm_options;
++	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n",
++		 skb, ATM_SKB(skb)->vcc, ATM_SKB(skb)->vcc->dev);
++	ret = ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb);
++out:
++	bh_unlock_sock(sk_atm(vcc));
++	return ret;
++}
++
+ int vcc_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *m,
+ 		size_t total_len)
+ {
+diff --git a/net/atm/common.h b/net/atm/common.h
+index cc3c2da..3a1c340 100644
+--- a/net/atm/common.h
++++ b/net/atm/common.h
+@@ -15,6 +15,7 @@ int vcc_release(struct socket *sock);
+ int vcc_connect(struct socket *sock, int itf, short vpi, int vci);
+ int vcc_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *msg,
+ 		size_t size, int flags);
++int vcc_send_bh(struct atm_vcc *vcc, struct sk_buff *skb);
+ int vcc_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *m,
+ 		size_t total_len);
+ unsigned int vcc_poll(struct file *file, struct socket *sock, poll_table *wait);
+diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
+index 5fc335a..7612f18 100644
+--- a/net/atm/pppoatm.c
++++ b/net/atm/pppoatm.c
+@@ -296,31 +296,10 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ 	}
+ 
+ 	vcc = ATM_SKB(skb)->vcc;
+-	bh_lock_sock(sk_atm(vcc));
+-	if (sock_owned_by_user(sk_atm(vcc)))
+-		goto nospace_unlock_sock;
+-	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
+-			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
+-			|| !test_bit(ATM_VF_READY, &vcc->flags))
+-		goto nospace_unlock_sock;
+-
+-	/*
+-	 * It's not clear that we need to bother with using atm_may_send()
+-	 * to check we don't exceed sk->sk_sndbuf.
+-	 */
+-	if (sk_wmem_alloc_get(sk_atm(vcc)) && !atm_may_send(vcc, skb->truesize))
+-		goto nospace_unlock_sock;
+-
+-	atomic_add(skb->truesize, &sk_atm(ATM_SKB(skb)->vcc)->sk_wmem_alloc);
+-	ATM_SKB(skb)->atm_options = ATM_SKB(skb)->vcc->atm_options;
+-	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n",
+-		 skb, ATM_SKB(skb)->vcc, ATM_SKB(skb)->vcc->dev);
+-	ret = ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb)
+-	    ? DROP_PACKET : 1;
+-	bh_unlock_sock(sk_atm(vcc));
+-	return ret;
+-nospace_unlock_sock:
+-	bh_unlock_sock(sk_atm(vcc));
++	ret = vcc_send_bh(vcc, skb);
++	if (ret == -EAGAIN)
++		goto nospace;
++	return ret ? DROP_PACKET : 1;
+ nospace:
+ 	/*
+ 	 * We don't have space to send this SKB now, but we might have
