@@ -1,28 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758394Ab2JaBfm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 21:35:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:12208 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753757Ab2JaBfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 21:35:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
-   d="scan'208";a="211528788"
-Message-ID: <1351647337.31033.13.camel@yhuang-dev>
-Subject: Re: [PATCH 2/9] uuid: use random32_get_bytes()
-From: Huang Ying <ying.huang@intel.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, chris.mason@fusionio.com,
-        linux-btrfs@vger.kernel.org
-Date: Wed, 31 Oct 2012 09:35:37 +0800
-In-Reply-To: <20121030044818.GA5972@thunk.org>
-References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
-	 <1351408746-8623-2-git-send-email-akinobu.mita@gmail.com>
-	 <20121029205200.GD7098@thunk.org> <1351561798.7817.352.camel@yhuang-dev>
-	 <20121030044818.GA5972@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
+	id S1759467Ab2JaBgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 21:36:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7930 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475Ab2JaBgf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 21:36:35 -0400
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=6MWR2sRkvj8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=SlKO6I3lSDoA:10 a=HK0Deuo6WE_9kiz5a7UA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351647390.4004.47.camel@gandalf.local.home>
+Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive
+ hashtable
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Tejun Heo <tj@kernel.org>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Date: Tue, 30 Oct 2012 21:36:30 -0400
+In-Reply-To: <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
+References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
+	 <20121030214257.GB2681@htj.dyndns.org>
+	 <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
+	 <1351646186.4004.41.camel@gandalf.local.home>
+	 <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
 X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -30,61 +42,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-30 at 00:48 -0400, Theodore Ts'o wrote:
-> On Tue, Oct 30, 2012 at 09:49:58AM +0800, Huang Ying wrote:
-> > The uuid_le/be_gen() in lib/uuid.c has set UUID variants to be DCE,
-> > that is done in __uuid_gen_common() with "b[8] = (b[8] & 0x3F) | 0x80".
+On Tue, 2012-10-30 at 18:25 -0700, Linus Torvalds wrote:
+> On Tue, Oct 30, 2012 at 6:16 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > ({                                                                    \
+> >         sizeof(val) <= 4 ? hash_32(val, bits) : hash_long(val, bits); \
+> > })
+> >
+> > Is the better way to go. We are C programmers, we like to see the ?: on
+> > a single line if possible. The way you have it, looks like three
+> > statements run consecutively.
 > 
-> Oh, I see, I missed that.
-> 
-> > To deal with random number generation issue, how about use
-> > get_random_bytes() in __uuid_gen_common()?
-> 
-> We already have generate_random_uuid() in drivers/char/random.c, and
-> no users for lib/uuid.c's equivalent uuid_be_gen().  So here's a
-> counter-proposal, why don't we drop lib/uuid.c, and include in
-> drivers/char/random.c:
-> 
-> /*
->  * Generate random GUID
->  *
->  * GUID's is like UUID's, but they uses the non-standard little-endian
->  * layout, compared to what is defined in RFC-4112; it is primarily
->  * used by the EFI specification.
->  */
-> void generate_random_guid(unsigned char uuid_out[16])
-> {
-> 	get_random_bytes(uuid_out, 16);
-> 	/* Set UUID version to 4 --- truly random generation */
-> 	uuid_out[7] = (uuid_out[7] & 0x0F) | 0x40;
-> 	/* Set the UUID variant to DCE */
-> 	uuid_out[8] = (uuid_out[8] & 0x3F) | 0x80;
-> }
-> EXPORT_SYMBOL(generate_random_guid);
-> 
-> I really don't think it's worth it to have a __uuid_gen_common once we
-> are using get_random_bytes(), since there isn't much code to be
-> factored out, and it's simpler just to have two functions in one place.
+> If we're C programmers, why use the non-standard statement-expression
+> at all? And split it onto three lines when it's just a single one?
 
-The intention of lib/uuid.c is to unify various UUID related code, and
-put them in same place.  In addition to UUID generation, it provide some
-other utility and may provide/collect more in the future.  So do you
-think it is a good idea to put generate_rand_uuid/guid into lib/uuid.c
-and maybe change the name/prototype to make it consistent with other
-uuid definitions?
+I like the blue color over the pink. Anyway, I was just expressing an
+opinion and really didn't care if it was changed or not.
 
-> Using UUID vs. GUID I think makes things much clearer, since the EFI
-> specification talks about GUID's, not UUID's, and that way we don't
-> have to worry about people getting confused about whether they should
-> be using the little-endian versus big-endian variant.  (And I'd love
-> to ask to whoever wrote the EFI specification what on *Earth* were
-> they thinking when they decided to diverge from the rest of the
-> world....)
 
-I think that is a good idea.  From Wikipedia, GUID is in native byte
-order, while UUID is in internet byte order.
+> 
+> But whatever. This series has gotten way too much bike-shedding
+> anyway. I think it should just be applied, since it does remove lines
+> of code overall. I'd even possibly apply it to mainline, but it seems
+> to be against linux-next.
 
-Best Regards,
-Huang Ying
+I would think this change is a bit too big for an -rc4 release, but
+you're the boss.  I've already given my ack for my code that this set
+touches. Let it go to Stephen's repo then.
+
+-- Steve
 
 
