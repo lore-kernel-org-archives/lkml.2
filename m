@@ -1,76 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758339Ab2JaWHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 18:07:24 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:60379 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752309Ab2JaWHX (ORCPT
+	id S1759160Ab2JaWKl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 18:10:41 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41597 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab2JaWKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 18:07:23 -0400
-Subject: Re: [RFC 1/7] capebus: Core capebus support
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <CA+Bv8XZ5WnhsKqYA6TBv8wh6OvOdU-G8XhuV2dO49O1qX_FRgg@mail.gmail.com>
-Date: Thu, 1 Nov 2012 00:07:18 +0200
-Cc: Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        linux-omap@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <EBB972CD-D9D9-4704-AABF-2DFCED584297@antoniou-consulting.com>
-References: <1351702333-8456-1-git-send-email-panto@antoniou-consulting.com> <1351702333-8456-2-git-send-email-panto@antoniou-consulting.com> <CA+Bv8XZ5WnhsKqYA6TBv8wh6OvOdU-G8XhuV2dO49O1qX_FRgg@mail.gmail.com>
-To: Russ Dill <Russ.Dill@ti.com>
-X-Mailer: Apple Mail (2.1085)
+	Wed, 31 Oct 2012 18:10:39 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: David Gibson <david@gibson.dropbear.id.au>, Jon Loeliger <jdl@jdl.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V5 1/2] kbuild: centralize .dts->.dtb rule
+Date: Wed, 31 Oct 2012 16:10:30 -0600
+Message-Id: <1351721431-26220-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stephen Warren <swarren@nvidia.com>
 
-On Oct 31, 2012, at 11:55 PM, Russ Dill wrote:
+All architectures that use cmd_dtc do so in the same way. Move the build
+rule to a central location to avoid duplication.
 
-> On Wed, Oct 31, 2012 at 9:52 AM, Pantelis Antoniou
-> <panto@antoniou-consulting.com> wrote:
->> Introducing capebus; a bus that allows small boards (capes) to connect
->> to a complex SoC using simple expansion connectors.
->> 
+Update Documentation/kbuild to remove the explicit call to cmd_dtc from
+the example, now that the rule exists in a centralized location, and in
+fact replace the example with a couple that still exist.
 
-[snip]
->> +       if (drv) {
->> +               /* call the removed bus method (if added prev.) */
->> +               if (cape_dev->added) {
->> +                       BUG_ON(cape_dev->bus == NULL);
->> +                       BUG_ON(cape_dev->bus->ops == NULL);
->> +                       if (cape_dev->bus->ops->dev_removed)
->> +                               cape_dev->bus->ops->dev_removed(cape_dev);
->> +                       cape_dev->added = 0;
->> +               }
-> 
-> Is there any case where added will not track drv?
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+v5: Update Documentation/kbuild
+v4: No change.
+v3: No change.
+v2: New patch.
+---
+ Documentation/kbuild/makefiles.txt |   21 +++++++++++++++------
+ arch/arm/boot/Makefile             |    4 ----
+ arch/c6x/boot/Makefile             |    3 ---
+ arch/openrisc/boot/Makefile        |    3 ---
+ arch/powerpc/boot/Makefile         |    4 ----
+ scripts/Makefile.lib               |    3 +++
+ 6 files changed, 18 insertions(+), 20 deletions(-)
 
-
-Yes, there is a corner case here.
-
-There is the case where while the device is created there is no matching
-driver yet. Either that's the case of a not supported cape, or the
-cape driver hasn't been loaded yet.
-
-We do need the device to be created, so that the user can browse in the
-sysfs it's eeprom attributes.
-
-There's some further complications with runtime cape overrides, but
-that's the gist of it.
-
-
->> --
->> 1.7.12
->> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-Regards
-
--- Pantelis
+diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
+index ec9ae67..a0b0671 100644
+--- a/Documentation/kbuild/makefiles.txt
++++ b/Documentation/kbuild/makefiles.txt
+@@ -1175,15 +1175,24 @@ When kbuild executes, the following steps are followed (roughly):
+ 	in an init section in the image. Platform code *must* copy the
+ 	blob to non-init memory prior to calling unflatten_device_tree().
+ 
++	To use this command, simply add *.dtb into obj-y or targets, or make
++	some other target depend on %.dtb
++
++	A central rule exists to create $(obj)/%.dtb from $(src)/dts/%.dts;
++	architecture Makefiles do no need to explicitly write out that rule.
++
+ 	Example:
+-		#arch/x86/platform/ce4100/Makefile
+-		clean-files := *dtb.S
++		#arch/arm/boot/Makefile
++		targets += $(dtb-y)
++		clean-files := *.dtb
++
++		#arch/powerpc/boot/Makefile
++		DTC_FLAGS       ?= -p 1024
+ 
+-		DTC_FLAGS := -p 1024
+-		obj-y += foo.dtb.o
++		$(obj)/dtbImage.%: vmlinux $(wrapperbits) $(obj)/%.dtb
++			$(call if_changed,wrap,$*,,$(obj)/$*.dtb)
+ 
+-		$(obj)/%.dtb: $(src)/%.dts
+-			$(call cmd,dtc)
++		clean-files += ... *.dtb
+ 
+ --- 6.8 Custom kbuild commands
+ 
+diff --git a/arch/arm/boot/Makefile b/arch/arm/boot/Makefile
+index f2aa09e..208bb4c 100644
+--- a/arch/arm/boot/Makefile
++++ b/arch/arm/boot/Makefile
+@@ -61,10 +61,6 @@ endif
+ 
+ targets += $(dtb-y)
+ 
+-# Rule to build device tree blobs
+-$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+-	$(call if_changed_dep,dtc)
+-
+ $(obj)/dtbs: $(addprefix $(obj)/, $(dtb-y))
+ 
+ clean-files := *.dtb
+diff --git a/arch/c6x/boot/Makefile b/arch/c6x/boot/Makefile
+index 6891257..ad605fb 100644
+--- a/arch/c6x/boot/Makefile
++++ b/arch/c6x/boot/Makefile
+@@ -12,9 +12,6 @@ ifneq ($(DTB),)
+ obj-y += linked_dtb.o
+ endif
+ 
+-$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+-	$(call if_changed_dep,dtc)
+-
+ quiet_cmd_cp = CP      $< $@$2
+ 	cmd_cp = cat $< >$@$2 || (rm -f $@ && echo false)
+ 
+diff --git a/arch/openrisc/boot/Makefile b/arch/openrisc/boot/Makefile
+index 0995835..fd329bd 100644
+--- a/arch/openrisc/boot/Makefile
++++ b/arch/openrisc/boot/Makefile
+@@ -10,6 +10,3 @@ obj-y += $(BUILTIN_DTB)
+ clean-files := *.dtb.S
+ 
+ #DTC_FLAGS ?= -p 1024
+-
+-$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+-	$(call if_changed_dep,dtc)
+diff --git a/arch/powerpc/boot/Makefile b/arch/powerpc/boot/Makefile
+index 6a15c96..90206f2 100644
+--- a/arch/powerpc/boot/Makefile
++++ b/arch/powerpc/boot/Makefile
+@@ -356,10 +356,6 @@ $(obj)/treeImage.initrd.%: vmlinux $(obj)/%.dtb $(wrapperbits)
+ $(obj)/treeImage.%: vmlinux $(obj)/%.dtb $(wrapperbits)
+ 	$(call if_changed,wrap,treeboot-$*,,$(obj)/$*.dtb)
+ 
+-# Rule to build device tree blobs
+-$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+-	$(call if_changed_dep,dtc)
+-
+ # If there isn't a platform selected then just strip the vmlinux.
+ ifeq (,$(image-y))
+ image-y := vmlinux.strip
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 0be6f11..425578e 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -266,6 +266,9 @@ $(obj)/%.dtb.S: $(obj)/%.dtb
+ quiet_cmd_dtc = DTC     $@
+ cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile) $<
+ 
++$(obj)/%.dtb: $(src)/dts/%.dts FORCE
++	$(call if_changed_dep,dtc)
++
+ # Bzip2
+ # ---------------------------------------------------------------------------
+ 
+-- 
+1.7.0.4
 
