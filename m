@@ -1,98 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934096Ab2JaCd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 22:33:59 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42429 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759824Ab2JaCd5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 22:33:57 -0400
-X-AuditID: 9c930179-b7c8bae000003559-e5-50908e10aa7d
-Date: Wed, 31 Oct 2012 11:39:48 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, gaowanlong@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v3 0/3] zram/zsmalloc promotion
-Message-ID: <20121031023947.GA24883@bbox>
-References: <1351501009-15111-1-git-send-email-minchan@kernel.org>
- <20121031010642.GN15767@bbox>
- <20121031014209.GB2672@kroah.com>
- <20121031020443.GP15767@bbox>
- <20121031021618.GA1142@kroah.com>
+	id S1760507Ab2JaCiQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 22:38:16 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58557 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757735Ab2JaCiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 22:38:14 -0400
+Date: Tue, 30 Oct 2012 22:38:08 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, chris.mason@fusionio.com,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 2/9] uuid: use random32_get_bytes()
+Message-ID: <20121031023808.GB9475@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Huang Ying <ying.huang@intel.com>,
+	Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+	akpm@linux-foundation.org, chris.mason@fusionio.com,
+	linux-btrfs@vger.kernel.org
+References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
+ <1351408746-8623-2-git-send-email-akinobu.mita@gmail.com>
+ <20121029205200.GD7098@thunk.org>
+ <1351561798.7817.352.camel@yhuang-dev>
+ <20121030044818.GA5972@thunk.org>
+ <1351647337.31033.13.camel@yhuang-dev>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121031021618.GA1142@kroah.com>
+In-Reply-To: <1351647337.31033.13.camel@yhuang-dev>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 07:16:18PM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Oct 31, 2012 at 11:04:43AM +0900, Minchan Kim wrote:
-> > Hi Greg,
-> > 
-> > On Tue, Oct 30, 2012 at 06:42:09PM -0700, Greg Kroah-Hartman wrote:
-> > > On Wed, Oct 31, 2012 at 10:06:42AM +0900, Minchan Kim wrote:
-> > > > Thanks all,
-> > > > 
-> > > > At last, everybody who contributes to zsmalloc want to put it under /lib.
-> > > > 
-> > > > Greg,
-> > > > What should I do for promoting this dragging patchset?
-> > > 
-> > > You need to get the -mm developers to agree that this is something that
-> > > is worth accepting.  I have yet to see any compeling argument why this
-> > 
-> > I'm one of mm developers. :)
-> > Yes. I hope Andrew have a time to take a look.
-> > 
-> > > even needs to be in the kernel in the first place.
-> > 
-> > Confused. what do you mean "this"? "zsmalloc" or "zram" or "both"?
-> > If you mean "zsmalloc", I guess there were some lengthy thread about
-> > "why we need a new another allocator". Unfortunately, I didn't follow it
-> > at that time. Nitin, Pekka, Could you point out that thread? or summarize
-> > the result.
-> > 
-> > > 
-> > > I'm not moving this anywhere until you get their acceptance.
-> > 
-> > I understand you.
-> > 
-> > It's one of problem in current mm mailing list.
-> > As you know, many mm guys works for server, not embedded so they don't have
-> > big interest about embedded feature so prioirty of the feature was always
-> > low. CMA proved it and next turn is zram. Even new-comer in mm is few so
-> > review bandwidth is always low, too. :(
-> > 
-> > How can I poke them?
+On Wed, Oct 31, 2012 at 09:35:37AM +0800, Huang Ying wrote:
 > 
-> You just did.  If they ignore this, wait a week, and resend.
-> Persistance is key.
-> 
-> good luck,
+> The intention of lib/uuid.c is to unify various UUID related code, and
+> put them in same place.  In addition to UUID generation, it provide some
+> other utility and may provide/collect more in the future.  So do you
+> think it is a good idea to put generate_rand_uuid/guid into lib/uuid.c
+> and maybe change the name/prototype to make it consistent with other
+> uuid definitions?
 
-Okay. I will wait.
-Greg, what do you think about LTSI?
-Is it proper feature to add it? For it, still do I need ACK from mm developers?
+I had trouble understanding why lib/uuid.c existed, since the only
+thing I saw was the uuid generation function.  After some more
+looking, I see you also created inline functions which wrapped
+memcmp().
 
-> 
-> greg k-h
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+The problem I have with your abstractions is that it just makes life
+more complicated for the callers.  All of the current places which use
+generate_random_uuid() merely want to fill in a unsigned char array.
+This includes btrfs, by the way, which is already using
+generate_random_uuid in some places, and I'm not sure why they are
+using uuid_le_gen(), since there doesn't seem to be any need for a
+little-endian uuid/guid here (it's just used as unique bag of bits
+which is 16 bytes long), and using uuid_le_gen() means extra memory
+has to be allocated on the stack, and then an extra memory copy is
+required.  Contrast (in fs/btrfs/root-tree.c):
 
--- 
-Kind regards,
-Minchan Kim
+	   uuid_le uuid;
+	   ...
+		uuid_le_gen(&uuid);
+		memcpy(item->uuid, uuid.b, BTRFS_UUID_SIZE);
+
+versus, simply doing (fs/btrfs/volumes.c):
+
+	generate_random_uuid(fs_devices->fsid);
+
+see which one is easier?  And after the uuid is generated, none of the
+current callers ever do any manipulation of the uuid, so there's no
+real point to play fancy typedef games; it just adds more work for no
+real gain.
+
+> > Using UUID vs. GUID I think makes things much clearer, since the EFI
+> > specification talks about GUID's, not UUID's, and that way we don't
+> > have to worry about people getting confused about whether they should
+> > be using the little-endian versus big-endian variant.  (And I'd love
+> > to ask to whoever wrote the EFI specification what on *Earth* were
+> > they thinking when they decided to diverge from the rest of the
+> > world....)
+> 
+> I think that is a good idea.  From Wikipedia, GUID is in native byte
+> order, while UUID is in internet byte order.
+
+Well, technially GUID is "intel/little-endian byte order".  If someone
+tried to implement the GPT on a big-endian system, such as PowerPC,
+they would still have to use the little-endian byte order, even though
+it's not the native byte order for that architecture.  Otherwise
+devices wouldn't be portable between those systems.  (This is why I
+think the GUID was such a bad idea; everyone basically treats them as
+16 byte octet strings, so this whole idea of "native byte order" just
+to save a few byte swaps at UUID generation time was really, IMHO, a
+very bad idea.)
+
+Regards,
+
+					- Ted
