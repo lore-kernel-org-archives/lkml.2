@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760623Ab2JaAhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:37:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:35074 "EHLO mga02.intel.com"
+	id S1760564Ab2JaAhJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:37:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21748 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759237Ab2JaAei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759273Ab2JaAei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Oct 2012 20:34:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,683,1344236400"; 
-   d="scan'208";a="213257361"
+   d="scan'208";a="234886224"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 27/32] perf, x86: Support CPU specific sysfs events
-Date: Tue, 30 Oct 2012 17:34:18 -0700
-Message-Id: <1351643663-23828-28-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 21/32] perf, tools: Add support for record transaction flags v2
+Date: Tue, 30 Oct 2012 17:34:12 -0700
+Message-Id: <1351643663-23828-22-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
 References: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
@@ -26,75 +26,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a way for the CPU initialization code to register additional events,
-and merge them into the events attribute directory. Used in the next
-patch.
+Add the glue in the user tools to record transaction flags with
+--transaction (-T was already taken) and dump them.
 
+Followon patches will use them.
+
+v2: Fix manpage
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |   29 +++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/perf_event.h |    1 +
- 2 files changed, 30 insertions(+), 0 deletions(-)
+ tools/perf/Documentation/perf-record.txt |    4 +++-
+ tools/perf/builtin-record.c              |    2 ++
+ tools/perf/perf.h                        |    1 +
+ tools/perf/util/event.h                  |    1 +
+ tools/perf/util/evsel.c                  |    9 +++++++++
+ tools/perf/util/session.c                |    3 +++
+ 6 files changed, 19 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index af38635..e247423 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1344,6 +1344,30 @@ static void __init filter_events(struct attribute **attrs)
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index fd4ac81..becccf7 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -185,12 +185,14 @@ is enabled for all the sampling events. The sampled branch type is the same for
+ The various filters must be specified as a comma separated list: --branch-filter any_ret,u,k
+ Note that this feature may not be available on all processors.
+ 
+--W::
+ --weight::
+ Enable weightened sampling. An additional weight is recorded per sample and can be
+ displayed with the weight and local_weight sort keys.  This currently works for TSX
+ abort events and some memory events in precise mode on modern Intel CPUs.
+ 
++--transaction::
++Record transaction flags for transaction related events.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 5ed43f2..5b8e185 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -1046,6 +1046,8 @@ const struct option record_options[] = {
+ 		     parse_branch_stack),
+ 	OPT_BOOLEAN('W', "weight", &record.opts.sample_weight,
+ 		    "sample by weight (on special events only)"),
++	OPT_BOOLEAN(0, "transaction", &record.opts.sample_transaction,
++		    "sample transaction flags (special events only)"),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 7d3173f..4ae529c 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -247,6 +247,7 @@ struct perf_record_opts {
+ 	u64	     default_interval;
+ 	u64	     user_interval;
+ 	u16	     stack_dump_size;
++	bool	     sample_transaction;
+ };
+ 
+ #endif
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index a97fbbe..84b070d 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -89,6 +89,7 @@ struct perf_sample {
+ 	u64 stream_id;
+ 	u64 period;
+ 	u64 weight;
++	u64 transaction;
+ 	u32 cpu;
+ 	u32 raw_size;
+ 	void *raw_data;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 3800fb5..5c9790d 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -448,6 +448,9 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 	if (opts->sample_weight)
+ 		attr->sample_type	|= PERF_SAMPLE_WEIGHT;
+ 
++	if (opts->sample_transaction)
++		attr->sample_type	|= PERF_SAMPLE_TRANSACTION;
++
+ 	if (opts->call_graph) {
+ 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
+ 
+@@ -951,6 +954,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		array++;
  	}
+ 
++	data->transaction = 0;
++	if (type & PERF_SAMPLE_TRANSACTION) {
++		data->transaction = *array;
++		array++;
++	}
++
+ 	if (type & PERF_SAMPLE_READ) {
+ 		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
+ 		return -1;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 175dde3..6757345 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1009,6 +1009,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
+ 
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		printf("... weight: %" PRIu64 "\n", sample->weight);
++
++	if (sample_type & PERF_SAMPLE_TRANSACTION)
++		printf("... transaction: %" PRIx64 "\n", sample->transaction);
  }
  
-+/* Merge two pointer arrays */
-+static __init struct attribute **merge_attr(struct attribute **a,
-+					    struct attribute **b)
-+{
-+	struct attribute **new;
-+	int j, i;
-+
-+	for (j = 0; a[j]; j++)
-+		;
-+	for (i = 0; b[i]; i++)
-+		j++;
-+	j++;
-+	new = kmalloc(sizeof(struct attribute *) * j, GFP_KERNEL);
-+	if (!new)
-+		return a;
-+	j = 0;
-+	for (i = 0; a[i]; i++)
-+		new[j++] = a[i];
-+	for (i = 0; b[i]; i++)
-+		new[j++] = b[i];
-+	new[j] = NULL;
-+	return new;
-+}
-+
- ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
- 			  char *page)
- {
-@@ -1481,6 +1505,11 @@ static int __init init_hw_perf_events(void)
- 	else
- 		filter_events(x86_pmu_events_group.attrs);
- 
-+	if (x86_pmu.cpu_events)
-+		x86_pmu_events_group.attrs =
-+			merge_attr(x86_pmu_events_group.attrs,
-+				   x86_pmu.cpu_events);
-+
- 	pr_info("... version:                %d\n",     x86_pmu.version);
- 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
- 	pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 12ae625..22f8003 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -360,6 +360,7 @@ struct x86_pmu {
- 	struct attribute **format_attrs;
- 
- 	ssize_t		(*events_sysfs_show)(char *page, u64 config);
-+	struct attribute **cpu_events;
- 
- 	/*
- 	 * CPU Hotplug hooks
+ static struct machine *
 -- 
 1.7.7.6
 
