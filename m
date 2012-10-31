@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760126Ab2JaTQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 15:16:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37253 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759779Ab2JaTQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 15:16:04 -0400
-Date: Wed, 31 Oct 2012 20:16:02 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] cgroup: kill CSS_REMOVED
-Message-ID: <20121031191602.GB1271@dhcp22.suse.cz>
-References: <1351657365-25055-1-git-send-email-tj@kernel.org>
- <1351657365-25055-3-git-send-email-tj@kernel.org>
- <20121031153926.GC22809@dhcp22.suse.cz>
- <20121031165739.GE2945@htj.dyndns.org>
+	id S1760170Ab2JaTQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 15:16:51 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47837 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759793Ab2JaTQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 15:16:50 -0400
+Message-ID: <5091791F.4080400@wwwdotorg.org>
+Date: Wed, 31 Oct 2012 13:16:47 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121031165739.GE2945@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V4 0/4] ARM: tegra: Enable SLINK controller driver
+References: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com> <50915203.8030505@wwwdotorg.org> <5091607D.8010907@nvidia.com>
+In-Reply-To: <5091607D.8010907@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 31-10-12 09:57:39, Tejun Heo wrote:
-> Hey, Michal.
+On 10/31/2012 11:31 AM, Laxman Dewangan wrote:
+> On Wednesday 31 October 2012 09:59 PM, Stephen Warren wrote:
+>> On 10/31/2012 03:02 AM, Laxman Dewangan wrote:
+>>> This series modify the dts file to add the slink addresses,
+>>> make AUXDATA in board dt files, enable slink4 for tegra30-cardhu and
+>>> enable slink controller defconfig.
+>> I don't appear to have received patch 1/4 this time around. I'll assume
+>> it's identical to V3, since I don't think anything needed to change
+>> there...
 > 
-> On Wed, Oct 31, 2012 at 04:39:26PM +0100, Michal Hocko wrote:
-> > >  	prepare_to_wait(&cgroup_rmdir_waitq, &wait, TASK_INTERRUPTIBLE);
-> > >  
-> > > -	local_irq_disable();
-> > > -
-> > 
-> > OK, so the new charges shouldn't come from the IRQ context so we cannot
-> > race with css_tryget but why did we need this in the first place?
-> > A separate patch which removes this with an explanation would be nice.
-> 
-> The change is actually tied to this one.  Because css_tryget() busy
-> loops on DEACT_BIAS && !CSS_REMOVED and css_tryget() may happen from
-> an IRQ context, we need to disable IRQ while deactivating refcnts and
-> setting CSS_REMOVED.  I'll mention it in the commit message.
+> Yes, it is identical to V3, no change on the 1/4.
 
-OK
+OK, I have applied the series now. Thanks.
 
-> > > @@ -2343,7 +2343,6 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
-> > >  again:
-> > >  	if (*ptr) { /* css should be a valid one */
-> > >  		memcg = *ptr;
-> > > -		VM_BUG_ON(css_is_removed(&memcg->css));
-> > 
-> > All the callers seem to be fine but this was a safety net that something
-> > didn't leak out. Can we keep it and test that the reference counter has
-> > been disabled already (css_refcnt(&memcg->css) < 0 - I do not care
-> > whether open coded or wrapped innsude css_is_removed albeit helper
-> > sounds nicer)?
-> 
-> I don't think that's a good idea.  In general, I think too much of
-> cgroup internals are exposed to controllers.  People try to implement
-> weird behaviors and expose cgroup internals for that, which in turn
-> attracts more weirdness, and there seems to be a pattern - cgroup core
-> is unnecessarily coupled with VFS locking like controllers are
-> unnecessarily coupled with cgroup internal locking.  I really wanna
-> move away from such pattern.  I mean, you can't even know
-> css_is_removed() isn't gonna change while the function is in progress.
+BTW, I noticed that the Cardu board files sets the SPI controller's max
+frequency to 25MHZ (which is consistent with the commit description) but
+the SPI flash node's frequency to 20MHz. Was that intended, or should I
+fix it up to be 25MHz?
 
-Sure, it cannot detect races but this wasn't the intention of the check.
-The more important part is that memcg can outlive css and we want to
-catch bugs when we try to charge to an already dead memcg.
+> Only change in 3/4 and 4/4. I realize later that you already applied the
+> 2/4 yesterday.
 
-[...]
--- 
-Michal Hocko
-SUSE Labs
+Oops, that was a mistake; I forgot to pull it out after testing and not
+getting it to work. Oh well.
