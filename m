@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422925Ab2JaN5i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:57:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54235 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422754Ab2JaN5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:57:36 -0400
-Message-ID: <50912E33.1030108@kernel.dk>
-Date: Wed, 31 Oct 2012 14:57:07 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	id S1422942Ab2JaN5t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:57:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422901Ab2JaN5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 09:57:37 -0400
+Date: Wed, 31 Oct 2012 09:57:22 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
+        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/8] cgroup: make ->pre_destroy() return void
+Message-ID: <20121031135722.GB1865@redhat.com>
+References: <1351657365-25055-1-git-send-email-tj@kernel.org>
+ <1351657365-25055-9-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: Re: linux-next: manual merge of the block tree with Linus' tree
-References: <20121031130439.7242d3f12fa7002624c3b1e6@canb.auug.org.au> <1351691714.13356.31.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1351691714.13356.31.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351657365-25055-9-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-31 14:55, Ben Hutchings wrote:
-> On Wed, 2012-10-31 at 13:04 +1100, Stephen Rothwell wrote:
->> Hi Jens,
->>
->> Today's linux-next merge of the block tree got a conflict in
->> drivers/block/floppy.c between a set of common patches from Linus' tree
->> and commit b33d002f4b6b ("genhd: Make put_disk() safe for disks that have
->> not been registered") from the block tree.
->>
->> I fixed it up (by using the block tree version) and can carry the fix as
->> necessary (no action is required).
+On Tue, Oct 30, 2012 at 09:22:45PM -0700, Tejun Heo wrote:
+> All ->pre_destory() implementations return 0 now, which is the only
+> allowed return value.  Make it return void.
 > 
-> commit b33d002f4b6b ("genhd: Make put_disk() safe for disks that have
-> not been registered") was supposed to be dropped or reverted; I don't
-> why it's hanging around.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  block/blk-cgroup.c     | 3 +--
+>  include/linux/cgroup.h | 2 +-
+>  kernel/cgroup.c        | 2 +-
+>  mm/hugetlb_cgroup.c    | 4 +---
+>  mm/memcontrol.c        | 3 +--
+>  5 files changed, 5 insertions(+), 9 deletions(-)
+> 
+> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> index f3b44a6..a7816f3 100644
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -600,7 +600,7 @@ struct cftype blkcg_files[] = {
+>   *
+>   * This is the blkcg counterpart of ioc_release_fn().
+>   */
+> -static int blkcg_pre_destroy(struct cgroup *cgroup)
+> +static void blkcg_pre_destroy(struct cgroup *cgroup)
+>  {
+>  	struct blkcg *blkcg = cgroup_to_blkcg(cgroup);
+>  
+> @@ -622,7 +622,6 @@ static int blkcg_pre_destroy(struct cgroup *cgroup)
+>  	}
+>  
+>  	spin_unlock_irq(&blkcg->lock);
+> -	return 0;
 
-It's my for-next branch that wasn't updated yet. Will do that now.
+Looks good from blk-cgroup perspective. ACK for these bits.
 
--- 
-Jens Axboe
-
+Thanks
+Vivek
