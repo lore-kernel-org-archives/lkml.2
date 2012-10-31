@@ -1,126 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935900Ab2JaVgd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 17:36:33 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:36241 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759903Ab2JaVgb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 17:36:31 -0400
-Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20121031212639.GQ12739@atomide.com>
-Date: Wed, 31 Oct 2012 23:36:25 +0200
-Cc: Benoit Cousson <b-cousson@ti.com>, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8B058B00-6C21-4410-A24B-75651D49F6EC@antoniou-consulting.com>
-References: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com> <20121031175219.GH12739@atomide.com> <C9715CB7-D3E2-4CA7-8A93-2B10E8B70640@antoniou-consulting.com> <20121031180935.GL12739@atomide.com> <50918223.6080003@ti.com> <8AD2F7AF-8315-442B-A394-1A38DAB29F52@antoniou-consulting.com> <20121031212639.GQ12739@atomide.com>
-To: Tony Lindgren <tony@atomide.com>
-X-Mailer: Apple Mail (2.1085)
+	id S935924Ab2JaVgm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 17:36:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:43964 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759903Ab2JaVgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 17:36:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,688,1344236400"; 
+   d="scan'208";a="211939610"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Zheng, Lv" <lv.zheng@intel.com>, "Huang, Ying" <ying.huang@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        x86 list <x86@kernel.org>
+Subject: RE: [PATCH 1/5] driver core / ACPI: Move ACPI support to core
+ device and driver types
+Thread-Topic: [PATCH 1/5] driver core / ACPI: Move ACPI support to core
+ device and driver types
+Thread-Index: AQHNt0r0TVxtmXQkpkGhOK26ITzdfZfUDw+AgAAmloCAAAC1gP//n91wgAB9pID//4rq8IAAfwwA//+SjzA=
+Date: Wed, 31 Oct 2012 21:36:36 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D5B9DE@ORSMSX108.amr.corp.intel.com>
+References: <1421417.rIOjExM5Pt@vostro.rjw.lan>
+ <1789657.7GoIl2rp8v@vostro.rjw.lan>
+ <3908561D78D1C84285E8C5FCA982C28F19D5B8C0@ORSMSX108.amr.corp.intel.com>
+ <4946697.LIFggnbCY6@vostro.rjw.lan>
+In-Reply-To: <4946697.LIFggnbCY6@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9VLalAR021782
 
-Tony,
+> The BIOSes of currently available ia64 systems don't contain ACPI nodes whose
+> IDs will match the IDs of the new devices (ie. the ones that are going to be
+> added to acpi_platform_device_ids[]), so for ia64 it should be sufficient to
+> test that code as is (ie. without any new devices in the system).
 
-On Oct 31, 2012, at 11:26 PM, Tony Lindgren wrote:
+Ok - built cleanly on ia64.  Boots too. Just one new console message:
 
-> * Pantelis Antoniou <panto@antoniou-consulting.com> [121031 13:14]:
->> On Oct 31, 2012, at 9:55 PM, Benoit Cousson wrote:
->>> 
->>> Yeah, I do agree. I'm confused as well. Only OMAP IPs under PRCM control
->>> could have an hwmod and thus must be handled by an omap_device.
->>> 
->>> Any devices that is created later cannot be omap_device. The DT core
->>> will create regular platform_device for them.
->>> 
->>> Since cape is an external board, it should have nothing to do with
->>> omap_device.
->>> 
->>> Looking at your patch:
->>> da8xx-dt: Create da8xx DT adapter device
->>> 
->>> I understand why you do that, but in fact that patch does not make sense
->>> to me :-(
->>> 
->>> Why do you have to create an omap_device from the driver probe?
->>> 
->> 
->> The problem is that capes are not external boards in the normal sense
->> as a PCI board is. In the PCI case the hardware that implements the 
->> desired functionality is on the PCI board, while in the cape case the
->> hardware module is in the SoC. The cape most of the times is quite
->> simple and contains passive components, leds or some kind of I2C/SPI devices.
-> 
-> Ah now I see, you're talking about the beaglebone extension
-> boards :)
-> 
-> The way to deal with those properly is to just edit the
-> board .dts entry to include omap-beaglebone-cape-xyz.dtsi
-> whatever.
-> 
+ACPI: bus type platform registered
 
-That is what is being done...
-This is the fallout.
+that seems pretty harmless.
 
->> You can't instantiate the omap_device early in the boot process like it was done up to 
->> now in the board file. You can only do that later in the boot process (for built-in 
->> cape drivers), or even after user-space has booted and the matching cape driver module
->> has been loaded.
-> 
-> Yes you can, just edit the .dts file for the extension
-> board you have connected. This stuff should be DT
-> only for sure, let's not even start adding platform_data
-> entries for that.
-> 
-> The omap_device entries for the omap internal devices
-> will be created automatically during startup based on the
-> .dts. Note that you can set status = "disabled" for the
-> omap internal devices in the .dts file, the devices are
-> there in the hardware.
-> 
-> If you are sure the extension boards are safely hot
-> pluggable, then all you need is some interface to enable
-> and disable devices after booting. But that should be
-> done in Linux generic way.
-> 
-> So we should not export any omap_hwmod or omap_device
-> things, and want to keep it __init only, and local to
-> arch/arm/mach-omap2.
-> 
-
-I disagree. This is not something that is handled by just
-editing the dts. The way it is handled, is in the Linux
-generic way, we have a proper bus, and the drivers as compiled
-as standalone file. 
-
-We're hitting a use case that wasn't there in omap until now.
-
-There a a whole bunch of conflicting capes. There's no
-way to instantiate them together. They must be instantiated
-only after their EEPROMs are read and they are matched
-to their corresponding cape drivers.
-
-We don't have a board file anymore where to do i. This is all on
-board-generic, getting ready for the one kernel fits all for ARM.
-
-Everything is local to arch/arm/mach-omap2, the only
-problem is that __init modifier that's keeping us from
-loading the cape drivers as modules.
-
-If you take some time and scan the full patchset you will 
-understand why this is the way it is.
-
-> Regards,
-> 
-> Tony
-
-Regards
-
--- Pantelis
-
+Acked-by: Tony Luck <tony.luck@intel.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
