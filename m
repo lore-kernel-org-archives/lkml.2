@@ -1,61 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932968Ab2JaTge (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 15:36:34 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:42420 "EHLO e2.ny.us.ibm.com"
+	id S1760202Ab2JaTiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 15:38:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33775 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759749Ab2JaTgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 15:36:33 -0400
-Message-ID: <50917DB7.6040503@linux.vnet.ibm.com>
-Date: Wed, 31 Oct 2012 14:36:23 -0500
-From: Trey Ramsay <tramsay@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1754524Ab2JaTiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 15:38:50 -0400
+Date: Wed, 31 Oct 2012 20:38:45 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] AMD64 EDAC: Cleanup type usage to be consistent
+Message-ID: <20121031193845.GL24389@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Daniel J Blueman <daniel@numascale-asia.com>,
+	Ingo Molnar <mingo@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+	Steffen Persvold <sp@numascale.com>, x86@kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1351662932-22279-1-git-send-email-daniel@numascale-asia.com>
+ <1351662932-22279-3-git-send-email-daniel@numascale-asia.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: cjb@laptop.org
-Subject: drivers/mmc/card/block.c infinite loop in mmc_blk_err_check waiting
- on R1_READY_FOR_DATA
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12103119-5112-0000-0000-00000E0D1349
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1351662932-22279-3-git-send-email-daniel@numascale-asia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the 3.7-rc3 kernel, there is an infinite loop in the 
-mmc_blk_err_check() function in drivers/mmc/card/block.c that can be 
-caused bad hardware. This loop has moved around a little, but appears to 
-have been around in the kernel since v2.6.12.  The code will loop 
-forever on write if the card isn't ready for data or if it's in program 
-mode.  I did some searching and saw that it was reported to 
-linux-mmc@vger.kernel.org 
-http://permalink.gmane.org/gmane.linux.kernel.mmc/2021 back in May but 
-didn't see a response.  Should there be a maximum retry count or a 
-timeout to prevent an infinite loop?
+On Wed, Oct 31, 2012 at 01:55:31PM +0800, Daniel J Blueman wrote:
+> As the Northbridge IDs are at most 16-bits, use the same type
+> consistently.
+> 
+> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+> ---
+>  arch/x86/include/asm/amd_nb.h    |    2 +-
+>  arch/x86/include/asm/processor.h |    2 +-
+>  arch/x86/kernel/cpu/amd.c        |    4 ++--
+>  drivers/edac/amd64_edac.c        |   26 ++++++++++++++------------
+>  drivers/edac/amd64_edac.h        |    2 +-
+>  5 files changed, 19 insertions(+), 17 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+> index b88fc7a..0cc1045 100644
+> --- a/arch/x86/include/asm/amd_nb.h
+> +++ b/arch/x86/include/asm/amd_nb.h
+> @@ -76,7 +76,7 @@ static inline bool amd_nb_has_feature(unsigned feature)
+>  	return ((amd_northbridges.flags & feature) == feature);
+>  }
+>  
+> -static inline struct amd_northbridge *node_to_amd_nb(int node)
+> +static inline struct amd_northbridge *node_to_amd_nb(u16 node)
+>  {
+>  	return (node < amd_northbridges.num) ? &amd_northbridges.nb[node] : NULL;
+>  }
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index ad1fc85..eb3ba58 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -934,7 +934,7 @@ extern void start_thread(struct pt_regs *regs, unsigned long new_ip,
+>  extern int get_tsc_mode(unsigned long adr);
+>  extern int set_tsc_mode(unsigned int val);
+>  
+> -extern int amd_get_nb_id(int cpu);
+> +extern u16 amd_get_nb_id(int cpu);
+>  
+>  struct aperfmperf {
+>  	u64 aperf, mperf;
+> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+> index f7e98a2..52cab1f 100644
+> --- a/arch/x86/kernel/cpu/amd.c
+> +++ b/arch/x86/kernel/cpu/amd.c
+> @@ -364,9 +364,9 @@ static void __cpuinit amd_detect_cmp(struct cpuinfo_x86 *c)
+>  #endif
+>  }
+>  
+> -int amd_get_nb_id(int cpu)
+> +u16 amd_get_nb_id(int cpu)
+>  {
+> -	int id = 0;
+> +	u16 id = 0;
+>  #ifdef CONFIG_SMP
+>  	id = per_cpu(cpu_llc_id, cpu);
+>  #endif
+> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+> index 9920dfd..12cd675 100644
+> --- a/drivers/edac/amd64_edac.c
+> +++ b/drivers/edac/amd64_edac.c
+> @@ -239,7 +239,7 @@ static int amd64_get_scrub_rate(struct mem_ctl_info *mci)
+>   * DRAM base/limit associated with node_id
+>   */
+>  static bool amd64_base_limit_match(struct amd64_pvt *pvt, u64 sys_addr,
+> -				   unsigned nid)
+> +				   u16 nid)
 
+This one is used as an index into an 8 elements array, i.e. the DRAM
+ranges. I don't think you need u16 for it.
 
-1030         /*
-1031          * Everything else is either success, or a data error of some
-1032          * kind.  If it was a write, we may have transitioned to
-1033          * program mode, which we have to wait for it to complete.
-1034          */
-1035         if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
-1036                 u32 status;
-1037                 do {
-1038                         int err = get_card_status(card, &status, 5);
-1039                         if (err) {
-1040 
-                                 pr_err("%s: error %d requesting status\n",
-1041                                        req->rq_disk->disk_name, err);
-1042                                 return MMC_BLK_CMD_ERR;
-1043                         }
-1044                         /*
-1045                          * Some cards mishandle the status bits,
-1046                          * so make sure to check both the busy
-1047                          * indication and the card state.
-1048                          */
-1049                 } while (!(status & R1_READY_FOR_DATA) ||
-1050                          (R1_CURRENT_STATE(status) == R1_STATE_PRG));
-1051         }
+>  {
+>  	u64 addr;
+>  
+> @@ -265,7 +265,7 @@ static struct mem_ctl_info *find_mc_by_sys_addr(struct mem_ctl_info *mci,
+>  						u64 sys_addr)
+>  {
+>  	struct amd64_pvt *pvt;
+> -	unsigned node_id;
+> +	u16 node_id;
 
+This is the loop variable over the DRAM_RANGES, so ditto.
+
+>  	u32 intlv_en, bits;
+>  
+>  	/*
+> @@ -613,7 +613,8 @@ static u64 sys_addr_to_input_addr(struct mem_ctl_info *mci, u64 sys_addr)
+>  static u64 input_addr_to_dram_addr(struct mem_ctl_info *mci, u64 input_addr)
+>  {
+>  	struct amd64_pvt *pvt;
+> -	unsigned node_id, intlv_shift;
+> +	u16 node_id;
+
+Ok, this takes pvt->mc_node_id so definitely needed.
+
+HOWEVER(!), there's a
+
+        BUG_ON(node_id > 7);
+
+on the next line. And the reason you don't hit it is
+because this is dead code - its user got removed by
+5e2af0c09e60d11dd8297e259a9ca2b3d92d2cf4.
+
+So, you can drop the change to input_addr_to_dram_addr - the whole
+function and its caller input_addr_to_sys_addr have to go. I'll remove
+them.
+
+> +	unsigned intlv_shift;
+>  	u64 bits, dram_addr;
+>  	u32 intlv_sel;
+>  
+> @@ -1337,7 +1338,7 @@ static u8 f1x_determine_channel(struct amd64_pvt *pvt, u64 sys_addr,
+>  }
+>  
+>  /* Convert the sys_addr to the normalized DCT address */
+> -static u64 f1x_get_norm_dct_addr(struct amd64_pvt *pvt, unsigned range,
+> +static u64 f1x_get_norm_dct_addr(struct amd64_pvt *pvt, u16 range,
+>  				 u64 sys_addr, bool hi_rng,
+>  				 u32 dct_sel_base_addr)
+>  {
+
+ditto.
+
+> @@ -1413,7 +1414,7 @@ static int f10_process_possible_spare(struct amd64_pvt *pvt, u8 dct, int csrow)
+>   *	-EINVAL:  NOT FOUND
+>   *	0..csrow = Chip-Select Row
+>   */
+> -static int f1x_lookup_addr_in_dct(u64 in_addr, u32 nid, u8 dct)
+> +static int f1x_lookup_addr_in_dct(u64 in_addr, u16 nid, u8 dct)
+>  {
+>  	struct mem_ctl_info *mci;
+>  	struct amd64_pvt *pvt;
+> @@ -1491,7 +1492,7 @@ static u64 f1x_swap_interleaved_region(struct amd64_pvt *pvt, u64 sys_addr)
+>  
+>  /* For a given @dram_range, check if @sys_addr falls within it. */
+>  static int f1x_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
+> -				  u64 sys_addr, int *nid, int *chan_sel)
+> +				  u64 sys_addr, u16 *nid, int *chan_sel)
+
+from staring at this code, we're actually not using that *nid anymore in
+f1x_map_sysaddr_to_csrow. And to be honest, it has been like that since
+we upstreamed the driver.
+
+So you can drop that change too, I'll audit it more thoroughly and
+remove that function argument too.
+
+>  {
+>  	int cs_found = -EINVAL;
+>  	u64 chan_addr;
+> @@ -1572,10 +1573,10 @@ static int f1x_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
+>  }
+>  
+>  static int f1x_translate_sysaddr_to_cs(struct amd64_pvt *pvt, u64 sys_addr,
+> -				       int *node, int *chan_sel)
+> +				       u16 *node, int *chan_sel)
+>  {
+>  	int cs_found = -EINVAL;
+> -	unsigned range;
+> +	u16 range;
+>  
+>  	for (range = 0; range < DRAM_RANGES; range++) {
+>  
+
+ditto.
+
+> @@ -1607,7 +1608,8 @@ static void f1x_map_sysaddr_to_csrow(struct mem_ctl_info *mci, u64 sys_addr,
+>  {
+>  	struct amd64_pvt *pvt = mci->pvt_info;
+>  	u32 page, offset;
+> -	int nid, csrow, chan = 0;
+> +	int csrow, chan = 0;
+> +	u16 nid;
+
+ditto.
+
+>  
+>  	error_address_to_page_and_offset(sys_addr, &page, &offset);
+>  
+> @@ -2065,7 +2067,7 @@ static void read_mc_regs(struct amd64_pvt *pvt)
+>  	struct cpuinfo_x86 *c = &boot_cpu_data;
+>  	u64 msr_val;
+>  	u32 tmp;
+> -	unsigned range;
+> +	u16 range;
+
+no need, only iterating over the 8 DRAM ranges.
+
+>  
+>  	/*
+>  	 * Retrieve TOP_MEM and TOP_MEM2; no masking off of reserved bits since
+> @@ -2263,7 +2265,7 @@ static int init_csrows(struct mem_ctl_info *mci)
+>  }
+>  
+>  /* get all cores on this DCT */
+> -static void get_cpus_on_this_dct_cpumask(struct cpumask *mask, unsigned nid)
+> +static void get_cpus_on_this_dct_cpumask(struct cpumask *mask, u16 nid)
+>  {
+>  	int cpu;
+>  
+> @@ -2273,7 +2275,7 @@ static void get_cpus_on_this_dct_cpumask(struct cpumask *mask, unsigned nid)
+>  }
+>  
+>  /* check MCG_CTL on all the cpus on this node */
+> -static bool amd64_nb_mce_bank_enabled_on_node(unsigned nid)
+> +static bool amd64_nb_mce_bank_enabled_on_node(u16 nid)
+>  {
+>  	cpumask_var_t mask;
+>  	int cpu, nbe;
+> diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
+> index 90cae61..647c9b8 100644
+> --- a/drivers/edac/amd64_edac.h
+> +++ b/drivers/edac/amd64_edac.h
+> @@ -332,7 +332,7 @@ struct amd64_pvt {
+>  	/* pci_device handles which we utilize */
+>  	struct pci_dev *F1, *F2, *F3;
+>  
+> -	unsigned mc_node_id;	/* MC index of this MC node */
+> +	u16 mc_node_id;	/* MC index of this MC node */
+>  	int ext_model;		/* extended model value of this node */
+>  	int channel_count;
+>  
+> -- 
+> 1.7.9.5
+> 
+> 
+
+-- 
+Regards/Gruss,
+    Boris.
