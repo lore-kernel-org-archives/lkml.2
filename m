@@ -1,117 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934263Ab2JaAvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:51:41 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:46820 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932969Ab2JaAvj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:51:39 -0400
+	id S934713Ab2JaAxX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:53:23 -0400
+Received: from mout.perfora.net ([74.208.4.194]:60859 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754190Ab2JaAxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Oct 2012 20:53:21 -0400
+Date: Tue, 30 Oct 2012 20:51:28 -0400
+From: Jim Rees <rees@umich.edu>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com,
+        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive hashtable
+Message-ID: <20121031005128.GA30251@umich.edu>
+References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
+ <20121030214257.GB2681@htj.dyndns.org>
+ <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <87a9v3a33h.fsf@devron.myhome.or.jp>
-References: <1351389156-2484-1-git-send-email-linkinjeon@gmail.com>
-	<87a9v3a33h.fsf@devron.myhome.or.jp>
-Date: Wed, 31 Oct 2012 09:51:38 +0900
-Message-ID: <CAKYAXd9n_EHvaRVN63Gkv2kBHn07yYU+n=XrCj6TpxMubjmt0A@mail.gmail.com>
-Subject: Re: [PATCH 1/5] fat: remove parent_logstart check in fat_get_parent
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
+X-Provags-ID: V02:K0:xNZ1pUMHaq/ovLpBrilZYJixHbGItnEoIYnKFDgIVFI
+ UqEOMCkl4u/GSrYs0NPk8N6tNxNb/2B7v0/sObu93jl40VMdzt
+ UiF7WTS1icK0E4Po+Tuj+8PglQPyFZsuKjpzNPb5A8SnNRJrtH
+ ejQQa7xm83pcauWp4+/NaR+2Wu9rseFB4aX8ysTt0ILh2czsxA
+ bpHAKrq1jDN6MIcMFAehjREKotiofUjZl6yetoVAxz2wMM6RF6
+ 8yr9kYYtxhBxlo7P65eWH0VtRe6dLb6+NlSXw5FGZXHJk+K+8g
+ nI+leYBiGD9X7OoQ9OYLZPfxDdCZTgdQPJfttzxMGSFYx087A=
+ =
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/31, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> The root directory inode is added to the directory hash table in
->> fat_attach when mounted with nfs option. Since root dentry never
->> expires until umount, fat_dget never fails to return the root inode
->> for subdirectories of root inode.i.e., parent_logstart cannot be zero.
->
-> Sorry, I will review at this weekend.
-No problem, Thank you.
->
-> Thanks.
->
->> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
->> Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
->> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
->> ---
->>  fs/fat/nfs.c |   51 ++++++++++++++++++++++-----------------------------
->>  1 file changed, 22 insertions(+), 29 deletions(-)
->>
->> diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
->> index a4e6ac7..671a75d 100644
->> --- a/fs/fat/nfs.c
->> +++ b/fs/fat/nfs.c
->> @@ -274,36 +274,29 @@ struct dentry *fat_get_parent(struct dentry
->> *child_dir)
->>  		parent_inode = fat_dget(sb, parent_logstart);
->>  		if (parent_inode || sbi->options.nfs != FAT_NFS_NOSTALE_RO)
->>  			goto out;
->> -		if (!parent_logstart)
->> -			/*logstart of dotdot entry is zero if
->> -			* if the directory's parent is root
->> -			*/
->> -			parent_inode = sb->s_root->d_inode;
->> -		else {
->> -			blknr = fat_clus_to_blknr(sbi, parent_logstart);
->> -			parent_bh = sb_bread(sb, blknr);
->> -			if (!parent_bh) {
->> -				fat_msg(sb, KERN_ERR,
->> -					"NFS:unable to read cluster of parent directory");
->> -				goto out;
->> -			}
->> -			de = (struct msdos_dir_entry *) parent_bh->b_data;
->> -			clus_to_match = fat_get_start(sbi, &de[0]);
->> -			search_clus = fat_get_start(sbi, &de[1]);
->> -			if (!search_clus)
->> -				search_clus = sbi->root_cluster;
->> -			brelse(parent_bh);
->> -			do {
->> -				parent_inode =  fat_traverse_cluster(sb,
->> -						search_clus, clus_to_match);
->> -				if (IS_ERR(parent_inode) || parent_inode)
->> -					break;
->> -				search_clus = fat_read_next_clus(sb,
->> -								search_clus);
->> -				if (search_clus < 0)
->> -					break;
->> -			} while (search_clus != FAT_ENT_EOF);
->> +		blknr = fat_clus_to_blknr(sbi, parent_logstart);
->> +		parent_bh = sb_bread(sb, blknr);
->> +		if (!parent_bh) {
->> +			fat_msg(sb, KERN_ERR,
->> +				"NFS:unable to read cluster of parent directory");
->> +			goto out;
->>  		}
->> +		de = (struct msdos_dir_entry *) parent_bh->b_data;
->> +		clus_to_match = fat_get_start(sbi, &de[0]);
->> +		search_clus = fat_get_start(sbi, &de[1]);
->> +		if (!search_clus)
->> +			search_clus = sbi->root_cluster;
->> +		brelse(parent_bh);
->> +		do {
->> +			parent_inode =  fat_traverse_cluster(sb,
->> +					search_clus, clus_to_match);
->> +			if (IS_ERR(parent_inode) || parent_inode)
->> +				break;
->> +			search_clus = fat_read_next_clus(sb,
->> +							search_clus);
->> +			if (search_clus < 0)
->> +				break;
->> +		} while (search_clus != FAT_ENT_EOF);
->>  	}
->>  out:
->>  	brelse(dotdot_bh);
->
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Sasha Levin wrote:
+
+  On Tue, Oct 30, 2012 at 5:42 PM, Tejun Heo <tj@kernel.org> wrote:
+  > Hello,
+  >
+  > Just some nitpicks.
+  >
+  > On Tue, Oct 30, 2012 at 02:45:57PM -0400, Sasha Levin wrote:
+  >> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
+  >> +#define hash_min(val, bits)                                                  \
+  >> +({                                                                           \
+  >> +     sizeof(val) <= 4 ?                                                      \
+  >> +     hash_32(val, bits) :                                                    \
+  >> +     hash_long(val, bits);                                                   \
+  >> +})
+  >
+  > Doesn't the above fit in 80 column.  Why is it broken into multiple
+  > lines?  Also, you probably want () around at least @val.  In general,
+  > it's a good idea to add () around any macro argument to avoid nasty
+  > surprises.
+  
+  It was broken to multiple lines because it looks nicer that way (IMO).
+  
+  If we wrap it with () it's going to go over 80, so it's going to stay
+  broken down either way :)
+
+I would prefer the body be all on one line too. But shouldn't this be a
+static inline function?
