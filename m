@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935221Ab2JaI72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 04:59:28 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:13701 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934894Ab2JaI7Y (ORCPT
+	id S935225Ab2JaJAX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:00:23 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:39496 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934894Ab2JaJAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 04:59:24 -0400
-Message-ID: <5090F67C.9020104@atmel.com>
-Date: Wed, 31 Oct 2012 10:59:24 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 31 Oct 2012 05:00:19 -0400
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <havard@skinnemoen.net>,
-        David Laight <David.Laight@aculab.com>
-CC: <netdev@vger.kernel.org>, <davem@davemloft.net>,
-        <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
-        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <manabian@gmail.com>
-Subject: Re: [PATCH v3 06/10] net/macb: clean up ring buffer logic
-References: <cover.1351591858.git.nicolas.ferre@atmel.com> <75eb5df193c504e68ebff7d6a6a88d9a1cc678cb.1351591858.git.nicolas.ferre@atmel.com> <AE90C24D6B3A694183C094C60CF0A2F6026B707D@saturn3.aculab.com> <CACiLriQnQcoXFqrqNt3nkY47nR8FnXbqWjtPRp250gueHSMDmQ@mail.gmail.com>
-In-Reply-To: <CACiLriQnQcoXFqrqNt3nkY47nR8FnXbqWjtPRp250gueHSMDmQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <CAKohpoko6p4z729YTcHXHhKE63+ZG=d43OuPmWvPyf1QmWrgFA@mail.gmail.com>
+References: <cover.1348736069.git.viresh.kumar@linaro.org>
+	<CAKohpoko6p4z729YTcHXHhKE63+ZG=d43OuPmWvPyf1QmWrgFA@mail.gmail.com>
+Date: Wed, 31 Oct 2012 14:30:18 +0530
+Message-ID: <CAKohpokGF62fH6GmXdtt2j0mgcbYmW2XH00kLd6wO3JkKqmauQ@mail.gmail.com>
+Subject: Re: [PATCH V2 0/3] Create sched_select_cpu() and use it in workqueues
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de
+Cc: pjt@google.com, paul.mckenney@linaro.org, tj@kernel.org,
+        suresh.b.siddha@intel.com, venki@google.com, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, amit.kucheria@linaro.org,
+        vincent.guittot@linaro.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2012 07:22 PM, Håvard Skinnemoen :
-> On Tue, Oct 30, 2012 at 4:12 AM, David Laight <David.Laight@aculab.com> wrote:
->>> Instead of masking head and tail every time we increment them, just let them
->>> wrap through UINT_MAX and mask them when subscripting. Add simple accessor
->>> functions to do the subscripting properly to minimize the chances of messing
->>> this up.
->> ...
->>> +static unsigned int macb_tx_ring_avail(struct macb *bp)
->>> +{
->>> +     return TX_RING_SIZE - (bp->tx_head - bp->tx_tail);
->>> +}
->>
->> That one doesn't look quite right to me.
->> Surely it should be masking with 'TX_RING_SIZE - 1'
-> 
-> Why is that? head and tail can never be more than TX_RING_SIZE apart,
-> so it shouldn't make any difference.
+On 15 October 2012 10:08, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> I totally understand since last few weeks you guys were very busy as the
+> merge window was around. So, didn't tried to disturb you then :)
+>
+> Can you please share your viewpoint on this patchset now? And also
+> the running timer migration patch (which was sent separately)?
 
-Absolutely.
-
-Best regards,
--- 
-Nicolas Ferre
+Ping!!
