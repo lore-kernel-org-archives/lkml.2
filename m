@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759973Ab2JaUDj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 16:03:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10789 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756957Ab2JaUDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 16:03:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,688,1344236400"; 
-   d="scan'208";a="213654272"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Zheng, Lv" <lv.zheng@intel.com>, "Huang, Ying" <ying.huang@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        x86 list <x86@kernel.org>
-Subject: RE: [PATCH 1/5] driver core / ACPI: Move ACPI support to core
- device and driver types
-Thread-Topic: [PATCH 1/5] driver core / ACPI: Move ACPI support to core
- device and driver types
-Thread-Index: AQHNt0r0TVxtmXQkpkGhOK26ITzdfZfUDw+AgAAmloCAAAC1gP//n91w
-Date: Wed, 31 Oct 2012 20:03:34 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D5B845@ORSMSX108.amr.corp.intel.com>
-References: <1421417.rIOjExM5Pt@vostro.rjw.lan>
- <1825320.jYYkSTpTOm@vostro.rjw.lan> <20121031162407.GA318@kroah.com>
- <1587006.fly6qcnVo1@vostro.rjw.lan> <5091719D.9090109@zytor.com>
-In-Reply-To: <5091719D.9090109@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1760046Ab2JaUFT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 16:05:19 -0400
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:59915 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756957Ab2JaUFR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 16:05:17 -0400
+Date: Wed, 31 Oct 2012 16:03:52 -0400
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+Cc: davem@davemloft.net, dwmw2@infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of
+ vcc
+Message-ID: <20121031160352.68353ecc@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <20121031094147.GA1004@shrek.podlesie.net>
+References: <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
+	<201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
+	<20121030182001.GA30373@shrek.podlesie.net>
+	<20121031094147.GA1004@shrek.podlesie.net>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9VK3iY3021479
 
-On 10/31/2012 11:42 AM, Rafael J. Wysocki wrote:
-> I wonder if the x86 and/or ia64 maintainers have any reservations?
+On Wed, 31 Oct 2012 10:41:47 +0100
+Krzysztof Mazur <krzysiek@podlesie.net> wrote:
 
-Can you elaborate on the "tested by mika" that you put into the 0/5
-message. Especially w.r.t. ia64. Compile tested? Boot tested? Ran with
-some new device that uses the ACPI enumeration provided by this series?
+> On Tue, Oct 30, 2012 at 07:20:01PM +0100, Krzysztof Mazur wrote:
+> > Yes, this problem can be probably fixed by reversing close and push
+> > and adding some synchronization to pppoatm_unassign_vcc(), but I think
+> > we need that locking anyway, for instance for synchronization for
+> > checking and incrementing sk->sk_wmem_alloc, between pppoatm_send()
+> > and vcc_sendmsg().
+> > 
+> 
+> I think that the same problem exists in other drivers (net/atm/br2684.c,
+> net/atm/clip.c, maybe other).
+>
+> Reversing order of close() and push(vcc, NULL) operations seems to
+> be a good idea, but synchronization with push(vcc, NULL)
+> and function that calls vcc->send() must be added to all drivers.
 
-Nothing in the concept or code scares me ... but I'd like to know that it
-actually works :-)
+this was the scheme that was (and is) currently in place.  detaching a
+protocol from the atm layer never had a separate function, so it was
+decided at some point to just push a NULL skb as a signal to the next
+layer that i needed to cleanly shutdown and detach.  the push(vcc,
+NULL) always happens in a sleepable context, so waiting for whatever
+attached protocol scheduler to finish up is not a problem.  after the
+pushing of the skb NULL, the attached protocol should not send or recv
+any data on that vcc.
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+reversing the order of the push and close certainly seems like the right
+thing to do. i would like to see if it would fix your problem.  making
+the minimal change to get something working would be preferred before
+adding additional complexity.  i am just surprised we havent seen this
+bug before.
+
+> I think it's better to just use ATM socket lock - lock_sock(sk_atm(vcc)),
+> it will fix also problems with synchronization with vcc_sendmsg()
+> and possibly other functions (ioctl?).
+> 
+> I think that we should add a wrapper to vcc->send(), based on
+> fixed pppoatm_send(), that performs required checks and takes the ATM socket
+> lock.
+> 
+> But I think we should reverse those operations anyway, because some
+> drivers may use other locks, not ATM socket lock, for proper
+> synchronization.
+
+i dont think this is a bad idea.  vcc_release_async() could happen
+(this would be a bit unusual for a pvc but removing the usbatm device
+would do this) and there is no point in sending on a vcc that is
+closing.
