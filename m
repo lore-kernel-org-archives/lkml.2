@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605Ab2JaAds (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:33:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33239 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753342Ab2JaAdP (ORCPT
+	id S1759044Ab2JaAeL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:34:11 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41556 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755680Ab2JaAeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:33:15 -0400
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9Sh0tkKHrLsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=NDWzv-LtIjcA:10 a=VwQbUJbxAAAA:8 a=ikMIzOjJKqLRoHuP5kEA:9 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121031003314.634541033@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 30 Oct 2012 20:33:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 2/4] rcu: Disable RCU_FAST_NO_HZ on RT
-References: <20121031003258.811955127@goodmis.org>
-Content-Disposition: inline; filename=0002-rcu-Disable-RCU_FAST_NO_HZ-on-RT.patch
+	Tue, 30 Oct 2012 20:34:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121030214257.GB2681@htj.dyndns.org>
+References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com> <20121030214257.GB2681@htj.dyndns.org>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Tue, 30 Oct 2012 20:33:43 -0400
+Message-ID: <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
+Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive hashtable
+To: Tejun Heo <tj@kernel.org>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
+        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On Tue, Oct 30, 2012 at 5:42 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> Just some nitpicks.
+>
+> On Tue, Oct 30, 2012 at 02:45:57PM -0400, Sasha Levin wrote:
+>> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
+>> +#define hash_min(val, bits)                                                  \
+>> +({                                                                           \
+>> +     sizeof(val) <= 4 ?                                                      \
+>> +     hash_32(val, bits) :                                                    \
+>> +     hash_long(val, bits);                                                   \
+>> +})
+>
+> Doesn't the above fit in 80 column.  Why is it broken into multiple
+> lines?  Also, you probably want () around at least @val.  In general,
+> it's a good idea to add () around any macro argument to avoid nasty
+> surprises.
 
-This uses a timer_list timer from the irq disabled guts of the idle
-code. Disable it for now to prevent wreckage.
+It was broken to multiple lines because it looks nicer that way (IMO).
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable-rt@vger.kernel.org
----
- init/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 5ed453f..948350f 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -469,7 +469,7 @@ config RCU_FANOUT_EXACT
- 
- config RCU_FAST_NO_HZ
- 	bool "Accelerate last non-dyntick-idle CPU's grace periods"
--	depends on TREE_RCU && NO_HZ && SMP
-+	depends on TREE_RCU && NO_HZ && SMP && !PREEMPT_RT_FULL
- 	default n
- 	help
- 	  This option causes RCU to attempt to accelerate grace periods
--- 
-1.7.10.4
+If we wrap it with () it's going to go over 80, so it's going to stay
+broken down either way :)
 
 
+Thanks,
+Sasha
+
+> Looks good to me otherwise.
+>
+>  Reviewed-by: Tejun Heo <tj@kernel.org>
+>
+> Thanks.
+>
+> --
+> tejun
