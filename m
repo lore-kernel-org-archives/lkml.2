@@ -1,144 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935050Ab2JaICD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 04:02:03 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50724 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754983Ab2JaH6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 03:58:32 -0400
-X-IronPort-AV: E=Sophos;i="4.80,687,1344182400"; 
-   d="scan'208";a="6107041"
-From: Wen Congyang <wency@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-doc@vger.kernel.org
-Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-Subject: [PART3 Patch 04/14] memcontrol: use N_MEMORY instead N_HIGH_MEMORY
-Date: Wed, 31 Oct 2012 16:04:02 +0800
-Message-Id: <1351670652-9932-5-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1351670652-9932-1-git-send-email-wency@cn.fujitsu.com>
-References: <1351670652-9932-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 15:57:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/31 15:57:44,
-	Serialize complete at 2012/10/31 15:57:44
+	id S935021Ab2JaICR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 04:02:17 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:60266 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933836Ab2JaICI convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Wed, 31 Oct 2012 04:02:08 -0400
+Message-Id: <5090E93302000078000A59C8@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 31 Oct 2012 08:02:43 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Olaf Hering" <olaf@aepfle.de>
+Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        "xen-devel" <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH v4] xen PVonHVM: move shared_info to
+ reserved memory area
+References: <1351612057-21822-1-git-send-email-olaf@aepfle.de>
+ <50900B1D02000078000A586C@nat28.tlf.novell.com>
+ <20121030163006.GA26404@aepfle.de>
+ <5090124C02000078000A58AC@nat28.tlf.novell.com>
+ <20121030170321.GA1251@aepfle.de>
+In-Reply-To: <20121030170321.GA1251@aepfle.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+>>> On 30.10.12 at 18:03, Olaf Hering <olaf@aepfle.de> wrote:
+> On Tue, Oct 30, Jan Beulich wrote:
+> 
+>> And iirc you're doing this relocation because otherwise the newly
+>> booting kernel image may get overwritten at an (from its
+>> perspective) arbitrary location. What I'm trying to point out is
+>> that the shared info structure is not the only thing (potentially)
+>> inside the kernel image that might get overwritten - the relocated
+>> (by the old kernel) vCPU info may as well. Plus I think the new
+>> kernel has no way of relocating it a second time (including back
+>> into the shared info structure) with how the hypervisor works at
+>> present.
+> 
+> Thanks, I have not looked at this, nor was I aware of it until now.
+> I will see what needs to be done.
+> 
+> Is this also an issue with the xenlinux based PVonHVM code?
 
-N_HIGH_MEMORY stands for the nodes that has normal or high memory.
-N_MEMORY stands for the nodes that has any memory.
+No - this code doesn't make use of that feature (yet, we've got
+a feature request that would involve doing so), as it only ever
+touches vCPU 0's info.
 
-The code here need to handle with the nodes which have memory, we should
-use N_MEMORY instead.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- mm/memcontrol.c  | 18 +++++++++---------
- mm/page_cgroup.c |  2 +-
- 2 files changed, 10 insertions(+), 10 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7acf43b..1b69665 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -800,7 +800,7 @@ static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
- 	int nid;
- 	u64 total = 0;
- 
--	for_each_node_state(nid, N_HIGH_MEMORY)
-+	for_each_node_state(nid, N_MEMORY)
- 		total += mem_cgroup_node_nr_lru_pages(memcg, nid, lru_mask);
- 	return total;
- }
-@@ -1611,9 +1611,9 @@ static void mem_cgroup_may_update_nodemask(struct mem_cgroup *memcg)
- 		return;
- 
- 	/* make a nodemask where this memcg uses memory from */
--	memcg->scan_nodes = node_states[N_HIGH_MEMORY];
-+	memcg->scan_nodes = node_states[N_MEMORY];
- 
--	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
-+	for_each_node_mask(nid, node_states[N_MEMORY]) {
- 
- 		if (!test_mem_cgroup_node_reclaimable(memcg, nid, false))
- 			node_clear(nid, memcg->scan_nodes);
-@@ -1684,7 +1684,7 @@ static bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
- 	/*
- 	 * Check rest of nodes.
- 	 */
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		if (node_isset(nid, memcg->scan_nodes))
- 			continue;
- 		if (test_mem_cgroup_node_reclaimable(memcg, nid, noswap))
-@@ -3759,7 +3759,7 @@ move_account:
- 		drain_all_stock_sync(memcg);
- 		ret = 0;
- 		mem_cgroup_start_move(memcg);
--		for_each_node_state(node, N_HIGH_MEMORY) {
-+		for_each_node_state(node, N_MEMORY) {
- 			for (zid = 0; !ret && zid < MAX_NR_ZONES; zid++) {
- 				enum lru_list lru;
- 				for_each_lru(lru) {
-@@ -4087,7 +4087,7 @@ static int memcg_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- 
- 	total_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL);
- 	seq_printf(m, "total=%lu", total_nr);
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid, LRU_ALL);
- 		seq_printf(m, " N%d=%lu", nid, node_nr);
- 	}
-@@ -4095,7 +4095,7 @@ static int memcg_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- 
- 	file_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_FILE);
- 	seq_printf(m, "file=%lu", file_nr);
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid,
- 				LRU_ALL_FILE);
- 		seq_printf(m, " N%d=%lu", nid, node_nr);
-@@ -4104,7 +4104,7 @@ static int memcg_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- 
- 	anon_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_ANON);
- 	seq_printf(m, "anon=%lu", anon_nr);
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid,
- 				LRU_ALL_ANON);
- 		seq_printf(m, " N%d=%lu", nid, node_nr);
-@@ -4113,7 +4113,7 @@ static int memcg_numa_stat_show(struct cgroup *cont, struct cftype *cft,
- 
- 	unevictable_nr = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_UNEVICTABLE));
- 	seq_printf(m, "unevictable=%lu", unevictable_nr);
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid,
- 				BIT(LRU_UNEVICTABLE));
- 		seq_printf(m, " N%d=%lu", nid, node_nr);
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 5ddad0c..c1054ad 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -271,7 +271,7 @@ void __init page_cgroup_init(void)
- 	if (mem_cgroup_disabled())
- 		return;
- 
--	for_each_node_state(nid, N_HIGH_MEMORY) {
-+	for_each_node_state(nid, N_MEMORY) {
- 		unsigned long start_pfn, end_pfn;
- 
- 		start_pfn = node_start_pfn(nid);
--- 
-1.8.0
+Jan
 
