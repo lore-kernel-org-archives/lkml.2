@@ -1,169 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945948Ab2JaSQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 14:16:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46615 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932875Ab2JaSQ3 convert rfc822-to-8bit (ORCPT
+	id S1945976Ab2JaSQn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 14:16:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33705 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932875Ab2JaSQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 14:16:29 -0400
-From: "Porter, Matt" <mporter@ti.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@cam.ac.uk>,
-        "Patil, Rachna" <rachna@ti.com>,
-        "<linux-iio@vger.kernel.org>" <linux-iio@vger.kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        "Dill, Russ" <russ.dill@ti.com>,
-        "<linux-omap@vger.kernel.org>" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 1/3] ti_adc: Update with IIO map interface
-Thread-Topic: [PATCH 1/3] ti_adc: Update with IIO map interface
-Thread-Index: AQHNt42ginHI6eJLNka0J5JLsMuW/JfUBbqAgAAAwgCAAAXZgA==
-Date: Wed, 31 Oct 2012 18:16:18 +0000
-Message-ID: <0D509040-2DC5-46BF-B782-96B5B7B2620B@ti.com>
-References: <1351783496-11557-1-git-send-email-panto@antoniou-consulting.com>
- <50916563.8080704@metafoo.de>
- <F29A4A48-CDFA-4058-BED1-C09242B23326@antoniou-consulting.com>
-In-Reply-To: <F29A4A48-CDFA-4058-BED1-C09242B23326@antoniou-consulting.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <18773C2E86EA5A4FBE71C1F0C2878288@owa.mail.ti.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 31 Oct 2012 14:16:37 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
+        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHSET v2] cgroup: simplify cgroup removal path
+Date: Wed, 31 Oct 2012 11:16:23 -0700
+Message-Id: <1351707391-22287-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, guys.
 
-On Oct 31, 2012, at 1:55 PM, Pantelis Antoniou wrote:
+Changes from the last posting[L] are,
 
-> 
-> On Oct 31, 2012, at 7:52 PM, Lars-Peter Clausen wrote:
-> 
->> On 11/01/2012 04:24 PM, Pantelis Antoniou wrote:
->>> Add an IIO map interface that consumers can use.
->> 
->> Hi,
->> 
->> Looks like you overlooked the review comments I had inline last time. I've
->> put them in again, see below.
->> 
->>> 
->>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
->>> ---
->>> drivers/iio/adc/ti_am335x_adc.c | 60 +++++++++++++++++++++++++++++++++--------
->>> 1 file changed, 49 insertions(+), 11 deletions(-)
->>> 
->>> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
->>> index 02a43c8..8595a90 100644
->>> --- a/drivers/iio/adc/ti_am335x_adc.c
->>> +++ b/drivers/iio/adc/ti_am335x_adc.c
->>> @@ -20,8 +20,9 @@
->>> #include <linux/slab.h>
->>> #include <linux/interrupt.h>
->>> #include <linux/platform_device.h>
->>> -#include <linux/io.h>
->>> #include <linux/iio/iio.h>
->>> +#include <linux/iio/machine.h>
->>> +#include <linux/iio/driver.h>
->>> 
->>> #include <linux/mfd/ti_am335x_tscadc.h>
->>> #include <linux/platform_data/ti_am335x_adc.h>
->>> @@ -29,6 +30,8 @@
->>> struct tiadc_device {
->>> 	struct ti_tscadc_dev *mfd_tscadc;
->>> 	int channels;
->>> +	char *buf;
->> 
->> buf doesn't seem to be used anywhere
->> 
-> 
-> Duh
-> 
->>> +	struct iio_map *map;
->>> };
->>> 
->>> static unsigned int tiadc_readl(struct tiadc_device *adc, unsigned int reg)
->>> @@ -72,27 +75,62 @@ static void tiadc_step_config(struct tiadc_device *adc_dev)
->>> 	tiadc_writel(adc_dev, REG_SE, STPENB_STEPENB);
->>> }
->>> 
->>> -static int tiadc_channel_init(struct iio_dev *indio_dev, int channels)
->>> +static int tiadc_channel_init(struct iio_dev *indio_dev,
->>> +		struct tiadc_device *adc_dev)
->>> {
->>> 	struct iio_chan_spec *chan_array;
->>> -	int i;
->>> -
->>> -	indio_dev->num_channels = channels;
->>> -	chan_array = kcalloc(indio_dev->num_channels,
->>> -			sizeof(struct iio_chan_spec), GFP_KERNEL);
->>> +	struct iio_chan_spec *chan;
->>> +	char *s;
->>> +	int i, len, size, ret;
->>> +	int channels = adc_dev->channels;
->>> 
->>> +	size = channels * (sizeof(struct iio_chan_spec) + 6);
->>> +	chan_array = kzalloc(size, GFP_KERNEL);
->>> 	if (chan_array == NULL)
->>> 		return -ENOMEM;
->>> 
->>> -	for (i = 0; i < (indio_dev->num_channels); i++) {
->>> -		struct iio_chan_spec *chan = chan_array + i;
->>> +	/* buffer space is after the array */
->>> +	s = (char *)(chan_array + channels);
->>> +	chan = chan_array;
->>> +	for (i = 0; i < channels; i++, chan++, s += len + 1) {
->>> +
->>> +		len = sprintf(s, "AIN%d", i);
->>> +
->>> 		chan->type = IIO_VOLTAGE;
->>> 		chan->indexed = 1;
->>> 		chan->channel = i;
->>> -		chan->info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT;
->>> +		chan->datasheet_name = s;
->>> +		chan->scan_type.sign = 'u';
->>> +		chan->scan_type.realbits = 12;
->>> +		chan->scan_type.storagebits = 32;
->>> +		chan->scan_type.shift = 0;
->> 
->> The scan type assignment should go in a separate patch if possible.
-> 
-> ok.
-> 
->> 
->>> 	}
->>> 
->>> 	indio_dev->channels = chan_array;
->>> +	indio_dev->num_channels = channels;
->>> +
->>> +	size = (channels + 1) * sizeof(struct iio_map);
->>> +	adc_dev->map = kzalloc(size, GFP_KERNEL);
->>> +	if (adc_dev->map == NULL) {
->>> +		kfree(chan_array);
->>> +		return -ENOMEM;
->>> +	}
->>> +
->>> +	for (i = 0; i < indio_dev->num_channels; i++) {
->>> +		adc_dev->map[i].adc_channel_label = chan_array[i].datasheet_name;
->>> +		adc_dev->map[i].consumer_dev_name = "any";
->>> +		adc_dev->map[i].consumer_channel = chan_array[i].datasheet_name;
->>> +	}
->>> +	adc_dev->map[i].adc_channel_label = NULL;
->>> +	adc_dev->map[i].consumer_dev_name = NULL;
->>> +	adc_dev->map[i].consumer_channel = NULL;
->> 
->> The map should be passed in via platform data or similar. All the fields of
->> the map depend on the specific user, so you can't use a generic map. In fact
->> if we were able to use a generic map, we wouldn't need a map at all.
-> 
-> There's no platform data in the board I'm using. It's board-generic using
-> device tree only.
+* cgroup_call_pre_destroy() removal moved from 0001 to 0004 per
+  Michal.
 
-How about a DT binding for the map?
+* Comment and commit message updates per Glauber and Michal.
 
--Matt
+Original head message follows.
+
+cgroup removal path is quite ugly.  A lot of the ugliness comes from
+the weird design which allows ->pre_destroy() to fail and the feature
+to drain existing CSS reference counts before committing to removal.
+Both mean that it should be possible to roll-back cgroup destruction
+after some or all ->pre_destroy() invocations.
+
+This weird design has never really worked.  To list a couple examples.
+
+ * Some ->pre_destroy() implementations aren't side-effect free.
+   Roll-back happens after a lot of state is already lost.
+
+ * Some ->pre_destroy() implementations (naturally) assume that the
+   cgroup being destroyed would stay quiescent between successful
+   ->pre_destroy() and its destruction.  Unfortunately, any operation
+   can happen inbetween and the cgroup could be in a very different
+   state by the time it actually gets destroyed.
+
+It's just such an unusual design which unnecessarily contains weird
+code path combinations which are tricky to hit, reproduce and expect.
+Moreover, the design's deficiencies attracts kludges on top as
+workarounds and we end up with stuff like cgroup_exclude_rmdir() and
+cgroup_release_and_wakeup_rmdir() which really make me want to cry.
+
+Now that memcg has moved away from failable ->pre_destroy(), we can do
+away with all these.  I tested some basic operations and some corner
+cases but am still a bit scared.  Would love to get acks from Li and
+memcg people.
+
+This patchset contains the following eight patches.
+
+ 0001-cgroup-kill-cgroup_subsys-__DEPRECATED_clear_css_ref.patch
+ 0002-cgroup-kill-CSS_REMOVED.patch
+ 0003-cgroup-use-cgroup_lock_live_group-parent-in-cgroup_c.patch
+ 0004-cgroup-deactivate-CSS-s-and-mark-cgroup-dead-before-.patch
+ 0005-cgroup-remove-CGRP_WAIT_ON_RMDIR-cgroup_exclude_rmdi.patch
+ 0006-memcg-make-mem_cgroup_reparent_charges-non-failing.patch
+ 0007-hugetlb-do-not-fail-in-hugetlb_cgroup_pre_destroy.patch
+ 0008-cgroup-make-pre_destroy-return-void.patch
+
+0001-0002 remove now unused ->pre_destroy() failure handling and do
+follow-up simplification.
+
+0003-0004 update removal path such that each ->pre_destroy() is
+guaranteed to be invoked once per removal and the cgroup being
+destroyed stays quiescent until destruction is complete.
+
+0005 removes the scary CGRP_WAIT_ON_RMDIR mechanism.
+
+0006-0008 are follow-up clean-ups.  0006 and 0007 are from Michal's
+patchset[1].
+
+This patchset is on top of
+
+  v3.6 (a0d271cbfe)
++ [1] the first three patches of
+      "memcg/cgroup: do not fail fail on pre_destroy callbacks" patchset
+
+and available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-rmdir-updates
+
+Thanks.
+
+ block/blk-cgroup.c     |    3 
+ include/linux/cgroup.h |   41 -------
+ kernel/cgroup.c        |  256 +++++++++++--------------------------------------
+ mm/hugetlb_cgroup.c    |   11 --
+ mm/memcontrol.c        |   51 +--------
+ 5 files changed, 75 insertions(+), 287 deletions(-)
+
+--
+tejun
+
+[L] http://www.spinics.net/lists/linux-containers/msg26157.html
+[1] http://thread.gmane.org/gmane.linux.kernel.cgroups/4757
