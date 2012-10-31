@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423152Ab2JaPJr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 11:09:47 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:40124 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423087Ab2JaPJm (ORCPT
+	id S1423184Ab2JaPJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 11:09:58 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19641 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423154Ab2JaPJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 11:09:42 -0400
+	Wed, 31 Oct 2012 11:09:51 -0400
+X-Greylist: delayed 1573 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Oct 2012 11:09:51 EDT
 From: Dan Magenheimer <dan.magenheimer@oracle.com>
 To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
@@ -14,189 +15,234 @@ To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
         minchan@kernel.org, dan.magenheimer@oracle.com, fschmaus@gmail.com,
         andor.damm@googlemail.com, ilendir@googlemail.com,
         akpm@linux-foundation.org, mgorman@suse.de
-Subject: [PATCH 2/5] mm: frontswap: lazy initialization to allow tmem backends to build/run as modules
-Date: Wed, 31 Oct 2012 08:07:51 -0700
-Message-Id: <1351696074-29362-3-git-send-email-dan.magenheimer@oracle.com>
+Subject: [PATCH 4/5] staging: zcache2+ramster: enable ramster to be built/loaded as a module
+Date: Wed, 31 Oct 2012 08:07:53 -0700
+Message-Id: <1351696074-29362-5-git-send-email-dan.magenheimer@oracle.com>
 X-Mailer: git-send-email 1.7.5.1
 In-Reply-To: <1351696074-29362-1-git-send-email-dan.magenheimer@oracle.com>
 References: <1351696074-29362-1-git-send-email-dan.magenheimer@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
-built/loaded as modules rather than built-in and enabled by a boot parameter,
-this patch provides "lazy initialization", allowing backends to register to
-frontswap even after swapon was run. Before a backend registers all calls
-to init are recorded and the creation of tmem_pools delayed until a backend
-registers or until a frontswap put is attempted.
+Enable module support for ramster.  Note runtime dependency disallows
+loading if cleancache/frontswap lazy initialization patches are not
+present.
 
-Signed-off-by: Stefan Hengelein <ilendir@googlemail.com>
-Signed-off-by: Florian Schmaus <fschmaus@gmail.com>
-Signed-off-by: Andor Daam <andor.daam@googlemail.com>
+If built-in (not built as a module), the original mechanism of enabling via
+a kernel boot parameter is retained, but this should be considered deprecated.
+
+Note that module unload is explicitly not yet supported.
+
 Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 ---
- include/linux/frontswap.h |    1 +
- mm/frontswap.c            |   70 +++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 63 insertions(+), 8 deletions(-)
+ drivers/staging/ramster/ramster.h                  |    6 +++-
+ drivers/staging/ramster/ramster/nodemanager.c      |    9 +++---
+ drivers/staging/ramster/ramster/ramster.c          |   29 ++++++++++++++++---
+ drivers/staging/ramster/ramster/ramster.h          |    2 +-
+ .../staging/ramster/ramster/ramster_nodemanager.h  |    2 +
+ 5 files changed, 37 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
-index 3044254..ef6ada6 100644
---- a/include/linux/frontswap.h
-+++ b/include/linux/frontswap.h
-@@ -23,6 +23,7 @@ extern void frontswap_writethrough(bool);
- extern void frontswap_tmem_exclusive_gets(bool);
+diff --git a/drivers/staging/ramster/ramster.h b/drivers/staging/ramster/ramster.h
+index 1b71aea..e1f91d5 100644
+--- a/drivers/staging/ramster/ramster.h
++++ b/drivers/staging/ramster/ramster.h
+@@ -11,10 +11,14 @@
+ #ifndef _ZCACHE_RAMSTER_H_
+ #define _ZCACHE_RAMSTER_H_
  
- extern void __frontswap_init(unsigned type);
-+#define FRONTSWAP_HAS_LAZY_INIT
- extern int __frontswap_store(struct page *page);
- extern int __frontswap_load(struct page *page);
- extern void __frontswap_invalidate_page(unsigned, pgoff_t);
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index 2890e67..523a19b 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -80,6 +80,19 @@ static inline void inc_frontswap_succ_stores(void) { }
- static inline void inc_frontswap_failed_stores(void) { }
- static inline void inc_frontswap_invalidates(void) { }
- #endif
++#ifdef CONFIG_RAMSTER_MODULE
++#define CONFIG_RAMSTER
++#endif
 +
-+/*
-+ * When no backend is registered all calls to init are registered and
-+ * remembered but fail to create tmem_pools. When a backend registers with
-+ * frontswap the previous calls to init are executed to create tmem_pools
-+ * and set the respective poolids.
-+ * While no backend is registered all "puts", "gets" and "flushes" are
-+ * ignored or fail.
-+ */
-+#define MAX_INITIALIZABLE_SD 32
-+static int sds[MAX_INITIALIZABLE_SD];
-+static int backend_registered;
-+
- /*
-  * Register operations for frontswap, returning previous thus allowing
-  * detection of multiple backends and possible nesting.
-@@ -87,9 +100,16 @@ static inline void inc_frontswap_invalidates(void) { }
- struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
+ #ifdef CONFIG_RAMSTER
+ #include "ramster/ramster.h"
+ #else
+-static inline void ramster_init(bool x, bool y, bool z)
++static inline void ramster_init(bool x, bool y, bool z, bool w)
  {
- 	struct frontswap_ops old = frontswap_ops;
-+	int i;
- 
- 	frontswap_ops = *ops;
- 	frontswap_enabled = true;
-+
-+	backend_registered = 1;
-+	for (i = 0; i < MAX_INITIALIZABLE_SD; i++) {
-+		if (sds[i] != -1)
-+			(*frontswap_ops.init)(sds[i]);
-+	}
- 	return old;
  }
- EXPORT_SYMBOL(frontswap_register_ops);
-@@ -122,7 +142,10 @@ void __frontswap_init(unsigned type)
- 	BUG_ON(sis == NULL);
- 	if (sis->frontswap_map == NULL)
- 		return;
--	frontswap_ops.init(type);
-+	if (backend_registered) {
-+		(*frontswap_ops.init)(type);
-+		sds[type] = type;
-+	}
+ 
+diff --git a/drivers/staging/ramster/ramster/nodemanager.c b/drivers/staging/ramster/ramster/nodemanager.c
+index c0f4815..2cfe933 100644
+--- a/drivers/staging/ramster/ramster/nodemanager.c
++++ b/drivers/staging/ramster/ramster/nodemanager.c
+@@ -949,7 +949,7 @@ static void __exit exit_r2nm(void)
+ 	r2hb_exit();
  }
- EXPORT_SYMBOL(__frontswap_init);
  
-@@ -147,10 +170,20 @@ int __frontswap_store(struct page *page)
- 	struct swap_info_struct *sis = swap_info[type];
- 	pgoff_t offset = swp_offset(entry);
- 
-+	if (!backend_registered) {
-+		inc_frontswap_failed_stores();
-+		return ret;
-+	}
-+
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset))
- 		dup = 1;
-+	if (type < MAX_INITIALIZABLE_SD && sds[type] == -1) {
-+		/* lazy init call to handle post-boot insmod backends*/
-+		(*frontswap_ops.init)(type);
-+		sds[type] = type;
-+	}
- 	ret = frontswap_ops.store(type, offset, page);
- 	if (ret == 0) {
- 		frontswap_set(sis, offset);
-@@ -186,6 +219,9 @@ int __frontswap_load(struct page *page)
- 	struct swap_info_struct *sis = swap_info[type];
- 	pgoff_t offset = swp_offset(entry);
- 
-+	if (!backend_registered)
-+		return ret;
-+
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset))
-@@ -209,6 +245,9 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
+-static int __init init_r2nm(void)
++int r2nm_init(void)
  {
- 	struct swap_info_struct *sis = swap_info[type];
+ 	int ret = -1;
  
-+	if (!backend_registered)
-+		return;
-+
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset)) {
- 		frontswap_ops.invalidate_page(type, offset);
-@@ -225,13 +264,23 @@ EXPORT_SYMBOL(__frontswap_invalidate_page);
- void __frontswap_invalidate_area(unsigned type)
- {
- 	struct swap_info_struct *sis = swap_info[type];
--
--	BUG_ON(sis == NULL);
--	if (sis->frontswap_map == NULL)
--		return;
--	frontswap_ops.invalidate_area(type);
--	atomic_set(&sis->frontswap_pages, 0);
--	memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-+	int i;
-+
-+	if (backend_registered) {
-+		BUG_ON(sis == NULL);
-+		if (sis->frontswap_map == NULL)
-+			return;
-+		(*frontswap_ops.invalidate_area)(type);
-+		atomic_set(&sis->frontswap_pages, 0);
-+		memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-+	} else {
-+		for (i = 0; i < MAX_INITIALIZABLE_SD; i++) {
-+			if (sds[i] == type) {
-+				sds[i] = -1;
-+				break;
-+			}
-+		}
-+	}
+@@ -986,10 +986,11 @@ out_r2hb:
+ out:
+ 	return ret;
  }
- EXPORT_SYMBOL(__frontswap_invalidate_area);
++EXPORT_SYMBOL_GPL(r2nm_init);
  
-@@ -353,6 +402,7 @@ EXPORT_SYMBOL(frontswap_curr_pages);
+ MODULE_AUTHOR("Oracle");
+ MODULE_LICENSE("GPL");
  
- static int __init init_frontswap(void)
+-/* module_init(init_r2nm) */
+-late_initcall(init_r2nm);
+-/* module_exit(exit_r2nm) */
++#ifndef CONFIG_RAMSTER_MODULE
++late_initcall(r2nm_init);
++#endif
+diff --git a/drivers/staging/ramster/ramster/ramster.c b/drivers/staging/ramster/ramster/ramster.c
+index c06709f..491ec70 100644
+--- a/drivers/staging/ramster/ramster/ramster.c
++++ b/drivers/staging/ramster/ramster/ramster.c
+@@ -92,7 +92,7 @@ static unsigned long ramster_remote_page_flushes_failed;
+ #include <linux/debugfs.h>
+ #define	zdfs	debugfs_create_size_t
+ #define	zdfs64	debugfs_create_u64
+-static int __init ramster_debugfs_init(void)
++static int ramster_debugfs_init(void)
  {
-+	int i;
- #ifdef CONFIG_DEBUG_FS
- 	struct dentry *root = debugfs_create_dir("frontswap", NULL);
+ 	struct dentry *root = debugfs_create_dir("ramster", NULL);
  	if (root == NULL)
-@@ -364,6 +414,10 @@ static int __init init_frontswap(void)
- 	debugfs_create_u64("invalidates", S_IRUGO,
- 				root, &frontswap_invalidates);
- #endif
-+	for (i = 0; i < MAX_INITIALIZABLE_SD; i++)
-+		sds[i] = -1;
-+
-+	frontswap_enabled = 1;
- 	return 0;
+@@ -191,6 +191,7 @@ int ramster_do_preload_flnode(struct tmem_pool *pool)
+ 		kmem_cache_free(ramster_flnode_cache, flnode);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(ramster_do_preload_flnode);
+ 
+ /*
+  * Called by the message handler after a (still compressed) page has been
+@@ -458,6 +459,7 @@ void *ramster_pampd_free(void *pampd, struct tmem_pool *pool,
+ 	}
+ 	return local_pampd;
+ }
++EXPORT_SYMBOL_GPL(ramster_pampd_free);
+ 
+ void ramster_count_foreign_pages(bool eph, int count)
+ {
+@@ -489,6 +491,7 @@ void ramster_count_foreign_pages(bool eph, int count)
+ 		ramster_foreign_pers_pages = c;
+ 	}
+ }
++EXPORT_SYMBOL_GPL(ramster_count_foreign_pages);
+ 
+ /*
+  * For now, just push over a few pages every few seconds to
+@@ -674,7 +677,7 @@ requeue:
+ 	ramster_remotify_queue_delayed_work(HZ);
  }
  
+-void __init ramster_remotify_init(void)
++void ramster_remotify_init(void)
+ {
+ 	unsigned long n = 60UL;
+ 	ramster_remotify_workqueue =
+@@ -849,8 +852,10 @@ static bool frontswap_selfshrinking __read_mostly;
+ static void selfshrink_process(struct work_struct *work);
+ static DECLARE_DELAYED_WORK(selfshrink_worker, selfshrink_process);
+ 
++#ifndef CONFIG_RAMSTER_MODULE
+ /* Enable/disable with kernel boot option. */
+ static bool use_frontswap_selfshrink __initdata = true;
++#endif
+ 
+ /*
+  * The default values for the following parameters were deemed reasonable
+@@ -905,6 +910,7 @@ static void frontswap_selfshrink(void)
+ 	frontswap_shrink(tgt_frontswap_pages);
+ }
+ 
++#ifndef CONFIG_RAMSTER_MODULE
+ static int __init ramster_nofrontswap_selfshrink_setup(char *s)
+ {
+ 	use_frontswap_selfshrink = false;
+@@ -912,6 +918,7 @@ static int __init ramster_nofrontswap_selfshrink_setup(char *s)
+ }
+ 
+ __setup("noselfshrink", ramster_nofrontswap_selfshrink_setup);
++#endif
+ 
+ static void selfshrink_process(struct work_struct *work)
+ {
+@@ -930,6 +937,7 @@ void ramster_cpu_up(int cpu)
+ 	per_cpu(ramster_remoteputmem1, cpu) = p1;
+ 	per_cpu(ramster_remoteputmem2, cpu) = p2;
+ }
++EXPORT_SYMBOL_GPL(ramster_cpu_up);
+ 
+ void ramster_cpu_down(int cpu)
+ {
+@@ -945,6 +953,7 @@ void ramster_cpu_down(int cpu)
+ 		kp->flnode = NULL;
+ 	}
+ }
++EXPORT_SYMBOL_GPL(ramster_cpu_down);
+ 
+ void ramster_register_pamops(struct tmem_pamops *pamops)
+ {
+@@ -955,9 +964,11 @@ void ramster_register_pamops(struct tmem_pamops *pamops)
+ 	pamops->repatriate = ramster_pampd_repatriate;
+ 	pamops->repatriate_preload = ramster_pampd_repatriate_preload;
+ }
++EXPORT_SYMBOL_GPL(ramster_register_pamops);
+ 
+-void __init ramster_init(bool cleancache, bool frontswap,
+-				bool frontswap_exclusive_gets)
++void ramster_init(bool cleancache, bool frontswap,
++				bool frontswap_exclusive_gets,
++				bool frontswap_selfshrink)
+ {
+ 	int ret = 0;
+ 
+@@ -972,10 +983,17 @@ void __init ramster_init(bool cleancache, bool frontswap,
+ 	if (ret)
+ 		pr_err("ramster: can't create sysfs for ramster\n");
+ 	(void)r2net_register_handlers();
++#ifdef CONFIG_RAMSTER_MODULE
++	ret = r2nm_init();
++	if (ret)
++		pr_err("ramster: can't init r2net\n");
++	frontswap_selfshrinking = frontswap_selfshrink;
++#else
++	frontswap_selfshrinking = use_frontswap_selfshrink;
++#endif
+ 	INIT_LIST_HEAD(&ramster_rem_op_list);
+ 	ramster_flnode_cache = kmem_cache_create("ramster_flnode",
+ 				sizeof(struct flushlist_node), 0, 0, NULL);
+-	frontswap_selfshrinking = use_frontswap_selfshrink;
+ 	if (frontswap_selfshrinking) {
+ 		pr_info("ramster: Initializing frontswap selfshrink driver.\n");
+ 		schedule_delayed_work(&selfshrink_worker,
+@@ -983,3 +1001,4 @@ void __init ramster_init(bool cleancache, bool frontswap,
+ 	}
+ 	ramster_remotify_init();
+ }
++EXPORT_SYMBOL_GPL(ramster_init);
+diff --git a/drivers/staging/ramster/ramster/ramster.h b/drivers/staging/ramster/ramster/ramster.h
+index 12ae56f..6d41a7a 100644
+--- a/drivers/staging/ramster/ramster/ramster.h
++++ b/drivers/staging/ramster/ramster/ramster.h
+@@ -147,7 +147,7 @@ extern int r2net_register_handlers(void);
+ extern int r2net_remote_target_node_set(int);
+ 
+ extern int ramster_remotify_pageframe(bool);
+-extern void ramster_init(bool, bool, bool);
++extern void ramster_init(bool, bool, bool, bool);
+ extern void ramster_register_pamops(struct tmem_pamops *);
+ extern int ramster_localify(int, struct tmem_oid *oidp, uint32_t, char *,
+ 				unsigned int, void *);
+diff --git a/drivers/staging/ramster/ramster/ramster_nodemanager.h b/drivers/staging/ramster/ramster/ramster_nodemanager.h
+index 49f879d..dbaae34 100644
+--- a/drivers/staging/ramster/ramster/ramster_nodemanager.h
++++ b/drivers/staging/ramster/ramster/ramster_nodemanager.h
+@@ -36,4 +36,6 @@
+ /* host name, group name, cluster name all 64 bytes */
+ #define R2NM_MAX_NAME_LEN        64    /* __NEW_UTS_LEN */
+ 
++extern int r2nm_init(void);
++
+ #endif /* _RAMSTER_NODEMANAGER_H */
 -- 
 1.7.1
 
