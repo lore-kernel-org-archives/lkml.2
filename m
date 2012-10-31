@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760616Ab2JaTz1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 15:55:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56376 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760393Ab2JaTz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 15:55:26 -0400
-Message-ID: <50918223.6080003@ti.com>
-Date: Wed, 31 Oct 2012 20:55:15 +0100
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1759973Ab2JaUDj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 16:03:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10789 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756957Ab2JaUDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 16:03:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,688,1344236400"; 
+   d="scan'208";a="213654272"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Zheng, Lv" <lv.zheng@intel.com>, "Huang, Ying" <ying.huang@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        x86 list <x86@kernel.org>
+Subject: RE: [PATCH 1/5] driver core / ACPI: Move ACPI support to core
+ device and driver types
+Thread-Topic: [PATCH 1/5] driver core / ACPI: Move ACPI support to core
+ device and driver types
+Thread-Index: AQHNt0r0TVxtmXQkpkGhOK26ITzdfZfUDw+AgAAmloCAAAC1gP//n91w
+Date: Wed, 31 Oct 2012 20:03:34 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D5B845@ORSMSX108.amr.corp.intel.com>
+References: <1421417.rIOjExM5Pt@vostro.rjw.lan>
+ <1825320.jYYkSTpTOm@vostro.rjw.lan> <20121031162407.GA318@kroah.com>
+ <1587006.fly6qcnVo1@vostro.rjw.lan> <5091719D.9090109@zytor.com>
+In-Reply-To: <5091719D.9090109@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, <linux-omap@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
-References: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com> <20121031175219.GH12739@atomide.com> <C9715CB7-D3E2-4CA7-8A93-2B10E8B70640@antoniou-consulting.com> <20121031180935.GL12739@atomide.com>
-In-Reply-To: <20121031180935.GL12739@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9VK3iY3021479
 
-Hi Panto,
+On 10/31/2012 11:42 AM, Rafael J. Wysocki wrote:
+> I wonder if the x86 and/or ia64 maintainers have any reservations?
 
-On 10/31/2012 07:09 PM, Tony Lindgren wrote:
-> * Pantelis Antoniou <panto@antoniou-consulting.com> [121031 11:05]:
->> Hi Tony,
->>
->> On Oct 31, 2012, at 7:52 PM, Tony Lindgren wrote:
->>
->>> * Pantelis Antoniou <panto@antoniou-consulting.com> [121031 10:26]:
->>>> It is painless to move the adapter DT devices to arch/arm/mach-omap2
->>>>
->>>> However I got bit by the __init at omap_build_device family functions.
->>>> If you don't remove it, crashes every time you instantiate a device
->>>> at runtime, or you load the cape driver as a module.
->>>
->>> Hmm I think you misunderstood me. You only need to create the
->>> platform_device under arch/arm/mach-omap2. The device creation
->>> happens only at __init, so omap_build_device can stay as __init.
->>> The driver itself should be under drivers.
->>>
->>> But is this bus on non-device-tree omaps? If not, just make it
->>> device tree only.
->>>
->>
->> I'm afraid that's not the case. The whole notion of capebus is that
->> instantiation of the devices doesn't just happen early at the boot
->> sequence.
->>
->> It is perfectly valid for a cape to be instantiated via loading
->> a module, or by making an override by writing a sysfs file.
->>
->> When having the __init there, the function has been long removed
->> and you get a crash by calling into the weeds.
->>
->> So the sequence is:
->>
->> <early boot>       Register the adapter driver.
-> 
-> OK this is always there for the hardware, and done during
-> the __init and this one should have an omap_device..
->  
->> <user>             insmod bone-geiger-cape
->> <cape-is-matched>  call omap_build_device
->>
->> Please look into the capebus patches for the details. 
-> 
-> ..but it seems that the devices connected to capebus should
-> not have anything to do with omap_device and hwmod?
+Can you elaborate on the "tested by mika" that you put into the 0/5
+message. Especially w.r.t. ia64. Compile tested? Boot tested? Ran with
+some new device that uses the ACPI enumeration provided by this series?
 
+Nothing in the concept or code scares me ... but I'd like to know that it
+actually works :-)
 
-Yeah, I do agree. I'm confused as well. Only OMAP IPs under PRCM control
-could have an hwmod and thus must be handled by an omap_device.
-
-Any devices that is created later cannot be omap_device. The DT core
-will create regular platform_device for them.
-
-Since cape is an external board, it should have nothing to do with
-omap_device.
-
-Looking at your patch:
- da8xx-dt: Create da8xx DT adapter device
-
-I understand why you do that, but in fact that patch does not make sense
-to me :-(
-
-Why do you have to create an omap_device from the driver probe?
-
-
-Regards,
-Benoit
-
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
