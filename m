@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab2JaJqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 05:46:14 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:50838 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab2JaJqL (ORCPT
+	id S934559Ab2JaJrH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 05:47:07 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:35150 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab2JaJrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 05:46:11 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-49-5090f36181b5
+	Wed, 31 Oct 2012 05:47:03 -0400
+X-AuditID: cbfee61a-b7fa66d0000004cf-0b-5090f3957c39
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
@@ -15,64 +15,64 @@ To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         jooyoung.hwang@samsung.com
 References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
 In-reply-to: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-Subject: [PATCH 10/17] f2fs: add core inode operations
-Date: Wed, 31 Oct 2012 18:46:09 +0900
-Message-id: <004701cdb74c$8e0da9b0$aa28fd10$%kim@samsung.com>
+Subject: [PATCH 11/17] f2fs: add inode operations for special inodes
+Date: Wed, 31 Oct 2012 18:47:01 +0900
+Message-id: <004801cdb74c$ad1ae1b0$0750a510$%kim@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAAWzGA
+Thread-index: Ac23SwwW/9IJbTdIRgmy8VWYLJ8GMwAAZEFw
 Content-language: en-us
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zfd3EzxMCDG7u0LPYs/cki8XlXXPY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mq4eXsle8ENh4rvE7cwNzDOMuti5OSQEDCRWHz8AiuE
-	LSZx4d56ti5GLg4hgWWMEhOPf2eEKeqbcpQFIjGdUWLy1w+sEM4/RoktP5uYuxg5ONgEtCU2
-	7zcAiYsIPGSU2P9sKTtIt5CArcTT+9fYQWo4BewkLp+IAAkLC5hJ9E76yAJiswioSjSe6mED
-	sXmByp9dbGOEsAUlfky+B1bDLKAuMWneImYIW15i85q3YGslgOKP/uqChEUEjCSONv+GKheX
-	mPTgITvEeAGJb5MPsUCUy0psOsAMcqWEwCJ2iR/Hu5ghfpSUOLjiBssERvFZSDbPQrJ5FpLN
-	s5CsWMDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjJJakdzCuarA4xCjAwajEw2vwrz9A
-	iDWxrLgy9xCjBAezkghv8qcJAUK8KYmVValF+fFFpTmpxYcYfYAun8gsJZqcD4zzvJJ4Q2Nj
-	EzMTUxNzS1NzUxzCSuK8zR4pAUIC6YklqdmpqQWpRTDjmDg4pRoY14f+sdzvZsHwWGuZXt60
-	qyl7H7hqlO5WLDptknDw+T5Z/12WbBYa14XnCiRdebItly9Y/Zumx8zCphKZLzt717k8NncU
-	kl5pZp1a2sm+Jq5+7jSTgpLSt0GhWz56NNh85Vz8Qy03oPbo2iaNTXc4Fzj/vXvm6G4dPUnx
-	6gzj/dvT9rT8tuVTYinOSDTUYi4qTgQAW7/20dICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t9jQd3EzxMCDH5eVbPYs/cki8XlXXPY
-	HJg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
-	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMuHl7JXvBDYeK
-	7xO3MDcwzjLrYuTkkBAwkeibcpQFwhaTuHBvPVsXIxeHkMB0RonJXz+wQjj/GCW2/Gxi7mLk
-	4GAT0JbYvN8AJC4i8JBRYv+zpewg3UICthJP719jB6nhFLCTuHwiAiQsLGAm0TvpI9gCFgFV
-	icZTPWwgNi9Q+bOLbYwQtqDEj8n3wGqYBdQlJs1bxAxhy0tsXvMWbK0EUPzRX12QsIiAkcTR
-	5t9Q5eISkx48ZJ/AKDgLyaRZSCbNQjJpFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNz
-	NzGCI/WZ9A7GVQ0WhxgFOBiVeHgN/vUHCLEmlhVX5h5ilOBgVhLhTf40IUCINyWxsiq1KD++
-	qDQntfgQow/QoxOZpUST84FJJK8k3tDYxMzI0sjMwsjE3ByHsJI4b7NHSoCQQHpiSWp2ampB
-	ahHMOCYOTqkGxnWbJ1wv+md1xL7RQPvBn7V2l8/bnD35vVbTqaNA+taCS8f/h2nfDbu4pqcs
-	c0ds3+krCxrM2tc0lFgEHU40klY8IVk5mz9MauaL5ub5uhO33I5NOHrZ6f8P2b7e6v9x/87a
-	ftEq9+C8vH3/ymnBlazHmw4+tl9/oNRlrtenZyzc75oXnz4ZfkOJpTgj0VCLuag4EQAvYeUR
-	AQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zQ92pnycEGCz7qW2xZ+9JFovLu+aw
+	OTB5fN4kF8AYxWWTkpqTWZZapG+XwJUxc3EXS8G/5IqDbRuYGhhnBnYxcnJICJhI7Ou4xwhh
+	i0lcuLeerYuRi0NIYBmjxMzps9lhipqvP2OFSCxilOg+tpYdwvnHKPHoyE+gFg4ONgFtic37
+	DUDiIgIPGSX2P1sK1i0kYCvx9P41dpAaTgE7icsnIkDCwgIuEu1P57GC2CwCqhLfr9xhAinh
+	BSnfKwwS5hUQlPgx+R4LiM0soC4xad4iZghbXmLzmrfMIOUSQPFHf3VBwiICRhLPnzcwQZSI
+	S0x68JAdYrqAxLfJh1ggymUlNh1gBjlSQmARu8TjY/OgfpeUOLjiBssERvFZSDbPQrJ5FpLN
+	s5CsWMDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjJJKkdjCubLA4xCjAwajEw2v4rz9A
+	iDWxrLgy9xCjBAezkghv8qcJAUK8KYmVValF+fFFpTmpxYcYfYAun8gsJZqcD4zyvJJ4Q2Nj
+	EzMTUxNzS1NzUxzCSuK8zR4pAUIC6YklqdmpqQWpRTDjmDg4pRoYj7J/PH7zXEmjxGwTvfLV
+	/JtN04pd/x86kLDt0/KE6FD3f183NyWVNvxNde3lfv8k7KFjUK3MtPj7M8pM444L9JyZlfV1
+	8cP501Q7Dm9IlNjr4sB79GnAsyA+1e9LOQ7YJS6dLLz+8fptGfNeiZ4VLLN3fjxTXUy84mOs
+	QrqbkFjh26U5P+2DlFiKMxINtZiLihMBrIJuNNECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t9jAd2pnycEGNzapWaxZ+9JFovLu+aw
+	OTB5fN4kF8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
+	oOuWmQM0WkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYMXNxF0vBv+SK
+	g20bmBoYZwZ2MXJySAiYSDRff8YKYYtJXLi3nq2LkYtDSGARo0T3sbXsEM4/RolHR34CZTg4
+	2AS0JTbvNwCJiwg8ZJTY/2wpO0i3kICtxNP719hBajgF7CQun4gACQsLuEi0P50HtoBFQFXi
+	+5U7TCAlvCDle4VBwrwCghI/Jt9jAbGZBdQlJs1bxAxhy0tsXvOWGaRcAij+6K8uSFhEwEji
+	+fMGJogScYlJDx6yT2AUnIVk0iwkk2YhmTQLScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ
+	+bmbGMFx+kxqB+PKBotDjAIcjEo8vIb/+gOEWBPLiitzDzFKcDArifAmf5oQIMSbklhZlVqU
+	H19UmpNafIjRB+jPicxSosn5wBSSVxJvaGxiZmRpZGZhZGJujkNYSZy32SMlQEggPbEkNTs1
+	tSC1CGYcEwenVAMjz+ynfo+EYvt2zJXU69u0bX/45+/cofvffgicd/LSvEmf/4p9T3TgnJD3
+	2iTuiP/FE/45+Qdm+Uq7fFkdq3nK2YT3Yr+1uKTe9Y5YD73GS2d/+AeWRKrcUQoyre+yX8CX
+	y+n6ddv0pYJvZrut+PXpXceksA0680MCZ53Ku79Kvfuz/4ePkvGRSizFGYmGWsxFxYkAfa7p
+	EQADAAA=
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds core functions to get, read, write, and evict an inode.
+This adds inode operations for directory, symlink, and special inodes.
 
 Signed-off-by: Changman Lee <cm224.lee@samsung.com>
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/inode.c |  266 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 266 insertions(+)
- create mode 100644 fs/f2fs/inode.c
+ fs/f2fs/namei.c |  504 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 504 insertions(+)
+ create mode 100644 fs/f2fs/namei.c
 
-diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
 new file mode 100644
-index 0000000..94f13d2
+index 0000000..aec362f
 --- /dev/null
-+++ b/fs/f2fs/inode.c
-@@ -0,0 +1,266 @@
++++ b/fs/f2fs/namei.c
+@@ -0,0 +1,504 @@
 +/**
-+ * fs/f2fs/inode.c
++ * fs/f2fs/namei.c
 + *
 + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
 + *             http://www.samsung.com/
@@ -83,260 +83,498 @@ index 0000000..94f13d2
 + */
 +#include <linux/fs.h>
 +#include <linux/f2fs_fs.h>
-+#include <linux/buffer_head.h>
-+#include <linux/writeback.h>
++#include <linux/pagemap.h>
++#include <linux/sched.h>
++#include <linux/ctype.h>
 +
 +#include "f2fs.h"
-+#include "node.h"
++#include "xattr.h"
++#include "acl.h"
 +
-+struct f2fs_iget_args {
-+	u64 ino;
-+	int on_free;
-+};
-+
-+void f2fs_set_inode_flags(struct inode *inode)
++static struct inode *f2fs_new_inode(struct inode *dir, umode_t mode)
 +{
-+	unsigned int flags = F2FS_I(inode)->i_flags;
-+
-+	inode->i_flags &= ~(S_SYNC | S_APPEND | S_IMMUTABLE |
-+			S_NOATIME | S_DIRSYNC);
-+
-+	if (flags & FS_SYNC_FL)
-+		inode->i_flags |= S_SYNC;
-+	if (flags & FS_APPEND_FL)
-+		inode->i_flags |= S_APPEND;
-+	if (flags & FS_IMMUTABLE_FL)
-+		inode->i_flags |= S_IMMUTABLE;
-+	if (flags & FS_NOATIME_FL)
-+		inode->i_flags |= S_NOATIME;
-+	if (flags & FS_DIRSYNC_FL)
-+		inode->i_flags |= S_DIRSYNC;
-+}
-+
-+static int f2fs_iget_test(struct inode *inode, void *data)
-+{
-+	struct f2fs_iget_args *args = data;
-+
-+	if (inode->i_ino != args->ino)
-+		return 0;
-+	if (inode->i_state & (I_FREEING | I_WILL_FREE)) {
-+		args->on_free = 1;
-+		return 0;
-+	}
-+	return 1;
-+}
-+
-+struct inode *f2fs_iget_nowait(struct super_block *sb, unsigned long ino)
-+{
-+	struct f2fs_iget_args args = {
-+		.ino = ino,
-+		.on_free = 0
-+	};
-+	struct inode *inode = ilookup5(sb, ino, f2fs_iget_test, &args);
-+
-+	if (inode)
-+		return inode;
-+	if (!args.on_free)
-+		return f2fs_iget(sb, ino);
-+	return ERR_PTR(-ENOENT);
-+}
-+
-+static int do_read_inode(struct inode *inode)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct f2fs_inode_info *fi = F2FS_I(inode);
-+	struct page *node_page;
-+	struct f2fs_node *rn;
-+	struct f2fs_inode *ri;
-+
-+	/* Check if ino is within scope */
-+	check_nid_range(sbi, inode->i_ino);
-+
-+	node_page = get_node_page(sbi, inode->i_ino);
-+	if (IS_ERR(node_page))
-+		return PTR_ERR(node_page);
-+
-+	rn = page_address(node_page);
-+	ri = &(rn->i);
-+
-+	inode->i_mode = le16_to_cpu(ri->i_mode);
-+	i_uid_write(inode, le32_to_cpu(ri->i_uid));
-+	i_gid_write(inode, le32_to_cpu(ri->i_gid));
-+	set_nlink(inode, le32_to_cpu(ri->i_links));
-+	inode->i_size = le64_to_cpu(ri->i_size);
-+	inode->i_blocks = le64_to_cpu(ri->i_blocks);
-+
-+	inode->i_atime.tv_sec = le64_to_cpu(ri->i_atime);
-+	inode->i_ctime.tv_sec = le64_to_cpu(ri->i_ctime);
-+	inode->i_mtime.tv_sec = le64_to_cpu(ri->i_mtime);
-+	inode->i_atime.tv_nsec = le32_to_cpu(ri->i_atime_nsec);
-+	inode->i_ctime.tv_nsec = le32_to_cpu(ri->i_ctime_nsec);
-+	inode->i_mtime.tv_nsec = le32_to_cpu(ri->i_mtime_nsec);
-+	inode->i_generation = le32_to_cpu(ri->i_generation);
-+
-+	fi->i_current_depth = le32_to_cpu(ri->i_current_depth);
-+	fi->i_xattr_nid = le32_to_cpu(ri->i_xattr_nid);
-+	fi->i_flags = le32_to_cpu(ri->i_flags);
-+	fi->flags = 0;
-+	fi->data_version = le64_to_cpu(F2FS_CKPT(sbi)->checkpoint_ver) - 1;
-+	fi->i_advise = ri->i_advise;
-+	get_extent_info(&fi->ext, ri->i_ext);
-+	f2fs_put_page(node_page, 1);
-+	return 0;
-+}
-+
-+struct inode *f2fs_iget(struct super_block *sb, unsigned long ino)
-+{
++	struct super_block *sb = dir->i_sb;
 +	struct f2fs_sb_info *sbi = F2FS_SB(sb);
++	nid_t ino;
 +	struct inode *inode;
-+	int ret;
++	bool nid_free = false;
++	int err;
 +
-+	inode = iget_locked(sb, ino);
++	inode = new_inode(sb);
 +	if (!inode)
 +		return ERR_PTR(-ENOMEM);
-+	if (!(inode->i_state & I_NEW))
-+		return inode;
-+	if (ino == F2FS_NODE_INO(sbi) || ino == F2FS_META_INO(sbi))
-+		goto make_now;
 +
-+	ret = do_read_inode(inode);
-+	if (ret)
-+		goto bad_inode;
-+
-+	if (!sbi->por_doing && inode->i_nlink == 0) {
-+		ret = -ENOENT;
-+		goto bad_inode;
++	mutex_lock_op(sbi, NODE_NEW);
++	if (!alloc_nid(sbi, &ino)) {
++		mutex_unlock_op(sbi, NODE_NEW);
++		err = -ENOSPC;
++		goto fail;
 +	}
++	mutex_unlock_op(sbi, NODE_NEW);
 +
-+make_now:
-+	if (ino == F2FS_NODE_INO(sbi)) {
-+		inode->i_mapping->a_ops = &f2fs_node_aops;
-+		mapping_set_gfp_mask(inode->i_mapping, GFP_F2FS_ZERO);
-+	} else if (ino == F2FS_META_INO(sbi)) {
-+		inode->i_mapping->a_ops = &f2fs_meta_aops;
-+		mapping_set_gfp_mask(inode->i_mapping, GFP_F2FS_ZERO);
-+	} else if (S_ISREG(inode->i_mode)) {
-+		inode->i_op = &f2fs_file_inode_operations;
-+		inode->i_fop = &f2fs_file_operations;
-+		inode->i_mapping->a_ops = &f2fs_dblock_aops;
-+	} else if (S_ISDIR(inode->i_mode)) {
-+		inode->i_op = &f2fs_dir_inode_operations;
-+		inode->i_fop = &f2fs_dir_operations;
-+		inode->i_mapping->a_ops = &f2fs_dblock_aops;
-+		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER_MOVABLE |
-+				__GFP_ZERO);
-+	} else if (S_ISLNK(inode->i_mode)) {
-+		inode->i_op = &f2fs_symlink_inode_operations;
-+		inode->i_mapping->a_ops = &f2fs_dblock_aops;
-+	} else if (S_ISCHR(inode->i_mode) || S_ISBLK(inode->i_mode) ||
-+			S_ISFIFO(inode->i_mode) || S_ISSOCK(inode->i_mode)) {
-+		inode->i_op = &f2fs_special_inode_operations;
-+		init_special_inode(inode, inode->i_mode, inode->i_rdev);
++	inode->i_uid = current_fsuid();
++
++	if (dir->i_mode & S_ISGID) {
++		inode->i_gid = dir->i_gid;
++		if (S_ISDIR(mode))
++			mode |= S_ISGID;
 +	} else {
-+		ret = -EIO;
-+		goto bad_inode;
++		inode->i_gid = current_fsgid();
 +	}
-+	unlock_new_inode(inode);
 +
++	inode->i_ino = ino;
++	inode->i_mode = mode;
++	inode->i_blocks = 0;
++	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
++	inode->i_generation = sbi->s_next_generation++;
++
++	err = insert_inode_locked(inode);
++	if (err) {
++		err = -EINVAL;
++		nid_free = true;
++		goto out;
++	}
++
++	mark_inode_dirty(inode);
 +	return inode;
 +
-+bad_inode:
-+	iget_failed(inode);
-+	return ERR_PTR(ret);
++out:
++	clear_nlink(inode);
++	unlock_new_inode(inode);
++fail:
++	iput(inode);
++	if (nid_free)
++		alloc_nid_failed(sbi, ino);
++	return ERR_PTR(err);
 +}
 +
-+void update_inode(struct inode *inode, struct page *node_page)
++static int is_multimedia_file(const unsigned char *s, const char *sub)
 +{
-+	struct f2fs_node *rn;
-+	struct f2fs_inode *ri;
++	int slen = strlen(s);
++	int sublen = strlen(sub);
++	int ret;
 +
-+	wait_on_page_writeback(node_page);
++	if (sublen > slen)
++		return 1;
 +
-+	rn = page_address(node_page);
-+	ri = &(rn->i);
-+
-+	ri->i_mode = cpu_to_le16(inode->i_mode);
-+	ri->i_advise = F2FS_I(inode)->i_advise;
-+	ri->i_uid = cpu_to_le32(i_uid_read(inode));
-+	ri->i_gid = cpu_to_le32(i_gid_read(inode));
-+	ri->i_links = cpu_to_le32(inode->i_nlink);
-+	ri->i_size = cpu_to_le64(i_size_read(inode));
-+	ri->i_blocks = cpu_to_le64(inode->i_blocks);
-+	set_raw_extent(&F2FS_I(inode)->ext, &ri->i_ext);
-+
-+	ri->i_atime = cpu_to_le64(inode->i_atime.tv_sec);
-+	ri->i_ctime = cpu_to_le64(inode->i_ctime.tv_sec);
-+	ri->i_mtime = cpu_to_le64(inode->i_mtime.tv_sec);
-+	ri->i_atime_nsec = cpu_to_le32(inode->i_atime.tv_nsec);
-+	ri->i_ctime_nsec = cpu_to_le32(inode->i_ctime.tv_nsec);
-+	ri->i_mtime_nsec = cpu_to_le32(inode->i_mtime.tv_nsec);
-+	ri->i_current_depth = cpu_to_le32(F2FS_I(inode)->i_current_depth);
-+	ri->i_xattr_nid = cpu_to_le32(F2FS_I(inode)->i_xattr_nid);
-+	ri->i_flags = cpu_to_le32(F2FS_I(inode)->i_flags);
-+	ri->i_generation = cpu_to_le32(inode->i_generation);
-+	set_page_dirty(node_page);
-+}
-+
-+int f2fs_write_inode(struct inode *inode, struct writeback_control *wbc)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-+	struct page *node_page;
-+	bool need_lock = false;
-+
-+	if (inode->i_ino == F2FS_NODE_INO(sbi) ||
-+			inode->i_ino == F2FS_META_INO(sbi))
-+		return 0;
-+
-+	node_page = get_node_page(sbi, inode->i_ino);
-+	if (IS_ERR(node_page))
-+		return PTR_ERR(node_page);
-+
-+	if (!PageDirty(node_page)) {
-+		need_lock = true;
-+		f2fs_put_page(node_page, 1);
-+		mutex_lock(&sbi->write_inode);
-+		node_page = get_node_page(sbi, inode->i_ino);
-+		if (IS_ERR(node_page)) {
-+			mutex_unlock(&sbi->write_inode);
-+			return PTR_ERR(node_page);
-+		}
++	ret = memcmp(s + slen - sublen, sub, sublen);
++	if (ret) {	/* compare upper case */
++		int i;
++		char upper_sub[8];
++		for (i = 0; i < sublen && i < sizeof(upper_sub); i++)
++			upper_sub[i] = toupper(sub[i]);
++		return memcmp(s + slen - sublen, upper_sub, sublen);
 +	}
-+	update_inode(inode, node_page);
-+	f2fs_put_page(node_page, 1);
-+	if (need_lock)
-+		mutex_unlock(&sbi->write_inode);
-+	return 0;
++
++	return ret;
 +}
 +
 +/**
-+ * Called at the last iput() if i_nlink is zero
++ * Set multimedia files as cold files for hot/cold data separation
 + */
-+void f2fs_evict_inode(struct inode *inode)
++static inline void set_cold_file(struct f2fs_sb_info *sbi, struct inode *inode,
++		const unsigned char *name)
 +{
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	int i;
++	__u8 (*extlist)[8] = sbi->raw_super->extension_list;
 +
-+	truncate_inode_pages(&inode->i_data, 0);
-+
-+	if (inode->i_ino == F2FS_NODE_INO(sbi) ||
-+			inode->i_ino == F2FS_META_INO(sbi))
-+		goto no_delete;
-+
-+	BUG_ON(atomic_read(&F2FS_I(inode)->dirty_dents));
-+	remove_dirty_dir_inode(inode);
-+
-+	if (inode->i_nlink || is_bad_inode(inode))
-+		goto no_delete;
-+
-+	set_inode_flag(F2FS_I(inode), FI_NO_ALLOC);
-+	i_size_write(inode, 0);
-+
-+	if (F2FS_HAS_BLOCKS(inode))
-+		f2fs_truncate(inode);
-+
-+	remove_inode_page(inode);
-+no_delete:
-+	clear_inode(inode);
++	int count = le32_to_cpu(sbi->raw_super->extension_count);
++	for (i = 0; i < count; i++) {
++		if (!is_multimedia_file(name, extlist[i])) {
++			F2FS_I(inode)->i_advise |= FADVISE_COLD_BIT;
++			break;
++		}
++	}
 +}
++
++static int f2fs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
++						bool excl)
++{
++	struct super_block *sb = dir->i_sb;
++	struct f2fs_sb_info *sbi = F2FS_SB(sb);
++	struct inode *inode;
++	nid_t ino = 0;
++	int err;
++
++	inode = f2fs_new_inode(dir, mode);
++	if (IS_ERR(inode))
++		return PTR_ERR(inode);
++
++	if (!test_opt(sbi, DISABLE_EXT_IDENTIFY))
++		set_cold_file(sbi, inode, dentry->d_name.name);
++
++	inode->i_op = &f2fs_file_inode_operations;
++	inode->i_fop = &f2fs_file_operations;
++	inode->i_mapping->a_ops = &f2fs_dblock_aops;
++	ino = inode->i_ino;
++
++	err = f2fs_add_link(dentry, inode);
++	if (err)
++		goto out;
++
++	alloc_nid_done(sbi, ino);
++
++	if (!sbi->por_doing)
++		d_instantiate(dentry, inode);
++	unlock_new_inode(inode);
++
++	f2fs_balance_fs(sbi);
++	return 0;
++out:
++	clear_nlink(inode);
++	unlock_new_inode(inode);
++	iput(inode);
++	alloc_nid_failed(sbi, ino);
++	return err;
++}
++
++static int f2fs_link(struct dentry *old_dentry, struct inode *dir,
++		struct dentry *dentry)
++{
++	struct inode *inode = old_dentry->d_inode;
++	struct super_block *sb = dir->i_sb;
++	struct f2fs_sb_info *sbi = F2FS_SB(sb);
++	int err;
++
++	inode->i_ctime = CURRENT_TIME;
++	atomic_inc(&inode->i_count);
++
++	set_inode_flag(F2FS_I(inode), FI_INC_LINK);
++	err = f2fs_add_link(dentry, inode);
++	if (err)
++		goto out;
++
++	d_instantiate(dentry, inode);
++
++	f2fs_balance_fs(sbi);
++	return 0;
++out:
++	clear_inode_flag(F2FS_I(inode), FI_INC_LINK);
++	iput(inode);
++	return err;
++}
++
++struct dentry *f2fs_get_parent(struct dentry *child)
++{
++	struct qstr dotdot = QSTR_INIT("..", 2);
++	unsigned long ino = f2fs_inode_by_name(child->d_inode, &dotdot);
++	if (!ino)
++		return ERR_PTR(-ENOENT);
++	return d_obtain_alias(f2fs_iget(child->d_inode->i_sb, ino));
++}
++
++static struct dentry *f2fs_lookup(struct inode *dir, struct dentry *dentry,
++		unsigned int flags)
++{
++	struct inode *inode = NULL;
++	struct f2fs_dir_entry *de;
++	struct page *page;
++
++	if (dentry->d_name.len > F2FS_MAX_NAME_LEN)
++		return ERR_PTR(-ENAMETOOLONG);
++
++	de = f2fs_find_entry(dir, &dentry->d_name, &page);
++	if (de) {
++		nid_t ino = le32_to_cpu(de->ino);
++		kunmap(page);
++		f2fs_put_page(page, 0);
++
++		inode = f2fs_iget(dir->i_sb, ino);
++		if (IS_ERR(inode))
++			return ERR_CAST(inode);
++	}
++
++	return d_splice_alias(inode, dentry);
++}
++
++static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
++{
++	struct super_block *sb = dir->i_sb;
++	struct f2fs_sb_info *sbi = F2FS_SB(sb);
++	struct inode *inode = dentry->d_inode;
++	struct f2fs_dir_entry *de;
++	struct page *page;
++	int err = -ENOENT;
++
++	de = f2fs_find_entry(dir, &dentry->d_name, &page);
++	if (!de)
++		goto fail;
++
++	err = check_orphan_space(sbi);
++	if (err) {
++		kunmap(page);
++		f2fs_put_page(page, 0);
++		goto fail;
++	}
++
++	f2fs_delete_entry(de, page, inode);
++
++	/* In order to evict this inode,  we set it dirty */
++	mark_inode_dirty(inode);
++	f2fs_balance_fs(sbi);
++fail:
++	return err;
++}
++
++static int f2fs_symlink(struct inode *dir, struct dentry *dentry,
++					const char *symname)
++{
++	struct super_block *sb = dir->i_sb;
++	struct f2fs_sb_info *sbi = F2FS_SB(sb);
++	struct inode *inode;
++	unsigned symlen = strlen(symname) + 1;
++	int err;
++
++	inode = f2fs_new_inode(dir, S_IFLNK | S_IRWXUGO);
++	if (IS_ERR(inode))
++		return PTR_ERR(inode);
++
++	inode->i_op = &f2fs_symlink_inode_operations;
++	inode->i_mapping->a_ops = &f2fs_dblock_aops;
++
++	err = f2fs_add_link(dentry, inode);
++	if (err)
++		goto out;
++
++	err = page_symlink(inode, symname, symlen);
++	alloc_nid_done(sbi, inode->i_ino);
++
++	d_instantiate(dentry, inode);
++	unlock_new_inode(inode);
++
++	f2fs_balance_fs(sbi);
++
++	return err;
++out:
++	clear_nlink(inode);
++	unlock_new_inode(inode);
++	iput(inode);
++	alloc_nid_failed(sbi, inode->i_ino);
++	return err;
++}
++
++static int f2fs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
++	struct inode *inode;
++	int err;
++
++	inode = f2fs_new_inode(dir, S_IFDIR | mode);
++	err = PTR_ERR(inode);
++	if (IS_ERR(inode))
++		return err;
++
++	inode->i_op = &f2fs_dir_inode_operations;
++	inode->i_fop = &f2fs_dir_operations;
++	inode->i_mapping->a_ops = &f2fs_dblock_aops;
++	mapping_set_gfp_mask(inode->i_mapping, GFP_NOFS | __GFP_ZERO);
++
++	set_inode_flag(F2FS_I(inode), FI_INC_LINK);
++	err = f2fs_add_link(dentry, inode);
++	if (err)
++		goto out_fail;
++
++	alloc_nid_done(sbi, inode->i_ino);
++
++	d_instantiate(dentry, inode);
++	unlock_new_inode(inode);
++
++	f2fs_balance_fs(sbi);
++	return 0;
++
++out_fail:
++	clear_inode_flag(F2FS_I(inode), FI_INC_LINK);
++	clear_nlink(inode);
++	unlock_new_inode(inode);
++	iput(inode);
++	alloc_nid_failed(sbi, inode->i_ino);
++	return err;
++}
++
++static int f2fs_rmdir(struct inode *dir, struct dentry *dentry)
++{
++	struct inode *inode = dentry->d_inode;
++	if (f2fs_empty_dir(inode))
++		return f2fs_unlink(dir, dentry);
++	return -ENOTEMPTY;
++}
++
++static int f2fs_mknod(struct inode *dir, struct dentry *dentry,
++				umode_t mode, dev_t rdev)
++{
++	struct super_block *sb = dir->i_sb;
++	struct f2fs_sb_info *sbi = F2FS_SB(sb);
++	struct inode *inode;
++	int err = 0;
++
++	if (!new_valid_dev(rdev))
++		return -EINVAL;
++
++	inode = f2fs_new_inode(dir, mode);
++	if (IS_ERR(inode))
++		return PTR_ERR(inode);
++
++	init_special_inode(inode, inode->i_mode, rdev);
++	inode->i_op = &f2fs_special_inode_operations;
++
++	err = f2fs_add_link(dentry, inode);
++	if (err)
++		goto out;
++
++	alloc_nid_done(sbi, inode->i_ino);
++	d_instantiate(dentry, inode);
++	unlock_new_inode(inode);
++
++	f2fs_balance_fs(sbi);
++
++	return 0;
++out:
++	clear_nlink(inode);
++	unlock_new_inode(inode);
++	iput(inode);
++	alloc_nid_failed(sbi, inode->i_ino);
++	return err;
++}
++
++static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
++			struct inode *new_dir, struct dentry *new_dentry)
++{
++	struct super_block *sb = old_dir->i_sb;
++	struct f2fs_sb_info *sbi = F2FS_SB(sb);
++	struct inode *old_inode = old_dentry->d_inode;
++	struct inode *new_inode = new_dentry->d_inode;
++	struct page *old_dir_page;
++	struct page *old_page;
++	struct f2fs_dir_entry *old_dir_entry = NULL;
++	struct f2fs_dir_entry *old_entry;
++	struct f2fs_dir_entry *new_entry;
++	int err = -ENOENT;
++
++	old_entry = f2fs_find_entry(old_dir, &old_dentry->d_name, &old_page);
++	if (!old_entry)
++		goto out;
++
++	if (S_ISDIR(old_inode->i_mode)) {
++		err = -EIO;
++		old_dir_entry = f2fs_parent_dir(old_inode, &old_dir_page);
++		if (!old_dir_entry)
++			goto out_old;
++	}
++
++	mutex_lock_op(sbi, RENAME);
++
++	if (new_inode) {
++		struct page *new_page;
++
++		err = -ENOTEMPTY;
++		if (old_dir_entry && !f2fs_empty_dir(new_inode))
++			goto out_dir;
++
++		err = -ENOENT;
++		new_entry = f2fs_find_entry(new_dir, &new_dentry->d_name,
++						&new_page);
++		if (!new_entry)
++			goto out_dir;
++
++		f2fs_set_link(new_dir, new_entry, new_page, old_inode);
++
++		new_inode->i_ctime = CURRENT_TIME;
++		if (old_dir_entry)
++			drop_nlink(new_inode);
++		drop_nlink(new_inode);
++		if (!new_inode->i_nlink)
++			add_orphan_inode(sbi, new_inode->i_ino);
++		f2fs_write_inode(new_inode, NULL);
++	} else {
++		err = f2fs_add_link(new_dentry, old_inode);
++		if (err)
++			goto out_dir;
++
++		if (old_dir_entry) {
++			inc_nlink(new_dir);
++			f2fs_write_inode(new_dir, NULL);
++		}
++	}
++
++	old_inode->i_ctime = CURRENT_TIME;
++	set_inode_flag(F2FS_I(old_inode), FI_NEED_CP);
++	mark_inode_dirty(old_inode);
++
++	f2fs_delete_entry(old_entry, old_page, NULL);
++
++	if (old_dir_entry) {
++		if (old_dir != new_dir) {
++			f2fs_set_link(old_inode, old_dir_entry,
++						old_dir_page, new_dir);
++		} else {
++			kunmap(old_dir_page);
++			f2fs_put_page(old_dir_page, 0);
++		}
++		drop_nlink(old_dir);
++		f2fs_write_inode(old_dir, NULL);
++	}
++
++	mutex_unlock_op(sbi, RENAME);
++
++	f2fs_balance_fs(sbi);
++	return 0;
++
++out_dir:
++	if (old_dir_entry) {
++		kunmap(old_dir_page);
++		f2fs_put_page(old_dir_page, 0);
++	}
++	mutex_unlock_op(sbi, RENAME);
++out_old:
++	kunmap(old_page);
++	f2fs_put_page(old_page, 0);
++out:
++	return err;
++}
++
++const struct inode_operations f2fs_dir_inode_operations = {
++	.create		= f2fs_create,
++	.lookup		= f2fs_lookup,
++	.link		= f2fs_link,
++	.unlink		= f2fs_unlink,
++	.symlink	= f2fs_symlink,
++	.mkdir		= f2fs_mkdir,
++	.rmdir		= f2fs_rmdir,
++	.mknod		= f2fs_mknod,
++	.rename		= f2fs_rename,
++	.setattr	= f2fs_setattr,
++	.get_acl	= f2fs_get_acl,
++#ifdef CONFIG_F2FS_FS_XATTR
++	.setxattr	= generic_setxattr,
++	.getxattr	= generic_getxattr,
++	.listxattr	= f2fs_listxattr,
++	.removexattr	= generic_removexattr,
++#endif
++};
++
++const struct inode_operations f2fs_symlink_inode_operations = {
++	.readlink       = generic_readlink,
++	.follow_link    = page_follow_link_light,
++	.put_link       = page_put_link,
++	.setattr	= f2fs_setattr,
++#ifdef CONFIG_F2FS_FS_XATTR
++	.setxattr	= generic_setxattr,
++	.getxattr	= generic_getxattr,
++	.listxattr	= f2fs_listxattr,
++	.removexattr	= generic_removexattr,
++#endif
++};
++
++const struct inode_operations f2fs_special_inode_operations = {
++	.setattr        = f2fs_setattr,
++	.get_acl	= f2fs_get_acl,
++#ifdef CONFIG_F2FS_FS_XATTR
++	.setxattr       = generic_setxattr,
++	.getxattr       = generic_getxattr,
++	.listxattr	= f2fs_listxattr,
++	.removexattr    = generic_removexattr,
++#endif
++};
 -- 
 1.7.9.5
 
