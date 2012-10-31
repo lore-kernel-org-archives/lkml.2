@@ -1,119 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935583Ab2JaNll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:41:41 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:41235 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756605Ab2JaNlh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:41:37 -0400
-Message-ID: <50912A85.5090808@gmail.com>
-Date: Wed, 31 Oct 2012 21:41:25 +0800
-From: Jianguo Wu <wujianguo106@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S935598Ab2JaNlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:41:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933735Ab2JaNlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 09:41:47 -0400
+Message-ID: <50912A72.6050307@redhat.com>
+Date: Wed, 31 Oct 2012 15:41:06 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Jiang Liu <liuj97@gmail.com>,
-        Len Brown <len.brown@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, rjw@sisk.pl,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [Patch v4 3/8] memory-hotplug: fix NR_FREE_PAGES mismatch
-References: <1351682594-17347-1-git-send-email-wency@cn.fujitsu.com> <1351682594-17347-4-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1351682594-17347-4-git-send-email-wency@cn.fujitsu.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V2 RFC 2/3] kvm: Handle yield_to failure return code for
+ potential undercommit case
+References: <20121029140621.15448.92083.sendpatchset@codeblue> <20121029140702.15448.56932.sendpatchset@codeblue> <50911BC3.6080305@redhat.com> <50911C7D.5080307@linux.vnet.ibm.com> <50912463.3040201@linux.vnet.ibm.com>
+In-Reply-To: <50912463.3040201@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/10/31 19:23, Wen Congyang wrote:
-> NR_FREE_PAGES will be wrong after offlining pages.  We add/dec
-> NR_FREE_PAGES like this now:
+On 10/31/2012 03:15 PM, Raghavendra K T wrote:
+> On 10/31/2012 06:11 PM, Raghavendra K T wrote:
+>> On 10/31/2012 06:08 PM, Avi Kivity wrote:
+>>> On 10/29/2012 04:07 PM, Raghavendra K T wrote:
+>>>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>>>>
+>>>> Also we do not update last boosted vcpu in failure cases.
+>>>>
+>>>>   #endif
+>>>> +
+>>>>   void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>>>>   {
+>>>>       struct kvm *kvm = me->kvm;
+>>>> @@ -1727,11 +1727,12 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>>>>                   continue;
+>>>>               if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
+>>>>                   continue;
+>>>> -            if (kvm_vcpu_yield_to(vcpu)) {
+>>>> +
+>>>> +            yielded = kvm_vcpu_yield_to(vcpu);
+>>>> +            if (yielded > 0)
+>>>>                   kvm->last_boosted_vcpu = i;
+>>>> -                yielded = 1;
+>>>> +            if (yielded)
+>>>>                   break;
+>>>> -            }
+>>>>           }
+>>>
+>>> If yielded == -ESRCH, should we not try to yield to another vcpu?
+>>>
+>>
+>>   Yes. plan is to abort the iteration. since it means we are mostly
+>> undercommitted.
 > 
-> 1. move all pages in buddy system to MIGRATE_ISOLATE, and dec NR_FREE_PAGES
-> 
-> 2. don't add NR_FREE_PAGES when it is freed and the migratetype is
->    MIGRATE_ISOLATE
-> 
-> 3. dec NR_FREE_PAGES when offlining isolated pages.
-> 
-> 4. add NR_FREE_PAGES when undoing isolate pages.
-> 
-> When we come to step 3, all pages are in MIGRATE_ISOLATE list, and
-> NR_FREE_PAGES are right.  When we come to step4, all pages are not in
-> buddy system, so we don't change NR_FREE_PAGES in this step, but we change
-> NR_FREE_PAGES in step3.  So NR_FREE_PAGES is wrong after offlining pages.
-> So there is no need to change NR_FREE_PAGES in step3.
-> 
-> This patch also fixs a problem in step2: if the migratetype is
-> MIGRATE_ISOLATE, we should not add NR_FRR_PAGES when we remove pages from
-> pcppages.
-> 
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Jiang Liu <liuj97@gmail.com>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  mm/page_alloc.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 5b74de6..a7cd2d1 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -667,11 +667,13 @@ static void free_pcppages_bulk(struct zone *zone, int count,
->  			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
->  			__free_one_page(page, zone, 0, mt);
->  			trace_mm_page_pcpu_drain(page, 0, mt);
-> -			if (is_migrate_cma(mt))
-> -				__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
-> +			if (likely(mt != MIGRATE_ISOLATE)) {
-
-Hi Congyang,
-	I think mt != MIGRATE_ISOLATE is always true here,
-page from PCP's migratetype < MIGRATE_PCPTYPES.
-When isolate page, we change pageblock's migratetype to MIGRATE_ISOLATE,
-but set_freepage_migratetype() isn't called.
-Maybe we can use mt = get_pageblock_migratetype() here ?
-
-Thanks,
-Jianguo Wu.
-
-> +				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
-> +				if (is_migrate_cma(mt))
-> +					__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
-> +			}
->  		} while (--to_free && --batch_free && !list_empty(list));
->  	}
-> -	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
->  	spin_unlock(&zone->lock);
->  }
->  
-> @@ -5987,8 +5989,6 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
->  		list_del(&page->lru);
->  		rmv_page_order(page);
->  		zone->free_area[order].nr_free--;
-> -		__mod_zone_page_state(zone, NR_FREE_PAGES,
-> -				      - (1UL << order));
->  		for (i = 0; i < (1 << order); i++)
->  			SetPageReserved((page+i));
->  		pfn += (1 << order);
+> Sorry if it was ambiguous. I wanted to say we do not want to continue
+> yield to another vcpu..
 > 
 
+
+Why not?  We found that this particular vcpu is running and therefore
+likely not a lock holder.  That says nothing about other vcpus.  The
+next in line might be runnable-but-not-running on another runqueue.
+
+
+-- 
+error compiling committee.c: too many arguments to function
