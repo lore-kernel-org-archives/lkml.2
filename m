@@ -1,109 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423138Ab2JaPI1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 11:08:27 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:39599 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423027Ab2JaPIX (ORCPT
+	id S1423145Ab2JaPJS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 11:09:18 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:35700 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423087Ab2JaPJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 11:08:23 -0400
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
-        konrad.wilk@oracle.com, sjenning@linux.vnet.ibm.com,
-        minchan@kernel.org, dan.magenheimer@oracle.com, fschmaus@gmail.com,
-        andor.damm@googlemail.com, ilendir@googlemail.com,
-        akpm@linux-foundation.org, mgorman@suse.de
-Subject: [PATCH 0/5] enable all tmem backends to be built and loaded as modules
-Date: Wed, 31 Oct 2012 08:07:49 -0700
-Message-Id: <1351696074-29362-1-git-send-email-dan.magenheimer@oracle.com>
-X-Mailer: git-send-email 1.7.5.1
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 31 Oct 2012 11:09:14 -0400
+Date: Wed, 31 Oct 2012 15:09:11 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Shea Levy <shea@shealevy.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121031150911.GA12799@srcf.ucam.org>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+ <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+ <20121029174131.GC7580@srcf.ucam.org>
+ <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
+ <20121031150201.GA12394@srcf.ucam.org>
+ <50913E24.1010009@shealevy.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50913E24.1010009@shealevy.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since various parts of transcendent memory ("tmem") [1] were first posted in
-2009, reviewers have suggested that various tmem features should be built
-as a module and enabled by loading the module, rather than the current clunky
-method of compiling as a built-in and enabling via boot parameter.  Due
-to certain tmem initialization steps, that was not feasible at the time.
+On Wed, Oct 31, 2012 at 11:05:08AM -0400, Shea Levy wrote:
+> Or the boot variable where you stored the key, but in that case I'd
+> say the attacker has won too.
 
-[1] http://lwn.net/Articles/454795/ 
+Right, in that case they can compromise MOK.
 
-This patchset allows each of the three merged transcendent memory
-backends (zcache, ramster, Xen tmem) to be used as modules by first
-enabling transcendent memory frontends (cleancache, frontswap) to deal
-with "lazy initialization" and, second, by adding the necessary code for
-the backends to be built and loaded as modules.
-
-The original mechanism to enable tmem backends -- namely to hardwire
-them into the kernel and select/enable one with a kernel boot
-parameter --  is retained but should be considered deprecated.  When
-backends are loaded as modules, certain knobs will now be
-properly selected via module_params rather than via undocumented
-kernel boot parameters.  Note that module UNloading is not yet
-supported as it is lower priority and will require significant
-additional work.
-
-The lazy initialization support is necessary because filesystems
-and swap devices are normally mounted early in boot and these
-activites normally trigger tmem calls to setup certain data structures;
-if the respective cleancache/frontswap ops are not yet registered
-by a back end, the tmem setup would fail for these devices and
-cleancache/frontswap would never be enabled for them which limits
-much of the value of tmem in many system configurations.  Lazy
-initialization records the necessary information in cleancache/frontswap
-data structures and "replays" it after the ops are registered
-to ensure that all filesystems and swap devices can benefit from
-the loaded tmem backend.
-
-Patches 1 and 2 are the original [2] patches to cleancache and frontswap
-proposed by Erlangen University, but rebased to 3.7-rcN plus a couple
-of bug fixes I found necessary to run properly.  I have not attempted
-any code cleanup.  I have also added defines to ensure at runtime
-that backends are not loaded as modules if the frontend patches are not
-yet merged; this is useful to avoid any build dependency (since the
-frontends may be merged into linux-next through different trees and
-at different times than some backends) and once the entire patchset
-is safely merged, these defines/ifdefs can be removed.
-
-[2] http://www.spinics.net/lists/linux-mm/msg31490.html 
-
-Patch 3 enables module support for zcache2.  Zsmalloc support
-has not yet been merged into zcache2 but, once merged, could now
-easily be selected via a module_param.
-
-Patch 4 enables module support for ramster.  Ramster will now be
-enabled with a module_param to zcache2.
-
-Patch 5 enables module support for the Xen tmem shim.  Xen
-self-ballooning and frontswap-selfshrinking are also "lazily"
-initialized when the Xen tmem shim is loaded as a module, unless
-explicitly disabled by module_params.
-
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-
----
-Diffstat:
-
- drivers/staging/ramster/Kconfig                    |    6 +-
- drivers/staging/ramster/Makefile                   |   11 +-
- drivers/staging/ramster/ramster.h                  |    6 +-
- drivers/staging/ramster/ramster/nodemanager.c      |    9 +-
- drivers/staging/ramster/ramster/ramster.c          |   29 +++-
- drivers/staging/ramster/ramster/ramster.h          |    2 +-
- .../staging/ramster/ramster/ramster_nodemanager.h  |    2 +
- drivers/staging/ramster/tmem.c                     |    6 +-
- drivers/staging/ramster/tmem.h                     |    8 +-
- drivers/staging/ramster/zcache-main.c              |   61 +++++++-
- drivers/staging/ramster/zcache.h                   |    2 +-
- drivers/xen/Kconfig                                |    4 +-
- drivers/xen/tmem.c                                 |   56 ++++++--
- drivers/xen/xen-selfballoon.c                      |   13 +-
- include/linux/cleancache.h                         |    1 +
- include/linux/frontswap.h                          |    1 +
- include/xen/tmem.h                                 |    8 +
- mm/cleancache.c                                    |  157 +++++++++++++++++--
- mm/frontswap.c                                     |   70 ++++++++-
- 19 files changed, 379 insertions(+), 73 deletions(-)
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
