@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab2JaXOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 19:14:44 -0400
-Received: from mailserver6.natinst.com ([130.164.80.6]:53361 "EHLO
+	id S1755371Ab2JaXOz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 19:14:55 -0400
+Received: from mailserver6.natinst.com ([130.164.80.6]:53996 "EHLO
 	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798Ab2JaXMw (ORCPT
+	with ESMTP id S1754465Ab2JaXOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 19:12:52 -0400
-Message-Id: <3ec3531d21c247ac3dcc76d91ff6be13ebfc733b.1351721190.git.josh.cartwright@ni.com>
+	Wed, 31 Oct 2012 19:14:51 -0400
+Message-Id: <1dc81a3260da0a911dbcabd737547b7bff16a99c.1351721190.git.josh.cartwright@ni.com>
 In-Reply-To: <cover.1351721190.git.josh.cartwright@ni.com>
 References: <cover.1351721190.git.josh.cartwright@ni.com>
 From: Josh Cartwright <josh.cartwright@ni.com>
-Date: Wed, 31 Oct 2012 11:11:59 -0600
-Subject: [PATCH 1/8] ARM: zynq: move arm-specific sys_timer out of ttc
+Date: Wed, 31 Oct 2012 12:24:48 -0600
+Subject: [PATCH 4/8] ARM: zynq: dts: split up device tree
 To: Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>,
         Russell King <linux@arm.linux.org.uk>,
@@ -35,94 +35,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the sys_timer definition out of ttc driver and make it part of the
-common zynq code.  This is preparation for renaming and COMMON_CLK
-support.
+The purpose of the created zynq-7000.dtsi file is to describe the
+hardware common to all Zynq 7000-based boards.  Also, get rid of the
+zynq-ep107 device tree, since it is not hardware anyone can purchase.
+
+Add a zc702 dts file based on the zynq-7000.dtsi.  Add it to the
+dts/Makefile so it is built with the 'dtbs' target.
 
 Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
 ---
- arch/arm/mach-zynq/common.c | 13 +++++++++++++
- arch/arm/mach-zynq/common.h |  4 +---
- arch/arm/mach-zynq/timer.c  | 10 +---------
- 3 files changed, 15 insertions(+), 12 deletions(-)
+ arch/arm/boot/dts/Makefile                         |  1 +
+ .../boot/dts/{zynq-ep107.dts => zynq-7000.dtsi}    | 19 +++-----------
+ arch/arm/boot/dts/zynq-zc702.dts                   | 30 ++++++++++++++++++++++
+ arch/arm/mach-zynq/common.c                        |  3 ++-
+ 4 files changed, 36 insertions(+), 17 deletions(-)
+ rename arch/arm/boot/dts/{zynq-ep107.dts => zynq-7000.dtsi} (79%)
+ create mode 100644 arch/arm/boot/dts/zynq-zc702.dts
 
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index f37cf9f..76ed11e 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -103,5 +103,6 @@ dtb-$(CONFIG_ARCH_VEXPRESS) += vexpress-v2p-ca5s.dtb \
+ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
+ 	wm8505-ref.dtb \
+ 	wm8650-mid.dtb
++dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
+ 
+ endif
+diff --git a/arch/arm/boot/dts/zynq-ep107.dts b/arch/arm/boot/dts/zynq-7000.dtsi
+similarity index 79%
+rename from arch/arm/boot/dts/zynq-ep107.dts
+rename to arch/arm/boot/dts/zynq-7000.dtsi
+index 5caf100..8b30e59 100644
+--- a/arch/arm/boot/dts/zynq-ep107.dts
++++ b/arch/arm/boot/dts/zynq-7000.dtsi
+@@ -10,29 +10,16 @@
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  */
++/include/ "skeleton.dtsi"
+ 
+-/dts-v1/;
+ / {
+-	model = "Xilinx Zynq EP107";
+-	compatible = "xlnx,zynq-ep107";
+-	#address-cells = <1>;
+-	#size-cells = <1>;
+-	interrupt-parent = <&intc>;
+-
+-	memory {
+-		device_type = "memory";
+-		reg = <0x0 0x10000000>;
+-	};
+-
+-	chosen {
+-		bootargs = "console=ttyPS0,9600 root=/dev/ram rw initrd=0x800000,8M earlyprintk";
+-		linux,stdout-path = &uart0;
+-	};
++	compatible = "xlnx,zynq-7000";
+ 
+ 	amba {
+ 		compatible = "simple-bus";
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
++		interrupt-parent = <&intc>;
+ 		ranges;
+ 
+ 		intc: interrupt-controller@f8f01000 {
+diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
+new file mode 100644
+index 0000000..e25a307
+--- /dev/null
++++ b/arch/arm/boot/dts/zynq-zc702.dts
+@@ -0,0 +1,30 @@
++/*
++ *  Copyright (C) 2011 Xilinx
++ *  Copyright (C) 2012 National Instruments Corp.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++/dts-v1/;
++/include/ "zynq-7000.dtsi"
++
++/ {
++	model = "Zynq ZC702 Development Board";
++	compatible = "xlnx,zynq-zc702", "xlnx,zynq-7000";
++
++	memory {
++		device_type = "memory";
++		reg = <0x0 0x40000000>;
++	};
++
++	chosen {
++		bootargs = "console=ttyPS1,115200 earlyprintk";
++	};
++
++};
 diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index ba8d14f..6f058258 100644
+index 0279ea7..447904b 100644
 --- a/arch/arm/mach-zynq/common.c
 +++ b/arch/arm/mach-zynq/common.c
-@@ -25,6 +25,7 @@
+@@ -115,7 +115,8 @@ static void __init xilinx_map_io(void)
+ }
  
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-+#include <asm/mach/time.h>
- #include <asm/mach-types.h>
- #include <asm/page.h>
- #include <asm/hardware/gic.h>
-@@ -93,6 +94,18 @@ static struct map_desc io_desc[] __initdata = {
- 
+ static const char *xilinx_dt_match[] = {
+-	"xlnx,zynq-ep107",
++	"xlnx,zynq-zc702",
++	"xlnx,zynq-7000",
+ 	NULL
  };
  
-+static void __init xilinx_zynq_timer_init(void)
-+{
-+	xttcpss_timer_init();
-+}
-+
-+/*
-+ * Instantiate and initialize the system timer structure
-+ */
-+static struct sys_timer xttcpss_sys_timer = {
-+	.init		= xilinx_zynq_timer_init,
-+};
-+
- /**
-  * xilinx_map_io() - Create memory mappings needed for early I/O.
-  */
-diff --git a/arch/arm/mach-zynq/common.h b/arch/arm/mach-zynq/common.h
-index a009644..954b91c 100644
---- a/arch/arm/mach-zynq/common.h
-+++ b/arch/arm/mach-zynq/common.h
-@@ -17,8 +17,6 @@
- #ifndef __MACH_ZYNQ_COMMON_H__
- #define __MACH_ZYNQ_COMMON_H__
- 
--#include <asm/mach/time.h>
--
--extern struct sys_timer xttcpss_sys_timer;
-+void __init xttcpss_timer_init(void);
- 
- #endif
-diff --git a/arch/arm/mach-zynq/timer.c b/arch/arm/mach-zynq/timer.c
-index c2c96cc..c93cbe5 100644
---- a/arch/arm/mach-zynq/timer.c
-+++ b/arch/arm/mach-zynq/timer.c
-@@ -24,7 +24,6 @@
- #include <linux/clockchips.h>
- #include <linux/io.h>
- 
--#include <asm/mach/time.h>
- #include <mach/zynq_soc.h>
- #include "common.h"
- 
-@@ -269,7 +268,7 @@ static struct clock_event_device xttcpss_clockevent = {
-  * Initializes the timer hardware and register the clock source and clock event
-  * timers with Linux kernal timer framework
-  **/
--static void __init xttcpss_timer_init(void)
-+void __init xttcpss_timer_init(void)
- {
- 	xttcpss_timer_hardware_init();
- 	clocksource_register_hz(&clocksource_xttcpss, TIMER_RATE);
-@@ -289,10 +288,3 @@ static void __init xttcpss_timer_init(void)
- 	xttcpss_clockevent.cpumask = cpumask_of(0);
- 	clockevents_register_device(&xttcpss_clockevent);
- }
--
--/*
-- * Instantiate and initialize the system timer structure
-- */
--struct sys_timer xttcpss_sys_timer = {
--	.init		= xttcpss_timer_init,
--};
 -- 
 1.8.0
 
