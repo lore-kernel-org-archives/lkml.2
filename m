@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934969Ab2JaH2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 03:28:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53741 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934408Ab2JaH16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 03:27:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Cochran <richardcochran@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>, Imre Kaloz <kaloz@openwrt.org>
-Subject: Re: [PULL REQ] IXP4xx changes for Linux 3.7
-Date: Tue, 30 Oct 2012 22:27:55 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Krzysztof Halasa <khc@pm.waw.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org,
-        lkml <linux-kernel@vger.kernel.org>, arm@kernel.org
-References: <m3bog6m5iz.fsf@intrepid.localdomain> <m3a9vkahci.fsf@intrepid.localdomain> <20121029082940.GC2527@netboy.at.omicron.at>
-In-Reply-To: <20121029082940.GC2527@netboy.at.omicron.at>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210302227.55857.arnd@arndb.de>
-X-Provags-ID: V02:K0:jyC0YvX4CQPpR+NccKfgJpvaTZa8hrcRXjirHjMLQMJ
- ZU9Q6ZGoeTpClZgfeADOb6ZjO4uvD7WwugyjJjeH5GJTNTrt3r
- uzM5vsR0+w7TqbbFRD3qdYDQ97ryCiAsVlt3Yd3oEHB8DDBOJA
- vNDTvV/QjCa7NOvpDNZebPNs0Qkyw3zKMvjWPPImyoWW9OFJdj
- CxgpeWViSEa8gpBU5HbJl/hP4L6o7xBDN9msrhKtTmgtqwPGqV
- Nbt+2V0HS+pOrdZ6euJBV++45oGfL0UOysnWuijMrESzOX1Enx
- MRGntTSpmLM0IhYpR+l4KPm/gchQgRD/Tntl5vGO0L1GsO1F8H
- KemY2JylhBf/R9QhM10A=
+	id S934918Ab2JaH3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 03:29:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:33923 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932447Ab2JaH3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 03:29:05 -0400
+X-IronPort-AV: E=Sophos;i="4.80,687,1344182400"; 
+   d="scan'208";a="6106805"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: yinghai@kernel.org, bhelgaas@google.com, lenb@kernel.org,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/3] ACPI: container hot remove support.
+Date: Wed, 31 Oct 2012 15:27:48 +0800
+Message-Id: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/31 15:28:19,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/31 15:28:20,
+	Serialize complete at 2012/10/31 15:28:20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 October 2012, Richard Cochran wrote:
-> On Thu, Oct 18, 2012 at 12:01:17AM +0200, Krzysztof Halasa wrote:
-> > 
-> > Don't get me wrong. If I had time for this it could be different.
-> > Unfortunately IXP4xx is a legacy arch, and for me it's simply a hobby at
-> > this point. Given the raised barriers to participate, probably aimed at
-> > paid maintainers, I have to quit doing this.
-> > 
-> > BTW since Imre has probably even much less time, it would be a good time
-> > to find someone to maintain IXP4xx code. I will be publishing (from time
-> > to time) my tree (I'm using the hw myself), so even simple
-> > cherry-picking would probably make some sense.
-> 
-> So if no one else wants to do this, then I am willing to look after
-> the IXP code. I think that I do have the time for it.
+Hi,
 
-Thanks for the offer! 
+The container hotplug handler container_notify_cb() didn't implement
+the hot-remove functionality. So, these 3 patches implement it like
+the following way:
 
-Jason Cooper was also volunteering to help out with this, and even we can't
-convince Krzysztof to continue doing it, there is also Imre who is officially
-listed as maintainer for IXP4xx and who has not commented on this. As Krzysztof
-mentions, he probably doesn't have much time for it, but I'd like to give
-him the chance to comment as well.
+patch 1. Do not use kacpid_wq/kacpid_notify_wq to handle container hotplug event,
+         use kacpi_hotplug_wq instead to avoid deadlock.
+         Doing this is to reuse acpi_bus_hot_remove_device() in container
+         hot-remove handling.
 
-I'm sure we can find some solution between the four of you. Right now, I think
-we should focus on getting the bug fixes from Krzysztof's tree into mainline
-and the stable kernels where applicable, and then establish a better working
-mode for the future kernels.
+patch 2. Introduce a new function container_device_remove() to handle
+         ACPI_NOTIFY_EJECT_REQUEST event for container.
 
-	Arnd
+
+change log v2 -> v3:
+
+1. Add 1 patch(patch1). As Toshi Kan mentioned, acpi_os_hotplug_execute() is already
+   kernel. So use it instead of alloc_acpi_hp_work() to add hotplug job onto kacpi_hotplug_wq.
+
+2. In patch3: Print caller's function name when container_device_remove() fails to help to debug.
+
+3. In patch3: Add commit message to describ why we need to call acpi_bus_trim() twice when
+   removing devices.
+
+change log v1 -> v2:
+
+1. In patch1: Based on the lastest for-pci-split-pci-root-hp-2 branch from Lu Yinghai, 
+   use alloc_acpi_hp_work() to add container hotplug work into kacpi_hotplug_wq.
+
+2. In patch2: Allocate ej_event after container is stopped, so that we don't need to
+   kfree the ej_event if stopping container failed.
+
+
+This is based on Lu Yinghai's job.
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-split-pci-root-hp-2
+
+
+Tang Chen (3):
+  Use acpi_os_hotplug_execute() instead of alloc_acpi_hp_work().
+  Use kacpi_hotplug_wq to handle container hotplug event.
+  Improve container_notify_cb() to support container hot-remove.
+
+ drivers/acpi/container.c           |   95 +++++++++++++++++++++++++++++++-----
+ drivers/acpi/osl.c                 |   28 +++++-----
+ drivers/acpi/pci_root_hp.c         |   25 ++++++---
+ drivers/pci/hotplug/acpiphp_glue.c |   39 ++++++++-------
+ include/acpi/acpiosxf.h            |    7 +--
+ 5 files changed, 137 insertions(+), 57 deletions(-)
+
