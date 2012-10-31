@@ -1,134 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935365Ab2JaKWQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:22:16 -0400
-Received: from shrek-modem2.podlesie.net ([83.13.132.46]:57446 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933180Ab2JaKWN (ORCPT
+	id S935375Ab2JaKWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:22:43 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55276 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933180Ab2JaKWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:22:13 -0400
-Date: Wed, 31 Oct 2012 11:22:10 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: "Chas Williams (CONTRACTOR)" <chas@cmf.nrl.navy.mil>
-Cc: davem@davemloft.net, dwmw2@infradead.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
-Message-ID: <20121031102210.GA15077@shrek.podlesie.net>
-References: <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
- <201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
- <20121030182001.GA30373@shrek.podlesie.net>
- <20121031094147.GA1004@shrek.podlesie.net>
+	Wed, 31 Oct 2012 06:22:41 -0400
+Date: Wed, 31 Oct 2012 11:22:37 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.6.4-rt11
+In-Reply-To: <20121031053708.GD25658@windriver.com>
+Message-ID: <alpine.LFD.2.02.1210311118300.2756@ionos>
+References: <alpine.LFD.2.02.1210310144210.2756@ionos> <20121031053708.GD25658@windriver.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121031094147.GA1004@shrek.podlesie.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 10:41:47AM +0100, Krzysztof Mazur wrote:
+On Wed, 31 Oct 2012, Paul Gortmaker wrote:
+
+> [[ANNOUNCE] 3.6.4-rt11] On 31/10/2012 (Wed 02:19) Thomas Gleixner wrote:
 > 
-> I think that we should add a wrapper to vcc->send(), based on
-> fixed pppoatm_send(), that performs required checks and takes the ATM socket
-> lock.
+> > Dear RT Folks,
+> > 
+> > I'm pleased to announce the 3.6.4-rt11 release.
 > 
+> The rt11 content is present on master in the 3.6-rt patch repo:
+>   http://git.kernel.org/?p=linux/kernel/git/paulg/3.6-rt-patches.git
+> 
+> I've also created a v3.6.4-rt11-fixes branch, which contains a fix for
+> the preempt-lazy TIF test on x86_32 (please check this; I really should
+> not be left unattended, mucking around in .S files while on vacation).
+> It is queued in the series right after the preempt-lazy-support.patch.
 
-I'm sending initial version of such wrapper and update to pppoatm.
-Untested but the code is just copied from pppoatm_send.
+Duh. My tired brain saw the warning fly by without actually grasping
+it. Will fold it back for the next release.
 
-In final series I will fix some old &sk_atm(ATM_SKB(skb)->vcc)-like
-code from original version, before moving to vcc_send_bh(), but
-it's just an initial idea for some comments.
+> [ quick link to TIF patch @kernel.org: http://goo.gl/7Gbtg ]
 
-Krzysiek
+Good catch. Thanks,
 
-diff --git a/net/atm/common.c b/net/atm/common.c
-index 0c0ad93..e0602d2 100644
---- a/net/atm/common.c
-+++ b/net/atm/common.c
-@@ -558,6 +558,32 @@ int vcc_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *msg,
- 	return copied;
- }
- 
-+int vcc_send_bh(struct atm_vcc *vcc, struct sk_buff *skb)
-+{
-+	int ret;
-+
-+	bh_lock_sock(sk_atm(vcc));
-+	ret = -EAGAIN;
-+	if (sock_owned_by_user(sk_atm(vcc)))
-+		goto out;
-+	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
-+			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
-+			|| !test_bit(ATM_VF_READY, &vcc->flags))
-+		goto out;
-+
-+	if (sk_wmem_alloc_get(sk_atm(vcc)) && !atm_may_send(vcc, skb->truesize))
-+		goto out;
-+
-+	atomic_add(skb->truesize, &sk_atm(ATM_SKB(skb)->vcc)->sk_wmem_alloc);
-+	ATM_SKB(skb)->atm_options = ATM_SKB(skb)->vcc->atm_options;
-+	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n",
-+		 skb, ATM_SKB(skb)->vcc, ATM_SKB(skb)->vcc->dev);
-+	ret = ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb);
-+out:
-+	bh_unlock_sock(sk_atm(vcc));
-+	return ret;
-+}
-+
- int vcc_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *m,
- 		size_t total_len)
- {
-diff --git a/net/atm/common.h b/net/atm/common.h
-index cc3c2da..3a1c340 100644
---- a/net/atm/common.h
-+++ b/net/atm/common.h
-@@ -15,6 +15,7 @@ int vcc_release(struct socket *sock);
- int vcc_connect(struct socket *sock, int itf, short vpi, int vci);
- int vcc_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *msg,
- 		size_t size, int flags);
-+int vcc_send_bh(struct atm_vcc *vcc, struct sk_buff *skb);
- int vcc_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *m,
- 		size_t total_len);
- unsigned int vcc_poll(struct file *file, struct socket *sock, poll_table *wait);
-diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
-index 5fc335a..7612f18 100644
---- a/net/atm/pppoatm.c
-+++ b/net/atm/pppoatm.c
-@@ -296,31 +296,10 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
- 	}
- 
- 	vcc = ATM_SKB(skb)->vcc;
--	bh_lock_sock(sk_atm(vcc));
--	if (sock_owned_by_user(sk_atm(vcc)))
--		goto nospace_unlock_sock;
--	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
--			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
--			|| !test_bit(ATM_VF_READY, &vcc->flags))
--		goto nospace_unlock_sock;
--
--	/*
--	 * It's not clear that we need to bother with using atm_may_send()
--	 * to check we don't exceed sk->sk_sndbuf.
--	 */
--	if (sk_wmem_alloc_get(sk_atm(vcc)) && !atm_may_send(vcc, skb->truesize))
--		goto nospace_unlock_sock;
--
--	atomic_add(skb->truesize, &sk_atm(ATM_SKB(skb)->vcc)->sk_wmem_alloc);
--	ATM_SKB(skb)->atm_options = ATM_SKB(skb)->vcc->atm_options;
--	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n",
--		 skb, ATM_SKB(skb)->vcc, ATM_SKB(skb)->vcc->dev);
--	ret = ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb)
--	    ? DROP_PACKET : 1;
--	bh_unlock_sock(sk_atm(vcc));
--	return ret;
--nospace_unlock_sock:
--	bh_unlock_sock(sk_atm(vcc));
-+	ret = vcc_send_bh(vcc, skb);
-+	if (ret == -EAGAIN)
-+		goto nospace;
-+	return ret ? DROP_PACKET : 1;
- nospace:
- 	/*
- 	 * We don't have space to send this SKB now, but we might have
+     tglx
