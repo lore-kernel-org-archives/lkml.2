@@ -1,82 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab2JaAbZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:31:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15285 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab2JaAbX (ORCPT
+	id S1756018Ab2JaAdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:33:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53520 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632Ab2JaAdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:31:23 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=z6B3CIpYkvYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=evC8euxjDUgA:10 a=VwQbUJbxAAAA:8 a=ankguWfssnWlHO32Y0EA:9 a=U62fhAwekXMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121031003107.834398757@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 30 Oct 2012 20:31:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 0/4] [ANNOUNCE] 3.2.32-rt49-rc1 stable review
+	Tue, 30 Oct 2012 20:33:08 -0400
+Date: Wed, 31 Oct 2012 01:33:02 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter LaDow <petela@gocougs.wsu.edu>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org, netfilter@vger.kernel.org
+Subject: Re: Process Hang in __read_seqcount_begin
+In-Reply-To: <CAN8Q1Ef1_OOTpqSrvPB6ja3A3e9-Lky-iceH4NKjWLw8HcW2AA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1210310130240.2756@ionos>
+References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com> <1350925299.8609.978.camel@edumazet-glaptop> <CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com> <CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
+ <CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com> <1351053164.6537.95.camel@edumazet-glaptop> <CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com> <1351270087.30380.9.camel@edumazet-glaptop>
+ <CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com> <1351285552.30380.20.camel@edumazet-glaptop> <CAN8Q1Ecx-pDR=NBQm4O=VaynQsxBU1wku9e_kcKkWB=xU0OtMA@mail.gmail.com> <alpine.LFD.2.02.1210262351330.2756@ionos>
+ <CAN8Q1Ef1_OOTpqSrvPB6ja3A3e9-Lky-iceH4NKjWLw8HcW2AA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 30 Oct 2012, Peter LaDow wrote:
+> Anyway, based on earlier discussion, is there any reason not to use a
+> lock (presuming any solution properly takes into account possible
+> recursion)?  I understand that the mainline is protected, but perhaps
+> in the RT version we can use seqlock (and prevent a recursive lock)?
 
-Dear RT Folks,
-
-This is the RT stable review cycle of patch 3.2.32-rt49-rc1.
-
-Please scream at me if I messed something up. Please test the patches too.
-
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candidate).
-
-The pre-releases will not be pushed to the git repository, only the
-final release is.
-
-If all goes well, this patch will be converted to the next main release
-on 11/2/2012.
-
-Enjoy,
-
--- Steve
-
-
-To build 3.2.32-rt49-rc1 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.32.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.32-rt49-rc1.patch.xz
-
-You can also build from 3.2.32-rt48 by applying the incremental patch:
-
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.32-rt48-rt49-rc1.patch.xz
-
-
-Changes from 3.2.32-rt48:
-
----
-
-
-Steven Rostedt (1):
-      Linux 3.2.32-rt49-rc1
-
-Thomas Gleixner (2):
-      rcu: Disable RCU_FAST_NO_HZ on RT
-      net: netfilter: Serialize xt_write_recseq sections on RT
-
-Watanabe (1):
-      hrtimer: Raise softirq if hrtimer irq stalled
-
-----
- include/linux/locallock.h          |    4 ++++
- include/linux/netfilter/x_tables.h |    7 +++++++
- init/Kconfig                       |    2 +-
- kernel/hrtimer.c                   |    9 ++++-----
- localversion-rt                    |    2 +-
- net/netfilter/core.c               |    6 ++++++
- 6 files changed, 23 insertions(+), 7 deletions(-)
+Have you tried 3.6.3-rt9?
