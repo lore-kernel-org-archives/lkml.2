@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934626Ab2JaK4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:56:14 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:51607 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932448Ab2JaK4M (ORCPT
+	id S1756977Ab2JaK7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:59:37 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40090 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756752Ab2JaK7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:56:12 -0400
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
-        Rupesh Gujare <rgujare@ozmodevices.com>,
-        Chris Kelly <ckelly@ozmodevices.com>,
+	Wed, 31 Oct 2012 06:59:34 -0400
+Date: Wed, 31 Oct 2012 12:03:37 +0100
+From: Dave Martin <dave.martin@linaro.org>
+To: Tekkaman Ninja <tekkamanninja@gmail.com>
+Cc: Harry Wei <harryxiyou@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH] staging: ozwpan: use tasklet_kill in device remove/release process
-Date: Wed, 31 Oct 2012 18:56:48 +0800
-Message-Id: <1351681008-27356-1-git-send-email-xtfeng@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH]Documentation: Chinese translation of
+ Documentation/arm/kernel_user_helpers.txt
+Message-ID: <20121031110337.GB3780@linaro.org>
+References: <20121030162004.GA3467@Super-MAGI>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030162004.GA3467@Super-MAGI>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some driver uses tasklet_disable in device remove/release process,
-tasklet_disable will inc tasklet->count and return. If the tasklet
-is not handled yet under some softirq pressure, the tasklet will be
-placed on the tasklet_vec, never have a chance to be excuted. This might
-lead to a heavy loaded ksoftirqd, wakeup with pending_softirq, but
-tasklet is disabled. tasklet_kill should be used in this case.
+On Wed, Oct 31, 2012 at 12:20:04AM +0800, Tekkaman Ninja wrote:
+> This is a Chinese translated version of
+> Documentation/arm/kernel_user_helpers.txt
+> 
+> Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
 
-Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Cc: Rupesh Gujare <rgujare@ozmodevices.com>
-Cc: Chris Kelly <ckelly@ozmodevices.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org
----
- drivers/staging/ozwpan/ozhcd.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+[...]
 
-diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
-index 2e087ac..33c0009 100644
---- a/drivers/staging/ozwpan/ozhcd.c
-+++ b/drivers/staging/ozwpan/ozhcd.c
-@@ -2304,8 +2304,8 @@ error:
-  */
- void oz_hcd_term(void)
- {
--	tasklet_disable(&g_urb_process_tasklet);
--	tasklet_disable(&g_urb_cancel_tasklet);
-+	tasklet_kill(&g_urb_process_tasklet);
-+	tasklet_kill(&g_urb_cancel_tasklet);
- 	platform_device_unregister(g_plat_dev);
- 	platform_driver_unregister(&g_oz_plat_drv);
- 	oz_trace("Pending urbs:%d\n", atomic_read(&g_pending_urbs));
--- 
-1.7.9.5
+> +If you have any comment or update to the content, please contact the
+> +original document maintainer directly.  However, if you have a problem
+> +communicating in English you can also ask the Chinese maintainer for
+> +help.  Contact the Chinese maintainer if this translation is outdated
+> +or if there is a problem with the translation.
+> +
+> +Maintainer: Nicolas Pitre <nicolas.pitre@linaro.org>
+> +		Dave Martin <dave.martin@linaro.org>
 
+I'm not sure whether I am really a maintainer for this document, though
+I don't mind helping.  It partly depends on Nicolas's opinion on this.
+
+Cheers
+---Dave
