@@ -1,126 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935172Ab2JaItR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 04:49:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36374 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935123Ab2JaIs4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 04:48:56 -0400
-From: Daniel J Blueman <daniel@numascale-asia.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>
-Subject: [PATCH 2/4, v2] AMD64 EDAC: Add support for >255 memory controllers
-Date: Wed, 31 Oct 2012 16:48:12 +0800
-Message-Id: <1351673292-31359-1-git-send-email-daniel@numascale-asia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351662932-22279-2-git-send-email-daniel@numascale-asia.com>
-References: <1351662932-22279-2-git-send-email-daniel@numascale-asia.com>
+	id S935174Ab2JaItu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 04:49:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62940 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935123Ab2JaItm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 04:49:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,687,1344236400"; 
+   d="scan'208";a="213391200"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: "jonghwa3.lee@samsung.com" <jonghwa3.lee@samsung.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Amit Dinel Kachhap <amit.kachhap@linaro.org>
+Subject: RE: [PATCH v2] Thermal: exynos: Add sysfs node supporting exynos's
+ emulation mode.
+Thread-Topic: [PATCH v2] Thermal: exynos: Add sysfs node supporting exynos's
+ emulation mode.
+Thread-Index: AQHNtx7n+YMSf3Woz0ObGln8lMi8pJfS7v4Q//+9zYCAAG0cQA==
+Date: Wed, 31 Oct 2012 08:49:36 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB591FDF82@BGSMSX101.gar.corp.intel.com>
+References: <1351657147-26092-1-git-send-email-jonghwa3.lee@samsung.com>
+ <4D68720C2E767A4AA6A8796D42C8EB591FDE36@BGSMSX101.gar.corp.intel.com>
+ <5090D6F7.5040401@samsung.com>
+In-Reply-To: <5090D6F7.5040401@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9V8nsEE017255
 
-As the AMD64 last-level-cache ID is 16-bits and federated systems
-eg using Numascale's NumaConnect/NumaChip can have more than 255 memory
-controllers, use 16-bits to store the ID.
+Hi,
 
-v2: Avoid change to intlv_en variable
+[A big cut.]
+> >> +
+> >> +	mutex_lock(&data->lock);
+> >> +	clk_enable(data->clk);
+> >> +
+> >> +	reg = readl(data->base + EXYNOS_EMUL_CON);
+> >> +	enable = reg & EXYNOS_EMUL_ENABLE;
+> >> +	if (!enable && !temp)
+> >> +		goto out;
+> > I think you what you are trying to do here is this:
+> > If the emulation is already disabled, and 'this' write tries to
+> > disable it again, you jump to 'out' as an optimization.
+> > Please correct me if I am wrong.
+> Yes, you're right. If we try to disable the emulation mode despite it already is
+> disabled,
+> then emulation mode will be failed and we can't use it. Because emulation
+> mode has some
+> strange characteristic.
+> Let me explain more detail. Emulation mode requires synchronous of any
+> value changing and
+> enabling. It means you can't change any value (next target temperature,
+> sensing time delay)
+> without enabling. In this code, disabling overlapping makes problem at initial
+> state. At the initial,
+> there is no next target temperature and only value 1 for delay time. But if
+> you try to write 0 again
+> to sysfs node, temp, then it write delay time with 938us and next
+> temperature with minimum
+> temperature automatically. Value is changed but enable bit is still disabled.
+> This is what the
+> problem is happened.
 
-Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
----
- drivers/edac/amd64_edac.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+Thanks for the detailed Explanation.
 
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index 18d404a..28b2005 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -942,7 +942,8 @@ static u64 get_error_address(struct mce *m)
- 		struct amd64_pvt *pvt;
- 		u64 cc6_base, tmp_addr;
- 		u32 tmp;
--		u8 mce_nid, intlv_en;
-+		u16 mce_nid;
-+		u8 intlv_en;
- 
- 		if ((addr & GENMASK(24, 47)) >> 24 != 0x00fdf7)
- 			return addr;
-@@ -1499,7 +1500,7 @@ static int f1x_match_to_this_node(struct amd64_pvt *pvt, unsigned range,
- 	u8 channel;
- 	bool high_range = false;
- 
--	u8 node_id    = dram_dst_node(pvt, range);
-+	u16 node_id   = dram_dst_node(pvt, range);
- 	u8 intlv_en   = dram_intlv_en(pvt, range);
- 	u32 intlv_sel = dram_intlv_sel(pvt, range);
- 
-@@ -2306,7 +2307,7 @@ out:
- 	return ret;
- }
- 
--static int toggle_ecc_err_reporting(struct ecc_settings *s, u8 nid, bool on)
-+static int toggle_ecc_err_reporting(struct ecc_settings *s, u16 nid, bool on)
- {
- 	cpumask_var_t cmask;
- 	int cpu;
-@@ -2344,7 +2345,7 @@ static int toggle_ecc_err_reporting(struct ecc_settings *s, u8 nid, bool on)
- 	return 0;
- }
- 
--static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
-+static bool enable_ecc_error_reporting(struct ecc_settings *s, u16 nid,
- 				       struct pci_dev *F3)
- {
- 	bool ret = true;
-@@ -2396,7 +2397,7 @@ static bool enable_ecc_error_reporting(struct ecc_settings *s, u8 nid,
- 	return ret;
- }
- 
--static void restore_ecc_error_reporting(struct ecc_settings *s, u8 nid,
-+static void restore_ecc_error_reporting(struct ecc_settings *s, u16 nid,
- 					struct pci_dev *F3)
- {
- 	u32 value, mask = 0x3;		/* UECC/CECC enable */
-@@ -2435,7 +2436,7 @@ static const char *ecc_msg =
- 	"'ecc_enable_override'.\n"
- 	" (Note that use of the override may cause unknown side effects.)\n";
- 
--static bool ecc_enabled(struct pci_dev *F3, u8 nid)
-+static bool ecc_enabled(struct pci_dev *F3, u16 nid)
- {
- 	u32 value;
- 	u8 ecc_en = 0;
-@@ -2556,7 +2557,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
- 	struct mem_ctl_info *mci = NULL;
- 	struct edac_mc_layer layers[2];
- 	int err = 0, ret;
--	u8 nid = get_node_id(F2);
-+	u16 nid = get_node_id(F2);
- 
- 	ret = -ENOMEM;
- 	pvt = kzalloc(sizeof(struct amd64_pvt), GFP_KERNEL);
-@@ -2647,7 +2648,7 @@ err_ret:
- static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
- 					     const struct pci_device_id *mc_type)
- {
--	u8 nid = get_node_id(pdev);
-+	u16 nid = get_node_id(pdev);
- 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
- 	struct ecc_settings *s;
- 	int ret = 0;
-@@ -2697,7 +2698,7 @@ static void __devexit amd64_remove_one_instance(struct pci_dev *pdev)
- {
- 	struct mem_ctl_info *mci;
- 	struct amd64_pvt *pvt;
--	u8 nid = get_node_id(pdev);
-+	u16 nid = get_node_id(pdev);
- 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
- 	struct ecc_settings *s = ecc_stngs[nid];
- 
--- 
-1.7.9.5
+> >>  	}
+> >> +#ifdef CONFIG_EXYNOS_THERMAL_EMUL
+> >> +	device_create_file(&pdev->dev, &dev_attr_emulation);
+> > Don't we want to capture the return value here ?
+> > Also, if we conditionally create this, we should remove this conditionally
+> also.
+> > I did not see a corresponding device_remove_file for this attr.
+> Sorry, It's my mistake. I'll fix it.
+> >> +#endif
+> > Can we club all the code inside CONFIG_*_EMUL at one place ?
+> > This will make it neat, and not spread the #ifdefs all over the driver.
+> I'd like to do either. But I just couldn't find a way.
+> Could you give me any idea how to do it ?
 
+I was thinking something like below:
+
+inside #ifdef CONFIG_*_EMUL
+	int register_emulation_mode(...) { device_create_file(...) };
+	int unregister_emulation_mode(...) { device_remove_file(...) };
+#else
+	static inline int register..(...) { return 0; }
+	static inline int unregister..(...) { return 0; }
+#endif
+
+Then the rest of the driver can just use register/unregister,
+without worrying about #ifdef.
+
+Thanks,
+Durga
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
