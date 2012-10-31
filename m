@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758255Ab2JaQpH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 12:45:07 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:49951 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab2JaQpF (ORCPT
+	id S1758337Ab2JaQpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 12:45:14 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59393 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933Ab2JaQpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 12:45:05 -0400
-X-Auth-Info: sIwPE7NLPlc3rg3+UdYFurcaLTsmA+q9AiJ/oemau44=
-From: Marek Vasut <marex@denx.de>
-To: Brian Norris <computersforpeace@gmail.com>
-Subject: Re: [PATCH for 3.7] mtd: nand: fix Samsung SLC NAND identification regression
-Date: Wed, 31 Oct 2012 17:45:00 +0100
-User-Agent: KMail/1.13.7 (Linux/3.4-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Robin van der Gracht <robin@protonic.nl>
-References: <1349850366-4731-1-git-send-email-computersforpeace@gmail.com> <1349855329.6072.72.camel@shinybook.infradead.org> <CAN8TOE8yzJY67b=S=KyONe2pLYGJVe9vW4KXzsjvU7AU9aFpHg@mail.gmail.com>
-In-Reply-To: <CAN8TOE8yzJY67b=S=KyONe2pLYGJVe9vW4KXzsjvU7AU9aFpHg@mail.gmail.com>
+	Wed, 31 Oct 2012 12:45:07 -0400
+Date: Wed, 31 Oct 2012 09:45:04 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Konstantin Ryabitsev <mricon@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: new daily bugzilla.kernel.org annoyance messages
+Message-ID: <20121031164504.GB1119@kroah.com>
+References: <20121031163005.GA411@kroah.com>
+ <5091535C.9050103@kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210311745.00677.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5091535C.9050103@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Brian Norris,
-
-> Hi David,
-> 
-> On Wed, Oct 10, 2012 at 12:48 AM, David Woodhouse <dwmw2@infradead.org> wrote:
-> > On Tue, 2012-10-09 at 23:39 -0700, Brian Norris wrote:
-> >> I can see if that's possible, but I think it's unlikely. They don't
-> >> even bother following standards (ONFI). Is this an obstacle to
-> >> merging?
+On Wed, Oct 31, 2012 at 12:35:40PM -0400, Konstantin Ryabitsev wrote:
+> On 31/10/12 12:30 PM, Greg KH wrote:
+> > Hi Konstantin,
 > > 
-> > No. I already pushed it.
+> > Who is in charge of bugzilla.kernel.org?  Yesterday I started getting a
+> > "Here is a daily list of your outstanding bugs" email, saying:
+> > 
+> > 	You will get this message once a day until you've dealt with these bugs!
+> > 
+> > Who made this change?
+> > 
+> > And how do we turn it off?
+> > 
+> > Otherwise I'm just going to go and delete my bugzilla.kernel.org
+> > account, as that's just about the most annoying thing I've seen in a
+> > while.  There are plenty of reasons why you don't want to send out
+> > emails like this to developers and to do it every single day is pretty
+> > rude.
 > 
-> This is a "bump" for a 3.7-rc pull request. This regression has been
-> noticed by others.
+> Hi, Greg:
+> 
+> I'm sorry about that -- a few people wanted to use the "whine" option,
+> which required that I turn the functionality on. In turn, this annoyed
+> everyone with bugs assigned to it.
+> 
+> Let me see if setting "whinedays" to "0" will turn off the automated
+> whines while letting people set up custom whines as they needed. If that
+> doesn't work, then I'll set "whinedays" to 3650, so at least this way
+> the only bugs you'll get whines about will be those that have been "NEW"
+> for over 10 years. :)
 
-[whine] my nand doesn't work ;-)
+Thanks, that would be good.  I didn't see anywhere where I could turn
+the "whine" option off, or change it, what screen is it on?
 
-Thanks for keeping eye on this, Brian.
+thanks,
 
-Best regards,
-Marek Vasut
+greg k-h
