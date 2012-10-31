@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935544Ab2JaOC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 10:02:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35645 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932647Ab2JaOCZ (ORCPT
+	id S935580Ab2JaOEf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 10:04:35 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:16412 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647Ab2JaOEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 10:02:25 -0400
-From: anish kumar <anish198519851985@gmail.com>
-To: rostedt@goodmis.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        akpm@linux-foundation.org, paul.gortmaker@windriver.com,
-        tglx@linutronix.de, mingo@kernel.org, fweisbec@gmail.com
-Cc: anish kumar <anish198519851985@gmail.com>
-Subject: [PATCH] [RFC]IRQ CORE: irq_work_queue function return value not used.
-Date: Wed, 31 Oct 2012 23:02:06 +0900
-Message-Id: <1351692126-8944-1-git-send-email-anish198519851985@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 31 Oct 2012 10:04:33 -0400
+Date: Wed, 31 Oct 2012 09:51:50 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <jbeulich@suse.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Message-ID: <20121031135150.GA28699@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
+ <508A89CB020000780008E6ED@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
+ <20121026201409.GF2708@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC8292335373918@SHSMSX101.ccr.corp.intel.com>
+ <20121029123950.GK2708@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC8292335374C86@SHSMSX101.ccr.corp.intel.com>
+ <20121030133720.GA27463@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923353755E1@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923353755E1@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: anish kumar <anish198519851985@gmail.com>
+On Tue, Oct 30, 2012 at 03:18:59PM +0000, Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+> >>> +config XEN_ACPI_PAD_STUB
+> >>> +	bool
+> >>> +	depends on XEN_DOM0 && X86_64 && ACPI
+> >>> +	default n
+> >>> +
+> >> 
+> >> This Kconfig is pointless, if CONFIG_XEN_ACPI_PAD_STUB = n, native
+> >> pad would successfully registerred, and then mwait #UD (we would
+> >> revert df88b2d96e36d9a9e325bfcd12eb45671cbbc937, right?). So xen
+> >> stub logic should unconditionally built-in kernel.   
+> > 
+> > 
+> > Potentially. Keep in mind that there is no need to built this if the
+> > kernel is not built with ACPI.
+> 
+> Sure, 'obj-$(CONFIG_XEN_DOM0) +=' is enough.
+> (XEN_DOM0 depends on ACPI).
+> 
+> >>> +subsys_initcall(xen_acpi_pad_stub_init);
+> >> 
+> >> I'm still confused. In this way there are xen-acpi-pad-stub.c and
+> >> xen-acpi-pad.c, and you want to let xen-acpi-pad loaded as module,
+> >> right? how can xen-acpi-pad logic work when it was insmoded?  
+> > 
+> > Via the register/unregister calls that this provides? Or does ACPI bus
+> > drivers get immediately called once the call acpi_bus_register_driver?
+> 
+> But when xen stub driver registerred, real xen pad ops has not been hooked to stub ops.
+> 
+> > 
+> > Or can one 'poke' the 'add' and 'remove' calls so that once the "true"
+> > PAD driver is loaded it will restart the ops->add call?
+> 
+> I think we'd better not to use xen pad stub approach. Technically it's complicated, say, how to match xen_acpi_pad driver w/ pad device? when and how to invoke .add method? how to avoid native pad loading risk? etc. I didn't find its obivous advantages, so how about keep simpler approach?
 
-As no one is using the return value of irq_work_queue function
-it is better to just make it void.
+OK. Lets go with that one for right now. The one thing I don't like about it is
+that it is built-in. It would be so much better if it was a module, but I am just
+not sure how to make that work with the acpi_pad. Unless the mwait CPUID capability
+is not exported (so drop your patch 1 that reverts a commit).
 
-This patch is just a way to understand if there is some future
-plan to use it but in any case please let me know the reason.
----
- kernel/irq_work.c |   21 ++++++++++-----------
- 1 files changed, 10 insertions(+), 11 deletions(-)
-
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 1588e3b..4a9a44c 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -32,21 +32,21 @@ static DEFINE_PER_CPU(struct llist_head, irq_work_list);
- /*
-  * Claim the entry so that no one else will poke at it.
-  */
--static bool irq_work_claim(struct irq_work *work)
-+static void irq_work_claim(struct irq_work *work)
- {
- 	unsigned long flags, nflags;
- 
- 	for (;;) {
- 		flags = work->flags;
- 		if (flags & IRQ_WORK_PENDING)
--			return false;
-+			return;
- 		nflags = flags | IRQ_WORK_FLAGS;
- 		if (cmpxchg(&work->flags, flags, nflags) == flags)
- 			break;
- 		cpu_relax();
- 	}
- 
--	return true;
-+	return;
- }
- 
- void __weak arch_irq_work_raise(void)
-@@ -79,15 +79,14 @@ static void __irq_work_queue(struct irq_work *work)
-  *
-  * Can be re-enqueued while the callback is still in progress.
-  */
--bool irq_work_queue(struct irq_work *work)
-+void irq_work_queue(struct irq_work *work)
- {
--	if (!irq_work_claim(work)) {
--		/*
--		 * Already enqueued, can't do!
--		 */
--		return false;
--	}
--
-+	/*
-+	 * This function either will claim the entry to queue
-+	 * the work or if the work is already queued and is in
-+	 * pending state then it will simply return.
-+	 */
-+	irq_work_claim(work)
- 	__irq_work_queue(work);
- 	return true;
- }
--- 
-1.7.1
+Perhaps there is a way to make it a module/built-in with some Kconfig
+magic options? Say if ACPI_PROCESSOR_AGGREGATOR is not set, then we can
+make it a module. But if ACPI_PROCESSOR_AGGREGATOR=m|y then we do it
+as built-in?
 
