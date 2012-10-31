@@ -1,51 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422840Ab2JaNWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:22:21 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34590 "EHLO comal.ext.ti.com"
+	id S1422851Ab2JaNXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:23:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60387 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422806Ab2JaNWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:22:20 -0400
-Message-ID: <509125FC.1090609@ti.com>
-Date: Wed, 31 Oct 2012 09:22:04 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S935543Ab2JaNXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 09:23:11 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Steve French <sfrench@samba.org>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, Matthew Wilcox <matthew@wil.cx>,
+        linux-afs@lists.infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, ocfs2-devel@oss.oracle.com
+Subject: Re: [patch 05/10] vfs: pass data to alloc_inode super operation
+References: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
+	<1351628084-29358-8-git-send-email-jmoyer@redhat.com>
+	<20121030205142.GB2616@ZenIV.linux.org.uk>
+	<20121030211701.GC2616@ZenIV.linux.org.uk>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 31 Oct 2012 09:22:51 -0400
+In-Reply-To: <20121030211701.GC2616@ZenIV.linux.org.uk> (Al Viro's message of
+	"Tue, 30 Oct 2012 21:17:01 +0000")
+Message-ID: <x49liemixn8.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
-        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
-        <viresh.linux@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <nsekhar@ti.com>, <khilman@ti.com>, <linux@arm.linux.org.uk>,
-        <sshtylyov@mvista.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
-Subject: Re: [PATCH v3 04/11] clk: davinci - add pll divider clock driver
-References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-5-git-send-email-m-karicheri2@ti.com> <CACRpkdY3ji_twCqej6Yf8grR7oovf3jeGrbQMzybk5CK5f2Y9A@mail.gmail.com>
-In-Reply-To: <CACRpkdY3ji_twCqej6Yf8grR7oovf3jeGrbQMzybk5CK5f2Y9A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2012 03:26 PM, Linus Walleij wrote:
-> On Thu, Oct 25, 2012 at 6:11 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
->
->> pll dividers are present in the pll controller of DaVinci and Other
->> SoCs that re-uses the same hardware IP. This has a enable bit for
->> bypass the divider or enable the driver. This is a sub class of the
->> clk-divider clock checks the enable bit to calculare the rate and
->> invoke the recalculate() function of the clk-divider if enabled.
->>
->> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> Looking good,
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
-> Yours,
-> Linus Walleij
->
-Linus,
+Al Viro <viro@ZenIV.linux.org.uk> writes:
 
-Thanks. I will add your Acked-by in the next version.
+> On Tue, Oct 30, 2012 at 08:51:42PM +0000, Al Viro wrote:
+>> On Tue, Oct 30, 2012 at 04:14:39PM -0400, Jeff Moyer wrote:
+>> > This patch passes a data pointer along to the alloc_inode
+>> > super_operations function.  The value will initially be used by
+>> > bdev_alloc_inode to allocate the bdev_inode on the same numa
+>> > node as the device to which it is tied.
+>> 
+>> Yecchhh...
+>> 
+>> > -static struct inode *bdev_alloc_inode(struct super_block *sb)
+>> > +static struct inode *bdev_alloc_inode(struct super_block *sb, void *data)
+>> >  {
+>> > -	struct bdev_inode *ei = kmem_cache_alloc(bdev_cachep, GFP_KERNEL);
+>> > +	struct bdev_inode *ei;
+>> > +	int partno;
+>> > +	int node;
+>> > +
+>> > +	if (data) {
+>> > +		struct gendisk *disk;
+>> > +		dev_t dev = *(dev_t *)data;
+>> > +		disk = get_gendisk(dev, &partno);
+>> > +		node = disk->node_id;
+>
+> Oh, _lovely_.  Such a stunningly elegant idea.  And why not pass the
+> sodding node_id directly, if I may ask?
 
-Murali
+struct block_device *bdget(dev_t dev)
+{
+...
+        inode = iget5_locked(blockdev_superblock, hash(dev),
+                        bdev_test, bdev_set, &dev);
+
+The device is used by bdev_test and bdev_set.
+
+> Take that crap out and don't bring it back.  And consider this kludge NAKed
+> once and forever.  It's unspeakably ugly, even if it didn't break just about
+> every fs out there (you do realize that almost all of them have ->alloc_inode(),
+> pdon't you?  Use grep and see).
+
+Oof.  I was using cscope and it didn't show all callers.
+
+> BTW, speaking of other reasons this is FUBAR - mknod a block device node
+> for something that doesn't exist and try to open it.  struct block_device
+> lifetime is not limited to that of struct gendisk; it can be allocated
+> before gendisk is there.  Moreover, with static /dev and demand-loaded
+> modules this will be the normal scenario.
+>
+> IOW, this is completely misguided.
+
+OK, thanks for the review, Al, it's greatly appreciated.  Do you have a
+suggestion on how I might achieve this in a way that would be
+acceptable?  I'm not too fond of the idea of reallocating the inode when
+the device does appear.  I'll give it some more thought.
+
+Again, thanks for taking a look.
+
+Cheers,
+Jeff
