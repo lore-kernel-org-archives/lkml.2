@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133Ab2JaGim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 02:38:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44008 "EHLO comal.ext.ti.com"
+	id S932291Ab2JaGjz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 02:39:55 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:40117 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018Ab2JaGik convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 02:38:40 -0400
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        "Porter, Matt" <mporter@ti.com>, "Dill, Russ" <russ.dill@ti.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>
-Subject: RE: [PATCH] omap2-clk: Add missing lcdc clock definition
-Thread-Topic: [PATCH] omap2-clk: Add missing lcdc clock definition
-Thread-Index: AQHNtvYG6t4YD4tdv0iN86NxZoH7IpfS0m0g//+6gQCAAGmq0A==
-Date: Wed, 31 Oct 2012 06:38:27 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EB52BC6@DBDE01.ent.ti.com>
-References: <1351698962-3923-1-git-send-email-panto@antoniou-consulting.com>
- <20121030181837.GM11908@atomide.com>
- <alpine.DEB.2.00.1210302324530.6152@utopia.booyaka.com>
- <79CD15C6BA57404B839C016229A409A83EB529E4@DBDE01.ent.ti.com>
- <alpine.DEB.2.00.1210310547560.8340@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.00.1210310547560.8340@utopia.booyaka.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753807Ab2JaGjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 02:39:53 -0400
+Date: Tue, 30 Oct 2012 23:40:56 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>, acme@redhat.com, mingo@kernel.org,
+        eranian@google.com, asharma@fb.com,
+        Anton Blanchard <anton@au1.ibm.com>, paulus@samba.org,
+        mpjohn@us.ibm.com, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] perf: Add a few generic stalled-cycles events
+Message-ID: <20121031064056.GA12061@us.ibm.com>
+References: <20121012012839.GA15348@us.ibm.com>
+ <20121015155534.GR8285@erda.amd.com>
+ <20121016100809.GS8285@erda.amd.com>
+ <20121016183148.GA25482@us.ibm.com>
+ <1351081662.22332.13.camel@twins>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351081662.22332.13.camel@twins>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12103106-5806-0000-0000-00001B39B662
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 11:19:44, Paul Walmsley wrote:
-> On Wed, 31 Oct 2012, Hiremath, Vaibhav wrote:
-> 
-> > As far as lck clock node is concerned, we had deliberately dropped all leaf-
-> > node clocks from the clock tree, please refer to the description mentioned 
-> > in -
-> > http://lists.infradead.org/pipermail/linux-arm-kernel/2012-May/101987.html
-> 
-> Ach, should have remembered that :-(  Indeed there is an LCDC hwmod:
-> 
-> static struct omap_hwmod am33xx_lcdc_hwmod = {
-> 	.name		= "lcdc",
-> 	.class		= &am33xx_lcdc_hwmod_class,
-> 	.clkdm_name	= "lcdc_clkdm",
-> 	.mpu_irqs	= am33xx_lcdc_irqs,
-> 	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
-> 	.main_clk	= "lcd_gclk",
-> 	.prcm		= {
-> 		.omap4	= {
-> 			.clkctrl_offs	= AM33XX_CM_PER_LCDC_CLKCTRL_OFFSET,
-> 			.modulemode	= MODULEMODE_SWCTRL,
-> 		},
-> 	},
-> };
-> 
-> > >From LCDC driver perspective, driver is using,
-> > 
-> > fb_clk = clk_get(&device->dev, NULL);
-> > 
-> > This I feel needs to be corrected for valid name as per Spec (mostly I would 
-> > vote for "fck") and then every platform should make sure that it returns 
-> > valid clock-node for it.
-> > 
-> > Change in Driver would be,
-> > 
-> > fb_clk = clk_get(&device->dev, "fck");
-> 
+Peter Zijlstra [peterz@infradead.org] wrote:
+| On Tue, 2012-10-16 at 11:31 -0700, Sukadev Bhattiprolu wrote:
+| > On a side note, how does the kernel on x86 use the 'config' information in 
+| > say /sys/bus/event_source/devices/cpu/format/cccr ? On Power7, the raw
+| > code encodes the information such as the PMC to use for the event. Is that
+| > how the 'config' info in Intel is used ?
+| > 
+| > Does the 'config' info change from system to system or is it static for
+| > a given event on a given CPU ? 
+| 
+| Have a look at commits (tip/master):
+| 
+|   641cc938815dfd09f8fa1ec72deb814f0938ac33
+|   a47473939db20e3961b200eb00acf5fcf084d755
+|   43c032febde48aabcf6d59f47cdcb7b5debbdc63
+| 
+| 
+| So basically
+| 
+|  /sys/bus/event_source/devices/cpu/format/event
+| 
+| contains something like:
+| 
+|   config:0-7
+| 
+| Which says that for the 'cpu' PMU, field 'event' fills
+| perf_event_attr::config bits 0 through 7 (for type=PERF_TYPE_RAW).
+| 
+| The perf tool syntax for this is:
+| 
+|   perf stat -e 'cpu/event=0x3c/'
+| 
+| This basically allows you to expose bitfields in the 'raw' event format
+| for ease of writing raw events. I do not know if the Power PMU has such
+| or not.
 
-Ok, thanks. Let me submit patch for this.
+Thanks for the detailed explanation.
 
-Thanks,
-Vaibhav
+Power does not support this yet, but I have started working on it now.
 
-> Indeed.
-> 
-> 
-> - Paul
-> 
+BTW, does this mean that we can use arch-specific names for the sysfs entries
+within:
+
+	/sys/bus/event_source/devices/cpu/events/
+
+So instead of the names I came up with in this patch, stalled-cycles-fixed-point
+we could use the name used in the CPU spec - 'cmplu_stall_fxu' in the arch
+specific code ?
+
+Sukadev
 
