@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760177Ab2JaBgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 21:36:46 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:56514 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475Ab2JaBgm (ORCPT
+	id S1756666Ab2JaBif (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 21:38:35 -0400
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:49437 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751000Ab2JaBid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 21:36:42 -0400
+	Tue, 30 Oct 2012 21:38:33 -0400
+X-Greylist: delayed 1545 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Oct 2012 21:38:33 EDT
+Date: Wed, 31 Oct 2012 01:12:44 +0000
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: linux-kernel@vger.kernel.org
+Subject: Console font corruption on tty1 after using xorg in 3.6 with i915 
+Message-ID: <20121031011244.GA14804@milliways>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
-References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
- <20121030214257.GB2681@htj.dyndns.org> <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
- <1351646186.4004.41.camel@gandalf.local.home> <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Tue, 30 Oct 2012 21:36:21 -0400
-Message-ID: <CA+1xoqd8vAn+N1JuhpXRjSr74OPtnnw_1UBhf8=c4WDC3jOirw@mail.gmail.com>
-Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive hashtable
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Cloudmark-Analysis: v=1.1 cv=AUhbpHVS+xhHrj9wLCYAQoYnFLYUZdbP8UM0GmH2jwk= c=1 sm=0 a=wom5GMh1gUkA:10 a=JoKJUd9NJSQA:10 a=uObrxnre4hsA:10 a=8nJEP1OIZ-IA:10 a=NCIGvu0kO5pZwXIYr-MA:9 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi, since 3.6-rc7 I'm *sometimes* seeing console font corruption on
+tty1 after I leave xorg [ I'm old enough to use 'startx' ].  This is
+with a 512-glyph font.  What seems to be happening is that many
+lower-case ASCII letters, and also '0', are replaced by other
+glyphs.  Many of these other glyphs happen to be stored at ASCII
+values below 'space' in my font, but I doubt that is important.
 
-> But whatever. This series has gotten way too much bike-shedding
-> anyway. I think it should just be applied, since it does remove lines
-> of code overall. I'd even possibly apply it to mainline, but it seems
-> to be against linux-next.
+ Last week I tried to determine where/when this happened, and
+managed to get it by using the 3.4 epiphany browser, perhaps only
+when accessing googlemail.  But it didn't happen all the time.  I
+never saw it with 3.6-rc3, but I did see it with all of -rc7, 3.6.0,
+3.6.1.  I then upgraded to 3.6.3 and the problem seemed to have gone.
+Unfortunately, tonight it happened again in 3.6.3.
 
-Yup, I switched to using -next because I've been running my
-trinity/KVM tools tests with it.
+ Is anyone else seeing anything like this ?
 
-I can either rebase that on top of mainline, or we can ask maintainers
-to take it to their own trees if you take only 01/16 into mainline.
-What would you prefer?
+ Just to be clear, I normally log in on tty1.  If the problem
+occurs, tty2 to tty6 are fine.  The only way I've found to fix the
+corruption is to reboot.  I'm mentioning i915 in the subject because
+my r600 radeon doesn't have this problem.
 
-
-Thanks,
-Sasha
+ken
+-- 
+das eine Mal als Tragödie, das andere Mal als Farce
