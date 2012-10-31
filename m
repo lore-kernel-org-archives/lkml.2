@@ -1,114 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935602Ab2JaNtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 09:49:53 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:52169 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933628Ab2JaNtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 09:49:50 -0400
-Message-ID: <50912C6D.6020000@parallels.com>
-Date: Wed, 31 Oct 2012 17:49:33 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <lizefan@huawei.com>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
-        <bsingharora@gmail.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET] cgroup: simplify cgroup removal path
-References: <1351657365-25055-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1351657365-25055-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1422905Ab2JaNv7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 09:51:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21150 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933628Ab2JaNv5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 09:51:57 -0400
+X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=gPGaiRUHczgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=rQ8w98ZuNmwA:10 a=Zb1TR0gF99nHc721YnAA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351691516.4004.80.camel@gandalf.local.home>
+Subject: Re: [PATCH 2/2] irq_work: Fix racy IRQ_WORK_BUSY flag setting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: anish kumar <anish198519851985@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Wed, 31 Oct 2012 09:51:56 -0400
+In-Reply-To: <1351681467.1504.20.camel@anish-Inspiron-N5050>
+References: <1351611301-3520-1-git-send-email-fweisbec@gmail.com>
+	 <1351611301-3520-3-git-send-email-fweisbec@gmail.com>
+	 <1351622024.1504.13.camel@anish-Inspiron-N5050>
+	 <CAFTL4hz7Jy69rr4Ze1pOtYPo5CFSZuTGXdY+w3jR4ZboA_8EYg@mail.gmail.com>
+	 <1351650181.4004.70.camel@gandalf.local.home>
+	 <1351681467.1504.20.camel@anish-Inspiron-N5050>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 08:22 AM, Tejun Heo wrote:
-> Hello, guys.
-> 
-> cgroup removal path is quite ugly.  A lot of the ugliness comes from
-> the weird design which allows ->pre_destroy() to fail and the feature
-> to drain existing CSS reference counts before committing to removal.
-> Both mean that it should be possible to roll-back cgroup destruction
-> after some or all ->pre_destroy() invocations.
-> 
-> This weird design has never really worked.  To list a couple examples.
-> 
->  * Some ->pre_destroy() implementations aren't side-effect free.
->    Roll-back happens after a lot of state is already lost.
-> 
->  * Some ->pre_destroy() implementations (naturally) assume that the
->    cgroup being destroyed would stay quiescent between successful
->    ->pre_destroy() and its destruction.  Unfortunately, any operation
->    can happen inbetween and the cgroup could be in a very different
->    state by the time it actually gets destroyed.
-> 
-> It's just such an unusual design which unnecessarily contains weird
-> code path combinations which are tricky to hit, reproduce and expect.
-> Moreover, the design's deficiencies attracts kludges on top as
-> workarounds and we end up with stuff like cgroup_exclude_rmdir() and
-> cgroup_release_and_wakeup_rmdir() which really make me want to cry.
-> 
-> Now that memcg has moved away from failable ->pre_destroy(), we can do
-> away with all these.  I tested some basic operations and some corner
-> cases but am still a bit scared.  Would love to get acks from Li and
-> memcg people.
-> 
-> This patchset contains the following eight patches.
-> 
->  0001-cgroup-kill-cgroup_subsys-__DEPRECATED_clear_css_ref.patch
->  0002-cgroup-kill-CSS_REMOVED.patch
->  0003-cgroup-use-cgroup_lock_live_group-parent-in-cgroup_c.patch
->  0004-cgroup-deactivate-CSS-s-and-mark-cgroup-dead-before-.patch
->  0005-cgroup-remove-CGRP_WAIT_ON_RMDIR-cgroup_exclude_rmdi.patch
->  0006-memcg-make-mem_cgroup_reparent_charges-non-failing.patch
->  0007-hugetlb-do-not-fail-in-hugetlb_cgroup_pre_destroy.patch
->  0008-cgroup-make-pre_destroy-return-void.patch
-> 
-> 0001-0002 remove now unused ->pre_destroy() failure handling and do
-> follow-up simplification.
-> 
-> 0003-0004 update removal path such that each ->pre_destroy() is
-> guaranteed to be invoked once per removal and the cgroup being
-> destroyed stays quiescent until destruction is complete.
-> 
-> 0005 removes the scary CGRP_WAIT_ON_RMDIR mechanism.
-> 
-> 0006-0008 are follow-up clean-ups.  0006 and 0007 are from Michal's
-> patchset[1].
-> 
-> This patchset is on top of
-> 
->   v3.6 (a0d271cbfe)
-> + [1] the first three patches of
->       "memcg/cgroup: do not fail fail on pre_destroy callbacks" patchset
-> 
-> and available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-rmdir-updates
-> 
-> Thanks.
-> 
->  block/blk-cgroup.c     |    3 
->  include/linux/cgroup.h |   41 -------
->  kernel/cgroup.c        |  256 +++++++++++--------------------------------------
->  mm/hugetlb_cgroup.c    |   11 --
->  mm/memcontrol.c        |   51 +--------
->  5 files changed, 75 insertions(+), 287 deletions(-)
+On Wed, 2012-10-31 at 20:04 +0900, anish kumar wrote:
+
+> > This now does:
+> > 
+> > 	CPU 1					CPU 2
+> > 	-----					-----
+> > 	(flags = 0)
+> > 	cmpxchg(flags, 0, IRQ_WORK_FLAGS)
+> > 	(flags = 3)
+> > 	[...]
+
+We can still add here:
+
+						(fetch flags)
+
+> > 	xchg(&flags, IRQ_WORK_BUSY)
+> > 	(flags = 2)
+> > 	func()
+> > 						oflags = cmpxchg(&flags, flags, nflags);
+
+Then the cmpxchg() would fail, and oflags would be 2
+
+> > 						(sees flags = 2)
+> > 						if (flags & IRQ_WORK_PENDING)
+
+This should be:
+						  if (oflags & IRQ_WORK_PENDING)
 
 
-The patches are quite straightforward, and you are basically throwing
-useless code away...
+> > 							(not true)
+> > 						(loop)						
+> > 	cmpxchg(flags, 2, 0);
+> > 	(flags = 2)
 
-The only think that drew my attention is that you are changing the
-local_irq_save callsite to local_irq_disable. It shouldn't be a problem,
-since this is never expected to be called in interrupt context.
+This should be:
+	  (flags = 0)
+as we described the previous cmpxchg() as failing, flags would still be
+2 before this cmpxchg(), and this one would succeed.
 
-Still... it makes me wonder if that disabled-interrupt block is still
-needed? According to the changelogs, it was introduced in e7c5ec919 for
-the css_tryget mechanism. But css_tryget itself will never scan
-subsystems, so if we can no longer fail, we should be able to just ditch
-it. Unless I am missing something
+-- Steve
+
+> > 						flags = 3
+> > 
+> > 
+> > 
+
 
