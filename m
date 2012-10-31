@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935412Ab2JaLHh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 07:07:37 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52167 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933580Ab2JaLHf (ORCPT
+	id S935433Ab2JaLJw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 07:09:52 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38149 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935389Ab2JaLJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 07:07:35 -0400
-Message-ID: <50910664.1010304@ti.com>
-Date: Wed, 31 Oct 2012 12:07:16 +0100
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 31 Oct 2012 07:09:49 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <509106E2.70008@jp.fujitsu.com>
+Date: Wed, 31 Oct 2012 20:09:22 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Afzal Mohammed <afzal@ti.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, AnilKumar Ch <anilkumar@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vaibhav Hiremath <hvaibhav@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: dts: am33xx: rtc node
-References: <1351589646-27082-1-git-send-email-afzal@ti.com>
-In-Reply-To: <1351589646-27082-1-git-send-email-afzal@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: <yinghai@kernel.org>, <bhelgaas@google.com>, <lenb@kernel.org>,
+        <jiang.liu@huawei.com>, <izumi.taku@jp.fujitsu.com>,
+        <linux-acpi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 0/3] ACPI: container hot remove support.
+References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Afzal,
+Hi Tang,
 
-On 10/30/2012 10:34 AM, Afzal Mohammed wrote:
-> Add am33xx rtc node.
+2012/10/31 16:27, Tang Chen wrote:
+> Hi,
 > 
-> Signed-off-by: Afzal Mohammed <afzal@ti.com>
-> ---
-> Hi Benoit,
+> The container hotplug handler container_notify_cb() didn't implement
+> the hot-remove functionality. So, these 3 patches implement it like
+> the following way:
 > 
-> This is based on your for_3.8/dts branch.
+> patch 1. Do not use kacpid_wq/kacpid_notify_wq to handle container hotplug event,
+>           use kacpi_hotplug_wq instead to avoid deadlock.
+>           Doing this is to reuse acpi_bus_hot_remove_device() in container
+>           hot-remove handling.
+> 
+> patch 2. Introduce a new function container_device_remove() to handle
+>           ACPI_NOTIFY_EJECT_REQUEST event for container.
 
-I've just applied it in the branch with a slight change in the subject.
+If container device contains memory device, the function is 
+very danger. As you know, we are developing a memory hotplug.
+If memory has kernel memory, memory hot remove operations fails.
+But container_device_remove() cannot realize it. So even if
+the memory hot remove operation fails, container_device_remove()
+keeps hot remove operation. Finally, the function sends _EJ0
+to firmware. In this case, if the memory is accessed, kernel
+panic occurs.
+The example is as follows:
+
+ https://lkml.org/lkml/2012/9/26/318
 
 Thanks,
-Benoit
+Yasuaki Ishimatsu
 
 > 
-> This has been tested on Beagle Bone.
 > 
-> Bindings along with driver changes for DT has been picked by Andrew
-> Morton and is now present in linux-next.
+> change log v2 -> v3:
 > 
-> Regards
-> Afzal
+> 1. Add 1 patch(patch1). As Toshi Kan mentioned, acpi_os_hotplug_execute() is already
+>     kernel. So use it instead of alloc_acpi_hp_work() to add hotplug job onto kacpi_hotplug_wq.
 > 
-> v2
->  1. Remove interrupt parent in rtc node.
->  2. Modify subject as per new convention.
+> 2. In patch3: Print caller's function name when container_device_remove() fails to help to debug.
+> 
+> 3. In patch3: Add commit message to describ why we need to call acpi_bus_trim() twice when
+>     removing devices.
+> 
+> change log v1 -> v2:
+> 
+> 1. In patch1: Based on the lastest for-pci-split-pci-root-hp-2 branch from Lu Yinghai,
+>     use alloc_acpi_hp_work() to add container hotplug work into kacpi_hotplug_wq.
+> 
+> 2. In patch2: Allocate ej_event after container is stopped, so that we don't need to
+>     kfree the ej_event if stopping container failed.
 > 
 > 
->  arch/arm/boot/dts/am33xx.dtsi | 8 ++++++++
->  1 file changed, 8 insertions(+)
+> This is based on Lu Yinghai's job.
+> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-split-pci-root-hp-2
 > 
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index 70d24b8..97a7bd3 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -291,5 +291,13 @@
->  			ti,hwmods = "timer7";
->  			ti,timer-pwm;
->  		};
-> +
-> +		rtc@44e3e000 {
-> +			compatible = "ti,da830-rtc";
-> +			reg = <0x44e3e000 0x1000>;
-> +			interrupts = <75
-> +				      76>;
-> +			ti,hwmods = "rtc";
-> +		};
->  	};
->  };
 > 
+> Tang Chen (3):
+>    Use acpi_os_hotplug_execute() instead of alloc_acpi_hp_work().
+>    Use kacpi_hotplug_wq to handle container hotplug event.
+>    Improve container_notify_cb() to support container hot-remove.
+> 
+>   drivers/acpi/container.c           |   95 +++++++++++++++++++++++++++++++-----
+>   drivers/acpi/osl.c                 |   28 +++++-----
+>   drivers/acpi/pci_root_hp.c         |   25 ++++++---
+>   drivers/pci/hotplug/acpiphp_glue.c |   39 ++++++++-------
+>   include/acpi/acpiosxf.h            |    7 +--
+>   5 files changed, 137 insertions(+), 57 deletions(-)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
 
