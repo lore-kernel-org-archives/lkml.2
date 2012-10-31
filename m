@@ -1,128 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab2JaAba (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 20:31:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15285 "EHLO
+	id S1756727Ab2JaAb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 20:31:28 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24247 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292Ab2JaAbY (ORCPT
+	with ESMTP id S1752235Ab2JaAbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 20:31:24 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=x4JOzqezCnsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=eyxcYNHtip8A:10 a=VwQbUJbxAAAA:8 a=23Gay-bRqyLVN7q2eI0A:9 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Tue, 30 Oct 2012 20:31:23 -0400
+X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9Sh0tkKHrLsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=NDWzv-LtIjcA:10 a=VwQbUJbxAAAA:8 a=ikMIzOjJKqLRoHuP5kEA:9 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121031003123.098798359@goodmis.org>
+Message-Id: <20121031003122.969515377@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 30 Oct 2012 20:31:10 -0400
+Date: Tue, 30 Oct 2012 20:31:09 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Peter LaDow <petela@gocougs.wsu.edu>
-Subject: [PATCH RT 3/4] net: netfilter: Serialize xt_write_recseq sections on RT
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 2/4] rcu: Disable RCU_FAST_NO_HZ on RT
 References: <20121031003107.834398757@goodmis.org>
-Content-Disposition: inline; filename=0003-net-netfilter-Serialize-xt_write_recseq-sections-on-.patch
+Content-Disposition: inline; filename=0002-rcu-Disable-RCU_FAST_NO_HZ-on-RT.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
-The netfilter code relies only on the implicit semantics of
-local_bh_disable() for serializing wt_write_recseq sections. RT breaks
-that and needs explicit serialization here.
+This uses a timer_list timer from the irq disabled guts of the idle
+code. Disable it for now to prevent wreckage.
 
-Reported-by: Peter LaDow <petela@gocougs.wsu.edu>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: stable-rt@vger.kernel.org
 ---
- include/linux/locallock.h          |    4 ++++
- include/linux/netfilter/x_tables.h |    7 +++++++
- net/netfilter/core.c               |    6 ++++++
- 3 files changed, 17 insertions(+)
+ init/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/locallock.h b/include/linux/locallock.h
-index f1804a3..a5eea5d 100644
---- a/include/linux/locallock.h
-+++ b/include/linux/locallock.h
-@@ -25,6 +25,9 @@ struct local_irq_lock {
- 	DEFINE_PER_CPU(struct local_irq_lock, lvar) = {			\
- 		.lock = __SPIN_LOCK_UNLOCKED((lvar).lock) }
+diff --git a/init/Kconfig b/init/Kconfig
+index 720c182..aa6545f 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -469,7 +469,7 @@ config RCU_FANOUT_EXACT
  
-+#define DECLARE_LOCAL_IRQ_LOCK(lvar)					\
-+	DECLARE_PER_CPU(struct local_irq_lock, lvar)
-+
- #define local_irq_lock_init(lvar)					\
- 	do {								\
- 		int __cpu;						\
-@@ -220,6 +223,7 @@ static inline int __local_unlock_irqrestore(struct local_irq_lock *lv,
- #else /* PREEMPT_RT_BASE */
- 
- #define DEFINE_LOCAL_IRQ_LOCK(lvar)		__typeof__(const int) lvar
-+#define DECLARE_LOCAL_IRQ_LOCK(lvar)		extern __typeof__(const int) lvar
- 
- static inline void local_irq_lock_init(int lvar) { }
- 
-diff --git a/include/linux/netfilter/x_tables.h b/include/linux/netfilter/x_tables.h
-index 32cddf7..bed90da2 100644
---- a/include/linux/netfilter/x_tables.h
-+++ b/include/linux/netfilter/x_tables.h
-@@ -186,6 +186,7 @@ struct xt_counters_info {
- #ifdef __KERNEL__
- 
- #include <linux/netdevice.h>
-+#include <linux/locallock.h>
- 
- /**
-  * struct xt_action_param - parameters for matches/targets
-@@ -466,6 +467,8 @@ extern void xt_free_table_info(struct xt_table_info *info);
-  */
- DECLARE_PER_CPU(seqcount_t, xt_recseq);
- 
-+DECLARE_LOCAL_IRQ_LOCK(xt_write_lock);
-+
- /**
-  * xt_write_recseq_begin - start of a write section
-  *
-@@ -480,6 +483,9 @@ static inline unsigned int xt_write_recseq_begin(void)
- {
- 	unsigned int addend;
- 
-+	/* RT protection */
-+	local_lock(xt_write_lock);
-+
- 	/*
- 	 * Low order bit of sequence is set if we already
- 	 * called xt_write_recseq_begin().
-@@ -510,6 +516,7 @@ static inline void xt_write_recseq_end(unsigned int addend)
- 	/* this is kind of a write_seqcount_end(), but addend is 0 or 1 */
- 	smp_wmb();
- 	__this_cpu_add(xt_recseq.sequence, addend);
-+	local_unlock(xt_write_lock);
- }
- 
- /*
-diff --git a/net/netfilter/core.c b/net/netfilter/core.c
-index afca6c7..aa3f87b 100644
---- a/net/netfilter/core.c
-+++ b/net/netfilter/core.c
-@@ -20,11 +20,17 @@
- #include <linux/proc_fs.h>
- #include <linux/mutex.h>
- #include <linux/slab.h>
-+#include <linux/locallock.h>
- #include <net/net_namespace.h>
- #include <net/sock.h>
- 
- #include "nf_internals.h"
- 
-+#ifdef CONFIG_PREEMPT_RT_BASE
-+DEFINE_LOCAL_IRQ_LOCK(xt_write_lock);
-+EXPORT_PER_CPU_SYMBOL(xt_write_lock);
-+#endif
-+
- static DEFINE_MUTEX(afinfo_mutex);
- 
- const struct nf_afinfo __rcu *nf_afinfo[NFPROTO_NUMPROTO] __read_mostly;
+ config RCU_FAST_NO_HZ
+ 	bool "Accelerate last non-dyntick-idle CPU's grace periods"
+-	depends on TREE_RCU && NO_HZ && SMP
++	depends on TREE_RCU && NO_HZ && SMP && !PREEMPT_RT_FULL
+ 	default n
+ 	help
+ 	  This option causes RCU to attempt to accelerate grace periods
 -- 
 1.7.10.4
 
