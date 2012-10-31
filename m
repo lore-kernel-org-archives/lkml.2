@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934197Ab2J3SQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 14:16:11 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:59055 "EHLO
+	id S934183Ab2J3SQH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 14:16:07 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:59056 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934048Ab2J3SMo (ORCPT
+	by vger.kernel.org with ESMTP id S934079Ab2J3SMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Oct 2012 14:12:44 -0400
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
+To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org
-Subject: [PATCH] pwm: export of_pwm_request
-Date: Wed, 31 Oct 2012 17:57:10 +0200
-Message-Id: <1351699030-4401-1-git-send-email-panto@antoniou-consulting.com>
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
+Subject: [PATCH] i2c: Export capability to probe devices
+Date: Wed, 31 Oct 2012 17:57:20 +0200
+Message-Id: <1351699040-4445-1-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to hide of_pwm_request, it's useful to other in-kernel users.
+Probe devices for a node other that the adapter node.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- drivers/pwm/core.c  | 6 +++++-
- include/linux/pwm.h | 7 +++++++
- 2 files changed, 12 insertions(+), 1 deletion(-)
+ drivers/of/of_i2c.c    | 14 ++++++++++----
+ include/linux/of_i2c.h |  3 +++
+ 2 files changed, 13 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index f5acdaa..f8c7e6b 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -457,7 +457,7 @@ static struct pwm_chip *of_node_to_pwmchip(struct device_node *np)
-  * becomes mandatory for devices that look up the PWM device via the con_id
-  * parameter.
-  */
--static struct pwm_device *of_pwm_request(struct device_node *np,
-+struct pwm_device *of_pwm_request(struct device_node *np,
- 					 const char *con_id)
+diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
+index 3550f3b..7f36b05 100644
+--- a/drivers/of/of_i2c.c
++++ b/drivers/of/of_i2c.c
+@@ -18,18 +18,18 @@
+ #include <linux/of_irq.h>
+ #include <linux/module.h>
+ 
+-void of_i2c_register_devices(struct i2c_adapter *adap)
++void of_i2c_register_node_devices(struct i2c_adapter *adap,
++		struct device_node *parent_node)
  {
- 	struct pwm_device *pwm = NULL;
-@@ -466,6 +466,9 @@ static struct pwm_device *of_pwm_request(struct device_node *np,
- 	int index = 0;
- 	int err;
+ 	void *result;
+ 	struct device_node *node;
  
-+	if (!np)
-+		return ERR_PTR(-ENODEV);
+-	/* Only register child devices if the adapter has a node pointer set */
+-	if (!adap->dev.of_node)
++	if (!parent_node)
+ 		return;
+ 
+ 	dev_dbg(&adap->dev, "of_i2c: walking child nodes\n");
+ 
+-	for_each_child_of_node(adap->dev.of_node, node) {
++	for_each_child_of_node(parent_node, node) {
+ 		struct i2c_board_info info = {};
+ 		struct dev_archdata dev_ad = {};
+ 		const __be32 *addr;
+@@ -76,6 +76,12 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
+ 		}
+ 	}
+ }
++EXPORT_SYMBOL(of_i2c_register_node_devices);
 +
- 	if (con_id) {
- 		index = of_property_match_string(np, "pwm-names", con_id);
- 		if (index < 0)
-@@ -516,6 +519,7 @@ put:
- 
- 	return pwm;
- }
-+EXPORT_SYMBOL(of_pwm_request);
- 
- /**
-  * pwm_add_table() - register PWM device consumers
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 112b314..fafbb1c 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -171,6 +171,7 @@ struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
- 					 unsigned int index,
- 					 const char *label);
- 
-+struct pwm_device *of_pwm_request(struct device_node *np, const char *consumer);
- struct pwm_device *pwm_get(struct device *dev, const char *consumer);
- void pwm_put(struct pwm_device *pwm);
- 
-@@ -204,6 +205,12 @@ static inline struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
- 	return ERR_PTR(-ENODEV);
- }
- 
-+static inline struct pwm_device *of_pwm_request(struct device_node *np,
-+					 const char *consumer)
++void of_i2c_register_devices(struct i2c_adapter *adap)
 +{
-+	return ERR_PTR(-ENODEV);
++	of_i2c_register_node_devices(adap, adap->dev.of_node);
 +}
+ EXPORT_SYMBOL(of_i2c_register_devices);
+ 
+ static int of_dev_node_match(struct device *dev, void *data)
+diff --git a/include/linux/of_i2c.h b/include/linux/of_i2c.h
+index 1cb775f..d2f8ebb6 100644
+--- a/include/linux/of_i2c.h
++++ b/include/linux/of_i2c.h
+@@ -15,6 +15,9 @@
+ #if defined(CONFIG_OF_I2C) || defined(CONFIG_OF_I2C_MODULE)
+ #include <linux/i2c.h>
+ 
++extern void of_i2c_register_node_devices(struct i2c_adapter *adap,
++		struct device_node *parent_node);
 +
- static inline struct pwm_device *pwm_get(struct device *dev,
- 					 const char *consumer)
- {
+ extern void of_i2c_register_devices(struct i2c_adapter *adap);
+ 
+ /* must call put_device() when done with returned i2c_client device */
 -- 
 1.7.12
 
