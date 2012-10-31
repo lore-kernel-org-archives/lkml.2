@@ -1,94 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422786Ab2JaMaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 08:30:11 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52391 "EHLO arroyo.ext.ti.com"
+	id S1757466Ab2JaM3k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 08:29:40 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:21951 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935514Ab2JaMaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 08:30:04 -0400
-Message-ID: <509119AE.6050505@ti.com>
-Date: Wed, 31 Oct 2012 17:59:34 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
-        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
-        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
-        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
-Subject: Re: [PATCH v3 01/11] clk: davinci - add main PLL clock driver
-References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-2-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1351181518-11882-2-git-send-email-m-karicheri2@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1757251Ab2JaM32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 08:29:28 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <cgroups@vger.kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 2/2] allow post_create to fail
+Date: Wed, 31 Oct 2012 16:29:14 +0400
+Message-Id: <1351686554-22592-3-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1351686554-22592-1-git-send-email-glommer@parallels.com>
+References: <1351686554-22592-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Murali,
+Initialization in post_create can theoretically fail (although it won't
+in cpuset). The comment in cgroup.c even seem to indicate that the
+possibility of failure was the intention.
 
-On 10/25/2012 9:41 PM, Murali Karicheri wrote:
-> This is the driver for the main PLL clock hardware found on DM SoCs.
-> This driver borrowed code from arch/arm/mach-davinci/clock.c and
-> implemented the driver as per common clock provider API. The main PLL
-> hardware typically has a multiplier, a pre-divider and a post-divider.
-> Some of the SoCs has the divider fixed meaning they can not be
-> configured through a register. HAS_PREDIV and HAS_POSTDIV flags are used
-> to tell the driver if a hardware has these dividers present or not.
-> Driver is configured through the struct clk_pll_data that has the
-> SoC specific clock data.
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> ---
+It is not terribly complicated, so let us just allow it to fail.
 
-> diff --git a/drivers/clk/davinci/clk-pll.c b/drivers/clk/davinci/clk-pll.c
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Li Zefan <lizefan@huawei.com>
+---
+ include/linux/cgroup.h | 2 +-
+ kernel/cgroup.c        | 7 +++++--
+ kernel/cpuset.c        | 8 ++++----
+ 3 files changed, 10 insertions(+), 7 deletions(-)
 
-> +static unsigned long clk_pllclk_recalc(struct clk_hw *hw,
-> +					unsigned long parent_rate)
-> +{
-> +	struct clk_pll *pll = to_clk_pll(hw);
-> +	struct clk_pll_data *pll_data = pll->pll_data;
-> +	u32 mult = 1, prediv = 1, postdiv = 1;
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 7f422ba..34cb906 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -477,7 +477,7 @@ struct cgroup_subsys {
+ 	void (*fork)(struct task_struct *task);
+ 	void (*exit)(struct cgroup *cgrp, struct cgroup *old_cgrp,
+ 		     struct task_struct *task);
+-	void (*post_create)(struct cgroup *cgrp);
++	int (*post_create)(struct cgroup *cgrp);
+ 	void (*bind)(struct cgroup *root);
+ 
+ 	int subsys_id;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 40caab1..20a1422 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3963,8 +3963,11 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 				goto err_destroy;
+ 		}
+ 		/* At error, ->destroy() callback has to free assigned ID. */
+-		if (ss->post_create)
+-			ss->post_create(cgrp);
++		if (ss->post_create) {
++			err = ss->post_create(cgrp);
++			if (err)
++				goto err_destroy;
++		}
+ 
+ 		if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
+ 		    parent->parent) {
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index ca97af8..e7623ae 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1799,19 +1799,19 @@ static struct cftype files[] = {
+  * (and likewise for mems) to the new cgroup. Called with cgroup_mutex
+  * held.
+  */
+-static void cpuset_post_create(struct cgroup *cgroup)
++static int cpuset_post_create(struct cgroup *cgroup)
+ {
+ 	struct cgroup *parent, *child;
+ 	struct cpuset *cs, *parent_cs;
+ 
+ 	if (!clone_children(cgroup))
+-		return;
++		return 0;
+ 
+ 	parent = cgroup->parent;
+ 	list_for_each_entry(child, &parent->children, sibling) {
+ 		cs = cgroup_cs(child);
+ 		if (is_mem_exclusive(cs) || is_cpu_exclusive(cs))
+-			return;
++			return 0;
+ 	}
+ 	cs = cgroup_cs(cgroup);
+ 	parent_cs = cgroup_cs(parent);
+@@ -1820,7 +1820,7 @@ static void cpuset_post_create(struct cgroup *cgroup)
+ 	cs->mems_allowed = parent_cs->mems_allowed;
+ 	cpumask_copy(cs->cpus_allowed, parent_cs->cpus_allowed);
+ 	mutex_unlock(&callback_mutex);
+-	return;
++	return 0;
+ }
+ 
+ /*
+-- 
+1.7.11.7
 
-No need to initialize mult here. I gave this comment last time around as
-well.
-
-> +	unsigned long rate = parent_rate;
-> +
-> +	mult = readl(pll_data->reg_pllm);
-> +
-> +	/*
-> +	 * if fixed_multiplier is non zero, multiply pllm value by this
-> +	 * value.
-> +	 */
-> +	if (pll_data->fixed_multiplier)
-> +		mult =  pll_data->fixed_multiplier *
-> +				(mult & pll_data->pllm_mask);
-> +	else
-> +		mult = (mult & pll_data->pllm_mask) + 1;
-
-Hmm, this is interpreting the 'mult' register field differently in both
-cases. In one case it is 'actual multiplier - 1' and in other case it is
-the 'actual multiplier' itself. Can we be sure that the mult register
-definition will change whenever there is a fixed multiplier in the PLL
-block? I don't think any of the existing DaVinci devices have a fixed
-multiplier. Is this on keystone?
-
-> +struct clk *clk_register_davinci_pll(struct device *dev, const char *name,
-> +			const char *parent_name,
-> +			struct clk_pll_data *pll_data)
-> +{
-> +	struct clk_init_data init;
-> +	struct clk_pll *pll;
-> +	struct clk *clk;
-> +
-> +	if (!pll_data)
-> +		return ERR_PTR(-ENODEV);
-
--EINVAL? Clearly you are treating NULL value as an invalid argument here.
-
-Thanks,
-Sekhar
