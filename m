@@ -1,347 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030188Ab2JaHpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 03:45:14 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:13232 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933553Ab2JaHpL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 03:45:11 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61b-b7f616d00000319b-16-5090d6fb029c
-Message-id: <5090D6F7.5040401@samsung.com>
-Date: Wed, 31 Oct 2012 16:44:55 +0900
-From: jonghwa3.lee@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-To: "R, Durgadoss" <durgadoss.r@intel.com>
-Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Amit Dinel Kachhap <amit.kachhap@linaro.org>
-Subject: Re: [PATCH v2] Thermal: exynos: Add sysfs node supporting exynos's
- emulation mode.
-References: <1351657147-26092-1-git-send-email-jonghwa3.lee@samsung.com>
- <4D68720C2E767A4AA6A8796D42C8EB591FDE36@BGSMSX101.gar.corp.intel.com>
-In-reply-to: <4D68720C2E767A4AA6A8796D42C8EB591FDE36@BGSMSX101.gar.corp.intel.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t9jQd3f1yYEGEycY2FxedccNovPvUcY
-	HZg8Pm+SC2CM4rJJSc3JLEst0rdL4Mr4s+UMU8GGyIoJM1IaGD+7djFyckgImEis2jiNEcIW
-	k7hwbz1bFyMXh5DAdEaJ/ctvsYEkeAUEJX5MvsfSxcjBwSwgL3HkUjZImFlAXWLSvEXMEPUv
-	GSU6Fk5mgajXkpj+YAtYL4uAqkTHrdtgNpuAnMTbpm+MIHNEBSIkfvVzgIRFgMrbd+xkBJnD
-	LDCXSeLQiaXMIDXCArES057kQMyfwCjx8MxBsDmcAiES52b+YJzAKDALyXmzEM6bheS8BYzM
-	qxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCw/CZ9A7GVQ0WhxgFOBiVeHgN/vUHCLEmlhVX
-	5h5ilOBgVhLhLZkxIUCINyWxsiq1KD++qDQntfgQozQHi5I4b7NHSoCQQHpiSWp2ampBahFM
-	lomDU6qBsWj2o50XO6LZxfIrL/WxvVZZb3TodcaTWJM9bzcn1n3W9jhwrTWFZeXVHQ8Uom2X
-	f5y9giNIKo5V/oCoxXO+cy3ee+fFO6dlvZRVL4+Id2R20vqXOuGKSF6xAWdO6CllDtGYLdXW
-	xSWT3G5JHrFY/Nqybs1Z91sy8iUNdQE/8rISTxtffhSpxFKckWioxVxUnAgAjm/Xoj8CAAA=
+	id S932498Ab2JaH6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 03:58:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50724 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752993Ab2JaH6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 03:58:31 -0400
+X-IronPort-AV: E=Sophos;i="4.80,687,1344182400"; 
+   d="scan'208";a="6107040"
+From: Wen Congyang <wency@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org
+Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+Subject: [PART3 Patch 01/14] node_states: introduce N_MEMORY
+Date: Wed, 31 Oct 2012 16:03:59 +0800
+Message-Id: <1351670652-9932-2-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1351670652-9932-1-git-send-email-wency@cn.fujitsu.com>
+References: <1351670652-9932-1-git-send-email-wency@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/31 15:57:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/31 15:57:44,
+	Serialize complete at 2012/10/31 15:57:44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012년 10월 31일 15:45, R, Durgadoss wrote:
-> Hi,
->
-> Looks like a nice feature :-)
-> Without something like this, we had been spending time on
-> writing test drivers, to actually test our thermal framework code.
-Yes, fortunately, Exynos SOCs emulation mode makes our life better. ; )
-> BTW, against which tree this patch was generated ?
-> Rui's -next or master or Linux-next ?
->
-> Some comments below, on a quick glance..
-It is based on Rui's -next branch.
->> -----Original Message-----
->> From: Jonghwa Lee [mailto:jonghwa3.lee@samsung.com]
->> Sent: Wednesday, October 31, 2012 9:49 AM
->> To: linux-pm@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org; Brown, Len; R, Durgadoss; Rafael J.
->> Wysocki; Amit Dinel Kachhap; Jonghwa Lee
->> Subject: [PATCH v2] Thermal: exynos: Add sysfs node supporting exynos's
->> emulation mode.
->>
->> This patch supports exynos's emulation mode with newly created sysfs node.
->> Exynos 4x12 (4212, 4412) and 5 series provide emulation mode for thermal
->> management unit. Thermal emulation mode supports software debug for
->> TMU's
->> operation. User can set temperature manually with software code and TMU
->> will read current temperature from user value not from sensor's value.
->> This patch includes also documentary placed under
->> Documentation/thermal/.
->>
->> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
->> ---
->> v2
->>  exynos_thermal.c
->>  - Fix build error occured by wrong emulation control register name.
->>  - Remove exynos5410 dependent codes.
->>  exynos_theraml_emulation
->>  - Align indentation.
->>
->>  Documentation/thermal/exynos_thermal_emulation |   49 +++++++++++++
->>  drivers/thermal/Kconfig                        |    9 +++
->>  drivers/thermal/exynos_thermal.c               |   88
->> ++++++++++++++++++++++++
->>  3 files changed, 146 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/thermal/exynos_thermal_emulation
->>
->> diff --git a/Documentation/thermal/exynos_thermal_emulation
->> b/Documentation/thermal/exynos_thermal_emulation
->> new file mode 100644
->> index 0000000..062d867
->> --- /dev/null
->> +++ b/Documentation/thermal/exynos_thermal_emulation
->> @@ -0,0 +1,49 @@
->> +EXYNOS EMULATION MODE
->> +========================
->> +
->> +Copyright (C) 2012 Samsung Electronics
->> +
->> +Writen by Jonghwa Lee <jonghwa3.lee@samsung.com>
->> +
->> +Description
->> +-----------
->> +
->> +Exynos 4x12 (4212, 4412) and 5 series provide emulation mode for thermal
->> management unit.
->> +Thermal emulation mode supports software debug for TMU's operation.
->> User can set temperature
->> +manually with software code and TMU will read current temperature from
->> user value not from
->> +sensor's value.
->> +
->> +Enabling CONFIG_EXYNOS_THERMAL_EMUL option will make this support
->> in available.
->> +When it's enabled, sysfs node will be created under
->> +/sys/bus/platform/devices/'exynos device name'/ with name of
->> 'emulation'.
->> +
->> +The sysfs node, 'emulation', will contain value 0 for the initial state. When
->> you input any
->> +temperature you want to update to sysfs node, it automatically enable
->> emulation mode and
->> +current temperature will be changed into it.
->> +(Exynos also supports user changable delay time which would be used to
->> delay of
->> + changing temperature. However, this node only uses same delay of real
->> sensing time, 938us.)
->> +
->> +Disabling emulation mode only requires writing value 0 to sysfs node.
->> +
->> +
->> +TEMP	120 |
->> +	    |
->> +	100 |
->> +	    |
->> +	 80 |
->> +	    |		     	 	 +-----------
->> +	 60 |      		     	 |	    |
->> +	    |	           +-------------|          |
->> +	 40 |              |         	 |          |
->> +   	    |		   |	     	 |          |
->> +	 20 |		   |	     	 |          +----------
->> +	    |	 	   |	     	 |          |          |
->> +  	  0
->> |______________|_____________|__________|__________|_______
->> __
->> +		   A	    	 A	    A	   	       A     TIME
->> +		   |<----->|	 |<----->|  |<----->|	       |
->> +		   | 938us |  	 |	 |  |       |          |
->> +emulation    :  0  50	   |  	 70      |  20      |          0
->> +current temp :   sensor   50		 70         20	      sensor
-> Thanks for the documentation. Is there a publicly available data sheet for this?
-> If so, please provide the link here.
-I'm sorry it isn't.
->> +
->> +
->> +
->> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
->> index e1cb6bd..c02a66c 100644
->> --- a/drivers/thermal/Kconfig
->> +++ b/drivers/thermal/Kconfig
->> @@ -55,3 +55,12 @@ config EXYNOS_THERMAL
->>  	help
->>  	  If you say yes here you get support for TMU (Thermal Managment
->>  	  Unit) on SAMSUNG EXYNOS series of SoC.
->> +
->> +config EXYNOS_THERMAL_EMUL
->> +	bool "EXYNOS TMU emulation mode support"
->> +	depends on !CPU_EXYNOS4210 && EXYNOS_THERMAL
->> +	help
->> +	  Exynos 4412 and 4414 and 5 series has emulation mode on TMU.
->> +	  Enable this option will be make sysfs node in exynos thermal
->> platform
->> +	  device directory to support emulation mode. With emulation mode
->> sysfs
->> +	  node, you can manually input temperature to TMU for simulation
->> purpose.
->> diff --git a/drivers/thermal/exynos_thermal.c
->> b/drivers/thermal/exynos_thermal.c
->> index fd03e85..9e3c150 100644
->> --- a/drivers/thermal/exynos_thermal.c
->> +++ b/drivers/thermal/exynos_thermal.c
->> @@ -99,6 +99,15 @@
->>  #define IDLE_INTERVAL 10000
->>  #define MCELSIUS	1000
->>
->> +#ifdef CONFIG_EXYNOS_THERMAL_EMUL
->> +#define EXYNOS_EMUL_TIME	0x57F0
->> +#define EXYNOS_EMUL_TIME_SHIFT	16
->> +#define EXYNOS_EMUL_DATA_SHIFT	8
->> +#define EXYNOS_EMUL_DATA_MASK	0xFF
->> +#define EXYNOS_EMUL_DISABLE	0x0
->> +#define EXYNOS_EMUL_ENABLE	0x1
->> +#endif /* CONFIG_EXYNOS_THERMAL_EMUL */
->> +
->>  /* CPU Zone information */
->>  #define PANIC_ZONE      4
->>  #define WARN_ZONE       3
->> @@ -832,6 +841,82 @@ static inline struct  exynos_tmu_platform_data
->> *exynos_get_driver_data(
->>  	return (struct exynos_tmu_platform_data *)
->>  			platform_get_device_id(pdev)->driver_data;
->>  }
->> +
->> +#ifdef CONFIG_EXYNOS_THERMAL_EMUL
->> +static ssize_t exynos_tmu_emulation_show(struct device *dev,
->> +					 struct device_attribute *attr,
->> +					 char *buf)
->> +{
->> +	struct platform_device *pdev = container_of(dev,
->> +					struct platform_device, dev);
->> +	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
->> +	unsigned int reg;
->> +	u8 temp_code;
->> +	int temp, enable;
->> +
->> +	mutex_lock(&data->lock);
->> +	clk_enable(data->clk);
->> +	reg = readl(data->base + EXYNOS_EMUL_CON);
->> +	clk_disable(data->clk);
->> +	mutex_unlock(&data->lock);
->> +
->> +	enable = reg & EXYNOS_EMUL_ENABLE;
-> Looks like we don't need this variable 'enable'.
-> Also, initialize temp to 0 in the beginning, which will save the
-> else part of the code.
-Some maintainers warn me off using 0 initializing at beginning.
-Anyway, I'll follow you this time.
->> +
->> +	if (enable) {
->> +		reg >>= EXYNOS_EMUL_DATA_SHIFT;
->> +		temp_code = reg & EXYNOS_EMUL_DATA_MASK;
->> +		temp = code_to_temp(data, temp_code);
->> +	} else {
->> +		temp = 0;
->> +	}
->> +
->> +	return sprintf(buf, "%d\n", temp);
->> +}
->> +
->> +static ssize_t exynos_tmu_emulation_store(struct device *dev,
->> +					struct device_attribute *attr,
->> +					const char *buf, size_t count)
->> +{
->> +	struct platform_device *pdev = container_of(dev,
->> +					struct platform_device, dev);
->> +	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
->> +	unsigned int reg;
->> +	u8 temp_code;
->> +	int temp, enable, i;
->> +
->> +	if (!sscanf(buf, "%d\n", &temp))
->> +		return -EINVAL;
->> +
->> +	if (temp < 0)
->> +		return -EINVAL;
-> Why not combine both the if s using || ?
-Okay, I'll fix it.
->> +
->> +	mutex_lock(&data->lock);
->> +	clk_enable(data->clk);
->> +
->> +	reg = readl(data->base + EXYNOS_EMUL_CON);
->> +	enable = reg & EXYNOS_EMUL_ENABLE;
->> +	if (!enable && !temp)
->> +		goto out;
-> I think you what you are trying to do here is this:
-> If the emulation is already disabled, and 'this' write tries to
-> disable it again, you jump to 'out' as an optimization.
-> Please correct me if I am wrong.
-Yes, you're right. If we try to disable the emulation mode despite it already is disabled,
-then emulation mode will be failed and we can't use it. Because emulation mode has some
-strange characteristic.
-Let me explain more detail. Emulation mode requires synchronous of any value changing and
-enabling. It means you can't change any value (next target temperature, sensing time delay)
-without enabling. In this code, disabling overlapping makes problem at initial state. At the initial,
-there is no next target temperature and only value 1 for delay time. But if you try to write 0 again
-to sysfs node, temp, then it write delay time with 938us and next temperature with minimum
-temperature automatically. Value is changed but enable bit is still disabled. This is what the
-problem is happened.
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-> In this case, name the variable is_enabled or something like
-> that, which makes the check more explicit.
-Okay, I'll consider of it.
->> +
->> +	temp_code = (reg >> EXYNOS_EMUL_DATA_SHIFT) &
->> EXYNOS_EMUL_DATA_MASK;
->> +	temp_code = temp == 0 ? temp_code : temp_to_code(data, temp);
->> +
->> +	reg = (EXYNOS_EMUL_TIME << EXYNOS_EMUL_TIME_SHIFT) |
->> +		(temp_code << EXYNOS_EMUL_DATA_SHIFT) |
->> +		 (temp > 0 ? EXYNOS_EMUL_ENABLE :
->> EXYNOS_EMUL_DISABLE);
-> 2 things here:
-> 1. Can we make the temp > 0 comparison as a separate statement, so that
-> it is easy to read/maintain ?
->
-> 2. you are comparing temp > 0 here, but above you return when temp < 0.
-> Looks like, in this case, the flow will never reach here, when temp < 0.
-Yes, The case, temp < 0 , will never get here. but I want to separate the case, temp = 0 and
-temp > 0. I'll modify this to be more clear.
->> +
->> +	writel(reg, data->base + EXYNOS_EMUL_CON);
->> +out:
->> +	clk_disable(data->clk);
->> +	mutex_unlock(&data->lock);
->> +
->> +	return count;
->> +}
->> +
->> +static DEVICE_ATTR(emulation, 0644, exynos_tmu_emulation_show,
->> +					exynos_tmu_emulation_store);
->> +#endif
->> +
->>  static int __devinit exynos_tmu_probe(struct platform_device *pdev)
->>  {
->>  	struct exynos_tmu_data *data;
->> @@ -930,6 +1015,9 @@ static int __devinit exynos_tmu_probe(struct
->> platform_device *pdev)
->>  		dev_err(&pdev->dev, "Failed to register thermal
->> interface\n");
->>  		goto err_clk;
->>  	}
->> +#ifdef CONFIG_EXYNOS_THERMAL_EMUL
->> +	device_create_file(&pdev->dev, &dev_attr_emulation);
-> Don't we want to capture the return value here ?
-> Also, if we conditionally create this, we should remove this conditionally also.
-> I did not see a corresponding device_remove_file for this attr.
-Sorry, It's my mistake. I'll fix it.
->> +#endif
-> Can we club all the code inside CONFIG_*_EMUL at one place ?
-> This will make it neat, and not spread the #ifdefs all over the driver.
-I'd like to do either. But I just couldn't find a way.
-Could you give me any idea how to do it ?
+We have N_NORMAL_MEMORY for standing for the nodes that have normal memory with
+zone_type <= ZONE_NORMAL.
 
-Best regards,
-Jonghwa Lee.
-> Thanks,
-> Durga
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+And we have N_HIGH_MEMORY for standing for the nodes that have normal or high
+memory.
+
+But we don't have any word to stand for the nodes that have *any* memory.
+
+And we have N_CPU but without N_MEMORY.
+
+Current code reuse the N_HIGH_MEMORY for this purpose because any node which
+has memory must have high memory or normal memory currently.
+
+A)	But this reusing is bad for *readability*. Because the name
+	N_HIGH_MEMORY just stands for high or normal:
+
+A.example 1)
+	mem_cgroup_nr_lru_pages():
+		for_each_node_state(nid, N_HIGH_MEMORY)
+
+	The user will be confused(why this function just counts for high or
+	normal memory node? does it counts for ZONE_MOVABLE's lru pages?)
+	until someone else tell them N_HIGH_MEMORY is reused to stand for
+	nodes that have any memory.
+
+A.cont) If we introduce N_MEMORY, we can reduce this confusing
+	AND make the code more clearly:
+
+A.example 2) mm/page_cgroup.c use N_HIGH_MEMORY twice:
+
+	One is in page_cgroup_init(void):
+		for_each_node_state(nid, N_HIGH_MEMORY) {
+
+	It means if the node have memory, we will allocate page_cgroup map for
+	the node. We should use N_MEMORY instead here to gaim more clearly.
+
+	The second using is in alloc_page_cgroup():
+		if (node_state(nid, N_HIGH_MEMORY))
+			addr = vzalloc_node(size, nid);
+
+	It means if the node has high or normal memory that can be allocated
+	from kernel. We should keep N_HIGH_MEMORY here, and it will be better
+	if the "any memory" semantic of N_HIGH_MEMORY is removed.
+
+B)	This reusing is out-dated if we introduce MOVABLE-dedicated node.
+	The MOVABLE-dedicated node should not appear in
+	node_stats[N_HIGH_MEMORY] nor node_stats[N_NORMAL_MEMORY],
+	because MOVABLE-dedicated node has no high or normal memory.
+
+	In x86_64, N_HIGH_MEMORY=N_NORMAL_MEMORY, if a MOVABLE-dedicated node
+	is in node_stats[N_HIGH_MEMORY], it is also means it is in
+	node_stats[N_NORMAL_MEMORY], it causes SLUB wrong.
+
+	The slub uses
+		for_each_node_state(nid, N_NORMAL_MEMORY)
+	and creates kmem_cache_node for MOVABLE-dedicated node and cause problem.
+
+In one word, we need a N_MEMORY. We just intrude it as an alias to
+N_HIGH_MEMORY and fix all im-proper usages of N_HIGH_MEMORY in late patches.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Acked-by: Hillf Danton <dhillf@gmail.com>
+---
+ include/linux/nodemask.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
+index 7afc363..c6ebdc9 100644
+--- a/include/linux/nodemask.h
++++ b/include/linux/nodemask.h
+@@ -380,6 +380,7 @@ enum node_states {
+ #else
+ 	N_HIGH_MEMORY = N_NORMAL_MEMORY,
+ #endif
++	N_MEMORY = N_HIGH_MEMORY,
+ 	N_CPU,		/* The node has one or more cpus */
+ 	NR_NODE_STATES
+ };
+-- 
+1.8.0
 
