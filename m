@@ -1,160 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933265Ab2JaHYo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 03:24:44 -0400
-Received: from mga03.intel.com ([143.182.124.21]:1355 "EHLO mga03.intel.com"
+	id S933817Ab2JaHZA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 03:25:00 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38928 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932093Ab2JaHYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 03:24:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,685,1344236400"; 
-   d="scan'208";a="211617074"
-Subject: [PATCH 3/3] alarmtimer: cleanup the POSIX clock interface without
- CONFIG_RTC_CLASS
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: john.stultz@linaro.org, tglx@linutronix.de, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-In-Reply-To: <1351700455.15558.1571.camel@cliu38-desktop-build>
-References: <1351700455.15558.1571.camel@cliu38-desktop-build>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Nov 2012 00:25:04 +0800
-Message-ID: <1351700704.15558.1575.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932368Ab2JaHYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 03:24:54 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>, <afzal@ti.com>,
+        <tony@atomide.com>, <broonie@opensource.wolfsonmicro.com>,
+        <rmk+kernel@arm.linux.org.uk>, <gregkh@linuxfoundation.org>
+CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <ivan.djelic@parrot.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>
+Subject: [PATCH v2 1/3] mtd: nand: omap2: Update nerrors using ecc.strength
+Date: Wed, 31 Oct 2012 12:38:25 +0530
+Message-ID: <1351667307-447-2-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1351667307-447-1-git-send-email-avinashphilip@ti.com>
+References: <1351667307-447-1-git-send-email-avinashphilip@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Update number of errors using nand ecc strength.
+Also add macro definitions BCH8_ERROR_MAX & BCH4_ERROR_MAX
 
-When CONFIG_RTC_CLASS is not defined, implementing the POSIX clock
-interface with null function is enough.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
 ---
- kernel/time/alarmtimer.c |   78 ++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 59 insertions(+), 19 deletions(-)
+:100644 100644 5c8978e... a02be29... M	drivers/mtd/nand/omap2.c
+ drivers/mtd/nand/omap2.c |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index 5490fa8..12c17a4 100644
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -41,10 +41,6 @@ static struct alarm_base {
- 	clockid_t		base_clockid;
- } alarm_bases[ALARM_NUMTYPE];
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index 5c8978e..a02be29 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -118,6 +118,9 @@
  
--/* freezer delta & lock used to handle clock_nanosleep triggered wakeups */
--static ktime_t freezer_delta;
--static DEFINE_SPINLOCK(freezer_delta_lock);
--
- static struct wakeup_source *ws;
+ #define OMAP24XX_DMA_GPMC		4
  
- #ifdef CONFIG_RTC_CLASS
-@@ -53,6 +49,10 @@ static struct rtc_timer		rtctimer;
- static struct rtc_device	*rtcdev;
- static DEFINE_MUTEX(rtcdev_mutex);
- 
-+/* freezer delta & lock used to handle clock_nanosleep triggered wakeups */
-+static ktime_t freezer_delta;
-+static DEFINE_SPINLOCK(freezer_delta_lock);
++#define BCH8_MAX_ERROR		8	/* upto 8 bit correctable */
++#define BCH4_MAX_ERROR		4	/* upto 4 bit correctable */
 +
- /**
-  * alarmtimer_get_rtcdev - Return selected rtcdevice
-  *
-@@ -268,21 +268,6 @@ static int alarmtimer_suspend(struct device *dev)
- }
+ /* oob info generated runtime depending on ecc algorithm and layout selected */
+ static struct nand_ecclayout omap_oobinfo;
+ /* Define some generic bad / good block scan pattern which are used
+@@ -1042,7 +1045,7 @@ static void omap3_enable_hwecc_bch(struct mtd_info *mtd, int mode)
+ 	struct nand_chip *chip = mtd->priv;
+ 	u32 val;
+ 
+-	nerrors = (info->nand.ecc.bytes == 13) ? 8 : 4;
++	nerrors = info->nand.ecc.strength;
+ 	dev_width = (chip->options & NAND_BUSWIDTH_16) ? 1 : 0;
+ 	nsectors = 1;
+ 	/*
+@@ -1219,13 +1222,14 @@ static int omap3_init_bch(struct mtd_info *mtd, int ecc_opt)
+ 	struct omap_nand_info *info = container_of(mtd, struct omap_nand_info,
+ 						   mtd);
+ #ifdef CONFIG_MTD_NAND_OMAP_BCH8
+-	const int hw_errors = 8;
++	const int hw_errors = BCH8_MAX_ERROR;
+ #else
+-	const int hw_errors = 4;
++	const int hw_errors = BCH4_MAX_ERROR;
  #endif
+ 	info->bch = NULL;
  
--static void alarmtimer_freezerset(ktime_t absexp, enum alarmtimer_type type)
--{
--	ktime_t delta;
--	unsigned long flags;
--	struct alarm_base *base = &alarm_bases[type];
--
--	delta = ktime_sub(absexp, base->gettime());
--
--	spin_lock_irqsave(&freezer_delta_lock, flags);
--	if (!freezer_delta.tv64 || (delta.tv64 < freezer_delta.tv64))
--		freezer_delta = delta;
--	spin_unlock_irqrestore(&freezer_delta_lock, flags);
--}
--
--
- /**
-  * alarm_init - Initialize an alarm structure
-  * @alarm: ptr to alarm to be initialized
-@@ -393,6 +378,21 @@ u64 alarm_forward(struct alarm *alarm, ktime_t now, ktime_t interval)
- 
- 
- 
-+#ifdef CONFIG_RTC_CLASS
-+static void alarmtimer_freezerset(ktime_t absexp, enum alarmtimer_type type)
-+{
-+	ktime_t delta;
-+	unsigned long flags;
-+	struct alarm_base *base = &alarm_bases[type];
-+
-+	delta = ktime_sub(absexp, base->gettime());
-+
-+	spin_lock_irqsave(&freezer_delta_lock, flags);
-+	if (!freezer_delta.tv64 || (delta.tv64 < freezer_delta.tv64))
-+		freezer_delta = delta;
-+	spin_unlock_irqrestore(&freezer_delta_lock, flags);
-+}
-+
- 
- /**
-  * clock2alarm - helper that converts from clockid to alarmtypes
-@@ -722,7 +722,47 @@ static int alarm_timer_nsleep(const clockid_t which_clock, int flags,
- out:
- 	return ret;
- }
-+#else
-+static inline int alarm_clock_getres(const clockid_t which_clock,
-+						struct timespec *tp)
-+{
-+	return 0;
-+}
-+
-+static inline int alarm_clock_get(clockid_t which_clock, struct timespec *tp)
-+{
-+	return 0;
-+}
- 
-+static inline int alarm_timer_create(struct k_itimer *new_timer)
-+{
-+	return 0;
-+}
-+
-+static inline int alarm_timer_set(struct k_itimer *timr, int flags,
-+				struct itimerspec *new_setting,
-+				struct itimerspec *old_setting)
-+{
-+	return 0;
-+}
-+
-+static inline int alarm_timer_del(struct k_itimer *timr)
-+{
-+	return 0;
-+}
-+
-+static inline void alarm_timer_get(struct k_itimer *timr,
-+				struct itimerspec *cur_setting)
-+{
-+	return;
-+}
-+
-+static inline int alarm_timer_nsleep(const clockid_t which_clock, int flags,
-+		     struct timespec *tsreq, struct timespec __user *rmtp)
-+{
-+	return 0;
-+}
-+#endif
- 
- /* Suspend hook structures */
- static const struct dev_pm_ops alarmtimer_pm_ops = {
+-	max_errors = (ecc_opt == OMAP_ECC_BCH8_CODE_HW) ? 8 : 4;
++	max_errors = (ecc_opt == OMAP_ECC_BCH8_CODE_HW) ?
++		BCH8_MAX_ERROR : BCH4_MAX_ERROR;
+ 	if (max_errors != hw_errors) {
+ 		pr_err("cannot configure %d-bit BCH ecc, only %d-bit supported",
+ 		       max_errors, hw_errors);
 -- 
 1.7.0.4
-
-
 
