@@ -1,71 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759827Ab2JaDvu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Oct 2012 23:51:50 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34742 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756234Ab2JaDvr convert rfc822-to-8bit (ORCPT
+	id S934962Ab2JaD4E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Oct 2012 23:56:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33610 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757352Ab2JaD4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Oct 2012 23:51:47 -0400
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-CC: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        "Porter, Matt" <mporter@ti.com>, "Dill, Russ" <russ.dill@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH] da8xx: Fix revision check on the da8xx driver
-Thread-Topic: [PATCH] da8xx: Fix revision check on the da8xx driver
-Thread-Index: AQHNtsqfCgc9UO0H5UCB7Zm0ApPz9pfSxjAA
-Date: Wed, 31 Oct 2012 03:51:35 +0000
-Message-ID: <A73F36158E33644199EB82C5EC81C7BC3E9E10D6@DBDE01.ent.ti.com>
-References: <1351698984-4007-1-git-send-email-panto@antoniou-consulting.com>
-In-Reply-To: <1351698984-4007-1-git-send-email-panto@antoniou-consulting.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Oct 2012 23:56:01 -0400
+Message-ID: <5090A14E.3050902@vflare.org>
+Date: Tue, 30 Oct 2012 20:55:58 -0700
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] zram: factor-out zram_decompress_page() function
+References: <20121027160052.GA4771@swordfish> <508EB96C.4040505@vflare.org> <20121030210403.GA2635@swordfish>
+In-Reply-To: <20121030210403.GA2635@swordfish>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 21:26:24, Pantelis Antoniou wrote:
-> The revision check fails for the beaglebone; Add new revision ID.
-> 
-> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+On 10/30/2012 02:04 PM, Sergey Senozhatsky wrote:
+> On (10/29/12 10:14), Nitin Gupta wrote:
+>> ======
+>> zram: Fix use-after-free in partial I/O case
+>>
+>> When the compressed size of a page exceeds a threshold, the page is
+>> stored as-is i.e. in uncompressed form. In the partial I/O i.e.
+>> non-PAGE_SIZE'ed I/O case, however, the uncompressed memory was being
+>> freed before it could be copied into the zsmalloc pool resulting in
+>> use-after-free bug.
+>>
+>
+> Hello Nitin,
+> hope you are fine.
+>
+> how about the following one? I moved some of the code to zram_compress_page()
+> (very similar to zram_decompress_page()), so errors are easier to care in
+> zram_bvec_write(). now we handle both use after-kfree (as you did in your patch),
+> and use after-kunmap.
+>
+> please review.
+>
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+>
 > ---
->  drivers/video/da8xx-fb.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-> index 80665f6..866d804 100644
-> --- a/drivers/video/da8xx-fb.c
-> +++ b/drivers/video/da8xx-fb.c
-> @@ -1283,6 +1283,7 @@ static int __devinit fb_probe(struct platform_device *device)
->  		lcd_revision = LCD_VERSION_1;
->  		break;
->  	case 0x4F200800:
-> +	case 0x4F201000:
+>
+>   drivers/staging/zram/zram_drv.c | 91 +++++++++++++++++++++--------------------
+>   1 file changed, 46 insertions(+), 45 deletions(-)
+>
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index 47f2e3a..5f37be1 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -213,6 +213,44 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+>   	return 0;
+>   }
+>
+> +static int zram_compress_page(struct zram *zram, char *uncmem, u32 index)
+> +{
+> +	int ret;
+> +	size_t clen;
+> +	unsigned long handle;
+> +	unsigned char *cmem, *src;
+> +
+> +	src = zram->compress_buffer;
+> +	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
+> +			       zram->compress_workmem);
+> +	if (unlikely(ret != LZO_E_OK)) {
+> +		pr_err("Page compression failed: err=%d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	if (unlikely(clen > max_zpage_size)) {
+> +		zram_stat_inc(&zram->stats.bad_compress);
+> +		src = uncmem;
+> +		clen = PAGE_SIZE;
+> +	}
+> +
+> +	handle = zs_malloc(zram->mem_pool, clen);
+> +	if (!handle) {
+> +		pr_info("Error allocating memory for compressed "
+> +			"page: %u, size=%zu\n", index, clen);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
+> +	memcpy(cmem, src, clen);
+> +	zs_unmap_object(zram->mem_pool, handle);
+> +
+> +	zram->table[index].handle = handle;
+> +	zram->table[index].size = clen;
+> +
+> +	return 0;
+> +}
+> +
+>   static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+>   			  u32 index, int offset, struct bio *bio)
+>   {
+> @@ -267,13 +305,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>   {
+>   	int ret;
+>   	size_t clen;
+> -	unsigned long handle;
+>   	struct page *page;
+> -	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
+> +	unsigned char *user_mem, *uncmem = NULL;
+>
+>   	page = bvec->bv_page;
+> -	src = zram->compress_buffer;
+> -
+>   	if (is_partial_io(bvec)) {
+>   		/*
+>   		 * This is a partial IO. We need to read the full page
+> @@ -286,10 +321,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>   			goto out;
+>   		}
+>   		ret = zram_decompress_page(zram, uncmem, index);
+> -		if (ret) {
+> -			kfree(uncmem);
+> +		if (ret)
+>   			goto out;
+> -		}
+>   	}
+>
+>   	/*
+> @@ -309,58 +342,26 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>   		uncmem = user_mem;
+>
+>   	if (page_zero_filled(uncmem)) {
+> -		kunmap_atomic(user_mem);
+> -		if (is_partial_io(bvec))
+> -			kfree(uncmem);
+>   		zram_stat_inc(&zram->stats.pages_zero);
+>   		zram_set_flag(zram, index, ZRAM_ZERO);
+>   		ret = 0;
+>   		goto out;
+>   	}
+>
+> -	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
+> -			       zram->compress_workmem);
+> -
+> -	kunmap_atomic(user_mem);
+> -	if (is_partial_io(bvec))
+> -			kfree(uncmem);
+> -
+> -	if (unlikely(ret != LZO_E_OK)) {
+> -		pr_err("Compression failed! err=%d\n", ret);
+> -		goto out;
+> -	}
+> -
+> -	if (unlikely(clen > max_zpage_size)) {
+> -		zram_stat_inc(&zram->stats.bad_compress);
+> -		src = uncmem;
+> -		clen = PAGE_SIZE;
+> -	}
+> -
+> -	handle = zs_malloc(zram->mem_pool, clen);
+> -	if (!handle) {
+> -		pr_info("Error allocating memory for compressed "
+> -			"page: %u, size=%zu\n", index, clen);
+> -		ret = -ENOMEM;
+> +	ret = zram_compress_page(zram, uncmem, index);
+> +	if (ret)
+>   		goto out;
+> -	}
+> -	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
+> -
+> -	memcpy(cmem, src, clen);
+> -
+> -	zs_unmap_object(zram->mem_pool, handle);
+> -
+> -	zram->table[index].handle = handle;
+> -	zram->table[index].size = clen;
+>
+> +	clen = zram->table[index].size;
+>   	/* Update stats */
+>   	zram_stat64_add(zram, &zram->stats.compr_size, clen);
+>   	zram_stat_inc(&zram->stats.pages_stored);
+>   	if (clen <= PAGE_SIZE / 2)
+>   		zram_stat_inc(&zram->stats.good_compress);
+> -
+> -	return 0;
+> -
+>   out:
+> +	kunmap_atomic(user_mem);
 
-Thanks for Correcting. This is the LCDC revision on am335x silicon in comparison
-with to one read(0x4F200800) on emulator platform.
+We are doing zs_malloc + zs_map/unmap + memcpy while keeping a page 
+kmap'ed. We must really release it as soon as possible, so 
+zs_compress_page() should just do compression and return with results, 
+or just keep direct can to lzo_compress in bvec_write() since we are not 
+gaining anything by this refactoring, unlike the decompress case.
 
-Acked-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+Do we have a way to generate these partial I/Os so we can exercise these 
+code paths?
 
->  		lcd_revision = LCD_VERSION_2;
->  		break;
->  	default:
-> -- 
-> 1.7.12
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Thanks,
+Nitin
 
