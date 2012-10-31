@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935378Ab2JaK3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 06:29:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55795 "EHLO mx1.redhat.com"
+	id S1422665Ab2JaK3W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 06:29:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39428 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756752Ab2JaK2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 06:28:54 -0400
-Date: Wed, 31 Oct 2012 12:31:11 +0200
+	id S935381Ab2JaK3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 06:29:15 -0400
+Date: Wed, 31 Oct 2012 12:31:31 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 Cc: Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
@@ -16,8 +16,9 @@ Cc: Vlad Yasevich <vyasevic@redhat.com>,
         Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
         virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv2 net-next 2/8] skb: api to report errors for zero copy skbs
-Message-ID: <cfa9ea5acdaeaed930a92f7733e5fc80a4e935a0.1351679008.git.mst@redhat.com>
+Subject: [PATCHv2 net-next 5/8] vhost: track zero copy failures using DMA
+ length
+Message-ID: <f2d45f8c115b02bbe5191ca63319520a509e06d6.1351679008.git.mst@redhat.com>
 References: <cover.1351679008.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -29,63 +30,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Orphaning frags for zero copy skbs needs to allocate data in atomic
-context so is has a chance to fail. If it does we currently discard
-the skb which is safe, but we don't report anything to the caller,
-so it can not recover by e.g. disabling zero copy.
-
-Add an API to free skb reporting such errors: this is used
-by tun in case orphaning frags fails.
+This will be used to disable zerocopy when error rate
+is high.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/skbuff.h |  1 +
- net/core/skbuff.c      | 20 ++++++++++++++++++++
- 2 files changed, 21 insertions(+)
+ drivers/vhost/vhost.c | 7 ++++---
+ drivers/vhost/vhost.h | 4 ++++
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 8bac11b..0644432 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -568,6 +568,7 @@ static inline struct rtable *skb_rtable(const struct sk_buff *skb)
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 906fd9f..5affce3 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -425,7 +425,7 @@ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
+ 	int j = 0;
+ 
+ 	for (i = vq->done_idx; i != vq->upend_idx; i = (i + 1) % UIO_MAXIOV) {
+-		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN)) {
++		if (VHOST_DMA_IS_DONE(vq->heads[i].len)) {
+ 			vq->heads[i].len = VHOST_DMA_CLEAR_LEN;
+ 			vhost_add_used_and_signal(vq->dev, vq,
+ 						  vq->heads[i].id, 0);
+@@ -1600,13 +1600,14 @@ void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *ubufs)
+ 	kfree(ubufs);
  }
  
- extern void kfree_skb(struct sk_buff *skb);
-+extern void skb_tx_error(struct sk_buff *skb, int err);
- extern void consume_skb(struct sk_buff *skb);
- extern void	       __kfree_skb(struct sk_buff *skb);
- extern struct kmem_cache *skbuff_head_cache;
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index eb31f6e..2e7a1fd 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -635,6 +635,26 @@ void kfree_skb(struct sk_buff *skb)
- EXPORT_SYMBOL(kfree_skb);
+-void vhost_zerocopy_callback(struct ubuf_info *ubuf, int zerocopy_status)
++void vhost_zerocopy_callback(struct ubuf_info *ubuf, int status)
+ {
+ 	struct vhost_ubuf_ref *ubufs = ubuf->ctx;
+ 	struct vhost_virtqueue *vq = ubufs->vq;
  
- /**
-+ *	skb_tx_error - report an sk_buff xmit error
-+ *	@skb: buffer that triggered an error
-+ *
-+ *	Report xmit error if a device callback is tracking this skb.
-+ *	skb must be freed afterwards.
-+ */
-+void skb_tx_error(struct sk_buff *skb, int err)
-+{
-+	if (skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
-+		struct ubuf_info *uarg;
+ 	vhost_poll_queue(&vq->poll);
+ 	/* set len to mark this desc buffers done DMA */
+-	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
++	vq->heads[ubuf->desc].len = status ?
++		VHOST_DMA_FAILED_LEN : VHOST_DMA_DONE_LEN;
+ 	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
+ }
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index ad72a1f..6fdf31d 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -17,6 +17,8 @@
+  * For transmit, used buffer len is unused; we override it to track buffer
+  * status internally; used for zerocopy tx only.
+  */
++/* Lower device DMA failed */
++#define VHOST_DMA_FAILED_LEN	3
+ /* Lower device DMA done */
+ #define VHOST_DMA_DONE_LEN	2
+ /* Lower device DMA in progress */
+@@ -24,6 +26,8 @@
+ /* Buffer unused */
+ #define VHOST_DMA_CLEAR_LEN	0
+ 
++#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
 +
-+		uarg = skb_shinfo(skb)->destructor_arg;
-+		if (uarg->callback)
-+			uarg->callback(uarg, err);
-+		skb_shinfo(skb)->tx_flags &= ~SKBTX_DEV_ZEROCOPY;
-+	}
-+}
-+EXPORT_SYMBOL(skb_tx_error);
-+
-+/**
-  *	consume_skb - free an skbuff
-  *	@skb: buffer to free
-  *
+ struct vhost_device;
+ 
+ struct vhost_work;
 -- 
 MST
 
