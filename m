@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945976Ab2JaSQn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 14:16:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33705 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932875Ab2JaSQh (ORCPT
+	id S935779Ab2JaSQr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 14:16:47 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63888 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932875Ab2JaSQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 14:16:37 -0400
+	Wed, 31 Oct 2012 14:16:44 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
         bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHSET v2] cgroup: simplify cgroup removal path
-Date: Wed, 31 Oct 2012 11:16:23 -0700
-Message-Id: <1351707391-22287-1-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3/8] cgroup: use cgroup_lock_live_group(parent) in cgroup_create()
+Date: Wed, 31 Oct 2012 11:16:26 -0700
+Message-Id: <1351707391-22287-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1351707391-22287-1-git-send-email-tj@kernel.org>
+References: <1351707391-22287-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+This patch makes cgroup_create() fail if @parent is marked removed.
+This is to prepare for further updates to cgroup_rmdir() path.
 
-Changes from the last posting[L] are,
+Note that this change isn't strictly necessary.  cgroup can only be
+created via mkdir and the removed marking and dentry removal happen
+without releasing cgroup_mutex, so cgroup_create() can never race with
+cgroup_rmdir().  Even after the scheduled updates to cgroup_rmdir(),
+cgroup_mkdir() and cgroup_rmdir() are synchronized by i_mutex
+rendering the added liveliness check unnecessary.
 
-* cgroup_call_pre_destroy() removal moved from 0001 to 0004 per
-  Michal.
+Do it anyway such that locking is contained inside cgroup proper and
+we don't get nasty surprises if we ever grow another caller of
+cgroup_create().
 
-* Comment and commit message updates per Glauber and Michal.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-Original head message follows.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index a49cdbc..b3010ae 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3906,6 +3906,18 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	if (!cgrp)
+ 		return -ENOMEM;
+ 
++	/*
++	 * Only live parents can have children.  Note that the liveliness
++	 * check isn't strictly necessary because cgroup_mkdir() and
++	 * cgroup_rmdir() are fully synchronized by i_mutex; however, do it
++	 * anyway so that locking is contained inside cgroup proper and we
++	 * don't get nasty surprises if we ever grow another caller.
++	 */
++	if (!cgroup_lock_live_group(parent)) {
++		err = -ENODEV;
++		goto err_free;
++	}
++
+ 	/* Grab a reference on the superblock so the hierarchy doesn't
+ 	 * get deleted on unmount if there are child cgroups.  This
+ 	 * can be done outside cgroup_mutex, since the sb can't
+@@ -3913,8 +3925,6 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	 * fs */
+ 	atomic_inc(&sb->s_active);
+ 
+-	mutex_lock(&cgroup_mutex);
+-
+ 	init_cgroup_housekeeping(cgrp);
+ 
+ 	cgrp->parent = parent;
+@@ -3985,7 +3995,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 
+ 	/* Release the reference count that we took on the superblock */
+ 	deactivate_super(sb);
+-
++err_free:
+ 	kfree(cgrp);
+ 	return err;
+ }
+-- 
+1.7.11.7
 
-cgroup removal path is quite ugly.  A lot of the ugliness comes from
-the weird design which allows ->pre_destroy() to fail and the feature
-to drain existing CSS reference counts before committing to removal.
-Both mean that it should be possible to roll-back cgroup destruction
-after some or all ->pre_destroy() invocations.
-
-This weird design has never really worked.  To list a couple examples.
-
- * Some ->pre_destroy() implementations aren't side-effect free.
-   Roll-back happens after a lot of state is already lost.
-
- * Some ->pre_destroy() implementations (naturally) assume that the
-   cgroup being destroyed would stay quiescent between successful
-   ->pre_destroy() and its destruction.  Unfortunately, any operation
-   can happen inbetween and the cgroup could be in a very different
-   state by the time it actually gets destroyed.
-
-It's just such an unusual design which unnecessarily contains weird
-code path combinations which are tricky to hit, reproduce and expect.
-Moreover, the design's deficiencies attracts kludges on top as
-workarounds and we end up with stuff like cgroup_exclude_rmdir() and
-cgroup_release_and_wakeup_rmdir() which really make me want to cry.
-
-Now that memcg has moved away from failable ->pre_destroy(), we can do
-away with all these.  I tested some basic operations and some corner
-cases but am still a bit scared.  Would love to get acks from Li and
-memcg people.
-
-This patchset contains the following eight patches.
-
- 0001-cgroup-kill-cgroup_subsys-__DEPRECATED_clear_css_ref.patch
- 0002-cgroup-kill-CSS_REMOVED.patch
- 0003-cgroup-use-cgroup_lock_live_group-parent-in-cgroup_c.patch
- 0004-cgroup-deactivate-CSS-s-and-mark-cgroup-dead-before-.patch
- 0005-cgroup-remove-CGRP_WAIT_ON_RMDIR-cgroup_exclude_rmdi.patch
- 0006-memcg-make-mem_cgroup_reparent_charges-non-failing.patch
- 0007-hugetlb-do-not-fail-in-hugetlb_cgroup_pre_destroy.patch
- 0008-cgroup-make-pre_destroy-return-void.patch
-
-0001-0002 remove now unused ->pre_destroy() failure handling and do
-follow-up simplification.
-
-0003-0004 update removal path such that each ->pre_destroy() is
-guaranteed to be invoked once per removal and the cgroup being
-destroyed stays quiescent until destruction is complete.
-
-0005 removes the scary CGRP_WAIT_ON_RMDIR mechanism.
-
-0006-0008 are follow-up clean-ups.  0006 and 0007 are from Michal's
-patchset[1].
-
-This patchset is on top of
-
-  v3.6 (a0d271cbfe)
-+ [1] the first three patches of
-      "memcg/cgroup: do not fail fail on pre_destroy callbacks" patchset
-
-and available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-rmdir-updates
-
-Thanks.
-
- block/blk-cgroup.c     |    3 
- include/linux/cgroup.h |   41 -------
- kernel/cgroup.c        |  256 +++++++++++--------------------------------------
- mm/hugetlb_cgroup.c    |   11 --
- mm/memcontrol.c        |   51 +--------
- 5 files changed, 75 insertions(+), 287 deletions(-)
-
---
-tejun
-
-[L] http://www.spinics.net/lists/linux-containers/msg26157.html
-[1] http://thread.gmane.org/gmane.linux.kernel.cgroups/4757
