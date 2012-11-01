@@ -1,127 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761857Ab2KAQf5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 12:35:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37686 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755410Ab2KAQfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 12:35:55 -0400
-Message-ID: <5092A4DF.4080405@ti.com>
-Date: Thu, 1 Nov 2012 22:05:43 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>, Nishanth Menon <nm@ti.com>
-CC: <linux-omap@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] ARM: OMAP4: ID: Improve features detection and check
-References: <1351765401-12487-1-git-send-email-ivan.khoronzhuk@ti.com> <50925E7F.7080602@ti.com> <5092A156.4000601@ti.com>
-In-Reply-To: <5092A156.4000601@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1762073Ab2KAQgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 12:36:09 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34899 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762054Ab2KAQgF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 12:36:05 -0400
+Date: Thu, 1 Nov 2012 16:40:45 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121101164045.6a9ed161@pyramind.ukuu.org.uk>
+In-Reply-To: <20121101162901.GE13132@srcf.ucam.org>
+References: <36538307.gzWq1oO7Kg@linux-lqwf.site>
+	<1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
+	<alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
+	<1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
+	<alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
+	<1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
+	<CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+	<1351780935.2391.58.camel@dabdike.int.hansenpartnership.com>
+	<20121101144912.GA10269@srcf.ucam.org>
+	<20121101150654.19efe0b5@pyramind.ukuu.org.uk>
+	<20121101162901.GE13132@srcf.ucam.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 November 2012 09:50 PM, ivan.khoronzhuk wrote:
-> On 11/01/2012 01:35 PM, Santosh Shilimkar wrote:
->> On Thursday 01 November 2012 03:53 PM, Ivan Khoronzhuk wrote:
->>> Replaces several flags bearing the same meaning. There is no need
->>> to set flags due to different omap types here, it can be checked
->>> in appropriate places as well.
->>>
->>> Cc: Tony Lindgren <tony@atomide.com>
->>> Cc: Russell King <linux@arm.linux.org.uk>
->>> Cc: linux-omap@vger.kernel.org
->>> Cc: linux-arm-kernel@lists.infradead.org
->>> Cc: linux-kernel@vger.kernel.org
->>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>> ---
->>>   arch/arm/mach-omap2/id.c  |   25 +++++++------------------
->>>   arch/arm/mach-omap2/soc.h |    8 ++------
->>>   2 files changed, 9 insertions(+), 24 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
->>> index cf2362c..3c47a19 100644
->>> --- a/arch/arm/mach-omap2/id.c
->>> +++ b/arch/arm/mach-omap2/id.c
->>> @@ -28,6 +28,9 @@
->>>   #include "soc.h"
->>>   #include "control.h"
->>>
->>> +#define OMAP4_SILICON_TYPE_STANDARD        0x01
->>> +#define OMAP4_SILICON_TYPE_PERFORMANCE        0x02
->>> +
->>>   static unsigned int omap_revision;
->>>   static const char *cpu_rev;
->>>   u32 omap_features;
->>> @@ -273,25 +276,11 @@ void __init omap4xxx_check_features(void)
->>>   {
->>>       u32 si_type;
->>>
->>> -    if (cpu_is_omap443x())
->>> -        omap_features |= OMAP4_HAS_MPU_1GHZ;
->>> -
->>> +    si_type =
->>> +    (read_tap_reg(OMAP4_CTRL_MODULE_CORE_STD_FUSE_PROD_ID_1) >> 16)
->>> & 0x03;
->>>
->>> -    if (cpu_is_omap446x()) {
->>> -        si_type =
->>> - read_tap_reg(OMAP4_CTRL_MODULE_CORE_STD_FUSE_PROD_ID_1);
->>> -        switch ((si_type & (3 << 16)) >> 16) {
->>> -        case 2:
->>> -            /* High performance device */
->>> -            omap_features |= OMAP4_HAS_MPU_1_5GHZ;
->>> -            break;
->>> -        case 1:
->>> -        default:
->>> -            /* Standard device */
->>> -            omap_features |= OMAP4_HAS_MPU_1_2GHZ;
->>> -            break;
->>> -        }
->>> -    }
->>> +    if (si_type == OMAP4_SILICON_TYPE_PERFORMANCE)
->>> +        omap_features = OMAP4_HAS_PERF_SILICON;
->>
->> Well the detection isn't for performance/standard but there are some
->> features depend on it. For example 1 GHz doesn't DPLL DCC enable feature
->> where as 1.2 GHz, 1.5 GHz doesn't need. This is the main reason this
->> information is also effused. Have you considered this aspect while
->> creating this patch ?
->>
->> Regards
->> Santosh
->>
->
-> I had considered it. There is no dependency on the features.
-> DCC usage depends on asked frequency on the fly, not from the features.
-> Depending on "performance/standard" feature the available frequencies
-> should be chosen in places where they are needed, for example while
-> initializing OPPs.
->
-You are correct about the way DCC is handled in the clock code. Infact
-all these features like L2CACHE, SGX, IVA etc is more for to display
-boot messages.
+On Thu, 1 Nov 2012 16:29:01 +0000
+Matthew Garrett <mjg@redhat.com> wrote:
 
-> Currently we have several features while it is only one indeed.
->
-1GHz, 1.2GHz, 1.5 GHz are not same since the silicon capability itself
-is different.
+> On Thu, Nov 01, 2012 at 03:06:54PM +0000, Alan Cox wrote:
+> > > The entire point of this feature is that it's no longer possible to turn 
+> > > a privileged user exploit into a full system exploit. Gaining admin 
+> > > access on Windows 8 doesn't permit you to install a persistent backdoor, 
+> > 
+> > Really, that would be a first. Do you have a detailed knowledge of
+> > windows 8 actual security ?
+> 
+> http://msdn.microsoft.com/en-us/library/windows/desktop/hh848061%28v=vs.85%29.aspx
 
-git blame tells me that Nishant has sent this update so looping him
-if above differentiation in boot log helps.
+No I said knowledge of not web pages. The Red Hat pages say Linux is very
+secure, the Apple ones say MacOS is.
 
-Nishant,
-What's your take on removing above freq prints and marking
-those silicon as performance silicons as the $subject patch does ?
+The point being you don't want to evaluate apparent security by press
+release of one system versus deep internal knowledge of the other.
 
-Regards
-Santosh
-
-
-
-
+Alan
 
 
