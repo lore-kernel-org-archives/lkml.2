@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab2KAH7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 03:59:52 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22593 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755312Ab2KAH7t (ORCPT
+	id S932625Ab2KAIBJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 04:01:09 -0400
+Received: from aserp1050.oracle.com ([141.146.126.70]:22309 "EHLO
+	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756520Ab2KAIBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 03:59:49 -0400
-Subject: [PATCH 3/3] fs: Fix remaining filesystems to wait for stable page
- writeback
+	Thu, 1 Nov 2012 04:01:03 -0400
+Subject: [PATCH 1/3] bdi: Track users that require stable page writes
 To: axboe@kernel.dk, lucho@ionkov.net, tytso@mit.edu, sage@inktank.com,
         darrick.wong@oracle.com, ericvh@gmail.com, mfasheh@suse.com,
         dedekind1@gmail.com, adrian.hunter@intel.com, dhowells@redhat.com,
@@ -21,108 +20,185 @@ Cc: linux-cifs@vger.kernel.org, jack@suse.cz, martin.petersen@oracle.com,
         v9fs-developer@lists.sourceforge.net, ceph-devel@vger.kernel.org,
         linux-ext4@vger.kernel.org, linux-afs@lists.infradead.org,
         ocfs2-devel@oss.oracle.com
-Date: Thu, 01 Nov 2012 00:58:29 -0700
-Message-ID: <20121101075829.16153.92036.stgit@blackbox.djwong.org>
+Date: Thu, 01 Nov 2012 00:58:13 -0700
+Message-ID: <20121101075813.16153.94581.stgit@blackbox.djwong.org>
 In-Reply-To: <20121101075805.16153.64714.stgit@blackbox.djwong.org>
 References: <20121101075805.16153.64714.stgit@blackbox.djwong.org>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: aserp1040.oracle.com [141.146.126.69]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix up the filesystems that provide their own ->page_mkwrite handlers to
-provide stable page writes if necessary.
+This creates a per-backing-device counter that tracks the number of users which
+require pages to be held immutable during writeout.  Eventually it will be used
+to waive wait_for_page_writeback() if nobody requires stable pages.
 
 Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
 ---
- fs/9p/vfs_file.c |    1 +
- fs/afs/write.c   |    4 ++--
- fs/ceph/addr.c   |    1 +
- fs/cifs/file.c   |    1 +
- fs/ocfs2/mmap.c  |    1 +
- fs/ubifs/file.c  |    4 ++--
- 6 files changed, 8 insertions(+), 4 deletions(-)
+ Documentation/ABI/testing/sysfs-class-bdi |    7 +++++
+ block/blk-integrity.c                     |    4 +++
+ include/linux/backing-dev.h               |   16 ++++++++++++
+ include/linux/blkdev.h                    |   10 ++++++++
+ mm/backing-dev.c                          |   38 +++++++++++++++++++++++++++++
+ 5 files changed, 75 insertions(+)
 
 
-diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
-index c2483e9..aa253f0 100644
---- a/fs/9p/vfs_file.c
-+++ b/fs/9p/vfs_file.c
-@@ -620,6 +620,7 @@ v9fs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	lock_page(page);
- 	if (page->mapping != inode->i_mapping)
- 		goto out_unlock;
-+	wait_on_stable_page_write(page);
+diff --git a/Documentation/ABI/testing/sysfs-class-bdi b/Documentation/ABI/testing/sysfs-class-bdi
+index 5f50097..218a618 100644
+--- a/Documentation/ABI/testing/sysfs-class-bdi
++++ b/Documentation/ABI/testing/sysfs-class-bdi
+@@ -48,3 +48,10 @@ max_ratio (read-write)
+ 	most of the write-back cache.  For example in case of an NFS
+ 	mount that is prone to get stuck, or a FUSE mount which cannot
+ 	be trusted to play fair.
++
++stable_pages_required (read-write)
++
++	If set, the backing device requires that all pages comprising a write
++	request must not be changed until writeout is complete.  The system
++	administrator can turn this on if the hardware does not do so already.
++	However, once enabled, this flag cannot be disabled.
+diff --git a/block/blk-integrity.c b/block/blk-integrity.c
+index da2a818..cf2dd95 100644
+--- a/block/blk-integrity.c
++++ b/block/blk-integrity.c
+@@ -420,6 +420,8 @@ int blk_integrity_register(struct gendisk *disk, struct blk_integrity *template)
+ 	} else
+ 		bi->name = bi_unsupported_name;
  
- 	return VM_FAULT_LOCKED;
- out_unlock:
-diff --git a/fs/afs/write.c b/fs/afs/write.c
-index 9aa52d9..39eb2a4 100644
---- a/fs/afs/write.c
-+++ b/fs/afs/write.c
-@@ -758,7 +758,7 @@ int afs_page_mkwrite(struct vm_area_struct *vma, struct page *page)
- #ifdef CONFIG_AFS_FSCACHE
- 	fscache_wait_on_page_write(vnode->cache, page);
++	queue_require_stable_pages(disk->queue);
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL(blk_integrity_register);
+@@ -438,6 +440,8 @@ void blk_integrity_unregister(struct gendisk *disk)
+ 	if (!disk || !disk->integrity)
+ 		return;
+ 
++	queue_unrequire_stable_pages(disk->queue);
++
+ 	bi = disk->integrity;
+ 
+ 	kobject_uevent(&bi->kobj, KOBJ_REMOVE);
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 2a9a9ab..0554f5d 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -109,6 +109,7 @@ struct backing_dev_info {
+ 	struct dentry *debug_dir;
+ 	struct dentry *debug_stats;
  #endif
--
-+	wait_on_stable_page_write(page);
- 	_leave(" = 0");
--	return 0;
-+	return VM_FAULT_LOCKED;
++	atomic_t stable_page_users;
+ };
+ 
+ int bdi_init(struct backing_dev_info *bdi);
+@@ -307,6 +308,21 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout);
+ int pdflush_proc_obsolete(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *lenp, loff_t *ppos);
+ 
++static inline void bdi_require_stable_pages(struct backing_dev_info *bdi)
++{
++	atomic_inc(&bdi->stable_page_users);
++}
++
++static inline void bdi_unrequire_stable_pages(struct backing_dev_info *bdi)
++{
++	atomic_dec(&bdi->stable_page_users);
++}
++
++static inline bool bdi_cap_stable_pages_required(struct backing_dev_info *bdi)
++{
++	return atomic_read(&bdi->stable_page_users) > 0;
++}
++
+ static inline bool bdi_cap_writeback_dirty(struct backing_dev_info *bdi)
+ {
+ 	return !(bdi->capabilities & BDI_CAP_NO_WRITEBACK);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 1756001..bf927c0 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -458,6 +458,16 @@ struct request_queue {
+ 				 (1 << QUEUE_FLAG_SAME_COMP)	|	\
+ 				 (1 << QUEUE_FLAG_ADD_RANDOM))
+ 
++static inline void queue_require_stable_pages(struct request_queue *q)
++{
++	bdi_require_stable_pages(&q->backing_dev_info);
++}
++
++static inline void queue_unrequire_stable_pages(struct request_queue *q)
++{
++	bdi_unrequire_stable_pages(&q->backing_dev_info);
++}
++
+ static inline void queue_lockdep_assert_held(struct request_queue *q)
+ {
+ 	if (q->queue_lock)
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index d3ca2b3..dd9f5ed 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -221,12 +221,48 @@ static ssize_t max_ratio_store(struct device *dev,
  }
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index 6690269..e9734bf 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -1208,6 +1208,7 @@ static int ceph_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 		set_page_dirty(page);
- 		up_read(&mdsc->snap_rwsem);
- 		ret = VM_FAULT_LOCKED;
-+		wait_on_stable_page_write(page);
- 	} else {
- 		if (ret == -ENOMEM)
- 			ret = VM_FAULT_OOM;
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index edb25b4..a8770bf 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -2997,6 +2997,7 @@ cifs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	struct page *page = vmf->page;
+ BDI_SHOW(max_ratio, bdi->max_ratio)
  
- 	lock_page(page);
-+	wait_on_stable_page_write(page);
- 	return VM_FAULT_LOCKED;
- }
++static ssize_t stable_pages_required_store(struct device *dev,
++					   struct device_attribute *attr,
++					   const char *buf, size_t count)
++{
++	struct backing_dev_info *bdi = dev_get_drvdata(dev);
++	unsigned int spw;
++	ssize_t ret;
++
++	ret = kstrtouint(buf, 10, &spw);
++	if (ret < 0)
++		return ret;
++
++	/*
++	 * SPW could be enabled due to hw requirement, so don't
++	 * let users disable it.
++	 */
++	if (bdi_cap_stable_pages_required(bdi) && spw == 0)
++		return -EINVAL;
++
++	if (spw != 0)
++		atomic_inc(&bdi->stable_page_users);
++
++	return count;
++}
++
++static ssize_t stable_pages_required_show(struct device *dev,
++					  struct device_attribute *attr,
++					  char *page)
++{
++	struct backing_dev_info *bdi = dev_get_drvdata(dev);
++
++	return snprintf(page, PAGE_SIZE-1, "%d\n",
++			bdi_cap_stable_pages_required(bdi) ? 1 : 0);
++}
++
+ #define __ATTR_RW(attr) __ATTR(attr, 0644, attr##_show, attr##_store)
  
-diff --git a/fs/ocfs2/mmap.c b/fs/ocfs2/mmap.c
-index 47a87dd..a0027b1 100644
---- a/fs/ocfs2/mmap.c
-+++ b/fs/ocfs2/mmap.c
-@@ -124,6 +124,7 @@ static int __ocfs2_page_mkwrite(struct file *file, struct buffer_head *di_bh,
- 				     fsdata);
- 	BUG_ON(ret != len);
- 	ret = VM_FAULT_LOCKED;
-+	wait_on_stable_page_write(page);
- out:
- 	return ret;
- }
-diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
-index 5bc7781..cb0d3aa 100644
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -1522,8 +1522,8 @@ static int ubifs_vm_page_mkwrite(struct vm_area_struct *vma,
- 			ubifs_release_dirty_inode_budget(c, ui);
- 	}
+ static struct device_attribute bdi_dev_attrs[] = {
+ 	__ATTR_RW(read_ahead_kb),
+ 	__ATTR_RW(min_ratio),
+ 	__ATTR_RW(max_ratio),
++	__ATTR_RW(stable_pages_required),
+ 	__ATTR_NULL,
+ };
  
--	unlock_page(page);
--	return 0;
-+	wait_on_stable_page_write(page);
-+	return VM_FAULT_LOCKED;
+@@ -650,6 +686,8 @@ int bdi_init(struct backing_dev_info *bdi)
+ 	bdi->write_bandwidth = INIT_BW;
+ 	bdi->avg_write_bandwidth = INIT_BW;
  
- out_unlock:
- 	unlock_page(page);
++	atomic_set(&bdi->stable_page_users, 0);
++
+ 	err = fprop_local_init_percpu(&bdi->completions);
+ 
+ 	if (err) {
 
