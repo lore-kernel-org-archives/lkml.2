@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762317Ab2KAVhe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 17:37:34 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:49399 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752124Ab2KAVhc (ORCPT
+	id S1762351Ab2KAVhq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 17:37:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47926 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762332Ab2KAVhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 17:37:32 -0400
-Date: Thu, 1 Nov 2012 22:37:26 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, joro@8bytes.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 00/19 v3] Improve IRQ remapping abstraction in x86 core
- code
-Message-ID: <20121101213726.GC31453@breakpoint.cc>
-References: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
+	Thu, 1 Nov 2012 17:37:40 -0400
+Date: Thu, 1 Nov 2012 14:37:18 -0700
+From: tip-bot for Sankara Muthukrishnan <sankara.m@gmail.com>
+Message-ID: <tip-f3de44edf376d18773febca6a37800c042bada7d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rostedt@goodmis.org, sankara.m@gmail.com, sankara.m@ni.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sankara.m@gmail.com, rostedt@goodmis.org, sankara.m@ni.com,
+        tglx@linutronix.de
+In-Reply-To: <CAFQPvXeVZ858WFYimEU5uvLNxLDd6bJMmqWihFmbCf3ntokz0A@mail.gmail.com>
+References: <CAFQPvXeVZ858WFYimEU5uvLNxLDd6bJMmqWihFmbCf3ntokz0A@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] irq: Set CPU affinity right on thread creation
+Git-Commit-ID: f3de44edf376d18773febca6a37800c042bada7d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; x-action=pgp-signed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1348656291-10375-1-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 01 Nov 2012 14:37:23 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+Commit-ID:  f3de44edf376d18773febca6a37800c042bada7d
+Gitweb:     http://git.kernel.org/tip/f3de44edf376d18773febca6a37800c042bada7d
+Author:     Sankara Muthukrishnan <sankara.m@gmail.com>
+AuthorDate: Wed, 31 Oct 2012 15:41:23 -0500
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 1 Nov 2012 12:11:31 +0100
 
-On Wed, Sep 26, 2012 at 12:44:32PM +0200, Joerg Roedel wrote:
-> Hi,
-Hi Jörg,
+irq: Set CPU affinity right on thread creation
 
-> here is the third version of the patch-set to improve the abstraction
-> of interrupt remapping in the x86 core code. A more detailed description
+As irq_thread_check_affinity is called ONLY inside the while loop in
+the irq thread, the core affinity is set only when an interrupt
+occurs. This patch sets the core affinity right after the irq thread
+is created and before it waits for interrupts. In real-tiime targets
+that do not typically change the core affinity of irqs during
+run-time, this patch will save additional latency of an irq thread in
+setting the core affinity during the first interrupt occurrence for
+that irq.
 
-I went through the whole series and looks good. The patches
-- - x86, io_apic: Introduce x86_io_apic_ops.disable()
-- - x86, io_apic: Introduce x86_io_apic_ops.print_entries for debugging
-- - x86, msi: Use IRQ remapping specific setup_msi_irqs routine
-- - x86, io_apic: Convert setup_ioapic_entry to function pointerx86, io_apic:
-- - x86, io_apic: Move irq_remapping_enabled checks out of check_timer()
-- - x86, io-apic: Move CONFIG_IRQ_REMAP code out of x86 core
+Signed-off-by: Sankara S Muthukrishnan <sankara.m@ni.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/CAFQPvXeVZ858WFYimEU5uvLNxLDd6bJMmqWihFmbCf3ntokz0A@mail.gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/manage.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-trigger some checkpatch warnings, mostly the 80char thingy. I don't care about
-the "quoted string split across lines" warning.
-Besides the minor thingy I just mentioned,
- Acked-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-
-Sebastian
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQkuuWAAoJEHuW6BYqjPXRnVwP/08DxdazUY4SOPIvBK4+gZh7
-3VW5EdTLjBSYnaWEFccwhaqqq6FgJ5MfJ862sSXUpejjApDFQdOQPlZmIwfY5lFh
-n3z20/6Nvum6mCvZLUEi7D+cQZ42ZWfyQW62dBxwQvw6sex884f5DUFqftlCUJzA
-qlCBXoqVRkW03stfH8j4rDI+lponuR6P1m7hdV4r7CB95RthME/ZOpHQ3G2qSTRF
-7mCRJ6eP7eLdZSichWHuhyXcil1uADglPw8m9PKtEE7AW9satiXO/b/pEFiDDdNr
-xcb7Sc3OalccYVe7/Hs5WypNg05e/N4WHuTx4Y4gD2f6pHJA64bbZ6+3nmMJBt9y
-NbCzuDg1dgXFG0YQkPCbULGSnu/Z6DKnryrPvmRhCQUS7w8pXMOfhdKz8q2v+l8G
-riej/ZGHCGbf0UmvM+HguTjuTTCGMdvkCRGpx/UwVvy8Ll5sb0o73ORw25hdPHdD
-VGaximc4jmRBTSMB7ncOCMYOjTp6CKhG2ZvtA6q+JDS+GGTv3tfEBHri2STzZ7BY
-SrG8boABWJq39xxsivltimMJFa9IBCWpTyb/yG7T4I4ypOwI2QSdRob/Rs/BprHI
-SdzYlj2BFiR3ToF8WDXrMw9ywkVG6QL1oVrUDA+LHaBZO574KW/LMMuktYCj+gmY
-mQEcW6k8kS39uBtiL0Kh
-=tIW6
------END PGP SIGNATURE-----
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index d06a396..1cbd572 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -849,6 +849,8 @@ static int irq_thread(void *data)
+ 	init_task_work(&on_exit_work, irq_thread_dtor);
+ 	task_work_add(current, &on_exit_work, false);
+ 
++	irq_thread_check_affinity(desc, action);
++
+ 	while (!irq_wait_for_interrupt(action)) {
+ 		irqreturn_t action_ret;
+ 
