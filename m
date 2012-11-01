@@ -1,270 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761303Ab2KAMUf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 08:20:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38705 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755195Ab2KAMUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 08:20:34 -0400
-Date: Thu, 1 Nov 2012 12:20:27 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Paul Turner <pjt@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 17/31] mm/migrate: Introduce migrate_misplaced_page()
-Message-ID: <20121101122027.GV3888@suse.de>
-References: <20121025121617.617683848@chello.nl>
- <20121025124833.785487250@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121025124833.785487250@chello.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S935789Ab2KAMWI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 08:22:08 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:5613 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933620Ab2KAMWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 08:22:05 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6882"; a="3454346"
+From: tlinder <tlinder@codeaurora.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, philippedeswert@gmail.com, jengelh@inai.de,
+        jh80.chung@samsung.com, tgih.jun@samsung.com, arnd.bergmann@linaro.org,
+        Tatyana Brokhman <tlinder@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [RFC/PATCH v2 1/2] block: Add support for reinsert a dispatched req
+Date: Thu,  1 Nov 2012 14:21:52 +0200
+Message-Id: <1351772516-10423-1-git-send-email-tlinder@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 02:16:34PM +0200, Peter Zijlstra wrote:
-> Add migrate_misplaced_page() which deals with migrating pages from
-> faults. 
-> 
-> This includes adding a new MIGRATE_FAULT migration mode to
-> deal with the extra page reference required due to having to look up
-> the page.
-> 
-> Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-> Cc: Paul Turner <pjt@google.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  include/linux/migrate.h      |    7 +++
->  include/linux/migrate_mode.h |    3 +
->  mm/migrate.c                 |   85 ++++++++++++++++++++++++++++++++++++++-----
->  3 files changed, 87 insertions(+), 8 deletions(-)
-> 
-> Index: tip/include/linux/migrate.h
-> ===================================================================
-> --- tip.orig/include/linux/migrate.h
-> +++ tip/include/linux/migrate.h
-> @@ -30,6 +30,7 @@ extern int migrate_vmas(struct mm_struct
->  extern void migrate_page_copy(struct page *newpage, struct page *page);
->  extern int migrate_huge_page_move_mapping(struct address_space *mapping,
->  				  struct page *newpage, struct page *page);
-> +extern int migrate_misplaced_page(struct page *page, int node);
->  #else
->  
->  static inline void putback_lru_pages(struct list_head *l) {}
-> @@ -63,5 +64,11 @@ static inline int migrate_huge_page_move
->  #define migrate_page NULL
->  #define fail_migrate_page NULL
->  
-> +static inline
-> +int migrate_misplaced_page(struct page *page, int node)
-> +{
-> +	return -EAGAIN; /* can't migrate now */
-> +}
->  #endif /* CONFIG_MIGRATION */
-> +
->  #endif /* _LINUX_MIGRATE_H */
-> Index: tip/include/linux/migrate_mode.h
-> ===================================================================
-> --- tip.orig/include/linux/migrate_mode.h
-> +++ tip/include/linux/migrate_mode.h
-> @@ -6,11 +6,14 @@
->   *	on most operations but not ->writepage as the potential stall time
->   *	is too significant
->   * MIGRATE_SYNC will block when migrating pages
-> + * MIGRATE_FAULT called from the fault path to migrate-on-fault for mempolicy
-> + *	this path has an extra reference count
->   */
->  enum migrate_mode {
->  	MIGRATE_ASYNC,
->  	MIGRATE_SYNC_LIGHT,
->  	MIGRATE_SYNC,
-> +	MIGRATE_FAULT,
->  };
->  
->  #endif		/* MIGRATE_MODE_H_INCLUDED */
-> Index: tip/mm/migrate.c
-> ===================================================================
-> --- tip.orig/mm/migrate.c
-> +++ tip/mm/migrate.c
-> @@ -225,7 +225,7 @@ static bool buffer_migrate_lock_buffers(
->  	struct buffer_head *bh = head;
->  
->  	/* Simple case, sync compaction */
-> -	if (mode != MIGRATE_ASYNC) {
-> +	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT) {
->  		do {
->  			get_bh(bh);
->  			lock_buffer(bh);
-> @@ -279,12 +279,22 @@ static int migrate_page_move_mapping(str
->  		struct page *newpage, struct page *page,
->  		struct buffer_head *head, enum migrate_mode mode)
->  {
-> -	int expected_count;
-> +	int expected_count = 0;
->  	void **pslot;
->  
-> +	if (mode == MIGRATE_FAULT) {
-> +		/*
-> +		 * MIGRATE_FAULT has an extra reference on the page and
-> +		 * otherwise acts like ASYNC, no point in delaying the
-> +		 * fault, we'll try again next time.
-> +		 */
-> +		expected_count++;
-> +	}
-> +
->  	if (!mapping) {
->  		/* Anonymous page without mapping */
-> -		if (page_count(page) != 1)
-> +		expected_count += 1;
-> +		if (page_count(page) != expected_count)
->  			return -EAGAIN;
->  		return 0;
->  	}
-> @@ -294,7 +304,7 @@ static int migrate_page_move_mapping(str
->  	pslot = radix_tree_lookup_slot(&mapping->page_tree,
->   					page_index(page));
->  
-> -	expected_count = 2 + page_has_private(page);
-> +	expected_count += 2 + page_has_private(page);
->  	if (page_count(page) != expected_count ||
->  		radix_tree_deref_slot_protected(pslot, &mapping->tree_lock) != page) {
->  		spin_unlock_irq(&mapping->tree_lock);
-> @@ -313,7 +323,7 @@ static int migrate_page_move_mapping(str
->  	 * the mapping back due to an elevated page count, we would have to
->  	 * block waiting on other references to be dropped.
->  	 */
-> -	if (mode == MIGRATE_ASYNC && head &&
-> +	if ((mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT) && head &&
->  			!buffer_migrate_lock_buffers(head, mode)) {
->  		page_unfreeze_refs(page, expected_count);
->  		spin_unlock_irq(&mapping->tree_lock);
-> @@ -521,7 +531,7 @@ int buffer_migrate_page(struct address_s
->  	 * with an IRQ-safe spinlock held. In the sync case, the buffers
->  	 * need to be locked now
->  	 */
-> -	if (mode != MIGRATE_ASYNC)
-> +	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT)
->  		BUG_ON(!buffer_migrate_lock_buffers(head, mode));
->  
->  	ClearPagePrivate(page);
-> @@ -687,7 +697,7 @@ static int __unmap_and_move(struct page
->  	struct anon_vma *anon_vma = NULL;
->  
->  	if (!trylock_page(page)) {
-> -		if (!force || mode == MIGRATE_ASYNC)
-> +		if (!force || mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT)
->  			goto out;
->  
->  		/*
-> @@ -1403,4 +1413,63 @@ int migrate_vmas(struct mm_struct *mm, c
->   	}
->   	return err;
->  }
-> -#endif
-> +
-> +/*
-> + * Attempt to migrate a misplaced page to the specified destination
-> + * node.
-> + */
-> +int migrate_misplaced_page(struct page *page, int node)
-> +{
-> +	struct address_space *mapping = page_mapping(page);
-> +	int page_lru = page_is_file_cache(page);
-> +	struct page *newpage;
-> +	int ret = -EAGAIN;
-> +	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
-> +
-> +	/*
-> +	 * Don't migrate pages that are mapped in multiple processes.
-> +	 */
-> +	if (page_mapcount(page) != 1)
-> +		goto out;
-> +
+From: Tatyana Brokhman <tlinder@codeaurora.org>
 
-Why?
+Add support for reinserting a dispatched request back to the
+schedulers internal data structures.
+Add API for verifying whether the current scheduler
+supports reinserting requests mechanism
 
-I know why -- it's because we don't want to ping-pong shared library
-pages.
+Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 
-However, what if it's a shmem mapping? We might want to consider migrating
-those but with this check that will never happen.
-
-> +	/*
-> +	 * Never wait for allocations just to migrate on fault, but don't dip
-> +	 * into reserves. And, only accept pages from the specified node. No
-> +	 * sense migrating to a different "misplaced" page!
-> +	 */
-
-Not only that,  we do not want to reclaim on a remote node to allow
-migration. The cost of reclaim will exceed the benefit from local memory
-accesses.
-
-> +	if (mapping)
-> +		gfp = mapping_gfp_mask(mapping);
-> +	gfp &= ~__GFP_WAIT;
-> +	gfp |= __GFP_NOMEMALLOC | GFP_THISNODE;
-> +
-> +	newpage = alloc_pages_node(node, gfp, 0);
-> +	if (!newpage) {
-> +		ret = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	if (isolate_lru_page(page)) {
-> +		ret = -EBUSY;
-> +		goto put_new;
-> +	}
-> +
-
-Going to need to keep an eye on the hotness of the LRU lock during heavy
-migration states. Actually, a process using MPOL_MF_LAZY and then creating
-a large number of threads is going to hammer that lock. I've no proposed
-solution to this but if we see a bug report related to stalls after using
-that system call then this will be a candidate.
-
-Compaction had to use trylock-like logic to get around this problem but
-it's not necessarily the right choice for lazy migration unless you are
-willing to depend on the automatic detection to fix it up later.
-
-> +	inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
-> +	ret = __unmap_and_move(page, newpage, 0, 0, MIGRATE_FAULT);
-
-By bypassing __unmap_and_move, you miss the PageTransHuge() check in
-unmap_and_move and the splitting when a transhuge is encountered. Was that
-deliberate? Why?
-
-> +	/*
-> +	 * A page that has been migrated has all references removed and will be
-> +	 * freed. A page that has not been migrated will have kepts its
-> +	 * references and be restored.
-> +	 */
-> +	dec_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
-> +	putback_lru_page(page);
-> +put_new:
-> +	/*
-> +	 * Move the new page to the LRU. If migration was not successful
-> +	 * then this will free the page.
-> +	 */
-> +	putback_lru_page(newpage);
-> +out:
-> +	return ret;
-> +}
-> +
-> +#endif /* CONFIG_NUMA */
-> 
-> 
-
+diff --git a/block/blk-core.c b/block/blk-core.c
+index b421289..8881e46 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1177,6 +1177,45 @@ void blk_requeue_request(struct request_queue *q, struct request *rq)
+ }
+ EXPORT_SYMBOL(blk_requeue_request);
+ 
++/**
++ * blk_reinsert_request() - Insert a request back to the scheduler
++ * @q:		request queue
++ * @rq:		request to be inserted
++ *
++ * This function inserts the request back to the scheduler as if
++ * it was never dispatched.
++ *
++ * Return: 0 on success, error code on fail
++ */
++int blk_reinsert_request(struct request_queue *q, struct request *rq)
++{
++	blk_delete_timer(rq);
++	blk_clear_rq_complete(rq);
++	trace_block_rq_requeue(q, rq);
++
++	if (blk_rq_tagged(rq))
++		blk_queue_end_tag(q, rq);
++
++	BUG_ON(blk_queued_rq(rq));
++
++	return elv_reinsert_request(q, rq);
++}
++EXPORT_SYMBOL(blk_reinsert_request);
++
++/**
++ * blk_reinsert_req_sup() - check whether the scheduler supports
++ *          reinsertion of requests
++ * @q:		request queue
++ *
++ * Returns true if the current scheduler supports reinserting
++ * request. False otherwise
++ */
++bool blk_reinsert_req_sup(struct request_queue *q)
++{
++	return q->elevator->type->ops.elevator_reinsert_req_fn ? true : false;
++}
++EXPORT_SYMBOL(blk_reinsert_req_sup);
++
+ static void add_acct_request(struct request_queue *q, struct request *rq,
+ 			     int where)
+ {
+diff --git a/block/elevator.c b/block/elevator.c
+index 9b1d42b..121a351 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -539,6 +539,36 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
+ 	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
+ }
+ 
++/**
++ * elv_reinsert_request() - Insert a request back to the scheduler
++ * @q:		request queue where request should be inserted
++ * @rq:		request to be inserted
++ *
++ * This function returns the request back to the scheduler to be
++ * inserted as if it was never dispatched
++ *
++ * Return: 0 on success, error code on failure
++ */
++int elv_reinsert_request(struct request_queue *q, struct request *rq)
++{
++	if (!q->elevator->type->ops.elevator_reinsert_req_fn)
++		return -EPERM;
++	/*
++	 * it already went through dequeue, we need to decrement the
++	 * in_flight count again
++	 */
++	if (blk_account_rq(rq)) {
++		q->in_flight[rq_is_sync(rq)]--;
++		if (rq->cmd_flags & REQ_SORTED)
++			elv_deactivate_rq(q, rq);
++	}
++
++	rq->cmd_flags &= ~REQ_STARTED;
++	q->nr_sorted++;
++
++	return q->elevator->type->ops.elevator_reinsert_req_fn(q, rq);
++}
++
+ void elv_drain_elevator(struct request_queue *q)
+ {
+ 	static int printed;
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 1756001..e725303 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -722,6 +722,8 @@ extern struct request *blk_get_request(struct request_queue *, int, gfp_t);
+ extern struct request *blk_make_request(struct request_queue *, struct bio *,
+ 					gfp_t);
+ extern void blk_requeue_request(struct request_queue *, struct request *);
++extern int blk_reinsert_request(struct request_queue *q, struct request *rq);
++extern bool blk_reinsert_req_sup(struct request_queue *q);
+ extern void blk_add_request_payload(struct request *rq, struct page *page,
+ 		unsigned int len);
+ extern int blk_rq_check_limits(struct request_queue *q, struct request *rq);
+diff --git a/include/linux/elevator.h b/include/linux/elevator.h
+index c03af76..f70d05d 100644
+--- a/include/linux/elevator.h
++++ b/include/linux/elevator.h
+@@ -22,6 +22,8 @@ typedef void (elevator_bio_merged_fn) (struct request_queue *,
+ typedef int (elevator_dispatch_fn) (struct request_queue *, int);
+ 
+ typedef void (elevator_add_req_fn) (struct request_queue *, struct request *);
++typedef int (elevator_reinsert_req_fn) (struct request_queue *,
++					struct request *);
+ typedef struct request *(elevator_request_list_fn) (struct request_queue *, struct request *);
+ typedef void (elevator_completed_req_fn) (struct request_queue *, struct request *);
+ typedef int (elevator_may_queue_fn) (struct request_queue *, int);
+@@ -47,6 +49,8 @@ struct elevator_ops
+ 
+ 	elevator_dispatch_fn *elevator_dispatch_fn;
+ 	elevator_add_req_fn *elevator_add_req_fn;
++	elevator_reinsert_req_fn *elevator_reinsert_req_fn;
++
+ 	elevator_activate_req_fn *elevator_activate_req_fn;
+ 	elevator_deactivate_req_fn *elevator_deactivate_req_fn;
+ 
+@@ -123,6 +127,7 @@ extern void elv_merged_request(struct request_queue *, struct request *, int);
+ extern void elv_bio_merged(struct request_queue *q, struct request *,
+ 				struct bio *);
+ extern void elv_requeue_request(struct request_queue *, struct request *);
++extern int elv_reinsert_request(struct request_queue *, struct request *);
+ extern struct request *elv_former_request(struct request_queue *, struct request *);
+ extern struct request *elv_latter_request(struct request_queue *, struct request *);
+ extern int elv_register_queue(struct request_queue *q);
 -- 
-Mel Gorman
-SUSE Labs
+1.7.6
+--
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. 
+Is a member of Code Aurora Forum, hosted by the Linux Foundation
+
