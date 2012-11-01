@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992533Ab2KAVaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 17:30:21 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:39471 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S2992467Ab2KAVaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 17:30:18 -0400
-Date: Thu, 1 Nov 2012 16:30:10 -0500
-From: Ben Myers <bpm@sgi.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: Hang in XFS reclaim on 3.7.0-rc3
-Message-ID: <20121101213010.GD9783@sgi.com>
-References: <CAPVoSvSM9=hictqwT2rzZA-fU_XSwd-_FRzW_J+HQYj7iohTWQ@mail.gmail.com>
- <20121029222613.GU29378@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029222613.GU29378@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S2992539Ab2KAVab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 17:30:31 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35276 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760735Ab2KAVa1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 17:30:27 -0400
+Date: Thu, 1 Nov 2012 21:35:24 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121101213524.03fa2d53@pyramind.ukuu.org.uk>
+In-Reply-To: <20121101211859.GA20014@srcf.ucam.org>
+References: <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
+	<1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
+	<CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+	<1351780935.2391.58.camel@dabdike.int.hansenpartnership.com>
+	<CACLa4pvh3v3Mhq8oe3dzRL8ytBgmitPkCGUSfVCR5WdQopjRMQ@mail.gmail.com>
+	<1351783096.2391.77.camel@dabdike.int.hansenpartnership.com>
+	<CACLa4pu0yoB6CQX=3nuAT2vz4=oTNfM9fjMUvFXKJovYu+y4fw@mail.gmail.com>
+	<1351803800.2391.96.camel@dabdike.int.hansenpartnership.com>
+	<20121101210634.GA19723@srcf.ucam.org>
+	<1351804440.2391.99.camel@dabdike.int.hansenpartnership.com>
+	<20121101211859.GA20014@srcf.ucam.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Thu, 1 Nov 2012 21:18:59 +0000
+Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 
-On Tue, Oct 30, 2012 at 09:26:13AM +1100, Dave Chinner wrote:
-> On Mon, Oct 29, 2012 at 09:03:15PM +0100, Torsten Kaiser wrote:
-> > After experiencing a hang of all IO yesterday (
-> > http://marc.info/?l=linux-kernel&m=135142236520624&w=2 ), I turned on
-> > LOCKDEP after upgrading to -rc3.
-> > 
-> > I then tried to replicate the load that hung yesterday and got the
-> > following lockdep report, implicating XFS instead of by stacking swap
-> > onto dm-crypt and md.
-> > 
-> > [ 2844.971913]
-> > [ 2844.971920] =================================
-> > [ 2844.971921] [ INFO: inconsistent lock state ]
-> > [ 2844.971924] 3.7.0-rc3 #1 Not tainted
-> > [ 2844.971925] ---------------------------------
-> > [ 2844.971927] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-> > [ 2844.971929] kswapd0/725 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> > [ 2844.971931] (&(&ip->i_lock)->mr_lock){++++?.}, at: [<ffffffff811e7ef4>] xfs_ilock+0x84/0xb0
-> > [ 2844.971941] {RECLAIM_FS-ON-W} state was registered at:
-> > [ 2844.971942]   [<ffffffff8108137e>] mark_held_locks+0x7e/0x130
-> > [ 2844.971947]   [<ffffffff81081a63>] lockdep_trace_alloc+0x63/0xc0
-> > [ 2844.971949]   [<ffffffff810e9dd5>] kmem_cache_alloc+0x35/0xe0
-> > [ 2844.971952]   [<ffffffff810dba31>] vm_map_ram+0x271/0x770
-> > [ 2844.971955]   [<ffffffff811e10a6>] _xfs_buf_map_pages+0x46/0xe0
-> > [ 2844.971959]   [<ffffffff811e1fba>] xfs_buf_get_map+0x8a/0x130
-> > [ 2844.971961]   [<ffffffff81233849>] xfs_trans_get_buf_map+0xa9/0xd0
-> > [ 2844.971964]   [<ffffffff8121e339>] xfs_ifree_cluster+0x129/0x670
-> > [ 2844.971967]   [<ffffffff8121f959>] xfs_ifree+0xe9/0xf0
-> > [ 2844.971969]   [<ffffffff811f4abf>] xfs_inactive+0x2af/0x480
-> > [ 2844.971972]   [<ffffffff811efb90>] xfs_fs_evict_inode+0x70/0x80
-> > [ 2844.971974]   [<ffffffff8110cb8f>] evict+0xaf/0x1b0
-> > [ 2844.971977]   [<ffffffff8110cd95>] iput+0x105/0x210
-> > [ 2844.971979]   [<ffffffff811070d0>] dentry_iput+0xa0/0xe0
-> > [ 2844.971981]   [<ffffffff81108310>] dput+0x150/0x280
-> > [ 2844.971983]   [<ffffffff811020fb>] sys_renameat+0x21b/0x290
-> > [ 2844.971986]   [<ffffffff81102186>] sys_rename+0x16/0x20
-> > [ 2844.971988]   [<ffffffff816b2292>] system_call_fastpath+0x16/0x1b
+> On Thu, Nov 01, 2012 at 09:14:00PM +0000, James Bottomley wrote:
 > 
-> We shouldn't be mapping pages there. See if the patch below fixes
-> it.
+> > I agree that's a possibility.  However, I think the court of public
+> > opinion would pillory the first Commercial Linux Distribution that went
+> > to Microsoft for the express purpose of revoking their competition's
+> > right to boot.  It would be commercial suicide.
 > 
-> Fundamentally, though, the lockdep warning has come about because
-> vm_map_ram is doing a GFP_KERNEL allocation when we need it to be
-> doing GFP_NOFS - we are within a transaction here, so memory reclaim
-> is not allowed to recurse back into the filesystem.
-> 
-> mm-folk: can we please get this vmalloc/gfp_flags passing API
-> fixed once and for all? This is the fourth time in the last month or
-> so that I've seen XFS bug reports with silent hangs and associated
-> lockdep output that implicate GFP_KERNEL allocations from vm_map_ram
-> in GFP_NOFS conditions as the potential cause....
-> 
-> Cheers,
-> 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
-> 
-> xfs: don't vmap inode cluster buffers during free
+> Oracle are something of a vexatious litigant as far as the court of 
+> public opinion is concerned, but even without that it could be a 
+> customer who complains. If you're personally comfortable with a specific 
+> level of security here, that's fine - but it's completely reasonable for 
+> others to feel that there are valid technical and commercial concerns to 
+> do this properly.
 
-Could you write up a little more background for the commit message?
+The main people who really really care about this the MS key stuff
+is mostly irrelevant for as they won't use the Microsoft keys
+anyway. Microsoft will have to provide signing to all sorts of other law
+enforcement bodies as a responsible provider. If the FBI have a key no
+other government security installation will have that key in their
+systems. If the Chinese state has it I doubt the US government will be
+too keen either.
 
-Regards,
-	Ben
+All those official government trojans end up creating a big problem in the
+trust department.
+
+Alan
