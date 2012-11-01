@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936088Ab2KAU0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 16:26:22 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35187 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932415Ab2KAU0R (ORCPT
+	id S965618Ab2KAU07 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 16:26:59 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50650 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964942Ab2KAU05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 16:26:17 -0400
-Date: Thu, 1 Nov 2012 20:25:31 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Will Drewry <wad@chromium.org>, Geremy Condra <gcondra@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH 3/4] arch/arm: allow a scno of -1 to not cause a SIGILL
-Message-ID: <20121101202531.GT21164@n2100.arm.linux.org.uk>
-References: <1351799199-6853-1-git-send-email-keescook@chromium.org> <1351799199-6853-4-git-send-email-keescook@chromium.org>
+	Thu, 1 Nov 2012 16:26:57 -0400
+Date: Thu, 1 Nov 2012 21:26:54 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+Message-ID: <20121101202503.GA20817@xo-6d-61-c0.localdomain>
+References: <20121012125708.GJ10110@dhcp22.suse.cz>
+ <20121023164546.747e90f6.akpm@linux-foundation.org>
+ <20121024062938.GA6119@dhcp22.suse.cz>
+ <20121024125439.c17a510e.akpm@linux-foundation.org>
+ <50884F63.8030606@linux.vnet.ibm.com>
+ <20121024134836.a28d223a.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351799199-6853-4-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20121024134836.a28d223a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 12:46:38PM -0700, Kees Cook wrote:
-> From: Will Drewry <wad@chromium.org>
+Hi!
+
+> > > hmpf.  This patch worries me.  If there are people out there who are
+> > > regularly using drop_caches because the VM sucks, it seems pretty
+> > > obnoxious of us to go dumping stuff into their syslog.  What are they
+> > > supposed to do?  Stop using drop_caches?
+> > 
+> > People use drop_caches because they _think_ the VM sucks, or they
+> > _think_ they're "tuning" their system.  _They_ are supposed to stop
+> > using drop_caches. :)
 > 
-> On tracehook-friendly platforms, a system call number of -1 falls
-> through without running much code or taking much action.
+> Well who knows.  Could be that people's vm *does* suck.  Or they have
+> some particularly peculiar worklosd or requirement[*].  Or their VM
+> *used* to suck, and the drop_caches is not really needed any more but
+> it's there in vendor-provided code and they can't practically prevent
+> it.
+
+Or they have ipw wifi that does order 5 allocation :-).
+
+I seen drop_caches used in some android code, as part of SD card handling IIRC.
+
+> > What kind of interface _is_ it in the first place?  Is it really a
+> > production-level thing that we expect users to be poking at?  Or, is it
+> > a rarely-used debugging and benchmarking knob which is fair game for us
+> > to tweak like this?
 > 
-> ARM is different.  This adds a lightweight check to arm_syscall()
-> to make sure that ARM behaves the same way.
-> 
-> Signed-off-by: Will Drewry <wad@chromium.org>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  arch/arm/kernel/traps.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-> index b0179b8..f303ea6 100644
-> --- a/arch/arm/kernel/traps.c
-> +++ b/arch/arm/kernel/traps.c
-> @@ -540,6 +540,10 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
->  	struct thread_info *thread = current_thread_info();
->  	siginfo_t info;
->  
-> +	/* Emulate/fallthrough. */
-> +	if (no == -1)
-> +		return regs->ARM_r0;
-> +
+> It was a rarely-used mainly-developer-only thing which, apparently, real
+> people found useful at some point in the past.  Perhaps we should never
+> have offered it.
 
-This won't work properly with OABI.  The problem is that OABI has an
-offset on its syscall numbers which is removed/added at appropriate
-times, and this is one of the places where it's put back.  So you end
-up with -1 XOR 0x900000 here, not -1.
+And yes, documentation would be good. IIRC you claimed that
+drop_caches is not safe to use year-or-so-ago, is that still true?
 
-It'd probably be better to do this check in the asm code here, which
-prevents that yuckyness from affecting this.
-
-__sys_trace:
-        mov     r1, scno
-        add     r0, sp, #S_OFF
-        bl      syscall_trace_enter
-
-        adr     lr, BSYM(__sys_trace_return)    @ return address
-        mov     scno, r0                        @ syscall number (possibly new)
-        add     r1, sp, #S_R0 + S_OFF           @ pointer to regs
-        cmp     scno, #NR_syscalls              @ check upper syscall limit
-        ldmccia r1, {r0 - r6}                   @ have to reload r0 - r6
-        stmccia sp, {r4, r5}                    @ and update the stack args
-        ldrcc   pc, [tbl, scno, lsl #2]         @ call sys_* routine
-+	cmp	scno, #-1
-        bne     2b
-+	b	ret_slow_syscall
-
+										Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
