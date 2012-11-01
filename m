@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760240Ab2KAK6o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 06:58:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34178 "EHLO mx2.suse.de"
+	id S1760014Ab2KALCW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 07:02:22 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47720 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753748Ab2KAK6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 06:58:42 -0400
-Date: Thu, 1 Nov 2012 10:58:38 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 11/31] mm/mpol: Make MPOL_LOCAL a real policy
-Message-ID: <20121101105838.GR3888@suse.de>
-References: <20121025121617.617683848@chello.nl>
- <20121025124833.322016965@chello.nl>
+	id S1755060Ab2KALCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 07:02:21 -0400
+Message-ID: <5092568C.5000805@ti.com>
+Date: Thu, 1 Nov 2012 16:31:32 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121025124833.322016965@chello.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
+        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 01/11] clk: davinci - add main PLL clock driver
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-2-git-send-email-m-karicheri2@ti.com> <509119AE.6050505@ti.com> <50912BCE.5000401@ti.com>
+In-Reply-To: <50912BCE.5000401@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 02:16:28PM +0200, Peter Zijlstra wrote:
-> Make MPOL_LOCAL a real and exposed policy such that applications that
-> relied on the previous default behaviour can explicitly request it.
-> 
-> Requested-by: Christoph Lameter <cl@linux.com>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-> Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+On 10/31/2012 7:16 PM, Murali Karicheri wrote:
+> On 10/31/2012 08:29 AM, Sekhar Nori wrote:
 
-Seems reasonable but Michael Kerrisk should be cc'd because when the dust
-settles on this there may be a manual page update required.
+>>> +    /*
+>>> +     * if fixed_multiplier is non zero, multiply pllm value by this
+>>> +     * value.
+>>> +     */
+>>> +    if (pll_data->fixed_multiplier)
+>>> +        mult =  pll_data->fixed_multiplier *
+>>> +                (mult & pll_data->pllm_mask);
+>>> +    else
+>>> +        mult = (mult & pll_data->pllm_mask) + 1;
+>> Hmm, this is interpreting the 'mult' register field differently in both
+>> cases. In one case it is 'actual multiplier - 1' and in other case it is
+>> the 'actual multiplier' itself. Can we be sure that the mult register
+>> definition will change whenever there is a fixed multiplier in the PLL
+>> block? I don't think any of the existing DaVinci devices have a fixed
+>> multiplier. Is this on keystone?
+> Read section 6.4.3 (PLL Mode) in DM365 documentation (SPRUFG5a.pdf) that
+> states PLL multiplies the clock by 2x the value in the PLLM. In the old
+> code this is handled by a if cpu_is_* macro that we can't use in the
+> driver. So this is represented by a fixed_multiplier that can be set to
+> 2 for DM365 and zero on other SoCs.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+Thanks for the clarification.
 
--- 
-Mel Gorman
-SUSE Labs
+Regards,
+Sekhar
