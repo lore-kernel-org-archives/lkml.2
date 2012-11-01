@@ -1,232 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935939Ab2KAMM5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 08:12:57 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:26840 "EHLO relay.sw.ru"
+	id S935466Ab2KAMHx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 08:07:53 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:6851 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935449Ab2KAMHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 08:07:54 -0400
+	id S932147Ab2KAMHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 08:07:51 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
         Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: [PATCH v6 10/29] memcg: use static branches when code not in use
-Date: Thu,  1 Nov 2012 16:07:26 +0400
-Message-Id: <1351771665-11076-11-git-send-email-glommer@parallels.com>
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH v6 00/29] kmem controller for memcg.
+Date: Thu,  1 Nov 2012 16:07:16 +0400
+Message-Id: <1351771665-11076-1-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351771665-11076-1-git-send-email-glommer@parallels.com>
-References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can use static branches to patch the code in or out when not used.
+Hi,
 
-Because the _ACTIVE bit on kmem_accounted is only set after the
-increment is done, we guarantee that the root memcg will always be
-selected for kmem charges until all call sites are patched (see
-memcg_kmem_enabled).  This guarantees that no mischarges are applied.
+This work introduces the kernel memory controller for memcg. Unlike previous
+submissions, this includes the whole controller, comprised of slab and stack
+memory.
 
-static branch decrement happens when the last reference count from the
-kmem accounting in memcg dies. This will only happen when the charges
-drop down to 0.
+Slab-specific considerations: I've modified the kmem_cache_free() mechanism
+so we would have the code in a single location. It is then inlined into all
+interested instances of kmem_cache_free. Following this logic, there is little
+to be simplified in kmalloc/kmem_cache_alloc, which already does only exactly
+this. The attribute propagation code was kept, since integrating it would still
+depend on quite some infrastructure.
 
-When that happen, we need to disable the static branch only on those
-memcgs that enabled it. To achieve this, we would be forced to
-complicate the code by keeping track of which memcgs were the ones
-that actually enabled limits, and which ones got it from its parents.
 
-It is a lot simpler just to do static_key_slow_inc() on every child
-that is accounted.
 
-[ v4: adapted this patch to the changes in kmem_accounted ]
+*v6	- joint submission slab + stack.
+        - fixed race conditions with cache destruction.
+        - unified code for kmem_cache_free cache derivation in mm/slab.h.
+        - changed memcg_css_id to memcg_cache_id, now not equal to css_id.
+        - remove extra memcg_kmem_get_cache in the kmalloc path.
+        - fixed a bug with slab that would occur with some invocations of
+          kmem_cache_free
+        - use post_create() for memcg kmem_accounted_flag propagation.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Suleiman Souhlal <suleiman@google.com>
-CC: Tejun Heo <tj@kernel.org>
----
- include/linux/memcontrol.h |  4 ++-
- mm/memcontrol.c            | 79 +++++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 78 insertions(+), 5 deletions(-)
+*v5:    - changed charged order, kmem charged first.
+        - minor nits and comments merged.
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index e6ca1cf..2a2ae05 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -22,6 +22,7 @@
- #include <linux/cgroup.h>
- #include <linux/vm_event_item.h>
- #include <linux/hardirq.h>
-+#include <linux/jump_label.h>
- 
- struct mem_cgroup;
- struct page_cgroup;
-@@ -410,9 +411,10 @@ static inline void sock_release_memcg(struct sock *sk)
- #endif /* CONFIG_INET && CONFIG_MEMCG_KMEM */
- 
- #ifdef CONFIG_MEMCG_KMEM
-+extern struct static_key memcg_kmem_enabled_key;
- static inline bool memcg_kmem_enabled(void)
- {
--	return true;
-+	return static_key_false(&memcg_kmem_enabled_key);
- }
- 
- /*
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 91a021a..403f5a7 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -344,10 +344,13 @@ struct mem_cgroup {
- /* internal only representation about the status of kmem accounting. */
- enum {
- 	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
-+	KMEM_ACCOUNTED_ACTIVATED, /* static key enabled. */
- 	KMEM_ACCOUNTED_DEAD, /* dead memcg with pending kmem charges */
- };
- 
--#define KMEM_ACCOUNTED_MASK (1 << KMEM_ACCOUNTED_ACTIVE)
-+/* We account when limit is on, but only after call sites are patched */
-+#define KMEM_ACCOUNTED_MASK \
-+		((1 << KMEM_ACCOUNTED_ACTIVE) | (1 << KMEM_ACCOUNTED_ACTIVATED))
- 
- #ifdef CONFIG_MEMCG_KMEM
- static inline void memcg_kmem_set_active(struct mem_cgroup *memcg)
-@@ -360,6 +363,11 @@ static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
- 	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
- }
- 
-+static void memcg_kmem_set_activated(struct mem_cgroup *memcg)
-+{
-+	set_bit(KMEM_ACCOUNTED_ACTIVATED, &memcg->kmem_account_flags);
-+}
-+
- static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
- {
- 	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags))
-@@ -530,6 +538,26 @@ static void disarm_sock_keys(struct mem_cgroup *memcg)
- }
- #endif
- 
-+#ifdef CONFIG_MEMCG_KMEM
-+struct static_key memcg_kmem_enabled_key;
-+
-+static void disarm_kmem_keys(struct mem_cgroup *memcg)
-+{
-+	if (memcg_kmem_is_active(memcg))
-+		static_key_slow_dec(&memcg_kmem_enabled_key);
-+}
-+#else
-+static void disarm_kmem_keys(struct mem_cgroup *memcg)
-+{
-+}
-+#endif /* CONFIG_MEMCG_KMEM */
-+
-+static void disarm_static_keys(struct mem_cgroup *memcg)
-+{
-+	disarm_sock_keys(memcg);
-+	disarm_kmem_keys(memcg);
-+}
-+
- static void drain_all_stock_async(struct mem_cgroup *memcg);
- 
- static struct mem_cgroup_per_zone *
-@@ -4167,6 +4195,8 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
- {
- 	int ret = -EINVAL;
- #ifdef CONFIG_MEMCG_KMEM
-+	bool must_inc_static_branch = false;
-+
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
- 	/*
- 	 * For simplicity, we won't allow this to be disabled.  It also can't
-@@ -4197,7 +4227,15 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
- 		ret = res_counter_set_limit(&memcg->kmem, val);
- 		VM_BUG_ON(ret);
- 
--		memcg_kmem_set_active(memcg);
-+		/*
-+		 * After this point, kmem_accounted (that we test atomically in
-+		 * the beginning of this conditional), is no longer 0. This
-+		 * guarantees only one process will set the following boolean
-+		 * to true. We don't need test_and_set because we're protected
-+		 * by the set_limit_mutex anyway.
-+		 */
-+		memcg_kmem_set_activated(memcg);
-+		must_inc_static_branch = true;
- 		/*
- 		 * kmem charges can outlive the cgroup. In the case of slab
- 		 * pages, for instance, a page contain objects from various
-@@ -4210,6 +4248,27 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
- out:
- 	mutex_unlock(&set_limit_mutex);
- 	cgroup_unlock();
-+
-+	/*
-+	 * We are by now familiar with the fact that we can't inc the static
-+	 * branch inside cgroup_lock. See disarm functions for details. A
-+	 * worker here is overkill, but also wrong: After the limit is set, we
-+	 * must start accounting right away. Since this operation can't fail,
-+	 * we can safely defer it to here - no rollback will be needed.
-+	 *
-+	 * The boolean used to control this is also safe, because
-+	 * KMEM_ACCOUNTED_ACTIVATED guarantees that only one process will be
-+	 * able to set it to true;
-+	 */
-+	if (must_inc_static_branch) {
-+		static_key_slow_inc(&memcg_kmem_enabled_key);
-+		/*
-+		 * setting the active bit after the inc will guarantee no one
-+		 * starts accounting before all call sites are patched
-+		 */
-+		memcg_kmem_set_active(memcg);
-+	}
-+
- #endif
- 	return ret;
- }
-@@ -4221,8 +4280,20 @@ static void memcg_propagate_kmem(struct mem_cgroup *memcg)
- 		return;
- 	memcg->kmem_account_flags = parent->kmem_account_flags;
- #ifdef CONFIG_MEMCG_KMEM
--	if (memcg_kmem_is_active(memcg))
-+	/*
-+	 * When that happen, we need to disable the static branch only on those
-+	 * memcgs that enabled it. To achieve this, we would be forced to
-+	 * complicate the code by keeping track of which memcgs were the ones
-+	 * that actually enabled limits, and which ones got it from its
-+	 * parents.
-+	 *
-+	 * It is a lot simpler just to do static_key_slow_inc() on every child
-+	 * that is accounted.
-+	 */
-+	if (memcg_kmem_is_active(memcg)) {
- 		mem_cgroup_get(memcg);
-+		static_key_slow_inc(&memcg_kmem_enabled_key);
-+	}
- #endif
- }
- 
-@@ -5147,7 +5218,7 @@ static void free_work(struct work_struct *work)
- 	 * to move this code around, and make sure it is outside
- 	 * the cgroup_lock.
- 	 */
--	disarm_sock_keys(memcg);
-+	disarm_static_keys(memcg);
- 	if (size < PAGE_SIZE)
- 		kfree(memcg);
- 	else
+*v4:    - kmem_accounted can no longer become unlimited
+        - kmem_accounted can no longer become limited, if group has children.
+        - documentation moved to this patchset
+        - more style changes
+        - css_get in charge path to ensure task won't move during charge
+*v3:
+	- Changed function names to match memcg's
+	- avoid doing get/put in charge/uncharge path
+	- revert back to keeping the account enabled after it is first activated
+
+Numbers can be found at https://lkml.org/lkml/2012/9/13/239
+
+A (throwaway) git tree with them is placed at:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/glommer/memcg.git kmemcg-slab
+
+
+The kernel memory limitation mechanism for memcg concerns itself with
+disallowing potentially non-reclaimable allocations to happen in exaggerate
+quantities by a particular set of tasks (cgroup). Those allocations could
+create pressure that affects the behavior of a different and unrelated set of
+tasks.
+
+Its basic working mechanism consists in annotating interesting allocations with
+the _GFP_KMEMCG flag. When this flag is set, the current task allocating will
+have its memcg identified and charged against. When reaching a specific limit,
+further allocations will be denied.
+
+As of this work, pages allocated on behalf of the slab allocator, and stack
+memory are tracked. Other kinds of memory, like spurious calls to
+__get_free_pages, vmalloc, page tables, etc are not tracked. Besides the memcg
+cost that may be present with those allocations - that other allocations may
+rightfully want to avoid - memory need to be somehow traceable back to a task
+in order to be accounted by memcg. This may be trivial - as in the stack - or a
+bit complicated, requiring extra work to be done - as in the case of the slab.
+IOW, which memory to track is always a complexity tradeoff. We believe stack +
+slab provides enough coverage of the relevant kernel memory most of the time.
+
+Tracking accuracy depends on how well we can track memory back to a specific
+task. Memory allocated for the stack is always accurately tracked, since stack
+memory trivially belongs to a task and is never shared. For the slab, the
+accuracy depends on the amount of object-sharing existing between tasks in
+different cgroups (like memcg does for shmem, the kernel memory controller
+operates in a first-touch basis). Workloads, such as OS containers, usually
+have a very low amount of sharing, and will therefore present high accuracy.
+
+One example of problematic pressure that can be prevented by this work is
+a fork bomb conducted in a shell. We prevent it by noting that tasks use a
+limited amount of stack pages. Seen this way, a fork bomb is just a special
+case of resource abuse. If the offender is unable to grab more pages for the
+stack, no new tasks can be created.
+
+There are also other things the general mechanism protects against. For
+example, using too much of pinned dentry and inode cache, by touching files an
+leaving them in memory forever.
+
+In fact, a simple:
+
+while true; do mkdir x; cd x; done
+
+can halt your system easily because the file system limits are hard to reach
+(big disks), but the kernel memory is not. Those are examples, but the list
+certainly don't stop here.
+
+An important use case for all that, is concerned with people offering hosting
+services through containers. In a physical box we can put a limit to some
+resources, like total number of processes or threads. But in an environment
+where each independent user gets its own piece of the machine, we don't want a
+potentially malicious user to destroy good users' services.
+
+This might be true for systemd as well, that now groups services inside
+cgroups. They generally want to put forward a set of guarantees that limits the
+running service in a variety of ways, so that if they become badly behaved,
+they won't interfere with the rest of the system.
+
+There is, of course, a cost for that. To attempt to mitigate that, static
+branches are used. This code will only be enabled after the first user of this
+service configures any kmem limit, guaranteeing near-zero overhead even if a
+large number of (non-kmem limited) memcgs are deployed.
+
+Behavior depends on the values of memory.limit_in_bytes (U), and
+memory.kmem.limit_in_bytes (K):
+
+    U != 0, K = unlimited:
+    This is the standard memcg limitation mechanism already present before kmem
+    accounting. Kernel memory is completely ignored.
+
+    U != 0, K < U:
+    Kernel memory is a subset of the user memory. This setup is useful in
+    deployments where the total amount of memory per-cgroup is overcommited.
+    Overcommiting kernel memory limits is definitely not recommended, since the
+    box can still run out of non-reclaimable memory.
+    In this case, the admin could set up K so that the sum of all groups is
+    never greater than the total memory, and freely set U at the cost of his
+    QoS.
+
+    U != 0, K >= U:
+    Since kmem charges will also be fed to the user counter and reclaim will be
+    triggered for the cgroup for both kinds of memory. This setup gives the
+    admin a unified view of memory, and it is also useful for people who just
+    want to track kernel memory usage.
+
+
+Glauber Costa (27):
+  memcg: change defines to an enum
+  kmem accounting basic infrastructure
+  Add a __GFP_KMEMCG flag
+  memcg: kmem controller infrastructure
+  mm: Allocate kernel pages to the right memcg
+  res_counter: return amount of charges after res_counter_uncharge
+  memcg: kmem accounting lifecycle management
+  memcg: use static branches when code not in use
+  memcg: allow a memcg with kmem charges to be destructed.
+  execute the whole memcg freeing in free_worker
+  protect architectures where THREAD_SIZE >= PAGE_SIZE against fork
+    bombs
+  Add documentation about the kmem controller
+  slab/slub: struct memcg_params
+  slab: annotate on-slab caches nodelist locks
+  consider a memcg parameter in kmem_create_cache
+  Allocate memory for memcg caches whenever a new memcg appears
+  memcg: infrastructure to match an allocation to the right cache
+  memcg: skip memcg kmem allocations in specified code regions
+  sl[au]b: always get the cache from its page in kmem_cache_free
+  sl[au]b: Allocate objects from memcg cache
+  memcg: destroy memcg caches
+  memcg/sl[au]b Track all the memcg children of a kmem_cache.
+  memcg/sl[au]b: shrink dead caches
+  Aggregate memcg cache values in slabinfo
+  slab: propagate tunables values
+  slub: slub-specific propagation changes.
+  Add slab-specific documentation about the kmem controller
+
+Suleiman Souhlal (2):
+  memcg: Make it possible to use the stock for more than one page.
+  memcg: Reclaim when more than one page needed.
+
+ Documentation/cgroups/memory.txt           |   66 +-
+ Documentation/cgroups/resource_counter.txt |    7 +-
+ include/linux/gfp.h                        |    6 +-
+ include/linux/memcontrol.h                 |  203 ++++
+ include/linux/res_counter.h                |   12 +-
+ include/linux/sched.h                      |    1 +
+ include/linux/slab.h                       |   48 +
+ include/linux/slab_def.h                   |    3 +
+ include/linux/slub_def.h                   |    9 +-
+ include/linux/thread_info.h                |    2 +
+ include/trace/events/gfpflags.h            |    1 +
+ init/Kconfig                               |    2 +-
+ kernel/fork.c                              |    4 +-
+ kernel/res_counter.c                       |   20 +-
+ mm/memcontrol.c                            | 1562 ++++++++++++++++++++++++----
+ mm/page_alloc.c                            |   35 +
+ mm/slab.c                                  |   93 +-
+ mm/slab.h                                  |  137 ++-
+ mm/slab_common.c                           |  118 ++-
+ mm/slob.c                                  |    2 +-
+ mm/slub.c                                  |  124 ++-
+ 21 files changed, 2171 insertions(+), 284 deletions(-)
+
 -- 
 1.7.11.7
 
