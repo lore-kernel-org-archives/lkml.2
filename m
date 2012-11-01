@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936141Ab2KAWPi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 18:15:38 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57441 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933190Ab2KAWPd (ORCPT
+	id S1762394Ab2KAWU1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:20:27 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:45494 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab2KAWUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 18:15:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <11976302.Ya3MGGIAsU@vostro.rjw.lan>
-References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1748725.QBg5LLmPOx@vostro.rjw.lan>
-	<CAE9FiQV0gAJabpcoSHhTYq19m-YmaC0O6HH_dFKXUTuvUMG4Fg@mail.gmail.com>
-	<11976302.Ya3MGGIAsU@vostro.rjw.lan>
-Date: Thu, 1 Nov 2012 15:15:31 -0700
-X-Google-Sender-Auth: gyBe_DRvRij064zDjV2blNodxbU
-Message-ID: <CAE9FiQVGPP3+97D2SatH_CBPBpqBZyCe7We=9=x5ZEq8_d0fWQ@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] Improve container_notify_cb() to support container hot-remove.
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Toshi Kani <toshi.kani@hp.com>, ZhangRui <rui.zhang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>, bhelgaas@google.com,
-        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 1 Nov 2012 18:20:25 -0400
+Date: Thu, 1 Nov 2012 23:20:10 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH v2] ARM: plat-versatile: move FPGA irq driver to
+ drivers/irqchip
+Message-ID: <20121101232010.78269291@skate>
+In-Reply-To: <1351805329-19576-1-git-send-email-linus.walleij@linaro.org>
+References: <1351805329-19576-1-git-send-email-linus.walleij@linaro.org>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 1, 2012 at 2:31 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> oh, no, that commit should not be reverted. instead we should add some
->> comment for it...
->>
->> that mean : three path, will have three separated static lock dep key
->> from every INIT_WORK.
->
-> I see.
->
-> OK, I'll drop the patch removing it.
->
-> What about the following comment:
->
-> "To prevent lockdep from complaining unnecessarily, make sure that there
->  is a different static lockdep key created for each workqueue by using
->  INIT_WORK for each of them separately."
->
-created ?
+Linus,
 
-how about "defined" ?
+On Thu,  1 Nov 2012 22:28:49 +0100, Linus Walleij wrote:
 
-or just remove  "created"
+> +void fpga_handle_irq(struct pt_regs *regs);
+
+This function does not need to be exposed in a public header: as
+proposed for the bcm2835 and armada-370-xp IRQ controller drivers, the
+driver should directly do handle_arch_irq = fpga_handle_irq, and
+therefore there is no need for the machine desc structure to reference
+fpga_handle_irq anymore.
+
+> +void fpga_irq_init(void __iomem *, const char *, int, int, u32,
+> +		struct device_node *node);
+> +int fpga_irq_of_init(struct device_node *node,
+> +		     struct device_node *parent);
+
+I don't think this function needs to be exported. Just move the
+compatible string to drivers/irqchip/irqchip.c and instead of calling
+of_irq_init(), call irqchip_init().
+
+This will leave only the fpga_irq_init() function, which we could get
+rid of once the non-DT support is removed.
+
+Best regards,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
