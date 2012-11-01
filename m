@@ -1,110 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761753Ab2KAOoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 10:44:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24836 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761301Ab2KAOoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 10:44:06 -0400
-Date: Thu, 1 Nov 2012 10:43:04 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Matthew Garrett <mjg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: Kdump with signed images
-Message-ID: <20121101144304.GA15821@redhat.com>
-References: <20121025141048.GD9377@redhat.com>
- <1351190421.18115.92.camel@falcor>
- <20121025185520.GA17995@redhat.com>
- <1351214158.18115.186.camel@falcor>
- <20121026023916.GA16762@srcf.ucam.org>
- <20121026170609.GB24687@redhat.com>
- <1351276649.18115.217.camel@falcor>
- <20121101131003.GA14573@redhat.com>
- <20121101135356.GA15659@redhat.com>
- <1351780159.15708.17.camel@falcor>
+	id S1761301Ab2KAOqb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 10:46:31 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46243 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199Ab2KAOq2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 10:46:28 -0400
+Message-ID: <50928BC9.30305@gmail.com>
+Date: Thu, 01 Nov 2012 15:48:41 +0100
+From: Francesco Lavra <francescolavra.fl@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351780159.15708.17.camel@falcor>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "hongbo.zhang" <hongbo.zhang@linaro.org>
+CC: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, rui.zhang@intel.com, amit.kachhap@linaro.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
+Subject: Re: [PATCH V3 4/5] Thermal: Add ST-Ericsson DB8500 thermal driver.
+References: <1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com> <1351615741-24134-1-git-send-email-hongbo.zhang@linaro.com> <1351615741-24134-5-git-send-email-hongbo.zhang@linaro.com>
+In-Reply-To: <1351615741-24134-5-git-send-email-hongbo.zhang@linaro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 10:29:19AM -0400, Mimi Zohar wrote:
-> On Thu, 2012-11-01 at 09:53 -0400, Vivek Goyal wrote:
-> > On Thu, Nov 01, 2012 at 09:10:03AM -0400, Vivek Goyal wrote:
-> > 
-> > [..]
-> > > > 
-> > > > > - So say we can sign /sbin/kexec at build time and distros can do that.
-> > > > > - Verify the signature at exec time using kernel keyring and if
-> > > > >   verification happens successfully, say process gains extra capability.
-> > > > > - Use this new capability to determine whether kexec_load() will be
-> > > > >   successful or not.
-> > > > > 
-> > > > > Even if we can do all this, it still has the issue of being able to
-> > > > > stop the process in user space and replace the code at run time
-> > > > > and be able to launch unsigned kernel.
-> > > 
-> > > Thinking more about it. Can we just keep track whether a process was
-> > > ptraced or not and disallow kexec_load() syscall if it was ptraced.
-> > > (I am assuming that ptrace is the only way to change process code/data).
-> > > 
-> > > So binaries can be signed offline. Signature verification can take place
-> > > using kernel keyring at exec() time. And we can keep track of ptraced
-> > > processes and disallow calling kexec_load() for such processes. If this
-> > > is implementable, this should take care of following requirement raised
-> > > by matthew.
-> > > 
-> > > ************************************************************************
-> > > It must be impossible for the kernel to launch any /sbin/kexec that hasn't
-> > > been signed by a trusted key that's been built into the kernel, and it
-> > > must be impossible for anything other than /sbin/kexec to make the kexec
-> > > system call.
-> > > *************************************************************************
-> > > 
-> > > Thoughts?
-> > 
-> > Eric responded but my mistake he responded to only me. So I will quickly 
-> > put his idea here.
-> > 
-> > [start quote]
-> > 
-> > You can't ptrace a process that has a capability you don't.
-> > 
-> > That should be enforced in security/commoncap/
-> > 
-> > [end quote]
-> > 
-> > This looks like a good idea. Upon verification signed binaries will be
-> > assigned special capability and then no unsigned binary should be able
-> > to ptrace signed/verified processes
+Hi,
+
+On 10/30/2012 05:49 PM, hongbo.zhang wrote:
+> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
 > 
-> That's a good generic solution, which I'm all in favor of, but it
-> doesn't resolve the latter half of Matthrew's requirement "and it must
-> be impossible for anything other than /sbin/kexec to make the kexec
-> system call."
+> This diver is based on the thermal management framework in thermal_sys.c. A
+> thermal zone device is created with the trip points to which cooling devices
+> can be bound, the current cooling device is cpufreq, e.g. CPU frequency is
+> clipped down to cool the CPU, and other cooling devices can be added and bound
+> to the trip points dynamically.  The platform specific PRCMU interrupts are
+> used to active thermal update when trip points are reached.
+> 
+> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
 
-Only those executables which have extended capability
-(say CAP_SIGNATURES_VERIFIED) will be able to call kexec_load() syscall.
-Only signed executables will get this capability upon signature verification
-(using keys in kernel keyring only).
+[...]
+> +static struct db8500_thsens_platform_data*
+> +		db8500_thermal_parse_dt(struct platform_device *pdev)
+> +{
+> +	struct db8500_thsens_platform_data *ptrips;
+> +	struct device_node *np = pdev->dev.of_node;
+> +	char prop_name[32];
+> +	const char *tmp_str;
+> +	u32 tmp_data;
+> +	int i, j;
+> +
+> +	ptrips = devm_kzalloc(&pdev->dev, sizeof(*ptrips), GFP_KERNEL);
+> +	if (!ptrips)
+> +		return NULL;
+> +
+> +	if (of_property_read_u32(np, "num-trips", &tmp_data))
+> +		goto err_parse_dt;
+> +
+> +	if (tmp_data > THERMAL_MAX_TRIPS)
+> +		goto err_parse_dt;
+> +
+> +	ptrips->num_trips = tmp_data;
+> +
+> +	for (i = 0; i < ptrips->num_trips; i++) {
+> +		sprintf(prop_name, "trip%d-temp", i);
+> +		if (of_property_read_u32(np, prop_name, &tmp_data))
+> +			goto err_parse_dt;
+> +
+> +		ptrips->trip_points[i].temp = tmp_data;
+> +
+> +		sprintf(prop_name, "trip%d-type", i);
+> +		if (of_property_read_string(np, prop_name, &tmp_str))
+> +			goto err_parse_dt;
+> +
+> +		if (!strcmp(tmp_str, "active"))
+> +			ptrips->trip_points[i].type = THERMAL_TRIP_ACTIVE;
+> +		else if (!strcmp(tmp_str, "passive"))
+> +			ptrips->trip_points[i].type = THERMAL_TRIP_PASSIVE;
+> +		else if (!strcmp(tmp_str, "hot"))
+> +			ptrips->trip_points[i].type = THERMAL_TRIP_HOT;
+> +		else if (!strcmp(tmp_str, "critical"))
+> +			ptrips->trip_points[i].type = THERMAL_TRIP_CRITICAL;
+> +		else
+> +			goto err_parse_dt;
+> +
+> +		sprintf(prop_name, "trip%d-cdev-num", i);
+> +		if (of_property_read_u32(np, prop_name, &tmp_data))
+> +			goto err_parse_dt;
+> +
+> +		if (tmp_data > COOLING_DEV_MAX)
+> +			goto err_parse_dt;
+> +
+> +		for (j = 0; j < tmp_data; j++) {
+> +			sprintf(prop_name, "trip%d-cdev-name%d", i, j);
+> +			if (of_property_read_string(np, prop_name, &tmp_str))
+> +				goto err_parse_dt;
+> +
+> +			if (strlen(tmp_str) > THERMAL_NAME_LENGTH)
+> +				goto err_parse_dt;
+> +
+> +			strcpy(ptrips->trip_points[i].cdev_name[j], tmp_str);
 
-so any xyz executable will not be able to call kexec_load() until and
-unless it is signed with keys kernel trusts. This is similar to signed
-module verification.
+If strlen(tmp_str) equals THERMAL_NAME_LENGTH, strcpy() will go past the
+size of the destination array.
 
-So I think this does satisfy the requirement matthew specified. Isn't it?
-Matthew, what do you think?
+After the above is fixed, you can add my:
+Reviewed-by: Francesco Lavra <francescolavra.fl@gmail.com>
 
-Thanks
-Vivek
+If you re-send a new version of the patch series, I suggest you do so in
+a new thread.
+
+Thanks,
+Francesco
