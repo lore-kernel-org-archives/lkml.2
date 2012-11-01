@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292Ab2KAJAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 05:00:24 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42177 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757418Ab2KAJAU (ORCPT
+	id S1758904Ab2KAJBG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 05:01:06 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59085 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758079Ab2KAJBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 05:00:20 -0400
+	Thu, 1 Nov 2012 05:01:03 -0400
+Message-ID: <50923A48.1080906@gmail.com>
+Date: Thu, 01 Nov 2012 17:00:56 +0800
+From: Shan Wei <shanwei88@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <5091CA18.7020905@gmail.com>
-References: <1351719113-30880-1-git-send-email-linus.walleij@linaro.org>
-	<5091CA18.7020905@gmail.com>
-Date: Thu, 1 Nov 2012 10:00:19 +0100
-Message-ID: <CACRpkda06BbFOiX1WSqNLM-R5Es-Nd6btUNq2mMDuH7s3jA2cw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: plat-versatile: move FPGA irq driver to drivers/irqchip
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
-        arm@kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: Christoph Lameter <cl@linux.com>, steffen.klassert@secunet.com,
+        David Miller <davem@davemloft.net>, NetDev <netdev@vger.kernel.org>,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/9] net: xfrm: use this_cpu_ptr per-cpu helper
+References: <509109F9.3030904@gmail.com> <0000013ab7e4a640-60bd5b38-a1fc-4730-b918-4109211ffea0-000000@email.amazonses.com> <20121101034136.GA27343@gondor.apana.org.au>
+In-Reply-To: <20121101034136.GA27343@gondor.apana.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 1, 2012 at 2:02 AM, Rob Herring <robherring2@gmail.com> wrote:
-> On 10/31/2012 04:31 PM, Linus Walleij wrote:
+Herbert Xu said, at 2012/11/1 11:41:
+> Please refer to the comment in the patch above.
+> 
+> But I think the patch is wrong anyway because it would introduce
+> a warning, no?
 
->>  rename arch/arm/plat-versatile/include/plat/fpga-irq.h => include/linux/platform_data/irq-versatile-fpga.h (100%)
->
-> I think include/linux/irqchip/ is the right place.
+yes, __this_cpu_ptr(or __this_cpu_read) is more reasonable 
+which don't check preemption context.
 
-OK I'll fix.
+> 
+> Thanks,
+> 
 
-> Ideally we would not
-> need the header at all. You can remove some of the function declarations
-> if you base this on Thomas Petazzoni's series to have a common init
-> function for DT and also move the fpga_handle_irq init into the
-> fpga_irq_init function.
-
-Sounds like a separate patch but surely we can do this. Is Thomas'
-stuff on a branch somewhere that I can then rebase upon to get
-it upstream? I was planning to get this series as such to the
-ARM SoC maintainers soon-ish.
-
-Yours,
-Linus Walleij
