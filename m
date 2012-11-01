@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935222Ab2KAU0O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 16:26:14 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:38648 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932415Ab2KAU0M (ORCPT
+	id S936088Ab2KAU0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 16:26:22 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35187 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932415Ab2KAU0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 16:26:12 -0400
-Date: Thu, 1 Nov 2012 20:26:09 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Minchan Kim <minchan@kernel.org>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC] Support volatile range for anon vma
-In-Reply-To: <20121026005851.GD15767@bbox>
-Message-ID: <0000013abda6fc7d-6cfbef1e-bc7d-4f4f-bb38-221729e8c9f9-000000@email.amazonses.com>
-References: <1351133820-14096-1-git-send-email-minchan@kernel.org> <0000013a9881a86c-c0fb5823-b6e7-4bea-8707-f6b8eddae14d-000000@email.amazonses.com> <20121026005851.GD15767@bbox>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 1 Nov 2012 16:26:17 -0400
+Date: Thu, 1 Nov 2012 20:25:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Will Drewry <wad@chromium.org>, Geremy Condra <gcondra@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH 3/4] arch/arm: allow a scno of -1 to not cause a SIGILL
+Message-ID: <20121101202531.GT21164@n2100.arm.linux.org.uk>
+References: <1351799199-6853-1-git-send-email-keescook@chromium.org> <1351799199-6853-4-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351799199-6853-4-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Oct 2012, Minchan Kim wrote:
+On Thu, Nov 01, 2012 at 12:46:38PM -0700, Kees Cook wrote:
+> From: Will Drewry <wad@chromium.org>
+> 
+> On tracehook-friendly platforms, a system call number of -1 falls
+> through without running much code or taking much action.
+> 
+> ARM is different.  This adds a lightweight check to arm_syscall()
+> to make sure that ARM behaves the same way.
+> 
+> Signed-off-by: Will Drewry <wad@chromium.org>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  arch/arm/kernel/traps.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+> index b0179b8..f303ea6 100644
+> --- a/arch/arm/kernel/traps.c
+> +++ b/arch/arm/kernel/traps.c
+> @@ -540,6 +540,10 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
+>  	struct thread_info *thread = current_thread_info();
+>  	siginfo_t info;
+>  
+> +	/* Emulate/fallthrough. */
+> +	if (no == -1)
+> +		return regs->ARM_r0;
+> +
 
-> I guess it would improve system performance very well.
-> But as I wrote down in description, downside of the patch is that we have to
-> age anon lru although we don't have swap. But gain via the patch is bigger than
-> loss via aging of anon lru when memory pressure happens. I don't see other downside
-> other than it. What do you think about it?
-> (I didn't implement anon lru aging in case of no-swap but it's trivial
-> once we decide)
+This won't work properly with OABI.  The problem is that OABI has an
+offset on its syscall numbers which is removed/added at appropriate
+times, and this is one of the places where it's put back.  So you end
+up with -1 XOR 0x900000 here, not -1.
 
+It'd probably be better to do this check in the asm code here, which
+prevents that yuckyness from affecting this.
 
-I am a bit confused like some of the others as to why this patch is
-necessary since we already have DONT_NEED.
+__sys_trace:
+        mov     r1, scno
+        add     r0, sp, #S_OFF
+        bl      syscall_trace_enter
+
+        adr     lr, BSYM(__sys_trace_return)    @ return address
+        mov     scno, r0                        @ syscall number (possibly new)
+        add     r1, sp, #S_R0 + S_OFF           @ pointer to regs
+        cmp     scno, #NR_syscalls              @ check upper syscall limit
+        ldmccia r1, {r0 - r6}                   @ have to reload r0 - r6
+        stmccia sp, {r4, r5}                    @ and update the stack args
+        ldrcc   pc, [tbl, scno, lsl #2]         @ call sys_* routine
++	cmp	scno, #-1
+        bne     2b
++	b	ret_slow_syscall
+
