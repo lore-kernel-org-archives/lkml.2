@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759181Ab2JaRlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:41:07 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:34585 "EHLO
+	id S1759346Ab2JaRl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:41:29 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:34579 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932988Ab2JaRjl (ORCPT
+	by vger.kernel.org with ESMTP id S933929Ab2JaRjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:39:41 -0400
+	Wed, 31 Oct 2012 13:39:40 -0400
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
 To: Tony Lindgren <tony@atomide.com>
 Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
@@ -14,9 +14,9 @@ Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
         Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Subject: [RFC-v2 5/7] capebus: Beaglebone capebus DT update
-Date: Thu,  1 Nov 2012 17:32:30 +0200
-Message-Id: <1351783952-11804-6-git-send-email-panto@antoniou-consulting.com>
+Subject: [RFC-v2 4/7] capebus: Beaglebone geiger cape support
+Date: Thu,  1 Nov 2012 17:32:29 +0200
+Message-Id: <1351783952-11804-5-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1351783952-11804-1-git-send-email-panto@antoniou-consulting.com>
 References: <1351783952-11804-1-git-send-email-panto@antoniou-consulting.com>
@@ -24,750 +24,565 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the common beaglebone's DTS with the required DT
-entries for all known working capes as of now.
+Support beaglebone's geiger cape.
+
+The geiger cape allows you to measure the amount of
+ionising radiation in your area, and as an example
+of how to create a complex non-generic cape driver.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- arch/arm/boot/dts/am335x-bone-common.dtsi | 689 ++++++++++++++++++++++++++++--
- 1 file changed, 659 insertions(+), 30 deletions(-)
+ drivers/capebus/capes/Kconfig            |   7 +
+ drivers/capebus/capes/Makefile           |   1 +
+ drivers/capebus/capes/bone-geiger-cape.c | 517 +++++++++++++++++++++++++++++++
+ 3 files changed, 525 insertions(+)
+ create mode 100644 drivers/capebus/capes/bone-geiger-cape.c
 
-diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
-index 99240a5..46d5f27 100644
---- a/arch/arm/boot/dts/am335x-bone-common.dtsi
-+++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
-@@ -51,6 +51,143 @@
- 				0x60 0x17	/* gpmc_a8.gpio1_24, OUTPUT_PULLUP | MODE7 */
- 			>;
- 		};
-+		i2c2_pins: pinmux_i2c2_pins {
-+			pinctrl-single,pins = <
-+				0x178 0x73 	/* uart1_ctsn.i2c2_sda, SLEWCTRL_SLOW | INPUT_PULLUP | MODE3 */
-+				0x17c 0x73	/* uart1_rtsn.i2c2_scl, SLEWCTRL_SLOW | INPUT_PULLUP | MODE3 */
-+			>;
-+		};
+diff --git a/drivers/capebus/capes/Kconfig b/drivers/capebus/capes/Kconfig
+index bfe54a6..0418bef 100644
+--- a/drivers/capebus/capes/Kconfig
++++ b/drivers/capebus/capes/Kconfig
+@@ -4,3 +4,10 @@ config CAPEBUS_BONE_GENERIC
+ 	default n
+ 	help
+ 	  "Select this to enable a generic cape driver; LCD/DVI capes etc"
 +
-+		bone_dvi_cape_led_pins: pinmux_bone_dvi_cape_led_pins {
-+			pinctrl-single,pins = <
-+				0x48 0x07	/* gpmc_a2.gpio1_18, OUTPUT | MODE7 */
-+				0x4c 0x07	/* gpmc_a3.gpio1_19, OUTPUT | MODE7 */
-+			>;
-+		};
++config CAPEBUS_BONE_GEIGER
++	tristate "Beaglebone Geiger cape driver"
++	depends on CAPEBUS_BONE_CONTROLLER
++	default n
++	help
++	  "Select this to enable a driver for the geiger cape"
+diff --git a/drivers/capebus/capes/Makefile b/drivers/capebus/capes/Makefile
+index 83da381..d6f94ce 100644
+--- a/drivers/capebus/capes/Makefile
++++ b/drivers/capebus/capes/Makefile
+@@ -1 +1,2 @@
+ obj-$(CONFIG_CAPEBUS_BONE_GENERIC)	+= bone-generic-cape.o
++obj-$(CONFIG_CAPEBUS_BONE_GEIGER)	+= bone-geiger-cape.o
+diff --git a/drivers/capebus/capes/bone-geiger-cape.c b/drivers/capebus/capes/bone-geiger-cape.c
+new file mode 100644
+index 0000000..9b3a83d
+--- /dev/null
++++ b/drivers/capebus/capes/bone-geiger-cape.c
+@@ -0,0 +1,517 @@
++/*
++ * Driver for beaglebone Geiger cape
++ *
++ * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
 +
-+		bone_dvi_cape_dvi_00A0_pins: pinmux_bone_dvi_cape_dvi_00A0_pins {
-+			pinctrl-single,pins = <
-+				0x1c 0x07	/* gpmc_ad7.gpio1_7, OUTPUT | MODE7 - DVIPDn */
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/timer.h>
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/delay.h>
++#include <linux/bitops.h>
++#include <linux/err.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
++#include <linux/pinctrl/pinctrl.h>
++#include <linux/pinctrl/pinmux.h>
++#include <linux/pinctrl/consumer.h>
++#include <linux/atomic.h>
++#include <linux/clk.h>
++#include <linux/interrupt.h>
++#include <linux/clkdev.h>
++#include <linux/pwm.h>
++#include <linux/math64.h>
++#include <linux/atomic.h>
++#include <linux/leds.h>
++#include <linux/input/ti_am335x_tsc.h>
++#include <linux/platform_data/ti_am335x_adc.h>
++#include <linux/mfd/ti_am335x_tscadc.h>
++#include <linux/iio/iio.h>
++#include <linux/iio/machine.h>
++#include <linux/iio/consumer.h>
 +
-+				0xa0 0x08	/* lcd_data0.lcd_data0, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xa4 0x08	/* lcd_data1.lcd_data1, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xa8 0x08	/* lcd_data2.lcd_data2, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xac 0x08	/* lcd_data3.lcd_data3, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xb0 0x08	/* lcd_data4.lcd_data4, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xb4 0x08	/* lcd_data5.lcd_data5, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xb8 0x08	/* lcd_data6.lcd_data6, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xbc 0x08	/* lcd_data7.lcd_data7, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xc0 0x08	/* lcd_data8.lcd_data8, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xc4 0x08	/* lcd_data9.lcd_data9, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xc8 0x08	/* lcd_data10.lcd_data10, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xcc 0x08	/* lcd_data11.lcd_data11, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xd0 0x08	/* lcd_data12.lcd_data12, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xd4 0x08	/* lcd_data13.lcd_data13, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xd8 0x08	/* lcd_data14.lcd_data14, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xdc 0x08	/* lcd_data15.lcd_data15, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xe0 0x00	/* lcd_vsync.lcd_vsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+				0xe4 0x00	/* lcd_hsync.lcd_hsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+				0xe8 0x00	/* lcd_pclk.lcd_pclk, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+				0xec 0x00	/* lcd_ac_bias_en.lcd_ac_bias_en, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+			>;
-+		};
++#include <linux/capebus/capebus-bone.h>
 +
-+		bone_dvi_cape_dvi_00A1_pins: pinmux_bone_dvi_cape_dvi_00A1_pins {
-+			pinctrl-single,pins = <
-+				0x84 0x07	/* gpmc_csn2.gpio1_31, OUTPUT | MODE7 - DVIPDn */
++/* fwd decl. */
++extern struct cape_driver bonegeiger_driver;
 +
-+				0xa0 0x08	/* lcd_data0.lcd_data0, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xa4 0x08	/* lcd_data1.lcd_data1, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xa8 0x08	/* lcd_data2.lcd_data2, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xac 0x08	/* lcd_data3.lcd_data3, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xb0 0x08	/* lcd_data4.lcd_data4, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xb4 0x08	/* lcd_data5.lcd_data5, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xb8 0x08	/* lcd_data6.lcd_data6, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xbc 0x08	/* lcd_data7.lcd_data7, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xc0 0x08	/* lcd_data8.lcd_data8, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xc4 0x08	/* lcd_data9.lcd_data9, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xc8 0x08	/* lcd_data10.lcd_data10, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xcc 0x08	/* lcd_data11.lcd_data11, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xd0 0x08	/* lcd_data12.lcd_data12, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xd4 0x08	/* lcd_data13.lcd_data13, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xd8 0x08	/* lcd_data14.lcd_data14, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xdc 0x08	/* lcd_data15.lcd_data15, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xe0 0x00	/* lcd_vsync.lcd_vsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+				0xe4 0x00	/* lcd_hsync.lcd_hsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+				0xe8 0x00	/* lcd_pclk.lcd_pclk, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+				0xec 0x00	/* lcd_ac_bias_en.lcd_ac_bias_en, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+			>;
-+		};
-+
-+		bone_geiger_cape_led_pins: pinmux_bone_geiger_cape_led_pins {
-+			pinctrl-single,pins = <
-+				0xe4 0x07	/* lcd_hsync.gpio2_23, OUTPUT | MODE7 */
-+				0xec 0x07	/* lcd_ac_bias_en.gpio2_25, OUTPUT | MODE7 */
-+			>;
-+		};
-+
-+		bone_geiger_cape_pins: pinmux_bone_geiger_cape_pins {
-+			pinctrl-single,pins = <
-+				0x48 0x06       /* gpmc_a2.ehrpwm1a, OMAP_MUX_MODE6 | AM33XX_PIN_OUTPUT */
-+				/* 0x19c 0x34 */	/* mcasp0_ahclkr.eCAP2_in_PWM2_out, OMAP_MUX_MODE4 | INPUT_PULLUP */
-+				0x19c 0x37 	/* mcasp0_ahclkr.gpio3_17, OMAP_MUX_MODE4 | INPUT_PULLUP */
-+			>;
-+		};
-+
-+		bone_lcd3_cape_led_00A0_pins: pinmux_bone_lcd3_cape_led_00A0_pins {
-+			pinctrl-single,pins = <
-+				0x48 0x07	/* gpmc_a2.gpio1_18, OUTPUT | MODE7 */
-+				0x4c 0x07	/* gpmc_a3.gpio1_19, OUTPUT | MODE7 */
-+			>;
-+		};
-+
-+		bone_lcd3_cape_lcd_pins: pinmux_bone_lcd3_cape_lcd_pins {
-+			pinctrl-single,pins = <
-+				0xa0 0x08	/* lcd_data0.lcd_data0, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xa4 0x08	/* lcd_data1.lcd_data1, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xa8 0x08	/* lcd_data2.lcd_data2, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xac 0x08	/* lcd_data3.lcd_data3, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xb0 0x08	/* lcd_data4.lcd_data4, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xb4 0x08	/* lcd_data5.lcd_data5, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xb8 0x08	/* lcd_data6.lcd_data6, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xbc 0x08	/* lcd_data7.lcd_data7, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xc0 0x08	/* lcd_data8.lcd_data8, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xc4 0x08	/* lcd_data9.lcd_data9, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xc8 0x08	/* lcd_data10.lcd_data10, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xcc 0x08	/* lcd_data11.lcd_data11, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xd0 0x08	/* lcd_data12.lcd_data12, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xd4 0x08	/* lcd_data13.lcd_data13, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xd8 0x08	/* lcd_data14.lcd_data14, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xdc 0x08	/* lcd_data15.lcd_data15, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT | AM33XX_PULL_DISA */
-+				0xe0 0x00	/* lcd_vsync.lcd_vsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+				0xe4 0x00	/* lcd_hsync.lcd_hsync, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+				0xe8 0x00	/* lcd_pclk.lcd_pclk, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+				0xec 0x00	/* lcd_ac_bias_en.lcd_ac_bias_en, OMAP_MUX_MODE0 | AM33XX_PIN_OUTPUT */
-+			>;
-+		};
-+
-+		bone_lcd3_cape_keys_00A0_pins: pinmux_bone_lcd3_cape_keys_00A0_pins {
-+			pinctrl-single,pins = <
-+				0x040 0x2f	/* gpmc_a0.gpio1_16, INPUT | PULLDIS | MODE7 */
-+				0x044 0x2f	/* gpmc_a1.gpio1_17, INPUT | PULLDIS | MODE7 */
-+				0x1a4 0x2f	/* mcasp0_fsr.gpio3_19, INPUT | PULLDIS | MODE7 */
-+				0x078 0x2f	/* gpmc_ben1.gpio1_28, INPUT | PULLDIS | MODE7 */
-+				0x164 0x2f	/* ecap0_in_pwm0_out.gpio0_7, INPUT | PULLDIS | MODE7 */
-+			>;
-+		};
-+
-+		pwm_bl_pins: pinmux_pwm_bl_pins {
-+			pinctrl-single,pins = <
-+				0x4c 0x06	/* gpmc_a3.ehrpwm1b, OMAP_MUX_MODE6 | AM33XX_PIN_OUTPUT */
-+				// 0x48 0x06       /* gpmc_a2.ehrpwm1a, OMAP_MUX_MODE6 | AM33XX_PIN_OUTPUT */
-+			>;
-+	       };
-+
-+		weather_cape_w1_pins: pinmux_weather_cape_w1_pins {
-+			pinctrl-single,pins = <
-+				0x0c 0x37       /* gpmc_ad3.gpio1_3, OMAP_PIN_INPUT_PULLUP | OMAP_MUX_MODE7 - w1-gpio */
-+			>;
-+		};
- 	};
- 
- 	ocp {
-@@ -92,16 +229,6 @@
- 			};
- 		};
- 
--		i2c1: i2c@44e0b000 {
--			status = "okay";
--			clock-frequency = <400000>;
--
--			tps: tps@24 {
--				reg = <0x24>;
--			};
--
--		};
--
- 		gpevt {
- 			compatible = "gpevt";
- 			pinctrl-names = "default";
-@@ -110,15 +237,117 @@
- 			dma-names = "gpioevt";
- 			gpio-evt = <&gpio3 2 0>;
- 		};
-+
-+	};
-+
-+	capebus: capebus@0 {
-+			compatible = "bone-capebus";
-+
-+			bone_dvi_cape: cape@0 {
-+				compatible = "bone-generic-cape";
-+			};
-+
-+			bone_geiger_cape: cape@1 {
-+				compatible = "bone-geiger-cape";
-+			};
-+
-+			bone_lcd3_cape: cape@2 {
-+				compatible = "bone-generic-cape";
-+			};
-+
-+			bone_lcd7_cape: cape@3 {
-+				compatible = "bone-lcd7-cape";
-+			};
-+
-+			bone_weather_cape: cape@4 {
-+				compatible = "bone-generic-cape";
-+			};
-+
-+			bone_adafruit_cape: cape@5 {
-+				compatible = "bone-generic-cape";
-+			};
-+
-+			/* overrides; no EEPROM (prototyping) */
-+//			override@3 {
-+//				compatible = "bone-capebus-slot-override";
-+//				slot = <3>;
-+//				board-name = "Geiger Cape";
-+//				version = "00A0";
-+//				manufacturer = "Geiger Inc";
-+//				/* TODO: Add the rest */
-+//			};
-+
-+//			override@2 {
-+//				compatible = "bone-capebus-slot-override";
-+//				slot = <2>;
-+//				board-name = "Weather Cape";
-+//				version = "00A0";
-+//				manufacturer = "CCO Inc";
-+//				/* TODO: Add the rest */
-+//			};
-+
-+//			override@1 {
-+//				compatible = "bone-capebus-slot-override";
-+//				slot = <1>;
-+//				board-name = "Adafruit 1.8 Cape";
-+//				version = "00A0";
-+//				manufacturer = "Adafruit";
-+//				/* TODO: Add the rest */
-+//			};
-+
-+//			override@0 {
-+//				compatible = "bone-capebus-slot-override";
-+//				slot = <0>;
-+//				board-name = "BeagleBone Weather CAPE";
-+//				version = "00A0";
-+//				manufacturer = "Beagleboardtoys";
-+//				/* TODO: Add the rest */
-+//			};
- 	};
- 
--	backlight {
--			compatible	= "pwm-backlight"; 
--			pwms = <&ehrpwm1 0 500000 0>;
--			pwm-names = "st7735fb";
--			brightness-levels = <0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100>;
--			default-brightness-level = <50>; /* index to the array above */ 
--		};
++struct bone_geiger_info {
++	struct cape_dev *dev;
++	struct bone_capebus_generic_info *geninfo;
++	struct pwm_device *pwm_dev;
++	int pwm_frequency;
++	int pwm_duty_cycle;
++	int run;
++	atomic64_t counter;
++	int event_gpio;
++	int event_irq;
++	struct led_trigger *event_led;		/* event detect */
++	struct led_trigger *run_led;		/* running      */
++	unsigned long event_blink_delay;
++	struct sysfs_dirent *counter_sd;	/* notifier */
++	const char *vsense_name;
++	unsigned int vsense_scale;
++	struct iio_channel *vsense_channel;
 +};
 +
-+&i2c0 {
-+	status = "okay";
-+	clock-frequency = <400000>;
++static const struct of_device_id bonegeiger_of_match[] = {
++	{
++		.compatible = "bone-geiger-cape",
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, bonegeiger_of_match);
 +
-+	tps: tps@24 {
-+		reg = <0x24>;
-+	};
++static int bonegeiger_start(struct cape_dev *dev)
++{
++	struct bone_geiger_info *info = dev->drv_priv;
++	int duty, period;
 +
-+	baseboard_eeprom: baseboard_eeprom@50 {
-+		compatible = "at,24c256";
-+		reg = <0x50>;
-+	};
++	if (info->run != 0)
++		return 0;
++
++	/* checks */
++	if (info->pwm_frequency < 1000 || info->pwm_frequency > 50000) {
++		dev_err(&dev->dev, "Cowardly refusing to use a "
++				"frequency of %d\n",
++				info->pwm_frequency);
++		return -EINVAL;
++	}
++	if (info->pwm_duty_cycle > 80) {
++		dev_err(&dev->dev, "Cowardly refusing to use a "
++				"duty cycle of %d\n",
++				info->pwm_duty_cycle);
++		return -EINVAL;
++	}
++
++	period = div_u64(1000000000LLU, info->pwm_frequency);
++	duty = (period * info->pwm_duty_cycle) / 100;
++
++	dev_info(&dev->dev, "starting geiger tube with "
++			"duty=%duns period=%dus\n",
++			duty, period);
++
++	pwm_config(info->pwm_dev, duty, period);
++	pwm_enable(info->pwm_dev);
++
++	info->run = 1;
++	led_trigger_event(info->run_led, LED_FULL);
++
++	return 0;
++}
++
++static int bonegeiger_stop(struct cape_dev *dev)
++{
++	struct bone_geiger_info *info = dev->drv_priv;
++
++	if (info->run == 0)
++		return 0;
++
++	dev_info(&dev->dev, "disabling geiger tube\n");
++	pwm_config(info->pwm_dev, 0, 50000);	/* 0% duty cycle, 20KHz */
++	pwm_disable(info->pwm_dev);
++
++	info->run = 0;
++	led_trigger_event(info->run_led, LED_OFF);
++
++	return 0;
++}
++
++static ssize_t bonegeiger_show_run(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct cape_dev *cdev = to_cape_dev(dev);
++	struct bone_geiger_info *info = cdev->drv_priv;
++
++	return sprintf(buf, "%d\n", info->run);
++}
++
++static ssize_t bonegeiger_store_run(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
++{
++	struct cape_dev *cdev = to_cape_dev(dev);
++	int run, err;
++
++	if (sscanf(buf, "%i", &run) != 1)
++		return -EINVAL;
++
++	if (run)
++		err = bonegeiger_start(cdev);
++	else
++		err = bonegeiger_stop(cdev);
++
++	return err ? err : count;
++}
++
++static ssize_t bonegeiger_show_counter(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct cape_dev *cdev = to_cape_dev(dev);
++	struct bone_geiger_info *info = cdev->drv_priv;
++
++	return sprintf(buf, "%llu\n", atomic64_read(&info->counter));
++}
++
++static ssize_t bonegeiger_store_counter(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
++{
++	struct cape_dev *cdev = to_cape_dev(dev);
++	struct bone_geiger_info *info = cdev->drv_priv;
++
++	atomic64_set(&info->counter, 0);	/* just reset */
++	return count;
++}
++
++static ssize_t bonegeiger_show_vsense(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct cape_dev *cdev = to_cape_dev(dev);
++	struct bone_geiger_info *info = cdev->drv_priv;
++	int ret, val;
++	u32 mvolts;
++
++	ret = iio_read_channel_raw(info->vsense_channel, &val);
++	if (ret < 0)
++		return ret;
++
++	/* V = (1800 / 4096) * val * scale) = (1.8 * val * scale / 4096) */
++	mvolts = div_u64(1800 * info->vsense_scale * (u64)val, 4096 * 100);
++
++	return sprintf(buf, "%d\n", mvolts);
++}
++
++static DEVICE_ATTR(run, S_IRUGO | S_IWUSR,
++		bonegeiger_show_run, bonegeiger_store_run);
++static DEVICE_ATTR(counter, S_IRUGO | S_IWUSR,
++		bonegeiger_show_counter, bonegeiger_store_counter);
++static DEVICE_ATTR(vsense, S_IRUGO,
++		bonegeiger_show_vsense, NULL);
++
++static int bonegeiger_sysfs_register(struct cape_dev *cdev)
++{
++	int err;
++
++	err = device_create_file(&cdev->dev, &dev_attr_run);
++	if (err != 0)
++		goto err_no_run;
++
++	err = device_create_file(&cdev->dev, &dev_attr_counter);
++	if (err != 0)
++		goto err_no_counter;
++
++	err = device_create_file(&cdev->dev, &dev_attr_vsense);
++	if (err != 0)
++		goto err_no_vsense;
++
++	return 0;
++
++err_no_vsense:
++	device_remove_file(&cdev->dev, &dev_attr_counter);
++err_no_counter:
++	device_remove_file(&cdev->dev, &dev_attr_run);
++err_no_run:
++	return err;
++}
++
++static void bonegeiger_sysfs_unregister(struct cape_dev *cdev)
++{
++	device_remove_file(&cdev->dev, &dev_attr_vsense);
++	device_remove_file(&cdev->dev, &dev_attr_counter);
++	device_remove_file(&cdev->dev, &dev_attr_run);
++}
++
++static irqreturn_t bonegeiger_irq_handler(int irq, void *dev_id)
++{
++	struct cape_dev *dev = dev_id;
++	struct bone_geiger_info *info = dev->drv_priv;
++
++	atomic64_inc(&info->counter);
++
++	led_trigger_blink_oneshot(info->event_led,
++		  &info->event_blink_delay, &info->event_blink_delay, 0);
++
++	sysfs_notify_dirent(info->counter_sd);
++
++	return IRQ_HANDLED;
++}
++
++static int bonegeiger_probe(struct cape_dev *dev, const struct cape_device_id *id)
++{
++	char boardbuf[33];
++	char versionbuf[5];
++	const char *board_name;
++	const char *version;
++	struct bone_geiger_info *info;
++	struct pinctrl *pinctrl;
++	struct device_node *node, *pwm_node;
++	phandle phandle;
++	u32 val;
++	int err;
++
++	/* boiler plate probing */
++	err = bone_capebus_probe_prolog(dev, id);
++	if (err != 0)
++		return err;
++
++	/* get the board name (after check of cntrlboard match) */
++	board_name = bone_capebus_id_get_field(id, BONE_CAPEBUS_BOARD_NAME,
++			boardbuf, sizeof(boardbuf));
++	/* get the board version */
++	version = bone_capebus_id_get_field(id, BONE_CAPEBUS_VERSION,
++			versionbuf, sizeof(versionbuf));
++	/* should never happen; but check anyway */
++	if (board_name == NULL || version == NULL)
++		return -ENODEV;
++
++	dev->drv_priv = devm_kzalloc(&dev->dev, sizeof(*info), GFP_KERNEL);
++	if (dev->drv_priv == NULL) {
++		dev_err(&dev->dev, "Failed to allocate info\n");
++		err = -ENOMEM;
++		goto err_no_mem;
++	}
++	info = dev->drv_priv;
++
++	pinctrl = devm_pinctrl_get_select_default(&dev->dev);
++	if (IS_ERR(pinctrl))
++		dev_warn(&dev->dev,
++			"pins are not configured from the driver\n");
++
++	node = capebus_of_find_property_node(dev, "version", version, "pwms");
++	if (node == NULL) {
++		dev_err(&dev->dev, "unable to find pwms property\n");
++		err = -ENODEV;
++		goto err_no_pwm;
++	}
++
++	err = of_property_read_u32(node, "pwms", &val);
++	if (err != 0) {
++		dev_err(&dev->dev, "unable to read pwm handle\n");
++		goto err_no_pwm;
++	}
++	phandle = val;
++
++	pwm_node = of_find_node_by_phandle(phandle);
++	if (pwm_node == NULL) {
++		dev_err(&dev->dev, "Failed to pwm node\n");
++		err = -EINVAL;
++		goto err_no_pwm;
++	}
++
++	err = capebus_of_platform_device_enable(pwm_node);
++	of_node_put(pwm_node);
++	if (err != 0) {
++		dev_err(&dev->dev, "Failed to pwm node\n");
++		goto err_no_pwm;
++	}
++
++	info->pwm_dev = of_pwm_request(node, NULL);
++	of_node_put(node);
++	if (IS_ERR(info->pwm_dev)) {
++		dev_err(&dev->dev, "unable to request PWM\n");
++		err = PTR_ERR(info->pwm_dev);
++		goto err_no_pwm;
++	}
++
++	if (capebus_of_property_read_u32(dev,
++				"version", version,
++				"pwm-frequency", &val) != 0) {
++		val = 20000;
++		dev_warn(&dev->dev, "Could not read pwm-frequency property; "
++				"using default %u\n",
++				val);
++	}
++	info->pwm_frequency = val;
++
++	if (capebus_of_property_read_u32(dev,
++				"version", version,
++				"pwm-duty-cycle", &val) != 0) {
++		val = 60;
++		dev_warn(&dev->dev, "Could not read pwm-duty-cycle property; "
++				"using default %u\n",
++				val);
++	}
++	info->pwm_duty_cycle = val;
++
++	node = capebus_of_find_property_node(dev, "gpios", version, "pwms");
++	info->event_gpio = of_get_gpio_flags(node, 0, NULL);
++	of_node_put(node);
++	if (IS_ERR_VALUE(info->event_gpio)) {
++		dev_err(&dev->dev, "unable to get event GPIO\n");
++		err = info->event_gpio;
++		goto err_no_gpio;
++	}
++
++	err = gpio_request_one(info->event_gpio,
++			GPIOF_DIR_IN | GPIOF_EXPORT,
++			"bone-geiger-cape-event");
++	if (err != 0) {
++		dev_err(&dev->dev, "failed to request event GPIO\n");
++		goto err_no_gpio;
++	}
++
++	atomic64_set(&info->counter, 0);
++
++	info->event_irq = gpio_to_irq(info->event_gpio);
++	if (IS_ERR_VALUE(info->event_irq)) {
++		dev_err(&dev->dev, "unable to get event GPIO IRQ\n");
++		err = info->event_irq;
++		goto err_no_irq;
++	}
++
++	err = request_irq(info->event_irq, bonegeiger_irq_handler,
++			IRQF_TRIGGER_RISING | IRQF_SHARED,
++			"bone-geiger-irq", dev);
++	if (err != 0) {
++		dev_err(&dev->dev, "unable to request irq\n");
++		goto err_no_irq;
++	}
++
++	err = bonegeiger_sysfs_register(dev);
++	if (err != 0) {
++		dev_err(&dev->dev, "unable to register sysfs\n");
++		goto err_no_sysfs;
++	}
++
++	info->counter_sd = sysfs_get_dirent(dev->dev.kobj.sd, NULL, "counter");
++	if (info->counter_sd == NULL) {
++		dev_err(&dev->dev, "unable to get dirent of counter\n");
++		err = -ENODEV;
++		goto err_no_counter_dirent;
++	}
++
++	led_trigger_register_simple("geiger-event", &info->event_led);
++	led_trigger_register_simple("geiger-run", &info->run_led);
++
++	/* pick up the generics; tsc & leds */
++	info->geninfo = bone_capebus_probe_generic(dev, id);
++	if (info->geninfo == NULL) {
++		dev_err(&dev->dev, "Could not probe generic\n");
++		goto err_no_generic;
++	}
++
++	led_trigger_event(info->run_led, LED_OFF);
++
++	/* default */
++	if (capebus_of_property_read_u32(dev,
++				"version", version,
++				"event-blink-delay", &val) != 0) {
++		val = 30;
++		dev_warn(&dev->dev, "Could not read event-blink-delay "
++				"property; using default %u\n",
++					val);
++	}
++	info->event_blink_delay = val;
++
++	/* default */
++	if (capebus_of_property_read_string(dev,
++				"version", version,
++				"vsense-name", &info->vsense_name) != 0) {
++		info->vsense_name = "AIN5";
++		dev_warn(&dev->dev, "Could not read vsense-name property; "
++				"using default %u\n",
++					val);
++	}
++
++	if (capebus_of_property_read_u32(dev,
++				"version", version,
++				"vsense-scale", &info->vsense_scale) != 0) {
++		info->vsense_scale = 37325;	/* 373.25 */
++		dev_warn(&dev->dev, "Could not read vsense-scale property; "
++				"using default %u\n",
++					info->vsense_scale);
++	}
++
++	info->vsense_channel = iio_channel_get(NULL, info->vsense_name);
++	if (IS_ERR(info->vsense_channel)) {
++		dev_err(&dev->dev, "Could not get AIN5 analog input\n");
++		err = PTR_ERR(info->vsense_channel);
++		goto err_no_vsense;
++	}
++
++	dev_info(&dev->dev, "ready\n");
++
++	err = bonegeiger_start(dev);
++	if (err != 0) {
++		dev_err(&dev->dev, "Could not start geiger device\n");
++		goto err_no_start;
++	}
++
++	return 0;
++
++err_no_start:
++	iio_channel_release(info->vsense_channel);
++err_no_vsense:
++	bone_capebus_remove_generic(info->geninfo);
++err_no_generic:
++	led_trigger_unregister_simple(info->run_led);
++	led_trigger_unregister_simple(info->event_led);
++	sysfs_put(info->counter_sd);
++err_no_counter_dirent:
++	bonegeiger_sysfs_unregister(dev);
++err_no_sysfs:
++	free_irq(info->event_irq, dev);
++err_no_irq:
++	gpio_free(info->event_gpio);
++err_no_gpio:
++	pwm_put(info->pwm_dev);
++err_no_pwm:
++	devm_kfree(&dev->dev, info);
++err_no_mem:
++	return err;
++}
++
++static void bonegeiger_remove(struct cape_dev *dev)
++{
++	struct bone_geiger_info *info = dev->drv_priv;
++
++	dev_info(&dev->dev, "Removing geiger cape driver...\n");
++
++	bonegeiger_stop(dev);
++
++	iio_channel_release(info->vsense_channel);
++	bone_capebus_remove_generic(info->geninfo);
++	led_trigger_unregister_simple(info->run_led);
++	led_trigger_unregister_simple(info->event_led);
++	sysfs_put(info->counter_sd);
++	bonegeiger_sysfs_unregister(dev);
++	free_irq(info->event_irq, dev);
++	gpio_free(info->event_gpio);
++	pwm_put(info->pwm_dev);
++}
++
++struct cape_driver bonegeiger_driver = {
++	.driver = {
++		.name		= "bonegeiger",
++		.owner		= THIS_MODULE,
++		.of_match_table	= bonegeiger_of_match,
++	},
++	.probe		= bonegeiger_probe,
++	.remove		= bonegeiger_remove,
 +};
 +
-+&i2c2 {
-+	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&i2c2_pins>;
-+
-+	clock-frequency = <100000>;
-+
-+	/* OK, I know these are cape but for now it will do */
-+	cape_eeprom_0: cape_eeprom_0@54 {
-+		compatible = "at,24c256";
-+		reg = <0x54>;
-+	};
-+
-+	cape_eeprom_1: cape_eeprom_1@55 {
-+		compatible = "at,24c256";
-+		reg = <0x55>;
-+	};
-+
-+	cape_eeprom_2: cape_eeprom_2@56 {
-+		compatible = "at,24c256";
-+		reg = <0x56>;
-+	};
-+
-+	cape_eeprom_3: cape_eeprom_3@57 {
-+		compatible = "at,24c256";
-+		reg = <0x57>;
-+	};
- };
- 
- /include/ "tps65217.dtsi"
-@@ -165,6 +394,7 @@
- 			regulator-always-on;
- 		};
- 	};
-+
- };
- 
- &mmc1 {
-@@ -172,21 +402,8 @@
- };
- 
- &spi1 {
--	status = "okay";
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&spi1_pins>;
--
--	lcd@0 {
--		compatible = "adafruit,tft-lcd-1.8-green", "sitronix,st7735";
--		spi-max-frequency = <8000000>;
--		reg = <0>;
--		spi-cpol;
--		spi-cpha;
--		pinctrl-names = "default";
--		pinctrl-0 = <&lcd_pins>;
--		st7735-rst = <&gpio4 19 0>;
--		st7735-dc = <&gpio4 21 0>;
--	};
- };
- 
- &edma {
-@@ -200,3 +417,415 @@
- &cpsw_emac1 {
- 	phy_id = "4a101000.mdio:01";
- };
-+
-+&ehrpwm1 {
-+	status = "okay";
-+};
-+
-+&capebus {
-+	slots = <&cape_eeprom_0 &cape_eeprom_1 &cape_eeprom_2 &cape_eeprom_3>;
-+};
-+
-+&bone_dvi_cape {
-+	board-name = "BeagleBone DVI-D CAPE";
-+
-+	/* hacky, since this is not a proper DT platform device */
-+	/* but until we have DT bindings... */
-+	version@00A0 {
-+		version = "00A0";
-+		dvi {
-+			compatible = "da8xx-dt";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&bone_dvi_cape_dvi_00A0_pins>;
-+			ti,hwmods = "lcdc";
-+
-+			disp-pll = <560000000>;
-+			panel-type = "1024x768@60";
-+			powerdn-gpio = <&gpio2 7 0>;
-+		};
-+	};
-+
-+	version@00A1 {
-+		version = "00A1", "01";
-+		dvi {
-+			compatible = "da8xx-dt";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&bone_dvi_cape_dvi_00A1_pins>;
-+			ti,hwmods = "lcdc";
-+
-+			disp-pll = <560000000>;
-+			panel-type = "1024x768@60";
-+			powerdn-gpio = <&gpio2 31 0>;
-+		};
-+	};
-+
-+	gpio-leds {
-+		compatible = "gpio-leds";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&bone_dvi_cape_led_pins>;
-+
-+		dvi-led0 {
-+			label = "dvi:green:usr0";
-+			gpios = <&gpio2 18 0>;
-+			linux,default-trigger = "heartbeat";
-+			default-state = "off";
-+		};
-+
-+		dvi-led1 {
-+			label = "dvi:green:usr1";
-+			gpios = <&gpio2 19 0>;
-+			linux,default-trigger = "mmc0";
-+			default-state = "off";
-+		};
-+	};
-+};
-+
-+&bone_geiger_cape {
-+	board-name = "Geiger Cape";
-+
-+	/* note that these can't be versioned... */
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&bone_geiger_cape_pins>;
-+
-+	pwms = <&ehrpwm1 0 500000 0>;
-+	pwm-names = "bone-geiger-cape";
-+
-+	pwm-frequency  = <20000>;	/* 20KHz */
-+	pwm-duty-cycle = <60>;		/* 60% */
-+
-+	event-blink-delay = <30>;	/* 30ms */
-+
-+	gpios = <&gpio4 17 0>;		/* pulse */
-+
-+	vsense-name = "AIN5";		/* analog vsense */
-+	vsense-scale = <37325>;		/* scaling */
-+
-+	tscadc {
-+		compatible = "ti-tscadc-dt";
-+
-+		ti,hwmods = "adc_tsc";
-+
-+		adc-channels = <8>;
-+	};
-+
-+	gpio-leds {
-+		compatible = "gpio-leds";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&bone_geiger_cape_led_pins>;
-+
-+		geiger-led0 {
-+			label = "geiger:green:usr0";
-+			gpios = <&gpio3 23 0>;
-+			linux,default-trigger = "geiger-run";
-+			default-state = "off";
-+		};
-+
-+		geiger-led1 {
-+			label = "geiger:red:usr1";
-+			gpios = <&gpio3 25 0>;
-+			linux,default-trigger = "geiger-event";
-+			default-state = "off";
-+		};
-+	};
-+};
-+
-+&bone_lcd3_cape {
-+	board-name = "BeagleBone LCD3 CAPE";
-+
-+	/* hacky, since this is not a proper DT platform device */
-+	/* but until we have DT bindings... */
-+	lcd3 {
-+		compatible = "da8xx-dt";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&bone_lcd3_cape_lcd_pins>;
-+
-+		ti,hwmods = "lcdc";
-+
-+		disp-pll = <16000000>;
-+		panel-type = "CDTech_S035Q01";
-+	};
-+
-+	/* same thing as above */
-+	tscadc {
-+		compatible = "ti-tscadc-dt";
-+
-+		ti,hwmods = "adc_tsc";
-+
-+		tsc-wires = <4>;
-+		tsc-x-plate-resistance = <200>;
-+		tsc-steps = <6>;
-+
-+		adc-channels = <4>;
-+	};
-+
-+	version@00A0 {
-+		version = "00A0";
-+
-+		backlight {
-+			compatible = "tps65217-backlight";
-+			isel = <1>;
-+			fdim = <200>;
-+
-+			tps = <&tps>;	/* link to the tps */
-+			brightness = <100>;
-+		};
-+
-+		gpio-leds {
-+			compatible = "gpio-leds";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&bone_lcd3_cape_led_00A0_pins>;
-+
-+			lcd3-led0 {
-+				label = "lcd3:green:usr0";
-+				gpios = <&gpio2 18 0>;
-+				linux,default-trigger = "heartbeat";
-+				default-state = "off";
-+			};
-+
-+			lcd3-led1 {
-+				label = "lcd3:green:usr1";
-+				gpios = <&gpio2 19 0>;
-+				linux,default-trigger = "cpu0";
-+				default-state = "off";
-+			};
-+		};
-+
-+		gpio_keys {
-+			compatible = "gpio-keys";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&bone_lcd3_cape_keys_00A0_pins>;
-+
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			button@1 {
-+				debounce_interval = <50>;
-+				linux,code = <105>;
-+				label = "left";
-+				gpios = <&gpio2 16 0x0>;
-+				gpio-key,wakeup;
-+				autorepeat;
-+			};
-+			button@2 {
-+				debounce_interval = <50>;
-+				linux,code = <106>;
-+				label = "right";
-+				gpios = <&gpio2 17 0x0>;
-+				gpio-key,wakeup;
-+				autorepeat;
-+			};
-+			button@3 {
-+				debounce_interval = <50>;
-+				linux,code = <103>;
-+				label = "up";
-+				gpios = <&gpio4 19 0x0>;
-+				gpio-key,wakeup;
-+				autorepeat;
-+			};
-+			button@4 {
-+				debounce_interval = <50>;
-+				linux,code = <108>;
-+				label = "down";
-+				gpios = <&gpio2 28 0x0>;
-+				gpio-key,wakeup;
-+				autorepeat;
-+			};
-+			button@5 {
-+				debounce_interval = <50>;
-+				linux,code = <28>;
-+				label = "enter";
-+				gpios = <&gpio1 7 0x0>;
-+				gpio-key,wakeup;
-+			};
-+		};
-+	};
-+};
-+
-+&bone_lcd7_cape {
-+	board-name = "BeagleBone LCD7 CAPE";
-+
-+	/* hacky, since this is not a proper DT platform device */
-+	/* but until we have DT bindings... */
-+	lcd7 {
-+		compatible = "da8xx-dt";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&bone_lcd3_cape_lcd_pins>;
-+
-+		ti,hwmods = "lcdc";
-+
-+		disp-pll = <60000000>;
-+		panel-type = "TFC_S9700RTWV35TR_01B";
-+	};
-+
-+	/* same thing as above */
-+	tscadc {
-+		compatible = "ti-tscadc-dt";
-+
-+		ti,hwmods = "adc_tsc";
-+
-+		tsc-wires = <4>;
-+		tsc-x-plate-resistance = <200>;
-+		tsc-steps = <6>;
-+
-+		adc-channels = <4>;
-+	};
-+
-+	version@00A0 {
-+		version = "00A0";
-+
-+		backlight {
-+			compatible = "tps65217-backlight";
-+			isel = <1>;
-+			fdim = <200>;
-+
-+			tps = <&tps>;	/* link to the tps */
-+			brightness = <100>;
-+		};
-+
-+		gpio-leds {
-+			compatible = "gpio-leds";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&bone_lcd3_cape_led_00A0_pins>;
-+
-+			lcd3-led0 {
-+				label = "lcd3:green:usr0";
-+				gpios = <&gpio2 18 0>;
-+				linux,default-trigger = "heartbeat";
-+				default-state = "off";
-+			};
-+
-+			lcd3-led1 {
-+				label = "lcd3:green:usr1";
-+				gpios = <&gpio2 19 0>;
-+				linux,default-trigger = "cpu0";
-+				default-state = "off";
-+			};
-+		};
-+
-+		gpio_keys {
-+			compatible = "gpio-keys";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&bone_lcd3_cape_keys_00A0_pins>;
-+
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			button@1 {
-+				debounce_interval = <50>;
-+				linux,code = <105>;
-+				label = "left";
-+				gpios = <&gpio2 16 0x0>;
-+				gpio-key,wakeup;
-+				autorepeat;
-+			};
-+			button@2 {
-+				debounce_interval = <50>;
-+				linux,code = <106>;
-+				label = "right";
-+				gpios = <&gpio2 17 0x0>;
-+				gpio-key,wakeup;
-+				autorepeat;
-+			};
-+			button@3 {
-+				debounce_interval = <50>;
-+				linux,code = <103>;
-+				label = "up";
-+				gpios = <&gpio4 19 0x0>;
-+				gpio-key,wakeup;
-+				autorepeat;
-+			};
-+			button@4 {
-+				debounce_interval = <50>;
-+				linux,code = <108>;
-+				label = "down";
-+				gpios = <&gpio2 28 0x0>;
-+				gpio-key,wakeup;
-+				autorepeat;
-+			};
-+			button@5 {
-+				debounce_interval = <50>;
-+				linux,code = <28>;
-+				label = "enter";
-+				gpios = <&gpio1 7 0x0>;
-+				gpio-key,wakeup;
-+			};
-+		};
-+	};
-+};
-+
-+&bone_weather_cape {
-+	board-name = "BeagleBone Weather CAPE";
-+
-+	i2c2-devices {
-+		compatible = "i2c-dt";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		parent = <&i2c2>;
-+
-+		/* Ambient light sensor */
-+		tsl2550@39 {
-+			compatible = "tsl,tsl2550";
-+			reg = <0x39>;
-+		};
-+
-+		/* Humidity Sensor */
-+		sht21@40 {
-+			compatible = "sensiron,sht21";
-+			reg = <0x40>;
-+		};
-+
-+		/* Barometric pressure sensor */
-+		bmp085@77 {
-+			compatible = "bosch,bmp085";
-+			reg = <0x77>;
-+		};
-+	};
-+
-+	onewire@0 {
-+		compatible	= "w1-gpio";
-+		pinctrl-names	= "default";
-+		pinctrl-0	= <&weather_cape_w1_pins>;
-+		status		= "okay";
-+
-+		gpios = <&gpio2 3 0>;
-+	};
-+
-+};
-+
-+&bone_adafruit_cape {
-+	board-name = "Adafruit 1.8 Cape";
-+
-+	backlight {
-+		compatible	= "pwm-backlight";
-+		pinctrl-names	= "default";
-+		pinctrl-0	= <&pwm_bl_pins>;
-+
-+		pwms = <&ehrpwm1 1 500000 0>;
-+		pwm-names = "st7735fb";
-+		brightness-levels = <0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100>;
-+		default-brightness-level = <50>; /* index to the array above */
-+	};
-+
-+	spi1-devices {
-+		compatible = "spi-dt";
-+
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		parent = <&spi1>;
-+
-+		lcd@0 {
-+			compatible = "adafruit,tft-lcd-1.8-red", "sitronix,st7735";
-+			spi-max-frequency = <8000000>;
-+			reg = <0>;
-+			spi-cpol;
-+			spi-cpha;
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&lcd_pins>;
-+			st7735-rst = <&gpio4 19 0>;
-+			st7735-dc = <&gpio4 21 0>;
-+		};
-+
-+	};
-+};
++module_capebus_driver(bonegeiger_driver);
++
++MODULE_AUTHOR("Pantelis Antoniou");
++MODULE_DESCRIPTION("Beaglebone geiger cape");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:bone-geiger-cape");
 -- 
 1.7.12
 
