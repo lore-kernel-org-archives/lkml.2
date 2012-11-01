@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762094Ab2KASt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 14:49:57 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:48786 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750796Ab2KAStz (ORCPT
+	id S2992495Ab2KASuX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 14:50:23 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:58691 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762130Ab2KASuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 14:49:55 -0400
-Date: Thu, 1 Nov 2012 19:49:50 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, joro@8bytes.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 00/19 v2] Improve IRQ remapping abstraction in x86 core
- code
-Message-ID: <20121101184950.GA31453@breakpoint.cc>
-References: <1345470965-24410-1-git-send-email-joerg.roedel@amd.com>
- <20120826191749.GK3690@breakpoint.cc>
- <20120919145227.GS2505@amd.com>
+	Thu, 1 Nov 2012 14:50:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120919145227.GS2505@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 1 Nov 2012 14:50:17 -0400
+Message-ID: <CA+T6QPk-etCT7EzwGR-tP+JTab_m4Vywh9qgHG_HW-oXKgn_AQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+From: Jason Kridner <jkridner@beagleboard.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: b-cousson@ti.com, Koen Kooi <koen@dominion.thruhere.net>, paul@pwsan.com,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        "Porter, Matt" <mporter@ti.com>, Russ Dill <russ.dill@gmail.com>,
+        khilman@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 19, 2012 at 04:52:27PM +0200, Joerg Roedel wrote:
-> Hi Sebastian,
-Hi Joerg,
+My apologies for starting a new thread, but I don't have this thread
+in my Inbox.
 
-> > After browsing through the new functions in irq_remapping_modify_x86_ops() I
-> > see that some of them test for "remap_ops" which is pointless because you don't
-> > call irq_remapping_modify_x86_ops() if it is not the case. This also goes mostly
-> > for irq_remapping_enabled.
-> 
-> Okay, I am usually a bit conservative when it comes to checking function
-> pointers and conditions. One reason is that the Linux kernel had severe
-> security bugs in the past with NULL functions pointers being called.
-> Especially when future changes modify the code path these function
-> pointers it is easy to forget re-adding the checks. But I will look
-> again at the patches to check which checks can be removed and which
-> should better stay.
+http://www.spinics.net/lists/linux-omap/msg81034.html
 
-But if you forget to set the pointer and you simply return doing nothing it
-is kind of bad. So if you do a setup, make check at the beginning and then you
-*can* expect that pointers are set. And you can never prepare against people
-touching code and not thinking much.
-If you look at the IRQ code or x86'ops code for instance, there are a few
-places where function pointers are checked / set at the beginning and then are
-called. And sometimes the functions are simple "void / return 0" code if this
-is really not implemented / required but you don't have to check for it.
+Tony Lindgren wrote:
 
-> Well, when something goes wrong on resume and irq-remapping doesn't work
-> anymore the system is usually doomed (with and without this patch-set).
-> When irq-remapping does not work the dma-remapping will likely also not
-> work anymore which is even worse.
+>* Pantelis Antoniou <panto@xxxxxxxxxxxxxxxxxxxxxxx> [121031 15:02]:
+>>
+>> So when device's node is 'disabled' of_platform_device_create_pdata()
+>> will not create the device.
+>>
+>> Now, of course it is possible to re-trigger the platform's probe method
+>> to be called, and in fact I do so in the capebus patches.
+>
+>You should fix this in generic way then rather than working
+>around it in capebus. The same problem exists changing
+>between different functionality for the shared pins,
+>let's say between USB pins and UART pins if you want a
+>serial debug console on some phone.
 
-understood.
+The current capebus solution goes a long way to fixing a huge issue
+for BeagleBone users and I don't understand what seems to be a
+push-back on principle. On BeagleBone capes, these conflicts cannot be
+resolved early.
 
-> 
-> Regards,
-> 
-> 	Joerg
-> 
-
-Sebastian
+Do you have suggestions on some more generic method? It seems to me
+the proposed capebus approach strikes a good balance.
