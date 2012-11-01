@@ -1,34 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902Ab2KAFEv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 01:04:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60894 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750972Ab2KAFEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 01:04:50 -0400
-Message-ID: <5092039C.60009@redhat.com>
-Date: Thu, 01 Nov 2012 13:07:40 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S1751932Ab2KAFIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 01:08:50 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:56380 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab2KAFIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 01:08:48 -0400
 MIME-Version: 1.0
-To: Stephen Hemminger <shemminger@vyatta.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, maxk@qualcomm.com, haixiao@juniper.net,
-        ernesto.martin@viasat.com, krkumar2@in.ibm.com, edumazet@google.com
-Subject: Re: [net-next v4 0/7] Multiqueue support in tuntap
-References: <1351488964-11109-1-git-send-email-jasowang@redhat.com> <20121030165249.4cc4d596@nehalam.linuxnetplumber.net>
-In-Reply-To: <20121030165249.4cc4d596@nehalam.linuxnetplumber.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Thu, 1 Nov 2012 13:08:45 +0800
+Message-ID: <CAPgLHd928Pn4GvgcRAHic6pGU2T1gLrWRpGsqjxsGk0=nDg9rw@mail.gmail.com>
+Subject: [PATCH] mtip32xx: remove unused variables from mtip32xx.c
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: axboe@kernel.dk
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 07:52 AM, Stephen Hemminger wrote:
-> I am testing BQL for tuntap.
-> It wouldn't be hard to do BQL in the multi-queue version.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Yes, if BQL for tuntap is in first, I will rebase and convert it to 
-multiqueue version.
+The variables fis, reply are initialized but never used
+otherwise, so remove the unused variables.
 
-Thanks
+dpatch engine is used to auto generate this patch.
+(https://github.com/weiyj/dpatch)
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/block/mtip32xx/mtip32xx.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index adc6f36..d1e0273 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -555,7 +555,6 @@ static void print_tags(struct driver_data *dd,
+ static void mtip_timeout_function(unsigned long int data)
+ {
+ 	struct mtip_port *port = (struct mtip_port *) data;
+-	struct host_to_dev_fis *fis;
+ 	struct mtip_cmd *command;
+ 	int tag, cmdto_cnt = 0;
+ 	unsigned int bit, group;
+@@ -587,7 +586,6 @@ static void mtip_timeout_function(unsigned long int data)
+ 			bit = tag & 0x1F;
+ 
+ 			command = &port->commands[tag];
+-			fis = (struct host_to_dev_fis *) command->command;
+ 
+ 			set_bit(tag, tagaccum);
+ 			cmdto_cnt++;
+@@ -1142,10 +1140,8 @@ static void mtip_issue_non_ncq_command(struct mtip_port *port, int tag)
+ static bool mtip_pause_ncq(struct mtip_port *port,
+ 				struct host_to_dev_fis *fis)
+ {
+-	struct host_to_dev_fis *reply;
+ 	unsigned long task_file_data;
+ 
+-	reply = port->rxfis + RX_FIS_D2H_REG;
+ 	task_file_data = readl(port->mmio+PORT_TFDATA);
+ 
+ 	if (fis->command == ATA_CMD_SEC_ERASE_UNIT)
+
+
