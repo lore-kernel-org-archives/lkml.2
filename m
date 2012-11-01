@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758904Ab2KAJBG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 05:01:06 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59085 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758079Ab2KAJBD (ORCPT
+	id S1758968Ab2KAJBc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 05:01:32 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53071 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757669Ab2KAJB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 05:01:03 -0400
-Message-ID: <50923A48.1080906@gmail.com>
-Date: Thu, 01 Nov 2012 17:00:56 +0800
-From: Shan Wei <shanwei88@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: Christoph Lameter <cl@linux.com>, steffen.klassert@secunet.com,
-        David Miller <davem@davemloft.net>, NetDev <netdev@vger.kernel.org>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/9] net: xfrm: use this_cpu_ptr per-cpu helper
-References: <509109F9.3030904@gmail.com> <0000013ab7e4a640-60bd5b38-a1fc-4730-b918-4109211ffea0-000000@email.amazonses.com> <20121101034136.GA27343@gondor.apana.org.au>
-In-Reply-To: <20121101034136.GA27343@gondor.apana.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 1 Nov 2012 05:01:26 -0400
+Subject: Re: [Suggestion] net-ipv6: format %8s change to %16s in
+ rt6_info_route function of route.c
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <50921A92.8000809@asianux.com>
+References: <50921A92.8000809@asianux.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Nov 2012 10:01:22 +0100
+Message-ID: <1351760482.32673.913.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Herbert Xu said, at 2012/11/1 11:41:
-> Please refer to the comment in the patch above.
+On Thu, 2012-11-01 at 14:45 +0800, Chen Gang wrote:
+> Hello:
 > 
-> But I think the patch is wrong anyway because it would introduce
-> a warning, no?
+> 1) For Public Kernel:
+> 
+>    A) in rt6_info_route function of net/ipv6/route.c
+> 
+>    B) the length of rt->rt6i_dev->name is 16 (IFNAMSIZ)
+> 
+>    C) using %16s is better than %8s (it will be more "beautiful")
+>       (also suggest to delete RT6_INFO_LEN, it is useless for ever)
+> 
+> 
+> 
+> 2) For Red Hat RHEL5:
+> 
+>    A) in rt6_info_route function of net/ipv6/route.c
+> 
+>    B) the length of rt->rt6i_dev->name is 16 (IFNAMSIZ)
+> 
+>    C) for RT6_INFO_LEN is still useful, so it is an correctness issue.
+> 
+>    the relative patch for RHEL5 is below:
 
-yes, __this_cpu_ptr(or __this_cpu_read) is more reasonable 
-which don't check preemption context.
+Hi Chen
 
-> 
-> Thanks,
-> 
+Thats a good suggestion indeed.
+
+Networking patches should be sent to netdev@vger.kernel.org (added in
+CC)
+
+This list only cares about recent generic kernels, not RedHat ones.
+
+If you want to provide a patch, please base it on David Miller net-next
+[1] tree, and make it official (read Documentation/SubmittingPatches for
+general advices)
+
+By the way, the %8s should be replaced by %s, there is no need to make
+/proc/net/ipv6_route 'beautiful'. In the past, it was *needed* because
+each line had to be of a given length, but its not anymore the case.
+
+Thanks
+
+[1] :
+http://git.kernel.org/?p=linux/kernel/git/davem/net-next.git;a=summary
+
 
