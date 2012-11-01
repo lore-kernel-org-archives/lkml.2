@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992602Ab2KAWnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 18:43:13 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35578 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762306Ab2KAWnM (ORCPT
+	id S2992614Ab2KAWnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:43:43 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:47318 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932676Ab2KAWnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 18:43:12 -0400
-Date: Thu, 1 Nov 2012 23:43:01 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-cc: Oliver Neukum <oneukum@suse.de>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] alarmtimer: Replace the spinlock rtcdev_lock with
- mutex
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A1B9C8A@SHSMSX101.ccr.corp.intel.com>
-Message-ID: <alpine.LFD.2.02.1211012306240.2756@ionos>
-References: <1351700455.15558.1571.camel@cliu38-desktop-build> <2035297.QqCM5sVoD5@linux-lqwf.site> <27240C0AC20F114CBF8149A2696CBE4A1B9C8A@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 1 Nov 2012 18:43:41 -0400
+Date: Thu, 1 Nov 2012 23:21:39 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] r8169: enable internal ASPM and clock request settings
+Message-ID: <20121101222139.GC7708@electric-eye.fr.zoreil.com>
+References: <1351780651-1271-1-git-send-email-hayeswang@realtek.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351780651-1271-1-git-send-email-hayeswang@realtek.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Nov 2012, Liu, Chuansheng wrote:
-> > From: Oliver Neukum [mailto:oneukum@suse.de]
-> > On Thursday 01 November 2012 00:20:55 Chuansheng Liu wrote:
-> > > When do code reviewing, found no special requirement to
-> > > use spin_lock_irqsave/spin_unlock_irqrestore, because
-> > > alarmtimer_get_rtcdev() is called by posix clock interface.
-> > > So would like to use mutex to replace it.
-> > 
-> > What is gained thereby?
-> spin_lock_irqsave will disable the preempt and local irq, it is expensive than
-> mutex. Thanks.
+Hayes Wang <hayeswang@realtek.com> :
+> The following chips need to enable internal settings to let ASPM
+> and clock request work.
 
-Let's have a look at how expensive that is. The function which is
-relevant is alarmtimer_get_rtcdev(), which does:
+No objection, you know better than me.
 
-        spin_lock_irqsave(&rtcdev_lock, flags);
-        ret = rtcdev;
-        spin_unlock_irqrestore(&rtcdev_lock, flags);
-        return ret;
+[...]
+> @@ -5145,7 +5146,10 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
+>  
+>  	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
+>  	RTL_W32(MISC, RTL_R32(MISC) & ~RXDV_GATED_EN);
+> +	RTL_W32(MISC, RTL_R32(MISC) | FORCE_CLK);
 
-So now you make rtcdev_lock a mutex, which means that for a single
-protected instruction i.e "ret = rtcdev" you want to use a
-serialization mechanism which is way more expensive when it actually
-comes to a contention.
+I wonder if those could had been merged.
 
-Now we could debate this back and forth, but this is pointless as your
-code review missed the real issue:
+[...]
+> @@ -5407,7 +5417,10 @@ static void rtl_hw_start_8106(struct rtl8169_private *tp)
+>  	/* Force LAN exit from ASPM if Rx/Tx are not idle */
+>  	RTL_W32(FuncEvent, RTL_R32(FuncEvent) | 0x002800);
+>  
+> -	RTL_W32(MISC, (RTL_R32(MISC) | DISABLE_LAN_EN) & ~EARLY_TALLY_EN);
+> +	RTL_W32(MISC, RTL_R32(MISC) & ~EARLY_TALLY_EN);
+> +	RTL_W32(MISC, RTL_R32(MISC) | DISABLE_LAN_EN | FORCE_CLK);
 
- "Protecting" the dereferencing of rtcdev with any kind of lock does
- not provide any useful protection at all.
+As well as those.
 
-Lets look at the code which manipulates rtcdev.
-
-The only function which does that is alarmtimer_rtc_add_device(). This
-function only can set the pointer ONCE. Now that function needs a
-serialization and again we can debate whether this needs to be a
-spinlock or a mutex. So now that we know that a device which has been
-registered with that function can never go away and is never going to
-change, it's completely pointless to have a lock in
-alarmtimer_get_rtcdev() at all.
-
-It's safe to do in any code path which wants to use rtcdev:
-
-     if (!rtcdev)
-     	return -ENODEV:
-     do_something(rtcdev);
-
-Thanks,
-
-	tglx
+-- 
+Ueimor
