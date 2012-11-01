@@ -1,272 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab2KAOQs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 10:16:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43622 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756011Ab2KAOQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 10:16:47 -0400
-Date: Thu, 1 Nov 2012 14:16:42 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 22/31] sched, numa, mm: Implement THP migration
-Message-ID: <20121101141642.GZ3888@suse.de>
-References: <20121025121617.617683848@chello.nl>
- <20121025124834.161540645@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121025124834.161540645@chello.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761547Ab2KAORN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 10:17:13 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46857 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756011Ab2KAORM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 10:17:12 -0400
+Message-ID: <1351779418.11071.1.camel@phoenix>
+Subject: [PATCH] irqchip: irq-bcm2835: Add terminating entry for
+ of_device_id table
+From: Axel Lin <axel.lin@ingics.com>
+To: linux-kernel@vger.kernel.org
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Simon Arlott <simon@fire.lp0.eu>,
+        Olof Johansson <olof@lixom.net>, linux-rpi-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 01 Nov 2012 22:16:58 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 02:16:39PM +0200, Peter Zijlstra wrote:
-> Add THP migration for the NUMA working set scanning fault case.
-> 
-> It uses the page lock to serialize.
+The of_device_id table is supposed to be zero-terminated.
 
-Serialize against what?
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/irqchip/irq-bcm2835.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> No migration pte dance is
-> necessary because the pte is already unmapped when we decide
-> to migrate.
-> 
-
-Without the migration PTE dance it does mean that parallel faults could
-attempt to migrate at the same time and do a lot of busy work. Is this
-what the page lock is meant to serialise against?
-
-Either way, this feels like an optimisation that should have appeared later
-in the series because if there is any bug due to this patch it'll be a bitch
-to debug. The bisection will point to where schednuma finally comes into play
-and not this patch where the actual bug is (if any, maybe this is perfect).
-
-Also, I'm slightly confused by this comment because we have this
-
-        page = pmd_page(entry);
-        if (page) {
-                VM_BUG_ON(!PageCompound(page) || !PageHead(page));
-
-                get_page(page);
-                node = mpol_misplaced(page, vma, haddr);
-                if (node != -1)
-                        goto migrate;
-
-It's not obvious at all why the "pte is already unmapped when we decide
-to migrate".
-
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> [ Significant fixes and changelog. ]
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  mm/huge_memory.c |  133 ++++++++++++++++++++++++++++++++++++++++++-------------
->  mm/migrate.c     |    2 
->  2 files changed, 104 insertions(+), 31 deletions(-)
-> 
-> Index: tip/mm/huge_memory.c
-> ===================================================================
-> --- tip.orig/mm/huge_memory.c
-> +++ tip/mm/huge_memory.c
-> @@ -742,12 +742,13 @@ void do_huge_pmd_numa_page(struct mm_str
->  			   unsigned int flags, pmd_t entry)
->  {
->  	unsigned long haddr = address & HPAGE_PMD_MASK;
-> +	struct page *new_page = NULL;
->  	struct page *page = NULL;
-> -	int node;
-> +	int node, lru;
->  
->  	spin_lock(&mm->page_table_lock);
->  	if (unlikely(!pmd_same(*pmd, entry)))
-> -		goto out_unlock;
-> +		goto unlock;
->  
->  	if (unlikely(pmd_trans_splitting(entry))) {
->  		spin_unlock(&mm->page_table_lock);
-> @@ -755,45 +756,117 @@ void do_huge_pmd_numa_page(struct mm_str
->  		return;
->  	}
->  
-> -#ifdef CONFIG_NUMA
->  	page = pmd_page(entry);
-> -	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
-> +	if (page) {
-> +		VM_BUG_ON(!PageCompound(page) || !PageHead(page));
->  
-> -	get_page(page);
-> +		get_page(page);
-> +		node = mpol_misplaced(page, vma, haddr);
-> +		if (node != -1)
-> +			goto migrate;
-> +	}
-> +
-> +fixup:
-> +	/* change back to regular protection */
-> +	entry = pmd_modify(entry, vma->vm_page_prot);
-> +	set_pmd_at(mm, haddr, pmd, entry);
-> +	update_mmu_cache_pmd(vma, address, entry);
-> +
-> +unlock:
->  	spin_unlock(&mm->page_table_lock);
-> +	if (page)
-> +		put_page(page);
->  
-> -	/*
-> -	 * XXX should we serialize against split_huge_page ?
-> -	 */
-> -
-> -	node = mpol_misplaced(page, vma, haddr);
-> -	if (node == -1)
-> -		goto do_fixup;
-> -
-> -	/*
-> -	 * Due to lacking code to migrate thp pages, we'll split
-> -	 * (which preserves the special PROT_NONE) and re-take the
-> -	 * fault on the normal pages.
-> -	 */
-> -	split_huge_page(page);
-> -	put_page(page);
->  	return;
->  
-> -do_fixup:
-> +migrate:
-> +	spin_unlock(&mm->page_table_lock);
-> +
-> +	lock_page(page);
->  	spin_lock(&mm->page_table_lock);
-> -	if (unlikely(!pmd_same(*pmd, entry)))
-> -		goto out_unlock;
-> -#endif
-> +	if (unlikely(!pmd_same(*pmd, entry))) {
-> +		spin_unlock(&mm->page_table_lock);
-> +		unlock_page(page);
-> +		put_page(page);
-> +		return;
-> +	}
-> +	spin_unlock(&mm->page_table_lock);
->  
-> -	/* change back to regular protection */
-> -	entry = pmd_modify(entry, vma->vm_page_prot);
-> -	if (pmdp_set_access_flags(vma, haddr, pmd, entry, 1))
-> -		update_mmu_cache_pmd(vma, address, entry);
-> +	new_page = alloc_pages_node(node,
-> +	    (GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT,
-> +	    HPAGE_PMD_ORDER);
-> +
-> +	if (!new_page)
-> +		goto alloc_fail;
-> +
-> +	lru = PageLRU(page);
-> +
-> +	if (lru && isolate_lru_page(page)) /* does an implicit get_page() */
-> +		goto alloc_fail;
-> +
-> +	if (!trylock_page(new_page))
-> +		BUG();
-> +
-> +	/* anon mapping, we can simply copy page->mapping to the new page: */
-> +	new_page->mapping = page->mapping;
-> +	new_page->index = page->index;
->  
-> -out_unlock:
-> +	migrate_page_copy(new_page, page);
-> +
-> +	WARN_ON(PageLRU(new_page));
-> +
-> +	spin_lock(&mm->page_table_lock);
-> +	if (unlikely(!pmd_same(*pmd, entry))) {
-
-
-So the page lock serialises against parallel faults by the looks of
-things but where does it serialise against the transhuge page being
-split underneath you and turning it into a regular pmd? I guess the
-pmd_same check sortof catches that but it feels like it is caught by
-accident instead of on purpose.
-
-> +		spin_unlock(&mm->page_table_lock);
-> +		if (lru)
-> +			putback_lru_page(page);
-> +
-> +		unlock_page(new_page);
-> +		ClearPageActive(new_page);	/* Set by migrate_page_copy() */
-> +		new_page->mapping = NULL;
-> +		put_page(new_page);		/* Free it */
-> +
-> +		unlock_page(page);
-> +		put_page(page);			/* Drop the local reference */
-> +
-> +		return;
-> +	}
-> +
-> +	entry = mk_pmd(new_page, vma->vm_page_prot);
-> +	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-> +	entry = pmd_mkhuge(entry);
-> +
-> +	page_add_new_anon_rmap(new_page, vma, haddr);
-> +
-> +	set_pmd_at(mm, haddr, pmd, entry);
-> +	update_mmu_cache_pmd(vma, address, entry);
-> +	page_remove_rmap(page);
->  	spin_unlock(&mm->page_table_lock);
-> -	if (page)
-> +
-> +	put_page(page);			/* Drop the rmap reference */
-> +
-> +	if (lru)
-> +		put_page(page);		/* drop the LRU isolation reference */
-> +
-> +	unlock_page(new_page);
-> +	unlock_page(page);
-> +	put_page(page);			/* Drop the local reference */
-> +
-> +	return;
-> +
-> +alloc_fail:
-> +	if (new_page)
-> +		put_page(new_page);
-> +
-> +	unlock_page(page);
-> +
-> +	spin_lock(&mm->page_table_lock);
-> +	if (unlikely(!pmd_same(*pmd, entry))) {
->  		put_page(page);
-> +		page = NULL;
-> +		goto unlock;
-> +	}
-> +	goto fixup;
->  }
->  
->  int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
-> Index: tip/mm/migrate.c
-> ===================================================================
-> --- tip.orig/mm/migrate.c
-> +++ tip/mm/migrate.c
-> @@ -417,7 +417,7 @@ int migrate_huge_page_move_mapping(struc
->   */
->  void migrate_page_copy(struct page *newpage, struct page *page)
->  {
-> -	if (PageHuge(page))
-> +	if (PageHuge(page) || PageTransHuge(page))
->  		copy_huge_page(newpage, page);
->  	else
->  		copy_highpage(newpage, page);
-> 
-> 
-
+diff --git a/drivers/irqchip/irq-bcm2835.c b/drivers/irqchip/irq-bcm2835.c
+index dc670cc..16c78f1 100644
+--- a/drivers/irqchip/irq-bcm2835.c
++++ b/drivers/irqchip/irq-bcm2835.c
+@@ -168,7 +168,8 @@ static int __init armctrl_of_init(struct device_node *node,
+ }
+ 
+ static struct of_device_id irq_of_match[] __initconst = {
+-	{ .compatible = "brcm,bcm2835-armctrl-ic", .data = armctrl_of_init }
++	{ .compatible = "brcm,bcm2835-armctrl-ic", .data = armctrl_of_init },
++	{ }
+ };
+ 
+ void __init bcm2835_init_irq(void)
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
+
+
