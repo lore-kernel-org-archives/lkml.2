@@ -1,94 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992593Ab2KAWi0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 18:38:26 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:58990 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992552Ab2KAWiV (ORCPT
+	id S1762469Ab2KAWl0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:41:26 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:38243 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762411Ab2KAWlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 18:38:21 -0400
+	Thu, 1 Nov 2012 18:41:23 -0400
+From: Marcos Chaparro <marcos@mrkindustries.com.ar>
+Organization: Mrk Industries
+To: Gustavo Padovan <gustavo@padovan.org>
+Subject: Re: [PATCH] ath3k: Add support for VAIO VPCEH [0489:e027]
+Date: Thu, 1 Nov 2012 19:40:45 -0300
+User-Agent: KMail/1.13.7 (Linux/3.6.3; KDE/4.8.4; x86_64; ; )
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201210291009.12913.marcos@mrkindustries.com.ar> <20121031182532.GD1679@joana>
+In-Reply-To: <20121031182532.GD1679@joana>
 MIME-Version: 1.0
-In-Reply-To: <9809109.C0U00708CM@vostro.rjw.lan>
-References: <1421417.rIOjExM5Pt@vostro.rjw.lan>
-	<14394066.j8A8VXQzU7@vostro.rjw.lan>
-	<CAE9FiQUXk9AcR87B8PyLoW3JJveZMd7SqB9pDmfA8F320SCLng@mail.gmail.com>
-	<9809109.C0U00708CM@vostro.rjw.lan>
-Date: Thu, 1 Nov 2012 15:38:19 -0700
-X-Google-Sender-Auth: K01wC4AlLSTlHlUdnoy0Q4w4Djg
-Message-ID: <CAE9FiQWiRcaC3dKQFUHoC0qe0TneW2T+CYNZPEic5At_QcP0rw@mail.gmail.com>
-Subject: Re: [PATCH 5/5] ACPI: Add support for platform bus type
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86 list <x86@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211011940.45569.marcos@mrkindustries.com.ar>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 1, 2012 at 2:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> So you are going to replace acpi_device/acpi_driver with
->> platform_device/platform_driver ?
->
-> Not exactly.  Let me start from the big picture, though. :-)
->
-> First off, we need to unify the handling of devices by the ACPI subsystem
-> regardless of whether they are on a specific bus, like PCI, or they are
-> busless "platform" devices.
->
-> Currently, if a device is on a specific bus *and* there is a device node in the
-> ACPI namespace corresponding to it, there will be two objects based on
-> struct device for it eventually, the "physical node", like struct pci_dev, and
-> the "ACPI node" represented by struct acpi_device.  They are associated with
-> each other through the code in drivers/acpi/glue.c.  In turn, if the device is
-> busless and not discoverable natively, we only create the "ACPI node" struct
-> acpi_device thing for it.  Those ACPI nodes are then *sometimes* bind to
-> drivers (represented by struct acpi_driver).
->
-> The fact that the busless devices are *sometimes* handled by binding drivers
-> directly to struct acpi_device while the other devices are handled through
-> glue.c confuses things substantially and causes problems to happen right now
-> (for example, acpi_driver drivers sometimes attempt to bind to things that have
-> other native drivers and should really be handled by them).
-> Furthermore, the situation will only get worse over time if we don't do
-> anything about that, because we're going to see more and more devices that
-> won't be discoverable natively and will have corresponding nodes in the ACPI
-> namespace and we're going to see more buses whose devices will have such
-> nodes.
->
-> Moreover, for many of those devices there are native drivers present in
-> the kernel tree already, because they will be based on IP blocks used in
-> the current hardware (for example, we may see ARM-based systems based on
-> exactly the same hardware with ACPI BIOSes and without them).  That applies
-> to busless devices as well as to devices on specific buses.
->
-> Now, the problem is how the unification is going to be done and I honestly
-> don't think we have much *choice* here.  Namely, for PCI (and other devices
-> discoverable natively) we pretty much have to do the glue.c thing (or something
-> equivalent), because we need to match what we've discovered natively against
-> the information from the ACPI tables in the BIOS.  This means that for busless
-> devices we need to create "physical" nodes as well, so that all of them are
-> handled by drivers binding to the "physical" node rather than to struct
-> acpi_device.  This also will allow us to reuse the existing drivers with
-> minimum modifications (well, hopefully).
+Added Atheros AR3011 internal bluetooth device found in Sony VAIO VPCEH to the 
+devices list.
+Before this, the bluetooth module was identified as an Foxconn / Hai bluetooth 
+device [0489:e027], now it claims to be an AtherosAR3011 Bluetooth 
+[0cf3:3005].
 
-ok, acpi_driver will be killed at first.
+# cat /sys/kernel/debug/usb/devices
+T:  Bus=01 Lev=02 Prnt=02 Port=04 Cnt=02 Dev#= 11 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=3005 Rev= 0.01
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-acpi_pci_root_driver will be converted to platform driver or
-add acpi_pci_host_bridge to work with pci_host_bridge.
+Signed-off by: Marcos A Chaparro <marcos@mrkindustries.com.ar>
+---
 
-BTW,  the problem for hotadd pci root bus,
-the acpi_driver ops.add can pci root bus and create pci dev before all
-acpi device get
-created still there.
-    https://lkml.org/lkml/2012/10/5/569
+Thanks Gustavo for pointing me out to the SubmittingPatches help file. Please 
+let me know if the patch is actually merged to the mainstream.
+
+
+diff --git a/linux-3.7-rc3.orig/drivers/bluetooth/ath3k.c b/linux-3.7-
+rc3.new/drivers/bluetooth/ath3k.c
+index fc2de55..b00000e 100644
+--- a/linux-3.7-rc3.orig/drivers/bluetooth/ath3k.c
++++ b/linux-3.7-rc3.new/drivers/bluetooth/ath3k.c
+@@ -67,6 +67,7 @@ static struct usb_device_id ath3k_table[] = {
+        { USB_DEVICE(0x13d3, 0x3304) },
+        { USB_DEVICE(0x0930, 0x0215) },
+        { USB_DEVICE(0x0489, 0xE03D) },
++       { USB_DEVICE(0x0489, 0xE027) },
+ 
+        /* Atheros AR9285 Malbec with sflash firmware */
+        { USB_DEVICE(0x03F0, 0x311D) },
+diff --git a/linux-3.7-rc3.orig/drivers/bluetooth/btusb.c b/linux-3.7-
+rc3.new/drivers/bluetooth/btusb.c
+index debda27..ee82f2f 100644
+--- a/linux-3.7-rc3.orig/drivers/bluetooth/btusb.c
++++ b/linux-3.7-rc3.new/drivers/bluetooth/btusb.c
+@@ -124,6 +124,7 @@ static struct usb_device_id blacklist_table[] = {
+        { USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
+        { USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
+        { USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
++       { USB_DEVICE(0x0489, 0xe027), .driver_info = BTUSB_IGNORE },
+ 
+        /* Atheros AR9285 Malbec with sflash firmware */
+        { USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+
+--
+Marcos
