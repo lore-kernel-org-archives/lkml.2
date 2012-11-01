@@ -1,101 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762147Ab2KAS3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 14:29:12 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59973 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756152Ab2KAS3K (ORCPT
+	id S1762152Ab2KAScV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 14:32:21 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49186 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1762114Ab2KAScR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 14:29:10 -0400
-Message-ID: <5092BF4B.3020004@ti.com>
-Date: Thu, 1 Nov 2012 23:58:27 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Thu, 1 Nov 2012 14:32:17 -0400
+Date: Thu, 1 Nov 2012 14:32:15 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Vincent Palatin <vpalatin@chromium.org>
+cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, Olof Johansson <olofj@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        "Arjun.K.V" <arjun.kv@samsung.com>,
+        Vikas Sajjan <vikas.sajjan@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>
+Subject: Re: [PATCH] USB: ohci-exynos: initialize registers pointer earlier
+In-Reply-To: <1351793128-19564-1-git-send-email-vpalatin@chromium.org>
+Message-ID: <Pine.LNX.4.44L0.1211011431050.1762-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>, "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>
-CC: <linux-omap@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] ARM: OMAP4: ID: Improve features detection and check
-References: <1351765401-12487-1-git-send-email-ivan.khoronzhuk@ti.com> <50925E7F.7080602@ti.com> <5092A156.4000601@ti.com> <5092A4DF.4080405@ti.com> <20121101170609.GA23552@kahuna>
-In-Reply-To: <20121101170609.GA23552@kahuna>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 November 2012 10:36 PM, Nishanth Menon wrote:
-> On 22:05-20121101, Santosh Shilimkar wrote:
->> On Thursday 01 November 2012 09:50 PM, ivan.khoronzhuk wrote:
->>> On 11/01/2012 01:35 PM, Santosh Shilimkar wrote:
->>>> On Thursday 01 November 2012 03:53 PM, Ivan Khoronzhuk wrote:
->>>>> Replaces several flags bearing the same meaning. There is no need
->>>>> to set flags due to different omap types here, it can be checked
->>>>> in appropriate places as well.
->>>>>
->>>>> Cc: Tony Lindgren <tony@atomide.com>
->>>>> Cc: Russell King <linux@arm.linux.org.uk>
->>>>> Cc: linux-omap@vger.kernel.org
->>>>> Cc: linux-arm-kernel@lists.infradead.org
->>>>> Cc: linux-kernel@vger.kernel.org
->>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>>>> ---
+On Thu, 1 Nov 2012, Vincent Palatin wrote:
 
-[..]
->>>>> +    if (si_type == OMAP4_SILICON_TYPE_PERFORMANCE)
->>>>> +        omap_features = OMAP4_HAS_PERF_SILICON;
->>>>
->>>> Well the detection isn't for performance/standard but there are some
->>>> features depend on it. For example 1 GHz doesn't DPLL DCC enable feature
->>>> where as 1.2 GHz, 1.5 GHz doesn't need. This is the main reason this
->>>> information is also effused. Have you considered this aspect while
->>>> creating this patch ?
->>>>
->>>> Regards
->>>> Santosh
->>>>
->>>
->>> I had considered it. There is no dependency on the features.
->>> DCC usage depends on asked frequency on the fly, not from the features.
->>> Depending on "performance/standard" feature the available frequencies
->>> should be chosen in places where they are needed, for example while
->>> initializing OPPs.
->>>
->> You are correct about the way DCC is handled in the clock code. Infact
->> all these features like L2CACHE, SGX, IVA etc is more for to display
->> boot messages.
->>
->>> Currently we have several features while it is only one indeed.
->>>
->> 1GHz, 1.2GHz, 1.5 GHz are not same since the silicon capability itself
->> is different.
->>
->> git blame tells me that Nishant has sent this update so looping him
->> if above differentiation in boot log helps.
->>
->> Nishant,
->> What's your take on removing above freq prints and marking
->> those silicon as performance silicons as the $subject patch does ?
->>
->> Regards
->> Santosh
-> Yes $subject patch is a better approach compared to having freq based
-> handling which just increases the number of macros we need to enable
-> depending on SoC variants that we spin off the main SoC. This also
-> allows us to conserve the features bitfield ahead as well.
->
-> I hate to admit, but after a couple of generations of SoC spinoffs,
-> my original logic is proving to be was pretty short sighted,
-> unfortunately :(
->
-> So, approach
-> Acked-by: Nishanth Menon <nm@ti.com>
->
-Thanks Nishant for clarification and ack.
+> In the former code, we have a race condition between the first interrupt
+> and the regs field initilization in the usb_hcd structure.
+> If the OHCI irq fires before hcd->regs is set, we are getting a null
+> pointer dereference in ohci_irq.
+> 
+> When calling usb_add_hcd(), it first executes the reset() callback,
+> then enables the ohci interrupt, and finally executes the start()
+> callback. So moving the ohci_init() call which actually initializes the
+> reg field from start() to reset() should remove the race.
+> 
+> Tested by enabling the external HSIC hub in the bootloader on an exynos5
+> machine and booting. With the former code, this triggers an early interrupt
+> about 50% of the boots and a subsequent kernel panic in ohci_irq when trying
+> to access the registers.
+> 
+> Cc: Olof Johansson <olofj@chromium.org>
+> Cc: Doug Anderson <dianders@chromium.org>
+> Cc: Arjun.K.V <arjun.kv@samsung.com>
+> Cc: Vikas Sajjan <vikas.sajjan@samsung.com>
+> Cc: Abhilash Kesavan <a.kesavan@samsung.com>
+> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+> ---
+>  drivers/usb/host/ohci-exynos.c |   10 ++++++----
+>  1 files changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
+> index 20a5008..f04cfde 100644
+> --- a/drivers/usb/host/ohci-exynos.c
+> +++ b/drivers/usb/host/ohci-exynos.c
+> @@ -23,6 +23,11 @@ struct exynos_ohci_hcd {
+>  	struct clk *clk;
+>  };
+>  
+> +static int ohci_exynos_reset(struct usb_hcd *hcd)
+> +{
+> +	return ohci_init(hcd_to_ohci(hcd));
+> +}
+> +
+>  static int ohci_exynos_start(struct usb_hcd *hcd)
+>  {
+>  	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
+> @@ -30,10 +35,6 @@ static int ohci_exynos_start(struct usb_hcd *hcd)
+>  
+>  	ohci_dbg(ohci, "ohci_exynos_start, ohci:%p", ohci);
+>  
+> -	ret = ohci_init(ohci);
+> -	if (ret < 0)
+> -		return ret;
+> -
+>  	ret = ohci_run(ohci);
+>  	if (ret < 0) {
+>  		dev_err(hcd->self.controller, "can't start %s\n",
+> @@ -53,6 +54,7 @@ static const struct hc_driver exynos_ohci_hc_driver = {
+>  	.irq			= ohci_irq,
+>  	.flags			= HCD_MEMORY|HCD_USB11,
+>  
+> +	.reset			= ohci_exynos_reset,
+>  	.start			= ohci_exynos_start,
+>  	.stop			= ohci_stop,
+>  	.shutdown		= ohci_shutdown,
 
-With the clarification I also like the subject patch.
-Feel free add.
+Quite right; every host controller driver must have a .reset routine.
 
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
