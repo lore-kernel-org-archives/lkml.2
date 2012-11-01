@@ -1,95 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992625Ab2KAW6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 18:58:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15640 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992551Ab2KAW6I (ORCPT
+	id S2992630Ab2KAW7W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:59:22 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:56495 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992551Ab2KAW7S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 18:58:08 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=iHy4KzXKIIwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NE78AOKw864A:10 a=Wn7OnVGmgRzFgaPCjT0A:9 a=PUjeQqilurYA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351810685.4004.124.camel@gandalf.local.home>
-Subject: Re: [PATCH RT 3/4] net: netfilter: Serialize xt_write_recseq
- sections on RT
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter LaDow <petela@gocougs.wsu.edu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>
-Date: Thu, 01 Nov 2012 18:58:05 -0400
-In-Reply-To: <CAN8Q1Ecq9T5HC60_ta8Xr9kKyAe8Fjrd8znV9MpDTYqkSSptOw@mail.gmail.com>
-References: <20121031003258.811955127@goodmis.org>
-	 <20121031003314.763160265@goodmis.org>
-	 <CAN8Q1EcVfzJJh+XMeXMMk33kwyyyRoEWsuEbSQqVW0Vz3i3Vuw@mail.gmail.com>
-	 <alpine.LFD.2.02.1211012213460.2756@ionos>
-	 <CAN8Q1Ecq9T5HC60_ta8Xr9kKyAe8Fjrd8znV9MpDTYqkSSptOw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Nov 2012 18:59:18 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "mikew@google.com" <mikew@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [RESEND][PATCH v4 0/7] efi_pstore: multiple event logging support
+Thread-Topic: [RESEND][PATCH v4 0/7] efi_pstore: multiple event logging
+ support
+Thread-Index: Ac24hHFAFvQEFsFDS+CaDx9ULcfkfw==
+Date: Thu, 1 Nov 2012 22:59:01 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D4138B435F@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-11-01_07:2012-11-01,2012-11-01,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=11 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1211010268
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-01 at 15:30 -0700, Peter LaDow wrote:
-> On Thu, Nov 1, 2012 at 2:26 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > Cough. You are missing a boat load of crucial fixes. There is a damned
-> > good reason why 3.0.stable got 12 updates and the -rt version 14.
-> 
-> I don't doubt there are.  But we've only experienced one problem
-> between 3.0.36-rt58 and 3.0.48-rt72.  Indeed, it might be easier to
-> evaluate the risk if all the changelogs were readily available.  So
-> far, however, we haven't discovered any other issues that give us any
-> concerns.
+Changelog
 
-They are, it's just many of them. This is the point of the stable
-series, is to add patches that pose little risk and fix a real bug. Also
-note that a lot of the changes in mainline stable are for drivers, which
-most likely wont affect you. You may want to look at all the core code
-changes though.
+v3 -> v4
+   - Rebase to 3.7-rc3
+   - Add ctime to an argument of efi_pstore_erase to build successfully
+     in case where CONFIG_PTORE=n is specified. (Patch 4/7)
+   - Add count to an argument of efi_pstore_erase and efi_pstore_write to
+     build successfully in case where CONFIG_PTORE=n is specified (Patch 5/7)
+   - Fix a white space damage (Patch 6/7)
+   - Modify a logic checking a 3-variable format of a variable name (Patch 7/7)
 
-> 
-> > Your risk assessment is definitley interesting.
-> 
-> We have specifically tested 3.0.36-rt58 for performance in our
-> application.  Moving to 3.0.48-rt72 poses risk about whether would
-> still be able to meet our performance requirements.  And with regard
-> to stability, the only issue we've had since our earlier moved to
-> 3.0.36-rt58 was the netfilter problem.  We initially only saw the
-> problem on PPP related interfaces, so we reverted to 3.0.3 (non-rt)
-> for PPP related issues.
-> 
-> Now, if you think there are some issues that should raise eyebrows, or
-> can point me to a list of changelogs, I'd be happy to evaluate them.
+v2 -> v3
+   - Create patches 6/7 and 7/7 to work with an existing format of variable name
 
-Note, if you are only interested in -rt related fixes, all -rt only
-fixes are pushed as a separate update. Look for releases where only the
--rt version changes. I update the -rt version when doing a new merge of
-the mainline stable release and I update the -rt version if there's -rt
-only changes added. I never combine the two, so you don't need to look
-at the changes where the mainline version number changes (ie. 3.0.x).
+v1 -> v2
+   - Separate into 5 patches in accordance with Mike's comment
+   - Erase an extra line of comment in patch 1/5
 
-v3.0.34-rt55
-v3.0.35-rt56
-v3.0.36-rt57
-v3.0.36-rt58
-v3.0.39-rt59
+[Issue]
 
--rt56 was only the merge of 3.0.35. -rt 57 was only the merge of 3.0.36.
--rt58 had only -rt specific changes applied. -rt59 was only the merge of
-3.0.39.
+    Currently, efi_pstore driver simply overwrites existing panic messages in NVRAM.
+    So, in the following scenario, we will lose 1st panic messages.
 
-Simply need to do a: git log v3.0.36-rt58 to see the -rt specific
-changes since -rt57 (the merge of 3.0.36).
+    1. kernel panics.
+    2. efi_pstore is kicked and writes panic messages to NVRAM.
+    3. system reboots.
+    4. kernel panics again before a user checks the 1st panic messages in NVRAM.
 
-Note, if we find a bug in mainline, we do not add it to the -rt series.
-Instead we forward a note to the mainline stable maintainer (Either Greg
-or Ben) and Cc the stable mailing list. The stable releases only get
-those fixes via mainline. Thus, you will be missing fixes that we find
-in mainline and push it back to them.
+[Solution]
 
--- Steve
+   Solutions of this problem has been discussed among Tony, Matthew, Don, Mike and me.
 
+   http://marc.info/?l=linux-kernel&m=134273270704586&w=2
 
+   And there are two possible solutions right now.
+     - First one is introducing some policy overwriting existing logs.
+     - Second one is simply holding multiple log without overwriting any entries.
+
+   We haven't decided the overwriting policy which is reasonable to all users yet.
+   But I believe we agree that just holding multiple logs is a reasonable way.
+
+   We may need further discussions to find the possibility of introducing overwriting
+   policy, especially getting critical messages in multiple oops case.
+   But I would like to begin with a simple and reasonable way to everyone.
+   So, this patch takes an approach just holding multiple logs.
+
+[Patch Description]
+
+Seiji Aguchi (7):
+  efi_pstore: Check remaining space with QueryVariableInfo() before
+    writing data
+  efi_pstore: Add a logic erasing entries to an erase callback
+  efi_pstore: Remove a logic erasing entries from a write callback to
+    hold multiple logs
+  efi_pstore: Add ctime to argument of erase callback
+  efi_pstore: Add a sequence counter to a variable name
+  efi_pstore: Add a format check for an existing variable name at
+    reading time
+  Add a format check for an existing variable name at erasing time
+
+ drivers/acpi/apei/erst.c   |   16 ++--
+ drivers/firmware/efivars.c |  163 ++++++++++++++++++++++++++++++-------------
+ fs/pstore/inode.c          |    7 ++-
+ fs/pstore/internal.h       |    2 +-
+ fs/pstore/platform.c       |   11 ++--
+ fs/pstore/ram.c            |    9 +--
+ include/linux/efi.h        |    1 +
+ include/linux/pstore.h     |    6 +-
+ 8 files changed, 143 insertions(+), 72 deletions(-)
