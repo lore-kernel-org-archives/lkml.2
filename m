@@ -1,98 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935430Ab2KAOcH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 10:32:07 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:35376 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934896Ab2KAOcC (ORCPT
+	id S1761660Ab2KAOcv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 10:32:51 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:59573 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761446Ab2KAOcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 10:32:02 -0400
-Message-ID: <1351780159.15708.17.camel@falcor>
-Subject: Re: Kdump with signed images
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Matthew Garrett <mjg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Kees Cook <keescook@chromium.org>
-Date: Thu, 01 Nov 2012 10:29:19 -0400
-In-Reply-To: <20121101135356.GA15659@redhat.com>
-References: <20121024173651.GE1821@redhat.com>
-	 <1351145401.18115.78.camel@falcor> <20121025141048.GD9377@redhat.com>
-	 <1351190421.18115.92.camel@falcor> <20121025185520.GA17995@redhat.com>
-	 <1351214158.18115.186.camel@falcor> <20121026023916.GA16762@srcf.ucam.org>
-	 <20121026170609.GB24687@redhat.com> <1351276649.18115.217.camel@falcor>
-	 <20121101131003.GA14573@redhat.com> <20121101135356.GA15659@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12110114-2876-0000-0000-00000197EDD2
+	Thu, 1 Nov 2012 10:32:45 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qA1EWZiT029454, This message is released by code: ctlocs8528
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next] r8169: enable internal ASPM and clock request settings
+Date: Thu, 1 Nov 2012 22:37:31 +0800
+Message-ID: <1351780651-1271-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.11.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-01 at 09:53 -0400, Vivek Goyal wrote:
-> On Thu, Nov 01, 2012 at 09:10:03AM -0400, Vivek Goyal wrote:
-> 
-> [..]
-> > > 
-> > > > - So say we can sign /sbin/kexec at build time and distros can do that.
-> > > > - Verify the signature at exec time using kernel keyring and if
-> > > >   verification happens successfully, say process gains extra capability.
-> > > > - Use this new capability to determine whether kexec_load() will be
-> > > >   successful or not.
-> > > > 
-> > > > Even if we can do all this, it still has the issue of being able to
-> > > > stop the process in user space and replace the code at run time
-> > > > and be able to launch unsigned kernel.
-> > 
-> > Thinking more about it. Can we just keep track whether a process was
-> > ptraced or not and disallow kexec_load() syscall if it was ptraced.
-> > (I am assuming that ptrace is the only way to change process code/data).
-> > 
-> > So binaries can be signed offline. Signature verification can take place
-> > using kernel keyring at exec() time. And we can keep track of ptraced
-> > processes and disallow calling kexec_load() for such processes. If this
-> > is implementable, this should take care of following requirement raised
-> > by matthew.
-> > 
-> > ************************************************************************
-> > It must be impossible for the kernel to launch any /sbin/kexec that hasn't
-> > been signed by a trusted key that's been built into the kernel, and it
-> > must be impossible for anything other than /sbin/kexec to make the kexec
-> > system call.
-> > *************************************************************************
-> > 
-> > Thoughts?
-> 
-> Eric responded but my mistake he responded to only me. So I will quickly 
-> put his idea here.
-> 
-> [start quote]
-> 
-> You can't ptrace a process that has a capability you don't.
-> 
-> That should be enforced in security/commoncap/
-> 
-> [end quote]
-> 
-> This looks like a good idea. Upon verification signed binaries will be
-> assigned special capability and then no unsigned binary should be able
-> to ptrace signed/verified processes
+The following chips need to enable internal settings to let ASPM
+and clock request work.
 
-That's a good generic solution, which I'm all in favor of, but it
-doesn't resolve the latter half of Matthrew's requirement "and it must
-be impossible for anything other than /sbin/kexec to make the kexec
-system call."
+RTL8111E-VL, RTL8111F, RTL8411, RTL8111G
+RTL8105, RTL8402, RTL8106
 
-thanks,
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 29 +++++++++++++++++++++--------
+ 1 file changed, 21 insertions(+), 8 deletions(-)
 
-Mimi
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 123c6a5..87d03f6 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -456,6 +456,7 @@ enum rtl8168_registers {
+ #define PWM_EN				(1 << 22)
+ #define RXDV_GATED_EN			(1 << 19)
+ #define EARLY_TALLY_EN			(1 << 16)
++#define FORCE_CLK			(1 << 15) /* force clock request */
+ };
+ 
+ enum rtl_register_content {
+@@ -519,6 +520,7 @@ enum rtl_register_content {
+ 	PMEnable	= (1 << 0),	/* Power Management Enable */
+ 
+ 	/* Config2 register p. 25 */
++	ClkReqEn	= (1 << 7),	/* Clock Request Enable */
+ 	MSIEnable	= (1 << 5),	/* 8169 only. Reserved in the 8168. */
+ 	PCI_Clock_66MHz = 0x01,
+ 	PCI_Clock_33MHz = 0x00,
+@@ -539,6 +541,7 @@ enum rtl_register_content {
+ 	Spi_en		= (1 << 3),
+ 	LanWake		= (1 << 1),	/* LanWake enable/disable */
+ 	PMEStatus	= (1 << 0),	/* PME status can be reset by PCI RST# */
++	ASPM_en		= (1 << 0),	/* ASPM enable */
+ 
+ 	/* TBICSR p.28 */
+ 	TBIReset	= 0x80000000,
+@@ -5046,8 +5049,6 @@ static void rtl_hw_start_8168e_2(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(MaxTxPacketSize, EarlySize);
+ 
+-	rtl_disable_clock_request(pdev);
+-
+ 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
+ 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
+ 
+@@ -5056,7 +5057,8 @@ static void rtl_hw_start_8168e_2(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
+ 	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN);
+-	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
++	RTL_W8(Config5, (RTL_R8(Config5) & ~Spi_en) | ASPM_en);
++	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
+ }
+ 
+ static void rtl_hw_start_8168f(struct rtl8169_private *tp)
+@@ -5081,13 +5083,12 @@ static void rtl_hw_start_8168f(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(MaxTxPacketSize, EarlySize);
+ 
+-	rtl_disable_clock_request(pdev);
+-
+ 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
+ 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
+-	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN);
+-	RTL_W8(Config5, RTL_R8(Config5) & ~Spi_en);
++	RTL_W32(MISC, RTL_R32(MISC) | PWM_EN | FORCE_CLK);
++	RTL_W8(Config5, (RTL_R8(Config5) & ~Spi_en) | ASPM_en);
++	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
+ }
+ 
+ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
+@@ -5145,7 +5146,10 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
+ 	RTL_W32(MISC, RTL_R32(MISC) & ~RXDV_GATED_EN);
++	RTL_W32(MISC, RTL_R32(MISC) | FORCE_CLK);
+ 	RTL_W8(MaxTxPacketSize, EarlySize);
++	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
++	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
+ 
+ 	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+@@ -5361,6 +5365,9 @@ static void rtl_hw_start_8105e_1(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
++	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
++	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
++	RTL_W32(MISC, RTL_R32(MISC) | FORCE_CLK);
+ 
+ 	rtl_ephy_init(tp, e_info_8105e_1, ARRAY_SIZE(e_info_8105e_1));
+ }
+@@ -5386,6 +5393,9 @@ static void rtl_hw_start_8402(struct rtl8169_private *tp)
+ 
+ 	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
+ 	RTL_W8(MCU, RTL_R8(MCU) & ~NOW_IS_OOB);
++	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
++	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
++	RTL_W32(MISC, RTL_R32(MISC) | FORCE_CLK);
+ 
+ 	rtl_ephy_init(tp, e_info_8402, ARRAY_SIZE(e_info_8402));
+ 
+@@ -5407,7 +5417,10 @@ static void rtl_hw_start_8106(struct rtl8169_private *tp)
+ 	/* Force LAN exit from ASPM if Rx/Tx are not idle */
+ 	RTL_W32(FuncEvent, RTL_R32(FuncEvent) | 0x002800);
+ 
+-	RTL_W32(MISC, (RTL_R32(MISC) | DISABLE_LAN_EN) & ~EARLY_TALLY_EN);
++	RTL_W32(MISC, RTL_R32(MISC) & ~EARLY_TALLY_EN);
++	RTL_W32(MISC, RTL_R32(MISC) | DISABLE_LAN_EN | FORCE_CLK);
++	RTL_W8(Config5, RTL_R8(Config5) | ASPM_en);
++	RTL_W8(Config2, RTL_R8(Config2) | ClkReqEn);
+ 	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~PFM_EN);
+ }
+-- 
+1.7.11.4
 
