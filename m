@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761958Ab2KARrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 13:47:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65530 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969Ab2KARrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 13:47:51 -0400
-Date: Thu, 1 Nov 2012 15:47:30 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC EDAC/GHES] edac: lock module owner to avoid error report
- conflicts
-Message-ID: <20121101154730.3580c356@redhat.com>
-In-Reply-To: <CA+8MBbK5J1qWqTZjC6nHsVbqk05t0yF1F7d-_0PQpvBQBXgO1w@mail.gmail.com>
-References: <048a00fa4a888b349be5954ce9fd063a7bcf2564.1351691230.git.mchehab@redhat.com>
-	<20121101110512.GA31271@liondog.tnic>
-	<20121101094721.2a57719c@redhat.com>
-	<CA+8MBbK5J1qWqTZjC6nHsVbqk05t0yF1F7d-_0PQpvBQBXgO1w@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1762059Ab2KARuO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 13:50:14 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61994 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab2KARuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 13:50:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1351783096.2391.77.camel@dabdike.int.hansenpartnership.com>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	<2548314.3caaFsMVg6@linux-lqwf.site>
+	<50919EED.3020601@genband.com>
+	<36538307.gzWq1oO7Kg@linux-lqwf.site>
+	<1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
+	<alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
+	<1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
+	<alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
+	<1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
+	<CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+	<1351780935.2391.58.camel@dabdike.int.hansenpartnership.com>
+	<CACLa4pvh3v3Mhq8oe3dzRL8ytBgmitPkCGUSfVCR5WdQopjRMQ@mail.gmail.com>
+	<1351783096.2391.77.camel@dabdike.int.hansenpartnership.com>
+Date: Thu, 1 Nov 2012 13:50:08 -0400
+Message-ID: <CACLa4pu0yoB6CQX=3nuAT2vz4=oTNfM9fjMUvFXKJovYu+y4fw@mail.gmail.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+From: Eric Paris <eparis@parisplace.org>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 1 Nov 2012 10:25:23 -0700
-Tony Luck <tony.luck@intel.com> escreveu:
+On Thu, Nov 1, 2012 at 11:18 AM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
 
-> On Thu, Nov 1, 2012 at 4:47 AM, Mauro Carvalho Chehab
-> <mchehab@redhat.com> wrote:
-> > Take a look at arch/x86/kernel/cpu/mcheck/mce-apei.c:
-> >
-> >         void apei_mce_report_mem_error(int corrected, struct cper_sec_mem_err *mem_err)
-> >         {
-> >                 struct mce m;
-> >
-> >                 /* Only corrected MC is reported */
-> >                 if (!corrected || !(mem_err->validation_bits &
-> >                                         CPER_MEM_VALID_PHYSICAL_ADDRESS))
-> >                         return;
-> >
-> >                 mce_setup(&m);
-> >                 m.bank = 1;
-> >                 /* Fake a memory read corrected error with unknown channel */
-> >                 m.status = MCI_STATUS_VAL | MCI_STATUS_EN | MCI_STATUS_ADDRV | 0x9f;
-> >                 m.addr = mem_err->physical_addr;
-> >                 mce_log(&m);
-> >                 mce_notify_irq();
-> >         }
-> >
-> > Bank information there is fake; status is fake. Only addr is really filled
-> > there; it works only for corrected errors.
-> 
-> This went in like this to help out the Westmere-EX processors that
-> didn't fill out MCi_ADDR for corrected errors. APEI could get the
-> address from some platform CSRs ... reporting via /dev/mcelog
-> so that predictive analysis in mcelog(8) would work on these machines.
+> You're completely confusing two separate goals:
+>
+>      1. Is it possible to use secure boot to implement a security policy
+>         on Linux
+>      2. What do we have to do anything to prevent Linux being used to
+>         attack windows which may lead to a revocation of the distro
+>         signing key.
+>
+> "untrusted root" is a silly answer to 1 because it's incredibly
+> difficult to remove sufficient trust from root and still have it be
+> trusted enough to be effective as root.  The trust bound up in root is
+> incredibly intertwined.  It would be far better to start by eliminating
+> the root user altogether and building up on the capabilities in a
+> granular fashion for this type of lockdown.
 
-Ok, but it is broken on other platforms like Sandy Bridge.
+granular lockdown!?  sounds like SELinux.  But that certainly can't
+solve the problems here...
 
-> I don't think we can rip it out yet ... not until those machines are
-> shuffled off to recycle heaven.
+I think your premise has a couple of problems.  First is how you chose
+to word #2.  Lets reword it as:
 
-Perhaps then we could add a logic at apei-mce to only forward errors to
-MCE on the platforms where the MCE log is known to be right.
+What do we have to do to prevent Linux being used to attack Linux
+which may lead to secure boot being useless.
 
-> But perhaps we should get smarter about which machines we enable
-> APEI on?
+If we accept that as #2, then we think, "What makes secure boot
+useless"  or "What is the security goal as envisioned by secure boot."
+ The goal of secure boot is to implement an operating system which
+prevents uid==0 to ring 0 escalation.  That is the security policy
+secure boot needs to not be completely useless.  And as it turns out,
+that security policy is useful in other situations.
 
-That makes sense. IMO, APEI should be on by default only if no other driver
-exists, like in the case of Nehalem-EX. For platforms supported by i7core_edac,
-sb_edac and amd64_edac, we could add a parameter to explicitly force it to
-be on, otherwise, APEI will be disabled.
+> "untrusted root", if it can even be achieved, might be a sufficient
+> condition for 2 but it's way overkill for a necessary one.
 
-> If we get everything we need from the machine check banks,
-> then the detour via the BIOS to report the same thing again isn't helpful.
+But it is a condition, as specifically stated, that others have wanted
+long before secure boot even came to rise.  I've talked with and
+worked with a public cloud operator who wants to prevent even a
+malicious root user from being able to run code in ring 0 inside their
+VM.  The hope in that case was that in doing so they can indirectly
+shrink the attack surface between virtual machine and hypervisor.
+They hoped to limit the ways the guest could interact to only those
+methods the linux kernel implemented.
 
-Agreed.
+They want to launch a vm running a kernel they chose and make sure
+root inside the vm could not run some other kernel or run arbitrary
+code in kernel space.  It's wasn't something they solved completely.
+If it was, all of this secure boot work would be finished.  Which is
+why we are having these discussions to understand all of the way that
+you an Alan seem to have to get around the secure boot restrictions.
+And look for solutions to retain functionality which meeting the
+security goal of 'prevent uid=0 to ring 0 privilege escalation.
 
-Regards,
-Mauro
+-Eric
