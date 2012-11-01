@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762152Ab2KAScV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 14:32:21 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49186 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1762114Ab2KAScR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 14:32:17 -0400
-Date: Thu, 1 Nov 2012 14:32:15 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Vincent Palatin <vpalatin@chromium.org>
-cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, Olof Johansson <olofj@chromium.org>,
-        Doug Anderson <dianders@chromium.org>,
-        "Arjun.K.V" <arjun.kv@samsung.com>,
-        Vikas Sajjan <vikas.sajjan@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>
-Subject: Re: [PATCH] USB: ohci-exynos: initialize registers pointer earlier
-In-Reply-To: <1351793128-19564-1-git-send-email-vpalatin@chromium.org>
-Message-ID: <Pine.LNX.4.44L0.1211011431050.1762-100000@iolanthe.rowland.org>
+	id S1762155Ab2KASc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 14:32:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751978Ab2KAScy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 14:32:54 -0400
+Date: Thu, 1 Nov 2012 19:33:24 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] percpu_rw_semaphore: reimplement to not block the
+	readers unnecessarily
+Message-ID: <20121101183324.GA30442@redhat.com>
+References: <20121017224430.GC2518@linux.vnet.ibm.com> <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <20121101154340.GH3027@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121101154340.GH3027@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Nov 2012, Vincent Palatin wrote:
+Paul, thanks.
 
-> In the former code, we have a race condition between the first interrupt
-> and the regs field initilization in the usb_hcd structure.
-> If the OHCI irq fires before hcd->regs is set, we are getting a null
-> pointer dereference in ohci_irq.
-> 
-> When calling usb_add_hcd(), it first executes the reset() callback,
-> then enables the ohci interrupt, and finally executes the start()
-> callback. So moving the ohci_init() call which actually initializes the
-> reg field from start() to reset() should remove the race.
-> 
-> Tested by enabling the external HSIC hub in the bootloader on an exynos5
-> machine and booting. With the former code, this triggers an early interrupt
-> about 50% of the boots and a subsequent kernel panic in ohci_irq when trying
-> to access the registers.
-> 
-> Cc: Olof Johansson <olofj@chromium.org>
-> Cc: Doug Anderson <dianders@chromium.org>
-> Cc: Arjun.K.V <arjun.kv@samsung.com>
-> Cc: Vikas Sajjan <vikas.sajjan@samsung.com>
-> Cc: Abhilash Kesavan <a.kesavan@samsung.com>
-> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-> ---
->  drivers/usb/host/ohci-exynos.c |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-> index 20a5008..f04cfde 100644
-> --- a/drivers/usb/host/ohci-exynos.c
-> +++ b/drivers/usb/host/ohci-exynos.c
-> @@ -23,6 +23,11 @@ struct exynos_ohci_hcd {
->  	struct clk *clk;
->  };
->  
-> +static int ohci_exynos_reset(struct usb_hcd *hcd)
-> +{
-> +	return ohci_init(hcd_to_ohci(hcd));
-> +}
-> +
->  static int ohci_exynos_start(struct usb_hcd *hcd)
->  {
->  	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
-> @@ -30,10 +35,6 @@ static int ohci_exynos_start(struct usb_hcd *hcd)
->  
->  	ohci_dbg(ohci, "ohci_exynos_start, ohci:%p", ohci);
->  
-> -	ret = ohci_init(ohci);
-> -	if (ret < 0)
-> -		return ret;
-> -
->  	ret = ohci_run(ohci);
->  	if (ret < 0) {
->  		dev_err(hcd->self.controller, "can't start %s\n",
-> @@ -53,6 +54,7 @@ static const struct hc_driver exynos_ohci_hc_driver = {
->  	.irq			= ohci_irq,
->  	.flags			= HCD_MEMORY|HCD_USB11,
->  
-> +	.reset			= ohci_exynos_reset,
->  	.start			= ohci_exynos_start,
->  	.stop			= ohci_stop,
->  	.shutdown		= ohci_shutdown,
+Sorry, I can't reply today, just one note...
 
-Quite right; every host controller driver must have a .reset routine.
+On 11/01, Paul E. McKenney wrote:
+>
+> OK, so it looks to me that this code relies on synchronize_sched()
+> forcing a memory barrier on each CPU executing in the kernel.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+No, the patch tries to avoid this assumption, but probably I missed
+something.
+
+> 1.	A task running on CPU 0 currently write-holds the lock.
+>
+> 2.	CPU 1 is running in the kernel, executing a longer-than-average
+> 	loop of normal instructions (no atomic instructions or memory
+> 	barriers).
+>
+> 3.	CPU 0 invokes percpu_up_write(), calling up_write(),
+> 	synchronize_sched(), and finally mutex_unlock().
+
+And my expectation was, this should be enough because ...
+
+> 4.	CPU 1 executes percpu_down_read(), which calls update_fast_ctr(),
+
+since update_fast_ctr does preempt_disable/enable it should see all
+modifications done by CPU 0.
+
+IOW. Suppose that the writer (CPU 0) does
+
+	percpu_done_write();
+	STORE;
+	percpu_up_write();
+
+This means
+
+	STORE;
+	synchronize_sched();
+	mutex_unlock();
+
+Now. Do you mean that the next preempt_disable/enable can see the
+result of mutex_unlock() but not STORE?
+
+Oleg.
 
