@@ -1,66 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933433Ab2KAJjz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 05:39:55 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:35515 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933039Ab2KAJjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 05:39:51 -0400
-X-Greylist: delayed 1259 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Nov 2012 05:39:51 EDT
-Date: Thu, 1 Nov 2012 10:18:42 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Shan Wei <shanwei88@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        NetDev <netdev@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/9] net: xfrm: use this_cpu_ptr per-cpu helper
-Message-ID: <20121101091842.GA2719@secunet.com>
-References: <509109F9.3030904@gmail.com>
- <0000013ab7e4a640-60bd5b38-a1fc-4730-b918-4109211ffea0-000000@email.amazonses.com>
- <50923956.5090206@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50923956.5090206@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 01 Nov 2012 09:18:42.0604 (UTC) FILETIME=[E300AEC0:01CDB811]
+	id S1759937Ab2KAJkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 05:40:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:38886 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754334Ab2KAJjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 05:39:14 -0400
+X-IronPort-AV: E=Sophos;i="4.80,693,1344182400"; 
+   d="scan'208";a="6116045"
+From: Wen Congyang <wency@cn.fujitsu.com>
+To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Cc: David Rientjes <rientjes@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Len Brown <len.brown@intel.com>, benh@kernel.crashing.org,
+        paulus@samba.org, Christoph Lameter <cl@linux.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>
+Subject: [PATCH v3 11/12] memory-hotplug: remove sysfs file of node
+Date: Thu, 1 Nov 2012 17:44:42 +0800
+Message-Id: <1351763083-7905-12-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com>
+References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/01 17:38:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/01 17:38:13,
+	Serialize complete at 2012/11/01 17:38:13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 04:56:54PM +0800, Shan Wei wrote:
-> Christoph Lameter said, at 2012/11/1 1:35:
-> > It would be better to use
-> > 
-> > 	this_cpu_read(tfms)
-> > 
-> > since that would also make it atomic vs interrupts. The above code (both
-> > original and modified) could determine a pointer to a per cpu structure
-> > and then take an interrupt which would move the task. On return we would
-> > be accessing the per cpu variable of another processor.
-> 
-> this_cpu_read
-> |-----_this_cpu_generic_read
-> 
-> #define _this_cpu_generic_read(pcp)                                     \
-> ({      typeof(pcp) ret__;                                              \
->         preempt_disable();                                              \
->         ret__ = *this_cpu_ptr(&(pcp));                                  \
->         preempt_enable();                                               \
->         ret__;                                                          \
-> })
-> 
-> 
-> this_cpu_read operations locate per-cpu variable with preemption safe， not
-> disable interrupts. why is it atomic vs interrupts?
-> 
-> I have no idea whether we need to disable preemption for this code?
-> At least, xfrm code run well with per_cpu_ptr which don't disable preemption.
+This patch introduces a new function try_offline_node() to
+remove sysfs file of node when all memory sections of this
+node are removed. If some memory sections of this node are
+not removed, this function does nothing.
 
-We compare the name of the newly allocated crypto transform against the
-existing ones. The name is the same on every percpu transform and it
-does not change after the transform is allocated. So we don't care
-if we get migrated or not, we can just take the transform from an
-arbitrary cpu to read the name from it.
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ drivers/acpi/acpi_memhotplug.c |  8 +++++-
+ include/linux/memory_hotplug.h |  2 +-
+ mm/memory_hotplug.c            | 58 ++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 64 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 24c807f..0780f99 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -310,7 +310,9 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+ {
+ 	int result;
+ 	struct acpi_memory_info *info, *n;
++	int node;
+ 
++	node = acpi_get_node(mem_device->device->handle);
+ 
+ 	/*
+ 	 * Ask the VM to offline this memory range.
+@@ -318,7 +320,11 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+ 	 */
+ 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+ 		if (info->enabled) {
+-			result = remove_memory(info->start_addr, info->length);
++			if (node < 0)
++				node = memory_add_physaddr_to_nid(
++					info->start_addr);
++			result = remove_memory(node, info->start_addr,
++				info->length);
+ 			if (result)
+ 				return result;
+ 		}
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index d4c4402..7b4cfe6 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -231,7 +231,7 @@ extern int arch_add_memory(int nid, u64 start, u64 size);
+ extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
+ extern int offline_memory_block(struct memory_block *mem);
+ extern bool is_memblock_offlined(struct memory_block *mem);
+-extern int remove_memory(u64 start, u64 size);
++extern int remove_memory(int node, u64 start, u64 size);
+ extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
+ 								int nr_pages);
+ extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 7bcced0..d965da3 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -29,6 +29,7 @@
+ #include <linux/suspend.h>
+ #include <linux/mm_inline.h>
+ #include <linux/firmware-map.h>
++#include <linux/stop_machine.h>
+ 
+ #include <asm/tlbflush.h>
+ 
+@@ -1299,7 +1300,58 @@ static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
+ 	return ret;
+ }
+ 
+-int __ref remove_memory(u64 start, u64 size)
++static int check_cpu_on_node(void *data)
++{
++	struct pglist_data *pgdat = data;
++	int cpu;
++
++	for_each_present_cpu(cpu) {
++		if (cpu_to_node(cpu) == pgdat->node_id)
++			/*
++			 * the cpu on this node isn't removed, and we can't
++			 * offline this node.
++			 */
++			return -EBUSY;
++	}
++
++	return 0;
++}
++
++/* offline the node if all memory sections of this node are removed */
++static void try_offline_node(int nid)
++{
++	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
++	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
++	unsigned long pfn;
++
++	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
++		unsigned long section_nr = pfn_to_section_nr(pfn);
++
++		if (!present_section_nr(section_nr))
++			continue;
++
++		if (pfn_to_nid(pfn) != nid)
++			continue;
++
++		/*
++		 * some memory sections of this node are not removed, and we
++		 * can't offline node now.
++		 */
++		return;
++	}
++
++	if (stop_machine(check_cpu_on_node, NODE_DATA(nid), NULL))
++		return;
++
++	/*
++	 * all memory/cpu of this node are removed, we can offline this
++	 * node now.
++	 */
++	node_set_offline(nid);
++	unregister_one_node(nid);
++}
++
++int __ref remove_memory(int nid, u64 start, u64 size)
+ {
+ 	unsigned long start_pfn, end_pfn;
+ 	int ret = 0;
+@@ -1346,6 +1398,8 @@ repeat:
+ 
+ 	arch_remove_memory(start, size);
+ 
++	try_offline_node(nid);
++
+ 	unlock_memory_hotplug();
+ 
+ 	return 0;
+@@ -1355,7 +1409,7 @@ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+ {
+ 	return -EINVAL;
+ }
+-int remove_memory(u64 start, u64 size)
++int remove_memory(int nid, u64 start, u64 size)
+ {
+ 	return -EINVAL;
+ }
+-- 
+1.8.0
+
