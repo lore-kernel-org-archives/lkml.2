@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761243Ab2KAOt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 10:49:29 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:55352 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408Ab2KAOtZ (ORCPT
+	id S935568Ab2KAOtm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 10:49:42 -0400
+Received: from 3.mo4.mail-out.ovh.net ([46.105.57.129]:52005 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754175Ab2KAOt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 10:49:25 -0400
-Date: Thu, 1 Nov 2012 14:49:12 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121101144912.GA10269@srcf.ucam.org>
-References: <2548314.3caaFsMVg6@linux-lqwf.site>
- <50919EED.3020601@genband.com>
- <36538307.gzWq1oO7Kg@linux-lqwf.site>
- <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
- <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
- <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
- <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
- <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
- <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
- <1351780935.2391.58.camel@dabdike.int.hansenpartnership.com>
+	Thu, 1 Nov 2012 10:49:26 -0400
+Date: Thu, 1 Nov 2012 15:47:07 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: netdev@vger.kernel.org, davem@davemloft.net, havard@skinnemoen.net,
+        bhutchings@solarflare.com, linux-arm-kernel@lists.infradead.org,
+        patrice.vilchez@atmel.com, linux-kernel@vger.kernel.org,
+        manabian@gmail.com, David.Laight@ACULAB.COM
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH v4 00/10] net/macb: driver enhancement concerning GEM
+ support, ring logic and cleanup
+Message-ID: <20121101144707.GH19021@game.jcrosoft.org>
+References: <cover.1351690694.git.nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351780935.2391.58.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <cover.1351690694.git.nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-Ovh-Tracer-Id: 10057945343622228844
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrvdegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 02:42:15PM +0000, James Bottomley wrote:
-> On Thu, 2012-11-01 at 10:29 -0400, Eric Paris wrote:
-> > Imagine you run windows and you've never heard of Linux.  You like
-> > that only windows kernels can boot on your box and not those mean
-> > nasty hacked up malware kernels.  Now some attacker manages to take
-> > over your box because you clicked on that executable for young models
-> > in skimpy bathing suits.  That executable rewrote your bootloader to
-> > launch a very small carefully crafted Linux environment.  This
-> > environment does nothing but launch a perfectly valid signed Linux
-> > kernel, which gets a Windows environment all ready to launch after
-> > resume and goes to sleep.  Now you have to hit the power button twice
-> > every time you turn on your computer, weird, but Windows comes up, and
-> > secureboot is still on, so you must be safe!
+On 17:04 Wed 31 Oct     , Nicolas Ferre wrote:
+> This is an enhancement work that began several years ago. I try to catchup with
+> some performance improvement that has been implemented then by Havard.
+> The ring index logic and the TX error path modification are the biggest changes
+> but some cleanup/debugging have been added along the way.
+> The GEM revision will benefit from the Gigabit support.
+> Newer pinctrl infrastructure support is added but it is optional.
 > 
-> So you're going back to the root exploit problem?  I thought that was
-> debunked a few emails ago in the thread?
+> The series has been tested on several Atmel AT91 SoC with the two MACB/GEM
+> flavors.
+> 
+> v4: - remove unneeded device tree header includes
+>     - modified the computation of available entries in ring buffer
+> v3: - rebased on net-next to take into account current effor to merge
+>       at91_ether with macb drivers
+>     - add additional patch to use the new pinctrl infrastructure
+> v2: - modify the tx error handling: now uses a workqueue
+>     - information provided by ethtool -i were not accurate: removed
+> 
+> 
+> Havard Skinnemoen (4):
+>   net/macb: memory barriers cleanup
+>   net/macb: change debugging messages
+>   net/macb: clean up ring buffer logic
+>   net/macb: Offset first RX buffer by two bytes
+> 
+> Jean-Christophe PLAGNIOL-VILLARD (1):
+>   net/macb: add pinctrl consumer support
+> 
+> Nicolas Ferre (4):
+>   net/macb: remove macb_get_drvinfo()
+>   net/macb: tx status is more than 8 bits now
+>   net/macb: ethtool interface: add register dump feature
+>   net/macb: better manage tx errors
+> 
+> Patrice Vilchez (1):
+>   net/macb: Add support for Gigabit Ethernet mode
+> 
+>  drivers/net/ethernet/cadence/at91_ether.c |   6 +-
+>  drivers/net/ethernet/cadence/macb.c       | 448 +++++++++++++++++++++---------
+>  drivers/net/ethernet/cadence/macb.h       |  30 +-
+>  3 files changed, 337 insertions(+), 147 deletions(-)
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-The entire point of this feature is that it's no longer possible to turn 
-a privileged user exploit into a full system exploit. Gaining admin 
-access on Windows 8 doesn't permit you to install a persistent backdoor, 
-unless there's some way to circumvent that. Which there is, if you can 
-drop a small Linux distribution onto the ESP and use a signed, trusted 
-bootloader to boot a signed, trusted kernel that then resumes from an 
-unsigned, untrusted hibernate image. So we have to ensure that that's 
-impossible.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Best Regards,
+J.
+> 
+> -- 
+> 1.8.0
+> 
