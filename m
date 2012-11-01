@@ -1,490 +1,495 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab2KAGe3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 02:34:29 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39374 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab2KAGe1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 02:34:27 -0400
+	id S1753175Ab2KAGfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 02:35:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9487 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752749Ab2KAGfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 02:35:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,691,1344236400"; 
+   d="scan'208,223";a="213837549"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jan Beulich <jbeulich@suse.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Index: AQHNs7Z0Ti91BiFLfUibRvXA4zlK85fUjX6A
+Date: Thu, 1 Nov 2012 06:34:45 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC8292335377346@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
+ <5089676602000078000A4928@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
+ <508A89CB020000780008E6ED@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
+ <20121026201409.GF2708@phenom.dumpdata.com>
+In-Reply-To: <20121026201409.GF2708@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: multipart/mixed;
+	boundary="_002_DE8DF0795D48FD4CA783C40EC8292335377346SHSMSX101ccrcorpi_"
 MIME-Version: 1.0
-In-Reply-To: <1992450.Ke1VSjeX8X@vostro.rjw.lan>
-References: <1421417.rIOjExM5Pt@vostro.rjw.lan>
-	<1992450.Ke1VSjeX8X@vostro.rjw.lan>
-Date: Wed, 31 Oct 2012 23:34:24 -0700
-X-Google-Sender-Auth: NCVjveHu08ZgcpguQMBGYfoPlOg
-Message-ID: <CAE9FiQURGWOUzHc5j4pHCfcXE9y4a3WaPCEg=RewUpA=u8pSAQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] ACPI: Add support for platform bus type
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86 list <x86@kernel.org>,
-        Tony Luck <tony.luck@intel.com>
-Content-Type: multipart/mixed; boundary=000e0cd1d124d1a23804cd69351d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd1d124d1a23804cd69351d
-Content-Type: text/plain; charset=ISO-8859-1
+--_002_DE8DF0795D48FD4CA783C40EC8292335377346SHSMSX101ccrcorpi_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Oct 31, 2012 at 2:36 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Mika Westerberg <mika.westerberg@linux.intel.com>
->
-> With ACPI 5 it is now possible to enumerate traditional SoC
-> peripherals, like serial bus controllers and slave devices behind
-> them.  These devices are typically based on IP-blocks used in many
-> existing SoC platforms and platform drivers for them may already
-> be present in the kernel tree.
->
-> To make driver "porting" more straightforward, add ACPI support to
-> the platform bus type.  Instead of writing ACPI "glue" drivers for
-> the existing platform drivers, register the platform bus type with
-> ACPI to create platform device objects for the drivers and bind the
-> corresponding ACPI handles to those platform devices.
->
-> This should allow us to reuse the existing platform drivers for the
-> devices in question with the minimum amount of modifications.
->
-> This changeset is based on Mika Westerberg's and Mathias Nyman's
-> work.
->
-> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/Makefile        |    1
->  drivers/acpi/acpi_platform.c |  285 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/acpi/internal.h      |    7 +
->  drivers/acpi/scan.c          |   16 ++
->  drivers/base/platform.c      |    5
->  5 files changed, 313 insertions(+), 1 deletion(-)
+Thanks! updated as attached.
 
-this patch is too big, and should be split to at least two or more.
+Jinsong
 
->  create mode 100644 drivers/acpi/acpi_platform.c
->
-> Index: linux/drivers/acpi/Makefile
-> ===================================================================
-> --- linux.orig/drivers/acpi/Makefile
-> +++ linux/drivers/acpi/Makefile
-> @@ -37,6 +37,7 @@ acpi-y                                += processor_core.o
->  acpi-y                         += ec.o
->  acpi-$(CONFIG_ACPI_DOCK)       += dock.o
->  acpi-y                         += pci_root.o pci_link.o pci_irq.o pci_bind.o
-> +acpi-y                         += acpi_platform.o
->  acpi-y                         += power.o
->  acpi-y                         += event.o
->  acpi-y                         += sysfs.o
-> Index: linux/drivers/acpi/acpi_platform.c
-> ===================================================================
-> --- /dev/null
-> +++ linux/drivers/acpi/acpi_platform.c
-> @@ -0,0 +1,285 @@
-> +/*
-> + * ACPI support for platform bus type.
-> + *
-> + * Copyright (C) 2012, Intel Corporation
-> + * Authors: Mika Westerberg <mika.westerberg@linux.intel.com>
-> + *          Mathias Nyman <mathias.nyman@linux.intel.com>
-> + *          Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/acpi.h>
-> +#include <linux/device.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +
-> +ACPI_MODULE_NAME("platform");
-> +
-> +struct resource_info {
-> +       struct device *dev;
-> +       struct resource *res;
-> +       size_t n, cur;
-> +};
-> +
-> +static acpi_status acpi_platform_count_resources(struct acpi_resource *res,
-> +                                                void *data)
-> +{
-> +       struct acpi_resource_extended_irq *acpi_xirq;
-> +       struct resource_info *ri = data;
-> +
-> +       switch (res->type) {
-> +       case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
-> +       case ACPI_RESOURCE_TYPE_IRQ:
-> +               ri->n++;
-> +               break;
-> +       case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
-> +               acpi_xirq = &res->data.extended_irq;
-> +               ri->n += acpi_xirq->interrupt_count;
-> +               break;
-> +       case ACPI_RESOURCE_TYPE_ADDRESS32:
-> +               if (res->data.address32.resource_type == ACPI_IO_RANGE)
-> +                       ri->n++;
-> +               break;
-> +       }
-> +
-> +       return AE_OK;
-> +}
-> +
-> +static acpi_status acpi_platform_add_resources(struct acpi_resource *res,
-> +                                              void *data)
-> +{
-> +       struct acpi_resource_fixed_memory32 *acpi_mem;
-> +       struct acpi_resource_address32 *acpi_add32;
-> +       struct acpi_resource_extended_irq *acpi_xirq;
-> +       struct acpi_resource_irq *acpi_irq;
-> +       struct resource_info *ri = data;
-> +       struct resource *r;
-> +       int irq, i;
-> +
-> +       switch (res->type) {
-> +       case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
-> +               acpi_mem = &res->data.fixed_memory32;
-> +               r = &ri->res[ri->cur++];
-> +
-> +               r->start = acpi_mem->address;
-> +               r->end = r->start + acpi_mem->address_length - 1;
-> +               r->flags = IORESOURCE_MEM;
-> +
-> +               dev_dbg(ri->dev, "Memory32Fixed %pR\n", r);
-> +               break;
-> +
-> +       case ACPI_RESOURCE_TYPE_ADDRESS32:
-> +               acpi_add32 = &res->data.address32;
-> +
-> +               if (acpi_add32->resource_type == ACPI_IO_RANGE) {
-> +                       r = &ri->res[ri->cur++];
-> +                       r->start = acpi_add32->minimum;
-> +                       r->end = r->start + acpi_add32->address_length - 1;
-> +                       r->flags = IORESOURCE_IO;
-> +                       dev_dbg(ri->dev, "Address32 %pR\n", r);
-> +               }
-> +               break;
-> +
-> +       case ACPI_RESOURCE_TYPE_IRQ:
-> +               acpi_irq = &res->data.irq;
-> +               r = &ri->res[ri->cur++];
-> +
-> +               irq = acpi_register_gsi(ri->dev,
-> +                                       acpi_irq->interrupts[0],
-> +                                       acpi_irq->triggering,
-> +                                       acpi_irq->polarity);
-> +
-> +               r->start = r->end = irq;
-> +               r->flags = IORESOURCE_IRQ;
-> +
-> +               dev_dbg(ri->dev, "IRQ %pR\n", r);
-> +               break;
-> +
-> +       case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
-> +               acpi_xirq = &res->data.extended_irq;
-> +
-> +               for (i = 0; i < acpi_xirq->interrupt_count; i++, ri->cur++) {
-> +                       r = &ri->res[ri->cur];
-> +                       irq = acpi_register_gsi(ri->dev,
-> +                                               acpi_xirq->interrupts[i],
-> +                                               acpi_xirq->triggering,
-> +                                               acpi_xirq->polarity);
-> +
-> +                       r->start = r->end = irq;
-> +                       r->flags = IORESOURCE_IRQ;
-> +
-> +                       dev_dbg(ri->dev, "Interrupt %pR\n", r);
-> +               }
-> +               break;
-> +       }
-> +
-> +       return AE_OK;
-> +}
-> +
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+>From f514b97628945cfac00efb0d456f133d44754c9d Mon Sep 17 00:00:00 2001
+From: Liu, Jinsong <jinsong.liu@intel.com>
+Date: Thu, 1 Nov 2012 21:02:36 +0800
+Subject: [PATCH 1/2] Xen acpi pad implement
 
-could be shared with pci root or pnp devices?
+PAD is acpi Processor Aggregator Device which provides a control point
+that enables the platform to perform specific processor configuration
+and control that applies to all processors in the platform.
 
-> +static acpi_status acpi_platform_get_device_uid(struct acpi_device *adev,
-> +                                               int *uid)
-> +{
-> +       struct acpi_device_info *info;
-> +       acpi_status status;
-> +
-> +       status = acpi_get_object_info(adev->handle, &info);
-> +       if (ACPI_FAILURE(status))
-> +               return status;
-> +
-> +       status = AE_NOT_EXIST;
-> +       if ((info->valid & ACPI_VALID_UID) &&
-> +            !kstrtoint(info->unique_id.string, 0, uid))
-> +               status = AE_OK;
-> +
-> +       kfree(info);
-> +       return status;
-> +}
-> +
-> +/**
-> + * acpi_create_platform_device - Create platform device for ACPI device node
-> + * @adev: ACPI device node to create a platform device for.
-> + *
-> + * Check if the given @adev can be represented as a platform device and, if
-> + * that's the case, create and register a platform device, populate its common
-> + * resources and returns a pointer to it.  Otherwise, return %NULL.
-> + *
-> + * The platform device's name will be taken from the @adev's _HID and _UID.
-> + */
-> +struct platform_device *acpi_create_platform_device(struct acpi_device *adev)
-> +{
-> +       struct platform_device *pdev = NULL;
-> +       struct acpi_device *acpi_parent;
-> +       struct device *parent = NULL;
-> +       struct resource_info ri;
-> +       acpi_status status;
-> +       int devid;
-> +
-> +       /* If the ACPI node already has a physical device attached, skip it. */
-> +       if (adev->physical_node_count)
-> +               return NULL;
-> +
-> +       /* Use the UID of the device as the new platform device id if found. */
-> +       status = acpi_platform_get_device_uid(adev, &devid);
-> +       if (ACPI_FAILURE(status))
-> +               devid = -1;
-> +
-> +       memset(&ri, 0, sizeof(ri));
-> +
-> +       /* First, count the resources. */
-> +       status = acpi_walk_resources(adev->handle, METHOD_NAME__CRS,
-> +                                    acpi_platform_count_resources, &ri);
-> +       if (ACPI_FAILURE(status) || !ri.n)
-> +               return NULL;
-> +
-> +       /* Next, allocate memory for all the resources and populate it. */
-> +       ri.dev = &adev->dev;
-> +       ri.res = kzalloc(ri.n * sizeof(struct resource), GFP_KERNEL);
-> +       if (!ri.res) {
-> +               dev_err(&adev->dev,
-> +                       "failed to allocate memory for resources\n");
-> +               return NULL;
-> +       }
-> +
-> +       status = acpi_walk_resources(adev->handle, METHOD_NAME__CRS,
-> +                                    acpi_platform_add_resources, &ri);
-> +       if (ACPI_FAILURE(status)) {
-> +               dev_err(&adev->dev, "failed to walk resources\n");
-> +               goto out;
-> +       }
-> +
-> +       if (WARN_ON(ri.n != ri.cur))
-> +               goto out;
-> +
-> +       /*
-> +        * If the ACPI node has a parent and that parent has a physical device
-> +        * attached to it, that physical device should be the parent of the
-> +        * platform device we are about to create.
-> +        */
-> +       acpi_parent = adev->parent;
-> +       if (acpi_parent) {
-> +               struct acpi_device_physical_node *entry;
-> +               struct list_head *list;
-> +
-> +               mutex_lock(&acpi_parent->physical_node_lock);
-> +               list = &acpi_parent->physical_node_list;
-> +               if (!list_empty(list)) {
-> +                       entry = list_first_entry(list,
-> +                                       struct acpi_device_physical_node,
-> +                                       node);
-> +                       parent = entry->dev;
-> +               }
-> +               mutex_unlock(&acpi_parent->physical_node_lock);
-> +       }
-> +       pdev = platform_device_register_resndata(parent, acpi_device_hid(adev),
-> +                                                devid, ri.res, ri.n, NULL, 0);
-> +       if (IS_ERR(pdev)) {
-> +               dev_err(&adev->dev, "platform device creation failed: %ld\n",
-> +                       PTR_ERR(pdev));
-> +               pdev = NULL;
-> +       } else {
-> +               dev_dbg(&adev->dev, "created platform device %s\n",
-> +                       dev_name(&pdev->dev));
-> +       }
-> +
-> + out:
-> +       kfree(ri.res);
-> +       return pdev;
-> +}
-> +
-> +static acpi_status acpi_platform_match(acpi_handle handle, u32 depth,
-> +                                      void *data, void **return_value)
-> +{
-> +       struct platform_device *pdev = data;
-> +       struct acpi_device *adev;
-> +       acpi_status status;
-> +
-> +       status = acpi_bus_get_device(handle, &adev);
-> +       if (ACPI_FAILURE(status))
-> +               return status;
-> +
-> +       /* Skip ACPI devices that have physical device attached */
-> +       if (adev->physical_node_count)
-> +               return AE_OK;
-> +
-> +       if (!strcmp(pdev->name, acpi_device_hid(adev))) {
-> +               int devid;
-> +
-> +               /* Check that both name and UID match if it exists */
-> +               status = acpi_platform_get_device_uid(adev, &devid);
-> +               if (ACPI_FAILURE(status))
-> +                       devid = -1;
-> +
-> +               if (pdev->id != devid)
-> +                       return AE_OK;
-> +
-> +               *(acpi_handle *)return_value = handle;
-> +               return AE_CTRL_TERMINATE;
-> +       }
-> +
-> +       return AE_OK;
-> +}
-> +
-> +static int acpi_platform_find_device(struct device *dev, acpi_handle *handle)
-> +{
-> +       struct platform_device *pdev = to_platform_device(dev);
-> +
-> +       *handle = NULL;
-> +       acpi_get_devices(pdev->name, acpi_platform_match, pdev, handle);
-> +
-> +       return *handle ? 0 : -ENODEV;
-> +}
-> +
-> +static struct acpi_bus_type acpi_platform_bus = {
-> +       .bus = &platform_bus_type,
-> +       .find_device = acpi_platform_find_device,
-> +};
-> +
-> +static int __init acpi_platform_init(void)
-> +{
-> +       return register_acpi_bus_type(&acpi_platform_bus);
-> +}
-> +arch_initcall(acpi_platform_init);
-> Index: linux/drivers/acpi/internal.h
-> ===================================================================
-> --- linux.orig/drivers/acpi/internal.h
-> +++ linux/drivers/acpi/internal.h
-> @@ -93,4 +93,11 @@ static inline int suspend_nvs_save(void)
->  static inline void suspend_nvs_restore(void) {}
->  #endif
->
-> +/*--------------------------------------------------------------------------
-> +                               Platform bus support
-> +  -------------------------------------------------------------------------- */
-> +struct platform_device;
-> +
-> +struct platform_device *acpi_create_platform_device(struct acpi_device *adev);
-> +
->  #endif /* _ACPI_INTERNAL_H_ */
-> Index: linux/drivers/acpi/scan.c
-> ===================================================================
-> --- linux.orig/drivers/acpi/scan.c
-> +++ linux/drivers/acpi/scan.c
-> @@ -29,6 +29,15 @@ extern struct acpi_device *acpi_root;
->
->  static const char *dummy_hid = "device";
->
-> +/*
-> + * The following ACPI IDs are known to be suitable for representing as
-> + * platform devices.
-> + */
-> +static const struct acpi_device_id acpi_platform_device_ids[] = {
-> +
+This patch is to implement Xen acpi pad logic. When running under Xen
+virt platform, native pad driver would not work. Instead Xen pad driver,
+a self-contained and very thin logic level, would take over acpi pad staff.
+When acpi pad notify OSPM, xen pad logic intercept and parse _PUR object
+and then hypercall to hyervisor for the rest work, say, core parking.
 
-?
+Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
+---
+ drivers/xen/Makefile             |    1 +
+ drivers/xen/xen_acpi_pad.c       |  206 ++++++++++++++++++++++++++++++++++=
+++++
+ include/xen/interface/platform.h |   17 +++
+ 3 files changed, 224 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/xen/xen_acpi_pad.c
 
-> +       { }
-> +};
-> +
->  static LIST_HEAD(acpi_device_list);
->  static LIST_HEAD(acpi_bus_id_list);
->  DEFINE_MUTEX(acpi_device_lock);
-> @@ -1544,8 +1553,13 @@ static acpi_status acpi_bus_check_add(ac
->          */
->         device = NULL;
->         acpi_bus_get_device(handle, &device);
-> -       if (ops->acpi_op_add && !device)
-> +       if (ops->acpi_op_add && !device) {
->                 acpi_add_single_object(&device, handle, type, sta, ops);
-> +               /* Is the device a known good platform device? */
-> +               if (device
-> +                   && !acpi_match_device_ids(device, acpi_platform_device_ids))
-> +                       acpi_create_platform_device(device);
-> +       }
+diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+index 0e86370..a2af622 100644
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_XEN_MCE_LOG)		+=3D mcelog.o
+ obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+=3D xen-pciback/
+ obj-$(CONFIG_XEN_PRIVCMD)		+=3D xen-privcmd.o
+ obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+=3D xen-acpi-processor.o
++obj-$(CONFIG_XEN_DOM0)			+=3D xen_acpi_pad.o
+ xen-evtchn-y				:=3D evtchn.o
+ xen-gntdev-y				:=3D gntdev.o
+ xen-gntalloc-y				:=3D gntalloc.o
+diff --git a/drivers/xen/xen_acpi_pad.c b/drivers/xen/xen_acpi_pad.c
+new file mode 100644
+index 0000000..e8c26a4
+--- /dev/null
++++ b/drivers/xen/xen_acpi_pad.c
+@@ -0,0 +1,206 @@
++/*
++ * xen_acpi_pad.c - Xen pad interface
++ *
++ * Copyright (c) 2012, Intel Corporation.
++ *    Author: Liu, Jinsong <jinsong.liu@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License f=
+or
++ * more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <acpi/acpi_bus.h>
++#include <acpi/acpi_drivers.h>
++#include <asm/xen/hypercall.h>
++#include <xen/interface/version.h>
++
++#define ACPI_PROCESSOR_AGGREGATOR_CLASS	"acpi_pad"
++#define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
++#define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
++
++static DEFINE_MUTEX(xen_pad_lock);
++
++static int xen_pad_set_idle_cpus(int num_cpus)
++{
++	struct xen_platform_op op;
++
++	if (num_cpus < 0)
++		return -EINVAL;
++
++	/* set cpu nums expected to be idled */
++	op.cmd =3D XENPF_core_parking;
++	op.u.core_parking.type =3D XEN_CORE_PARKING_SET;
++	op.u.core_parking.idle_nums =3D num_cpus;
++
++	return HYPERVISOR_dom0_op(&op);
++}
++
++/*
++ * Cannot get idle cpus by using hypercall once (shared with _SET)
++ * because of the characteristic of Xen continue_hypercall_on_cpu
++ */
++static int xen_pad_get_idle_cpus(void)
++{
++	int ret;
++	struct xen_platform_op op;
++
++	/* get cpu nums actually be idled */
++	op.cmd =3D XENPF_core_parking;
++	op.u.core_parking.type =3D XEN_CORE_PARKING_GET;
++	ret =3D HYPERVISOR_dom0_op(&op);
++	if (ret < 0)
++		return ret;
++
++	return op.u.core_parking.idle_nums;
++}
++
++/*
++ * Query firmware how many CPUs should be idle
++ * return -1 on failure
++ */
++static int xen_acpi_pad_pur(acpi_handle handle)
++{
++	struct acpi_buffer buffer =3D {ACPI_ALLOCATE_BUFFER, NULL};
++	union acpi_object *package;
++	int num =3D -1;
++
++	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_PUR", NULL, &buffer)))
++		return num;
++
++	if (!buffer.length || !buffer.pointer)
++		return num;
++
++	package =3D buffer.pointer;
++
++	if (package->type =3D=3D ACPI_TYPE_PACKAGE &&
++		package->package.count =3D=3D 2 &&
++		package->package.elements[0].integer.value =3D=3D 1) /* rev 1 */
++
++		num =3D package->package.elements[1].integer.value;
++
++	kfree(buffer.pointer);
++	return num;
++}
++
++/* Notify firmware how many CPUs are idle */
++static void xen_acpi_pad_ost(acpi_handle handle, int stat,
++	uint32_t idle_cpus)
++{
++	union acpi_object params[3] =3D {
++		{.type =3D ACPI_TYPE_INTEGER,},
++		{.type =3D ACPI_TYPE_INTEGER,},
++		{.type =3D ACPI_TYPE_BUFFER,},
++	};
++	struct acpi_object_list arg_list =3D {3, params};
++
++	params[0].integer.value =3D ACPI_PROCESSOR_AGGREGATOR_NOTIFY;
++	params[1].integer.value =3D  stat;
++	params[2].buffer.length =3D 4;
++	params[2].buffer.pointer =3D (void *)&idle_cpus;
++	acpi_evaluate_object(handle, "_OST", &arg_list, NULL);
++}
++
++static void xen_acpi_pad_handle_notify(acpi_handle handle)
++{
++	int num_cpus;
++
++	num_cpus =3D xen_acpi_pad_pur(handle);
++	if (num_cpus < 0)
++		return;
++
++	mutex_lock(&xen_pad_lock);
++	if (xen_pad_set_idle_cpus(num_cpus)) {
++		mutex_unlock(&xen_pad_lock);
++		return;
++	}
++
++	num_cpus =3D xen_pad_get_idle_cpus();
++	if (num_cpus < 0) {
++		mutex_unlock(&xen_pad_lock);
++		return;
++	}
++	mutex_unlock(&xen_pad_lock);
++
++	xen_acpi_pad_ost(handle, 0, num_cpus);
++}
++
++static void xen_acpi_pad_notify(acpi_handle handle, u32 event,
++	void *data)
++{
++	switch (event) {
++	case ACPI_PROCESSOR_AGGREGATOR_NOTIFY:
++		xen_acpi_pad_handle_notify(handle);
++		break;
++	default:
++		pr_warn("Unsupported event [0x%x]\n", event);
++		break;
++	}
++}
++
++static int xen_acpi_pad_add(struct acpi_device *device)
++{
++	acpi_status status;
++
++	strcpy(acpi_device_name(device), ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME);
++	strcpy(acpi_device_class(device), ACPI_PROCESSOR_AGGREGATOR_CLASS);
++
++	status =3D acpi_install_notify_handler(device->handle,
++		 ACPI_DEVICE_NOTIFY, xen_acpi_pad_notify, device);
++	if (ACPI_FAILURE(status))
++		return -ENODEV;
++
++	return 0;
++}
++
++static int xen_acpi_pad_remove(struct acpi_device *device,
++	int type)
++{
++	mutex_lock(&xen_pad_lock);
++	xen_pad_set_idle_cpus(0);
++	mutex_unlock(&xen_pad_lock);
++
++	acpi_remove_notify_handler(device->handle,
++		ACPI_DEVICE_NOTIFY, xen_acpi_pad_notify);
++	return 0;
++}
++
++static const struct acpi_device_id pad_device_ids[] =3D {
++	{"ACPI000C", 0},
++	{"", 0},
++};
++
++static struct acpi_driver xen_acpi_pad_driver =3D {
++	.name =3D "processor_aggregator",
++	.class =3D ACPI_PROCESSOR_AGGREGATOR_CLASS,
++	.ids =3D pad_device_ids,
++	.ops =3D {
++		.add =3D xen_acpi_pad_add,
++		.remove =3D xen_acpi_pad_remove,
++	},
++};
++
++static int __init xen_acpi_pad_init(void)
++{
++	int ret =3D -ENOSYS;
++	unsigned int version =3D HYPERVISOR_xen_version(XENVER_version, NULL);
++	unsigned int major =3D version >> 16;
++	unsigned int minor =3D version & 0xffff;
++
++	/* Only DOM0 is responsible for Xen acpi pad */
++	if (!xen_initial_domain())
++		return -ENODEV;
++
++	/* Only Xen4.2 or later support Xen acpi pad */
++	if (((major =3D=3D 4) && (minor >=3D 2)) || (major > 4))
++		ret =3D acpi_bus_register_driver(&xen_acpi_pad_driver);
++
++	return ret;
++}
++subsys_initcall(xen_acpi_pad_init);
+diff --git a/include/xen/interface/platform.h b/include/xen/interface/platf=
+orm.h
+index 4755b5f..a3be54c 100644
+--- a/include/xen/interface/platform.h
++++ b/include/xen/interface/platform.h
+@@ -324,6 +324,22 @@ struct xenpf_cpu_ol {
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xenpf_cpu_ol);
+=20
++/*
++ * CMD 58 and 59 are reserved for cpu hotadd and memory hotadd,
++ * which are already occupied at Xen hypervisor side.
++ */
++#define XENPF_core_parking	60
++struct xenpf_core_parking {
++	/* IN variables */
++#define XEN_CORE_PARKING_SET	1
++#define XEN_CORE_PARKING_GET	2
++	uint32_t type;
++	/* IN variables:  set cpu nums expected to be idled */
++	/* OUT variables: get cpu nums actually be idled */
++	uint32_t idle_nums;
++};
++DEFINE_GUEST_HANDLE_STRUCT(xenpf_core_parking);
++
+ struct xen_platform_op {
+ 	uint32_t cmd;
+ 	uint32_t interface_version; /* XENPF_INTERFACE_VERSION */
+@@ -341,6 +357,7 @@ struct xen_platform_op {
+ 		struct xenpf_set_processor_pminfo set_pminfo;
+ 		struct xenpf_pcpuinfo          pcpu_info;
+ 		struct xenpf_cpu_ol            cpu_ol;
++		struct xenpf_core_parking      core_parking;
+ 		uint8_t                        pad[128];
+ 	} u;
+ };
+--=20
+1.7.1
 
-That is ugly! any reason for not using acpi_driver for them.
-
-there is not reason to treat those platform_device different from pci
-root device and other pnp device.
-
-something like attached patch. .add of acpi_driver ops could call
-acpi_create_platform_device.
-
-Yinghai
-
---000e0cd1d124d1a23804cd69351d
-Content-Type: application/octet-stream; name="acpi_platform_driver.patch"
-Content-Disposition: attachment; filename="acpi_platform_driver.patch"
+--_002_DE8DF0795D48FD4CA783C40EC8292335377346SHSMSX101ccrcorpi_
+Content-Type: application/octet-stream;
+	name="0001-Xen-acpi-pad-implement.patch"
+Content-Description: 0001-Xen-acpi-pad-implement.patch
+Content-Disposition: attachment;
+	filename="0001-Xen-acpi-pad-implement.patch"; size=8184;
+	creation-date="Thu, 01 Nov 2012 06:25:57 GMT";
+	modification-date="Thu, 01 Nov 2012 13:29:12 GMT"
 Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h8zht1cz0
 
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvYWNwaS9hY3BpX3BsYXRmb3JtLmMgYi9kcml2ZXJzL2FjcGkv
-YWNwaV9wbGF0Zm9ybS5jCmluZGV4IGE1YTIzNDYuLjRlZDk3YTcgMTAwNjQ0Ci0tLSBhL2RyaXZl
-cnMvYWNwaS9hY3BpX3BsYXRmb3JtLmMKKysrIGIvZHJpdmVycy9hY3BpL2FjcGlfcGxhdGZvcm0u
-YwpAQCAtMjMwLDYgKzIzMCw0NCBAQCBzdHJ1Y3QgcGxhdGZvcm1fZGV2aWNlICphY3BpX2NyZWF0
-ZV9wbGF0Zm9ybV9kZXZpY2Uoc3RydWN0IGFjcGlfZGV2aWNlICphZGV2KQogCXJldHVybiBwZGV2
-OwogfQogCisvKgorICogVGhlIGZvbGxvd2luZyBBQ1BJIElEcyBhcmUga25vd24gdG8gYmUgc3Vp
-dGFibGUgZm9yIHJlcHJlc2VudGluZyBhcworICogcGxhdGZvcm0gZGV2aWNlcy4KKyAqLworc3Rh
-dGljIGNvbnN0IHN0cnVjdCBhY3BpX2RldmljZV9pZCBhY3BpX3BsYXRmb3JtX2RldmljZV9pZHNb
-XSA9IHsKKworCXsgfQorfTsKKworI2RlZmluZSBBQ1BJX1BMQVRGT1JNX0NMQVNTCQkiYWNwaV9w
-bGF0Zm9ybSIKK3N0YXRpYyBpbnQgX19kZXZpbml0IGFjcGlfcGxhdGZvcm1fZGV2aWNlX2FkZChz
-dHJ1Y3QgYWNwaV9kZXZpY2UgKmRldmljZSkKK3sKKwlhY3BpX2NyZWF0ZV9wbGF0Zm9ybV9kZXZp
-Y2UoZGV2aWNlKTsKK30KK3N0YXRpYyBpbnQgYWNwaV9wbGF0Zm9ybV9kZXZpY2VfcmVtb3ZlKHN0
-cnVjdCBhY3BpX2RldmljZSAqZGV2aWNlLCBpbnQgdHlwZSkKK3sKKwkvKiBUT0RPOiByZW1vdmUg
-dGhhdCBwbGF0ZnJvbV9kZXZpY2UgYW5kIHJlc291cmNlICovCit9CisKK3N0YXRpYyBzdHJ1Y3Qg
-YWNwaV9kcml2ZXIgYWNwaV9wbGF0Zm9ybV9kcml2ZXIgPSB7CisJLm5hbWUgPSAiYWNwaV9wbGF0
-Zm9ybSIsCisJLmNsYXNzID0gQUNQSV9QTEFURk9STV9DTEFTUywKKwkuaWRzID0gYWNwaV9wbGF0
-Zm9ybV9kZXZpY2VfaWRzLAorCS5vcHMgPSB7CisJCS5hZGQgPSBhY3BpX3BsYXRmb3JtX2Rldmlj
-ZV9hZGQsCisJCS5yZW1vdmUgPSBhY3BpX3BsYXRmb3JtX2RldmljZV9yZW1vdmUsCisJCX0sCit9
-OworCitzdGF0aWMgaW50IF9faW5pdCBhY3BpX3BsYXRmb3JtX2luaXQodm9pZCkKK3sKKwlpZiAo
-YWNwaV9idXNfcmVnaXN0ZXJfZHJpdmVyKCZhY3BpX3BsYXRmb3JtX2RyaXZlcikgPCAwKQorCQly
-ZXR1cm4gLUVOT0RFVjsKKworCXJldHVybiAwOworfQorc3Vic3lzX2luaXRjYWxsKGFjcGlfcGxh
-dGZvcm1faW5pdCk7CisKIHN0YXRpYyBhY3BpX3N0YXR1cyBhY3BpX3BsYXRmb3JtX21hdGNoKGFj
-cGlfaGFuZGxlIGhhbmRsZSwgdTMyIGRlcHRoLAogCQkJCSAgICAgICB2b2lkICpkYXRhLCB2b2lk
-ICoqcmV0dXJuX3ZhbHVlKQogewpkaWZmIC0tZ2l0IGEvZHJpdmVycy9hY3BpL3NjYW4uYyBiL2Ry
-aXZlcnMvYWNwaS9zY2FuLmMKaW5kZXggZTdhZmJhMS4uNzNiZmEzZCAxMDA2NDQKLS0tIGEvZHJp
-dmVycy9hY3BpL3NjYW4uYworKysgYi9kcml2ZXJzL2FjcGkvc2Nhbi5jCkBAIC0yOSwxNSArMjks
-NiBAQCBleHRlcm4gc3RydWN0IGFjcGlfZGV2aWNlICphY3BpX3Jvb3Q7CiAKIHN0YXRpYyBjb25z
-dCBjaGFyICpkdW1teV9oaWQgPSAiZGV2aWNlIjsKIAotLyoKLSAqIFRoZSBmb2xsb3dpbmcgQUNQ
-SSBJRHMgYXJlIGtub3duIHRvIGJlIHN1aXRhYmxlIGZvciByZXByZXNlbnRpbmcgYXMKLSAqIHBs
-YXRmb3JtIGRldmljZXMuCi0gKi8KLXN0YXRpYyBjb25zdCBzdHJ1Y3QgYWNwaV9kZXZpY2VfaWQg
-YWNwaV9wbGF0Zm9ybV9kZXZpY2VfaWRzW10gPSB7Ci0KLQl7IH0KLX07Ci0KIHN0YXRpYyBMSVNU
-X0hFQUQoYWNwaV9kZXZpY2VfbGlzdCk7CiBzdGF0aWMgTElTVF9IRUFEKGFjcGlfYnVzX2lkX2xp
-c3QpOwogREVGSU5FX01VVEVYKGFjcGlfZGV2aWNlX2xvY2spOwpAQCAtMTU1MywxMyArMTU0NCw4
-IEBAIHN0YXRpYyBhY3BpX3N0YXR1cyBhY3BpX2J1c19jaGVja19hZGQoYWNwaV9oYW5kbGUgaGFu
-ZGxlLCB1MzIgbHZsLAogCSAqLwogCWRldmljZSA9IE5VTEw7CiAJYWNwaV9idXNfZ2V0X2Rldmlj
-ZShoYW5kbGUsICZkZXZpY2UpOwotCWlmIChvcHMtPmFjcGlfb3BfYWRkICYmICFkZXZpY2UpIHsK
-KwlpZiAob3BzLT5hY3BpX29wX2FkZCAmJiAhZGV2aWNlKQogCQlhY3BpX2FkZF9zaW5nbGVfb2Jq
-ZWN0KCZkZXZpY2UsIGhhbmRsZSwgdHlwZSwgc3RhLCBvcHMpOwotCQkvKiBJcyB0aGUgZGV2aWNl
-IGEga25vd24gZ29vZCBwbGF0Zm9ybSBkZXZpY2U/ICovCi0JCWlmIChkZXZpY2UKLQkJICAgICYm
-ICFhY3BpX21hdGNoX2RldmljZV9pZHMoZGV2aWNlLCBhY3BpX3BsYXRmb3JtX2RldmljZV9pZHMp
-KQotCQkJYWNwaV9jcmVhdGVfcGxhdGZvcm1fZGV2aWNlKGRldmljZSk7Ci0JfQogCiAJaWYgKCFk
-ZXZpY2UpCiAJCXJldHVybiBBRV9DVFJMX0RFUFRIOwo=
---000e0cd1d124d1a23804cd69351d--
+RnJvbSBmNTE0Yjk3NjI4OTQ1Y2ZhYzAwZWZiMGQ0NTZmMTMzZDQ0NzU0YzlkIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
+RGF0ZTogVGh1LCAxIE5vdiAyMDEyIDIxOjAyOjM2ICswODAwClN1YmplY3Q6IFtQQVRDSCAxLzJd
+IFhlbiBhY3BpIHBhZCBpbXBsZW1lbnQKClBBRCBpcyBhY3BpIFByb2Nlc3NvciBBZ2dyZWdhdG9y
+IERldmljZSB3aGljaCBwcm92aWRlcyBhIGNvbnRyb2wgcG9pbnQKdGhhdCBlbmFibGVzIHRoZSBw
+bGF0Zm9ybSB0byBwZXJmb3JtIHNwZWNpZmljIHByb2Nlc3NvciBjb25maWd1cmF0aW9uCmFuZCBj
+b250cm9sIHRoYXQgYXBwbGllcyB0byBhbGwgcHJvY2Vzc29ycyBpbiB0aGUgcGxhdGZvcm0uCgpU
+aGlzIHBhdGNoIGlzIHRvIGltcGxlbWVudCBYZW4gYWNwaSBwYWQgbG9naWMuIFdoZW4gcnVubmlu
+ZyB1bmRlciBYZW4KdmlydCBwbGF0Zm9ybSwgbmF0aXZlIHBhZCBkcml2ZXIgd291bGQgbm90IHdv
+cmsuIEluc3RlYWQgWGVuIHBhZCBkcml2ZXIsCmEgc2VsZi1jb250YWluZWQgYW5kIHZlcnkgdGhp
+biBsb2dpYyBsZXZlbCwgd291bGQgdGFrZSBvdmVyIGFjcGkgcGFkIHN0YWZmLgpXaGVuIGFjcGkg
+cGFkIG5vdGlmeSBPU1BNLCB4ZW4gcGFkIGxvZ2ljIGludGVyY2VwdCBhbmQgcGFyc2UgX1BVUiBv
+YmplY3QKYW5kIHRoZW4gaHlwZXJjYWxsIHRvIGh5ZXJ2aXNvciBmb3IgdGhlIHJlc3Qgd29yaywg
+c2F5LCBjb3JlIHBhcmtpbmcuCgpTaWduZWQtb2ZmLWJ5OiBMaXUsIEppbnNvbmcgPGppbnNvbmcu
+bGl1QGludGVsLmNvbT4KLS0tCiBkcml2ZXJzL3hlbi9NYWtlZmlsZSAgICAgICAgICAgICB8ICAg
+IDEgKwogZHJpdmVycy94ZW4veGVuX2FjcGlfcGFkLmMgICAgICAgfCAgMjA2ICsrKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrCiBpbmNsdWRlL3hlbi9pbnRlcmZhY2UvcGxhdGZv
+cm0uaCB8ICAgMTcgKysrCiAzIGZpbGVzIGNoYW5nZWQsIDIyNCBpbnNlcnRpb25zKCspLCAwIGRl
+bGV0aW9ucygtKQogY3JlYXRlIG1vZGUgMTAwNjQ0IGRyaXZlcnMveGVuL3hlbl9hY3BpX3BhZC5j
+CgpkaWZmIC0tZ2l0IGEvZHJpdmVycy94ZW4vTWFrZWZpbGUgYi9kcml2ZXJzL3hlbi9NYWtlZmls
+ZQppbmRleCAwZTg2MzcwLi5hMmFmNjIyIDEwMDY0NAotLS0gYS9kcml2ZXJzL3hlbi9NYWtlZmls
+ZQorKysgYi9kcml2ZXJzL3hlbi9NYWtlZmlsZQpAQCAtMjksNiArMjksNyBAQCBvYmotJChDT05G
+SUdfWEVOX01DRV9MT0cpCQkrPSBtY2Vsb2cubwogb2JqLSQoQ09ORklHX1hFTl9QQ0lERVZfQkFD
+S0VORCkJKz0geGVuLXBjaWJhY2svCiBvYmotJChDT05GSUdfWEVOX1BSSVZDTUQpCQkrPSB4ZW4t
+cHJpdmNtZC5vCiBvYmotJChDT05GSUdfWEVOX0FDUElfUFJPQ0VTU09SKQkrPSB4ZW4tYWNwaS1w
+cm9jZXNzb3Iubworb2JqLSQoQ09ORklHX1hFTl9ET00wKQkJCSs9IHhlbl9hY3BpX3BhZC5vCiB4
+ZW4tZXZ0Y2huLXkJCQkJOj0gZXZ0Y2huLm8KIHhlbi1nbnRkZXYteQkJCQk6PSBnbnRkZXYubwog
+eGVuLWdudGFsbG9jLXkJCQkJOj0gZ250YWxsb2MubwpkaWZmIC0tZ2l0IGEvZHJpdmVycy94ZW4v
+eGVuX2FjcGlfcGFkLmMgYi9kcml2ZXJzL3hlbi94ZW5fYWNwaV9wYWQuYwpuZXcgZmlsZSBtb2Rl
+IDEwMDY0NAppbmRleCAwMDAwMDAwLi5lOGMyNmE0Ci0tLSAvZGV2L251bGwKKysrIGIvZHJpdmVy
+cy94ZW4veGVuX2FjcGlfcGFkLmMKQEAgLTAsMCArMSwyMDYgQEAKKy8qCisgKiB4ZW5fYWNwaV9w
+YWQuYyAtIFhlbiBwYWQgaW50ZXJmYWNlCisgKgorICogQ29weXJpZ2h0IChjKSAyMDEyLCBJbnRl
+bCBDb3Jwb3JhdGlvbi4KKyAqICAgIEF1dGhvcjogTGl1LCBKaW5zb25nIDxqaW5zb25nLmxpdUBp
+bnRlbC5jb20+CisgKgorICogVGhpcyBwcm9ncmFtIGlzIGZyZWUgc29mdHdhcmU7IHlvdSBjYW4g
+cmVkaXN0cmlidXRlIGl0IGFuZC9vciBtb2RpZnkgaXQKKyAqIHVuZGVyIHRoZSB0ZXJtcyBhbmQg
+Y29uZGl0aW9ucyBvZiB0aGUgR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2UsCisgKiB2ZXJzaW9u
+IDIsIGFzIHB1Ymxpc2hlZCBieSB0aGUgRnJlZSBTb2Z0d2FyZSBGb3VuZGF0aW9uLgorICoKKyAq
+IFRoaXMgcHJvZ3JhbSBpcyBkaXN0cmlidXRlZCBpbiB0aGUgaG9wZSBpdCB3aWxsIGJlIHVzZWZ1
+bCwgYnV0IFdJVEhPVVQKKyAqIEFOWSBXQVJSQU5UWTsgd2l0aG91dCBldmVuIHRoZSBpbXBsaWVk
+IHdhcnJhbnR5IG9mIE1FUkNIQU5UQUJJTElUWSBvcgorICogRklUTkVTUyBGT1IgQSBQQVJUSUNV
+TEFSIFBVUlBPU0UuICBTZWUgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGZvcgorICog
+bW9yZSBkZXRhaWxzLgorICovCisKKyNpbmNsdWRlIDxsaW51eC9rZXJuZWwuaD4KKyNpbmNsdWRl
+IDxsaW51eC90eXBlcy5oPgorI2luY2x1ZGUgPGFjcGkvYWNwaV9idXMuaD4KKyNpbmNsdWRlIDxh
+Y3BpL2FjcGlfZHJpdmVycy5oPgorI2luY2x1ZGUgPGFzbS94ZW4vaHlwZXJjYWxsLmg+CisjaW5j
+bHVkZSA8eGVuL2ludGVyZmFjZS92ZXJzaW9uLmg+CisKKyNkZWZpbmUgQUNQSV9QUk9DRVNTT1Jf
+QUdHUkVHQVRPUl9DTEFTUwkiYWNwaV9wYWQiCisjZGVmaW5lIEFDUElfUFJPQ0VTU09SX0FHR1JF
+R0FUT1JfREVWSUNFX05BTUUgIlByb2Nlc3NvciBBZ2dyZWdhdG9yIgorI2RlZmluZSBBQ1BJX1BS
+T0NFU1NPUl9BR0dSRUdBVE9SX05PVElGWSAweDgwCisKK3N0YXRpYyBERUZJTkVfTVVURVgoeGVu
+X3BhZF9sb2NrKTsKKworc3RhdGljIGludCB4ZW5fcGFkX3NldF9pZGxlX2NwdXMoaW50IG51bV9j
+cHVzKQoreworCXN0cnVjdCB4ZW5fcGxhdGZvcm1fb3Agb3A7CisKKwlpZiAobnVtX2NwdXMgPCAw
+KQorCQlyZXR1cm4gLUVJTlZBTDsKKworCS8qIHNldCBjcHUgbnVtcyBleHBlY3RlZCB0byBiZSBp
+ZGxlZCAqLworCW9wLmNtZCA9IFhFTlBGX2NvcmVfcGFya2luZzsKKwlvcC51LmNvcmVfcGFya2lu
+Zy50eXBlID0gWEVOX0NPUkVfUEFSS0lOR19TRVQ7CisJb3AudS5jb3JlX3BhcmtpbmcuaWRsZV9u
+dW1zID0gbnVtX2NwdXM7CisKKwlyZXR1cm4gSFlQRVJWSVNPUl9kb20wX29wKCZvcCk7Cit9CisK
+Ky8qCisgKiBDYW5ub3QgZ2V0IGlkbGUgY3B1cyBieSB1c2luZyBoeXBlcmNhbGwgb25jZSAoc2hh
+cmVkIHdpdGggX1NFVCkKKyAqIGJlY2F1c2Ugb2YgdGhlIGNoYXJhY3RlcmlzdGljIG9mIFhlbiBj
+b250aW51ZV9oeXBlcmNhbGxfb25fY3B1CisgKi8KK3N0YXRpYyBpbnQgeGVuX3BhZF9nZXRfaWRs
+ZV9jcHVzKHZvaWQpCit7CisJaW50IHJldDsKKwlzdHJ1Y3QgeGVuX3BsYXRmb3JtX29wIG9wOwor
+CisJLyogZ2V0IGNwdSBudW1zIGFjdHVhbGx5IGJlIGlkbGVkICovCisJb3AuY21kID0gWEVOUEZf
+Y29yZV9wYXJraW5nOworCW9wLnUuY29yZV9wYXJraW5nLnR5cGUgPSBYRU5fQ09SRV9QQVJLSU5H
+X0dFVDsKKwlyZXQgPSBIWVBFUlZJU09SX2RvbTBfb3AoJm9wKTsKKwlpZiAocmV0IDwgMCkKKwkJ
+cmV0dXJuIHJldDsKKworCXJldHVybiBvcC51LmNvcmVfcGFya2luZy5pZGxlX251bXM7Cit9CisK
+Ky8qCisgKiBRdWVyeSBmaXJtd2FyZSBob3cgbWFueSBDUFVzIHNob3VsZCBiZSBpZGxlCisgKiBy
+ZXR1cm4gLTEgb24gZmFpbHVyZQorICovCitzdGF0aWMgaW50IHhlbl9hY3BpX3BhZF9wdXIoYWNw
+aV9oYW5kbGUgaGFuZGxlKQoreworCXN0cnVjdCBhY3BpX2J1ZmZlciBidWZmZXIgPSB7QUNQSV9B
+TExPQ0FURV9CVUZGRVIsIE5VTEx9OworCXVuaW9uIGFjcGlfb2JqZWN0ICpwYWNrYWdlOworCWlu
+dCBudW0gPSAtMTsKKworCWlmIChBQ1BJX0ZBSUxVUkUoYWNwaV9ldmFsdWF0ZV9vYmplY3QoaGFu
+ZGxlLCAiX1BVUiIsIE5VTEwsICZidWZmZXIpKSkKKwkJcmV0dXJuIG51bTsKKworCWlmICghYnVm
+ZmVyLmxlbmd0aCB8fCAhYnVmZmVyLnBvaW50ZXIpCisJCXJldHVybiBudW07CisKKwlwYWNrYWdl
+ID0gYnVmZmVyLnBvaW50ZXI7CisKKwlpZiAocGFja2FnZS0+dHlwZSA9PSBBQ1BJX1RZUEVfUEFD
+S0FHRSAmJgorCQlwYWNrYWdlLT5wYWNrYWdlLmNvdW50ID09IDIgJiYKKwkJcGFja2FnZS0+cGFj
+a2FnZS5lbGVtZW50c1swXS5pbnRlZ2VyLnZhbHVlID09IDEpIC8qIHJldiAxICovCisKKwkJbnVt
+ID0gcGFja2FnZS0+cGFja2FnZS5lbGVtZW50c1sxXS5pbnRlZ2VyLnZhbHVlOworCisJa2ZyZWUo
+YnVmZmVyLnBvaW50ZXIpOworCXJldHVybiBudW07Cit9CisKKy8qIE5vdGlmeSBmaXJtd2FyZSBo
+b3cgbWFueSBDUFVzIGFyZSBpZGxlICovCitzdGF0aWMgdm9pZCB4ZW5fYWNwaV9wYWRfb3N0KGFj
+cGlfaGFuZGxlIGhhbmRsZSwgaW50IHN0YXQsCisJdWludDMyX3QgaWRsZV9jcHVzKQoreworCXVu
+aW9uIGFjcGlfb2JqZWN0IHBhcmFtc1szXSA9IHsKKwkJey50eXBlID0gQUNQSV9UWVBFX0lOVEVH
+RVIsfSwKKwkJey50eXBlID0gQUNQSV9UWVBFX0lOVEVHRVIsfSwKKwkJey50eXBlID0gQUNQSV9U
+WVBFX0JVRkZFUix9LAorCX07CisJc3RydWN0IGFjcGlfb2JqZWN0X2xpc3QgYXJnX2xpc3QgPSB7
+MywgcGFyYW1zfTsKKworCXBhcmFtc1swXS5pbnRlZ2VyLnZhbHVlID0gQUNQSV9QUk9DRVNTT1Jf
+QUdHUkVHQVRPUl9OT1RJRlk7CisJcGFyYW1zWzFdLmludGVnZXIudmFsdWUgPSAgc3RhdDsKKwlw
+YXJhbXNbMl0uYnVmZmVyLmxlbmd0aCA9IDQ7CisJcGFyYW1zWzJdLmJ1ZmZlci5wb2ludGVyID0g
+KHZvaWQgKikmaWRsZV9jcHVzOworCWFjcGlfZXZhbHVhdGVfb2JqZWN0KGhhbmRsZSwgIl9PU1Qi
+LCAmYXJnX2xpc3QsIE5VTEwpOworfQorCitzdGF0aWMgdm9pZCB4ZW5fYWNwaV9wYWRfaGFuZGxl
+X25vdGlmeShhY3BpX2hhbmRsZSBoYW5kbGUpCit7CisJaW50IG51bV9jcHVzOworCisJbnVtX2Nw
+dXMgPSB4ZW5fYWNwaV9wYWRfcHVyKGhhbmRsZSk7CisJaWYgKG51bV9jcHVzIDwgMCkKKwkJcmV0
+dXJuOworCisJbXV0ZXhfbG9jaygmeGVuX3BhZF9sb2NrKTsKKwlpZiAoeGVuX3BhZF9zZXRfaWRs
+ZV9jcHVzKG51bV9jcHVzKSkgeworCQltdXRleF91bmxvY2soJnhlbl9wYWRfbG9jayk7CisJCXJl
+dHVybjsKKwl9CisKKwludW1fY3B1cyA9IHhlbl9wYWRfZ2V0X2lkbGVfY3B1cygpOworCWlmIChu
+dW1fY3B1cyA8IDApIHsKKwkJbXV0ZXhfdW5sb2NrKCZ4ZW5fcGFkX2xvY2spOworCQlyZXR1cm47
+CisJfQorCW11dGV4X3VubG9jaygmeGVuX3BhZF9sb2NrKTsKKworCXhlbl9hY3BpX3BhZF9vc3Qo
+aGFuZGxlLCAwLCBudW1fY3B1cyk7Cit9CisKK3N0YXRpYyB2b2lkIHhlbl9hY3BpX3BhZF9ub3Rp
+ZnkoYWNwaV9oYW5kbGUgaGFuZGxlLCB1MzIgZXZlbnQsCisJdm9pZCAqZGF0YSkKK3sKKwlzd2l0
+Y2ggKGV2ZW50KSB7CisJY2FzZSBBQ1BJX1BST0NFU1NPUl9BR0dSRUdBVE9SX05PVElGWToKKwkJ
+eGVuX2FjcGlfcGFkX2hhbmRsZV9ub3RpZnkoaGFuZGxlKTsKKwkJYnJlYWs7CisJZGVmYXVsdDoK
+KwkJcHJfd2FybigiVW5zdXBwb3J0ZWQgZXZlbnQgWzB4JXhdXG4iLCBldmVudCk7CisJCWJyZWFr
+OworCX0KK30KKworc3RhdGljIGludCB4ZW5fYWNwaV9wYWRfYWRkKHN0cnVjdCBhY3BpX2Rldmlj
+ZSAqZGV2aWNlKQoreworCWFjcGlfc3RhdHVzIHN0YXR1czsKKworCXN0cmNweShhY3BpX2Rldmlj
+ZV9uYW1lKGRldmljZSksIEFDUElfUFJPQ0VTU09SX0FHR1JFR0FUT1JfREVWSUNFX05BTUUpOwor
+CXN0cmNweShhY3BpX2RldmljZV9jbGFzcyhkZXZpY2UpLCBBQ1BJX1BST0NFU1NPUl9BR0dSRUdB
+VE9SX0NMQVNTKTsKKworCXN0YXR1cyA9IGFjcGlfaW5zdGFsbF9ub3RpZnlfaGFuZGxlcihkZXZp
+Y2UtPmhhbmRsZSwKKwkJIEFDUElfREVWSUNFX05PVElGWSwgeGVuX2FjcGlfcGFkX25vdGlmeSwg
+ZGV2aWNlKTsKKwlpZiAoQUNQSV9GQUlMVVJFKHN0YXR1cykpCisJCXJldHVybiAtRU5PREVWOwor
+CisJcmV0dXJuIDA7Cit9CisKK3N0YXRpYyBpbnQgeGVuX2FjcGlfcGFkX3JlbW92ZShzdHJ1Y3Qg
+YWNwaV9kZXZpY2UgKmRldmljZSwKKwlpbnQgdHlwZSkKK3sKKwltdXRleF9sb2NrKCZ4ZW5fcGFk
+X2xvY2spOworCXhlbl9wYWRfc2V0X2lkbGVfY3B1cygwKTsKKwltdXRleF91bmxvY2soJnhlbl9w
+YWRfbG9jayk7CisKKwlhY3BpX3JlbW92ZV9ub3RpZnlfaGFuZGxlcihkZXZpY2UtPmhhbmRsZSwK
+KwkJQUNQSV9ERVZJQ0VfTk9USUZZLCB4ZW5fYWNwaV9wYWRfbm90aWZ5KTsKKwlyZXR1cm4gMDsK
+K30KKworc3RhdGljIGNvbnN0IHN0cnVjdCBhY3BpX2RldmljZV9pZCBwYWRfZGV2aWNlX2lkc1td
+ID0geworCXsiQUNQSTAwMEMiLCAwfSwKKwl7IiIsIDB9LAorfTsKKworc3RhdGljIHN0cnVjdCBh
+Y3BpX2RyaXZlciB4ZW5fYWNwaV9wYWRfZHJpdmVyID0geworCS5uYW1lID0gInByb2Nlc3Nvcl9h
+Z2dyZWdhdG9yIiwKKwkuY2xhc3MgPSBBQ1BJX1BST0NFU1NPUl9BR0dSRUdBVE9SX0NMQVNTLAor
+CS5pZHMgPSBwYWRfZGV2aWNlX2lkcywKKwkub3BzID0geworCQkuYWRkID0geGVuX2FjcGlfcGFk
+X2FkZCwKKwkJLnJlbW92ZSA9IHhlbl9hY3BpX3BhZF9yZW1vdmUsCisJfSwKK307CisKK3N0YXRp
+YyBpbnQgX19pbml0IHhlbl9hY3BpX3BhZF9pbml0KHZvaWQpCit7CisJaW50IHJldCA9IC1FTk9T
+WVM7CisJdW5zaWduZWQgaW50IHZlcnNpb24gPSBIWVBFUlZJU09SX3hlbl92ZXJzaW9uKFhFTlZF
+Ul92ZXJzaW9uLCBOVUxMKTsKKwl1bnNpZ25lZCBpbnQgbWFqb3IgPSB2ZXJzaW9uID4+IDE2Owor
+CXVuc2lnbmVkIGludCBtaW5vciA9IHZlcnNpb24gJiAweGZmZmY7CisKKwkvKiBPbmx5IERPTTAg
+aXMgcmVzcG9uc2libGUgZm9yIFhlbiBhY3BpIHBhZCAqLworCWlmICgheGVuX2luaXRpYWxfZG9t
+YWluKCkpCisJCXJldHVybiAtRU5PREVWOworCisJLyogT25seSBYZW40LjIgb3IgbGF0ZXIgc3Vw
+cG9ydCBYZW4gYWNwaSBwYWQgKi8KKwlpZiAoKChtYWpvciA9PSA0KSAmJiAobWlub3IgPj0gMikp
+IHx8IChtYWpvciA+IDQpKQorCQlyZXQgPSBhY3BpX2J1c19yZWdpc3Rlcl9kcml2ZXIoJnhlbl9h
+Y3BpX3BhZF9kcml2ZXIpOworCisJcmV0dXJuIHJldDsKK30KK3N1YnN5c19pbml0Y2FsbCh4ZW5f
+YWNwaV9wYWRfaW5pdCk7CmRpZmYgLS1naXQgYS9pbmNsdWRlL3hlbi9pbnRlcmZhY2UvcGxhdGZv
+cm0uaCBiL2luY2x1ZGUveGVuL2ludGVyZmFjZS9wbGF0Zm9ybS5oCmluZGV4IDQ3NTViNWYuLmEz
+YmU1NGMgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUveGVuL2ludGVyZmFjZS9wbGF0Zm9ybS5oCisrKyBi
+L2luY2x1ZGUveGVuL2ludGVyZmFjZS9wbGF0Zm9ybS5oCkBAIC0zMjQsNiArMzI0LDIyIEBAIHN0
+cnVjdCB4ZW5wZl9jcHVfb2wgewogfTsKIERFRklORV9HVUVTVF9IQU5ETEVfU1RSVUNUKHhlbnBm
+X2NwdV9vbCk7CiAKKy8qCisgKiBDTUQgNTggYW5kIDU5IGFyZSByZXNlcnZlZCBmb3IgY3B1IGhv
+dGFkZCBhbmQgbWVtb3J5IGhvdGFkZCwKKyAqIHdoaWNoIGFyZSBhbHJlYWR5IG9jY3VwaWVkIGF0
+IFhlbiBoeXBlcnZpc29yIHNpZGUuCisgKi8KKyNkZWZpbmUgWEVOUEZfY29yZV9wYXJraW5nCTYw
+CitzdHJ1Y3QgeGVucGZfY29yZV9wYXJraW5nIHsKKwkvKiBJTiB2YXJpYWJsZXMgKi8KKyNkZWZp
+bmUgWEVOX0NPUkVfUEFSS0lOR19TRVQJMQorI2RlZmluZSBYRU5fQ09SRV9QQVJLSU5HX0dFVAky
+CisJdWludDMyX3QgdHlwZTsKKwkvKiBJTiB2YXJpYWJsZXM6ICBzZXQgY3B1IG51bXMgZXhwZWN0
+ZWQgdG8gYmUgaWRsZWQgKi8KKwkvKiBPVVQgdmFyaWFibGVzOiBnZXQgY3B1IG51bXMgYWN0dWFs
+bHkgYmUgaWRsZWQgKi8KKwl1aW50MzJfdCBpZGxlX251bXM7Cit9OworREVGSU5FX0dVRVNUX0hB
+TkRMRV9TVFJVQ1QoeGVucGZfY29yZV9wYXJraW5nKTsKKwogc3RydWN0IHhlbl9wbGF0Zm9ybV9v
+cCB7CiAJdWludDMyX3QgY21kOwogCXVpbnQzMl90IGludGVyZmFjZV92ZXJzaW9uOyAvKiBYRU5Q
+Rl9JTlRFUkZBQ0VfVkVSU0lPTiAqLwpAQCAtMzQxLDYgKzM1Nyw3IEBAIHN0cnVjdCB4ZW5fcGxh
+dGZvcm1fb3AgewogCQlzdHJ1Y3QgeGVucGZfc2V0X3Byb2Nlc3Nvcl9wbWluZm8gc2V0X3BtaW5m
+bzsKIAkJc3RydWN0IHhlbnBmX3BjcHVpbmZvICAgICAgICAgIHBjcHVfaW5mbzsKIAkJc3RydWN0
+IHhlbnBmX2NwdV9vbCAgICAgICAgICAgIGNwdV9vbDsKKwkJc3RydWN0IHhlbnBmX2NvcmVfcGFy
+a2luZyAgICAgIGNvcmVfcGFya2luZzsKIAkJdWludDhfdCAgICAgICAgICAgICAgICAgICAgICAg
+IHBhZFsxMjhdOwogCX0gdTsKIH07Ci0tIAoxLjcuMQoK
+
+--_002_DE8DF0795D48FD4CA783C40EC8292335377346SHSMSX101ccrcorpi_--
