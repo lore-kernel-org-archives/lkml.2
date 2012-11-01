@@ -1,96 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759596Ab2KATZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 15:25:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28867 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992453Ab2KATZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 15:25:20 -0400
-Date: Thu, 1 Nov 2012 21:16:37 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv3 net-next 4/8] vhost-net: cleanup macros for DMA status
- tracking
-Message-ID: <a5fa0c01ea5ac0fec2ec35b32a9061ff80ad3880.1351797353.git.mst@redhat.com>
-References: <cover.1351797353.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1351797353.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
-To: unlisted-recipients:; (no To-header on input)
+	id S1762231Ab2KATZq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 15:25:46 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:17942 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762179Ab2KATZk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 15:25:40 -0400
+Message-ID: <1351797478.19172.103.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v3 3/3] Improve container_notify_cb() to support
+ container hot-remove.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ZhangRui <rui.zhang@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tang Chen <tangchen@cn.fujitsu.com>, bhelgaas@google.com,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 01 Nov 2012 13:17:58 -0600
+In-Reply-To: <CAE9FiQXxHz_RntOc2gxxDscv8+mDQ2XBL0sHSrptj_arwUb8-A@mail.gmail.com>
+References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <1351668471-31436-4-git-send-email-tangchen@cn.fujitsu.com>
+	 <1351788194.19172.98.camel@misato.fc.hp.com>
+	 <CAE9FiQXxHz_RntOc2gxxDscv8+mDQ2XBL0sHSrptj_arwUb8-A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Better document macros for DMA tracking. Add an
-explicit one for DMA in progress instead of
-relying on user supplying len != 1.
+On Thu, 2012-11-01 at 11:28 -0700, Yinghai Lu wrote:
+> On Thu, Nov 1, 2012 at 9:43 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+> >
+> > Rafael pointed out in my CPU hot-remove patch that
+> > acpi_bus_hot_remove_device() was not exported for modules.  Looks like
+> > you have the same problem here.  FYI, I just sent the following patch
+> > that exports acpi_bus_hot_remove_device() and acpi_os_hotplug_execute().
+> >
+> > https://lkml.org/lkml/2012/11/1/225
+> 
+> acpi_os_hotplug_execute() does not like having good quality yet.
+> 
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  941)   /*
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  942)    * We
+> can't run hotplug code in keventd_wq/kacpid_wq/kacpid_notify_wq
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  943)    *
+> because the hotplug code may call driver .remove() functions,
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  944)    *
+> which invoke flush_scheduled_work/acpi_os_wait_events_complete
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  945)    * to
+> flush these workqueues.
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  946)    */
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  947)   queue
+> = hp ? kacpi_hotplug_wq :
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  948)
+>  (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
+> 9ac61856 (Bjorn Helgaas       2009-08-31 22:32:10 +0000  949)
+> dpc->wait = hp ? 1 : 0;
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  950)
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  951)   if
+> (queue == kacpi_hotplug_wq)
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  952)
+>  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  953)   else
+> if (queue == kacpi_notify_wq)
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  954)
+>  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  955)   else
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  956)
+>  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  957)
+> 
+> really don't know why checking queue and call same code in every branch.
+> 
+> from comm:
+> 
+> commit bc73675b99fd9850dd914be01d71af99c5d2a1ae
+> Author: Zhang Rui <rui.zhang@intel.com>
+> Date:   Mon Mar 22 15:48:54 2010 +0800
+> 
+>     ACPI: fixes a false alarm from lockdep
+> 
+>     fixes a false alarm from lockdep, as acpi hotplug workqueue waits other
+>     workqueues.
+>     http://bugzilla.kernel.org/show_bug.cgi?id=14553
+>     https://bugzilla.kernel.org/show_bug.cgi?id=15521
+> 
+>     Original-patch-from: Andrew Morton <akpm@linux-foundation.org>
+>     Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+>     Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+>     Signed-off-by: Len Brown <len.brown@intel.com>
+> 
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index 8e6d866..900da68 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -758,7 +758,14 @@ static acpi_status
+> __acpi_os_execute(acpi_execute_type type,
+>         queue = hp ? kacpi_hotplug_wq :
+>                 (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
+>         dpc->wait = hp ? 1 : 0;
+> -       INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> +
+> +       if (queue == kacpi_hotplug_wq)
+> +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> +       else if (queue == kacpi_notify_wq)
+> +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> +       else
+> +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> +
+>         ret = queue_work(queue, &dpc->work);
+> 
+>         if (!ret) {
+> 
+> 
+> Len or Rafael,
+> can you just revert that silly patch?
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/vhost/net.c   |  3 ++-
- drivers/vhost/vhost.c |  2 +-
- drivers/vhost/vhost.h | 12 +++++++++---
- 3 files changed, 12 insertions(+), 5 deletions(-)
+Hi Yinghai,
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 072cbba..f80ae5f 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -237,7 +237,8 @@ static void handle_tx(struct vhost_net *net)
- 			} else {
- 				struct ubuf_info *ubuf = &vq->ubuf_info[head];
- 
--				vq->heads[vq->upend_idx].len = len;
-+				vq->heads[vq->upend_idx].len =
-+					VHOST_DMA_IN_PROGRESS;
- 				ubuf->callback = vhost_zerocopy_callback;
- 				ubuf->ctx = vq->ubufs;
- 				ubuf->desc = vq->upend_idx;
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 73d08db..f23cf89 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -1606,7 +1606,7 @@ void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool status)
- 	struct vhost_virtqueue *vq = ubufs->vq;
- 
- 	vhost_poll_queue(&vq->poll);
--	/* set len = 1 to mark this desc buffers done DMA */
-+	/* set len to mark this desc buffers done DMA */
- 	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
- 	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
- }
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 2de4ce2..b6538ee 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -13,9 +13,15 @@
- #include <linux/virtio_ring.h>
- #include <linux/atomic.h>
- 
--/* This is for zerocopy, used buffer len is set to 1 when lower device DMA
-- * done */
--#define VHOST_DMA_DONE_LEN	1
-+/*
-+ * For transmit, used buffer len is unused; we override it to track buffer
-+ * status internally; used for zerocopy tx only.
-+ */
-+/* Lower device DMA done */
-+#define VHOST_DMA_DONE_LEN	2
-+/* Lower device DMA in progress */
-+#define VHOST_DMA_IN_PROGRESS	1
-+/* Buffer unused */
- #define VHOST_DMA_CLEAR_LEN	0
- 
- struct vhost_device;
--- 
-MST
+Per the following thread, the code seems to be written in this way to
+allocate a separate lock_class_key for each work queue.  It should have
+had some comment to explain this, though.
+
+https://lkml.org/lkml/2009/12/13/304
+
+Thanks,
+-Toshi
+
+
+
+> 
+> Yinghai
+
 
