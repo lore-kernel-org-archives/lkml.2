@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762347Ab2KAVio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 17:38:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47944 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759632Ab2KAVim (ORCPT
+	id S965608Ab2KAVja (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 17:39:30 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:44303 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762284Ab2KAVjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 17:38:42 -0400
-Date: Thu, 1 Nov 2012 14:38:17 -0700
-From: tip-bot for Chuansheng Liu <chuansheng.liu@intel.com>
-Message-ID: <tip-b8f61116c1ce342804a0897b0a80eb4df5f19453@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, chuansheng.liu@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, chuansheng.liu@intel.com
-In-Reply-To: <1351098455.15558.1421.camel@cliu38-desktop-build>
-References: <1351098455.15558.1421.camel@cliu38-desktop-build>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] tick: Correct the comments for tick_sched_timer(
- )
-Git-Commit-ID: b8f61116c1ce342804a0897b0a80eb4df5f19453
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 01 Nov 2012 14:38:22 -0700 (PDT)
+	Thu, 1 Nov 2012 17:39:25 -0400
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: [PATCH v3 0/4] cbus/retu drivers
+Date: Thu,  1 Nov 2012 23:39:16 +0200
+Message-Id: <1351805960-7612-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b8f61116c1ce342804a0897b0a80eb4df5f19453
-Gitweb:     http://git.kernel.org/tip/b8f61116c1ce342804a0897b0a80eb4df5f19453
-Author:     Chuansheng Liu <chuansheng.liu@intel.com>
-AuthorDate: Thu, 25 Oct 2012 01:07:35 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 1 Nov 2012 12:13:59 +0100
+This patch set introduces drivers for CBUS access and Retu multifunction
+chip found on Nokia Internet Tablets (770, N800, N810). It would be
+nice get these patches applied as the functionality of these devices is
+severely lacking without Retu. E.g. watchdog support is mandatory at
+least on Nokia N800, you cannot currently run the mainline kernel for
+longer than ~60 seconds (there is no way to disable the watchdog).
 
-tick: Correct the comments for tick_sched_timer()
+Drivers originate from linux-omap cbus branch and have been cleaned
+up/rewritten around i2c and MFD core.
 
-In the comments of function tick_sched_timer(), the sentence
-"timer->base->cpu_base->lock held" is not right.
+Patches have been tested on top of 3.7-rc3 with Nokia N800 (watchdog
+feeding works, power off shuts down the device, power button triggers
+IRQs and input events, loading and unloading retu-pwrbutton module in a
+loop while manically pressing the power button does not crash the kernel).
 
-In function __run_hrtimer(), before call timer->function(),
-the cpu_base->lock has been unlocked.
+Changes since the second version (https://lkml.org/lkml/2012/10/31/520):
+	- i2c-cbus:
+		- move i2c-cbus.h under linux/platform_data
+	- retu-mfd
+		- replace "&retu_pwrbutton_res[0]" expression with simpler
+		  "retu_pwrbutton_res".
+	- retu-pwrbutton:
+		- eliminate struct retu_pwrbutton
+		- delete checks for duplicate events
+		- rework probe to avoid races
+		- disable IRQ before unregister in retu_pwrbutton_remove() to
+		  avoid races
+		- eliminate double free in retu_pwrbutton_remove()
+		- add .owner = THIS_MODULE
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-Cc: fei.li@intel.com
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1351098455.15558.1421.camel@cliu38-desktop-build
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/tick-sched.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Changes since the first version (https://lkml.org/lkml/2012/9/3/265):
+	- i2c-cbus:
+		- use devres
+		- improve comments
+		- simplify and delete redundant code
+		- refactoring & bug fixes on error handling
+		- discard "input" parameter from cbus_send_bit/data()
+	- retu-mfd:
+		- use devres
+		- use regmap
+	- retu_wdt: use devres
+	- retu-pwrbutton: use devres
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 766d4c4..77729cc 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -809,7 +809,7 @@ void tick_check_idle(int cpu)
- #ifdef CONFIG_HIGH_RES_TIMERS
- /*
-  * We rearm the timer until we get disabled by the idle code.
-- * Called with interrupts disabled and timer->base->cpu_base->lock held.
-+ * Called with interrupts disabled.
-  */
- static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
- {
+Changes since the RFC version
+(http://marc.info/?l=linux-omap&m=134618967116737&w=2):
+        - added DT support for getting i2c-cbus GPIO pins
+        - merged n8x0 board file changes into i2c-cbus patch
+        - corrected typo in Kconfig for MFD_RETU
+        - added power off functionality to retu-mfd
+        - added IRQ functionality to retu-mfd
+        - added power button key driver
+        - some cleanups
+
+Aaro Koskinen (4):
+  i2c: introduce i2c-cbus driver
+  mfd: introduce retu-mfd driver
+  watchdog: introduce retu_wdt driver
+  input: misc: introduce retu-pwrbutton
+
+ arch/arm/mach-omap2/board-n8x0.c       |   42 +++++
+ drivers/i2c/busses/Kconfig             |   10 +
+ drivers/i2c/busses/Makefile            |    1 +
+ drivers/i2c/busses/i2c-cbus.c          |  300 ++++++++++++++++++++++++++++++++
+ drivers/input/misc/Kconfig             |   10 +
+ drivers/input/misc/Makefile            |    1 +
+ drivers/input/misc/retu-pwrbutton.c    |  102 +++++++++++
+ drivers/mfd/Kconfig                    |    9 +
+ drivers/mfd/Makefile                   |    1 +
+ drivers/mfd/retu-mfd.c                 |  264 ++++++++++++++++++++++++++++
+ drivers/watchdog/Kconfig               |   12 ++
+ drivers/watchdog/Makefile              |    1 +
+ drivers/watchdog/retu_wdt.c            |  178 +++++++++++++++++++
+ include/linux/mfd/retu.h               |   22 +++
+ include/linux/platform_data/i2c-cbus.h |   27 +++
+ 15 files changed, 980 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/i2c/busses/i2c-cbus.c
+ create mode 100644 drivers/input/misc/retu-pwrbutton.c
+ create mode 100644 drivers/mfd/retu-mfd.c
+ create mode 100644 drivers/watchdog/retu_wdt.c
+ create mode 100644 include/linux/mfd/retu.h
+ create mode 100644 include/linux/platform_data/i2c-cbus.h
+
+-- 
+1.7.2.5
+
