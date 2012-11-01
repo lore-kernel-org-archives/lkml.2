@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762430Ab2KAWaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 18:30:21 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:43627 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759477Ab2KAWaT (ORCPT
+	id S1762445Ab2KAWap (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:30:45 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:53252 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761979Ab2KAWao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 18:30:19 -0400
-Date: Thu, 1 Nov 2012 15:30:17 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-cc: Jan Beulich <jbeulich@suse.com>, jeremy@goop.org, x86@kernel.org,
-        tglx@linutronix.de, torvalds@linux-foundation.org,
-        xen-devel@lists.xensource.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [patch] x86, xen: fix build dependency when USB_SUPPORT is not
- enabled
-In-Reply-To: <20121101220520.GC18854@localhost.localdomain>
-Message-ID: <alpine.DEB.2.00.1211011527541.26123@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1210312239120.31758@chino.kir.corp.google.com> <20121101124912.GA10743@localhost.localdomain> <5092D5EA020000780008EB85@nat28.tlf.novell.com> <20121101220520.GC18854@localhost.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 1 Nov 2012 18:30:44 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.LFD.2.02.1211012213460.2756@ionos>
+References: <20121031003258.811955127@goodmis.org>
+	<20121031003314.763160265@goodmis.org>
+	<CAN8Q1EcVfzJJh+XMeXMMk33kwyyyRoEWsuEbSQqVW0Vz3i3Vuw@mail.gmail.com>
+	<alpine.LFD.2.02.1211012213460.2756@ionos>
+Date: Thu, 1 Nov 2012 15:30:42 -0700
+X-Google-Sender-Auth: Lm5XcJSQU3czRP6oW9WaZqIARKs
+Message-ID: <CAN8Q1Ecq9T5HC60_ta8Xr9kKyAe8Fjrd8znV9MpDTYqkSSptOw@mail.gmail.com>
+Subject: Re: [PATCH RT 3/4] net: netfilter: Serialize xt_write_recseq sections
+ on RT
+From: Peter LaDow <petela@gocougs.wsu.edu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Nov 2012, Konrad Rzeszutek Wilk wrote:
+On Thu, Nov 1, 2012 at 2:26 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Cough. You are missing a boat load of crucial fixes. There is a damned
+> good reason why 3.0.stable got 12 updates and the -rt version 14.
 
-> Oh. I missed that part - so do you think that this patch should also
-> be used? Or do you think there is another way to fix this?
-> 
+I don't doubt there are.  But we've only experienced one problem
+between 3.0.36-rt58 and 3.0.48-rt72.  Indeed, it might be easier to
+evaluate the risk if all the changelogs were readily available.  So
+far, however, we haven't discovered any other issues that give us any
+concerns.
 
-Appears to be fixed by d99e65bda806 ("USB: fix build with XEN and 
-EARLY_PRINTK_DBGP enabled but USB_SUPPORT disabled") as of this morning's 
-tree which relies on CONFIG_USB, which effectively requires 
-CONFIG_USB_SUPPORT that this patch provides, so feel free to drop mine.
+> Your risk assessment is definitley interesting.
+
+We have specifically tested 3.0.36-rt58 for performance in our
+application.  Moving to 3.0.48-rt72 poses risk about whether would
+still be able to meet our performance requirements.  And with regard
+to stability, the only issue we've had since our earlier moved to
+3.0.36-rt58 was the netfilter problem.  We initially only saw the
+problem on PPP related interfaces, so we reverted to 3.0.3 (non-rt)
+for PPP related issues.
+
+Now, if you think there are some issues that should raise eyebrows, or
+can point me to a list of changelogs, I'd be happy to evaluate them.
+
+Thanks,
+Pete
