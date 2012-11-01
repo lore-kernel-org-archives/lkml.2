@@ -1,92 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757670Ab2KAC7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 22:59:12 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:34963 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab2KAC7J (ORCPT
+	id S1757811Ab2KADOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 23:14:31 -0400
+Received: from tw-mx2.synaptics.com.tw ([203.163.83.68]:58859 "EHLO
+	tw-mx2.synaptics.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757336Ab2KADO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 22:59:09 -0400
-X-Spam-Score: -106.8
-Message-ID: <5091E5B8.5080104@asianux.com>
-Date: Thu, 01 Nov 2012 11:00:08 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Wed, 31 Oct 2012 23:14:29 -0400
+From: Alexandra Chin <alexandra.chin@tw.synaptics.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Mahesh Srinivasan <msrinivasan@synaptics.com>,
+        Alex Chang <alex.chang@tw.synaptics.com>,
+        Scott Lin <scott.lin@tw.synaptics.com>,
+        Christopher Heiny <Cheiny@synaptics.com>
+Subject: RE: [PATCH] staging: ste_rmi4: Convert to Type-B support
+Thread-Topic: [PATCH] staging: ste_rmi4: Convert to Type-B support
+Thread-Index: AQHNt0iaVH28WIkHEkKTYbYZL4AhCZfTOqSAgAELgJA=
+Date: Thu, 1 Nov 2012 03:14:10 +0000
+Message-ID: <CC51EC7B5B7F984AA566DC102237848896F5F362@hkdcw-mail1.synaptics-inc.local>
+References: <CC51EC7B5B7F984AA566DC102237848896F590C0@hkdcw-mail1.synaptics-inc.local>
+ <20121003180121.GA4198@polaris.bitmath.org>
+ <CC51EC7B5B7F984AA566DC102237848896F5F20B@hkdcw-mail1.synaptics-inc.local>
+ <20121031184347.GA1530@polaris.bitmath.org>
+In-Reply-To: <20121031184347.GA1530@polaris.bitmath.org>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-HK
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.14.51.94]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Ric Wheeler <rwheeler@redhat.com>, Jun YOSHIDA <jun@asianux.com>
-Subject: [Consult]  "gifts" to Red Hat.
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA13Eg1o022774
 
-Hello linux-kernel@vger.kernel.org:
+Hi Henrik,
 
-1) Sorry for bothering you, firstly.
+I see what you mean. Input subsystem handles multi-touch tracking for input driver.
+I will update reporting process, and resubmit a patch against 3.7-rcX.
+Greatly appreciate your comments.
 
-   A) Asianux have found, analysed, and also provided the solving ways
-to the issues which only relative with Red Hat (public kernel not have),
-we can call them in short words "gifts".
-
-   B) The relative members of Red Hat suggested Asianux to send these
-"gifts" to public kernel mailing list (linux-*@vger.kernel.org), please
-see the details in bottom of this mail.
-
-   C) I want to consult: "is it suitable to talk about these 'gifts' in
-linux-*@vger.kernel.org" ?
-
-
-2) for Asianux:
-
-   A) Asianux will provide their contributes to the Open Source, just as
-Asianux have already get benefits from the Open Source.
-
-   B) Finding, analysing, and providing solving ways is one of important
-ways to contributes to the Open Source.
-
-   C) Asianux will do what they can do for Open Source
-      focus on Linux kernel (not only Red Hat, but also public kernel)
-
-
-3) please feed back:
-
-   A) welcome any members to giving any suggestions and completions.
-
-   B) if none-reply within 2 weeks, Asianux will see "it is suitable".
-
-   C) thanks.
-
-Appendix:
-
-The communication between gang.chen@asianux.com and rwheeler@redhat.com
--------------------------------------------------------------------------
-ÓÚ 2012Äê10ÔÂ24ÈÕ 19:07, Ric Wheeler Ğ´µÀ:
-> On 10/24/2012 06:24 AM, Chen Gang wrote:
->> Hi Ric,
->>
->>
->> 1) I have sent to this mail to linux-nfs@vger.kernel.org.
->
-> Great!
->
-> What you need to do is to post the question there and also a test
-> with the upstream kernel version.
->>
->> 2) I want to know:  "Why send an issue to a public kernel mail list
->> which is only relative with Red Hat own ??".
->
-> Our developers will see your post and will follow up based on the
-> upstream conversation if we think it is a feature our customer base
-> (and supported configurations) will see.
->
-> We are *not* paid to support other distributions or their developer
-> teams in debugging and supporting your code base.
->
-
-
--- 
-Chen Gang
-
-Asianux Corporation
+Alexandra Chin
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
