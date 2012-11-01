@@ -1,76 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762155Ab2KASc6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 14:32:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5878 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978Ab2KAScy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 14:32:54 -0400
-Date: Thu, 1 Nov 2012 19:33:24 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] percpu_rw_semaphore: reimplement to not block the
-	readers unnecessarily
-Message-ID: <20121101183324.GA30442@redhat.com>
-References: <20121017224430.GC2518@linux.vnet.ibm.com> <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <20121101154340.GH3027@linux.vnet.ibm.com>
+	id S933155Ab2KASd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 14:33:58 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61264 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932075Ab2KASd4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 14:33:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121101154340.GH3027@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121101101233.17ffcf5a@skate>
+References: <1351719113-30880-1-git-send-email-linus.walleij@linaro.org>
+	<5091CA18.7020905@gmail.com>
+	<CACRpkda06BbFOiX1WSqNLM-R5Es-Nd6btUNq2mMDuH7s3jA2cw@mail.gmail.com>
+	<20121101101233.17ffcf5a@skate>
+Date: Thu, 1 Nov 2012 19:33:55 +0100
+Message-ID: <CACRpkdaYyoYRg+ZnK1z4n39eO2c+U0uL=Ttsa83S2e6h6=XJag@mail.gmail.com>
+Subject: Re: [PATCH] ARM: plat-versatile: move FPGA irq driver to drivers/irqchip
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Rob Herring <robherring2@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        Thomas Gleixner <tglx@linutronix.de>, arm@kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul, thanks.
-
-Sorry, I can't reply today, just one note...
-
-On 11/01, Paul E. McKenney wrote:
+On Thu, Nov 1, 2012 at 10:12 AM, Thomas Petazzoni
+<thomas.petazzoni@free-electrons.com> wrote:
+> On Thu, 1 Nov 2012 10:00:19 +0100, Linus Walleij wrote:
 >
-> OK, so it looks to me that this code relies on synchronize_sched()
-> forcing a memory barrier on each CPU executing in the kernel.
-
-No, the patch tries to avoid this assumption, but probably I missed
-something.
-
-> 1.	A task running on CPU 0 currently write-holds the lock.
+>> Sounds like a separate patch but surely we can do this. Is Thomas'
+>> stuff on a branch somewhere that I can then rebase upon to get
+>> it upstream? I was planning to get this series as such to the
+>> ARM SoC maintainers soon-ish.
 >
-> 2.	CPU 1 is running in the kernel, executing a longer-than-average
-> 	loop of normal instructions (no atomic instructions or memory
-> 	barriers).
->
-> 3.	CPU 0 invokes percpu_up_write(), calling up_write(),
-> 	synchronize_sched(), and finally mutex_unlock().
+> Not at the moment. But do you want me to put that in a branch, and
+> agglomerate all the related patches (posted by Rob for GIC/VIC and by
+> you for the FPGA IRQ controller), and then later send a pull request to
+> Arnd with those changes?
 
-And my expectation was, this should be enough because ...
+Whatever I can base on ... I would just push the stuff you consider
+stable to ARM SoC as quickly as possible so we can grab it
+from there and base development on it. Then each of us can
+just request the ARM SoC people to pull it and state that it
+is based on that branch so they need to pull it into the same
+place.
 
-> 4.	CPU 1 executes percpu_down_read(), which calls update_fast_ctr(),
+> Also, again, the whole point of the initial infrastructure in
+> drivers/irqchip/ was to avoid adding per-driver header files in
+> include/linux/irqchip/, so there should at least be a long term plan on
+> how to remove those headers file, either by moving more platforms to
+> DT, or my extending the irqchip infrastructure to cover more features.
 
-since update_fast_ctr does preempt_disable/enable it should see all
-modifications done by CPU 0.
+So the header in this case looks like this:
 
-IOW. Suppose that the writer (CPU 0) does
+#ifndef PLAT_FPGA_IRQ_H
+#define PLAT_FPGA_IRQ_H
 
-	percpu_done_write();
-	STORE;
-	percpu_up_write();
+struct device_node;
+struct pt_regs;
 
-This means
+void fpga_handle_irq(struct pt_regs *regs);
+void fpga_irq_init(void __iomem *, const char *, int, int, u32,
+                struct device_node *node);
+int fpga_irq_of_init(struct device_node *node,
+                     struct device_node *parent);
 
-	STORE;
-	synchronize_sched();
-	mutex_unlock();
+#endif
 
-Now. Do you mean that the next preempt_disable/enable can see the
-result of mutex_unlock() but not STORE?
+So this is the stuff that needs to be called from the machine
+descriptor, nothing else.
 
-Oleg.
+Example:
 
+MACHINE_START(INTEGRATOR, "ARM-Integrator")
+        /* Maintainer: ARM Ltd/Deep Blue Solutions Ltd */
+        .atag_offset    = 0x100,
+        .reserve        = integrator_reserve,
+        .map_io         = ap_map_io,
+        .init_early     = ap_init_early,
+        .init_irq       = ap_init_irq,
+        .handle_irq     = fpga_handle_irq,
+        .timer          = &ap_timer,
+        .init_machine   = ap_init,
+        .restart        = integrator_restart,
+MACHINE_END
+
+The .init_irq hooks above contain some other stuff apart from just
+calling these directly, but the problem remains: how to cross-call
+these functions from the machine start since the IRQs are needed
+by say the timer and everything else.
+
+include/linux/irqchip/bcm2835.h look exactly the same (just one
+function instead of separete DT/non-DT versions) so
+there isn't exactly a precedent on how to solve this in an
+elegant way.
+
+But maybe your patch set contains the silver bullet that will decouple
+this and fix everything?
+
+Then I can do a patch to convert this and the BCM2835 too
+probably...
+
+Yours,
+Linus Walleij
