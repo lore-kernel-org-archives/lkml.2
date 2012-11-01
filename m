@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759023Ab2JaRZI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:25:08 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:57339 "EHLO
+	id S1759194Ab2JaRZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:25:55 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:57334 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758943Ab2JaRZF (ORCPT
+	by vger.kernel.org with ESMTP id S1758752Ab2JaRZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:25:05 -0400
+	Wed, 31 Oct 2012 13:25:03 -0400
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
 To: Tony Lindgren <tony@atomide.com>
 Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
         linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
         Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
         linux-omap@vger.kernel.org
-Subject: [PATCH 3/3] ti-tscadc-dt: Create ti-tscadc-dt DT adapter device
-Date: Thu,  1 Nov 2012 17:18:02 +0200
-Message-Id: <1351783082-11411-4-git-send-email-panto@antoniou-consulting.com>
+Subject: [PATCH 2/3] da8xx-dt: Create da8xx DT adapter device
+Date: Thu,  1 Nov 2012 17:18:01 +0200
+Message-Id: <1351783082-11411-3-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com>
 References: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com>
@@ -25,35 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 omap_device is going private.
 
-Move the ti-tscadc-dt adapter device to arch/arm/mach-omap2.
+Move the da8xx-dt adapter device to arch/arm/mach-omap2.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- arch/arm/mach-omap2/Makefile       |   1 +
- arch/arm/mach-omap2/ti-tscadc-dt.c | 155 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 156 insertions(+)
- create mode 100644 arch/arm/mach-omap2/ti-tscadc-dt.c
+ arch/arm/mach-omap2/Makefile   |   3 +
+ arch/arm/mach-omap2/da8xx-dt.c | 197 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 200 insertions(+)
+ create mode 100644 arch/arm/mach-omap2/da8xx-dt.c
 
 diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-index 3a9a0ff..1eab37b 100644
+index fe40d9e..3a9a0ff 100644
 --- a/arch/arm/mach-omap2/Makefile
 +++ b/arch/arm/mach-omap2/Makefile
-@@ -202,6 +202,7 @@ endif
+@@ -200,6 +200,9 @@ ifneq ($(CONFIG_DRM_OMAP),)
+ obj-y					+= drm.o
+ endif
  
- # AM3XX Device Tree adapters for legacy drivers
- obj-$(CONFIG_SOC_AM33XX)		+= da8xx-dt.o
-+obj-$(CONFIG_SOC_AM33XX)		+= ti-tscadc-dt.o
- 
++# AM3XX Device Tree adapters for legacy drivers
++obj-$(CONFIG_SOC_AM33XX)		+= da8xx-dt.o
++
  # Specific board support
  obj-$(CONFIG_MACH_OMAP_GENERIC)		+= board-generic.o
-diff --git a/arch/arm/mach-omap2/ti-tscadc-dt.c b/arch/arm/mach-omap2/ti-tscadc-dt.c
+ obj-$(CONFIG_MACH_OMAP_H4)		+= board-h4.o
+diff --git a/arch/arm/mach-omap2/da8xx-dt.c b/arch/arm/mach-omap2/da8xx-dt.c
 new file mode 100644
-index 0000000..0a1a17a
+index 0000000..d3c6f48
 --- /dev/null
-+++ b/arch/arm/mach-omap2/ti-tscadc-dt.c
-@@ -0,0 +1,155 @@
++++ b/arch/arm/mach-omap2/da8xx-dt.c
+@@ -0,0 +1,197 @@
 +/*
-+ * TI-TSCADC-DT: Device tree adapter using the legacy driver
++ * DA8XX-DT: Device tree adapter using the legacy driver
 + *
 + * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
 + * Copyright (C) 2012 Texas Instruments Inc.
@@ -80,133 +82,175 @@ index 0000000..0a1a17a
 +#include <linux/err.h>
 +#include <linux/of.h>
 +#include <linux/of_device.h>
++#include <linux/of_gpio.h>
++#include <video/da8xx-fb.h>
 +#include <linux/pinctrl/pinctrl.h>
 +#include <linux/pinctrl/pinmux.h>
 +#include <linux/pinctrl/consumer.h>
 +#include <linux/clk.h>
-+#include <linux/input/ti_am335x_tsc.h>
-+#include <linux/platform_data/ti_am335x_adc.h>
-+#include <linux/mfd/ti_am335x_tscadc.h>
 +#include <plat/clock.h>
 +#include <plat/omap_device.h>
 +
-+struct ti_tscadc_priv {
-+	struct omap_hwmod *tsc_oh;
-+	struct tsc_data tsc_data;
-+	struct adc_data adc_data;
-+	struct mfd_tscadc_board tscadc_data;
-+	struct platform_device *tscadc_pdev;
++struct da8xx_priv {
++	struct da8xx_lcdc_platform_data lcd_pdata;
++	struct lcd_ctrl_config lcd_cfg;
++	struct display_panel lcd_panel;
++	struct platform_device *lcdc_pdev;
++	struct omap_hwmod *lcdc_oh;
++	struct resource lcdc_res[1];
++	int power_dn_gpio;
 +};
 +
-+static const struct of_device_id of_ti_tscadc_dt_match[] = {
-+	{ .compatible = "ti-tscadc-dt", },
++static const struct of_device_id of_da8xx_dt_match[] = {
++	{ .compatible = "da8xx-dt", },
 +	{},
 +};
 +
-+static int __devinit ti_tscadc_dt_probe(struct platform_device *pdev)
++static int __devinit da8xx_dt_probe(struct platform_device *pdev)
 +{
-+	struct ti_tscadc_priv *priv;
++	struct da8xx_priv *priv;
++	struct clk *disp_pll;
 +	struct pinctrl *pinctrl;
-+	u32 val;
-+	int ret;
++	u32 disp_pll_val;
++	const char *panel_type;
++	int ret = -EINVAL;
 +
 +	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
 +	if (priv == NULL) {
 +		dev_err(&pdev->dev, "Failed to allocate priv\n");
 +		return -ENOMEM;
 +	}
++	priv->power_dn_gpio = -1;
 +
 +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
 +	if (IS_ERR(pinctrl))
 +		dev_warn(&pdev->dev,
 +			"pins are not configured from the driver\n");
 +
-+	ret = of_property_read_u32(pdev->dev.of_node, "tsc-wires", &val);
++	ret = of_property_read_u32(pdev->dev.of_node, "disp-pll",
++			&disp_pll_val);
 +	if (ret != 0) {
-+		dev_info(&pdev->dev, "no tsc-wires property; disabling TSC\n");
-+		val = 0;
++		dev_err(&pdev->dev, "Failed to read disp-pll property\n");
++		return ret;
 +	}
-+	priv->tsc_data.wires = val;
 +
-+	if (priv->tsc_data.wires > 0) {
-+		ret = of_property_read_u32(pdev->dev.of_node,
-+				"tsc-x-plate-resistance", &val);
++	ret = of_property_read_string(pdev->dev.of_node, "panel-type",
++			&panel_type);
++	if (ret != 0) {
++		dev_err(&pdev->dev, "Failed to read panel-type property\n");
++		return ret;
++	}
++
++	/* conf_disp_pll(disp_pll); */
++	disp_pll = clk_get(NULL, "dpll_disp_ck");
++	if (IS_ERR(disp_pll)) {
++		dev_err(&pdev->dev, "Cannot clk_get disp_pll\n");
++		return PTR_ERR(disp_pll);
++	}
++	ret = clk_set_rate(disp_pll, disp_pll_val);
++	clk_put(disp_pll);
++	if (ret != 0) {
++		dev_err(&pdev->dev, "Failed to set disp_pll\n");
++		return ret;
++	}
++
++	ret = of_get_named_gpio_flags(pdev->dev.of_node, "powerdn-gpio",
++			0, NULL);
++	if (IS_ERR_VALUE(ret)) {
++		dev_info(&pdev->dev, "No power down GPIO\n");
++	} else {
++		priv->power_dn_gpio = ret;
++
++		ret = devm_gpio_request(&pdev->dev, priv->power_dn_gpio,
++				"da8xx-dt:PDN");
 +		if (ret != 0) {
-+			dev_err(&pdev->dev, "Failed to read "
-+					"tsc-x-plate-resistance property\n");
++			dev_err(&pdev->dev, "Failed to gpio_request\n");
 +			return ret;
 +		}
-+		priv->tsc_data.x_plate_resistance = val;
 +
-+		ret = of_property_read_u32(pdev->dev.of_node,
-+				"tsc-steps", &val);
++		ret = gpio_direction_output(priv->power_dn_gpio, 1);
 +		if (ret != 0) {
-+			dev_err(&pdev->dev, "Failed to read "
-+					"tsc-steps property\n");
++			dev_err(&pdev->dev, "Failed to set powerdn to 1\n");
 +			return ret;
 +		}
-+		priv->tsc_data.steps_to_configure = val;
 +	}
 +
-+	ret = of_property_read_u32(pdev->dev.of_node, "adc-channels", &val);
-+	if (ret != 0) {
-+		dev_info(&pdev->dev, "No adc-channels property; "
-+				"disabling adc\n");
-+		val = 0;
-+	}
-+	priv->adc_data.adc_channels = val;
++	/* display_panel */
++	priv->lcd_panel.panel_type	= QVGA;
++	priv->lcd_panel.max_bpp		= 16;
++	priv->lcd_panel.min_bpp		= 16;
++	priv->lcd_panel.panel_shade	= COLOR_ACTIVE;
 +
-+	priv->tscadc_data.tsc_init = &priv->tsc_data;
-+	priv->tscadc_data.adc_init = &priv->adc_data;
++	/* lcd_ctrl_config */
++	priv->lcd_cfg.p_disp_panel	= &priv->lcd_panel;
++	priv->lcd_cfg.ac_bias		= 255;
++	priv->lcd_cfg.ac_bias_intrpt	= 0;
++	priv->lcd_cfg.dma_burst_sz	= 16;
++	priv->lcd_cfg.bpp		= 16;
++	priv->lcd_cfg.fdd		= 0x80;
++	priv->lcd_cfg.tft_alt_mode	= 0;
++	priv->lcd_cfg.stn_565_mode	= 0;
++	priv->lcd_cfg.mono_8bit_mode	= 0;
++	priv->lcd_cfg.invert_line_clock	= 1;
++	priv->lcd_cfg.invert_frm_clock	= 1;
++	priv->lcd_cfg.sync_edge		= 0;
++	priv->lcd_cfg.sync_ctrl		= 1;
++	priv->lcd_cfg.raster_order	= 0;
 +
-+	priv->tsc_oh = omap_hwmod_lookup("adc_tsc");
-+	if (priv->tsc_oh == NULL) {
-+		dev_err(&pdev->dev, "Could not lookup HWMOD %s\n", "adc_tsc");
++	/* da8xx_lcdc_platform_data */
++	strcpy(priv->lcd_pdata.manu_name, "BBToys");
++	priv->lcd_pdata.controller_data = &priv->lcd_cfg;
++	strcpy(priv->lcd_pdata.type, panel_type);
++
++	priv->lcdc_oh = omap_hwmod_lookup("lcdc");
++	if (priv->lcdc_oh == NULL) {
++		dev_err(&pdev->dev, "Failed to lookup omap_hwmod lcdc\n");
 +		return -ENODEV;
 +	}
 +
-+	priv->tscadc_pdev = omap_device_build("ti_tscadc", -1, priv->tsc_oh,
-+			&priv->tscadc_data, sizeof(priv->tscadc_data),
++	priv->lcdc_pdev = omap_device_build("da8xx_lcdc", 0, priv->lcdc_oh,
++			&priv->lcd_pdata,
++			sizeof(struct da8xx_lcdc_platform_data),
 +			NULL, 0, 0);
-+	if (priv->tscadc_pdev == NULL) {
-+		dev_err(&pdev->dev, "Could not create tsc_adc device\n");
++	if (priv->lcdc_pdev == NULL) {
++		dev_err(&pdev->dev, "Failed to build LCDC device\n");
 +		return -ENODEV;
 +	}
 +
-+	dev_info(&pdev->dev, "TI tscadc pdev created OK\n");
++	dev_info(&pdev->dev, "Registered bone LCDC OK.\n");
 +
 +	platform_set_drvdata(pdev, priv);
 +
 +	return 0;
 +}
 +
-+static int __devexit ti_tscadc_dt_remove(struct platform_device *pdev)
++static int __devexit da8xx_dt_remove(struct platform_device *pdev)
 +{
 +	return -EINVAL;	/* not supporting removal yet */
 +}
 +
-+static struct platform_driver ti_tscadc_dt_driver = {
-+	.probe		= ti_tscadc_dt_probe,
-+	.remove		= __devexit_p(ti_tscadc_dt_remove),
++static struct platform_driver da8xx_dt_driver = {
++	.probe		= da8xx_dt_probe,
++	.remove		= __devexit_p(da8xx_dt_remove),
 +	.driver		= {
-+		.name	= "ti_tscadc-dt",
++		.name	= "da8xx-dt",
 +		.owner	= THIS_MODULE,
-+		.of_match_table = of_ti_tscadc_dt_match,
++		.of_match_table = of_da8xx_dt_match,
 +	},
 +};
 +
-+static __init int ti_tscadc_dt_init(void)
++static __init int da8xx_dt_init(void)
 +{
-+	return platform_driver_register(&ti_tscadc_dt_driver);
++	return platform_driver_register(&da8xx_dt_driver);
 +}
 +
-+static __exit void ti_tscadc_dt_exit(void)
++static __exit void da8xx_dt_exit(void)
 +{
-+	platform_driver_unregister(&ti_tscadc_dt_driver);
++	platform_driver_unregister(&da8xx_dt_driver);
 +}
 +
-+postcore_initcall(ti_tscadc_dt_init);
-+module_exit(ti_tscadc_dt_exit);
++postcore_initcall(da8xx_dt_init);
++module_exit(da8xx_dt_exit);
 -- 
 1.7.12
 
