@@ -1,131 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761353Ab2KABZz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 21:25:55 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:58210 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756931Ab2KABZx convert rfc822-to-8bit (ORCPT
+	id S1761383Ab2KAB12 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 21:27:28 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48683 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761179Ab2KAB10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 21:25:53 -0400
-From: "Yangfei (Felix)" <felix.yang@huawei.com>
-To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: Fix the "WFI" instruction opcode definition.
-Thread-Topic: [PATCH] ARM: Fix the "WFI" instruction opcode definition.
-Thread-Index: Ac23z6d/3tbLKIaaQtK80YZQCsebpQ==
-Date: Thu, 1 Nov 2012 01:24:38 +0000
-Message-ID: <DA41BE1DDCA941489001C7FBD7A8820E3CB5512E@szxeml549-mbx.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.135.72.226]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 31 Oct 2012 21:27:26 -0400
+X-AuditID: 9c930179-b7c8bae000003559-51-5091cffcd49e
+Date: Thu, 1 Nov 2012 10:33:25 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Paul Turner <pjt@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, John Stultz <john.stultz@linaro.org>,
+        Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, sanjay@google.com,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [RFC v2] Support volatile range for anon vma
+Message-ID: <20121101013325.GD26256@bbox>
+References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
+ <20121031143524.0509665d.akpm@linux-foundation.org>
+ <CAPM31RKm89s6PaAnfySUD-f+eGdoZP6=9DHy58tx_4Zi8Z9WPQ@mail.gmail.com>
+ <20121101005052.GB26256@bbox>
+ <CAPM31RLNN3w5HOpuY8vX0af4j9FEPVLx1nPTrEA3ukGhG_Ssbg@mail.gmail.com>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM31RLNN3w5HOpuY8vX0af4j9FEPVLx1nPTrEA3ukGhG_Ssbg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current "WFI" opcode definiton causes CPU hot-plug feature fails to work
-if the kernel is built with CONFIG_THUMB2_KERNEL/CONFIG_CPU_ENDIAN_BE8 being
-defined. An invalid instruction exception will be generated.
+On Wed, Oct 31, 2012 at 06:22:58PM -0700, Paul Turner wrote:
+> On Wed, Oct 31, 2012 at 5:50 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > Hello,
+> >
+> > On Wed, Oct 31, 2012 at 02:59:07PM -0700, Paul Turner wrote:
+> >> On Wed, Oct 31, 2012 at 2:35 PM, Andrew Morton
+> >> <akpm@linux-foundation.org> wrote:
+> >> >
+> >> > On Tue, 30 Oct 2012 10:29:54 +0900
+> >> > Minchan Kim <minchan@kernel.org> wrote:
+> >> >
+> >> > > This patch introudces new madvise behavior MADV_VOLATILE and
+> >> > > MADV_NOVOLATILE for anonymous pages. It's different with
+> >> > > John Stultz's version which considers only tmpfs while this patch
+> >> > > considers only anonymous pages so this cannot cover John's one.
+> >> > > If below idea is proved as reasonable, I hope we can unify both
+> >> > > concepts by madvise/fadvise.
+> >> > >
+> >> > > Rationale is following as.
+> >> > > Many allocators call munmap(2) when user call free(3) if ptr is
+> >> > > in mmaped area. But munmap isn't cheap because it have to clean up
+> >> > > all pte entries and unlinking a vma so overhead would be increased
+> >> > > linearly by mmaped area's size.
+> >> >
+> >> > Presumably the userspace allocator will internally manage memory in
+> >> > large chunks, so the munmap() call frequency will be much lower than
+> >> > the free() call frequency.  So the performance gains from this change
+> >> > might be very small.
+> >>
+> >> I don't think I strictly understand the motivation from a
+> >> malloc-standpoint here.
+> >>
+> >> These days we (tcmalloc) use madvise(..., MADV_DONTNEED) when we want
+> >> to perform discards on Linux.    For any reasonable allocator (short
+> >> of binding malloc --> mmap, free --> unmap) this seems a better
+> >> choice.
+> >>
+> >> Note also from a performance stand-point I doubt any allocator (which
+> >> case about performance) is going to want to pay the cost of even a
+> >> null syscall about typical malloc/free usage (consider: a tcmalloc
+> >
+> > Good point.
+> >
+> >> malloc/free pairis currently <20ns).  Given then that this cost is
+> >> amortized once you start doing discards on larger blocks MADV_DONTNEED
+> >> seems a preferable interface:
+> >> - You don't need to reconstruct an arena when you do want to allocate
+> >> since there's no munmap/mmap for the region to change about
+> >> - There are no syscalls involved in later reallocating the block.
+> >
+> > Above benefits are applied on MADV_VOLATILE, too.
+> > But as you pointed out, there is a little bit overhead than DONTNEED
+> > because allocator should call madvise(MADV_NOVOLATILE) before allocation.
+> > For mavise(NOVOLATILE) does just mark vma flag, it does need mmap_sem
+> > and could be a problem on parallel malloc/free workload as KOSAKI pointed out.
+> >
+> > In such case, we can change semantic so malloc doesn't need to call
+> > madivse(NOVOLATILE) before allocating. Then, page fault handler have to
+> > check whether this page fault happen by access of volatile vma. If so,
+> > it could return zero page instead of SIGBUS and mark the vma isn't volatile
+> > any more.
+> 
+> I think being able to determine whether the backing was discarded
+> (about a atomic transition to non-volatile) would be a required
+> property to make this useful for non-malloc use-cases.
+> 
 
-Signed-off-by: yangfei.kernel@gmail.com
----
- arch/arm/mach-exynos/hotplug.c   |    8 +++++++-
- arch/arm/mach-realview/hotplug.c |    8 +++++++-
- arch/arm/mach-shmobile/hotplug.c |    8 +++++++-
- 3 files changed, 21 insertions(+), 3 deletions(-)
+Absolutely.
 
-diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
-index f4d7dd2..823a0e4 100644
---- a/arch/arm/mach-exynos/hotplug.c
-+++ b/arch/arm/mach-exynos/hotplug.c
-@@ -18,11 +18,17 @@
- #include <asm/cacheflush.h>
- #include <asm/cp15.h>
- #include <asm/smp_plat.h>
-+#include <asm/opcodes.h>
- 
- #include <mach/regs-pmu.h>
- 
- #include "common.h"
- 
-+/*
-+ * Define opcode of the WFI instruction.
-+ */
-+#define __WFI __inst_arm_thumb16(0xe320f003, 0xbf30)
-+
- static inline void cpu_enter_lowpower(void)
- {
- 	unsigned int v;
-@@ -72,7 +78,7 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
- 		/*
- 		 * here's the WFI
- 		 */
--		asm(".word	0xe320f003\n"
-+		asm(__WFI
- 		    :
- 		    :
- 		    : "memory", "cc");
-diff --git a/arch/arm/mach-realview/hotplug.c b/arch/arm/mach-realview/hotplug.c
-index 53818e5..5271a1a 100644
---- a/arch/arm/mach-realview/hotplug.c
-+++ b/arch/arm/mach-realview/hotplug.c
-@@ -15,6 +15,12 @@
- #include <asm/cacheflush.h>
- #include <asm/cp15.h>
- #include <asm/smp_plat.h>
-+#include <asm/opcodes.h>
-+
-+/*
-+ * Define opcode of the WFI instruction.
-+ */
-+#define __WFI __inst_arm_thumb16(0xe320f003, 0xbf30)
- 
- static inline void cpu_enter_lowpower(void)
- {
-@@ -64,7 +70,7 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
- 		/*
- 		 * here's the WFI
- 		 */
--		asm(".word	0xe320f003\n"
-+		asm(__WFI
- 		    :
- 		    :
- 		    : "memory", "cc");
-diff --git a/arch/arm/mach-shmobile/hotplug.c b/arch/arm/mach-shmobile/hotplug.c
-index b09a0bd..0d7b7d1 100644
---- a/arch/arm/mach-shmobile/hotplug.c
-+++ b/arch/arm/mach-shmobile/hotplug.c
-@@ -20,6 +20,12 @@
- #include <mach/emev2.h>
- #include <asm/cacheflush.h>
- #include <asm/mach-types.h>
-+#include <asm/opcodes.h>
-+
-+/*
-+ * Define opcode of the WFI instruction.
-+ */
-++#define __WFI __inst_arm_thumb16(0xe320f003, 0xbf30)
- 
- static cpumask_t dead_cpus;
- 
-@@ -39,7 +45,7 @@ void shmobile_cpu_die(unsigned int cpu)
- 		/*
- 		 * here's the WFI
- 		 */
--		asm(".word	0xe320f003\n"
-+		asm(__WFI
- 		    :
- 		    :
- 		    : "memory", "cc");
---
+-- 
+Kind regards,
+Minchan Kim
