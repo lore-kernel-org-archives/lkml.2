@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab2KANOR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 09:14:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27492 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751593Ab2KANOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 09:14:16 -0400
-Message-ID: <5092758C.10309@redhat.com>
-Date: Thu, 01 Nov 2012 09:13:48 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1754900Ab2KANPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 09:15:04 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51232 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab2KANO7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 09:14:59 -0400
+Date: Thu, 1 Nov 2012 06:14:57 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, skinsbursky@parallels.com,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        baggins@pld-linux.org, arekm@pld-linux.org
+Subject: Re: [PATCH] lockd: fix races in per-net NSM client handling
+Message-ID: <20121101131457.GC20982@kroah.com>
+References: <1689813.hptKgzjpAu@localhost>
+ <20121031180550.GD30432@elie.Belkin>
+ <20121031182206.GB1542@kroah.com>
+ <46616972.aF1r9eoRhb@localhost>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Mike Galbraith <efault@gmx.de>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 02/31] sched, numa, mm: Describe the NUMA scheduling problem
- formally
-References: <20121025121617.617683848@chello.nl> <20121025124832.621452204@chello.nl> <20121101095658.GM3888@suse.de>
-In-Reply-To: <20121101095658.GM3888@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <46616972.aF1r9eoRhb@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2012 05:56 AM, Mel Gorman wrote:
-> On Thu, Oct 25, 2012 at 02:16:19PM +0200, Peter Zijlstra wrote:
->> This is probably a first: formal description of a complex high-level
->> computing problem, within the kernel source.
->>
->
-> Who does not love the smell of formal methods first thing in the
-> morning?
+On Thu, Nov 01, 2012 at 07:54:21AM +0100, Paweł Sikora wrote:
+> On Wednesday 31 of October 2012 11:22:06 Greg KH wrote:
+> > On Wed, Oct 31, 2012 at 11:05:51AM -0700, Jonathan Nieder wrote:
+> > > Hi,
+> > > 
+> > > Greg KH wrote:
+> > > > On Wed, Oct 31, 2012 at 06:27:36PM +0100, Paweł Sikora wrote:
+> > > 
+> > > >> the patch metioned in https://lkml.org/lkml/2012/10/24/175 seems to fix
+> > > >> the 3.6.3 oops (while 3.6.2 works fine) at 16-cores opteron server.
+> > > >> please queue this path for 3.6.$next.
+> > > >
+> > > > Is it in Linus's tree already?  If so, what is the git commit id?
+> > > 
+> > > One of
+> > > 
+> > >   a4ee8d978e47 LOCKD: fix races in nsm_client_get
+> > >   e498daa81295 LOCKD: Clear ln->nsm_clnt only when ln->nsm_users is zero
+> > > 
+> > > both of which were included in v3.6.5.
+> > 
+> > Ok, Paweł, does 3.6.5 work properly for you?
+> 
+> ~12h uptime with full cpu/nfs load and all servers with 3.6.5 seem to work stable.
 
-The only issue I have with this document is that it does not have
-any description of how the source code tries to solve the problem
-at hand.
+Wonderful, thanks for testing.
 
-A description of how the problem is solved will make the documentation
-useful to people trying to figure out why the NUMA code does what
-it does.
-
-Of course, since we still do not know what sched-numa needs to do
-in order to match autonuma performance, that description would have
-to be updated later, anyway.
-
--- 
-All rights reversed
+greg k-h
