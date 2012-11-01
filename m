@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759569Ab2KAUiP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 16:38:15 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:41336 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756080Ab2KAUiJ (ORCPT
+	id S1753224Ab2KAUjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 16:39:13 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49314 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750825Ab2KAUjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 16:38:09 -0400
-Date: Thu, 1 Nov 2012 17:38:01 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 00/25] perf test: Add perf_event_attr tests
-Message-ID: <20121101203800.GA3911@ghostprotocols.net>
-References: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
+	Thu, 1 Nov 2012 16:39:11 -0400
+Date: Thu, 1 Nov 2012 16:39:09 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jan Beulich <jbeulich@suse.com>
+cc: rdunlap@infradead.org, <sfr@canb.auug.org.au>,
+        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: linux-next: Tree for Oct 31 (ehci, dbgp)
+In-Reply-To: <5092D1AC020000780008EB60@nat28.tlf.novell.com>
+Message-ID: <Pine.LNX.4.44L0.1211011636410.1762-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 30, 2012 at 11:01:41PM +0100, Jiri Olsa escreveu:
-> hi,
-> this code tests the link between perf stat/record command line
-> options and final perf_event_attr struct values. Also it tests
-> the group fd linkage.
+On Thu, 1 Nov 2012, Jan Beulich wrote:
+
+> >>> Alan Stern <stern@rowland.harvard.edu> 11/01/12 4:28 PM >>>
+> >On Wed, 31 Oct 2012, Randy Dunlap wrote:
+> >> on x86_64:
+> >> 
+> >> drivers/built-in.o: In function `ehci_reset':
+> >> host.c:(.text+0x542a7e): undefined reference to `dbgp_reset_prep'
+> >> host.c:(.text+0x542b75): undefined reference to `dbgp_external_startup'
+> >> drivers/built-in.o: In function `ehci_bus_resume':
+> >> host.c:(.text+0x544705): undefined reference to `dbgp_reset_prep'
+> >> host.c:(.text+0x544731): undefined reference to `dbgp_external_startup'
+> >
+> >We all forgot about the chipidea driver.  It includes code from 
 > 
-> Plus moving test related objects under 'test' directory.
+> I didn't even know of this.
+> 
+> >ehci-hcd in a rather unorthodox manner (see 
+> >drivers/usb/chipidea/host.c).
+> >
+> >Evidently we need to change your new test in
+> >drivers/usb/early/ehci-dbgp.c to:
+> >
+> >#if IS_ENABLED(CONFIG_USB_HCD_EHCI) || defined(CONFIG_USB_CHIPIDEA_HOST)
+> >
+> >Upcoming changes to ehci-hcd will make this unnecessary in 3.8, but for 
+> >now we need it.
+> 
+> Which tells me that the CONFIG_USB_SUPPORT version would have been
+> the better one  (and I would favor that over the ugly variant you suggest
+> above).
 
-Ok, so I applied this to my local perf/core branch with a few changes,
-namely to move 24/25 to after 5/25 so that I could do, for each
-subsequent tests:
+I also suggested IS_ENABLED(CONFIG_USB), which is no uglier than what 
+you submitted and would also fix this build error.  How about using it 
+instead?
 
-$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf install
-$ perf test -v perf_event_attr
+Alan Stern
 
-And see if each one passed.
-
-So at the end I changed
-/home/acme/libexec/perf-core/tests/attr/base-record flipping
-"watermark=0" to "watermark=1" and got:
-
-[root@sandy ~]# perf test perf_event_attr
-13: struct perf_event_attr setup                           :FAILED '/home/acme/libexec/perf-core/tests/attr/test-record-count' - match failure
- FAILED!
-[root@sandy ~]#
-
-But I wanted it to show _what_ didn't match, so I tried:
-
-[root@sandy ~]# perf test -v perf_event_attr
-13: struct perf_event_attr setup                           :
---- start ---
-running '/home/acme/libexec/perf-core/tests/attr/test-record-count'
-FAILED '/home/acme/libexec/perf-core/tests/attr/test-record-count' - match failure
----- end ----
-struct perf_event_attr setup: FAILED!
-[root@sandy ~]#
-
-Also is there a strict need for setting PERF_TEST_ATTR? I thought that if it
-found the /home/acme/libexec/perf-core/tests/attr/ dirs it would test it, but
-haven't dug deep, care to ellaborate here?
-
-Ah, I just pushed perf/core with this patchset, thanks!
-
-- Arnaldo
