@@ -1,396 +1,981 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab2KALv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 07:51:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37481 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051Ab2KALv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 07:51:27 -0400
-Date: Thu, 1 Nov 2012 11:51:21 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Paul Turner <pjt@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 14/31] mm/mpol: Create special PROT_NONE infrastructure
-Message-ID: <20121101115121.GT3888@suse.de>
-References: <20121025121617.617683848@chello.nl>
- <20121025124833.552083105@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121025124833.552083105@chello.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934432Ab2KAMAG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 08:00:06 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:47249 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab2KAMAC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 08:00:02 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6882"; a="3388211"
+From: tlinder <tlinder@codeaurora.org>
+To: linux-mmc@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, philippedeswert@gmail.com, jengelh@inai.de,
+        jh80.chung@samsung.com, tgih.jun@samsung.com, arnd.bergmann@linaro.org,
+        Tatyana Brokhman <tlinder@codeaurora.org>,
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [RFC/PATCH v3 1/2] block: Adding ROW scheduling algorithm
+Date: Thu,  1 Nov 2012 13:59:09 +0200
+Message-Id: <1351771169-31036-1-git-send-email-tlinder@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 02:16:31PM +0200, Peter Zijlstra wrote:
-> In order to facilitate a lazy -- fault driven -- migration of pages,
-> create a special transient PROT_NONE variant, we can then use the
-> 'spurious' protection faults to drive our migrations from.
-> 
+From: Tatyana Brokhman <tlinder@codeaurora.org>
 
-The changelog should mention that fault-driven migration also means that
-the full cost of migration is incurred by the process. If someone in the
-future tries to do the migration in a kernel thread they should be reminded
-that the fault-driven choice was deliberate.
+This patch adds the implementation of a new scheduling algorithm - ROW.
+The policy of this algorithm is to prioritize READ requests over WRITE
+as much as possible without starving the WRITE requests.
 
-> Pages that already had an effective PROT_NONE mapping will not
-> be detected to generate these 'spuriuos' faults for the simple reason
-> that we cannot distinguish them on their protection bits, see
-> pte_numa().
-> 
-> This isn't a problem since PROT_NONE (and possible PROT_WRITE with
-> dirty tracking) aren't used or are rare enough for us to not care
-> about their placement.
-> 
-> Suggested-by: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-> Cc: Paul Turner <pjt@google.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> [ fixed various cross-arch and THP/!THP details ]
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  include/linux/huge_mm.h |   19 ++++++++++++
->  include/linux/mm.h      |   18 +++++++++++
->  mm/huge_memory.c        |   32 ++++++++++++++++++++
->  mm/memory.c             |   75 +++++++++++++++++++++++++++++++++++++++++++-----
->  mm/mprotect.c           |   24 ++++++++++-----
->  5 files changed, 154 insertions(+), 14 deletions(-)
-> 
-> Index: tip/include/linux/huge_mm.h
-> ===================================================================
-> --- tip.orig/include/linux/huge_mm.h
-> +++ tip/include/linux/huge_mm.h
-> @@ -159,6 +159,13 @@ static inline struct page *compound_tran
->  	}
->  	return page;
->  }
-> +
-> +extern bool pmd_numa(struct vm_area_struct *vma, pmd_t pmd);
-> +
-> +extern void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> +				  unsigned long address, pmd_t *pmd,
-> +				  unsigned int flags, pmd_t orig_pmd);
-> +
->  #else /* CONFIG_TRANSPARENT_HUGEPAGE */
->  #define HPAGE_PMD_SHIFT ({ BUILD_BUG(); 0; })
->  #define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
-> @@ -195,6 +202,18 @@ static inline int pmd_trans_huge_lock(pm
->  {
->  	return 0;
->  }
-> +
-> +static inline bool pmd_numa(struct vm_area_struct *vma, pmd_t pmd)
-> +{
-> +	return false;
-> +}
-> +
-> +static inline void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> +				  unsigned long address, pmd_t *pmd,
-> +				  unsigned int flags, pmd_t orig_pmd)
-> +{
-> +}
-> +
->  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
->  
->  #endif /* _LINUX_HUGE_MM_H */
-> Index: tip/include/linux/mm.h
-> ===================================================================
-> --- tip.orig/include/linux/mm.h
-> +++ tip/include/linux/mm.h
-> @@ -1091,6 +1091,9 @@ extern unsigned long move_page_tables(st
->  extern unsigned long do_mremap(unsigned long addr,
->  			       unsigned long old_len, unsigned long new_len,
->  			       unsigned long flags, unsigned long new_addr);
-> +extern void change_protection(struct vm_area_struct *vma, unsigned long start,
-> +			      unsigned long end, pgprot_t newprot,
-> +			      int dirty_accountable);
->  extern int mprotect_fixup(struct vm_area_struct *vma,
->  			  struct vm_area_struct **pprev, unsigned long start,
->  			  unsigned long end, unsigned long newflags);
-> @@ -1561,6 +1564,21 @@ static inline pgprot_t vm_get_page_prot(
->  }
->  #endif
->  
-> +static inline pgprot_t vma_prot_none(struct vm_area_struct *vma)
-> +{
-> +	/*
-> +	 * obtain PROT_NONE by removing READ|WRITE|EXEC privs
-> +	 */
-> +	vm_flags_t vmflags = vma->vm_flags & ~(VM_READ|VM_WRITE|VM_EXEC);
-> +	return pgprot_modify(vma->vm_page_prot, vm_get_page_prot(vmflags));
-> +}
-> +
+Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 
-Again, this very much hard-codes the choice of prot_none as the
-_PAGE_NUMA bit.
-
-> +static inline void
-> +change_prot_none(struct vm_area_struct *vma, unsigned long start, unsigned long end)
-> +{
-> +	change_protection(vma, start, end, vma_prot_none(vma), 0);
-> +}
-> +
-
-And this is somewhat explicit too. Steal pte_mknuma and shove this into
-the arch layer?
-
->  struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
->  int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
->  			unsigned long pfn, unsigned long size, pgprot_t);
-> Index: tip/mm/huge_memory.c
-> ===================================================================
-> --- tip.orig/mm/huge_memory.c
-> +++ tip/mm/huge_memory.c
-> @@ -725,6 +725,38 @@ out:
->  	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
->  }
->  
-> +bool pmd_numa(struct vm_area_struct *vma, pmd_t pmd)
-> +{
-> +	/*
-> +	 * See pte_numa().
-> +	 */
-> +	if (pmd_same(pmd, pmd_modify(pmd, vma->vm_page_prot)))
-> +		return false;
-> +
-> +	return pmd_same(pmd, pmd_modify(pmd, vma_prot_none(vma)));
-> +}
-> +
-> +void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> +			   unsigned long address, pmd_t *pmd,
-> +			   unsigned int flags, pmd_t entry)
-> +{
-> +	unsigned long haddr = address & HPAGE_PMD_MASK;
-> +
-> +	spin_lock(&mm->page_table_lock);
-> +	if (unlikely(!pmd_same(*pmd, entry)))
-> +		goto out_unlock;
-> +
-> +	/* do fancy stuff */
-> +
-
-Joking aside, 
-
-> +	/* change back to regular protection */
-> +	entry = pmd_modify(entry, vma->vm_page_prot);
-> +	if (pmdp_set_access_flags(vma, haddr, pmd, entry, 1))
-> +		update_mmu_cache_pmd(vma, address, entry);
-> +
-> +out_unlock:
-> +	spin_unlock(&mm->page_table_lock);
-> +}
-> +
->  int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
->  		  pmd_t *dst_pmd, pmd_t *src_pmd, unsigned long addr,
->  		  struct vm_area_struct *vma)
-> Index: tip/mm/memory.c
-> ===================================================================
-> --- tip.orig/mm/memory.c
-> +++ tip/mm/memory.c
-> @@ -1464,6 +1464,25 @@ int zap_vma_ptes(struct vm_area_struct *
->  }
->  EXPORT_SYMBOL_GPL(zap_vma_ptes);
->  
-> +static bool pte_numa(struct vm_area_struct *vma, pte_t pte)
-> +{
-> +	/*
-> +	 * If we have the normal vma->vm_page_prot protections we're not a
-> +	 * 'special' PROT_NONE page.
-> +	 *
-> +	 * This means we cannot get 'special' PROT_NONE faults from genuine
-> +	 * PROT_NONE maps, nor from PROT_WRITE file maps that do dirty
-> +	 * tracking.
-> +	 *
-> +	 * Neither case is really interesting for our current use though so we
-> +	 * don't care.
-> +	 */
-> +	if (pte_same(pte, pte_modify(pte, vma->vm_page_prot)))
-> +		return false;
-> +
-> +	return pte_same(pte, pte_modify(pte, vma_prot_none(vma)));
-> +}
-> +
->  /**
->   * follow_page - look up a page descriptor from a user-virtual address
->   * @vma: vm_area_struct mapping @address
-> @@ -3433,6 +3452,41 @@ static int do_nonlinear_fault(struct mm_
->  	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
->  }
->  
-> +static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> +			unsigned long address, pte_t *ptep, pmd_t *pmd,
-> +			unsigned int flags, pte_t entry)
-> +{
-> +	spinlock_t *ptl;
-> +	int ret = 0;
-> +
-> +	if (!pte_unmap_same(mm, pmd, ptep, entry))
-> +		goto out;
-> +
-> +	/*
-> +	 * Do fancy stuff...
-> +	 */
-> +
-
-Ok, so we should not have to check for a splitting huge page at this
-point because it has been checked already.
-
-> +	/*
-> +	 * OK, nothing to do,.. change the protection back to what it
-> +	 * ought to be.
-> +	 */
-> +	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
-> +	if (unlikely(!pte_same(*ptep, entry)))
-> +		goto unlock;
-> +
-> +	flush_cache_page(vma, address, pte_pfn(entry));
-> +
-
-This page was marked PROT_NONE so why is it necessary to flush the
-cache? Needs a comment.
-
-> +	ptep_modify_prot_start(mm, address, ptep);
-> +	entry = pte_modify(entry, vma->vm_page_prot);
-> +	ptep_modify_prot_commit(mm, address, ptep, entry);
-> +
-
-could have used pte_mknonnuma() if it was pulled in.
-
-> +	update_mmu_cache(vma, address, ptep);
-> +unlock:
-> +	pte_unmap_unlock(ptep, ptl);
-> +out:
-> +	return ret;
-> +}
-> +
->  /*
->   * These routines also need to handle stuff like marking pages dirty
->   * and/or accessed for architectures that don't do it in hardware (most
-> @@ -3471,6 +3525,9 @@ int handle_pte_fault(struct mm_struct *m
->  					pte, pmd, flags, entry);
->  	}
->  
-> +	if (pte_numa(vma, entry))
-> +		return do_numa_page(mm, vma, address, pte, pmd, flags, entry);
-> +
->  	ptl = pte_lockptr(mm, pmd);
->  	spin_lock(ptl);
->  	if (unlikely(!pte_same(*pte, entry)))
-> @@ -3535,13 +3592,16 @@ retry:
->  							  pmd, flags);
->  	} else {
->  		pmd_t orig_pmd = *pmd;
-> -		int ret;
-> +		int ret = 0;
->  
->  		barrier();
-> -		if (pmd_trans_huge(orig_pmd)) {
-> -			if (flags & FAULT_FLAG_WRITE &&
-> -			    !pmd_write(orig_pmd) &&
-> -			    !pmd_trans_splitting(orig_pmd)) {
-> +		if (pmd_trans_huge(orig_pmd) && !pmd_trans_splitting(orig_pmd)) {
-
-Hmm ok, if it trans_huge and is splitting it now falls through
-
-> +			if (pmd_numa(vma, orig_pmd)) {
-> +				do_huge_pmd_numa_page(mm, vma, address, pmd,
-> +						      flags, orig_pmd);
-> +			}
-> +
-
-When this thing returns you are not holding the page_table_lock and mmap_sem
-on its own is not enough to protect against a split.  Should you not recheck
-pmd_trans_splitting and potentially return 0 to retry the fault if it is?
-
-I guess it does not matter per-se. If it's a write, you call
-do_huge_pmd_wp_page() which will eventually check if pmd_same (which will
-fail as PROT_NONE was fixed up) and retry the whole fault after a bunch
-of work like allocating a huge page. To avoid that, I strong suspect
-you should re-read orig_pmd after handling the NUMA fault or something
-similar. If the fault is a read fault, it'll fall through and return 0.
-
-> +			if ((flags & FAULT_FLAG_WRITE) && !pmd_write(orig_pmd)) {
->  				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
->  							  orig_pmd);
->  				/*
-> @@ -3551,12 +3611,13 @@ retry:
->  				 */
->  				if (unlikely(ret & VM_FAULT_OOM))
->  					goto retry;
-> -				return ret;
->  			}
-> -			return 0;
-> +
-> +			return ret;
->  		}
->  	}
->  
-> +
->  	/*
->  	 * Use __pte_alloc instead of pte_alloc_map, because we can't
->  	 * run pte_offset_map on the pmd, if an huge pmd could
-> Index: tip/mm/mprotect.c
-> ===================================================================
-> --- tip.orig/mm/mprotect.c
-> +++ tip/mm/mprotect.c
-> @@ -112,7 +112,7 @@ static inline void change_pud_range(stru
->  	} while (pud++, addr = next, addr != end);
->  }
->  
-> -static void change_protection(struct vm_area_struct *vma,
-> +static void change_protection_range(struct vm_area_struct *vma,
->  		unsigned long addr, unsigned long end, pgprot_t newprot,
->  		int dirty_accountable)
->  {
-> @@ -134,6 +134,20 @@ static void change_protection(struct vm_
->  	flush_tlb_range(vma, start, end);
->  }
->  
-> +void change_protection(struct vm_area_struct *vma, unsigned long start,
-> +		       unsigned long end, pgprot_t newprot,
-> +		       int dirty_accountable)
-> +{
-> +	struct mm_struct *mm = vma->vm_mm;
-> +
-> +	mmu_notifier_invalidate_range_start(mm, start, end);
-> +	if (is_vm_hugetlb_page(vma))
-> +		hugetlb_change_protection(vma, start, end, newprot);
-> +	else
-> +		change_protection_range(vma, start, end, newprot, dirty_accountable);
-> +	mmu_notifier_invalidate_range_end(mm, start, end);
-> +}
-> +
->  int
->  mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
->  	unsigned long start, unsigned long end, unsigned long newflags)
-> @@ -206,12 +220,8 @@ success:
->  		dirty_accountable = 1;
->  	}
->  
-> -	mmu_notifier_invalidate_range_start(mm, start, end);
-> -	if (is_vm_hugetlb_page(vma))
-> -		hugetlb_change_protection(vma, start, end, vma->vm_page_prot);
-> -	else
-> -		change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable);
-> -	mmu_notifier_invalidate_range_end(mm, start, end);
-> +	change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable);
-> +
->  	vm_stat_account(mm, oldflags, vma->vm_file, -nrpages);
->  	vm_stat_account(mm, newflags, vma->vm_file, nrpages);
->  	perf_event_mmap(vma);
-> 
-> 
-
+diff --git a/Documentation/block/row-iosched.txt b/Documentation/block/row-iosched.txt
+new file mode 100644
+index 0000000..343c276
+--- /dev/null
++++ b/Documentation/block/row-iosched.txt
+@@ -0,0 +1,186 @@
++Introduction
++============
++
++The ROW scheduling algorithm will be used in mobile devices as default
++block layer IO scheduling algorithm. ROW stands for "READ Over WRITE"
++which is the main requests dispatch policy of this algorithm.
++
++The ROW IO scheduler was developed with the mobile devices needs in
++mind. In mobile devices we favor user experience upon everything else,
++thus we want to give READ IO requests as much priority as possible.
++The main idea of the ROW scheduling policy is just that:
++- If there are READ requests in pipe - dispatch them, while write
++starvation is considered.
++
++Software description
++====================
++The elevator defines a registering mechanism for different IO scheduler
++to implement. This makes implementing a new algorithm quite straight
++forward and requires almost no changes to block/elevator framework. A
++new IO scheduler just has to implement a set of callback functions
++defined by the elevator.
++These callbacks cover all the required IO operations such as
++adding/removing request to/from the scheduler, merging two requests,
++dispatching a request etc.
++
++Design
++======
++
++The requests are kept in queues according to their priority. The
++dispatching of requests is done in a Round Robin manner with a
++different slice for each queue. The dispatch quantum for a specific
++queue is set according to the queues priority. READ queues are
++given bigger dispatch quantum than the WRITE queues, within a dispatch
++cycle.
++
++At the moment there are 6 types of queues the requests are
++distributed to:
++-	High priority READ queue
++-	High priority Synchronous WRITE queue
++-	Regular priority READ queue
++-	Regular priority Synchronous WRITE queue
++-	Regular priority WRITE queue
++-	Low priority READ queue
++
++The marking of request as high/low priority will be done by the
++application adding the request and not the scheduler. See TODO section.
++If the request is not marked in any way (high/low) the scheduler
++assigns it to one of the regular priority queues:
++read/write/sync write.
++
++If in a certain dispatch cycle one of the queues was empty and didn't
++use its quantum that queue will be marked as "un-served". If we're in
++a middle of a dispatch cycle dispatching from queue Y and a request
++arrives for queue X that was un-served in the previous cycle, if X's
++priority is higher than Y's, queue X will be preempted in the favor of
++queue Y.
++
++For READ request queues ROW IO scheduler allows idling within a
++dispatch quantum in order to give the application a chance to insert
++more requests. Idling means adding some extra time for serving a
++certain queue even if the queue is empty. The idling is enabled if
++the ROW IO scheduler identifies the application is inserting requests
++in a high frequency.
++Not all queues can idle. ROW scheduler exposes an enablement struct
++for idling.
++For idling on READ queues, the ROW IO scheduler uses timer mechanism.
++When the timer expires we schedule a delayed work that will signal the
++device driver to fetch another request for dispatch.
++
++ROW scheduler will support additional services for block devices that
++supports Urgent Requests. That is, the scheduler may inform the
++device driver upon urgent requests using a newly defined callback.
++In addition it will support rescheduling of requests that were
++interrupted. For example if the device driver issues a long write
++request and a sudden urgent request is received by the scheduler.
++The scheduler will inform the device driver about the urgent request,
++so the device driver can stop the current write request and serve the
++urgent request. In such a case the device driver may also insert back
++to the scheduler the remainder of the interrupted write request, such
++that the scheduler may continue sending urgent requests without the
++need to interrupt the ongoing write again and again. The write
++remainder will be sent later on according to the scheduler policy.
++
++SMP/multi-core
++==============
++At the moment the code is accessed from 2 contexts:
++- Application context (from block/elevator layer): adding the requests.
++- device driver thread: dispatching the requests and notifying on
++  completion.
++
++One lock is used to synchronize between the two. This lock is provided
++by the block device driver along with the dispatch queue.
++
++Performance
++===========
++Several performance tests were run in order to compare the ROW
++scheduler to existing scheduling algorithms:
++
++1. Parallel sequential READ and sequential WRITE
++The test was performed by running two parallel lmdd commands.
++
++IO scheduling| R Throughput| W Throughput| Worst case R | Worst case W
++ Algorithm   |  [MB/sec]   |  [MB/sec]   | Latency [sec]| Latency [sec]
++-------------|-------------|-------------|--------------|--------------
++no-op        |  11.73      |  19.67      |  3830.00     |  4257.50
++deadline     |  11.84      |  20.11      |  610.00      |  5267.50
++cfq          |  20.39      |  12.32      |  353.33      |  8673.33
++ROW          |  35.75      |  12.08      |  70.00       |  13695.00
++
++R = READ, W = WRITE
++
++2. Parallel Random READ with sequential WRITE:
++The test was performed by running lmdd WRITE command in parallel to
++iozone.
++
++IO scheduling| R performance| W Throughput| Worst case R | Worst case W
++ Algorithm   |  [iops]      |  [MB/sec]   | Latency [sec]| Latency [sec]
++-------------|--------------|-------------|--------------|--------------
++no-op        |  1909.25     |  20.82      |  3240.00     |  4175.00
++deadline     |  1912.25     |  20.26      |  432.50      |  5372.50
++cfq          |  1771.60     |  14.05      |  60.00       |  8786.00
++ROW          |  1857.00     |  18.86      |  62.00       |  4718.00
++
++R = READ, W = WRITE
++
++3. Parallel Random READ with sequential READ:
++The test was performed by running lmdd WRITE command in parallel to
++iozone.
++
++IO scheduling| R performance| W Throughput| Worst case R | Worst case W
++ Algorithm   |  [iops]      |  [MB/sec]   | Latency [sec]| Latency [sec]
++-------------|--------------|-------------|--------------|--------------
++no-op        |  1919.50     |  35.59      |  32.50       |  300.00
++deadline     |  1913.00     |  35.68      |  30.00       |  302.50
++cfq          |  1789.20     |  23.19      |  264.00      |  864.00
++ROW          |  1850.80     |  38.13      |  32.00       |  2206.00
++
++R = READ, W = WRITE
++
++Note: the above measurements were collected on a particular system
++configuration and may be different on other. We performed tests on
++other system configurations as well. The numbers were different but
++the main idea was the same - reduced latency and increased throughput.
++
++
++Config options
++==============
++1. hp_read_quantum: dispatch quantum for the high priority READ queue
++   (default is 100 requests)
++2. rp_read_quantum: dispatch quantum for the regular priority READ
++   queue (default is 100 requests)
++3. hp_swrite_quantum: dispatch quantum for the high priority
++   Synchronous WRITE queue (default is 2 requests)
++4. rp_swrite_quantum: dispatch quantum for the regular priority
++   Synchronous WRITE queue (default is 1 requests)
++5. rp_write_quantum: dispatch quantum for the regular priority WRITE
++   queue (default is 1 requests)
++6. lp_read_quantum: dispatch quantum for the low priority READ queue
++   (default is 1 requests)
++7. lp_swrite_quantum: dispatch quantum for the low priority Synchronous
++   WRITE queue (default is 1 requests)
++8. read_idle: how long to idle on read queue in Msec (in case idling
++   is enabled on that queue). (default is 1 requests)
++9. read_idle_freq: frequency of inserting READ requests that will
++   trigger idling. This is the time in Msec between inserting two READ
++   requests. (default is 1 requests)
++
++Note: Dispatch quantum is number of requests that will be dispatched
++from a certain queue in a dispatch cycle.
++
++To do
++=====
++The ROW algorithm takes the scheduling policy one step further, making
++it a bit more "user-needs oriented", by allowing the application to
++hint on the urgency of its requests. For example: even among the READ
++requests several requests may be more urgent for completion than other.
++The former will go to the High priority READ queue, that is given the
++bigger dispatch quantum than any other queue.
++
++Still need to design the way applications will "hint" on the urgency of
++their requests. May be done by ioctl(). We need to look into concrete
++use-cases in order to determine the best solution for this.
++This will be implemented as a second phase.
++
++Design and implement additional services for block devices that
++supports High Priority Requests.
+\ No newline at end of file
+diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
+index 421bef9..5a747e2 100644
+--- a/block/Kconfig.iosched
++++ b/block/Kconfig.iosched
+@@ -21,6 +21,16 @@ config IOSCHED_DEADLINE
+ 	  a new point in the service tree and doing a batch of IO from there
+ 	  in case of expiry.
+ 
++config IOSCHED_ROW
++	tristate "ROW I/O scheduler"
++	---help---
++	  The ROW I/O scheduler gives priority to READ requests over the
++	  WRITE requests when dispatching, without starving WRITE requests.
++	  Requests are kept in priority queues. Dispatching is done in a RR
++	  manner when the dispatch quantum for each queue is calculated
++	  according to queue priority.
++	  Most suitable for mobile devices.
++
+ config IOSCHED_CFQ
+ 	tristate "CFQ I/O scheduler"
+ 	default y
+@@ -49,6 +59,16 @@ choice
+ 	config DEFAULT_DEADLINE
+ 		bool "Deadline" if IOSCHED_DEADLINE=y
+ 
++	config DEFAULT_ROW
++		bool "ROW" if IOSCHED_ROW=y
++		help
++		  The ROW I/O scheduler gives priority to READ requests
++		  over the WRITE requests when dispatching, without starving
++		  WRITE requests. Requests are kept in priority queues.
++		  Dispatching is done in a RR manner when the dispatch quantum
++		  for each queue is defined according to queue priority.
++		  Most suitable for mobile devices.
++
+ 	config DEFAULT_CFQ
+ 		bool "CFQ" if IOSCHED_CFQ=y
+ 
+@@ -60,6 +80,7 @@ endchoice
+ config DEFAULT_IOSCHED
+ 	string
+ 	default "deadline" if DEFAULT_DEADLINE
++	default "row" if DEFAULT_ROW
+ 	default "cfq" if DEFAULT_CFQ
+ 	default "noop" if DEFAULT_NOOP
+ 
+diff --git a/block/Makefile b/block/Makefile
+index 39b76ba..dd80dc2 100644
+--- a/block/Makefile
++++ b/block/Makefile
+@@ -14,6 +14,7 @@ obj-$(CONFIG_BLK_CGROUP)	+= blk-cgroup.o
+ obj-$(CONFIG_BLK_DEV_THROTTLING)	+= blk-throttle.o
+ obj-$(CONFIG_IOSCHED_NOOP)	+= noop-iosched.o
+ obj-$(CONFIG_IOSCHED_DEADLINE)	+= deadline-iosched.o
++obj-$(CONFIG_IOSCHED_ROW)	+= row-iosched.o
+ obj-$(CONFIG_IOSCHED_CFQ)	+= cfq-iosched.o
+ 
+ obj-$(CONFIG_BLOCK_COMPAT)	+= compat_ioctl.o
+diff --git a/block/row-iosched.c b/block/row-iosched.c
+new file mode 100644
+index 0000000..b7965c6
+--- /dev/null
++++ b/block/row-iosched.c
+@@ -0,0 +1,686 @@
++/*
++ * ROW (Read Over Write) I/O scheduler.
++ *
++ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++/* See Documentation/block/row-iosched.txt */
++
++#include <linux/kernel.h>
++#include <linux/fs.h>
++#include <linux/blkdev.h>
++#include <linux/elevator.h>
++#include <linux/bio.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/init.h>
++#include <linux/compiler.h>
++#include <linux/blktrace_api.h>
++#include <linux/jiffies.h>
++
++/*
++ * enum row_queue_prio - Priorities of the ROW queues
++ *
++ * This enum defines the priorities (and the number of queues)
++ * the requests will be disptributed to. The higher priority -
++ * the bigger is the dispatch quantum given to that queue.
++ * ROWQ_PRIO_HIGH_READ - is the higher priority queue.
++ *
++ */
++enum row_queue_prio {
++	ROWQ_PRIO_HIGH_READ = 0,
++	ROWQ_PRIO_REG_READ,
++	ROWQ_PRIO_HIGH_SWRITE,
++	ROWQ_PRIO_REG_SWRITE,
++	ROWQ_PRIO_REG_WRITE,
++	ROWQ_PRIO_LOW_READ,
++	ROWQ_PRIO_LOW_SWRITE,
++	ROWQ_MAX_PRIO,
++};
++
++/* Flags indicating whether idling is enabled on the queue */
++static const bool queue_idling_enabled[] = {
++	true,	/* ROWQ_PRIO_HIGH_READ */
++	true,	/* ROWQ_PRIO_REG_READ */
++	false,	/* ROWQ_PRIO_HIGH_SWRITE */
++	false,	/* ROWQ_PRIO_REG_SWRITE */
++	false,	/* ROWQ_PRIO_REG_WRITE */
++	false,	/* ROWQ_PRIO_LOW_READ */
++	false,	/* ROWQ_PRIO_LOW_SWRITE */
++};
++
++/* Default values for row queues quantums in each dispatch cycle */
++static const int queue_quantum[] = {
++	100,	/* ROWQ_PRIO_HIGH_READ */
++	100,	/* ROWQ_PRIO_REG_READ */
++	2,	/* ROWQ_PRIO_HIGH_SWRITE */
++	1,	/* ROWQ_PRIO_REG_SWRITE */
++	1,	/* ROWQ_PRIO_REG_WRITE */
++	1,	/* ROWQ_PRIO_LOW_READ */
++	1	/* ROWQ_PRIO_LOW_SWRITE */
++};
++
++/* Default values for idling on read queues */
++#define ROW_IDLE_TIME 50	/* 5 msec */
++#define ROW_READ_FREQ 70	/* 7 msec */
++
++/**
++ * struct rowq_idling_data -  parameters for idling on the queue
++ * @idle_trigger_time:	time (in jiffies). If a new request was
++ *			inserted before this time value, idling
++ *			will be enabled.
++ * @begin_idling:	flag indicating wether we should idle
++ *
++ */
++struct rowq_idling_data {
++	unsigned long		idle_trigger_time;
++	bool			begin_idling;
++};
++
++/**
++ * struct row_queue - requests grouping structure
++ * @rdata:		parent row_data structure
++ * @fifo:		fifo of requests
++ * @prio:		queue priority (enum row_queue_prio)
++ * @nr_dispatched:	number of requests already dispatched in
++ *			the current dispatch cycle
++ * @slice:		number of requests to dispatch in a cycle
++ * @idle_data:		data for idling on queues
++ *
++ */
++struct row_queue {
++	struct row_data		*rdata;
++	struct list_head	fifo;
++	enum row_queue_prio	prio;
++
++	unsigned int		nr_dispatched;
++	unsigned int		slice;
++
++	/* used only for READ queues */
++	struct rowq_idling_data	idle_data;
++};
++
++/**
++ * struct idling_data - data for idling on empty rqueue
++ * @idle_time:		idling duration (msec)
++ * @freq:		min time between two requests that
++ *			triger idling (msec)
++ * @idle_work:		pointer to struct delayed_work
++ *
++ */
++struct idling_data {
++	unsigned long			idle_time;
++	unsigned long			freq;
++
++	struct workqueue_struct	*idle_workqueue;
++	struct delayed_work		idle_work;
++};
++
++/**
++ * struct row_queue - Per block device rqueue structure
++ * @dispatch_queue:	dispatch rqueue
++ * @row_queues:		array of priority request queues with
++ *			dispatch quantum per rqueue
++ * @curr_queue:		index in the row_queues array of the
++ *			currently serviced rqueue
++ * @read_idle:		data for idling after READ request
++ * @nr_reqs: nr_reqs[0] holds the number of all READ requests in
++ *			scheduler, nr_reqs[1] holds the number of all WRITE
++ *			requests in scheduler
++ * @cycle_flags:	used for marking unserved queueus
++ *
++ */
++struct row_data {
++	struct request_queue		*dispatch_queue;
++
++	struct {
++		struct row_queue	rqueue;
++		int			disp_quantum;
++	} row_queues[ROWQ_MAX_PRIO];
++
++	enum row_queue_prio		curr_queue;
++
++	struct idling_data		read_idle;
++	unsigned int			nr_reqs[2];
++
++	unsigned int			cycle_flags;
++};
++
++#define RQ_ROWQ(rq) ((struct row_queue *) ((rq)->elv.priv[0]))
++
++#define row_log(q, fmt, args...)   \
++	blk_add_trace_msg(q, "%s():" fmt , __func__, ##args)
++#define row_log_rowq(rdata, rowq_id, fmt, args...)		\
++	blk_add_trace_msg(rdata->dispatch_queue, "rowq%d " fmt, \
++		rowq_id, ##args)
++
++static inline void row_mark_rowq_unserved(struct row_data *rd,
++					 enum row_queue_prio qnum)
++{
++	rd->cycle_flags |= (1 << qnum);
++}
++
++static inline void row_clear_rowq_unserved(struct row_data *rd,
++					  enum row_queue_prio qnum)
++{
++	rd->cycle_flags &= ~(1 << qnum);
++}
++
++static inline int row_rowq_unserved(struct row_data *rd,
++				   enum row_queue_prio qnum)
++{
++	return rd->cycle_flags & (1 << qnum);
++}
++
++/******************** Static helper functions ***********************/
++/*
++ * kick_queue() - Wake up device driver queue thread
++ * @work:	pointer to struct work_struct
++ *
++ * This is a idling delayed work function. It's purpose is to wake up the
++ * device driver in order for it to start fetching requests.
++ *
++ */
++static void kick_queue(struct work_struct *work)
++{
++	struct delayed_work *idle_work = to_delayed_work(work);
++	struct idling_data *read_data =
++		container_of(idle_work, struct idling_data, idle_work);
++	struct row_data *rd =
++		container_of(read_data, struct row_data, read_idle);
++
++	row_log_rowq(rd, rd->curr_queue, "Performing delayed work");
++	/* Mark idling process as done */
++	rd->row_queues[rd->curr_queue].rqueue.idle_data.begin_idling = false;
++
++	if (!(rd->nr_reqs[0] + rd->nr_reqs[1]))
++		row_log(rd->dispatch_queue, "No requests in scheduler");
++	else {
++		spin_lock_irq(rd->dispatch_queue->queue_lock);
++		__blk_run_queue(rd->dispatch_queue);
++		spin_unlock_irq(rd->dispatch_queue->queue_lock);
++	}
++}
++
++/*
++ * row_restart_disp_cycle() - Restart the dispatch cycle
++ * @rd:	pointer to struct row_data
++ *
++ * This function restarts the dispatch cycle by:
++ * - Setting current queue to ROWQ_PRIO_HIGH_READ
++ * - For each queue: reset the number of requests dispatched in
++ *   the cycle
++ */
++static inline void row_restart_disp_cycle(struct row_data *rd)
++{
++	int i;
++
++	for (i = 0; i < ROWQ_MAX_PRIO; i++)
++		rd->row_queues[i].rqueue.nr_dispatched = 0;
++
++	rd->curr_queue = ROWQ_PRIO_HIGH_READ;
++	row_log(rd->dispatch_queue, "Restarting cycle");
++}
++
++static inline void row_get_next_queue(struct row_data *rd)
++{
++	rd->curr_queue++;
++	if (rd->curr_queue == ROWQ_MAX_PRIO)
++		row_restart_disp_cycle(rd);
++}
++
++/******************* Elevator callback functions *********************/
++
++/*
++ * row_add_request() - Add request to the scheduler
++ * @q:	requests queue
++ * @rq:	request to add
++ *
++ */
++static void row_add_request(struct request_queue *q,
++			    struct request *rq)
++{
++	struct row_data *rd = (struct row_data *)q->elevator->elevator_data;
++	struct row_queue *rqueue = RQ_ROWQ(rq);
++
++	list_add_tail(&rq->queuelist, &rqueue->fifo);
++	rd->nr_reqs[rq_data_dir(rq)]++;
++	rq_set_fifo_time(rq, jiffies); /* for statistics*/
++
++	if (queue_idling_enabled[rqueue->prio]) {
++		if (delayed_work_pending(&rd->read_idle.idle_work))
++			(void)cancel_delayed_work(
++				&rd->read_idle.idle_work);
++		if (time_before(jiffies, rqueue->idle_data.idle_trigger_time)) {
++			rqueue->idle_data.begin_idling = true;
++			row_log_rowq(rd, rqueue->prio, "Enable idling");
++		} else
++			rqueue->idle_data.begin_idling = false;
++
++		rqueue->idle_data.idle_trigger_time =
++			jiffies + msecs_to_jiffies(rd->read_idle.freq);
++	}
++	row_log_rowq(rd, rqueue->prio, "added request");
++}
++
++/*
++ * row_remove_request() -  Remove given request from scheduler
++ * @q:	requests queue
++ * @rq:	request to remove
++ *
++ */
++static void row_remove_request(struct request_queue *q,
++			       struct request *rq)
++{
++	struct row_data *rd = (struct row_data *)q->elevator->elevator_data;
++
++	rq_fifo_clear(rq);
++	rd->nr_reqs[rq_data_dir(rq)]--;
++}
++
++/*
++ * row_dispatch_insert() - move request to dispatch queue
++ * @rd:	pointer to struct row_data
++ *
++ * This function moves the next request to dispatch from
++ * rd->curr_queue to the dispatch queue
++ *
++ */
++static void row_dispatch_insert(struct row_data *rd)
++{
++	struct request *rq;
++
++	rq = rq_entry_fifo(rd->row_queues[rd->curr_queue].rqueue.fifo.next);
++	row_remove_request(rd->dispatch_queue, rq);
++	elv_dispatch_add_tail(rd->dispatch_queue, rq);
++	rd->row_queues[rd->curr_queue].rqueue.nr_dispatched++;
++	row_clear_rowq_unserved(rd, rd->curr_queue);
++	row_log_rowq(rd, rd->curr_queue, " Dispatched request nr_disp = %d",
++		     rd->row_queues[rd->curr_queue].rqueue.nr_dispatched);
++}
++
++/*
++ * row_choose_queue() -  choose the next queue to dispatch from
++ * @rd:	pointer to struct row_data
++ *
++ * Updates rd->curr_queue. Returns 1 if there are requests to
++ * dispatch, 0 if there are no requests in scheduler
++ *
++ */
++static int row_choose_queue(struct row_data *rd)
++{
++	int prev_curr_queue = rd->curr_queue;
++
++	if (!(rd->nr_reqs[0] + rd->nr_reqs[1])) {
++		row_log(rd->dispatch_queue, "No more requests in scheduler");
++		return 0;
++	}
++
++	row_get_next_queue(rd);
++
++	/*
++	 * Loop over all queues to find the next queue that is not empty.
++	 * Stop when you get back to curr_queue
++	 */
++	while (list_empty(&rd->row_queues[rd->curr_queue].rqueue.fifo)
++	       && rd->curr_queue != prev_curr_queue) {
++		/* Mark rqueue as unserved */
++		row_mark_rowq_unserved(rd, rd->curr_queue);
++		row_get_next_queue(rd);
++	}
++
++	return 1;
++}
++
++/*
++ * row_dispatch_requests() - selects the next request to dispatch
++ * @q:		requests queue
++ * @force:	ignored
++ *
++ * Return 0 if no requests were moved to the dispatch queue.
++ *	  1 otherwise
++ *
++ */
++static int row_dispatch_requests(struct request_queue *q, int force)
++{
++	struct row_data *rd = (struct row_data *)q->elevator->elevator_data;
++	int ret = 0, currq, i;
++
++	currq = rd->curr_queue;
++
++	/*
++	 * Find the first unserved queue (with higher priority then currq)
++	 * that is not empty
++	 */
++	for (i = 0; i < currq; i++) {
++		if (row_rowq_unserved(rd, i) &&
++		    !list_empty(&rd->row_queues[i].rqueue.fifo)) {
++			row_log_rowq(rd, currq,
++				" Preemting for unserved rowq%d", i);
++			rd->curr_queue = i;
++			row_dispatch_insert(rd);
++			ret = 1;
++			goto done;
++		}
++	}
++
++	if (rd->row_queues[currq].rqueue.nr_dispatched >=
++	    rd->row_queues[currq].disp_quantum) {
++		rd->row_queues[currq].rqueue.nr_dispatched = 0;
++		row_log_rowq(rd, currq, "Expiring rqueue");
++		ret = row_choose_queue(rd);
++		if (ret)
++			row_dispatch_insert(rd);
++		goto done;
++	}
++
++	/* Dispatch from curr_queue */
++	if (list_empty(&rd->row_queues[currq].rqueue.fifo)) {
++		/* check idling */
++		if (delayed_work_pending(&rd->read_idle.idle_work)) {
++			if (force) {
++				(void)cancel_delayed_work(
++				&rd->read_idle.idle_work);
++				row_log_rowq(rd, currq,
++					"Canceled delayed work - forced dispatch");
++			} else {
++				row_log_rowq(rd, currq,
++						 "Delayed work pending. Exiting");
++				goto done;
++			}
++		}
++
++		if (!force && queue_idling_enabled[currq] &&
++		    rd->row_queues[currq].rqueue.idle_data.begin_idling) {
++			if (!queue_delayed_work(rd->read_idle.idle_workqueue,
++			    &rd->read_idle.idle_work,
++			    jiffies +
++			    msecs_to_jiffies(rd->read_idle.idle_time))) {
++				row_log_rowq(rd, currq,
++					     "Work already on queue!");
++				pr_err("ROW_BUG: Work already on queue!");
++			} else
++				row_log_rowq(rd, currq,
++				     "Scheduled delayed work. exiting");
++			goto done;
++		} else {
++			row_log_rowq(rd, currq,
++				     "Currq empty. Choose next queue");
++			ret = row_choose_queue(rd);
++			if (!ret)
++				goto done;
++		}
++	}
++
++	ret = 1;
++	row_dispatch_insert(rd);
++
++done:
++	return ret;
++}
++
++/*
++ * row_init_queue() - Init scheduler data structures
++ * @q:	requests queue
++ *
++ * Return pointer to struct row_data to be saved in elevator for
++ * this dispatch queue
++ *
++ */
++static void *row_init_queue(struct request_queue *q)
++{
++
++	struct row_data *rdata;
++	int i;
++
++	rdata = kmalloc_node(sizeof(*rdata),
++			     GFP_KERNEL | __GFP_ZERO, q->node);
++	if (!rdata)
++		return NULL;
++
++	for (i = 0; i < ROWQ_MAX_PRIO; i++) {
++		INIT_LIST_HEAD(&rdata->row_queues[i].rqueue.fifo);
++		rdata->row_queues[i].disp_quantum = queue_quantum[i];
++		rdata->row_queues[i].rqueue.rdata = rdata;
++		rdata->row_queues[i].rqueue.prio = i;
++		rdata->row_queues[i].rqueue.idle_data.begin_idling = false;
++	}
++
++	/*
++	 * Currently idling is enabled only for READ queues. If we want to
++	 * enable it for write queues also, note that idling frequency will
++	 * be the same in both cases
++	 */
++	rdata->read_idle.idle_time = ROW_IDLE_TIME;
++	rdata->read_idle.freq = ROW_READ_FREQ;
++	rdata->read_idle.idle_workqueue = alloc_workqueue("row_idle_work",
++					    WQ_MEM_RECLAIM | WQ_HIGHPRI, 0);
++	if (!rdata->read_idle.idle_workqueue)
++		panic("Failed to create idle workqueue\n");
++	INIT_DELAYED_WORK(&rdata->read_idle.idle_work, kick_queue);
++
++	rdata->curr_queue = ROWQ_PRIO_HIGH_READ;
++	rdata->dispatch_queue = q;
++
++	rdata->nr_reqs[READ] = rdata->nr_reqs[WRITE] = 0;
++
++	return rdata;
++}
++
++/*
++ * row_exit_queue() - called on unloading the RAW scheduler
++ * @e:	poiner to struct elevator_queue
++ *
++ */
++static void row_exit_queue(struct elevator_queue *e)
++{
++	struct row_data *rd = (struct row_data *)e->elevator_data;
++	int i;
++
++	for (i = 0; i < ROWQ_MAX_PRIO; i++)
++		BUG_ON(!list_empty(&rd->row_queues[i].rqueue.fifo));
++	(void)cancel_delayed_work_sync(&rd->read_idle.idle_work);
++	kfree(rd);
++}
++
++/*
++ * row_merged_requests() - Called when 2 requests are merged
++ * @q:		requests queue
++ * @rq:		request the two requests were merged into
++ * @next:	request that was merged
++ */
++static void row_merged_requests(struct request_queue *q, struct request *rq,
++				 struct request *next)
++{
++	struct row_queue   *rqueue = RQ_ROWQ(next);
++
++	list_del_init(&next->queuelist);
++
++	rqueue->rdata->nr_reqs[rq_data_dir(rq)]--;
++}
++
++/*
++ * get_queue_type() - Get queue type for a given request
++ *
++ * This is a helping function which purpose is to determine what
++ * ROW queue the given request should be added to (and
++ * dispatched from leter on)
++ *
++ * TODO: Right now only 3 queues are used REG_READ, REG_WRITE
++ * and REG_SWRITE
++ */
++static enum row_queue_prio get_queue_type(struct request *rq)
++{
++	const int data_dir = rq_data_dir(rq);
++	const bool is_sync = rq_is_sync(rq);
++
++	if (data_dir == READ)
++		return ROWQ_PRIO_REG_READ;
++	else if (is_sync)
++		return ROWQ_PRIO_REG_SWRITE;
++	else
++		return ROWQ_PRIO_REG_WRITE;
++}
++
++/*
++ * row_set_request() - Set ROW data structures associated with this request.
++ * @q:		requests queue
++ * @rq:		pointer to the request
++ * @gfp_mask:	ignored
++ *
++ */
++static int
++row_set_request(struct request_queue *q, struct request *rq, gfp_t gfp_mask)
++{
++	struct row_data *rd = (struct row_data *)q->elevator->elevator_data;
++	unsigned long flags;
++
++	spin_lock_irqsave(q->queue_lock, flags);
++	rq->elv.priv[0] =
++		(void *)(&rd->row_queues[get_queue_type(rq)]);
++	spin_unlock_irqrestore(q->queue_lock, flags);
++
++	return 0;
++}
++
++/********** Helping sysfs functions/defenitions for ROW attributes ******/
++static ssize_t row_var_show(int var, char *page)
++{
++	return snprintf(page, 100, "%d\n", var);
++}
++
++static ssize_t row_var_store(int *var, const char *page, size_t count)
++{
++	int err;
++	err = kstrtoul(page, 10, (unsigned long *)var);
++
++	return count;
++}
++
++#define SHOW_FUNCTION(__FUNC, __VAR, __CONV)				\
++static ssize_t __FUNC(struct elevator_queue *e, char *page)		\
++{									\
++	struct row_data *rowd = e->elevator_data;			\
++	int __data = __VAR;						\
++	if (__CONV)							\
++		__data = jiffies_to_msecs(__data);			\
++	return row_var_show(__data, (page));			\
++}
++SHOW_FUNCTION(row_hp_read_quantum_show,
++	rowd->row_queues[ROWQ_PRIO_HIGH_READ].disp_quantum, 0);
++SHOW_FUNCTION(row_rp_read_quantum_show,
++	rowd->row_queues[ROWQ_PRIO_REG_READ].disp_quantum, 0);
++SHOW_FUNCTION(row_hp_swrite_quantum_show,
++	rowd->row_queues[ROWQ_PRIO_HIGH_SWRITE].disp_quantum, 0);
++SHOW_FUNCTION(row_rp_swrite_quantum_show,
++	rowd->row_queues[ROWQ_PRIO_REG_SWRITE].disp_quantum, 0);
++SHOW_FUNCTION(row_rp_write_quantum_show,
++	rowd->row_queues[ROWQ_PRIO_REG_WRITE].disp_quantum, 0);
++SHOW_FUNCTION(row_lp_read_quantum_show,
++	rowd->row_queues[ROWQ_PRIO_LOW_READ].disp_quantum, 0);
++SHOW_FUNCTION(row_lp_swrite_quantum_show,
++	rowd->row_queues[ROWQ_PRIO_LOW_SWRITE].disp_quantum, 0);
++SHOW_FUNCTION(row_read_idle_show, rowd->read_idle.idle_time, 1);
++SHOW_FUNCTION(row_read_idle_freq_show, rowd->read_idle.freq, 1);
++#undef SHOW_FUNCTION
++
++#define STORE_FUNCTION(__FUNC, __PTR, MIN, MAX, __CONV)			\
++static ssize_t __FUNC(struct elevator_queue *e,				\
++		const char *page, size_t count)				\
++{									\
++	struct row_data *rowd = e->elevator_data;			\
++	int __data;						\
++	int ret = row_var_store(&__data, (page), count);		\
++	if (__CONV)							\
++		__data = (int)msecs_to_jiffies(__data);			\
++	if (__data < (MIN))						\
++		__data = (MIN);						\
++	else if (__data > (MAX))					\
++		__data = (MAX);						\
++	*(__PTR) = __data;						\
++	return ret;							\
++}
++STORE_FUNCTION(row_hp_read_quantum_store,
++&rowd->row_queues[ROWQ_PRIO_HIGH_READ].disp_quantum, 1, INT_MAX, 0);
++STORE_FUNCTION(row_rp_read_quantum_store,
++			&rowd->row_queues[ROWQ_PRIO_REG_READ].disp_quantum,
++			1, INT_MAX, 0);
++STORE_FUNCTION(row_hp_swrite_quantum_store,
++			&rowd->row_queues[ROWQ_PRIO_HIGH_SWRITE].disp_quantum,
++			1, INT_MAX, 0);
++STORE_FUNCTION(row_rp_swrite_quantum_store,
++			&rowd->row_queues[ROWQ_PRIO_REG_SWRITE].disp_quantum,
++			1, INT_MAX, 0);
++STORE_FUNCTION(row_rp_write_quantum_store,
++			&rowd->row_queues[ROWQ_PRIO_REG_WRITE].disp_quantum,
++			1, INT_MAX, 0);
++STORE_FUNCTION(row_lp_read_quantum_store,
++			&rowd->row_queues[ROWQ_PRIO_LOW_READ].disp_quantum,
++			1, INT_MAX, 0);
++STORE_FUNCTION(row_lp_swrite_quantum_store,
++			&rowd->row_queues[ROWQ_PRIO_LOW_SWRITE].disp_quantum,
++			1, INT_MAX, 1);
++STORE_FUNCTION(row_read_idle_store, &rowd->read_idle.idle_time, 1, INT_MAX, 1);
++STORE_FUNCTION(row_read_idle_freq_store, &rowd->read_idle.freq, 1, INT_MAX, 1);
++
++#undef STORE_FUNCTION
++
++#define ROW_ATTR(name) \
++	__ATTR(name, S_IRUGO|S_IWUSR, row_##name##_show, \
++				      row_##name##_store)
++
++static struct elv_fs_entry row_attrs[] = {
++	ROW_ATTR(hp_read_quantum),
++	ROW_ATTR(rp_read_quantum),
++	ROW_ATTR(hp_swrite_quantum),
++	ROW_ATTR(rp_swrite_quantum),
++	ROW_ATTR(rp_write_quantum),
++	ROW_ATTR(lp_read_quantum),
++	ROW_ATTR(lp_swrite_quantum),
++	ROW_ATTR(read_idle),
++	ROW_ATTR(read_idle_freq),
++	__ATTR_NULL
++};
++
++static struct elevator_type iosched_row = {
++	.ops = {
++		.elevator_merge_req_fn		= row_merged_requests,
++		.elevator_dispatch_fn		= row_dispatch_requests,
++		.elevator_add_req_fn		= row_add_request,
++		.elevator_former_req_fn		= elv_rb_former_request,
++		.elevator_latter_req_fn		= elv_rb_latter_request,
++		.elevator_set_req_fn		= row_set_request,
++		.elevator_init_fn		= row_init_queue,
++		.elevator_exit_fn		= row_exit_queue,
++	},
++
++	.elevator_attrs = row_attrs,
++	.elevator_name = "row",
++	.elevator_owner = THIS_MODULE,
++};
++
++static int __init row_init(void)
++{
++	elv_register(&iosched_row);
++	return 0;
++}
++
++static void __exit row_exit(void)
++{
++	elv_unregister(&iosched_row);
++}
++
++module_init(row_init);
++module_exit(row_exit);
++
++MODULE_LICENSE("GPLv2");
++MODULE_DESCRIPTION("Read Over Write IO scheduler");
 -- 
-Mel Gorman
-SUSE Labs
+1.7.6
+--
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. 
+Is a member of Code Aurora Forum, hosted by the Linux Foundation
