@@ -1,213 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935466Ab2KAMHx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 08:07:53 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:6851 "EHLO relay.sw.ru"
+	id S935989Ab2KAMOS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 08:14:18 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:19795 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932147Ab2KAMHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 08:07:51 -0400
+	id S934809Ab2KAMHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 08:07:53 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
         Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH v6 00/29] kmem controller for memcg.
-Date: Thu,  1 Nov 2012 16:07:16 +0400
-Message-Id: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+        David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: [PATCH v6 08/29] res_counter: return amount of charges after res_counter_uncharge
+Date: Thu,  1 Nov 2012 16:07:24 +0400
+Message-Id: <1351771665-11076-9-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+It is useful to know how many charges are still left after a call to
+res_counter_uncharge. While it is possible to issue a res_counter_read
+after uncharge, this can be racy.
 
-This work introduces the kernel memory controller for memcg. Unlike previous
-submissions, this includes the whole controller, comprised of slab and stack
-memory.
+If we need, for instance, to take some action when the counters drop
+down to 0, only one of the callers should see it. This is the same
+semantics as the atomic variables in the kernel.
 
-Slab-specific considerations: I've modified the kmem_cache_free() mechanism
-so we would have the code in a single location. It is then inlined into all
-interested instances of kmem_cache_free. Following this logic, there is little
-to be simplified in kmalloc/kmem_cache_alloc, which already does only exactly
-this. The attribute propagation code was kept, since integrating it would still
-depend on quite some infrastructure.
+Since the current return value is void, we don't need to worry about
+anything breaking due to this change: nobody relied on that, and only
+users appearing from now on will be checking this value.
 
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Suleiman Souhlal <suleiman@google.com>
+CC: Tejun Heo <tj@kernel.org>
+---
+ Documentation/cgroups/resource_counter.txt |  7 ++++---
+ include/linux/res_counter.h                | 12 +++++++-----
+ kernel/res_counter.c                       | 20 +++++++++++++-------
+ 3 files changed, 24 insertions(+), 15 deletions(-)
 
-
-*v6	- joint submission slab + stack.
-        - fixed race conditions with cache destruction.
-        - unified code for kmem_cache_free cache derivation in mm/slab.h.
-        - changed memcg_css_id to memcg_cache_id, now not equal to css_id.
-        - remove extra memcg_kmem_get_cache in the kmalloc path.
-        - fixed a bug with slab that would occur with some invocations of
-          kmem_cache_free
-        - use post_create() for memcg kmem_accounted_flag propagation.
-
-*v5:    - changed charged order, kmem charged first.
-        - minor nits and comments merged.
-
-*v4:    - kmem_accounted can no longer become unlimited
-        - kmem_accounted can no longer become limited, if group has children.
-        - documentation moved to this patchset
-        - more style changes
-        - css_get in charge path to ensure task won't move during charge
-*v3:
-	- Changed function names to match memcg's
-	- avoid doing get/put in charge/uncharge path
-	- revert back to keeping the account enabled after it is first activated
-
-Numbers can be found at https://lkml.org/lkml/2012/9/13/239
-
-A (throwaway) git tree with them is placed at:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/glommer/memcg.git kmemcg-slab
-
-
-The kernel memory limitation mechanism for memcg concerns itself with
-disallowing potentially non-reclaimable allocations to happen in exaggerate
-quantities by a particular set of tasks (cgroup). Those allocations could
-create pressure that affects the behavior of a different and unrelated set of
-tasks.
-
-Its basic working mechanism consists in annotating interesting allocations with
-the _GFP_KMEMCG flag. When this flag is set, the current task allocating will
-have its memcg identified and charged against. When reaching a specific limit,
-further allocations will be denied.
-
-As of this work, pages allocated on behalf of the slab allocator, and stack
-memory are tracked. Other kinds of memory, like spurious calls to
-__get_free_pages, vmalloc, page tables, etc are not tracked. Besides the memcg
-cost that may be present with those allocations - that other allocations may
-rightfully want to avoid - memory need to be somehow traceable back to a task
-in order to be accounted by memcg. This may be trivial - as in the stack - or a
-bit complicated, requiring extra work to be done - as in the case of the slab.
-IOW, which memory to track is always a complexity tradeoff. We believe stack +
-slab provides enough coverage of the relevant kernel memory most of the time.
-
-Tracking accuracy depends on how well we can track memory back to a specific
-task. Memory allocated for the stack is always accurately tracked, since stack
-memory trivially belongs to a task and is never shared. For the slab, the
-accuracy depends on the amount of object-sharing existing between tasks in
-different cgroups (like memcg does for shmem, the kernel memory controller
-operates in a first-touch basis). Workloads, such as OS containers, usually
-have a very low amount of sharing, and will therefore present high accuracy.
-
-One example of problematic pressure that can be prevented by this work is
-a fork bomb conducted in a shell. We prevent it by noting that tasks use a
-limited amount of stack pages. Seen this way, a fork bomb is just a special
-case of resource abuse. If the offender is unable to grab more pages for the
-stack, no new tasks can be created.
-
-There are also other things the general mechanism protects against. For
-example, using too much of pinned dentry and inode cache, by touching files an
-leaving them in memory forever.
-
-In fact, a simple:
-
-while true; do mkdir x; cd x; done
-
-can halt your system easily because the file system limits are hard to reach
-(big disks), but the kernel memory is not. Those are examples, but the list
-certainly don't stop here.
-
-An important use case for all that, is concerned with people offering hosting
-services through containers. In a physical box we can put a limit to some
-resources, like total number of processes or threads. But in an environment
-where each independent user gets its own piece of the machine, we don't want a
-potentially malicious user to destroy good users' services.
-
-This might be true for systemd as well, that now groups services inside
-cgroups. They generally want to put forward a set of guarantees that limits the
-running service in a variety of ways, so that if they become badly behaved,
-they won't interfere with the rest of the system.
-
-There is, of course, a cost for that. To attempt to mitigate that, static
-branches are used. This code will only be enabled after the first user of this
-service configures any kmem limit, guaranteeing near-zero overhead even if a
-large number of (non-kmem limited) memcgs are deployed.
-
-Behavior depends on the values of memory.limit_in_bytes (U), and
-memory.kmem.limit_in_bytes (K):
-
-    U != 0, K = unlimited:
-    This is the standard memcg limitation mechanism already present before kmem
-    accounting. Kernel memory is completely ignored.
-
-    U != 0, K < U:
-    Kernel memory is a subset of the user memory. This setup is useful in
-    deployments where the total amount of memory per-cgroup is overcommited.
-    Overcommiting kernel memory limits is definitely not recommended, since the
-    box can still run out of non-reclaimable memory.
-    In this case, the admin could set up K so that the sum of all groups is
-    never greater than the total memory, and freely set U at the cost of his
-    QoS.
-
-    U != 0, K >= U:
-    Since kmem charges will also be fed to the user counter and reclaim will be
-    triggered for the cgroup for both kinds of memory. This setup gives the
-    admin a unified view of memory, and it is also useful for people who just
-    want to track kernel memory usage.
-
-
-Glauber Costa (27):
-  memcg: change defines to an enum
-  kmem accounting basic infrastructure
-  Add a __GFP_KMEMCG flag
-  memcg: kmem controller infrastructure
-  mm: Allocate kernel pages to the right memcg
-  res_counter: return amount of charges after res_counter_uncharge
-  memcg: kmem accounting lifecycle management
-  memcg: use static branches when code not in use
-  memcg: allow a memcg with kmem charges to be destructed.
-  execute the whole memcg freeing in free_worker
-  protect architectures where THREAD_SIZE >= PAGE_SIZE against fork
-    bombs
-  Add documentation about the kmem controller
-  slab/slub: struct memcg_params
-  slab: annotate on-slab caches nodelist locks
-  consider a memcg parameter in kmem_create_cache
-  Allocate memory for memcg caches whenever a new memcg appears
-  memcg: infrastructure to match an allocation to the right cache
-  memcg: skip memcg kmem allocations in specified code regions
-  sl[au]b: always get the cache from its page in kmem_cache_free
-  sl[au]b: Allocate objects from memcg cache
-  memcg: destroy memcg caches
-  memcg/sl[au]b Track all the memcg children of a kmem_cache.
-  memcg/sl[au]b: shrink dead caches
-  Aggregate memcg cache values in slabinfo
-  slab: propagate tunables values
-  slub: slub-specific propagation changes.
-  Add slab-specific documentation about the kmem controller
-
-Suleiman Souhlal (2):
-  memcg: Make it possible to use the stock for more than one page.
-  memcg: Reclaim when more than one page needed.
-
- Documentation/cgroups/memory.txt           |   66 +-
- Documentation/cgroups/resource_counter.txt |    7 +-
- include/linux/gfp.h                        |    6 +-
- include/linux/memcontrol.h                 |  203 ++++
- include/linux/res_counter.h                |   12 +-
- include/linux/sched.h                      |    1 +
- include/linux/slab.h                       |   48 +
- include/linux/slab_def.h                   |    3 +
- include/linux/slub_def.h                   |    9 +-
- include/linux/thread_info.h                |    2 +
- include/trace/events/gfpflags.h            |    1 +
- init/Kconfig                               |    2 +-
- kernel/fork.c                              |    4 +-
- kernel/res_counter.c                       |   20 +-
- mm/memcontrol.c                            | 1562 ++++++++++++++++++++++++----
- mm/page_alloc.c                            |   35 +
- mm/slab.c                                  |   93 +-
- mm/slab.h                                  |  137 ++-
- mm/slab_common.c                           |  118 ++-
- mm/slob.c                                  |    2 +-
- mm/slub.c                                  |  124 ++-
- 21 files changed, 2171 insertions(+), 284 deletions(-)
-
+diff --git a/Documentation/cgroups/resource_counter.txt b/Documentation/cgroups/resource_counter.txt
+index 0c4a344..c4d99ed 100644
+--- a/Documentation/cgroups/resource_counter.txt
++++ b/Documentation/cgroups/resource_counter.txt
+@@ -83,16 +83,17 @@ to work with it.
+ 	res_counter->lock internally (it must be called with res_counter->lock
+ 	held). The force parameter indicates whether we can bypass the limit.
+ 
+- e. void res_counter_uncharge[_locked]
++ e. u64 res_counter_uncharge[_locked]
+ 			(struct res_counter *rc, unsigned long val)
+ 
+ 	When a resource is released (freed) it should be de-accounted
+ 	from the resource counter it was accounted to.  This is called
+-	"uncharging".
++	"uncharging". The return value of this function indicate the amount
++	of charges still present in the counter.
+ 
+ 	The _locked routines imply that the res_counter->lock is taken.
+ 
+- f. void res_counter_uncharge_until
++ f. u64 res_counter_uncharge_until
+ 		(struct res_counter *rc, struct res_counter *top,
+ 		 unsinged long val)
+ 
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index 7d7fbe2..4b173b6 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -130,14 +130,16 @@ int res_counter_charge_nofail(struct res_counter *counter,
+  *
+  * these calls check for usage underflow and show a warning on the console
+  * _locked call expects the counter->lock to be taken
++ *
++ * returns the total charges still present in @counter.
+  */
+ 
+-void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
+-void res_counter_uncharge(struct res_counter *counter, unsigned long val);
++u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
++u64 res_counter_uncharge(struct res_counter *counter, unsigned long val);
+ 
+-void res_counter_uncharge_until(struct res_counter *counter,
+-				struct res_counter *top,
+-				unsigned long val);
++u64 res_counter_uncharge_until(struct res_counter *counter,
++			       struct res_counter *top,
++			       unsigned long val);
+ /**
+  * res_counter_margin - calculate chargeable space of a counter
+  * @cnt: the counter
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+index ad581aa..7b3d6dc 100644
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -86,33 +86,39 @@ int res_counter_charge_nofail(struct res_counter *counter, unsigned long val,
+ 	return __res_counter_charge(counter, val, limit_fail_at, true);
+ }
+ 
+-void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
++u64 res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
+ {
+ 	if (WARN_ON(counter->usage < val))
+ 		val = counter->usage;
+ 
+ 	counter->usage -= val;
++	return counter->usage;
+ }
+ 
+-void res_counter_uncharge_until(struct res_counter *counter,
+-				struct res_counter *top,
+-				unsigned long val)
++u64 res_counter_uncharge_until(struct res_counter *counter,
++			       struct res_counter *top,
++			       unsigned long val)
+ {
+ 	unsigned long flags;
+ 	struct res_counter *c;
++	u64 ret = 0;
+ 
+ 	local_irq_save(flags);
+ 	for (c = counter; c != top; c = c->parent) {
++		u64 r;
+ 		spin_lock(&c->lock);
+-		res_counter_uncharge_locked(c, val);
++		r = res_counter_uncharge_locked(c, val);
++		if (c == counter)
++			ret = r;
+ 		spin_unlock(&c->lock);
+ 	}
+ 	local_irq_restore(flags);
++	return ret;
+ }
+ 
+-void res_counter_uncharge(struct res_counter *counter, unsigned long val)
++u64 res_counter_uncharge(struct res_counter *counter, unsigned long val)
+ {
+-	res_counter_uncharge_until(counter, NULL, val);
++	return res_counter_uncharge_until(counter, NULL, val);
+ }
+ 
+ static inline unsigned long long *
 -- 
 1.7.11.7
 
