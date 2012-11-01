@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab2KAI5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 04:57:12 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63659 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757363Ab2KAI5F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 04:57:05 -0400
-Message-ID: <50923956.5090206@gmail.com>
-Date: Thu, 01 Nov 2012 16:56:54 +0800
-From: Shan Wei <shanwei88@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1758014Ab2KAI6h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 04:58:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57929 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755312Ab2KAI6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 04:58:35 -0400
+Date: Thu, 1 Nov 2012 09:58:32 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH 4/8] cgroup: deactivate CSS's and mark cgroup dead before
+ invoking ->pre_destroy()
+Message-ID: <20121101085832.GB8525@dhcp22.suse.cz>
+References: <1351712650-23709-1-git-send-email-tj@kernel.org>
+ <1351712650-23709-5-git-send-email-tj@kernel.org>
+ <20121031212359.GC5286@dhcp22.suse.cz>
+ <20121031212725.GA2945@htj.dyndns.org>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: steffen.klassert@secunet.com, David Miller <davem@davemloft.net>,
-        NetDev <netdev@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/9] net: xfrm: use this_cpu_ptr per-cpu helper
-References: <509109F9.3030904@gmail.com> <0000013ab7e4a640-60bd5b38-a1fc-4730-b918-4109211ffea0-000000@email.amazonses.com>
-In-Reply-To: <0000013ab7e4a640-60bd5b38-a1fc-4730-b918-4109211ffea0-000000@email.amazonses.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121031212725.GA2945@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter said, at 2012/11/1 1:35:
-> It would be better to use
+On Wed 31-10-12 14:27:25, Tejun Heo wrote:
+> Hey, Michal.
 > 
-> 	this_cpu_read(tfms)
+> On Wed, Oct 31, 2012 at 10:23:59PM +0100, Michal Hocko wrote:
+> > > +	for_each_subsys(cgrp->root, ss)
+> > > +		if (ss->pre_destroy)
+> > > +			WARN_ON_ONCE(ss->pre_destroy(cgrp));
+> > 
+> > Do you think that BUG_ON would be too harsh?
 > 
-> since that would also make it atomic vs interrupts. The above code (both
-> original and modified) could determine a pointer to a per cpu structure
-> and then take an interrupt which would move the task. On return we would
-> be accessing the per cpu variable of another processor.
+> Yeah, I do think so.  In general, I think the consensus now is to
+> prefer WARN_ON[_ONCE]() over BUG_ON() whenever possible.  It's not
+> like we can get more information from BUG_ON()s (more likely to get
+> less reporting actually by taking down the machine).  Limping machines
+> are better than dead ones and there just isn't much to gain here by
+> killing it.
 
-this_cpu_read
-|-----_this_cpu_generic_read
+Fair enough
 
-#define _this_cpu_generic_read(pcp)                                     \
-({      typeof(pcp) ret__;                                              \
-        preempt_disable();                                              \
-        ret__ = *this_cpu_ptr(&(pcp));                                  \
-        preempt_enable();                                               \
-        ret__;                                                          \
-})
-
-
-this_cpu_read operations locate per-cpu variable with preemption safe， not
-disable interrupts. why is it atomic vs interrupts?
-
-I have no idea whether we need to disable preemption for this code?
-At least, xfrm code run well with per_cpu_ptr which don't disable preemption.
-
+-- 
+Michal Hocko
+SUSE Labs
