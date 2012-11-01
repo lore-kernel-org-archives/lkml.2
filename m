@@ -1,277 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab2KAFyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 01:54:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18840 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752610Ab2KAFyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 01:54:01 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: maxk@qti.qualcomm.com, edumazet@google.com, krkumar2@in.ibm.com,
-        ernesto.martin@viasat.com, haixiao@juniper.net,
-        Jason Wang <jasowang@redhat.com>
-Subject: [net-next v5 3/7] tuntap: RCUify dereferencing between tun_struct and tun_file
-Date: Thu,  1 Nov 2012 13:45:58 +0800
-Message-Id: <1351748762-3455-4-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1351748762-3455-1-git-send-email-jasowang@redhat.com>
-References: <1351748762-3455-1-git-send-email-jasowang@redhat.com>
+	id S1752954Ab2KAF4c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 01:56:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62129 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752268Ab2KAF4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 01:56:30 -0400
+X-IronPort-AV: E=Sophos;i="4.80,692,1344182400"; 
+   d="scan'208";a="6114225"
+Message-ID: <50920EB8.3020400@cn.fujitsu.com>
+Date: Thu, 01 Nov 2012 13:55:04 +0800
+From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+MIME-Version: 1.0
+To: "Hatayama, Daisuke" <d.hatayama@jp.fujitsu.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH v3 2/2] KVM: make crash_clear_loaded_vmcss valid when
+ loading kvm_intel module
+References: <50909B55.2070901@cn.fujitsu.com> <50909C35.9080702@cn.fujitsu.com> <33710E6CAA200E4583255F4FB666C4E20AACCA2F@G01JPEXMBYT03>
+In-Reply-To: <33710E6CAA200E4583255F4FB666C4E20AACCA2F@G01JPEXMBYT03>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/01 13:55:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/01 13:55:44,
+	Serialize complete at 2012/11/01 13:55:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RCU were introduced in this patch to synchronize the dereferences between
-tun_struct and tun_file. All tun_{get|put} were replaced with RCU, the
-dereference from one to other must be done under rtnl lock or rcu read critical
-region.
+于 2012年10月31日 17:01, Hatayama, Daisuke 写道:
+> 
+> 
+>> -----Original Message-----
+>> From: kexec-bounces@lists.infradead.org
+>> [mailto:kexec-bounces@lists.infradead.org] On Behalf Of zhangyanfei
+>> Sent: Wednesday, October 31, 2012 12:34 PM
+>> To: x86@kernel.org; kexec@lists.infradead.org; Avi Kivity; Marcelo
+>> Tosatti
+>> Cc: linux-kernel@vger.kernel.org; kvm@vger.kernel.org
+>> Subject: [PATCH v3 2/2] KVM: make crash_clear_loaded_vmcss valid when
+>> loading kvm_intel module
+>>
+>> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> 
+> [...]
+> 
+>> @@ -7230,6 +7231,10 @@ static int __init vmx_init(void)
+>>  	if (r)
+>>  		goto out3;
+>>
+>> +#ifdef CONFIG_KEXEC
+>> +	crash_clear_loaded_vmcss = vmclear_local_loaded_vmcss;
+>> +#endif
+>> +
+> 
+> Assignment here cannot cover the case where NMI is initiated after VMX is on in kvm_init and before vmclear_local_loaded_vmcss is assigned, though rare but can happen.
+> 
 
-This is needed for the following patches since the one of the goal of multiqueue
-tuntap is to allow adding or removing queues during workload. Without RCU,
-control path would hold tx locks when adding or removing queues (which may cause
-sme delay) and it's hard to change the number of queues without stopping the net
-device. With the help of rcu, there's also no need for tun_file hold an refcnt
-to tun_struct.
+By saying "VMX is on in kvm init", you mean kvm_init enables the VMX feature in the logical processor?
+No, only there is a vcpu to be created, kvm will enable the VMX feature.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/tun.c |   95 ++++++++++++++++++++++++++---------------------------
- 1 files changed, 47 insertions(+), 48 deletions(-)
+I think there is no difference with this assignment before or after kvm_init because the vmcs linked
+list must be empty before vmx_init is finished.
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index d52ad24..bdbb526 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -115,13 +115,16 @@ struct tap_filter {
-  * tap_filter were kept in tun_struct since they were used for filtering for the
-  * netdevice not for a specific queue (at least I didn't see the reqirement for
-  * this).
-+ *
-+ * RCU usage:
-+ * The tun_file and tun_struct are loosely coupled, the pointer from on to the
-+ * other can only be read while rcu_read_lock or rtnl_lock is held.
-  */
- struct tun_file {
- 	struct sock sk;
- 	struct socket socket;
- 	struct socket_wq wq;
--	atomic_t count;
--	struct tun_struct *tun;
-+	struct tun_struct __rcu *tun;
- 	struct net *net;
- 	struct fasync_struct *fasync;
- 	/* only used for fasnyc */
-@@ -133,7 +136,7 @@ struct tun_file {
-  * file were attached to a persist device.
-  */
- struct tun_struct {
--	struct tun_file		*tfile;
-+	struct tun_file	__rcu	*tfile;
- 	unsigned int 		flags;
- 	kuid_t			owner;
- 	kgid_t			group;
-@@ -179,13 +182,11 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
- 		if (!err)
- 			goto out;
- 	}
--	tfile->tun = tun;
-+	rcu_assign_pointer(tfile->tun, tun);
- 	tfile->socket.sk->sk_sndbuf = tun->sndbuf;
--	tun->tfile = tfile;
-+	rcu_assign_pointer(tun->tfile, tfile);
- 	netif_carrier_on(tun->dev);
--	dev_hold(tun->dev);
- 	sock_hold(&tfile->sk);
--	atomic_inc(&tfile->count);
- 
- out:
- 	netif_tx_unlock_bh(tun->dev);
-@@ -194,34 +195,29 @@ out:
- 
- static void __tun_detach(struct tun_struct *tun)
- {
--	struct tun_file *tfile = tun->tfile;
-+	struct tun_file *tfile = rcu_dereference_protected(tun->tfile,
-+							lockdep_rtnl_is_held());
- 	/* Detach from net device */
--	netif_tx_lock_bh(tun->dev);
- 	netif_carrier_off(tun->dev);
--	tun->tfile = NULL;
--	tfile->tun = NULL;
--	netif_tx_unlock_bh(tun->dev);
--
--	/* Drop read queue */
--	skb_queue_purge(&tfile->socket.sk->sk_receive_queue);
--
--	/* Drop the extra count on the net device */
--	dev_put(tun->dev);
--}
-+	rcu_assign_pointer(tun->tfile, NULL);
-+	if (tfile) {
-+		rcu_assign_pointer(tfile->tun, NULL);
- 
--static void tun_detach(struct tun_struct *tun)
--{
--	rtnl_lock();
--	__tun_detach(tun);
--	rtnl_unlock();
-+		synchronize_net();
-+		/* Drop read queue */
-+		skb_queue_purge(&tfile->socket.sk->sk_receive_queue);
-+	}
- }
- 
- static struct tun_struct *__tun_get(struct tun_file *tfile)
- {
--	struct tun_struct *tun = NULL;
-+	struct tun_struct *tun;
- 
--	if (atomic_inc_not_zero(&tfile->count))
--		tun = tfile->tun;
-+	rcu_read_lock();
-+	tun = rcu_dereference(tfile->tun);
-+	if (tun)
-+		dev_hold(tun->dev);
-+	rcu_read_unlock();
- 
- 	return tun;
- }
-@@ -233,10 +229,7 @@ static struct tun_struct *tun_get(struct file *file)
- 
- static void tun_put(struct tun_struct *tun)
- {
--	struct tun_file *tfile = tun->tfile;
--
--	if (atomic_dec_and_test(&tfile->count))
--		tun_detach(tfile->tun);
-+	dev_put(tun->dev);
- }
- 
- /* TAP filtering */
-@@ -357,14 +350,15 @@ static const struct ethtool_ops tun_ethtool_ops;
- static void tun_net_uninit(struct net_device *dev)
- {
- 	struct tun_struct *tun = netdev_priv(dev);
--	struct tun_file *tfile = tun->tfile;
-+	struct tun_file *tfile = rcu_dereference_protected(tun->tfile,
-+							lockdep_rtnl_is_held());
- 
- 	/* Inform the methods they need to stop using the dev.
- 	 */
- 	if (tfile) {
- 		wake_up_all(&tfile->wq.wait);
--		if (atomic_dec_and_test(&tfile->count))
--			__tun_detach(tun);
-+		__tun_detach(tun);
-+		synchronize_net();
- 	}
- }
- 
-@@ -386,14 +380,16 @@ static int tun_net_close(struct net_device *dev)
- static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
- {
- 	struct tun_struct *tun = netdev_priv(dev);
--	struct tun_file *tfile = tun->tfile;
--
--	tun_debug(KERN_INFO, tun, "tun_net_xmit %d\n", skb->len);
-+	struct tun_file *tfile;
- 
-+	rcu_read_lock();
-+	tfile = rcu_dereference(tun->tfile);
- 	/* Drop packet if interface is not attached */
- 	if (!tfile)
- 		goto drop;
- 
-+	tun_debug(KERN_INFO, tun, "tun_net_xmit %d\n", skb->len);
-+
- 	/* Drop if the filter does not like it.
- 	 * This is a noop if the filter is disabled.
- 	 * Filter can be enabled only for the TAP devices. */
-@@ -435,11 +431,14 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
- 		kill_fasync(&tfile->fasync, SIGIO, POLL_IN);
- 	wake_up_interruptible_poll(&tfile->wq.wait, POLLIN |
- 				   POLLRDNORM | POLLRDBAND);
-+
-+	rcu_read_unlock();
- 	return NETDEV_TX_OK;
- 
- drop:
- 	dev->stats.tx_dropped++;
- 	kfree_skb(skb);
-+	rcu_read_unlock();
- 	return NETDEV_TX_OK;
- }
- 
-@@ -1089,7 +1088,6 @@ static int tun_sendmsg(struct kiocb *iocb, struct socket *sock,
- 
- 	if (!tun)
- 		return -EBADFD;
--
- 	ret = tun_get_user(tun, tfile, m->msg_control, m->msg_iov, total_len,
- 			   m->msg_iovlen, m->msg_flags & MSG_DONTWAIT);
- 	tun_put(tun);
-@@ -1662,8 +1660,7 @@ static int tun_chr_open(struct inode *inode, struct file * file)
- 					    &tun_proto);
- 	if (!tfile)
- 		return -ENOMEM;
--	atomic_set(&tfile->count, 0);
--	tfile->tun = NULL;
-+	rcu_assign_pointer(tfile->tun, NULL);
- 	tfile->net = get_net(current->nsproxy->net_ns);
- 	tfile->flags = 0;
- 
-@@ -1691,7 +1688,9 @@ static int tun_chr_close(struct inode *inode, struct file *file)
- 	struct tun_struct *tun;
- 	struct net *net = tfile->net;
- 
--	tun = __tun_get(tfile);
-+	rtnl_lock();
-+
-+	tun = rcu_dereference_protected(tfile->tun, lockdep_rtnl_is_held());
- 	if (tun) {
- 		struct net_device *dev = tun->dev;
- 
-@@ -1699,18 +1698,20 @@ static int tun_chr_close(struct inode *inode, struct file *file)
- 
- 		__tun_detach(tun);
- 
-+		synchronize_net();
-+
- 		/* If desirable, unregister the netdevice. */
- 		if (!(tun->flags & TUN_PERSIST)) {
--			rtnl_lock();
- 			if (dev->reg_state == NETREG_REGISTERED)
- 				unregister_netdevice(dev);
--			rtnl_unlock();
- 		}
- 
- 		/* drop the reference that netdevice holds */
- 		sock_put(&tfile->sk);
- 	}
- 
-+	rtnl_unlock();
-+
- 	/* drop the reference that file holds */
- 	BUG_ON(!test_bit(SOCK_EXTERNALLY_ALLOCATED,
- 			 &tfile->socket.flags));
-@@ -1842,14 +1843,12 @@ static void tun_cleanup(void)
-  * holding a reference to the file for as long as the socket is in use. */
- struct socket *tun_get_socket(struct file *file)
- {
--	struct tun_struct *tun;
--	struct tun_file *tfile = file->private_data;
-+	struct tun_file *tfile;
- 	if (file->f_op != &tun_fops)
- 		return ERR_PTR(-EINVAL);
--	tun = tun_get(file);
--	if (!tun)
-+	tfile = file->private_data;
-+	if (!tfile)
- 		return ERR_PTR(-EBADFD);
--	tun_put(tun);
- 	return &tfile->socket;
- }
- EXPORT_SYMBOL_GPL(tun_get_socket);
--- 
-1.7.1
+Thanks
+Zhang Yanfei
+
+> What does happen if calling vmclear_local_loaded_vmcss before kvm_init? I think it no problem since the list is initially empty.
+> 
+>>  	vmx_disable_intercept_for_msr(MSR_FS_BASE, false);
+>>  	vmx_disable_intercept_for_msr(MSR_GS_BASE, false);
+>>  	vmx_disable_intercept_for_msr(MSR_KERNEL_GS_BASE, true);
+>> @@ -7265,6 +7270,10 @@ static void __exit vmx_exit(void)
+>>  	free_page((unsigned long)vmx_io_bitmap_b);
+>>  	free_page((unsigned long)vmx_io_bitmap_a);
+>>
+>> +#ifdef CONFIG_KEXEC
+>> +	crash_clear_loaded_vmcss = NULL;
+>> +#endif
+>> +
+>>  	kvm_exit();
+>>  }
+> 
+> Also, this is converse to the above.
+> 
+> Thanks.
+> HATAYAMA, Daisuke
+> 
+> 
 
