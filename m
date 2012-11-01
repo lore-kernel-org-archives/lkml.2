@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936018Ab2KAMNF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 08:13:05 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45600 "EHLO relay.sw.ru"
+	id S936007Ab2KAMNE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 08:13:04 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:19548 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934970Ab2KAMHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 08:07:53 -0400
+	id S935407Ab2KAMHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 08:07:54 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -16,9 +16,9 @@ Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Glauber Costa <glommer@parallels.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>,
         Suleiman Souhlal <suleiman@google.com>
-Subject: [PATCH v6 11/29] memcg: allow a memcg with kmem charges to be destructed.
-Date: Thu,  1 Nov 2012 16:07:27 +0400
-Message-Id: <1351771665-11076-12-git-send-email-glommer@parallels.com>
+Subject: [PATCH v6 09/29] memcg: kmem accounting lifecycle management
+Date: Thu,  1 Nov 2012 16:07:25 +0400
+Message-Id: <1351771665-11076-10-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351771665-11076-1-git-send-email-glommer@parallels.com>
 References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
@@ -26,71 +26,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the ultimate goal of the kmem tracking in memcg is to track slab
-pages as well, we can't guarantee that we'll always be able to point a
-page to a particular process, and migrate the charges along with it -
-since in the common case, a page will contain data belonging to multiple
-processes.
+Because kmem charges can outlive the cgroup, we need to make sure that
+we won't free the memcg structure while charges are still in flight.
+For reviewing simplicity, the charge functions will issue
+mem_cgroup_get() at every charge, and mem_cgroup_put() at every
+uncharge.
 
-Because of that, when we destroy a memcg, we only make sure the
-destruction will succeed by discounting the kmem charges from the user
-charges when we try to empty the cgroup.
+This can get expensive, however, and we can do better. mem_cgroup_get()
+only really needs to be issued once: when the first limit is set. In the
+same spirit, we only need to issue mem_cgroup_put() when the last charge
+is gone.
+
+We'll need an extra bit in kmem_account_flags for that: KMEM_ACCOUNTED_DEAD.
+it will be set when the cgroup dies, if there are charges in the group.
+If there aren't, we can proceed right away.
+
+Our uncharge function will have to test that bit every time the charges
+drop to 0. Because that is not the likely output of
+res_counter_uncharge, this should not impose a big hit on us: it is
+certainly much better than a reference count decrease at every
+operation.
+
+[ v3: merged all lifecycle related patches in one ]
+[ v5: changed memcg_kmem_dead's name ]
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
 Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: Johannes Weiner <hannes@cmpxchg.org>
 CC: Suleiman Souhlal <suleiman@google.com>
 CC: Tejun Heo <tj@kernel.org>
 ---
- mm/memcontrol.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ mm/memcontrol.c | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 50 insertions(+), 7 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 403f5a7..61a382a 100644
+index 1eefb64..91a021a 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -545,6 +545,11 @@ static void disarm_kmem_keys(struct mem_cgroup *memcg)
+@@ -344,6 +344,7 @@ struct mem_cgroup {
+ /* internal only representation about the status of kmem accounting. */
+ enum {
+ 	KMEM_ACCOUNTED_ACTIVE = 0, /* accounted by this cgroup itself */
++	KMEM_ACCOUNTED_DEAD, /* dead memcg with pending kmem charges */
+ };
+ 
+ #define KMEM_ACCOUNTED_MASK (1 << KMEM_ACCOUNTED_ACTIVE)
+@@ -353,6 +354,23 @@ static inline void memcg_kmem_set_active(struct mem_cgroup *memcg)
  {
- 	if (memcg_kmem_is_active(memcg))
- 		static_key_slow_dec(&memcg_kmem_enabled_key);
+ 	set_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
+ }
++
++static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
++{
++	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
++}
++
++static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
++{
++	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags))
++		set_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_account_flags);
++}
++
++static bool memcg_kmem_test_and_clear_dead(struct mem_cgroup *memcg)
++{
++	return test_and_clear_bit(KMEM_ACCOUNTED_DEAD,
++				  &memcg->kmem_account_flags);
++}
+ #endif
+ 
+ /* Stuffs for move charges at task migration. */
+@@ -2691,10 +2709,16 @@ static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
+ 
+ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
+ {
+-	res_counter_uncharge(&memcg->kmem, size);
+ 	res_counter_uncharge(&memcg->res, size);
+ 	if (do_swap_account)
+ 		res_counter_uncharge(&memcg->memsw, size);
++
++	/* Not down to 0 */
++	if (res_counter_uncharge(&memcg->kmem, size))
++		return;
++
++	if (memcg_kmem_test_and_clear_dead(memcg))
++		mem_cgroup_put(memcg);
+ }
+ 
+ /*
+@@ -2733,13 +2757,9 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
+ 		return true;
+ 	}
+ 
+-	mem_cgroup_get(memcg);
+-
+ 	ret = memcg_charge_kmem(memcg, gfp, PAGE_SIZE << order);
+ 	if (!ret)
+ 		*_memcg = memcg;
+-	else
+-		mem_cgroup_put(memcg);
+ 
+ 	css_put(&memcg->css);
+ 	return (ret == 0);
+@@ -2755,7 +2775,6 @@ void __memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg,
+ 	/* The page allocation failed. Revert */
+ 	if (!page) {
+ 		memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
+-		mem_cgroup_put(memcg);
+ 		return;
+ 	}
+ 
+@@ -2796,7 +2815,6 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order)
+ 
+ 	VM_BUG_ON(mem_cgroup_is_root(memcg));
+ 	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
+-	mem_cgroup_put(memcg);
+ }
+ #endif /* CONFIG_MEMCG_KMEM */
+ 
+@@ -4180,6 +4198,13 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
+ 		VM_BUG_ON(ret);
+ 
+ 		memcg_kmem_set_active(memcg);
++		/*
++		 * kmem charges can outlive the cgroup. In the case of slab
++		 * pages, for instance, a page contain objects from various
++		 * processes, so it is unfeasible to migrate them away. We
++		 * need to reference count the memcg because of that.
++		 */
++		mem_cgroup_get(memcg);
+ 	} else
+ 		ret = res_counter_set_limit(&memcg->kmem, val);
+ out:
+@@ -4195,6 +4220,10 @@ static void memcg_propagate_kmem(struct mem_cgroup *memcg)
+ 	if (!parent)
+ 		return;
+ 	memcg->kmem_account_flags = parent->kmem_account_flags;
++#ifdef CONFIG_MEMCG_KMEM
++	if (memcg_kmem_is_active(memcg))
++		mem_cgroup_get(memcg);
++#endif
+ }
+ 
+ /*
+@@ -4883,6 +4912,20 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
+ {
+ 	mem_cgroup_sockets_destroy(memcg);
++
++	memcg_kmem_mark_dead(memcg);
++
++	if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
++		return;
++
 +	/*
-+	 * This check can't live in kmem destruction function,
-+	 * since the charges will outlive the cgroup
++	 * Charges already down to 0, undo mem_cgroup_get() done in the charge
++	 * path here, being careful not to race with memcg_uncharge_kmem: it is
++	 * possible that the charges went down to 0 between mark_dead and the
++	 * res_counter read, so in that case, we don't need the put
 +	 */
-+	WARN_ON(res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0);
++	if (memcg_kmem_test_and_clear_dead(memcg))
++		mem_cgroup_put(memcg);
  }
  #else
- static void disarm_kmem_keys(struct mem_cgroup *memcg)
-@@ -3995,6 +4000,7 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg, bool free_all)
- 	int node, zid, shrink;
- 	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
- 	struct cgroup *cgrp = memcg->css.cgroup;
-+	u64 usage;
- 
- 	css_get(&memcg->css);
- 
-@@ -4028,8 +4034,17 @@ move_account:
- 		mem_cgroup_end_move(memcg);
- 		memcg_oom_recover(memcg);
- 		cond_resched();
-+		/*
-+		 * Kernel memory may not necessarily be trackable to a specific
-+		 * process. So they are not migrated, and therefore we can't
-+		 * expect their value to drop to 0 here.
-+		 *
-+		 * having res filled up with kmem only is enough
-+		 */
-+		usage = res_counter_read_u64(&memcg->res, RES_USAGE) -
-+			res_counter_read_u64(&memcg->kmem, RES_USAGE);
- 	/* "ret" should also be checked to ensure all lists are empty. */
--	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0 || ret);
-+	} while (usage > 0 || ret);
- out:
- 	css_put(&memcg->css);
- 	return ret;
+ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
 -- 
 1.7.11.7
 
