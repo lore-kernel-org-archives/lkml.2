@@ -1,65 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935270Ab2KAUSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 16:18:31 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:56502 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932415Ab2KAUS3 (ORCPT
+	id S1759767Ab2KAUXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 16:23:10 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:55482 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758641Ab2KAUXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 16:18:29 -0400
-Message-ID: <5092D90F.7020105@vlnb.net>
-Date: Thu, 01 Nov 2012 16:18:23 -0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: "Theodore Ts'o" <tytso@mit.edu>,
-        =?UTF-8?B?5p2o6IuP56uLIFlhbmcgU3UgTGk=?= <suli@cs.wisc.edu>,
-        General Discussion of SQLite Database 
-	<sqlite-users@sqlite.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        drh@hwaci.com
-Subject: Re: [sqlite] light weight write barriers
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>	<m2fw5mtffg.fsf_-_@firstfloor.org>	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>	<5086F5A7.9090406@vlnb.net>	<20121025051445.GA9860@thunk.org>	<508B3EED.2080003@vlnb.net>	<20121027044456.GA2764@thunk.org>	<5090532D.4050902@vlnb.net> <20121031095404.0ac18a4b@pyramind.ukuu.org.uk>
-In-Reply-To: <20121031095404.0ac18a4b@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Thu, 1 Nov 2012 16:23:03 -0400
+Date: Thu, 1 Nov 2012 16:22:54 -0400
+From: Jeff Layton <jlayton@samba.org>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, <axboe@kernel.dk>,
+        <lucho@ionkov.net>, <tytso@mit.edu>, <sage@inktank.com>,
+        <ericvh@gmail.com>, <mfasheh@suse.com>, <dedekind1@gmail.com>,
+        <adrian.hunter@intel.com>, <dhowells@redhat.com>, <sfrench@samba.org>,
+        <jlbec@evilplan.org>, <rminnich@sandia.gov>,
+        <linux-cifs@vger.kernel.org>, <jack@suse.cz>,
+        <martin.petersen@oracle.com>, <neilb@suse.de>, <david@fromorbit.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-mtd@lists.infradead.org>, <linux-fsdevel@vger.kernel.org>,
+        <v9fs-developer@lists.sourceforge.net>, <ceph-devel@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>, <linux-afs@lists.infradead.org>,
+        <ocfs2-devel@oss.oracle.com>
+Subject: Re: [PATCH 3/3] fs: Fix remaining filesystems to wait for stable
+ page writeback
+Message-ID: <20121101162254.03dbbd9a@tlielax.poochiereds.net>
+In-Reply-To: <5092C2CE.7070209@panasas.com>
+References: <20121101075805.16153.64714.stgit@blackbox.djwong.org>
+	<20121101075829.16153.92036.stgit@blackbox.djwong.org>
+	<5092C2CE.7070209@panasas.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:hmlVbSsT5+199tDpDKZDR/9pEBTknF5zaHhk6tzyWSE
- UEN2L9f0Jk4kC9K9z7Kz6+1D4LsiaTjFGmhE9omeOm0zrwvXOI
- KV+aIV8J4fOsxJQ/3zJ7u5Pbx7pI0/zIasgB8q0plPnHZ9s9vp
- 5jJfspXT6rvj3UjMoDu6Yykf21/R9XT7/25wLcrwuzbUCcvRES
- z1ENkIVuYAKX+/Nh5sIN/7u22TFdtqkRkNHyVP3PC9GHsKqV3c
- eHC1KsrTw2+kXrlGIVhj2mt1A5FLZlRt+owzldtmgm1MN2uTtO
- OQ7af7PkbhsGRue18dsRUF3vRWU/VNzjXRH1hUFDDm9bELJJwX
- TVZHkoBzgPi44am5r1wg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 1 Nov 2012 11:43:26 -0700
+Boaz Harrosh <bharrosh@panasas.com> wrote:
 
-Alan Cox, on 10/31/2012 05:54 AM wrote:
->> I don't want to flame on this topic, but you are not right here. As far as I can
->> see, a big chunk of Linux storage and file system developers are/were employed by
->> the "gold-plated storage" manufacturers, starting from FusionIO, SGI and Oracle.
->>
->> You know, RedHat from recent times also stepped to this market, at least I saw
->> their advertisement on SDC 2012. So, you can add here all RedHat employees.
->
-> Booleans generally should be reserved for logic operators. Most of the
-> Linux companies work on both low and high end storage. The two are not
-> mutually exclusive nor do they divide neatly by market. Many big clouds
-> use cheap low end drives by the crate, some high end desktops are using
-> SAS although given you can get six 2.5" hotplug drives in a 5.25" bay I'm
-> not sure personally there is much point
+> On 11/01/2012 12:58 AM, Darrick J. Wong wrote:
+> > Fix up the filesystems that provide their own ->page_mkwrite handlers to
+> > provide stable page writes if necessary.
+> > 
+> > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> > ---
+> >  fs/9p/vfs_file.c |    1 +
+> >  fs/afs/write.c   |    4 ++--
+> >  fs/ceph/addr.c   |    1 +
+> >  fs/cifs/file.c   |    1 +
+> >  fs/ocfs2/mmap.c  |    1 +
+> >  fs/ubifs/file.c  |    4 ++--
+> >  6 files changed, 8 insertions(+), 4 deletions(-)
+> > 
+> > 
+> > diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
+> > index c2483e9..aa253f0 100644
+> > --- a/fs/9p/vfs_file.c
+> > +++ b/fs/9p/vfs_file.c
+> > @@ -620,6 +620,7 @@ v9fs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> >  	lock_page(page);
+> >  	if (page->mapping != inode->i_mapping)
+> >  		goto out_unlock;
+> > +	wait_on_stable_page_write(page);
+> >  
+> 
+> Good god thanks, yes please ;-)
+> 
+> >  	return VM_FAULT_LOCKED;
+> >  out_unlock:
+> > diff --git a/fs/afs/write.c b/fs/afs/write.c
+> > index 9aa52d9..39eb2a4 100644
+> > --- a/fs/afs/write.c
+> > +++ b/fs/afs/write.c
+> > @@ -758,7 +758,7 @@ int afs_page_mkwrite(struct vm_area_struct *vma, struct page *page)
+> 
+> afs, is it not a network filesystem? which means that it has it's own emulated none-block-device
+> BDI, registered internally. So if you do need stable pages someone should call
+> bdi_require_stable_pages()
+> 
+> But again since it is a network filesystem I don't see how it is needed, and/or it might be
+> taken care of already.
+> 
+> >  #ifdef CONFIG_AFS_FSCACHE
+> >  	fscache_wait_on_page_write(vnode->cache, page);
+> >  #endif
+> > -
+> > +	wait_on_stable_page_write(page);
+> >  	_leave(" = 0");
+> > -	return 0;
+> > +	return VM_FAULT_LOCKED;
+> >  }
+> > diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+> 
+> CEPH for sure has it's own "emulated none-block-device BDI". This one is also
+> a pure networking filesystem.
+> 
+> And it already does what it needs to do with wait_on_writeback().
+> 
+> So i do not think you should touch CEPH
+> 
+> > index 6690269..e9734bf 100644
+> > --- a/fs/ceph/addr.c
+> > +++ b/fs/ceph/addr.c
+> > @@ -1208,6 +1208,7 @@ static int ceph_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> >  		set_page_dirty(page);
+> >  		up_read(&mdsc->snap_rwsem);
+> >  		ret = VM_FAULT_LOCKED;
+> > +		wait_on_stable_page_write(page);
+> >  	} else {
+> >  		if (ret == -ENOMEM)
+> >  			ret = VM_FAULT_OOM;
+> > diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> 
+> Cifs also self-BDI network filesystem, but
+> 
+> > index edb25b4..a8770bf 100644
+> > --- a/fs/cifs/file.c
+> > +++ b/fs/cifs/file.c
+> > @@ -2997,6 +2997,7 @@ cifs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> >  	struct page *page = vmf->page;
+> >  
+> >  	lock_page(page);
+> 
+> It waits by locking the page, that's cifs naive way of waiting for writeback
+> 
+> > +	wait_on_stable_page_write(page);
+> 
+> Instead it could do better and not override page_mkwrite at all, and all it needs
+> to do is call bdi_require_stable_pages() at it's own registered BDI
+> 
 
-Those doesn't contradict the point that high performance storage vendors are also 
-funding Linux kernel storage development.
+Hmm...I don't know...
 
-> Send patches with benchmarks demonstrating it is useful. It's really
-> quite simple. Code talks.
+I've never been crazy about using the page lock for this, but in the
+absence of a better way to guarantee stable pages, it was what I ended
+up with at the time. cifs_writepages will hold the page lock until
+kernel_sendmsg returns. At that point the TCP layer will have copied
+off the page data so it's safe to release it.
 
-How about that recently preliminary infrastructure to send ORDERED commands 
-instead of queue draining was deleted from the kernel, because "there's no 
-difference where to drain the queue, on the kernel or the storage side"?
+With this change though, we're going to end up blocking until the
+writeback flag clears, right? And I think that will happen when the
+reply comes in? So, we'll end up blocking for much longer than is
+really necessary in page_mkwrite with this change.
 
-Vlad
+-- 
+Jeff Layton <jlayton@samba.org>
