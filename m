@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992619Ab2KAW5L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 18:57:11 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:41662 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762462Ab2KAW5I (ORCPT
+	id S2992625Ab2KAW6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:58:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15640 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992551Ab2KAW6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 18:57:08 -0400
-Message-ID: <5092FE22.30906@panasas.com>
-Date: Thu, 1 Nov 2012 15:56:34 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-CC: <axboe@kernel.dk>, <lucho@ionkov.net>, <tytso@mit.edu>, <sage@inktank.com>,
-        <ericvh@gmail.com>, <mfasheh@suse.com>, <dedekind1@gmail.com>,
-        <adrian.hunter@intel.com>, <dhowells@redhat.com>, <sfrench@samba.org>,
-        <jlbec@evilplan.org>, <rminnich@sandia.gov>,
-        <linux-cifs@vger.kernel.org>, <jack@suse.cz>,
-        <martin.petersen@oracle.com>, <neilb@suse.de>, <david@fromorbit.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-mtd@lists.infradead.org>, <linux-fsdevel@vger.kernel.org>,
-        <v9fs-developer@lists.sourceforge.net>, <ceph-devel@vger.kernel.org>,
-        <linux-ext4@vger.kernel.org>, <linux-afs@lists.infradead.org>,
-        <ocfs2-devel@oss.oracle.com>
-Subject: Re: [PATCH 1/3] bdi: Track users that require stable page writes
-References: <20121101075805.16153.64714.stgit@blackbox.djwong.org> <20121101075813.16153.94581.stgit@blackbox.djwong.org> <5092BDA2.6090001@panasas.com> <20121101185756.GI19591@blackbox.djwong.org>
-In-Reply-To: <20121101185756.GI19591@blackbox.djwong.org>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 1 Nov 2012 18:58:08 -0400
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=iHy4KzXKIIwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NE78AOKw864A:10 a=Wn7OnVGmgRzFgaPCjT0A:9 a=PUjeQqilurYA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351810685.4004.124.camel@gandalf.local.home>
+Subject: Re: [PATCH RT 3/4] net: netfilter: Serialize xt_write_recseq
+ sections on RT
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter LaDow <petela@gocougs.wsu.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>
+Date: Thu, 01 Nov 2012 18:58:05 -0400
+In-Reply-To: <CAN8Q1Ecq9T5HC60_ta8Xr9kKyAe8Fjrd8znV9MpDTYqkSSptOw@mail.gmail.com>
+References: <20121031003258.811955127@goodmis.org>
+	 <20121031003314.763160265@goodmis.org>
+	 <CAN8Q1EcVfzJJh+XMeXMMk33kwyyyRoEWsuEbSQqVW0Vz3i3Vuw@mail.gmail.com>
+	 <alpine.LFD.2.02.1211012213460.2756@ionos>
+	 <CAN8Q1Ecq9T5HC60_ta8Xr9kKyAe8Fjrd8znV9MpDTYqkSSptOw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2012 11:57 AM, Darrick J. Wong wrote:
-> On Thu, Nov 01, 2012 at 11:21:22AM -0700, Boaz Harrosh wrote:
->> On 11/01/2012 12:58 AM, Darrick J. Wong wrote:
->>> This creates a per-backing-device counter that tracks the number of users which
->>> require pages to be held immutable during writeout.  Eventually it will be used
->>> to waive wait_for_page_writeback() if nobody requires stable pages.
->>>
->>
->> There is two things I do not like:
->> 1. Please remind me why we need the users counter?
->>    If the device needs it, it will always be needed. The below 
->>    queue_unrequire_stable_pages call at blk_integrity_unregister
->>    only happens at device destruction time, no?
->>
->>    It was also said that maybe individual filesystems would need
->>    stable pages where other FSs using the same BDI do not. But
->>    since the FS is at the driving seat in any case, it can just
->>    do wait_for_writeback() regardless and can care less about
->>    the bdi flag and the other FSs. Actually all those FSs already
->>    do this this, and do not need any help. So this reason is
->>    mute.
+On Thu, 2012-11-01 at 15:30 -0700, Peter LaDow wrote:
+> On Thu, Nov 1, 2012 at 2:26 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > Cough. You are missing a boat load of crucial fixes. There is a damned
+> > good reason why 3.0.stable got 12 updates and the -rt version 14.
 > 
-> The counter exists so that a filesystem can forcibly enable stable page writes
-> even if the underlying device doesn't require it, because the generic fs/mm
-> waiting only happens if stable_pages_required=1.  The idea here was to allow a
-> filesystem that needs stable page writes for its own purposes (i.e. data block
-> checksumming) to be able to enforce the requirement even if the disk doesn't
-> care (or doesn't exist).
+> I don't doubt there are.  But we've only experienced one problem
+> between 3.0.36-rt58 and 3.0.48-rt72.  Indeed, it might be easier to
+> evaluate the risk if all the changelogs were readily available.  So
+> far, however, we haven't discovered any other issues that give us any
+> concerns.
+
+They are, it's just many of them. This is the point of the stable
+series, is to add patches that pose little risk and fix a real bug. Also
+note that a lot of the changes in mainline stable are for drivers, which
+most likely wont affect you. You may want to look at all the core code
+changes though.
+
 > 
-
-But the filesystem does not need BDI flag to do that, It can just call
-wait_on_page_writeback() directly and or any other waiting like cifs does,
-and this way will not affect any other partitions of the same BDI. So this flag
-is never needed by the FS, it is always to service the device.
-
-> But maybe there are no such filesystems?
+> > Your risk assessment is definitley interesting.
 > 
-
-Exactly, all the FSs that do care, already take care of it.
-
-> <shrug> I don't really like the idea that you can dirty a page during writeout,
-> which means that the disk could write the before page, the after page, or some
-> weird mix of the two, and all you get is a promise that the after page will get
-> rewritten if the power doesn't go out.  Not to mention that it could happen
-> again. :)
+> We have specifically tested 3.0.36-rt58 for performance in our
+> application.  Moving to 3.0.48-rt72 poses risk about whether would
+> still be able to meet our performance requirements.  And with regard
+> to stability, the only issue we've had since our earlier moved to
+> 3.0.36-rt58 was the netfilter problem.  We initially only saw the
+> problem on PPP related interfaces, so we reverted to 3.0.3 (non-rt)
+> for PPP related issues.
 > 
+> Now, if you think there are some issues that should raise eyebrows, or
+> can point me to a list of changelogs, I'd be happy to evaluate them.
 
-I guess that's life. But what is the difference between a modification of a page
-that comes 1 nanosecond before the end_write_back, and another one that came
-1 nano after end_write_back. To the disk it looks like the same load pattern.
+Note, if you are only interested in -rt related fixes, all -rt only
+fixes are pushed as a separate update. Look for releases where only the
+-rt version changes. I update the -rt version when doing a new merge of
+the mainline stable release and I update the -rt version if there's -rt
+only changes added. I never combine the two, so you don't need to look
+at the changes where the mainline version number changes (ie. 3.0.x).
 
-I do have in mind a way that we can minimize these redirty-while-writeback by 90% but
-I don't care enough (And am not paid) to fix it, so the contention is currently worse
-then what it could be.
+v3.0.34-rt55
+v3.0.35-rt56
+v3.0.36-rt57
+v3.0.36-rt58
+v3.0.39-rt59
 
->> 2. I hate the atomic_read for every mkwrite. I think we can do
->>    better, since as you noted it can never be turned off, only
->>    on, at init time. And because of 1. above it is not dynamic.
->>    I think I like your previous simple bool better.
-> 
-> I doubt the counter would change much; I could probably change it to something
-> less heavyweight if it's really a problem.
-> 
+-rt56 was only the merge of 3.0.35. -rt 57 was only the merge of 3.0.36.
+-rt58 had only -rt specific changes applied. -rt59 was only the merge of
+3.0.39.
 
-I hope you are convinced that a counter is not needed, and a simple bool like
-before is enough
+Simply need to do a: git log v3.0.36-rt58 to see the -rt specific
+changes since -rt57 (the merge of 3.0.36).
 
-Thanks
-Boaz
+Note, if we find a bug in mainline, we do not add it to the -rt series.
+Instead we forward a note to the mainline stable maintainer (Either Greg
+or Ben) and Cc the stable mailing list. The stable releases only get
+those fixes via mainline. Thus, you will be missing fixes that we find
+in mainline and push it back to them.
+
+-- Steve
+
+
