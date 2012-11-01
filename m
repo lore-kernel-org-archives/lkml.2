@@ -1,66 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761093Ab2KAMQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 08:16:42 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:53652 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756264Ab2KAMQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 08:16:39 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1761303Ab2KAMUf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 08:20:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38705 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755195Ab2KAMUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 08:20:34 -0400
+Date: Thu, 1 Nov 2012 12:20:27 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Paul Turner <pjt@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 17/31] mm/migrate: Introduce migrate_misplaced_page()
+Message-ID: <20121101122027.GV3888@suse.de>
+References: <20121025121617.617683848@chello.nl>
+ <20121025124833.785487250@chello.nl>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Subject: RE: [PATCH 3/9] net: xfrm: use this_cpu_ptr per-cpu helper
-Date: Thu, 1 Nov 2012 12:15:50 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7086@saturn3.aculab.com>
-In-Reply-To: <50923956.5090206@gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH 3/9] net: xfrm: use this_cpu_ptr per-cpu helper
-thread-index: Ac24DvJGr57KwqY8QU2JzE4svQI8SgAGrdWw
-References: <509109F9.3030904@gmail.com> <0000013ab7e4a640-60bd5b38-a1fc-4730-b918-4109211ffea0-000000@email.amazonses.com> <50923956.5090206@gmail.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Shan Wei" <shanwei88@gmail.com>, "Christoph Lameter" <cl@linux.com>
-Cc: <steffen.klassert@secunet.com>, "David Miller" <davem@davemloft.net>,
-        "NetDev" <netdev@vger.kernel.org>,
-        "Herbert Xu" <herbert@gondor.hengli.com.au>,
-        "Kernel-Maillist" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121025124833.785487250@chello.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA1CGkv3024535
 
-> this_cpu_read
-> |-----_this_cpu_generic_read
+On Thu, Oct 25, 2012 at 02:16:34PM +0200, Peter Zijlstra wrote:
+> Add migrate_misplaced_page() which deals with migrating pages from
+> faults. 
 > 
-> #define _this_cpu_generic_read(pcp)                                     \
-> ({      typeof(pcp) ret__;                                              \
->         preempt_disable();                                              \
->         ret__ = *this_cpu_ptr(&(pcp));                                  \
->         preempt_enable();                                               \
->         ret__;                                                          \
-> })
+> This includes adding a new MIGRATE_FAULT migration mode to
+> deal with the extra page reference required due to having to look up
+> the page.
+> 
+> Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> Cc: Paul Turner <pjt@google.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  include/linux/migrate.h      |    7 +++
+>  include/linux/migrate_mode.h |    3 +
+>  mm/migrate.c                 |   85 ++++++++++++++++++++++++++++++++++++++-----
+>  3 files changed, 87 insertions(+), 8 deletions(-)
+> 
+> Index: tip/include/linux/migrate.h
+> ===================================================================
+> --- tip.orig/include/linux/migrate.h
+> +++ tip/include/linux/migrate.h
+> @@ -30,6 +30,7 @@ extern int migrate_vmas(struct mm_struct
+>  extern void migrate_page_copy(struct page *newpage, struct page *page);
+>  extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+>  				  struct page *newpage, struct page *page);
+> +extern int migrate_misplaced_page(struct page *page, int node);
+>  #else
+>  
+>  static inline void putback_lru_pages(struct list_head *l) {}
+> @@ -63,5 +64,11 @@ static inline int migrate_huge_page_move
+>  #define migrate_page NULL
+>  #define fail_migrate_page NULL
+>  
+> +static inline
+> +int migrate_misplaced_page(struct page *page, int node)
+> +{
+> +	return -EAGAIN; /* can't migrate now */
+> +}
+>  #endif /* CONFIG_MIGRATION */
+> +
+>  #endif /* _LINUX_MIGRATE_H */
+> Index: tip/include/linux/migrate_mode.h
+> ===================================================================
+> --- tip.orig/include/linux/migrate_mode.h
+> +++ tip/include/linux/migrate_mode.h
+> @@ -6,11 +6,14 @@
+>   *	on most operations but not ->writepage as the potential stall time
+>   *	is too significant
+>   * MIGRATE_SYNC will block when migrating pages
+> + * MIGRATE_FAULT called from the fault path to migrate-on-fault for mempolicy
+> + *	this path has an extra reference count
+>   */
+>  enum migrate_mode {
+>  	MIGRATE_ASYNC,
+>  	MIGRATE_SYNC_LIGHT,
+>  	MIGRATE_SYNC,
+> +	MIGRATE_FAULT,
+>  };
+>  
+>  #endif		/* MIGRATE_MODE_H_INCLUDED */
+> Index: tip/mm/migrate.c
+> ===================================================================
+> --- tip.orig/mm/migrate.c
+> +++ tip/mm/migrate.c
+> @@ -225,7 +225,7 @@ static bool buffer_migrate_lock_buffers(
+>  	struct buffer_head *bh = head;
+>  
+>  	/* Simple case, sync compaction */
+> -	if (mode != MIGRATE_ASYNC) {
+> +	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT) {
+>  		do {
+>  			get_bh(bh);
+>  			lock_buffer(bh);
+> @@ -279,12 +279,22 @@ static int migrate_page_move_mapping(str
+>  		struct page *newpage, struct page *page,
+>  		struct buffer_head *head, enum migrate_mode mode)
+>  {
+> -	int expected_count;
+> +	int expected_count = 0;
+>  	void **pslot;
+>  
+> +	if (mode == MIGRATE_FAULT) {
+> +		/*
+> +		 * MIGRATE_FAULT has an extra reference on the page and
+> +		 * otherwise acts like ASYNC, no point in delaying the
+> +		 * fault, we'll try again next time.
+> +		 */
+> +		expected_count++;
+> +	}
+> +
+>  	if (!mapping) {
+>  		/* Anonymous page without mapping */
+> -		if (page_count(page) != 1)
+> +		expected_count += 1;
+> +		if (page_count(page) != expected_count)
+>  			return -EAGAIN;
+>  		return 0;
+>  	}
+> @@ -294,7 +304,7 @@ static int migrate_page_move_mapping(str
+>  	pslot = radix_tree_lookup_slot(&mapping->page_tree,
+>   					page_index(page));
+>  
+> -	expected_count = 2 + page_has_private(page);
+> +	expected_count += 2 + page_has_private(page);
+>  	if (page_count(page) != expected_count ||
+>  		radix_tree_deref_slot_protected(pslot, &mapping->tree_lock) != page) {
+>  		spin_unlock_irq(&mapping->tree_lock);
+> @@ -313,7 +323,7 @@ static int migrate_page_move_mapping(str
+>  	 * the mapping back due to an elevated page count, we would have to
+>  	 * block waiting on other references to be dropped.
+>  	 */
+> -	if (mode == MIGRATE_ASYNC && head &&
+> +	if ((mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT) && head &&
+>  			!buffer_migrate_lock_buffers(head, mode)) {
+>  		page_unfreeze_refs(page, expected_count);
+>  		spin_unlock_irq(&mapping->tree_lock);
+> @@ -521,7 +531,7 @@ int buffer_migrate_page(struct address_s
+>  	 * with an IRQ-safe spinlock held. In the sync case, the buffers
+>  	 * need to be locked now
+>  	 */
+> -	if (mode != MIGRATE_ASYNC)
+> +	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT)
+>  		BUG_ON(!buffer_migrate_lock_buffers(head, mode));
+>  
+>  	ClearPagePrivate(page);
+> @@ -687,7 +697,7 @@ static int __unmap_and_move(struct page
+>  	struct anon_vma *anon_vma = NULL;
+>  
+>  	if (!trylock_page(page)) {
+> -		if (!force || mode == MIGRATE_ASYNC)
+> +		if (!force || mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT)
+>  			goto out;
+>  
+>  		/*
+> @@ -1403,4 +1413,63 @@ int migrate_vmas(struct mm_struct *mm, c
+>   	}
+>   	return err;
+>  }
+> -#endif
+> +
+> +/*
+> + * Attempt to migrate a misplaced page to the specified destination
+> + * node.
+> + */
+> +int migrate_misplaced_page(struct page *page, int node)
+> +{
+> +	struct address_space *mapping = page_mapping(page);
+> +	int page_lru = page_is_file_cache(page);
+> +	struct page *newpage;
+> +	int ret = -EAGAIN;
+> +	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
+> +
+> +	/*
+> +	 * Don't migrate pages that are mapped in multiple processes.
+> +	 */
+> +	if (page_mapcount(page) != 1)
+> +		goto out;
+> +
+
+Why?
+
+I know why -- it's because we don't want to ping-pong shared library
+pages.
+
+However, what if it's a shmem mapping? We might want to consider migrating
+those but with this check that will never happen.
+
+> +	/*
+> +	 * Never wait for allocations just to migrate on fault, but don't dip
+> +	 * into reserves. And, only accept pages from the specified node. No
+> +	 * sense migrating to a different "misplaced" page!
+> +	 */
+
+Not only that,  we do not want to reclaim on a remote node to allow
+migration. The cost of reclaim will exceed the benefit from local memory
+accesses.
+
+> +	if (mapping)
+> +		gfp = mapping_gfp_mask(mapping);
+> +	gfp &= ~__GFP_WAIT;
+> +	gfp |= __GFP_NOMEMALLOC | GFP_THISNODE;
+> +
+> +	newpage = alloc_pages_node(node, gfp, 0);
+> +	if (!newpage) {
+> +		ret = -ENOMEM;
+> +		goto out;
+> +	}
+> +
+> +	if (isolate_lru_page(page)) {
+> +		ret = -EBUSY;
+> +		goto put_new;
+> +	}
+> +
+
+Going to need to keep an eye on the hotness of the LRU lock during heavy
+migration states. Actually, a process using MPOL_MF_LAZY and then creating
+a large number of threads is going to hammer that lock. I've no proposed
+solution to this but if we see a bug report related to stalls after using
+that system call then this will be a candidate.
+
+Compaction had to use trylock-like logic to get around this problem but
+it's not necessarily the right choice for lazy migration unless you are
+willing to depend on the automatic detection to fix it up later.
+
+> +	inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
+> +	ret = __unmap_and_move(page, newpage, 0, 0, MIGRATE_FAULT);
+
+By bypassing __unmap_and_move, you miss the PageTransHuge() check in
+unmap_and_move and the splitting when a transhuge is encountered. Was that
+deliberate? Why?
+
+> +	/*
+> +	 * A page that has been migrated has all references removed and will be
+> +	 * freed. A page that has not been migrated will have kepts its
+> +	 * references and be restored.
+> +	 */
+> +	dec_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
+> +	putback_lru_page(page);
+> +put_new:
+> +	/*
+> +	 * Move the new page to the LRU. If migration was not successful
+> +	 * then this will free the page.
+> +	 */
+> +	putback_lru_page(newpage);
+> +out:
+> +	return ret;
+> +}
+> +
+> +#endif /* CONFIG_NUMA */
 > 
 > 
-> this_cpu_read operations locate per-cpu variable with preemption safeï¼Œ not
-> disable interrupts. why is it atomic vs interrupts?
 
-Hmmm...  what effect do those preemt_dis/enable() actually have?
-Since a pre-empt can happen either side of them, the value
-the caller sees can be for the wrong cpu anyway.
-
-The only time I could see them being necessary is if
-*this_cpu_ptr() itself needs mutex protection in order to
-function correctly - and that is likely to be port specific.
-On i386/amd64 where (I guess) it is an access offset by fs/gs
-this isn't necessary and just wastes cpu cycles.
-
-If the caller cares which cpu the value comes from (eg to
-increment a counter) then the caller would need to disable
-pre-emption across the whole operation.
-
-	David
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Mel Gorman
+SUSE Labs
