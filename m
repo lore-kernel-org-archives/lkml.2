@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762197Ab2KAS7b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 14:59:31 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:47935 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753555Ab2KAS71 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 14:59:27 -0400
+	id S1762190Ab2KATBX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 15:01:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56323 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753555Ab2KATBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 15:01:21 -0400
+Date: Thu, 1 Nov 2012 20:01:19 +0100
+From: Jan Kara <jack@suse.cz>
+To: Marcus Sundman <marcus@hibox.fi>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Debugging system freezes on filesystem writes
+Message-ID: <20121101190119.GA27294@quack.suse.cz>
+References: <508DB432.2030208@hibox.fi>
 MIME-Version: 1.0
-Date: Thu, 1 Nov 2012 11:59:26 -0700
-X-Google-Sender-Auth: 1Fbtk3mRC06Th0zqjd2ezCAgiqY
-Message-ID: <CAGXu5jLSA-DKt5BfimH96vOQW23UCgGaWcK9tPxx9+FGWLei2A@mail.gmail.com>
-Subject: dropping CONFIG_EXPERIMENTAL (was: warning: (BLK_DEV_RBD && CEPH_FS)
- selects CEPH_LIB which has unmet direct dependencies (NET && INET && EXPERIMENTAL))
-From: Kees Cook <keescook@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Fengguang Wu <fengguang.wu@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508DB432.2030208@hibox.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like the drop-experimental patches have started to land in
-Linus's tree ahead of schedule (they're queuing up in linux-next[1]
-currently). These types of warnings don't happen if the first patch
-from my series (that explicitly enables CONFIG_EXPERIMENTAL until all
-references are removed) is in the tree.
+On Mon 29-10-12 00:39:46, Marcus Sundman wrote:
+  Hello,
 
-How would people like to handle this? I could ask Linus to pull the
-ceph change to make this specific warning go away, but I'm nervous
-that we'll just continue to see one-off problems.
+> I have a big problem with the system freezing and would appreciate
+> any help on debugging this and pinpointing where exactly the problem
+> is, so it could be fixed.
+> 
+> So, whenever I write to the disk the system comes to a crawl or
+> freezes altogether. This happens even when the writing processes are
+> running on nice '19' and ionice 'idle'. (E.g. a 10 second compile
+> could freeze the system for several minutes, rendering the computer
+> pretty much unusable for anything interesting.)
+> 
+> Here you can see a 20 second gap even in superhigh priority:
+> # nice -n -20 ionice -c1 iostat -t -m -d -x 1 > http://pastebin.com/j5qnh2VV
+> 
+> I'm currently running 3.5.0-17-lowlatency on the ZenBook UX31E,
+> using the NOOP I/O scheduler on the SanDisk SSD U100. The chipset
+> seems to be Intel QS67. I've had this same problem on 3.2.0 generic
+> and lowlatency kernels.
+  These are Ubuntu kernels. Any chance to reproduce the issue with vanilla
+kernels - i.e. kernels without any Ubuntu patches? Also when you speak of
+system freezing - can you e.g. type to terminal while the system is frozen?
+Or is it just that running commands freezes? And how much free memory do
+you have while the system is frozen? Finally, can you trigger the freeze by
+something simpler than compilation - e.g. does
+  dd if=/dev/zero of=/tmp bs=1M
+trigger the freeze as well?
 
--Kees
-
-[1] http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/linux-next
-
-On Thu, Nov 1, 2012 at 11:27 AM, kbuild test robot
-<fengguang.wu@intel.com> wrote:
-> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux master
-> head:   8c23f406c6d86808726ace580657186bc3b44587
-> commit: b8977285ecb0033b0bd9a99d4355f9c0bc8708f1 drivers/block: remove CONFIG_EXPERIMENTAL
-> date:   9 days ago
-> config: i386-randconfig-b610 (attached as .config)
->
-> All warnings:
->
-> warning: (BLK_DEV_RBD && CEPH_FS) selects CEPH_LIB which has unmet direct dependencies (NET && INET && EXPERIMENTAL)
-> warning: (BLK_DEV_RBD && CEPH_FS) selects CEPH_LIB which has unmet direct dependencies (NET && INET && EXPERIMENTAL)
->
-> ---
-> 0-DAY kernel build testing backend         Open Source Technology Center
-> Fengguang Wu, Yuanhan Liu                              Intel Corporation
-
-
-
+								Honza
 -- 
-Kees Cook
-Chrome OS Security
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
