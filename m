@@ -1,238 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761100Ab2KANdb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 09:33:31 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36724 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756787Ab2KANd2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 09:33:28 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.1 \(1498\))
+	id S1761275Ab2KANgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 09:36:06 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:49244 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756931Ab2KANgC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 09:36:02 -0400
 Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <20121101130636.GB12489@arwen.pp.htv.fi>
-Date: Thu, 1 Nov 2012 14:33:21 +0100
-Cc: "Cousson, Benoit" <b-cousson@ti.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20121101131609.GC12489@arwen.pp.htv.fi>
+Date: Thu, 1 Nov 2012 15:35:55 +0200
+Cc: "Cousson, Benoit" <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>, Koen Kooi <koen@dominion.thruhere.net>,
         Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
         <linux-omap@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
         Paul Walmsley <paul@pwsan.com>
 Content-Transfer-Encoding: 8BIT
-Message-Id: <CF8447C2-55E9-48AC-9C08-F1F48D47739B@dominion.thruhere.net>
-References: <50918223.6080003@ti.com> <8AD2F7AF-8315-442B-A394-1A38DAB29F52@antoniou-consulting.com> <20121031212639.GQ12739@atomide.com> <8B058B00-6C21-4410-A24B-75651D49F6EC@antoniou-consulting.com> <20121031221402.GA29490@arwen.pp.htv.fi> <E4EE0D1F-C7AC-4620-86F2-D9C7C56E279F@antoniou-consulting.com> <50924DA3.1060901@ti.com> <F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com> <50925C49.7060004@ti.com> <CBDE21C5-1980-4BDC-9153-7653A07D0024@dominion.thruhere.net> <20121101130636.GB12489@arwen.pp.htv.fi>
+Message-Id: <E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com>
+References: <20121031212639.GQ12739@atomide.com> <8B058B00-6C21-4410-A24B-75651D49F6EC@antoniou-consulting.com> <20121031221402.GA29490@arwen.pp.htv.fi> <E4EE0D1F-C7AC-4620-86F2-D9C7C56E279F@antoniou-consulting.com> <50924DA3.1060901@ti.com> <F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com> <20121101110418.GF410@arwen.pp.htv.fi> <3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com> <20121101124025.GA12489@arwen.pp.htv.fi> <A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com> <20121101131609.GC12489@arwen.pp.htv.fi>
 To: <balbi@ti.com>
-X-Mailer: Apple Mail (2.1498)
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
-Op 1 nov. 2012, om 14:06 heeft Felipe Balbi <balbi@ti.com> het volgende geschreven:
+On Nov 1, 2012, at 3:16 PM, Felipe Balbi wrote:
 
 > Hi,
 > 
-> On Thu, Nov 01, 2012 at 01:00:21PM +0100, Koen Kooi wrote:
->> tl;dr: please suggest an actual solution that allows plug&play when
->> plugging in multiple capes and applying power after that. Preferably
->> one that doesn't pass the buck to u-boot.
-> 
-> I can think of a few ways:
-> 
-> 1) ship your distribution with all necessary drivers and let udev handle
-> 	driver probing.
-> 
-> 	clearly this will require constant updates for the distribution
-> 	as new capes are developed. But IIUC, that's the same with
-> 	Arduino where new "libraries" are added to the Arduino OS.
-
-And how are you going to handle pinmuxing and conflict resolution? You're basically saying that people should just use /dev/mem to write drivers, since you don't consider their use case valid.
-
-> 
-> 2) ship with drivers for EEPROMs only and setup a repository of drivers
-> 
-> 	this would require every driver to be packaged separately, then
-> 	you create a setup where bone's userland will use EEPROMs data
-> 	to figure out which drivers it needs, pass that information to
-> 	SDK via USB, then SDK downloads all necessary/missing packages,
-> 	sends them to bone via USB and all packages are installed on the
-> 	bone.
-> 
-> 	Note that since packages would be 'installed', this would be a
-> 	one-time-only thing.
-
-I lack the words to describe my emotions after reading this. Let's leave it at that.
-
-> 3) realize that if your user can build an FPGA cape, s/he can most
-> 	likely write code and adding/recompiling kernel shouldn't be the
-> 	biggest of his/her worries
-> 
-> 	(no comments to this one, I understand it's not feasible)
-
-You'd be surprised.
-
-> in any case, capebus sounds like something which is hugely unnecessary.
-
-On tablets and phones, yes. But TI chips are use for different use-cases, bone + capes being one of those.
-
-> ps: at least for the I2C subsystem, i2c-core can detect for you if your
-> driver provides ->detect() method.
-
-So I just need to patch all i2c drivers and force people to use the "standard" address for the i2c chip when designing a board.
-
->> Op 1 nov. 2012, om 12:26 heeft "Cousson, Benoit" <b-cousson@ti.com> het volgende geschreven:
->>>>> FWIW, we do have a similar, but simpler, problem with the beagle /
->>>>> beagle-xm and panda / panda-es. But for the moment we are just
->>>>> using a different DTS for each board.
+> On Thu, Nov 01, 2012 at 02:57:26PM +0200, Pantelis Antoniou wrote:
+>>>>>>> Each cape will have their own DTS and based on some board id you
+>>>>>>> will fix the DT dynamically.
+>>>>>>> 
+>>>>>>> My point is that the issue you are facing is a real limitation of
+>>>>>>> DT, so you should fix the DT core and not workaround it by creating
+>>>>>>> artificial bindings / drivers.
+>>>>>>> 
+>>>>>> 
+>>>>>> You still haven't described any mechanism to deal with all the use
+>>>>>> cases I described.
+>>>>>> 
+>>>>>> DT can't and will not deal with the complexity that we're facing right
+>>>>>> now.
+>>>>> 
+>>>>> and DT-itself shouldn't. I agree with Benoit that this should be built
+>>>>> at bootloader level, perhaps. Whatever you're doing in capebus, you
+>>>>> could do at kernel space, build your DT bindings in runtime, and pass
+>>>>> that DT blob to kernel.
 >>>> 
->>>> A different DTS for each board combination... There alot more capes
->>>> for the bone that they are for the beagle & the panda.  And more
->>>> are going to come, but not necessarily from people that have any
->>>> connection to TI or CCO.
+>>>> We're just passing the buck someplace else. We're not fixing the problem.
+>>>> What makes you think that dealing with this in the bootloader is going
+>>>> to be simpler?
 >>> 
->>> Sure, but my point is that your solution will not solve our problem
->>> :-)
->>> This is a generic problem that you address with a very custom /
->>> specific approach.
+>>> I never said it was supposed to be simpler, it just doesn't sound like
+>>> something the kernel should care about. Kernel cares about the
+>> 
+>> I just disagree here. The kernel should provide services that make the life
+>> of users easier, not the lives of the kernel developers easier.
+> 
+> and it's already doing that isn't it ? we have i2c framework for i2c
+> clients. From a userland point of view, you have input layer, iio,
+> hwmon, chardev and a whole bunch of other interfaces which standardize
+> device accesses.
+> 
+> Look at your sentence again: "kernel should make life of users easier,
+> not that of kernel developers"; IMHO capebus is just making it easier
+> for the kernel developers who have to maintain a bunch of drivers for
+> different devices on different capes ;-)
+> 
+> At the end of the day, capebus will just be creating devices which will
+> be handled by the same I2C framework, iio, input, hwmon, and so on. So
+> what was the great benefit from capebus other than decreasing the
+> amount of changes to .dts files ?
+> 
+
+How about true plug and play, conflict resolution & real easy development of
+new cape designs.
+
+I fail to see how your convoluted method(s) fixes any of the above. And no
+passing the buck to someone else (be it u-boot, u-dev, user-space) won't cut
+it.
+
+What you are proposing will just stop dead all cape development besides the
+ones that dedicated teams at TI do. In fact the whole project, of a cheap
+Linux based, hackable community board will fail.
+
+
+>>>>> One question though, what do you mean by "some capes are full blown
+>>>>> devices with their own drivers" ? Do you mean you have capes running
+>>>>> some other (RT)OS and communicating with linux somehow ? How does it
+>>>>> communicate to the bone ?
+>>>> 
+>>>> Some have FPGAs.
+>>>> https://specialcomp.com/beaglebone/BeagleBone_FPGA.html
 >>> 
->>>> You still haven't described how I could solve the issue of
->>>> conflicting capes using a single DTS.
+>>> how does linux communicate with those ? What they are matters very
+>>> little ;-) All we need is an interface to load binaries to the FPGA.
 >>> 
->>> Well I don't have the solution otherwise I will have done it already
->>> :-)
->>> My point is that the solution has to be in the DT core if not in the
->>> bootloader.
 >> 
->> <snarky comment>So when we at beagleboard.org handled the beagleboard
->> and beagleboard xM expansionboards in the bootloader (detection,
->> muxing, etc) we were told it was wrong and we should handle it in the
->> kernel and if we waited a bit, DT would solve everything. And now that
->> we actually handle it in the kernel you are saying that it is wrong
->> and we should handle it in the bootloader and that DT won't solve
->> everything. I guess someone will now tell us that uEFI will fix
->> everything.</snarky comment>
+>> We can not know what people will come up with. It might have a few GPIOs
+>> to load the bitfile to the FPGA, but after that, no-one can tell.
+>> I might not interface to Linux at all; it might interface via I2C, or RS232.
+> 
+> which means that whoever writes RTL for the FPGA needs to do so with
+> bone's I/O choices in mind.
+> 
+> Let's assume the use UART to send bitfile to FPGA and bitfile is a model
+> of an I2C Sensor, they'll have to use /dev/ttyOn to pass bitfile to FPGA
+> and later an i2c-client driver (possibly using iio, since it's a sensor)
+> will be loaded. Right ?
+> 
+
+No. I don't know details about what the actual cape design is, but they
+certainly don't want to deal with the piece-meal method, of loading one
+driver, and then creating a bunch of I2C devices, and then activating an
+RS232 tty, and then using that to burn the bitfile and so on.
+
+What they want, and what every user wants, is I plug this board in, and
+the driver make sure everything is loaded and ready. No, the end users
+don't want to see any of the implementation details of how the bitfile
+is transported; the driver can handle it.
+
+>> Chances are, it won't fit in any kind of known drivers of linux. 
+>> Some guy is using an FPGA for SDR, another is making a radar cape.
+> 
+> awesome. That means we need to take care of those :-) Even with capebus,
+> they will still have to write those drivers won't they ? So instead of
+> writing some capebus driver, why can't the guy write a driver for his
+> radar instead ? That way, if he ever turns that into an ASIC and decides
+> to sell it as a chip, he doesn't have to write another driver just to
+> strip the capebus away.
+
+You have to build something working first, before you move on to make a custom
+board based to it. FWIW, after a design gets to work as a cape, chances
+are the hardware redesign will just end up with the same h/w connections
+as a cape, and just use an override to avoid putting the EEPROM in there.
+
+> 
+>> These guys don't give a damn frankly about Linux. What they do care
+>> about is having a cheap/easy to develop platform for their own little
+>> widget.  If you are going to ask from the to hunt down their own dts
+>> and assemble from various dtsi's they'll just move to something else.
+> 
+> I never asked that :-) What I'm claiming is that capebus doesn't sound
+> like the best solution for the problem exposed.
+> 
+>> Which is a shame, cause we do have a nice platform here.
+> 
+> I agree with you, the bone is quite awesome ;-)
+
+Not without any working capes, it isn't.
+
+> 
+>>>> Some capes have their own MCUs.
+>>>> A recent one has an 6502 communicating with uio_pruss.
+>>>> https://github.com/ohporter/b6502
+>>> 
+>>> that uses remoteproc, so I assume it's using OMAP's mailbox ?
+>>> 
+>>> Again I say that this is not a 'capebus', it's just another device
+>>> which we use another interface to talk to.
+>>> 
+>>> i2c devices will be children of the omap i2c controller, spi devices
+>>> will be children of the omap mcspi, GPMC devices will need the GPMC
+>>> controller and so on, but none of this looks like argument to introduce
+>>> a fake bus into the kernel.
+>>> 
 >> 
->> Apart from that, you and others still fail to tell us how you want to
->> handle a user (or customer) that buys a beaglebone, an LCD cape, a
->> weatherstation cape and a geiger counter cape and plugs those together
->> and powers them on. With the evil TI vendor tree and extra patches the
->> boardfile reads the eeproms and tries its best to instantiate all the
->> platform data. One of the capes won't have working LEDs since
->> appending to the leds-gpio struct is pretty much impossible in this
+>> I'll let the users of said bus to do the talking. You're just flat out
+>> wrong IMO.
 > 
-> couldn't you just instantiate multiple leds-gpio device ?
+> fair enough, I feel the same way about your capebus ;-)
 
-No, and that is a problem in the driver core, see earlier discussions about similar problems.
-
->> situation. But it gets a picture on the screen, blinks LEDs and does
->> largely what the user expects.
->> 
->> With capebus we get:
->> 
->> 1) da8xx-fb which lacks DT bindingsp[1] receives plaftorm data to
->> match the LCD
-> 
-> this is something which could be fixed at the driver level, right ? :-)
-
-You'd have to tell your coworkers that.
-
->> 2) the i2c sensors on the weathercape are registered
-> 
-> that will work with or without capebus.
-
-Not in a plug and play way.
-
->> 3) the one-wire bus on the weathercape gets registered
-> 
-> also should work with or without capebus.
-
-Not in a plug and play way.
-
->> 4) the LEDs on the lcd cape get registered5
-> 
-> also works with or without capebus.
-
-Not in a plug and play way.
-
->> 5) the LED on the geigercape gets registered and adds a custom trigger
-> 
-> also works with or without capebus.
-
-Not in a plug and play way.
+Let's agree to disagree then :)
 
 > 
->> 6) the ADC, which again, lacks DT bindings[2], receives plaftorm data
->> and a custom IIO binding
-> 
-> driver problem.
+> -- 
+> balbi
 
-Yes, beat up your coworkers, I can't.
+Regards
 
-> 
->> 7) pinctrl sets the pinmuxes for the above
-> 
-> also works with or without capebus.
+-- Pantelis
 
-Not in a plug and play way.
-
-> 
->> In other words: plug & play, even for devices with drivers that are
->> still lacking DT support. 
-> 
-> I _do_ agree with you that we could have a "grace period" where DT and
-> non-DT would boot together, but apparently that's not something which
-> isn't trivial to do.
-> 
-> I guess Benoit might also be concerned that if we add such an
-> infrastructure than conversion to DT will never finish heh.
-
-Like I said, take that up with your coworkers. I want DT support for all TI IP blocks, apparently TI disagrees.
-
->> Now please explain to me why you think it's such an awesome idea that
->> the users will need to find the right dtsi files (multiple revisions
->> of the lcd cape exist), include them in the dts, run dtc, add a few
->> missing semicolons, run dtc again, copy it over to /boot and reboot to
->> have a change of making it work?
-> 
-> that shouldn't be necessary. At least for all the I2C devices, you can
-> just implement ->detect() and it will just work. Maybe similar tricks
-> can be done for 1-wire and SPI, I haven't looked into the details of
-> those buses to be sure, though.
-> 
->> I know you can't escape that for new or custom capes, but I do want
->> all the capes my company assembles work out of the box.
-> 
-> then push all drivers to mainline and start shipping your boards with
-> those drivers enabled.
-
-So how do you solve conflicts? The PRU pins are mixed with the LCD pins. So how can I enable both drivers? Same deal with mcasp and SPI.
-
-> 
->> (Cross)compiling a kernel is a bridge too far for 95% of the intended
->> audience.
-> 
-> Agreed, but that doesn't prevent you from either shipping distribution
-> with drivers enabled or providing pre-compiled modules.
-> 
->> With capebus most capes can be supported by editing the DTS, your
->> bootloader proposal involves updating u-boot for every new cape as
->> well. That is downright scary. The RMA department will get flooded.
-> 
-> that's not true at all. If capebus can do all that from within kernel,
-> it surely can do the same (with a few changes here and there) from
-> within bootloader.
-
-Yes, and then I have 2 places to add support for capes instead of one. And I seriously question why anyone thinks that having users replace their bootloader everytime they add a new i2c device or LED to their board is a good idea.
-
-> 
->> More importantly: capebus is generic enough to work on beagleboard,
->> beagleboard xm, panda, panda es and even raspberry-pi. Basically on
->> any DT capable platform.
-> 
-> that doesn't matter much I guess. MTP is so cool that works on Exynos,
-> OMAP, Tegra, x86, Cris, AVR, etc etc etc and we still don't have an MTP
-> stack inside the kernel (ok a bit sarcastic... but you get the drift,
-> hopefully).
-
-Yes, I agree, we still don't have a working MUSB driver in the kernel either. But that shouldn't stop capebus from being considered.
