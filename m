@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757468Ab2KADqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 23:46:06 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53205 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab2KADqD (ORCPT
+	id S1758015Ab2KADrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 23:47:49 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1850 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752767Ab2KADrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 23:46:03 -0400
-Date: Thu, 1 Nov 2012 14:46:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mukesh Rathor <mukesh.rathor@oracle.com>
-Subject: linux-next: build warning after merge of the tmem tree
-Message-Id: <20121101144601.2e7dd92cca17f80f368bb012@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__1_Nov_2012_14_46_01_+1100_DNkW4WIlpo+28ze3"
+	Wed, 31 Oct 2012 23:47:47 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 31 Oct 2012 20:47:40 -0700
+Message-ID: <5091F076.6030507@nvidia.com>
+Date: Thu, 1 Nov 2012 09:15:58 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V4 0/4] ARM: tegra: Enable SLINK controller driver
+References: <1351674176-20603-1-git-send-email-ldewangan@nvidia.com> <50915203.8030505@wwwdotorg.org> <5091607D.8010907@nvidia.com> <5091791F.4080400@wwwdotorg.org>
+In-Reply-To: <5091791F.4080400@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__1_Nov_2012_14_46_01_+1100_DNkW4WIlpo+28ze3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thursday 01 November 2012 12:46 AM, Stephen Warren wrote:
+> On 10/31/2012 11:31 AM, Laxman Dewangan wrote:
+>> On Wednesday 31 October 2012 09:59 PM, Stephen Warren wrote:
+>>> On 10/31/2012 03:02 AM, Laxman Dewangan wrote:
+>>>> This series modify the dts file to add the slink addresses,
+>>>> make AUXDATA in board dt files, enable slink4 for tegra30-cardhu and
+>>>> enable slink controller defconfig.
+>>> I don't appear to have received patch 1/4 this time around. I'll assume
+>>> it's identical to V3, since I don't think anything needed to change
+>>> there...
+>> Yes, it is identical to V3, no change on the 1/4.
+> OK, I have applied the series now. Thanks.
+>
+> BTW, I noticed that the Cardu board files sets the SPI controller's max
+> frequency to 25MHZ (which is consistent with the commit description) but
+> the SPI flash node's frequency to 20MHz. Was that intended, or should I
+> fix it up to be 25MHz?
+If device provide the max frequency then the spi communciation will on 
+this requested frequency.
+If device does not provide the max spi frequency then it will 
+communciate with the controller max frequency.
 
-Hi Konrad,
-
-After merging the tmem tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
-
-arch/x86/xen/enlighten.c:109:0: warning: "xen_pvh_domain" redefined [enable=
-d by default]
-include/xen/xen.h:23:0: note: this is the location of the previous definiti=
-on
-
-Probably caused by the merge of commit 6056726e851a ("xen/pvh: bootup and
-setup (E820) related changes") from the xen-two tree and commit
-7282a68f5aea ("PVH: Basic and preparatory changes") from the tmem tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__1_Nov_2012_14_46_01_+1100_DNkW4WIlpo+28ze3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQkfB5AAoJEECxmPOUX5FEPV0P+gJ8AW7TnYW0nps+pTtAUSVP
-1BnnYSyjVDGGt/2BuVaHayge+U16M+5VC4qtLdV+hxj2nQF9P7EHjTqrcEIS90bZ
-yFRAuQVMxbSqQ6NMY9eV3j24s1SFbZ1WVMFXaLL4WfCbOqQGcCzleGcCfVcdeLQR
-KQcU2qsvooFXrFZNzD9LGjI1X18f0la7pBc6Mntc1gnYy0N8v7k1unM4pVv0j31+
-zYhV+66M55mPZAwuEpGf1/sg+UvhiatcWypowogz195tjBOUXPwwu5H5l1boJvCK
-lScswFEvDb80Fw82Wa2m0MO3ccaxKFqiqAreDhI8Fj65PiWywMoRhw+zW/zEg9Ga
-F3rd8vDNffCvp3kYqvNBsTzzXIxzO4NiyqfBsy2Fh3jz0qWMKKZT22WLXmYBnRTs
-poo7i/fDXP9ExCMdx/uVr5QD9VpbXSbS/Wie8g5Sf4lTfM+CLASsDwa542OHWyQH
-et9R22gZHl9K/FIR4B31e3GgaA/o0litWhpxo9Ds3w9RWTMTB2/4qu8x7AEpthVA
-a0BZGngiGZp8fxEVlQ33+Nuv+AziDQf44e0h1XvaHhBXaG2gFPtqm2EYpjswgu92
-JHoIXhJaOrMPIgMVod2XOeXhZYCH71lo5txG1jLeHu3/D3RPfLVnIiHnQqF/TfGP
-F/HO7B0nz0lDo1OfR9lw
-=9upD
------END PGP SIGNATURE-----
-
---Signature=_Thu__1_Nov_2012_14_46_01_+1100_DNkW4WIlpo+28ze3--
+In this case we provide the 20MHz for device and 25MHz for controller. 
+So spi communciation with this device will be always 20MHz.
