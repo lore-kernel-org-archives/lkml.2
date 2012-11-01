@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992502Ab2KATrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 15:47:21 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:58140 "EHLO smtp.outflux.net"
+	id S936055Ab2KATrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 15:47:10 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:39302 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964853Ab2KATrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 15:47:17 -0400
+	id S933652Ab2KATrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 15:47:02 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
@@ -13,9 +13,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
         Al Viro <viro@zeniv.linux.org.uk>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3/4] arch/arm: allow a scno of -1 to not cause a SIGILL
-Date: Thu,  1 Nov 2012 12:46:38 -0700
-Message-Id: <1351799199-6853-4-git-send-email-keescook@chromium.org>
+Subject: [PATCH 1/4] arch/arm: add syscall_get_arch
+Date: Thu,  1 Nov 2012 12:46:36 -0700
+Message-Id: <1351799199-6853-2-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351799199-6853-1-git-send-email-keescook@chromium.org>
 References: <1351799199-6853-1-git-send-email-keescook@chromium.org>
@@ -26,33 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Will Drewry <wad@chromium.org>
 
-On tracehook-friendly platforms, a system call number of -1 falls
-through without running much code or taking much action.
-
-ARM is different.  This adds a lightweight check to arm_syscall()
-to make sure that ARM behaves the same way.
+Provide an ARM implementation of syscall_get_arch. This is a pre-requisite
+for CONFIG_HAVE_ARCH_SECCOMP_FILTER.
 
 Signed-off-by: Will Drewry <wad@chromium.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/arm/kernel/traps.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/include/asm/syscall.h |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index b0179b8..f303ea6 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -540,6 +540,10 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
- 	struct thread_info *thread = current_thread_info();
- 	siginfo_t info;
+diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
+index 9fdded6..803f433 100644
+--- a/arch/arm/include/asm/syscall.h
++++ b/arch/arm/include/asm/syscall.h
+@@ -7,6 +7,8 @@
+ #ifndef _ASM_ARM_SYSCALL_H
+ #define _ASM_ARM_SYSCALL_H
  
-+	/* Emulate/fallthrough. */
-+	if (no == -1)
-+		return regs->ARM_r0;
++#include <linux/audit.h> /* for AUDIT_ARCH_* */
++#include <linux/elf.h> /* for ELF_EM */
+ #include <linux/err.h>
+ #include <linux/sched.h>
+ 
+@@ -95,4 +97,15 @@ static inline void syscall_set_arguments(struct task_struct *task,
+ 	memcpy(&regs->ARM_r0 + i, args, n * sizeof(args[0]));
+ }
+ 
++static inline int syscall_get_arch(struct task_struct *task,
++				   struct pt_regs *regs)
++{
++	/* ARM tasks don't change audit architectures on the fly. */
++#ifdef __ARMEB__
++	return AUDIT_ARCH_ARMEB;
++#else
++	return AUDIT_ARCH_ARM;
++#endif
++}
 +
- 	if ((no >> 16) != (__ARM_NR_BASE>> 16))
- 		return bad_syscall(no, regs);
- 
+ #endif /* _ASM_ARM_SYSCALL_H */
 -- 
 1.7.9.5
 
