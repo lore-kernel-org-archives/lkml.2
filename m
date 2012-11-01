@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761599Ab2KAOXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 10:23:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40275 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761568Ab2KAOXR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 10:23:17 -0400
-Date: Thu, 1 Nov 2012 14:23:15 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: Fix trivial typo for TPS51632 Kconfig help
- text
-Message-ID: <20121101142315.GE4413@opensource.wolfsonmicro.com>
-References: <1351749756.3695.2.camel@phoenix>
+	id S1761612Ab2KAO0B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 10:26:01 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:42576 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761388Ab2KAO0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 10:26:00 -0400
+Date: Thu, 1 Nov 2012 15:23:25 +0100
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Subject: Re: BUG: enabling psacct breaks fsfreeze
+Message-ID: <20121101142325.GD20752@pcnci.linuxbox.cz>
+References: <20121023094351.GC27919@pcnci.linuxbox.cz>
+ <20121031121517.GD18424@quack.suse.cz>
+ <20121031124600.GM20752@pcnci.linuxbox.cz>
+ <20121101093723.GC6584@quack.suse.cz>
+ <20121101111957.GD6584@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qz2CZ664xQdCRdPu"
+	protocol="application/pgp-signature"; boundary="jYUWvSWTDpDT74zJ"
 Content-Disposition: inline
-In-Reply-To: <1351749756.3695.2.camel@phoenix>
-X-Cookie: You will never know hunger.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121101111957.GD6584@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 7972265 records (last update: 20121101)
+X-Spam-Score: N/A (imported whitelist)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Qz2CZ664xQdCRdPu
+--jYUWvSWTDpDT74zJ
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Nov 01, 2012 at 02:02:36PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Hi Jan,
 
-Applied, thanks.
+here it goes:
 
---Qz2CZ664xQdCRdPu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Nov  1 14:23:25 vmnci22 [ 1075.178123] SysRq : Show Blocked State
+Nov  1 14:23:25 vmnci22 [ 1075.180555]   task                        PC sta=
+ck   pid father
+Nov  1 14:23:25 vmnci22 [ 1075.180592] fsfreeze      D 0000000000000000    =
+ 0  4215   4195 0x00000000
+Nov  1 14:23:25 vmnci22 [ 1075.180599]  ffff8800090b9b28 0000000000000046 0=
+000000000000000 ffffffff00000000
+Nov  1 14:23:25 vmnci22 [ 1075.180606]  0000000000013780 ffff8800090b9fd8 f=
+fff88000f716170 ffff88000f715e80
+Nov  1 14:23:25 vmnci22 [ 1075.180612]  ffff88000f715dc0 ffffffff81566080 f=
+fff88000f716170 000000010002f405
+Nov  1 14:23:25 vmnci22 [ 1075.180619] Call Trace:
+Nov  1 14:23:25 vmnci22 [ 1075.180693]  [<ffffffff810e2dbb>] __generic_file=
+_aio_write+0xbb/0x420
+Nov  1 14:23:25 vmnci22 [ 1075.180729]  [<ffffffff81079290>] ? autoremove_w=
+ake_function+0x0/0x40
+Nov  1 14:23:25 vmnci22 [ 1075.180736]  [<ffffffff810e317f>] generic_file_a=
+io_write+0x5f/0xc0
+
+I obtained it using networked syslog, so it shouldn't be truncated..
+
+
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28.rijna 168, 709 00 Ostrava
+
+tel.:   +420 591 166 214
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--jYUWvSWTDpDT74zJ
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.14 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQkoXFAAoJELSic+t+oim9s94P/2LRCdr1kyaBKyofTFr+kC4Q
-w51vsaJiROWtq/ZUB4HVjHSki5v+R8ErorfPILJLzqj5Ea+wkxmUzrai7Asw+lfJ
-95uStcJ2UkakSBVZIT+OrDGwBqY/XajlUMx9WwNTdxLIpS5aTR4QHrG1gUAAw1Xh
-VgUK5tjMgprjj0a2kP57MrZENzCtFrsuB+o8T9qetecshB28+YtpuRtNJ6s1C7aF
-9jUWiDWHYqKN9ZRVHRE2Efrz8YbeykcVMySTlpNxsxsmnRWQtJ79jROiPfM3i13D
-4D77bvpS/A6qJKTmAVCAHIH/9Un2uFkuaonQ27ulaC9DOBQKjfNOkbKRaWVPjnf5
-QOwPscx3mngeDxXiDYDVH1AiRrHGTveSunz20p1n0yLo/vaE41NcA9k+ZkkmYfpY
-cyKmcUgBlay3NJJX+KEpGqyLwM9sYoemBqpHFqzHmUMfcgy0sIJKg60H+ZaUfG2L
-+SN+my2DXk9SFdx4qkglWlwHXt0eK4T49ONgU3/ID02LDk4uOVx2i5iKD6cV9tXk
-/ps8kRgiFCSYA+Wtrv4vngLtdAsy9S7O3+gXtFg2bqVodCjlucKmeS9ZKyd8T2Ha
-FD/r382oUgbj5xX0N7IodhujIx9aObFVaQ5vFQfDMdiFIeoM/C/bwTUFk6kKfBv/
-//P7eGVnpNSbMiLswTX0
-=6f3I
+iEYEARECAAYFAlCShd0ACgkQ3xdJJrLygV7mVQCeN6VsePgRg6WdUJcCldfBr6qn
+16IAnROZAO2s9LTP1upCPrzR+fNIGGhN
+=wpKQ
 -----END PGP SIGNATURE-----
 
---Qz2CZ664xQdCRdPu--
+--jYUWvSWTDpDT74zJ--
