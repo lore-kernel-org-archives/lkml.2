@@ -1,121 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762264Ab2KATQV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 15:16:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23479 "EHLO mx1.redhat.com"
+	id S935071Ab2KATR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 15:17:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15805 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762070Ab2KATOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 15:14:06 -0400
-Date: Thu, 1 Nov 2012 21:16:22 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv3 net-next 1/8] skb: report completion status for zero copy
- skbs
-Message-ID: <725e0613989e6bb75ff5b4b550283e4403c1809b.1351797353.git.mst@redhat.com>
-References: <cover.1351797353.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1351797353.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
-To: unlisted-recipients:; (no To-header on input)
+	id S932329Ab2KATR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 15:17:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,695,1344236400"; 
+   d="scan'208";a="241495262"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 1/6] mei: mei_write: revamp function flow
+Date: Thu,  1 Nov 2012 21:17:13 +0200
+Message-Id: <1351797438-26345-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if skb is marked for zero copy, net core might still decide
-to copy it later which is somewhat slower than a copy in user context:
-besides copying the data we need to pin/unpin the pages.
+Use goto statement for error handling instead of deeper if constructs
+and rename label 'unlock_dev' to more appropriate 'err'
 
-Add a parameter reporting such cases through zero copy callback:
-if this happens a lot, device can take this into account
-and switch to copying in user context.
-
-This patch updates all users but ignores the passed value for now:
-it will be used by follow-up patches.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/vhost/vhost.c  | 2 +-
- drivers/vhost/vhost.h  | 2 +-
- include/linux/skbuff.h | 4 +++-
- net/core/skbuff.c      | 4 ++--
- 4 files changed, 7 insertions(+), 5 deletions(-)
+ drivers/misc/mei/main.c |   88 +++++++++++++++++++++++-----------------------
+ 1 files changed, 44 insertions(+), 44 deletions(-)
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 99ac2cb..73d08db 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -1600,7 +1600,7 @@ void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *ubufs)
- 	kfree(ubufs);
- }
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index ed4943f..7a03d77 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -543,24 +543,24 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
  
--void vhost_zerocopy_callback(struct ubuf_info *ubuf)
-+void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool status)
- {
- 	struct vhost_ubuf_ref *ubufs = ubuf->ctx;
- 	struct vhost_virtqueue *vq = ubufs->vq;
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 1125af3..2de4ce2 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -191,7 +191,7 @@ bool vhost_enable_notify(struct vhost_dev *, struct vhost_virtqueue *);
+ 	if (dev->dev_state != MEI_DEV_ENABLED) {
+ 		rets = -ENODEV;
+-		goto unlock_dev;
++		goto err;
+ 	}
  
- int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
- 		    unsigned int log_num, u64 len);
--void vhost_zerocopy_callback(struct ubuf_info *);
-+void vhost_zerocopy_callback(struct ubuf_info *, bool);
- int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq);
+ 	i = mei_me_cl_by_id(dev, cl->me_client_id);
+ 	if (i < 0) {
+ 		rets = -ENODEV;
+-		goto unlock_dev;
++		goto err;
+ 	}
+ 	if (length > dev->me_clients[i].props.max_msg_length || length <= 0) {
+ 		rets = -EMSGSIZE;
+-		goto unlock_dev;
++		goto err;
+ 	}
  
- #define vq_err(vq, fmt, ...) do {                                  \
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index a2a0bdb..e5eae5b 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -235,11 +235,13 @@ enum {
- /*
-  * The callback notifies userspace to release buffers when skb DMA is done in
-  * lower device, the skb last reference should be 0 when calling this.
-+ * The zerocopy_success argument is true if zero copy transmit occurred,
-+ * false on data copy or out of memory error caused by data copy attempt.
-  * The ctx field is used to track device context.
-  * The desc field is used to track userspace buffer index.
-  */
- struct ubuf_info {
--	void (*callback)(struct ubuf_info *);
-+	void (*callback)(struct ubuf_info *, bool zerocopy_success);
- 	void *ctx;
- 	unsigned long desc;
- };
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 6e04b1f..4abdf71 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -519,7 +519,7 @@ static void skb_release_data(struct sk_buff *skb)
+ 	if (cl->state != MEI_FILE_CONNECTED) {
+ 		rets = -ENODEV;
+ 		dev_err(&dev->pdev->dev, "host client = %d,  is not connected to ME client = %d",
+ 			cl->host_client_id, cl->me_client_id);
+-		goto unlock_dev;
++		goto err;
+ 	}
+ 	if (cl == &dev->iamthif_cl) {
+ 		write_cb = find_amthi_read_list_entry(dev, file);
+@@ -599,17 +599,17 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
+ 	if (!write_cb) {
+ 		dev_err(&dev->pdev->dev, "write cb allocation failed\n");
+ 		rets = -ENOMEM;
+-		goto unlock_dev;
++		goto err;
+ 	}
+ 	rets = mei_io_cb_alloc_req_buf(write_cb, length);
+ 	if (rets)
+-		goto unlock_dev;
++		goto err;
  
- 			uarg = skb_shinfo(skb)->destructor_arg;
- 			if (uarg->callback)
--				uarg->callback(uarg);
-+				uarg->callback(uarg, true);
+ 	dev_dbg(&dev->pdev->dev, "cb request size = %zd\n", length);
+ 
+ 	rets = copy_from_user(write_cb->request_buffer.data, ubuf, length);
+ 	if (rets)
+-		goto unlock_dev;
++		goto err;
+ 
+ 	cl->sm_state = 0;
+ 	if (length == 4 &&
+@@ -624,7 +624,7 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
+ 	if (cl == &dev->iamthif_cl) {
+ 		rets = mei_io_cb_alloc_resp_buf(write_cb, dev->iamthif_mtu);
+ 		if (rets)
+-			goto unlock_dev;
++			goto err;
+ 
+ 		write_cb->major_file_operations = MEI_IOCTL;
+ 
+@@ -641,7 +641,7 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
+ 			if (rets) {
+ 				dev_err(&dev->pdev->dev, "amthi write failed with status = %d\n",
+ 				    rets);
+-				goto unlock_dev;
++				goto err;
+ 			}
  		}
+ 		mutex_unlock(&dev->device_lock);
+@@ -654,51 +654,51 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
+ 	    cl->host_client_id, cl->me_client_id);
+ 	rets = mei_flow_ctrl_creds(dev, cl);
+ 	if (rets < 0)
+-		goto unlock_dev;
++		goto err;
  
- 		if (skb_has_frag_list(skb))
-@@ -797,7 +797,7 @@ int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask)
- 	for (i = 0; i < num_frags; i++)
- 		skb_frag_unref(skb, i);
+-	if (rets && dev->mei_host_buffer_is_empty) {
+-		rets = 0;
+-		dev->mei_host_buffer_is_empty = false;
+-		if (length >  mei_hbuf_max_data(dev)) {
+-			mei_hdr.length = mei_hbuf_max_data(dev);
+-			mei_hdr.msg_complete = 0;
+-		} else {
+-			mei_hdr.length = length;
+-			mei_hdr.msg_complete = 1;
+-		}
+-		mei_hdr.host_addr = cl->host_client_id;
+-		mei_hdr.me_addr = cl->me_client_id;
+-		mei_hdr.reserved = 0;
+-		dev_dbg(&dev->pdev->dev, "call mei_write_message header=%08x.\n",
+-		    *((u32 *) &mei_hdr));
+-		if (mei_write_message(dev, &mei_hdr,
+-			(unsigned char *) (write_cb->request_buffer.data),
+-			mei_hdr.length)) {
+-			rets = -ENODEV;
+-			goto unlock_dev;
+-		}
++	if (rets == 0 || dev->mei_host_buffer_is_empty == false) {
++		write_cb->buf_idx = 0;
++		mei_hdr.msg_complete = 0;
+ 		cl->writing_state = MEI_WRITING;
+-		write_cb->buf_idx = mei_hdr.length;
+-		if (mei_hdr.msg_complete) {
+-			if (mei_flow_ctrl_reduce(dev, cl)) {
+-				rets = -ENODEV;
+-				goto unlock_dev;
+-			}
+-			list_add_tail(&write_cb->list, &dev->write_waiting_list.list);
+-		} else {
+-			list_add_tail(&write_cb->list, &dev->write_list.list);
+-		}
++		goto out;
++	}
  
--	uarg->callback(uarg);
-+	uarg->callback(uarg, false);
++	dev->mei_host_buffer_is_empty = false;
++	if (length >  mei_hbuf_max_data(dev)) {
++		mei_hdr.length = mei_hbuf_max_data(dev);
++		mei_hdr.msg_complete = 0;
+ 	} else {
++		mei_hdr.length = length;
++		mei_hdr.msg_complete = 1;
++	}
++	mei_hdr.host_addr = cl->host_client_id;
++	mei_hdr.me_addr = cl->me_client_id;
++	mei_hdr.reserved = 0;
++	dev_dbg(&dev->pdev->dev, "call mei_write_message header=%08x.\n",
++	    *((u32 *) &mei_hdr));
++	if (mei_write_message(dev, &mei_hdr,
++		write_cb->request_buffer.data, mei_hdr.length)) {
++		rets = -ENODEV;
++		goto err;
++	}
++	cl->writing_state = MEI_WRITING;
++	write_cb->buf_idx = mei_hdr.length;
  
- 	/* skb frags point to kernel buffers */
- 	for (i = num_frags - 1; i >= 0; i--) {
+-		write_cb->buf_idx = 0;
+-		cl->writing_state = MEI_WRITING;
++out:
++	if (mei_hdr.msg_complete) {
++		if (mei_flow_ctrl_reduce(dev, cl)) {
++			rets = -ENODEV;
++			goto err;
++		}
++		list_add_tail(&write_cb->list, &dev->write_waiting_list.list);
++	} else {
+ 		list_add_tail(&write_cb->list, &dev->write_list.list);
+ 	}
++
+ 	mutex_unlock(&dev->device_lock);
+ 	return length;
+ 
+-unlock_dev:
++err:
+ 	mutex_unlock(&dev->device_lock);
+ 	mei_io_cb_free(write_cb);
+ 	return rets;
 -- 
-MST
+1.7.4.4
 
