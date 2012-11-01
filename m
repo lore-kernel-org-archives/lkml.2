@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762394Ab2KAWU1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 18:20:27 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:45494 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab2KAWUZ (ORCPT
+	id S1762426Ab2KAWZA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:25:00 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:39957 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760695Ab2KAWY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 18:20:25 -0400
-Date: Thu, 1 Nov 2012 23:20:10 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH v2] ARM: plat-versatile: move FPGA irq driver to
- drivers/irqchip
-Message-ID: <20121101232010.78269291@skate>
-In-Reply-To: <1351805329-19576-1-git-send-email-linus.walleij@linaro.org>
-References: <1351805329-19576-1-git-send-email-linus.walleij@linaro.org>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 1 Nov 2012 18:24:58 -0400
+Message-ID: <5092F67A.2060203@panasas.com>
+Date: Thu, 1 Nov 2012 15:23:54 -0700
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@samba.org>
+CC: "Darrick J. Wong" <darrick.wong@oracle.com>, <axboe@kernel.dk>,
+        <lucho@ionkov.net>, <tytso@mit.edu>, <sage@inktank.com>,
+        <ericvh@gmail.com>, <mfasheh@suse.com>, <dedekind1@gmail.com>,
+        <adrian.hunter@intel.com>, <dhowells@redhat.com>, <sfrench@samba.org>,
+        <jlbec@evilplan.org>, <rminnich@sandia.gov>,
+        <linux-cifs@vger.kernel.org>, <jack@suse.cz>,
+        <martin.petersen@oracle.com>, <neilb@suse.de>, <david@fromorbit.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-mtd@lists.infradead.org>, <linux-fsdevel@vger.kernel.org>,
+        <v9fs-developer@lists.sourceforge.net>, <ceph-devel@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>, <linux-afs@lists.infradead.org>,
+        <ocfs2-devel@oss.oracle.com>
+Subject: Re: [PATCH 3/3] fs: Fix remaining filesystems to wait for stable
+ page writeback
+References: <20121101075805.16153.64714.stgit@blackbox.djwong.org> <20121101075829.16153.92036.stgit@blackbox.djwong.org> <5092C2CE.7070209@panasas.com> <20121101162254.03dbbd9a@tlielax.poochiereds.net>
+In-Reply-To: <20121101162254.03dbbd9a@tlielax.poochiereds.net>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 11/01/2012 01:22 PM, Jeff Layton wrote:
+> Hmm...I don't know...
+> 
+> I've never been crazy about using the page lock for this, but in the
+> absence of a better way to guarantee stable pages, it was what I ended
+> up with at the time. cifs_writepages will hold the page lock until
+> kernel_sendmsg returns. At that point the TCP layer will have copied
+> off the page data so it's safe to release it.
+> 
+> With this change though, we're going to end up blocking until the
+> writeback flag clears, right? And I think that will happen when the
+> reply comes in? So, we'll end up blocking for much longer than is
+> really necessary in page_mkwrite with this change.
+> 
 
-On Thu,  1 Nov 2012 22:28:49 +0100, Linus Walleij wrote:
+Hmm OK, that is a very good point. In that case it is just a simple
+nack on Darrick's hunk to cifs. cifs is fine and should not be touched
 
-> +void fpga_handle_irq(struct pt_regs *regs);
-
-This function does not need to be exposed in a public header: as
-proposed for the bcm2835 and armada-370-xp IRQ controller drivers, the
-driver should directly do handle_arch_irq = fpga_handle_irq, and
-therefore there is no need for the machine desc structure to reference
-fpga_handle_irq anymore.
-
-> +void fpga_irq_init(void __iomem *, const char *, int, int, u32,
-> +		struct device_node *node);
-> +int fpga_irq_of_init(struct device_node *node,
-> +		     struct device_node *parent);
-
-I don't think this function needs to be exported. Just move the
-compatible string to drivers/irqchip/irqchip.c and instead of calling
-of_irq_init(), call irqchip_init().
-
-This will leave only the fpga_irq_init() function, which we could get
-rid of once the non-DT support is removed.
-
-Best regards,
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Boaz
