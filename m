@@ -1,119 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992498Ab2KAV5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 17:57:37 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:45924 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab2KAV5d (ORCPT
+	id S965748Ab2KAV6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 17:58:05 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:49099 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932660Ab2KAV6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 17:57:33 -0400
-Message-ID: <1351807050.2647.61.camel@lorien2>
-Subject: Re: dma_mapping_error() interfaces
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: akpm@linux-foundation.org, Joerg Roedel <joerg.roedel@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Date: Thu, 01 Nov 2012 15:57:30 -0600
-In-Reply-To: <20121031133939.GD27288@phenom.dumpdata.com>
-References: <1351194980.2432.88.camel@lorien2>
-	 <20121031133939.GD27288@phenom.dumpdata.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 1 Nov 2012 17:58:02 -0400
+Date: Thu, 1 Nov 2012 21:57:52 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121101215752.GA21154@srcf.ucam.org>
+References: <CACLa4pvh3v3Mhq8oe3dzRL8ytBgmitPkCGUSfVCR5WdQopjRMQ@mail.gmail.com>
+ <1351783096.2391.77.camel@dabdike.int.hansenpartnership.com>
+ <CACLa4pu0yoB6CQX=3nuAT2vz4=oTNfM9fjMUvFXKJovYu+y4fw@mail.gmail.com>
+ <1351803800.2391.96.camel@dabdike.int.hansenpartnership.com>
+ <20121101210634.GA19723@srcf.ucam.org>
+ <20121101213127.5967327f@pyramind.ukuu.org.uk>
+ <20121101212843.GA20309@srcf.ucam.org>
+ <20121101213751.377ebaa8@pyramind.ukuu.org.uk>
+ <20121101213452.GA20564@srcf.ucam.org>
+ <20121101215817.79e50ec2@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121101215817.79e50ec2@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-31 at 09:39 -0400, Konrad Rzeszutek Wilk wrote:
-> On Thu, Oct 25, 2012 at 01:56:20PM -0600, Shuah Khan wrote:
-> > I am working on changing dma_mapping_error() interfaces to add call to
-> > debug_dma_mapping_error() interface. I found several dma_mapping_error()
-> > defines in various arch specific dma-mapping.h files.
-> > 
-> > Majority of these arch specific defines look identical - simply
-> > 
-> > static inline int dma_mapping_error(struct device *dev, dma_ addr_t
-> > dma_addr)
-> > {
-> >        struct dma_map_ops *dma_ops = get_dma_ops(dev);
-> > 
-> >        if (dma_ops->mapping_error)
-> >                 return dma_ops->mapping_error(dev, dma_addr);
-> > }
-> > 
-> > Maybe a generic dma_mapping_error() could be added to augment the
-> > existing dma_map_page() and dma_map_single() generic interfaces in
-> > include/asm-generic/dma-mapping-common.h (Future work)
-> > 
-> > For the most part, architecture specific
-> > dma_map_page()/dma_map_single(), dma_unmap_page() interfaces are
-> > implemented as a pair, however arch/m68k/include/asm/dma-mapping.h is an
-> > exception. In this case generic dma_map_page()/dma_map_single() are
-> > used, and arch specific dma_unmap_page() is defined. Couple of issues,
-> > unmap routines do nothing. Maybe just fine for this architecture.
+On Thu, Nov 01, 2012 at 09:58:17PM +0000, Alan Cox wrote:
+> On Thu, 1 Nov 2012 21:34:52 +0000
+> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > I think you've misunderstood. Blacklist updates are append only.
 > 
-> Could you CC the maintainer of said architecture and find out? Perhaps
-> this was intended.. or just a bug.
+> I think you've misunderstood - thats a technical detail that merely
+> alters the cost to the people who did something improper.
 
-Did more looking into this. I was wrong and it does defines arch
-specific dma_map_page(), dma_map_single(), and dma_mapping_error()
-interfaces. None of these call dma-debug at this time and there is no
-need to change dma_mapping_error() to call debug_dma_mapping_error().
+Winning a case is cold comfort if your software has been uninstallable 
+for the years it took to get through the courts. If others want to take 
+that risk, fine.
 
-> 
-> 
-> > However, when dma_debug is enabled, debug is lopsided and debug entries
-> > don't get releases.
-> > 
-> > For the present here is what I am planning to do:
-> > 
-> > Change dma_mapping_error() defines to add debug_dma_mapping_error() on
-> > architectures that use the generic dma_map_page() and dma_map_single()
-> > interfaces from include/asm-generic/dma-mapping-common.h to debug
-> > inconsistency between invoking dma-debug at mapping time and missing
-> > debug at error check time. Inconsistency will result in false warnings.
-> > The following fall into this category.
-> > 
-> > arch/alpha/include/asm/dma-mapping.h
-> > arch/arm/include/asm/dma-mapping.h
-> > arch/arm64/include/asm/dma-mapping.h
-> > arch/c6x/include/asm/dma-mapping.h
-> > arch/frv/include/asm/dma-mapping.h
-> > arch/hexagon/include/asm/dma-mapping.h
-> > arch/ia64/include/asm/dma-mapping.h
-> > arch/m68k/include/asm/dma-mapping.h
-> > arch/microblaze/include/asm/dma-mapping.h
-> > arch/mips/include/asm/dma-mapping.h
-> > arch/powerpc/include/asm/dma-mapping.h
-> > arch/sh/include/asm/dma-mapping.h
-> > arch/sparc/include/asm/dma-mapping.h
-> 
-> Sounds good.
-
-I did send arch patches last week tagging them for linux-next. I should
-follow-up to see what is happening to them.
-
-> > 
-> > Leave dma_mapping_error() defines as is in arch header files that also
-> > define dma_map_page() and dma_map_single() and not call
-> > debug_dma_map_page() interface. The following fall into this category.
-> > 
-> > arch/avr32/include/asm/dma-mapping.h
-> > arch/blackfin/include/asm/dma-mapping.h
-> > arch/cris/include/asm/dma-mapping.h
-> > arch/mn10300/include/asm/dma-mapping.h
-> > arch/parisc/include/asm/dma-mapping.h
-> > arch/xtensa/include/asm/dma-mapping.h
-> 
-> Any reason to skip those?
-
-All of these define architecture specific dma interfaces and none of
-them use dma debug at this time. Maybe something that could be enhanced,
-however there is nothing to fix based on the change I made to add
-debug_dma_mapping_error() to the dma-debug.
-
--- Shuah
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
