@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972Ab2KAFiu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 01:38:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43150 "EHLO
+	id S1752049Ab2KAFmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 01:42:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35826 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab2KAFis (ORCPT
+	with ESMTP id S1751507Ab2KAFmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 01:38:48 -0400
-Date: Wed, 31 Oct 2012 22:38:45 -0700 (PDT)
+	Thu, 1 Nov 2012 01:42:33 -0400
+Date: Wed, 31 Oct 2012 22:42:30 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-cc: Haggai Eran <haggaie@mellanox.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [patch] mm: fix build warning for uninitialized value
-Message-ID: <alpine.DEB.2.00.1210312234180.31758@chino.kir.corp.google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: [patch] x86, xen: fix build dependency when USB_SUPPORT is not
+ enabled
+Message-ID: <alpine.DEB.2.00.1210312239120.31758@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-1830707544-1351748326=:31758"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+CONFIG_XEN_DOM0 must depend on CONFIG_USB_SUPPORT, otherwise there is no 
+definition of xen_dbgp_reset_prep() and xen_dbgp_external_startup() 
+resulting in the following link error:
 
---531381512-1830707544-1351748326=:31758
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-do_wp_page() sets mmun_called if mmun_start and mmun_end were initialized 
-and, if so, may call mmu_notifier_invalidate_range_end() with these 
-values.  This doesn't prevent gcc from emitting a build warning though:
-
-mm/memory.c: In function ‘do_wp_page’:
-mm/memory.c:2530: warning: ‘mmun_start’ may be used uninitialized in this function
-mm/memory.c:2531: warning: ‘mmun_end’ may be used uninitialized in this function
-
-It's much easier to initialize the variables to impossible values and do a 
-simple comparison to determine if they were initialized to remove the bool 
-entirely.
+drivers/built-in.o: In function `dbgp_reset_prep':
+(.text+0x1e03c5): undefined reference to `xen_dbgp_reset_prep'
+drivers/built-in.o: In function `dbgp_external_startup':
+(.text+0x1e0d55): undefined reference to `xen_dbgp_external_startup'
 
 Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- mm/memory.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ arch/x86/xen/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/memory.c b/mm/memory.c
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2527,9 +2527,8 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	int ret = 0;
- 	int page_mkwrite = 0;
- 	struct page *dirty_page = NULL;
--	unsigned long mmun_start;	/* For mmu_notifiers */
--	unsigned long mmun_end;		/* For mmu_notifiers */
--	bool mmun_called = false;	/* For mmu_notifiers */
-+	unsigned long mmun_start = 0;	/* For mmu_notifiers */
-+	unsigned long mmun_end = 0;	/* For mmu_notifiers */
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -17,6 +17,7 @@ config XEN_DOM0
+ 	def_bool y
+ 	depends on XEN && PCI_XEN && SWIOTLB_XEN
+ 	depends on X86_LOCAL_APIC && X86_IO_APIC && ACPI && PCI
++	depends on USB_SUPPORT
  
- 	old_page = vm_normal_page(vma, address, orig_pte);
- 	if (!old_page) {
-@@ -2708,8 +2707,7 @@ gotten:
- 		goto oom_free_new;
- 
- 	mmun_start  = address & PAGE_MASK;
--	mmun_end    = (address & PAGE_MASK) + PAGE_SIZE;
--	mmun_called = true;
-+	mmun_end    = mmun_start + PAGE_SIZE;
- 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
- 
- 	/*
-@@ -2778,7 +2776,7 @@ gotten:
- 		page_cache_release(new_page);
- unlock:
- 	pte_unmap_unlock(page_table, ptl);
--	if (mmun_called)
-+	if (mmun_end > mmun_start)
- 		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
- 	if (old_page) {
- 		/*
---531381512-1830707544-1351748326=:31758--
+ # Dummy symbol since people have come to rely on the PRIVILEGED_GUEST
+ # name in tools.
