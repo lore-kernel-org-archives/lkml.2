@@ -1,137 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761431Ab2KAMlb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 08:41:31 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:49755 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab2KAMl3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 08:41:29 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6882"; a="3397784"
-From: tlinder <tlinder@codeaurora.org>
-To: linux-mmc@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, philippedeswert@gmail.com, jengelh@inai.de,
-        jh80.chung@samsung.com, tgih.jun@samsung.com, arnd.bergmann@linaro.org,
-        Tatyana Brokhman <tlinder@codeaurora.org>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [RFC/PATCH v2 2/2]block:row: Add support for urgent request handling
-Date: Thu,  1 Nov 2012 14:41:19 +0200
-Message-Id: <1351773679-19680-1-git-send-email-tlinder@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
+	id S1761428Ab2KAMmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 08:42:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37178 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756000Ab2KAMmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 08:42:21 -0400
+Message-ID: <50926E03.8050102@ti.com>
+Date: Thu, 1 Nov 2012 18:11:39 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
+        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 03/11] clk: davinci - common clk utilities to init
+ clk driver
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-4-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1351181518-11882-4-git-send-email-m-karicheri2@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tatyana Brokhman <tlinder@codeaurora.org>
+On 10/25/2012 9:41 PM, Murali Karicheri wrote:
+> This is the common clk driver initialization functions for DaVinci
+> SoCs and other SoCs that uses similar hardware architecture.
+> clock.h also defines struct types for clock definitions in a SoC
+> and clock data type for configuring clk-mux. The initialization
+> functions are used by clock initialization code in a specific
+> platform/SoC.
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 
-This patch add support for handling urgent requests.
-ROW queue can be marked as "urgent" so if it was un-served and a
-request was added to it - it will trigger issuing urgent request
-to the mmc driver.
+> +struct clk *davinci_plldiv_clk(const char *name, const char *parent,
+> +				struct clk_plldiv_data *data)
+> +{
+> +	/*
+> +	 * This is a PLL divider clock with divider specified by
+> +	 * div_reg in pll_div_data.
+> +	 */
+> +	data->reg = ioremap(data->phys_div_reg, 4);
+> +	if (WARN_ON(!data->reg))
+> +		return NULL;
+> +
+> +	return clk_register_davinci_plldiv(NULL, name, parent, data, &_lock);
 
-Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+This function does not exist at this point. Looks like you need to swap
+3/11 with 4/11. Also, you should also add build infrastructure
+(makefile, Kconfig) changes in the same patch that creates the file.
+There is no point in adding those separately.
 
-diff --git a/block/row-iosched.c b/block/row-iosched.c
-index 62789a4..fdf7618 100644
---- a/block/row-iosched.c
-+++ b/block/row-iosched.c
-@@ -27,6 +27,8 @@
- #include <linux/blktrace_api.h>
- #include <linux/jiffies.h>
- 
-+#include "blk.h"
-+
- /*
-  * enum row_queue_prio - Priorities of the ROW queues
-  *
-@@ -58,6 +60,17 @@ static const bool queue_idling_enabled[] = {
- 	false,	/* ROWQ_PRIO_LOW_SWRITE */
- };
- 
-+/* Flags indicating whether the queue can notify on urgent requests */
-+static const bool urgent_queues[] = {
-+	true,	/* ROWQ_PRIO_HIGH_READ */
-+	true,	/* ROWQ_PRIO_REG_READ */
-+	false,	/* ROWQ_PRIO_HIGH_SWRITE */
-+	false,	/* ROWQ_PRIO_REG_SWRITE */
-+	false,	/* ROWQ_PRIO_REG_WRITE */
-+	false,	/* ROWQ_PRIO_LOW_READ */
-+	false,	/* ROWQ_PRIO_LOW_SWRITE */
-+};
-+
- /* Default values for row queues quantums in each dispatch cycle */
- static const int queue_quantum[] = {
- 	100,	/* ROWQ_PRIO_HIGH_READ */
-@@ -269,7 +282,13 @@ static void row_add_request(struct request_queue *q,
- 		rqueue->idle_data.idle_trigger_time =
- 			jiffies + msecs_to_jiffies(rd->read_idle.freq);
- 	}
--	row_log_rowq(rd, rqueue->prio, "added request");
-+	if (urgent_queues[rqueue->prio] &&
-+	    row_rowq_unserved(rd, rqueue->prio)) {
-+		row_log_rowq(rd, rqueue->prio,
-+			     "added urgent req curr_queue = %d",
-+			     rd->curr_queue);
-+	} else
-+		row_log_rowq(rd, rqueue->prio, "added request");
- }
- 
- /*
-@@ -289,7 +308,12 @@ static int row_reinsert_req(struct request_queue *q,
- 	struct row_queue   *rqueue = RQ_ROWQ(rq);
- 
- 	/* Verify rqueue is legitimate */
--	BUG_ON(rqueue != &rd->row_queues[rqueue->prio].rqueue);
-+	if (rqueue->prio >= ROWQ_MAX_PRIO) {
-+		pr_err("\n\nROW BUG: row_reinsert_req() rqueue->prio = %d\n",
-+			   rqueue->prio);
-+		blk_dump_rq_flags(rq, "");
-+		return -EIO;
-+	}
- 
- 	list_add(&rq->queuelist, &rqueue->fifo);
- 	rd->nr_reqs[rq_data_dir(rq)]++;
-@@ -299,6 +323,29 @@ static int row_reinsert_req(struct request_queue *q,
- 	return 0;
- }
- 
-+/*
-+ * row_urgent_pending() - Return TRUE if there is an urgent
-+ *			  request on scheduler
-+ * @q:	dispatch queue
-+ *
-+ */
-+static bool row_urgent_pending(struct request_queue *q)
-+{
-+	struct row_data *rd = q->elevator->elevator_data;
-+	int i;
-+
-+	for (i = 0; i < ROWQ_MAX_PRIO; i++)
-+		if (urgent_queues[i] && row_rowq_unserved(rd, i) &&
-+		    !list_empty(&rd->row_queues[i].rqueue.fifo)) {
-+			row_log_rowq(rd, i,
-+				     "Urgent request pending (curr=%i)",
-+				     rd->curr_queue);
-+			return true;
-+		}
-+
-+	return false;
-+}
-+
- /**
-  * row_remove_request() -  Remove given request from scheduler
-  * @q:	requests queue
-@@ -684,6 +731,7 @@ static struct elevator_type iosched_row = {
- 		.elevator_dispatch_fn		= row_dispatch_requests,
- 		.elevator_add_req_fn		= row_add_request,
- 		.elevator_reinsert_req_fn	= row_reinsert_req,
-+		.elevator_is_urgent_fn		= row_urgent_pending,
- 		.elevator_former_req_fn		= elv_rb_former_request,
- 		.elevator_latter_req_fn		= elv_rb_latter_request,
- 		.elevator_set_req_fn		= row_set_request,
--- 
-1.7.6
---
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. 
-Is a member of Code Aurora Forum, hosted by the Linux Foundation
-
+Thanks,
+Sekhar
