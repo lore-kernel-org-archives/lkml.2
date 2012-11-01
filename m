@@ -1,75 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761286Ab2KAXLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 19:11:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65334 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755031Ab2KAXLp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 19:11:45 -0400
-Message-ID: <509301AF.6000901@zankel.net>
-Date: Thu, 01 Nov 2012 16:11:43 -0700
-From: Chris Zankel <chris@zankel.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1755817Ab2KAXNh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 19:13:37 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:51446 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751063Ab2KAXNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 19:13:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 list <x86@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH 5/5] ACPI: Add support for platform bus type
+Date: Fri, 02 Nov 2012 00:17:37 +0100
+Message-ID: <2690277.s5TEOPtmaZ@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CAE9FiQWiRcaC3dKQFUHoC0qe0TneW2T+CYNZPEic5At_QcP0rw@mail.gmail.com>
+References: <1421417.rIOjExM5Pt@vostro.rjw.lan> <9809109.C0U00708CM@vostro.rjw.lan> <CAE9FiQWiRcaC3dKQFUHoC0qe0TneW2T+CYNZPEic5At_QcP0rw@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org
-Subject: [PULL REQUEST for 3.7-rc4] xtensa: fix syscall table and vfork, and
- switch to generic thread/execve
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thursday, November 01, 2012 03:38:19 PM Yinghai Lu wrote:
+> On Thu, Nov 1, 2012 at 2:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> So you are going to replace acpi_device/acpi_driver with
+> >> platform_device/platform_driver ?
+> >
+> > Not exactly.  Let me start from the big picture, though. :-)
+> >
+> > First off, we need to unify the handling of devices by the ACPI subsystem
+> > regardless of whether they are on a specific bus, like PCI, or they are
+> > busless "platform" devices.
+> >
+> > Currently, if a device is on a specific bus *and* there is a device node in the
+> > ACPI namespace corresponding to it, there will be two objects based on
+> > struct device for it eventually, the "physical node", like struct pci_dev, and
+> > the "ACPI node" represented by struct acpi_device.  They are associated with
+> > each other through the code in drivers/acpi/glue.c.  In turn, if the device is
+> > busless and not discoverable natively, we only create the "ACPI node" struct
+> > acpi_device thing for it.  Those ACPI nodes are then *sometimes* bind to
+> > drivers (represented by struct acpi_driver).
+> >
+> > The fact that the busless devices are *sometimes* handled by binding drivers
+> > directly to struct acpi_device while the other devices are handled through
+> > glue.c confuses things substantially and causes problems to happen right now
+> > (for example, acpi_driver drivers sometimes attempt to bind to things that have
+> > other native drivers and should really be handled by them).
+> > Furthermore, the situation will only get worse over time if we don't do
+> > anything about that, because we're going to see more and more devices that
+> > won't be discoverable natively and will have corresponding nodes in the ACPI
+> > namespace and we're going to see more buses whose devices will have such
+> > nodes.
+> >
+> > Moreover, for many of those devices there are native drivers present in
+> > the kernel tree already, because they will be based on IP blocks used in
+> > the current hardware (for example, we may see ARM-based systems based on
+> > exactly the same hardware with ACPI BIOSes and without them).  That applies
+> > to busless devices as well as to devices on specific buses.
+> >
+> > Now, the problem is how the unification is going to be done and I honestly
+> > don't think we have much *choice* here.  Namely, for PCI (and other devices
+> > discoverable natively) we pretty much have to do the glue.c thing (or something
+> > equivalent), because we need to match what we've discovered natively against
+> > the information from the ACPI tables in the BIOS.  This means that for busless
+> > devices we need to create "physical" nodes as well, so that all of them are
+> > handled by drivers binding to the "physical" node rather than to struct
+> > acpi_device.  This also will allow us to reuse the existing drivers with
+> > minimum modifications (well, hopefully).
+> 
+> ok, acpi_driver will be killed at first.
+> 
+> acpi_pci_root_driver will be converted to platform driver or
+> add acpi_pci_host_bridge to work with pci_host_bridge.
 
-Would be great if you could pull the Xtensa tree for some important bug
-fixes. With the change to uapi, there was a bug introduced that results
-in an empty syscall table (mult-inclusion bug). Switching to the generic
-thread/execve allowed us to fix a bug we had in vfork().
+Yup.
+
+> BTW,  the problem for hotadd pci root bus,
+> the acpi_driver ops.add can pci root bus and create pci dev before all
+> acpi device get
+> created still there.
+>     https://lkml.org/lkml/2012/10/5/569
+
+Yes, I'm aware of that, it's on my todo list FWIW. :-)
 
 Thanks,
--Chris
+Rafael
 
-------
 
-The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
-
-  Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
-
-are available in the git repository at:
-
-  https://github.com/czankel/xtensa-linux.git for_next
-
-for you to fetch changes up to dc241f2c1761bfdec85915f4bbf7e750663f3442:
-
-  xtensa: switch to generic sys_execve() (2012-10-25 15:00:44 -0700)
-
-----------------------------------------------------------------
-Xtensa patchset for 3.7-rc4
-
-----------------------------------------------------------------
-Chris Zankel (3):
-      xtensa: allow multi-inclusion for uapi/unistd.h
-      xtensa: use physical addresses for bus addresses
-      xtensa: reset windowbase/windowstart when cloning the VM
-
-Max Filippov (3):
-      xtensa: switch to generic kernel_thread()
-      xtensa: switch to generic kernel_execve()
-      xtensa: switch to generic sys_execve()
-
- arch/xtensa/Kconfig                   |    2 +
- arch/xtensa/include/asm/io.h          |    4 ++
- arch/xtensa/include/asm/processor.h   |    4 +-
- arch/xtensa/include/asm/syscall.h     |    2 +-
- arch/xtensa/include/asm/unistd.h      |   15 ++--
- arch/xtensa/include/uapi/asm/unistd.h |   16 ++---
- arch/xtensa/kernel/entry.S            |   57 ++++-----------
- arch/xtensa/kernel/process.c          |  128
-++++++++++++++++++---------------
- arch/xtensa/kernel/syscall.c          |    7 +-
- arch/xtensa/kernel/xtensa_ksyms.c     |    1 -
- 10 files changed, 104 insertions(+), 132 deletions(-)
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
