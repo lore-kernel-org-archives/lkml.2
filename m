@@ -1,93 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762453Ab2KAWci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 18:32:38 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:57637 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762214Ab2KAWcg (ORCPT
+	id S936143Ab2KAWiA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:38:00 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:42697 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932676Ab2KAWh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 18:32:36 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhoYAKX3klB5LGX0/2dsb2JhbABEhS64EIRwAoEEgQmCHgEBBScTHCMQCAMOCi4UJQMhE4gFDL0hFItnJ4FhhDMDlXeBHI8ogwOBSQ
-Date: Fri, 2 Nov 2012 09:32:33 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Ben Myers <bpm@sgi.com>
-Cc: Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: Hang in XFS reclaim on 3.7.0-rc3
-Message-ID: <20121101223233.GR29378@dastard>
-References: <CAPVoSvSM9=hictqwT2rzZA-fU_XSwd-_FRzW_J+HQYj7iohTWQ@mail.gmail.com>
- <20121029222613.GU29378@dastard>
- <20121101213010.GD9783@sgi.com>
+	Thu, 1 Nov 2012 18:37:57 -0400
+Date: Thu, 1 Nov 2012 20:37:50 -0200
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2012-11-01
+Message-ID: <20121101223750.GA1915@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VS++wcV0S1rZb1Fb"
 Content-Disposition: inline
-In-Reply-To: <20121101213010.GD9783@sgi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 04:30:10PM -0500, Ben Myers wrote:
-> Hi Dave,
-> 
-> On Tue, Oct 30, 2012 at 09:26:13AM +1100, Dave Chinner wrote:
-> > On Mon, Oct 29, 2012 at 09:03:15PM +0100, Torsten Kaiser wrote:
-> > > After experiencing a hang of all IO yesterday (
-> > > http://marc.info/?l=linux-kernel&m=135142236520624&w=2 ), I turned on
-> > > LOCKDEP after upgrading to -rc3.
-> > > 
-> > > I then tried to replicate the load that hung yesterday and got the
-> > > following lockdep report, implicating XFS instead of by stacking swap
-> > > onto dm-crypt and md.
-> > > 
-> > > [ 2844.971913]
-> > > [ 2844.971920] =================================
-> > > [ 2844.971921] [ INFO: inconsistent lock state ]
-> > > [ 2844.971924] 3.7.0-rc3 #1 Not tainted
-> > > [ 2844.971925] ---------------------------------
-> > > [ 2844.971927] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-> > > [ 2844.971929] kswapd0/725 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> > > [ 2844.971931] (&(&ip->i_lock)->mr_lock){++++?.}, at: [<ffffffff811e7ef4>] xfs_ilock+0x84/0xb0
-> > > [ 2844.971941] {RECLAIM_FS-ON-W} state was registered at:
-> > > [ 2844.971942]   [<ffffffff8108137e>] mark_held_locks+0x7e/0x130
-> > > [ 2844.971947]   [<ffffffff81081a63>] lockdep_trace_alloc+0x63/0xc0
-> > > [ 2844.971949]   [<ffffffff810e9dd5>] kmem_cache_alloc+0x35/0xe0
-> > > [ 2844.971952]   [<ffffffff810dba31>] vm_map_ram+0x271/0x770
-> > > [ 2844.971955]   [<ffffffff811e10a6>] _xfs_buf_map_pages+0x46/0xe0
-.....
-> > We shouldn't be mapping pages there. See if the patch below fixes
-> > it.
-> > 
-> > Fundamentally, though, the lockdep warning has come about because
-> > vm_map_ram is doing a GFP_KERNEL allocation when we need it to be
-> > doing GFP_NOFS - we are within a transaction here, so memory reclaim
-> > is not allowed to recurse back into the filesystem.
-> > 
-> > mm-folk: can we please get this vmalloc/gfp_flags passing API
-> > fixed once and for all? This is the fourth time in the last month or
-> > so that I've seen XFS bug reports with silent hangs and associated
-> > lockdep output that implicate GFP_KERNEL allocations from vm_map_ram
-> > in GFP_NOFS conditions as the potential cause....
-> > 
-> > xfs: don't vmap inode cluster buffers during free
-> 
-> Could you write up a little more background for the commit message?
 
-Sure, that was just a test patch and often I don't bother putting a
-detailed description in them until I know they fix the problem. My
-current tree has:
+--VS++wcV0S1rZb1Fb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-xfs: don't vmap inode cluster buffers during free
+Hi John,
 
-Inode buffers do not need to be mapped as inodes are read or written
-directly from/to the pages underlying the buffer. This fixes a
-regression introduced by commit 611c994 ("xfs: make XBF_MAPPED the
-default behaviour").
+Another set of patches for integration in wireless-next. There are two big =
+set
+of changes in it: Andrei Emeltchenko and Mat Martineau added more patches
+towards a full Bluetooth High Speed support and Johan Hedberg improve the
+single mode support for Bluetooth dongles. Apart from that we have small fi=
+xes
+and improvements.=20
 
-Cheers,
+Please pull. Thanks a lot.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+	Gustavo
+---
+
+The following changes since commit 9917c85b06c2eb9d61c0f2dadd2d5d8788f7e563:
+
+  brcm80211: remove some truely barftastic code (2012-10-19 16:20:56 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next fo=
+r-upstream
+
+for you to fetch changes up to 0c0afedf55ff409be9db0b0aeeaa1c6fe0f3cd3c:
+
+  Bluetooth: Fix parameter order of hci_get_route (2012-11-01 20:27:11 -020=
+0)
+
+----------------------------------------------------------------
+Andrei Emeltchenko (18):
+      Bluetooth: trivial: Remove unneeded assignment
+      Bluetooth: Use helper function sending EFS conf rsp
+      Bluetooth: AMP: Process Physical Link Complete evt
+      Bluetooth: AMP: Process Logical Link complete evt
+      Bluetooth: Add put(hcon) when deleting hchan
+      Bluetooth: trivial: Fix braces style and remove empty line
+      Bluetooth: Save hs_hchan instead of hs_hcon in loglink complete
+      Bluetooth: Return correct L2CAP response type
+      Bluetooth: Derive remote and local amp id from chan struct
+      Bluetooth: AMP: Add Logical Link Create function
+      Bluetooth: AMP: Process Disc Logical Link
+      Bluetooth: AMP: Process Disc Physical Link Complete evt
+      Bluetooth: AMP: Remove hci_conn receiving error command status
+      Bluetooth: Disconnect logical link when deleting chan
+      Bluetooth: AMP: Check for hs_hcon instead of ctrl_id
+      Bluetooth: AMP: Use l2cap_physical_cfm in phylink complete evt
+      Bluetooth: Process Create Chan Request
+      Bluetooth: Rename ctrl_id to remote_amp_id
+
+Denis Kirjanov (1):
+      Bluetooth:Replace list_for_each with list_for_each_entry() helper
+
+Gustavo Padovan (1):
+      Bluetooth: Replace *_init() for *_setup()
+
+Johan Hedberg (16):
+      Bluetooth: Add initial support for LE-only controllers
+      Bluetooth: Fix LE MTU reporting for HCIGETDEVINFO
+      Bluetooth: Add setting of the LE event mask
+      Bluetooth: Read adversiting channel TX power during init sequence
+      Bluetooth: Fix HCI command sending when powering on LE-only adapters
+      Bluetooth: mgmt: Restrict BR/EDR settings to BR/EDR-only adapters
+      Bluetooth: Fix updating host feature bits for LE
+      Bluetooth: Add missing feature test macros
+      Bluetooth: Make use feature test macros
+      Bluetooth: Add flag for LE GAP Peripheral role
+      Bluetooth: Disallow LE scanning and connecting in peripheral role
+      Bluetooth: Fix setting host feature bits for SSP
+      Bluetooth: Fix sending unnecessary HCI_Write_SSP_Mode command
+      Bluetooth: Fix unnecessary EIR update during powering on
+      Bluetooth: Fix sending unnecessary HCI_LE_Host_Enable
+      Bluetooth: Fix parameter order of hci_get_route
+
+Mat Martineau (18):
+      Bluetooth: Add new l2cap_chan struct members for high speed channels
+      Bluetooth: Add L2CAP create channel request handling
+      Bluetooth: Remove unnecessary intermediate function
+      Bluetooth: Lookup channel structure based on DCID
+      Bluetooth: Channel move request handling
+      Bluetooth: Add new ERTM receive states for channel move
+      Bluetooth: Add move channel confirm handling
+      Bluetooth: Add state to hci_chan
+      Bluetooth: Move channel response
+      Bluetooth: Add logical link confirm
+      Bluetooth: Add move confirm response handling
+      Bluetooth: Handle physical link completion
+      Bluetooth: Flag ACL frames as complete for AMP controllers
+      Bluetooth: Do not send data during channel move
+      Bluetooth: Configure appropriate timeouts for AMP controllers
+      Bluetooth: Ignore BR/EDR packet size constraints when fragmenting for=
+ AMP
+      Bluetooth: Do not retransmit data during a channel move
+      Bluetooth: Start channel move when socket option is changed
+
+Syam Sidhardhan (4):
+      Bluetooth: trivial: Remove newline before EOF
+      Bluetooth: Replace include linux/module.h with linux/export.h
+      Bluetooth: Remove unnecessary include export.h
+      Bluetooth: mgmt: Use __constant when dealing with constants
+
+ include/net/bluetooth/amp.h      |    4 +
+ include/net/bluetooth/hci.h      |    7 +
+ include/net/bluetooth/hci_core.h |   44 +-
+ include/net/bluetooth/l2cap.h    |   38 +-
+ net/bluetooth/Kconfig            |    1 -
+ net/bluetooth/a2mp.c             |    4 +-
+ net/bluetooth/amp.c              |   93 ++++
+ net/bluetooth/bnep/netdev.c      |    1 -
+ net/bluetooth/cmtp/capi.c        |    2 +-
+ net/bluetooth/cmtp/sock.c        |    2 +-
+ net/bluetooth/hci_conn.c         |    6 +
+ net/bluetooth/hci_core.c         |   65 +--
+ net/bluetooth/hci_event.c        |  309 +++++++++++--
+ net/bluetooth/l2cap_core.c       | 1000 ++++++++++++++++++++++++++++++++++=
++++---
+ net/bluetooth/l2cap_sock.c       |    5 +
+ net/bluetooth/mgmt.c             |   98 ++--
+ 16 files changed, 1486 insertions(+), 193 deletions(-)
+
+--VS++wcV0S1rZb1Fb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQkvm+AAoJEPs3PUX4s20oh48QAKc0Cb9KUsMnnZOie6+OYa6i
+HbsF/4mnsU9TsDft2Bwm3ejinqcEyN+n85U9qCuVqe/tlbkqfMTPwYqe25Ny2gBq
+oMIRnQgG0Hq10yx9Hq2QGffMlaCx3WmuVrrWhKwTo8k/ZoiKuGnjaMUubJQJw2wy
+Nr97i7OS5eUuvWP++BrGW0CXZHmKenqA5L9+IlfpeEQj3STRmPA9nLas0Cdp7j1P
+nErse6ol1yXsaik8yBSSmBVOK5NzHhe/XN7R11nd1DO1GDopMMlfJyR+x+0VSEFp
++hYPTs81RndLZv2W29PGdPnZy2JrGURYjIGEbEkorJ95iZprBoqMAOzHT3O+lGf4
+ILoewAy/0nTMaaPOf0057hXPgkQ4pBO+k1AWZUMTOlQoYUfDRzL5E5/VC9/EyABD
+FPEvP7jOp2bKPi6DFnHZpJfrEQETcGlxWwmCVzCgCdDSyrEWlvbdIUCyOt2xvoMh
+vdyufs9iPnHYYp9aXEfs+eYymxuiFOXwgu4OqDFkHvVNekIqX3Wzttq0gjw2OtwY
+rE2M8UEzgIc9OLcvhn1v1CDj8PkWlNRWME1dE0YfazTRhw9GlnE0W4wEluNU0hxw
+wxKO72UUF9rNngRdp24haau0X4qLO8bBogQSsqE9Z1kvLIeWjqexeJGKh3tqLcy/
+PtXnX/mwteuvsEwiBa+z
+=orX4
+-----END PGP SIGNATURE-----
+
+--VS++wcV0S1rZb1Fb--
