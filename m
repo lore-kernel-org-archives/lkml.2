@@ -1,171 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761449Ab2KANli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 09:41:38 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56639 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761236Ab2KANld (ORCPT
+	id S1761464Ab2KANq5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 09:46:57 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34630 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761439Ab2KANqx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 09:41:33 -0400
-Date: Thu, 1 Nov 2012 06:41:26 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Zhouping Liu <zliu@redhat.com>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>, CAI Qian <caiqian@redhat.com>
-Subject: Re: [PATCH 00/31] numa/core patches
-In-Reply-To: <alpine.LNX.2.00.1210311005220.5685@eggly.anvils>
-Message-ID: <alpine.LNX.2.00.1211010636140.3648@eggly.anvils>
-References: <20121025121617.617683848@chello.nl> <508A52E1.8020203@redhat.com> <1351242480.12171.48.camel@twins> <20121028175615.GC29827@cmpxchg.org> <508F73C5.7050409@redhat.com> <20121031004838.GA1657@cmpxchg.org> <alpine.LNX.2.00.1210302350140.5084@eggly.anvils>
- <50912478.2040403@redhat.com> <alpine.LNX.2.00.1210311005220.5685@eggly.anvils>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 1 Nov 2012 09:46:53 -0400
+Date: Thu, 1 Nov 2012 13:51:48 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: <balbi@ti.com>, "Cousson, Benoit" <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, <linux-omap@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+Message-ID: <20121101135148.382aec00@pyramind.ukuu.org.uk>
+In-Reply-To: <E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com>
+References: <20121031212639.GQ12739@atomide.com>
+	<8B058B00-6C21-4410-A24B-75651D49F6EC@antoniou-consulting.com>
+	<20121031221402.GA29490@arwen.pp.htv.fi>
+	<E4EE0D1F-C7AC-4620-86F2-D9C7C56E279F@antoniou-consulting.com>
+	<50924DA3.1060901@ti.com>
+	<F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com>
+	<20121101110418.GF410@arwen.pp.htv.fi>
+	<3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com>
+	<20121101124025.GA12489@arwen.pp.htv.fi>
+	<A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com>
+	<20121101131609.GC12489@arwen.pp.htv.fi>
+	<E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Oct 2012, Hugh Dickins wrote:
-> On Wed, 31 Oct 2012, Zhouping Liu wrote:
-> > On 10/31/2012 03:26 PM, Hugh Dickins wrote:
-> > > 
-> > > There's quite a few put_page()s in do_huge_pmd_numa_page(), and it
-> > > would help if we could focus on the one which is giving the trouble,
-> > > but I don't know which that is.  Zhouping, if you can, please would
-> > > you do an "objdump -ld vmlinux >bigfile" of your kernel, then extract
-> > > from bigfile just the lines from "<do_huge_pmd_numa_page>:" to whatever
-> > > is the next function, and post or mail privately just that disassembly.
-> > > That should be good to identify which of the put_page()s is involved.
-> > 
-> > Hugh, I didn't find the next function, as I can't find any words that matched
-> > "do_huge_pmd_numa_page".
-> > is there any other methods?
-> 
-> Hmm, do_huge_pmd_numa_page does appear in your stacktrace,
-> unless I've made a typo but am blind to it.
-> 
-> Were you applying objdump to the vmlinux which gave you the
-> BUG at mm/memcontrol.c:1134! ?
+> What they want, and what every user wants, is I plug this board in, and
+> the driver make sure everything is loaded and ready. No, the end users
+> don't want to see any of the implementation details of how the bitfile
+> is transported; the driver can handle it.
 
-Thanks for the further info you then sent privately: I have not made any
-more effort to reproduce the issue, but your objdump did tell me that the
-put_page hitting the problem is the one on line 872 of mm/huge_memory.c,
-"Drop the local reference", just before successful return after migration.
+That doesn't necessarily make it a bus merely some kind of hotplug
+enumeration of devices. That should all work properly both for devices
+and busses with spi and i²c as the final bits needed for it got fixed
+some time ago.
 
-I didn't really get the inspiration I'd hoped for out of knowing that,
-but it did make wonder whether you're suffering from one of the issues
-I already mentioned, and I can now see a way in which it might cause
-the mm/memcontrol.c:1134 BUG:-
+In an ideal world you don't want to be writing custom drivers for stuff.
+If your cape routes an i²c serial device to the existing system i²c
+busses then you want to just create an instance of any existing driver on
+the existing i²c bus not create a whole new layer of goop.
 
-migrate_page_copy() does TestClearPageActive on the source page:
-so given the unsafe way in which do_huge_pmd_numa_page() was proceeding
-with a !PageLRU page, it's quite possible that the page was sitting in
-a pagevec, and added to the active lru (so added to the lru_size of the
-active lru), but our final put_page removes it from lru, active flag has
-been cleared, so we subtract it from the lru_size of the inactive lru -
-that could indeed make it go negative and trigger the BUG.
+It does need to do the plumbing and resource management for the plumbing
+but thats not the same as being a bus.
 
-Here's a patch fixing and tidying up that and a few other things there.
-But I'm not signing it off yet, partly because I've barely tested it
-(quite probably I didn't even have any numa pmd migration happening
-at all), and partly because just a moment ago I ran across this
-instructive comment in __collapse_huge_page_isolate():
-	/* cannot use mapcount: can't collapse if there's a gup pin */
-	if (page_count(page) != 1) {
-
-Hmm, yes, below I've added the page_mapcount() check I proposed to
-do_huge_pmd_numa_page(), but is even that safe enough?  Do we actually
-need a page_count() check (for 2?) to guard against get_user_pages()?
-I suspect we do, but then do we have enough locking to stabilize such
-a check?  Probably, but...
-
-This will take more time, and I doubt get_user_pages() is an issue in
-your testing, so please would you try the patch below, to see if it
-does fix the BUGs you are seeing?  Thanks a lot.
-
-Not-Yet-Signed-off-by: Hugh Dickins <hughd@google.com>
----
-
- mm/huge_memory.c |   24 +++++++++---------------
- 1 file changed, 9 insertions(+), 15 deletions(-)
-
---- 3.7-rc2+schednuma+johannes/mm/huge_memory.c	2012-11-01 04:10:43.812155671 -0700
-+++ linux/mm/huge_memory.c	2012-11-01 05:52:19.512153771 -0700
-@@ -745,7 +745,7 @@ void do_huge_pmd_numa_page(struct mm_str
- 	struct mem_cgroup *memcg = NULL;
- 	struct page *new_page = NULL;
- 	struct page *page = NULL;
--	int node, lru;
-+	int node = -1;
- 
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(*pmd, entry)))
-@@ -762,7 +762,8 @@ void do_huge_pmd_numa_page(struct mm_str
- 		VM_BUG_ON(!PageCompound(page) || !PageHead(page));
- 
- 		get_page(page);
--		node = mpol_misplaced(page, vma, haddr);
-+		if (page_mapcount(page) == 1)	/* Only do exclusively mapped */
-+			node = mpol_misplaced(page, vma, haddr);
- 		if (node != -1)
- 			goto migrate;
- 	}
-@@ -801,13 +802,11 @@ migrate:
- 	if (!new_page)
- 		goto alloc_fail;
- 
--	lru = PageLRU(page);
--
--	if (lru && isolate_lru_page(page)) /* does an implicit get_page() */
-+	if (isolate_lru_page(page))	/* Does an implicit get_page() */
- 		goto alloc_fail;
- 
--	if (!trylock_page(new_page))
--		BUG();
-+	__set_page_locked(new_page);
-+	SetPageSwapBacked(new_page);
- 
- 	/* anon mapping, we can simply copy page->mapping to the new page: */
- 	new_page->mapping = page->mapping;
-@@ -820,8 +819,6 @@ migrate:
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(*pmd, entry))) {
- 		spin_unlock(&mm->page_table_lock);
--		if (lru)
--			putback_lru_page(page);
- 
- 		unlock_page(new_page);
- 		ClearPageActive(new_page);	/* Set by migrate_page_copy() */
-@@ -829,6 +826,7 @@ migrate:
- 		put_page(new_page);		/* Free it */
- 
- 		unlock_page(page);
-+		putback_lru_page(page);
- 		put_page(page);			/* Drop the local reference */
- 
- 		return;
-@@ -859,16 +857,12 @@ migrate:
- 	mem_cgroup_end_migration(memcg, page, new_page, true);
- 	spin_unlock(&mm->page_table_lock);
- 
--	put_page(page);			/* Drop the rmap reference */
--
- 	task_numa_fault(node, HPAGE_PMD_NR);
- 
--	if (lru)
--		put_page(page);		/* drop the LRU isolation reference */
--
- 	unlock_page(new_page);
--
- 	unlock_page(page);
-+	put_page(page);			/* Drop the rmap reference */
-+	put_page(page);			/* Drop the LRU isolation reference */
- 	put_page(page);			/* Drop the local reference */
- 
- 	return;
+Alan
