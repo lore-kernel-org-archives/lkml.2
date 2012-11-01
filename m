@@ -1,51 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab2KAHND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 03:13:03 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49171 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753562Ab2KAHNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 03:13:01 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>
-Cc: Adil Mujeeb <mujeeb.adil@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V2 3/3] checkpatch: Emit an warning when floating point values are used
-Date: Thu,  1 Nov 2012 00:12:18 -0700
-Message-Id: <359a78054bc0dfaedede95222781b4177d3c33ce.1351736873.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.112.g3fd21
-In-Reply-To: <cover.1351736873.git.joe@perches.com>
-References: <cover.1351736873.git.joe@perches.com>
+	id S1753898Ab2KAH1Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 03:27:16 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38614 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753643Ab2KAH1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 03:27:14 -0400
+Date: Thu, 1 Nov 2012 09:21:16 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Behan Webster <behanw@converseincode.com>
+CC: <balbi@ti.com>, <davem@davemloft.net>, <linux-usb@vger.kernel.org>,
+        <netfilter-devel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 2/3] Remove VLAIS usage from gadget code
+Message-ID: <20121101072116.GA32013@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1351631937-21455-1-git-send-email-behanw@converseincode.com>
+ <1351631937-21455-3-git-send-email-behanw@converseincode.com>
+ <20121031132838.GQ10998@arwen.pp.htv.fi>
+ <509144C0.8000601@converseincode.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
+Content-Disposition: inline
+In-Reply-To: <509144C0.8000601@converseincode.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux kernel doesn't like floating point, say so.
+--5vNYLRcllDrimb99
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+Hi,
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index c3a2162..96685c6 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2332,6 +2332,13 @@ sub process {
- 			     "do not add new typedefs\n" . $herecurr);
- 		}
- 
-+# check for floating point constants
-+
-+		if ($line =~ /\b$Float\b/) {
-+			WARN("KERNEL_FLOAT",
-+			     "Floating point is not supported in linux kernel source\n" . $herecurr);
-+		}
-+
- # * goes on variable not on type
- 		# (char*[ const])
- 		while ($line =~ m{(\($NonptrType(\s*(?:$Modifier\b\s*|\*\s*)+)\))}g) {
--- 
-1.7.8.112.g3fd21
+On Wed, Oct 31, 2012 at 11:33:20AM -0400, Behan Webster wrote:
+> On 12-10-31 09:28 AM, Felipe Balbi wrote:
+> >hi,
+> >
+> >On Tue, Oct 30, 2012 at 05:18:56PM -0400, Behan Webster wrote:
+> >>The use of variable length arrays in structs (VLAIS) in the Linux Kerne=
+l code
+> >>precludes the use of compilers which don't implement VLAIS (for instanc=
+e the
+> >>Clang compiler). This patch instead calculates offsets into the kmalloc=
+-ed
+> >>memory buffer using macros from valign.h.
+> >>
+> >>Signed-off-by: Behan Webster <behanw@converseincode.com>
+> >this won't apply after the current cleanups I applied to gadget code
+> >from Sebastian.
+> Makes sense. I'll try it with your repo, and regenerate.
+>=20
+> >If someone takes this patch, it will generate a series of annoying,
+> >hard-to-figure-out conflicts (at least judging by the looks of
+> >$SUBJECT).
+> I just tried the patch on your git.kernel.org repo and thankfully
+> there is only one hunk which is rejected, and fortunately the reason
+> is trivial (descriptors -> fs_descriptors).
+>=20
+> Was:
+> -        func->function.descriptors =3D data->fs_descs;
+> +        func->function.descriptors =3D fs_descs;
+>=20
+> Now is:
+> -        func->function.fs_descriptors =3D data->fs_descs;
+> +        func->function.fs_descriptors =3D fs_descs;
+>=20
+> I will regenerate the patch set, but obviously the new gadget patch
+> in the V3 patchset will only apply to the USB repo, and not to the
+> netfilter repo.
 
+then we can merge to net tree and handle the conflicts when merging to
+Linus, that'd be fine by me as long as people know how to solve the
+conflict properly ;-)
+
+--=20
+balbi
+
+--5vNYLRcllDrimb99
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQkiLsAAoJEIaOsuA1yqREd1QQAKe3dQ1fDKIfatg1mHzvXktL
+H/xNZs3FG42iC2lmi7dYQ2oe1B0XYrqrjRFAfr+5U/7J8bVO5nQAM3Dw0yN6Hsgh
+Gs01NEvzCvrdB0iqMrmudp/rbDO68jdfJtTq7HDvN3gS2JTbh62ubLEp3iuGXYk8
+CPgy/oqjZo8Gc7NDgQRCSFczIw8AAYeGAIkc5GW2KfjILgrelrXFtV5nQ3iKmZQD
+Pj+mhaXzl/Xx0NaQosOAR0/h4AFrIQbh60t2l8KjJSEpfpuCgXiVC1hU0UrJXafa
+xG7T3kYP6FKyWultL70UoSbGQ/tnnILVm3X0lmAmZ3V9CcDeIYhQtys2v7jUjasz
+7nohu61lMt4+sruipoI21pWvXQbR9m9nfgp7+u9jIG0OZ6RJ2AAfEqAB/xuN/waT
+4PPyVl1atob2cmG9ptQTIHwjoxljP1uPEfmnx35ivYR/UXI+kEp/b15xKy3j4BaG
+v2IUDLPWajjvOwcSpXcHGGke5VcTNqDtBSr9X+nE1MjaENWQh+eFQTB7Bq9SSEyI
+o/4MEdkT8PhQN75207EUHopGag68DCDDxBeuNygnCVOTdo3EorwCxwfOOy2nDZsI
+44BN29BvtFxRhttMko3ljcqGoQDQL91HnuX9YOrxMWuaubLmxyiylz9YcnyapfnN
+fToJE+ZrDwcgwcb4urIj
+=2uiy
+-----END PGP SIGNATURE-----
+
+--5vNYLRcllDrimb99--
