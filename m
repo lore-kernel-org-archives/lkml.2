@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762321Ab2KAVdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 17:33:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47860 "EHLO
+	id S2992548Ab2KAVej (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 17:34:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47871 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759887Ab2KAVdm (ORCPT
+	with ESMTP id S2992489Ab2KAVeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 17:33:42 -0400
-Date: Thu, 1 Nov 2012 14:33:19 -0700
-From: tip-bot for Andre Przywara <andre.przywara@amd.com>
-Message-ID: <tip-2bbf0a1427c377350f001fbc6260995334739ad7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, osp@andrep.de, hpa@zytor.com,
-        mingo@kernel.org, andre.przywara@amd.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, osp@andrep.de,
-        linux-kernel@vger.kernel.org, andre.przywara@amd.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1351700450-9277-1-git-send-email-osp@andrep.de>
-References: <1351700450-9277-1-git-send-email-osp@andrep.de>
+	Thu, 1 Nov 2012 17:34:37 -0400
+Date: Thu, 1 Nov 2012 14:34:20 -0700
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-fa22b5dfbea95c14dd96da264e80cac68857ceb7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        robert.richter@amd.com, jun.zhang@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com, wei.yang@windriver.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        robert.richter@amd.com, jun.zhang@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com, wei.yang@windriver.com
+In-Reply-To: <20120912135059.GZ8285@erda.amd.com>
+References: <20120912135059.GZ8285@erda.amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, amd:
-  Disable way access filter on Piledriver CPUs
-Git-Commit-ID: 2bbf0a1427c377350f001fbc6260995334739ad7
+Subject: [tip:x86/urgent] x86-32:
+  Fix invalid stack address while in softirq
+Git-Commit-ID: fa22b5dfbea95c14dd96da264e80cac68857ceb7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,77 +30,155 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 01 Nov 2012 14:33:26 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 01 Nov 2012 14:34:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2bbf0a1427c377350f001fbc6260995334739ad7
-Gitweb:     http://git.kernel.org/tip/2bbf0a1427c377350f001fbc6260995334739ad7
-Author:     Andre Przywara <andre.przywara@amd.com>
-AuthorDate: Wed, 31 Oct 2012 17:20:50 +0100
+Commit-ID:  fa22b5dfbea95c14dd96da264e80cac68857ceb7
+Gitweb:     http://git.kernel.org/tip/fa22b5dfbea95c14dd96da264e80cac68857ceb7
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Mon, 3 Sep 2012 20:54:48 +0200
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 31 Oct 2012 13:06:55 -0700
+CommitDate: Wed, 31 Oct 2012 14:25:18 -0700
 
-x86, amd: Disable way access filter on Piledriver CPUs
+x86-32: Fix invalid stack address while in softirq
 
-The Way Access Filter in recent AMD CPUs may hurt the performance of
-some workloads, caused by aliasing issues in the L1 cache.
-This patch disables it on the affected CPUs.
+In 32 bit the stack address provided by kernel_stack_pointer() may
+point to an invalid range causing NULL pointer access or page faults
+while in NMI (see trace below). This happens if called in softirq
+context and if the stack is empty. The address at &regs->sp is then
+out of range.
 
-The issue is similar to that one of last year:
-http://lkml.indiana.edu/hypermail/linux/kernel/1107.3/00041.html
-This new patch does not replace the old one, we just need another
-quirk for newer CPUs.
+Fixing this by checking if regs and &regs->sp are in the same stack
+context. Otherwise return the previous stack pointer stored in struct
+thread_info. If that address is invalid too, return address of regs.
 
-The performance penalty without the patch depends on the
-circumstances, but is a bit less than the last year's 3%.
+ BUG: unable to handle kernel NULL pointer dereference at 0000000a
+ IP: [<c1004237>] print_context_stack+0x6e/0x8d
+ *pde = 00000000
+ Oops: 0000 [#1] SMP
+ Modules linked in:
+ Pid: 4434, comm: perl Not tainted 3.6.0-rc3-oprofile-i386-standard-g4411a05 #4 Hewlett-Packard HP xw9400 Workstation/0A1Ch
+ EIP: 0060:[<c1004237>] EFLAGS: 00010093 CPU: 0
+ EIP is at print_context_stack+0x6e/0x8d
+ EAX: ffffe000 EBX: 0000000a ECX: f4435f94 EDX: 0000000a
+ ESI: f4435f94 EDI: f4435f94 EBP: f5409ec0 ESP: f5409ea0
+  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+ CR0: 8005003b CR2: 0000000a CR3: 34ac9000 CR4: 000007d0
+ DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+ DR6: ffff0ff0 DR7: 00000400
+ Process perl (pid: 4434, ti=f5408000 task=f5637850 task.ti=f4434000)
+ Stack:
+  000003e8 ffffe000 00001ffc f4e39b00 00000000 0000000a f4435f94 c155198c
+  f5409ef0 c1003723 c155198c f5409f04 00000000 f5409edc 00000000 00000000
+  f5409ee8 f4435f94 f5409fc4 00000001 f5409f1c c12dce1c 00000000 c155198c
+ Call Trace:
+  [<c1003723>] dump_trace+0x7b/0xa1
+  [<c12dce1c>] x86_backtrace+0x40/0x88
+  [<c12db712>] ? oprofile_add_sample+0x56/0x84
+  [<c12db731>] oprofile_add_sample+0x75/0x84
+  [<c12ddb5b>] op_amd_check_ctrs+0x46/0x260
+  [<c12dd40d>] profile_exceptions_notify+0x23/0x4c
+  [<c1395034>] nmi_handle+0x31/0x4a
+  [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+  [<c13950ed>] do_nmi+0xa0/0x2ff
+  [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+  [<c13949e5>] nmi_stack_correct+0x28/0x2d
+  [<c1029dc5>] ? ftrace_define_fields_irq_handler_entry+0x45/0x45
+  [<c1003603>] ? do_softirq+0x4b/0x7f
+  <IRQ>
+  [<c102a06f>] irq_exit+0x35/0x5b
+  [<c1018f56>] smp_apic_timer_interrupt+0x6c/0x7a
+  [<c1394746>] apic_timer_interrupt+0x2a/0x30
+ Code: 89 fe eb 08 31 c9 8b 45 0c ff 55 ec 83 c3 04 83 7d 10 00 74 0c 3b 5d 10 73 26 3b 5d e4 73 0c eb 1f 3b 5d f0 76 1a 3b 5d e8 73 15 <8b> 13 89 d0 89 55 e0 e8 ad 42 03 00 85 c0 8b 55 e0 75 a6 eb cc
+ EIP: [<c1004237>] print_context_stack+0x6e/0x8d SS:ESP 0068:f5409ea0
+ CR2: 000000000000000a
+ ---[ end trace 62afee3481b00012 ]---
+ Kernel panic - not syncing: Fatal exception in interrupt
 
-The workloads affected would be those that access code from the same
-physical page under different virtual addresses, so different
-processes using the same libraries with ASLR or multiple instances of
-PIE-binaries. The code needs to be accessed simultaneously from both
-cores of the same compute unit.
+V2:
+* add comments to kernel_stack_pointer()
+* always return a valid stack address by falling back to the address
+  of regs
 
-More details can be found here:
-http://developer.amd.com/Assets/SharedL1InstructionCacheonAMD15hCPU.pdf
-
-CPUs affected are anything with the core known as Piledriver.
-That includes the new parts of the AMD A-Series (aka Trinity) and the
-just released new CPUs of the FX-Series (aka Vishera).
-The model numbering is a bit odd here: FX CPUs have model 2,
-A-Series has model 10h, with possible extensions to 1Fh. Hence the
-range of model ids.
-
-Signed-off-by: Andre Przywara <osp@andrep.de>
-Link: http://lkml.kernel.org/r/1351700450-9277-1-git-send-email-osp@andrep.de
+Reported-by: Yang Wei <wei.yang@windriver.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Link: http://lkml.kernel.org/r/20120912135059.GZ8285@erda.amd.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Jun Zhang <jun.zhang@intel.com>
 ---
- arch/x86/kernel/cpu/amd.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/ptrace.h |   15 ++++-----------
+ arch/x86/kernel/ptrace.c      |   28 ++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index f7e98a2..1b7d165 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -631,6 +631,20 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		}
- 	}
+diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
+index dcfde52..19f16eb 100644
+--- a/arch/x86/include/asm/ptrace.h
++++ b/arch/x86/include/asm/ptrace.h
+@@ -205,21 +205,14 @@ static inline bool user_64bit_mode(struct pt_regs *regs)
+ }
+ #endif
  
-+	/*
-+	 * The way access filter has a performance penalty on some workloads.
-+	 * Disable it on the affected CPUs.
-+	 */
-+	if ((c->x86 == 0x15) &&
-+	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
-+		u64 val;
-+
-+		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
-+			val |= 0x1E;
-+			wrmsrl_safe(0xc0011021, val);
-+		}
-+	}
-+
- 	cpu_detect_cache_sizes(c);
+-/*
+- * X86_32 CPUs don't save ss and esp if the CPU is already in kernel mode
+- * when it traps.  The previous stack will be directly underneath the saved
+- * registers, and 'sp/ss' won't even have been saved. Thus the '&regs->sp'.
+- *
+- * This is valid only for kernel mode traps.
+- */
+-static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
+-{
+ #ifdef CONFIG_X86_32
+-	return (unsigned long)(&regs->sp);
++extern unsigned long kernel_stack_pointer(struct pt_regs *regs);
+ #else
++static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
++{
+ 	return regs->sp;
+-#endif
+ }
++#endif
  
- 	/* Multi core CPU? */
+ #define GET_IP(regs) ((regs)->ip)
+ #define GET_FP(regs) ((regs)->bp)
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index b00b33a..2484e33 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -166,6 +166,34 @@ static inline bool invalid_selector(u16 value)
+ 
+ #define FLAG_MASK		FLAG_MASK_32
+ 
++/*
++ * X86_32 CPUs don't save ss and esp if the CPU is already in kernel mode
++ * when it traps.  The previous stack will be directly underneath the saved
++ * registers, and 'sp/ss' won't even have been saved. Thus the '&regs->sp'.
++ *
++ * Now, if the stack is empty, '&regs->sp' is out of range. In this
++ * case we try to take the previous stack. To always return a non-null
++ * stack pointer we fall back to regs as stack if no previous stack
++ * exists.
++ *
++ * This is valid only for kernel mode traps.
++ */
++unsigned long kernel_stack_pointer(struct pt_regs *regs)
++{
++	unsigned long context = (unsigned long)regs & ~(THREAD_SIZE - 1);
++	unsigned long sp = (unsigned long)&regs->sp;
++	struct thread_info *tinfo;
++
++	if (context == (sp & ~(THREAD_SIZE - 1)))
++		return sp;
++
++	tinfo = (struct thread_info *)context;
++	if (tinfo->previous_esp)
++		return tinfo->previous_esp;
++
++	return (unsigned long)regs;
++}
++
+ static unsigned long *pt_regs_access(struct pt_regs *regs, unsigned long regno)
+ {
+ 	BUILD_BUG_ON(offsetof(struct pt_regs, bx) != 0);
