@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992645Ab2KAXr6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 19:47:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59699 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992551Ab2KAXrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 19:47:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,695,1344236400"; 
-   d="scan'208";a="214202699"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC EDAC/GHES] edac: lock module owner to avoid error report
- conflicts
-Thread-Topic: [RFC EDAC/GHES] edac: lock module owner to avoid error report
- conflicts
-Thread-Index: AQHNuCDOuRD+LyTnWU633Vkrr6zwkZfVUmSAgACISoD//5ZoIIAAjUSA//+mO7A=
-Date: Thu, 1 Nov 2012 23:47:52 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D5C22B@ORSMSX108.amr.corp.intel.com>
-References: <048a00fa4a888b349be5954ce9fd063a7bcf2564.1351691230.git.mchehab@redhat.com>
- <20121101110512.GA31271@liondog.tnic> <20121101094721.2a57719c@redhat.com>
- <20121101195509.GE31271@liondog.tnic>
- <3908561D78D1C84285E8C5FCA982C28F19D5C13C@ORSMSX108.amr.corp.intel.com>
- <20121101220249.GI31271@liondog.tnic>
-In-Reply-To: <20121101220249.GI31271@liondog.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S2992551Ab2KAXsr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 19:48:47 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54242 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab2KAXsq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 19:48:46 -0400
+Date: Thu, 1 Nov 2012 16:48:41 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: shmem_getpage_gfp VM_BUG_ON triggered. [3.7rc2]
+In-Reply-To: <20121101232030.GA25519@redhat.com>
+Message-ID: <alpine.LNX.2.00.1211011627120.19567@eggly.anvils>
+References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA1Nm9fq027416
 
-> Right, but at least in the csrow case, we still can compute back the
-> csrow even with the interleaving, after we know how it is done exactly
-> (on which address bits, etc). I think this should be doable on Intel
-> controllers too but I don't know.
+On Thu, 1 Nov 2012, Dave Jones wrote:
+> On Thu, Nov 01, 2012 at 04:03:40PM -0700, Hugh Dickins wrote:
+>  > 
+>  > Except... earlier in the thread you explained how you hacked
+>  > #define VM_BUG_ON(cond) WARN_ON(cond)
+>  > to get this to come out as a warning instead of a bug,
+>  > and now it looks as if "a user" has here done the same.
+>  > 
+>  > Which is very much a user's right, of course; but does
+>  > make me wonder whether that user might actually be davej ;)
+> 
+> indirectly. I made the same change in the Fedora kernel a while ago
+> to test a hypothesis that we weren't getting any VM_BUG_ON reports.
 
-No. Architecturally all Intel provides is the physical address in MCi_ADDR.
-To do anything with that you are into per-system space, and the
-registers that define the mappings are not necessarily available
-to OS code ... sometimes they are, and sometimes they are even
-documented in places where Mauro can use them to write an
-EDAC driver ... but there are no guarantees.
+Fedora turns on CONFIG_DEBUG_VM?
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+All mm developers should thank you for the wider testing exposure;
+but I'm not so sure that Fedora users should thank you for turning
+it on - really it's for mm developers to wrap around !assertions or
+more expensive checks (e.g. checking calls) in their development.
+
+Or did I read a few months ago that some change had been made to
+such definitions, and VM_BUG_ON(contents) are evaluated even when
+the config option is off?  I do hope I'm mistaken on that.
+
+Hugh
