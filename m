@@ -1,53 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761369Ab2KAMz5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 08:55:57 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:33696 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755631Ab2KAMzz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 08:55:55 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: nepomuk@kde.org
-Subject: Re: [Nepomuk] Better support for (desktop) file search / indexing applications
-Date: Thu, 1 Nov 2012 13:55:53 +0100
-User-Agent: KMail/1.13.7 (Linux/3.6.0-tp520; KDE/4.8.4; x86_64; ; )
-Cc: Jan Kara <jack@suse.cz>, John McCutchan <john@johnmccutchan.com>,
-        Robert Love <rlove@rlove.org>, Eric Paris <eparis@parisplace.org>,
-        Eric Paris <eparis@redhat.com>,
-        Linux Filesystem Development Mailinglist 
-	<linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <201211011352.42476.Martin@lichtvoll.de> (sfid-20121101_135310_030853_04871946)
-In-Reply-To: <201211011352.42476.Martin@lichtvoll.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211011355.54347.Martin@lichtvoll.de>
+	id S1761409Ab2KAM5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 08:57:34 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:36140 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753408Ab2KAM5c convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 08:57:32 -0400
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20121101124025.GA12489@arwen.pp.htv.fi>
+Date: Thu, 1 Nov 2012 14:57:26 +0200
+Cc: "Cousson, Benoit" <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>, Koen Kooi <koen@dominion.thruhere.net>,
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        <linux-omap@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com>
+References: <50918223.6080003@ti.com> <8AD2F7AF-8315-442B-A394-1A38DAB29F52@antoniou-consulting.com> <20121031212639.GQ12739@atomide.com> <8B058B00-6C21-4410-A24B-75651D49F6EC@antoniou-consulting.com> <20121031221402.GA29490@arwen.pp.htv.fi> <E4EE0D1F-C7AC-4620-86F2-D9C7C56E279F@antoniou-consulting.com> <50924DA3.1060901@ti.com> <F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com> <20121101110418.GF410@arwen.pp.htv.fi> <3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com> <20121101124025.GA12489@arwen.pp.htv.fi>
+To: <balbi@ti.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 1. November 2012 schrieb Martin Steigerwald:
-> Furthermore there is an issue with updating the file index on login or
-> service start. In order to catch all other file renames a indexer would
-> have to run over every directory whose modification time stamp has
-> changed again in order to see whether a (checksummed) file has moved.
+Hi,
+
+On Nov 1, 2012, at 2:40 PM, Felipe Balbi wrote:
+
+> Hi,
 > 
-> An approach like recursive mtime as proposed by Jan Kara can help to
-> improve initial scan times a lot.
+> On Thu, Nov 01, 2012 at 01:26:10PM +0200, Pantelis Antoniou wrote:
+>> Hi 
+>> 
+>> On Nov 1, 2012, at 1:04 PM, Felipe Balbi wrote:
+>> 
+>>> Hi,
+>>> 
+>>> On Thu, Nov 01, 2012 at 12:39:30PM +0200, Pantelis Antoniou wrote:
+>>>>>>>               lcd@0 {
+>>>>>>>                       compatible = "adafruit,tft-lcd-1.8-red", "sitronix,st7735";
+>>>>>>>                       spi-max-frequency = <8000000>;
+>>>>>>>                       reg = <0>;
+>>>>>>>                       spi-cpol;
+>>>>>>>                       spi-cpha;
+>>>>>>>                       pinctrl-names = "default";
+>>>>>>>                       pinctrl-0 = <&lcd_pins>;
+>>>>>>>                       st7735-rst = <&gpio4 19 0>;
+>>>>>>>                       st7735-dc = <&gpio4 21 0>;
+>>>>>>>               };
+>>>>>>> 
+>>>>>>>       };
+>>>>>>> };
+>>>>>>> 
+>>>>> 
+>>>>> I guess there is no easy solution for that, but it looks to me that
+>>>>> what you have to do is to make the DT creation dynamic in your case.
+>>>>> Assuming you do not want to do that in the bootloader, you must do
+>>>>> that pretty early during the boot process to end up with a full
+>>>>> description of your DT tree before creating the devices.
+>>>>> 
+>>>> 
+>>>> Do it pretty early in the boot processes ended up with the am335xevm board file in the PSP tree.
+>>>> 
+>>>> The whole set of possible cape designs cannot be controlled, nor do we want to.
+>>>> We want to empower users to come up with their own designs without having to do any kernel/boot loader
+>>>> hacking.
+>>> 
+>>> that's impossible since you will have to provide the capebus driver
+>>> anyway.
+>>> 
+>> 
+>> The generic cape bus driver can handle the easy stuff. More complex
+>> stuff can be supported with per-cape drivers.
 > 
-> As to what I know this scan has been enabled in Nepomuk recently, with
-> the hope that files are moved mainly during the user session is
-> active. I think thats an assumption that may be accurate for many
-> cases.
+> likewise:
+> 
+> the generic stuff can be handled by FDT easily, the more complex stuff
+> can be supported by dynamically changing FDT blob, no ?
+> 
 
-disabled, not enabled.
+No. You're missing the point. Up until we read the EEPROM we don't know
+what to dynamically change in the device tree (not the blob). What you
+will end up is something like capebus again. Only you're going to reinvent it
+with a different name.
 
-I read over this before but did not see the typo.
+>>>>> Each cape will have their own DTS and based on some board id you
+>>>>> will fix the DT dynamically.
+>>>>> 
+>>>>> My point is that the issue you are facing is a real limitation of
+>>>>> DT, so you should fix the DT core and not workaround it by creating
+>>>>> artificial bindings / drivers.
+>>>>> 
+>>>> 
+>>>> You still haven't described any mechanism to deal with all the use
+>>>> cases I described.
+>>>> 
+>>>> DT can't and will not deal with the complexity that we're facing right
+>>>> now.
+>>> 
+>>> and DT-itself shouldn't. I agree with Benoit that this should be built
+>>> at bootloader level, perhaps. Whatever you're doing in capebus, you
+>>> could do at kernel space, build your DT bindings in runtime, and pass
+>>> that DT blob to kernel.
+>> 
+>> We're just passing the buck someplace else. We're not fixing the problem.
+>> What makes you think that dealing with this in the bootloader is going
+>> to be simpler?
+> 
+> I never said it was supposed to be simpler, it just doesn't sound like
+> something the kernel should care about. Kernel cares about the
 
-Sorry,
--- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+I just disagree here. The kernel should provide services that make the life
+of users easier, not the lives of the kernel developers easier.
+
+> 
+>> 
+>>> 
+>>> One question though, what do you mean by "some capes are full blown
+>>> devices with their own drivers" ? Do you mean you have capes running
+>>> some other (RT)OS and communicating with linux somehow ? How does it
+>>> communicate to the bone ?
+>> 
+>> Some have FPGAs.
+>> https://specialcomp.com/beaglebone/BeagleBone_FPGA.html
+> 
+> how does linux communicate with those ? What they are matters very
+> little ;-) All we need is an interface to load binaries to the FPGA.
+> 
+
+We can not know what people will come up with. It might have a few GPIOs
+to load the bitfile to the FPGA, but after that, no-one can tell.
+I might not interface to Linux at all; it might interface via I2C, or RS232.
+
+Chances are, it won't fit in any kind of known drivers of linux. 
+Some guy is using an FPGA for SDR, another is making a radar cape.
+
+These guys don't give a damn frankly about Linux. What they do care about
+is having a cheap/easy to develop platform for their own little widget.
+If you are going to ask from the to hunt down their own dts and assemble
+from various dtsi's they'll just move to something else.
+
+Which is a shame, cause we do have a nice platform here.
+
+>> Some capes have their own MCUs.
+>> A recent one has an 6502 communicating with uio_pruss.
+>> https://github.com/ohporter/b6502
+> 
+> that uses remoteproc, so I assume it's using OMAP's mailbox ?
+> 
+> Again I say that this is not a 'capebus', it's just another device
+> which we use another interface to talk to.
+> 
+> i2c devices will be children of the omap i2c controller, spi devices
+> will be children of the omap mcspi, GPMC devices will need the GPMC
+> controller and so on, but none of this looks like argument to introduce
+> a fake bus into the kernel.
+> 
+
+I'll let the users of said bus to do the talking. You're just flat out
+wrong IMO.
+
+> -- 
+> balbi
+
+Regards
+
+-- Pantelis
+
