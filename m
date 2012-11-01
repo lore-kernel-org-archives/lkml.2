@@ -1,98 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956Ab2KAJNb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 05:13:31 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:60179 "EHLO mx2.parallels.com"
+	id S933007Ab2KAJQu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 05:16:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58488 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932613Ab2KAJN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 05:13:28 -0400
-Message-ID: <5092ADB7.8080200@parallels.com>
-Date: Thu, 1 Nov 2012 21:13:27 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S932613Ab2KAJQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 05:16:46 -0400
+Date: Thu, 1 Nov 2012 10:16:44 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8] cgroup: use cgroup_lock_live_group(parent) in
+ cgroup_create()
+Message-ID: <20121101091644.GA8533@dhcp22.suse.cz>
+References: <1351657365-25055-1-git-send-email-tj@kernel.org>
+ <1351657365-25055-4-git-send-email-tj@kernel.org>
+ <20121031155514.GD22809@dhcp22.suse.cz>
+ <20121031170431.GF2945@htj.dyndns.org>
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>, JoonSoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH] slab: annotate on-slab caches nodelist locks
-References: <1351507779-26847-1-git-send-email-glommer@parallels.com> <50922087.6080300@linux.vnet.ibm.com> <5092A7DD.6070304@parallels.com> <50923C84.2060703@linux.vnet.ibm.com>
-In-Reply-To: <50923C84.2060703@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121031170431.GF2945@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2012 01:10 PM, Michael Wang wrote:
-> On 11/02/2012 12:48 AM, Glauber Costa wrote:
->> On 11/01/2012 11:11 AM, Michael Wang wrote:
->>> On 10/29/2012 06:49 PM, Glauber Costa wrote:
->>>> We currently provide lockdep annotation for kmalloc caches, and also
->>>> caches that have SLAB_DEBUG_OBJECTS enabled. The reason for this is that
->>>> we can quite frequently nest in the l3->list_lock lock, which is not
->>>> something trivial to avoid.
->>>>
->>>> My proposal with this patch, is to extend this to caches whose slab
->>>> management object lives within the slab as well ("on_slab"). The need
->>>> for this arose in the context of testing kmemcg-slab patches. With such
->>>> patchset, we can have per-memcg kmalloc caches. So the same path that
->>>> led to nesting between kmalloc caches will could then lead to in-memcg
->>>> nesting. Because they are not annotated, lockdep will trigger.
->>>
->>> Hi, Glauber
->>>
->>> I'm trying to understand what's the issue we are trying to solve, but
->>> looks like I need some help...
->>>
->> Understandably =)
->>
->> This will not trigger in an upstream kernel, so in this sense, it is not
->> an existing bug. It happens when the kmemcg-slab series is applied
->> (https://lkml.org/lkml/2012/10/16/186) and (http://lwn.net/Articles/519877/)
->>
->> Because this is a big series, I am for a while adopting the policy of
->> sending out patches that are in principle independent of the series, to
->> be reviewed on their own. But in some cases like this, some context may
->> end up missing.
->>
->> Now, of course I won't tell you to go read it all, so here is a summary:
->> * We operate in a containerized environment, with each container inside
->> a cgroup
->> * in this context, it is necessary to account and limit the amount of
->> kernel memory that can be tracked back to processes. This is akin of
->> OpenVZ's beancounters (http://wiki.openvz.org/Proc/user_beancounters)
->> * To do that, we create a version of each slab that a cgroup uses.
->> Processes in that cgroup will allocate from that slab.
->>
->> This means that we will have cgroup-specific versions of slabs like
->> kmalloc-XX, dentry, inode, etc.
->>
->>> So allow me to ask few questions:
->>>
->>> 1. what's scene will cause the fake dead lock?
->>
->> This lockdep annotation exists because when freeing from kmalloc caches,
->> it is possible to nest in the l3 list_lock. The particular one I hit was
->> when we reach cache_flusharray with the l3 list_lock held, which seems
->> to happen quite often.
->>
->>> 2. what's the conflict caches?
->> kmalloc-XX and kmalloc-memcg-y-XX
->>
->>> 3. how does their lock operation nested?
->>>
->>
->> In the same way kmalloc-XX would nest with itself.
+On Wed 31-10-12 10:04:31, Tejun Heo wrote:
+> Hey, Michal.
 > 
-> So this is a patch to fix the possible BUG if other patch applied?
-> I'm not sure but sounds like not the right process...add this one to
-> that patch set may be better :)
+> On Wed, Oct 31, 2012 at 04:55:14PM +0100, Michal Hocko wrote:
+> > > +	/*
+> > > +	 * Only live parents can have children.  Note that the liveliness
+> > > +	 * check isn't strictly necessary because cgroup_mkdir() and
+> > > +	 * cgroup_rmdir() are fully synchronized by i_mutex; however, do it
+> > > +	 * anyway so that locking is contained inside cgroup proper and we
+> > > +	 * don't get nasty surprises if we ever grow another caller.
+> > > +	 */
+> > > +	if (!cgroup_lock_live_group(parent)) {
+> > > +		err = -ENODEV;
+> > > +		goto err_free;
+> > > +	}
+> > > +
+> > 
+> > I think this should be moved up before we try to allocate any memory.
+> > Or is your motivation to keep cgroup_lock held for shorter time?
+> > I could agree with that but a small comment would be helpful.
 > 
+> Then I have to change the error out path more and I'm not sure I wanna
+> call deactivate_super() under cgroup_mutex.  It's just simpler this
+> way.
 
-It is in the patchset. As I said, I've *also* (not exclusively) been
-sending separately for a while patches that are potentially good on
-their own (iow, have no code dependency with the rest of the series). In
-some cases it help, in some, it doesn't
+I am not sure I understand. What does deactivate_super has to do with
+the above suggestion? cgroup_lock_live_group will take the cgroup_mutex
+on the success or frees the previously allocated&unused memory. The
+only thing I was suggesting is to do cgroup_lock_live_group first and
+allocate the cgroup only if it doesn't fail.
 
+-- 
+Michal Hocko
+SUSE Labs
