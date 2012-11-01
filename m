@@ -1,281 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992530Ab2KAUMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 16:12:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51087 "EHLO mx1.redhat.com"
+	id S2992536Ab2KAUMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 16:12:13 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:51097 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932415Ab2KAULO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 16:11:14 -0400
-From: Milan Broz <mbroz@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: jaxboe@fusionio.com, kzak@redhat.com, Milan Broz <mbroz@redhat.com>
-Subject: [RFC PATCH 1/4] Remove cryptoloop module.
-Date: Thu,  1 Nov 2012 21:11:01 +0100
-Message-Id: <2764b483d6fc4efe02ce7e8ff88cb1fed390a555.1351799189.git.mbroz@redhat.com>
-In-Reply-To: <cover.1351799189.git.mbroz@redhat.com>
-References: <cover.1351799189.git.mbroz@redhat.com>
-In-Reply-To: <cover.1351799189.git.mbroz@redhat.com>
-References: <cover.1351799189.git.mbroz@redhat.com>
+	id S2992524Ab2KAUMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 16:12:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Toshi Kani <toshi.kani@hp.com>, ZhangRui <rui.zhang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>, bhelgaas@google.com,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] Improve container_notify_cb() to support container hot-remove.
+Date: Thu, 01 Nov 2012 21:16:13 +0100
+Message-ID: <2190235.LV034OX9Ij@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CAE9FiQXxHz_RntOc2gxxDscv8+mDQ2XBL0sHSrptj_arwUb8-A@mail.gmail.com>
+References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com> <1351788194.19172.98.camel@misato.fc.hp.com> <CAE9FiQXxHz_RntOc2gxxDscv8+mDQ2XBL0sHSrptj_arwUb8-A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mainline cryptoloop extension to block device loop driver is for years in limbo.
+On Thursday, November 01, 2012 11:28:25 AM Yinghai Lu wrote:
+> On Thu, Nov 1, 2012 at 9:43 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+> >
+> > Rafael pointed out in my CPU hot-remove patch that
+> > acpi_bus_hot_remove_device() was not exported for modules.  Looks like
+> > you have the same problem here.  FYI, I just sent the following patch
+> > that exports acpi_bus_hot_remove_device() and acpi_os_hotplug_execute().
+> >
+> > https://lkml.org/lkml/2012/11/1/225
+> 
+> acpi_os_hotplug_execute() does not like having good quality yet.
+> 
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  941)   /*
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  942)    * We
+> can't run hotplug code in keventd_wq/kacpid_wq/kacpid_notify_wq
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  943)    *
+> because the hotplug code may call driver .remove() functions,
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  944)    *
+> which invoke flush_scheduled_work/acpi_os_wait_events_complete
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  945)    * to
+> flush these workqueues.
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  946)    */
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  947)   queue
+> = hp ? kacpi_hotplug_wq :
+> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  948)
+>  (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
+> 9ac61856 (Bjorn Helgaas       2009-08-31 22:32:10 +0000  949)
+> dpc->wait = hp ? 1 : 0;
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  950)
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  951)   if
+> (queue == kacpi_hotplug_wq)
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  952)
+>  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  953)   else
+> if (queue == kacpi_notify_wq)
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  954)
+>  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  955)   else
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  956)
+>  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  957)
+> 
+> really don't know why checking queue and call same code in every branch.
+> 
+> from comm:
+> 
+> commit bc73675b99fd9850dd914be01d71af99c5d2a1ae
+> Author: Zhang Rui <rui.zhang@intel.com>
+> Date:   Mon Mar 22 15:48:54 2010 +0800
+> 
+>     ACPI: fixes a false alarm from lockdep
+> 
+>     fixes a false alarm from lockdep, as acpi hotplug workqueue waits other
+>     workqueues.
+>     http://bugzilla.kernel.org/show_bug.cgi?id=14553
+>     https://bugzilla.kernel.org/show_bug.cgi?id=15521
+> 
+>     Original-patch-from: Andrew Morton <akpm@linux-foundation.org>
+>     Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+>     Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+>     Signed-off-by: Len Brown <len.brown@intel.com>
+> 
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index 8e6d866..900da68 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -758,7 +758,14 @@ static acpi_status
+> __acpi_os_execute(acpi_execute_type type,
+>         queue = hp ? kacpi_hotplug_wq :
+>                 (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
+>         dpc->wait = hp ? 1 : 0;
+> -       INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> +
+> +       if (queue == kacpi_hotplug_wq)
+> +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> +       else if (queue == kacpi_notify_wq)
+> +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> +       else
+> +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> +
+>         ret = queue_work(queue, &dpc->work);
+> 
+>         if (!ret) {
+> 
+> 
+> Len or Rafael,
+> can you just revert that silly patch?
 
-There are known problems (like predictable IV). This code is already
-superseded by using dmcrypt/cryptsetup.
-(Cryptsetup automatically allocates free loop device if run over file image.)
+We're removing this as per:
 
-Other implementation, out of mainline tree loop-AES is already heavily
-patching loop driver.
+http://git.kernel.org/?p=linux/kernel/git/rafael/linux-pm.git;a=commit;h=77f1966ec9763e85e5f1a9202802e90c297b4c21
 
-Current mainline userspace (util-linux) is going to remove encryption support
-in next version (already removed in git tree), encryption support is already
-deprecated in last release.
+Thanks,
+Rafael
 
-Let's stop pretend this code is supported and remove it completely.
 
-Signed-off-by: Milan Broz <mbroz@redhat.com>
----
- drivers/block/Makefile     |    1 -
- drivers/block/cryptoloop.c |  216 --------------------------------------------
- 2 files changed, 217 deletions(-)
- delete mode 100644 drivers/block/cryptoloop.c
-
-diff --git a/drivers/block/Makefile b/drivers/block/Makefile
-index 17e82df..d0bd32f 100644
---- a/drivers/block/Makefile
-+++ b/drivers/block/Makefile
-@@ -28,7 +28,6 @@ obj-$(CONFIG_BLK_DEV_OSD)	+= osdblk.o
- 
- obj-$(CONFIG_BLK_DEV_UMEM)	+= umem.o
- obj-$(CONFIG_BLK_DEV_NBD)	+= nbd.o
--obj-$(CONFIG_BLK_DEV_CRYPTOLOOP) += cryptoloop.o
- obj-$(CONFIG_VIRTIO_BLK)	+= virtio_blk.o
- 
- obj-$(CONFIG_VIODASD)		+= viodasd.o
-diff --git a/drivers/block/cryptoloop.c b/drivers/block/cryptoloop.c
-deleted file mode 100644
-index 8b6bb76..0000000
---- a/drivers/block/cryptoloop.c
-+++ /dev/null
-@@ -1,216 +0,0 @@
--/*
--   Linux loop encryption enabling module
--
--   Copyright (C)  2002 Herbert Valerio Riedel <hvr@gnu.org>
--   Copyright (C)  2003 Fruhwirth Clemens <clemens@endorphin.org>
--
--   This module is free software; you can redistribute it and/or modify
--   it under the terms of the GNU General Public License as published by
--   the Free Software Foundation; either version 2 of the License, or
--   (at your option) any later version.
--
--   This module is distributed in the hope that it will be useful,
--   but WITHOUT ANY WARRANTY; without even the implied warranty of
--   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--   GNU General Public License for more details.
--
--   You should have received a copy of the GNU General Public License
--   along with this module; if not, write to the Free Software
--   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-- */
--
--#include <linux/module.h>
--
--#include <linux/init.h>
--#include <linux/string.h>
--#include <linux/crypto.h>
--#include <linux/blkdev.h>
--#include <linux/loop.h>
--#include <linux/scatterlist.h>
--#include <asm/uaccess.h>
--
--MODULE_LICENSE("GPL");
--MODULE_DESCRIPTION("loop blockdevice transferfunction adaptor / CryptoAPI");
--MODULE_AUTHOR("Herbert Valerio Riedel <hvr@gnu.org>");
--
--#define LOOP_IV_SECTOR_BITS 9
--#define LOOP_IV_SECTOR_SIZE (1 << LOOP_IV_SECTOR_BITS)
--
--static int
--cryptoloop_init(struct loop_device *lo, const struct loop_info64 *info)
--{
--	int err = -EINVAL;
--	int cipher_len;
--	int mode_len;
--	char cms[LO_NAME_SIZE];			/* cipher-mode string */
--	char *cipher;
--	char *mode;
--	char *cmsp = cms;			/* c-m string pointer */
--	struct crypto_blkcipher *tfm;
--
--	/* encryption breaks for non sector aligned offsets */
--
--	if (info->lo_offset % LOOP_IV_SECTOR_SIZE)
--		goto out;
--
--	strncpy(cms, info->lo_crypt_name, LO_NAME_SIZE);
--	cms[LO_NAME_SIZE - 1] = 0;
--
--	cipher = cmsp;
--	cipher_len = strcspn(cmsp, "-");
--
--	mode = cmsp + cipher_len;
--	mode_len = 0;
--	if (*mode) {
--		mode++;
--		mode_len = strcspn(mode, "-");
--	}
--
--	if (!mode_len) {
--		mode = "cbc";
--		mode_len = 3;
--	}
--
--	if (cipher_len + mode_len + 3 > LO_NAME_SIZE)
--		return -EINVAL;
--
--	memmove(cms, mode, mode_len);
--	cmsp = cms + mode_len;
--	*cmsp++ = '(';
--	memcpy(cmsp, info->lo_crypt_name, cipher_len);
--	cmsp += cipher_len;
--	*cmsp++ = ')';
--	*cmsp = 0;
--
--	tfm = crypto_alloc_blkcipher(cms, 0, CRYPTO_ALG_ASYNC);
--	if (IS_ERR(tfm))
--		return PTR_ERR(tfm);
--
--	err = crypto_blkcipher_setkey(tfm, info->lo_encrypt_key,
--				      info->lo_encrypt_key_size);
--	
--	if (err != 0)
--		goto out_free_tfm;
--
--	lo->key_data = tfm;
--	return 0;
--
-- out_free_tfm:
--	crypto_free_blkcipher(tfm);
--
-- out:
--	return err;
--}
--
--
--typedef int (*encdec_cbc_t)(struct blkcipher_desc *desc,
--			struct scatterlist *sg_out,
--			struct scatterlist *sg_in,
--			unsigned int nsg);
--
--static int
--cryptoloop_transfer(struct loop_device *lo, int cmd,
--		    struct page *raw_page, unsigned raw_off,
--		    struct page *loop_page, unsigned loop_off,
--		    int size, sector_t IV)
--{
--	struct crypto_blkcipher *tfm = lo->key_data;
--	struct blkcipher_desc desc = {
--		.tfm = tfm,
--		.flags = CRYPTO_TFM_REQ_MAY_SLEEP,
--	};
--	struct scatterlist sg_out;
--	struct scatterlist sg_in;
--
--	encdec_cbc_t encdecfunc;
--	struct page *in_page, *out_page;
--	unsigned in_offs, out_offs;
--	int err;
--
--	sg_init_table(&sg_out, 1);
--	sg_init_table(&sg_in, 1);
--
--	if (cmd == READ) {
--		in_page = raw_page;
--		in_offs = raw_off;
--		out_page = loop_page;
--		out_offs = loop_off;
--		encdecfunc = crypto_blkcipher_crt(tfm)->decrypt;
--	} else {
--		in_page = loop_page;
--		in_offs = loop_off;
--		out_page = raw_page;
--		out_offs = raw_off;
--		encdecfunc = crypto_blkcipher_crt(tfm)->encrypt;
--	}
--
--	while (size > 0) {
--		const int sz = min(size, LOOP_IV_SECTOR_SIZE);
--		u32 iv[4] = { 0, };
--		iv[0] = cpu_to_le32(IV & 0xffffffff);
--
--		sg_set_page(&sg_in, in_page, sz, in_offs);
--		sg_set_page(&sg_out, out_page, sz, out_offs);
--
--		desc.info = iv;
--		err = encdecfunc(&desc, &sg_out, &sg_in, sz);
--		if (err)
--			return err;
--
--		IV++;
--		size -= sz;
--		in_offs += sz;
--		out_offs += sz;
--	}
--
--	return 0;
--}
--
--static int
--cryptoloop_ioctl(struct loop_device *lo, int cmd, unsigned long arg)
--{
--	return -EINVAL;
--}
--
--static int
--cryptoloop_release(struct loop_device *lo)
--{
--	struct crypto_blkcipher *tfm = lo->key_data;
--	if (tfm != NULL) {
--		crypto_free_blkcipher(tfm);
--		lo->key_data = NULL;
--		return 0;
--	}
--	printk(KERN_ERR "cryptoloop_release(): tfm == NULL?\n");
--	return -EINVAL;
--}
--
--static struct loop_func_table cryptoloop_funcs = {
--	.number = LO_CRYPT_CRYPTOAPI,
--	.init = cryptoloop_init,
--	.ioctl = cryptoloop_ioctl,
--	.transfer = cryptoloop_transfer,
--	.release = cryptoloop_release,
--	.owner = THIS_MODULE
--};
--
--static int __init
--init_cryptoloop(void)
--{
--	int rc = loop_register_transfer(&cryptoloop_funcs);
--
--	if (rc)
--		printk(KERN_ERR "cryptoloop: loop_register_transfer failed\n");
--	return rc;
--}
--
--static void __exit
--cleanup_cryptoloop(void)
--{
--	if (loop_unregister_transfer(LO_CRYPT_CRYPTOAPI))
--		printk(KERN_ERR
--			"cryptoloop: loop_unregister_transfer failed\n");
--}
--
--module_init(init_cryptoloop);
--module_exit(cleanup_cryptoloop);
 -- 
-1.7.10.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
