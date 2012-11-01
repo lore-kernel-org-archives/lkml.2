@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab2KAI6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 04:58:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57929 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755312Ab2KAI6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 04:58:35 -0400
-Date: Thu, 1 Nov 2012 09:58:32 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH 4/8] cgroup: deactivate CSS's and mark cgroup dead before
- invoking ->pre_destroy()
-Message-ID: <20121101085832.GB8525@dhcp22.suse.cz>
-References: <1351712650-23709-1-git-send-email-tj@kernel.org>
- <1351712650-23709-5-git-send-email-tj@kernel.org>
- <20121031212359.GC5286@dhcp22.suse.cz>
- <20121031212725.GA2945@htj.dyndns.org>
+	id S1758292Ab2KAJAY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 05:00:24 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42177 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757418Ab2KAJAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 05:00:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121031212725.GA2945@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5091CA18.7020905@gmail.com>
+References: <1351719113-30880-1-git-send-email-linus.walleij@linaro.org>
+	<5091CA18.7020905@gmail.com>
+Date: Thu, 1 Nov 2012 10:00:19 +0100
+Message-ID: <CACRpkda06BbFOiX1WSqNLM-R5Es-Nd6btUNq2mMDuH7s3jA2cw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: plat-versatile: move FPGA irq driver to drivers/irqchip
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, Thomas Gleixner <tglx@linutronix.de>,
+        arm@kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 31-10-12 14:27:25, Tejun Heo wrote:
-> Hey, Michal.
-> 
-> On Wed, Oct 31, 2012 at 10:23:59PM +0100, Michal Hocko wrote:
-> > > +	for_each_subsys(cgrp->root, ss)
-> > > +		if (ss->pre_destroy)
-> > > +			WARN_ON_ONCE(ss->pre_destroy(cgrp));
-> > 
-> > Do you think that BUG_ON would be too harsh?
-> 
-> Yeah, I do think so.  In general, I think the consensus now is to
-> prefer WARN_ON[_ONCE]() over BUG_ON() whenever possible.  It's not
-> like we can get more information from BUG_ON()s (more likely to get
-> less reporting actually by taking down the machine).  Limping machines
-> are better than dead ones and there just isn't much to gain here by
-> killing it.
+On Thu, Nov 1, 2012 at 2:02 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On 10/31/2012 04:31 PM, Linus Walleij wrote:
 
-Fair enough
+>>  rename arch/arm/plat-versatile/include/plat/fpga-irq.h => include/linux/platform_data/irq-versatile-fpga.h (100%)
+>
+> I think include/linux/irqchip/ is the right place.
 
--- 
-Michal Hocko
-SUSE Labs
+OK I'll fix.
+
+> Ideally we would not
+> need the header at all. You can remove some of the function declarations
+> if you base this on Thomas Petazzoni's series to have a common init
+> function for DT and also move the fpga_handle_irq init into the
+> fpga_irq_init function.
+
+Sounds like a separate patch but surely we can do this. Is Thomas'
+stuff on a branch somewhere that I can then rebase upon to get
+it upstream? I was planning to get this series as such to the
+ARM SoC maintainers soon-ish.
+
+Yours,
+Linus Walleij
