@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936055Ab2KATrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 15:47:10 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:39302 "EHLO smtp.outflux.net"
+	id S1758301Ab2KATrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 15:47:07 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:48985 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933652Ab2KATrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S935175Ab2KATrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Nov 2012 15:47:02 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
@@ -13,9 +13,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
         Al Viro <viro@zeniv.linux.org.uk>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Kees Cook <keescook@chromium.org>
-Subject: [PATCH 1/4] arch/arm: add syscall_get_arch
-Date: Thu,  1 Nov 2012 12:46:36 -0700
-Message-Id: <1351799199-6853-2-git-send-email-keescook@chromium.org>
+Subject: [PATCH 4/4] arch/arm: select HAVE_ARCH_SECCOMP_FILTER
+Date: Thu,  1 Nov 2012 12:46:39 -0700
+Message-Id: <1351799199-6853-5-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351799199-6853-1-git-send-email-keescook@chromium.org>
 References: <1351799199-6853-1-git-send-email-keescook@chromium.org>
@@ -26,44 +26,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Will Drewry <wad@chromium.org>
 
-Provide an ARM implementation of syscall_get_arch. This is a pre-requisite
-for CONFIG_HAVE_ARCH_SECCOMP_FILTER.
+Reflect architectural support for seccomp filter.
 
 Signed-off-by: Will Drewry <wad@chromium.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/arm/include/asm/syscall.h |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ arch/arm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
-index 9fdded6..803f433 100644
---- a/arch/arm/include/asm/syscall.h
-+++ b/arch/arm/include/asm/syscall.h
-@@ -7,6 +7,8 @@
- #ifndef _ASM_ARM_SYSCALL_H
- #define _ASM_ARM_SYSCALL_H
- 
-+#include <linux/audit.h> /* for AUDIT_ARCH_* */
-+#include <linux/elf.h> /* for ELF_EM */
- #include <linux/err.h>
- #include <linux/sched.h>
- 
-@@ -95,4 +97,15 @@ static inline void syscall_set_arguments(struct task_struct *task,
- 	memcpy(&regs->ARM_r0 + i, args, n * sizeof(args[0]));
- }
- 
-+static inline int syscall_get_arch(struct task_struct *task,
-+				   struct pt_regs *regs)
-+{
-+	/* ARM tasks don't change audit architectures on the fly. */
-+#ifdef __ARMEB__
-+	return AUDIT_ARCH_ARMEB;
-+#else
-+	return AUDIT_ARCH_ARM;
-+#endif
-+}
-+
- #endif /* _ASM_ARM_SYSCALL_H */
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ade7e92..0e8d490 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -21,6 +21,7 @@ config ARM
+ 	select HAVE_AOUT
+ 	select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
+ 	select HAVE_ARCH_KGDB
++	select HAVE_ARCH_SECCOMP_FILTER
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_BPF_JIT
+ 	select HAVE_C_RECORDMCOUNT
 -- 
 1.7.9.5
 
