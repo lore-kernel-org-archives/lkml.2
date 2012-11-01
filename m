@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757040Ab2KACjk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 22:39:40 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47860 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab2KACji (ORCPT
+	id S1756883Ab2KACq3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 22:46:29 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10983 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754681Ab2KACq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 22:39:38 -0400
-X-AuditID: 9c93016f-b7c7bae000000eb7-46-5091e0e747c1
-Date: Thu, 1 Nov 2012 11:45:36 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, gaowanlong@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v3 0/3] zram/zsmalloc promotion
-Message-ID: <20121101024536.GC24883@bbox>
-References: <1351501009-15111-1-git-send-email-minchan@kernel.org>
- <20121031010642.GN15767@bbox>
- <20121031014209.GB2672@kroah.com>
- <20121031020443.GP15767@bbox>
- <20121031021618.GA1142@kroah.com>
- <20121031023947.GA24883@bbox>
- <20121031024307.GA9210@kroah.com>
- <20121031070202.GR15767@bbox>
- <20121031161900.GG31804@kroah.com>
+	Wed, 31 Oct 2012 22:46:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 31 Oct 2012 19:33:39 -0700
+From: Alex Courbot <acourbot@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: How about a gpio_get(device *, char *) function?
+Date: Thu, 1 Nov 2012 11:48:13 +0900
+Message-ID: <17133691.o4iLtizVux@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9.2 (Linux/3.6.3-1-ARCH; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <509142F5.4010307@wwwdotorg.org>
+References: <38620644.IyR5R8rjKP@percival> <509142F5.4010307@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121031161900.GG31804@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 09:19:00AM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Oct 31, 2012 at 04:02:02PM +0900, Minchan Kim wrote:
-> > On Tue, Oct 30, 2012 at 07:43:07PM -0700, Greg Kroah-Hartman wrote:
-> > > On Wed, Oct 31, 2012 at 11:39:48AM +0900, Minchan Kim wrote:
-> > > > Greg, what do you think about LTSI?
-> > > > Is it proper feature to add it? For it, still do I need ACK from mm developers?
-> > > 
-> > > It's already in LTSI, as it's in the 3.4 kernel, right?
+On Wednesday 31 October 2012 23:25:41 Stephen Warren wrote:
+> On 10/31/2012 03:04 AM, Alex Courbot wrote:
+> > Hi,
 > > 
-> > Right. But as I look, it seems to be based on 3.4.11 which doesn't have
-> > recent bug fix and enhances and current 3.4.16 also doesn't include it.
+> > Would anyone be opposed to having a gpio_get() function that works
+> > similarly to e.g. regulator_get() and clk_get()?
 > 
-> You can ask for those bugfixes to get backported to the stable/longterm
-> kernel tree, see Documentation/stable_kernel_rules.txt for how to do
-> this properly.
-> 
-> > Just out of curiosity.
-> > 
-> > Is there any rule about update period in long-term kernel?
-> > I mean how often you release long-term kernel.
-> 
-> About once a week lately.
-> 
-> > Is there any rule about update period in LTSI kernel based on long-term kernel?
-> 
-> No, the LTSI kernel work has been slow due to the lack of time on my
-> part lately.
-> 
-> > If I get the answer on above two quesion, I can expect later what LTSI kernel
-> > version include feature I need.
-> > 
-> > Another question.
-> > For example, There is A feature in mainline and A has no problem but
-> > someone invents new wheel "B" which is better than A so it replace A totally
-> > in recent mainline. As following stable-kernel rule, it's not a real bug fix
-> > so I guess stable kernel will never replace A with B.
-> 
-> That is correct.
-> 
-> > It means LTSI never get a chance to use new wheel. Right?
-> 
-> No, you can submit the same patches for the LTSI kernel as well, they
-> will probably be accepted as the rules are much more "loose" for the
-> LTSI tree compared to the normal stable/longterm kernel rules.  Which is
-> the primary reason it is around.
-> 
-> Hope this helps,
-> 
-> greg k-h
+> One major stumbling block is that with device tree, each individual
+> binding gets to decide on the specific naming of the propert{y,ies} that
+> define the GPIO(s) for the device, and so there's no way to provide a
+> generic implementation of that function.
 
-Thanks, Greg!
+The idea is not to make every GPIOs declared so far accessible through this 
+function - as you point out this would be tricky at best - but to also define 
+how they should be properly declared (similarly to regulators and pals) for 
+bindings that need to use get_gpio(). Existing bindings and drivers that can 
+live without it should not be modified. And now that you mention it, the end of 
+the GPIO declaration anarchy would be another point in favor of this feature.
 
--- 
-Kind regards,
-Minchan Kim
+Now I am aware that almost every subsystem comes with its own scheme for 
+declaring resources in the DT and there will be an long fight to decide which 
+one should apply here, but I'm willing to take that road.
+
+> Related, I've always wished that DT nodes looked like:
+> 
+> device {
+>     reg = <...>;
+>     compatible = <...>;
+>     resources {
+>         pwms = <...>;
+>         regulators = <...>;
+>         clocks = <...>;
+>         gpios = <...>;
+>         other-devices = <...>; /* for custom API dependencies */
+>     };
+>     config {
+>         /* device-specific properties */
+>     };
+>     child-busses {
+>         0 = { ... };
+>         1 = { ... };
+>     };
+> };
+> 
+> ... specifically so that all resource allocation, and perhaps even child
+> bus enumeration, could be completely standardized in the DT/device core.
+> This could also feed into deferred probe, which could then be purely
+> implemented inside the DT/driver core. However, that'd require something
+> incompatible like "device tree 2.0"
+
+I think this would be awesome. This could even probably be implemented without 
+breaking things, if everything takes place inside well-defined subnodes of the 
+device.
+
+Alex.
+
