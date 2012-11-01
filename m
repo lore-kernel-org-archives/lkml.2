@@ -1,70 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab2KAEia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 00:38:30 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:53528 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab2KAEi3 (ORCPT
+	id S1751672Ab2KAE5u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 00:57:50 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57899 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab2KAE5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 00:38:29 -0400
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-From: joeyli <jlee@suse.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-In-Reply-To: <s5h390utqv3.wl%tiwai@suse.de>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
-	 <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
-	 <20121029174131.GC7580@srcf.ucam.org> <s5hobjia6vj.wl%tiwai@suse.de>
-	 <20121031173728.GA18615@srcf.ucam.org>  <s5h390utqv3.wl%tiwai@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Nov 2012 12:21:55 +0800
-Message-ID: <1351743715.21227.95.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Thu, 1 Nov 2012 00:57:48 -0400
+X-AuditID: 9c930197-b7c0bae00000042f-a0-5092014a0cd6
+Date: Thu, 1 Nov 2012 14:03:47 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH v2 4/5] mm, highmem: makes flush_all_zero_pkmaps() return
+ index of first flushed entry
+Message-ID: <20121101050347.GD24883@bbox>
+References: <Yes>
+ <1351702597-10795-1-git-send-email-js1304@gmail.com>
+ <1351702597-10795-5-git-send-email-js1304@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351702597-10795-5-git-send-email-js1304@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 三，2012-10-31 於 19:53 +0100，Takashi Iwai 提到：
-> At Wed, 31 Oct 2012 17:37:28 +0000,
-> Matthew Garrett wrote:
-> > 
-> > On Wed, Oct 31, 2012 at 06:28:16PM +0100, Takashi Iwai wrote:
-> > 
-> > > request_firmware() is used for microcode loading, too, so it's fairly
-> > > a core part to cover, I'm afraid.
-> > > 
-> > > I played a bit about this yesterday.  The patch below is a proof of
-> > > concept to (ab)use the module signing mechanism for firmware loading
-> > > too.  Sign firmware files via scripts/sign-file, and put to
-> > > /lib/firmware/signed directory.
-> > 
-> > That does still leave me a little uneasy as far as the microcode 
-> > licenses go. I don't know that we can distribute signed copies of some 
-> > of them, and we obviously can't sign at the user end.
+On Thu, Nov 01, 2012 at 01:56:36AM +0900, Joonsoo Kim wrote:
+> In current code, after flush_all_zero_pkmaps() is invoked,
+> then re-iterate all pkmaps. It can be optimized if flush_all_zero_pkmaps()
+> return index of first flushed entry. With this index,
+> we can immediately map highmem page to virtual address represented by index.
+> So change return type of flush_all_zero_pkmaps()
+> and return index of first flushed entry.
 > 
-> Yeah, that's a concern.  Although this is a sort of "container" and
-> keeping the original data as is, it might be regarded as a
-> modification.
+> Additionally, update last_pkmap_nr to this index.
+> It is certain that entry which is below this index is occupied by other mapping,
+> therefore updating last_pkmap_nr to this index is reasonable optimization.
 > 
-> Another approach would be to a signature in a separate file, but I'm
-> not sure whether it makes sense.
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
 > 
+> diff --git a/include/linux/highmem.h b/include/linux/highmem.h
+> index ef788b5..97ad208 100644
+> --- a/include/linux/highmem.h
+> +++ b/include/linux/highmem.h
+> @@ -32,6 +32,7 @@ static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
+>  
+>  #ifdef CONFIG_HIGHMEM
+>  #include <asm/highmem.h>
+> +#define PKMAP_INVALID_INDEX (LAST_PKMAP)
+>  
+>  /* declarations for linux/mm/highmem.c */
+>  unsigned int nr_free_highpages(void);
+> diff --git a/mm/highmem.c b/mm/highmem.c
+> index d98b0a9..b365f7b 100644
+> --- a/mm/highmem.c
+> +++ b/mm/highmem.c
+> @@ -106,10 +106,10 @@ struct page *kmap_to_page(void *vaddr)
+>  	return virt_to_page(addr);
+>  }
+>  
+> -static void flush_all_zero_pkmaps(void)
+> +static unsigned int flush_all_zero_pkmaps(void)
+>  {
+>  	int i;
+> -	int need_flush = 0;
+> +	unsigned int index = PKMAP_INVALID_INDEX;
+>  
+>  	flush_cache_kmaps();
+>  
+> @@ -141,10 +141,13 @@ static void flush_all_zero_pkmaps(void)
+>  			  &pkmap_page_table[i]);
+>  
+>  		set_page_address(page, NULL);
+> -		need_flush = 1;
+> +		if (index == PKMAP_INVALID_INDEX)
+> +			index = i;
+>  	}
+> -	if (need_flush)
+> +	if (index != PKMAP_INVALID_INDEX)
+>  		flush_tlb_kernel_range(PKMAP_ADDR(0), PKMAP_ADDR(LAST_PKMAP));
+> +
+> +	return index;
+>  }
+>  
+>  /**
+> @@ -152,14 +155,19 @@ static void flush_all_zero_pkmaps(void)
+>   */
+>  void kmap_flush_unused(void)
+>  {
+> +	unsigned int index;
+> +
+>  	lock_kmap();
+> -	flush_all_zero_pkmaps();
+> +	index = flush_all_zero_pkmaps();
+> +	if (index != PKMAP_INVALID_INDEX && (index < last_pkmap_nr))
+> +		last_pkmap_nr = index;
 
-I think it make sense because the private key is still protected by
-signer. Any hacker who modified firmware is still need use private key
-to generate signature, but hacker's private key is impossible to match
-with the public key that kernel used to verify firmware.
+I don't know how kmap_flush_unused is really fast path so how my nitpick
+is effective. Anyway,
+What problem happens if we do following as?
 
-And, I afraid we have no choice that we need put the firmware signature
-in a separate file. Contacting with those company's legal department
-will be very time-consuming, and I am not sure all company will agree we
-put the signature with firmware then distribute.
+lock()
+index = flush_all_zero_pkmaps();
+if (index != PKMAP_INVALID_INDEX)
+        last_pkmap_nr = index;
+unlock();
 
+Normally, last_pkmap_nr is increased with searching empty slot in
+map_new_virtual. So I expect return value of flush_all_zero_pkmaps
+in kmap_flush_unused normally become either less than last_pkmap_nr
+or last_pkmap_nr + 1.
 
-Thanks a lot!
-Joey Lee
+ 
+>  	unlock_kmap();
+>  }
+>  
+>  static inline unsigned long map_new_virtual(struct page *page)
+>  {
+>  	unsigned long vaddr;
+> +	unsigned int index = PKMAP_INVALID_INDEX;
+>  	int count;
+>  
+>  start:
+> @@ -168,40 +176,45 @@ start:
+>  	for (;;) {
+>  		last_pkmap_nr = (last_pkmap_nr + 1) & LAST_PKMAP_MASK;
+>  		if (!last_pkmap_nr) {
+> -			flush_all_zero_pkmaps();
+> -			count = LAST_PKMAP;
+> +			index = flush_all_zero_pkmaps();
+> +			break;
+>  		}
+> -		if (!pkmap_count[last_pkmap_nr])
+> +		if (!pkmap_count[last_pkmap_nr]) {
+> +			index = last_pkmap_nr;
+>  			break;	/* Found a usable entry */
+> -		if (--count)
+> -			continue;
+> -
+> -		/*
+> -		 * Sleep for somebody else to unmap their entries
+> -		 */
+> -		{
+> -			DECLARE_WAITQUEUE(wait, current);
+> -
+> -			__set_current_state(TASK_UNINTERRUPTIBLE);
+> -			add_wait_queue(&pkmap_map_wait, &wait);
+> -			unlock_kmap();
+> -			schedule();
+> -			remove_wait_queue(&pkmap_map_wait, &wait);
+> -			lock_kmap();
+> -
+> -			/* Somebody else might have mapped it while we slept */
+> -			if (page_address(page))
+> -				return (unsigned long)page_address(page);
+> -
+> -			/* Re-start */
+> -			goto start;
+>  		}
+> +		if (--count == 0)
+> +			break;
+>  	}
+> -	vaddr = PKMAP_ADDR(last_pkmap_nr);
+> +
+> +	/*
+> +	 * Sleep for somebody else to unmap their entries
+> +	 */
+> +	if (index == PKMAP_INVALID_INDEX) {
+> +		DECLARE_WAITQUEUE(wait, current);
+> +
+> +		__set_current_state(TASK_UNINTERRUPTIBLE);
+> +		add_wait_queue(&pkmap_map_wait, &wait);
+> +		unlock_kmap();
+> +		schedule();
+> +		remove_wait_queue(&pkmap_map_wait, &wait);
+> +		lock_kmap();
+> +
+> +		/* Somebody else might have mapped it while we slept */
+> +		vaddr = (unsigned long)page_address(page);
+> +		if (vaddr)
+> +			return vaddr;
+> +
+> +		/* Re-start */
+> +		goto start;
+> +	}
+> +
+> +	vaddr = PKMAP_ADDR(index);
+>  	set_pte_at(&init_mm, vaddr,
+> -		   &(pkmap_page_table[last_pkmap_nr]), mk_pte(page, kmap_prot));
+> +		   &(pkmap_page_table[index]), mk_pte(page, kmap_prot));
+>  
+> -	pkmap_count[last_pkmap_nr] = 1;
+> +	pkmap_count[index] = 1;
+> +	last_pkmap_nr = index;
+>  	set_page_address(page, (void *)vaddr);
+>  
+>  	return vaddr;
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
+-- 
+Kind regards,
+Minchan Kim
