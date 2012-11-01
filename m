@@ -1,236 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab2KAItQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 04:49:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63517 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754334Ab2KAItL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 04:49:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,692,1344236400"; 
-   d="scan'208";a="241261575"
-From: "Zhang, Jun" <jun.zhang@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] To crash dump, we need keep other memory type except
- E820_RAM, because other type come from BIOS or firmware is used by other
- code(for example: PCI_MMCONFIG).
-Thread-Topic: [PATCH] To crash dump, we need keep other memory type except
- E820_RAM, because other type come from BIOS or firmware is used by other
- code(for example: PCI_MMCONFIG).
-Thread-Index: AQHNt+hSfR2Fx2YnIECke/y8I0UmkJfUqpWQ
-Date: Thu, 1 Nov 2012 08:49:07 +0000
-Message-ID: <88DC34334CA3444C85D647DBFA962C270FD7F039@SHSMSX102.ccr.corp.intel.com>
-References: <88DC34334CA3444C85D647DBFA962C270FD7EAD3@SHSMSX102.ccr.corp.intel.com>
- <50909120.3040101@zytor.com>
- <88DC34334CA3444C85D647DBFA962C270FD7EB0B@SHSMSX102.ccr.corp.intel.com>
- <5090AB3C.5050405@zytor.com>
- <88DC34334CA3444C85D647DBFA962C270FD7EB3A@SHSMSX102.ccr.corp.intel.com>
- <5090B966.4040605@zytor.com>
- <88DC34334CA3444C85D647DBFA962C270FD7EF68@SHSMSX102.ccr.corp.intel.com>
- <c6a025f9-0ac5-45d7-bda9-7f9bc8eaf9ab@email.android.com>
-In-Reply-To: <c6a025f9-0ac5-45d7-bda9-7f9bc8eaf9ab@email.android.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1757268Ab2KAI4x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 04:56:53 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:63802 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab2KAI4u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 04:56:50 -0400
 MIME-Version: 1.0
+In-Reply-To: <CACRpkdbCk9+HSBPtfT-1dO8paSRYJ5VXX_0SxiyxgrObnJEvmQ@mail.gmail.com>
+References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
+	<20121024161429.GA16350@core.coreip.homeip.net>
+	<CACRpkdai3NocZQnW6YRF+k6GXUSx3P_Ge=F-tkuivrFm6tBbLg@mail.gmail.com>
+	<4099134.xWUIfbbahk@dtor-d630.eng.vmware.com>
+	<CACRpkdaiLXVeUg1quuw3XPTenbKOjn+aWbGQezpcyvzQCtCWow@mail.gmail.com>
+	<20121030113407.GA24335@sirena.org.uk>
+	<CACRpkdapQJY0aoam741O0fb8EeM9BLk_Psq5TaPG84J7wEvCLw@mail.gmail.com>
+	<87obji8kta.fsf@deeprootsystems.com>
+	<CACRpkdbCk9+HSBPtfT-1dO8paSRYJ5VXX_0SxiyxgrObnJEvmQ@mail.gmail.com>
+Date: Thu, 1 Nov 2012 09:56:48 +0100
+Message-ID: <CACRpkdaBmg7wtX0WsaxMw=n1sKDN5YphK=y8tzAx_CF=JnUqvw@mail.gmail.com>
+Subject: Fwd: [PATCHv2] Input: omap4-keypad: Add pinctrl support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Kevin Hilman <khilman@deeprootsystems.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA18nRqU023643
 
-Hello, Anvin
+On Wed, Oct 31, 2012 at 9:10 PM, Kevin Hilman
+<khilman@deeprootsystems.com> wrote:
 
-Thank for your advice.
-
-Hello, All
-
-the next patch is made by 2), please review it. Thanks!
-
-Subject: [PATCH] When we are doing a crash dump, we still need non-E820_RAM
- memory information in order to do I/O. So only remove all
- RAM ranges which need to be dumped.
-
-Signed-off-by: jzha144 <jun.zhang@intel.com>
----
- arch/x86/kernel/e820.c  |    8 --------
- arch/x86/kernel/setup.c |   22 ++++++++++++++++++++++
- 2 files changed, 22 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index df06ade..0bc1687 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -844,14 +844,6 @@ static int __init parse_memmap_opt(char *p)
- 		return -EINVAL;
- 
- 	if (!strncmp(p, "exactmap", 8)) {
--#ifdef CONFIG_CRASH_DUMP
--		/*
--		 * If we are doing a crash dump, we still need to know
--		 * the real mem size before original memory map is
--		 * reset.
--		 */
--		saved_max_pfn = e820_end_of_ram_pfn();
--#endif
- 		e820.nr_map = 0;
- 		userdef = 1;
- 		return 0;
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index ca45696..5eb178b 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -480,6 +480,25 @@ static void __init e820_reserve_setup_data(void)
- 	e820_print_map("reserve setup_data");
- }
- 
-+#ifdef CONFIG_CRASH_DUMP
-+static void __init e820_crashdump_remove_ram(void)
-+{
-+	/*
-+	 * We are doing a crash dump, so remove all RAM ranges
-+	 * as they are the ones that need to be dumped.
-+	 * We still need all non-RAM information in order to do I/O.
-+	 */
-+	/* NOTE: if you use old kexec, please remove memmap=exactmap
-+	 * which remove all ranges, not only RAM ranges.
-+	 */
-+	saved_max_pfn = e820_end_of_ram_pfn();
-+	e820_remove_range(0, ULLONG_MAX, E820_RAM, 1);
-+	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	printk(KERN_INFO "crash dump non-RAM map:\n");
-+	e820_print_map("crash_dump");
-+}
-+#endif
-+
- static void __init memblock_x86_reserve_range_setup_data(void)
- {
- 	struct setup_data *data;
-@@ -751,6 +770,9 @@ void __init setup_arch(char **cmdline_p)
- 	parse_setup_data();
- 	/* update the e820_saved too */
- 	e820_reserve_setup_data();
-+#ifdef CONFIG_CRASH_DUMP
-+	e820_crashdump_remove_ram();
-+#endif
- 
- 	copy_edd();
- 
--- 
-1.7.6
-
-Best Regards!
-
-Jun Zhang
-Inet: 8821-4273
-Dir.Tel: 86-21-6116-4273
-Email: jun.zhang@intel.com
+> Linus Walleij <linus.walleij@linaro.org> writes:
 
 
------Original Message-----
-From: H. Peter Anvin [mailto:hpa@zytor.com] 
-Sent: Thursday, November 01, 2012 12:20 PM
-To: Zhang, Jun
-Cc: Thomas Gleixner; Ingo Molnar; x86@kernel.org; Andrew Morton; Fleming, Matt; Paul Gortmaker; linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] To crash dump, we need keep other memory type except E820_RAM, because other type come from BIOS or firmware is used by other code(for example: PCI_MMCONFIG).
-
-2) would make most sense to me, but I'd be okay with 3) as well.
-
-"Zhang, Jun" <jun.zhang@intel.com> wrote:
-
->Hello, Anvin
 >
->I want to explain why I modify in this place. In kexec, it pass three 
->parameters, memmap=exactmap memmap=544K@64K memmap=64964K@32768K I 
->think my patch modify the least code.
->Actually, there are some choise to fix it. 
->1)  my patch.
->2)  modify kexec, only pass two parameters -- memmap=544K@64K 
->memmap=64964K@32768K, in kernel setup_memory_map, we can remove RAM 
->range.
->3)  add extra optional, like memmap=REMOVERAM
+> > piece of hardware, this would be the right thing to do,
+> > and I think the in-kernel examples are all "simple",
+> > e.g. arch/arm/mach-omap2/powerdomain* is all about
+> > power domains and nothing else,
 >
->Which one do you like? Maybe you have better solution, please share it.
->Thanks!
->
->Best Regards!
->
->Jun Zhang
->Inet: 8821-4273
->Dir.Tel: 86-21-6116-4273
->Email: jun.zhang@intel.com
->
->-----Original Message-----
->From: H. Peter Anvin [mailto:hpa@zytor.com]
->Sent: Wednesday, October 31, 2012 1:39 PM
->To: Zhang, Jun
->Cc: Thomas Gleixner; Ingo Molnar; x86@kernel.org; Andrew Morton; 
->Fleming, Matt; Paul Gortmaker; linux-kernel@vger.kernel.org
->Subject: Re: [PATCH] To crash dump, we need keep other memory type 
->except E820_RAM, because other type come from BIOS or firmware is used 
->by other code(for example: PCI_MMCONFIG).
->
->On 10/30/2012 10:22 PM, Zhang, Jun wrote:
->> Hello, Anvin
->>    You are right. Thanks!
->>
->> Hello, All
->>    Please review it again. Thanks!
->>
->>  From bf7506ac7e9ce0df0b915164dbb7a6d858ef2e40 Mon Sep 17 00:00:00
->> 2001
->> From: jzha144 <jun.zhang@intel.com>
->> Date: Wed, 31 Oct 2012 08:51:18 +0800
->> Subject: [PATCH] When we are doing a crash dump, we still need
->non-E820_RAM
->>   memory type address information in order to do I/O. so only
->>   remove all RAM ranges which need to be dumped.
->>
->> Signed-off-by: jzha144 <jun.zhang@intel.com>
->> ---
->>   arch/x86/kernel/e820.c |    9 +++++++++
->>   1 files changed, 9 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c index
->> df06ade..77be839 100644
->> --- a/arch/x86/kernel/e820.c
->> +++ b/arch/x86/kernel/e820.c
->> @@ -851,6 +851,15 @@ static int __init parse_memmap_opt(char *p)
->>   		 * reset.
->>   		 */
->>   		saved_max_pfn = e820_end_of_ram_pfn();
->> +
->> +		/*
->> +		 * We are doing a crash dump, so remove all RAM ranges
->> +		 * as they are the ones that need to be dumped.
->> +		 * We still need all non-RAM information in order to do I/O.
->> +		 */
->> +		e820_remove_range(0, ULLONG_MAX, E820_RAM, 1);
->> +		userdef = 1;
->> +		return 0;
->>   #endif
->>   		e820.nr_map = 0;
->>   		userdef = 1;
->>
->
->The code is still wrong...
->
->	-hpa
->
->
->--
->H. Peter Anvin, Intel Open Source Technology Center I work for Intel. 
->I don't speak on their behalf.
+> FYI... that code isn't the same as PM domain.
 
---
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+This sort of points to a core problem here. Our terminologies are
+ambiguous that we cannot understand each others code. As long
+as <linux/pm_domain.h> begins:
+
+/*
+ * pm_domain.h - Definitions and headers related to device power domains.
+ *
+
+But arguably that should just be patched (I think there are a few
+remnants in the code still implying that these things are only about
+power).
+
+>
+>  That code is for the
+> *hardware* powerdomains, not the software concept of "PM domain."  In
+> OMAP, PM domain is implmented at the omap_device level.  And omap_device
+> is the abstraction of an IP block that knows about all the PM related
+> register settings, clocks, HW powerdomain, voltage domain, PM related
+> pin-muxing etc. etc.    All of these things are abstracted in an
+> omap_device, so that the PM domain implementation for OMAP looks rather
+> simple (c.f. omap_device_pm_domain in arch/arm/plat-omap/omap_device.c.)
+
+
+OK following now...
+
+>
+> > I think the lesser of two evils is the distributed approach,
+>
+> The pinctrl examples I've seen mentioned so far are all PM related
+>
+> (sleep, idle, wakeup, etc.) so to me I think they still belong in
+> PM domains (and that's how we handle the PM related pins in OMAP.)
+
+
+Well, the pinctrl grabbers in these drivers are using these states also
+for platforms that do not even select CONFIG_PM.  For example
+mach-nomadik is quite happy that the PL011 driver is thusly
+muxing in its pins. And would require refactoring to use PM
+domains.
+
+So basically this requirement comes down to:
+
+- When dealing with a SoC IP block driver
+
+- That need to multiplex pins
+
+- Then your SoC must select CONFIG_PM and
+  CONFIG_PM_RUNTIME and
+  CONFIG_PM_GENERIC_DOMAINS and implement
+  proper domain handling hooks.
+
+Is this correct? And for Mark, Dmitry, does this correspond to
+your view?
+
+It's actually something that needs to be acknowledged by the
+ARM SoC maintainers, because they will be the ones telling
+all subarch maintainers to go implement full PM handling
+with these three frameworks whenever an SoC driver want
+to handle pins.
+
+Bascially all subsystem maintainers dealing with embedded
+SoCs need to be aligned on this as well...
+
+And IIUC not only pins but also silicon block clocks?
+
+I can surely fix these for "my" systems, but it really needs
+to be enforced widely or it will be a mess.
+
+>
+> > I worry that the per-SoC power domain implementation
+> > which will live in arch/arm/mach-* as of today will become
+> > the new board file problem, overburdening the arch/* tree.
+> > Maybe I'm mistaken as to the size of these things,
+> > but just doing ls arch/arm/mach-omap2/powerdomain*
+> > makes me start worrying.
+>
+> Yes, I agree that this means more code/data in arch/arm/mach-*, but
+> IMO, that's really where it belongs.  It really is SoC integration
+> details, and driver should really not know about it.
+
+
+OK we need feedback from ARM SoC on this.
+
+Yours,
+Linus Walleij
