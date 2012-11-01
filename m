@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758968Ab2KAJBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 05:01:32 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53071 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757669Ab2KAJB0 (ORCPT
+	id S1759029Ab2KAJFs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 05:05:48 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45079 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755312Ab2KAJFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 05:01:26 -0400
-Subject: Re: [Suggestion] net-ipv6: format %8s change to %16s in
- rt6_info_route function of route.c
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <50921A92.8000809@asianux.com>
-References: <50921A92.8000809@asianux.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Nov 2012 10:01:22 +0100
-Message-ID: <1351760482.32673.913.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 1 Nov 2012 05:05:45 -0400
+Message-ID: <50923B65.4060304@gmail.com>
+Date: Thu, 01 Nov 2012 10:05:41 +0100
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: alsa-devel@alsa-project.org
+CC: LKML <linux-kernel@vger.kernel.org>, maillist@superlative.org
+Subject: Re: [alsa-devel] Idea: dynamic loading of USB quirks
+References: <2390628.MpxcLPPhM0@kamdesktop>
+In-Reply-To: <2390628.MpxcLPPhM0@kamdesktop>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-01 at 14:45 +0800, Chen Gang wrote:
-> Hello:
-> 
-> 1) For Public Kernel:
-> 
->    A) in rt6_info_route function of net/ipv6/route.c
-> 
->    B) the length of rt->rt6i_dev->name is 16 (IFNAMSIZ)
-> 
->    C) using %16s is better than %8s (it will be more "beautiful")
->       (also suggest to delete RT6_INFO_LEN, it is useless for ever)
-> 
-> 
-> 
-> 2) For Red Hat RHEL5:
-> 
->    A) in rt6_info_route function of net/ipv6/route.c
-> 
->    B) the length of rt->rt6i_dev->name is 16 (IFNAMSIZ)
-> 
->    C) for RT6_INFO_LEN is still useful, so it is an correctness issue.
-> 
->    the relative patch for RHEL5 is below:
+[cc lkml as this might be of broader interest]
 
-Hi Chen
+On 01.11.2012 00:32, maillist@superlative.org wrote:
+> Dear Alsa community,
+> I've some minor contributions in the form of patches for USB quirks for 
+> devices in the past. It occurred to me that having these USB quirks hardcoded 
+> into the driver maybe isn't the best thing.
+> 
+> Looking at the current quirks file, the majority of them are relatively trivial 
+> and are really just there to give the USB driver a nudge in the right 
+> direction.
+> 
+> Having to have these hardcoded into the driver creates a number of issues:
+> 
+> 1. It needs someone with the expertise and will, and access the specific device 
+> for testing, to build the quirk. To hardened ALSA hackers this seems trivial, 
+> but to an average end user who has a device they want to get supported, this 
+> can be pretty inpenatrable. The complexity of just getting the alsa source 
+> installed and set up for compilation is enough to put off the vast majority of 
+> users.
+> 
+> 2. It makes the process of getting the driver "to market" lengthy as these 
+> changes have to go through all of the normal release schedules, and these are 
+> pretty opaque.
+> 
+> 3. It makes getting changing a driver (because of a bug, or a new release of 
+> hardware) difficult as the revisions need to go through the whole process of 
+> creating a patch, getting it accepted, and then the long kernel release 
+> process, as well as the various distribution release processes.
+> 
+> It occured to me that there might be a better way where quirks like this could 
+> be dynamically loaded into the driver after it has loaded. This would a 
+> structured text file describing the quirk to be created and pushed into the 
+> driver. Ultimately this could be wrapped into a framework where quirk files 
+> could be put into a common directory (similar to modprobe.d) with a startup 
+> script which pushed these into the driver.
 
-Thats a good suggestion indeed.
+The idea is interesting, but we would need to find a way to not only
+cover the entries in quirks-list.h but the other hard-coded details as well.
 
-Networking patches should be sent to netdev@vger.kernel.org (added in
-CC)
+I fear that if quirk fixups are done on both the kernel level and loaded
+from userspace, it actually makes debugging and maintainance harder.
 
-This list only cares about recent generic kernels, not RedHat ones.
+Then again, if a versatile and clean solution to this problem is found,
+there would be tons of other drivers in Linux to benefit from it, just
+think about the hda driver to begin with. But not only in the ALSA area.
 
-If you want to provide a patch, please base it on David Miller net-next
-[1] tree, and make it official (read Documentation/SubmittingPatches for
-general advices)
 
-By the way, the %8s should be replaced by %s, there is no need to make
-/proc/net/ipv6_route 'beautiful'. In the past, it was *needed* because
-each line had to be of a given length, but its not anymore the case.
-
-Thanks
-
-[1] :
-http://git.kernel.org/?p=linux/kernel/git/davem/net-next.git;a=summary
-
+Daniel
 
