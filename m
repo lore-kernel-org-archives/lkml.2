@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761494Ab2KANyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 09:54:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56559 "EHLO mx1.redhat.com"
+	id S1761501Ab2KAN6S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 09:58:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42868 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758235Ab2KANyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 09:54:12 -0400
-Date: Thu, 1 Nov 2012 09:53:56 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Matthew Garrett <mjg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: Kdump with signed images
-Message-ID: <20121101135356.GA15659@redhat.com>
-References: <20121024173651.GE1821@redhat.com>
- <1351145401.18115.78.camel@falcor>
- <20121025141048.GD9377@redhat.com>
- <1351190421.18115.92.camel@falcor>
- <20121025185520.GA17995@redhat.com>
- <1351214158.18115.186.camel@falcor>
- <20121026023916.GA16762@srcf.ucam.org>
- <20121026170609.GB24687@redhat.com>
- <1351276649.18115.217.camel@falcor>
- <20121101131003.GA14573@redhat.com>
+	id S1761460Ab2KAN6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 09:58:17 -0400
+Date: Thu, 1 Nov 2012 13:58:13 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 20/31] sched, numa, mm/mpol: Make mempolicy home-node
+ aware
+Message-ID: <20121101135813.GX3888@suse.de>
+References: <20121025121617.617683848@chello.nl>
+ <20121025124834.012980641@chello.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121101131003.GA14573@redhat.com>
+In-Reply-To: <20121025124834.012980641@chello.nl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 09:10:03AM -0400, Vivek Goyal wrote:
-
-[..]
-> > 
-> > > - So say we can sign /sbin/kexec at build time and distros can do that.
-> > > - Verify the signature at exec time using kernel keyring and if
-> > >   verification happens successfully, say process gains extra capability.
-> > > - Use this new capability to determine whether kexec_load() will be
-> > >   successful or not.
-> > > 
-> > > Even if we can do all this, it still has the issue of being able to
-> > > stop the process in user space and replace the code at run time
-> > > and be able to launch unsigned kernel.
+On Thu, Oct 25, 2012 at 02:16:37PM +0200, Peter Zijlstra wrote:
+> Add another layer of fallback policy to make the home node concept
+> useful from a memory allocation PoV.
 > 
-> Thinking more about it. Can we just keep track whether a process was
-> ptraced or not and disallow kexec_load() syscall if it was ptraced.
-> (I am assuming that ptrace is the only way to change process code/data).
+> This changes the mpol order to:
 > 
-> So binaries can be signed offline. Signature verification can take place
-> using kernel keyring at exec() time. And we can keep track of ptraced
-> processes and disallow calling kexec_load() for such processes. If this
-> is implementable, this should take care of following requirement raised
-> by matthew.
+>  - vma->vm_ops->get_policy	[if applicable]
+>  - vma->vm_policy		[if applicable]
+>  - task->mempolicy
+>  - tsk_home_node() preferred	[NEW]
+>  - default_policy
 > 
-> ************************************************************************
-> It must be impossible for the kernel to launch any /sbin/kexec that hasn't
-> been signed by a trusted key that's been built into the kernel, and it
-> must be impossible for anything other than /sbin/kexec to make the kexec
-> system call.
-> *************************************************************************
+> Note that the tsk_home_node() policy has Migrate-on-Fault enabled to
+> facilitate efficient on-demand memory migration.
 > 
-> Thoughts?
 
-Eric responded but my mistake he responded to only me. So I will quickly 
-put his idea here.
+Makes sense and it looks like a VMA policy, if set, will still override
+the home_node policy as you'd expect. At some point this may need to cope
+with node hot-remove. Also, at some point this must be dealing with the
+case where mbind() is called but the home_node is not in the nodemask.
+Does that happen somewhere else in the series? (maybe I'll see it later)
 
-[start quote]
-
-You can't ptrace a process that has a capability you don't.
-
-That should be enforced in security/commoncap/
-
-[end quote]
-
-This looks like a good idea. Upon verification signed binaries will be
-assigned special capability and then no unsigned binary should be able
-to ptrace signed/verified processes
-
-Thanks
-Vivek
+-- 
+Mel Gorman
+SUSE Labs
