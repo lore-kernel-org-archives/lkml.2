@@ -1,135 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761142Ab2KALKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 07:10:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48468 "EHLO comal.ext.ti.com"
+	id S1761310Ab2KALLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 07:11:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34908 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323Ab2KALKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 07:10:16 -0400
-Date: Thu, 1 Nov 2012 13:04:18 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: "Cousson, Benoit" <b-cousson@ti.com>, <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, <linux-omap@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
-Message-ID: <20121101110418.GF410@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <C9715CB7-D3E2-4CA7-8A93-2B10E8B70640@antoniou-consulting.com>
- <20121031180935.GL12739@atomide.com>
- <50918223.6080003@ti.com>
- <8AD2F7AF-8315-442B-A394-1A38DAB29F52@antoniou-consulting.com>
- <20121031212639.GQ12739@atomide.com>
- <8B058B00-6C21-4410-A24B-75651D49F6EC@antoniou-consulting.com>
- <20121031221402.GA29490@arwen.pp.htv.fi>
- <E4EE0D1F-C7AC-4620-86F2-D9C7C56E279F@antoniou-consulting.com>
- <50924DA3.1060901@ti.com>
- <F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com>
+	id S1757856Ab2KALLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 07:11:03 -0400
+Date: Thu, 1 Nov 2012 11:10:58 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 12/31] mm/mpol: Add MPOL_MF_NOOP
+Message-ID: <20121101111058.GS3888@suse.de>
+References: <20121025121617.617683848@chello.nl>
+ <20121025124833.400431442@chello.nl>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Sw7tCqrGA+HQ0/zt"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com>
+In-Reply-To: <20121025124833.400431442@chello.nl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sw7tCqrGA+HQ0/zt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Oct 25, 2012 at 02:16:29PM +0200, Peter Zijlstra wrote:
+> From: Lee Schermerhorn <lee.schermerhorn@hp.com>
+> 
+> This patch augments the MPOL_MF_LAZY feature by adding a "NOOP" policy
 
-Hi,
+The MPOL_MF_LAZY feature doesn't exist yet so it's hard to augment at this
+point :)
 
-On Thu, Nov 01, 2012 at 12:39:30PM +0200, Pantelis Antoniou wrote:
-> >>>                 lcd@0 {
-> >>>                         compatible =3D "adafruit,tft-lcd-1.8-red", "s=
-itronix,st7735";
-> >>>                         spi-max-frequency =3D <8000000>;
-> >>>                         reg =3D <0>;
-> >>>                         spi-cpol;
-> >>>                         spi-cpha;
-> >>>                         pinctrl-names =3D "default";
-> >>>                         pinctrl-0 =3D <&lcd_pins>;
-> >>>                         st7735-rst =3D <&gpio4 19 0>;
-> >>>                         st7735-dc =3D <&gpio4 21 0>;
-> >>>                 };
-> >>>=20
-> >>>         };
-> >>> };
-> >>>=20
-> >=20
-> > I guess there is no easy solution for that, but it looks to me that
-> > what you have to do is to make the DT creation dynamic in your case.
-> > Assuming you do not want to do that in the bootloader, you must do
-> > that pretty early during the boot process to end up with a full
-> > description of your DT tree before creating the devices.
-> >=20
->=20
-> Do it pretty early in the boot processes ended up with the am335xevm boar=
-d file in the PSP tree.
->=20
-> The whole set of possible cape designs cannot be controlled, nor do we wa=
-nt to.
-> We want to empower users to come up with their own designs without having=
- to do any kernel/boot loader
-> hacking.
+> to mbind().  When the NOOP policy is used with the 'MOVE and 'LAZY
+> flags, mbind() will map the pages PROT_NONE so that they will be
+> migrated on the next touch.
+> 
 
-that's impossible since you will have to provide the capebus driver
-anyway.
+This implies that a user-space application has a two-stage process.  Stage 1,
+it marks a range NOOP and the stage 2 marks the range lazy.  That feels like
+it might violate Rusty's API design rule of "The obvious use is wrong."
+What is the motivation for exposing NOOP to userspace? Instead why does
+mbind(addr, len, MPOL_MF_LAZY, nodemask, maxnode, flags) not imply that
+the range gets marked PROT_NONE (or PROT_NUMA or some other variant that
+is not arch-specific)?
 
-> > Each cape will have their own DTS and based on some board id you
-> > will fix the DT dynamically.
-> >=20
-> > My point is that the issue you are facing is a real limitation of
-> > DT, so you should fix the DT core and not workaround it by creating
-> > artificial bindings / drivers.
-> >=20
->=20
-> You still haven't described any mechanism to deal with all the use
-> cases I described.
->=20
-> DT can't and will not deal with the complexity that we're facing right
-> now.
+It also seems that MPOL_MF_LAZY must imply MPOL_MF_MOVE or it's a bit
+pointless without the application having to specify the exact flag
+combination
 
-and DT-itself shouldn't. I agree with Benoit that this should be built
-at bootloader level, perhaps. Whatever you're doing in capebus, you
-could do at kernel space, build your DT bindings in runtime, and pass
-that DT blob to kernel.
+> This allows an application to prepare for a new phase of operation
+> where different regions of shared storage will be assigned to
+> worker threads, w/o changing policy.  Note that we could just use
+> "default" policy in this case.  However, this also allows an
+> application to request that pages be migrated, only if necessary,
+> to follow any arbitrary policy that might currently apply to a
+> range of pages, without knowing the policy, or without specifying
+> multiple mbind()s for ranges with different policies.
+> 
 
-One question though, what do you mean by "some capes are full blown
-devices with their own drivers" ? Do you mean you have capes running
-some other (RT)OS and communicating with linux somehow ? How does it
-communicate to the bone ?
+I very much like the idea because potentially a motivated developer could use
+this mechanism to avoid any ping-pong problems with an automatic migration
+scheme. It could even be argued that any application using MPOL_MF_LAZY
+get unsubscribed from any automatic mechanism to avoid interference.
 
-cheers
+> [ Bug in early version of mpol_parse_str() reported by Fengguang Wu. ]
+> 
+> Bug-Reported-by: Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  include/uapi/linux/mempolicy.h |    1 +
+>  mm/mempolicy.c                 |   11 ++++++-----
+>  2 files changed, 7 insertions(+), 5 deletions(-)
+> 
+> Index: tip/include/uapi/linux/mempolicy.h
+> ===================================================================
+> --- tip.orig/include/uapi/linux/mempolicy.h
+> +++ tip/include/uapi/linux/mempolicy.h
+> @@ -21,6 +21,7 @@ enum {
+>  	MPOL_BIND,
+>  	MPOL_INTERLEAVE,
+>  	MPOL_LOCAL,
+> +	MPOL_NOOP,		/* retain existing policy for range */
+>  	MPOL_MAX,	/* always last member of enum */
+>  };
+>  
+> Index: tip/mm/mempolicy.c
+> ===================================================================
+> --- tip.orig/mm/mempolicy.c
+> +++ tip/mm/mempolicy.c
+> @@ -251,10 +251,10 @@ static struct mempolicy *mpol_new(unsign
+>  	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
+>  		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
+>  
+> -	if (mode == MPOL_DEFAULT) {
+> +	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
+>  		if (nodes && !nodes_empty(*nodes))
+>  			return ERR_PTR(-EINVAL);
+> -		return NULL;	/* simply delete any existing policy */
+> +		return NULL;
+>  	}
+>  	VM_BUG_ON(!nodes);
+>  
+> @@ -1146,7 +1146,7 @@ static long do_mbind(unsigned long start
+>  	if (start & ~PAGE_MASK)
+>  		return -EINVAL;
+>  
+> -	if (mode == MPOL_DEFAULT)
+> +	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
+>  		flags &= ~MPOL_MF_STRICT;
+>  
+>  	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
+> @@ -2381,7 +2381,8 @@ static const char * const policy_modes[]
+>  	[MPOL_PREFERRED]  = "prefer",
+>  	[MPOL_BIND]       = "bind",
+>  	[MPOL_INTERLEAVE] = "interleave",
+> -	[MPOL_LOCAL]      = "local"
+> +	[MPOL_LOCAL]      = "local",
+> +	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
 
---=20
-balbi
+If it should not be used, why it is exposed to userspace?
 
---Sw7tCqrGA+HQ0/zt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>  };
+>  
+>  
+> @@ -2432,7 +2433,7 @@ int mpol_parse_str(char *str, struct mem
+>  			break;
+>  		}
+>  	}
+> -	if (mode >= MPOL_MAX)
+> +	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
+>  		goto out;
+>  
+>  	switch (mode) {
+> 
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQklcyAAoJEIaOsuA1yqREUYwP/AwugWcpptAOP7Vl8BukfrOd
-bQ1R6tSGYVQ+Iv8WJii4h7u0elKt+68iA56ceK5KqP/NUjG6r3MUdJMIZucbwiGl
-6UIWxeYNyH5i6VziVtT582ApXuM5YAzu2TVKN9L0Z+zGlf8617ddKVmRnXr9/qPg
-pFqZDc80kfoKKwZNrjd41ubtA3zn+Fc1v3lcU9t6QbLibP8M47OOEZNQPn0pCsJd
-OdbHqBemfa8E62I4QiPOGjAwMW+ijjwOhVN4d4soMM4dMCkJ9SRPTymZnlQClEru
-SsfdoaqrUjo7xz33YAW2BshFjSgo9Gx6BQDgKeb1/QTDGRKdD/tmUkpe9AOsSq8d
-gr1ISHyjZkgvmR5hZJT/pNOE5IpekD03OZmHT8bt3awh21ne++914hjz6ptW7n4+
-eP3xSSq2+N7V95lJ2WYO7+DIE4UESQW7KpIdpEP7eWtmPjerfMNf7zhpeMzhiDY7
-42q0E5QxfKPNj7COhTDlHicyKEDxf1Q77jhRG/pLv5CA7CNMVrfGc9FtUEg+rhKe
-wJpGnALHOnhNpQiGDsEl4jNuGGv82JiynEd9jXD+H0rncCwkvugrlE9N+JjeRsfd
-8he2bregyX/Mj8N0aTG6sB9cdrJSijJFqKlqitGpMnnEPRE+FGGwlb3jD6J6ZwKe
-B8TqVntYLF+19cFJV7tQ
-=6DTe
------END PGP SIGNATURE-----
-
---Sw7tCqrGA+HQ0/zt--
+-- 
+Mel Gorman
+SUSE Labs
