@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762241Ab2KATPI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 15:15:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47936 "EHLO mx1.redhat.com"
+	id S1762228Ab2KATOP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 15:14:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17506 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934007Ab2KATOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 15:14:34 -0400
-Date: Thu, 1 Nov 2012 21:16:51 +0200
+	id S1752746Ab2KATOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 15:14:10 -0400
+Date: Thu, 1 Nov 2012 21:16:28 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 Cc: Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
@@ -16,8 +16,8 @@ Cc: Vlad Yasevich <vyasevic@redhat.com>,
         Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
         virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv3 net-next 7/8] vhost-net: select tx zero copy dynamically
-Message-ID: <b420d8d6433f42282be3b0b8636eaf375aadb17c.1351797353.git.mst@redhat.com>
+Subject: [PATCHv3 net-next 2/8] skb: api to report errors for zero copy skbs
+Message-ID: <e7af9b18fbf340e035288dbb76b09565b3177d56.1351797353.git.mst@redhat.com>
 References: <cover.1351797353.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -29,158 +29,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even when vhost-net is in zero-copy transmit mode,
-net core might still decide to copy the skb later
-which is somewhat slower than a copy in user
-context: data copy overhead is added to the cost of
-page pin/unpin. The result is that enabling tx zero copy
-option leads to higher CPU utilization for guest to guest
-and guest to host traffic.
+Orphaning frags for zero copy skbs needs to allocate data in atomic
+context so is has a chance to fail. If it does we currently discard
+the skb which is safe, but we don't report anything to the caller,
+so it can not recover by e.g. disabling zero copy.
 
-To fix this, suppress zero copy tx after a given number of
-packets triggered late data copy. Re-enable periodically
-to detect workload changes.
+Add an API to free skb reporting such errors: this is used
+by tun in case orphaning frags fails.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/vhost/net.c | 61 ++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 53 insertions(+), 8 deletions(-)
+ include/linux/skbuff.h |  1 +
+ net/core/skbuff.c      | 20 ++++++++++++++++++++
+ 2 files changed, 21 insertions(+)
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 532fc88..93f2d67 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -42,6 +42,21 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Experimental Zero Copy TX");
- #define VHOST_MAX_PEND 128
- #define VHOST_GOODCOPY_LEN 256
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index e5eae5b..f2af494 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -568,6 +568,7 @@ static inline struct rtable *skb_rtable(const struct sk_buff *skb)
+ }
  
-+/*
-+ * For transmit, used buffer len is unused; we override it to track buffer
-+ * status internally; used for zerocopy tx only.
+ extern void kfree_skb(struct sk_buff *skb);
++extern void skb_tx_error(struct sk_buff *skb);
+ extern void consume_skb(struct sk_buff *skb);
+ extern void	       __kfree_skb(struct sk_buff *skb);
+ extern struct kmem_cache *skbuff_head_cache;
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 4abdf71..d9addea 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -635,6 +635,26 @@ void kfree_skb(struct sk_buff *skb)
+ EXPORT_SYMBOL(kfree_skb);
+ 
+ /**
++ *	skb_tx_error - report an sk_buff xmit error
++ *	@skb: buffer that triggered an error
++ *
++ *	Report xmit error if a device callback is tracking this skb.
++ *	skb must be freed afterwards.
 + */
-+/* Lower device DMA failed */
-+#define VHOST_DMA_FAILED_LEN	3
-+/* Lower device DMA done */
-+#define VHOST_DMA_DONE_LEN	2
-+/* Lower device DMA in progress */
-+#define VHOST_DMA_IN_PROGRESS	1
-+/* Buffer unused */
-+#define VHOST_DMA_CLEAR_LEN	0
-+
-+#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
-+
- enum {
- 	VHOST_NET_VQ_RX = 0,
- 	VHOST_NET_VQ_TX = 1,
-@@ -62,8 +77,33 @@ struct vhost_net {
- 	 * We only do this when socket buffer fills up.
- 	 * Protected by tx vq lock. */
- 	enum vhost_net_poll_state tx_poll_state;
-+	/* Number of TX recently submitted.
-+	 * Protected by tx vq lock. */
-+	unsigned tx_packets;
-+	/* Number of times zerocopy TX recently failed.
-+	 * Protected by tx vq lock. */
-+	unsigned tx_zcopy_err;
- };
- 
-+static void vhost_net_tx_packet(struct vhost_net *net)
++void skb_tx_error(struct sk_buff *skb)
 +{
-+	++net->tx_packets;
-+	if (net->tx_packets < 1024)
-+		return;
-+	net->tx_packets = 0;
-+	net->tx_zcopy_err = 0;
-+}
++	if (skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
++		struct ubuf_info *uarg;
 +
-+static void vhost_net_tx_err(struct vhost_net *net)
-+{
-+	++net->tx_zcopy_err;
++		uarg = skb_shinfo(skb)->destructor_arg;
++		if (uarg->callback)
++			uarg->callback(uarg, false);
++		skb_shinfo(skb)->tx_flags &= ~SKBTX_DEV_ZEROCOPY;
++	}
 +}
++EXPORT_SYMBOL(skb_tx_error);
 +
-+static bool vhost_net_tx_select_zcopy(struct vhost_net *net)
-+{
-+	return net->tx_packets / 64 >= net->tx_zcopy_err;
-+}
-+
- static bool vhost_sock_zcopy(struct socket *sock)
- {
- 	return unlikely(experimental_zcopytx) &&
-@@ -131,12 +171,15 @@ static void tx_poll_start(struct vhost_net *net, struct socket *sock)
-  * of used idx. Once lower device DMA done contiguously, we will signal KVM
-  * guest used idx.
-  */
--int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
-+static int vhost_zerocopy_signal_used(struct vhost_net *net,
-+				      struct vhost_virtqueue *vq)
- {
- 	int i;
- 	int j = 0;
- 
- 	for (i = vq->done_idx; i != vq->upend_idx; i = (i + 1) % UIO_MAXIOV) {
-+		if (vq->heads[i].len == VHOST_DMA_FAILED_LEN)
-+			vhost_net_tx_err(net);
- 		if (VHOST_DMA_IS_DONE(vq->heads[i].len)) {
- 			vq->heads[i].len = VHOST_DMA_CLEAR_LEN;
- 			vhost_add_used_and_signal(vq->dev, vq,
-@@ -150,15 +193,15 @@ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
- 	return j;
- }
- 
--static void vhost_zerocopy_callback(struct ubuf_info *ubuf, int status)
-+static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
- {
- 	struct vhost_ubuf_ref *ubufs = ubuf->ctx;
- 	struct vhost_virtqueue *vq = ubufs->vq;
- 
- 	vhost_poll_queue(&vq->poll);
- 	/* set len to mark this desc buffers done DMA */
--	vq->heads[ubuf->desc].len = status ?
--		VHOST_DMA_FAILED_LEN : VHOST_DMA_DONE_LEN;
-+	vq->heads[ubuf->desc].len = success ?
-+		VHOST_DMA_DONE_LEN : VHOST_DMA_FAILED_LEN;
- 	vhost_ubuf_put(ubufs);
- }
- 
-@@ -208,7 +251,7 @@ static void handle_tx(struct vhost_net *net)
- 	for (;;) {
- 		/* Release DMAs done buffers first */
- 		if (zcopy)
--			vhost_zerocopy_signal_used(vq);
-+			vhost_zerocopy_signal_used(net, vq);
- 
- 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
- 					 ARRAY_SIZE(vq->iov),
-@@ -263,7 +306,8 @@ static void handle_tx(struct vhost_net *net)
- 		/* use msg_control to pass vhost zerocopy ubuf info to skb */
- 		if (zcopy) {
- 			vq->heads[vq->upend_idx].id = head;
--			if (len < VHOST_GOODCOPY_LEN) {
-+			if (!vhost_net_tx_select_zcopy(net) ||
-+			    len < VHOST_GOODCOPY_LEN) {
- 				/* copy don't need to wait for DMA done */
- 				vq->heads[vq->upend_idx].len =
- 							VHOST_DMA_DONE_LEN;
-@@ -305,8 +349,9 @@ static void handle_tx(struct vhost_net *net)
- 		if (!zcopy)
- 			vhost_add_used_and_signal(&net->dev, vq, head, 0);
- 		else
--			vhost_zerocopy_signal_used(vq);
-+			vhost_zerocopy_signal_used(net, vq);
- 		total_len += len;
-+		vhost_net_tx_packet(net);
- 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
- 			vhost_poll_queue(&vq->poll);
- 			break;
-@@ -774,7 +819,7 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
- 	if (oldubufs) {
- 		vhost_ubuf_put_and_wait(oldubufs);
- 		mutex_lock(&vq->mutex);
--		vhost_zerocopy_signal_used(vq);
-+		vhost_zerocopy_signal_used(n, vq);
- 		mutex_unlock(&vq->mutex);
- 	}
- 
++/**
+  *	consume_skb - free an skbuff
+  *	@skb: buffer to free
+  *
 -- 
 MST
 
