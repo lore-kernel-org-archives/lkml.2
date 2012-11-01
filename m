@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761807Ab2KAOu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 10:50:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18312 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab2KAOuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 10:50:20 -0400
-Date: Thu, 1 Nov 2012 10:50:14 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Bruno Wolff III <bruno@wolff.to>, dhowells@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MODSIGN: Only sign modules if built in-tree
-Message-ID: <20121101145013.GN6627@hansolo.jdub.homelinux.org>
-References: <20121031132749.GH6627@hansolo.jdub.homelinux.org>
- <87390t6bs0.fsf@rustcorp.com.au>
- <20121101112655.GM6627@hansolo.jdub.homelinux.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121101112655.GM6627@hansolo.jdub.homelinux.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761780Ab2KAOuQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 10:50:16 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:9610 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761590Ab2KAOuL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 10:50:11 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: linux-acpi@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl
+Cc: linux-kernel@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        imammedo@redhat.com, vijaymohan.pandarathil@hp.com, prarit@redhat.com,
+        bhelgaas@google.com, Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v3 1/2] ACPI: Export functions for hot-remove
+Date: Thu,  1 Nov 2012 08:42:12 -0600
+Message-Id: <1351780933-30560-2-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1351780933-30560-1-git-send-email-toshi.kani@hp.com>
+References: <1351780933-30560-1-git-send-email-toshi.kani@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 07:26:55AM -0400, Josh Boyer wrote:
-> > I prefer something like this (untested):
-> > 
-> > diff --git a/Makefile b/Makefile
-> > index 42d0e56..cb66c8d 100644
-> > --- a/Makefile
-> > +++ b/Makefile
-> > @@ -722,8 +722,14 @@ export mod_strip_cmd
-> >  ifeq ($(CONFIG_MODULE_SIG),y)
-> >  MODSECKEY = ./signing_key.priv
-> >  MODPUBKEY = ./signing_key.x509
-> > +ifeq ($(KBUILD_EXTMOD),)
-> > +SIGNFAIL = false
-> > +else
-> > +# External builds might not have a signing key, don't break module_install.
-> > +SIGNFAIL = true
-> > +endif # KBUILD_EXTMOD
-> >  export MODPUBKEY
-> > -mod_sign_cmd = perl $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY)
-> > +mod_sign_cmd = perl $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY) || $(SIGNFAIL)
-> >  else
-> >  mod_sign_cmd = true
-> >  endif
-> 
-> OK.  I'll give this a spin locally today, but at first glance it seems
-> like it would do the same.
+Exported acpi_os_hotplug_execute() and acpi_bus_hot_remove_device()
+so that they can be called from modules for hot-remove operations.
 
-We need to put $(SIGNFAIL) before the perl script invocation or we get
-errors because mod_sign_cmd is passed an argument and sign-file is
-treating the "|| $(SIGNFAIL)" as something it's passed.  That was the
-only change I needed to make and it works as expected.
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+---
+ drivers/acpi/osl.c  | 1 +
+ drivers/acpi/scan.c | 1 +
+ 2 files changed, 2 insertions(+)
 
-Do you want me to send a v2 of the patch, or will you add it yourself
-given you've basically written the code?  Either way works for me.
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 9eaf708..7dfe91d 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -986,6 +986,7 @@ acpi_status acpi_os_hotplug_execute(acpi_osd_exec_callback function,
+ {
+ 	return __acpi_os_execute(0, function, context, 1);
+ }
++EXPORT_SYMBOL(acpi_os_hotplug_execute);
+ 
+ void acpi_os_wait_events_complete(void)
+ {
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 1fcb867..a81845e 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -157,6 +157,7 @@ err_out:
+ 	kfree(context);
+ 	return;
+ }
++EXPORT_SYMBOL(acpi_bus_hot_remove_device);
+ 
+ static ssize_t
+ acpi_eject_store(struct device *d, struct device_attribute *attr,
+-- 
+1.7.11.7
 
-josh
