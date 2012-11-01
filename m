@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760256Ab2KALFT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 07:05:19 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36670 "EHLO mail.skyhub.de"
+	id S1761077Ab2KALGw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 07:06:52 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33599 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756014Ab2KALFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 07:05:16 -0400
-Date: Thu, 1 Nov 2012 12:05:12 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Tony Luck <tony.luck@intel.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC EDAC/GHES] edac: lock module owner to avoid error report
- conflicts
-Message-ID: <20121101110512.GA31271@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>,
-	Tony Luck <tony.luck@intel.com>,
-	Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <048a00fa4a888b349be5954ce9fd063a7bcf2564.1351691230.git.mchehab@redhat.com>
+	id S1756014Ab2KALGu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 07:06:50 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <048a00fa4a888b349be5954ce9fd063a7bcf2564.1351691230.git.mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Wei Yongjun <weiyj.lk@gmail.com>, <peter.ujfalusi@ti.com>
+From: Mike Turquette <mturquette@ti.com>
+In-Reply-To: <CAPgLHd-LVhPkOHUWOwjmcsDA-4spfQMTxW9z2tB7fnEuS_5OOw@mail.gmail.com>
+CC: <yongjun_wei@trendmicro.com.cn>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+References: <CAPgLHd-LVhPkOHUWOwjmcsDA-4spfQMTxW9z2tB7fnEuS_5OOw@mail.gmail.com>
+Message-ID: <20121101110636.22860.46946@nucleus>
+User-Agent: alot/0.3.2+
+Subject: Re: [PATCH -next] CLK: clk-twl6040: fix return value check in
+ twl6040_clk_probe()
+Date: Thu, 1 Nov 2012 04:06:36 -0700
+X-Originating-IP: [10.188.36.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Tony.
+Quoting Wei Yongjun (2012-10-31 22:33:55)
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> In case of error, the function clk_register() returns ERR_PTR()
+> and never returns NULL. The NULL test in the return value check
+> should be replaced with IS_ERR().
+> 
+> dpatch engine is used to auto generate this patch.
+> (https://github.com/weiyj/dpatch)
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-On Wed, Oct 31, 2012 at 11:58:15AM -0200, Mauro Carvalho Chehab wrote:
-> There's a know bug that happens when apei/ghes is loaded together
-> with an EDAC module: the same error is reported several times,
-> as ghes calls mcelog, with, in tune, calls edac.
+Thanks for the patch.  Will take into clk-next.
 
-This is exactly why I think APEI is crap. So it is a completely useless
-additional layer between the MCA code and the rest.
+Regards,
+Mike
 
-The #MC handler runs, logs the error, and then a split happens which
-runs in parallel:
-
-* we do mce_log which carries the error to EDAC
-* we enter APEI, do some mumbo jumbo and then do mce_log AGAIN! Wtf?
-
-So, in order to sort this out properly, let's take a step back first:
-what do we actually want to do?
-
-* the error coming from APEI still needs to get decoded by EDAC? If yes,
-then WTF we need APEI for anyway?
-
-* the error coming from APEI is already decoded, so no need for EDAC? I
-highly doubt that.
-
-* add a filter to the MCE code so that certain types of errors are not
-reported by it but by APEI so that the double reporting doesn't happen?
-
-Right about now, I'm open for hints as to why we need that APEI crap at
-all. And I don't want to hear that "clear interface so that OS coders
-don't need to know the hardware" bullshit argument from the sick world
-of windoze.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+> ---
+>  drivers/clk/clk-twl6040.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/clk/clk-twl6040.c b/drivers/clk/clk-twl6040.c
+> index f4a3389..bc1e713 100644
+> --- a/drivers/clk/clk-twl6040.c
+> +++ b/drivers/clk/clk-twl6040.c
+> @@ -92,8 +92,8 @@ static int __devinit twl6040_clk_probe(struct platform_device *pdev)
+>  
+>         clkdata->mcpdm_fclk.init = &wm831x_clkout_init;
+>         clkdata->clk = clk_register(&pdev->dev, &clkdata->mcpdm_fclk);
+> -       if (!clkdata->clk)
+> -               return -EINVAL;
+> +       if (IS_ERR(clkdata->clk))
+> +               return PTR_ERR(clkdata->clk);
+>  
+>         dev_set_drvdata(&pdev->dev, clkdata);
