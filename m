@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758542Ab2KAJh1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 05:37:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59253 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338Ab2KAJhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 05:37:25 -0400
-Date: Thu, 1 Nov 2012 10:37:23 +0100
-From: Jan Kara <jack@suse.cz>
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: BUG: enabling psacct breaks fsfreeze
-Message-ID: <20121101093723.GC6584@quack.suse.cz>
-References: <20121023094351.GC27919@pcnci.linuxbox.cz>
- <20121031121517.GD18424@quack.suse.cz>
- <20121031124600.GM20752@pcnci.linuxbox.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121031124600.GM20752@pcnci.linuxbox.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758854Ab2KAJi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 05:38:29 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36713 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752887Ab2KAJi1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 05:38:27 -0400
+Message-ID: <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Oliver Neukum <oneukum@suse.de>, Chris Friesen <chris.friesen@genband.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Date: Thu, 01 Nov 2012 09:38:23 +0000
+In-Reply-To: <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	  <2548314.3caaFsMVg6@linux-lqwf.site> <50919EED.3020601@genband.com>
+	  <36538307.gzWq1oO7Kg@linux-lqwf.site>
+	 <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
+	 <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 31-10-12 13:46:00, Nikola Ciprich wrote:
-> Hi Jan,
+On Thu, 2012-11-01 at 10:20 +0100, Jiri Kosina wrote:
+> On Thu, 1 Nov 2012, James Bottomley wrote:
 > 
-> thanks for the reply, sure, I'll gather and post requested info.
-> One more note before that, the problem is with psacct, not audit
->  - psacct if I'm not mistaken  (and as opposed to audit) doesn't
-> use any userspace, kernel dumps information directly to fs, 
-> which might the reason for deadlock..
-  Ah, right. Now I looked into the right code and I can see what's the
-problem. I'll see what we could do about that... So far I don't have a
-better idea than just dropping accounting records that should be written to
-frozen filesystem (as you have nowhere to write those records to).
+> > The point I'm making is that given that the majority of exploits will 
+> > already be able to execute arbitrary code in-kernel, there's not much 
+> > point trying to consider features like this as attacker prevention.  We 
+> > should really be focusing on discussing why we'd want to prevent a 
+> > legitimate local root from writing to the suspend partition in a secure 
+> > boot environment.
+> 
+> Well, this is being repeated over and over again when talking about secure 
+> boot, right?
+> 
+> My understanding is that we are not trying to protect against root 
+> exploiting the kernel. We are trying to protect against root tampering 
+> with the kernel code and data through legitimate use of kernel-provided 
+> facilitiies (/dev/mem, ioperm, reprogramming devices to DMA to arbitrary 
+> memory locations, resuming from hibernation image that has been tampered 
+> with, etc).
+> 
+> Or perhaps I just misunderstood the point you were trying to make?
 
-								Honza
+I'm actually just struggling to understand the use case for these more
+esoteric protections.
 
-> > > Should more debugging information be needed, I'll be glad to provide whatever I can..
-> >   Thanks for report. Hum, I'm not sure how the deadlock can happen because
-> > AFAIU audit sends a message via netlink to userspace and whatever audit
-> > daemon does with it is its private thing. Can you please run:
-> >   echo w >/proc/sysrq-trigger
-> > after the machine deadlocks and then take dmesg and attach it here? You'll
-> > have to have the shell prepared and use serial console / netconsole to gather
-> > dmesg or try your luck with copying via ssh / netcat.
-> > 
-> > 								Honza
-> > -- 
-> > Jan Kara <jack@suse.cz>
-> > SUSE Labs, CR
-> > 
-> 
-> -- 
-> -------------------------------------
-> Ing. Nikola CIPRICH
-> LinuxBox.cz, s.r.o.
-> 28.rijna 168, 709 00 Ostrava
-> 
-> tel.:   +420 591 166 214
-> fax:    +420 596 621 273
-> mobil:  +420 777 093 799
-> www.linuxbox.cz
-> 
-> mobil servis: +420 737 238 656
-> email servis: servis@linuxbox.cz
-> -------------------------------------
+So the assumption is malice on the part of a legitimate local root?  I
+just don't see what such a user would gain by compromising resume in
+this way (given that their scope for damage in the rest of the system
+and data is huge) and I don't really see why a non-malicious local root
+would be interested.  A legitimate local root entails quite a measure of
+trust, so what I don't really see is the use case for investing all that
+trust in someone but not trusting them with the boot system.  In a
+proper capability separated limited trust environment, you simply don't
+allow less trusted users raw access to all or some devices and that
+solves the problem far more simply.
+
+James
 
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
