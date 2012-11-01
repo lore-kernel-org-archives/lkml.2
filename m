@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761641Ab2KAO3W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 10:29:22 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55266 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761607Ab2KAO3T (ORCPT
+	id S1761644Ab2KAObe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 10:31:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39168 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761388Ab2KAObc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 10:29:19 -0400
+	Thu, 1 Nov 2012 10:31:32 -0400
+Date: Thu, 1 Nov 2012 14:31:30 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Axel Lin <axel.lin@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        David Dajun Chen <dchen@diasemi.com>
+Subject: Re: [patch v1 1/2] mfd: i2c issue fix for DA9052/53 and support for
+ DA9053-BC
+Message-ID: <20121101143130.GI4413@opensource.wolfsonmicro.com>
+References: <1351750722.19193.16.camel@dhruva>
 MIME-Version: 1.0
-In-Reply-To: <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
-	<2548314.3caaFsMVg6@linux-lqwf.site>
-	<50919EED.3020601@genband.com>
-	<36538307.gzWq1oO7Kg@linux-lqwf.site>
-	<1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
-	<alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
-	<1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
-	<alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
-	<1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
-Date: Thu, 1 Nov 2012 10:29:17 -0400
-Message-ID: <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-From: Eric Paris <eparis@parisplace.org>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AptwxgnoZDC4KQWS"
+Content-Disposition: inline
+In-Reply-To: <1351750722.19193.16.camel@dhruva>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 1, 2012 at 5:59 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
 
-> But that doesn't really help me: untrusted root is an oxymoron.
+--AptwxgnoZDC4KQWS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Imagine you run windows and you've never heard of Linux.  You like
-that only windows kernels can boot on your box and not those mean
-nasty hacked up malware kernels.  Now some attacker manages to take
-over your box because you clicked on that executable for young models
-in skimpy bathing suits.  That executable rewrote your bootloader to
-launch a very small carefully crafted Linux environment.  This
-environment does nothing but launch a perfectly valid signed Linux
-kernel, which gets a Windows environment all ready to launch after
-resume and goes to sleep.  Now you have to hit the power button twice
-every time you turn on your computer, weird, but Windows comes up, and
-secureboot is still on, so you must be safe!
+On Thu, Nov 01, 2012 at 11:48:42AM +0530, Ashish Jangam wrote:
 
-In this case we have a completely 'untrusted' root inside Linux.  From
-the user PoV root and Linux are both malware.  Notice the EXACT same
-attack would work launching rootkit'd Linux from Linux.  So don't
-pretend not to care about Windows.  It's just that launching malware
-Linux seems like a reason to get your key revoked.  We don't want
-signed code which can be used as an attack vector on ourselves or on
-others.
+> This patch fixes this issue to by following any read or write with a dummy read
+> to a safe register address. A safe register address is one where the contents
+> will not affect the operation of the system.
 
-That make sense?
+> Apart from this the patch also adds support to the DA9053-BC PMIC chip
 
--Eric
+This is two separate changes and so should be two separate patches (one
+is a bugfix and one isn't...).
+
+--AptwxgnoZDC4KQWS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQkoe7AAoJELSic+t+oim9L0oP/Rp+NfA4t/2u+03dBoxmDC7e
+UGcSqSOa1RojBAF+rnTjdR5dG3EcopmaLg2syJWJbIc92cH2ABHJb/t7tArosXJi
+Xxf/opInxdGzlZSW0U1QAqg+momKCwGeGykjqzCExCRWN+uDRY0SPimFo4dOrzeK
+tO2kBe1HhSOZN/fw+I7OnJdxmJtLX+KqQ+Sk2S5Ih1snYv0arJwVNFHRTaZWkfOl
+zzC0+zrxgUESyjAKfABWsAN5ZD5ctugepLaBfhptzV+blchmUYt+MylcDNyODuT1
+el8toHVjA40E2aWbQDQTQOaWlVzY/cwVjnhQ1TfUcSVWNrJCSQ/gUeGw8V4KYSXd
+SSiMvszMawfIy78ZNrO1NRNsh0tlnl6ooJXXOmdOat2cnmzBZbfTx5VVqM7TVecM
+Ip+PZ4P3Wjrkjo+svFvfnygvek4SW6SyQYbffO56yw0F80FhXcQ+I8ZYv4NkC1Df
+BulJdbclWCB85AHAz0mbDozcAAie2slpi6GPwIcJPjGBUWZuXtYCPnKoBgS3S9l9
+FHGx6F99AjyrslNYZ8zJarIu5xHFPxINcEDOBQV901bRwVV5YfRxonG2Cfs4JL7u
+U//CVyxCqisw6RowvrUaUtv9i8HhmU/OVH8VSPIpUXNun+8bkIvQpxsTXlgGyZRw
+/QvFDEDaotgfDvLf8s7K
+=5kdC
+-----END PGP SIGNATURE-----
+
+--AptwxgnoZDC4KQWS--
