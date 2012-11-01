@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589Ab2KARXY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 13:23:24 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58667 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab2KARXW (ORCPT
+	id S1752995Ab2KARZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 13:25:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40353 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752293Ab2KARZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 13:23:22 -0400
-Message-ID: <5092B007.7050609@wwwdotorg.org>
-Date: Thu, 01 Nov 2012 11:23:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Thu, 1 Nov 2012 13:25:25 -0400
 MIME-Version: 1.0
-To: Dmitry Osipenko <digetx@gmail.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>
-CC: linus.walleij@linaro.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pinctrl: tegra: add suspend/resume support
-References: <1351785186-11431-1-git-send-email-digetx@gmail.com>
-In-Reply-To: <1351785186-11431-1-git-send-email-digetx@gmail.com>
-X-Enigmail-Version: 1.4.4
+In-Reply-To: <20121101094721.2a57719c@redhat.com>
+References: <048a00fa4a888b349be5954ce9fd063a7bcf2564.1351691230.git.mchehab@redhat.com>
+	<20121101110512.GA31271@liondog.tnic>
+	<20121101094721.2a57719c@redhat.com>
+Date: Thu, 1 Nov 2012 10:25:23 -0700
+X-Google-Sender-Auth: eYmnfflfOEFY-Q7meTnb5wOW2GM
+Message-ID: <CA+8MBbK5J1qWqTZjC6nHsVbqk05t0yF1F7d-_0PQpvBQBXgO1w@mail.gmail.com>
+Subject: Re: [RFC EDAC/GHES] edac: lock module owner to avoid error report conflicts
+From: Tony Luck <tony.luck@intel.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2012 09:53 AM, Dmitry Osipenko wrote:
-> Added suspend/resume pm ops. We need to store current regs vals on suspend and
-> restore them on resume.
+On Thu, Nov 1, 2012 at 4:47 AM, Mauro Carvalho Chehab
+<mchehab@redhat.com> wrote:
+> Take a look at arch/x86/kernel/cpu/mcheck/mce-apei.c:
+>
+>         void apei_mce_report_mem_error(int corrected, struct cper_sec_mem_err *mem_err)
+>         {
+>                 struct mce m;
+>
+>                 /* Only corrected MC is reported */
+>                 if (!corrected || !(mem_err->validation_bits &
+>                                         CPER_MEM_VALID_PHYSICAL_ADDRESS))
+>                         return;
+>
+>                 mce_setup(&m);
+>                 m.bank = 1;
+>                 /* Fake a memory read corrected error with unknown channel */
+>                 m.status = MCI_STATUS_VAL | MCI_STATUS_EN | MCI_STATUS_ADDRV | 0x9f;
+>                 m.addr = mem_err->physical_addr;
+>                 mce_log(&m);
+>                 mce_notify_irq();
+>         }
+>
+> Bank information there is fake; status is fake. Only addr is really filled
+> there; it works only for corrected errors.
 
-Interesting. Just literally a couple days ago, I was reviewing a patch
-to our internal kernel tree that implemented the same thing for the
-pinctrl driver, in almost the same way!
+This went in like this to help out the Westmere-EX processors that
+didn't fill out MCi_ADDR for corrected errors. APEI could get the
+address from some platform CSRs ... reporting via /dev/mcelog
+so that predictive analysis in mcelog(8) would work on these machines.
 
-> ---
-> Tested on my tablet.
+I don't think we can rip it out yet ... not until those machines are
+shuffled off to recycle heaven.
 
-I'm curious how; in what environment. As far as I know, the Tegra
-support in the mainline kernel doesn't actually support suspend/resume.
-I assume you cherry-picked this pinctrl driver into some other kernel,
-and tested this patch there?
+But perhaps we should get smarter about which machines we enable
+APEI on?  If we get everything we need from the machine check banks,
+then the detour via the BIOS to report the same thing again isn't helpful.
 
-> +#ifdef CONFIG_PM_SLEEP
-> +static int tegra_pinctrl_suspend_noirq(struct device *dev)
-
-The one major different between this patch and the downstream patch I
-reviewed is how suspend/resume is triggered. This uses suspend_noirq,
-whereas the downstream patch registers the callbacks using
-register_syscore_ops(). Apparently the latter is required (at least in
-our downstream kernel) in order to ensure that pinctrl gets suspended
-after all other drivers.
-
-I Cc'd Pritesh to comment on this.
-
-Still, perhaps device probe ordering should ensure this upstream so
-using register_syscore_ops() might not be necessary, although that
-relies on drivers probing in the correct order, which they may not
-without explicitly pinctrl_get() calls... back to that same problem again!
-
-...
-> +static const struct dev_pm_ops tegra_pinctrl_pm_ops = {
-> +	.suspend_noirq = tegra_pinctrl_suspend_noirq,
-> +	.resume_noirq = tegra_pinctrl_resume_noirq,
-> +};
-> +#define TEGRA_PINCTRL_PM	(&tegra_pinctrl_pm_ops)
-> +#else
-> +#define TEGRA_PINCTRL_PM	NULL
-> +#endif
-
-I was going to suggest using something like SET_SYSTEM_SLEEP_PM_OPS, but
-I guess there's no equivalent for the _noirq variants.
-
-> @@ -752,6 +838,8 @@ int __devinit tegra_pinctrl_probe(struct platform_device *pdev,
->  
->  	platform_set_drvdata(pdev, pmx);
->  
-> +	pdev->dev.driver->pm = TEGRA_PINCTRL_PM;
-
-That might be better done in the struct platform_driver initialization
-in pinctrl-tegra*.c?
+-Tony
