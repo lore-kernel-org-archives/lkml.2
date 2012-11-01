@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992589Ab2KAWMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 18:12:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41196 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992558Ab2KAWMP (ORCPT
+	id S936141Ab2KAWPi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:15:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57441 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933190Ab2KAWPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 18:12:15 -0400
-Date: Thu, 1 Nov 2012 23:12:00 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: khali@linux-fr.org, ben-linux@fluff.org, swarren@nvidia.com,
-        olof@lixom.net, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH REPOST] i2c: tegra: set irq name as device name
-Message-ID: <20121101221200.GB22956@pengutronix.de>
-References: <1351787894-23477-1-git-send-email-ldewangan@nvidia.com>
+	Thu, 1 Nov 2012 18:15:33 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JYK4vJDZwFMowpUq"
-Content-Disposition: inline
-In-Reply-To: <1351787894-23477-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <11976302.Ya3MGGIAsU@vostro.rjw.lan>
+References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1748725.QBg5LLmPOx@vostro.rjw.lan>
+	<CAE9FiQV0gAJabpcoSHhTYq19m-YmaC0O6HH_dFKXUTuvUMG4Fg@mail.gmail.com>
+	<11976302.Ya3MGGIAsU@vostro.rjw.lan>
+Date: Thu, 1 Nov 2012 15:15:31 -0700
+X-Google-Sender-Auth: gyBe_DRvRij064zDjV2blNodxbU
+Message-ID: <CAE9FiQVGPP3+97D2SatH_CBPBpqBZyCe7We=9=x5ZEq8_d0fWQ@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] Improve container_notify_cb() to support container hot-remove.
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Toshi Kani <toshi.kani@hp.com>, ZhangRui <rui.zhang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>, bhelgaas@google.com,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 1, 2012 at 2:31 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> oh, no, that commit should not be reverted. instead we should add some
+>> comment for it...
+>>
+>> that mean : three path, will have three separated static lock dep key
+>> from every INIT_WORK.
+>
+> I see.
+>
+> OK, I'll drop the patch removing it.
+>
+> What about the following comment:
+>
+> "To prevent lockdep from complaining unnecessarily, make sure that there
+>  is a different static lockdep key created for each workqueue by using
+>  INIT_WORK for each of them separately."
+>
+created ?
 
---JYK4vJDZwFMowpUq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+how about "defined" ?
 
-On Thu, Nov 01, 2012 at 10:08:14PM +0530, Laxman Dewangan wrote:
-> When watching the irqs name of tegra i2c, all instances
-> irq name shows as tegra_i2c.
->=20
-> Passing the device name properly to have the irq names with
-> instance like tegra-i2c.0, tegra-i2c.1 etc.
->=20
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> Acked-by: Jean Delvare <khali@linux-fr.org>
-
-Applied to for-current, thanks.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---JYK4vJDZwFMowpUq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlCS87AACgkQD27XaX1/VRvfzQCfWr9v21gPlvC95vloittgOnij
-F1MAmgMG9OqCQ++3qZnrYQTd75WPQm1D
-=iyzJ
------END PGP SIGNATURE-----
-
---JYK4vJDZwFMowpUq--
+or just remove  "created"
