@@ -1,40 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab2KAH7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 03:59:00 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7968 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992Ab2KAH66 (ORCPT
+	id S1756807Ab2KAH7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 03:59:52 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22593 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755312Ab2KAH7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 03:58:58 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 01 Nov 2012 00:58:56 -0700
-Message-ID: <50922B5A.9050601@nvidia.com>
-Date: Thu, 1 Nov 2012 13:27:14 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Thu, 1 Nov 2012 03:59:49 -0400
+Subject: [PATCH 3/3] fs: Fix remaining filesystems to wait for stable page
+ writeback
+To: axboe@kernel.dk, lucho@ionkov.net, tytso@mit.edu, sage@inktank.com,
+        darrick.wong@oracle.com, ericvh@gmail.com, mfasheh@suse.com,
+        dedekind1@gmail.com, adrian.hunter@intel.com, dhowells@redhat.com,
+        sfrench@samba.org, jlbec@evilplan.org, rminnich@sandia.gov
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: linux-cifs@vger.kernel.org, jack@suse.cz, martin.petersen@oracle.com,
+        neilb@suse.de, david@fromorbit.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-mtd@lists.infradead.org,
+        bharrosh@panasas.com, linux-fsdevel@vger.kernel.org,
+        v9fs-developer@lists.sourceforge.net, ceph-devel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-afs@lists.infradead.org,
+        ocfs2-devel@oss.oracle.com
+Date: Thu, 01 Nov 2012 00:58:29 -0700
+Message-ID: <20121101075829.16153.92036.stgit@blackbox.djwong.org>
+In-Reply-To: <20121101075805.16153.64714.stgit@blackbox.djwong.org>
+References: <20121101075805.16153.64714.stgit@blackbox.djwong.org>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: Fix trivial typo for TPS51632 Kconfig help
- text
-References: <1351749756.3695.2.camel@phoenix>
-In-Reply-To: <1351749756.3695.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 November 2012 11:32 AM, Axel Lin wrote:
-> Signed-off-by: Axel Lin<axel.lin@ingics.com>
->
->   	help
->   	  This driver supports TPS51632 voltage regulator chip.
-> -	  The TPS52632 is 3-2-1 Phase D-Cap+ Step Down Driverless Controller
-> +	  The TPS51632 is 3-2-1 Phase D-Cap+ Step Down Driverless Controller
-Ooh no, silly typo.
+Fix up the filesystems that provide their own ->page_mkwrite handlers to
+provide stable page writes if necessary.
 
-Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+---
+ fs/9p/vfs_file.c |    1 +
+ fs/afs/write.c   |    4 ++--
+ fs/ceph/addr.c   |    1 +
+ fs/cifs/file.c   |    1 +
+ fs/ocfs2/mmap.c  |    1 +
+ fs/ubifs/file.c  |    4 ++--
+ 6 files changed, 8 insertions(+), 4 deletions(-)
+
+
+diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
+index c2483e9..aa253f0 100644
+--- a/fs/9p/vfs_file.c
++++ b/fs/9p/vfs_file.c
+@@ -620,6 +620,7 @@ v9fs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	lock_page(page);
+ 	if (page->mapping != inode->i_mapping)
+ 		goto out_unlock;
++	wait_on_stable_page_write(page);
+ 
+ 	return VM_FAULT_LOCKED;
+ out_unlock:
+diff --git a/fs/afs/write.c b/fs/afs/write.c
+index 9aa52d9..39eb2a4 100644
+--- a/fs/afs/write.c
++++ b/fs/afs/write.c
+@@ -758,7 +758,7 @@ int afs_page_mkwrite(struct vm_area_struct *vma, struct page *page)
+ #ifdef CONFIG_AFS_FSCACHE
+ 	fscache_wait_on_page_write(vnode->cache, page);
+ #endif
+-
++	wait_on_stable_page_write(page);
+ 	_leave(" = 0");
+-	return 0;
++	return VM_FAULT_LOCKED;
+ }
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index 6690269..e9734bf 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -1208,6 +1208,7 @@ static int ceph_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 		set_page_dirty(page);
+ 		up_read(&mdsc->snap_rwsem);
+ 		ret = VM_FAULT_LOCKED;
++		wait_on_stable_page_write(page);
+ 	} else {
+ 		if (ret == -ENOMEM)
+ 			ret = VM_FAULT_OOM;
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index edb25b4..a8770bf 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2997,6 +2997,7 @@ cifs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	struct page *page = vmf->page;
+ 
+ 	lock_page(page);
++	wait_on_stable_page_write(page);
+ 	return VM_FAULT_LOCKED;
+ }
+ 
+diff --git a/fs/ocfs2/mmap.c b/fs/ocfs2/mmap.c
+index 47a87dd..a0027b1 100644
+--- a/fs/ocfs2/mmap.c
++++ b/fs/ocfs2/mmap.c
+@@ -124,6 +124,7 @@ static int __ocfs2_page_mkwrite(struct file *file, struct buffer_head *di_bh,
+ 				     fsdata);
+ 	BUG_ON(ret != len);
+ 	ret = VM_FAULT_LOCKED;
++	wait_on_stable_page_write(page);
+ out:
+ 	return ret;
+ }
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index 5bc7781..cb0d3aa 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1522,8 +1522,8 @@ static int ubifs_vm_page_mkwrite(struct vm_area_struct *vma,
+ 			ubifs_release_dirty_inode_budget(c, ui);
+ 	}
+ 
+-	unlock_page(page);
+-	return 0;
++	wait_on_stable_page_write(page);
++	return VM_FAULT_LOCKED;
+ 
+ out_unlock:
+ 	unlock_page(page);
+
