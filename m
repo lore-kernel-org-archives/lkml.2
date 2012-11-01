@@ -1,66 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab2KARZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 13:25:29 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40353 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab2KARZZ (ORCPT
+	id S1753149Ab2KAR2N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 13:28:13 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:45987 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750899Ab2KAR2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 13:25:25 -0400
+	Thu, 1 Nov 2012 13:28:10 -0400
+Subject: [PATCH 00/12] VMCI for Linux upstreaming
+To: linux-kernel@vger.kernel.org, georgezhang@vmware.com,
+        virtualization@lists.linux-foundation.org
+From: George Zhang <georgezhang@vmware.com>
+Cc: pv-drivers@vmware.com, gregkh@linuxfoundation.org
+Date: Thu, 01 Nov 2012 10:28:09 -0700
+Message-ID: <20121101172045.9733.67838.stgit@promb-2n-dhcp175.eng.vmware.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <20121101094721.2a57719c@redhat.com>
-References: <048a00fa4a888b349be5954ce9fd063a7bcf2564.1351691230.git.mchehab@redhat.com>
-	<20121101110512.GA31271@liondog.tnic>
-	<20121101094721.2a57719c@redhat.com>
-Date: Thu, 1 Nov 2012 10:25:23 -0700
-X-Google-Sender-Auth: eYmnfflfOEFY-Q7meTnb5wOW2GM
-Message-ID: <CA+8MBbK5J1qWqTZjC6nHsVbqk05t0yF1F7d-_0PQpvBQBXgO1w@mail.gmail.com>
-Subject: Re: [RFC EDAC/GHES] edac: lock module owner to avoid error report conflicts
-From: Tony Luck <tony.luck@intel.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 1, 2012 at 4:47 AM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> Take a look at arch/x86/kernel/cpu/mcheck/mce-apei.c:
->
->         void apei_mce_report_mem_error(int corrected, struct cper_sec_mem_err *mem_err)
->         {
->                 struct mce m;
->
->                 /* Only corrected MC is reported */
->                 if (!corrected || !(mem_err->validation_bits &
->                                         CPER_MEM_VALID_PHYSICAL_ADDRESS))
->                         return;
->
->                 mce_setup(&m);
->                 m.bank = 1;
->                 /* Fake a memory read corrected error with unknown channel */
->                 m.status = MCI_STATUS_VAL | MCI_STATUS_EN | MCI_STATUS_ADDRV | 0x9f;
->                 m.addr = mem_err->physical_addr;
->                 mce_log(&m);
->                 mce_notify_irq();
->         }
->
-> Bank information there is fake; status is fake. Only addr is really filled
-> there; it works only for corrected errors.
 
-This went in like this to help out the Westmere-EX processors that
-didn't fill out MCi_ADDR for corrected errors. APEI could get the
-address from some platform CSRs ... reporting via /dev/mcelog
-so that predictive analysis in mcelog(8) would work on these machines.
 
-I don't think we can rip it out yet ... not until those machines are
-shuffled off to recycle heaven.
+* * *
+This series of VMCI linux upstreaming patches include latest udpate from
+VMware.
 
-But perhaps we should get smarter about which machines we enable
-APEI on?  If we get everything we need from the machine check banks,
-then the detour via the BIOS to report the same thing again isn't helpful.
+Summary of changes:
+	- Use RCU for context lookup.
+	- Remove redundant init()/empty functions.
+	- Remove unnecessary ASSERTs.
+	- Remove delayed event callbacks.
+	- Cleanup some comments.
+	- Cleanup makefiles.
+	- Drop -I$(src)/shared custom flags from Makefile for VSOCK.
+	- Rename vmci_ctx_init_ctx() to vmci_ctx_create().
+	- Get rid of vmci_ctx_init().
+	- Rename vmci_ctx_release() to vmci_ctx_put().
 
--Tony
+
+
+* * *
+
+In an effort to improve the out-of-the-box experience with Linux
+kernels for VMware users, VMware is working on readying the Virtual
+Machine Communication Interface (vmw_vmci) and VMCI Sockets
+(vmw_vsock) kernel modules for inclusion in the Linux kernel. The
+purpose of this post is to acquire feedback on the vmw_vmci kernel
+module. The vmw_vsock kernel module will be presented in a later post.
+
+
+* * *
+
+VMCI allows virtual machines to communicate with host kernel modules
+and the VMware hypervisors. User level applications both in a virtual
+machine and on the host can use vmw_vmci through VMCI Sockets, a socket
+address family designed to be compatible with UDP and TCP at the
+interface level. Today, VMCI and VMCI Sockets are used by the VMware
+shared folders (HGFS) and various VMware Tools components inside the
+guest for zero-config, network-less access to VMware host services. In
+addition to this, VMware's users are using VMCI Sockets for various
+applications, where network access of the virtual machine is
+restricted or non-existent. Examples of this are VMs communicating
+with device proxies for proprietary hardware running as host
+applications and automated testing of applications running within
+virtual machines.
+
+In a virtual machine, VMCI is exposed as a regular PCI device. The
+primary communication mechanisms supported are a point-to-point
+bidirectional transport based on a pair of memory-mapped queues, and
+asynchronous notifications in the form of datagrams and
+doorbells. These features are available to kernel level components
+such as HGFS and VMCI Sockets through the VMCI kernel API. In addition
+to this, the VMCI kernel API provides support for receiving events
+related to the state of the VMCI communication channels, and the
+virtual machine itself.
+
+Outside the virtual machine, the host side support of the VMCI kernel
+module makes the same VMCI kernel API available to VMCI endpoints on
+the host. In addition to this, the host side manages each VMCI device
+in a virtual machine through a context object. This context object
+serves to identify the virtual machine for communication, and to track
+the resource consumption of the given VMCI device. Both operations
+related to communication between the virtual machine and the host
+kernel, and those related to the management of the VMCI device state
+in the host kernel, are invoked by the user level component of the
+hypervisor through a set of ioctls on the VMCI device node.  To
+provide seamless support for nested virtualization, where a virtual
+machine may use both a VMCI PCI device to talk to its hypervisor, and
+the VMCI host side support to run nested virtual machines, the VMCI
+host and virtual machine support are combined in a single kernel
+module.
+
+For additional information about the use of VMCI and in particular
+VMCI Sockets, please refer to the VMCI Socket Programming Guide
+available at https://www.vmware.com/support/developer/vmci-sdk/.
+
+
+---
+
+George Zhang (12):
+      VMCI: context implementation.
+      VMCI: datagram implementation.
+      VMCI: doorbell implementation.
+      VMCI: device driver implementaton.
+      VMCI: event handling implementation.
+      VMCI: handle array implementation.
+      VMCI: queue pairs implementation.
+      VMCI: resource object implementation.
+      VMCI: routing implementation.
+      VMCI: guest side driver implementation.
+      VMCI: host side driver implementation.
+      VMCI: Some header and config files.
+
+
+ drivers/misc/Kconfig                      |    1 
+ drivers/misc/Makefile                     |    2 
+ drivers/misc/vmw_vmci/Kconfig             |   16 
+ drivers/misc/vmw_vmci/Makefile            |    4 
+ drivers/misc/vmw_vmci/vmci_common_int.h   |   34 
+ drivers/misc/vmw_vmci/vmci_context.c      | 1247 ++++++++++
+ drivers/misc/vmw_vmci/vmci_context.h      |  183 ++
+ drivers/misc/vmw_vmci/vmci_datagram.c     |  506 ++++
+ drivers/misc/vmw_vmci/vmci_datagram.h     |   52 
+ drivers/misc/vmw_vmci/vmci_doorbell.c     |  645 +++++
+ drivers/misc/vmw_vmci/vmci_doorbell.h     |   53 
+ drivers/misc/vmw_vmci/vmci_driver.c       |  116 +
+ drivers/misc/vmw_vmci/vmci_driver.h       |   50 
+ drivers/misc/vmw_vmci/vmci_event.c        |  229 ++
+ drivers/misc/vmw_vmci/vmci_event.h        |   25 
+ drivers/misc/vmw_vmci/vmci_guest.c        |  762 ++++++
+ drivers/misc/vmw_vmci/vmci_handle_array.c |  142 +
+ drivers/misc/vmw_vmci/vmci_handle_array.h |   52 
+ drivers/misc/vmw_vmci/vmci_host.c         | 1036 +++++++++
+ drivers/misc/vmw_vmci/vmci_queue_pair.c   | 3507 +++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_queue_pair.h   |  191 ++
+ drivers/misc/vmw_vmci/vmci_resource.c     |  232 ++
+ drivers/misc/vmw_vmci/vmci_resource.h     |   59 
+ drivers/misc/vmw_vmci/vmci_route.c        |  233 ++
+ drivers/misc/vmw_vmci/vmci_route.h        |   30 
+ include/linux/vmw_vmci_api.h              |   82 +
+ include/linux/vmw_vmci_defs.h             |  973 ++++++++
+ 27 files changed, 10462 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/Kconfig
+ create mode 100644 drivers/misc/vmw_vmci/Makefile
+ create mode 100644 drivers/misc/vmw_vmci/vmci_common_int.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_context.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_context.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_datagram.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_doorbell.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_doorbell.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_driver.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_driver.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_guest.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_handle_array.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_handle_array.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_host.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_queue_pair.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_queue_pair.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_resource.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_resource.h
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.h
+ create mode 100644 include/linux/vmw_vmci_api.h
+ create mode 100644 include/linux/vmw_vmci_defs.h
+
+-- 
+Signature
