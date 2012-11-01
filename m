@@ -1,139 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762231Ab2KATZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 15:25:46 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:17942 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762179Ab2KATZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 15:25:40 -0400
-Message-ID: <1351797478.19172.103.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 3/3] Improve container_notify_cb() to support
- container hot-remove.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: ZhangRui <rui.zhang@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tang Chen <tangchen@cn.fujitsu.com>, bhelgaas@google.com,
-        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 01 Nov 2012 13:17:58 -0600
-In-Reply-To: <CAE9FiQXxHz_RntOc2gxxDscv8+mDQ2XBL0sHSrptj_arwUb8-A@mail.gmail.com>
-References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1351668471-31436-4-git-send-email-tangchen@cn.fujitsu.com>
-	 <1351788194.19172.98.camel@misato.fc.hp.com>
-	 <CAE9FiQXxHz_RntOc2gxxDscv8+mDQ2XBL0sHSrptj_arwUb8-A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S965264Ab2KAT3I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 15:29:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7602 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964826Ab2KAT3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 15:29:04 -0400
+Date: Thu, 1 Nov 2012 21:16:42 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 net-next 5/8] vhost: track zero copy failures using DMA
+ length
+Message-ID: <d53ccc944ec54f609342f95a8ff1764cc655c136.1351797353.git.mst@redhat.com>
+References: <cover.1351797353.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1351797353.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-01 at 11:28 -0700, Yinghai Lu wrote:
-> On Thu, Nov 1, 2012 at 9:43 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> >
-> > Rafael pointed out in my CPU hot-remove patch that
-> > acpi_bus_hot_remove_device() was not exported for modules.  Looks like
-> > you have the same problem here.  FYI, I just sent the following patch
-> > that exports acpi_bus_hot_remove_device() and acpi_os_hotplug_execute().
-> >
-> > https://lkml.org/lkml/2012/11/1/225
-> 
-> acpi_os_hotplug_execute() does not like having good quality yet.
-> 
-> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  941)   /*
-> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  942)    * We
-> can't run hotplug code in keventd_wq/kacpid_wq/kacpid_notify_wq
-> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  943)    *
-> because the hotplug code may call driver .remove() functions,
-> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  944)    *
-> which invoke flush_scheduled_work/acpi_os_wait_events_complete
-> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  945)    * to
-> flush these workqueues.
-> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  946)    */
-> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  947)   queue
-> = hp ? kacpi_hotplug_wq :
-> c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  948)
->  (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
-> 9ac61856 (Bjorn Helgaas       2009-08-31 22:32:10 +0000  949)
-> dpc->wait = hp ? 1 : 0;
-> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  950)
-> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  951)   if
-> (queue == kacpi_hotplug_wq)
-> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  952)
->  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  953)   else
-> if (queue == kacpi_notify_wq)
-> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  954)
->  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  955)   else
-> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  956)
->  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  957)
-> 
-> really don't know why checking queue and call same code in every branch.
-> 
-> from comm:
-> 
-> commit bc73675b99fd9850dd914be01d71af99c5d2a1ae
-> Author: Zhang Rui <rui.zhang@intel.com>
-> Date:   Mon Mar 22 15:48:54 2010 +0800
-> 
->     ACPI: fixes a false alarm from lockdep
-> 
->     fixes a false alarm from lockdep, as acpi hotplug workqueue waits other
->     workqueues.
->     http://bugzilla.kernel.org/show_bug.cgi?id=14553
->     https://bugzilla.kernel.org/show_bug.cgi?id=15521
-> 
->     Original-patch-from: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Shaohua Li <shaohua.li@intel.com>
->     Signed-off-by: Zhang Rui <rui.zhang@intel.com>
->     Signed-off-by: Len Brown <len.brown@intel.com>
-> 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 8e6d866..900da68 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -758,7 +758,14 @@ static acpi_status
-> __acpi_os_execute(acpi_execute_type type,
->         queue = hp ? kacpi_hotplug_wq :
->                 (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
->         dpc->wait = hp ? 1 : 0;
-> -       INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> +
-> +       if (queue == kacpi_hotplug_wq)
-> +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> +       else if (queue == kacpi_notify_wq)
-> +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> +       else
-> +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> +
->         ret = queue_work(queue, &dpc->work);
-> 
->         if (!ret) {
-> 
-> 
-> Len or Rafael,
-> can you just revert that silly patch?
+This will be used to disable zerocopy when error rate
+is high.
 
-Hi Yinghai,
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/vhost/vhost.c | 7 ++++---
+ drivers/vhost/vhost.h | 4 ++++
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
-Per the following thread, the code seems to be written in this way to
-allocate a separate lock_class_key for each work queue.  It should have
-had some comment to explain this, though.
-
-https://lkml.org/lkml/2009/12/13/304
-
-Thanks,
--Toshi
-
-
-
-> 
-> Yinghai
-
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index f23cf89..5affce3 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -425,7 +425,7 @@ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
+ 	int j = 0;
+ 
+ 	for (i = vq->done_idx; i != vq->upend_idx; i = (i + 1) % UIO_MAXIOV) {
+-		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN)) {
++		if (VHOST_DMA_IS_DONE(vq->heads[i].len)) {
+ 			vq->heads[i].len = VHOST_DMA_CLEAR_LEN;
+ 			vhost_add_used_and_signal(vq->dev, vq,
+ 						  vq->heads[i].id, 0);
+@@ -1600,13 +1600,14 @@ void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *ubufs)
+ 	kfree(ubufs);
+ }
+ 
+-void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool status)
++void vhost_zerocopy_callback(struct ubuf_info *ubuf, int status)
+ {
+ 	struct vhost_ubuf_ref *ubufs = ubuf->ctx;
+ 	struct vhost_virtqueue *vq = ubufs->vq;
+ 
+ 	vhost_poll_queue(&vq->poll);
+ 	/* set len to mark this desc buffers done DMA */
+-	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
++	vq->heads[ubuf->desc].len = status ?
++		VHOST_DMA_FAILED_LEN : VHOST_DMA_DONE_LEN;
+ 	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
+ }
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index b6538ee..464469d 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -17,6 +17,8 @@
+  * For transmit, used buffer len is unused; we override it to track buffer
+  * status internally; used for zerocopy tx only.
+  */
++/* Lower device DMA failed */
++#define VHOST_DMA_FAILED_LEN	3
+ /* Lower device DMA done */
+ #define VHOST_DMA_DONE_LEN	2
+ /* Lower device DMA in progress */
+@@ -24,6 +26,8 @@
+ /* Buffer unused */
+ #define VHOST_DMA_CLEAR_LEN	0
+ 
++#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
++
+ struct vhost_device;
+ 
+ struct vhost_work;
+-- 
+MST
 
