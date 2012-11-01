@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965098Ab2KAVOI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 17:14:08 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:38882 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751047Ab2KAVOF (ORCPT
+	id S1762075Ab2KAVPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 17:15:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41747 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab2KAVPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 17:14:05 -0400
-Message-ID: <1351804440.2391.99.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Date: Thu, 01 Nov 2012 21:14:00 +0000
-In-Reply-To: <20121101210634.GA19723@srcf.ucam.org>
-References: <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
-	 <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
-	 <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
-	 <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
-	 <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
-	 <1351780935.2391.58.camel@dabdike.int.hansenpartnership.com>
-	 <CACLa4pvh3v3Mhq8oe3dzRL8ytBgmitPkCGUSfVCR5WdQopjRMQ@mail.gmail.com>
-	 <1351783096.2391.77.camel@dabdike.int.hansenpartnership.com>
-	 <CACLa4pu0yoB6CQX=3nuAT2vz4=oTNfM9fjMUvFXKJovYu+y4fw@mail.gmail.com>
-	 <1351803800.2391.96.camel@dabdike.int.hansenpartnership.com>
-	 <20121101210634.GA19723@srcf.ucam.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
+	Thu, 1 Nov 2012 17:15:02 -0400
+Message-ID: <5092E64B.3030402@infradead.org>
+Date: Thu, 01 Nov 2012 14:14:51 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Arend van Spriel <arend@broadcom.com>
+CC: Johannes Berg <johannes@sipsolutions.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        linux-wireless@vger.kernel.org
+Subject: Re: [PATCH -next] wireless: brcmfmac: fix printk format warning
+References: <20121101163622.129b59967d2ee76e6946874a@canb.auug.org.au> <5092B4BE.4080803@infradead.org> <5092B900.2090801@broadcom.com> ( sfid-20121101_190234_358746_9918835B) <1351798279.17469.0.camel@jlt4.sipsolutions.net> <5092E0B7.9040608@broadcom.com>
+In-Reply-To: <5092E0B7.9040608@broadcom.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-01 at 21:06 +0000, Matthew Garrett wrote:
-> On Thu, Nov 01, 2012 at 09:03:20PM +0000, James Bottomley wrote:
-> > On Thu, 2012-11-01 at 13:50 -0400, Eric Paris wrote:
-> > > What do we have to do to prevent Linux being used to attack Linux
-> > > which may lead to secure boot being useless.
-> > 
-> > That's not really remotely related, is it?  Microsoft doesn't really
-> > care about Linux on Linux attacks, so preventing or allowing them isn't
-> > going to get a distro key revoked.
+On 11/01/2012 01:51 PM, Arend van Spriel wrote:
+
+> On 11/01/2012 08:31 PM, Johannes Berg wrote:
+>> On Thu, 2012-11-01 at 19:01 +0100, Arend van Spriel wrote:
+>>> On 11/01/2012 06:43 PM, Randy Dunlap wrote:
+>>>> From: Randy Dunlap <rdunlap@infradead.org>
+>>>>
+>>>> Fix printk format warning for ssid_len, which is a size_t:
+>>>>
+>>>> drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c:3941:2: warning: format '%d' expects type 'int', but argument 4 has type 'size_t'
+>>>>
+>>>> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+>>>> Cc:	brcm80211-dev-list@broadcom.com
+>>>
+>>>
+>>> We actually have a patch ready for that with credit to people who
+>>> reported it. We can add you to that list ;-)
+>>
+>> Which you've been sitting on for WAY too long already :)
+>>
+>> johannes
+>>
+>>
 > 
-> Linux vendors may care about Linux on Linux attacks. It's all fun and 
-> games until Oracle get Microsoft to revoke Red Hat's signature.
-
-I agree that's a possibility.  However, I think the court of public
-opinion would pillory the first Commercial Linux Distribution that went
-to Microsoft for the express purpose of revoking their competition's
-right to boot.  It would be commercial suicide.
-
-James
+> True. I was actually going to make Hante fix it, but failed my
+> management skills miserably. Fixed it myself in the end. There are quite
+> a number of patches queued up. Another flush() not working :-)
 
 
+Please get them into your linux-next tree so that we don't waste
+time fixing things that are already fixed.
 
+thanks,
+-- 
+~Randy
