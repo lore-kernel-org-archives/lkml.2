@@ -1,104 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab2KAH1Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 03:27:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38614 "EHLO comal.ext.ti.com"
+	id S1754403Ab2KAHkZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 03:40:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36980 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753643Ab2KAH1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 03:27:14 -0400
-Date: Thu, 1 Nov 2012 09:21:16 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Behan Webster <behanw@converseincode.com>
-CC: <balbi@ti.com>, <davem@davemloft.net>, <linux-usb@vger.kernel.org>,
-        <netfilter-devel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 2/3] Remove VLAIS usage from gadget code
-Message-ID: <20121101072116.GA32013@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1351631937-21455-1-git-send-email-behanw@converseincode.com>
- <1351631937-21455-3-git-send-email-behanw@converseincode.com>
- <20121031132838.GQ10998@arwen.pp.htv.fi>
- <509144C0.8000601@converseincode.com>
+	id S1754178Ab2KAHkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 03:40:24 -0400
+Date: Thu, 1 Nov 2012 13:09:51 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: sjur.brandeland@stericsson.com, "Michael S. Tsirkin" <mst@redhat.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, sjurbren@gmail.com
+Subject: Re: [PATCHv7 4/4] virtio_console: Add support for remoteproc serial
+Message-ID: <20121101073951.GA17012@amit.redhat.com>
+References: <1350287856-5284-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1350287856-5284-5-git-send-email-sjur.brandeland@stericsson.com>
+ <878vayhsca.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <509144C0.8000601@converseincode.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <878vayhsca.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---5vNYLRcllDrimb99
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On (Tue) 23 Oct 2012 [12:17:49], Rusty Russell wrote:
+> sjur.brandeland@stericsson.com writes:
+> > From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-Hi,
+> > @@ -1415,7 +1524,16 @@ static void remove_port_data(struct port *port)
+> >  
+> >  	/* Remove buffers we queued up for the Host to send us data in. */
+> >  	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
+> > -		free_buf(buf);
+> > +		free_buf(buf, true);
+> > +
+> > +	/*
+> > +	 * Remove buffers from out queue for rproc-serial. We cannot afford
+> > +	 * to leak any DMA mem, so reclaim this memory even if this might be
+> > +	 * racy for the remote processor.
+> > +	 */
+> > +	if (is_rproc_serial(port->portdev->vdev))
+> > +		while ((buf = virtqueue_detach_unused_buf(port->out_vq)))
+> > +			free_buf(buf, true);
+> >  }
+> 
+> This seems wrong; either this is needed even if !is_rproc_serial(), or
+> it's not necessary as the out_vq is empty.
+> 
+> Every path I can see has the device reset (in which case the queues
+> should not be active), or we got a VIRTIO_CONSOLE_PORT_REMOVE event (in
+> which case, the same).
+> 
+> I think we can have non-blocking writes which could leave buffers in
+> out_vq: Amit?
 
-On Wed, Oct 31, 2012 at 11:33:20AM -0400, Behan Webster wrote:
-> On 12-10-31 09:28 AM, Felipe Balbi wrote:
-> >hi,
-> >
-> >On Tue, Oct 30, 2012 at 05:18:56PM -0400, Behan Webster wrote:
-> >>The use of variable length arrays in structs (VLAIS) in the Linux Kerne=
-l code
-> >>precludes the use of compilers which don't implement VLAIS (for instanc=
-e the
-> >>Clang compiler). This patch instead calculates offsets into the kmalloc=
--ed
-> >>memory buffer using macros from valign.h.
-> >>
-> >>Signed-off-by: Behan Webster <behanw@converseincode.com>
-> >this won't apply after the current cleanups I applied to gadget code
-> >from Sebastian.
-> Makes sense. I'll try it with your repo, and regenerate.
->=20
-> >If someone takes this patch, it will generate a series of annoying,
-> >hard-to-figure-out conflicts (at least judging by the looks of
-> >$SUBJECT).
-> I just tried the patch on your git.kernel.org repo and thankfully
-> there is only one hunk which is rejected, and fortunately the reason
-> is trivial (descriptors -> fs_descriptors).
->=20
-> Was:
-> -        func->function.descriptors =3D data->fs_descs;
-> +        func->function.descriptors =3D fs_descs;
->=20
-> Now is:
-> -        func->function.fs_descriptors =3D data->fs_descs;
-> +        func->function.fs_descriptors =3D fs_descs;
->=20
-> I will regenerate the patch set, but obviously the new gadget patch
-> in the V3 patchset will only apply to the USB repo, and not to the
-> netfilter repo.
+Those get 'reclaimed' just above this hunk:
 
-then we can merge to net tree and handle the conflicts when merging to
-Linus, that'd be fine by me as long as people know how to solve the
-conflict properly ;-)
 
---=20
-balbi
+static void remove_port_data(struct port *port)
+{
+	struct port_buffer *buf;
 
---5vNYLRcllDrimb99
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	/* Remove unused data this port might have received. */
+	discard_port_data(port);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+	reclaim_consumed_buffers(port);
 
-iQIcBAEBAgAGBQJQkiLsAAoJEIaOsuA1yqREd1QQAKe3dQ1fDKIfatg1mHzvXktL
-H/xNZs3FG42iC2lmi7dYQ2oe1B0XYrqrjRFAfr+5U/7J8bVO5nQAM3Dw0yN6Hsgh
-Gs01NEvzCvrdB0iqMrmudp/rbDO68jdfJtTq7HDvN3gS2JTbh62ubLEp3iuGXYk8
-CPgy/oqjZo8Gc7NDgQRCSFczIw8AAYeGAIkc5GW2KfjILgrelrXFtV5nQ3iKmZQD
-Pj+mhaXzl/Xx0NaQosOAR0/h4AFrIQbh60t2l8KjJSEpfpuCgXiVC1hU0UrJXafa
-xG7T3kYP6FKyWultL70UoSbGQ/tnnILVm3X0lmAmZ3V9CcDeIYhQtys2v7jUjasz
-7nohu61lMt4+sruipoI21pWvXQbR9m9nfgp7+u9jIG0OZ6RJ2AAfEqAB/xuN/waT
-4PPyVl1atob2cmG9ptQTIHwjoxljP1uPEfmnx35ivYR/UXI+kEp/b15xKy3j4BaG
-v2IUDLPWajjvOwcSpXcHGGke5VcTNqDtBSr9X+nE1MjaENWQh+eFQTB7Bq9SSEyI
-o/4MEdkT8PhQN75207EUHopGag68DCDDxBeuNygnCVOTdo3EorwCxwfOOy2nDZsI
-44BN29BvtFxRhttMko3ljcqGoQDQL91HnuX9YOrxMWuaubLmxyiylz9YcnyapfnN
-fToJE+ZrDwcgwcb4urIj
-=2uiy
------END PGP SIGNATURE-----
+	/* Remove buffers we queued up for the Host to send us data in. */
+	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
+	      free_buf(buf, true);
 
---5vNYLRcllDrimb99--
+  ...
+
+
+
+
+> >  static void __exit fini(void)
+> >  {
+> > +	reclaim_dma_bufs();
+> 
+> Hmm, you didn't protect it here anyway...
+> 
+> Cheers,
+> Rusty.
+
+		Amit
