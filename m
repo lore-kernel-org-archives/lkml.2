@@ -1,96 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965264Ab2KAT3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 15:29:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7602 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964826Ab2KAT3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 15:29:04 -0400
-Date: Thu, 1 Nov 2012 21:16:42 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv3 net-next 5/8] vhost: track zero copy failures using DMA
- length
-Message-ID: <d53ccc944ec54f609342f95a8ff1764cc655c136.1351797353.git.mst@redhat.com>
-References: <cover.1351797353.git.mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1351797353.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
-To: unlisted-recipients:; (no To-header on input)
+	id S934322Ab2KATaz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 15:30:55 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:50938 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933938Ab2KATax (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 15:30:53 -0400
+Message-ID: <1351798279.17469.0.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH -next] wireless: brcmfmac: fix printk format warning
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        linux-wireless@vger.kernel.org
+Date: Thu, 01 Nov 2012 20:31:19 +0100
+In-Reply-To: <5092B900.2090801@broadcom.com> (sfid-20121101_190234_358746_9918835B)
+References: <20121101163622.129b59967d2ee76e6946874a@canb.auug.org.au>
+	 <5092B4BE.4080803@infradead.org> <5092B900.2090801@broadcom.com>
+	 (sfid-20121101_190234_358746_9918835B)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.1-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will be used to disable zerocopy when error rate
-is high.
+On Thu, 2012-11-01 at 19:01 +0100, Arend van Spriel wrote:
+> On 11/01/2012 06:43 PM, Randy Dunlap wrote:
+> > From: Randy Dunlap <rdunlap@infradead.org>
+> > 
+> > Fix printk format warning for ssid_len, which is a size_t:
+> > 
+> > drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c:3941:2: warning: format '%d' expects type 'int', but argument 4 has type 'size_t'
+> > 
+> > Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> > Cc:	brcm80211-dev-list@broadcom.com
+> 
+> 
+> We actually have a patch ready for that with credit to people who
+> reported it. We can add you to that list ;-)
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/vhost/vhost.c | 7 ++++---
- drivers/vhost/vhost.h | 4 ++++
- 2 files changed, 8 insertions(+), 3 deletions(-)
+Which you've been sitting on for WAY too long already :)
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index f23cf89..5affce3 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -425,7 +425,7 @@ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
- 	int j = 0;
- 
- 	for (i = vq->done_idx; i != vq->upend_idx; i = (i + 1) % UIO_MAXIOV) {
--		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN)) {
-+		if (VHOST_DMA_IS_DONE(vq->heads[i].len)) {
- 			vq->heads[i].len = VHOST_DMA_CLEAR_LEN;
- 			vhost_add_used_and_signal(vq->dev, vq,
- 						  vq->heads[i].id, 0);
-@@ -1600,13 +1600,14 @@ void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *ubufs)
- 	kfree(ubufs);
- }
- 
--void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool status)
-+void vhost_zerocopy_callback(struct ubuf_info *ubuf, int status)
- {
- 	struct vhost_ubuf_ref *ubufs = ubuf->ctx;
- 	struct vhost_virtqueue *vq = ubufs->vq;
- 
- 	vhost_poll_queue(&vq->poll);
- 	/* set len to mark this desc buffers done DMA */
--	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
-+	vq->heads[ubuf->desc].len = status ?
-+		VHOST_DMA_FAILED_LEN : VHOST_DMA_DONE_LEN;
- 	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
- }
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index b6538ee..464469d 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -17,6 +17,8 @@
-  * For transmit, used buffer len is unused; we override it to track buffer
-  * status internally; used for zerocopy tx only.
-  */
-+/* Lower device DMA failed */
-+#define VHOST_DMA_FAILED_LEN	3
- /* Lower device DMA done */
- #define VHOST_DMA_DONE_LEN	2
- /* Lower device DMA in progress */
-@@ -24,6 +26,8 @@
- /* Buffer unused */
- #define VHOST_DMA_CLEAR_LEN	0
- 
-+#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
-+
- struct vhost_device;
- 
- struct vhost_work;
--- 
-MST
+johannes
 
