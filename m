@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761451Ab2KARnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 13:43:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39218 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab2KARna (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 13:43:30 -0400
-Message-ID: <5092B4BE.4080803@infradead.org>
-Date: Thu, 01 Nov 2012 10:43:26 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        brcm80211-dev-list@broadcom.com, linux-wireless@vger.kernel.org
-Subject: [PATCH -next] wireless: brcmfmac: fix printk format warning
-References: <20121101163622.129b59967d2ee76e6946874a@canb.auug.org.au>
-In-Reply-To: <20121101163622.129b59967d2ee76e6946874a@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1761958Ab2KARrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 13:47:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65530 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750969Ab2KARrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 13:47:51 -0400
+Date: Thu, 1 Nov 2012 15:47:30 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC EDAC/GHES] edac: lock module owner to avoid error report
+ conflicts
+Message-ID: <20121101154730.3580c356@redhat.com>
+In-Reply-To: <CA+8MBbK5J1qWqTZjC6nHsVbqk05t0yF1F7d-_0PQpvBQBXgO1w@mail.gmail.com>
+References: <048a00fa4a888b349be5954ce9fd063a7bcf2564.1351691230.git.mchehab@redhat.com>
+	<20121101110512.GA31271@liondog.tnic>
+	<20121101094721.2a57719c@redhat.com>
+	<CA+8MBbK5J1qWqTZjC6nHsVbqk05t0yF1F7d-_0PQpvBQBXgO1w@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+Em Thu, 1 Nov 2012 10:25:23 -0700
+Tony Luck <tony.luck@intel.com> escreveu:
 
-Fix printk format warning for ssid_len, which is a size_t:
+> On Thu, Nov 1, 2012 at 4:47 AM, Mauro Carvalho Chehab
+> <mchehab@redhat.com> wrote:
+> > Take a look at arch/x86/kernel/cpu/mcheck/mce-apei.c:
+> >
+> >         void apei_mce_report_mem_error(int corrected, struct cper_sec_mem_err *mem_err)
+> >         {
+> >                 struct mce m;
+> >
+> >                 /* Only corrected MC is reported */
+> >                 if (!corrected || !(mem_err->validation_bits &
+> >                                         CPER_MEM_VALID_PHYSICAL_ADDRESS))
+> >                         return;
+> >
+> >                 mce_setup(&m);
+> >                 m.bank = 1;
+> >                 /* Fake a memory read corrected error with unknown channel */
+> >                 m.status = MCI_STATUS_VAL | MCI_STATUS_EN | MCI_STATUS_ADDRV | 0x9f;
+> >                 m.addr = mem_err->physical_addr;
+> >                 mce_log(&m);
+> >                 mce_notify_irq();
+> >         }
+> >
+> > Bank information there is fake; status is fake. Only addr is really filled
+> > there; it works only for corrected errors.
+> 
+> This went in like this to help out the Westmere-EX processors that
+> didn't fill out MCi_ADDR for corrected errors. APEI could get the
+> address from some platform CSRs ... reporting via /dev/mcelog
+> so that predictive analysis in mcelog(8) would work on these machines.
 
-drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c:3941:2: warning: format '%d' expects type 'int', but argument 4 has type 'size_t'
+Ok, but it is broken on other platforms like Sandy Bridge.
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc:	brcm80211-dev-list@broadcom.com
----
- drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> I don't think we can rip it out yet ... not until those machines are
+> shuffled off to recycle heaven.
 
---- linux-next-20121101.orig/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-+++ linux-next-20121101/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-@@ -3938,7 +3938,7 @@ brcmf_cfg80211_start_ap(struct wiphy *wi
- 	WL_TRACE("channel_type=%d, beacon_interval=%d, dtim_period=%d,\n",
- 		 settings->channel_type, settings->beacon_interval,
- 		 settings->dtim_period);
--	WL_TRACE("ssid=%s(%d), auth_type=%d, inactivity_timeout=%d\n",
-+	WL_TRACE("ssid=%s(%zu), auth_type=%d, inactivity_timeout=%d\n",
- 		 settings->ssid, settings->ssid_len, settings->auth_type,
- 		 settings->inactivity_timeout);
- 
+Perhaps then we could add a logic at apei-mce to only forward errors to
+MCE on the platforms where the MCE log is known to be right.
+
+> But perhaps we should get smarter about which machines we enable
+> APEI on?
+
+That makes sense. IMO, APEI should be on by default only if no other driver
+exists, like in the case of Nehalem-EX. For platforms supported by i7core_edac,
+sb_edac and amd64_edac, we could add a parameter to explicitly force it to
+be on, otherwise, APEI will be disabled.
+
+> If we get everything we need from the machine check banks,
+> then the detour via the BIOS to report the same thing again isn't helpful.
+
+Agreed.
+
+Regards,
+Mauro
