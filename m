@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934560Ab2KAKNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 06:13:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60540 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753437Ab2KAKM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 06:12:57 -0400
-From: Oliver Neukum <oneukum@suse.de>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Chris Friesen <chris.friesen@genband.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Date: Thu, 01 Nov 2012 11:12:55 +0100
-Message-ID: <1904191.8HVCpRFbLH@linux-lqwf.site>
-Organization: SUSE
-User-Agent: KMail/4.8.4 (Linux/3.7.0-rc3-12-desktop+; KDE/4.9.1; x86_64; ; )
-In-Reply-To: <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com> <36538307.gzWq1oO7Kg@linux-lqwf.site> <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1759351Ab2KAKW3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 06:22:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58241 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758678Ab2KAKW1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 06:22:27 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jamie Lentin <jm@lentin.co.uk>,
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH] gpio: adnp: Depend on OF_GPIO instead of OF
+Date: Thu,  1 Nov 2012 11:22:11 +0100
+Message-Id: <1351765331-30617-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.0
+X-Provags-ID: V02:K0:yPSJsjqOXjltwz+Du4of2H5CbQp970NOmtrtoq6QIkv
+ sUlBha4inBJURDJqqinLBTM7I2zX741FWD+uUIY+IRkL6RFAfk
+ CNT5pb0oKqTf5KcLlbQHHSPEl4gJwgcGQPq35NSM2z62X6DIkG
+ gcClsB/sHTgoO5V+xjFqnM8CHV8NX3h90PmqWvozDa8mpcE4Iy
+ uU7vhZutT68cRLc58URNWn+k8dLFZ83B6LwD+6GMKSmF5190Sp
+ HQ36nAoZbWk+NmiUyBH42IWwZ52zpVudSTCZVa18dkVu3seQUf
+ H6GqwqP5SgFlYVPynMsv1//na8O7aUUvmvhyXRqtBsJQuolloY
+ 6bPAbSFaJVLRYjnOej7n5lVvrtZrQlMk7kkgQM3bTcdC5YTyYM
+ SylXbactG7A5h2+Mvmqob22rThLVogBKi3t5ixfoMf3Aofa6cz
+ lcb10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 November 2012 09:08:25 James Bottomley wrote:
-> On Wed, 2012-10-31 at 23:19 +0100, Oliver Neukum wrote:
-> > On Wednesday 31 October 2012 15:58:05 Chris Friesen wrote:
-> > > On 10/31/2012 02:14 PM, Oliver Neukum wrote:
-> > 
-> > > > That would do it on my system.
-> > > > Maybe in theory you could solve this by the kernel invalidating images
-> > > > it hasn't written itself and forbidding to change the resume partition from the
-> > > > kernel command line, but that would break user space hibernation.
-> > > 
-> > > If the resuming kernel refuses to resume from images it didn't create 
-> > > itself, why do you need to forbid changing the resume partition from the 
-> > > kernel command line?
-> > 
-> > You don't. Signed images solve the problem.
-> 
-> I really don't think they do.  The proposed attack vector is to try to
-> prevent a local root exploit from running arbitrary in-kernel code,
-> because that would compromise the secure boot part of the kernel.
+The driver accesses the of_node field of struct gpio_chip, which is only
+available if OF_GPIO is selected. This solves a build issue on SPARC
+which conflicts with OF_GPIO and therefore does not provide this field.
 
-Well, it is an attempt to prevent unsigned code from altering signed
-code or data structures private to signed code. That can be seen as
-a technical question. What that is useful for is not strictly a technical
-question.
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+ drivers/gpio/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-We can of course discuss whether secure boot makes sense at all.
-But that is a different discussion. Once it is decided that it is to be
-implemented, some issues arise logically.
-
-> The point I'm making is that given that the majority of exploits will
-> already be able to execute arbitrary code in-kernel, there's not much
-> point trying to consider features like this as attacker prevention.  We
-> should really be focusing on discussing why we'd want to prevent a
-> legitimate local root from writing to the suspend partition in a secure
-> boot environment.
-
-That is strictly speaking what we are discussing.
-First, it is not given that root is local.
-Second, we don't want to stop root from writing to a partition.
-We just want to prevent that from altering kernel memory.
-
-	Regards
-		Oliver
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index d055cee..c856f9e 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -466,7 +466,7 @@ config GPIO_ADP5588_IRQ
+ 
+ config GPIO_ADNP
+ 	tristate "Avionic Design N-bit GPIO expander"
+-	depends on I2C && OF
++	depends on I2C && OF_GPIO
+ 	help
+ 	  This option enables support for N GPIOs found on Avionic Design
+ 	  I2C GPIO expanders. The register space will be extended by powers
+-- 
+1.8.0
 
