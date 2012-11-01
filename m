@@ -1,139 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762253Ab2KAUQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 16:16:27 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62370 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758502Ab2KAUQY (ORCPT
+	id S935270Ab2KAUSb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 16:18:31 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:56502 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932415Ab2KAUS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 16:16:24 -0400
+	Thu, 1 Nov 2012 16:18:29 -0400
+Message-ID: <5092D90F.7020105@vlnb.net>
+Date: Thu, 01 Nov 2012 16:18:23 -0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
 MIME-Version: 1.0
-In-Reply-To: <1748725.QBg5LLmPOx@vostro.rjw.lan>
-References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
-	<CAE9FiQXxHz_RntOc2gxxDscv8+mDQ2XBL0sHSrptj_arwUb8-A@mail.gmail.com>
-	<1351797478.19172.103.camel@misato.fc.hp.com>
-	<1748725.QBg5LLmPOx@vostro.rjw.lan>
-Date: Thu, 1 Nov 2012 13:16:22 -0700
-X-Google-Sender-Auth: jEHiGmh9_5BCjDGOHr_sY3WGGVg
-Message-ID: <CAE9FiQV0gAJabpcoSHhTYq19m-YmaC0O6HH_dFKXUTuvUMG4Fg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] Improve container_notify_cb() to support container hot-remove.
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Toshi Kani <toshi.kani@hp.com>, ZhangRui <rui.zhang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>, bhelgaas@google.com,
-        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "Theodore Ts'o" <tytso@mit.edu>,
+        =?UTF-8?B?5p2o6IuP56uLIFlhbmcgU3UgTGk=?= <suli@cs.wisc.edu>,
+        General Discussion of SQLite Database 
+	<sqlite-users@sqlite.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        drh@hwaci.com
+Subject: Re: [sqlite] light weight write barriers
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>	<m2fw5mtffg.fsf_-_@firstfloor.org>	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>	<5086F5A7.9090406@vlnb.net>	<20121025051445.GA9860@thunk.org>	<508B3EED.2080003@vlnb.net>	<20121027044456.GA2764@thunk.org>	<5090532D.4050902@vlnb.net> <20121031095404.0ac18a4b@pyramind.ukuu.org.uk>
+In-Reply-To: <20121031095404.0ac18a4b@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:hmlVbSsT5+199tDpDKZDR/9pEBTknF5zaHhk6tzyWSE
+ UEN2L9f0Jk4kC9K9z7Kz6+1D4LsiaTjFGmhE9omeOm0zrwvXOI
+ KV+aIV8J4fOsxJQ/3zJ7u5Pbx7pI0/zIasgB8q0plPnHZ9s9vp
+ 5jJfspXT6rvj3UjMoDu6Yykf21/R9XT7/25wLcrwuzbUCcvRES
+ z1ENkIVuYAKX+/Nh5sIN/7u22TFdtqkRkNHyVP3PC9GHsKqV3c
+ eHC1KsrTw2+kXrlGIVhj2mt1A5FLZlRt+owzldtmgm1MN2uTtO
+ OQ7af7PkbhsGRue18dsRUF3vRWU/VNzjXRH1hUFDDm9bELJJwX
+ TVZHkoBzgPi44am5r1wg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 1, 2012 at 1:17 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, November 01, 2012 01:17:58 PM Toshi Kani wrote:
->> On Thu, 2012-11-01 at 11:28 -0700, Yinghai Lu wrote:
->> > On Thu, Nov 1, 2012 at 9:43 AM, Toshi Kani <toshi.kani@hp.com> wrote:
->> > >
->> > > Rafael pointed out in my CPU hot-remove patch that
->> > > acpi_bus_hot_remove_device() was not exported for modules.  Looks like
->> > > you have the same problem here.  FYI, I just sent the following patch
->> > > that exports acpi_bus_hot_remove_device() and acpi_os_hotplug_execute().
->> > >
->> > > https://lkml.org/lkml/2012/11/1/225
->> >
->> > acpi_os_hotplug_execute() does not like having good quality yet.
->> >
->> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  941)   /*
->> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  942)    * We
->> > can't run hotplug code in keventd_wq/kacpid_wq/kacpid_notify_wq
->> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  943)    *
->> > because the hotplug code may call driver .remove() functions,
->> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  944)    *
->> > which invoke flush_scheduled_work/acpi_os_wait_events_complete
->> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  945)    * to
->> > flush these workqueues.
->> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  946)    */
->> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  947)   queue
->> > = hp ? kacpi_hotplug_wq :
->> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  948)
->> >  (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
->> > 9ac61856 (Bjorn Helgaas       2009-08-31 22:32:10 +0000  949)
->> > dpc->wait = hp ? 1 : 0;
->> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  950)
->> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  951)   if
->> > (queue == kacpi_hotplug_wq)
->> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  952)
->> >  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
->> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  953)   else
->> > if (queue == kacpi_notify_wq)
->> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  954)
->> >  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
->> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  955)   else
->> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  956)
->> >  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
->> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  957)
->> >
->> > really don't know why checking queue and call same code in every branch.
->> >
->> > from comm:
->> >
->> > commit bc73675b99fd9850dd914be01d71af99c5d2a1ae
->> > Author: Zhang Rui <rui.zhang@intel.com>
->> > Date:   Mon Mar 22 15:48:54 2010 +0800
->> >
->> >     ACPI: fixes a false alarm from lockdep
->> >
->> >     fixes a false alarm from lockdep, as acpi hotplug workqueue waits other
->> >     workqueues.
->> >     http://bugzilla.kernel.org/show_bug.cgi?id=14553
->> >     https://bugzilla.kernel.org/show_bug.cgi?id=15521
->> >
->> >     Original-patch-from: Andrew Morton <akpm@linux-foundation.org>
->> >     Signed-off-by: Shaohua Li <shaohua.li@intel.com>
->> >     Signed-off-by: Zhang Rui <rui.zhang@intel.com>
->> >     Signed-off-by: Len Brown <len.brown@intel.com>
->> >
->> > diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
->> > index 8e6d866..900da68 100644
->> > --- a/drivers/acpi/osl.c
->> > +++ b/drivers/acpi/osl.c
->> > @@ -758,7 +758,14 @@ static acpi_status
->> > __acpi_os_execute(acpi_execute_type type,
->> >         queue = hp ? kacpi_hotplug_wq :
->> >                 (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
->> >         dpc->wait = hp ? 1 : 0;
->> > -       INIT_WORK(&dpc->work, acpi_os_execute_deferred);
->> > +
->> > +       if (queue == kacpi_hotplug_wq)
->> > +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
->> > +       else if (queue == kacpi_notify_wq)
->> > +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
->> > +       else
->> > +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
->> > +
->> >         ret = queue_work(queue, &dpc->work);
->> >
->> >         if (!ret) {
->> >
->> >
->> > Len or Rafael,
->> > can you just revert that silly patch?
->>
->> Hi Yinghai,
->>
->> Per the following thread, the code seems to be written in this way to
->> allocate a separate lock_class_key for each work queue.  It should have
->> had some comment to explain this, though.
->>
->> https://lkml.org/lkml/2009/12/13/304
->
-> The code has evolved since then, however, so that it doesn't make sense
-> any more.
->
 
-oh, no, that commit should not be reverted. instead we should add some
-comment for it...
+Alan Cox, on 10/31/2012 05:54 AM wrote:
+>> I don't want to flame on this topic, but you are not right here. As far as I can
+>> see, a big chunk of Linux storage and file system developers are/were employed by
+>> the "gold-plated storage" manufacturers, starting from FusionIO, SGI and Oracle.
+>>
+>> You know, RedHat from recent times also stepped to this market, at least I saw
+>> their advertisement on SDC 2012. So, you can add here all RedHat employees.
+>
+> Booleans generally should be reserved for logic operators. Most of the
+> Linux companies work on both low and high end storage. The two are not
+> mutually exclusive nor do they divide neatly by market. Many big clouds
+> use cheap low end drives by the crate, some high end desktops are using
+> SAS although given you can get six 2.5" hotplug drives in a 5.25" bay I'm
+> not sure personally there is much point
 
-that mean : three path, will have three separated static lock dep key
-from every INIT_WORK.
+Those doesn't contradict the point that high performance storage vendors are also 
+funding Linux kernel storage development.
+
+> Send patches with benchmarks demonstrating it is useful. It's really
+> quite simple. Code talks.
+
+How about that recently preliminary infrastructure to send ORDERED commands 
+instead of queue draining was deleted from the kernel, because "there's no 
+difference where to drain the queue, on the kernel or the storage side"?
+
+Vlad
