@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab2KAKlG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 06:41:06 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:52115 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab2KAKlE (ORCPT
+	id S1758046Ab2KAKlh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 06:41:37 -0400
+Received: from hermes.synopsys.com ([198.182.44.81]:56355 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756518Ab2KAKlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 06:41:04 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-References: <508FDEF3.8030601@hitachi.com> <20121030143750.GF2290@redhat.com>
-	<50912CFB.5000508@hitachi.com> <20121031141426.GE1865@redhat.com>
-	<50924FCD.2020100@hitachi.com>
-Date: Thu, 01 Nov 2012 03:40:56 -0700
-In-Reply-To: <50924FCD.2020100@hitachi.com> (Mitsuhiro Tanino's message of
-	"Thu, 01 Nov 2012 19:32:45 +0900")
-Message-ID: <87vcdpk3lz.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 1 Nov 2012 06:41:32 -0400
+Message-ID: <509251CA.8050008@synopsys.com>
+Date: Thu, 1 Nov 2012 16:11:14 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19+/BO/sYC5ilXyJUEGvr3hKF/M4UisVog=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-X-Spam-Relay-Country: 
-Subject: Re: [Patch 0/2] Exclude hwpoison page from vmcore dump
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: David Howells <dhowells@redhat.com>
+CC: James Hogan <james@albanarts.com>, <torvalds@osdl.org>, <arnd@arndb.de>,
+        <hpa@zytor.com>, <alan@lxorguk.ukuu.org.uk>, <fengguang.wu@intel.com>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: UAPI for new arches (was Re: [GIT PULL] User API Disintegrate: Preparatory
+ patches)
+References: <18137.1349203013@warthog.procyon.org.uk> <CAAG0J9_gYLn5+4j9WUnPmxWyJfQK_b8e5xjxZdRPG21euXoCFg@mail.gmail.com> <CAAG0J9_LZ5Q1fNdcbSOyieesabkqcTMT0ueEDLXmemV2C_+F=g@mail.gmail.com>
+In-Reply-To: <CAAG0J9_LZ5Q1fNdcbSOyieesabkqcTMT0ueEDLXmemV2C_+F=g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.56]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com> writes:
+On Monday 22 October 2012 05:20 PM, James Hogan wrote:
+> On 17 October 2012 09:42, James Hogan <james@albanarts.com> wrote:
+>> On 2 October 2012 19:36, David Howells <dhowells@redhat.com> wrote:
+>>> The patches herein prepare for the extraction of the Userspace API bits from
+>>> the various header files named in the Kbuild files.
+>>>
+>>> [IMPORTANT NOTE!  These patches may need regenerating if the header files
+>>>  change too much.  This doesn't normally take very long to do as the
+>>>  disintegration procedure is almost entirely scripted.]
+>>
+>> Hi David,
+>>
+>> Any chance you (or somebody else) can point me towards your latest
+>> scripts for all this UAPI disintegration work? They don't seem to be
+>> in the kernel tree, and the only scripts I can find are from 2011 so I
+>> guess they're probably a bit out of date.
+> 
+> Ping... Please can you point me to the scripts you've been using David?
+> 
+> Thanks
+> James Hogan
+> 
 
-> Hi Vivek,
->
-> (2012/10/31 23:14), Vivek Goyal wrote:
->> If hwpoision functionality is not available in hardware, then respective
->> bit will not be even set in struct page and it will be saved by default.
->> So it should not matter whether hardware has hwpoision functionality
->> or not.
->
-> Thanks, I understand.
->
->> I think that removing hwpoisno pages by default makes sense. If somebody
->> does have a reasonable case of not doing so, then we could either
->> introduce anther filtering level (based on type) or add another command
->> line option like (--no-hwposion-filtering) etc.
->
-> I agree with you.
-> If somebody requests to support for disabling the filter of hwpoison pages,
-> this option will be discussed.
+Hi David,
 
+I'm planning to submit ARC Linux kernel port (from Synopsys) for review
+on lkml and arch mailing lists. I already have a a 3.7-rc3 based kernel
+(modulo the arch UAPI split). What would be the best way to get the UAPI
+split done.
 
-I agree.  If we are performing filtering filtering out of poisoned pages
-seems very reasonable.  So ack on the basic concept.
+Can you point me to the latest scripts and the best way to use them (so
+we have consistent automated split of headers). Otherwise if you like,
+you could take a stab at it yourself via my tree at
 
-Eric
+git://github.com/organizations/foss-for-synopsys-dwc-arc-processors/linux.git
+arc-3.7-rc3-newport
+
+TIA,
+-Vineet
