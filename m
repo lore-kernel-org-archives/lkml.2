@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936138Ab2KAV70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 17:59:26 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:25250 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992489Ab2KAV7X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 17:59:23 -0400
-Message-ID: <1351806702.19172.104.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 3/3] Improve container_notify_cb() to support
- container hot-remove.
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yinghai Lu <yinghai@kernel.org>, ZhangRui <rui.zhang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>, bhelgaas@google.com,
-        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 01 Nov 2012 15:51:42 -0600
-In-Reply-To: <11976302.Ya3MGGIAsU@vostro.rjw.lan>
-References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1748725.QBg5LLmPOx@vostro.rjw.lan>
-	 <CAE9FiQV0gAJabpcoSHhTYq19m-YmaC0O6HH_dFKXUTuvUMG4Fg@mail.gmail.com>
-	 <11976302.Ya3MGGIAsU@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1762399Ab2KAWCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:02:54 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39950 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752892Ab2KAWCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 18:02:52 -0400
+Date: Thu, 1 Nov 2012 23:02:49 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC EDAC/GHES] edac: lock module owner to avoid error report
+ conflicts
+Message-ID: <20121101220249.GI31271@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Luck, Tony" <tony.luck@intel.com>,
+	Mauro Carvalho Chehab <mchehab@redhat.com>,
+	Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <048a00fa4a888b349be5954ce9fd063a7bcf2564.1351691230.git.mchehab@redhat.com>
+ <20121101110512.GA31271@liondog.tnic>
+ <20121101094721.2a57719c@redhat.com>
+ <20121101195509.GE31271@liondog.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F19D5C13C@ORSMSX108.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D5C13C@ORSMSX108.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > >> Hi Yinghai,
-> > >>
-> > >> Per the following thread, the code seems to be written in this way to
-> > >> allocate a separate lock_class_key for each work queue.  It should have
-> > >> had some comment to explain this, though.
-> > >>
-> > >> https://lkml.org/lkml/2009/12/13/304
-> > >
-> > > The code has evolved since then, however, so that it doesn't make sense
-> > > any more.
-> > >
-> > 
-> > oh, no, that commit should not be reverted. instead we should add some
-> > comment for it...
-> > 
-> > that mean : three path, will have three separated static lock dep key
-> > from every INIT_WORK.
+On Thu, Nov 01, 2012 at 09:09:07PM +0000, Luck, Tony wrote:
+> > That is correct, unfortunately. That information is not available to
+> > software in all cases. Maybe APEI could be used for that DIMM location
+> > mapping through simple tables instead of letting it fumble the error
+> > handling path.
 > 
-> I see.
-> 
-> OK, I'll drop the patch removing it.
-> 
-> What about the following comment:
-> 
-> "To prevent lockdep from complaining unnecessarily, make sure that there
->  is a different static lockdep key created for each workqueue by using
->  INIT_WORK for each of them separately."
+> Not much hope for "simple"[1] tables.  There is also a timings issue on
+> system with rank sparing, memory mirroring etc.  ... you need to decode
+> to the DIMM at the time the error happened. If you wait until later, then
+> the system may have switched over to the spare rank or mirror ... and then
+> your decode will point at the new target, rather than the old.
 
-Looks good to me.
+Yeah, normally we're decoding the error right after being logged so...
 
-Thanks,
--Toshi
+> [1] Consider a 4 cpu-socket machine with 4 channels per socket and three
+> DIMMs per channel - so there are 48 sockets on the motherboard. Then
 
+You mean 48 DIMM slots, right?
 
-> 
-> Thanks,
-> Rafael
-> 
-> 
+> some lab monkey takes a box of random 1, 2, 4, 8 GB DIMMs and fills
+> most of the sockets. BIOS will somehow make sense out of this and
+> interleave where it finds matching speeds across pairs/quads of
+> channels (though size need not match ... if you have a 2G and 4G DIMM
+> you may get interleaving for the part. then non-interleaved for the
+> "extra" 2G).
 
+Right, but at least in the csrow case, we still can compute back the
+csrow even with the interleaving, after we know how it is done exactly
+(on which address bits, etc). I think this should be doable on Intel
+controllers too but I don't know.
 
+-- 
+Regards/Gruss,
+    Boris.
