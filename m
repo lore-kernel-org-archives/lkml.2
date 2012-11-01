@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935880Ab2KAMKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 08:10:21 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:14230 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935769Ab2KAMH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S935767Ab2KAMH4 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 1 Nov 2012 08:07:56 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:24877 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933449Ab2KAMHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 08:07:51 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
 Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -13,12 +13,11 @@ Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
         Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
         David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: [PATCH v6 28/29] slub: slub-specific propagation changes.
-Date: Thu,  1 Nov 2012 16:07:44 +0400
-Message-Id: <1351771665-11076-29-git-send-email-glommer@parallels.com>
+        Suleiman Souhlal <suleiman@google.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v6 01/29] memcg: Make it possible to use the stock for more than one page.
+Date: Thu,  1 Nov 2012 16:07:17 +0400
+Message-Id: <1351771665-11076-2-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351771665-11076-1-git-send-email-glommer@parallels.com>
 References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
@@ -26,171 +25,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SLUB allows us to tune a particular cache behavior with sysfs-based
-tunables.  When creating a new memcg cache copy, we'd like to preserve
-any tunables the parent cache already had.
+From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
 
-This can be done by tapping into the store attribute function provided
-by the allocator. We of course don't need to mess with read-only
-fields. Since the attributes can have multiple types and are stored
-internally by sysfs, the best strategy is to issue a ->show() in the
-root cache, and then ->store() in the memcg cache.
+We currently have a percpu stock cache scheme that charges one page at a
+time from memcg->res, the user counter. When the kernel memory
+controller comes into play, we'll need to charge more than that.
 
-The drawback of that, is that sysfs can allocate up to a page in
-buffering for show(), that we are likely not to need, but also can't
-guarantee. To avoid always allocating a page for that, we can update the
-caches at store time with the maximum attribute size ever stored to the
-root cache. We will then get a buffer big enough to hold it. The
-corolary to this, is that if no stores happened, nothing will be
-propagated.
+This is because kernel memory allocations will also draw from the user
+counter, and can be bigger than a single page, as it is the case with
+the stack (usually 2 pages) or some higher order slabs.
 
-It can also happen that a root cache has its tunables updated during
-normal system operation. In this case, we will propagate the change to
-all caches that are already active.
+[ glommer@parallels.com: added a changelog ]
 
+Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Michal Hocko <mhocko@suse.cz>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>
-CC: Suleiman Souhlal <suleiman@google.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 CC: Tejun Heo <tj@kernel.org>
 ---
- include/linux/slub_def.h |  1 +
- mm/slub.c                | 76 +++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 76 insertions(+), 1 deletion(-)
+ mm/memcontrol.c | 28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index 364ba6c..9db4825 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -103,6 +103,7 @@ struct kmem_cache {
- #endif
- #ifdef CONFIG_MEMCG_KMEM
- 	struct memcg_cache_params *memcg_params;
-+	int max_attr_size; /* for propagation, maximum size of a stored attr */
- #endif
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index e4e9b18..4a1abe9 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2028,20 +2028,28 @@ struct memcg_stock_pcp {
+ static DEFINE_PER_CPU(struct memcg_stock_pcp, memcg_stock);
+ static DEFINE_MUTEX(percpu_charge_mutex);
  
- #ifdef CONFIG_NUMA
-diff --git a/mm/slub.c b/mm/slub.c
-index ffc8ede..6c39af8 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -203,13 +203,14 @@ enum track_item { TRACK_ALLOC, TRACK_FREE };
- static int sysfs_slab_add(struct kmem_cache *);
- static int sysfs_slab_alias(struct kmem_cache *, const char *);
- static void sysfs_slab_remove(struct kmem_cache *);
--
-+static void memcg_propagate_slab_attrs(struct kmem_cache *s);
- #else
- static inline int sysfs_slab_add(struct kmem_cache *s) { return 0; }
- static inline int sysfs_slab_alias(struct kmem_cache *s, const char *p)
- 							{ return 0; }
- static inline void sysfs_slab_remove(struct kmem_cache *s) { }
+-/*
+- * Try to consume stocked charge on this cpu. If success, one page is consumed
+- * from local stock and true is returned. If the stock is 0 or charges from a
+- * cgroup which is not current target, returns false. This stock will be
+- * refilled.
++/**
++ * consume_stock: Try to consume stocked charge on this cpu.
++ * @memcg: memcg to consume from.
++ * @nr_pages: how many pages to charge.
++ *
++ * The charges will only happen if @memcg matches the current cpu's memcg
++ * stock, and at least @nr_pages are available in that stock.  Failure to
++ * service an allocation will refill the stock.
++ *
++ * returns true if successful, false otherwise.
+  */
+-static bool consume_stock(struct mem_cgroup *memcg)
++static bool consume_stock(struct mem_cgroup *memcg, unsigned int nr_pages)
+ {
+ 	struct memcg_stock_pcp *stock;
+ 	bool ret = true;
  
-+static inline void memcg_propagate_slab_attrs(struct kmem_cache *s) { }
- #endif
- 
- static inline void stat(const struct kmem_cache *s, enum stat_item si)
-@@ -3955,6 +3956,7 @@ int __kmem_cache_create(struct kmem_cache *s, unsigned long flags)
- 	if (err)
- 		return err;
- 
-+	memcg_propagate_slab_attrs(s);
- 	mutex_unlock(&slab_mutex);
- 	err = sysfs_slab_add(s);
- 	mutex_lock(&slab_mutex);
-@@ -5180,6 +5182,7 @@ static ssize_t slab_attr_store(struct kobject *kobj,
- 	struct slab_attribute *attribute;
- 	struct kmem_cache *s;
- 	int err;
-+	int i __maybe_unused;
- 
- 	attribute = to_slab_attr(attr);
- 	s = to_slab(kobj);
-@@ -5188,10 +5191,81 @@ static ssize_t slab_attr_store(struct kobject *kobj,
- 		return -EIO;
- 
- 	err = attribute->store(s, buf, len);
-+#ifdef CONFIG_MEMCG_KMEM
-+	if (slab_state < FULL)
-+		return err;
- 
-+	if ((err < 0) || !is_root_cache(s))
-+		return err;
++	if (nr_pages > CHARGE_BATCH)
++		return false;
 +
-+	mutex_lock(&slab_mutex);
-+	if (s->max_attr_size < len)
-+		s->max_attr_size = len;
-+
-+	for_each_memcg_cache_index(i) {
-+		struct kmem_cache *c = cache_from_memcg(s, i);
-+		if (c)
-+			/* return value determined by the parent cache only */
-+			attribute->store(c, buf, len);
-+	}
-+	mutex_unlock(&slab_mutex);
-+#endif
- 	return err;
- }
- 
-+static void memcg_propagate_slab_attrs(struct kmem_cache *s)
-+{
-+#ifdef CONFIG_MEMCG_KMEM
-+	int i;
-+	char *buffer = NULL;
-+
-+	if (!is_root_cache(s))
-+		return;
-+
-+	/*
-+	 * This mean this cache had no attribute written. Therefore, no point
-+	 * in copying default values around
-+	 */
-+	if (!s->max_attr_size)
-+		return;
-+
-+	for (i = 0; i < ARRAY_SIZE(slab_attrs); i++) {
-+		char mbuf[64];
-+		char *buf;
-+		struct slab_attribute *attr = to_slab_attr(slab_attrs[i]);
-+
-+		if (!attr || !attr->store || !attr->show)
-+			continue;
-+
-+		/*
-+		 * It is really bad that we have to allocate here, so we will
-+		 * do it only as a fallback. If we actually allocate, though,
-+		 * we can just use the allocated buffer until the end.
-+		 *
-+		 * Most of the slub attributes will tend to be very small in
-+		 * size, but sysfs allows buffers up to a page, so they can
-+		 * theoretically happen.
-+		 */
-+		if (buffer)
-+			buf = buffer;
-+		else if (s->max_attr_size < ARRAY_SIZE(mbuf))
-+			buf = mbuf;
-+		else {
-+			buffer = (char *) get_zeroed_page(GFP_KERNEL);
-+			if (WARN_ON(!buffer))
-+				continue;
-+			buf = buffer;
-+		}
-+
-+		attr->show(s->memcg_params->root_cache, buf);
-+		attr->store(s, buf, strlen(buf));
-+	}
-+
-+	if (buffer)
-+		free_page((unsigned long)buffer);
-+#endif
-+}
-+
- static const struct sysfs_ops slab_sysfs_ops = {
- 	.show = slab_attr_show,
- 	.store = slab_attr_store,
+ 	stock = &get_cpu_var(memcg_stock);
+-	if (memcg == stock->cached && stock->nr_pages)
+-		stock->nr_pages--;
++	if (memcg == stock->cached && stock->nr_pages >= nr_pages)
++		stock->nr_pages -= nr_pages;
+ 	else /* need to call res_counter_charge */
+ 		ret = false;
+ 	put_cpu_var(memcg_stock);
+@@ -2340,7 +2348,7 @@ again:
+ 		VM_BUG_ON(css_is_removed(&memcg->css));
+ 		if (mem_cgroup_is_root(memcg))
+ 			goto done;
+-		if (nr_pages == 1 && consume_stock(memcg))
++		if (consume_stock(memcg, nr_pages))
+ 			goto done;
+ 		css_get(&memcg->css);
+ 	} else {
+@@ -2365,7 +2373,7 @@ again:
+ 			rcu_read_unlock();
+ 			goto done;
+ 		}
+-		if (nr_pages == 1 && consume_stock(memcg)) {
++		if (consume_stock(memcg, nr_pages)) {
+ 			/*
+ 			 * It seems dagerous to access memcg without css_get().
+ 			 * But considering how consume_stok works, it's not
 -- 
 1.7.11.7
 
