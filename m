@@ -1,176 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936143Ab2KAWiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 18:38:00 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42697 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932676Ab2KAWh5 (ORCPT
+	id S2992593Ab2KAWi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:38:26 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58990 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992552Ab2KAWiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 18:37:57 -0400
-Date: Thu, 1 Nov 2012 20:37:50 -0200
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth-next 2012-11-01
-Message-ID: <20121101223750.GA1915@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	Thu, 1 Nov 2012 18:38:21 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VS++wcV0S1rZb1Fb"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <9809109.C0U00708CM@vostro.rjw.lan>
+References: <1421417.rIOjExM5Pt@vostro.rjw.lan>
+	<14394066.j8A8VXQzU7@vostro.rjw.lan>
+	<CAE9FiQUXk9AcR87B8PyLoW3JJveZMd7SqB9pDmfA8F320SCLng@mail.gmail.com>
+	<9809109.C0U00708CM@vostro.rjw.lan>
+Date: Thu, 1 Nov 2012 15:38:19 -0700
+X-Google-Sender-Auth: K01wC4AlLSTlHlUdnoy0Q4w4Djg
+Message-ID: <CAE9FiQWiRcaC3dKQFUHoC0qe0TneW2T+CYNZPEic5At_QcP0rw@mail.gmail.com>
+Subject: Re: [PATCH 5/5] ACPI: Add support for platform bus type
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 list <x86@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Zhang Rui <rui.zhang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 1, 2012 at 2:21 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> So you are going to replace acpi_device/acpi_driver with
+>> platform_device/platform_driver ?
+>
+> Not exactly.  Let me start from the big picture, though. :-)
+>
+> First off, we need to unify the handling of devices by the ACPI subsystem
+> regardless of whether they are on a specific bus, like PCI, or they are
+> busless "platform" devices.
+>
+> Currently, if a device is on a specific bus *and* there is a device node in the
+> ACPI namespace corresponding to it, there will be two objects based on
+> struct device for it eventually, the "physical node", like struct pci_dev, and
+> the "ACPI node" represented by struct acpi_device.  They are associated with
+> each other through the code in drivers/acpi/glue.c.  In turn, if the device is
+> busless and not discoverable natively, we only create the "ACPI node" struct
+> acpi_device thing for it.  Those ACPI nodes are then *sometimes* bind to
+> drivers (represented by struct acpi_driver).
+>
+> The fact that the busless devices are *sometimes* handled by binding drivers
+> directly to struct acpi_device while the other devices are handled through
+> glue.c confuses things substantially and causes problems to happen right now
+> (for example, acpi_driver drivers sometimes attempt to bind to things that have
+> other native drivers and should really be handled by them).
+> Furthermore, the situation will only get worse over time if we don't do
+> anything about that, because we're going to see more and more devices that
+> won't be discoverable natively and will have corresponding nodes in the ACPI
+> namespace and we're going to see more buses whose devices will have such
+> nodes.
+>
+> Moreover, for many of those devices there are native drivers present in
+> the kernel tree already, because they will be based on IP blocks used in
+> the current hardware (for example, we may see ARM-based systems based on
+> exactly the same hardware with ACPI BIOSes and without them).  That applies
+> to busless devices as well as to devices on specific buses.
+>
+> Now, the problem is how the unification is going to be done and I honestly
+> don't think we have much *choice* here.  Namely, for PCI (and other devices
+> discoverable natively) we pretty much have to do the glue.c thing (or something
+> equivalent), because we need to match what we've discovered natively against
+> the information from the ACPI tables in the BIOS.  This means that for busless
+> devices we need to create "physical" nodes as well, so that all of them are
+> handled by drivers binding to the "physical" node rather than to struct
+> acpi_device.  This also will allow us to reuse the existing drivers with
+> minimum modifications (well, hopefully).
 
---VS++wcV0S1rZb1Fb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ok, acpi_driver will be killed at first.
 
-Hi John,
+acpi_pci_root_driver will be converted to platform driver or
+add acpi_pci_host_bridge to work with pci_host_bridge.
 
-Another set of patches for integration in wireless-next. There are two big =
-set
-of changes in it: Andrei Emeltchenko and Mat Martineau added more patches
-towards a full Bluetooth High Speed support and Johan Hedberg improve the
-single mode support for Bluetooth dongles. Apart from that we have small fi=
-xes
-and improvements.=20
-
-Please pull. Thanks a lot.
-
-	Gustavo
----
-
-The following changes since commit 9917c85b06c2eb9d61c0f2dadd2d5d8788f7e563:
-
-  brcm80211: remove some truely barftastic code (2012-10-19 16:20:56 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next fo=
-r-upstream
-
-for you to fetch changes up to 0c0afedf55ff409be9db0b0aeeaa1c6fe0f3cd3c:
-
-  Bluetooth: Fix parameter order of hci_get_route (2012-11-01 20:27:11 -020=
-0)
-
-----------------------------------------------------------------
-Andrei Emeltchenko (18):
-      Bluetooth: trivial: Remove unneeded assignment
-      Bluetooth: Use helper function sending EFS conf rsp
-      Bluetooth: AMP: Process Physical Link Complete evt
-      Bluetooth: AMP: Process Logical Link complete evt
-      Bluetooth: Add put(hcon) when deleting hchan
-      Bluetooth: trivial: Fix braces style and remove empty line
-      Bluetooth: Save hs_hchan instead of hs_hcon in loglink complete
-      Bluetooth: Return correct L2CAP response type
-      Bluetooth: Derive remote and local amp id from chan struct
-      Bluetooth: AMP: Add Logical Link Create function
-      Bluetooth: AMP: Process Disc Logical Link
-      Bluetooth: AMP: Process Disc Physical Link Complete evt
-      Bluetooth: AMP: Remove hci_conn receiving error command status
-      Bluetooth: Disconnect logical link when deleting chan
-      Bluetooth: AMP: Check for hs_hcon instead of ctrl_id
-      Bluetooth: AMP: Use l2cap_physical_cfm in phylink complete evt
-      Bluetooth: Process Create Chan Request
-      Bluetooth: Rename ctrl_id to remote_amp_id
-
-Denis Kirjanov (1):
-      Bluetooth:Replace list_for_each with list_for_each_entry() helper
-
-Gustavo Padovan (1):
-      Bluetooth: Replace *_init() for *_setup()
-
-Johan Hedberg (16):
-      Bluetooth: Add initial support for LE-only controllers
-      Bluetooth: Fix LE MTU reporting for HCIGETDEVINFO
-      Bluetooth: Add setting of the LE event mask
-      Bluetooth: Read adversiting channel TX power during init sequence
-      Bluetooth: Fix HCI command sending when powering on LE-only adapters
-      Bluetooth: mgmt: Restrict BR/EDR settings to BR/EDR-only adapters
-      Bluetooth: Fix updating host feature bits for LE
-      Bluetooth: Add missing feature test macros
-      Bluetooth: Make use feature test macros
-      Bluetooth: Add flag for LE GAP Peripheral role
-      Bluetooth: Disallow LE scanning and connecting in peripheral role
-      Bluetooth: Fix setting host feature bits for SSP
-      Bluetooth: Fix sending unnecessary HCI_Write_SSP_Mode command
-      Bluetooth: Fix unnecessary EIR update during powering on
-      Bluetooth: Fix sending unnecessary HCI_LE_Host_Enable
-      Bluetooth: Fix parameter order of hci_get_route
-
-Mat Martineau (18):
-      Bluetooth: Add new l2cap_chan struct members for high speed channels
-      Bluetooth: Add L2CAP create channel request handling
-      Bluetooth: Remove unnecessary intermediate function
-      Bluetooth: Lookup channel structure based on DCID
-      Bluetooth: Channel move request handling
-      Bluetooth: Add new ERTM receive states for channel move
-      Bluetooth: Add move channel confirm handling
-      Bluetooth: Add state to hci_chan
-      Bluetooth: Move channel response
-      Bluetooth: Add logical link confirm
-      Bluetooth: Add move confirm response handling
-      Bluetooth: Handle physical link completion
-      Bluetooth: Flag ACL frames as complete for AMP controllers
-      Bluetooth: Do not send data during channel move
-      Bluetooth: Configure appropriate timeouts for AMP controllers
-      Bluetooth: Ignore BR/EDR packet size constraints when fragmenting for=
- AMP
-      Bluetooth: Do not retransmit data during a channel move
-      Bluetooth: Start channel move when socket option is changed
-
-Syam Sidhardhan (4):
-      Bluetooth: trivial: Remove newline before EOF
-      Bluetooth: Replace include linux/module.h with linux/export.h
-      Bluetooth: Remove unnecessary include export.h
-      Bluetooth: mgmt: Use __constant when dealing with constants
-
- include/net/bluetooth/amp.h      |    4 +
- include/net/bluetooth/hci.h      |    7 +
- include/net/bluetooth/hci_core.h |   44 +-
- include/net/bluetooth/l2cap.h    |   38 +-
- net/bluetooth/Kconfig            |    1 -
- net/bluetooth/a2mp.c             |    4 +-
- net/bluetooth/amp.c              |   93 ++++
- net/bluetooth/bnep/netdev.c      |    1 -
- net/bluetooth/cmtp/capi.c        |    2 +-
- net/bluetooth/cmtp/sock.c        |    2 +-
- net/bluetooth/hci_conn.c         |    6 +
- net/bluetooth/hci_core.c         |   65 +--
- net/bluetooth/hci_event.c        |  309 +++++++++++--
- net/bluetooth/l2cap_core.c       | 1000 ++++++++++++++++++++++++++++++++++=
-+++---
- net/bluetooth/l2cap_sock.c       |    5 +
- net/bluetooth/mgmt.c             |   98 ++--
- 16 files changed, 1486 insertions(+), 193 deletions(-)
-
---VS++wcV0S1rZb1Fb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQkvm+AAoJEPs3PUX4s20oh48QAKc0Cb9KUsMnnZOie6+OYa6i
-HbsF/4mnsU9TsDft2Bwm3ejinqcEyN+n85U9qCuVqe/tlbkqfMTPwYqe25Ny2gBq
-oMIRnQgG0Hq10yx9Hq2QGffMlaCx3WmuVrrWhKwTo8k/ZoiKuGnjaMUubJQJw2wy
-Nr97i7OS5eUuvWP++BrGW0CXZHmKenqA5L9+IlfpeEQj3STRmPA9nLas0Cdp7j1P
-nErse6ol1yXsaik8yBSSmBVOK5NzHhe/XN7R11nd1DO1GDopMMlfJyR+x+0VSEFp
-+hYPTs81RndLZv2W29PGdPnZy2JrGURYjIGEbEkorJ95iZprBoqMAOzHT3O+lGf4
-ILoewAy/0nTMaaPOf0057hXPgkQ4pBO+k1AWZUMTOlQoYUfDRzL5E5/VC9/EyABD
-FPEvP7jOp2bKPi6DFnHZpJfrEQETcGlxWwmCVzCgCdDSyrEWlvbdIUCyOt2xvoMh
-vdyufs9iPnHYYp9aXEfs+eYymxuiFOXwgu4OqDFkHvVNekIqX3Wzttq0gjw2OtwY
-rE2M8UEzgIc9OLcvhn1v1CDj8PkWlNRWME1dE0YfazTRhw9GlnE0W4wEluNU0hxw
-wxKO72UUF9rNngRdp24haau0X4qLO8bBogQSsqE9Z1kvLIeWjqexeJGKh3tqLcy/
-PtXnX/mwteuvsEwiBa+z
-=orX4
------END PGP SIGNATURE-----
-
---VS++wcV0S1rZb1Fb--
+BTW,  the problem for hotadd pci root bus,
+the acpi_driver ops.add can pci root bus and create pci dev before all
+acpi device get
+created still there.
+    https://lkml.org/lkml/2012/10/5/569
