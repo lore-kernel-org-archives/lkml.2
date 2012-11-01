@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761946Ab2KAPLO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 11:11:14 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43819 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761915Ab2KAPLJ (ORCPT
+	id S1761952Ab2KAPNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 11:13:00 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63750 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761859Ab2KAPM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 11:11:09 -0400
+	Thu, 1 Nov 2012 11:12:57 -0400
+Message-ID: <509291FF.6090500@gmail.com>
+Date: Thu, 01 Nov 2012 16:15:11 +0100
+From: Francesco Lavra <francescolavra.fl@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121031194158.GB504@redhat.com>
-References: <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com>
- <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com>
- <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com>
- <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com>
- <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com>
- <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 1 Nov 2012 08:10:47 -0700
-X-Google-Sender-Auth: 7BISRZuD_e8SUe4p0iOrYVfy4Mk
-Message-ID: <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] percpu_rw_semaphore: reimplement to not block the
- readers unnecessarily
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+To: "Rajanikanth H.V" <rajanikanth.hv@linaro.org>
+CC: rob.herring@calxeda.com, lee.jones@linaro.org, arnd@arndb.de,
+        anton.vorontsov@linaro.org, linus.walleij@stericsson.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        STEricsson_nomadik_linux@list.st.com, rajanikanth.hv@stericsson.com
+Subject: Re: [PATCH 1/4] mfd: ab8500: add devicetree support for fuelgauge
+References: <1351698033-8980-1-git-send-email-rajanikanth.hv@linaro.org> <1351698033-8980-2-git-send-email-rajanikanth.hv@linaro.org>
+In-Reply-To: <1351698033-8980-2-git-send-email-rajanikanth.hv@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 12:41 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Currently the writer does msleep() plus synchronize_sched() 3 times
-> to acquire/release the semaphore, and during this time the readers
-> are blocked completely. Even if the "write" section was not actually
-> started or if it was already finished.
->
-> With this patch down_read/up_read does synchronize_sched() twice and
-> down_read/up_read are still possible during this time, just they use
-> the slow path.
+On 10/31/2012 04:40 PM, Rajanikanth H.V wrote:
+> From: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
+> 
+> - This patch adds device tree support for fuelgauge driver
+> - optimize bm devices platform_data usage and of_probe(...)
+>   Note: of_probe() routine for battery managed devices is made
+>   common across all bm drivers.
+> - test status:
+>   - interrupt numbers assigned differs between legacy and FDT mode.
+> 
+> Signed-off-by: Rajanikanth H.V <rajanikanth.hv@stericsson.com>
+[...]
+> +int __devinit
+> +bmdevs_of_probe(struct device *dev,
+> +		struct device_node *np,
+> +		struct abx500_bm_data **battery)
+> +{
+> +	struct	abx500_battery_type *btype;
+> +	struct  device_node *np_bat_supply;
+> +	struct	abx500_bm_data *bat;
+> +	const char *btech;
+> +	char bat_tech[8];
+> +	int i, thermistor;
+> +
+> +	*battery = &ab8500_bm_data;
+> +
+> +	/* get phandle to 'battery-info' node */
+> +	np_bat_supply = of_parse_phandle(np, "battery", 0);
+> +	if (!np_bat_supply) {
+> +		dev_err(dev, "missing property battery\n");
+> +		return -EINVAL;
+> +	}
+> +	if (of_property_read_bool(np_bat_supply,
+> +			"thermistor-on-batctrl"))
+> +		thermistor = NTC_INTERNAL;
+> +	else
+> +		thermistor = NTC_EXTERNAL;
+> +
+> +	bat = *battery;
+> +	if (thermistor == NTC_EXTERNAL) {
+> +		bat->n_btypes  = 4;
+> +		bat->bat_type  = bat_type_ext_thermistor;
+> +		bat->adc_therm = ABx500_ADC_THERM_BATTEMP;
+> +	}
+> +	btech = of_get_property(np_bat_supply,
+> +		"stericsson,battery-type", NULL);
+> +	if (!btech) {
+> +		dev_warn(dev, "missing property battery-name/type\n");
+> +		strcpy(bat_tech, "UNKNOWN");
+> +	} else {
+> +		strcpy(bat_tech, btech);
+> +	}
 
-The changelog is wrong (it's the write path, not read path, that does
-the synchronize_sched).
-
->  struct percpu_rw_semaphore {
-> -       unsigned __percpu *counters;
-> -       bool locked;
-> -       struct mutex mtx;
-> +       int __percpu            *fast_read_ctr;
-
-This change is wrong.
-
-You must not make the 'fast_read_ctr' thing be an int. Or at least you
-need to be a hell of a lot more careful about it.
-
-Why?
-
-Because the readers update the counters while possibly moving around
-cpu's, the increment and decrement of the counters may be on different
-CPU's. But that means that when you add all the counters together,
-things can overflow (only the final sum is meaningful). And THAT in
-turn means that you should not use a signed count, for the simple
-reason that signed integers don't have well-behaved overflow behavior
-in C.
-
-Now, I doubt you'll find an architecture or C compiler where this will
-actually ever make a difference, but the fact remains that you
-shouldn't use signed integers for counters like this. You should use
-unsigned, and you should rely on the well-defined modulo-2**n
-semantics.
-
-I'd also like to see a comment somewhere in the source code about the
-whole algorithm and the rules.
-
-Other than that, I guess it looks ok.
-
-            Linus
+I don't get the point of declaring the char array and copying the string
+in it, when you could simply use just the pointer returned by
+of_get_property().
+Anyway, if the string property is longer than 8 characters, you are
+writing past the size of the destination array.
