@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759992Ab2KAN2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 09:28:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41755 "EHLO mx2.suse.de"
+	id S1760910Ab2KAN3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 09:29:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38961 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754338Ab2KAN2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754340Ab2KAN2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Nov 2012 09:28:50 -0400
-Date: Thu, 1 Nov 2012 14:28:46 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: axboe@kernel.dk, lucho@ionkov.net, tytso@mit.edu, sage@inktank.com,
-        ericvh@gmail.com, mfasheh@suse.com, dedekind1@gmail.com,
-        adrian.hunter@intel.com, dhowells@redhat.com, sfrench@samba.org,
-        jlbec@evilplan.org, rminnich@sandia.gov, linux-cifs@vger.kernel.org,
-        jack@suse.cz, martin.petersen@oracle.com, neilb@suse.de,
-        david@fromorbit.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-mtd@lists.infradead.org, bharrosh@panasas.com,
-        linux-fsdevel@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
-        ceph-devel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-afs@lists.infradead.org, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 2/3] mm: Only enforce stable page writes if the backing
- device requires it
-Message-ID: <20121101132846.GB23132@quack.suse.cz>
-References: <20121101075805.16153.64714.stgit@blackbox.djwong.org>
- <20121101075821.16153.38301.stgit@blackbox.djwong.org>
+Date: Thu, 1 Nov 2012 09:28:38 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, James Morris <jmorris@namei.org>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH] device_cgroup: fix unchecked cgroup parent usage
+Message-ID: <20121101132837.GE14789@redhat.com>
+References: <20121031160430.GD14789@redhat.com>
+ <20121031163501.79a0950e.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121101075821.16153.38301.stgit@blackbox.djwong.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121031163501.79a0950e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-11-12 00:58:21, Darrick J. Wong wrote:
-> Create a helper function to check if a backing device requires stable page
-> writes and, if so, performs the necessary wait.  Then, make it so that all
-> points in the memory manager that handle making pages writable use the helper
-> function.  This should provide stable page write support to most filesystems,
-> while eliminating unnecessary waiting for devices that don't require the
-> feature.
+On Wed, Oct 31, 2012 at 04:35:01PM -0700, Andrew Morton wrote:
+> On Wed, 31 Oct 2012 12:04:30 -0400
+> Aristeu Rozanski <aris@redhat.com> wrote:
 > 
-> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> ---
->  fs/buffer.c             |    2 +-
->  fs/ext4/inode.c         |    2 +-
->  include/linux/pagemap.h |    1 +
->  mm/filemap.c            |    3 ++-
->  mm/page-writeback.c     |   11 +++++++++++
->  5 files changed, 16 insertions(+), 3 deletions(-)
+> > In 4cef7299b4786879a3e113e84084a72b24590c5b the cgroup parent usage is
+> > unchecked. root will not have a parent and trying to use
+> > device.{allow,deny} will cause problems.
 > 
-..
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 830893b..916dae1 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -2275,3 +2275,14 @@ int mapping_tagged(struct address_space *mapping, int tag)
->  	return radix_tree_tagged(&mapping->page_tree, tag);
->  }
->  EXPORT_SYMBOL(mapping_tagged);
-> +
-> +void wait_on_stable_page_write(struct page *page)
-> +{
-> +	struct backing_dev_info *bdi = page->mapping->backing_dev_info;
-> +
-> +	if (!bdi_cap_stable_pages_required(bdi))
-> +		return;
-> +
-> +	wait_on_page_writeback(page);
-> +}
-> +EXPORT_SYMBOL_GPL(wait_on_stable_page_write);
-  Just one nit: Maybe "wait_if_stable_write()" would describe the function
-better? Otherwise the patch looks OK.
+> From my reading of the code "problems" means "kernel null pointer
+> dereference".
 
-								Honza
+yes. you want me to resubmit it fixing it or you want to update it?
+
+> >  static inline int may_allow_all(struct dev_cgroup *parent)
+> 
+> offtopic: this function could quite neatly have a bool return type.
+
+ok, will do.
+
+> >  {
+> > +	if (!parent)
+> > +		return 1;
+> 
+> hm.  Does it need a comment explaining what and why?  I guess not...  just.
+
+it's because the root's parent has to always allows full access to all
+devices. I can add a comment when I turn into a bool if you want.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Aristeu
+
