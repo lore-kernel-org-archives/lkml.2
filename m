@@ -1,355 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab2KAFyg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 01:54:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28928 "EHLO mx1.redhat.com"
+	id S1752925Ab2KAFyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 01:54:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18840 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932276Ab2KAFy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 01:54:26 -0400
+	id S1752610Ab2KAFyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 01:54:01 -0400
 From: Jason Wang <jasowang@redhat.com>
 To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: maxk@qti.qualcomm.com, edumazet@google.com, krkumar2@in.ibm.com,
         ernesto.martin@viasat.com, haixiao@juniper.net,
         Jason Wang <jasowang@redhat.com>
-Subject: [net-next v5 7/7] tuntap: choose the txq based on rxq
-Date: Thu,  1 Nov 2012 13:46:02 +0800
-Message-Id: <1351748762-3455-8-git-send-email-jasowang@redhat.com>
+Subject: [net-next v5 3/7] tuntap: RCUify dereferencing between tun_struct and tun_file
+Date: Thu,  1 Nov 2012 13:45:58 +0800
+Message-Id: <1351748762-3455-4-git-send-email-jasowang@redhat.com>
 In-Reply-To: <1351748762-3455-1-git-send-email-jasowang@redhat.com>
 References: <1351748762-3455-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a simple multiqueue flow steering policy - tx follows rx
-for tun/tap. The idea is simple, it just choose the txq based on which rxq it
-comes. The flow were identified through the rxhash of a skb, and the hash to
-queue mapping were recorded in a hlist with an ageing timer to retire the
-mapping. The mapping were created when tun receives packet from userspace, and
-was quired in .ndo_select_queue().
+RCU were introduced in this patch to synchronize the dereferences between
+tun_struct and tun_file. All tun_{get|put} were replaced with RCU, the
+dereference from one to other must be done under rtnl lock or rcu read critical
+region.
 
-I run co-current TCP_CRR test and didn't see any mapping manipulation helpers in
-perf top, so the overhead could be negelected.
+This is needed for the following patches since the one of the goal of multiqueue
+tuntap is to allow adding or removing queues during workload. Without RCU,
+control path would hold tx locks when adding or removing queues (which may cause
+sme delay) and it's hard to change the number of queues without stopping the net
+device. With the help of rcu, there's also no need for tun_file hold an refcnt
+to tun_struct.
 
 Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/net/tun.c |  227 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 224 insertions(+), 3 deletions(-)
+ drivers/net/tun.c |   95 ++++++++++++++++++++++++++---------------------------
+ 1 files changed, 47 insertions(+), 48 deletions(-)
 
 diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 79b6f9e..9e28768 100644
+index d52ad24..bdbb526 100644
 --- a/drivers/net/tun.c
 +++ b/drivers/net/tun.c
-@@ -115,6 +115,8 @@ struct tap_filter {
+@@ -115,13 +115,16 @@ struct tap_filter {
+  * tap_filter were kept in tun_struct since they were used for filtering for the
+  * netdevice not for a specific queue (at least I didn't see the reqirement for
+  * this).
++ *
++ * RCU usage:
++ * The tun_file and tun_struct are loosely coupled, the pointer from on to the
++ * other can only be read while rcu_read_lock or rtnl_lock is held.
   */
- #define MAX_TAP_QUEUES 1024
- 
-+#define TUN_FLOW_EXPIRE (3 * HZ)
-+
- /* A tun_file connects an open character device to a tuntap netdevice. It
-  * also contains all socket related strctures (except sock_fprog and tap_filter)
-  * to serve as one transmit queue for tuntap device. The sock_fprog and
-@@ -138,6 +140,18 @@ struct tun_file {
- 	u16 queue_index;
- };
- 
-+struct tun_flow_entry {
-+	struct hlist_node hash_link;
-+	struct rcu_head rcu;
-+	struct tun_struct *tun;
-+
-+	u32 rxhash;
-+	int queue_index;
-+	unsigned long updated;
-+};
-+
-+#define TUN_NUM_FLOW_ENTRIES 1024
-+
- /* Since the socket were moved to tun_file, to preserve the behavior of persist
-  * device, socket fileter, sndbuf and vnet header size were restore when the
+ struct tun_file {
+ 	struct sock sk;
+ 	struct socket socket;
+ 	struct socket_wq wq;
+-	atomic_t count;
+-	struct tun_struct *tun;
++	struct tun_struct __rcu *tun;
+ 	struct net *net;
+ 	struct fasync_struct *fasync;
+ 	/* only used for fasnyc */
+@@ -133,7 +136,7 @@ struct tun_file {
   * file were attached to a persist device.
-@@ -163,8 +177,164 @@ struct tun_struct {
- #ifdef TUN_DEBUG
- 	int debug;
- #endif
-+	spinlock_t lock;
-+	struct kmem_cache *flow_cache;
-+	struct hlist_head flows[TUN_NUM_FLOW_ENTRIES];
-+	struct timer_list flow_gc_timer;
-+	unsigned long ageing_time;
- };
+  */
+ struct tun_struct {
+-	struct tun_file		*tfile;
++	struct tun_file	__rcu	*tfile;
+ 	unsigned int 		flags;
+ 	kuid_t			owner;
+ 	kgid_t			group;
+@@ -179,13 +182,11 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
+ 		if (!err)
+ 			goto out;
+ 	}
+-	tfile->tun = tun;
++	rcu_assign_pointer(tfile->tun, tun);
+ 	tfile->socket.sk->sk_sndbuf = tun->sndbuf;
+-	tun->tfile = tfile;
++	rcu_assign_pointer(tun->tfile, tfile);
+ 	netif_carrier_on(tun->dev);
+-	dev_hold(tun->dev);
+ 	sock_hold(&tfile->sk);
+-	atomic_inc(&tfile->count);
  
-+static inline u32 tun_hashfn(u32 rxhash)
-+{
-+	return rxhash & 0x3ff;
-+}
-+
-+static struct tun_flow_entry *tun_flow_find(struct hlist_head *head, u32 rxhash)
-+{
-+	struct tun_flow_entry *e;
-+	struct hlist_node *n;
-+
-+	hlist_for_each_entry_rcu(e, n, head, hash_link) {
-+		if (e->rxhash == rxhash)
-+			return e;
+ out:
+ 	netif_tx_unlock_bh(tun->dev);
+@@ -194,34 +195,29 @@ out:
+ 
+ static void __tun_detach(struct tun_struct *tun)
+ {
+-	struct tun_file *tfile = tun->tfile;
++	struct tun_file *tfile = rcu_dereference_protected(tun->tfile,
++							lockdep_rtnl_is_held());
+ 	/* Detach from net device */
+-	netif_tx_lock_bh(tun->dev);
+ 	netif_carrier_off(tun->dev);
+-	tun->tfile = NULL;
+-	tfile->tun = NULL;
+-	netif_tx_unlock_bh(tun->dev);
+-
+-	/* Drop read queue */
+-	skb_queue_purge(&tfile->socket.sk->sk_receive_queue);
+-
+-	/* Drop the extra count on the net device */
+-	dev_put(tun->dev);
+-}
++	rcu_assign_pointer(tun->tfile, NULL);
++	if (tfile) {
++		rcu_assign_pointer(tfile->tun, NULL);
+ 
+-static void tun_detach(struct tun_struct *tun)
+-{
+-	rtnl_lock();
+-	__tun_detach(tun);
+-	rtnl_unlock();
++		synchronize_net();
++		/* Drop read queue */
++		skb_queue_purge(&tfile->socket.sk->sk_receive_queue);
 +	}
-+	return NULL;
-+}
-+
-+static struct tun_flow_entry *tun_flow_create(struct tun_struct *tun,
-+					      struct hlist_head *head,
-+					      u32 rxhash, u16 queue_index)
-+{
-+	struct tun_flow_entry *e = kmem_cache_alloc(tun->flow_cache,
-+						    GFP_ATOMIC);
-+	if (e) {
-+		tun_debug(KERN_INFO, tun, "create flow: hash %u index %u\n",
-+			  rxhash, queue_index);
-+		e->updated = jiffies;
-+		e->rxhash = rxhash;
-+		e->queue_index = queue_index;
-+		e->tun = tun;
-+		hlist_add_head_rcu(&e->hash_link, head);
-+	}
-+	return e;
-+}
-+
-+static void tun_flow_free(struct rcu_head *head)
-+{
-+	struct tun_flow_entry *e
-+		= container_of(head, struct tun_flow_entry, rcu);
-+	kmem_cache_free(e->tun->flow_cache, e);
-+}
-+
-+static void tun_flow_delete(struct tun_struct *tun, struct tun_flow_entry *e)
-+{
-+	tun_debug(KERN_INFO, tun, "delete flow: hash %u index %u\n",
-+		  e->rxhash, e->queue_index);
-+	hlist_del_rcu(&e->hash_link);
-+	call_rcu(&e->rcu, tun_flow_free);
-+}
-+
-+static void tun_flow_flush(struct tun_struct *tun)
-+{
-+	int i;
-+
-+	spin_lock_bh(&tun->lock);
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-+		struct tun_flow_entry *e;
-+		struct hlist_node *h, *n;
-+
-+		hlist_for_each_entry_safe(e, h, n, &tun->flows[i], hash_link)
-+			tun_flow_delete(tun, e);
-+	}
-+	spin_unlock_bh(&tun->lock);
-+}
-+
-+static void tun_flow_delete_by_queue(struct tun_struct *tun, u16 queue_index)
-+{
-+	int i;
-+
-+	spin_lock_bh(&tun->lock);
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-+		struct tun_flow_entry *e;
-+		struct hlist_node *h, *n;
-+
-+		hlist_for_each_entry_safe(e, h, n, &tun->flows[i], hash_link) {
-+			if (e->queue_index == queue_index)
-+				tun_flow_delete(tun, e);
-+		}
-+	}
-+	spin_unlock_bh(&tun->lock);
-+}
-+
-+static void tun_flow_cleanup(unsigned long data)
-+{
-+	struct tun_struct *tun = (struct tun_struct *)data;
-+	unsigned long delay = tun->ageing_time;
-+	unsigned long next_timer = jiffies + delay;
-+	unsigned long count = 0;
-+	int i;
-+
-+	tun_debug(KERN_INFO, tun, "tun_flow_cleanup\n");
-+
-+	spin_lock_bh(&tun->lock);
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-+		struct tun_flow_entry *e;
-+		struct hlist_node *h, *n;
-+
-+		hlist_for_each_entry_safe(e, h, n, &tun->flows[i], hash_link) {
-+			unsigned long this_timer;
-+			count++;
-+			this_timer = e->updated + delay;
-+			if (time_before_eq(this_timer, jiffies))
-+				tun_flow_delete(tun, e);
-+			else if (time_before(this_timer, next_timer))
-+				next_timer = this_timer;
-+		}
-+	}
-+
-+	if (count)
-+		mod_timer(&tun->flow_gc_timer, round_jiffies_up(next_timer));
-+	spin_unlock_bh(&tun->lock);
-+}
-+
-+static void tun_flow_update(struct tun_struct *tun, struct sk_buff *skb,
-+			    u16 queue_index)
-+{
-+	struct hlist_head *head;
-+	struct tun_flow_entry *e;
-+	unsigned long delay = tun->ageing_time;
-+	u32 rxhash = skb_get_rxhash(skb);
-+
-+	if (!rxhash)
-+		return;
-+	else
-+		head = &tun->flows[tun_hashfn(rxhash)];
-+
+ }
+ 
+ static struct tun_struct *__tun_get(struct tun_file *tfile)
+ {
+-	struct tun_struct *tun = NULL;
++	struct tun_struct *tun;
+ 
+-	if (atomic_inc_not_zero(&tfile->count))
+-		tun = tfile->tun;
 +	rcu_read_lock();
-+
-+	if (tun->numqueues == 1)
-+		goto unlock;
-+
-+	e = tun_flow_find(head, rxhash);
-+	if (likely(e)) {
-+		/* TODO: keep queueing to old queue until it's empty? */
-+		e->queue_index = queue_index;
-+		e->updated = jiffies;
-+	} else {
-+		spin_lock_bh(&tun->lock);
-+		if (!tun_flow_find(head, rxhash))
-+			tun_flow_create(tun, head, rxhash, queue_index);
-+
-+		if (!timer_pending(&tun->flow_gc_timer))
-+			mod_timer(&tun->flow_gc_timer,
-+				  round_jiffies_up(jiffies + delay));
-+		spin_unlock_bh(&tun->lock);
-+	}
-+
-+unlock:
++	tun = rcu_dereference(tfile->tun);
++	if (tun)
++		dev_hold(tun->dev);
 +	rcu_read_unlock();
-+}
-+
- /* We try to identify a flow through its rxhash first. The reason that
-  * we do not check rxq no. is becuase some cards(e.g 82599), chooses
-  * the rxq based on the txq where the last packet of the flow comes. As
-@@ -175,6 +345,7 @@ struct tun_struct {
- static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
+ 
+ 	return tun;
+ }
+@@ -233,10 +229,7 @@ static struct tun_struct *tun_get(struct file *file)
+ 
+ static void tun_put(struct tun_struct *tun)
+ {
+-	struct tun_file *tfile = tun->tfile;
+-
+-	if (atomic_dec_and_test(&tfile->count))
+-		tun_detach(tfile->tun);
++	dev_put(tun->dev);
+ }
+ 
+ /* TAP filtering */
+@@ -357,14 +350,15 @@ static const struct ethtool_ops tun_ethtool_ops;
+ static void tun_net_uninit(struct net_device *dev)
  {
  	struct tun_struct *tun = netdev_priv(dev);
-+	struct tun_flow_entry *e;
- 	u32 txq = 0;
- 	u32 numqueues = 0;
+-	struct tun_file *tfile = tun->tfile;
++	struct tun_file *tfile = rcu_dereference_protected(tun->tfile,
++							lockdep_rtnl_is_held());
  
-@@ -183,8 +354,12 @@ static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
+ 	/* Inform the methods they need to stop using the dev.
+ 	 */
+ 	if (tfile) {
+ 		wake_up_all(&tfile->wq.wait);
+-		if (atomic_dec_and_test(&tfile->count))
+-			__tun_detach(tun);
++		__tun_detach(tun);
++		synchronize_net();
+ 	}
+ }
  
- 	txq = skb_get_rxhash(skb);
- 	if (txq) {
--		/* use multiply and shift instead of expensive divide */
--		txq = ((u64)txq * numqueues) >> 32;
-+		e = tun_flow_find(&tun->flows[tun_hashfn(txq)], txq);
-+		if (e)
-+			txq = e->queue_index;
-+		else
-+			/* use multiply and shift instead of expensive divide */
-+			txq = ((u64)txq * numqueues) >> 32;
- 	} else if (likely(skb_rx_queue_recorded(skb))) {
- 		txq = skb_get_rx_queue(skb);
- 		while (unlikely(txq >= numqueues))
-@@ -234,6 +409,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
+@@ -386,14 +380,16 @@ static int tun_net_close(struct net_device *dev)
+ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+ {
+ 	struct tun_struct *tun = netdev_priv(dev);
+-	struct tun_file *tfile = tun->tfile;
+-
+-	tun_debug(KERN_INFO, tun, "tun_net_xmit %d\n", skb->len);
++	struct tun_file *tfile;
+ 
++	rcu_read_lock();
++	tfile = rcu_dereference(tun->tfile);
+ 	/* Drop packet if interface is not attached */
+ 	if (!tfile)
+ 		goto drop;
+ 
++	tun_debug(KERN_INFO, tun, "tun_net_xmit %d\n", skb->len);
++
+ 	/* Drop if the filter does not like it.
+ 	 * This is a noop if the filter is disabled.
+ 	 * Filter can be enabled only for the TAP devices. */
+@@ -435,11 +431,14 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		kill_fasync(&tfile->fasync, SIGIO, POLL_IN);
+ 	wake_up_interruptible_poll(&tfile->wq.wait, POLLIN |
+ 				   POLLRDNORM | POLLRDBAND);
++
++	rcu_read_unlock();
+ 	return NETDEV_TX_OK;
+ 
+ drop:
+ 	dev->stats.tx_dropped++;
+ 	kfree_skb(skb);
++	rcu_read_unlock();
+ 	return NETDEV_TX_OK;
+ }
+ 
+@@ -1089,7 +1088,6 @@ static int tun_sendmsg(struct kiocb *iocb, struct socket *sock,
+ 
+ 	if (!tun)
+ 		return -EBADFD;
+-
+ 	ret = tun_get_user(tun, tfile, m->msg_control, m->msg_iov, total_len,
+ 			   m->msg_iovlen, m->msg_flags & MSG_DONTWAIT);
+ 	tun_put(tun);
+@@ -1662,8 +1660,7 @@ static int tun_chr_open(struct inode *inode, struct file * file)
+ 					    &tun_proto);
+ 	if (!tfile)
+ 		return -ENOMEM;
+-	atomic_set(&tfile->count, 0);
+-	tfile->tun = NULL;
++	rcu_assign_pointer(tfile->tun, NULL);
+ 	tfile->net = get_net(current->nsproxy->net_ns);
+ 	tfile->flags = 0;
+ 
+@@ -1691,7 +1688,9 @@ static int tun_chr_close(struct inode *inode, struct file *file)
+ 	struct tun_struct *tun;
+ 	struct net *net = tfile->net;
+ 
+-	tun = __tun_get(tfile);
++	rtnl_lock();
++
++	tun = rcu_dereference_protected(tfile->tun, lockdep_rtnl_is_held());
+ 	if (tun) {
+ 		struct net_device *dev = tun->dev;
+ 
+@@ -1699,18 +1698,20 @@ static int tun_chr_close(struct inode *inode, struct file *file)
+ 
+ 		__tun_detach(tun);
+ 
++		synchronize_net();
++
+ 		/* If desirable, unregister the netdevice. */
+ 		if (!(tun->flags & TUN_PERSIST)) {
+-			rtnl_lock();
+ 			if (dev->reg_state == NETREG_REGISTERED)
+ 				unregister_netdevice(dev);
+-			rtnl_unlock();
+ 		}
+ 
+ 		/* drop the reference that netdevice holds */
  		sock_put(&tfile->sk);
+ 	}
  
- 		synchronize_net();
-+		tun_flow_delete_by_queue(tun, tun->numqueues + 1);
- 		/* Drop read queue */
- 		skb_queue_purge(&tfile->sk.sk_receive_queue);
- 		tun_set_real_num_queues(tun);
-@@ -631,6 +807,37 @@ static const struct net_device_ops tap_netdev_ops = {
- #endif
- };
- 
-+static int tun_flow_init(struct tun_struct *tun)
-+{
-+	int i;
++	rtnl_unlock();
 +
-+	tun->flow_cache = kmem_cache_create("tun_flow_cache",
-+					    sizeof(struct tun_flow_entry), 0, 0,
-+					    NULL);
-+	if (!tun->flow_cache)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++)
-+		INIT_HLIST_HEAD(&tun->flows[i]);
-+
-+	tun->ageing_time = TUN_FLOW_EXPIRE;
-+	setup_timer(&tun->flow_gc_timer, tun_flow_cleanup, (unsigned long)tun);
-+	mod_timer(&tun->flow_gc_timer,
-+		  round_jiffies_up(jiffies + tun->ageing_time));
-+
-+	return 0;
-+}
-+
-+static void tun_flow_uninit(struct tun_struct *tun)
-+{
-+	del_timer_sync(&tun->flow_gc_timer);
-+	tun_flow_flush(tun);
-+
-+	/* Wait for completion of call_rcu()'s */
-+	rcu_barrier();
-+	kmem_cache_destroy(tun->flow_cache);
-+}
-+
- /* Initialize net device. */
- static void tun_net_init(struct net_device *dev)
+ 	/* drop the reference that file holds */
+ 	BUG_ON(!test_bit(SOCK_EXTERNALLY_ALLOCATED,
+ 			 &tfile->socket.flags));
+@@ -1842,14 +1843,12 @@ static void tun_cleanup(void)
+  * holding a reference to the file for as long as the socket is in use. */
+ struct socket *tun_get_socket(struct file *file)
  {
-@@ -973,6 +1180,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	tun->dev->stats.rx_packets++;
- 	tun->dev->stats.rx_bytes += len;
- 
-+	tun_flow_update(tun, skb, tfile->queue_index);
- 	return total_len;
+-	struct tun_struct *tun;
+-	struct tun_file *tfile = file->private_data;
++	struct tun_file *tfile;
+ 	if (file->f_op != &tun_fops)
+ 		return ERR_PTR(-EINVAL);
+-	tun = tun_get(file);
+-	if (!tun)
++	tfile = file->private_data;
++	if (!tfile)
+ 		return ERR_PTR(-EBADFD);
+-	tun_put(tun);
+ 	return &tfile->socket;
  }
- 
-@@ -1150,6 +1358,14 @@ out:
- 	return ret;
- }
- 
-+static void tun_free_netdev(struct net_device *dev)
-+{
-+	struct tun_struct *tun = netdev_priv(dev);
-+
-+	tun_flow_uninit(tun);
-+	free_netdev(dev);
-+}
-+
- static void tun_setup(struct net_device *dev)
- {
- 	struct tun_struct *tun = netdev_priv(dev);
-@@ -1158,7 +1374,7 @@ static void tun_setup(struct net_device *dev)
- 	tun->group = INVALID_GID;
- 
- 	dev->ethtool_ops = &tun_ethtool_ops;
--	dev->destructor = free_netdev;
-+	dev->destructor = tun_free_netdev;
- }
- 
- /* Trivial set of netlink ops to allow deleting tun or tap
-@@ -1381,10 +1597,15 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		tun->filter_attached = false;
- 		tun->sndbuf = tfile->socket.sk->sk_sndbuf;
- 
-+		spin_lock_init(&tun->lock);
-+
- 		security_tun_dev_post_create(&tfile->sk);
- 
- 		tun_net_init(dev);
- 
-+		if (tun_flow_init(tun))
-+			goto err_free_dev;
-+
- 		dev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST |
- 			TUN_USER_FEATURES;
- 		dev->features = dev->hw_features;
+ EXPORT_SYMBOL_GPL(tun_get_socket);
 -- 
 1.7.1
 
