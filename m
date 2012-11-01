@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934211Ab2KAV0i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 17:26:38 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35261 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759926Ab2KAV0d (ORCPT
+	id S1762299Ab2KAV0l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 17:26:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35336 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932299Ab2KAV0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 17:26:33 -0400
-Date: Thu, 1 Nov 2012 21:31:27 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121101213127.5967327f@pyramind.ukuu.org.uk>
-In-Reply-To: <20121101210634.GA19723@srcf.ucam.org>
-References: <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
-	<1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
-	<alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
-	<1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
-	<CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
-	<1351780935.2391.58.camel@dabdike.int.hansenpartnership.com>
-	<CACLa4pvh3v3Mhq8oe3dzRL8ytBgmitPkCGUSfVCR5WdQopjRMQ@mail.gmail.com>
-	<1351783096.2391.77.camel@dabdike.int.hansenpartnership.com>
-	<CACLa4pu0yoB6CQX=3nuAT2vz4=oTNfM9fjMUvFXKJovYu+y4fw@mail.gmail.com>
-	<1351803800.2391.96.camel@dabdike.int.hansenpartnership.com>
-	<20121101210634.GA19723@srcf.ucam.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Nov 2012 17:26:35 -0400
+Date: Thu, 1 Nov 2012 22:26:30 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter LaDow <petela@gocougs.wsu.edu>
+cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>
+Subject: Re: [PATCH RT 3/4] net: netfilter: Serialize xt_write_recseq sections
+ on RT
+In-Reply-To: <CAN8Q1EcVfzJJh+XMeXMMk33kwyyyRoEWsuEbSQqVW0Vz3i3Vuw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1211012213460.2756@ionos>
+References: <20121031003258.811955127@goodmis.org> <20121031003314.763160265@goodmis.org> <CAN8Q1EcVfzJJh+XMeXMMk33kwyyyRoEWsuEbSQqVW0Vz3i3Vuw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Linux vendors may care about Linux on Linux attacks. It's all fun and 
-> games until Oracle get Microsoft to revoke Red Hat's signature.
+On Wed, 31 Oct 2012, Peter LaDow wrote:
+> On Tue, Oct 30, 2012 at 5:33 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > From: Thomas Gleixner <tglx@linutronix.de>
+> >
+> > The netfilter code relies only on the implicit semantics of
+> > local_bh_disable() for serializing wt_write_recseq sections. RT breaks
+> > that and needs explicit serialization here.
+> >
+> > Reported-by: Peter LaDow <petela@gocougs.wsu.edu>
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> 
+> > diff --git a/include/linux/locallock.h b/include/linux/locallock.h
+> > index f1804a3..a5eea5d 100644
+> 
+> > diff --git a/include/linux/netfilter/x_tables.h b/include/linux/netfilter/x_tables.h
+> > index 32cddf7..bed90da2 100644
+> 
+> > diff --git a/net/netfilter/core.c b/net/netfilter/core.c
+> > index 899b71c..5db16ea 100644
+> 
+> I'm trying these out right now.  We've applied these patches to
+> 3.0.36-rt58 (rather than pull in the full 3.0.48-rt72 -- too much risk
+> for us right now to do a full kernel change).  I am setting up a
 
-Fear uncertainty and doubt (and if you think Oracle are going to do that
-I suspect your lawyers should deal with it)
+Cough. You are missing a boat load of crucial fixes. There is a damned
+good reason why 3.0.stable got 12 updates and the -rt version 14.
 
-Alan.
+Your risk assessment is definitley interesting.
+
+Thanks,
+
+	tglx
