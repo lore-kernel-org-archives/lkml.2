@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762177Ab2KAUDL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 16:03:11 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:20441 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754461Ab2KAUDH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 16:03:07 -0400
-Date: Thu, 1 Nov 2012 20:03:06 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v6 06/29] memcg: kmem controller infrastructure
-In-Reply-To: <1351771665-11076-7-git-send-email-glommer@parallels.com>
-Message-ID: <0000013abd91e573-0ea881ef-538b-40dd-8056-9532812eb165-000000@email.amazonses.com>
-References: <1351771665-11076-1-git-send-email-glommer@parallels.com> <1351771665-11076-7-git-send-email-glommer@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+	id S965456Ab2KAUFF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 16:05:05 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:42992 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754461Ab2KAUFC convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
+	Thu, 1 Nov 2012 16:05:02 -0400
+Message-Id: <5092D5EA020000780008EB85@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 01 Nov 2012 20:04:58 +0000
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <rientjes@google.com>, <konrad.wilk@oracle.com>
+Cc: <jeremy@goop.org>, <x86@kernel.org>, <tglx@linutronix.de>,
+        <torvalds@linux-foundation.org>, <xen-devel@lists.xensource.com>,
+        <mingo@redhat.com>, <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [patch] x86, xen: fix build dependency when USB_SUPPORT is
+ not enabled
+References: <alpine.DEB.2.00.1210312239120.31758@chino.kir.corp.google.com>
+ <20121101124912.GA10743@localhost.localdomain>
+In-Reply-To: <20121101124912.GA10743@localhost.localdomain>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Nov 2012, Glauber Costa wrote:
+>>> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> 11/01/12 1:49 PM >>>
+>On Wed, Oct 31, 2012 at 10:42:30PM -0700, David Rientjes wrote:
+>> CONFIG_XEN_DOM0 must depend on CONFIG_USB_SUPPORT, otherwise there is no 
+>> definition of xen_dbgp_reset_prep() and xen_dbgp_external_startup() 
+>> resulting in the following link error:
+>> 
+>> drivers/built-in.o: In function `dbgp_reset_prep':
+>> (.text+0x1e03c5): undefined reference to `xen_dbgp_reset_prep'
+>> drivers/built-in.o: In function `dbgp_external_startup':
+>> (.text+0x1e0d55): undefined reference to `xen_dbgp_external_startup'
+>
+>There is another patch that needs to be Acked and picked up by
+>Greg KH that fixes this.
+>
+>Let me poke Jan Beulich to repost it with the appropiate Acks.
 
-> +#ifdef CONFIG_MEMCG_KMEM
-> +static inline bool memcg_kmem_enabled(void)
-> +{
-> +	return true;
-> +}
-> +
+It's been picked up already, but another dependency problem was found with
+it (due to not having used CONFIG_USB_SUPPORT as dependency, as I had
+first submitted).
 
-Maybe it would be better to do this in the same way that NUMA_BUILD was
-done in kernel.h?
-
-
-> +static __always_inline bool
-> +memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
-> +{
-> +	if (!memcg_kmem_enabled())
-> +		return true;
-> +
-> +	/*
-> +	 * __GFP_NOFAIL allocations will move on even if charging is not
-> +	 * possible. Therefore we don't even try, and have this allocation
-> +	 * unaccounted. We could in theory charge it with
-> +	 * res_counter_charge_nofail, but we hope those allocations are rare,
-> +	 * and won't be worth the trouble.
-> +	 */
-> +	if (!(gfp & __GFP_KMEMCG) || (gfp & __GFP_NOFAIL))
-> +		return true;
-
-
-> +	if (in_interrupt() || (!current->mm) || (current->flags & PF_KTHREAD))
-> +		return true;
-
-This type of check is repeatedly occurring in various subsystems. Could we
-get a function (maybe inline) to do this check?
+Jan
 
