@@ -1,97 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761322Ab2KAXjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 19:39:54 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41424 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756360Ab2KAXjw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 19:39:52 -0400
+	id S2992645Ab2KAXr6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 19:47:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59699 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S2992551Ab2KAXrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 19:47:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,695,1344236400"; 
+   d="scan'208";a="214202699"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC EDAC/GHES] edac: lock module owner to avoid error report
+ conflicts
+Thread-Topic: [RFC EDAC/GHES] edac: lock module owner to avoid error report
+ conflicts
+Thread-Index: AQHNuCDOuRD+LyTnWU633Vkrr6zwkZfVUmSAgACISoD//5ZoIIAAjUSA//+mO7A=
+Date: Thu, 1 Nov 2012 23:47:52 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D5C22B@ORSMSX108.amr.corp.intel.com>
+References: <048a00fa4a888b349be5954ce9fd063a7bcf2564.1351691230.git.mchehab@redhat.com>
+ <20121101110512.GA31271@liondog.tnic> <20121101094721.2a57719c@redhat.com>
+ <20121101195509.GE31271@liondog.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F19D5C13C@ORSMSX108.amr.corp.intel.com>
+ <20121101220249.GI31271@liondog.tnic>
+In-Reply-To: <20121101220249.GI31271@liondog.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1920067.RxMJtDGai1@vostro.rjw.lan>
-References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
-	<11976302.Ya3MGGIAsU@vostro.rjw.lan>
-	<CAE9FiQVGPP3+97D2SatH_CBPBpqBZyCe7We=9=x5ZEq8_d0fWQ@mail.gmail.com>
-	<1920067.RxMJtDGai1@vostro.rjw.lan>
-Date: Thu, 1 Nov 2012 16:39:50 -0700
-X-Google-Sender-Auth: A6wsdj6QXmbwvs3kEG5OTEF79Xg
-Message-ID: <CAE9FiQW4ONas+m2HWq_xs457xZu3VJ6Nxsq320MD72Khb+sqJg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] Improve container_notify_cb() to support container hot-remove.
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Toshi Kani <toshi.kani@hp.com>, ZhangRui <rui.zhang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>, bhelgaas@google.com,
-        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA1Nm9fq027416
 
-On Thu, Nov 1, 2012 at 4:15 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: ACPI: Make seemingly useless check in osl.c more understandable
->
-> There is a seemingly useless check in drivers/acpi/osl.c added by
-> commit bc73675 (ACPI: fixes a false alarm from lockdep), which really
-> is necessary to avoid false positive lockdep complaints.  Document
-> this and rearrange the code related to it so that it makes fewer
-> checks.
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/osl.c |   21 ++++++++++++++-------
->  1 file changed, 14 insertions(+), 7 deletions(-)
->
-> Index: linux/drivers/acpi/osl.c
-> ===================================================================
-> --- linux.orig/drivers/acpi/osl.c
-> +++ linux/drivers/acpi/osl.c
-> @@ -944,17 +944,24 @@ static acpi_status __acpi_os_execute(acp
->          * because the hotplug code may call driver .remove() functions,
->          * which invoke flush_scheduled_work/acpi_os_wait_events_complete
->          * to flush these workqueues.
-> +        *
-> +        * To prevent lockdep from complaining unnecessarily, make sure that
-> +        * there is a different static lockdep key for each workqueue by using
-> +        * INIT_WORK() for each of them separately.
->          */
-> -       queue = hp ? kacpi_hotplug_wq :
-> -               (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
-> -       dpc->wait = hp ? 1 : 0;
-> -
-> -       if (queue == kacpi_hotplug_wq)
-> +       if (hp) {
-> +               queue = kacpi_hotplug_wq;
-> +               dpc->wait = 1;
->                 INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> -       else if (queue == kacpi_notify_wq)
-> +       } else if (type == OSL_NOTIFY_HANDLER) {
-> +               queue = kacpi_notify_wq;
-> +               dpc->wait = 0;
+> Right, but at least in the csrow case, we still can compute back the
+> csrow even with the interleaving, after we know how it is done exactly
+> (on which address bits, etc). I think this should be doable on Intel
+> controllers too but I don't know.
 
-yes, much clear.
+No. Architecturally all Intel provides is the physical address in MCi_ADDR.
+To do anything with that you are into per-system space, and the
+registers that define the mappings are not necessarily available
+to OS code ... sometimes they are, and sometimes they are even
+documented in places where Mauro can use them to write an
+EDAC driver ... but there are no guarantees.
 
-at the same can you changne
-dpc allocation from kmalloc with kzalloc instead.
-
-then we save two lines for dpc->wait = 0
-
-After that
-
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-
->                 INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> -       else
-> +       } else {
-> +               queue = kacpid_wq;
-> +               dpc->wait = 0;
->                 INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> +       }
->
->         /*
->          * On some machines, a software-initiated SMI causes corruption unless
->
-> --
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
