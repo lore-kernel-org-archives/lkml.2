@@ -1,149 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759767Ab2KAUXK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 16:23:10 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:55482 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758641Ab2KAUXD (ORCPT
+	id S1759805Ab2KAUYe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 16:24:34 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:58330 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754260Ab2KAUYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 16:23:03 -0400
-Date: Thu, 1 Nov 2012 16:22:54 -0400
-From: Jeff Layton <jlayton@samba.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, <axboe@kernel.dk>,
-        <lucho@ionkov.net>, <tytso@mit.edu>, <sage@inktank.com>,
-        <ericvh@gmail.com>, <mfasheh@suse.com>, <dedekind1@gmail.com>,
-        <adrian.hunter@intel.com>, <dhowells@redhat.com>, <sfrench@samba.org>,
-        <jlbec@evilplan.org>, <rminnich@sandia.gov>,
-        <linux-cifs@vger.kernel.org>, <jack@suse.cz>,
-        <martin.petersen@oracle.com>, <neilb@suse.de>, <david@fromorbit.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-mtd@lists.infradead.org>, <linux-fsdevel@vger.kernel.org>,
-        <v9fs-developer@lists.sourceforge.net>, <ceph-devel@vger.kernel.org>,
-        <linux-ext4@vger.kernel.org>, <linux-afs@lists.infradead.org>,
-        <ocfs2-devel@oss.oracle.com>
-Subject: Re: [PATCH 3/3] fs: Fix remaining filesystems to wait for stable
- page writeback
-Message-ID: <20121101162254.03dbbd9a@tlielax.poochiereds.net>
-In-Reply-To: <5092C2CE.7070209@panasas.com>
-References: <20121101075805.16153.64714.stgit@blackbox.djwong.org>
-	<20121101075829.16153.92036.stgit@blackbox.djwong.org>
-	<5092C2CE.7070209@panasas.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+	Thu, 1 Nov 2012 16:24:32 -0400
+Message-ID: <1351801470.1597.13.camel@x61.thuisdomein>
+Subject: [PATCH] [media] budget-av: only use t_state if initialized
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 01 Nov 2012 21:24:30 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 01 Nov 2012 20:24:30.0611 (UTC) FILETIME=[E5DECE30:01CDB86E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Nov 2012 11:43:26 -0700
-Boaz Harrosh <bharrosh@panasas.com> wrote:
+Building budget-av.o triggers this GCC warning:
+    In file included from drivers/media/pci/ttpci/budget-av.c:44:0:
+    drivers/media/dvb-frontends/tda8261_cfg.h: In function ‘tda8261_get_bandwidth’:
+    drivers/media/dvb-frontends/tda8261_cfg.h:68:21: warning: ‘t_state.bandwidth’ may be used uninitialized in this function [-Wuninitialized]
 
-> On 11/01/2012 12:58 AM, Darrick J. Wong wrote:
-> > Fix up the filesystems that provide their own ->page_mkwrite handlers to
-> > provide stable page writes if necessary.
-> > 
-> > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > ---
-> >  fs/9p/vfs_file.c |    1 +
-> >  fs/afs/write.c   |    4 ++--
-> >  fs/ceph/addr.c   |    1 +
-> >  fs/cifs/file.c   |    1 +
-> >  fs/ocfs2/mmap.c  |    1 +
-> >  fs/ubifs/file.c  |    4 ++--
-> >  6 files changed, 8 insertions(+), 4 deletions(-)
-> > 
-> > 
-> > diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
-> > index c2483e9..aa253f0 100644
-> > --- a/fs/9p/vfs_file.c
-> > +++ b/fs/9p/vfs_file.c
-> > @@ -620,6 +620,7 @@ v9fs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> >  	lock_page(page);
-> >  	if (page->mapping != inode->i_mapping)
-> >  		goto out_unlock;
-> > +	wait_on_stable_page_write(page);
-> >  
-> 
-> Good god thanks, yes please ;-)
-> 
-> >  	return VM_FAULT_LOCKED;
-> >  out_unlock:
-> > diff --git a/fs/afs/write.c b/fs/afs/write.c
-> > index 9aa52d9..39eb2a4 100644
-> > --- a/fs/afs/write.c
-> > +++ b/fs/afs/write.c
-> > @@ -758,7 +758,7 @@ int afs_page_mkwrite(struct vm_area_struct *vma, struct page *page)
-> 
-> afs, is it not a network filesystem? which means that it has it's own emulated none-block-device
-> BDI, registered internally. So if you do need stable pages someone should call
-> bdi_require_stable_pages()
-> 
-> But again since it is a network filesystem I don't see how it is needed, and/or it might be
-> taken care of already.
-> 
-> >  #ifdef CONFIG_AFS_FSCACHE
-> >  	fscache_wait_on_page_write(vnode->cache, page);
-> >  #endif
-> > -
-> > +	wait_on_stable_page_write(page);
-> >  	_leave(" = 0");
-> > -	return 0;
-> > +	return VM_FAULT_LOCKED;
-> >  }
-> > diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-> 
-> CEPH for sure has it's own "emulated none-block-device BDI". This one is also
-> a pure networking filesystem.
-> 
-> And it already does what it needs to do with wait_on_writeback().
-> 
-> So i do not think you should touch CEPH
-> 
-> > index 6690269..e9734bf 100644
-> > --- a/fs/ceph/addr.c
-> > +++ b/fs/ceph/addr.c
-> > @@ -1208,6 +1208,7 @@ static int ceph_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> >  		set_page_dirty(page);
-> >  		up_read(&mdsc->snap_rwsem);
-> >  		ret = VM_FAULT_LOCKED;
-> > +		wait_on_stable_page_write(page);
-> >  	} else {
-> >  		if (ret == -ENOMEM)
-> >  			ret = VM_FAULT_OOM;
-> > diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-> 
-> Cifs also self-BDI network filesystem, but
-> 
-> > index edb25b4..a8770bf 100644
-> > --- a/fs/cifs/file.c
-> > +++ b/fs/cifs/file.c
-> > @@ -2997,6 +2997,7 @@ cifs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> >  	struct page *page = vmf->page;
-> >  
-> >  	lock_page(page);
-> 
-> It waits by locking the page, that's cifs naive way of waiting for writeback
-> 
-> > +	wait_on_stable_page_write(page);
-> 
-> Instead it could do better and not override page_mkwrite at all, and all it needs
-> to do is call bdi_require_stable_pages() at it's own registered BDI
-> 
+Move the printk() that uses t_state.bandwith to the location where it
+should be initialized to fix this.
 
-Hmm...I don't know...
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Compile tested only.
 
-I've never been crazy about using the page lock for this, but in the
-absence of a better way to guarantee stable pages, it was what I ended
-up with at the time. cifs_writepages will hold the page lock until
-kernel_sendmsg returns. At that point the TCP layer will have copied
-off the page data so it's safe to release it.
+1) By the way, the first two if()-tests in tda8261_get_bandwidth()
+should be superfluous. And the first two if()-tests in both
+tda8261_get_frequency() and tda8261_set_frequency() look bogus to me, as
+they should always succeed. If that's correct, there are some cleanups
+possible in this header.
 
-With this change though, we're going to end up blocking until the
-writeback flag clears, right? And I think that will happen when the
-reply comes in? So, we'll end up blocking for much longer than is
-really necessary in page_mkwrite with this change.
+ drivers/media/dvb-frontends/tda8261_cfg.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/media/dvb-frontends/tda8261_cfg.h b/drivers/media/dvb-frontends/tda8261_cfg.h
+index 1af1ee4..4671074 100644
+--- a/drivers/media/dvb-frontends/tda8261_cfg.h
++++ b/drivers/media/dvb-frontends/tda8261_cfg.h
+@@ -78,7 +78,7 @@ static int tda8261_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
+ 			return err;
+ 		}
+ 		*bandwidth = t_state.bandwidth;
++		printk("%s: Bandwidth=%d\n", __func__, t_state.bandwidth);
+ 	}
+-	printk("%s: Bandwidth=%d\n", __func__, t_state.bandwidth);
+ 	return 0;
+ }
 -- 
-Jeff Layton <jlayton@samba.org>
+1.7.11.7
+
