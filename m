@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936037Ab2KAP3A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 11:29:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39596 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935828Ab2KAP25 (ORCPT
+	id S933451Ab2KAPde (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 11:33:34 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:44780 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538Ab2KAPdc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 11:28:57 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, trivial@kernel.org, tiwai@suse.de,
-        perex@perex.cz, alsa-devel@alsa-project.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] sound: Fix typo in drivers sound
-Date: Fri,  2 Nov 2012 00:28:50 +0900
-Message-Id: <1351783730-24714-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
+	Thu, 1 Nov 2012 11:33:32 -0400
+MIME-Version: 1.0
+Message-ID: <d7588a48-9f47-4f3a-852c-3fac916de75c@default>
+Date: Thu, 1 Nov 2012 08:30:05 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, minchan@kernel.org,
+        fschmaus@gmail.com, andor.daam@googlemail.com, ilendir@googlemail.com,
+        akpm@linux-foundation.org, mgorman@suse.de
+Subject: RE: [PATCH 2/5] mm: frontswap: lazy initialization to allow tmem
+ backends to build/run as modules
+References: <1351696074-29362-1-git-send-email-dan.magenheimer@oracle.com>
+ <1351696074-29362-3-git-send-email-dan.magenheimer@oracle.com>
+ <50915A5C.8000303@linux.vnet.ibm.com>
+In-Reply-To: <50915A5C.8000303@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6661.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in debug messages within drivers/sound
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: Re: [PATCH 2/5] mm: frontswap: lazy initialization to allow tmem backends to build/run as
+> modules
+> 
+> >  static int __init init_frontswap(void)
+> >  {
+> > +	int i;
+> >  #ifdef CONFIG_DEBUG_FS
+> >  	struct dentry *root = debugfs_create_dir("frontswap", NULL);
+> >  	if (root == NULL)
+> > @@ -364,6 +414,10 @@ static int __init init_frontswap(void)
+> >  	debugfs_create_u64("invalidates", S_IRUGO,
+> >  				root, &frontswap_invalidates);
+> >  #endif
+> > +	for (i = 0; i < MAX_INITIALIZABLE_SD; i++)
+> > +		sds[i] = -1;
+> > +
+> > +	frontswap_enabled = 1;
+> 
+> If frontswap_enabled is going to be on all the time, then what point
+> does it serve?  By extension, can all of the static inline wrappers in
+> frontswap.h be done away with?
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- sound/i2c/other/ak4113.c   | 2 +-
- sound/i2c/other/ak4114.c   | 2 +-
- sound/i2c/other/ak4117.c   | 2 +-
- sound/pci/rme9652/hdspm.c  | 2 +-
- sound/soc/codecs/cs42l52.c | 2 +-
- sound/soc/codecs/wm8994.c  | 2 +-
- 6 files changed, 6 insertions(+), 6 deletions(-)
+The intent of frontswap_enabled and cleancache_enabled was
+to avoid the overhead of a function call at the point where
+each frontswap/cleancache "hooks" is placed, using a global
+variable check instead.  I'm not sure if this minor
+performance tuning effort is worth preserving:  If not,
+I agree frontswap_enabled and the static inline wrappers (as
+well as their cleancache brethren) could be done away with **;
+if worth preserving, then I think frontswap_enabled could
+be set in the init method instead but the check for enabled
+in the frontswap init method and the cleancache init_fs
+method would need to be removed else lazy initialization
+wouldn't work.
 
-diff --git a/sound/i2c/other/ak4113.c b/sound/i2c/other/ak4113.c
-index ef68d71..e04e750 100644
---- a/sound/i2c/other/ak4113.c
-+++ b/sound/i2c/other/ak4113.c
-@@ -426,7 +426,7 @@ static struct snd_kcontrol_new snd_ak4113_iec958_controls[] = {
- },
- {
- 	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
--	.name =		"IEC958 Preample Capture Default",
-+	.name =		"IEC958 Preamble Capture Default",
- 	.access =	SNDRV_CTL_ELEM_ACCESS_READ |
- 		SNDRV_CTL_ELEM_ACCESS_VOLATILE,
- 	.info =		snd_ak4113_spdif_pinfo,
-diff --git a/sound/i2c/other/ak4114.c b/sound/i2c/other/ak4114.c
-index 816e7d2..5bf4fca 100644
---- a/sound/i2c/other/ak4114.c
-+++ b/sound/i2c/other/ak4114.c
-@@ -401,7 +401,7 @@ static struct snd_kcontrol_new snd_ak4114_iec958_controls[] = {
- },
- {
- 	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
--	.name =		"IEC958 Preample Capture Default",
-+	.name =		"IEC958 Preamble Capture Default",
- 	.access =	SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
- 	.info =		snd_ak4114_spdif_pinfo,
- 	.get =		snd_ak4114_spdif_pget,
-diff --git a/sound/i2c/other/ak4117.c b/sound/i2c/other/ak4117.c
-index b4b2a51..40e33c9 100644
---- a/sound/i2c/other/ak4117.c
-+++ b/sound/i2c/other/ak4117.c
-@@ -380,7 +380,7 @@ static struct snd_kcontrol_new snd_ak4117_iec958_controls[] = {
- },
- {
- 	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
--	.name =		"IEC958 Preample Capture Default",
-+	.name =		"IEC958 Preamble Capture Default",
- 	.access =	SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
- 	.info =		snd_ak4117_spdif_pinfo,
- 	.get =		snd_ak4117_spdif_pget,
-diff --git a/sound/pci/rme9652/hdspm.c b/sound/pci/rme9652/hdspm.c
-index f1cd1e3..9a8d5ce 100644
---- a/sound/pci/rme9652/hdspm.c
-+++ b/sound/pci/rme9652/hdspm.c
-@@ -4899,7 +4899,7 @@ snd_hdspm_proc_read_madi(struct snd_info_entry * entry,
- 		insel = "Coaxial";
- 		break;
- 	default:
--		insel = "Unkown";
-+		insel = "Unknown";
- 	}
- 
- 	snd_iprintf(buffer,
-diff --git a/sound/soc/codecs/cs42l52.c b/sound/soc/codecs/cs42l52.c
-index 6159929..4d8db36 100644
---- a/sound/soc/codecs/cs42l52.c
-+++ b/sound/soc/codecs/cs42l52.c
-@@ -763,7 +763,7 @@ static int cs42l52_set_sysclk(struct snd_soc_dai *codec_dai,
- 	if ((freq >= CS42L52_MIN_CLK) && (freq <= CS42L52_MAX_CLK)) {
- 		cs42l52->sysclk = freq;
- 	} else {
--		dev_err(codec->dev, "Invalid freq paramter\n");
-+		dev_err(codec->dev, "Invalid freq parameter\n");
- 		return -EINVAL;
- 	}
- 	return 0;
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index 11982bf..88dbabc 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -3734,7 +3734,7 @@ static irqreturn_t wm8958_mic_irq(int irq, void *data)
- 	} while (count--);
- 
- 	if (count == 0)
--		dev_warn(codec->dev, "No impedence range reported for jack\n");
-+		dev_warn(codec->dev, "No impedance range reported for jack\n");
- 
- #ifndef CONFIG_SND_SOC_WM8994_MODULE
- 	trace_snd_soc_jack_irq(dev_name(codec->dev));
--- 
-1.8.0.rc3.16.g8ead1bf
+Dan
+
+** Note to anyone that tries this:  There is a subtle but
+clever hack in the wrappers suggested by Jeremy Fitzhardinge
+that disables the wrappers at compile-time as well as
+runtime.  IOW, make sure you test-compile both with
+CONFIG_{CLEANCACHE|FRONTSWAP} _and_ with them unconfig'd.
 
