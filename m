@@ -1,256 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759194Ab2JaRZz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 13:25:55 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:57334 "EHLO
+	id S1758847Ab2JaRZB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 13:25:01 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:57327 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758752Ab2JaRZD (ORCPT
+	by vger.kernel.org with ESMTP id S1754234Ab2JaRY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 13:25:03 -0400
+	Wed, 31 Oct 2012 13:24:59 -0400
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
 To: Tony Lindgren <tony@atomide.com>
 Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
         linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
         Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
         linux-omap@vger.kernel.org
-Subject: [PATCH 2/3] da8xx-dt: Create da8xx DT adapter device
-Date: Thu,  1 Nov 2012 17:18:01 +0200
-Message-Id: <1351783082-11411-3-git-send-email-panto@antoniou-consulting.com>
+Subject: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+Date: Thu,  1 Nov 2012 17:17:59 +0200
+Message-Id: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com>
-References: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-omap_device is going private.
+It is painless to move the adapter DT devices to arch/arm/mach-omap2
 
-Move the da8xx-dt adapter device to arch/arm/mach-omap2.
+However I got bit by the __init at omap_build_device family functions.
+If you don't remove it, crashes every time you instantiate a device
+at runtime, or you load the cape driver as a module.
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
----
- arch/arm/mach-omap2/Makefile   |   3 +
- arch/arm/mach-omap2/da8xx-dt.c | 197 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 200 insertions(+)
+Pantelis Antoniou (3):
+  omap-device: Remove __init from omap_device_build family functions
+  da8xx-dt: Create da8xx DT adapter device
+  ti-tscadc-dt: Create ti-tscadc-dt DT adapter device
+
+ arch/arm/mach-omap2/Makefile       |   4 +
+ arch/arm/mach-omap2/da8xx-dt.c     | 197 +++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/ti-tscadc-dt.c | 155 +++++++++++++++++++++++++++++
+ arch/arm/plat-omap/omap_device.c   |   4 +-
+ 4 files changed, 358 insertions(+), 2 deletions(-)
  create mode 100644 arch/arm/mach-omap2/da8xx-dt.c
+ create mode 100644 arch/arm/mach-omap2/ti-tscadc-dt.c
 
-diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-index fe40d9e..3a9a0ff 100644
---- a/arch/arm/mach-omap2/Makefile
-+++ b/arch/arm/mach-omap2/Makefile
-@@ -200,6 +200,9 @@ ifneq ($(CONFIG_DRM_OMAP),)
- obj-y					+= drm.o
- endif
- 
-+# AM3XX Device Tree adapters for legacy drivers
-+obj-$(CONFIG_SOC_AM33XX)		+= da8xx-dt.o
-+
- # Specific board support
- obj-$(CONFIG_MACH_OMAP_GENERIC)		+= board-generic.o
- obj-$(CONFIG_MACH_OMAP_H4)		+= board-h4.o
-diff --git a/arch/arm/mach-omap2/da8xx-dt.c b/arch/arm/mach-omap2/da8xx-dt.c
-new file mode 100644
-index 0000000..d3c6f48
---- /dev/null
-+++ b/arch/arm/mach-omap2/da8xx-dt.c
-@@ -0,0 +1,197 @@
-+/*
-+ * DA8XX-DT: Device tree adapter using the legacy driver
-+ *
-+ * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
-+ * Copyright (C) 2012 Texas Instruments Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/init.h>
-+#include <linux/err.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
-+#include <video/da8xx-fb.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinmux.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/clk.h>
-+#include <plat/clock.h>
-+#include <plat/omap_device.h>
-+
-+struct da8xx_priv {
-+	struct da8xx_lcdc_platform_data lcd_pdata;
-+	struct lcd_ctrl_config lcd_cfg;
-+	struct display_panel lcd_panel;
-+	struct platform_device *lcdc_pdev;
-+	struct omap_hwmod *lcdc_oh;
-+	struct resource lcdc_res[1];
-+	int power_dn_gpio;
-+};
-+
-+static const struct of_device_id of_da8xx_dt_match[] = {
-+	{ .compatible = "da8xx-dt", },
-+	{},
-+};
-+
-+static int __devinit da8xx_dt_probe(struct platform_device *pdev)
-+{
-+	struct da8xx_priv *priv;
-+	struct clk *disp_pll;
-+	struct pinctrl *pinctrl;
-+	u32 disp_pll_val;
-+	const char *panel_type;
-+	int ret = -EINVAL;
-+
-+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-+	if (priv == NULL) {
-+		dev_err(&pdev->dev, "Failed to allocate priv\n");
-+		return -ENOMEM;
-+	}
-+	priv->power_dn_gpio = -1;
-+
-+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-+	if (IS_ERR(pinctrl))
-+		dev_warn(&pdev->dev,
-+			"pins are not configured from the driver\n");
-+
-+	ret = of_property_read_u32(pdev->dev.of_node, "disp-pll",
-+			&disp_pll_val);
-+	if (ret != 0) {
-+		dev_err(&pdev->dev, "Failed to read disp-pll property\n");
-+		return ret;
-+	}
-+
-+	ret = of_property_read_string(pdev->dev.of_node, "panel-type",
-+			&panel_type);
-+	if (ret != 0) {
-+		dev_err(&pdev->dev, "Failed to read panel-type property\n");
-+		return ret;
-+	}
-+
-+	/* conf_disp_pll(disp_pll); */
-+	disp_pll = clk_get(NULL, "dpll_disp_ck");
-+	if (IS_ERR(disp_pll)) {
-+		dev_err(&pdev->dev, "Cannot clk_get disp_pll\n");
-+		return PTR_ERR(disp_pll);
-+	}
-+	ret = clk_set_rate(disp_pll, disp_pll_val);
-+	clk_put(disp_pll);
-+	if (ret != 0) {
-+		dev_err(&pdev->dev, "Failed to set disp_pll\n");
-+		return ret;
-+	}
-+
-+	ret = of_get_named_gpio_flags(pdev->dev.of_node, "powerdn-gpio",
-+			0, NULL);
-+	if (IS_ERR_VALUE(ret)) {
-+		dev_info(&pdev->dev, "No power down GPIO\n");
-+	} else {
-+		priv->power_dn_gpio = ret;
-+
-+		ret = devm_gpio_request(&pdev->dev, priv->power_dn_gpio,
-+				"da8xx-dt:PDN");
-+		if (ret != 0) {
-+			dev_err(&pdev->dev, "Failed to gpio_request\n");
-+			return ret;
-+		}
-+
-+		ret = gpio_direction_output(priv->power_dn_gpio, 1);
-+		if (ret != 0) {
-+			dev_err(&pdev->dev, "Failed to set powerdn to 1\n");
-+			return ret;
-+		}
-+	}
-+
-+	/* display_panel */
-+	priv->lcd_panel.panel_type	= QVGA;
-+	priv->lcd_panel.max_bpp		= 16;
-+	priv->lcd_panel.min_bpp		= 16;
-+	priv->lcd_panel.panel_shade	= COLOR_ACTIVE;
-+
-+	/* lcd_ctrl_config */
-+	priv->lcd_cfg.p_disp_panel	= &priv->lcd_panel;
-+	priv->lcd_cfg.ac_bias		= 255;
-+	priv->lcd_cfg.ac_bias_intrpt	= 0;
-+	priv->lcd_cfg.dma_burst_sz	= 16;
-+	priv->lcd_cfg.bpp		= 16;
-+	priv->lcd_cfg.fdd		= 0x80;
-+	priv->lcd_cfg.tft_alt_mode	= 0;
-+	priv->lcd_cfg.stn_565_mode	= 0;
-+	priv->lcd_cfg.mono_8bit_mode	= 0;
-+	priv->lcd_cfg.invert_line_clock	= 1;
-+	priv->lcd_cfg.invert_frm_clock	= 1;
-+	priv->lcd_cfg.sync_edge		= 0;
-+	priv->lcd_cfg.sync_ctrl		= 1;
-+	priv->lcd_cfg.raster_order	= 0;
-+
-+	/* da8xx_lcdc_platform_data */
-+	strcpy(priv->lcd_pdata.manu_name, "BBToys");
-+	priv->lcd_pdata.controller_data = &priv->lcd_cfg;
-+	strcpy(priv->lcd_pdata.type, panel_type);
-+
-+	priv->lcdc_oh = omap_hwmod_lookup("lcdc");
-+	if (priv->lcdc_oh == NULL) {
-+		dev_err(&pdev->dev, "Failed to lookup omap_hwmod lcdc\n");
-+		return -ENODEV;
-+	}
-+
-+	priv->lcdc_pdev = omap_device_build("da8xx_lcdc", 0, priv->lcdc_oh,
-+			&priv->lcd_pdata,
-+			sizeof(struct da8xx_lcdc_platform_data),
-+			NULL, 0, 0);
-+	if (priv->lcdc_pdev == NULL) {
-+		dev_err(&pdev->dev, "Failed to build LCDC device\n");
-+		return -ENODEV;
-+	}
-+
-+	dev_info(&pdev->dev, "Registered bone LCDC OK.\n");
-+
-+	platform_set_drvdata(pdev, priv);
-+
-+	return 0;
-+}
-+
-+static int __devexit da8xx_dt_remove(struct platform_device *pdev)
-+{
-+	return -EINVAL;	/* not supporting removal yet */
-+}
-+
-+static struct platform_driver da8xx_dt_driver = {
-+	.probe		= da8xx_dt_probe,
-+	.remove		= __devexit_p(da8xx_dt_remove),
-+	.driver		= {
-+		.name	= "da8xx-dt",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_da8xx_dt_match,
-+	},
-+};
-+
-+static __init int da8xx_dt_init(void)
-+{
-+	return platform_driver_register(&da8xx_dt_driver);
-+}
-+
-+static __exit void da8xx_dt_exit(void)
-+{
-+	platform_driver_unregister(&da8xx_dt_driver);
-+}
-+
-+postcore_initcall(da8xx_dt_init);
-+module_exit(da8xx_dt_exit);
 -- 
 1.7.12
 
