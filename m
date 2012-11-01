@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab2KATZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 15:25:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59669 "EHLO mga09.intel.com"
+	id S1759596Ab2KATZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 15:25:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28867 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609Ab2KATZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 15:25:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,695,1344236400"; 
-   d="scan'208";a="214114950"
-Date: Thu, 1 Nov 2012 12:25:17 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: "Alexis R. Cortes" <alexis.cortes@ti.com>
-Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [ 26/85] usb: host: xhci: New system added for Compliance Mode
- Patch on SN65LVPE502CP
-Message-ID: <20121101192517.GL29270@xanatos>
-References: <20121026000031.107227138@linuxfoundation.org>
- <20121026000033.747087636@linuxfoundation.org>
- <1351358293.4834.14.camel@deadeye.wl.decadent.org.uk>
+	id S2992453Ab2KATZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 15:25:20 -0400
+Date: Thu, 1 Nov 2012 21:16:37 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3 net-next 4/8] vhost-net: cleanup macros for DMA status
+ tracking
+Message-ID: <a5fa0c01ea5ac0fec2ec35b32a9061ff80ad3880.1351797353.git.mst@redhat.com>
+References: <cover.1351797353.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351358293.4834.14.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <cover.1351797353.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 27, 2012 at 06:18:13PM +0100, Ben Hutchings wrote:
-> On Thu, 2012-10-25 at 17:05 -0700, Greg Kroah-Hartman wrote:
-> > 3.6-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: "Alexis R. Cortes" <alexis.cortes@ti.com>
-> > 
-> > commit 470809741a28c3092279f4e1f3f432e534d46068 upstream.
-> > 
-> > This minor change adds a new system to which the "Fix Compliance Mode
-> > on SN65LVPE502CP Hardware" patch has to be applied also.
-> > 
-> > System added:
-> > Vendor: Hewlett-Packard. System Model: Z1
-> [...]
-> > --- a/drivers/usb/host/xhci.c
-> > +++ b/drivers/usb/host/xhci.c
-> > @@ -479,7 +479,8 @@ static bool compliance_mode_recovery_tim
-> >  
-> >  	if (strstr(dmi_product_name, "Z420") ||
-> >  			strstr(dmi_product_name, "Z620") ||
-> > -			strstr(dmi_product_name, "Z820"))
-> > +			strstr(dmi_product_name, "Z820") ||
-> > +			strstr(dmi_product_name, "Z1"))
-> 
-> This will also match any future models with extra digits after the '1'.
-> It might be worth using a slightly stricter match.
+Better document macros for DMA tracking. Add an
+explicit one for DMA in progress instead of
+relying on user supplying len != 1.
 
-Hmm, Ben has a point.  We don't want to have the timer run on a machine
-that really doesn't need the quirk, or we impact battery life.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/vhost/net.c   |  3 ++-
+ drivers/vhost/vhost.c |  2 +-
+ drivers/vhost/vhost.h | 12 +++++++++---
+ 3 files changed, 12 insertions(+), 5 deletions(-)
 
-Alex, can you make a new patch that fixes this?
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 072cbba..f80ae5f 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -237,7 +237,8 @@ static void handle_tx(struct vhost_net *net)
+ 			} else {
+ 				struct ubuf_info *ubuf = &vq->ubuf_info[head];
+ 
+-				vq->heads[vq->upend_idx].len = len;
++				vq->heads[vq->upend_idx].len =
++					VHOST_DMA_IN_PROGRESS;
+ 				ubuf->callback = vhost_zerocopy_callback;
+ 				ubuf->ctx = vq->ubufs;
+ 				ubuf->desc = vq->upend_idx;
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 73d08db..f23cf89 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -1606,7 +1606,7 @@ void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool status)
+ 	struct vhost_virtqueue *vq = ubufs->vq;
+ 
+ 	vhost_poll_queue(&vq->poll);
+-	/* set len = 1 to mark this desc buffers done DMA */
++	/* set len to mark this desc buffers done DMA */
+ 	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
+ 	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
+ }
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 2de4ce2..b6538ee 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -13,9 +13,15 @@
+ #include <linux/virtio_ring.h>
+ #include <linux/atomic.h>
+ 
+-/* This is for zerocopy, used buffer len is set to 1 when lower device DMA
+- * done */
+-#define VHOST_DMA_DONE_LEN	1
++/*
++ * For transmit, used buffer len is unused; we override it to track buffer
++ * status internally; used for zerocopy tx only.
++ */
++/* Lower device DMA done */
++#define VHOST_DMA_DONE_LEN	2
++/* Lower device DMA in progress */
++#define VHOST_DMA_IN_PROGRESS	1
++/* Buffer unused */
+ #define VHOST_DMA_CLEAR_LEN	0
+ 
+ struct vhost_device;
+-- 
+MST
 
-Sarah Sharp
