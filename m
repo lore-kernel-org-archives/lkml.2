@@ -1,169 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992609Ab2KAWtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 18:49:31 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33582 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936147Ab2KAWt0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 18:49:26 -0400
-Date: Thu, 1 Nov 2012 15:47:30 -0700
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Jeff Layton <jlayton@samba.org>
-Cc: Boaz Harrosh <bharrosh@panasas.com>, axboe@kernel.dk, lucho@ionkov.net,
-        tytso@mit.edu, sage@inktank.com, ericvh@gmail.com, mfasheh@suse.com,
-        dedekind1@gmail.com, adrian.hunter@intel.com, dhowells@redhat.com,
-        sfrench@samba.org, jlbec@evilplan.org, rminnich@sandia.gov,
-        linux-cifs@vger.kernel.org, jack@suse.cz, martin.petersen@oracle.com,
-        neilb@suse.de, david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-mtd@lists.infradead.org,
-        linux-fsdevel@vger.kernel.org, v9fs-developer@lists.sourceforge.net,
-        ceph-devel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-afs@lists.infradead.org, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 3/3] fs: Fix remaining filesystems to wait for stable
- page writeback
-Message-ID: <20121101224730.GJ19591@blackbox.djwong.org>
-References: <20121101075805.16153.64714.stgit@blackbox.djwong.org>
- <20121101075829.16153.92036.stgit@blackbox.djwong.org>
- <5092C2CE.7070209@panasas.com>
- <20121101162254.03dbbd9a@tlielax.poochiereds.net>
+	id S2992582Ab2KAWu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 18:50:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34663 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760291Ab2KAWuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 18:50:55 -0400
+Date: Thu, 1 Nov 2012 23:50:53 +0100
+From: Jan Kara <jack@suse.cz>
+To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: BUG: enabling psacct breaks fsfreeze
+Message-ID: <20121101225053.GB31937@quack.suse.cz>
+References: <20121023094351.GC27919@pcnci.linuxbox.cz>
+ <20121031121517.GD18424@quack.suse.cz>
+ <20121031124600.GM20752@pcnci.linuxbox.cz>
+ <20121101093723.GC6584@quack.suse.cz>
+ <20121101111957.GD6584@quack.suse.cz>
+ <20121101142325.GD20752@pcnci.linuxbox.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121101162254.03dbbd9a@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <20121101142325.GD20752@pcnci.linuxbox.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 04:22:54PM -0400, Jeff Layton wrote:
-> On Thu, 1 Nov 2012 11:43:26 -0700
-> Boaz Harrosh <bharrosh@panasas.com> wrote:
-> 
-> > On 11/01/2012 12:58 AM, Darrick J. Wong wrote:
-> > > Fix up the filesystems that provide their own ->page_mkwrite handlers to
-> > > provide stable page writes if necessary.
-> > > 
-> > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > > ---
-> > >  fs/9p/vfs_file.c |    1 +
-> > >  fs/afs/write.c   |    4 ++--
-> > >  fs/ceph/addr.c   |    1 +
-> > >  fs/cifs/file.c   |    1 +
-> > >  fs/ocfs2/mmap.c  |    1 +
-> > >  fs/ubifs/file.c  |    4 ++--
-> > >  6 files changed, 8 insertions(+), 4 deletions(-)
-> > > 
-> > > 
-> > > diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
-> > > index c2483e9..aa253f0 100644
-> > > --- a/fs/9p/vfs_file.c
-> > > +++ b/fs/9p/vfs_file.c
-> > > @@ -620,6 +620,7 @@ v9fs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > >  	lock_page(page);
-> > >  	if (page->mapping != inode->i_mapping)
-> > >  		goto out_unlock;
-> > > +	wait_on_stable_page_write(page);
-> > >  
-> > 
-> > Good god thanks, yes please ;-)
-> > 
-> > >  	return VM_FAULT_LOCKED;
-> > >  out_unlock:
-> > > diff --git a/fs/afs/write.c b/fs/afs/write.c
-> > > index 9aa52d9..39eb2a4 100644
-> > > --- a/fs/afs/write.c
-> > > +++ b/fs/afs/write.c
-> > > @@ -758,7 +758,7 @@ int afs_page_mkwrite(struct vm_area_struct *vma, struct page *page)
-> > 
-> > afs, is it not a network filesystem? which means that it has it's own emulated none-block-device
-> > BDI, registered internally. So if you do need stable pages someone should call
-> > bdi_require_stable_pages()
-> > 
-> > But again since it is a network filesystem I don't see how it is needed, and/or it might be
-> > taken care of already.
-> > 
-> > >  #ifdef CONFIG_AFS_FSCACHE
-> > >  	fscache_wait_on_page_write(vnode->cache, page);
-> > >  #endif
-> > > -
-> > > +	wait_on_stable_page_write(page);
-> > >  	_leave(" = 0");
-> > > -	return 0;
-> > > +	return VM_FAULT_LOCKED;
-> > >  }
-> > > diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-> > 
-> > CEPH for sure has it's own "emulated none-block-device BDI". This one is also
-> > a pure networking filesystem.
-> > 
-> > And it already does what it needs to do with wait_on_writeback().
-> > 
-> > So i do not think you should touch CEPH
-> > 
-> > > index 6690269..e9734bf 100644
-> > > --- a/fs/ceph/addr.c
-> > > +++ b/fs/ceph/addr.c
-> > > @@ -1208,6 +1208,7 @@ static int ceph_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > >  		set_page_dirty(page);
-> > >  		up_read(&mdsc->snap_rwsem);
-> > >  		ret = VM_FAULT_LOCKED;
-> > > +		wait_on_stable_page_write(page);
-> > >  	} else {
-> > >  		if (ret == -ENOMEM)
-> > >  			ret = VM_FAULT_OOM;
-> > > diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-> > 
-> > Cifs also self-BDI network filesystem, but
-> > 
-> > > index edb25b4..a8770bf 100644
-> > > --- a/fs/cifs/file.c
-> > > +++ b/fs/cifs/file.c
-> > > @@ -2997,6 +2997,7 @@ cifs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > >  	struct page *page = vmf->page;
-> > >  
-> > >  	lock_page(page);
-> > 
-> > It waits by locking the page, that's cifs naive way of waiting for writeback
-> > 
-> > > +	wait_on_stable_page_write(page);
-> > 
-> > Instead it could do better and not override page_mkwrite at all, and all it needs
-> > to do is call bdi_require_stable_pages() at it's own registered BDI
-> > 
-> 
-> Hmm...I don't know...
-> 
-> I've never been crazy about using the page lock for this, but in the
-> absence of a better way to guarantee stable pages, it was what I ended
-> up with at the time. cifs_writepages will hold the page lock until
-> kernel_sendmsg returns. At that point the TCP layer will have copied
-> off the page data so it's safe to release it.
-> 
-> With this change though, we're going to end up blocking until the
-> writeback flag clears, right? And I think that will happen when the
-> reply comes in? So, we'll end up blocking for much longer than is
-> really necessary in page_mkwrite with this change.
+On Thu 01-11-12 15:23:25, Nikola Ciprich wrote:
+> Nov  1 14:23:25 vmnci22 [ 1075.178123] SysRq : Show Blocked State
+> Nov  1 14:23:25 vmnci22 [ 1075.180555]   task                        PC stack   pid father
+> Nov  1 14:23:25 vmnci22 [ 1075.180592] fsfreeze      D 0000000000000000     0  4215   4195 0x00000000
+> Nov  1 14:23:25 vmnci22 [ 1075.180599]  ffff8800090b9b28 0000000000000046 0000000000000000 ffffffff00000000
+> Nov  1 14:23:25 vmnci22 [ 1075.180606]  0000000000013780 ffff8800090b9fd8 ffff88000f716170 ffff88000f715e80
+> Nov  1 14:23:25 vmnci22 [ 1075.180612]  ffff88000f715dc0 ffffffff81566080 ffff88000f716170 000000010002f405
+> Nov  1 14:23:25 vmnci22 [ 1075.180619] Call Trace:
+> Nov  1 14:23:25 vmnci22 [ 1075.180693]  [<ffffffff810e2dbb>] __generic_file_aio_write+0xbb/0x420
+> Nov  1 14:23:25 vmnci22 [ 1075.180729]  [<ffffffff81079290>] ? autoremove_wake_function+0x0/0x40
+> Nov  1 14:23:25 vmnci22 [ 1075.180736]  [<ffffffff810e317f>] generic_file_aio_write+0x5f/0xc0
+  Thanks. So the system isn't really deadlocked. It's just that fsfreeze
+command hangs, isn't it? OK, I understand that it's kind of incovenient
+situation because every command will hang like this when the filesystem is
+frozen.
 
-That's a very good point to make-- network FSes can stop the stable-waiting
-after the request is sent.  Can I interest you in a new page flag (PG_stable)
-that indicates when a page has to be held for stable write?  Along with a
-modification to wait_on_stable_page_write that uses the new PG_stable flag
-instead of just writeback?  Then, you can clear PG_stable right after the
-sendmsg() and release the page for further activity without having to overload
-the page lock.
+Now I only have to come up with a way to improve this... It isn't quite
+simple - to properly protect against freezing be have to communicate down
+into generic_file_aio_write() that we want to bail out if filesystem is
+frozen instead of waiting.
 
-I wrote a patch that does exactly that as part of my work to defer the
-integrity checksumming until the last possible instant.  However, I haven't
-gotten that part to work yet, so I left the PG_stable patch out of this
-submission.  On the other hand, it sounds like you could use it.
-
---D
-> 
-> -- 
-> Jeff Layton <jlayton@samba.org>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
