@@ -1,134 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760328Ab2KAUeC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 16:34:02 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35194 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756923Ab2KAUeA (ORCPT
+	id S1760585Ab2KAUhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 16:37:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8225 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759141Ab2KAUhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 16:34:00 -0400
-Date: Thu, 1 Nov 2012 20:33:38 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Will Drewry <wad@chromium.org>, Geremy Condra <gcondra@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH 2/4] arch/arm: move secure_computing into trace
-Message-ID: <20121101203338.GU21164@n2100.arm.linux.org.uk>
-References: <1351799199-6853-1-git-send-email-keescook@chromium.org> <1351799199-6853-3-git-send-email-keescook@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351799199-6853-3-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 1 Nov 2012 16:37:23 -0400
+X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=EaluEUCYuSkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=U_9UZLlTPtUA:10 a=HJ28OZ2oNHYdhXhNRA4A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351802241.4004.115.camel@gandalf.local.home>
+Subject: Re: [PATCH] [PATCH] x86: Don't clobber top of pt_regs in nested NMI
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jan Beulich <jbeulich@suse.com>
+Cc: sqazi@google.com, peterz@infradead.org, tglx@linutronix.de,
+        torvalds@linux-foundation.org, hpa@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 01 Nov 2012 16:37:21 -0400
+In-Reply-To: <5092D31C020000780008EB6B@nat28.tlf.novell.com>
+References: <20121002002919.27236.14388.stgit@dungbeetle.mtv.corp.google.com>
+	 <1351731872.4004.112.camel@gandalf.local.home>
+	 <5092D31C020000780008EB6B@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 12:46:37PM -0700, Kees Cook wrote:
->  #ifdef CONFIG_SECCOMP
-> -	tst	r10, #_TIF_SECCOMP
-> -	beq	1f
-> -	mov	r0, scno
-> -	bl	__secure_computing	
-> -	add	r0, sp, #S_R0 + S_OFF		@ pointer to regs
-> -	ldmia	r0, {r0 - r3}			@ have to reload r0 - r3
-> -1:
-> +	tst	r10, #_TIF_SECCOMP		@ is seccomp enabled?
-> +	bne	__sys_trace
->  #endif
->  
->  	tst	r10, #_TIF_SYSCALL_WORK		@ are we tracing syscalls?
-
-It's pointless having:
-
-	tst	r10, #_TIF_SECCOMP
-	bne	__sys_trace
-	tst	r10, #_TIF_SYSCALL_WORK
-	bne	__sys_trace
-
-Instead, make TIF_SECCOMP be bit 11, combine it into _TIF_SYSCALL_WORK, and
-eliminate all of that CONFIG_SECCOMP block.
-
-> diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
-> index 739db3a..6b0e14b 100644
-> --- a/arch/arm/kernel/ptrace.c
-> +++ b/arch/arm/kernel/ptrace.c
-> @@ -916,13 +916,15 @@ enum ptrace_syscall_dir {
->  	PTRACE_SYSCALL_EXIT,
->  };
->  
-> -static int ptrace_syscall_trace(struct pt_regs *regs, int scno,
-> -				enum ptrace_syscall_dir dir)
-> +asmlinkage int syscall_trace_enter(struct pt_regs *regs, int scno)
->  {
->  	unsigned long ip;
->  
->  	current_thread_info()->syscall = scno;
->  
-> +	if (secure_computing(scno) == -1)
-> +		return -1;
-> +
->  	if (!test_thread_flag(TIF_SYSCALL_TRACE))
->  		return scno;
-
-I'm not sure this change is correct (combined with your hunk below).
-What if we have auditing enabled but trace disabled?  How do we reach
-audit_syscall_entry()?  Or the tracehook stuff?
-
-This patch looks wrong in too many ways.
-
-> @@ -931,20 +933,13 @@ static int ptrace_syscall_trace(struct pt_regs *regs, int scno,
->  	 * IP = 0 -> entry, =1 -> exit
->  	 */
->  	ip = regs->ARM_ip;
-> -	regs->ARM_ip = dir;
-> -
-> -	if (dir == PTRACE_SYSCALL_EXIT)
-> -		tracehook_report_syscall_exit(regs, 0);
-> -	else if (tracehook_report_syscall_entry(regs))
-> +	regs->ARM_ip = PTRACE_SYSCALL_ENTER;
-> +	if (tracehook_report_syscall_entry(regs))
->  		current_thread_info()->syscall = -1;
-> -
->  	regs->ARM_ip = ip;
-> -	return current_thread_info()->syscall;
-> -}
->  
-> -asmlinkage int syscall_trace_enter(struct pt_regs *regs, int scno)
-> -{
-> -	scno = ptrace_syscall_trace(regs, scno, PTRACE_SYSCALL_ENTER);
-> +	scno = current_thread_info()->syscall;
-> +
->  	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
->  		trace_sys_enter(regs, scno);
->  	audit_syscall_entry(AUDIT_ARCH_ARM, scno, regs->ARM_r0, regs->ARM_r1,
-> @@ -954,7 +949,23 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs, int scno)
->  
->  asmlinkage int syscall_trace_exit(struct pt_regs *regs, int scno)
->  {
-> -	scno = ptrace_syscall_trace(regs, scno, PTRACE_SYSCALL_EXIT);
-> +	unsigned long ip;
-> +
-> +	current_thread_info()->syscall = scno;
-> +
-> +	if (!test_thread_flag(TIF_SYSCALL_TRACE))
-> +		return scno;
-> +
-> +	/*
-> +	 * IP is used to denote syscall entry/exit:
-> +	 * IP = 0 -> entry, =1 -> exit
-> +	 */
-> +	ip = regs->ARM_ip;
-> +	regs->ARM_ip = PTRACE_SYSCALL_EXIT;
-> +	tracehook_report_syscall_exit(regs, 0);
-> +	regs->ARM_ip = ip;
-> +
-> +	scno = current_thread_info()->syscall;
->  	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
->  		trace_sys_exit(regs, scno);
->  	audit_syscall_exit(regs);
-> -- 
-> 1.7.9.5
+On Thu, 2012-11-01 at 19:53 +0000, Jan Beulich wrote:
+> >>> Steven Rostedt <rostedt@goodmis.org> 11/01/12 2:04 AM >>>
+> >On Mon, 2012-10-01 at 17:29 -0700, Salman Qazi wrote:
+> >> @@ -1826,12 +1832,15 @@ repeat_nmi:
+> >>       * is benign for the non-repeat case, where 1 was pushed just above
+> >>       * to this very stack slot).
+> >>       */
+> >> -    movq $1, 5*8(%rsp)
+> >> +    movq $1, 10*8(%rsp)
+> >>  
+> >>      /* Make another copy, this one may be modified by nested NMIs */
+> >> +    addq $(10*8), %rsp
+> >
+> >This breaks the CFI magic.
+> >
+> >>      .rept 5
+> >> -    pushq_cfi 4*8(%rsp)
+> >> +    pushq_cfi -6*8(%rsp)
+> >>      .endr
+> >> +    subq $(5*8), %rsp
+> >
+> >So does this.
+> >
+> >This needs to be annotated correctly before I can push it out. But the
+> >good news is, I stressed tested this change, and it all works out.
+> >
+> >Jan, can you help out here?
 > 
+> There doesn't appear to be anything special about these adjustments, so I
+> don't see what help would be required here - it ought to be the normal use
+> of CFI_ADJUST_CFA_OFFSET that needs adding.
+
+Even the simple CFI adjustments look like magic to me :-)  OK, I'll
+update the patch and send it out. I'll Cc you in case I screw up even
+the most simple case ;-)
+
+-- Steve
+
+
