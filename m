@@ -1,155 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945998Ab2KAV1F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 17:27:05 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:51242 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762278Ab2KAV1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 17:27:00 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Toshi Kani <toshi.kani@hp.com>, ZhangRui <rui.zhang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>, bhelgaas@google.com,
-        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/3] Improve container_notify_cb() to support container hot-remove.
-Date: Thu, 01 Nov 2012 22:31:01 +0100
-Message-ID: <11976302.Ya3MGGIAsU@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CAE9FiQV0gAJabpcoSHhTYq19m-YmaC0O6HH_dFKXUTuvUMG4Fg@mail.gmail.com>
-References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com> <1748725.QBg5LLmPOx@vostro.rjw.lan> <CAE9FiQV0gAJabpcoSHhTYq19m-YmaC0O6HH_dFKXUTuvUMG4Fg@mail.gmail.com>
+	id S936095Ab2KAV26 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 17:28:58 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:47621 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260Ab2KAV2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 17:28:53 -0400
+Date: Thu, 1 Nov 2012 21:28:43 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121101212843.GA20309@srcf.ucam.org>
+References: <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
+ <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
+ <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+ <1351780935.2391.58.camel@dabdike.int.hansenpartnership.com>
+ <CACLa4pvh3v3Mhq8oe3dzRL8ytBgmitPkCGUSfVCR5WdQopjRMQ@mail.gmail.com>
+ <1351783096.2391.77.camel@dabdike.int.hansenpartnership.com>
+ <CACLa4pu0yoB6CQX=3nuAT2vz4=oTNfM9fjMUvFXKJovYu+y4fw@mail.gmail.com>
+ <1351803800.2391.96.camel@dabdike.int.hansenpartnership.com>
+ <20121101210634.GA19723@srcf.ucam.org>
+ <20121101213127.5967327f@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121101213127.5967327f@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 01, 2012 01:16:22 PM Yinghai Lu wrote:
-> On Thu, Nov 1, 2012 at 1:17 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, November 01, 2012 01:17:58 PM Toshi Kani wrote:
-> >> On Thu, 2012-11-01 at 11:28 -0700, Yinghai Lu wrote:
-> >> > On Thu, Nov 1, 2012 at 9:43 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> >> > >
-> >> > > Rafael pointed out in my CPU hot-remove patch that
-> >> > > acpi_bus_hot_remove_device() was not exported for modules.  Looks like
-> >> > > you have the same problem here.  FYI, I just sent the following patch
-> >> > > that exports acpi_bus_hot_remove_device() and acpi_os_hotplug_execute().
-> >> > >
-> >> > > https://lkml.org/lkml/2012/11/1/225
-> >> >
-> >> > acpi_os_hotplug_execute() does not like having good quality yet.
-> >> >
-> >> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  941)   /*
-> >> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  942)    * We
-> >> > can't run hotplug code in keventd_wq/kacpid_wq/kacpid_notify_wq
-> >> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  943)    *
-> >> > because the hotplug code may call driver .remove() functions,
-> >> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  944)    *
-> >> > which invoke flush_scheduled_work/acpi_os_wait_events_complete
-> >> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  945)    * to
-> >> > flush these workqueues.
-> >> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  946)    */
-> >> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  947)   queue
-> >> > = hp ? kacpi_hotplug_wq :
-> >> > c02256be (Zhang Rui           2009-06-23 10:20:29 +0800  948)
-> >> >  (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
-> >> > 9ac61856 (Bjorn Helgaas       2009-08-31 22:32:10 +0000  949)
-> >> > dpc->wait = hp ? 1 : 0;
-> >> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  950)
-> >> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  951)   if
-> >> > (queue == kacpi_hotplug_wq)
-> >> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  952)
-> >> >  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> >> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  953)   else
-> >> > if (queue == kacpi_notify_wq)
-> >> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  954)
-> >> >  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> >> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  955)   else
-> >> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  956)
-> >> >  INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> >> > bc73675b (Zhang Rui           2010-03-22 15:48:54 +0800  957)
-> >> >
-> >> > really don't know why checking queue and call same code in every branch.
-> >> >
-> >> > from comm:
-> >> >
-> >> > commit bc73675b99fd9850dd914be01d71af99c5d2a1ae
-> >> > Author: Zhang Rui <rui.zhang@intel.com>
-> >> > Date:   Mon Mar 22 15:48:54 2010 +0800
-> >> >
-> >> >     ACPI: fixes a false alarm from lockdep
-> >> >
-> >> >     fixes a false alarm from lockdep, as acpi hotplug workqueue waits other
-> >> >     workqueues.
-> >> >     http://bugzilla.kernel.org/show_bug.cgi?id=14553
-> >> >     https://bugzilla.kernel.org/show_bug.cgi?id=15521
-> >> >
-> >> >     Original-patch-from: Andrew Morton <akpm@linux-foundation.org>
-> >> >     Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> >> >     Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> >> >     Signed-off-by: Len Brown <len.brown@intel.com>
-> >> >
-> >> > diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> >> > index 8e6d866..900da68 100644
-> >> > --- a/drivers/acpi/osl.c
-> >> > +++ b/drivers/acpi/osl.c
-> >> > @@ -758,7 +758,14 @@ static acpi_status
-> >> > __acpi_os_execute(acpi_execute_type type,
-> >> >         queue = hp ? kacpi_hotplug_wq :
-> >> >                 (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
-> >> >         dpc->wait = hp ? 1 : 0;
-> >> > -       INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> >> > +
-> >> > +       if (queue == kacpi_hotplug_wq)
-> >> > +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> >> > +       else if (queue == kacpi_notify_wq)
-> >> > +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> >> > +       else
-> >> > +               INIT_WORK(&dpc->work, acpi_os_execute_deferred);
-> >> > +
-> >> >         ret = queue_work(queue, &dpc->work);
-> >> >
-> >> >         if (!ret) {
-> >> >
-> >> >
-> >> > Len or Rafael,
-> >> > can you just revert that silly patch?
-> >>
-> >> Hi Yinghai,
-> >>
-> >> Per the following thread, the code seems to be written in this way to
-> >> allocate a separate lock_class_key for each work queue.  It should have
-> >> had some comment to explain this, though.
-> >>
-> >> https://lkml.org/lkml/2009/12/13/304
-> >
-> > The code has evolved since then, however, so that it doesn't make sense
-> > any more.
-> >
+On Thu, Nov 01, 2012 at 09:31:27PM +0000, Alan Cox wrote:
+> > Linux vendors may care about Linux on Linux attacks. It's all fun and 
+> > games until Oracle get Microsoft to revoke Red Hat's signature.
 > 
-> oh, no, that commit should not be reverted. instead we should add some
-> comment for it...
-> 
-> that mean : three path, will have three separated static lock dep key
-> from every INIT_WORK.
+> Fear uncertainty and doubt (and if you think Oracle are going to do that
+> I suspect your lawyers should deal with it)
 
-I see.
-
-OK, I'll drop the patch removing it.
-
-What about the following comment:
-
-"To prevent lockdep from complaining unnecessarily, make sure that there
- is a different static lockdep key created for each workqueue by using
- INIT_WORK for each of them separately."
-
-Thanks,
-Rafael
-
+Lawyers won't remove blacklist entries.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Matthew Garrett | mjg59@srcf.ucam.org
