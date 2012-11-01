@@ -1,94 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550Ab2KAQu4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 12:50:56 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:3063 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab2KAQuy (ORCPT
+	id S1751183Ab2KARGV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 13:06:21 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56112 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab2KARGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 12:50:54 -0400
-Message-ID: <1351788194.19172.98.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 3/3] Improve container_notify_cb() to support
- container hot-remove.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: yinghai@kernel.org, bhelgaas@google.com, lenb@kernel.org,
-        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 01 Nov 2012 10:43:14 -0600
-In-Reply-To: <1351668471-31436-4-git-send-email-tangchen@cn.fujitsu.com>
-References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1351668471-31436-4-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Nov 2012 13:06:19 -0400
+Date: Thu, 1 Nov 2012 12:06:09 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: "ivan.khoronzhuk" <ivan.khoronzhuk@ti.com>, <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] ARM: OMAP4: ID: Improve features detection and check
+Message-ID: <20121101170609.GA23552@kahuna>
+References: <1351765401-12487-1-git-send-email-ivan.khoronzhuk@ti.com>
+ <50925E7F.7080602@ti.com>
+ <5092A156.4000601@ti.com>
+ <5092A4DF.4080405@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5092A4DF.4080405@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-31 at 15:27 +0800, Tang Chen wrote:
-> This patch introduces a new function container_device_remove() to do
-> the container hot-remove job. It works like the following:
+On 22:05-20121101, Santosh Shilimkar wrote:
+> On Thursday 01 November 2012 09:50 PM, ivan.khoronzhuk wrote:
+> >On 11/01/2012 01:35 PM, Santosh Shilimkar wrote:
+> >>On Thursday 01 November 2012 03:53 PM, Ivan Khoronzhuk wrote:
+> >>>Replaces several flags bearing the same meaning. There is no need
+> >>>to set flags due to different omap types here, it can be checked
+> >>>in appropriate places as well.
+> >>>
+> >>>Cc: Tony Lindgren <tony@atomide.com>
+> >>>Cc: Russell King <linux@arm.linux.org.uk>
+> >>>Cc: linux-omap@vger.kernel.org
+> >>>Cc: linux-arm-kernel@lists.infradead.org
+> >>>Cc: linux-kernel@vger.kernel.org
+> >>>Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> >>>---
+> >>>  arch/arm/mach-omap2/id.c  |   25 +++++++------------------
+> >>>  arch/arm/mach-omap2/soc.h |    8 ++------
+> >>>  2 files changed, 9 insertions(+), 24 deletions(-)
+> >>>
+> >>>diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
+> >>>index cf2362c..3c47a19 100644
+> >>>--- a/arch/arm/mach-omap2/id.c
+> >>>+++ b/arch/arm/mach-omap2/id.c
+> >>>@@ -28,6 +28,9 @@
+> >>>  #include "soc.h"
+> >>>  #include "control.h"
+> >>>
+> >>>+#define OMAP4_SILICON_TYPE_STANDARD        0x01
+> >>>+#define OMAP4_SILICON_TYPE_PERFORMANCE        0x02
+> >>>+
+> >>>  static unsigned int omap_revision;
+> >>>  static const char *cpu_rev;
+> >>>  u32 omap_features;
+> >>>@@ -273,25 +276,11 @@ void __init omap4xxx_check_features(void)
+> >>>  {
+> >>>      u32 si_type;
+> >>>
+> >>>-    if (cpu_is_omap443x())
+> >>>-        omap_features |= OMAP4_HAS_MPU_1GHZ;
+> >>>-
+> >>>+    si_type =
+> >>>+    (read_tap_reg(OMAP4_CTRL_MODULE_CORE_STD_FUSE_PROD_ID_1) >> 16)
+> >>>& 0x03;
+> >>>
+> >>>-    if (cpu_is_omap446x()) {
+> >>>-        si_type =
+> >>>- read_tap_reg(OMAP4_CTRL_MODULE_CORE_STD_FUSE_PROD_ID_1);
+> >>>-        switch ((si_type & (3 << 16)) >> 16) {
+> >>>-        case 2:
+> >>>-            /* High performance device */
+> >>>-            omap_features |= OMAP4_HAS_MPU_1_5GHZ;
+> >>>-            break;
+> >>>-        case 1:
+> >>>-        default:
+> >>>-            /* Standard device */
+> >>>-            omap_features |= OMAP4_HAS_MPU_1_2GHZ;
+> >>>-            break;
+> >>>-        }
+> >>>-    }
+> >>>+    if (si_type == OMAP4_SILICON_TYPE_PERFORMANCE)
+> >>>+        omap_features = OMAP4_HAS_PERF_SILICON;
+> >>
+> >>Well the detection isn't for performance/standard but there are some
+> >>features depend on it. For example 1 GHz doesn't DPLL DCC enable feature
+> >>where as 1.2 GHz, 1.5 GHz doesn't need. This is the main reason this
+> >>information is also effused. Have you considered this aspect while
+> >>creating this patch ?
+> >>
+> >>Regards
+> >>Santosh
+> >>
+> >
+> >I had considered it. There is no dependency on the features.
+> >DCC usage depends on asked frequency on the fly, not from the features.
+> >Depending on "performance/standard" feature the available frequencies
+> >should be chosen in places where they are needed, for example while
+> >initializing OPPs.
+> >
+> You are correct about the way DCC is handled in the clock code. Infact
+> all these features like L2CACHE, SGX, IVA etc is more for to display
+> boot messages.
 > 
-> 1. call acpi_bus_trim(device, 0) to stop the container device,
->    which means to unbind ACPI drivers first before remove devices.
->    (This feature is introduced by Lu Yinghai:
->     http://www.spinics.net/lists/linux-pci/msg17667.html)
-> 2. generate the KOBJ_OFFLINE uevent. (Did I do this correct ?)
-> 3. call acpi_bus_hot_remove_device(), which will call acpi_bus_trim(device, 1)
->    to remove the container.
+> >Currently we have several features while it is only one indeed.
+> >
+> 1GHz, 1.2GHz, 1.5 GHz are not same since the silicon capability itself
+> is different.
 > 
-> This patch is based on Lu Yinghai's work.
-> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-split-pci-root-hp-2
+> git blame tells me that Nishant has sent this update so looping him
+> if above differentiation in boot log helps.
 > 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->  drivers/acpi/container.c |   63 ++++++++++++++++++++++++++++++++++++++-------
->  1 files changed, 53 insertions(+), 10 deletions(-)
+> Nishant,
+> What's your take on removing above freq prints and marking
+> those silicon as performance silicons as the $subject patch does ?
 > 
-> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
-> index a10eee6..4abec98 100644
-> --- a/drivers/acpi/container.c
-> +++ b/drivers/acpi/container.c
-> @@ -166,6 +166,32 @@ static int container_device_add(struct acpi_device **device, acpi_handle handle)
->  	return result;
->  }
->  
-> +static int container_device_remove(struct acpi_device *device)
-> +{
-> +	int ret;
-> +	struct acpi_eject_event *ej_event;
-> +
-> +	/* stop container device at first */
-> +	ret = acpi_bus_trim(device, 0);
-> +	pr_debug("acpi_bus_trim stop return %x\n", ret);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* send the uevent before remove the device */
-> +	kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-> +
-> +	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-> +	if (!ej_event)
-> +		return -ENOMEM;
-> +
-> +	ej_event->device = device;
-> +	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-> +
-> +	acpi_bus_hot_remove_device(ej_event);
+> Regards
+> Santosh
+Yes $subject patch is a better approach compared to having freq based
+handling which just increases the number of macros we need to enable
+depending on SoC variants that we spin off the main SoC. This also
+allows us to conserve the features bitfield ahead as well.
 
-Hi Tang,
+I hate to admit, but after a couple of generations of SoC spinoffs,
+my original logic is proving to be was pretty short sighted,
+unfortunately :(
 
-Rafael pointed out in my CPU hot-remove patch that
-acpi_bus_hot_remove_device() was not exported for modules.  Looks like
-you have the same problem here.  FYI, I just sent the following patch
-that exports acpi_bus_hot_remove_device() and acpi_os_hotplug_execute().
-
-https://lkml.org/lkml/2012/11/1/225
-
-Thanks,
--Toshi
-
-
+So, approach
+Acked-by: Nishanth Menon <nm@ti.com>
+-- 
+Regards,
+Nishanth Menon
