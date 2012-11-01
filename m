@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933512Ab2KAJ7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 05:59:21 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36833 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932084Ab2KAJ7T (ORCPT
+	id S933841Ab2KAKEo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 06:04:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57255 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932084Ab2KAKEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 05:59:19 -0400
-Message-ID: <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Oliver Neukum <oneukum@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Date: Thu, 01 Nov 2012 09:59:14 +0000
-In-Reply-To: <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
-	   <2548314.3caaFsMVg6@linux-lqwf.site> <50919EED.3020601@genband.com>
-	   <36538307.gzWq1oO7Kg@linux-lqwf.site>
-	  <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
-	  <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
-	 <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
-	 <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Nov 2012 06:04:42 -0400
+Date: Thu, 1 Nov 2012 11:04:33 +0100
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: linux-next: manual merge of the block tree with Linus' tree
+Message-ID: <20121101100432.GA2702@herton-ThinkPad-T420>
+References: <20121031130439.7242d3f12fa7002624c3b1e6@canb.auug.org.au>
+ <1351691714.13356.31.camel@deadeye.wl.decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351691714.13356.31.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-01 at 10:45 +0100, Jiri Kosina wrote:
-> On Thu, 1 Nov 2012, James Bottomley wrote:
+On Wed, Oct 31, 2012 at 01:55:14PM +0000, Ben Hutchings wrote:
+> On Wed, 2012-10-31 at 13:04 +1100, Stephen Rothwell wrote:
+> > Hi Jens,
+> > 
+> > Today's linux-next merge of the block tree got a conflict in
+> > drivers/block/floppy.c between a set of common patches from Linus' tree
+> > and commit b33d002f4b6b ("genhd: Make put_disk() safe for disks that have
+> > not been registered") from the block tree.
+> > 
+> > I fixed it up (by using the block tree version) and can carry the fix as
+> > necessary (no action is required).
 > 
-> > I'm actually just struggling to understand the use case for these more
-> > esoteric protections.
+> commit b33d002f4b6b ("genhd: Make put_disk() safe for disks that have
+> not been registered") was supposed to be dropped or reverted; I don't
+> why it's hanging around.
+
+I also don't feel inclined to continue to fiddle too much with the
+floppy driver, but may be we should add to it a fix to not leak the
+reference to disks[]->queue in the error handling, checking if we really
+did the add_disk (the "disks[drive]->queue = NULL;" under out_put_disk).
+
 > 
-> I believe the real point is drawing a clear line between trusted and 
-> untrusted (with root being userspace, hence implicitly untrusted), and 
-> disallowing "legitimate crossing" of this line.
+> Ben.
+> 
+> -- 
+> Ben Hutchings
+> I'm always amazed by the number of people who take up solipsism because
+> they heard someone else explain it. - E*Borg on alt.fan.pratchett
 
-But that doesn't really help me: untrusted root is an oxymoron.  I get
-capability separated systems, where you invest trust in layers and you
-make each layer small and verifiable, so you have a granular trust
-policy you build up.  I really don't understand the use case for trying
-to remove a small portion of trust from the huge trust domain of root
-and then doing a massive amount of fixup around the edges because
-there's leaks all over the place from the trust that root still has.  It
-all seems to be a bit backwards.  If you just begin with the capability
-separated granular system, I don't see why it doesn't all just work with
-what we have today.
-
-James
-
-
+-- 
+[]'s
+Herton
