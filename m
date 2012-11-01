@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761962Ab2KAPQA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 11:16:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46572 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761655Ab2KAPP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 11:15:58 -0400
-Date: Thu, 1 Nov 2012 16:15:56 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] cgroup: use cgroup_lock_live_group(parent) in
- cgroup_create()
-Message-ID: <20121101151556.GB5065@dhcp22.suse.cz>
-References: <1351657365-25055-1-git-send-email-tj@kernel.org>
- <1351657365-25055-4-git-send-email-tj@kernel.org>
- <20121031155514.GD22809@dhcp22.suse.cz>
- <20121031170431.GF2945@htj.dyndns.org>
- <20121101091644.GA8533@dhcp22.suse.cz>
- <CAOS58YM+kRtspVUzmnSmOmrDoNS_kF6KA02zWGxqH5FUcRWo1Q@mail.gmail.com>
- <20121101150532.GA5065@dhcp22.suse.cz>
+	id S1761967Ab2KAPRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 11:17:18 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:58450 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761915Ab2KAPRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 11:17:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121101150532.GA5065@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351782390.2391.69.camel@dabdike.int.hansenpartnership.com>
+References: <2548314.3caaFsMVg6@linux-lqwf.site>
+	<50919EED.3020601@genband.com>
+	<36538307.gzWq1oO7Kg@linux-lqwf.site>
+	<1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
+	<alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
+	<1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
+	<alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
+	<1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
+	<CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+	<1351780935.2391.58.camel@dabdike.int.hansenpartnership.com>
+	<20121101144912.GA10269@srcf.ucam.org>
+	<1351782390.2391.69.camel@dabdike.int.hansenpartnership.com>
+Date: Thu, 1 Nov 2012 11:17:14 -0400
+Message-ID: <CACLa4psR5Q37tBG__0Vf-+9jmygejkYVRNKCAueF3L2Z3FcxLA@mail.gmail.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+From: Eric Paris <eparis@parisplace.org>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-11-12 16:05:32, Michal Hocko wrote:
-> On Thu 01-11-12 07:52:24, Tejun Heo wrote:
-> > Hey, Michal.
-> > 
-> > On Thu, Nov 1, 2012 at 2:16 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> > > I am not sure I understand. What does deactivate_super has to do with
-> > > the above suggestion? cgroup_lock_live_group will take the cgroup_mutex
-> > > on the success or frees the previously allocated&unused memory. The
-> > > only thing I was suggesting is to do cgroup_lock_live_group first and
-> > > allocate the cgroup only if it doesn't fail.
-> > 
-> > It complicates updates to the error exit path.
-> 
-> Still don't get it, sorry. What prevents us to do:
-> static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
->                              umode_t mode)
-> {
->         struct cgroup *cgrp;
->         struct cgroupfs_root *root = parent->root;
->         int err = 0;
->         struct cgroup_subsys *ss;
->         struct super_block *sb = root->sb;
-> 
-> 	if (!cgroup_lock_live_group(parent))
-> 		return -ENODEV;
-> 
->         cgrp = kzalloc(sizeof(*cgrp), GFP_KERNEL);
->         if (!cgrp)
->                 return -ENOMEM;
+On Thu, Nov 1, 2012 at 11:06 AM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
 
-this needs to drop the lock of course but it doesn't make it much more
-complicated...
- 
-> > You end up having to update a lot more and it's not like grabbing lock
-> > first is substantially better in any way, so why bother?
-> 
-> Yes the allocation can sleep if we are short on memory so this can
-> potentially take long which is not entirely nice but a pointless
-> allocation is not nice either. Anyway I am asking because I am trying to
-> understand what is the motivation behind and your explanation about the
-> error exit path doesn't make much sense to me. So I am either missing
-> something or we are talking about two different things.
+> But surely that's fanciful ... you've already compromised windows to get
+> access to the ESP.  If you've done it once, you can do it again until
+> the exploit is patched.
 
--- 
-Michal Hocko
-SUSE Labs
+You work under the assumption that any bad operation was done by means
+of a compromised kernel.  Admins install things all the time,
+sometimes, things which they shouldn't.  (This statement is OS
+agnostic)
+
+> There are likely many easier ways of ensuring
+> persistence than trying to install a full linux kernel with a
+> compromised resume system.
+
+I'm sure lots of us would love to hear the ideas.  And the attack is
+on the suspend side, nothing about resume has to be malicious (not
+really relevant I guess)...
