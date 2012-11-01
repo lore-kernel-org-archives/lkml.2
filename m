@@ -1,128 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703Ab2KABkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 21:40:08 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58336 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755002Ab2KABkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 21:40:06 -0400
-X-AuditID: 9c930197-b7c0bae00000042f-8c-5091d2f3edda
-Date: Thu, 1 Nov 2012 10:46:04 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Paul Turner <pjt@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, sanjay@google.com,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC v2] Support volatile range for anon vma
-Message-ID: <20121101014604.GE26256@bbox>
-References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
- <20121031143524.0509665d.akpm@linux-foundation.org>
- <CAPM31RKm89s6PaAnfySUD-f+eGdoZP6=9DHy58tx_4Zi8Z9WPQ@mail.gmail.com>
- <CAHGf_=om34CQoPqgmVE5v8oVxntaJQ-bvFeEPMnfe_R+uvxqrQ@mail.gmail.com>
- <CAPM31RJwrM2f8fg0--Xcea+tHYcB2C_khXy3k-h=O2x4MMfwmw@mail.gmail.com>
+	id S1756102Ab2KABlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 21:41:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61980 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755208Ab2KABln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Oct 2012 21:41:43 -0400
+X-IronPort-AV: E=Sophos;i="4.80,690,1344182400"; 
+   d="scan'208";a="6111679"
+Message-ID: <5091D30B.7040600@cn.fujitsu.com>
+Date: Thu, 01 Nov 2012 09:40:27 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPM31RJwrM2f8fg0--Xcea+tHYcB2C_khXy3k-h=O2x4MMfwmw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, yinghai@kernel.org
+CC: bhelgaas@google.com, lenb@kernel.org, jiang.liu@huawei.com,
+        izumi.taku@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/3] ACPI: container hot remove support.
+References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com> <509106E2.70008@jp.fujitsu.com>
+In-Reply-To: <509106E2.70008@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/01 09:40:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/01 09:40:55,
+	Serialize complete at 2012/11/01 09:40:55
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 06:15:33PM -0700, Paul Turner wrote:
-> On Wed, Oct 31, 2012 at 3:56 PM, KOSAKI Motohiro
-> <kosaki.motohiro@gmail.com> wrote:
-> >>> > Allocator should call madvise(MADV_NOVOLATILE) before reusing for
-> >>> > allocating that area to user. Otherwise, accessing of volatile range
-> >>> > will meet SIGBUS error.
-> >>>
-> >>> Well, why?  It would be easy enough for the fault handler to give
-> >>> userspace a new, zeroed page at that address.
-> >>
-> >> Note: MADV_DONTNEED already has this (nice) property.
-> >
-> > I don't think I strictly understand this patch. but maybe I can answer why
-> > userland and malloc folks don't like MADV_DONTNEED.
-> >
-> > glibc malloc discard freed memory by using MADV_DONTNEED
-> > as tcmalloc. and it is often a source of large performance decrease.
-> > because of MADV_DONTNEED discard memory immediately and
-> > right after malloc() call fall into page fault and pagesize memset() path.
-> > then, using DONTNEED increased zero fill and cache miss rate.
-> >
-> > At called free() time, malloc don't have a knowledge when next big malloc()
-> > is called. then, immediate discarding may or may not get good performance
-> > gain. (Ah, ok, the rate is not 5:5. then usually it is worth. but not everytime)
-> >
+On 10/31/2012 07:09 PM, Yasuaki Ishimatsu wrote:
+> Hi Tang,
 > 
-> Ah; In tcmalloc allocations (and their associated free-lists) are
-> binned into separate lists as a function of object-size which helps to
-> mitigate this.
+> If container device contains memory device, the function is
+> very danger. As you know, we are developing a memory hotplug.
+> If memory has kernel memory, memory hot remove operations fails.
+> But container_device_remove() cannot realize it. So even if
+> the memory hot remove operation fails, container_device_remove()
+> keeps hot remove operation. Finally, the function sends _EJ0
+> to firmware. In this case, if the memory is accessed, kernel
+> panic occurs.
+> The example is as follows:
 > 
-> I'd make a separate more general argument here:
-> If I'm allocating a large (multi-kilobyte object) the cost of what I'm
-> about to do with that object is likely fairly large -- The fault/zero
-> cost a probably fairly small proportional cost, which limits the
-> optimization value.
-
-While I look at thread trial of Rik which is same goal while implementation
-is different, I found this number.
-
-https://lkml.org/lkml/2007/4/20/390
-
-I believe optimiation is valuable. Of course, I need simillar testing for
-proving it.
-
+>   https://lkml.org/lkml/2012/9/26/318
 > 
-> >
-> > In past, several developers tryied to avoid such situation, likes
-> >
-> > - making zero page daemon and avoid pagesize zero fill at page fault
-> > - making new vma or page flags and mark as discardable w/o swap and
-> >   vmscan treat it. (like this and/or MADV_FREE)
-> > - making new process option and avoid page zero fill from page fault path.
-> >   (yes, it is big incompatibility and insecure. but some embedded folks thought
-> >    they are acceptable downside)
-> > - etc
-> >
-> >
-> > btw, I'm not sure this patch is better for malloc because current MADV_DONTNEED
-> > don't need mmap_sem and works very effectively when a lot of threads case.
-> > taking mmap_sem might bring worse performance than DONTNEED. dunno.
-> 
-> MADV_VOLATILE also seems to end up looking quite similar to a
-> user-visible (range-based) cleancache.
-> 
-> A second popular use-case for such semantics is the case of
-> discardable cache elements (e.g. web browser).  I suspect we'd want to
-> at least mention these in the changelog.  (Alternatively, what does a
-> cleancache-backed-fs exposing these semantics look like?)
-> 
+Hi Ishimatsu,
 
-It's a trial of John Stultz(http://lwn.net/Articles/518130/, there was another
-trial long time ago https://lkml.org/lkml/2005/11/1/384) and I want to
-expand the concept from file-backed page to anonymous page so this patch
-is a trial for anonymous page. So, usecase of my patch have focussed on
-malloc/free case.
-I hope both are able to be unified.
+I see, thanks for the info. So we need to do some roll back thing.
 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Is anyone doing this now ?
+If yes, would you please give me some links to refer to ? And I think I
+should push these patches later.
+If not, I think I can try to do it.
 
--- 
-Kind regards,
-Minchan Kim
+Thanks. :)
