@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762159Ab2KASfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 14:35:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56018 "EHLO arroyo.ext.ti.com"
+	id S1762167Ab2KASfs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 14:35:48 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:57748 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978Ab2KASfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 14:35:05 -0400
-Message-ID: <5092C0CB.5020504@ti.com>
-Date: Thu, 1 Nov 2012 14:34:51 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1751978Ab2KASfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 14:35:43 -0400
+Date: Thu, 1 Nov 2012 11:35:16 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Will Drewry <wad@chromium.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Kees Cook <keescook@chromium.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-doc@vger.kernel.org
+Subject: [PATCH v2] proc: add "Seccomp" to status
+Message-ID: <20121101183516.GA18332@www.outflux.net>
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>
-CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
-        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
-        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
-        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
-Subject: Re: [PATCH v3 03/11] clk: davinci - common clk utilities to init
- clk driver
-References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-4-git-send-email-m-karicheri2@ti.com> <50926E03.8050102@ti.com>
-In-Reply-To: <50926E03.8050102@ti.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2012 08:41 AM, Sekhar Nori wrote:
-> On 10/25/2012 9:41 PM, Murali Karicheri wrote:
->> This is the common clk driver initialization functions for DaVinci
->> SoCs and other SoCs that uses similar hardware architecture.
->> clock.h also defines struct types for clock definitions in a SoC
->> and clock data type for configuring clk-mux. The initialization
->> functions are used by clock initialization code in a specific
->> platform/SoC.
->>
->> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->> +struct clk *davinci_plldiv_clk(const char *name, const char *parent,
->> +				struct clk_plldiv_data *data)
->> +{
->> +	/*
->> +	 * This is a PLL divider clock with divider specified by
->> +	 * div_reg in pll_div_data.
->> +	 */
->> +	data->reg = ioremap(data->phys_div_reg, 4);
->> +	if (WARN_ON(!data->reg))
->> +		return NULL;
->> +
->> +	return clk_register_davinci_plldiv(NULL, name, parent, data, &_lock);
-> This function does not exist at this point. Looks like you need to swap
-> 3/11 with 4/11. Also, you should also add build infrastructure
-> (makefile, Kconfig) changes in the same patch that creates the file.
-> There is no point in adding those separately.
->
-> Thanks,
-> Sekhar
->
-Sekhar,
+It is currently impossible to examine the state of seccomp for
+a given process. While attaching with gdb and attempting "call
+prctl(PR_GET_SECCOMP,...)" will work with some situations, it is not
+reliable. If the process is in seccomp mode 1, this query will kill the
+process (prctl not allowed), if the process is in mode 2 with prctl not
+allowed, it will similarly be killed, and in weird cases, if prctl is
+filtered to return errno 0, it can look like seccomp is disabled.
 
-So the Makefile, Kconfig and new files should be in the same patch.
-Also will re-order the 3/11 and 4/11 in the next revision.
+When reviewing the state of running processes, there should be a way to
+externally examine the seccomp mode. ("Did this build of Chrome end up
+using seccomp?" "Did my distro ship ssh with seccomp enabled?")
 
-Murali
+This adds the "Seccomp" line to /proc/$pid/status.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
+
+---
+v2:
+ - improve commit message, add documentation, as suggested by akpm.
+---
+ Documentation/filesystems/proc.txt |    2 ++
+ fs/proc/array.c                    |    8 ++++++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index a1793d6..557891d 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -181,6 +181,7 @@ read the file /proc/PID/status:
+   CapPrm: 0000000000000000
+   CapEff: 0000000000000000
+   CapBnd: ffffffffffffffff
++  Seccomp:        0
+   voluntary_ctxt_switches:        0
+   nonvoluntary_ctxt_switches:     1
+ 
+@@ -237,6 +238,7 @@ Table 1-2: Contents of the status files (as of 2.6.30-rc7)
+  CapPrm                      bitmap of permitted capabilities
+  CapEff                      bitmap of effective capabilities
+  CapBnd                      bitmap of capabilities bounding set
++ Seccomp                     seccomp mode, like prctl(PR_GET_SECCOMP, ...)
+  Cpus_allowed                mask of CPUs on which this process may run
+  Cpus_allowed_list           Same as previous, but in "list format"
+  Mems_allowed                mask of memory nodes allowed to this process
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index c1c207c..135d6ac 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -327,6 +327,13 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+ 	render_cap_t(m, "CapBnd:\t", &cap_bset);
+ }
+ 
++static inline void task_seccomp(struct seq_file *m, struct task_struct *p)
++{
++#ifdef CONFIG_SECCOMP
++	seq_printf(m, "Seccomp:\t%d\n", p->seccomp.mode);
++#endif
++}
++
+ static inline void task_context_switch_counts(struct seq_file *m,
+ 						struct task_struct *p)
+ {
+@@ -360,6 +367,7 @@ int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
+ 	}
+ 	task_sig(m, task);
+ 	task_cap(m, task);
++	task_seccomp(m, task);
+ 	task_cpus_allowed(m, task);
+ 	cpuset_task_status_allowed(m, task);
+ 	task_context_switch_counts(m, task);
+-- 
+1.7.9.5
+
+
+-- 
+Kees Cook
+Chrome OS Security
