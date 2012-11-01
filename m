@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762190Ab2KATBX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 15:01:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56323 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753555Ab2KATBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 15:01:21 -0400
-Date: Thu, 1 Nov 2012 20:01:19 +0100
-From: Jan Kara <jack@suse.cz>
-To: Marcus Sundman <marcus@hibox.fi>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Debugging system freezes on filesystem writes
-Message-ID: <20121101190119.GA27294@quack.suse.cz>
-References: <508DB432.2030208@hibox.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508DB432.2030208@hibox.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934945Ab2KATD2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 15:03:28 -0400
+Received: from mx.scalarmail.ca ([98.158.95.75]:40412 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932329Ab2KATD1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 15:03:27 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] scatterlist: don't BUG when we can trivially return a proper error.
+Date: Thu,  1 Nov 2012 15:03:00 -0400
+Message-Id: <1351796580-20600-1-git-send-email-nbowler@elliptictech.com>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-10-12 00:39:46, Marcus Sundman wrote:
-  Hello,
+There is absolutely no reason to crash the kernel when we have a
+perfectly good return value already available to use for conveying
+failure status.
 
-> I have a big problem with the system freezing and would appreciate
-> any help on debugging this and pinpointing where exactly the problem
-> is, so it could be fixed.
-> 
-> So, whenever I write to the disk the system comes to a crawl or
-> freezes altogether. This happens even when the writing processes are
-> running on nice '19' and ionice 'idle'. (E.g. a 10 second compile
-> could freeze the system for several minutes, rendering the computer
-> pretty much unusable for anything interesting.)
-> 
-> Here you can see a 20 second gap even in superhigh priority:
-> # nice -n -20 ionice -c1 iostat -t -m -d -x 1 > http://pastebin.com/j5qnh2VV
-> 
-> I'm currently running 3.5.0-17-lowlatency on the ZenBook UX31E,
-> using the NOOP I/O scheduler on the SanDisk SSD U100. The chipset
-> seems to be Intel QS67. I've had this same problem on 3.2.0 generic
-> and lowlatency kernels.
-  These are Ubuntu kernels. Any chance to reproduce the issue with vanilla
-kernels - i.e. kernels without any Ubuntu patches? Also when you speak of
-system freezing - can you e.g. type to terminal while the system is frozen?
-Or is it just that running commands freezes? And how much free memory do
-you have while the system is frozen? Finally, can you trigger the freeze by
-something simpler than compilation - e.g. does
-  dd if=/dev/zero of=/tmp bs=1M
-trigger the freeze as well?
+Let's return an error code instead of crashing the kernel: that sounds
+like a much better plan.
 
-								Honza
+Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
+---
+ lib/scatterlist.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+index 3675452b23ca..11ecaf000696 100644
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -248,7 +248,8 @@ int __sg_alloc_table(struct sg_table *table, unsigned int nents,
+ 	unsigned int left;
+ 
+ #ifndef ARCH_HAS_SG_CHAIN
+-	BUG_ON(nents > max_ents);
++	if (WARN_ON_ONCE(nents > max_ents))
++		return -E2BIG;
+ #endif
+ 
+ 	memset(table, 0, sizeof(*table));
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.8.6
+
