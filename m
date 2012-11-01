@@ -1,48 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab2KAFrr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 01:47:47 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:51739 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab2KAFrq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 01:47:46 -0400
-MIME-Version: 1.0
-Date: Thu, 1 Nov 2012 13:47:45 +0800
-Message-ID: <CAPgLHd-EaZQ1i72va62Rwohs-prbR1fbEs-L6geiABur1rfwnw@mail.gmail.com>
-Subject: [PATCH -next] Staging: silicom: remove unused including <linux/version.h>
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+	id S1752290Ab2KAFxv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 01:53:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59368 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752079Ab2KAFxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 01:53:50 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: maxk@qti.qualcomm.com, edumazet@google.com, krkumar2@in.ibm.com,
+        ernesto.martin@viasat.com, haixiao@juniper.net,
+        Jason Wang <jasowang@redhat.com>
+Subject: [net-next v5 0/7] Multiqueue support in tuntap
+Date: Thu,  1 Nov 2012 13:45:55 +0800
+Message-Id: <1351748762-3455-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Hello All:
 
-Remove including <linux/version.h> that don't need it.
+This is an update of multiqueue support in tuntap from V3. Please consider to
+merge.
 
-dpatch engine is used to auto generate this patch.
-(https://github.com/weiyj/dpatch)
+The main idea for this series is to let tun/tap device to be benefited from
+multiqueue network cards and multi-core host. We used to have a single queue for
+tuntap which could be a bottleneck in a multiqueue/core environment. So this
+series let the device could be attched with multiple sockets and expose them
+through fd to the userspace as multiqueues. The sereis were orignally designed
+to serve as backend for multiqueue virtio-net in KVM, but the design is generic
+for other application to be used.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/staging/silicom/bp_mod.c | 1 -
- 1 file changed, 1 deletion(-)
+Some quick overview of the design:
 
-diff --git a/drivers/staging/silicom/bp_mod.c b/drivers/staging/silicom/bp_mod.c
-index 018b4ff..58c5f5c 100644
---- a/drivers/staging/silicom/bp_mod.c
-+++ b/drivers/staging/silicom/bp_mod.c
-@@ -9,7 +9,6 @@
- /*                                                                            */
- /*                                                                            */
- /******************************************************************************/
--#include <linux/version.h>
- 
- #include <linux/kernel.h>	/* We're doing kernel work */
- #include <linux/module.h>	/* Specifically, a module */
+- Moving socket from tun_device to tun_file.
+- Allowing multiple sockets to be attached to a tun/tap devices.
+- Using RCU to synchronize the data path and system call.
+- Two new ioctls were added for the usespace to attach and detach socket to the
+  device.
+- API compatibility were maintained without userspace notable changes, so legacy
+  userspace that only use one queue won't need any changes.
+- A flow(rxhash) to queue table were maintained by tuntap which choose the txq
+  based on the last rxq where it comes.
 
+Performance test:
+
+Pktgen is used to generate the traffic and a simple program that only does the
+receiving in userspace.
+
+#q #thread  aggregate kpps +improvement%
+1q 1thread  818kpps        +0%
+2q 2threads 1926kpps       +135%
+3q 3threads 2642kpps       +223%
+4q 4threads 3536kpps       +332%
+
+Changes from v4:
+- Fix style issue found by checkpatch.pl
+
+Changes from V3:
+- Rebase to net-next
+- A separate RCUiying patch to simply the reviewing
+- Add a simple "tx follows rx" policy when choosing txq
+- Various bug fixes
+
+Changes from V2:
+- Rebase to the latest net-next
+- Fix netdev leak when tun_attach fails
+- Fix return value of TUNSETOWNER
+- Purge the receive queue in socket destructor
+- Enable multiqueue tun (V1 and V2 only allows mq to be eanbled for tap
+- Add per-queue u64 statistics
+- Fix wrong BUG_ON() check in tun_detach()
+- Check numqueues instead of tfile[0] in tun_set_iff() to let tunctl -d works
+  correctly
+- Set numqueues to MAX_TAP_QUEUES during tun_detach_all() to prevent the
+  attaching.
+
+Changes from V1:
+- Simplify the sockets array management by not leaving NULL in the slot.
+- Optimization on the tx queue selecting.
+- Fix the bug in tun_deatch_all()
+
+Reference:
+- V4 https://lkml.org/lkml/2012/10/29/37
+- V3 https://lkml.org/lkml/2012/6/25/191
+- V2 http://lwn.net/Articles/459270/
+- V1 http://www.mail-archive.com/kvm@vger.kernel.org/msg59479.html
+
+Jason Wang (7):
+  tuntap: log the unsigned informaiton with %u
+  tuntap: move socket to tun_file
+  tuntap: RCUify dereferencing between tun_struct and tun_file
+  tuntap: introduce multiqueue flags
+  tuntap: multiqueue support
+  tuntap: add ioctl to attach or detach a file form tuntap device
+  tuntap: choose the txq based on rxq
+
+ drivers/net/tun.c           |  836 ++++++++++++++++++++++++++++++++-----------
+ include/uapi/linux/if_tun.h |    5 +
+ 2 files changed, 631 insertions(+), 210 deletions(-)
 
