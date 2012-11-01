@@ -1,39 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761883Ab2KAPEJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 11:04:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60068 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761851Ab2KAPDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 11:03:51 -0400
-Date: Thu, 01 Nov 2012 11:03:46 -0400 (EDT)
-Message-Id: <20121101.110346.1322437819225403446.davem@davemloft.net>
-To: balbi@ti.com
-Cc: behanw@converseincode.com, linux-usb@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 2/3] Remove VLAIS usage from gadget code
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121101072116.GA32013@arwen.pp.htv.fi>
-References: <20121031132838.GQ10998@arwen.pp.htv.fi>
-	<509144C0.8000601@converseincode.com>
-	<20121101072116.GA32013@arwen.pp.htv.fi>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1761885Ab2KAPFk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 11:05:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46053 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761791Ab2KAPFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 11:05:36 -0400
+Date: Thu, 1 Nov 2012 16:05:32 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8] cgroup: use cgroup_lock_live_group(parent) in
+ cgroup_create()
+Message-ID: <20121101150532.GA5065@dhcp22.suse.cz>
+References: <1351657365-25055-1-git-send-email-tj@kernel.org>
+ <1351657365-25055-4-git-send-email-tj@kernel.org>
+ <20121031155514.GD22809@dhcp22.suse.cz>
+ <20121031170431.GF2945@htj.dyndns.org>
+ <20121101091644.GA8533@dhcp22.suse.cz>
+ <CAOS58YM+kRtspVUzmnSmOmrDoNS_kF6KA02zWGxqH5FUcRWo1Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOS58YM+kRtspVUzmnSmOmrDoNS_kF6KA02zWGxqH5FUcRWo1Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felipe Balbi <balbi@ti.com>
-Date: Thu, 1 Nov 2012 09:21:16 +0200
+On Thu 01-11-12 07:52:24, Tejun Heo wrote:
+> Hey, Michal.
+> 
+> On Thu, Nov 1, 2012 at 2:16 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > I am not sure I understand. What does deactivate_super has to do with
+> > the above suggestion? cgroup_lock_live_group will take the cgroup_mutex
+> > on the success or frees the previously allocated&unused memory. The
+> > only thing I was suggesting is to do cgroup_lock_live_group first and
+> > allocate the cgroup only if it doesn't fail.
+> 
+> It complicates updates to the error exit path.
 
-> then we can merge to net tree and handle the conflicts when merging to
-> Linus, that'd be fine by me as long as people know how to solve the
-> conflict properly ;-)
+Still don't get it, sorry. What prevents us to do:
+static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+                             umode_t mode)
+{
+        struct cgroup *cgrp;
+        struct cgroupfs_root *root = parent->root;
+        int err = 0;
+        struct cgroup_subsys *ss;
+        struct super_block *sb = root->sb;
 
-Like Herbert with the crypto tree, I'm simply not merging this
-absolute crap into my networking tree.
+	if (!cgroup_lock_live_group(parent))
+		return -ENODEV;
 
-These changes are totally not appropriate.
+        cgrp = kzalloc(sizeof(*cgrp), GFP_KERNEL);
+        if (!cgrp)
+                return -ENOMEM;
+
+> You end up having to update a lot more and it's not like grabbing lock
+> first is substantially better in any way, so why bother?
+
+Yes the allocation can sleep if we are short on memory so this can
+potentially take long which is not entirely nice but a pointless
+allocation is not nice either. Anyway I am asking because I am trying to
+understand what is the motivation behind and your explanation about the
+error exit path doesn't make much sense to me. So I am either missing
+something or we are talking about two different things.
+-- 
+Michal Hocko
+SUSE Labs
