@@ -1,114 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935750Ab2KAOiL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 10:38:11 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:46614 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933397Ab2KAOiI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 10:38:08 -0400
-Subject: Re: [PATCH 2/3] da8xx-dt: Create da8xx DT adapter device
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <509288D9.7030406@iki.fi>
-Date: Thu, 1 Nov 2012 16:38:03 +0200
-Cc: Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <CA59AE1A-AF06-4BB2-B0C2-C6B79021C740@antoniou-consulting.com>
-References: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com> <1351783082-11411-3-git-send-email-panto@antoniou-consulting.com> <509288D9.7030406@iki.fi>
-To: Tomi Valkeinen <tomba@iki.fi>
-X-Mailer: Apple Mail (2.1085)
+	id S1761739Ab2KAOlo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 10:41:44 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34725 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761539Ab2KAOll (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 10:41:41 -0400
+Date: Thu, 1 Nov 2012 14:46:35 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Eric Paris <eparis@parisplace.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121101144635.55687287@pyramind.ukuu.org.uk>
+In-Reply-To: <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	<2548314.3caaFsMVg6@linux-lqwf.site>
+	<50919EED.3020601@genband.com>
+	<36538307.gzWq1oO7Kg@linux-lqwf.site>
+	<1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
+	<alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
+	<1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
+	<alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
+	<1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
+	<CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi,
+> Imagine you run windows and you've never heard of Linux.
 
-On Nov 1, 2012, at 4:36 PM, Tomi Valkeinen wrote:
+To those people I think you mean "never heard of Ubuntu" ;-)
 
-> On 2012-11-01 17:18, Pantelis Antoniou wrote:
->> omap_device is going private.
->> 
->> Move the da8xx-dt adapter device to arch/arm/mach-omap2.
->> 
->> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> In this case we have a completely 'untrusted' root inside Linux.  From
+> the user PoV root and Linux are both malware.  Notice the EXACT same
+> attack would work launching rootkit'd Linux from Linux.  So don't
+> pretend not to care about Windows.  It's just that launching malware
+> Linux seems like a reason to get your key revoked.  We don't want
+> signed code which can be used as an attack vector on ourselves or on
+> others.
 > 
-> 
->> +
->> +	/* display_panel */
->> +	priv->lcd_panel.panel_type	= QVGA;
->> +	priv->lcd_panel.max_bpp		= 16;
->> +	priv->lcd_panel.min_bpp		= 16;
->> +	priv->lcd_panel.panel_shade	= COLOR_ACTIVE;
->> +
->> +	/* lcd_ctrl_config */
->> +	priv->lcd_cfg.p_disp_panel	= &priv->lcd_panel;
->> +	priv->lcd_cfg.ac_bias		= 255;
->> +	priv->lcd_cfg.ac_bias_intrpt	= 0;
->> +	priv->lcd_cfg.dma_burst_sz	= 16;
->> +	priv->lcd_cfg.bpp		= 16;
->> +	priv->lcd_cfg.fdd		= 0x80;
->> +	priv->lcd_cfg.tft_alt_mode	= 0;
->> +	priv->lcd_cfg.stn_565_mode	= 0;
->> +	priv->lcd_cfg.mono_8bit_mode	= 0;
->> +	priv->lcd_cfg.invert_line_clock	= 1;
->> +	priv->lcd_cfg.invert_frm_clock	= 1;
->> +	priv->lcd_cfg.sync_edge		= 0;
->> +	priv->lcd_cfg.sync_ctrl		= 1;
->> +	priv->lcd_cfg.raster_order	= 0;
->> +
->> +	/* da8xx_lcdc_platform_data */
->> +	strcpy(priv->lcd_pdata.manu_name, "BBToys");
->> +	priv->lcd_pdata.controller_data = &priv->lcd_cfg;
->> +	strcpy(priv->lcd_pdata.type, panel_type);
->> +
->> +	priv->lcdc_oh = omap_hwmod_lookup("lcdc");
->> +	if (priv->lcdc_oh == NULL) {
->> +		dev_err(&pdev->dev, "Failed to lookup omap_hwmod lcdc\n");
->> +		return -ENODEV;
->> +	}
->> +
->> +	priv->lcdc_pdev = omap_device_build("da8xx_lcdc", 0, priv->lcdc_oh,
->> +			&priv->lcd_pdata,
->> +			sizeof(struct da8xx_lcdc_platform_data),
->> +			NULL, 0, 0);
->> +	if (priv->lcdc_pdev == NULL) {
->> +		dev_err(&pdev->dev, "Failed to build LCDC device\n");
->> +		return -ENODEV;
->> +	}
-> 
-> I know nothing about BeagleBone, da8xx_lcdc, or the capes, but here are
-> my thoughts... =)
-> 
-> If I understood this cape-thing correctly, to handle the LCDs properly
-> the da8xx_lcdc driver should be changed to be more dynamic.
-> 
-> The da8xx_lcdc device should be always added by the standard SoC code.
-> If the LCD panel is fixed for the board in question, the lcdc could be
-> passed the LCD data as done now (I guess).
-> 
-> But in beaglebone's case the platform data for lcdc should be empty, and
-> the lcdc driver should do just minimal setup, like memmapping its
-> registers. No pinmuxing nor other such things.
-> 
-> When the cape is identified and the cape's driver is loaded, the driver
-> would configure lcdc depending on the cape, including pinmuxing. After
-> that the LCD should be functional.
-> 
-> Tomi
-> 
+> That make sense?
 
-You are absolutely correct. That's the proper way to go about it,
-but you go to war with the drivers you have, and not the drivers you wish
-you had :)
+Not really but it keeps some of the Red Hat security people happy and out
+of harms way. With all the current posted RH patches I can still take over
+the box as root trivially enough and you seem to have so far abolished
+suspend to disk, kexec and a pile of other useful stuff. To actually lock
+it down you'll have to do a ton more of this. I suspect folks who know
+windows innards well are probably thinking the same about Windows 8 8)
 
-Meaning, it is getting fixed by the da8xx maintainers, but it's not ready yet.
+Almost anyone attacking a secure boot box will do it via windows or more
+likely via EFI. EFI because its large, new and doesn't a great history,
+windows because its the larger target. Actually from what I've seen on
+the security front there seems to a distinct view that secure boot is
+irrelevant because Windows 8 is so suspend/resume focussed that you might
+as well just trojan the box until the next reboot as its likely to be a
+couple of weeks a way.
 
-The da8xx-dt can die a short and merciful death then.
+Alan
 
-Regards
 
--- Pantelis
+
+
