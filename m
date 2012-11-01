@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759029Ab2KAJFs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 05:05:48 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45079 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755312Ab2KAJFp (ORCPT
+	id S932731Ab2KAJIc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 05:08:32 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36613 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932154Ab2KAJI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 05:05:45 -0400
-Message-ID: <50923B65.4060304@gmail.com>
-Date: Thu, 01 Nov 2012 10:05:41 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: alsa-devel@alsa-project.org
-CC: LKML <linux-kernel@vger.kernel.org>, maillist@superlative.org
-Subject: Re: [alsa-devel] Idea: dynamic loading of USB quirks
-References: <2390628.MpxcLPPhM0@kamdesktop>
-In-Reply-To: <2390628.MpxcLPPhM0@kamdesktop>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 1 Nov 2012 05:08:29 -0400
+Message-ID: <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Chris Friesen <chris.friesen@genband.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Jiri Kosina <jkosina@suse.cz>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Date: Thu, 01 Nov 2012 09:08:25 +0000
+In-Reply-To: <36538307.gzWq1oO7Kg@linux-lqwf.site>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	 <2548314.3caaFsMVg6@linux-lqwf.site> <50919EED.3020601@genband.com>
+	 <36538307.gzWq1oO7Kg@linux-lqwf.site>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc lkml as this might be of broader interest]
-
-On 01.11.2012 00:32, maillist@superlative.org wrote:
-> Dear Alsa community,
-> I've some minor contributions in the form of patches for USB quirks for 
-> devices in the past. It occurred to me that having these USB quirks hardcoded 
-> into the driver maybe isn't the best thing.
+On Wed, 2012-10-31 at 23:19 +0100, Oliver Neukum wrote:
+> On Wednesday 31 October 2012 15:58:05 Chris Friesen wrote:
+> > On 10/31/2012 02:14 PM, Oliver Neukum wrote:
 > 
-> Looking at the current quirks file, the majority of them are relatively trivial 
-> and are really just there to give the USB driver a nudge in the right 
-> direction.
+> > > That would do it on my system.
+> > > Maybe in theory you could solve this by the kernel invalidating images
+> > > it hasn't written itself and forbidding to change the resume partition from the
+> > > kernel command line, but that would break user space hibernation.
+> > 
+> > If the resuming kernel refuses to resume from images it didn't create 
+> > itself, why do you need to forbid changing the resume partition from the 
+> > kernel command line?
 > 
-> Having to have these hardcoded into the driver creates a number of issues:
-> 
-> 1. It needs someone with the expertise and will, and access the specific device 
-> for testing, to build the quirk. To hardened ALSA hackers this seems trivial, 
-> but to an average end user who has a device they want to get supported, this 
-> can be pretty inpenatrable. The complexity of just getting the alsa source 
-> installed and set up for compilation is enough to put off the vast majority of 
-> users.
-> 
-> 2. It makes the process of getting the driver "to market" lengthy as these 
-> changes have to go through all of the normal release schedules, and these are 
-> pretty opaque.
-> 
-> 3. It makes getting changing a driver (because of a bug, or a new release of 
-> hardware) difficult as the revisions need to go through the whole process of 
-> creating a patch, getting it accepted, and then the long kernel release 
-> process, as well as the various distribution release processes.
-> 
-> It occured to me that there might be a better way where quirks like this could 
-> be dynamically loaded into the driver after it has loaded. This would a 
-> structured text file describing the quirk to be created and pushed into the 
-> driver. Ultimately this could be wrapped into a framework where quirk files 
-> could be put into a common directory (similar to modprobe.d) with a startup 
-> script which pushed these into the driver.
+> You don't. Signed images solve the problem.
 
-The idea is interesting, but we would need to find a way to not only
-cover the entries in quirks-list.h but the other hard-coded details as well.
+I really don't think they do.  The proposed attack vector is to try to
+prevent a local root exploit from running arbitrary in-kernel code,
+because that would compromise the secure boot part of the kernel.
 
-I fear that if quirk fixups are done on both the kernel level and loaded
-from userspace, it actually makes debugging and maintainance harder.
+I really think that's mythical: a local privilege elevation attack
+usually exploits some bug (classically a buffer overflow) which executes
+arbitrary code in kernel context.  In that case, the same attack vector
+can be used to compromise any in-kernel protection mechanism including
+turning off the secure boot capability and reading the in-kernel private
+signing key.
 
-Then again, if a versatile and clean solution to this problem is found,
-there would be tons of other drivers in Linux to benefit from it, just
-think about the hda driver to begin with. But not only in the ALSA area.
+There have been one or two privilege elevation attacks that didn't
+involve in-kernel code (usually by compromising a suid binary or other
+cross domain scripting attack) that would only compromise local root and
+thus be confined to the secure boot prison but they are, historically, a
+minority.
 
+The point I'm making is that given that the majority of exploits will
+already be able to execute arbitrary code in-kernel, there's not much
+point trying to consider features like this as attacker prevention.  We
+should really be focusing on discussing why we'd want to prevent a
+legitimate local root from writing to the suspend partition in a secure
+boot environment.
 
-Daniel
+James
+
 
