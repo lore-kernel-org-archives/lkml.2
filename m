@@ -1,91 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761612Ab2KAO0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 10:26:01 -0400
-Received: from gwu.lbox.cz ([62.245.111.132]:42576 "EHLO gwu.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761388Ab2KAO0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 10:26:00 -0400
-Date: Thu, 1 Nov 2012 15:23:25 +0100
-From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Subject: Re: BUG: enabling psacct breaks fsfreeze
-Message-ID: <20121101142325.GD20752@pcnci.linuxbox.cz>
-References: <20121023094351.GC27919@pcnci.linuxbox.cz>
- <20121031121517.GD18424@quack.suse.cz>
- <20121031124600.GM20752@pcnci.linuxbox.cz>
- <20121101093723.GC6584@quack.suse.cz>
- <20121101111957.GD6584@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jYUWvSWTDpDT74zJ"
-Content-Disposition: inline
-In-Reply-To: <20121101111957.GD6584@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 7972265 records (last update: 20121101)
-X-Spam-Score: N/A (imported whitelist)
+	id S1761636Ab2KAO0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 10:26:40 -0400
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:60974 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761388Ab2KAO0i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 10:26:38 -0400
+Date: Thu, 1 Nov 2012 10:26:28 -0400
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+Cc: davem@davemloft.net, dwmw2@infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of
+ vcc
+Message-ID: <20121101102628.6e3d3cae@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <20121031220435.GA25157@shrek.podlesie.net>
+References: <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
+	<201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
+	<20121030182001.GA30373@shrek.podlesie.net>
+	<20121031094147.GA1004@shrek.podlesie.net>
+	<20121031160352.68353ecc@thirdoffive.cmf.nrl.navy.mil>
+	<20121031220435.GA25157@shrek.podlesie.net>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 31 Oct 2012 23:04:35 +0100
+Krzysztof Mazur <krzysiek@podlesie.net> wrote:
 
---jYUWvSWTDpDT74zJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> There are also some minor potential issues in pppoatm driver:
+> 
+> 	- locking issues, but now only between pppoatm_send() and
+> 	  vcc_sendmsg() and maybe some other functions,
 
-Hi Jan,
+these have been around for a while.  i agree that something should be
+done about it.  just not sure what should be synchronizing this mess.
 
-here it goes:
+> 	- missing check for SS_CONNECTED in pppoatm_ioctl,
 
-Nov  1 14:23:25 vmnci22 [ 1075.178123] SysRq : Show Blocked State
-Nov  1 14:23:25 vmnci22 [ 1075.180555]   task                        PC sta=
-ck   pid father
-Nov  1 14:23:25 vmnci22 [ 1075.180592] fsfreeze      D 0000000000000000    =
- 0  4215   4195 0x00000000
-Nov  1 14:23:25 vmnci22 [ 1075.180599]  ffff8800090b9b28 0000000000000046 0=
-000000000000000 ffffffff00000000
-Nov  1 14:23:25 vmnci22 [ 1075.180606]  0000000000013780 ffff8800090b9fd8 f=
-fff88000f716170 ffff88000f715e80
-Nov  1 14:23:25 vmnci22 [ 1075.180612]  ffff88000f715dc0 ffffffff81566080 f=
-fff88000f716170 000000010002f405
-Nov  1 14:23:25 vmnci22 [ 1075.180619] Call Trace:
-Nov  1 14:23:25 vmnci22 [ 1075.180693]  [<ffffffff810e2dbb>] __generic_file=
-_aio_write+0xbb/0x420
-Nov  1 14:23:25 vmnci22 [ 1075.180729]  [<ffffffff81079290>] ? autoremove_w=
-ake_function+0x0/0x40
-Nov  1 14:23:25 vmnci22 [ 1075.180736]  [<ffffffff810e317f>] generic_file_a=
-io_write+0x5f/0xc0
+in practice you will never run into this because a pvc is immediately
+put into SS_CONNECTED mode (right before the userspace open()
+returns).  however, should it check?  yes.  i dont see anything
+preventing you from running ppp on svc's.
 
-I obtained it using networked syslog, so it shouldn't be truncated..
-
-
---=20
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28.rijna 168, 709 00 Ostrava
-
-tel.:   +420 591 166 214
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
-www.linuxbox.cz
-
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
-
---jYUWvSWTDpDT74zJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.14 (GNU/Linux)
-
-iEYEARECAAYFAlCShd0ACgkQ3xdJJrLygV7mVQCeN6VsePgRg6WdUJcCldfBr6qn
-16IAnROZAO2s9LTP1upCPrzR+fNIGGhN
-=wpKQ
------END PGP SIGNATURE-----
-
---jYUWvSWTDpDT74zJ--
