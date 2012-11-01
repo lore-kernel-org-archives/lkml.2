@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759351Ab2KAKW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 06:22:29 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:58241 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758678Ab2KAKW1 (ORCPT
+	id S1759712Ab2KAKWt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 06:22:49 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:12459 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758678Ab2KAKWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 06:22:27 -0400
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jamie Lentin <jm@lentin.co.uk>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH] gpio: adnp: Depend on OF_GPIO instead of OF
-Date: Thu,  1 Nov 2012 11:22:11 +0100
-Message-Id: <1351765331-30617-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.8.0
-X-Provags-ID: V02:K0:yPSJsjqOXjltwz+Du4of2H5CbQp970NOmtrtoq6QIkv
- sUlBha4inBJURDJqqinLBTM7I2zX741FWD+uUIY+IRkL6RFAfk
- CNT5pb0oKqTf5KcLlbQHHSPEl4gJwgcGQPq35NSM2z62X6DIkG
- gcClsB/sHTgoO5V+xjFqnM8CHV8NX3h90PmqWvozDa8mpcE4Iy
- uU7vhZutT68cRLc58URNWn+k8dLFZ83B6LwD+6GMKSmF5190Sp
- HQ36nAoZbWk+NmiUyBH42IWwZ52zpVudSTCZVa18dkVu3seQUf
- H6GqwqP5SgFlYVPynMsv1//na8O7aUUvmvhyXRqtBsJQuolloY
- 6bPAbSFaJVLRYjnOej7n5lVvrtZrQlMk7kkgQM3bTcdC5YTyYM
- SylXbactG7A5h2+Mvmqob22rThLVogBKi3t5ixfoMf3Aofa6cz
- lcb10
+	Thu, 1 Nov 2012 06:22:48 -0400
+X-Spam-Score: -100.8
+Message-ID: <50924DB3.9010601@asianux.com>
+Date: Thu, 01 Nov 2012 18:23:47 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [Suggestion] net-ipv6: format %8s change to %16s in rt6_info_route
+ function of route.c
+References: <50921A92.8000809@asianux.com> <1351760482.32673.913.camel@edumazet-glaptop>
+In-Reply-To: <1351760482.32673.913.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver accesses the of_node field of struct gpio_chip, which is only
-available if OF_GPIO is selected. This solves a build issue on SPARC
-which conflicts with OF_GPIO and therefore does not provide this field.
+于 2012年11月01日 17:01, Eric Dumazet 写道:
+> Hi Chen
+> 
+> Thats a good suggestion indeed.
+> 
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
----
- drivers/gpio/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+  thank you very much for your confirmation.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index d055cee..c856f9e 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -466,7 +466,7 @@ config GPIO_ADP5588_IRQ
- 
- config GPIO_ADNP
- 	tristate "Avionic Design N-bit GPIO expander"
--	depends on I2C && OF
-+	depends on I2C && OF_GPIO
- 	help
- 	  This option enables support for N GPIOs found on Avionic Design
- 	  I2C GPIO expanders. The register space will be extended by powers
+> Networking patches should be sent to netdev@vger.kernel.org (added in
+> CC)
+
+  I will do it.
+
+> 
+> This list only cares about recent generic kernels, not RedHat ones.
+> 
+
+  it seems "it is not suitable to send any issues which only relative
+with Red Hat to linux-*@vger.kernel.org".
+
+
+
+> If you want to provide a patch, please base it on David Miller net-next
+> [1] tree, and make it official (read Documentation/SubmittingPatches for
+> general advices)
+> 
+
+  ok, I will follow, thank you for your information.
+
+
+> By the way, the %8s should be replaced by %s, there is no need to make
+> /proc/net/ipv6_route 'beautiful'. In the past, it was *needed* because
+> each line had to be of a given length, but its not anymore the case.
+> 
+> Thanks
+> 
+
+1) I agree with your result.
+
+2) But for the "reason", I have my opinions:
+   A) %.8s :  for limitation of output string length.
+   B) %8s  :  for width of output string length (but not limit 8).
+   C) %8.8s:  both limitation and width.
+
+3) for rt->rt6i_dev->name:
+   A) original %8s is not a bug for name len is more than 8 (can still
+be outputted correctly)
+   B) it is only effect with name len is less than 8 (it will fill some
+' ' before the name)
+   C) this is the reason why I call it "beautiful", not a bug.
+
+
+> [1] :
+> http://git.kernel.org/?p=linux/kernel/git/davem/net-next.git;a=summary
+> 
+
+  I will reference it, thanks.
+
+
 -- 
-1.8.0
+Chen Gang
 
+Asianux Corporation
