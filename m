@@ -1,52 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992495Ab2KASuX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 14:50:23 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:58691 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762130Ab2KASuU (ORCPT
+	id S1762184Ab2KAS7M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 14:59:12 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:48269 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753555Ab2KAS7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 14:50:20 -0400
+	Thu, 1 Nov 2012 14:59:09 -0400
+Date: Thu, 1 Nov 2012 11:57:56 -0700
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: axboe@kernel.dk, lucho@ionkov.net, tytso@mit.edu, sage@inktank.com,
+        ericvh@gmail.com, mfasheh@suse.com, dedekind1@gmail.com,
+        adrian.hunter@intel.com, dhowells@redhat.com, sfrench@samba.org,
+        jlbec@evilplan.org, rminnich@sandia.gov, linux-cifs@vger.kernel.org,
+        jack@suse.cz, martin.petersen@oracle.com, neilb@suse.de,
+        david@fromorbit.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
+        v9fs-developer@lists.sourceforge.net, ceph-devel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-afs@lists.infradead.org,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH 1/3] bdi: Track users that require stable page writes
+Message-ID: <20121101185756.GI19591@blackbox.djwong.org>
+References: <20121101075805.16153.64714.stgit@blackbox.djwong.org>
+ <20121101075813.16153.94581.stgit@blackbox.djwong.org>
+ <5092BDA2.6090001@panasas.com>
 MIME-Version: 1.0
-Date: Thu, 1 Nov 2012 14:50:17 -0400
-Message-ID: <CA+T6QPk-etCT7EzwGR-tP+JTab_m4Vywh9qgHG_HW-oXKgn_AQ@mail.gmail.com>
-Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
-From: Jason Kridner <jkridner@beagleboard.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: b-cousson@ti.com, Koen Kooi <koen@dominion.thruhere.net>, paul@pwsan.com,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        "Porter, Matt" <mporter@ti.com>, Russ Dill <russ.dill@gmail.com>,
-        khilman@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5092BDA2.6090001@panasas.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My apologies for starting a new thread, but I don't have this thread
-in my Inbox.
+On Thu, Nov 01, 2012 at 11:21:22AM -0700, Boaz Harrosh wrote:
+> On 11/01/2012 12:58 AM, Darrick J. Wong wrote:
+> > This creates a per-backing-device counter that tracks the number of users which
+> > require pages to be held immutable during writeout.  Eventually it will be used
+> > to waive wait_for_page_writeback() if nobody requires stable pages.
+> > 
+> 
+> There is two things I do not like:
+> 1. Please remind me why we need the users counter?
+>    If the device needs it, it will always be needed. The below 
+>    queue_unrequire_stable_pages call at blk_integrity_unregister
+>    only happens at device destruction time, no?
+> 
+>    It was also said that maybe individual filesystems would need
+>    stable pages where other FSs using the same BDI do not. But
+>    since the FS is at the driving seat in any case, it can just
+>    do wait_for_writeback() regardless and can care less about
+>    the bdi flag and the other FSs. Actually all those FSs already
+>    do this this, and do not need any help. So this reason is
+>    mute.
 
-http://www.spinics.net/lists/linux-omap/msg81034.html
+The counter exists so that a filesystem can forcibly enable stable page writes
+even if the underlying device doesn't require it, because the generic fs/mm
+waiting only happens if stable_pages_required=1.  The idea here was to allow a
+filesystem that needs stable page writes for its own purposes (i.e. data block
+checksumming) to be able to enforce the requirement even if the disk doesn't
+care (or doesn't exist).
 
-Tony Lindgren wrote:
+But maybe there are no such filesystems?
 
->* Pantelis Antoniou <panto@xxxxxxxxxxxxxxxxxxxxxxx> [121031 15:02]:
->>
->> So when device's node is 'disabled' of_platform_device_create_pdata()
->> will not create the device.
->>
->> Now, of course it is possible to re-trigger the platform's probe method
->> to be called, and in fact I do so in the capebus patches.
->
->You should fix this in generic way then rather than working
->around it in capebus. The same problem exists changing
->between different functionality for the shared pins,
->let's say between USB pins and UART pins if you want a
->serial debug console on some phone.
+<shrug> I don't really like the idea that you can dirty a page during writeout,
+which means that the disk could write the before page, the after page, or some
+weird mix of the two, and all you get is a promise that the after page will get
+rewritten if the power doesn't go out.  Not to mention that it could happen
+again. :)
 
-The current capebus solution goes a long way to fixing a huge issue
-for BeagleBone users and I don't understand what seems to be a
-push-back on principle. On BeagleBone capes, these conflicts cannot be
-resolved early.
+> 2. I hate the atomic_read for every mkwrite. I think we can do
+>    better, since as you noted it can never be turned off, only
+>    on, at init time. And because of 1. above it is not dynamic.
+>    I think I like your previous simple bool better.
 
-Do you have suggestions on some more generic method? It seems to me
-the proposed capebus approach strikes a good balance.
+I doubt the counter would change much; I could probably change it to something
+less heavyweight if it's really a problem.
+
+> But I do like a lot the new request_queue API you added here.
+> Thanks
+
+Good!
+
+--D
+> 
+> Boaz
+> > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+> > ---
+> >  Documentation/ABI/testing/sysfs-class-bdi |    7 +++++
+> >  block/blk-integrity.c                     |    4 +++
+> >  include/linux/backing-dev.h               |   16 ++++++++++++
+> >  include/linux/blkdev.h                    |   10 ++++++++
+> >  mm/backing-dev.c                          |   38 +++++++++++++++++++++++++++++
+> >  5 files changed, 75 insertions(+)
+> > 
+> > 
+> > diff --git a/Documentation/ABI/testing/sysfs-class-bdi b/Documentation/ABI/testing/sysfs-class-bdi
+> > index 5f50097..218a618 100644
+> > --- a/Documentation/ABI/testing/sysfs-class-bdi
+> > +++ b/Documentation/ABI/testing/sysfs-class-bdi
+> > @@ -48,3 +48,10 @@ max_ratio (read-write)
+> >  	most of the write-back cache.  For example in case of an NFS
+> >  	mount that is prone to get stuck, or a FUSE mount which cannot
+> >  	be trusted to play fair.
+> > +
+> > +stable_pages_required (read-write)
+> > +
+> > +	If set, the backing device requires that all pages comprising a write
+> > +	request must not be changed until writeout is complete.  The system
+> > +	administrator can turn this on if the hardware does not do so already.
+> > +	However, once enabled, this flag cannot be disabled.
+> > diff --git a/block/blk-integrity.c b/block/blk-integrity.c
+> > index da2a818..cf2dd95 100644
+> > --- a/block/blk-integrity.c
+> > +++ b/block/blk-integrity.c
+> > @@ -420,6 +420,8 @@ int blk_integrity_register(struct gendisk *disk, struct blk_integrity *template)
+> >  	} else
+> >  		bi->name = bi_unsupported_name;
+> >  
+> > +	queue_require_stable_pages(disk->queue);
+> > +
+> >  	return 0;
+> >  }
+> >  EXPORT_SYMBOL(blk_integrity_register);
+> > @@ -438,6 +440,8 @@ void blk_integrity_unregister(struct gendisk *disk)
+> >  	if (!disk || !disk->integrity)
+> >  		return;
+> >  
+> > +	queue_unrequire_stable_pages(disk->queue);
+> > +
+> >  	bi = disk->integrity;
+> >  
+> >  	kobject_uevent(&bi->kobj, KOBJ_REMOVE);
+> > diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+> > index 2a9a9ab..0554f5d 100644
+> > --- a/include/linux/backing-dev.h
+> > +++ b/include/linux/backing-dev.h
+> > @@ -109,6 +109,7 @@ struct backing_dev_info {
+> >  	struct dentry *debug_dir;
+> >  	struct dentry *debug_stats;
+> >  #endif
+> > +	atomic_t stable_page_users;
+> >  };
+> >  
+> >  int bdi_init(struct backing_dev_info *bdi);
+> > @@ -307,6 +308,21 @@ long wait_iff_congested(struct zone *zone, int sync, long timeout);
+> >  int pdflush_proc_obsolete(struct ctl_table *table, int write,
+> >  		void __user *buffer, size_t *lenp, loff_t *ppos);
+> >  
+> > +static inline void bdi_require_stable_pages(struct backing_dev_info *bdi)
+> > +{
+> > +	atomic_inc(&bdi->stable_page_users);
+> > +}
+> > +
+> > +static inline void bdi_unrequire_stable_pages(struct backing_dev_info *bdi)
+> > +{
+> > +	atomic_dec(&bdi->stable_page_users);
+> > +}
+> > +
+> > +static inline bool bdi_cap_stable_pages_required(struct backing_dev_info *bdi)
+> > +{
+> > +	return atomic_read(&bdi->stable_page_users) > 0;
+> > +}
+> > +
+> >  static inline bool bdi_cap_writeback_dirty(struct backing_dev_info *bdi)
+> >  {
+> >  	return !(bdi->capabilities & BDI_CAP_NO_WRITEBACK);
+> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> > index 1756001..bf927c0 100644
+> > --- a/include/linux/blkdev.h
+> > +++ b/include/linux/blkdev.h
+> > @@ -458,6 +458,16 @@ struct request_queue {
+> >  				 (1 << QUEUE_FLAG_SAME_COMP)	|	\
+> >  				 (1 << QUEUE_FLAG_ADD_RANDOM))
+> >  
+> > +static inline void queue_require_stable_pages(struct request_queue *q)
+> > +{
+> > +	bdi_require_stable_pages(&q->backing_dev_info);
+> > +}
+> > +
+> > +static inline void queue_unrequire_stable_pages(struct request_queue *q)
+> > +{
+> > +	bdi_unrequire_stable_pages(&q->backing_dev_info);
+> > +}
+> > +
+> >  static inline void queue_lockdep_assert_held(struct request_queue *q)
+> >  {
+> >  	if (q->queue_lock)
+> > diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> > index d3ca2b3..dd9f5ed 100644
+> > --- a/mm/backing-dev.c
+> > +++ b/mm/backing-dev.c
+> > @@ -221,12 +221,48 @@ static ssize_t max_ratio_store(struct device *dev,
+> >  }
+> >  BDI_SHOW(max_ratio, bdi->max_ratio)
+> >  
+> > +static ssize_t stable_pages_required_store(struct device *dev,
+> > +					   struct device_attribute *attr,
+> > +					   const char *buf, size_t count)
+> > +{
+> > +	struct backing_dev_info *bdi = dev_get_drvdata(dev);
+> > +	unsigned int spw;
+> > +	ssize_t ret;
+> > +
+> > +	ret = kstrtouint(buf, 10, &spw);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	/*
+> > +	 * SPW could be enabled due to hw requirement, so don't
+> > +	 * let users disable it.
+> > +	 */
+> > +	if (bdi_cap_stable_pages_required(bdi) && spw == 0)
+> > +		return -EINVAL;
+> > +
+> > +	if (spw != 0)
+> > +		atomic_inc(&bdi->stable_page_users);
+> > +
+> > +	return count;
+> > +}
+> > +
+> > +static ssize_t stable_pages_required_show(struct device *dev,
+> > +					  struct device_attribute *attr,
+> > +					  char *page)
+> > +{
+> > +	struct backing_dev_info *bdi = dev_get_drvdata(dev);
+> > +
+> > +	return snprintf(page, PAGE_SIZE-1, "%d\n",
+> > +			bdi_cap_stable_pages_required(bdi) ? 1 : 0);
+> > +}
+> > +
+> >  #define __ATTR_RW(attr) __ATTR(attr, 0644, attr##_show, attr##_store)
+> >  
+> >  static struct device_attribute bdi_dev_attrs[] = {
+> >  	__ATTR_RW(read_ahead_kb),
+> >  	__ATTR_RW(min_ratio),
+> >  	__ATTR_RW(max_ratio),
+> > +	__ATTR_RW(stable_pages_required),
+> >  	__ATTR_NULL,
+> >  };
+> >  
+> > @@ -650,6 +686,8 @@ int bdi_init(struct backing_dev_info *bdi)
+> >  	bdi->write_bandwidth = INIT_BW;
+> >  	bdi->avg_write_bandwidth = INIT_BW;
+> >  
+> > +	atomic_set(&bdi->stable_page_users, 0);
+> > +
+> >  	err = fprop_local_init_percpu(&bdi->completions);
+> >  
+> >  	if (err) {
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
