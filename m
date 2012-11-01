@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759165Ab2KAJjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 05:39:08 -0400
+	id S933543Ab2KAJlp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 05:41:45 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:5829 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752887Ab2KAJjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 05:39:01 -0400
+	id S1758990Ab2KAJjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 05:39:07 -0400
 X-IronPort-AV: E=Sophos;i="4.80,693,1344182400"; 
-   d="scan'208";a="6116036"
+   d="scan'208";a="6116041"
 From: Wen Congyang <wency@cn.fujitsu.com>
 To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -22,14 +22,12 @@ Cc: David Rientjes <rientjes@google.com>, Jiang Liu <liuj97@gmail.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
         Jianguo Wu <wujianguo@huawei.com>, Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH v3 06/12] memory-hotplug: unregister memory section on SPARSEMEM_VMEMMAP
-Date: Thu, 1 Nov 2012 17:44:37 +0800
-Message-Id: <1351763083-7905-7-git-send-email-wency@cn.fujitsu.com>
+Subject: [PATCH v3 00/12] memory-hotplug: hot-remove physical memory
+Date: Thu, 1 Nov 2012 17:44:31 +0800
+Message-Id: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com>
-References: <1351763083-7905-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/01 17:38:11,
+ 2012/11/01 17:38:10,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/11/01 17:38:13,
 	Serialize complete at 2012/11/01 17:38:13
@@ -37,50 +35,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+The patch-set was divided from following thread's patch-set.
+    https://lkml.org/lkml/2012/9/5/201
 
-Currently __remove_section for SPARSEMEM_VMEMMAP does nothing. But even if
-we use SPARSEMEM_VMEMMAP, we can unregister the memory_section.
+The last version of this patchset:
+    https://lkml.org/lkml/2012/10/23/213
 
-So the patch add unregister_memory_section() into __remove_section().
+If you want to know the reason, please read following thread.
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
- mm/memory_hotplug.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+https://lkml.org/lkml/2012/10/2/83
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index ca07433..66a79a7 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -286,11 +286,14 @@ static int __meminit __add_section(int nid, struct zone *zone,
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
- static int __remove_section(struct zone *zone, struct mem_section *ms)
- {
--	/*
--	 * XXX: Freeing memmap with vmemmap is not implement yet.
--	 *      This should be removed later.
--	 */
--	return -EBUSY;
-+	int ret = -EINVAL;
-+
-+	if (!valid_section(ms))
-+		return ret;
-+
-+	ret = unregister_memory_section(ms);
-+
-+	return ret;
- }
- #else
- static int __remove_section(struct zone *zone, struct mem_section *ms)
+The patch-set has only the function of kernel core side for physical
+memory hot remove. So if you use the patch, please apply following
+patches.
+
+- bug fix for memory hot remove
+  https://lkml.org/lkml/2012/10/31/269
+  
+- acpi framework
+  https://lkml.org/lkml/2012/10/26/175
+
+The patches can free/remove the following things:
+
+  - /sys/firmware/memmap/X/{end, start, type} : [PATCH 2/10]
+  - mem_section and related sysfs files       : [PATCH 3-4/10]
+  - memmap of sparse-vmemmap                  : [PATCH 5-7/10]
+  - page table of removed memory              : [RFC PATCH 8/10]
+  - node and related sysfs files              : [RFC PATCH 9-10/10]
+
+* [PATCH 2/10] checks whether the memory can be removed or not.
+
+If you find lack of function for physical memory hot-remove, please let me
+know.
+
+How to test this patchset?
+1. apply this patchset and build the kernel. MEMORY_HOTPLUG, MEMORY_HOTREMOVE,
+   ACPI_HOTPLUG_MEMORY must be selected.
+2. load the module acpi_memhotplug
+3. hotplug the memory device(it depends on your hardware)
+   You will see the memory device under the directory /sys/bus/acpi/devices/.
+   Its name is PNP0C80:XX.
+4. online/offline pages provided by this memory device
+   You can write online/offline to /sys/devices/system/memory/memoryX/state to
+   online/offline pages provided by this memory device
+5. hotremove the memory device
+   You can hotremove the memory device by the hardware, or writing 1 to
+   /sys/bus/acpi/devices/PNP0C80:XX/eject.
+
+Note: if the memory provided by the memory device is used by the kernel, it
+can't be offlined. It is not a bug.
+
+Known problems:
+1. hotremoving memory device may cause kernel panicked
+   This bug will be fixed by Liu Jiang's patch:
+   https://lkml.org/lkml/2012/7/3/1
+
+
+Changelogs from v2 to v3:
+ Patch9: call sync_global_pgds() if pgd is changed
+ Patch10: fix a problem int the patch
+
+Changelogs from v1 to v2:
+ Patch1: new patch, offline memory twice. 1st iterate: offline every non primary
+         memory block. 2nd iterate: offline primary (i.e. first added) memory
+         block.
+
+ Patch3: new patch, no logical change, just remove reduntant codes.
+
+ Patch9: merge the patch from wujianguo into this patch. flush tlb on all cpu
+         after the pagetable is changed.
+
+ Patch12: new patch, free node_data when a node is offlined
+
+Wen Congyang (6):
+  memory-hotplug: try to offline the memory twice to avoid dependence
+  memory-hotplug: remove redundant codes
+  memory-hotplug: introduce new function arch_remove_memory() for
+    removing page table depends on architecture
+  memory-hotplug: remove page table of x86_64 architecture
+  memory-hotplug: remove sysfs file of node
+  memory-hotplug: free node_data when a node is offlined
+
+Yasuaki Ishimatsu (6):
+  memory-hotplug: check whether all memory blocks are offlined or not
+    when removing memory
+  memory-hotplug: remove /sys/firmware/memmap/X sysfs
+  memory-hotplug: unregister memory section on SPARSEMEM_VMEMMAP
+  memory-hotplug: implement register_page_bootmem_info_section of
+    sparse-vmemmap
+  memory-hotplug: remove memmap of sparse-vmemmap
+  memory-hotplug: memory_hotplug: clear zone when removing the memory
+
+ arch/ia64/mm/discontig.c             |  14 ++
+ arch/ia64/mm/init.c                  |  18 ++
+ arch/powerpc/mm/init_64.c            |  14 ++
+ arch/powerpc/mm/mem.c                |  12 +
+ arch/s390/mm/init.c                  |  12 +
+ arch/s390/mm/vmem.c                  |  14 ++
+ arch/sh/mm/init.c                    |  17 ++
+ arch/sparc/mm/init_64.c              |  14 ++
+ arch/tile/mm/init.c                  |   8 +
+ arch/x86/include/asm/pgtable_types.h |   1 +
+ arch/x86/mm/init_32.c                |  12 +
+ arch/x86/mm/init_64.c                | 417 +++++++++++++++++++++++++++++++++++
+ arch/x86/mm/pageattr.c               |  47 ++--
+ drivers/acpi/acpi_memhotplug.c       |   8 +-
+ drivers/base/memory.c                |   6 +
+ drivers/firmware/memmap.c            |  98 +++++++-
+ include/linux/firmware-map.h         |   6 +
+ include/linux/memory_hotplug.h       |  15 +-
+ include/linux/mm.h                   |   5 +-
+ mm/memory_hotplug.c                  | 409 ++++++++++++++++++++++++++++++++--
+ mm/sparse.c                          |   5 +-
+ 21 files changed, 1095 insertions(+), 57 deletions(-)
+
 -- 
 1.8.0
 
