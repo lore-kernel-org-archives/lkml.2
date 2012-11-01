@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992470Ab2KAMKd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 08:10:33 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:9363 "EHLO relay.sw.ru"
+	id S2992460Ab2KAMKb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 08:10:31 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:13744 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935713Ab2KAMH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S935725Ab2KAMH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Nov 2012 08:07:56 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-mm@kvack.org>
@@ -16,9 +16,9 @@ Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Glauber Costa <glommer@parallels.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>,
         Suleiman Souhlal <suleiman@google.com>
-Subject: [PATCH v6 21/29] sl[au]b: always get the cache from its page in kmem_cache_free
-Date: Thu,  1 Nov 2012 16:07:37 +0400
-Message-Id: <1351771665-11076-22-git-send-email-glommer@parallels.com>
+Subject: [PATCH v6 22/29] sl[au]b: Allocate objects from memcg cache
+Date: Thu,  1 Nov 2012 16:07:38 +0400
+Message-Id: <1351771665-11076-23-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351771665-11076-1-git-send-email-glommer@parallels.com>
 References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
@@ -26,17 +26,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct page already have this information. If we start chaining caches,
-this information will always be more trustworthy than whatever is passed
-into the function
+We are able to match a cache allocation to a particular memcg.  If the
+task doesn't change groups during the allocation itself - a rare event,
+this will give us a good picture about who is the first group to touch a
+cache page.
 
-[ v3: added parent testing with VM_BUG_ON ]
-[ v4: make it faster when kmemcg not in use ]
-[ v6: move it to slab.h ]
+This patch uses the now available infrastructure by calling
+memcg_kmem_get_cache() before all the cache allocations.
+
+[ v6: simplified kmalloc relay code ]
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: Michal Hocko <mhocko@suse.cz>
@@ -45,163 +45,112 @@ CC: Johannes Weiner <hannes@cmpxchg.org>
 CC: Suleiman Souhlal <suleiman@google.com>
 CC: Tejun Heo <tj@kernel.org>
 ---
- include/linux/memcontrol.h |  5 +++++
- mm/slab.c                  |  6 +++++-
- mm/slab.h                  | 39 +++++++++++++++++++++++++++++++++++++++
- mm/slob.c                  |  2 +-
- mm/slub.c                  | 15 +++------------
- 5 files changed, 53 insertions(+), 14 deletions(-)
+ include/linux/slub_def.h | 5 ++++-
+ mm/memcontrol.c          | 3 +++
+ mm/slab.c                | 6 +++++-
+ mm/slub.c                | 7 ++++---
+ 4 files changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 16bff74..d77d88d 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -547,6 +547,11 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
- 	return __memcg_kmem_get_cache(cachep, gfp);
- }
- #else
-+static inline bool memcg_kmem_enabled(void)
-+{
-+	return false;
-+}
-+
- static inline bool
- memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **memcg, int order)
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index 961e72e..364ba6c 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -225,7 +225,10 @@ void *__kmalloc(size_t size, gfp_t flags);
+ static __always_inline void *
+ kmalloc_order(size_t size, gfp_t flags, unsigned int order)
  {
+-	void *ret = (void *) __get_free_pages(flags | __GFP_COMP, order);
++	void *ret;
++
++	flags |= (__GFP_COMP | __GFP_KMEMCG);
++	ret = (void *) __get_free_pages(flags, order);
+ 	kmemleak_alloc(ret, size, 1, flags);
+ 	return ret;
+ }
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index ff42586..f7773ed 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3059,6 +3059,9 @@ static struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+ 	new = kmem_cache_create_memcg(memcg, name, s->object_size, s->align,
+ 				      (s->flags & ~SLAB_PANIC), s->ctor);
+ 
++	if (new)
++		new->allocflags |= __GFP_KMEMCG;
++
+ 	kfree(name);
+ 	return new;
+ }
 diff --git a/mm/slab.c b/mm/slab.c
-index dcc05f5..de9cc0d 100644
+index de9cc0d..c5d6937 100644
 --- a/mm/slab.c
 +++ b/mm/slab.c
-@@ -87,7 +87,6 @@
-  */
- 
- #include	<linux/slab.h>
--#include	"slab.h"
- #include	<linux/mm.h>
- #include	<linux/poison.h>
- #include	<linux/swap.h>
-@@ -128,6 +127,8 @@
- 
- #include	"internal.h"
- 
-+#include	"slab.h"
-+
- /*
-  * DEBUG	- 1 for kmem_cache_create() to honour; SLAB_RED_ZONE & SLAB_POISON.
-  *		  0 for faster, smaller code (especially in the critical paths).
-@@ -3946,6 +3947,9 @@ EXPORT_SYMBOL(__kmalloc);
- void kmem_cache_free(struct kmem_cache *cachep, void *objp)
- {
- 	unsigned long flags;
-+	cachep = cache_from_obj(cachep, objp);
-+	if (!cachep)
-+		return;
- 
- 	local_irq_save(flags);
- 	debug_check_no_locks_freed(objp, cachep->object_size);
-diff --git a/mm/slab.h b/mm/slab.h
-index 22eb5aa2..fb1c4c4 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -108,6 +108,13 @@ static inline bool cache_match_memcg(struct kmem_cache *cachep,
- 	return (is_root_cache(cachep) && !memcg) ||
- 				(cachep->memcg_params->memcg == memcg);
+@@ -1981,7 +1981,7 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+ 	}
+ 	if (current->reclaim_state)
+ 		current->reclaim_state->reclaimed_slab += nr_freed;
+-	free_pages((unsigned long)addr, cachep->gfporder);
++	free_memcg_kmem_pages((unsigned long)addr, cachep->gfporder);
  }
-+
-+static inline bool slab_equal_or_root(struct kmem_cache *s,
-+					struct kmem_cache *p)
-+{
-+	return (p == s) ||
-+		(s->memcg_params && (p == s->memcg_params->root_cache));
-+}
- #else
- static inline bool is_root_cache(struct kmem_cache *s)
- {
-@@ -119,5 +126,37 @@ static inline bool cache_match_memcg(struct kmem_cache *cachep,
- {
- 	return true;
- }
-+
-+static inline bool slab_equal_or_root(struct kmem_cache *s,
-+				      struct kmem_cache *p)
-+{
-+	return true;
-+}
- #endif
-+
-+static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
-+{
-+	struct kmem_cache *cachep;
-+	struct page *page;
-+
-+	/*
-+	 * When kmemcg is not being used, both assignments should return the
-+	 * same value. but we don't want to pay the assignment price in that
-+	 * case. If it is not compiled in, the compiler should be smart enough
-+	 * to not do even the assignment. In that case, slab_equal_or_root
-+	 * will also be a constant.
-+	 */
-+	if (!memcg_kmem_enabled() && !unlikely(s->flags & SLAB_DEBUG_FREE))
-+		return s;
-+
-+	page = virt_to_head_page(x);
-+	cachep = page->slab_cache;
-+	if (slab_equal_or_root(cachep, s))
-+		return cachep;
-+
-+	pr_err("%s: Wrong slab cache. %s but object is from %s\n",
-+		__FUNCTION__, cachep->name, s->name);
-+	WARN_ON_ONCE(1);
-+	return s;
-+}
- #endif
-diff --git a/mm/slob.c b/mm/slob.c
-index 3edfeaa..c86ee32 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -59,7 +59,6 @@
  
- #include <linux/kernel.h>
- #include <linux/slab.h>
--#include "slab.h"
+ static void kmem_rcu_free(struct rcu_head *head)
+@@ -3547,6 +3547,8 @@ __cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
+ 	if (slab_should_failslab(cachep, flags))
+ 		return NULL;
  
- #include <linux/mm.h>
- #include <linux/swap.h> /* struct reclaim_state */
-@@ -74,6 +73,7 @@
++	cachep = memcg_kmem_get_cache(cachep, flags);
++
+ 	cache_alloc_debugcheck_before(cachep, flags);
+ 	local_irq_save(save_flags);
  
- #include <linux/atomic.h>
+@@ -3632,6 +3634,8 @@ __cache_alloc(struct kmem_cache *cachep, gfp_t flags, void *caller)
+ 	if (slab_should_failslab(cachep, flags))
+ 		return NULL;
  
-+#include "slab.h"
- /*
-  * slob_block has a field 'units', which indicates size of block if +ve,
-  * or offset of next block if -ve (in SLOB_UNITs).
++	cachep = memcg_kmem_get_cache(cachep, flags);
++
+ 	cache_alloc_debugcheck_before(cachep, flags);
+ 	local_irq_save(save_flags);
+ 	objp = __do_cache_alloc(cachep, flags);
 diff --git a/mm/slub.c b/mm/slub.c
-index a105bdc..6ff2bdb 100644
+index 6ff2bdb..8778370 100644
 --- a/mm/slub.c
 +++ b/mm/slub.c
-@@ -2609,19 +2609,10 @@ redo:
- 
- void kmem_cache_free(struct kmem_cache *s, void *x)
- {
--	struct page *page;
--
--	page = virt_to_head_page(x);
--
--	if (kmem_cache_debug(s) && page->slab_cache != s) {
--		pr_err("kmem_cache_free: Wrong slab cache. %s but object"
--			" is from  %s\n", page->slab_cache->name, s->name);
--		WARN_ON_ONCE(1);
-+	s = cache_from_obj(s, x);
-+	if (!s)
- 		return;
--	}
--
--	slab_free(s, page, x, _RET_IP_);
--
-+	slab_free(s, virt_to_head_page(x), x, _RET_IP_);
- 	trace_kmem_cache_free(_RET_IP_, x);
+@@ -1405,7 +1405,7 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+ 	reset_page_mapcount(page);
+ 	if (current->reclaim_state)
+ 		current->reclaim_state->reclaimed_slab += pages;
+-	__free_pages(page, order);
++	__free_memcg_kmem_pages(page, order);
  }
- EXPORT_SYMBOL(kmem_cache_free);
+ 
+ #define need_reserve_slab_rcu						\
+@@ -2321,6 +2321,7 @@ static __always_inline void *slab_alloc(struct kmem_cache *s,
+ 	if (slab_pre_alloc_hook(s, gfpflags))
+ 		return NULL;
+ 
++	s = memcg_kmem_get_cache(s, gfpflags);
+ redo:
+ 
+ 	/*
+@@ -3353,7 +3354,7 @@ static void *kmalloc_large_node(size_t size, gfp_t flags, int node)
+ 	struct page *page;
+ 	void *ptr = NULL;
+ 
+-	flags |= __GFP_COMP | __GFP_NOTRACK;
++	flags |= __GFP_COMP | __GFP_NOTRACK | __GFP_KMEMCG;
+ 	page = alloc_pages_node(node, flags, get_order(size));
+ 	if (page)
+ 		ptr = page_address(page);
+@@ -3459,7 +3460,7 @@ void kfree(const void *x)
+ 	if (unlikely(!PageSlab(page))) {
+ 		BUG_ON(!PageCompound(page));
+ 		kmemleak_free(x);
+-		__free_pages(page, compound_order(page));
++		__free_memcg_kmem_pages(page, compound_order(page));
+ 		return;
+ 	}
+ 	slab_free(page->slab_cache, page, object, _RET_IP_);
 -- 
 1.7.11.7
 
