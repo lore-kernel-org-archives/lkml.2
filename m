@@ -1,260 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759470Ab2KAXaD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 19:30:03 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:40276 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752615Ab2KAX36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 19:29:58 -0400
-Date: Thu, 1 Nov 2012 15:35:05 -0500
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, Kent Yoder <key@linux.vnet.ibm.com>,
-        adlai@linux.vnet.ibm.com, benh@kernel.crashing.org
-Subject: [PULL v2] IBM vTPM driver update
-Message-ID: <20121101203504.GB26935@ennui.austin.ibm.com>
+	id S1761322Ab2KAXjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 19:39:54 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41424 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360Ab2KAXjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 19:39:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12110123-5930-0000-0000-00000DB5552D
+In-Reply-To: <1920067.RxMJtDGai1@vostro.rjw.lan>
+References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com>
+	<11976302.Ya3MGGIAsU@vostro.rjw.lan>
+	<CAE9FiQVGPP3+97D2SatH_CBPBpqBZyCe7We=9=x5ZEq8_d0fWQ@mail.gmail.com>
+	<1920067.RxMJtDGai1@vostro.rjw.lan>
+Date: Thu, 1 Nov 2012 16:39:50 -0700
+X-Google-Sender-Auth: A6wsdj6QXmbwvs3kEG5OTEF79Xg
+Message-ID: <CAE9FiQW4ONas+m2HWq_xs457xZu3VJ6Nxsq320MD72Khb+sqJg@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] Improve container_notify_cb() to support container hot-remove.
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Toshi Kani <toshi.kani@hp.com>, ZhangRui <rui.zhang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>, bhelgaas@google.com,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On Thu, Nov 1, 2012 at 4:15 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: ACPI: Make seemingly useless check in osl.c more understandable
+>
+> There is a seemingly useless check in drivers/acpi/osl.c added by
+> commit bc73675 (ACPI: fixes a false alarm from lockdep), which really
+> is necessary to avoid false positive lockdep complaints.  Document
+> this and rearrange the code related to it so that it makes fewer
+> checks.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/acpi/osl.c |   21 ++++++++++++++-------
+>  1 file changed, 14 insertions(+), 7 deletions(-)
+>
+> Index: linux/drivers/acpi/osl.c
+> ===================================================================
+> --- linux.orig/drivers/acpi/osl.c
+> +++ linux/drivers/acpi/osl.c
+> @@ -944,17 +944,24 @@ static acpi_status __acpi_os_execute(acp
+>          * because the hotplug code may call driver .remove() functions,
+>          * which invoke flush_scheduled_work/acpi_os_wait_events_complete
+>          * to flush these workqueues.
+> +        *
+> +        * To prevent lockdep from complaining unnecessarily, make sure that
+> +        * there is a different static lockdep key for each workqueue by using
+> +        * INIT_WORK() for each of them separately.
+>          */
+> -       queue = hp ? kacpi_hotplug_wq :
+> -               (type == OSL_NOTIFY_HANDLER ? kacpi_notify_wq : kacpid_wq);
+> -       dpc->wait = hp ? 1 : 0;
+> -
+> -       if (queue == kacpi_hotplug_wq)
+> +       if (hp) {
+> +               queue = kacpi_hotplug_wq;
+> +               dpc->wait = 1;
+>                 INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> -       else if (queue == kacpi_notify_wq)
+> +       } else if (type == OSL_NOTIFY_HANDLER) {
+> +               queue = kacpi_notify_wq;
+> +               dpc->wait = 0;
 
-  This time against security-next...
+yes, much clear.
 
-The following changes since commit 61d335dd27c67d656f114c091a46cf95cbeeb77c:
+at the same can you changne
+dpc allocation from kmalloc with kzalloc instead.
 
-  Merge branch 'security-next-keys' of git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/security-keys into next-queue (2012-10-03 13:00:17 +1000)
+then we save two lines for dpc->wait = 0
 
-are available in the git repository at:
+After that
 
-  git://github.com/shpedoikal/linux.git tpmdd-11-1-12
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 
-for you to fetch changes up to b5666502700855a1eb1a15482005b22478b9460e:
-
-  drivers/char/tpm: remove tasklet and cleanup (2012-11-01 15:23:14 -0500)
-
-----------------------------------------------------------------
-Ashley Lai (1):
-      drivers/char/tpm: remove tasklet and cleanup
-
- drivers/char/tpm/tpm_ibmvtpm.c | 81 +++++++++++++++---------------------------
- drivers/char/tpm/tpm_ibmvtpm.h |  5 ++-
- 2 files changed, 30 insertions(+), 56 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
-index efc4ab3..88a95ea 100644
---- a/drivers/char/tpm/tpm_ibmvtpm.c
-+++ b/drivers/char/tpm/tpm_ibmvtpm.c
-@@ -38,8 +38,6 @@ static struct vio_device_id tpm_ibmvtpm_device_table[] __devinitdata = {
- };
- MODULE_DEVICE_TABLE(vio, tpm_ibmvtpm_device_table);
- 
--DECLARE_WAIT_QUEUE_HEAD(wq);
--
- /**
-  * ibmvtpm_send_crq - Send a CRQ request
-  * @vdev:	vio device struct
-@@ -83,6 +81,7 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
- {
- 	struct ibmvtpm_dev *ibmvtpm;
- 	u16 len;
-+	int sig;
- 
- 	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
- 
-@@ -91,22 +90,23 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
- 		return 0;
- 	}
- 
--	wait_event_interruptible(wq, ibmvtpm->crq_res.len != 0);
-+	sig = wait_event_interruptible(ibmvtpm->wq, ibmvtpm->res_len != 0);
-+	if (sig)
-+		return -EINTR;
-+
-+	len = ibmvtpm->res_len;
- 
--	if (count < ibmvtpm->crq_res.len) {
-+	if (count < len) {
- 		dev_err(ibmvtpm->dev,
- 			"Invalid size in recv: count=%ld, crq_size=%d\n",
--			count, ibmvtpm->crq_res.len);
-+			count, len);
- 		return -EIO;
- 	}
- 
- 	spin_lock(&ibmvtpm->rtce_lock);
--	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, ibmvtpm->crq_res.len);
--	memset(ibmvtpm->rtce_buf, 0, ibmvtpm->crq_res.len);
--	ibmvtpm->crq_res.valid = 0;
--	ibmvtpm->crq_res.msg = 0;
--	len = ibmvtpm->crq_res.len;
--	ibmvtpm->crq_res.len = 0;
-+	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, len);
-+	memset(ibmvtpm->rtce_buf, 0, len);
-+	ibmvtpm->res_len = 0;
- 	spin_unlock(&ibmvtpm->rtce_lock);
- 	return len;
- }
-@@ -273,7 +273,6 @@ static int __devexit tpm_ibmvtpm_remove(struct vio_dev *vdev)
- 	int rc = 0;
- 
- 	free_irq(vdev->irq, ibmvtpm);
--	tasklet_kill(&ibmvtpm->tasklet);
- 
- 	do {
- 		if (rc)
-@@ -372,7 +371,6 @@ static int ibmvtpm_reset_crq(struct ibmvtpm_dev *ibmvtpm)
- static int tpm_ibmvtpm_resume(struct device *dev)
- {
- 	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(dev);
--	unsigned long flags;
- 	int rc = 0;
- 
- 	do {
-@@ -387,10 +385,11 @@ static int tpm_ibmvtpm_resume(struct device *dev)
- 		return rc;
- 	}
- 
--	spin_lock_irqsave(&ibmvtpm->lock, flags);
--	vio_disable_interrupts(ibmvtpm->vdev);
--	tasklet_schedule(&ibmvtpm->tasklet);
--	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-+	rc = vio_enable_interrupts(ibmvtpm->vdev);
-+	if (rc) {
-+		dev_err(dev, "Error vio_enable_interrupts rc=%d\n", rc);
-+		return rc;
-+	}
- 
- 	rc = ibmvtpm_crq_send_init(ibmvtpm);
- 	if (rc)
-@@ -467,7 +466,7 @@ static struct ibmvtpm_crq *ibmvtpm_crq_get_next(struct ibmvtpm_dev *ibmvtpm)
- 	if (crq->valid & VTPM_MSG_RES) {
- 		if (++crq_q->index == crq_q->num_entry)
- 			crq_q->index = 0;
--		rmb();
-+		smp_rmb();
- 	} else
- 		crq = NULL;
- 	return crq;
-@@ -535,11 +534,9 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
- 			ibmvtpm->vtpm_version = crq->data;
- 			return;
- 		case VTPM_TPM_COMMAND_RES:
--			ibmvtpm->crq_res.valid = crq->valid;
--			ibmvtpm->crq_res.msg = crq->msg;
--			ibmvtpm->crq_res.len = crq->len;
--			ibmvtpm->crq_res.data = crq->data;
--			wake_up_interruptible(&wq);
-+			/* len of the data in rtce buffer */
-+			ibmvtpm->res_len = crq->len;
-+			wake_up_interruptible(&ibmvtpm->wq);
- 			return;
- 		default:
- 			return;
-@@ -559,38 +556,19 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
- static irqreturn_t ibmvtpm_interrupt(int irq, void *vtpm_instance)
- {
- 	struct ibmvtpm_dev *ibmvtpm = (struct ibmvtpm_dev *) vtpm_instance;
--	unsigned long flags;
--
--	spin_lock_irqsave(&ibmvtpm->lock, flags);
--	vio_disable_interrupts(ibmvtpm->vdev);
--	tasklet_schedule(&ibmvtpm->tasklet);
--	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
--
--	return IRQ_HANDLED;
--}
--
--/**
-- * ibmvtpm_tasklet - Interrupt handler tasklet
-- * @data:	ibm vtpm device struct
-- *
-- * Returns:
-- *	Nothing
-- **/
--static void ibmvtpm_tasklet(void *data)
--{
--	struct ibmvtpm_dev *ibmvtpm = data;
- 	struct ibmvtpm_crq *crq;
--	unsigned long flags;
- 
--	spin_lock_irqsave(&ibmvtpm->lock, flags);
-+	/* while loop is needed for initial setup (get version and
-+	 * get rtce_size). There should be only one tpm request at any
-+	 * given time.
-+	 */
- 	while ((crq = ibmvtpm_crq_get_next(ibmvtpm)) != NULL) {
- 		ibmvtpm_crq_process(crq, ibmvtpm);
- 		crq->valid = 0;
--		wmb();
-+		smp_wmb();
- 	}
- 
--	vio_enable_interrupts(ibmvtpm->vdev);
--	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-+	return IRQ_HANDLED;
- }
- 
- /**
-@@ -650,9 +628,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
- 		goto reg_crq_cleanup;
- 	}
- 
--	tasklet_init(&ibmvtpm->tasklet, (void *)ibmvtpm_tasklet,
--		     (unsigned long)ibmvtpm);
--
- 	rc = request_irq(vio_dev->irq, ibmvtpm_interrupt, 0,
- 			 tpm_ibmvtpm_driver_name, ibmvtpm);
- 	if (rc) {
-@@ -666,13 +641,14 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
- 		goto init_irq_cleanup;
- 	}
- 
-+	init_waitqueue_head(&ibmvtpm->wq);
-+
- 	crq_q->index = 0;
- 
- 	ibmvtpm->dev = dev;
- 	ibmvtpm->vdev = vio_dev;
- 	chip->vendor.data = (void *)ibmvtpm;
- 
--	spin_lock_init(&ibmvtpm->lock);
- 	spin_lock_init(&ibmvtpm->rtce_lock);
- 
- 	rc = ibmvtpm_crq_send_init(ibmvtpm);
-@@ -689,7 +665,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
- 
- 	return rc;
- init_irq_cleanup:
--	tasklet_kill(&ibmvtpm->tasklet);
- 	do {
- 		rc1 = plpar_hcall_norets(H_FREE_CRQ, vio_dev->unit_address);
- 	} while (rc1 == H_BUSY || H_IS_LONG_BUSY(rc1));
-diff --git a/drivers/char/tpm/tpm_ibmvtpm.h b/drivers/char/tpm/tpm_ibmvtpm.h
-index 4296eb4..bd82a79 100644
---- a/drivers/char/tpm/tpm_ibmvtpm.h
-+++ b/drivers/char/tpm/tpm_ibmvtpm.h
-@@ -38,13 +38,12 @@ struct ibmvtpm_dev {
- 	struct vio_dev *vdev;
- 	struct ibmvtpm_crq_queue crq_queue;
- 	dma_addr_t crq_dma_handle;
--	spinlock_t lock;
--	struct tasklet_struct tasklet;
- 	u32 rtce_size;
- 	void __iomem *rtce_buf;
- 	dma_addr_t rtce_dma_handle;
- 	spinlock_t rtce_lock;
--	struct ibmvtpm_crq crq_res;
-+	wait_queue_head_t wq;
-+	u16 res_len;
- 	u32 vtpm_version;
- };
- 
-
+>                 INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> -       else
+> +       } else {
+> +               queue = kacpid_wq;
+> +               dpc->wait = 0;
+>                 INIT_WORK(&dpc->work, acpi_os_execute_deferred);
+> +       }
+>
+>         /*
+>          * On some machines, a software-initiated SMI causes corruption unless
+>
+> --
