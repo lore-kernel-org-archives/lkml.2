@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab2KAJQu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 05:16:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58488 "EHLO mx2.suse.de"
+	id S1754831Ab2KAJUQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 05:20:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58617 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932613Ab2KAJQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 05:16:46 -0400
-Date: Thu, 1 Nov 2012 10:16:44 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] cgroup: use cgroup_lock_live_group(parent) in
- cgroup_create()
-Message-ID: <20121101091644.GA8533@dhcp22.suse.cz>
-References: <1351657365-25055-1-git-send-email-tj@kernel.org>
- <1351657365-25055-4-git-send-email-tj@kernel.org>
- <20121031155514.GD22809@dhcp22.suse.cz>
- <20121031170431.GF2945@htj.dyndns.org>
+	id S1752361Ab2KAJUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 05:20:13 -0400
+Date: Thu, 1 Nov 2012 10:20:08 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Oliver Neukum <oneukum@suse.de>, Chris Friesen <chris.friesen@genband.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+In-Reply-To: <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
+Message-ID: <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>  <2548314.3caaFsMVg6@linux-lqwf.site> <50919EED.3020601@genband.com>  <36538307.gzWq1oO7Kg@linux-lqwf.site> <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121031170431.GF2945@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 31-10-12 10:04:31, Tejun Heo wrote:
-> Hey, Michal.
-> 
-> On Wed, Oct 31, 2012 at 04:55:14PM +0100, Michal Hocko wrote:
-> > > +	/*
-> > > +	 * Only live parents can have children.  Note that the liveliness
-> > > +	 * check isn't strictly necessary because cgroup_mkdir() and
-> > > +	 * cgroup_rmdir() are fully synchronized by i_mutex; however, do it
-> > > +	 * anyway so that locking is contained inside cgroup proper and we
-> > > +	 * don't get nasty surprises if we ever grow another caller.
-> > > +	 */
-> > > +	if (!cgroup_lock_live_group(parent)) {
-> > > +		err = -ENODEV;
-> > > +		goto err_free;
-> > > +	}
-> > > +
-> > 
-> > I think this should be moved up before we try to allocate any memory.
-> > Or is your motivation to keep cgroup_lock held for shorter time?
-> > I could agree with that but a small comment would be helpful.
-> 
-> Then I have to change the error out path more and I'm not sure I wanna
-> call deactivate_super() under cgroup_mutex.  It's just simpler this
-> way.
+On Thu, 1 Nov 2012, James Bottomley wrote:
 
-I am not sure I understand. What does deactivate_super has to do with
-the above suggestion? cgroup_lock_live_group will take the cgroup_mutex
-on the success or frees the previously allocated&unused memory. The
-only thing I was suggesting is to do cgroup_lock_live_group first and
-allocate the cgroup only if it doesn't fail.
+> The point I'm making is that given that the majority of exploits will 
+> already be able to execute arbitrary code in-kernel, there's not much 
+> point trying to consider features like this as attacker prevention.  We 
+> should really be focusing on discussing why we'd want to prevent a 
+> legitimate local root from writing to the suspend partition in a secure 
+> boot environment.
+
+Well, this is being repeated over and over again when talking about secure 
+boot, right?
+
+My understanding is that we are not trying to protect against root 
+exploiting the kernel. We are trying to protect against root tampering 
+with the kernel code and data through legitimate use of kernel-provided 
+facilitiies (/dev/mem, ioperm, reprogramming devices to DMA to arbitrary 
+memory locations, resuming from hibernation image that has been tampered 
+with, etc).
+
+Or perhaps I just misunderstood the point you were trying to make?
+
+Thanks,
 
 -- 
-Michal Hocko
+Jiri Kosina
 SUSE Labs
