@@ -1,63 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936192Ab2KAXCH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 19:02:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35644 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936148Ab2KAXCD (ORCPT
+	id S2992652Ab2KAXCm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 19:02:42 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:58296 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992576Ab2KAXCg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 19:02:03 -0400
-Date: Fri, 2 Nov 2012 00:01:59 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter LaDow <petela@gocougs.wsu.edu>
-cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>
-Subject: Re: [PATCH RT 3/4] net: netfilter: Serialize xt_write_recseq sections
- on RT
-In-Reply-To: <CAN8Q1Ecq9T5HC60_ta8Xr9kKyAe8Fjrd8znV9MpDTYqkSSptOw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1211012358280.2756@ionos>
-References: <20121031003258.811955127@goodmis.org> <20121031003314.763160265@goodmis.org> <CAN8Q1EcVfzJJh+XMeXMMk33kwyyyRoEWsuEbSQqVW0Vz3i3Vuw@mail.gmail.com> <alpine.LFD.2.02.1211012213460.2756@ionos>
- <CAN8Q1Ecq9T5HC60_ta8Xr9kKyAe8Fjrd8znV9MpDTYqkSSptOw@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 1 Nov 2012 19:02:36 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "mikew@google.com" <mikew@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [RESEND][PATCH v4 6/7] efi_pstore: Add a format check for an
+ existing variable name at reading time
+Thread-Topic: [RESEND][PATCH v4 6/7] efi_pstore: Add a format check for an
+ existing variable name at reading time
+Thread-Index: Ac24hO8RMwYoINyJSIi/Kk3ddKLRIA==
+Date: Thu, 1 Nov 2012 23:02:26 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D4138B43CB@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-11-01_07:2012-11-01,2012-11-01,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1211010268
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Nov 2012, Peter LaDow wrote:
+[Issue]
 
-> On Thu, Nov 1, 2012 at 2:26 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > Cough. You are missing a boat load of crucial fixes. There is a damned
-> > good reason why 3.0.stable got 12 updates and the -rt version 14.
-> 
-> I don't doubt there are.  But we've only experienced one problem
-> between 3.0.36-rt58 and 3.0.48-rt72.  Indeed, it might be easier to
-> evaluate the risk if all the changelogs were readily available.  So
-> far, however, we haven't discovered any other issues that give us any
-> concerns.
-> 
-> > Your risk assessment is definitley interesting.
-> 
-> We have specifically tested 3.0.36-rt58 for performance in our
-> application.  Moving to 3.0.48-rt72 poses risk about whether would
-> still be able to meet our performance requirements.  And with regard
-> to stability, the only issue we've had since our earlier moved to
-> 3.0.36-rt58 was the netfilter problem.  We initially only saw the
-> problem on PPP related interfaces, so we reverted to 3.0.3 (non-rt)
-> for PPP related issues.
-> 
-> Now, if you think there are some issues that should raise eyebrows, or
-> can point me to a list of changelogs, I'd be happy to evaluate them.
+a format of variable name has been updated to type, id, count and ctime
+to support holding multiple logs.
 
-git log v3.0.36-rt58..3.0.48-rt72
+Format of current variable name
+  dump-type0-1-2-12345678
 
-That's what a source version control system is designed for AFAICT
+  type:0
+  id:1
+  count:2
+  ctime:12345678
 
-Thanks,
+On the other hand, if an old variable name before being updated
+remains, users can't read it via /dev/pstore.
 
-	tglx
+Format of old variable name
+  dump-type0-1-12345678
+
+  type:0
+  id:1
+  ctime:12345678
+
+[Solution]
+
+This patch add a format check for the old variable name in a read callback
+to make it readable.
+
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ drivers/firmware/efivars.c |   38 ++++++++++++++++++++++++++++----------
+ 1 files changed, 28 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 7ad3aae..bf7a6f9 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -681,17 +681,35 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+ 				*count = cnt;
+ 				timespec->tv_sec = time;
+ 				timespec->tv_nsec = 0;
+-				get_var_data_locked(efivars, &efivars->walk_entry->var);
+-				size = efivars->walk_entry->var.DataSize;
+-				*buf = kmalloc(size, GFP_KERNEL);
+-				if (*buf == NULL)
+-					return -ENOMEM;
+-				memcpy(*buf, efivars->walk_entry->var.Data,
+-				       size);
+-				efivars->walk_entry = list_entry(efivars->walk_entry->list.next,
+-					           struct efivar_entry, list);
+-				return size;
++			} else if (sscanf(name, "dump-type%u-%u-%lu",
++				   type, &part, &time) == 3) {
++				/*
++				 * Check if an old format,
++				 * which doesn't support holding
++				 * multiple logs, remains.
++				 */
++				*id = part;
++				*count = 0;
++				timespec->tv_sec = time;
++				timespec->tv_nsec = 0;
++			} else {
++				efivars->walk_entry = list_entry(
++						efivars->walk_entry->list.next,
++						struct efivar_entry, list);
++				continue;
+ 			}
++
++			get_var_data_locked(efivars, &efivars->walk_entry->var);
++			size = efivars->walk_entry->var.DataSize;
++			*buf = kmalloc(size, GFP_KERNEL);
++			if (*buf == NULL)
++				return -ENOMEM;
++			memcpy(*buf, efivars->walk_entry->var.Data,
++			       size);
++			efivars->walk_entry = list_entry(
++					efivars->walk_entry->list.next,
++					struct efivar_entry, list);
++			return size;
+ 		}
+ 		efivars->walk_entry = list_entry(efivars->walk_entry->list.next,
+ 						 struct efivar_entry, list);
+-- 
+1.7.1
