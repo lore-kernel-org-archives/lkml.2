@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab2KAI1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 04:27:18 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:17428 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932100Ab2KAI1N (ORCPT
+	id S932566Ab2KAI2m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 04:28:42 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:7756
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932102Ab2KAI2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 04:27:13 -0400
+	Thu, 1 Nov 2012 04:28:40 -0400
 X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
 X-SpamScore: 4
 X-BigFish: VPS4(zzc8kzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537hbe9i1155h)
@@ -16,8 +16,8 @@ To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 CC: Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
         David Dajun Chen <dchen@diasemi.com>, <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 1 Nov 2012 13:55:53 +0530
-Message-ID: <1351758353.22009.8.camel@dhruva>
+Date: Thu, 1 Nov 2012 13:57:56 +0530
+Message-ID: <1351758476.22009.10.camel@dhruva>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
