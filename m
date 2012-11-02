@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759066Ab2KBXGw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 19:06:52 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:46020 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab2KBXGr (ORCPT
+	id S1759245Ab2KBXIE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 19:08:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54334 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab2KBXIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 19:06:47 -0400
-Date: Fri, 2 Nov 2012 16:06:44 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Zhouping Liu <zliu@redhat.com>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>, CAI Qian <caiqian@redhat.com>
-Subject: Re: [PATCH 00/31] numa/core patches
-In-Reply-To: <50933CB6.6000909@redhat.com>
-Message-ID: <alpine.LNX.2.00.1211021558030.11106@eggly.anvils>
-References: <20121025121617.617683848@chello.nl> <508A52E1.8020203@redhat.com> <1351242480.12171.48.camel@twins> <20121028175615.GC29827@cmpxchg.org> <508F73C5.7050409@redhat.com> <20121031004838.GA1657@cmpxchg.org> <alpine.LNX.2.00.1210302350140.5084@eggly.anvils>
- <50912478.2040403@redhat.com> <alpine.LNX.2.00.1210311005220.5685@eggly.anvils> <alpine.LNX.2.00.1211010636140.3648@eggly.anvils> <50933CB6.6000909@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 2 Nov 2012 19:08:02 -0400
+Date: Fri, 2 Nov 2012 16:07:57 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Robin Dong <robin.k.dong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Robin Dong <sanbai@taobao.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <boyu.mt@taobao.com>
+Subject: Re: [PATCH 2/2 v5] block/throttle: Add IO submitted information in
+ blkio.throttle
+Message-ID: <20121102230757.GF27843@mtj.dyndns.org>
+References: <1351848697-26087-1-git-send-email-robin.k.dong@gmail.com>
+ <1351848697-26087-2-git-send-email-robin.k.dong@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351848697-26087-2-git-send-email-robin.k.dong@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Nov 2012, Zhouping Liu wrote:
-> On 11/01/2012 09:41 PM, Hugh Dickins wrote:
-> > 
-> > Here's a patch fixing and tidying up that and a few other things there.
-> > But I'm not signing it off yet, partly because I've barely tested it
-> > (quite probably I didn't even have any numa pmd migration happening
-> > at all), and partly because just a moment ago I ran across this
-> > instructive comment in __collapse_huge_page_isolate():
-> > 	/* cannot use mapcount: can't collapse if there's a gup pin */
-> > 	if (page_count(page) != 1) {
-> > 
-> > Hmm, yes, below I've added the page_mapcount() check I proposed to
-> > do_huge_pmd_numa_page(), but is even that safe enough?  Do we actually
-> > need a page_count() check (for 2?) to guard against get_user_pages()?
-> > I suspect we do, but then do we have enough locking to stabilize such
-> > a check?  Probably, but...
-> > 
-> > This will take more time, and I doubt get_user_pages() is an issue in
-> > your testing, so please would you try the patch below, to see if it
-> > does fix the BUGs you are seeing?  Thanks a lot.
+On Fri, Nov 02, 2012 at 05:31:37PM +0800, Robin Dong wrote:
+> From: Robin Dong <sanbai@taobao.com>
 > 
-> Hugh, I have tested the patch for 5 more hours,
-> the issue can't be reproduced again,
-> so I think it has fixed the issue, thank you :)
+> Currently, if the IO is throttled by io-throttle, the system admin has no idea
+> of the situation and can't report it to the real application user about that
+> he/she has to do something.
+> 
+> So this patch adds a new interface named blkio.throttle.io_submitted which
+> exposes the number of bios that have been sent into blk-throttle therefore the
+> user could calculate the difference from throttle.io_serviced to see how many
+> IOs are currently throttled.
+> 
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+> Signed-off-by: Robin Dong <sanbai@taobao.com>
 
-Thanks a lot for testing and reporting back, that's good news.
+ Acked-by: Tejun Heo <tj@kernel.org>
 
-However, I've meanwhile become convinced that more fixes are needed here,
-to be safe against get_user_pages() (including get_user_pages_fast());
-to get the Mlocked count right; and to recover correctly when !pmd_same
-with an Unevictable page.
+Thanks.
 
-Won't now have time to update the patch today,
-but these additional fixes shouldn't hold up your testing.
-
-Hugh
+-- 
+tejun
