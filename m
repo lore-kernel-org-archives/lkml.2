@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab2KBAOe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 20:14:34 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40178 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915Ab2KBAOb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 20:14:31 -0400
-Date: Thu, 1 Nov 2012 17:14:29 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Stan Hu <stanhu@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: help with diagnosing kernel oops in __mutex_lock_slowpath
-Message-ID: <20121102001429.GA2129@kroah.com>
-References: <CAMBWrQ=Xrp-_opV0ej4rn20p3yTUP0TmYQHr5nG79szC0=WUDA@mail.gmail.com>
- <CAMBWrQm6CacSoUxZdNA9XPhDMqyAt2R15ZXxpCLEZcRvEeRiCg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMBWrQm6CacSoUxZdNA9XPhDMqyAt2R15ZXxpCLEZcRvEeRiCg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754812Ab2KBAPW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 20:15:22 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:56785 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751555Ab2KBAPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 20:15:19 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
+        Will Drewry <wad@chromium.org>, Geremy Condra <gcondra@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH 4/4] arch/arm: select HAVE_ARCH_SECCOMP_FILTER
+Date: Thu,  1 Nov 2012 17:15:00 -0700
+Message-Id: <1351815300-28627-5-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351815300-28627-1-git-send-email-keescook@chromium.org>
+References: <1351815300-28627-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 03:02:45PM -0700, Stan Hu wrote:
-> Hello,
-> 
-> I'm getting this kernel oops sporadically with a custom Cortex-A8 ARM
-> board with a Linux 3.2.28 kernel.  The system is booting off an SD
-> card; interestingly this failure doesn't seem to happen when I boot
-> from NAND flash.   I would say 1 out 10 times it fails with a similar
-> backtrace.  Does anyone have any clue why this might be happening?
+From: Will Drewry <wad@chromium.org>
 
-Does this also happen on the 3.6 kernel, or 3.7-rc3?
+Reflect architectural support for seccomp filter.
 
-thanks,
+Signed-off-by: Will Drewry <wad@chromium.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/arm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-greg k-h
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ade7e92..0e8d490 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -21,6 +21,7 @@ config ARM
+ 	select HAVE_AOUT
+ 	select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
+ 	select HAVE_ARCH_KGDB
++	select HAVE_ARCH_SECCOMP_FILTER
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_BPF_JIT
+ 	select HAVE_C_RECORDMCOUNT
+-- 
+1.7.9.5
+
