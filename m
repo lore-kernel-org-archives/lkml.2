@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758952Ab2KBQBp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 12:01:45 -0400
+	id S1759275Ab2KBQB6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:01:58 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:58766 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758486Ab2KBQBl (ORCPT
+	with ESMTP id S1759006Ab2KBQBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 12:01:41 -0400
-Message-ID: <5093EE59.8010609@gmail.com>
-Date: Sat, 03 Nov 2012 00:01:29 +0800
+	Fri, 2 Nov 2012 12:01:53 -0400
+Message-ID: <5093EE6B.3070906@gmail.com>
+Date: Sat, 03 Nov 2012 00:01:47 +0800
 From: Shan Wei <shanwei88@gmail.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: jesse@nicira.com, dev@openvswitch.org, NetDev <netdev@vger.kernel.org>,
+To: dipankar@in.ibm.com, paulmck@linux.vnet.ibm.com,
         Kernel-Maillist <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, cl@linux-foundation.org,
-        Shan Wei <shanwei88@gmail.com>
-Subject: [PATCH 4/9] net: openvswitch: use this_cpu_ptr per-cpu helper
+        cl@linux-foundation.org, Shan Wei <shanwei88@gmail.com>
+Subject: [PATCH v2 6/9] rcu: use __this_cpu_read helper instead of per_cpu_ptr(p,
+ raw_smp_processor_id())
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,66 +25,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Shan Wei <davidshan@tencent.com>
 
-no change vs v1.
-
-Lots of drivers use this kind to read/write per-cpu variable.
-stats = this_cpu_ptr(dp->stats_percpu);
-u64_stats_update_begin(&stats->sync);
- 		stats->tx_packets++;
-u64_stats_update_begin(&stats->sync);
-
-
 Signed-off-by: Shan Wei <davidshan@tencent.com>
 ---
- net/openvswitch/datapath.c |    4 ++--
- net/openvswitch/vport.c    |    5 ++---
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ kernel/rcutree.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
-index 4c4b62c..77d16a5 100644
---- a/net/openvswitch/datapath.c
-+++ b/net/openvswitch/datapath.c
-@@ -208,7 +208,7 @@ void ovs_dp_process_received_packet(struct vport *p, struct sk_buff *skb)
- 	int error;
- 	int key_len;
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 74df86b..441b945 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1960,7 +1960,7 @@ static void force_quiescent_state(struct rcu_state *rsp)
+ 	struct rcu_node *rnp_old = NULL;
  
--	stats = per_cpu_ptr(dp->stats_percpu, smp_processor_id());
-+	stats = this_cpu_ptr(dp->stats_percpu);
- 
- 	/* Extract flow from 'skb' into 'key'. */
- 	error = ovs_flow_extract(skb, p->port_no, &key, &key_len);
-@@ -282,7 +282,7 @@ int ovs_dp_upcall(struct datapath *dp, struct sk_buff *skb,
- 	return 0;
- 
- err:
--	stats = per_cpu_ptr(dp->stats_percpu, smp_processor_id());
-+	stats = this_cpu_ptr(dp->stats_percpu);
- 
- 	u64_stats_update_begin(&stats->sync);
- 	stats->n_lost++;
-diff --git a/net/openvswitch/vport.c b/net/openvswitch/vport.c
-index 03779e8..70af0be 100644
---- a/net/openvswitch/vport.c
-+++ b/net/openvswitch/vport.c
-@@ -333,8 +333,7 @@ void ovs_vport_receive(struct vport *vport, struct sk_buff *skb)
- {
- 	struct vport_percpu_stats *stats;
- 
--	stats = per_cpu_ptr(vport->percpu_stats, smp_processor_id());
--
-+	stats = this_cpu_ptr(vport->percpu_stats);
- 	u64_stats_update_begin(&stats->sync);
- 	stats->rx_packets++;
- 	stats->rx_bytes += skb->len;
-@@ -359,7 +358,7 @@ int ovs_vport_send(struct vport *vport, struct sk_buff *skb)
- 	if (likely(sent)) {
- 		struct vport_percpu_stats *stats;
- 
--		stats = per_cpu_ptr(vport->percpu_stats, smp_processor_id());
-+		stats = this_cpu_ptr(vport->percpu_stats);
- 
- 		u64_stats_update_begin(&stats->sync);
- 		stats->tx_packets++;
+ 	/* Funnel through hierarchy to reduce memory contention. */
+-	rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
++	rnp = __this_cpu_read(rsp->rda->mynode);
+ 	for (; rnp != NULL; rnp = rnp->parent) {
+ 		ret = (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) ||
+ 		      !raw_spin_trylock(&rnp->fqslock);
 -- 
 1.7.1
+
 
