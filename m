@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763041Ab2KBRHy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:07:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33355 "EHLO mail.kernel.org"
+	id S932766Ab2KBRKR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:10:17 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33465 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762327Ab2KBRHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:39 -0400
+	id S1763035Ab2KBRHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 07/24] floppy: do put_disk on current dr if blk_init_queue fails
-Date: Fri,  2 Nov 2012 10:06:55 -0700
-Message-Id: <20121102170247.953165950@linuxfoundation.org>
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@lst.de>, Roland Dreier <roland@purestorage.com>,
+        Andy Grover <agrover@redhat.com>
+Subject: [ 20/24] target: Fix double-free of se_cmd in target_complete_tmr_failure
+Date: Fri,  2 Nov 2012 10:07:08 -0700
+Message-Id: <20121102170248.863847080@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170247.406319110@linuxfoundation.org>
 References: <20121102170247.406319110@linuxfoundation.org>
@@ -27,32 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 238ab78469c6ab7845b43d5061cd3c92331b2452 upstream.
+commit e13d5fef88c40b87c8430f8274c3a9ca32ef90bc upstream.
 
-If blk_init_queue fails, we do not call put_disk on the current dr
-(dr is decremented first in the error handling loop).
+Fabric drivers currently expect to internally release se_cmd in the event
+of a TMR failure during target_submit_tmr(), which means the immediate call
+to transport_generic_free_cmd() after TFO->queue_tm_rsp() from within
+target_complete_tmr_failure() workqueue context is wrong.
 
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+This is done as some fabrics expect TMR operations to be acknowledged
+before releasing the descriptor, so the assumption that core is releasing
+se_cmd associated TMR memory is incorrect.  This fixes a OOPs where
+transport_generic_free_cmd() was being called more than once.
+
+This bug was originally observed with tcm_qla2xxx fabric ports.
+
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Roland Dreier <roland@purestorage.com>
+Cc: Andy Grover <agrover@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/floppy.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/target_core_transport.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -4151,6 +4151,7 @@ static int __init do_floppy_init(void)
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1553,7 +1553,6 @@ static void target_complete_tmr_failure(
  
- 		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
- 		if (!disks[dr]->queue) {
-+			put_disk(disks[dr]);
- 			err = -ENOMEM;
- 			goto out_put_disk;
- 		}
+ 	se_cmd->se_tmr_req->response = TMR_LUN_DOES_NOT_EXIST;
+ 	se_cmd->se_tfo->queue_tm_rsp(se_cmd);
+-	transport_generic_free_cmd(se_cmd, 0);
+ }
+ 
+ /**
 
 
