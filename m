@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759871Ab2KBJ0B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 05:26:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60854 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756289Ab2KBJZ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 05:25:59 -0400
+	id S1760067Ab2KBJ0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 05:26:42 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54358 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757555Ab2KBJ0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 05:26:40 -0400
+Message-ID: <509391CA.9040408@ti.com>
+Date: Fri, 2 Nov 2012 10:26:34 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Date: Fri, 2 Nov 2012 17:25:59 +0800
-Message-ID: <CACV3sbLJ=ueYj+p_FKeNLB9Tbu33UJXPW12n1ZKVU+bgMLA1Zw@mail.gmail.com>
-Subject: [BUG] arm: perf probe can not get __copy_to_user callchain symbol
-From: Jovi Zhang <bookjovi@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jason Kridner <jkridner@beagleboard.org>
+CC: Tony Lindgren <tony@atomide.com>, Koen Kooi <koen@dominion.thruhere.net>,
+        <paul@pwsan.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, "Porter, Matt" <mporter@ti.com>,
+        Russ Dill <russ.dill@gmail.com>, <khilman@ti.com>
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+References: <CA+T6QPk-etCT7EzwGR-tP+JTab_m4Vywh9qgHG_HW-oXKgn_AQ@mail.gmail.com>
+In-Reply-To: <CA+T6QPk-etCT7EzwGR-tP+JTab_m4Vywh9qgHG_HW-oXKgn_AQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi Jason,
 
-In ARM, It seems that we cannot get __copy_to_user callchain symbol,
-like below output,
+On 11/1/2012 7:50 PM, Jason Kridner wrote:
+> My apologies for starting a new thread, but I don't have this thread
+> in my Inbox.
+>
+> http://www.spinics.net/lists/linux-omap/msg81034.html
+>
+> Tony Lindgren wrote:
+>
+>> * Pantelis Antoniou <panto@xxxxxxxxxxxxxxxxxxxxxxx> [121031 15:02]:
+>>>
+>>> So when device's node is 'disabled' of_platform_device_create_pdata()
+>>> will not create the device.
+>>>
+>>> Now, of course it is possible to re-trigger the platform's probe method
+>>> to be called, and in fact I do so in the capebus patches.
+>>
+>> You should fix this in generic way then rather than working
+>> around it in capebus. The same problem exists changing
+>> between different functionality for the shared pins,
+>> let's say between USB pins and UART pins if you want a
+>> serial debug console on some phone.
+>
+> The current capebus solution goes a long way to fixing a huge issue
+> for BeagleBone users and I don't understand what seems to be a
+> push-back on principle. On BeagleBone capes, these conflicts cannot be
+> resolved early.
 
-I guess it due to function __copy_to_user don't compile with unwind
-info, is this right?(not sure)
+I don't think there is any push-back on the principle. It is a very 
+valid problem that does not have any solution today.
 
-If the problem is relate with unwind info, is there anybody can make a
-patch on this? I'm not familiar with unwind stuff very much.
-thanks very much.
+The comments are more on the implementation.
 
+> Do you have suggestions on some more generic method? It seems to me
+> the proposed capebus approach strikes a good balance.
 
-#perf record -e probe:__copy_to_user* -g -a ls
+Well, yeah, that's a generic DT issue, not a beagle-cape issue.
+We should not necessarily handle it by introducing some fake bus and 
+some new binding like spi-dt / i2c-dt that does not mean anything in 
+term of HW.
 
-# Events: 677  probe:__copy_to_user
-#
-# Overhead  Command      Shared Object          Symbol
-# ........  .......  .................  ..............
-#
-    93.50%     perf  [kernel.kallsyms]  [k] __copy_to_user
-               |
-               --- __copy_to_user
-                  |
-                  |--29.38%-- 0xffffffff
-                  |          0xc0b00604
-                  |
-                  |--21.80%-- (nil)
-                  |          |
-                  |          |--92.03%-- 0xc0b00604
-                  |          |
-                  |          |--5.07%-- 0xc0af1bcc
-                  |          |
-                  |          |--1.45%-- 0xc0ab83b4
-                  |          |
-                  |          |--0.72%-- 0xc0af5a20
-                  |          |
-                  |           --0.72%-- 0xc0b0c8b0
-                  |
-                  |--19.91%-- 0xc0b0c8b0
-                  |
-                  |--19.91%-- 0xc0af5a20
-                  |
-                  |--8.53%-- 0xc0b0c658
-                   --0.47%-- [...]
+DT is about pure HW representation. Introducing some fake hierarchy to 
+make SW life easier is not necessarily the good approach.
+
+Adding the version information in the nodes is potentially a good idea, 
+but should clearly be well thought and part of the DT core.
+
+Regards,
+Benoit
+
