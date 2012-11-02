@@ -1,72 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762600Ab2KBBno (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 21:43:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26821 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762542Ab2KBBnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 21:43:43 -0400
-Date: Thu, 1 Nov 2012 21:43:36 -0400
-From: Dave Jones <davej@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: shmem_getpage_gfp VM_BUG_ON triggered. [3.7rc2]
-Message-ID: <20121102014336.GA1727@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org
-References: <20121025023738.GA27001@redhat.com>
- <alpine.LNX.2.00.1210242121410.1697@eggly.anvils>
- <20121101191052.GA5884@redhat.com>
- <alpine.LNX.2.00.1211011546090.19377@eggly.anvils>
- <20121101232030.GA25519@redhat.com>
- <alpine.LNX.2.00.1211011627120.19567@eggly.anvils>
+	id S1762614Ab2KBBtD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 21:49:03 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47546 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762567Ab2KBBs7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 21:48:59 -0400
+X-AuditID: 9c93016f-b7c7bae000000eb7-ee-509326891a17
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 02/25] perf tests: Move test objects into 'tests' directory
+References: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
+	<1351634526-1516-3-git-send-email-jolsa@redhat.com>
+Date: Fri, 02 Nov 2012 10:48:57 +0900
+In-Reply-To: <1351634526-1516-3-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Tue, 30 Oct 2012 23:01:43 +0100")
+Message-ID: <87k3u44vw6.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1211011627120.19567@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 04:48:41PM -0700, Hugh Dickins wrote:
- > On Thu, 1 Nov 2012, Dave Jones wrote:
- > > On Thu, Nov 01, 2012 at 04:03:40PM -0700, Hugh Dickins wrote:
- > >  > 
- > >  > Except... earlier in the thread you explained how you hacked
- > >  > #define VM_BUG_ON(cond) WARN_ON(cond)
- > >  > to get this to come out as a warning instead of a bug,
- > >  > and now it looks as if "a user" has here done the same.
- > >  > 
- > >  > Which is very much a user's right, of course; but does
- > >  > make me wonder whether that user might actually be davej ;)
- > > 
- > > indirectly. I made the same change in the Fedora kernel a while ago
- > > to test a hypothesis that we weren't getting any VM_BUG_ON reports.
- > 
- > Fedora turns on CONFIG_DEBUG_VM?
+Hi Jiri,
 
-Yes.
- 
- > All mm developers should thank you for the wider testing exposure;
- > but I'm not so sure that Fedora users should thank you for turning
- > it on - really it's for mm developers to wrap around !assertions or
- > more expensive checks (e.g. checking calls) in their development.
+Despite its way to acme's tree, I'd like to leave a few comments. :)
 
-The last time I did some benchmarking the impact wasn't as ridiculous
-as say lockdep, or spinlock debug. Maybe the benchmarks I was using
-weren't pushing the VM very hard, but it seemed to me that the value
-in getting info in potential problems early was higher than a small
-performance increase.
 
- > Or did I read a few months ago that some change had been made to
- > such definitions, and VM_BUG_ON(contents) are evaluated even when
- > the config option is off?  I do hope I'm mistaken on that.
+On Tue, 30 Oct 2012 23:01:43 +0100, Jiri Olsa wrote:
+> Separating test objects into 'tests' directory.
+>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  tools/perf/Makefile                 |    9 +-
+>  tools/perf/builtin-test.c           | 1559 -----------------------------------
+>  tools/perf/tests/builtin-test.c     | 1559 +++++++++++++++++++++++++++++++++++
+>  tools/perf/tests/dso-data.c         |  153 ++++
+>  tools/perf/tests/parse-events.c     | 1116 +++++++++++++++++++++++++
+>  tools/perf/util/dso-test-data.c     |  153 ----
+>  tools/perf/util/parse-events-test.c | 1116 -------------------------
 
-Pretty sure that isn't the case. I remember Andrew chastising people
-a few times for putting checks in VM_BUG_ON's that needed to stay around 
-even when the config option was off. Perhaps you were thinking of one
-of those incidents ?
+Looks like it should be considered as renames.  Isn't 'git format-patch
+-M' working?
 
-	Dave
+
+>  7 files changed, 2833 insertions(+), 2832 deletions(-)
+>  delete mode 100644 tools/perf/builtin-test.c
+>  create mode 100644 tools/perf/tests/builtin-test.c
+>  create mode 100644 tools/perf/tests/dso-data.c
+>  create mode 100644 tools/perf/tests/parse-events.c
+>  delete mode 100644 tools/perf/util/dso-test-data.c
+>  delete mode 100644 tools/perf/util/parse-events-test.c
+>
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 3e807d7..2d3427f 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -169,7 +169,7 @@ endif
+>  
+>  ### --- END CONFIGURATION SECTION ---
+>  
+> -BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+> +BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -Iutil -I. -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+
+Hmm..  Do you really want this?  AFAIK there're lots of places that
+include header files under the util directory and they used relative
+path.  I don't know how it affects them but at least they can be changed
+to use simpler path with this change.
+
+
+>  BASIC_LDFLAGS =
+>  
+>  ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+> @@ -371,7 +371,6 @@ LIB_OBJS += $(OUTPUT)util/help.o
+>  LIB_OBJS += $(OUTPUT)util/levenshtein.o
+>  LIB_OBJS += $(OUTPUT)util/parse-options.o
+>  LIB_OBJS += $(OUTPUT)util/parse-events.o
+> -LIB_OBJS += $(OUTPUT)util/parse-events-test.o
+>  LIB_OBJS += $(OUTPUT)util/path.o
+>  LIB_OBJS += $(OUTPUT)util/rbtree.o
+>  LIB_OBJS += $(OUTPUT)util/bitmap.o
+> @@ -389,7 +388,6 @@ LIB_OBJS += $(OUTPUT)util/sigchain.o
+>  LIB_OBJS += $(OUTPUT)util/dso.o
+>  LIB_OBJS += $(OUTPUT)util/symbol.o
+>  LIB_OBJS += $(OUTPUT)util/symbol-elf.o
+> -LIB_OBJS += $(OUTPUT)util/dso-test-data.o
+>  LIB_OBJS += $(OUTPUT)util/color.o
+>  LIB_OBJS += $(OUTPUT)util/pager.o
+>  LIB_OBJS += $(OUTPUT)util/header.o
+> @@ -430,6 +428,9 @@ LIB_OBJS += $(OUTPUT)ui/stdio/hist.o
+>  
+>  LIB_OBJS += $(OUTPUT)arch/common.o
+>  
+> +LIB_OBJS += $(OUTPUT)tests/parse-events.o
+> +LIB_OBJS += $(OUTPUT)tests/dso-data.o
+> +
+
+Maybe TEST_OBJS?  I guess they don't need to be included in libperf?
+
+
+>  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+>  BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+>  # Benchmark modules
+> @@ -459,8 +460,8 @@ BUILTIN_OBJS += $(OUTPUT)builtin-probe.o
+>  BUILTIN_OBJS += $(OUTPUT)builtin-kmem.o
+>  BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
+>  BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
+> -BUILTIN_OBJS += $(OUTPUT)builtin-test.o
+>  BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
+> +BUILTIN_OBJS += $(OUTPUT)tests/builtin-test.o
+
+Placing builtin command in a different directory looks little bit odd.
+
+Thanks,
+Namhyung
