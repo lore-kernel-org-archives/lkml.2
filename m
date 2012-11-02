@@ -1,43 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758282Ab2KBVnG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 17:43:06 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:35307 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab2KBVnC (ORCPT
+	id S1758584Ab2KBVns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 17:43:48 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:48413 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757887Ab2KBVnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 17:43:02 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <4911582.xWBr8PDhoE@vostro.rjw.lan>
-References: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com>
-	<CA+55aFxm0D77c0RYJuAiq2EDJxn+hGKTEGYJnHXNM8XkVAYOTA@mail.gmail.com>
-	<CAKMK7uEgnpTET0_VXWm7JyGePnXL-q_nHgSWq4g=qWodwrg38Q@mail.gmail.com>
-	<4911582.xWBr8PDhoE@vostro.rjw.lan>
-Date: Fri, 2 Nov 2012 22:43:02 +0100
-Message-ID: <CAKMK7uENP_XWQ7UWjd+PnqTH-S-jYRjrnfY1TwocfbT6abL61w@mail.gmail.com>
-Subject: Re: Linux 3.7-rc3
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Airlie <airlied@linux.ie>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 2 Nov 2012 17:43:47 -0400
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: rjw@sisk.pl
+Subject: [RFC] Suspend/resume without VT switches
+Date: Fri,  2 Nov 2012 14:43:39 -0700
+Message-Id: <1351892621-4840-1-git-send-email-jbarnes@virtuousgeek.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 2, 2012 at 10:40 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Can you point me to a range of commits worth checking?
+I've lightly tested this with X and it definitely makes my
+suspend/resume sequence a bit prettier.  It should speed things up
+trivally as well, but most of those gains come from other changes to the
+i915 driver (posted earlier to intel-gfx).
 
-8c3f929b6147e142..57df2ae9df6e335a98969cac is the core rework (plus a
-bit related follow-up) without any other merges interfering. Might
-oops if you open/close the lid without a suspend/resume cycle (since
-that's only fixed later on), should otherwise work.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Any thoughts?  I suspect we'll have to be more defensive about the
+resume configuration in case the BIOS did something weird, but overall I
+think we should be able to do this one way or another.
+
+Thanks,
+Jesse
+
