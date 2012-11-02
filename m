@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762778Ab2KBNgI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 09:36:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33788 "EHLO
+	id S1762755Ab2KBNgF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 09:36:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2638 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab2KBNfG (ORCPT
+	with ESMTP id S1762194Ab2KBNfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 09:35:06 -0400
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=chlWpSqTlBoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=SEJFRMVsQgQA:10 a=20KFwNOVAAAA:8 a=Fjapi_lNa2L97Yh5HBIA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=9OxXuuZRz8nFk1u8EBEA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 2 Nov 2012 09:35:08 -0400
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=_35cMLPAm4kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=OvHXHjnsBl0A:10 a=20KFwNOVAAAA:8 a=xTmkAlXm4ev871geS_cA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=wXM8LopmM4Ihf1vtBb8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121102133501.848683275@goodmis.org>
+Message-Id: <20121102133501.251584577@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 09:33:13 -0400
+Date: Fri, 02 Nov 2012 09:33:10 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 21/22] tracing: Use irq_work for wake ups and remove *_nowake_*() functions
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 18/22] tracing: Remove unused function unregister_tracer()
 References: <20121102133251.998500247@goodmis.org>
-Content-Disposition: inline; filename=0021-tracing-Use-irq_work-for-wake-ups-and-remove-_nowake.patch
+Content-Disposition: inline; filename=0018-tracing-Remove-unused-function-unregister_tracer.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,410 +31,69 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Have the ring buffer commit function use the irq_work infrastructure to
-wake up any waiters waiting on the ring buffer for new data. The irq_work
-was created for such a purpose, where doing the actual wake up at the
-time of adding data is too dangerous, as an event or function trace may
-be in the midst of the work queue locks and cause deadlocks. The irq_work
-will either delay the action to the next timer interrupt, or trigger an IPI
-to itself forcing an interrupt to do the work (in a safe location).
+The function register_tracer() is only used by kernel core code,
+that never needs to remove the tracer. As trace_events have become
+the main way to add new tracing to the kernel, the need to
+unregister a tracer has diminished. Remove the unused function
+unregister_tracer(). If a need arises where we need it, then we
+can always add it back.
 
-With irq_work, all ring buffer commits can safely do wakeups, removing
-the need for the ring buffer commit "nowake" variants, which were used
-by events and function tracing. All commits can now safely use the
-normal commit, and the "nowake" variants can be removed.
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace_event.h      |   14 ++---
- include/trace/ftrace.h            |    3 +-
- kernel/trace/Kconfig              |    1 +
- kernel/trace/trace.c              |  121 +++++++++++++++++++++------------=
-----
- kernel/trace/trace.h              |    5 --
- kernel/trace/trace_events.c       |    2 +-
- kernel/trace/trace_kprobe.c       |    8 +--
- kernel/trace/trace_sched_switch.c |    2 +-
- kernel/trace/trace_selftest.c     |    1 +
- 9 files changed, 84 insertions(+), 73 deletions(-)
+ kernel/trace/trace.c |   26 --------------------------
+ kernel/trace/trace.h |    1 -
+ 2 files changed, 27 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index c760670..a3d4895 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -133,13 +133,13 @@ trace_current_buffer_lock_reserve(struct ring_buffer =
-**current_buffer,
- void trace_current_buffer_unlock_commit(struct ring_buffer *buffer,
- 					struct ring_buffer_event *event,
- 					unsigned long flags, int pc);
--void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
--				       struct ring_buffer_event *event,
--					unsigned long flags, int pc);
--void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
--					    struct ring_buffer_event *event,
--					    unsigned long flags, int pc,
--					    struct pt_regs *regs);
-+void trace_buffer_unlock_commit(struct ring_buffer *buffer,
-+				struct ring_buffer_event *event,
-+				unsigned long flags, int pc);
-+void trace_buffer_unlock_commit_regs(struct ring_buffer *buffer,
-+				     struct ring_buffer_event *event,
-+				     unsigned long flags, int pc,
-+				     struct pt_regs *regs);
- void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
- 					 struct ring_buffer_event *event);
-=20
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index a763888..698f2a8 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -545,8 +545,7 @@ ftrace_raw_event_##call(void *__data, proto)				\
- 	{ assign; }							\
- 									\
- 	if (!filter_current_check_discard(buffer, event_call, entry, event)) \
--		trace_nowake_buffer_unlock_commit(buffer,		\
--						  event, irq_flags, pc); \
-+		trace_buffer_unlock_commit(buffer, event, irq_flags, pc); \
- }
- /*
-  * The ftrace_test_probe is compiled out, it is only here as a build time =
-check
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 4cea4f4..5d89335 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -119,6 +119,7 @@ config TRACING
- 	select BINARY_PRINTF
- 	select EVENT_TRACING
- 	select TRACE_CLOCK
-+	select IRQ_WORK
-=20
- config GENERIC_TRACER
- 	bool
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 8eaa837..d5f5997 100644
+index 599b29a..65b5fc9 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -19,6 +19,7 @@
- #include <linux/seq_file.h>
- #include <linux/notifier.h>
- #include <linux/irqflags.h>
-+#include <linux/irq_work.h>
- #include <linux/debugfs.h>
- #include <linux/pagemap.h>
- #include <linux/hardirq.h>
-@@ -85,6 +86,14 @@ static int dummy_set_flag(u32 old_flags, u32 bit, int se=
-t)
- static DEFINE_PER_CPU(bool, trace_cmdline_save);
-=20
- /*
-+ * When a reader is waiting for data, then this variable is
-+ * set to true.
-+ */
-+static bool trace_wakeup_needed;
-+
-+static struct irq_work trace_work_wakeup;
-+
-+/*
-  * Kill all tracing for good (never come back).
-  * It is initialized to 1 but will turn to zero if the initialization
-  * of the tracer is successful. But that is the only place that sets
-@@ -329,12 +338,18 @@ unsigned long trace_flags =3D TRACE_ITER_PRINT_PARENT=
- | TRACE_ITER_PRINTK |
- static int trace_stop_count;
- static DEFINE_RAW_SPINLOCK(tracing_start_lock);
-=20
--static void wakeup_work_handler(struct work_struct *work)
-+/**
-+ * trace_wake_up - wake up tasks waiting for trace input
-+ *
-+ * Schedules a delayed work to wake up any task that is blocked on the
-+ * trace_wait queue. These is used with trace_poll for tasks polling the
-+ * trace.
-+ */
-+static void trace_wake_up(struct irq_work *work)
- {
--	wake_up(&trace_wait);
--}
-+	wake_up_all(&trace_wait);
-=20
--static DECLARE_DELAYED_WORK(wakeup_work, wakeup_work_handler);
-+}
-=20
- /**
-  * tracing_on - enable tracing buffers
-@@ -389,22 +404,6 @@ int tracing_is_on(void)
+@@ -884,32 +884,6 @@ int register_tracer(struct tracer *type)
+ 	return ret;
  }
- EXPORT_SYMBOL_GPL(tracing_is_on);
 =20
--/**
-- * trace_wake_up - wake up tasks waiting for trace input
-- *
-- * Schedules a delayed work to wake up any task that is blocked on the
-- * trace_wait queue. These is used with trace_poll for tasks polling the
-- * trace.
-- */
--void trace_wake_up(void)
+-void unregister_tracer(struct tracer *type)
 -{
--	const unsigned long delay =3D msecs_to_jiffies(2);
+-	struct tracer **t;
 -
--	if (trace_flags & TRACE_ITER_BLOCK)
--		return;
--	schedule_delayed_work(&wakeup_work, delay);
+-	mutex_lock(&trace_types_lock);
+-	for (t =3D &trace_types; *t; t =3D &(*t)->next) {
+-		if (*t =3D=3D type)
+-			goto found;
+-	}
+-	pr_info("Tracer %s not registered\n", type->name);
+-	goto out;
+-
+- found:
+-	*t =3D (*t)->next;
+-
+-	if (type =3D=3D current_trace && tracer_enabled) {
+-		tracer_enabled =3D 0;
+-		tracing_stop();
+-		if (current_trace->stop)
+-			current_trace->stop(&global_trace);
+-		current_trace =3D &nop_trace;
+-	}
+-out:
+-	mutex_unlock(&trace_types_lock);
 -}
 -
- static int __init set_buf_size(char *str)
+ void tracing_reset(struct trace_array *tr, int cpu)
  {
- 	unsigned long buf_size;
-@@ -755,6 +754,40 @@ update_max_tr_single(struct trace_array *tr, struct ta=
-sk_struct *tsk, int cpu)
- }
- #endif /* CONFIG_TRACER_MAX_TRACE */
-=20
-+static void default_wait_pipe(struct trace_iterator *iter)
-+{
-+	DEFINE_WAIT(wait);
-+
-+	prepare_to_wait(&trace_wait, &wait, TASK_INTERRUPTIBLE);
-+
-+	/*
-+	 * The events can happen in critical sections where
-+	 * checking a work queue can cause deadlocks.
-+	 * After adding a task to the queue, this flag is set
-+	 * only to notify events to try to wake up the queue
-+	 * using irq_work.
-+	 *
-+	 * We don't clear it even if the buffer is no longer
-+	 * empty. The flag only causes the next event to run
-+	 * irq_work to do the work queue wake up. The worse
-+	 * that can happen if we race with !trace_empty() is that
-+	 * an event will cause an irq_work to try to wake up
-+	 * an empty queue.
-+	 *
-+	 * There's no reason to protect this flag either, as
-+	 * the work queue and irq_work logic will do the necessary
-+	 * synchronization for the wake ups. The only thing
-+	 * that is necessary is that the wake up happens after
-+	 * a task has been queued. It's OK for spurious wake ups.
-+	 */
-+	trace_wakeup_needed =3D true;
-+
-+	if (trace_empty(iter))
-+		schedule();
-+
-+	finish_wait(&trace_wait, &wait);
-+}
-+
- /**
-  * register_tracer - register a tracer with the ftrace system.
-  * @type - the plugin for the tracer
-@@ -1158,30 +1191,32 @@ void
- __buffer_unlock_commit(struct ring_buffer *buffer, struct ring_buffer_even=
-t *event)
- {
- 	__this_cpu_write(trace_cmdline_save, true);
-+	if (trace_wakeup_needed) {
-+		trace_wakeup_needed =3D false;
-+		/* irq_work_queue() supplies it's own memory barriers */
-+		irq_work_queue(&trace_work_wakeup);
-+	}
- 	ring_buffer_unlock_commit(buffer, event);
- }
-=20
- static inline void
- __trace_buffer_unlock_commit(struct ring_buffer *buffer,
- 			     struct ring_buffer_event *event,
--			     unsigned long flags, int pc,
--			     int wake)
-+			     unsigned long flags, int pc)
- {
- 	__buffer_unlock_commit(buffer, event);
-=20
- 	ftrace_trace_stack(buffer, flags, 6, pc);
- 	ftrace_trace_userstack(buffer, flags, pc);
--
--	if (wake)
--		trace_wake_up();
- }
-=20
- void trace_buffer_unlock_commit(struct ring_buffer *buffer,
- 				struct ring_buffer_event *event,
- 				unsigned long flags, int pc)
- {
--	__trace_buffer_unlock_commit(buffer, event, flags, pc, 1);
-+	__trace_buffer_unlock_commit(buffer, event, flags, pc);
- }
-+EXPORT_SYMBOL_GPL(trace_buffer_unlock_commit);
-=20
- struct ring_buffer_event *
- trace_current_buffer_lock_reserve(struct ring_buffer **current_rb,
-@@ -1198,29 +1233,21 @@ void trace_current_buffer_unlock_commit(struct ring=
-_buffer *buffer,
- 					struct ring_buffer_event *event,
- 					unsigned long flags, int pc)
- {
--	__trace_buffer_unlock_commit(buffer, event, flags, pc, 1);
-+	__trace_buffer_unlock_commit(buffer, event, flags, pc);
- }
- EXPORT_SYMBOL_GPL(trace_current_buffer_unlock_commit);
-=20
--void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
--				       struct ring_buffer_event *event,
--				       unsigned long flags, int pc)
--{
--	__trace_buffer_unlock_commit(buffer, event, flags, pc, 0);
--}
--EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit);
--
--void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
--					    struct ring_buffer_event *event,
--					    unsigned long flags, int pc,
--					    struct pt_regs *regs)
-+void trace_buffer_unlock_commit_regs(struct ring_buffer *buffer,
-+				     struct ring_buffer_event *event,
-+				     unsigned long flags, int pc,
-+				     struct pt_regs *regs)
- {
- 	__buffer_unlock_commit(buffer, event);
-=20
- 	ftrace_trace_stack_regs(buffer, flags, 0, pc, regs);
- 	ftrace_trace_userstack(buffer, flags, pc);
- }
--EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit_regs);
-+EXPORT_SYMBOL_GPL(trace_buffer_unlock_commit_regs);
-=20
- void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
- 					 struct ring_buffer_event *event)
-@@ -3364,19 +3391,6 @@ tracing_poll_pipe(struct file *filp, poll_table *pol=
-l_table)
- 	}
- }
-=20
--
--void default_wait_pipe(struct trace_iterator *iter)
--{
--	DEFINE_WAIT(wait);
--
--	prepare_to_wait(&trace_wait, &wait, TASK_INTERRUPTIBLE);
--
--	if (trace_empty(iter))
--		schedule();
--
--	finish_wait(&trace_wait, &wait);
--}
--
- /*
-  * This is a make-shift waitqueue.
-  * A tracer might use this callback on some rare cases:
-@@ -5128,6 +5142,7 @@ __init static int tracer_alloc_buffers(void)
- #endif
-=20
- 	trace_init_cmdlines();
-+	init_irq_work(&trace_work_wakeup, trace_wake_up);
-=20
- 	register_tracer(&nop_trace);
- 	current_trace =3D &nop_trace;
+ 	struct ring_buffer *buffer =3D tr->buffer;
 diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 8301d6d..c75d798 100644
+index 0e2c215..8301d6d 100644
 --- a/kernel/trace/trace.h
 +++ b/kernel/trace/trace.h
-@@ -327,7 +327,6 @@ trace_buffer_iter(struct trace_iterator *iter, int cpu)
+@@ -410,7 +410,6 @@ void tracing_sched_switch_assign_trace(struct trace_arr=
+ay *tr);
+ void tracing_stop_sched_switch_record(void);
+ void tracing_start_sched_switch_record(void);
+ int register_tracer(struct tracer *type);
+-void unregister_tracer(struct tracer *type);
+ int is_tracing_stopped(void);
 =20
- int tracer_init(struct tracer *t, struct trace_array *tr);
- int tracing_is_enabled(void);
--void trace_wake_up(void);
- void tracing_reset(struct trace_array *tr, int cpu);
- void tracing_reset_online_cpus(struct trace_array *tr);
- void tracing_reset_current(int cpu);
-@@ -349,9 +348,6 @@ trace_buffer_lock_reserve(struct ring_buffer *buffer,
- 			  unsigned long len,
- 			  unsigned long flags,
- 			  int pc);
--void trace_buffer_unlock_commit(struct ring_buffer *buffer,
--				struct ring_buffer_event *event,
--				unsigned long flags, int pc);
-=20
- struct trace_entry *tracing_get_trace_entry(struct trace_array *tr,
- 						struct trace_array_cpu *data);
-@@ -370,7 +366,6 @@ void trace_init_global_iter(struct trace_iterator *iter=
-);
-=20
- void tracing_iter_reset(struct trace_iterator *iter, int cpu);
-=20
--void default_wait_pipe(struct trace_iterator *iter);
- void poll_wait_pipe(struct trace_iterator *iter);
-=20
- void ftrace(struct trace_array *tr,
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index cb2df3b..880073d 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1760,7 +1760,7 @@ function_test_events_call(unsigned long ip, unsigned =
-long parent_ip,
- 	entry->ip			=3D ip;
- 	entry->parent_ip		=3D parent_ip;
-=20
--	trace_nowake_buffer_unlock_commit(buffer, event, flags, pc);
-+	trace_buffer_unlock_commit(buffer, event, flags, pc);
-=20
-  out:
- 	atomic_dec(&per_cpu(ftrace_test_event_disable, cpu));
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 5a3c533..1865d5f 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -751,8 +751,8 @@ static __kprobes void kprobe_trace_func(struct kprobe *=
-kp, struct pt_regs *regs)
- 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-=20
- 	if (!filter_current_check_discard(buffer, call, entry, event))
--		trace_nowake_buffer_unlock_commit_regs(buffer, event,
--						       irq_flags, pc, regs);
-+		trace_buffer_unlock_commit_regs(buffer, event,
-+						irq_flags, pc, regs);
- }
-=20
- /* Kretprobe handler */
-@@ -784,8 +784,8 @@ static __kprobes void kretprobe_trace_func(struct kretp=
-robe_instance *ri,
- 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-=20
- 	if (!filter_current_check_discard(buffer, call, entry, event))
--		trace_nowake_buffer_unlock_commit_regs(buffer, event,
--						       irq_flags, pc, regs);
-+		trace_buffer_unlock_commit_regs(buffer, event,
-+						irq_flags, pc, regs);
- }
-=20
- /* Event entry printers */
-diff --git a/kernel/trace/trace_sched_switch.c b/kernel/trace/trace_sched_s=
-witch.c
-index b0a136a..3374c79 100644
---- a/kernel/trace/trace_sched_switch.c
-+++ b/kernel/trace/trace_sched_switch.c
-@@ -102,7 +102,7 @@ tracing_sched_wakeup_trace(struct trace_array *tr,
- 	entry->next_cpu			=3D task_cpu(wakee);
-=20
- 	if (!filter_check_discard(call, entry, buffer, event))
--		trace_nowake_buffer_unlock_commit(buffer, event, flags, pc);
-+		trace_buffer_unlock_commit(buffer, event, flags, pc);
- }
-=20
- static void
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index 091b815..4762316 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -1094,6 +1094,7 @@ trace_selftest_startup_wakeup(struct tracer *trace, s=
-truct trace_array *tr)
- 	tracing_stop();
- 	/* check both trace buffers */
- 	ret =3D trace_test_buffer(tr, NULL);
-+	printk("ret =3D %d\n", ret);
- 	if (!ret)
- 		ret =3D trace_test_buffer(&max_tr, &count);
-=20
+ extern cpumask_var_t __read_mostly tracing_buffer_mask;
 --=20
 1.7.10.4
 
@@ -448,13 +106,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJQk8wFAAoJEOdOSU1xswtM92sH/jv3NJFrDGaFK7n9xxnv6Ur1
-+GgXjVDCqYgIgFpXn/AkKyFc5jzHiVPCGk5ZxxnVEHynLv30oEOVI9hdISYZvxgn
-5suY0VrO+ydbdiIybWNjYw/6B3mCCWpalSeD7UuViA55zhBPC3xfqLseuaUuQJm5
-YMI8P35NMu+mhBt1qvBPVx9FOd8YKjS/+Rul4ypt46ZZM/Au6zVtXp5HwronGz6X
-+SrM1GNjOt06KV76lCuVwxFNDGKXwECEZZB1kiGZZWeYkjk2DLnT+Hz/rO9urBz1
-dW0hGo3nI2/I8dZAyTksW45cdmlfXoAbCtmhTdyq2f6lJnT1MFPpZ6i6Z0IIAjo=
-=nF6L
+iQEcBAABAgAGBQJQk8wFAAoJEOdOSU1xswtM1cwIAMw0J9fnWJTnZ71KQDcUYRhf
+UK7HIGmAajRzn9PX0uBJRfwq0AQPekMKvDGudVf2zwlZPo9zwCIETN7qwW6Eh5Q/
+i7sAWUUhFgZs4B1ZT1vIi7XghpmKHwuMEpZzU3s7CgWb2PNXNuyi+b9ja3fpcu4y
+u46DOopGvYuBG8NXbWYVP5aMMkP0vwFUlljtfQFoCXIMw+V1MNwXs2iEBQTnQyGr
+42UZ6j8awc37jt2yfNTG2+NNT22fsW7+NwTyQT87ljFHIkFr5fEMK+0Shfem44MO
+UsQ+QDzFvGndQHzhdE2HnzxnneIzRMtBiZ/PXbtnLgtMRjzFPCaEhEm5cjVfkRk=
+=40KO
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
