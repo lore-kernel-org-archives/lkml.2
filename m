@@ -1,203 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760604Ab2KBWpt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 18:45:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27741 "EHLO
+	id S1760744Ab2KBWqG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 18:46:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16388 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759050Ab2KBWpO (ORCPT
+	with ESMTP id S1758197Ab2KBWpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 18:45:14 -0400
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=LKbzp2Afl1gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ZOIXb3-SFrwA:10 a=20KFwNOVAAAA:8 a=_yoRtwRrdxoPMFm6YYwA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 2 Nov 2012 18:45:13 -0400
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Y2s57nzHg2cA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=aNH6rOs39N8A:10 a=20KFwNOVAAAA:8 a=7QaoQKzyUE3Xn9JxLJcA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121102224510.698768364@goodmis.org>
+Message-Id: <20121102224510.254256793@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 18:38:35 -0400
+Date: Fri, 02 Nov 2012 18:38:32 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 7/8][RFC] ftrace: Use only the preempt version of function tracing
+Subject: [PATCH 4/8][RFC] ftrace: Add context level recursion bit checking
 References: <20121102223828.795874032@goodmis.org>
-Content-Disposition: inline; filename=0007-ftrace-Use-only-the-preempt-version-of-function-trac.patch
+Content-Disposition: inline; filename=0004-ftrace-Add-context-level-recursion-bit-checking.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The function tracer had two different versions of function tracing.
+Currently for recursion checking in the function tracer, ftrace
+tests a task_struct bit to determine if the function tracer had
+recursed or not. If it has, then it will will return without going
+further.
 
-The disabling of irqs version and the preempt disable version.
+But this leads to races. If an interrupt came in after the bit
+was set, the functions being traced would see that bit set and
+think that the function tracer recursed on itself, and would return.
 
-As function tracing in very intrusive and can cause nasty recursion
-issues, it has its own recursion protection. But the old method to
-do this was a flat layer. If it detected that a recursion was happening
-then it would just return without recording.
+Instead add a bit for each context (normal, softirq, irq and nmi).
 
-This made the preempt version (much faster than the irq disabling one)
-not very useful, because if an interrupt were to occur after the
-recursion flag was set, the interrupt would not be traced at all,
-because every function that was traced would think it recursed on
-itself (due to the context it preempted setting the recursive flag).
-
-Now that we have a recursion flag for every context level, we
-no longer need to worry about that. We can disable preemption,
-set the current context recursion check bit, and go on. If an
-interrupt were to come along, it would check its own context bit
-and happily continue to trace.
-
-As the preempt version is faster than the irq disable version,
-there's no more reason to keep the preempt version around.
-And the irq disable version still had an issue with missing
-out on tracing NMI code.
-
-Remove the irq disable function tracer version and have the
-preempt disable version be the default (and only version).
-
-Before this patch we had from running:
-
- # echo function > /debug/tracing/current_tracer
- # for i in `seq 10`; do ./hackbench 50; done
-Time: 12.028
-Time: 11.945
-Time: 11.925
-Time: 11.964
-Time: 12.002
-Time: 11.910
-Time: 11.944
-Time: 11.929
-Time: 11.941
-Time: 11.924
-
-(average: 11.9512)
-
-Now we have:
-
- # echo function > /debug/tracing/current_tracer
- # for i in `seq 10`; do ./hackbench 50; done
-Time: 10.285
-Time: 10.407
-Time: 10.243
-Time: 10.372
-Time: 10.380
-Time: 10.198
-Time: 10.272
-Time: 10.354
-Time: 10.248
-Time: 10.253
-
-(average: 10.3012)
-
- a 13.8% savings!
+A check of which context the task is in is made before testing the
+associated bit. Now if an interrupt preempts the function tracer
+after the previous context has been set, the interrupt functions
+can still be traced.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_functions.c |   61 +++++++++-------------------------------
- 1 file changed, 14 insertions(+), 47 deletions(-)
+ kernel/trace/ftrace.c |   40 +++++++++++++++++++++++++++++++++-------
+ kernel/trace/trace.h  |   12 +++++++++---
+ 2 files changed, 42 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index bb227e3..3c72615 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -47,34 +47,6 @@ static void function_trace_start(struct trace_array *tr)
- 	tracing_reset_online_cpus(tr);
- }
- 
--static void
--function_trace_call_preempt_only(unsigned long ip, unsigned long parent_ip,
--				 struct ftrace_ops *op, struct pt_regs *pt_regs)
--{
--	struct trace_array *tr = func_trace;
--	struct trace_array_cpu *data;
--	unsigned long flags;
--	long disabled;
--	int cpu;
--	int pc;
--
--	if (unlikely(!ftrace_function_enabled))
--		return;
--
--	pc = preempt_count();
--	preempt_disable_notrace();
--	local_save_flags(flags);
--	cpu = raw_smp_processor_id();
--	data = tr->data[cpu];
--	disabled = atomic_inc_return(&data->disabled);
--
--	if (likely(disabled == 1))
--		trace_function(tr, ip, parent_ip, flags, pc);
--
--	atomic_dec(&data->disabled);
--	preempt_enable_notrace();
--}
--
- /* Our option */
- enum {
- 	TRACE_FUNC_OPT_STACK	= 0x1,
-@@ -85,34 +57,34 @@ static struct tracer_flags func_flags;
- static void
- function_trace_call(unsigned long ip, unsigned long parent_ip,
- 		    struct ftrace_ops *op, struct pt_regs *pt_regs)
--
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index cd6cd3c..fbf25e7 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -156,14 +156,27 @@ static void
+ ftrace_global_list_func(unsigned long ip, unsigned long parent_ip,
+ 			struct ftrace_ops *op, struct pt_regs *regs)
  {
- 	struct trace_array *tr = func_trace;
- 	struct trace_array_cpu *data;
- 	unsigned long flags;
--	long disabled;
-+	unsigned int bit;
- 	int cpu;
- 	int pc;
- 
- 	if (unlikely(!ftrace_function_enabled))
+-	if (unlikely(trace_recursion_test(TRACE_GLOBAL_BIT)))
++	int bit;
++
++	if (in_interrupt()) {
++		if (in_nmi())
++			bit = TRACE_GLOBAL_NMI_BIT;
++
++		else if (in_irq())
++			bit = TRACE_GLOBAL_IRQ_BIT;
++		else
++			bit = TRACE_GLOBAL_SIRQ_BIT;
++	} else
++		bit = TRACE_GLOBAL_BIT;
++
++	if (unlikely(trace_recursion_test(bit)))
  		return;
-+	
-+	pc = preempt_count();
-+	preempt_disable_notrace();
  
--	/*
--	 * Need to use raw, since this must be called before the
--	 * recursive protection is performed.
--	 */
--	local_irq_save(flags);
--	cpu = raw_smp_processor_id();
--	data = tr->data[cpu];
--	disabled = atomic_inc_return(&data->disabled);
-+	bit = trace_test_and_set_recursion(TRACE_FTRACE_START, TRACE_FTRACE_MAX);
-+	if (bit < 0)
-+		goto out;
- 
--	if (likely(disabled == 1)) {
--		pc = preempt_count();
-+	cpu = smp_processor_id();
-+	data = tr->data[cpu];
-+	if (!atomic_read(&data->disabled)) {
-+		local_save_flags(flags);
- 		trace_function(tr, ip, parent_ip, flags, pc);
- 	}
-+	trace_clear_recursion(bit);
- 
--	atomic_dec(&data->disabled);
--	local_irq_restore(flags);
-+ out:
-+	preempt_enable_notrace();
+-	trace_recursion_set(TRACE_GLOBAL_BIT);
++	trace_recursion_set(bit);
+ 	do_for_each_ftrace_op(op, ftrace_global_list) {
+ 		op->func(ip, parent_ip, op, regs);
+ 	} while_for_each_ftrace_op(op);
+-	trace_recursion_clear(TRACE_GLOBAL_BIT);
++	trace_recursion_clear(bit);
  }
  
- static void
-@@ -185,11 +157,6 @@ static void tracing_start_function_trace(void)
+ static void ftrace_pid_func(unsigned long ip, unsigned long parent_ip,
+@@ -4132,14 +4145,27 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
+ 		       struct ftrace_ops *ignored, struct pt_regs *regs)
  {
- 	ftrace_function_enabled = 0;
+ 	struct ftrace_ops *op;
++	unsigned int bit;
  
--	if (trace_flags & TRACE_ITER_PREEMPTONLY)
--		trace_ops.func = function_trace_call_preempt_only;
--	else
--		trace_ops.func = function_trace_call;
--
- 	if (func_flags.val & TRACE_FUNC_OPT_STACK)
- 		register_ftrace_function(&trace_stack_ops);
- 	else
+ 	if (function_trace_stop)
+ 		return;
+ 
+-	if (unlikely(trace_recursion_test(TRACE_INTERNAL_BIT)))
+-		return;
++	if (in_interrupt()) {
++		if (in_nmi())
++			bit = TRACE_INTERNAL_NMI_BIT;
++
++		else if (in_irq())
++			bit = TRACE_INTERNAL_IRQ_BIT;
++		else
++			bit = TRACE_INTERNAL_SIRQ_BIT;
++	} else
++		bit = TRACE_INTERNAL_BIT;
++
++	if (unlikely(trace_recursion_test(bit)))
++			return;
++
++	trace_recursion_set(bit);
+ 
+-	trace_recursion_set(TRACE_INTERNAL_BIT);
+ 	/*
+ 	 * Some of the ops may be dynamically allocated,
+ 	 * they must be freed after a synchronize_sched().
+@@ -4150,7 +4176,7 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
+ 			op->func(ip, parent_ip, op, regs);
+ 	} while_for_each_ftrace_op(op);
+ 	preempt_enable_notrace();
+-	trace_recursion_clear(TRACE_INTERNAL_BIT);
++	trace_recursion_clear(bit);
+ }
+ 
+ /*
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 55010ed..15717a0 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -299,8 +299,14 @@ struct tracer {
+ 
+ /* for function tracing recursion */
+ #define TRACE_INTERNAL_BIT		(1<<11)
+-#define TRACE_GLOBAL_BIT		(1<<12)
+-#define TRACE_CONTROL_BIT		(1<<13)
++#define TRACE_INTERNAL_NMI_BIT		(1<<12)
++#define TRACE_INTERNAL_IRQ_BIT		(1<<13)
++#define TRACE_INTERNAL_SIRQ_BIT		(1<<14)
++#define TRACE_GLOBAL_BIT		(1<<15)
++#define TRACE_GLOBAL_NMI_BIT		(1<<16)
++#define TRACE_GLOBAL_IRQ_BIT		(1<<17)
++#define TRACE_GLOBAL_SIRQ_BIT		(1<<18)
++#define TRACE_CONTROL_BIT		(1<<19)
+ 
+ /*
+  * Abuse of the trace_recursion.
+@@ -309,7 +315,7 @@ struct tracer {
+  * was called in irq context but we have irq tracing off. Since this
+  * can only be modified by current, we can reuse trace_recursion.
+  */
+-#define TRACE_IRQ_BIT			(1<<13)
++#define TRACE_IRQ_BIT			(1<<20)
+ 
+ #define trace_recursion_set(bit)	do { (current)->trace_recursion |= (bit); } while (0)
+ #define trace_recursion_clear(bit)	do { (current)->trace_recursion &= ~(bit); } while (0)
 -- 
 1.7.10.4
 
