@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761591Ab2KBMpa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 08:45:30 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:57652 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758437Ab2KBMp1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 08:45:27 -0400
+	id S1761270Ab2KBMrT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 08:47:19 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:53338 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752029Ab2KBMrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 08:47:17 -0400
+Date: Fri, 2 Nov 2012 18:20:55 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Anton Arapov <anton@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] uprobes: Kill arch_uprobe_enable/disable_step()
+ hooks
+Message-ID: <20121102125055.GF11125@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121028173900.GA14621@redhat.com>
+ <20121028173936.GA14659@redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [91.224.174.71]
-In-Reply-To: <CAHR064jAfmmpf-p5Yh=SZWW31kr0JxcA3VNQrCTV=T9U48HQtw@mail.gmail.com>
-References: <1341961393-17728-1-git-send-email-bleung@chromium.org>
-	<1351200081-19349-1-git-send-email-bleung@chromium.org>
-	<1351200081-19349-2-git-send-email-bleung@chromium.org>
-	<CAHR064jAfmmpf-p5Yh=SZWW31kr0JxcA3VNQrCTV=T9U48HQtw@mail.gmail.com>
-Date: Fri, 2 Nov 2012 13:45:26 +0100
-Message-ID: <CAOesGMj3urrhy83o1aD4q3K0CqOL6ZrchknmdvgHDWkahavQQA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] Platform: x86: Add Chrome OS Laptop driver
-From: Olof Johansson <olof@lixom.net>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Benson Leung <bleung@chromium.org>, mjg@redhat.com,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        olofj@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121028173936.GA14659@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110212-8974-0000-0000-0000107FAA39
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00187806; UDB=6.00042536; UTC=2012-11-02
+ 12:47:15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 10:30 AM, Corentin Chary
-<corentin.chary@gmail.com> wrote:
+* Oleg Nesterov <oleg@redhat.com> [2012-10-28 18:39:36]:
 
-> Looks better, but I'm curious, what is the final purpose of this driver ?
-> What ABI will be exposed, who will use it ?
->
-> If it is going to be bigger, it may be a good idea to convert it to a
-> real platform driver (platform_drivers/platform_device stuff).
-
-It's not a driver per se. It's platform glue that, based on the DMI
-table, registers platform and i2c devices (at this time only i2c
-devices).
-
-Unfortunately there's no way to do this nicely from userspace after
-boot, since there's limits to how much data you can provide with the
-simpler userspace-driven i2c probing protocol.
-
-So, there's no user-facing ABI on this, and no one is expected to use
-it from userspace. It's just there to make sure that the un-probably
-devices on this kind of hardware gets bound to drivers properly.
-
-If it's converted to a platform_driver, how do you expect that to
-probe, where would the platform_device be registered?
+> Kill arch_uprobe_enable/disable_step() hooks, they do nothing and
+> nobody needs them.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
 
--Olof
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  include/linux/uprobes.h |    2 --
+>  kernel/events/uprobes.c |   10 ----------
+>  2 files changed, 0 insertions(+), 12 deletions(-)
+> 
+> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> index 2459457..2615c4d 100644
+> --- a/include/linux/uprobes.h
+> +++ b/include/linux/uprobes.h
+> @@ -101,8 +101,6 @@ extern void uprobe_dup_mmap(struct mm_struct *oldmm, struct mm_struct *newmm);
+>  extern void uprobe_free_utask(struct task_struct *t);
+>  extern void uprobe_copy_process(struct task_struct *t);
+>  extern unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs);
+> -extern void __weak arch_uprobe_enable_step(struct arch_uprobe *arch);
+> -extern void __weak arch_uprobe_disable_step(struct arch_uprobe *arch);
+>  extern int uprobe_post_sstep_notifier(struct pt_regs *regs);
+>  extern int uprobe_pre_sstep_notifier(struct pt_regs *regs);
+>  extern void uprobe_notify_resume(struct pt_regs *regs);
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 916391e..02d7c5f 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1430,14 +1430,6 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+>  	return uprobe;
+>  }
+> 
+> -void __weak arch_uprobe_enable_step(struct arch_uprobe *arch)
+> -{
+> -}
+> -
+> -void __weak arch_uprobe_disable_step(struct arch_uprobe *arch)
+> -{
+> -}
+> -
+>  /*
+>   * Run handler and ask thread to singlestep.
+>   * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
+> @@ -1491,7 +1483,6 @@ static void handle_swbp(struct pt_regs *regs)
+>  		goto out;
+> 
+>  	if (!pre_ssout(uprobe, regs, bp_vaddr)) {
+> -		arch_uprobe_enable_step(&uprobe->arch);
+>  		utask->active_uprobe = uprobe;
+>  		utask->state = UTASK_SSTEP;
+>  		return;
+> @@ -1523,7 +1514,6 @@ static void handle_singlestep(struct uprobe_task *utask, struct pt_regs *regs)
+>  	else
+>  		WARN_ON_ONCE(1);
+> 
+> -	arch_uprobe_disable_step(&uprobe->arch);
+>  	put_uprobe(uprobe);
+>  	utask->active_uprobe = NULL;
+>  	utask->state = UTASK_RUNNING;
+> -- 
+> 1.5.5.1
+> 
+
