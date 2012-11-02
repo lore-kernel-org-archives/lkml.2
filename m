@@ -1,128 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761758Ab2KBK1m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 06:27:42 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40850 "EHLO bear.ext.ti.com"
+	id S935177Ab2KBKbW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 06:31:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7221 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750927Ab2KBK1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 06:27:40 -0400
-Message-ID: <50939FFE.9020401@ti.com>
-Date: Fri, 2 Nov 2012 15:57:10 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S933559Ab2KBKbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 06:31:20 -0400
+Date: Fri, 2 Nov 2012 11:30:57 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 02/25] perf tests: Move test objects into 'tests'
+ directory
+Message-ID: <20121102103057.GB1157@krava.brq.redhat.com>
+References: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
+ <1351634526-1516-3-git-send-email-jolsa@redhat.com>
+ <87k3u44vw6.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linaro-dev@lists.linaro.org>, <peterz@infradead.org>,
-        <mingo@redhat.com>, <pjt@google.com>, <linux@arm.linux.org.uk>
-Subject: Re: [RFC 2/6] sched: add a new SD SHARE_POWERLINE flag for sched_domain
-References: <1349595838-31274-1-git-send-email-vincent.guittot@linaro.org> <1349595838-31274-3-git-send-email-vincent.guittot@linaro.org> <5088066D.7000907@ti.com> <CAKfTPtDMQvsbudGm71UAv1xUE86CLP-ySB1PBYXB7HoFa7gOgQ@mail.gmail.com> <CAKfTPtB4CBVZDLeRsqENUgZuefpG8+7g-oyPRMyY5J2iRJuEOA@mail.gmail.com>
-In-Reply-To: <CAKfTPtB4CBVZDLeRsqENUgZuefpG8+7g-oyPRMyY5J2iRJuEOA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k3u44vw6.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 October 2012 03:20 PM, Vincent Guittot wrote:
->   It looks like i need to describe more what
->
-> On 29 October 2012 10:40, Vincent Guittot <vincent.guittot@linaro.org> wrote:
->> On 24 October 2012 17:17, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
->>> Vincent,
->>>
->>> Few comments/questions.
->>>
->>>
->>> On Sunday 07 October 2012 01:13 PM, Vincent Guittot wrote:
->>>>
->>>> This new flag SD SHARE_POWERLINE reflects the sharing of the power rail
->>>> between the members of a domain. As this is the current assumption of the
->>>> scheduler, the flag is added to all sched_domain
->>>>
->>>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>>> ---
->>>>    arch/ia64/include/asm/topology.h |    1 +
->>>>    arch/tile/include/asm/topology.h |    1 +
->>>>    include/linux/sched.h            |    1 +
->>>>    include/linux/topology.h         |    3 +++
->>>>    kernel/sched/core.c              |    5 +++++
->>>>    5 files changed, 11 insertions(+)
->>>>
->>>> diff --git a/arch/ia64/include/asm/topology.h
->>>> b/arch/ia64/include/asm/topology.h
->>>> index a2496e4..065c720 100644
->>>> --- a/arch/ia64/include/asm/topology.h
->>>> +++ b/arch/ia64/include/asm/topology.h
->>>> @@ -65,6 +65,7 @@ void build_cpu_to_node_map(void);
->>>>                                  | SD_BALANCE_EXEC       \
->>>>                                  | SD_BALANCE_FORK       \
->>>>                                  | SD_WAKE_AFFINE,       \
->>>> +                               | arch_sd_share_power_line()            \
->>>>          .last_balance           = jiffies,              \
->>>>          .balance_interval       = 1,                    \
->>>>          .nr_balance_failed      = 0,                    \
->>>> diff --git a/arch/tile/include/asm/topology.h
->>>> b/arch/tile/include/asm/topology.h
->>>> index 7a7ce39..d39ed0b 100644
->>>> --- a/arch/tile/include/asm/topology.h
->>>> +++ b/arch/tile/include/asm/topology.h
->>>> @@ -72,6 +72,7 @@ static inline const struct cpumask *cpumask_of_node(int
->>>> node)
->>>>                                  | 0*SD_PREFER_LOCAL                     \
->>>>                                  | 0*SD_SHARE_CPUPOWER                   \
->>>>                                  | 0*SD_SHARE_PKG_RESOURCES              \
->>>> +                               | arch_sd_share_power_line()            \
->>>>                                  | 0*SD_SERIALIZE                        \
->>>>                                  ,                                       \
->>>>          .last_balance           = jiffies,                              \
->>>> diff --git a/include/linux/sched.h b/include/linux/sched.h
->>>> index 4786b20..74f2daf 100644
->>>> --- a/include/linux/sched.h
->>>> +++ b/include/linux/sched.h
->>>> @@ -862,6 +862,7 @@ enum cpu_idle_type {
->>>>    #define SD_WAKE_AFFINE                0x0020  /* Wake task to waking CPU
->>>> */
->>>>    #define SD_PREFER_LOCAL               0x0040  /* Prefer to keep tasks
->>>> local to this domain */
->>>>    #define SD_SHARE_CPUPOWER     0x0080  /* Domain members share cpu power
->>>> */
->>>> +#define SD_SHARE_POWERLINE     0x0100  /* Domain members share power
->>>> domain */
->>>
->>> If you ignore the current use of SD_SHARE_CPUPOWER, isn't the meaning of
->>> CPUPOWER and POWERLINE is same here. Just trying to understand the clear
->>> meaning of this new flag. Have you not considered SD_SHARE_CPUPOWER
->>> because it is being used for cpu_power and needs at least minimum two
->>> domains ? SD_PACKING would have been probably more appropriate based
->>> on the way it is being used in further series.
->>
->> CPUPOWER reflects the share of hw ressources between cores like for
->> hyper threading. POWERLINE describes the fact that cores are sharing
->> the same power line amore precisely the powergate.
->
-> Sorry, the mail has been sent too early while I was writing it
->
-> CPUPOWER reflects the share of hw ressources between cores like for
-> hyper threading. POWERLINE describes the fact that cores are sharing
-> the same power line and more precisely the same power gating. It looks
-> like I need to describe more precisely what i would mean with
-> SHARE_POWERLINE.
->
-Yes. More description will help. I see bit of overlap POWERLINE
-flag with SD_SHARE_CPUPOWER and SD_SHARE_PKG_RESOURCES and hence
-the questions.
+On Fri, Nov 02, 2012 at 10:48:57AM +0900, Namhyung Kim wrote:
+> Hi Jiri,
+> 
+> Despite its way to acme's tree, I'd like to leave a few comments. :)
+> 
+> 
+> On Tue, 30 Oct 2012 23:01:43 +0100, Jiri Olsa wrote:
+> > Separating test objects into 'tests' directory.
+> >
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > ---
+> >  tools/perf/Makefile                 |    9 +-
+> >  tools/perf/builtin-test.c           | 1559 -----------------------------------
+> >  tools/perf/tests/builtin-test.c     | 1559 +++++++++++++++++++++++++++++++++++
+> >  tools/perf/tests/dso-data.c         |  153 ++++
+> >  tools/perf/tests/parse-events.c     | 1116 +++++++++++++++++++++++++
+> >  tools/perf/util/dso-test-data.c     |  153 ----
+> >  tools/perf/util/parse-events-test.c | 1116 -------------------------
+> 
+> Looks like it should be considered as renames.  Isn't 'git format-patch
+> -M' working?
 
+I can see it is.. nice ;) first time I hear about it..
 
-> I don't want to use PACKING because it's more a behavior than a
-> feature. If cores can power gate independently (!SD_SHARE_POWERLINE),
-> packing small tasks is one interesting behavior but it may be not the
-> only one. I want to make a difference between the HW configuration and
-> the behavior we want to have above it
->
-Fair enough. Thanks for clarification.
+> 
+> 
+> >  7 files changed, 2833 insertions(+), 2832 deletions(-)
+> >  delete mode 100644 tools/perf/builtin-test.c
+> >  create mode 100644 tools/perf/tests/builtin-test.c
+> >  create mode 100644 tools/perf/tests/dso-data.c
+> >  create mode 100644 tools/perf/tests/parse-events.c
+> >  delete mode 100644 tools/perf/util/dso-test-data.c
+> >  delete mode 100644 tools/perf/util/parse-events-test.c
+> >
+> > diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> > index 3e807d7..2d3427f 100644
+> > --- a/tools/perf/Makefile
+> > +++ b/tools/perf/Makefile
+> > @@ -169,7 +169,7 @@ endif
+> >  
+> >  ### --- END CONFIGURATION SECTION ---
+> >  
+> > -BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+> > +BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -Iutil -I. -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+> 
+> Hmm..  Do you really want this?  AFAIK there're lots of places that
+> include header files under the util directory and they used relative
+> path.  I don't know how it affects them but at least they can be changed
+> to use simpler path with this change.
 
-Regards,
-Santosh
+[jolsa@krava perf]$ make O=$PWD/../build/
+...
+    CC /home/jolsa/kernel.org/linux/tools/build/tests/parse-events.o
+tests/parse-events.c:2:26: fatal error: parse-events.h: No such file or directory
 
+yes, we could consolidate util includes globaly
 
+> 
+> 
+> >  BASIC_LDFLAGS =
+> >  
+> >  ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+> > @@ -371,7 +371,6 @@ LIB_OBJS += $(OUTPUT)util/help.o
+> >  LIB_OBJS += $(OUTPUT)util/levenshtein.o
+> >  LIB_OBJS += $(OUTPUT)util/parse-options.o
+> >  LIB_OBJS += $(OUTPUT)util/parse-events.o
+> > -LIB_OBJS += $(OUTPUT)util/parse-events-test.o
+> >  LIB_OBJS += $(OUTPUT)util/path.o
+> >  LIB_OBJS += $(OUTPUT)util/rbtree.o
+> >  LIB_OBJS += $(OUTPUT)util/bitmap.o
+> > @@ -389,7 +388,6 @@ LIB_OBJS += $(OUTPUT)util/sigchain.o
+> >  LIB_OBJS += $(OUTPUT)util/dso.o
+> >  LIB_OBJS += $(OUTPUT)util/symbol.o
+> >  LIB_OBJS += $(OUTPUT)util/symbol-elf.o
+> > -LIB_OBJS += $(OUTPUT)util/dso-test-data.o
+> >  LIB_OBJS += $(OUTPUT)util/color.o
+> >  LIB_OBJS += $(OUTPUT)util/pager.o
+> >  LIB_OBJS += $(OUTPUT)util/header.o
+> > @@ -430,6 +428,9 @@ LIB_OBJS += $(OUTPUT)ui/stdio/hist.o
+> >  
+> >  LIB_OBJS += $(OUTPUT)arch/common.o
+> >  
+> > +LIB_OBJS += $(OUTPUT)tests/parse-events.o
+> > +LIB_OBJS += $(OUTPUT)tests/dso-data.o
+> > +
+> 
+> Maybe TEST_OBJS?  I guess they don't need to be included in libperf?
+
+I guess we could have NO_TESTS Makefile variable to disable tests
+
+and '[x] Tests' directory under make menuconfig ;)
+
+> 
+> 
+> >  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+> >  BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+> >  # Benchmark modules
+> > @@ -459,8 +460,8 @@ BUILTIN_OBJS += $(OUTPUT)builtin-probe.o
+> >  BUILTIN_OBJS += $(OUTPUT)builtin-kmem.o
+> >  BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
+> >  BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
+> > -BUILTIN_OBJS += $(OUTPUT)builtin-test.o
+> >  BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
+> > +BUILTIN_OBJS += $(OUTPUT)tests/builtin-test.o
+> 
+> Placing builtin command in a different directory looks little bit odd.
+
+well, it's full of tests ;)
+
+maybe we could have those tests placed in separate files and use
+builtin-test as runner only
+
+thanks,
+jirka
