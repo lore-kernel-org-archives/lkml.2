@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab2KBLAy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 07:00:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58223 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752520Ab2KBLAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 07:00:53 -0400
-Message-ID: <5093A7C5.9080605@ti.com>
-Date: Fri, 2 Nov 2012 16:30:21 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linaro-dev@lists.linaro.org>, <peterz@infradead.org>,
-        <mingo@redhat.com>, <pjt@google.com>, <linux@arm.linux.org.uk>
-Subject: Re: [RFC 6/6] ARM: sched: clear SD_SHARE_POWERLINE
-References: <1349595838-31274-1-git-send-email-vincent.guittot@linaro.org> <1349595838-31274-7-git-send-email-vincent.guittot@linaro.org> <50880795.4030609@ti.com> <CAKfTPtAZjLpwHYgj8JXku4sU0mPPf34MKkWp0=qiX5u-T0JVOA@mail.gmail.com>
-In-Reply-To: <CAKfTPtAZjLpwHYgj8JXku4sU0mPPf34MKkWp0=qiX5u-T0JVOA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1762526Ab2KBLEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 07:04:14 -0400
+Received: from vsp-authed02.binero.net ([195.74.38.226]:23915 "HELO
+	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755608Ab2KBLEN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 07:04:13 -0400
+From: Andreas Larsson <andreas@gaisler.com>
+To: Grant Likely <grant.likely@secretlab.ca>, davem@davemloft.net
+Cc: Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
+        software@gaisler.com, sam@ravnborg.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] of/address: sparc: Declare of_address_to_resource() as an extern function for sparc again
+Date: Fri,  2 Nov 2012 12:03:56 +0100
+Message-Id: <1351854236-14230-1-git-send-email-andreas@gaisler.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 October 2012 06:58 PM, Vincent Guittot wrote:
-> On 24 October 2012 17:21, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
->> On Sunday 07 October 2012 01:13 PM, Vincent Guittot wrote:
->>>
->>> The ARM platforms take advantage of packing small tasks on few cores.
->>> This is true even when the cores of a cluster can't be powergated
->>> independently.
->>>
->>>
->>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->>> ---
->>>    arch/arm/kernel/topology.c |    5 +++++
->>>    1 file changed, 5 insertions(+)
->>>
->>> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
->>> index 26c12c6..00511d0 100644
->>> --- a/arch/arm/kernel/topology.c
->>> +++ b/arch/arm/kernel/topology.c
->>> @@ -226,6 +226,11 @@ static inline void update_cpu_power(unsigned int
->>> cpuid, unsigned int mpidr) {}
->>>     */
->>>    struct cputopo_arm cpu_topology[NR_CPUS];
->>>
->>> +int arch_sd_share_power_line(void)
->>> +{
->>> +       return 0*SD_SHARE_POWERLINE;
->>> +}
->>
->>
->> Making this selection of policy based on sched domain will better. Just
->> gives the flexibility to choose a separate scheme for big and little
->> systems which will be very convenient.
->
-> I agree that it would be more flexible to be able to set it for each level
->
-Will you be addressing that in next version then ?
+This bug-fix makes sure that of_address_to_resource is defined extern for sparc
+so that the sparc-specific implementation of of_address_to_resource() is once
+again used when including include/linux/of_address.h in a sparc context. A
+number of drivers in mainline relies on this function working for sparc.
 
-Regards
-santosh
+The bug was introduced in a850a7554442f08d3e910c6eeb4ee216868dda1e, "of/address:
+add empty static inlines for !CONFIG_OF". Contrary to that commit title, the
+static inlines are added for !CONFIG_OF_ADRESS, and CONFIG_OF_ADRESS is never
+defined for sparc. This is good behavior for the other functions in
+include/linux/of_address.h, as the extern functions defined in
+drivers/of/address.c only gets linked when OF_ADDRESS is configured. However,
+for of_address_to_resource is that there exists a sparc-specific implementation
+in arch/sparc/arch/sparc/kernel/of_device_common.c
+
+A similar solution is already in place for irq_of_parse_and_map() in
+include/linux/of_irq.h.
+
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+---
+ include/linux/of_address.h |   22 +++++++++++++++-------
+ 1 files changed, 15 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index a1984dd..66adde9 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -4,11 +4,24 @@
+ #include <linux/errno.h>
+ #include <linux/of.h>
+ 
++/* of_address_to_resource() is used by all OF enabled platforms; but SPARC
++ * implements it differently. However, the prototype is the same for all,
++ * so declare it here for sparc as well as when CONFIG_OF_ADDRESS is set.
++ */
++#if defined(CONFIG_OF_ADDRESS) || defined(CONFIG_SPARC)
++extern int of_address_to_resource(struct device_node *dev, int index,
++				  struct resource *r);
++#else
++static inline int of_address_to_resource(struct device_node *dev, int index,
++					 struct resource *r)
++{
++	return -EINVAL;
++}
++#endif
++
+ #ifdef CONFIG_OF_ADDRESS
+ extern u64 of_translate_address(struct device_node *np, const __be32 *addr);
+ extern bool of_can_translate_address(struct device_node *dev);
+-extern int of_address_to_resource(struct device_node *dev, int index,
+-				  struct resource *r);
+ extern struct device_node *of_find_matching_node_by_address(
+ 					struct device_node *from,
+ 					const struct of_device_id *matches,
+@@ -28,11 +41,6 @@ static inline unsigned long pci_address_to_pio(phys_addr_t addr) { return -1; }
+ #endif
+ 
+ #else /* CONFIG_OF_ADDRESS */
+-static inline int of_address_to_resource(struct device_node *dev, int index,
+-					 struct resource *r)
+-{
+-	return -EINVAL;
+-}
+ static inline struct device_node *of_find_matching_node_by_address(
+ 					struct device_node *from,
+ 					const struct of_device_id *matches,
+-- 
+1.7.0.4
 
