@@ -1,133 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758600Ab2KBQRf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 12:17:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751953Ab2KBQRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 12:17:34 -0400
-Date: Fri, 2 Nov 2012 17:18:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] percpu_rw_semaphore: reimplement to not block the
-	readers unnecessarily
-Message-ID: <20121102161815.GA24256@redhat.com>
-References: <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <20121101154340.GH3027@linux.vnet.ibm.com> <20121101183324.GA30442@redhat.com>
+	id S1758773Ab2KBQSr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:18:47 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:61689 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757821Ab2KBQSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 12:18:45 -0400
+Message-ID: <5093F262.6000301@suse.cz>
+Date: Fri, 02 Nov 2012 17:18:42 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121101183324.GA30442@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 21/21] TTY: move tty buffers to tty_port
+References: <1350592007-9216-1-git-send-email-jslaby@suse.cz> <1350592007-9216-22-git-send-email-jslaby@suse.cz> <50897E98.5080502@gmail.com> <50911F67.3040303@suse.cz> <CA+1xoqfZ5DHVi44Y_a5EmXYeN6Eh=COSP4CiA6tM-aqJE1vBoQ@mail.gmail.com> <5091448D.3@suse.cz> <CA+1xoqdRBCQYBQdK-=KJohtua_wD_fp4akk6_jS0x3x82fRp5g@mail.gmail.com> <5093EC1B.2050800@suse.cz> <CA+1xoqdRV5LORTDM9iiTRQwCdGK9XqcW54zyh03M-c-mVU2YLQ@mail.gmail.com>
+In-Reply-To: <CA+1xoqdRV5LORTDM9iiTRQwCdGK9XqcW54zyh03M-c-mVU2YLQ@mail.gmail.com>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: multipart/mixed;
+ boundary="------------010406010004010400080408"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01, Oleg Nesterov wrote:
->
-> On 11/01, Paul E. McKenney wrote:
-> >
-> > OK, so it looks to me that this code relies on synchronize_sched()
-> > forcing a memory barrier on each CPU executing in the kernel.
->
-> No, the patch tries to avoid this assumption, but probably I missed
-> something.
->
-> > 1.	A task running on CPU 0 currently write-holds the lock.
-> >
-> > 2.	CPU 1 is running in the kernel, executing a longer-than-average
-> > 	loop of normal instructions (no atomic instructions or memory
-> > 	barriers).
-> >
-> > 3.	CPU 0 invokes percpu_up_write(), calling up_write(),
-> > 	synchronize_sched(), and finally mutex_unlock().
->
-> And my expectation was, this should be enough because ...
->
-> > 4.	CPU 1 executes percpu_down_read(), which calls update_fast_ctr(),
->
-> since update_fast_ctr does preempt_disable/enable it should see all
-> modifications done by CPU 0.
->
-> IOW. Suppose that the writer (CPU 0) does
->
-> 	percpu_done_write();
-> 	STORE;
-> 	percpu_up_write();
->
-> This means
->
-> 	STORE;
-> 	synchronize_sched();
-> 	mutex_unlock();
->
-> Now. Do you mean that the next preempt_disable/enable can see the
-> result of mutex_unlock() but not STORE?
+This is a multi-part message in MIME format.
+--------------010406010004010400080408
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-So far I think this is not possible, so the code doesn't need the
-additional wstate/barriers.
+On 11/02/2012 05:07 PM, Sasha Levin wrote:
+> On Fri, Nov 2, 2012 at 11:51 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+>> On 10/31/2012 04:59 PM, Sasha Levin wrote:
+>>> So you probably want a lot more than 100k syscalls, why limit it at
+>>> all actually?
+>>
+>> I unset the limit but I still can't reproduce...
+>>
+>>> I've attached my .config for the guest kernel as reference.
+>>
+>> Even using this config does not help to reproduce that.
+>>
+>> Do you use some special trinity params?
+> 
+> Not really:
+> 
+>     ./trinity -m --quiet --dangerous -l off
 
-> > +static bool update_fast_ctr(struct percpu_rw_semaphore *brw, int val)
-> > +{
-> > +	bool success = false;
->
-> 	int state;
->
-> > +
-> > +	preempt_disable();
-> > +	if (likely(!mutex_is_locked(&brw->writer_mutex))) {
->
-> 	state = ACCESS_ONCE(brw->wstate);
-> 	if (likely(!state)) {
->
-> > +		__this_cpu_add(*brw->fast_read_ctr, val);
-> > +		success = true;
->
-> 	} else if (state & WSTATE_NEED_MB) {
-> 		__this_cpu_add(*brw->fast_read_ctr, val);
-> 		smb_mb(); /* Order increment against critical section. */
-> 		success = true;
-> 	}
+Oh, you run that as root??
 
-...
+> Can I add something to my kernel to provide more info when it happens?
 
-> > +void percpu_up_write(struct percpu_rw_semaphore *brw)
-> > +{
-> > +	/* allow the new readers, but only the slow-path */
-> > +	up_write(&brw->rw_sem);
->
-> 	ACCESS_ONCE(brw->wstate) = WSTATE_NEED_MB;
->
-> > +
-> > +	/* insert the barrier before the next fast-path in down_read */
-> > +	synchronize_sched();
+Maybe the attached patch can tell us more...
 
-But update_fast_ctr() should see mutex_is_locked(), obiously down_write()
-must ensure this.
+-- 
+js
+suse labs
 
-So update_fast_ctr() can execute the WSTATE_NEED_MB code only if it
-races with
+--------------010406010004010400080408
+Content-Type: text/x-patch;
+ name="0001-tty-BUF-DEBUG.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-tty-BUF-DEBUG.patch"
 
-> 	ACCESS_ONCE(brw->wstate) = 0;
->
-> > +	mutex_unlock(&brw->writer_mutex);
+>From 36ad8f281846ef395e1969fc2af324c5edb13043 Mon Sep 17 00:00:00 2001
+From: Jiri Slaby <jslaby@suse.cz>
+Date: Sun, 28 Oct 2012 21:42:02 +0100
+Subject: [PATCH] tty BUF DEBUG
 
-these 2 stores and sees them in reverse order.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/tty_buffer.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index 45d9161..c70274b 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -371,6 +371,7 @@ void tty_schedule_flip(struct tty_struct *tty)
+ 	if (buf->tail != NULL)
+ 		buf->tail->commit = buf->tail->used;
+ 	spin_unlock_irqrestore(&buf->lock, flags);
++	WARN_RATELIMIT(tty->port->itty == NULL, "HUH\n");
+ 	schedule_work(&buf->work);
+ }
+ EXPORT_SYMBOL(tty_schedule_flip);
+@@ -566,6 +567,7 @@ void tty_flip_buffer_push(struct tty_struct *tty)
+ 		buf->tail->commit = buf->tail->used;
+ 	spin_unlock_irqrestore(&buf->lock, flags);
+ 
++	WARN_RATELIMIT(tty->port->itty == NULL, "HUH\n");
+ 	if (tty->low_latency)
+ 		flush_to_ldisc(&buf->work);
+ 	else
+-- 
+1.8.0
 
 
-
-I guess that mutex_is_locked() in update_fast_ctr() looks a bit confusing.
-It means no-fast-path for the reader, we could use ->state instead.
-
-And even ->writer_mutex should go away if we want to optimize the
-write-contended case, but I think this needs another patch on top of
-this initial implementation.
-
-Oleg.
-
+--------------010406010004010400080408--
