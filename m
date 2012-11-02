@@ -1,108 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab2KBP1n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 11:27:43 -0400
-Received: from exprod5og115.obsmtp.com ([64.18.0.246]:47926 "EHLO
-	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753966Ab2KBP1l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 11:27:41 -0400
-X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Nov 2012 11:27:40 EDT
-Message-ID: <5093E539.6050801@ge.com>
-Date: Fri, 02 Nov 2012 15:22:33 +0000
-From: Martyn Welch <martyn.welch@ge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1751412Ab2KBPbD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 11:31:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64095 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750738Ab2KBPbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 11:31:00 -0400
+Date: Fri, 2 Nov 2012 11:30:48 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121102153047.GF3300@redhat.com>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+ <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+ <20121029174131.GC7580@srcf.ucam.org>
+ <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
+ <20121031150201.GA12394@srcf.ucam.org>
 MIME-Version: 1.0
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: manohar.vanga@gmail.com, gregkh@linuxfoundation.org,
-        yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vme: vme_tsi148.c: use module_pci_driver to simplify
- the code
-References: <CAPgLHd-H31dtsbyMmYmPnG7VnOTPMc23w7y5e6DN_wvpcqxBkQ@mail.gmail.com>
-In-Reply-To: <CAPgLHd-H31dtsbyMmYmPnG7VnOTPMc23w7y5e6DN_wvpcqxBkQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Nov 2012 15:22:35.0657 (UTC) FILETIME=[E2EDEF90:01CDB90D]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121031150201.GA12394@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/10/2012 16:12, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Use the module_pci_driver() macro to make the code simpler
-> by eliminating module_init and module_exit calls.
->
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Wed, Oct 31, 2012 at 03:02:01PM +0000, Matthew Garrett wrote:
+> On Wed, Oct 31, 2012 at 03:50:00PM +0100, Jiri Kosina wrote:
+> 
+> > Reading stored memory image (potentially tampered before reboot) from disk 
+> > is basically DMA-ing arbitrary data over the whole RAM. I am currently not 
+> > able to imagine a scenario how this could be made "secure" (without 
+> > storing private keys to sign the hibernation image on the machine itself 
+> > which, well, doesn't sound secure either).
+> 
+> shim generates a public and private key. It hands the kernel the private 
+> key in a boot parameter and stores the public key in a boot variable. On 
+> suspend, the kernel signs the suspend image with that private key and 
+> discards it. On the next boot, shim generates a new key pair and hands 
+> the new private key to the kernel along with the old public key. The 
+> kernel verifies the suspend image before resuming it. The only way to 
+> subvert this would be to be able to access kernel memory directly, which 
+> means the attacker has already won.
 
-Huh, learn something new every day :-)
+"crash" utility has module which allows reading kernel memory. So leaking
+this private key will be easier then you are thinking it to be.
 
-Acked-by: Martyn Welch <martyn.welch@ge.com>
-
-Thanks,
-
-Martyn
-
-> ---
->   drivers/vme/bridges/vme_tsi148.c | 15 +--------------
->   1 file changed, 1 insertion(+), 14 deletions(-)
->
-> diff --git a/drivers/vme/bridges/vme_tsi148.c b/drivers/vme/bridges/vme_tsi148.c
-> index 5fbd08f..9c1aa4d 100644
-> --- a/drivers/vme/bridges/vme_tsi148.c
-> +++ b/drivers/vme/bridges/vme_tsi148.c
-> @@ -35,10 +35,8 @@
->   #include "../vme_bridge.h"
->   #include "vme_tsi148.h"
->
-> -static int __init tsi148_init(void);
->   static int tsi148_probe(struct pci_dev *, const struct pci_device_id *);
->   static void tsi148_remove(struct pci_dev *);
-> -static void __exit tsi148_exit(void);
->
->
->   /* Module parameter */
-> @@ -2244,11 +2242,6 @@ static void tsi148_free_consistent(struct device *parent, size_t size,
->   	pci_free_consistent(pdev, size, vaddr, dma);
->   }
->
-> -static int __init tsi148_init(void)
-> -{
-> -	return pci_register_driver(&tsi148_driver);
-> -}
-> -
->   /*
->    * Configure CR/CSR space
->    *
-> @@ -2754,10 +2747,7 @@ static void tsi148_remove(struct pci_dev *pdev)
->   	kfree(tsi148_bridge);
->   }
->
-> -static void __exit tsi148_exit(void)
-> -{
-> -	pci_unregister_driver(&tsi148_driver);
-> -}
-> +module_pci_driver(tsi148_driver);
->
->   MODULE_PARM_DESC(err_chk, "Check for VME errors on reads and writes");
->   module_param(err_chk, bool, 0);
-> @@ -2767,6 +2757,3 @@ module_param(geoid, int, 0);
->
->   MODULE_DESCRIPTION("VME driver for the Tundra Tempe VME bridge");
->   MODULE_LICENSE("GPL");
-> -
-> -module_init(tsi148_init);
-> -module_exit(tsi148_exit);
->
-
-
--- 
-Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
-GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
-T +44(0)1327322748                     | Manchester, M2 3AB
-E martyn.welch@ge.com                  | VAT:GB 927559189
-
+Thanks
+Vivek
