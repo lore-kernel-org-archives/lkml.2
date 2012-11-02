@@ -1,92 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab2KBQOx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 12:14:53 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:64613 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab2KBQOv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 12:14:51 -0400
-Date: Fri, 2 Nov 2012 12:14:47 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, Mel Gorman <mgorman@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [RFC] mm: add support for zsmalloc and zcache
-Message-ID: <20121102161444.GB4633@konrad-lan.dumpdata.com>
-References: <20120921180222.GA7220@phenom.dumpdata.com>
- <505CB9BC.8040905@linux.vnet.ibm.com>
- <42d62a30-bd6c-4bd7-97d1-bec2f237756b@default>
- <50609794.8030508@linux.vnet.ibm.com>
- <b34c65c9-4b25-431d-8b82-cbe911126be9@default>
- <5064B647.3000906@linux.vnet.ibm.com>
- <76d1a3f1-efc5-48b5-b485-604a94adcc1d@default>
- <506B2C4B.3080508@linux.vnet.ibm.com>
- <771b722f-3036-451a-a416-e6ab5b4a05f7@default>
- <508B046A.6050006@linux.vnet.ibm.com>
+	id S1758600Ab2KBQRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:17:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751953Ab2KBQRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 12:17:34 -0400
+Date: Fri, 2 Nov 2012 17:18:15 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] percpu_rw_semaphore: reimplement to not block the
+	readers unnecessarily
+Message-ID: <20121102161815.GA24256@redhat.com>
+References: <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <20121101154340.GH3027@linux.vnet.ibm.com> <20121101183324.GA30442@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <508B046A.6050006@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121101183324.GA30442@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 04:45:14PM -0500, Seth Jennings wrote:
-> On 10/02/2012 01:17 PM, Dan Magenheimer wrote:
-> > If so, <shake hands> and move forward?  What do you see as next steps?
-> 
-> I've been reviewing the changes between zcache and zcache2 and getting
-> a feel for the scope and direction of those changes.
-> 
-> - Getting the community engaged to review zcache1 at ~2300SLOC was
->   difficult.
-> - Adding RAMSter has meant adding RAMSter-specific code broadly across
->   zcache and increases the size of code to review to ~7600SLOC.
+On 11/01, Oleg Nesterov wrote:
+>
+> On 11/01, Paul E. McKenney wrote:
+> >
+> > OK, so it looks to me that this code relies on synchronize_sched()
+> > forcing a memory barrier on each CPU executing in the kernel.
+>
+> No, the patch tries to avoid this assumption, but probably I missed
+> something.
+>
+> > 1.	A task running on CPU 0 currently write-holds the lock.
+> >
+> > 2.	CPU 1 is running in the kernel, executing a longer-than-average
+> > 	loop of normal instructions (no atomic instructions or memory
+> > 	barriers).
+> >
+> > 3.	CPU 0 invokes percpu_up_write(), calling up_write(),
+> > 	synchronize_sched(), and finally mutex_unlock().
+>
+> And my expectation was, this should be enough because ...
+>
+> > 4.	CPU 1 executes percpu_down_read(), which calls update_fast_ctr(),
+>
+> since update_fast_ctr does preempt_disable/enable it should see all
+> modifications done by CPU 0.
+>
+> IOW. Suppose that the writer (CPU 0) does
+>
+> 	percpu_done_write();
+> 	STORE;
+> 	percpu_up_write();
+>
+> This means
+>
+> 	STORE;
+> 	synchronize_sched();
+> 	mutex_unlock();
+>
+> Now. Do you mean that the next preempt_disable/enable can see the
+> result of mutex_unlock() but not STORE?
 
-One can ignore the drivers/staging/ramster/ramster* directory.
+So far I think this is not possible, so the code doesn't need the
+additional wstate/barriers.
 
-> - The changes have blurred zcache's internal layering and increased
->   complexity beyond what a simple SLOC metric can reflect.
+> > +static bool update_fast_ctr(struct percpu_rw_semaphore *brw, int val)
+> > +{
+> > +	bool success = false;
+>
+> 	int state;
+>
+> > +
+> > +	preempt_disable();
+> > +	if (likely(!mutex_is_locked(&brw->writer_mutex))) {
+>
+> 	state = ACCESS_ONCE(brw->wstate);
+> 	if (likely(!state)) {
+>
+> > +		__this_cpu_add(*brw->fast_read_ctr, val);
+> > +		success = true;
+>
+> 	} else if (state & WSTATE_NEED_MB) {
+> 		__this_cpu_add(*brw->fast_read_ctr, val);
+> 		smb_mb(); /* Order increment against critical section. */
+> 		success = true;
+> 	}
 
-Not sure I see a problem.
-> - Getting the community engaged in reviewing zcache2 will be difficult
->   and will require an exceptional amount of effort for maintainer and
->   reviewer.
+...
 
-Exceptional? I think if we start trimming the code down and moving it
-around - and moving the 'ramster' specific calls to header files to
-not be compiled - that should make it easier to read.
+> > +void percpu_up_write(struct percpu_rw_semaphore *brw)
+> > +{
+> > +	/* allow the new readers, but only the slow-path */
+> > +	up_write(&brw->rw_sem);
+>
+> 	ACCESS_ONCE(brw->wstate) = WSTATE_NEED_MB;
+>
+> > +
+> > +	/* insert the barrier before the next fast-path in down_read */
+> > +	synchronize_sched();
 
-I mean the goal of any review is to address all of the concern you saw
-when you were looking over the code. You probably have a page of
-questions you asked yourself - and in all likehood the other reviewers
-would ask the same questions. So if you address them - either by
-giving comments or making the code easier to read - that would do it.
+But update_fast_ctr() should see mutex_is_locked(), obiously down_write()
+must ensure this.
 
-> 
-> It is difficult for me to know when it could be ready for mainline and
-> production use.  While zcache2 isn't getting broad code reviews yet,
-> how do suggest managing that complexity to make the code maintainable
-> and get it reviewed?
+So update_fast_ctr() can execute the WSTATE_NEED_MB code only if it
+races with
 
-There are Mel's feedback that is also applicable to zcache2.
+> 	ACCESS_ONCE(brw->wstate) = 0;
+>
+> > +	mutex_unlock(&brw->writer_mutex);
 
-Thanks for looking at the code!
-> 
-> Seth
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+these 2 stores and sees them in reverse order.
+
+
+
+I guess that mutex_is_locked() in update_fast_ctr() looks a bit confusing.
+It means no-fast-path for the reader, we could use ->state instead.
+
+And even ->writer_mutex should go away if we want to optimize the
+write-contended case, but I think this needs another patch on top of
+this initial implementation.
+
+Oleg.
+
