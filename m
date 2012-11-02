@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762764Ab2KBNgl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 09:36:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13989 "EHLO
+	id S1762793Ab2KBNhl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 09:37:41 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24583 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761200Ab2KBNfF (ORCPT
+	with ESMTP id S1761181Ab2KBNfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 09:35:05 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=uio4Cusoyq4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=2KByqrNPVRQA:10 a=20KFwNOVAAAA:8 a=2N7iOkv7plfqhN_ov1EA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=R5ATijz0JB5yeC7kUQoA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 2 Nov 2012 09:35:04 -0400
+X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=UUALxtUs0nsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=RaXdcHgNDvUA:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=TgJG3LqQqHbs6aKwffAA:9 a=QEXdDO2ut3YA:10 a=aBoZ2TYS_3EA:10 a=UTB_XpHje0EA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=h4wISTTLcWZLhp3VAlMA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121102133501.643958787@goodmis.org>
+Message-Id: <20121102133500.337156347@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 09:33:12 -0400
+Date: Fri, 02 Nov 2012 09:33:05 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 20/22] tracing: Remove deprecated tracing_enabled file
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        David Sharp <dhsharp@google.com>
+Subject: [PATCH 13/22] tracing: Reset ring buffer when changing trace_clocks
 References: <20121102133251.998500247@goodmis.org>
-Content-Disposition: inline; filename=0020-tracing-Remove-deprecated-tracing_enabled-file.patch
+Content-Disposition: inline; filename=0013-tracing-Reset-ring-buffer-when-changing-trace_clocks.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,60 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: David Sharp <dhsharp@google.com>
 
-The tracing_enabled file was used as a quick way to stop
-tracers, and try to bring down overhead for things like
-the latency tracers (irqsoff, wakeup, etc). But it didn't
-work that well.
+Because the "tsc" clock isn't in nanoseconds, the ring buffer must be
+reset when changing clocks so that incomparable timestamps don't end up
+in the same trace.
 
-The tracing_on file was created as a really fast way to
-stop recording into the ftrace ring buffer and can interact
-with the kernel. That is a tracing_off() call in the kernel
-can disable recording of events, and then from userspace one
-could echo 1 into the tracing_on file to continue it. The
-tracing_enabled function did too much to allow for this.
+Tested: Confirmed switching clocks resets the trace buffer.
 
-The tracing_on has taken over as a way to start and stop tracing
-and the tracing_enabled file should not be used. But because of
-its existance, it still confuses people. Over a year ago the
-following commit was added:
+Google-Bug-Id: 6980623
+Link: http://lkml.kernel.org/r/1349998076-15495-3-git-send-email-dhsharp@go=
+ogle.com
 
- commit 6752ab4a9c30d5411b2dfdb251a3f1cb18aae487
- Author: Steven Rostedt <srostedt@redhat.com>
- Date:   Tue Feb 8 13:54:06 2011 -0500
-
-    tracing: Deprecate tracing_enabled for tracing_on
-
-This commit added a WARN_ON() if the tracing_enabled file's variable
-was changed. After this was added, only LatencyTop complained, and
-they soon fixed their tool as there was no reason that LatencyTop
-should touch this file as it was using the perf ring buffers which
-this file does not interact with. But since that time no one else
-has complained about this WARN_ON(). Thus it is safe to assume that
-this file is no longer needed. Time to get rid of it.
-
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: David Sharp <dhsharp@google.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c |    3 ---
- 1 file changed, 3 deletions(-)
+ kernel/trace/trace.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 4b83a03..8eaa837 100644
+index d7d6c52..d598ede 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -4809,9 +4809,6 @@ static __init int tracer_init_debugfs(void)
+@@ -4074,6 +4074,14 @@ static ssize_t tracing_clock_write(struct file *filp=
+, const char __user *ubuf,
+ 	if (max_tr.buffer)
+ 		ring_buffer_set_clock(max_tr.buffer, trace_clocks[i].func);
 =20
- 	d_tracer =3D tracing_init_dentry();
++	/*
++	 * New clock may not be consistent with the previous clock.
++	 * Reset the buffer so that it doesn't have incomparable timestamps.
++	 */
++	tracing_reset_online_cpus(&global_trace);
++	if (max_tr.buffer)
++		tracing_reset_online_cpus(&max_tr);
++
+ 	mutex_unlock(&trace_types_lock);
 =20
--	trace_create_file("tracing_enabled", 0644, d_tracer,
--			  &global_trace, &rb_simple_fops);
--
- 	trace_create_file("trace_options", 0644, d_tracer,
- 			NULL, &tracing_iter_fops);
-=20
+ 	*fpos +=3D cnt;
 --=20
 1.7.10.4
 
@@ -97,13 +82,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJQk8wFAAoJEOdOSU1xswtMw4YH/jqPQbJfePQYAZt4QtHodUkJ
-DIaoRmHZ0KFDlWUIDe7FtNTqpVSUmeRyWEMZAE0dO4+ocoikNHBHLqCE50yHAgxZ
-N9lMtMKUvnvi13V1Ss94grzy4E9acwuSrXee7U6BG5wN90+7QbKPvAp0hN4LlCgZ
-HmnSPQ2F2MvGUELK2hrpHqMaiUW3BikSDhuTHMc05E7PbZpQ7TzyOx7F9Zp4uaAE
-h/fhXPxt5S7DFFqG/ooa1TjS4pMrkbCMQBfHzZSsAzzY9n/sEXE8STfAxE7kVx+4
-piRieWGrHh/fMeEgfq5uAjDTCWBv8Ead0M2l2uf6Guz8xCYiMT0EvzigyLjMs2o=
-=ongz
+iQEcBAABAgAGBQJQk8wEAAoJEOdOSU1xswtMj6kH/2VeJihYmGA1XWsiCwAy55wb
+eQgMkW0sIGtixYsPLAuwPg6Q7xx72vwBw50Igfq02nx8A1evpdN9oeb4xX3mVTOu
+rUPKgvmI2CvYdd8r7xvwIjbWvzZBHy6QLqYfnQ/XwkIFPuZwNel78BHLu/ds/x1A
+jPD5L4HqIM7If9aelbR30YetaBzNUZRszVY6GyjDdkKY/PMWltyffBgXWqwCfkP9
+CnTFURwXs5rB0BEaGbrEJSOlp3doAdvs+wzSiBalX7r0VmrFqTHhTaCRGc7LppL5
+TxTucZIIXXxOo3/LtX1/XAYUSdmjCiVM1KDS2D4sOAqn3TWXoZ8IqtHVrBYx3OU=
+=zCf/
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
