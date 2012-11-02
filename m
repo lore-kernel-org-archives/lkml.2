@@ -1,46 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625Ab2KBPDG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 11:03:06 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:60816 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755308Ab2KBPDD (ORCPT
+	id S1756171Ab2KBPDf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 11:03:35 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55708 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab2KBPDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 11:03:03 -0400
-Date: Fri, 2 Nov 2012 15:03:01 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH 00/32] [RFC] nohz/cpuset: Start discussions on nohz
- CPUs
-In-Reply-To: <1351867045.4004.141.camel@gandalf.local.home>
-Message-ID: <0000013ac1a58555-bea33420-d101-4e86-abc5-11dd6863b7a8-000000@email.amazonses.com>
-References: <20121029202711.062749374@goodmis.org> <0000013ac180f152-79f05c71-4d38-43b0-9b62-8a71c00dfda7-000000@email.amazonses.com> <1351867045.4004.141.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 2 Nov 2012 11:03:33 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+In-Reply-To: <1952961.jiv6kKxT5N@vostro.rjw.lan>
+References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
+	<1350593430-24470-2-git-send-email-yinghai@kernel.org>
+	<1952961.jiv6kKxT5N@vostro.rjw.lan>
+Date: Fri, 2 Nov 2012 08:03:31 -0700
+X-Google-Sender-Auth: hEschSZHXOa5LHQY3OICpNTfkD0
+Message-ID: <CAE9FiQXdQhv1bxue3PQpCGWdeoLSGrtgcZ+1MAvh+L+zEUFuNw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ACPI: Introduce a new acpi handle to determine HID match.
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org, Tang Chen <tangchen@cn.fujitsu.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Nov 2012, Steven Rostedt wrote:
-
-> > also it would be best to sync this conceptually with the processors
-> > enabled for rcu processing.
+On Fri, Nov 2, 2012 at 5:23 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, October 18, 2012 01:50:09 PM Yinghai Lu wrote:
+>> From: Tang Chen <tangchen@cn.fujitsu.com>
+>>
+>> We need to find out if one handle is for root bridge, and install notify
+>> handler for it to handle pci root bus hot add.
+>> At that time, root bridge acpi device is not created yet.
+>>
+>> So acpi_match_device_ids() will not work.
+>>
+>> This patch add a function to check if new acpi handle's HID matches a list
+>> of IDs.  The new api use acpi_device_info instead acpi_device.
+>>
+>> -v2: updated changelog, also check length for string info...
+>>      change checking sequence by moving string comaring close to for loop.
+>>                                       - Yinghai
+>>
+>> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> Cc: Len Brown <lenb@kernel.org>
+>> Cc: linux-acpi@vger.kernel.org
+>> ---
+>>  drivers/acpi/scan.c     |   33 +++++++++++++++++++++++++++++++++
+>>  include/acpi/acpi_bus.h |    2 ++
+>>  2 files changed, 35 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+>> index 5dfec09..33ca993 100644
+>> --- a/drivers/acpi/scan.c
+>> +++ b/drivers/acpi/scan.c
+>> @@ -312,6 +312,39 @@ int acpi_match_device_ids(struct acpi_device *device,
+>>  }
+>>  EXPORT_SYMBOL(acpi_match_device_ids);
+>>
+>> +int acpi_match_object_info_ids(struct acpi_device_info *info,
+>> +                            const struct acpi_device_id *ids)
+>> +{
+>> +     const struct acpi_device_id *id;
+>> +     char *str;
+>> +     u32 len;
+>> +     int i;
+>> +
+>> +     len = info->hardware_id.length;
+>> +     if (len) {
+>> +             str = info->hardware_id.string;
+>> +             if (str)
+>> +                     for (id = ids; id->id[0]; id++)
+>> +                             if (!strcmp((char *)id->id, str))
+>> +                                     return 0;
+>> +     }
+>> +
+>> +     for (i = 0; i < info->compatible_id_list.count; i++) {
+>> +             len = info->compatible_id_list.ids[i].length;
+>> +             if (!len)
+>> +                     continue;
+>> +             str = info->compatible_id_list.ids[i].string;
+>> +             if (!str)
+>> +                     continue;
+>> +             for (id = ids; id->id[0]; id++)
+>> +                     if (!strcmp((char *)id->id, str))
+>> +                             return 0;
+>> +     }
+>> +
+>> +     return -ENOENT;
+>> +}
+>> +EXPORT_SYMBOL(acpi_match_object_info_ids);
 >
-> Processors can be disabled for rcu processing? Or are you talking about
-> Paul's new work of offloading rcu callbacks?
+> EXPORT_SYMBOL_GPL, please?
 
-Yes. Paul's new work to remove rcu processing from processors. That needs
-to be synced configuration wise somehow. It does not make sense to process
-rcu callbacks on processors where the timer tick does not work anymore.
+yes, will change that while sending next version..
 
+>
+>> +
+>>  static void acpi_free_ids(struct acpi_device *device)
+>>  {
+>>       struct acpi_hardware_id *id, *tmp;
+>> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+>> index 608f92f..6ac415c 100644
+>> --- a/include/acpi/acpi_bus.h
+>> +++ b/include/acpi/acpi_bus.h
+>> @@ -374,6 +374,8 @@ int acpi_bus_start(struct acpi_device *device);
+>>  acpi_status acpi_bus_get_ejd(acpi_handle handle, acpi_handle * ejd);
+>>  int acpi_match_device_ids(struct acpi_device *device,
+>>                         const struct acpi_device_id *ids);
+>> +int acpi_match_object_info_ids(struct acpi_device_info *info,
+>> +                            const struct acpi_device_id *ids);
+>>  int acpi_create_dir(struct acpi_device *);
+>>  void acpi_remove_dir(struct acpi_device *);
+>
+> I wonder which code path(s) is(are) going to use the new routine?
+
+that is for installing handler for pci root bus removal. will resend
+them in batch 3.
+
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-split-pci-root-hp-2
+
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=b3752f4571a3db1bbbaf204a6cb85aadbd40b19d
+   PCI, acpiphp: Separate out hot-add support of pci host bridge
+
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=bda84c28ae8e00315fcc7dffceb301e082369c3e
+   PCI: correctly detect ACPI PCI host bridge objects
