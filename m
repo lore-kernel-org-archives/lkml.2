@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab2KBHGr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 03:06:47 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47165 "EHLO
+	id S1754517Ab2KBHHH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 03:07:07 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56905 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab2KBHGp (ORCPT
+	with ESMTP id S1752609Ab2KBHGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 03:06:45 -0400
-X-AuditID: 9c930197-b7c0bae00000042f-68-509371033ab6
+	Fri, 2 Nov 2012 03:06:49 -0400
+X-AuditID: 9c930197-b7c0bae00000042f-73-509371049de9
 From: Minchan Kim <minchan@kernel.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
@@ -18,117 +18,41 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Konrad Rzeszutek Wilk <konrad@darnok.org>,
         Jens Axboe <axboe@kernel.dk>, Pekka Enberg <penberg@cs.helsinki.fi>,
         gaowanlong@cn.fujitsu.com, Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v4 0/3] zram/zsmalloc promotion
-Date: Fri,  2 Nov 2012 16:12:44 +0900
-Message-Id: <1351840367-4152-1-git-send-email-minchan@kernel.org>
+Subject: [PATCH v4 3/3] zram: select ZSMALLOC when ZRAM is configured
+Date: Fri,  2 Nov 2012 16:12:47 +0900
+Message-Id: <1351840367-4152-4-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351840367-4152-1-git-send-email-minchan@kernel.org>
+References: <1351840367-4152-1-git-send-email-minchan@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset promotes zram/zsmalloc from staging.
-Both are very clean and zram have been used by many embedded product
-for a long time.
-It's time to go out of staging.
+At the monent, we can configure zram in driver/block once zsmalloc
+in /lib menu is configured firstly. It's not convenient.
 
-Greg, Jens is already OK that zram is located under driver/blocks/.
-The issue remained is where we put zsmalloc.
-The candidate is two under mm/ or under lib/
-Konrad and Nitin wanted to put zsmalloc into lib/ instead of mm/.
+User can configure zram in driver/block regardless of zsmalloc enabling
+by this patch.
 
-Quote from Nitin
-"
-I think mm/ directory should only contain the code which is intended
-for global use such as the slab allocator, page reclaim code etc.
-zsmalloc is used by only one (or possibly two) drivers, so lib/ seems
-to be the right place.
-"
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/block/zram/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Quote from Konrand
-"
-I like the idea of keeping it in /lib or /mm. Actually 'lib' sounds more
-appropriate since it is dealing with storing a bunch of pages in a nice
-layout for great density purposes.
-"
-
-In fact, there is some history about that.
-
-Why I put zsmalloc into under mm firstly was that Andrew had a concern
-about using strut page's some fields freely in zsmalloc so he wanted
-to maintain it in mm/ if I remember correctly.
-
-So I and Nitin tried to ask the opinion to akpm several times
-(at least 6 and even I sent such patch a few month ago) but didn't get
-any reply from him or any mm guys so I guess mm guys doesn't have any
-concern about that any more.
-
-In point of view that it's an another slab-like allocator,
-it might be proper under mm but it's not popular as current mm's
-allocators(/SLUB/SLOB and page allocator).
-
-Frankly speaking, I don't care whether we put it to mm/ or lib/.
-It seems contributors(ex, Nitin, Konrad, Seth and Dan) like lib/
-and mm guys are still silent. That's why I am biased into lib/ now.
-
-If someone yell we should keep it to mm/ by logical claim, I can change
-my mind easily. Please raise your hand.
-
-If Andrew doesn't have a concern about that any more, I would like to
-locate it into /lib.
-
-This patchset is based on next-20121102.
-
-Minchan Kim (3):
-  zsmalloc: promote to lib/
-  zram: promote zram from staging
-  zram: select ZSMALLOC when ZRAM is configured
-
- drivers/block/Kconfig                    |    1 +
- drivers/block/Makefile                   |    1 +
- drivers/block/zram/Kconfig               |   26 +
- drivers/block/zram/Makefile              |    3 +
- drivers/block/zram/zram.txt              |   76 +++
- drivers/block/zram/zram_drv.c            |  776 ++++++++++++++++++++++
- drivers/block/zram/zram_drv.h            |  119 ++++
- drivers/block/zram/zram_sysfs.c          |  225 +++++++
- drivers/staging/Kconfig                  |    4 -
- drivers/staging/Makefile                 |    2 -
- drivers/staging/zcache/zcache-main.c     |    4 +-
- drivers/staging/zram/Kconfig             |   25 -
- drivers/staging/zram/Makefile            |    3 -
- drivers/staging/zram/zram.txt            |   76 ---
- drivers/staging/zram/zram_drv.c          |  776 ----------------------
- drivers/staging/zram/zram_drv.h          |  120 ----
- drivers/staging/zram/zram_sysfs.c        |  225 -------
- drivers/staging/zsmalloc/Kconfig         |   10 -
- drivers/staging/zsmalloc/Makefile        |    3 -
- drivers/staging/zsmalloc/zsmalloc-main.c | 1064 ------------------------------
- drivers/staging/zsmalloc/zsmalloc.h      |   43 --
- include/linux/zsmalloc.h                 |   43 ++
- lib/Kconfig                              |   18 +
- lib/Makefile                             |    1 +
- lib/zsmalloc.c                           | 1064 ++++++++++++++++++++++++++++++
- 25 files changed, 2355 insertions(+), 2353 deletions(-)
- create mode 100644 drivers/block/zram/Kconfig
- create mode 100644 drivers/block/zram/Makefile
- create mode 100644 drivers/block/zram/zram.txt
- create mode 100644 drivers/block/zram/zram_drv.c
- create mode 100644 drivers/block/zram/zram_drv.h
- create mode 100644 drivers/block/zram/zram_sysfs.c
- delete mode 100644 drivers/staging/zram/Kconfig
- delete mode 100644 drivers/staging/zram/Makefile
- delete mode 100644 drivers/staging/zram/zram.txt
- delete mode 100644 drivers/staging/zram/zram_drv.c
- delete mode 100644 drivers/staging/zram/zram_drv.h
- delete mode 100644 drivers/staging/zram/zram_sysfs.c
- delete mode 100644 drivers/staging/zsmalloc/Kconfig
- delete mode 100644 drivers/staging/zsmalloc/Makefile
- delete mode 100644 drivers/staging/zsmalloc/zsmalloc-main.c
- delete mode 100644 drivers/staging/zsmalloc/zsmalloc.h
- create mode 100644 include/linux/zsmalloc.h
- create mode 100644 lib/zsmalloc.c
-
+diff --git a/drivers/block/zram/Kconfig b/drivers/block/zram/Kconfig
+index be5abe8..ee23a86 100644
+--- a/drivers/block/zram/Kconfig
++++ b/drivers/block/zram/Kconfig
+@@ -1,6 +1,7 @@
+ config ZRAM
+ 	tristate "Compressed RAM block device support"
+-	depends on BLOCK && SYSFS && ZSMALLOC
++	depends on BLOCK && SYSFS
++	select ZSMALLOC
+ 	select LZO_COMPRESS
+ 	select LZO_DECOMPRESS
+ 	default n
 -- 
 1.7.9.5
 
