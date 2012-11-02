@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763203Ab2KBRdh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:33:37 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49159 "EHLO
+	id S1763206Ab2KBRf2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:35:28 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59678 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762295Ab2KBRdf (ORCPT
+	with ESMTP id S1762935Ab2KBRf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:33:35 -0400
+	Fri, 2 Nov 2012 13:35:26 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -16,28 +16,88 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Anish Kumar <anish198519851985@gmail.com>
-Subject: [PATCH 0/2] irq_work: A couple fixes v2
-Date: Fri,  2 Nov 2012 18:33:27 +0100
-Message-Id: <1351877609-28856-1-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 1/2] irq_work: Fix racy IRQ_WORK_BUSY flag setting
+Date: Fri,  2 Nov 2012 18:35:15 +0100
+Message-Id: <1351877716-28911-1-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1351877609-28856-1-git-send-email-fweisbec@gmail.com>
+References: <1351877609-28856-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+The IRQ_WORK_BUSY flag is set right before we execute the
+work. Once this flag value is set, the work enters a
+claimable state again.
 
-After some discussion with Steve, this is a respin with changelogs and
-comments sanitized. The code itself hasn't changed.
+So if we have specific data to compute in our work, we ensure it's
+either handled by another CPU or locally by enqueuing the work again.
+This state machine is guanranteed by atomic operations on the flags.
 
-Thanks.
+So when we set IRQ_WORK_BUSY without using an xchg-like operation,
+we break this guarantee as in the following summarized scenario:
 
-Frederic Weisbecker (2):
-  irq_work: Fix racy IRQ_WORK_BUSY flag setting
-  irq_work: Fix racy check on work pending flag
+        CPU 1                                   CPU 2
+        -----                                   -----
+                                                (flags = 0)
+                                                old_flags = flags;
+        (flags = 0)
+        cmpxchg(flags, old_flags,
+                old_flags | IRQ_WORK_FLAGS)
+        (flags = 3)
+        [...]
+        flags = IRQ_WORK_BUSY
+        (flags = 2)
+        func()
+                                                (sees flags = 3)
+                                                cmpxchg(flags, old_flags,
+                                                        old_flags | IRQ_WORK_FLAGS)
+                                                (give up)
 
- kernel/irq_work.c |   21 +++++++++++++++------
- 1 files changed, 15 insertions(+), 6 deletions(-)
+        cmpxchg(flags, 2, 0);
+        (flags = 0)
 
+CPU 1 claims a work and executes it, so it sets IRQ_WORK_BUSY and
+the work is again in a claimable state. Now CPU 2 has new data to process
+and try to claim that work but it may see a stale value of the flags
+and think the work is still pending somewhere that will handle our data.
+This is because CPU 1 doesn't set IRQ_WORK_BUSY atomically.
+
+As a result, the data expected to be handle by CPU 2 won't get handled.
+
+To fix this, use xchg() to set IRQ_WORK_BUSY, this way we ensure the CPU 2
+will see the correct value with cmpxchg() using the expected ordering.
+
+Changelog-heavily-inspired-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Anish Kumar <anish198519851985@gmail.com>
+---
+ kernel/irq_work.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 1588e3b..57be1a6 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -119,8 +119,11 @@ void irq_work_run(void)
+ 		/*
+ 		 * Clear the PENDING bit, after this point the @work
+ 		 * can be re-used.
++		 * Make it immediately visible so that other CPUs trying
++		 * to claim that work don't rely on us to handle their data
++		 * while we are in the middle of the func.
+ 		 */
+-		work->flags = IRQ_WORK_BUSY;
++		xchg(&work->flags, IRQ_WORK_BUSY);
+ 		work->func(work);
+ 		/*
+ 		 * Clear the BUSY bit and return to the free state if
 -- 
 1.7.5.4
 
