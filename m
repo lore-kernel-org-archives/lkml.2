@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762439Ab2KBNqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 09:46:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46692 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756105Ab2KBNqb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 09:46:31 -0400
-Message-ID: <1351863973.2970.1.camel@phoenix>
-Subject: [PATCH] pinctrl: exynos: Add terminating entry for of_device_id
- table
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 02 Nov 2012 21:46:13 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1762855Ab2KBNvy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 09:51:54 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:59090 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757831Ab2KBNvw convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Fri, 2 Nov 2012 09:51:52 -0400
+Message-Id: <5093DE3002000078000A60C0@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 02 Nov 2012 13:52:32 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86/perf_events: build fix
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The of_device_id table is supposed to be zero-terminated.
+At least some older gcc versions dislike mixing constant and non-const
+data in the same section ("... causes a section type confict").
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+
 ---
- drivers/pinctrl/pinctrl-exynos.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/cpu/perf_event_p6.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/pinctrl-exynos.c b/drivers/pinctrl/pinctrl-exynos.c
-index 73a0aa2..b023254 100644
---- a/drivers/pinctrl/pinctrl-exynos.c
-+++ b/drivers/pinctrl/pinctrl-exynos.c
-@@ -36,6 +36,7 @@
- /* list of external wakeup controllers supported */
- static const struct of_device_id exynos_wkup_irq_ids[] = {
- 	{ .compatible = "samsung,exynos4210-wakeup-eint", },
-+	{ }
+--- 3.7-rc3/arch/x86/kernel/cpu/perf_event_p6.c
++++ 3.7-rc3-x86-perf-p6-section/arch/x86/kernel/cpu/perf_event_p6.c
+@@ -19,7 +19,7 @@ static const u64 p6_perfmon_event_map[] 
+ 
  };
  
- static void exynos_gpio_irq_unmask(struct irq_data *irqd)
--- 
-1.7.9.5
+-static __initconst u64 p6_hw_cache_event_ids
++static const u64 __initconst p6_hw_cache_event_ids
+ 				[PERF_COUNT_HW_CACHE_MAX]
+ 				[PERF_COUNT_HW_CACHE_OP_MAX]
+ 				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
 
 
 
