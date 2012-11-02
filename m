@@ -1,124 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab2KBNB4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 09:01:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33770 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751561Ab2KBNBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 09:01:54 -0400
-Message-ID: <5093C43F.9050508@redhat.com>
-Date: Fri, 02 Nov 2012 14:01:51 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
+	id S1755702Ab2KBNDs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 09:03:48 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53706 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab2KBNDq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 09:03:46 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: jaxboe@fusionio.com, kzak@redhat.com
-Subject: Re: [RFC PATCH 0/4] Remove cryptoloop support (cryptsetup replacement)
-References: <cover.1351799189.git.mbroz@redhat.com>
-In-Reply-To: <cover.1351799189.git.mbroz@redhat.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAOesGMj3urrhy83o1aD4q3K0CqOL6ZrchknmdvgHDWkahavQQA@mail.gmail.com>
+References: <1341961393-17728-1-git-send-email-bleung@chromium.org>
+	<1351200081-19349-1-git-send-email-bleung@chromium.org>
+	<1351200081-19349-2-git-send-email-bleung@chromium.org>
+	<CAHR064jAfmmpf-p5Yh=SZWW31kr0JxcA3VNQrCTV=T9U48HQtw@mail.gmail.com>
+	<CAOesGMj3urrhy83o1aD4q3K0CqOL6ZrchknmdvgHDWkahavQQA@mail.gmail.com>
+Date: Fri, 2 Nov 2012 13:03:44 +0000
+Message-ID: <CAHR064gM8sj75Mz1az4pS0wF3fEBcjWMvEjbYRF5pnDirhtjag@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] Platform: x86: Add Chrome OS Laptop driver
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Benson Leung <bleung@chromium.org>, Matthew Garrett <mjg@redhat.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, olofj@chromium.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2012 09:11 PM, Milan Broz wrote:
+On Fri, Nov 2, 2012 at 12:45 PM, Olof Johansson <olof@lixom.net> wrote:
+> On Fri, Oct 26, 2012 at 10:30 AM, Corentin Chary
+> <corentin.chary@gmail.com> wrote:
+>
+>> Looks better, but I'm curious, what is the final purpose of this driver ?
+>> What ABI will be exposed, who will use it ?
+>>
+>> If it is going to be bigger, it may be a good idea to convert it to a
+>> real platform driver (platform_drivers/platform_device stuff).
+>
+> It's not a driver per se. It's platform glue that, based on the DMI
+> table, registers platform and i2c devices (at this time only i2c
+> devices).
+>
+> Unfortunately there's no way to do this nicely from userspace after
+> boot, since there's limits to how much data you can provide with the
+> simpler userspace-driven i2c probing protocol.
+>
+> So, there's no user-facing ABI on this, and no one is expected to use
+> it from userspace. It's just there to make sure that the un-probably
+> devices on this kind of hardware gets bound to drivers properly.
+>
+> If it's converted to a platform_driver, how do you expect that to
+> probe, where would the platform_device be registered?
 
-> Dm-crypt/cryptsetup provides replacement for long time already.
-
-Just one addition, here are notes how to replace cryptoloop
-with cryptsetup.
-
-Because there are several incompatible lostup implementations,
-it cannot be automated. But you can easily find proper options
-using few switches below.
-
-Note, that some configurations are insecure and often
-the insecure variant is mostly the default.
-
-One such example is a passphrase used directly as key (not hashed)
-(option -N which is sometimes default) an key is padded.
-So with 8 char password and 256bit key 192bits of key is zeroed.
-
-Another problem is with using predictable IV (initial vector, which
-is basically just sector number in losetup) and CBC mode.
-For CBC mode this is not secure, because it open system to
-watermarking attacks.
-(Cryptsetup uses ESSIV by default or XTS mode.)
-
-Cryptsetup will not stop you to use such configurations though,
-it is designed to allow everything possible if user wants.
-
-
-LOSETUP -> CRYPTSETUP replacement
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-(N.B. for new images you should you use cryptsetup defaults and get rid
-of most compat options.)
-
-Short example for compatible mapping:
-
-  "losetup -e twofish -N /dev/loop0 /image.img"
-
-can be used by cryptsetup
-
-  "cryptsetup create image_plain /image.img -c twofish-cbc-plain -H plain"
-
-(Plaintext device will be /dev/mapper/image_plain instead of /dev/loop0.)
+I guess I would check dmi in the module init method, and then use the
+probe callback of platform_create_bundle to do more probing if
+necessary.
 
 
-Details
-~~~~~~~
-In Debian and some other distros is hashing default, hash is "ripemd160",
-default key size is mostly 256bits. In some distros hashing is not used.
-
-For cryptsetup (plain mode, no LUKS) you will need these options:
-
- [-c|--cipher]   - cipher specification
- [-s|--key-size] - key size in bits
- [-h|--hash]     - password hashing function ("plain" is no hashing)
- [-o|--offset]   - offset (in 512 sectors!)
- [-p|--skip]     - IV offset (in 512 sectors!) (usually the same as -o)
-
-Here are some common combinations and cryptsetup replacements:
-
-  losetup parameters     |  cryptsetup paramaters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  -e twofish [-N]        | -c twofish-cbc-plain -H plain [-s 256]
-  -e twofish             | -c twofish-cbc-plain -H ripemd160 [-s 256]
-
-Ditto for most other ciphers:
-
-  -e aes [-N]            | -c aes-cbc-plain -H plain [-s 256]
-  -e aes                 | -c aes-cbc-plain -H ripemd160 [-s 256]
-...
-
-Key size (Debian option -k, not upstream)
-
-  -k 128                 | -s 128
-
-Specifying offset, note losetup takes bytes, cryptsetup sectors.
-Offset must be multiple of sectors (even in losetup).
-SKip (-p) means offset for IV, you need specify both here.
-
-  -o 2560                | -o 5 -p 5       # 2560/512 = 5
-
-Even some esoteric configurations possible
-(This example was default for some very old SuSe distro.)
-
-Loop using twofish with only 160 bit key (zero padded to 192 bits) with no IV.
-
-   cryptsetup -c twofish-cbc-null -s 192 -h ripemd160:20
-
-Cryptsetup doesn't provide direct replacement for --pass-fd option
-(pass file descriptor to read key) but you can use directly keyfile
-option and keyfile size (see cryptsetup man page).
-
-Also note, that cryptsetup allows mapping of loop-aes (multi-key) devices
-(see loopaesOpen command in man page).
-But this was never part of mainline kernel, so it is not important
-for mainline cryptoloop replacement.
-
-Thanks,
-Milan
+--
+Corentin Chary
+http://xf.iksaif.net
