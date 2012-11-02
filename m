@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529Ab2KBEZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 00:25:20 -0400
-Received: from ozlabs.org ([203.10.76.45]:51030 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184Ab2KBEZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 00:25:17 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] MODSIGN: Add modules_sign make target
-In-Reply-To: <20121101112535.GL6627@hansolo.jdub.homelinux.org>
-References: <20121031135605.GJ6627@hansolo.jdub.homelinux.org> <87zk314w1t.fsf@rustcorp.com.au> <20121101112535.GL6627@hansolo.jdub.homelinux.org>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 02 Nov 2012 13:49:14 +1030
-Message-ID: <87ip9o4rpp.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751643Ab2KBEz0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 00:55:26 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44864 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab2KBEzW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 00:55:22 -0400
+Date: Fri, 2 Nov 2012 15:55:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kees Cook <keescook@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the drop-experimental tree with the
+ net-next tree
+Message-Id: <20121102155514.939282b4682c521f07e7943c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__2_Nov_2012_15_55_14_+1100_ZesQDe77+ORwRkej"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josh Boyer <jwboyer@redhat.com> writes:
+--Signature=_Fri__2_Nov_2012_15_55_14_+1100_ZesQDe77+ORwRkej
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, Nov 01, 2012 at 06:03:18PM +1030, Rusty Russell wrote:
->> Josh Boyer <jwboyer@redhat.com> writes:
->> 
->> > If CONFIG_MODULE_SIG is set, and 'make modules_sign' is called then this
->> > patch will cause the modules to get a signature appended.  The make target
->> > is intended to be run after 'make modules_install', and will modify the
->> > modules in-place in the installed location.  It can be used to produce
->> > signed modules after they have been processed by distribution build
->> > scripts.
->> >
->> > Signed-off-by: Josh Boyer <jwboyer@redhat.com>
->> 
->> It's a bit of a niche case, but applied.
->
-> Thanks.  Whether you consider RPM built kernels niche or not doesn't
-> matter to me.  Having this upstream is one less patch we have to carry
-> so I appreciate it a lot.
+Hi Kees,
 
-My comment was more that this relies on eu-strip, because we always
-sign modules on installation, so you need eu-strip to *unsign* them
-(strip won't do it, BTW).
+Today's linux-next merge of the drop-experimental tree got a conflict in
+drivers/net/ethernet/intel/Kconfig between commit a24006ed1261 ("ptp:
+Enable clock drivers along with associated net/PHY drivers") from the
+net-next tree and commit 70c5056f413d ("drivers/net/ethernet/intel:
+remove depends on CONFIG_EXPERIMENTAL") from the drop-experimental tree.
 
-More general would be a modules_install_unsigned target to match this,
-but since noone would use it, let's not write it :)
+The former removed some code that was changed by the latter, so I did
+that and can carry the fix as necessary (no action is required).
 
+--=20
 Cheers,
-Rusty.
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__2_Nov_2012_15_55_14_+1100_ZesQDe77+ORwRkej
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQk1IyAAoJEECxmPOUX5FEChUP/1tZ0iPHeX3wRJGmLtqZajjR
+gGiCRv0lEKfPQwXhlYH9+vxS04Vmn9Q+YLwKsrrmhSllEgmUCFrK002ea9q3Surd
+ZwTvlkfXiySokO29t4sOdfG/iOo6+DjEWRB0CggJX5ffqeZz0WJJz/OkrExFiMPg
+jy7VK3bJerdOZ6eURGwJBixg7duYV1YguajCijQTDKOlYONS12qtse446q8lael5
+9h6VRu/4GSUvnaFu8P4n4G85Z4ZTbwydqNCci7cXLuX5lygwRJC9c4OxHcBc2CFA
+4SLS4/H4GskTmZrfnd7fmpqlnreH0LsQ6CpidT9RzJqpbVJYFMeidnmzyh9SvrFZ
+wzPfF7t4YgYuqFVyw9mDbTsCv51PD9cWMa+c7pMg/7h8XC6WjEjkTzbHJM0GXk7Z
+RVjaxfMdsSXJj4Tz5ZX1fQNmlNo4JZrUT+VXmclDQisBC1zahokx0F5PlsWDK/Q7
+EdMyyxV0jELsQJFbLLhnhUTa2AfyA4a+D3lwNVTt1gA/6pw3JrhRmNbjr4OzGxw1
+Vh5/peCRR41Kj+7fi+7GCIQPAQDlkqzptiXJi47ShizCgEBYeu4xC2RB2CqmPz0/
+ST3CtTCGbtFhgOA1QeVVlp1gUwTHZ0Tm/4j8WnrKdf4CNySigVzqzqd64ijf1SvJ
+UEKV3zli/rbe7AiF2e7d
+=eh0J
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__2_Nov_2012_15_55_14_+1100_ZesQDe77+ORwRkej--
