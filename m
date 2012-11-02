@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab2KBNJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 09:09:29 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:63407 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab2KBNJ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 09:09:27 -0400
+	id S1757631Ab2KBNXk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 09:23:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38581 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757399Ab2KBNXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 09:23:38 -0400
+Date: Fri, 2 Nov 2012 09:23:19 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
+        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Kees Cook <keescook@chromium.org>, Peter Jones <pjones@redhat.com>
+Subject: Re: Kdump with signed images
+Message-ID: <20121102132318.GA3300@redhat.com>
+References: <20121025185520.GA17995@redhat.com>
+ <1351214158.18115.186.camel@falcor>
+ <20121026023916.GA16762@srcf.ucam.org>
+ <20121026170609.GB24687@redhat.com>
+ <1351276649.18115.217.camel@falcor>
+ <20121101131003.GA14573@redhat.com>
+ <20121101135356.GA15659@redhat.com>
+ <1351780159.15708.17.camel@falcor>
+ <20121101144304.GA15821@redhat.com>
+ <20121101145225.GB10269@srcf.ucam.org>
 MIME-Version: 1.0
-X-Originating-IP: [91.224.174.71]
-In-Reply-To: <CAHR064gM8sj75Mz1az4pS0wF3fEBcjWMvEjbYRF5pnDirhtjag@mail.gmail.com>
-References: <1341961393-17728-1-git-send-email-bleung@chromium.org>
-	<1351200081-19349-1-git-send-email-bleung@chromium.org>
-	<1351200081-19349-2-git-send-email-bleung@chromium.org>
-	<CAHR064jAfmmpf-p5Yh=SZWW31kr0JxcA3VNQrCTV=T9U48HQtw@mail.gmail.com>
-	<CAOesGMj3urrhy83o1aD4q3K0CqOL6ZrchknmdvgHDWkahavQQA@mail.gmail.com>
-	<CAHR064gM8sj75Mz1az4pS0wF3fEBcjWMvEjbYRF5pnDirhtjag@mail.gmail.com>
-Date: Fri, 2 Nov 2012 14:09:27 +0100
-Message-ID: <CAOesGMhQTdpiRjFQDFRD2NaOjjFg7xVXNeyZ-nj9-1ZCpK2PQA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] Platform: x86: Add Chrome OS Laptop driver
-From: Olof Johansson <olof@lixom.net>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Benson Leung <bleung@chromium.org>, Matthew Garrett <mjg@redhat.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, olofj@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121101145225.GB10269@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 2, 2012 at 2:03 PM, Corentin Chary <corentin.chary@gmail.com> wrote:
-> On Fri, Nov 2, 2012 at 12:45 PM, Olof Johansson <olof@lixom.net> wrote:
->> On Fri, Oct 26, 2012 at 10:30 AM, Corentin Chary
->> <corentin.chary@gmail.com> wrote:
->>
->>> Looks better, but I'm curious, what is the final purpose of this driver ?
->>> What ABI will be exposed, who will use it ?
->>>
->>> If it is going to be bigger, it may be a good idea to convert it to a
->>> real platform driver (platform_drivers/platform_device stuff).
->>
->> It's not a driver per se. It's platform glue that, based on the DMI
->> table, registers platform and i2c devices (at this time only i2c
->> devices).
->>
->> Unfortunately there's no way to do this nicely from userspace after
->> boot, since there's limits to how much data you can provide with the
->> simpler userspace-driven i2c probing protocol.
->>
->> So, there's no user-facing ABI on this, and no one is expected to use
->> it from userspace. It's just there to make sure that the un-probably
->> devices on this kind of hardware gets bound to drivers properly.
->>
->> If it's converted to a platform_driver, how do you expect that to
->> probe, where would the platform_device be registered?
->
-> I guess I would check dmi in the module init method, and then use the
-> probe callback of platform_create_bundle to do more probing if
-> necessary.
+On Thu, Nov 01, 2012 at 02:52:25PM +0000, Matthew Garrett wrote:
+> On Thu, Nov 01, 2012 at 10:43:04AM -0400, Vivek Goyal wrote:
+> 
+> > So I think this does satisfy the requirement matthew specified. Isn't it?
+> > Matthew, what do you think?
+> 
+> Sure, if you can ensure that. You'll need to figure out how to get the 
+> build system to sign the userspace binaries and you'll need to ensure 
+> that they're statically linked and don't dlopen anything (including the 
+> nsswitch modules), but otherwise that should work.
+> 
 
-Maybe I'm dense but I don't see how that could possibly be better than
-what the code does today. It would just add more overhead and clutter
-by creating a unnecessary dummy device/driver setup just to, in the
-end, register the same i2c devices.
+[ CC peter jones ]
 
+Ok, so even if we build kexec-tools statically with glibc, we have the
+issue of name service switch modules. glibc will still do dlopen on
+these modules. So what are options now.
 
--Olof
+- Sign glibc and associated shared libraries. Do not allow unsigned
+  shared library to dynamically link with signed executable.
+
+- Peter mentioned that work with uClibc for kexec-tools.
+
+I personally think that however hard it is but first option sounds like
+a long term solution. We might have more user space processes which
+we might have to trust a generic solution will help with that. For example,
+we might have to sign and trust qemu at some point of time.
+
+Are there other ways of handing glibc issue?
+
+Thanks
+Vivek
