@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab2KBAiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 20:38:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:18913 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753320Ab2KBAiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 20:38:50 -0400
-X-IronPort-AV: E=Sophos;i="4.80,696,1344182400"; 
-   d="scan'208";a="6119579"
-From: Gao feng <gaofeng@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
-Cc: serge.hallyn@canonical.com, ebiederm@xmission.com, glommer@parallels.com,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH] namespace:unmount pid_namespace's proc_mnt when copy_net_ns failed
-Date: Fri, 2 Nov 2012 08:38:23 +0800
-Message-Id: <1351816703-8805-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/02 08:38:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/02 08:38:02,
-	Serialize complete at 2012/11/02 08:38:02
+	id S1758060Ab2KBAkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 20:40:07 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:58864 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab2KBAkE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 20:40:04 -0400
+To: Gustavo Padovan <gustavo@padovan.org>
+Subject: Re: [PATCH] ath3k: Add support for VAIO VPCEH [0489:e027]
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+From: Marcos Chaparro <marcos@mrkindustries.com.ar>
+Organization: Mrk Industries
+Date: Thu, 1 Nov 2012 21:38:20 -0300
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211012138.20988.marcos@mrkindustries.com.ar>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we should call pid_ns_release_proc to unmount pid_namespace's
-proc_mnt when copy_net_ns failed in function create_new_namespaces.
+Added Atheros AR3011 internal bluetooth device found in Sony VAIO VPCEH to the 
+devices list.
+Before this, the bluetooth module was identified as an Foxconn / Hai bluetooth 
+device [0489:e027], now it claims to be an AtherosAR3011 Bluetooth 
+[0cf3:3005].
 
-otherwise,the proc_mnt will not be freed and because the super_block
-of proc_mnt also add the reference of the pid_namespace,so this
-pid_namespace will never be released too.
+# cat /sys/kernel/debug/usb/devices
+T:  Bus=01 Lev=02 Prnt=02 Port=04 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0489 ProdID=e027 Rev= 0.01
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off by: Marcos A Chaparro <marcos@mrkindustries.com.ar>
 ---
- kernel/nsproxy.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index b576f7f..d536480 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -99,8 +99,11 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 	return new_nsp;
+Updated usb /sys/kernel/debug/usb/devices output. A complete powercycle flushed 
+the device firmware.
+
+diff --git a/linux-3.7-rc3.orig/drivers/bluetooth/ath3k.c b/linux-3.7-
+rc3.new/drivers/bluetooth/ath3k.c
+index fc2de55..b00000e 100644
+--- a/linux-3.7-rc3.orig/drivers/bluetooth/ath3k.c
++++ b/linux-3.7-rc3.new/drivers/bluetooth/ath3k.c
+@@ -67,6 +67,7 @@ static struct usb_device_id ath3k_table[] = {
+        { USB_DEVICE(0x13d3, 0x3304) },
+        { USB_DEVICE(0x0930, 0x0215) },
+        { USB_DEVICE(0x0489, 0xE03D) },
++       { USB_DEVICE(0x0489, 0xE027) },
  
- out_net:
--	if (new_nsp->pid_ns)
-+	if (new_nsp->pid_ns) {
-+		if (flags & CLONE_NEWPID)
-+			pid_ns_release_proc(new_nsp->pid_ns);
- 		put_pid_ns(new_nsp->pid_ns);
-+	}
- out_pid:
- 	if (new_nsp->ipc_ns)
- 		put_ipc_ns(new_nsp->ipc_ns);
--- 
-1.7.7.6
+        /* Atheros AR9285 Malbec with sflash firmware */
+        { USB_DEVICE(0x03F0, 0x311D) },
+diff --git a/linux-3.7-rc3.orig/drivers/bluetooth/btusb.c b/linux-3.7-
+rc3.new/drivers/bluetooth/btusb.c
+index debda27..ee82f2f 100644
+--- a/linux-3.7-rc3.orig/drivers/bluetooth/btusb.c
++++ b/linux-3.7-rc3.new/drivers/bluetooth/btusb.c
+@@ -124,6 +124,7 @@ static struct usb_device_id blacklist_table[] = {
+        { USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
+        { USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
+        { USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
++       { USB_DEVICE(0x0489, 0xe027), .driver_info = BTUSB_IGNORE },
+ 
+        /* Atheros AR9285 Malbec with sflash firmware */
+        { USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
 
+--
+Marcos
