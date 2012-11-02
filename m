@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757169Ab2KBPeL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 11:34:11 -0400
-Received: from exprod5og114.obsmtp.com ([64.18.0.28]:46814 "EHLO
-	exprod5og114.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2KBPeH (ORCPT
+	id S1757691Ab2KBPjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 11:39:33 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59642 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab2KBPja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 11:34:07 -0400
-Message-ID: <5093E57B.2020801@ge.com>
-Date: Fri, 02 Nov 2012 15:23:39 +0000
-From: Martyn Welch <martyn.welch@ge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Fri, 2 Nov 2012 11:39:30 -0400
+Date: Fri, 2 Nov 2012 08:39:31 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jan Beulich <JBeulich@suse.com>, sfr@canb.auug.org.au,
+        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: linux-next: Tree for Oct 31 (ehci, dbgp)
+Message-ID: <20121102153931.GA3755@kroah.com>
+References: <5093E0DF02000078000A6102@nat28.tlf.novell.com>
+ <Pine.LNX.4.44L0.1211021019450.1356-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: manohar.vanga@gmail.com, gregkh@linuxfoundation.org,
-        yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vme: vme_vmivme7805.c: use module_pci_driver to simplify
- the code
-References: <CAPgLHd-jNUdrUE5cwm=+iEbJQb+N_Bdduwa9kMh_rJMmU=tYuw@mail.gmail.com>
-In-Reply-To: <CAPgLHd-jNUdrUE5cwm=+iEbJQb+N_Bdduwa9kMh_rJMmU=tYuw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Nov 2012 15:23:41.0950 (UTC) FILETIME=[0A7171E0:01CDB90E]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1211021019450.1356-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/10/2012 16:15, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Use the module_pci_driver() macro to make the code simpler
-> by eliminating module_init and module_exit calls.
->
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Fri, Nov 02, 2012 at 10:20:27AM -0400, Alan Stern wrote:
+> On Fri, 2 Nov 2012, Jan Beulich wrote:
+> 
+> > >>> On 02.11.12 at 15:01, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > > On Thu, 1 Nov 2012, Jan Beulich wrote:
+> > > 
+> > >> >>> Alan Stern <stern@rowland.harvard.edu> 11/01/12 9:39 PM >>>
+> > >> >On Thu, 1 Nov 2012, Jan Beulich wrote:
+> > >> >> >>> Alan Stern <stern@rowland.harvard.edu> 11/01/12 4:28 PM >>>
+> > >> >> >Evidently we need to change your new test in
+> > >> >> >drivers/usb/early/ehci-dbgp.c to:
+> > >> >> >
+> > >> >> >#if IS_ENABLED(CONFIG_USB_HCD_EHCI) || defined(CONFIG_USB_CHIPIDEA_HOST)
+> > >> >> >
+> > >> >> >Upcoming changes to ehci-hcd will make this unnecessary in 3.8, but for 
+> > >> >> >now we need it.
+> > >> >> 
+> > >> >> Which tells me that the CONFIG_USB_SUPPORT version would have been
+> > >> >> the better one  (and I would favor that over the ugly variant you suggest
+> > >> >> above).
+> > >> >
+> > >> >I also suggested IS_ENABLED(CONFIG_USB), which is no uglier than what 
+> > >> >you submitted and would also fix this build error.  How about using it 
+> > >> >instead?
+> > >> 
+> > >> Yes, that's better. Question then is - updated original patch or incremental 
+> > > one?
+> > > 
+> > > Greg will probably want an incremental patch, because the original has 
+> > > already been merged.
+> > 
+> > I actually sent both (the incremental as attachment - I hope that's
+> > going to be acceptable to him) in a submission earlier today.
+> 
+> Ah, okay, good.
+> 
+> Greg, whichever version you take, you can add:
+> 
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-Acked-by: Martyn Welch <martyn.welch@ge.com>
+Thanks for that, as you guessed, I have to take the incremental one as
+the first is already applied.
 
-> ---
->   drivers/vme/boards/vme_vmivme7805.c | 15 +--------------
->   1 file changed, 1 insertion(+), 14 deletions(-)
->
-> diff --git a/drivers/vme/boards/vme_vmivme7805.c b/drivers/vme/boards/vme_vmivme7805.c
-> index 8e05bb4..dd22b50 100644
-> --- a/drivers/vme/boards/vme_vmivme7805.c
-> +++ b/drivers/vme/boards/vme_vmivme7805.c
-> @@ -19,10 +19,8 @@
->   
->   #include "vme_vmivme7805.h"
->   
-> -static int __init vmic_init(void);
->   static int vmic_probe(struct pci_dev *, const struct pci_device_id *);
->   static void vmic_remove(struct pci_dev *);
-> -static void __exit vmic_exit(void);
->   
->   /** Base address to access FPGA register */
->   static void *vmic_base;
-> @@ -41,11 +39,6 @@ static struct pci_driver vmic_driver = {
->   	.remove = vmic_remove,
->   };
->   
-> -static int __init vmic_init(void)
-> -{
-> -	return pci_register_driver(&vmic_driver);
-> -}
-> -
->   static int vmic_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->   {
->   	int retval;
-> @@ -109,15 +102,9 @@ static void vmic_remove(struct pci_dev *pdev)
->   
->   }
->   
-> -static void __exit vmic_exit(void)
-> -{
-> -	pci_unregister_driver(&vmic_driver);
-> -}
-> +module_pci_driver(vmic_driver);
->   
->   MODULE_DESCRIPTION("VMIVME-7805 board support driver");
->   MODULE_AUTHOR("Arthur Benilov <arthur.benilov@iba-group.com>");
->   MODULE_LICENSE("GPL");
->   
-> -module_init(vmic_init);
-> -module_exit(vmic_exit);
-> -
->
->
-
-
--- 
-Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
-GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
-T +44(0)1327322748                     | Manchester, M2 3AB
-E martyn.welch@ge.com                  | VAT:GB 927559189
-
+greg k-h
