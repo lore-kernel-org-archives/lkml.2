@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762342Ab2KBRGQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:06:16 -0400
-Received: from mail.kernel.org ([198.145.19.201]:32950 "EHLO mail.kernel.org"
+	id S1762382Ab2KBRGY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:06:24 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33009 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761058Ab2KBRGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:06:10 -0400
+	id S1760792Ab2KBRGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:06:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 1/4] floppy: do put_disk on current dr if blk_init_queue fails
-Date: Fri,  2 Nov 2012 10:06:05 -0700
-Message-Id: <20121102170333.681455201@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 3/4] mm: fix XFS oops due to dirty pages without buffers on s390
+Date: Fri,  2 Nov 2012 10:06:07 -0700
+Message-Id: <20121102170333.833821754@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170333.581931288@linuxfoundation.org>
 References: <20121102170333.581931288@linuxfoundation.org>
@@ -27,32 +29,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 238ab78469c6ab7845b43d5061cd3c92331b2452 upstream.
+commit ef5d437f71afdf4afdbab99213add99f4b1318fd upstream.
 
-If blk_init_queue fails, we do not call put_disk on the current dr
-(dr is decremented first in the error handling loop).
+On s390 any write to a page (even from kernel itself) sets architecture
+specific page dirty bit.  Thus when a page is written to via buffered
+write, HW dirty bit gets set and when we later map and unmap the page,
+page_remove_rmap() finds the dirty bit and calls set_page_dirty().
 
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Dirtying of a page which shouldn't be dirty can cause all sorts of
+problems to filesystems.  The bug we observed in practice is that
+buffers from the page get freed, so when the page gets later marked as
+dirty and writeback writes it, XFS crashes due to an assertion
+BUG_ON(!PagePrivate(page)) in page_buffers() called from
+xfs_count_page_state().
+
+Similar problem can also happen when zero_user_segment() call from
+xfs_vm_writepage() (or block_write_full_page() for that matter) set the
+hardware dirty bit during writeback, later buffers get freed, and then
+page unmapped.
+
+Fix the issue by ignoring s390 HW dirty bit for page cache pages of
+mappings with mapping_cap_account_dirty().  This is safe because for
+such mappings when a page gets marked as writeable in PTE it is also
+marked dirty in do_wp_page() or do_page_fault().  When the dirty bit is
+cleared by clear_page_dirty_for_io(), the page gets writeprotected in
+page_mkclean().  So pagecache page is writeable if and only if it is
+dirty.
+
+Thanks to Hugh Dickins for pointing out mapping has to have
+mapping_cap_account_dirty() for things to work and proposing a cleaned
+up variant of the patch.
+
+The patch has survived about two hours of running fsx-linux on tmpfs
+while heavily swapping and several days of running on out build machines
+where the original problem was triggered.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/block/floppy.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -4198,6 +4198,7 @@ static int __init floppy_init(void)
+---
+ mm/rmap.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
+
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -57,6 +57,7 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/migrate.h>
+ #include <linux/hugetlb.h>
++#include <linux/backing-dev.h>
  
- 		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
- 		if (!disks[dr]->queue) {
-+			put_disk(disks[dr]);
- 			err = -ENOMEM;
- 			goto out_put_disk;
- 		}
+ #include <asm/tlbflush.h>
+ 
+@@ -936,11 +937,8 @@ int page_mkclean(struct page *page)
+ 
+ 	if (page_mapped(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+-		if (mapping) {
++		if (mapping)
+ 			ret = page_mkclean_file(mapping, page);
+-			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
+-				ret = 1;
+-		}
+ 	}
+ 
+ 	return ret;
+@@ -1121,6 +1119,8 @@ void page_add_file_rmap(struct page *pag
+  */
+ void page_remove_rmap(struct page *page)
+ {
++	struct address_space *mapping = page_mapping(page);
++
+ 	/* page still mapped by someone else? */
+ 	if (!atomic_add_negative(-1, &page->_mapcount))
+ 		return;
+@@ -1131,8 +1131,19 @@ void page_remove_rmap(struct page *page)
+ 	 * this if the page is anon, so about to be freed; but perhaps
+ 	 * not if it's in swapcache - there might be another pte slot
+ 	 * containing the swap entry, but page not yet written to swap.
++	 *
++	 * And we can skip it on file pages, so long as the filesystem
++	 * participates in dirty tracking; but need to catch shm and tmpfs
++	 * and ramfs pages which have been modified since creation by read
++	 * fault.
++	 *
++	 * Note that mapping must be decided above, before decrementing
++	 * mapcount (which luckily provides a barrier): once page is unmapped,
++	 * it could be truncated and page->mapping reset to NULL at any moment.
++	 * Note also that we are relying on page_mapping(page) to set mapping
++	 * to &swapper_space when PageSwapCache(page).
+ 	 */
+-	if ((!PageAnon(page) || PageSwapCache(page)) &&
++	if (mapping && !mapping_cap_account_dirty(mapping) &&
+ 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
+ 		set_page_dirty(page);
+ 	/*
 
 
