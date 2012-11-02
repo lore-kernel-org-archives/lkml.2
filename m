@@ -1,104 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab2KBKq2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 06:46:28 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:60098 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755185Ab2KBKq1 (ORCPT
+	id S1757279Ab2KBKsM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 06:48:12 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:45510
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751275Ab2KBKsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 06:46:27 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: rob.herring@calxeda.com, grant.likely@secretlab.ca
-Cc: srinivas.kandagatla@st.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: [RFC PATCH 3.7.0-rc2] dt/platform: insert resources correctly into resource tree
-Date: Fri,  2 Nov 2012 10:46:19 +0000
-Message-Id: <1351853179-27741-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 2 Nov 2012 06:48:10 -0400
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537hbe9i1155h)
+Subject: [Patch v1 1/1] mfd: fix for i2c issue DA9052/53 PMIC
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Axel Lin <axel.lin@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        <linux-kernel@vger.kernel.org>, David Dajun Chen <dchen@diasemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 2 Nov 2012 16:17:26 +0530
+Message-ID: <1351853246.32389.8.camel@dhruva>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+There is an issue where the DA9052/53-AA/BA/BB PMIC either locks up or fails to
+respond following a system Reset. This could result in a second write
+in which the bus writes the current content of the write buffer to address
+of the last I2C access.
 
-This patch add new code to correctly add resources into platform device.
-Issue with the existing code was the resources are added as flat entry
-without creating any tree, this is very much different to what non-dt
-platform code does.
+The failure case is where this unwanted write transfers incorrect data to
+a critical register.
 
-With this patch the resources appear correctly as tree in /proc/iomem,
-without this patch the resources in /proc/iomem appear as single entry.
+This patch fixes this issue by following any read or write with a dummy read
+to a safe register address. A safe register address is one where the contents
+will not affect the operation of the system.
 
-i2c example in /proc/iomem:
-
-With-patch:
-
-fed41000-fed4110f : /soc/i2c-stm@fed41000
-  fed41000-fed4110f : i2c
-
-Without patch:
-fed41000-fed4110f : i2c
-
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 ---
-Hi All, 
-Recently I noticed that appearance of /proc/iomem ouput changed 
-when I started using device trees and the reason for this was 
-the of-plaform code was not adding resources in same way as 
-non-dt platform code does.
+ drivers/mfd/da9052-i2c.c          |   56 +++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/da9052/da9052.h |   47 ++++++++++++++++++++++++++++--
+ include/linux/mfd/da9052/reg.h    |    3 ++
+ 3 files changed, 102 insertions(+), 4 deletions(-)
 
-Do you have any reason for not doing it the same way as non-dt platform code?
-
-This patch is a fixup to that issue.
-
-Comment?
-thanks,
-srini
-
- drivers/of/platform.c |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index b80891b..f43922c 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -203,6 +203,7 @@ struct platform_device *of_platform_device_create_pdata(
- 					struct device *parent)
- {
- 	struct platform_device *dev;
-+	int i;
+diff --git a/drivers/mfd/da9052-i2c.c b/drivers/mfd/da9052-i2c.c
+index 352c58b..90eff9a 100644
+--- a/drivers/mfd/da9052-i2c.c
++++ b/drivers/mfd/da9052-i2c.c
+@@ -27,6 +27,62 @@
+ #include <linux/of_device.h>
+ #endif
  
- 	if (!of_device_is_available(np))
- 		return NULL;
-@@ -218,6 +219,28 @@ struct platform_device *of_platform_device_create_pdata(
- 	dev->dev.bus = &platform_bus_type;
- 	dev->dev.platform_data = platform_data;
- 
-+	for (i = 0; i < dev->num_resources; i++) {
-+		struct resource *p, *r = &dev->resource[i];
++/* safe register to park I2C operation */
++static inline bool is_i2c_safe_reg(unsigned char reg)
++{
++	switch (reg) {
++	case DA9052_STATUS_A_REG:
++	case DA9052_STATUS_B_REG:
++	case DA9052_STATUS_C_REG:
++	case DA9052_STATUS_D_REG:
++	case DA9052_ADC_RES_L_REG:
++	case DA9052_ADC_RES_H_REG:
++	case DA9052_VDD_RES_REG:
++	case DA9052_ICHG_AV_REG:
++	case DA9052_TBAT_RES_REG:
++	case DA9052_ADCIN4_RES_REG:
++	case DA9052_ADCIN5_RES_REG:
++	case DA9052_ADCIN6_RES_REG:
++	case DA9052_TJUNC_RES_REG:
++	case DA9052_TSI_X_MSB_REG:
++	case DA9052_TSI_Y_MSB_REG:
++	case DA9052_TSI_LSB_REG:
++	case DA9052_TSI_Z_MSB_REG:
++		return true;
++	default:
++		return false;
++	}
++}
 +
-+		if (r->name == NULL)
-+			r->name = dev_name(&dev->dev);
++/*
++ * There is an issue with DA9052 and DA9053_AA/BA/BB PMIC where the PMIC
++ * gets lockup up or fails to respond following a system reset.
++ * This fix is to follow any read or write with a dummy read to a safe
++ * register.
++ */
++int da9052_i2c_fix(struct da9052 *da9052, unsigned char reg)
++{
++	int val;
 +
-+		p = r->parent;
-+		if (!p) {
-+			if (resource_type(r) == IORESOURCE_MEM)
-+				p = &iomem_resource;
-+			else if (resource_type(r) == IORESOURCE_IO)
-+				p = &ioport_resource;
-+		}
-+
-+		if (p && insert_resource(p, r)) {
-+			pr_err("%s: failed to claim resource %d\n",
-+			       dev_name(&dev->dev), i);
-+			platform_device_put(dev);
-+			return NULL;
-+		}
++	switch (da9052->chip_id) {
++	case DA9052:
++	case DA9053_AA:
++	case DA9053_BA:
++	case DA9053_BB:
++		/* A dummy read to a safe register address. */
++		if (!is_i2c_safe_reg(reg))
++			return regmap_read(da9052->regmap, DA9052_PARK_REGISTER,
++					   &val);
++		break;
++	default:
++		/* Do nothing */
++		break;
 +	}
 +
- 	/* We do not fill the DMA ops for platform devices by default.
- 	 * This is currently the responsibility of the platform code
- 	 * to do such, possibly using a device notifier
++	return 0;
++}
++EXPORT_SYMBOL(da9052_i2c_fix);
++
+ static int da9052_i2c_enable_multiwrite(struct da9052 *da9052)
+ {
+ 	int reg_val, ret;
+diff --git a/include/linux/mfd/da9052/da9052.h b/include/linux/mfd/da9052/da9052.h
+index 0507c4c..0bc0383 100644
+--- a/include/linux/mfd/da9052/da9052.h
++++ b/include/linux/mfd/da9052/da9052.h
+@@ -101,6 +101,16 @@ struct da9052 {
+ 	int chip_irq;
+ };
+ 
++/* I2C Fix */
++#if defined(CONFIG_MFD_DA9052_SPI)
++static inline int da9052_i2c_fix(struct da9052 *da9052, unsigned char reg)
++{
++	return 0;
++}
++#else
++int da9052_i2c_fix(struct da9052 *da9052, unsigned char reg);
++#endif
++
+ /* ADC API */
+ int da9052_adc_manual_read(struct da9052 *da9052, unsigned char channel);
+ int da9052_adc_read_temp(struct da9052 *da9052);
+@@ -113,32 +123,61 @@ static inline int da9052_reg_read(struct da9052 *da9052, unsigned char reg)
+ 	ret = regmap_read(da9052->regmap, reg, &val);
+ 	if (ret < 0)
+ 		return ret;
++
++	ret = da9052_i2c_fix(da9052, reg);
++	if (ret < 0)
++		return ret;
++
+ 	return val;
+ }
+ 
+ static inline int da9052_reg_write(struct da9052 *da9052, unsigned char reg,
+ 				    unsigned char val)
+ {
+-	return regmap_write(da9052->regmap, reg, val);
++	int ret;
++
++	ret = regmap_write(da9052->regmap, reg, val);
++	if (ret < 0)
++		return ret;
++
++	return da9052_i2c_fix(da9052, reg);
+ }
+ 
+ static inline int da9052_group_read(struct da9052 *da9052, unsigned char reg,
+ 				     unsigned reg_cnt, unsigned char *val)
+ {
+-	return regmap_bulk_read(da9052->regmap, reg, val, reg_cnt);
++	int ret;
++
++	ret = regmap_bulk_read(da9052->regmap, reg, val, reg_cnt);
++	if (ret < 0)
++		return ret;
++
++	return da9052_i2c_fix(da9052, reg);
+ }
+ 
+ static inline int da9052_group_write(struct da9052 *da9052, unsigned char reg,
+ 				      unsigned reg_cnt, unsigned char *val)
+ {
+-	return regmap_raw_write(da9052->regmap, reg, val, reg_cnt);
++	int ret;
++
++	ret = regmap_raw_write(da9052->regmap, reg, val, reg_cnt);
++	if (ret < 0)
++		return ret;
++
++	return da9052_i2c_fix(da9052, reg);
+ }
+ 
+ static inline int da9052_reg_update(struct da9052 *da9052, unsigned char reg,
+ 				     unsigned char bit_mask,
+ 				     unsigned char reg_val)
+ {
+-	return regmap_update_bits(da9052->regmap, reg, bit_mask, reg_val);
++	int ret;
++
++	ret = regmap_update_bits(da9052->regmap, reg, bit_mask, reg_val);
++	if (ret < 0)
++		return ret;
++
++	return da9052_i2c_fix(da9052, reg);
+ }
+ 
+ int da9052_device_init(struct da9052 *da9052, u8 chip_id);
+diff --git a/include/linux/mfd/da9052/reg.h b/include/linux/mfd/da9052/reg.h
+index b97f730..c4dd3a8 100644
+--- a/include/linux/mfd/da9052/reg.h
++++ b/include/linux/mfd/da9052/reg.h
+@@ -34,6 +34,9 @@
+ #define DA9052_STATUS_C_REG		3
+ #define DA9052_STATUS_D_REG		4
+ 
++/* PARK REGISTER */
++#define DA9052_PARK_REGISTER		DA9052_STATUS_D_REG
++
+ /* EVENT REGISTERS */
+ #define DA9052_EVENT_A_REG		5
+ #define DA9052_EVENT_B_REG		6
 -- 
 1.7.0.4
+
 
