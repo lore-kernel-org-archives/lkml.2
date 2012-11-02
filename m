@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab2KBW2K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 18:28:10 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39078 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab2KBW2H (ORCPT
+	id S1755042Ab2KBWh0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 18:37:26 -0400
+Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:52625 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753885Ab2KBWhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 18:28:07 -0400
+	Fri, 2 Nov 2012 18:37:24 -0400
+Message-ID: <50944B16.8010201@cs.tu-berlin.de>
+Date: Fri, 02 Nov 2012 23:37:10 +0100
+From: =?UTF-8?B?IkphbiBILiBTY2jDtm5oZXJyIg==?= <schnhrr@cs.tu-berlin.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120324 Thunderbird/10.0.3
 MIME-Version: 1.0
-In-Reply-To: <CAN8Q1EfDQi0Lh3215rA9aqzNcn1F5K7OqCLxZYmQ4WgXZyDDUw@mail.gmail.com>
-References: <20121031003258.811955127@goodmis.org>
-	<20121031003314.763160265@goodmis.org>
-	<CAN8Q1EcHJyDMs-z8Vw_=cpnCL2FO_pATaGThh2UHv4ketC-_Jw@mail.gmail.com>
-	<CAN8Q1EfDQi0Lh3215rA9aqzNcn1F5K7OqCLxZYmQ4WgXZyDDUw@mail.gmail.com>
-Date: Fri, 2 Nov 2012 15:28:05 -0700
-X-Google-Sender-Auth: XvFIylg58YDWv2b6HpZG5Jq_Ly0
-Message-ID: <CAN8Q1EfD4LeMiz1UFVzbXafi=ewKLg2myEmXt0L1nLy9VFvRsA@mail.gmail.com>
-Subject: Re: [PATCH RT 3/4] net: netfilter: Serialize xt_write_recseq sections
- on RT
-From: Peter LaDow <petela@gocougs.wsu.edu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kay Sievers <kay@vrfy.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] printk: drop ambiguous LOG_CONT flag
+References: <5064790E.4000207@cs.tu-berlin.de> <1348820728-13796-1-git-send-email-schnhrr@cs.tu-berlin.de> <CAPXgP11SN7cx7NW0Jv46g+KAvFPo61Ptczochzy4Ub83bjHn1Q@mail.gmail.com> <5065B909.1060907@cs.tu-berlin.de> <CAPXgP12v0aNtUnhKep3QiJwZYAp=NHebHVfS9N35V2EOSmAufg@mail.gmail.com> <CAPXgP13GCsooDtbor9_OvyDCZjPARL_On_cBtEoxTUWnVsBpvw@mail.gmail.com> <50732F8A.9090109@cs.tu-berlin.de> <CAPXgP10ipvmVTEV_e_8+q-xLksVbBaPqWWDfc8H+W8KUPohDLA@mail.gmail.com> <CAPXgP13+DWxdU23Z45tLj0H+kjGL_QCi-wYs_LrYypxQVqPndw@mail.gmail.com>
+In-Reply-To: <CAPXgP13+DWxdU23Z45tLj0H+kjGL_QCi-wYs_LrYypxQVqPndw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a separate note, I want to thank everyone that helped with this
-issue, especially Eric and Thomas, to and Steven and Thomas for
-schooling me on the changelog extraction.  This problem was a big one
-for us that we were struggling to understand.  All the help is greatly
-appreciated.
+Am 02.11.2012 04:53, schrieb Kay Sievers:
+> On Mon, Oct 8, 2012 at 9:56 PM, Kay Sievers <kay@vrfy.org> wrote:
+>> On Mon, Oct 8, 2012 at 9:54 PM, "Jan H. Schönherr"
+> 
+>>>> Jan,
+>>>> any updates, did you try something else?
+>>>> Or should we merge the first version for now?
+>>>
+>>> I'm working on it, though I cannot spend as much time as I want. :)
+>>>
+>>> My current version does mostly well for race-printk()s, now. But
+>>> there's still one issue to resolve and some polishing to do.
+>>>
+>>> If we can afford to wait a little longer, we might get a nicer
+>>> solution (and avoid a possible mostly-revert later).
+>>
+>> Sure, no hurry, I was just going through my TODO emails. :)
+> 
+> My TODO is nagging me again. :)
+> 
+> Any updates? No problems if not, but we should merge the current
+> version then, I think.
+> 
 
-Thanks,
-Pete
+Then let's take the first version. :)
+
+Thanks
+Jan
