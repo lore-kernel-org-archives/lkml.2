@@ -1,106 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933366Ab2KBJjP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 05:39:15 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45034 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759913Ab2KBJjN (ORCPT
+	id S1760360Ab2KBJkY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 05:40:24 -0400
+Received: from shrek-modem2.podlesie.net ([83.13.132.46]:43568 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757555Ab2KBJkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 05:39:13 -0400
-Message-ID: <509394BF.9020006@kernel.org>
-Date: Fri, 02 Nov 2012 09:39:11 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121012 Thunderbird/16.0.1
+	Fri, 2 Nov 2012 05:40:22 -0400
+Date: Fri, 2 Nov 2012 10:40:19 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+Cc: davem@davemloft.net, dwmw2@infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
+Message-ID: <20121102094018.GA14960@shrek.podlesie.net>
+References: <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
+ <201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
+ <20121030182001.GA30373@shrek.podlesie.net>
+ <20121031094147.GA1004@shrek.podlesie.net>
+ <20121031160352.68353ecc@thirdoffive.cmf.nrl.navy.mil>
+ <20121031220435.GA25157@shrek.podlesie.net>
+ <20121101102628.6e3d3cae@thirdoffive.cmf.nrl.navy.mil>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, kernel-janitors@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] drivers/iio/industrialio-event.c: eliminate possible
- double free
-References: <1350816727-1381-1-git-send-email-Julia.Lawall@lip6.fr> <1350816727-1381-6-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1350816727-1381-6-git-send-email-Julia.Lawall@lip6.fr>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121101102628.6e3d3cae@thirdoffive.cmf.nrl.navy.mil>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2012 11:52 AM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu, Nov 01, 2012 at 10:26:28AM -0400, chas williams - CONTRACTOR wrote:
+> On Wed, 31 Oct 2012 23:04:35 +0100
+> Krzysztof Mazur <krzysiek@podlesie.net> wrote:
 > 
-> The function __iio_add_event_config_attrs is only called once, by the
-> function iio_device_register_eventset.  If the call fails,
-> iio_device_register_eventset calls __iio_remove_event_config_attrs.  There
-> is thus no need for __iio_add_event_config_attrs to also call
-> __iio_remove_event_config_attrs on failure.
+> > There are also some minor potential issues in pppoatm driver:
+> > 
+> > 	- locking issues, but now only between pppoatm_send() and
+> > 	  vcc_sendmsg() and maybe some other functions,
 > 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r@
-> identifier f,free,a;
-> parameter list[n] ps;
-> type T;
-> expression e;
-> @@
-> 
-> f(ps,T a,...) {
->   ... when any
->       when != a = e
->   if(...) { ... free(a); ... return ...; }
->   ... when any
-> }
-> 
-> @@
-> identifier r.f,r.free;
-> expression x,a;
-> expression list[r.n] xs;
-> @@
-> 
-> * x = f(xs,a,...);
->   if (...) { ... free(a); ... return ...; }
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> these have been around for a while.  i agree that something should be
+> done about it.  just not sure what should be synchronizing this mess.
 
-Thanks - merged to fixes-togreg branch of iio.git
+I think the ATM socket lock should be used. I'm sending the latest
+patch that adds this locking after David Woodhouse's comments. The vcc->flags
+check is now probably unnecessary.
 
-Jonathan
 > 
-> ---
-> __iio_remove_event_config_attrs kfrees the elements of a list, but doesn't
-> actually remove them from the list.  Perhaps for safety this should be
-> cleaned up as well.  Not tested.
+> > 	- missing check for SS_CONNECTED in pppoatm_ioctl,
 > 
->  drivers/iio/industrialio-event.c |    7 +------
->  1 file changed, 1 insertion(+), 6 deletions(-)
-> 
-> diff --git a/drivers/iio/industrialio-event.c b/drivers/iio/industrialio-event.c
-> index fa6543b..78570c7 100644
-> --- a/drivers/iio/industrialio-event.c
-> +++ b/drivers/iio/industrialio-event.c
-> @@ -350,15 +350,10 @@ static inline int __iio_add_event_config_attrs(struct iio_dev *indio_dev)
->  		ret = iio_device_add_event_sysfs(indio_dev,
->  						 &indio_dev->channels[j]);
->  		if (ret < 0)
-> -			goto error_clear_attrs;
-> +			return ret;
->  		attrcount += ret;
->  	}
->  	return attrcount;
-> -
-> -error_clear_attrs:
-> -	__iio_remove_event_config_attrs(indio_dev);
-> -
-> -	return ret;
->  }
->  
->  static bool iio_check_for_dynamic_events(struct iio_dev *indio_dev)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> in practice you will never run into this because a pvc is immediately
+> put into SS_CONNECTED mode (right before the userspace open()
+> returns).  however, should it check?  yes.  i dont see anything
+> preventing you from running ppp on svc's.
+
+I can confirm that the problem really exists, without connect() in pppoatm
+plugin in pppd, I have seen an Oops and panic. I will send appropriate
+patch.
+
+Thanks.
+
+Krzysiek
+
+-- >8 --
+diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
+index f27a07a..ef19436 100644
+--- a/net/atm/pppoatm.c
++++ b/net/atm/pppoatm.c
+@@ -269,10 +269,23 @@ static inline int pppoatm_may_send(struct pppoatm_vcc *pvcc, int size)
+ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ {
+ 	struct pppoatm_vcc *pvcc = chan_to_pvcc(chan);
++	struct atm_vcc *vcc;
++	int ret;
++
+ 	ATM_SKB(skb)->vcc = pvcc->atmvcc;
+ 	pr_debug("(skb=0x%p, vcc=0x%p)\n", skb, pvcc->atmvcc);
+ 	if (skb->data[0] == '\0' && (pvcc->flags & SC_COMP_PROT))
+ 		(void) skb_pull(skb, 1);
++
++	vcc = ATM_SKB(skb)->vcc;
++	bh_lock_sock(sk_atm(vcc));
++	if (sock_owned_by_user(sk_atm(vcc)))
++		goto nospace;
++	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
++			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
++			|| !test_bit(ATM_VF_READY, &vcc->flags))
++		goto nospace;
++
+ 	switch (pvcc->encaps) {		/* LLC encapsulation needed */
+ 	case e_llc:
+ 		if (skb_headroom(skb) < LLC_LEN) {
+@@ -285,8 +298,10 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ 			}
+ 			consume_skb(skb);
+ 			skb = n;
+-			if (skb == NULL)
++			if (skb == NULL) {
++				bh_unlock_sock(sk_atm(vcc));
+ 				return DROP_PACKET;
++			}
+ 		} else if (!pppoatm_may_send(pvcc, skb->truesize))
+ 			goto nospace;
+ 		memcpy(skb_push(skb, LLC_LEN), pppllc, LLC_LEN);
+@@ -296,6 +311,7 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ 			goto nospace;
+ 		break;
+ 	case e_autodetect:
++		bh_unlock_sock(sk_atm(vcc));
+ 		pr_debug("Trying to send without setting encaps!\n");
+ 		kfree_skb(skb);
+ 		return 1;
+@@ -305,9 +321,12 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
+ 	ATM_SKB(skb)->atm_options = ATM_SKB(skb)->vcc->atm_options;
+ 	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n",
+ 		 skb, ATM_SKB(skb)->vcc, ATM_SKB(skb)->vcc->dev);
+-	return ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb)
++	ret = ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb)
+ 	    ? DROP_PACKET : 1;
++	bh_unlock_sock(sk_atm(vcc));
++	return ret;
+ nospace:
++	bh_unlock_sock(sk_atm(vcc));
+ 	/*
+ 	 * We don't have space to send this SKB now, but we might have
+ 	 * already applied SC_COMP_PROT compression, so may need to undo
