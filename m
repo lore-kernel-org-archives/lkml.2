@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab2KBUdo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 16:33:44 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:26661 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab2KBUdn (ORCPT
+	id S1753309Ab2KBUkI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 16:40:08 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46712 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab2KBUkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 16:33:43 -0400
-Message-ID: <50942E05.9040607@oracle.com>
-Date: Fri, 02 Nov 2012 16:33:09 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
+	Fri, 2 Nov 2012 16:40:06 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: paulmck@linux.vnet.ibm.com, dipankar@in.ibm.com, mingo@kernel.org,
+In-Reply-To: <50942E05.9040607@oracle.com>
+References: <1351811167-14856-1-git-send-email-sasha.levin@oracle.com>
+ <CA+55aFxxdFCiOHEz_xWx1vjMkpQzab_Mdmd2dweknayhVBx6kA@mail.gmail.com>
+ <50932F6E.5060506@oracle.com> <CA+55aFy9QSZhFpEt=iEvYTHMGhd3ARwpHfZ+PghHNAEcP6Ko7g@mail.gmail.com>
+ <50942E05.9040607@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 2 Nov 2012 13:39:43 -0700
+X-Google-Sender-Auth: lHD4i_6OcgHWcu0M9EZHomksoKk
+Message-ID: <CA+55aFyOX5qiakpoSBELCAbc3xkcxqf_-dcaxb40Gtrp7BXenw@mail.gmail.com>
+Subject: Re: [RFC] hlist: drop the node parameter from iterators
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: paulmck@linux.vnet.ibm.com, dipankar@in.ibm.com, mingo@kernel.org,
         hpa@zytor.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         peter.senna@gmail.com
-Subject: Re: [RFC] hlist: drop the node parameter from iterators
-References: <1351811167-14856-1-git-send-email-sasha.levin@oracle.com> <CA+55aFxxdFCiOHEz_xWx1vjMkpQzab_Mdmd2dweknayhVBx6kA@mail.gmail.com> <50932F6E.5060506@oracle.com> <CA+55aFy9QSZhFpEt=iEvYTHMGhd3ARwpHfZ+PghHNAEcP6Ko7g@mail.gmail.com>
-In-Reply-To: <CA+55aFy9QSZhFpEt=iEvYTHMGhd3ARwpHfZ+PghHNAEcP6Ko7g@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2012 04:16 PM, Linus Torvalds wrote:
-> On Thu, Nov 1, 2012 at 7:26 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->>
->> Here are some stats:
->>
->>  - Applying the patch from -next on top of your current git head
->> results in 3 conflicts.
->>
->>  - Applying the patch from your current git head on top of v3.6 results
->> in 18 conflicts.
->>
->>  - Applying the patch from 3.6 on top of 3.5 results in 25 conflicts.
-> 
-> Ok, that sounds slightly painful, but not unmanageable.
-> 
-> Can you send me the actual patch, and I'll mull on this a bit more? I
-> could run the coccinelle script myself, but I assume (maybe
-> incorrectly?) that there are manual fixes to clean some stuff up
-> afterwared..
+On Fri, Nov 2, 2012 at 1:33 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>
+> Do you want the patch on top of your git head, or on top of -next?
 
-You're right about that. There are 2 things which needs to be done after
-running the script:
+So the thing is, there's no way I'm going to apply this kind of patch
+anywhere *near* a merge window. With something like this, it needs to
+get applied a few weeks after the merge window closes (when things
+have calmed down) _and_ a few weeks before the next one opens (so that
+we see the results in -next, and don't scramble for the next merge
+window). IOW, around the -rc4 timeframe.
 
- - Coccinelle doesn't handle cases where there are multiple variables in
-the declaration. That means that things like:
+It sounds like it's not quite ready yet, which means that I'm not
+comfy with it this round, and we'd better do this around 3.8-rc4 or so
+(ie roughly this timeframe of the next release - I'll do 3.7-rc4
+either today or tomorrow).
 
-	struct hlist_node *node, *tmp;
-
-Have to be fixed manually.
-
-That's common when hlist_for_each_entry_safe() is used afterwards.
-
- - Some places actually use node for their needs, while coccinelle can
-automatically fix that to use '(ptr)->member', I'd rather go through those
-places manually and make sure we're doing the right thing.
-
-
-Do you want the patch on top of your git head, or on top of -next?
-
-
-Thanks,
-Sasha
-
+             Linus
