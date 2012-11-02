@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760215Ab2KBWDE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 18:03:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35513 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab2KBWDB (ORCPT
+	id S1761315Ab2KBWDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 18:03:17 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:42085 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795Ab2KBWDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 18:03:01 -0400
-Date: Fri, 2 Nov 2012 15:02:37 -0700
-From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-5074b85bdd3a464efe7b6de2ec163f4c07696a20@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dwmw2@infradead.org, jbeulich@suse.com, JBeulich@suse.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, JBeulich@suse.com, jbeulich@suse.com,
-        tglx@linutronix.de
-In-Reply-To: <5093E00D02000078000A60E2@nat28.tlf.novell.com>
-References: <5093E00D02000078000A60E2@nat28.tlf.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/timers] x86: hpet:
-  Fix inverted return value check in arch_setup_hpet_msi()
-Git-Commit-ID: 5074b85bdd3a464efe7b6de2ec163f4c07696a20
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 2 Nov 2012 18:03:14 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+References: <CACLa4pu0yoB6CQX=3nuAT2vz4=oTNfM9fjMUvFXKJovYu+y4fw@mail.gmail.com>
+	<1351803800.2391.96.camel@dabdike.int.hansenpartnership.com>
+	<20121101210634.GA19723@srcf.ucam.org>
+	<20121101213127.5967327f@pyramind.ukuu.org.uk>
+	<20121101212843.GA20309@srcf.ucam.org>
+	<20121101213751.377ebaa8@pyramind.ukuu.org.uk>
+	<20121101213452.GA20564@srcf.ucam.org>
+	<20121101215817.79e50ec2@pyramind.ukuu.org.uk>
+	<20121101215752.GA21154@srcf.ucam.org> <87625ogzje.fsf@xmission.com>
+	<20121102140057.GA4668@srcf.ucam.org>
+Date: Fri, 02 Nov 2012 15:03:02 -0700
+In-Reply-To: <20121102140057.GA4668@srcf.ucam.org> (Matthew Garrett's message
+	of "Fri, 2 Nov 2012 14:00:57 +0000")
+Message-ID: <87liejacix.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 02 Nov 2012 15:02:43 -0700 (PDT)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+OxKqi3+uCD0EecW6qkwuuFAzVq32efc4=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Matthew Garrett <mjg59@srcf.ucam.org>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5074b85bdd3a464efe7b6de2ec163f4c07696a20
-Gitweb:     http://git.kernel.org/tip/5074b85bdd3a464efe7b6de2ec163f4c07696a20
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Fri, 2 Nov 2012 14:00:29 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 2 Nov 2012 22:53:27 +0100
+Matthew Garrett <mjg59@srcf.ucam.org> writes:
 
-x86: hpet: Fix inverted return value check in arch_setup_hpet_msi()
+> On Fri, Nov 02, 2012 at 01:49:25AM -0700, Eric W. Biederman wrote:
+>
+>> When the goal is to secure Linux I don't see how any of this helps.
+>> Windows 8 compromises are already available so if we turn most of these
+>> arguments around I am certain clever attackers can go through windows to
+>> run compromised kernel on a linux system, at least as easily as the
+>> reverse.
+>
+> And if any of them are used to attack Linux, we'd expect those versions 
+> of Windows to be blacklisted.
 
-setup_hpet_msi_remapped() returns a negative error indicator on error
-- check for this rather than for a boolean false indication, and pass
-on that error code rather than a meaningless "-1".
+I fail to see the logic here.  It is ok to trust Microsofts signing key
+because after I have been p0wned they will blacklist the version of
+windows that has was used to compromise my system?
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Link: http://lkml.kernel.org/r/5093E00D02000078000A60E2@nat28.tlf.novell.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+A key revokation will help me when my system is p0wned how?
 
----
- arch/x86/kernel/apic/io_apic.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+I don't want my system p0wned in the first place and I don't want to run
+windows.  Why should I trust Microsoft's signing key?
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 1817fa9..b134f0b 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3317,8 +3317,9 @@ int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
- 	int ret;
- 
- 	if (irq_remapping_enabled) {
--		if (!setup_hpet_msi_remapped(irq, id))
--			return -1;
-+		ret = setup_hpet_msi_remapped(irq, id);
-+		if (ret)
-+			return ret;
- 	}
- 
- 	ret = msi_compose_msg(NULL, irq, &msg, id);
+Eric
