@@ -1,166 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760813Ab2KBWqq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 18:46:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16388 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755799Ab2KBWpM (ORCPT
+	id S1759897Ab2KBWtP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 18:49:15 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51673 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754663Ab2KBWtM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 18:45:12 -0400
-X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Y39-H8YWJCMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=GY31fDRxNSIA:10 a=20KFwNOVAAAA:8 a=6zb1UeEMHATOxlxdAG0A:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121102224510.084404455@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 18:38:31 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 3/8][RFC] ftrace: Optimize the function tracer list loop
-References: <20121102223828.795874032@goodmis.org>
-Content-Disposition: inline; filename=0003-ftrace-Optimize-the-function-tracer-list-loop.patch
+	Fri, 2 Nov 2012 18:49:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <201211021439.02797.Martin@lichtvoll.de>
+References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
+	<201211021439.02797.Martin@lichtvoll.de>
+Date: Sat, 3 Nov 2012 07:49:11 +0900
+Message-ID: <CAOtxgye-sqJFe17EyfJQ0RrMwQqsPbDv5m+4cJT0BjnRnGv56w@mail.gmail.com>
+Subject: Re: [PATCH 00/16 v3] f2fs: introduce flash-friendly file system
+From: Kim Jaegeuk <jaegeuk.kim@gmail.com>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: linux-kernel@vger.kernel.org, Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        linux-fsdevel@vger.kernel.org, gregkh@linuxfoundation.org,
+        viro@zeniv.linux.org.uk, arnd@arndb.de, tytso@mit.edu,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+2012/11/2 Martin Steigerwald <Martin@lichtvoll.de>
+>
+> Am Mittwoch, 31. Oktober 2012 schrieb Jaegeuk Kim:
+> > Change log from v2:
+> >
+> >  o Fix compilation error for arm [Max]
+> >  o Move proc entries to debugfs [Greg]
+> >  o Add i_atime, i_generation, etc [Neil]
+> >  o Support NFS export [Changman]
+> >  o Move the f2fs magic number [Marco]
+> >  o Add s_time_gran [Marco]
+> >  o Fix f2fs_truncate [Marco]
+> >  o Enhance f2fs document [Vyacheslav]
+> >  o Support uuid and add additional comments [Vyacheslav]
+> >  o Change superblock offset [Vyacheslav]
+> >  o Fix some bugs and return values [Vyacheslav]
+> >  o Improve initial mount time [Jaegeuk]
+> >  o Fix f2fs-tools environment [Mike]
+> >
+> > I've set up a git tree in sf.net for f2fs-tools.
+> > Please download f2fs-tools by tag: for_patch_set_v3.
+>
+> I like to try this out.
+>
+> Do you have kernel code available in some git repo? I didn´t find anything
+> on git.kernel.org? Otherwise I take the patches from your mails.
+>
 
-There is lots of places that perform:
+At this moment, there is no f2fs-repo yet in public.
+If f2fs is merged, I'd like to make a dev tree somewhere.
+I really want to make the dev tree in kernel.org later, but it totally depends
+on the maintainers' decision.
+Before then, I apologize to retrieve f2fs sources from LKML.
+Thanks,
 
-       op = rcu_dereference_raw(ftrace_control_list);
-       while (op != &ftrace_list_end) {
+--
+Jaegeuk Kim
+Samsung
 
-Add a helper macro to do this, and also optimize for a single
-entity. That is, gcc will optimize a loop for either no iterations
-or more than one iteration. But usually only a single callback
-is registered to the function tracer, thus the optimized case
-should be a single pass. to do this we now do:
-
-	op = rcu_dereference_raw(list);
-	do {
-		[...]
-	} while (likely(op = rcu_dereference_raw((op)->next)) &&
-	       unlikely((op) != &ftrace_list_end));
-
-An op is always registered (ftrace_list_end when no callbacks is
-registered), thus when a single callback is registered, the link
-list looks like:
-
- top => callback => ftrace_list_end => NULL.
-
-The likely(op = op->next) still must be performed due to the race
-of removing the callback, where the first op assignment could
-equal ftrace_list_end. In that case, the op->next would be NULL.
-But this is unlikely (only happens in a race condition when
-removing the callback).
-
-But it is very likely that the next op would be ftrace_list_end,
-unless more than one callback has been registered. This tells
-gcc what the most common case is and makes the fast path with
-the least amount of branches.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ftrace.c |   48 ++++++++++++++++++++++++++----------------------
- 1 file changed, 26 insertions(+), 22 deletions(-)
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 67e886e..cd6cd3c 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -111,6 +111,26 @@ static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip);
- #define ftrace_ops_list_func ((ftrace_func_t)ftrace_ops_no_ops)
- #endif
- 
-+/*
-+ * Traverse the ftrace_global_list, invoking all entries.  The reason that we
-+ * can use rcu_dereference_raw() is that elements removed from this list
-+ * are simply leaked, so there is no need to interact with a grace-period
-+ * mechanism.  The rcu_dereference_raw() calls are needed to handle
-+ * concurrent insertions into the ftrace_global_list.
-+ *
-+ * Silly Alpha and silly pointer-speculation compiler optimizations!
-+ */
-+#define do_for_each_ftrace_op(op, list)			\
-+	op = rcu_dereference_raw(list);			\
-+	do
-+
-+/*
-+ * Optimized for just a single item in the list (as that is the normal case).
-+ */
-+#define while_for_each_ftrace_op(op)				\
-+	while (likely(op = rcu_dereference_raw((op)->next)) &&	\
-+	       unlikely((op) != &ftrace_list_end))
-+
- /**
-  * ftrace_nr_registered_ops - return number of ops registered
-  *
-@@ -132,15 +152,6 @@ int ftrace_nr_registered_ops(void)
- 	return cnt;
- }
- 
--/*
-- * Traverse the ftrace_global_list, invoking all entries.  The reason that we
-- * can use rcu_dereference_raw() is that elements removed from this list
-- * are simply leaked, so there is no need to interact with a grace-period
-- * mechanism.  The rcu_dereference_raw() calls are needed to handle
-- * concurrent insertions into the ftrace_global_list.
-- *
-- * Silly Alpha and silly pointer-speculation compiler optimizations!
-- */
- static void
- ftrace_global_list_func(unsigned long ip, unsigned long parent_ip,
- 			struct ftrace_ops *op, struct pt_regs *regs)
-@@ -149,11 +160,9 @@ ftrace_global_list_func(unsigned long ip, unsigned long parent_ip,
- 		return;
- 
- 	trace_recursion_set(TRACE_GLOBAL_BIT);
--	op = rcu_dereference_raw(ftrace_global_list); /*see above*/
--	while (op != &ftrace_list_end) {
-+	do_for_each_ftrace_op(op, ftrace_global_list) {
- 		op->func(ip, parent_ip, op, regs);
--		op = rcu_dereference_raw(op->next); /*see above*/
--	};
-+	} while_for_each_ftrace_op(op);
- 	trace_recursion_clear(TRACE_GLOBAL_BIT);
- }
- 
-@@ -4104,14 +4113,11 @@ ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip,
- 	 */
- 	preempt_disable_notrace();
- 	trace_recursion_set(TRACE_CONTROL_BIT);
--	op = rcu_dereference_raw(ftrace_control_list);
--	while (op != &ftrace_list_end) {
-+	do_for_each_ftrace_op(op, ftrace_control_list) {
- 		if (!ftrace_function_local_disabled(op) &&
- 		    ftrace_ops_test(op, ip))
- 			op->func(ip, parent_ip, op, regs);
--
--		op = rcu_dereference_raw(op->next);
--	};
-+	} while_for_each_ftrace_op(op);
- 	trace_recursion_clear(TRACE_CONTROL_BIT);
- 	preempt_enable_notrace();
- }
-@@ -4139,12 +4145,10 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- 	 * they must be freed after a synchronize_sched().
- 	 */
- 	preempt_disable_notrace();
--	op = rcu_dereference_raw(ftrace_ops_list);
--	while (op != &ftrace_list_end) {
-+	do_for_each_ftrace_op(op, ftrace_ops_list) {
- 		if (ftrace_ops_test(op, ip))
- 			op->func(ip, parent_ip, op, regs);
--		op = rcu_dereference_raw(op->next);
--	};
-+	} while_for_each_ftrace_op(op);
- 	preempt_enable_notrace();
- 	trace_recursion_clear(TRACE_INTERNAL_BIT);
- }
--- 
-1.7.10.4
-
-
+> Tools cloned nicely.
+>
+> Thanks,
+> --
+> Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+> GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
