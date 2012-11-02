@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763111Ab2KBRMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:12:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33382 "EHLO mail.kernel.org"
+	id S1763136Ab2KBRNA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:13:00 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33316 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753001Ab2KBRHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:42 -0400
+	id S1762378Ab2KBRHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vivek Goyal <vgoyal@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 06/24] floppy: dont call alloc_ordered_workqueue inside the alloc_disk loop
-Date: Fri,  2 Nov 2012 10:06:54 -0700
-Message-Id: <20121102170247.883582032@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [ 05/24] md/raid1: Fix assembling of arrays containing Replacements.
+Date: Fri,  2 Nov 2012 10:06:53 -0700
+Message-Id: <20121102170247.813639343@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170247.406319110@linuxfoundation.org>
 References: <20121102170247.406319110@linuxfoundation.org>
@@ -27,77 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: NeilBrown <neilb@suse.de>
 
-commit b54e1f88897bcacc2cd359f48ea3b39eaf55f084 upstream.
+commit 02b898f2f04e418094f0093a3ad0b415bcdbe8eb upstream.
 
-Since commit 070ad7e ("floppy: convert to delayed work and single-thread
-wq"), we end up calling alloc_ordered_workqueue multiple times inside
-the loop, which shouldn't be intended. Besides the leak, other side
-effect in the current code is if blk_init_queue fails, we would end up
-calling unregister_blkdev even if we didn't call yet register_blkdev.
+setup_conf in raid1.c uses conf->raid_disks before assigning
+a value.  It is used when including 'Replacement' devices.
 
-Just moved the allocation of floppy_wq before the loop, and adjusted the
-code accordingly.
+The consequence is that assembling an array which contains a
+replacement will misbehave and either not include the replacement, or
+not include the device being replaced.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Though this doesn't lead directly to data corruption, it could lead to
+reduced data safety.
+
+So use mddev->raid_disks, which is initialised, instead.
+
+Bug was introduced by commit c19d57980b38a5bb613a898937a1cf85f422fb9b
+      md/raid1: recognise replacements when assembling arrays.
+
+in 3.3, so fix is suitable for 3.3.y thru 3.6.y.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/floppy.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ drivers/md/raid1.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -4138,6 +4138,10 @@ static int __init do_floppy_init(void)
- 
- 	raw_cmd = NULL;
- 
-+	floppy_wq = alloc_ordered_workqueue("floppy", 0);
-+	if (!floppy_wq)
-+		return -ENOMEM;
-+
- 	for (dr = 0; dr < N_DRIVE; dr++) {
- 		disks[dr] = alloc_disk(1);
- 		if (!disks[dr]) {
-@@ -4145,16 +4149,10 @@ static int __init do_floppy_init(void)
- 			goto out_put_disk;
- 		}
- 
--		floppy_wq = alloc_ordered_workqueue("floppy", 0);
--		if (!floppy_wq) {
--			err = -ENOMEM;
--			goto out_put_disk;
--		}
--
- 		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
- 		if (!disks[dr]->queue) {
- 			err = -ENOMEM;
--			goto out_destroy_workq;
-+			goto out_put_disk;
- 		}
- 
- 		blk_queue_max_hw_sectors(disks[dr]->queue, 64);
-@@ -4318,8 +4316,6 @@ out_release_dma:
- out_unreg_region:
- 	blk_unregister_region(MKDEV(FLOPPY_MAJOR, 0), 256);
- 	platform_driver_unregister(&floppy_driver);
--out_destroy_workq:
--	destroy_workqueue(floppy_wq);
- out_unreg_blkdev:
- 	unregister_blkdev(FLOPPY_MAJOR, "fd");
- out_put_disk:
-@@ -4335,6 +4331,7 @@ out_put_disk:
- 		}
- 		put_disk(disks[dr]);
- 	}
-+	destroy_workqueue(floppy_wq);
- 	return err;
- }
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -2699,7 +2699,7 @@ static struct r1conf *setup_conf(struct
+ 		    || disk_idx < 0)
+ 			continue;
+ 		if (test_bit(Replacement, &rdev->flags))
+-			disk = conf->mirrors + conf->raid_disks + disk_idx;
++			disk = conf->mirrors + mddev->raid_disks + disk_idx;
+ 		else
+ 			disk = conf->mirrors + disk_idx;
  
 
 
