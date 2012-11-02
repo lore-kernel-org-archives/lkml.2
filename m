@@ -1,127 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab2KBKoR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 06:44:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28287 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755185Ab2KBKoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 06:44:15 -0400
-Message-ID: <5093A3F4.8090108@redhat.com>
-Date: Fri, 02 Nov 2012 11:44:04 +0100
-From: Zdenek Kabelac <zkabelac@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S932947Ab2KBKpX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 06:45:23 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:43964 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755185Ab2KBKpV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 06:45:21 -0400
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "sjurbren@gmail.com" <sjurbren@gmail.com>
+Date: Fri, 2 Nov 2012 11:44:55 +0100
+Subject: RE: [PATCHv7 4/4] virtio_console: Add support for remoteproc serial
+Thread-Topic: [PATCHv7 4/4] virtio_console: Add support for remoteproc serial
+Thread-Index: Ac2448sTjqhiEbRFSgyjJRqYhJRBlAAAS19w
+Message-ID: <81C3A93C17462B4BBD7E272753C1057923BE98E5C6@EXDCVYMBSTM005.EQ1STM.local>
+References: <1350287856-5284-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1350287856-5284-5-git-send-email-sjur.brandeland@stericsson.com>
+ <878vayhsca.fsf@rustcorp.com.au> <20121101073951.GA17012@amit.redhat.com>
+ <87r4oc52ov.fsf@rustcorp.com.au> <20121102102047.GE10483@amit.redhat.com>
+In-Reply-To: <20121102102047.GE10483@amit.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Jiri Slaby <jslaby@suse.cz>, Valdis.Kletnieks@vt.edu,
-        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: kswapd0: excessive CPU usage
-References: <507688CC.9000104@suse.cz> <106695.1349963080@turing-police.cc.vt.edu> <5076E700.2030909@suse.cz> <118079.1349978211@turing-police.cc.vt.edu> <50770905.5070904@suse.cz> <119175.1349979570@turing-police.cc.vt.edu> <5077434D.7080008@suse.cz> <50780F26.7070007@suse.cz> <20121012135726.GY29125@suse.de> <507BDD45.1070705@suse.cz> <20121015110937.GE29125@suse.de>
-In-Reply-To: <20121015110937.GE29125@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 15.10.2012 13:09, Mel Gorman napsal(a):
-> On Mon, Oct 15, 2012 at 11:54:13AM +0200, Jiri Slaby wrote:
->> On 10/12/2012 03:57 PM, Mel Gorman wrote:
->>> mm: vmscan: scale number of pages reclaimed by reclaim/compaction only in direct reclaim
->>>
->>> Jiri Slaby reported the following:
->>>
->>> 	(It's an effective revert of "mm: vmscan: scale number of pages
->>> 	reclaimed by reclaim/compaction based on failures".)
->>> 	Given kswapd had hours of runtime in ps/top output yesterday in the
->>> 	morning and after the revert it's now 2 minutes in sum for the last 24h,
->>> 	I would say, it's gone.
->>>
->>> The intention of the patch in question was to compensate for the loss of
->>> lumpy reclaim. Part of the reason lumpy reclaim worked is because it
->>> aggressively reclaimed pages and this patch was meant to be a
->>> sane compromise.
->>>
->>> When compaction fails, it gets deferred and both compaction and
->>> reclaim/compaction is deferred avoid excessive reclaim. However, since
->>> commit c6543459 (mm: remove __GFP_NO_KSWAPD), kswapd is woken up each time
->>> and continues reclaiming which was not taken into account when the patch
->>> was developed.
->>>
->>> As it is not taking deferred compaction into account in this path it scans
->>> aggressively before falling out and making the compaction_deferred check in
->>> compaction_ready. This patch avoids kswapd scaling pages for reclaim and
->>> leaves the aggressive reclaim to the process attempting the THP
->>> allocation.
->>>
->>> Signed-off-by: Mel Gorman <mgorman@suse.de>
->>> ---
->>>   mm/vmscan.c |   10 ++++++++--
->>>   1 file changed, 8 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/mm/vmscan.c b/mm/vmscan.c
->>> index 2624edc..2b7edfa 100644
->>> --- a/mm/vmscan.c
->>> +++ b/mm/vmscan.c
->>> @@ -1763,14 +1763,20 @@ static bool in_reclaim_compaction(struct scan_control *sc)
->>>   #ifdef CONFIG_COMPACTION
->>>   /*
->>>    * If compaction is deferred for sc->order then scale the number of pages
->>> - * reclaimed based on the number of consecutive allocation failures
->>> + * reclaimed based on the number of consecutive allocation failures. This
->>> + * scaling only happens for direct reclaim as it is about to attempt
->>> + * compaction. If compaction fails, future allocations will be deferred
->>> + * and reclaim avoided. On the other hand, kswapd does not take compaction
->>> + * deferral into account so if it scaled, it could scan excessively even
->>> + * though allocations are temporarily not being attempted.
->>>    */
->>>   static unsigned long scale_for_compaction(unsigned long pages_for_compaction,
->>>   			struct lruvec *lruvec, struct scan_control *sc)
->>>   {
->>>   	struct zone *zone = lruvec_zone(lruvec);
->>>
->>> -	if (zone->compact_order_failed <= sc->order)
->>> +	if (zone->compact_order_failed <= sc->order &&
->>> +	    !current_is_kswapd())
->>>   		pages_for_compaction <<= zone->compact_defer_shift;
->>>   	return pages_for_compaction;
->>>   }
->>
->> Yes, applying this instead of the revert fixes the issue as well.
->>
->
+> On (Fri) 02 Nov 2012 [09:52:08], Rusty Russell wrote:
+> > Amit Shah <amit.shah@redhat.com> writes:
+> > > On (Tue) 23 Oct 2012 [12:17:49], Rusty Russell wrote:
+> > >> sjur.brandeland@stericsson.com writes:
+> > >> > From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> > >
+> > >> > @@ -1415,7 +1524,16 @@ static void remove_port_data(struct port
+> *port)
+> > >> >
+> > >> >  	/* Remove buffers we queued up for the Host to send us data in. */
+> > >> >  	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
+> > >> > -		free_buf(buf);
+> > >> > +		free_buf(buf, true);
+> > >> > +
+> > >> > +	/*
+> > >> > +	 * Remove buffers from out queue for rproc-serial. We
+> cannot afford
+> > >> > +	 * to leak any DMA mem, so reclaim this memory even if this
+> might be
+> > >> > +	 * racy for the remote processor.
+> > >> > +	 */
+> > >> > +	if (is_rproc_serial(port->portdev->vdev))
+> > >> > +		while ((buf = virtqueue_detach_unused_buf(port-
+> >out_vq)))
+> > >> > +			free_buf(buf, true);
+> > >> >  }
+> > >>
+> > >> This seems wrong; either this is needed even if !is_rproc_serial(), or
+> > >> it's not necessary as the out_vq is empty.
+> > >>
+> > >> Every path I can see has the device reset (in which case the queues
+> > >> should not be active), or we got a VIRTIO_CONSOLE_PORT_REMOVE
+> event (in
+> > >> which case, the same).
+> > >>
+> > >> I think we can have non-blocking writes which could leave buffers in
+> > >> out_vq: Amit?
+> > >
+> > > Those get 'reclaimed' just above this hunk:
+> > >
+> > >
+> > > static void remove_port_data(struct port *port)
+> > > {
+> > > 	struct port_buffer *buf;
+> > >
+> > > 	/* Remove unused data this port might have received. */
+> > > 	discard_port_data(port);
+> > >
+> > > 	reclaim_consumed_buffers(port);
+> > >
+> > > 	/* Remove buffers we queued up for the Host to send us data in. */
+> > > 	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
+> > > 	      free_buf(buf, true);
+> >
+> > No, that's pending input buffers, not output buffers.
+> 
+> You're right.  Nice catch.
+> 
+> Sjur, can you remove the WARN_ON in your latest series, even generic
+> ports may have buffers in the outq.
 
+Sure, I can respin the patch and remove the WARN_ON().
 
-I've applied this patch on 3.7.0-rc3 kernel - and I still see excessive CPU 
-usage - mainly  after  suspend/resume
+> It'll also need to be done in the port_fops_release() function.  Let
+> me know if you prefer I send a patch instead.
 
-Here is just simple  kswapd backtrace from running kernel:
+I can have a go at this, as I have to respin the patch anyway.
 
-kswapd0         R  running task        0    30      2 0x00000000
-  ffff8801331ddae8 0000000000000082 ffff880135b8a340 0000000000000008
-  ffff880135b8a340 ffff8801331ddfd8 ffff8801331ddfd8 ffff8801331ddfd8
-  ffff880071db8000 ffff880135b8a340 0000000000000286 ffff8801331dc000
-Call Trace:
-  [<ffffffff81555cd2>] preempt_schedule+0x42/0x60
-  [<ffffffff81557b75>] _raw_spin_unlock+0x55/0x60
-  [<ffffffff811929d1>] put_super+0x31/0x40
-  [<ffffffff81192aa2>] drop_super+0x22/0x30
-  [<ffffffff81193be9>] prune_super+0x149/0x1b0
-  [<ffffffff81141e2a>] shrink_slab+0xba/0x510
-  [<ffffffff81185baa>] ? mem_cgroup_iter+0x17a/0x2e0
-  [<ffffffff81185afa>] ? mem_cgroup_iter+0xca/0x2e0
-  [<ffffffff811450f9>] balance_pgdat+0x629/0x7f0
-  [<ffffffff81145434>] kswapd+0x174/0x620
-  [<ffffffff8106fd20>] ? __init_waitqueue_head+0x60/0x60
-  [<ffffffff811452c0>] ? balance_pgdat+0x7f0/0x7f0
-  [<ffffffff8106f50b>] kthread+0xdb/0xe0
-  [<ffffffff8106f430>] ? kthread_create_on_node+0x140/0x140
-  [<ffffffff8155fb1c>] ret_from_fork+0x7c/0xb0
-  [<ffffffff8106f430>] ? kthread_create_on_node+0x140/0x140
-
-
-Zdenek
-
+Thanks,
+Sjur
 
