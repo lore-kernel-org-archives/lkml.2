@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab2KBAYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 20:24:12 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:63689 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab2KBAYK (ORCPT
+	id S1757929Ab2KBAgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 20:36:31 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:63367 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829Ab2KBAg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 20:24:10 -0400
+	Thu, 1 Nov 2012 20:36:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <20121102001429.GA2129@kroah.com>
-References: <CAMBWrQ=Xrp-_opV0ej4rn20p3yTUP0TmYQHr5nG79szC0=WUDA@mail.gmail.com>
- <CAMBWrQm6CacSoUxZdNA9XPhDMqyAt2R15ZXxpCLEZcRvEeRiCg@mail.gmail.com> <20121102001429.GA2129@kroah.com>
-From: Stan Hu <stanhu@gmail.com>
-Date: Thu, 1 Nov 2012 17:23:48 -0700
-Message-ID: <CAMBWrQmQqF7yjmZWkVFbjWrPUane-tB2sm6BCgn-x4QnXWYVgA@mail.gmail.com>
-Subject: Re: help with diagnosing kernel oops in __mutex_lock_slowpath
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20121031003314.763160265@goodmis.org>
+References: <20121031003258.811955127@goodmis.org>
+	<20121031003314.763160265@goodmis.org>
+Date: Thu, 1 Nov 2012 17:36:25 -0700
+X-Google-Sender-Auth: iDbNnK7slPeeoCNGOEboWyMOm4E
+Message-ID: <CAN8Q1EcHJyDMs-z8Vw_=cpnCL2FO_pATaGThh2UHv4ketC-_Jw@mail.gmail.com>
+Subject: Re: [PATCH RT 3/4] net: netfilter: Serialize xt_write_recseq sections
+ on RT
+From: Peter LaDow <petela@gocougs.wsu.edu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unfortunately, with this board I am using, it would be a significant
-effort for me to get 3.6 or 3.7 running.  Do you have any suggestions
-of what I should look for in the 3.2 kernel?
+On Tue, Oct 30, 2012 at 5:33 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> From: Thomas Gleixner <tglx@linutronix.de>
+>
+> The netfilter code relies only on the implicit semantics of
+> local_bh_disable() for serializing wt_write_recseq sections. RT breaks
+> that and needs explicit serialization here.
+>
+> Reported-by: Peter LaDow <petela@gocougs.wsu.edu>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-For now, I've worked around it by enabling the panic=10 and
-panic_on_oops kernel=1 options to reboot when this happens.  The
-system seems to come up fine after another try or two.
+> diff --git a/include/linux/locallock.h b/include/linux/locallock.h
+> index f1804a3..a5eea5d 100644
 
-On Thu, Nov 1, 2012 at 5:14 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Thu, Nov 01, 2012 at 03:02:45PM -0700, Stan Hu wrote:
->> Hello,
->>
->> I'm getting this kernel oops sporadically with a custom Cortex-A8 ARM
->> board with a Linux 3.2.28 kernel.  The system is booting off an SD
->> card; interestingly this failure doesn't seem to happen when I boot
->> from NAND flash.   I would say 1 out 10 times it fails with a similar
->> backtrace.  Does anyone have any clue why this might be happening?
->
-> Does this also happen on the 3.6 kernel, or 3.7-rc3?
->
-> thanks,
->
-> greg k-h
+> diff --git a/include/linux/netfilter/x_tables.h b/include/linux/netfilter/x_tables.h
+> index 32cddf7..bed90da2 100644
+
+> diff --git a/net/netfilter/core.c b/net/netfilter/core.c
+> index 899b71c..5db16ea 100644
+
+I'm have a setup running 3.0.48-rt72.  It's been running about 8 hours
+so far, and tomorrow I'll know if there's been any problems.  I'm
+confident things will be fine tomorrow, and at that time I'll be glad
+to attach a Tested-by tag.
+
+Thanks,
+Pete
