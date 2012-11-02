@@ -1,69 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934181Ab2KBSLE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 14:11:04 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:60559 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933602Ab2KBSLC (ORCPT
+	id S934454Ab2KBSOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 14:14:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33253 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934115Ab2KBSOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 14:11:02 -0400
-Date: Fri, 2 Nov 2012 11:10:26 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Shan Wei <shanwei88@gmail.com>
-Cc: dipankar@in.ibm.com, Kernel-Maillist <linux-kernel@vger.kernel.org>,
-        cl@linux-foundation.org
-Subject: Re: [PATCH v2 6/9] rcu: use __this_cpu_read helper instead of
- per_cpu_ptr(p, raw_smp_processor_id())
-Message-ID: <20121102181026.GY3027@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <5093EE6B.3070906@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5093EE6B.3070906@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12110218-7408-0000-0000-000009EA04B4
+	Fri, 2 Nov 2012 14:14:31 -0400
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=qbC_2myEpI0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=McLntpi8likA:10 a=VwQbUJbxAAAA:8 a=RsALlvvzhG05sFfqJh8A:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=1SLLj1mNlTysNBE3:21 a=jWbLll6QwxU2dmjD:21 a=FDvI4REQ3wl_SysPGoYA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121102181429.931862099@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 02 Nov 2012 14:13:32 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Daniel Walter <sahne@0x90.at>
+Subject: [PATCH 01/19] tracing: Replace strict_strto* with kstrto*
+References: <20121102181331.513782854@goodmis.org>
+Content-Disposition: inline; filename=0001-tracing-Replace-strict_strto-with-kstrto.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 03, 2012 at 12:01:47AM +0800, Shan Wei wrote:
-> From: Shan Wei <davidshan@tencent.com>
-> 
-> Signed-off-by: Shan Wei <davidshan@tencent.com>
-> ---
->  kernel/rcutree.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 74df86b..441b945 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1960,7 +1960,7 @@ static void force_quiescent_state(struct rcu_state *rsp)
->  	struct rcu_node *rnp_old = NULL;
-> 
->  	/* Funnel through hierarchy to reduce memory contention. */
-> -	rnp = per_cpu_ptr(rsp->rda, raw_smp_processor_id())->mynode;
-> +	rnp = __this_cpu_read(rsp->rda->mynode);
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-OK, I'll bite...  Why this instead of:
+From: Daniel Walter <sahne@0x90.at>
 
-	rnp = __this_cpu_read(rsp->rda)->mynode;
+ * remove old string conversions with kstrto*
 
-							Thanx, Paul
+Link: http://lkml.kernel.org/r/20120926200838.GC1244@0x90.at
 
->  	for (; rnp != NULL; rnp = rnp->parent) {
->  		ret = (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) ||
->  		      !raw_spin_trylock(&rnp->fqslock);
-> -- 
-> 1.7.1
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Signed-off-by: Daniel Walter <sahne@0x90.at>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c              |    2 +-
+ kernel/trace/trace.c               |    2 +-
+ kernel/trace/trace_events_filter.c |    4 ++--
+ kernel/trace/trace_functions.c     |    2 +-
+ kernel/trace/trace_kprobe.c        |    2 +-
+ kernel/trace/trace_probe.c         |   14 +++++++-------
+ kernel/trace/trace_uprobe.c        |    2 +-
+ 7 files changed, 14 insertions(+), 14 deletions(-)
 
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 9dcf15d..60ad606 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -4381,7 +4381,7 @@ ftrace_pid_write(struct file *filp, const char __user=
+ *ubuf,
+ 	if (strlen(tmp) =3D=3D 0)
+ 		return 1;
+=20
+-	ret =3D strict_strtol(tmp, 10, &val);
++	ret =3D kstrtol(tmp, 10, &val);
+ 	if (ret < 0)
+ 		return ret;
+=20
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 31e4f55..f6928ed 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -431,7 +431,7 @@ static int __init set_tracing_thresh(char *str)
+=20
+ 	if (!str)
+ 		return 0;
+-	ret =3D strict_strtoul(str, 0, &threshold);
++	ret =3D kstrtoul(str, 0, &threshold);
+ 	if (ret < 0)
+ 		return 0;
+ 	tracing_thresh =3D threshold * 1000;
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events=
+_filter.c
+index c154797..e5b0ca8 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -1000,9 +1000,9 @@ static int init_pred(struct filter_parse_state *ps,
+ 		}
+ 	} else {
+ 		if (field->is_signed)
+-			ret =3D strict_strtoll(pred->regex.pattern, 0, &val);
++			ret =3D kstrtoll(pred->regex.pattern, 0, &val);
+ 		else
+-			ret =3D strict_strtoull(pred->regex.pattern, 0, &val);
++			ret =3D kstrtoull(pred->regex.pattern, 0, &val);
+ 		if (ret) {
+ 			parse_error(ps, FILT_ERR_ILLEGAL_INTVAL, 0);
+ 			return -EINVAL;
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index 507a7a9..618dcf8 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -366,7 +366,7 @@ ftrace_trace_onoff_callback(struct ftrace_hash *hash,
+ 	 * We use the callback data field (which is a pointer)
+ 	 * as our counter.
+ 	 */
+-	ret =3D strict_strtoul(number, 0, (unsigned long *)&count);
++	ret =3D kstrtoul(number, 0, (unsigned long *)&count);
+ 	if (ret)
+ 		return ret;
+=20
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 1a21170..5a3c533 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -444,7 +444,7 @@ static int create_trace_probe(int argc, char **argv)
+ 			return -EINVAL;
+ 		}
+ 		/* an address specified */
+-		ret =3D strict_strtoul(&argv[1][0], 0, (unsigned long *)&addr);
++		ret =3D kstrtoul(&argv[1][0], 0, (unsigned long *)&addr);
+ 		if (ret) {
+ 			pr_info("Failed to parse address.\n");
+ 			return ret;
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index daa9980..412e959 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -441,7 +441,7 @@ static const struct fetch_type *find_fetch_type(const c=
+har *type)
+ 			goto fail;
+=20
+ 		type++;
+-		if (strict_strtoul(type, 0, &bs))
++		if (kstrtoul(type, 0, &bs))
+ 			goto fail;
+=20
+ 		switch (bs) {
+@@ -501,8 +501,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsign=
+ed long *offset)
+=20
+ 	tmp =3D strchr(symbol, '+');
+ 	if (tmp) {
+-		/* skip sign because strict_strtol doesn't accept '+' */
+-		ret =3D strict_strtoul(tmp + 1, 0, offset);
++		/* skip sign because kstrtoul doesn't accept '+' */
++		ret =3D kstrtoul(tmp + 1, 0, offset);
+ 		if (ret)
+ 			return ret;
+=20
+@@ -533,7 +533,7 @@ static int parse_probe_vars(char *arg, const struct fet=
+ch_type *t,
+ 			else
+ 				ret =3D -EINVAL;
+ 		} else if (isdigit(arg[5])) {
+-			ret =3D strict_strtoul(arg + 5, 10, &param);
++			ret =3D kstrtoul(arg + 5, 10, &param);
+ 			if (ret || param > PARAM_MAX_STACK)
+ 				ret =3D -EINVAL;
+ 			else {
+@@ -579,7 +579,7 @@ static int parse_probe_arg(char *arg, const struct fetc=
+h_type *t,
+=20
+ 	case '@':	/* memory or symbol */
+ 		if (isdigit(arg[1])) {
+-			ret =3D strict_strtoul(arg + 1, 0, &param);
++			ret =3D kstrtoul(arg + 1, 0, &param);
+ 			if (ret)
+ 				break;
+=20
+@@ -597,14 +597,14 @@ static int parse_probe_arg(char *arg, const struct fe=
+tch_type *t,
+ 		break;
+=20
+ 	case '+':	/* deref memory */
+-		arg++;	/* Skip '+', because strict_strtol() rejects it. */
++		arg++;	/* Skip '+', because kstrtol() rejects it. */
+ 	case '-':
+ 		tmp =3D strchr(arg, '(');
+ 		if (!tmp)
+ 			break;
+=20
+ 		*tmp =3D '\0';
+-		ret =3D strict_strtol(arg, 0, &offset);
++		ret =3D kstrtol(arg, 0, &offset);
+=20
+ 		if (ret)
+ 			break;
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 03003cd..4ff9ca4 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -252,7 +252,7 @@ static int create_trace_uprobe(int argc, char **argv)
+ 	if (ret)
+ 		goto fail_address_parse;
+=20
+-	ret =3D strict_strtoul(arg, 0, &offset);
++	ret =3D kstrtoul(arg, 0, &offset);
+ 	if (ret)
+ 		goto fail_address_parse;
+=20
+--=20
+1.7.10.4
+
+
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAABAgAGBQJQlA2GAAoJEOdOSU1xswtM4OYH/Rml3B34TbNzNcpSTYSVQXEu
+LqBfvVnN1ID56tfPiXCov9GkfUMS5+o4yvwlZMNZqabZCAob0XqRp52xraFwCqvv
+k5SGY1U/luepq+XgigIBN4HeqEx+cYIaswZa/rJjVhf1sOQ8+RmZyaRfp9beCcHL
+d2953iKF1Txw75ZCnKohLeOjcrQFQQK5Hp+XMrDnz9jrfOiAuOqiJwm0xpV1BI+g
+r8U8dwXQ+VTAZM7mRXdwT5W5xI+NbYLiRHY/gXg7TNdJSFABlE7Bx0NNHtlCCT/T
+dvApNN8go1UcyTdsICtMRYXMnccbC5qb7TFLA2w00UN2/ywE5RkJiND9nCmZq3E=
+=A4KE
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
