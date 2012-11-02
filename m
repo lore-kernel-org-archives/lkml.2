@@ -1,465 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab2KBFuo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 01:50:44 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56459 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940Ab2KBFu1 (ORCPT
+	id S1752699Ab2KBGFM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 02:05:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36935 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab2KBGFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 01:50:27 -0400
-X-AuditID: 9c93016f-b7c7bae000000eb7-97-50935f20deb8
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, David Ahern <dsahern@gmail.com>,
-        Irina Tirdea <irina.tirdea@gmail.com>
-Subject: [PATCH 2/3] perf tools: Introduce struct hist_browser_timer
-Date: Fri,  2 Nov 2012 14:50:05 +0900
-Message-Id: <1351835406-15208-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351835406-15208-1-git-send-email-namhyung@kernel.org>
-References: <1351835406-15208-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 2 Nov 2012 02:05:08 -0400
+Date: Fri, 2 Nov 2012 17:04:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: linux-next: build failures after merge of the final tree (usb tree
+ related)
+Message-Id: <20121102170459.5e152727a2a38797ee493da0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__2_Nov_2012_17_04_59_+1100_0AK3=k=8+0l/.lQB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+--Signature=_Fri__2_Nov_2012_17_04_59_+1100_0AK3=k=8+0l/.lQB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Currently various hist browser functions receive 3 arguments for
-refreshing histogram but only used from a few places.  Also it's only
-for perf top command so that it can be NULL for other (and probably
-most) cases.  Pack them into a struct in order to reduce number of
-those unused arguments.
+Hi ,
 
-This is a mechanical change and does not intend a functional change.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Irina Tirdea <irina.tirdea@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+In file included from drivers/usb/host/ehci-platform.c:28:0:
+drivers/usb/host/ehci.h: In function 'ehci_readl':
+drivers/usb/host/ehci.h:662:3: error: implicit declaration of function 'rea=
+dl_be' [-Werror=3Dimplicit-function-declaration]
+drivers/usb/host/ehci.h:663:3: error: implicit declaration of function 'rea=
+dl' [-Werror=3Dimplicit-function-declaration]
+drivers/usb/host/ehci.h: In function 'ehci_writel':
+drivers/usb/host/ehci.h:674:3: error: implicit declaration of function 'wri=
+tel_be' [-Werror=3Dimplicit-function-declaration]
+drivers/usb/host/ehci.h:675:3: error: implicit declaration of function 'wri=
+tel' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit 99f91934a907 ("USB: EHCI: make ehci-platform a separate
+driver") from the usb tree.
+
+I have reverted that commit for today.
+
+I then got:
+
+drivers/usb/chipidea/built-in.o: In function `ehci_init_driver':
+(.opd+0x5a0): multiple definition of `ehci_init_driver'
+drivers/usb/host/built-in.o:(.opd+0xb58): first defined here
+drivers/usb/chipidea/built-in.o: In function `.ehci_init_driver':
+(.text+0x6528): multiple definition of `.ehci_init_driver'
+drivers/usb/host/built-in.o:(.text+0x9eb4): first defined here
+drivers/usb/chipidea/built-in.o: In function `ehci_suspend':
+(.opd+0xc18): multiple definition of `ehci_suspend'
+drivers/usb/host/built-in.o:(.opd+0x11d0): first defined here
+drivers/usb/chipidea/built-in.o: In function `ehci_resume':
+(.opd+0x1020): multiple definition of `ehci_resume'
+drivers/usb/host/built-in.o:(.opd+0x1680): first defined here
+drivers/usb/chipidea/built-in.o: In function `.ehci_suspend':
+(.text+0x100e4): multiple definition of `.ehci_suspend'
+drivers/usb/host/built-in.o:(.text+0x13b00): first defined here
+drivers/usb/chipidea/built-in.o: In function `.ehci_resume':
+(.text+0x17760): multiple definition of `.ehci_resume'
+drivers/usb/host/built-in.o:(.text+0x1b498): first defined here
+drivers/usb/chipidea/built-in.o: In function `ehci_setup':
+(.opd+0x1128): multiple definition of `ehci_setup'
+drivers/usb/host/built-in.o:(.opd+0x17a0): first defined here
+drivers/usb/chipidea/built-in.o: In function `.ehci_setup':
+(.text+0x228f0): multiple definition of `.ehci_setup'
+drivers/usb/host/built-in.o:(.text+0x266fc): first defined here
+
+Which is caused by commit 3e0232039967 ("USB: EHCI: prepare to make
+ehci-hcd a library module").
+
+I have added the following patch to disable the chipidea driver for now:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 2 Nov 2012 16:59:55 +1100
+Subject: [PATCH] usb: mark the chipidea broken for now
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- tools/perf/builtin-annotate.c     |  2 +-
- tools/perf/builtin-report.c       |  4 ++--
- tools/perf/builtin-top.c          |  9 +++++---
- tools/perf/ui/browsers/annotate.c | 27 +++++++++++-------------
- tools/perf/ui/browsers/hists.c    | 43 +++++++++++++++++----------------------
- tools/perf/ui/gtk/browser.c       |  4 +---
- tools/perf/util/annotate.h        |  8 ++++----
- tools/perf/util/hist.h            | 28 ++++++++++++-------------
- 8 files changed, 58 insertions(+), 67 deletions(-)
+ drivers/usb/chipidea/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index cb234765ce3d..dc870cf31b79 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -139,7 +139,7 @@ find_next:
- 		}
- 
- 		if (use_browser > 0) {
--			key = hist_entry__tui_annotate(he, evidx, NULL, NULL, 0);
-+			key = hist_entry__tui_annotate(he, evidx, NULL);
- 			switch (key) {
- 			case K_RIGHT:
- 				next = rb_next(nd);
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index f07eae73e692..234f34d466e3 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -428,10 +428,10 @@ static int __cmd_report(struct perf_report *rep)
- 	if (use_browser > 0) {
- 		if (use_browser == 1) {
- 			perf_evlist__tui_browse_hists(session->evlist, help,
--						      NULL, NULL, 0);
-+						      NULL);
- 		} else if (use_browser == 2) {
- 			perf_evlist__gtk_browse_hists(session->evlist, help,
--						      NULL, NULL, 0);
-+						      NULL);
- 		}
- 	} else
- 		perf_evlist__tty_browse_hists(session->evlist, rep, help);
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index f2ecd498c72d..102b43c9905d 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -582,6 +582,11 @@ static void *display_thread_tui(void *arg)
- 	struct perf_evsel *pos;
- 	struct perf_top *top = arg;
- 	const char *help = "For a higher level overview, try: perf top --sort comm,dso";
-+	struct hist_browser_timer hbt = {
-+		.timer		= perf_top__sort_new_samples,
-+		.arg		= top,
-+		.refresh	= top->delay_secs,
-+	};
- 
- 	perf_top__sort_new_samples(top);
- 
-@@ -593,9 +598,7 @@ static void *display_thread_tui(void *arg)
- 	list_for_each_entry(pos, &top->evlist->entries, node)
- 		pos->hists.uid_filter_str = top->target.uid_str;
- 
--	perf_evlist__tui_browse_hists(top->evlist, help,
--				      perf_top__sort_new_samples,
--				      top, top->delay_secs);
-+	perf_evlist__tui_browse_hists(top->evlist, help, &hbt);
- 
- 	exit_browser(0);
- 	exit(0);
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 28f8aab73aee..3eff17f703f3 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -386,9 +386,8 @@ static void annotate_browser__init_asm_mode(struct annotate_browser *browser)
- 	browser->b.nr_entries = browser->nr_asm_entries;
- }
- 
--static bool annotate_browser__callq(struct annotate_browser *browser,
--				    int evidx, void (*timer)(void *arg),
--				    void *arg, int delay_secs)
-+static bool annotate_browser__callq(struct annotate_browser *browser, int evidx,
-+				    struct hist_browser_timer *hbt)
- {
- 	struct map_symbol *ms = browser->b.priv;
- 	struct disasm_line *dl = browser->selection;
-@@ -418,7 +417,7 @@ static bool annotate_browser__callq(struct annotate_browser *browser,
- 	}
- 
- 	pthread_mutex_unlock(&notes->lock);
--	symbol__tui_annotate(target, ms->map, evidx, timer, arg, delay_secs);
-+	symbol__tui_annotate(target, ms->map, evidx, hbt);
- 	ui_browser__show_title(&browser->b, sym->name);
- 	return true;
- }
-@@ -602,13 +601,13 @@ static void annotate_browser__update_addr_width(struct annotate_browser *browser
- }
- 
- static int annotate_browser__run(struct annotate_browser *browser, int evidx,
--				 void(*timer)(void *arg),
--				 void *arg, int delay_secs)
-+				 struct hist_browser_timer *hbt)
- {
- 	struct rb_node *nd = NULL;
- 	struct map_symbol *ms = browser->b.priv;
- 	struct symbol *sym = ms->sym;
- 	const char *help = "Press 'h' for help on key bindings";
-+	int delay_secs = hbt ? hbt->refresh : 0;
- 	int key;
- 
- 	if (ui_browser__show(&browser->b, sym->name, help) < 0)
-@@ -639,8 +638,8 @@ static int annotate_browser__run(struct annotate_browser *browser, int evidx,
- 
- 		switch (key) {
- 		case K_TIMER:
--			if (timer != NULL)
--				timer(arg);
-+			if (hbt)
-+				hbt->timer(hbt->arg);
- 
- 			if (delay_secs != 0)
- 				symbol__annotate_decay_histogram(sym, evidx);
-@@ -740,7 +739,7 @@ show_help:
- 					goto show_sup_ins;
- 				goto out;
- 			} else if (!(annotate_browser__jump(browser) ||
--				     annotate_browser__callq(browser, evidx, timer, arg, delay_secs))) {
-+				     annotate_browser__callq(browser, evidx, hbt))) {
- show_sup_ins:
- 				ui_helpline__puts("Actions are only available for 'callq', 'retq' & jump instructions.");
- 			}
-@@ -763,10 +762,9 @@ out:
- }
- 
- int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
--			     void(*timer)(void *arg), void *arg, int delay_secs)
-+			     struct hist_browser_timer *hbt)
- {
--	return symbol__tui_annotate(he->ms.sym, he->ms.map, evidx,
--				    timer, arg, delay_secs);
-+	return symbol__tui_annotate(he->ms.sym, he->ms.map, evidx, hbt);
- }
- 
- static void annotate_browser__mark_jump_targets(struct annotate_browser *browser,
-@@ -816,8 +814,7 @@ static inline int width_jumps(int n)
- }
- 
- int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
--			 void(*timer)(void *arg), void *arg,
--			 int delay_secs)
-+			 struct hist_browser_timer *hbt)
- {
- 	struct disasm_line *pos, *n;
- 	struct annotation *notes;
-@@ -899,7 +896,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
- 
- 	annotate_browser__update_addr_width(&browser);
- 
--	ret = annotate_browser__run(&browser, evidx, timer, arg, delay_secs);
-+	ret = annotate_browser__run(&browser, evidx, hbt);
- 	list_for_each_entry_safe(pos, n, &notes->src->source, node) {
- 		list_del(&pos->node);
- 		disasm_line__free(pos);
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 082078ae9a6b..c7d32edb8057 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -310,10 +310,11 @@ static void ui_browser__warn_lost_events(struct ui_browser *browser)
- }
- 
- static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
--			     void(*timer)(void *arg), void *arg, int delay_secs)
-+			     struct hist_browser_timer *hbt)
- {
- 	int key;
- 	char title[160];
-+	int delay_secs = hbt ? hbt->refresh : 0;
- 
- 	browser->b.entries = &browser->hists->entries;
- 	browser->b.nr_entries = browser->hists->nr_entries;
-@@ -330,7 +331,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 
- 		switch (key) {
- 		case K_TIMER:
--			timer(arg);
-+			hbt->timer(hbt->arg);
- 			ui_browser__update_nr_entries(&browser->b, browser->hists->nr_entries);
- 
- 			if (browser->hists->stats.nr_lost_warned !=
-@@ -1136,8 +1137,7 @@ static inline bool is_report_browser(void *timer)
- static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 				    const char *helpline, const char *ev_name,
- 				    bool left_exits,
--				    void(*timer)(void *arg), void *arg,
--				    int delay_secs)
-+				    struct hist_browser_timer *hbt)
- {
- 	struct hists *hists = &evsel->hists;
- 	struct hist_browser *browser = hist_browser__new(hists);
-@@ -1148,6 +1148,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 	int key = -1;
- 	char buf[64];
- 	char script_opt[64];
-+	int delay_secs = hbt ? hbt->refresh : 0;
- 
- 	if (browser == NULL)
- 		return -1;
-@@ -1170,7 +1171,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 
- 		nr_options = 0;
- 
--		key = hist_browser__run(browser, ev_name, timer, arg, delay_secs);
-+		key = hist_browser__run(browser, ev_name, hbt);
- 
- 		if (browser->he_selection != NULL) {
- 			thread = hist_browser__selected_thread(browser);
-@@ -1220,7 +1221,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			}
- 			continue;
- 		case 'r':
--			if (is_report_browser(timer))
-+			if (is_report_browser(hbt))
- 				goto do_scripts;
- 			continue;
- 		case K_F1:
-@@ -1388,8 +1389,7 @@ do_annotate:
- 			 * Don't let this be freed, say, by hists__decay_entry.
- 			 */
- 			he->used = true;
--			err = hist_entry__tui_annotate(he, evsel->idx,
--						       timer, arg, delay_secs);
-+			err = hist_entry__tui_annotate(he, evsel->idx, hbt);
- 			he->used = false;
- 			/*
- 			 * offer option to annotate the other branch source or target
-@@ -1512,11 +1512,12 @@ static void perf_evsel_menu__write(struct ui_browser *browser,
- 
- static int perf_evsel_menu__run(struct perf_evsel_menu *menu,
- 				int nr_events, const char *help,
--				void(*timer)(void *arg), void *arg, int delay_secs)
-+				struct hist_browser_timer *hbt)
- {
- 	struct perf_evlist *evlist = menu->b.priv;
- 	struct perf_evsel *pos;
- 	const char *ev_name, *title = "Available samples";
-+	int delay_secs = hbt ? hbt->refresh : 0;
- 	int key;
- 
- 	if (ui_browser__show(&menu->b, title,
-@@ -1528,7 +1529,7 @@ static int perf_evsel_menu__run(struct perf_evsel_menu *menu,
- 
- 		switch (key) {
- 		case K_TIMER:
--			timer(arg);
-+			hbt->timer(hbt->arg);
- 
- 			if (!menu->lost_events_warned && menu->lost_events) {
- 				ui_browser__warn_lost_events(&menu->b);
-@@ -1546,12 +1547,11 @@ browse_hists:
- 			 * Give the calling tool a chance to populate the non
- 			 * default evsel resorted hists tree.
- 			 */
--			if (timer)
--				timer(arg);
-+			if (hbt)
-+				hbt->timer(hbt->arg);
- 			ev_name = perf_evsel__name(pos);
- 			key = perf_evsel__hists_browse(pos, nr_events, help,
--						       ev_name, true, timer,
--						       arg, delay_secs);
-+						       ev_name, true, hbt);
- 			ui_browser__show_title(&menu->b, title);
- 			switch (key) {
- 			case K_TAB:
-@@ -1599,8 +1599,7 @@ out:
- 
- static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
- 					   const char *help,
--					   void(*timer)(void *arg), void *arg,
--					   int delay_secs)
-+					   struct hist_browser_timer *hbt)
- {
- 	struct perf_evsel *pos;
- 	struct perf_evsel_menu menu = {
-@@ -1624,23 +1623,19 @@ static int __perf_evlist__tui_browse_hists(struct perf_evlist *evlist,
- 			menu.b.width = line_len;
- 	}
- 
--	return perf_evsel_menu__run(&menu, evlist->nr_entries, help, timer,
--				    arg, delay_secs);
-+	return perf_evsel_menu__run(&menu, evlist->nr_entries, help, hbt);
- }
- 
- int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
--				  void(*timer)(void *arg), void *arg,
--				  int delay_secs)
-+				  struct hist_browser_timer *hbt)
- {
- 	if (evlist->nr_entries == 1) {
- 		struct perf_evsel *first = list_entry(evlist->entries.next,
- 						      struct perf_evsel, node);
- 		const char *ev_name = perf_evsel__name(first);
- 		return perf_evsel__hists_browse(first, evlist->nr_entries, help,
--						ev_name, false, timer, arg,
--						delay_secs);
-+						ev_name, false, hbt);
- 	}
- 
--	return __perf_evlist__tui_browse_hists(evlist, help,
--					       timer, arg, delay_secs);
-+	return __perf_evlist__tui_browse_hists(evlist, help, hbt);
- }
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index 4125c6284114..253b6219a39e 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -237,9 +237,7 @@ static GtkWidget *perf_gtk__setup_statusbar(void)
- 
- int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
- 				  const char *help,
--				  void (*timer) (void *arg)__maybe_unused,
--				  void *arg __maybe_unused,
--				  int delay_secs __maybe_unused)
-+				  struct hist_browser_timer *hbt __maybe_unused)
- {
- 	struct perf_evsel *pos;
- 	GtkWidget *vbox;
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index a4dd25a61a07..c6272011625a 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -5,6 +5,7 @@
- #include <stdint.h>
- #include "types.h"
- #include "symbol.h"
-+#include "hist.h"
- #include <linux/list.h>
- #include <linux/rbtree.h>
- #include <pthread.h>
-@@ -140,14 +141,13 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
- 
- #ifdef NEWT_SUPPORT
- int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
--			 void(*timer)(void *arg), void *arg, int delay_secs);
-+			 struct hist_browser_timer *hbt);
- #else
- static inline int symbol__tui_annotate(struct symbol *sym __maybe_unused,
- 				       struct map *map __maybe_unused,
- 				       int evidx __maybe_unused,
--				       void(*timer)(void *arg) __maybe_unused,
--				       void *arg __maybe_unused,
--				       int delay_secs __maybe_unused)
-+				       struct hist_browser_timer *hbt
-+				       __maybe_unused)
- {
- 	return 0;
- }
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index b87460971736..96664cce7c7b 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -157,22 +157,25 @@ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
- 
- struct perf_evlist;
- 
-+struct hist_browser_timer {
-+	void (*timer)(void *arg);
-+	void *arg;
-+	int refresh;
-+};
-+
- #ifdef NEWT_SUPPORT
- #include "../ui/keysyms.h"
- int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
--			     void(*timer)(void *arg), void *arg, int delay_secs);
-+			     struct hist_browser_timer *hbt);
- 
- int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
--				  void(*timer)(void *arg), void *arg,
--				  int refresh);
-+				  struct hist_browser_timer *hbt);
- int script_browse(const char *script_opt);
- #else
- static inline
- int perf_evlist__tui_browse_hists(struct perf_evlist *evlist __maybe_unused,
- 				  const char *help __maybe_unused,
--				  void(*timer)(void *arg) __maybe_unused,
--				  void *arg __maybe_unused,
--				  int refresh __maybe_unused)
-+				  struct hist_browser_timer *hbt __maybe_unused)
- {
- 	return 0;
- }
-@@ -180,10 +183,8 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist __maybe_unused,
- static inline int hist_entry__tui_annotate(struct hist_entry *self
- 					   __maybe_unused,
- 					   int evidx __maybe_unused,
--					   void(*timer)(void *arg)
--					   __maybe_unused,
--					   void *arg __maybe_unused,
--					   int delay_secs __maybe_unused)
-+					   struct hist_browser_timer *hbt
-+					   __maybe_unused)
- {
- 	return 0;
- }
-@@ -199,15 +200,12 @@ static inline int script_browse(const char *script_opt)
- 
- #ifdef GTK2_SUPPORT
- int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist, const char *help,
--				  void(*timer)(void *arg), void *arg,
--				  int refresh);
-+				  struct hist_browser_timer *hbt __maybe_unused);
- #else
- static inline
- int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist __maybe_unused,
- 				  const char *help __maybe_unused,
--				  void(*timer)(void *arg) __maybe_unused,
--				  void *arg __maybe_unused,
--				  int refresh __maybe_unused)
-+				  struct hist_browser_timer *hbt __maybe_unused)
- {
- 	return 0;
- }
--- 
-1.7.11.7
+diff --git a/drivers/usb/chipidea/Kconfig b/drivers/usb/chipidea/Kconfig
+index 1ea932a..26a239a 100644
+--- a/drivers/usb/chipidea/Kconfig
++++ b/drivers/usb/chipidea/Kconfig
+@@ -1,6 +1,7 @@
+ config USB_CHIPIDEA
+ 	tristate "ChipIdea Highspeed Dual Role Controller"
+ 	depends on USB || USB_GADGET
++	depends on BROKEN
+ 	help
+ 	  Say Y here if your system has a dual role high speed USB
+ 	  controller based on ChipIdea silicon IP. Currently, only the
+--=20
+1.7.10.280.gaa39
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__2_Nov_2012_17_04_59_+1100_0AK3=k=8+0l/.lQB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQk2KLAAoJEECxmPOUX5FE7NQP/2L6rHlVwaYA86hvvu7ZIqkm
+8tErXYmk0a73sVzeInfaXeS/vk42GIatyi1O3CFIPphextljqb1ts86QbhLLfnU5
+aHt6vlxkEjcqC4BicgqorfpruFvy4fPvZKPKKQMHNTJzj7oTGGKHpVP0JvLpkfP8
+WwYVPnZivHanBNcu0uX7iG16+h7PdQqaG4+i4MHVcB64HxFOwRI86FsgYVU95kZw
+DuS6Ec+Wp0nAvtcXcLzpC1JIPpcxYlw0qRJ8e0iQnrHWmismKuW78rQvn7m9VEBn
+XiV1kFSdNP8AABZn6AY20rM8Ww6hVipMwvyKWRrgBdHwY3FAkYbJQ402pcR6lzvR
+LExLnsU4hMTMXUvln0vrnBYtJB4S95SY4yDs45Hl13rpl7GFule1td85qiZtF+Kl
+0sF5gPCE29siPYlnztVHNY/c52tRC/9yAuaYtSRybjJ2TPFVEOgVntKO+MaWntBa
+sFlZsNaoKwuh8kdj2NNmBzqZ1q4i2FLd4c91XsWEp4FoiXwjyOCkiFuu47wGM0d0
+FiSbzkqm0TGL1YQ2fthbRaqLQotti+TTaGeLxZulXYl3dItNLYtsAqzMwSLnCBMB
+deaPpA6aQbFvahM5uZX1xS0zeWITYs7SP+dicgJlm+5BYcdwp0a2KRBaI1XYdkPi
+LoEVXRmwWg9ZpjCAr65M
+=8EOf
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__2_Nov_2012_17_04_59_+1100_0AK3=k=8+0l/.lQB--
