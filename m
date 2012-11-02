@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759523Ab2KBWpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 18:45:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16388 "EHLO
+	id S1759060Ab2KBWpO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 18:45:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19944 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898Ab2KBWpL (ORCPT
+	with ESMTP id S1754052Ab2KBWpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Nov 2012 18:45:11 -0400
-X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=cV44URiwEzkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=9SDdFD8QBGwA:10 a=hrke7HMuZDkSRR1YYKoA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Yz3Bi5mCXbAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=xSQHIVwy9PUA:10 a=20KFwNOVAAAA:8 a=FmuBU-rodUV_qrTzYOYA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121102223828.795874032@goodmis.org>
+Message-Id: <20121102224509.791009824@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 18:38:28 -0400
+Date: Fri, 02 Nov 2012 18:38:29 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 0/8][RFC] tracing: Using recursion bits for function tracing and ring buffer
+Subject: [PATCH 1/8][RFC] ftrace: Fix global function tracers that are not recursion safe
+References: <20121102223828.795874032@goodmis.org>
+Content-Disposition: inline; filename=0001-ftrace-Fix-global-function-tracers-that-are-not-recu.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A couple of months ago I was playing with getting recursion
-fixed with the function tracer. There's a lot of places that could
-use improvements, and I also found a few cases where the recursion
-protection would have false positives causing missed function tracing.
+From: Steven Rostedt <srostedt@redhat.com>
 
-I implemented a per context bit checking (Normal, SoftIRQ, IRQ and NMI).
-Using 4 bits in the task_struct trace_recursion field, I was
-able to fix these issues as well as improve the speed of the function
-tracer and ring buffer.
+If one of the function tracers set by the global ops is not recursion
+safe, it can still be called directly without the added recursion
+supplied by the ftrace infrastructure.
 
-Before the patches I had:
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
- # echo function > /debug/tracing/current_tracer
- # for i in `seq 10`; do ./hackbench 50; done
-Time: 12.028
-Time: 11.945
-Time: 11.925
-Time: 11.964
-Time: 12.002
-Time: 11.910
-Time: 11.944
-Time: 11.929
-Time: 11.941
-Time: 11.924
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 4451aa3..67e886e 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -221,10 +221,24 @@ static void update_global_ops(void)
+ 	 * registered callers.
+ 	 */
+ 	if (ftrace_global_list == &ftrace_list_end ||
+-	    ftrace_global_list->next == &ftrace_list_end)
++	    ftrace_global_list->next == &ftrace_list_end) {
+ 		func = ftrace_global_list->func;
+-	else
++		/*
++		 * As we are calling the function directly.
++		 * If it does not have recursion protection,
++		 * the function_trace_op needs to be updated
++		 * accordingly.
++		 */
++		if (ftrace_global_list->flags & FTRACE_OPS_FL_RECURSION_SAFE)
++			global_ops.flags |= FTRACE_OPS_FL_RECURSION_SAFE;
++		else
++			global_ops.flags &= ~FTRACE_OPS_FL_RECURSION_SAFE;
++	} else {
+ 		func = ftrace_global_list_func;
++		/* The list has its own recursion protection. */
++		global_ops.flags |= FTRACE_OPS_FL_RECURSION_SAFE;
++	}
++
+ 
+ 	/* If we filter on pids, update to use the pid function */
+ 	if (!list_empty(&ftrace_pids)) {
+-- 
+1.7.10.4
 
-(average: 11.9512)
 
-Now we have:
-
- # echo function > /debug/tracing/current_tracer
- # for i in `seq 10`; do ./hackbench 50; done
-Time: 9.712
-Time: 9.824
-Time: 9.861
-Time: 9.827
-Time: 9.962
-Time: 9.905
-Time: 9.886
-Time: 10.088
-Time: 9.861
-Time: 9.834
-
-(average: 9.876)
-    
-This is a total of a 17.4% improvement in function tracing!
-
-
-Steven Rostedt (8):
-      ftrace: Fix global function tracers that are not recursion safe
-      ftrace: Fix function tracing recursion self test
-      ftrace: Optimize the function tracer list loop
-      ftrace: Add context level recursion bit checking
-      tracing: Make the trace recursion bits into enums
-      tracing: Avoid unnecessary multiple recursion checks
-      ftrace: Use only the preempt version of function tracing
-      ring-buffer: User context bit recursion checking
-
-----
- kernel/trace/ftrace.c          |   82 ++++++++++++++++---------
- kernel/trace/ring_buffer.c     |   85 +++++++++++++++++--------
- kernel/trace/trace.h           |  133 ++++++++++++++++++++++++++++++++++++----
- kernel/trace/trace_functions.c |   61 +++++-------------
- kernel/trace/trace_selftest.c  |    3 +-
- 5 files changed, 248 insertions(+), 116 deletions(-)
