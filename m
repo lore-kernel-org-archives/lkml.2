@@ -1,32 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab2KBNHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 09:07:40 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:51625
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752477Ab2KBNHj (ORCPT
+	id S1756066Ab2KBNJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 09:09:29 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:63407 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab2KBNJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 09:07:39 -0400
-Date: Fri, 2 Nov 2012 09:07:33 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH] xfs: silence GCC warning
-Message-ID: <20121102130733.GF12578@infradead.org>
-References: <1351851021.1597.27.camel@x61.thuisdomein>
+	Fri, 2 Nov 2012 09:09:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351851021.1597.27.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Originating-IP: [91.224.174.71]
+In-Reply-To: <CAHR064gM8sj75Mz1az4pS0wF3fEBcjWMvEjbYRF5pnDirhtjag@mail.gmail.com>
+References: <1341961393-17728-1-git-send-email-bleung@chromium.org>
+	<1351200081-19349-1-git-send-email-bleung@chromium.org>
+	<1351200081-19349-2-git-send-email-bleung@chromium.org>
+	<CAHR064jAfmmpf-p5Yh=SZWW31kr0JxcA3VNQrCTV=T9U48HQtw@mail.gmail.com>
+	<CAOesGMj3urrhy83o1aD4q3K0CqOL6ZrchknmdvgHDWkahavQQA@mail.gmail.com>
+	<CAHR064gM8sj75Mz1az4pS0wF3fEBcjWMvEjbYRF5pnDirhtjag@mail.gmail.com>
+Date: Fri, 2 Nov 2012 14:09:27 +0100
+Message-ID: <CAOesGMhQTdpiRjFQDFRD2NaOjjFg7xVXNeyZ-nj9-1ZCpK2PQA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] Platform: x86: Add Chrome OS Laptop driver
+From: Olof Johansson <olof@lixom.net>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: Benson Leung <bleung@chromium.org>, Matthew Garrett <mjg@redhat.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, olofj@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good, Dave has actually sent it a tidbit earlier as part
-of his series with fixes for 3.7-rc
+On Fri, Nov 2, 2012 at 2:03 PM, Corentin Chary <corentin.chary@gmail.com> wrote:
+> On Fri, Nov 2, 2012 at 12:45 PM, Olof Johansson <olof@lixom.net> wrote:
+>> On Fri, Oct 26, 2012 at 10:30 AM, Corentin Chary
+>> <corentin.chary@gmail.com> wrote:
+>>
+>>> Looks better, but I'm curious, what is the final purpose of this driver ?
+>>> What ABI will be exposed, who will use it ?
+>>>
+>>> If it is going to be bigger, it may be a good idea to convert it to a
+>>> real platform driver (platform_drivers/platform_device stuff).
+>>
+>> It's not a driver per se. It's platform glue that, based on the DMI
+>> table, registers platform and i2c devices (at this time only i2c
+>> devices).
+>>
+>> Unfortunately there's no way to do this nicely from userspace after
+>> boot, since there's limits to how much data you can provide with the
+>> simpler userspace-driven i2c probing protocol.
+>>
+>> So, there's no user-facing ABI on this, and no one is expected to use
+>> it from userspace. It's just there to make sure that the un-probably
+>> devices on this kind of hardware gets bound to drivers properly.
+>>
+>> If it's converted to a platform_driver, how do you expect that to
+>> probe, where would the platform_device be registered?
+>
+> I guess I would check dmi in the module init method, and then use the
+> probe callback of platform_create_bundle to do more probing if
+> necessary.
 
+Maybe I'm dense but I don't see how that could possibly be better than
+what the code does today. It would just add more overhead and clutter
+by creating a unnecessary dummy device/driver setup just to, in the
+end, register the same i2c devices.
+
+
+-Olof
