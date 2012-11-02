@@ -1,106 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935552Ab2KBSxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 14:53:16 -0400
-Received: from smtp145.dfw.emailsrvr.com ([67.192.241.145]:57756 "EHLO
-	smtp145.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab2KBSvn (ORCPT
+	id S935489Ab2KBTFN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 15:05:13 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51588 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260Ab2KBTFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 14:51:43 -0400
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-To: linux-kernel@vger.kernel.org
-Cc: cpufreq@vger.kernel.org, Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/6 v2] arm: use devicetree to get smp_twd clock
-Date: Fri,  2 Nov 2012 13:51:44 -0500
-Message-Id: <1351882309-733-2-git-send-email-mark.langsdorf@calxeda.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351882309-733-1-git-send-email-mark.langsdorf@calxeda.com>
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
- <1351882309-733-1-git-send-email-mark.langsdorf@calxeda.com>
+	Fri, 2 Nov 2012 15:05:10 -0400
+Message-ID: <50941960.3060407@wwwdotorg.org>
+Date: Fri, 02 Nov 2012 13:05:04 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: dwmw2@infradead.org, artem.bityutskiy@linux.intel.com,
+        b32955@freescale.com, shubhrajyoti@ti.com, wim@iguana.be, hs@denx.de,
+        nsekhar@ti.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, gregkh@linuxfoundation.org,
+        hdoyu@nvidia.com, santosh.shilimkar@ti.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com
+Subject: Re: [RFC PATCH 1/2] memory: davinci - add aemif controller platform
+ driver
+References: <1351873278-27325-1-git-send-email-m-karicheri2@ti.com> <1351873278-27325-2-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1351873278-27325-2-git-send-email-m-karicheri2@ti.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On 11/02/2012 10:21 AM, Murali Karicheri wrote:
+> This is a platform driver for asynchronous external memory interface
+> available on TI SoCs. This driver was previously located inside the
+> mach-davinci folder. As this DaVinci IP is re-used across multiple
+> family of devices such as c6x, keystone etc, the driver is moved to drivers.
+> The driver configures async bus parameters associated with a particular
+> chip select. For DaVinci controller driver and driver for other async
+> devices such as NOR flash, ASRAM etc, the bus confuguration is
+> done by this driver at init time. A set of APIs (set/get) provided to
+> update the values based on specific driver usage.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
+> +++ b/Documentation/devicetree/bindings/arm/davinci/aemif.txt
 
-Changes from v1
-	None.
----
- arch/arm/kernel/smp_twd.c | 23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
+If the HW/binding is generic, I'd assume the documentation would be
+place somewhere more like
+Documentation/devicetree/bindings/memory/davinci-aemif.txt?
 
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index b22d700..600fbcc 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -237,12 +237,15 @@ static irqreturn_t twd_handler(int irq, void *dev_id)
- 	return IRQ_NONE;
- }
- 
--static struct clk *twd_get_clock(void)
-+static struct clk *twd_get_clock(struct device_node *np)
- {
--	struct clk *clk;
-+	struct clk *clk = NULL;
- 	int err;
- 
--	clk = clk_get_sys("smp_twd", NULL);
-+	if (np)
-+		clk = of_clk_get(np, 0);
-+	if (!clk)
-+		clk = clk_get_sys("smp_twd", NULL);
- 	if (IS_ERR(clk)) {
- 		pr_err("smp_twd: clock not found: %d\n", (int)PTR_ERR(clk));
- 		return clk;
-@@ -263,6 +266,7 @@ static struct clk *twd_get_clock(void)
- 		return ERR_PTR(err);
- 	}
- 
-+	twd_timer_rate = clk_get_rate(clk);
- 	return clk;
- }
- 
-@@ -273,12 +277,7 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
- {
- 	struct clock_event_device **this_cpu_clk;
- 
--	if (!twd_clk)
--		twd_clk = twd_get_clock();
--
--	if (!IS_ERR_OR_NULL(twd_clk))
--		twd_timer_rate = clk_get_rate(twd_clk);
--	else
-+	if (IS_ERR_OR_NULL(twd_clk))
- 		twd_calibrate_rate();
- 
- 	__raw_writel(0, twd_base + TWD_TIMER_CONTROL);
-@@ -349,6 +348,10 @@ int __init twd_local_timer_register(struct twd_local_timer *tlt)
- 	if (!twd_base)
- 		return -ENOMEM;
- 
-+	twd_clk = twd_get_clock(NULL);
-+
-+	twd_clk = twd_get_clock(NULL);
-+
- 	return twd_local_timer_common_register();
- }
- 
-@@ -383,6 +386,8 @@ void __init twd_local_timer_of_register(void)
- 		goto out;
- 	}
- 
-+	twd_clk = twd_get_clock(np);
-+
- 	err = twd_local_timer_common_register();
- 
- out:
--- 
-1.7.11.7
+> @@ -0,0 +1,62 @@
+> +* Texas Instruments Davinci AEMIF bus interface
+> +
+> +This file provides information for the davinci-emif chip select
+> +bindings.
 
+Shouldn't the binding be for an IP block (the AEMIF bus controller I
+assume), rather than for a particular chip-select generated by the
+controller?
+
+> +This is a sub device node inside the davinci-emif device node
+> +to describe a async bus for a specific chip select. For NAND,
+> +CFI flash device bindings described inside an aemif node,
+> +etc, a cs sub node is defined to associate the bus parameter
+> +bindings used by the device.
+
+Oh, this file only documents part of the controller's node? It seems
+unusual to do that; the documentation for an entire node would usually
+be in a single file, which seems to be
+Documentation/devicetree/bindings/arm/davinci/nand.txt right now. Is
+this "cs" sub-node really something that gets re-used across multiple
+different memory controller IPs?
+
+If so, I guess this file should be called something more like
+davinci-aemif-cs.txt than davinci-aemif.txt. I'd suggest moving
+arm/davinci/nand.txt into a common location too (and renaming it to
+davici-nand.txt to better represent the compatible value it documents).
+
+> +Required properties:=
+> +- compatible: "ti,davinci-cs";
+> +- #address-cells = <1>;
+> +- #size-cells = <1>;
+> +- cs - cs used by the device (NAND, CFI flash etc. values in the range: 2-5
+> +
+> +Optional properties:-
+> +- asize - asynchronous data bus width (0 - 8bit, 1 - 16 bit)
+> +  All of the params below in nanoseconds
+> +
+> +- ta - Minimum turn around time
+> +- rhold - read hold width
+> +- rstobe - read strobe width
+> +- rsetup - read setup width
+> +- whold - write hold width
+> +- wstrobe - write strobe width
+> +- wsetup - write setup width
+> +- ss - enable/disable select strobe (0 - disable, 1 - enable)
+> +- ew - enable/disable extended wait cycles (0 - disable, 1 - enable)
+
+I assume all of those are pretty custom to this binding, and not
+something you'd expect to re-use across multiple vendors' bindings? If
+so, shouldn't they have a "ti," vendor prefix?
+
+> +Example for davinci nand chip select
+> +
+> +aemif@60000000 {
+> +
+> +	compatible = "ti,davinci-aemif";
+
+You need a reg property here.
+
+> +	#address-cells = <2>;
+> +	#size-cells = <1>;
+> +
+> +	nand_cs:cs2@70000000 {
+> +		compatible = "ti,davinci-cs";
+
+You need a reg property here. The unit address "@70000000" in the node
+name only has one address cell, whereas the parent node sets
+#address-cells = <2>.
