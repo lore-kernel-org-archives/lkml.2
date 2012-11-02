@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762973Ab2KBRHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:07:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33259 "EHLO mail.kernel.org"
+	id S1763083Ab2KBRH7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:07:59 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33432 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930Ab2KBRH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:29 -0400
+	id S1753946Ab2KBRHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nix <nix@esperi.org.uk>, Eric Sandeen <sandeen@redhat.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 01/24] ext4: fix unjournaled inode bitmap modification
-Date: Fri,  2 Nov 2012 10:06:49 -0700
-Message-Id: <20121102170247.528566015@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [ 17/24] USB: io_edgeport: remove unused variable
+Date: Fri,  2 Nov 2012 10:07:05 -0700
+Message-Id: <20121102170248.653597289@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170247.406319110@linuxfoundation.org>
 References: <20121102170247.406319110@linuxfoundation.org>
@@ -26,90 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit ffb5387e85d528fb6d0d924abfa3fbf0fc484071 upstream.
+The stable commit 12ddc74e8e25107eda81aceb74e3311c1480b381
+("USB: io_edgeport: fix port-data memory leak") left one variable
+unused:
+    drivers/usb/serial/io_edgeport.c: In function 'edge_release':
+    drivers/usb/serial/io_edgeport.c:3155:6: warning: unused variable 'i' [-Wunused-variable]
 
-commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31 changed
-ext4_new_inode() such that the inode bitmap was being modified
-outside a transaction, which could lead to corruption, and was
-discovered when journal_checksum found a bad checksum in the
-journal during log replay.
+Remove this unused variable.
 
-Nix ran into this when using the journal_async_commit mount
-option, which enables journal checksumming.  The ensuing
-journal replay failures due to the bad checksums led to
-filesystem corruption reported as the now infamous
-"Apparent serious progressive ext4 data corruption bug"
-
-[ Changed by tytso to only call ext4_journal_get_write_access() only
-  when we're fairly certain that we're going to allocate the inode. ]
-
-I've tested this by mounting with journal_checksum and
-running fsstress then dropping power; I've also tested by
-hacking DM to create snapshots w/o first quiescing, which
-allows me to test journal replay repeatedly w/o actually
-power-cycling the box.  Without the patch I hit a journal
-checksum error every time.  With this fix it survives
-many iterations.
-
-Reported-by: Nix <nix@esperi.org.uk>
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ialloc.c |   19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ drivers/usb/serial/io_edgeport.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -716,6 +716,10 @@ repeat_in_this_group:
- 				   "inode=%lu", ino + 1);
- 			continue;
- 		}
-+		BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
-+		err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
-+		if (err)
-+			goto fail;
- 		ext4_lock_group(sb, group);
- 		ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
- 		ext4_unlock_group(sb, group);
-@@ -729,6 +733,11 @@ repeat_in_this_group:
- 	goto out;
+--- a/drivers/usb/serial/io_edgeport.c
++++ b/drivers/usb/serial/io_edgeport.c
+@@ -3152,7 +3152,6 @@ static void edge_disconnect(struct usb_s
+ static void edge_release(struct usb_serial *serial)
+ {
+ 	struct edgeport_serial *edge_serial = usb_get_serial_data(serial);
+-	int i;
  
- got:
-+	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
-+	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
-+	if (err)
-+		goto fail;
-+
- 	/* We may have to initialize the block bitmap if it isn't already */
- 	if (ext4_has_group_desc_csum(sb) &&
- 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
-@@ -762,11 +771,6 @@ got:
- 			goto fail;
- 	}
+ 	dbg("%s", __func__);
  
--	BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
--	err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
--	if (err)
--		goto fail;
--
- 	BUFFER_TRACE(group_desc_bh, "get_write_access");
- 	err = ext4_journal_get_write_access(handle, group_desc_bh);
- 	if (err)
-@@ -814,11 +818,6 @@ got:
- 	}
- 	ext4_unlock_group(sb, group);
- 
--	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
--	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
--	if (err)
--		goto fail;
--
- 	BUFFER_TRACE(group_desc_bh, "call ext4_handle_dirty_metadata");
- 	err = ext4_handle_dirty_metadata(handle, NULL, group_desc_bh);
- 	if (err)
 
 
