@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761385Ab2KBAQR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 20:16:17 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:48954 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758642Ab2KBAQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 20:16:13 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
-        Will Drewry <wad@chromium.org>, Geremy Condra <gcondra@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3/4] arch/arm: allow a scno of -1 to not cause a SIGILL
-Date: Thu,  1 Nov 2012 17:14:59 -0700
-Message-Id: <1351815300-28627-4-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351815300-28627-1-git-send-email-keescook@chromium.org>
-References: <1351815300-28627-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1762530Ab2KBARX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 20:17:23 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59887 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754359Ab2KBART (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 20:17:19 -0400
+Message-ID: <5093110D.8000900@zankel.net>
+Date: Thu, 01 Nov 2012 17:17:17 -0700
+From: Chris Zankel <chris@zankel.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST for 3.7-rc4 - second attempt] xtensa: fix syscall table
+ and vfork, and switch to generic thread/execve
+References: <509301AF.6000901@zankel.net>
+In-Reply-To: <509301AF.6000901@zankel.net>
+X-Forwarded-Message-Id: <509301AF.6000901@zankel.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On tracehook-friendly platforms, a system call number of -1 falls
-through without running much code or taking much action.
+Hi Linus,
 
-ARM is different. This adds a short-circuit check in the trace path to
-avoid any additional work, as suggested by Russell King, to make sure
-that ARM behaves the same way as other platforms.
+Sorry for the mishap with my previous attempt. I noted the change to use
+the git protocol, so it won't happen again (I think I actually used the
+wrong one also the past two times). Regarding the invalid tag, I hadn't
+pushed the tag up before creating the message, so git-request-pull seems
+to have defaulted to the previous tag (or branch name?), and no warning.
+I'll verify the tag next time.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- arch/arm/kernel/entry-common.S |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-index 8355d4b..0bef977 100644
---- a/arch/arm/kernel/entry-common.S
-+++ b/arch/arm/kernel/entry-common.S
-@@ -448,7 +448,10 @@ __sys_trace:
- 	ldmccia	r1, {r0 - r6}			@ have to reload r0 - r6
- 	stmccia	sp, {r4, r5}			@ and update the stack args
- 	ldrcc	pc, [tbl, scno, lsl #2]		@ call sys_* routine
--	b	2b
-+	cmp	scno, #-1			@ skip the syscall?
-+	bne	2b
-+	add	sp, sp, #S_OFF			@ restore stack
-+	b	ret_slow_syscall
- 
- __sys_trace_return:
- 	str	r0, [sp, #S_R0 + S_OFF]!	@ save returned r0
--- 
-1.7.9.5
+Original message:
+
+Would be great if you could pull the Xtensa tree for some important bug
+fixes. With the change to uapi, there was a bug introduced that results
+in an empty syscall table (mult-inclusion bug). Switching to the generic
+thread/execve allowed us to fix a bug we had in vfork().
+
+Thanks,
+-Chris
+
+The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
+
+  Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
+
+are available in the git repository at:
+
+  git://github.com/czankel/xtensa-linux.git tags/xtensa-next-20121101
+
+for you to fetch changes up to dc241f2c1761bfdec85915f4bbf7e750663f3442:
+
+  xtensa: switch to generic sys_execve() (2012-10-25 15:00:44 -0700)
+
+----------------------------------------------------------------
+Xtensa patchset for 3.7-rc4
+
+----------------------------------------------------------------
+Chris Zankel (3):
+      xtensa: allow multi-inclusion for uapi/unistd.h
+      xtensa: use physical addresses for bus addresses
+      xtensa: reset windowbase/windowstart when cloning the VM
+
+Max Filippov (3):
+      xtensa: switch to generic kernel_thread()
+      xtensa: switch to generic kernel_execve()
+      xtensa: switch to generic sys_execve()
+
+ arch/xtensa/Kconfig                   |    2 +
+ arch/xtensa/include/asm/io.h          |    4 ++
+ arch/xtensa/include/asm/processor.h   |    4 +-
+ arch/xtensa/include/asm/syscall.h     |    2 +-
+ arch/xtensa/include/asm/unistd.h      |   15 ++--
+ arch/xtensa/include/uapi/asm/unistd.h |   16 ++---
+ arch/xtensa/kernel/entry.S            |   57 ++++-----------
+ arch/xtensa/kernel/process.c          |  128 ++++++++++++++++++---------------
+ arch/xtensa/kernel/syscall.c          |    7 +-
+ arch/xtensa/kernel/xtensa_ksyms.c     |    1 -
+ 10 files changed, 104 insertions(+), 132 deletions(-)
 
