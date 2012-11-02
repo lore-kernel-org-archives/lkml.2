@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934434Ab2KBS0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 14:26:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:44891 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762175Ab2KBS0V (ORCPT
+	id S934646Ab2KBS0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 14:26:40 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52844 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934474Ab2KBS0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 14:26:21 -0400
-Date: Fri, 2 Nov 2012 14:24:30 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-mm@kvack.org, ngupta@vflare.org, minchan@kernel.org,
-        fschmaus@gmail.com, andor.daam@googlemail.com, ilendir@googlemail.com,
-        akpm@linux-foundation.org, mgorman@suse.de
-Subject: Re: [PATCH 2/5] mm: frontswap: lazy initialization to allow tmem
- backends to build/run as modules
-Message-ID: <20121102182429.GA30100@konrad-lan.dumpdata.com>
-References: <1351696074-29362-1-git-send-email-dan.magenheimer@oracle.com>
- <1351696074-29362-3-git-send-email-dan.magenheimer@oracle.com>
- <50915A5C.8000303@linux.vnet.ibm.com>
- <d7588a48-9f47-4f3a-852c-3fac916de75c@default>
+	Fri, 2 Nov 2012 14:26:36 -0400
+Date: Fri, 2 Nov 2012 18:26:32 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Felipe Balbi <balbi@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
+Message-ID: <20121102182632.GF4413@opensource.wolfsonmicro.com>
+References: <20121026160316.GY18814@opensource.wolfsonmicro.com>
+ <20121029194901.GA30152@arwen.pp.htv.fi>
+ <20121030112410.GM4511@opensource.wolfsonmicro.com>
+ <20121030114949.GC28722@arwen.pp.htv.fi>
+ <20121030140714.GO4511@opensource.wolfsonmicro.com>
+ <20121030151642.GE29159@arwen.pp.htv.fi>
+ <20121030155821.GU4511@opensource.wolfsonmicro.com>
+ <20121030172513.GA3993@arwen.pp.htv.fi>
+ <20121030183704.GX4511@opensource.wolfsonmicro.com>
+ <CACRpkdac=ztY0vXQ8Mu6H8fiAO4aFSSF-A6O1Q==zKOKEsJegw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZsxMXj7gRnSZQ7B8"
 Content-Disposition: inline
-In-Reply-To: <d7588a48-9f47-4f3a-852c-3fac916de75c@default>
+In-Reply-To: <CACRpkdac=ztY0vXQ8Mu6H8fiAO4aFSSF-A6O1Q==zKOKEsJegw@mail.gmail.com>
+X-Cookie: You will never know hunger.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > +	frontswap_enabled = 1;
-> > 
-> > If frontswap_enabled is going to be on all the time, then what point
-> > does it serve?  By extension, can all of the static inline wrappers in
-> > frontswap.h be done away with?
 
-Hm, or the frontswap_enabled can be converted to a "frontswap_flag"
-which has:
+--ZsxMXj7gRnSZQ7B8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-#define FRONTSWAP_ON (1<<1)
-#define FRONTSWAP_BACKEND_ON (1<<2)
+On Tue, Oct 30, 2012 at 10:51:11PM +0100, Linus Walleij wrote:
+> On Tue, Oct 30, 2012 at 7:37 PM, Mark Brown
 
-or so? And then we can see if we can squash the 'backend_registerd'
-and 'frontswap_enabled' together.
-> 
-> The intent of frontswap_enabled and cleancache_enabled was
-> to avoid the overhead of a function call at the point where
-> each frontswap/cleancache "hooks" is placed, using a global
-> variable check instead.  I'm not sure if this minor
-> performance tuning effort is worth preserving:  If not,
-> I agree frontswap_enabled and the static inline wrappers (as
-> well as their cleancache brethren) could be done away with **;
-> if worth preserving, then I think frontswap_enabled could
-> be set in the init method instead but the check for enabled
-> in the frontswap init method and the cleancache init_fs
-> method would need to be removed else lazy initialization
-> wouldn't work.
+> > More seriously the amount of time we seem to have been spending recently
+> > on changes which end up requiring us to go through essentially every
+> > driver and add code to them (often several times) doesn't seem like
+> > we're doing a good job here.
 
-Either way, that should be a seperate patch.
-> 
-> Dan
-> 
-> ** Note to anyone that tries this:  There is a subtle but
-> clever hack in the wrappers suggested by Jeremy Fitzhardinge
-> that disables the wrappers at compile-time as well as
-> runtime.  IOW, make sure you test-compile both with
-> CONFIG_{CLEANCACHE|FRONTSWAP} _and_ with them unconfig'd.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> If this is your main concern you should be made aware that there
+> are people out there planning to supplant the existing DT probe paths
+> that are now being added to each and every ARM-related driver
+> with an ACPI probe path as ARM servers come into the picture.
+
+That's different as we're adding support for a new external interface
+which will need per device configuration parsing rather than
+reorganising things within the kernel; I'd expect it won't supplant DT
+but rather sit alongside it as it's more a requirement for the server
+market than for the embedded market.
+
+--ZsxMXj7gRnSZQ7B8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQlBBPAAoJELSic+t+oim95a8P/2gQNhkpjfeKtjLN+b7VjGx3
+hS8eHcBUX37fs0Av+wz2BM+d6ySD7tBKsmw6No0KQvZW04JsO7KApQRSVJF+RU4k
+HJfxHj1nse6FNTYwmMlkL6WZcyC1EXMgje4i0jHkbOambdO4pQn4q/sILkvsWgun
+wBeTRDxViHVDAy6lNaHv79RId24cCsyUMPXpdj8PQ9Ci0jO0p6i2hxvHBMkwbMP1
+RIIuGEEt/TWEQc2dq/FkXgazhWEr7KQcb8MyOeE26cRql23DGlRhxhmjAV3e+6HM
+3sAPO0uBT+TPke5V+GOJXQLK7XoWW9zHoHobbRzWhwAOdm03KU7DO3B39/VvmJNl
+4nWPtKWQc0QSA2rfCmBtAfLtyrSMDmlFPHFn41a/oHt82VZR7+JE9UPPi+bGusBo
+tnnv6Gco+/FIVDvmyWg/6lj0CMTb7nLhQ2TOjYVbsIhI1hZ4g0imWDW/pvlX4MEe
+Ea3+tFscm3bCQXI7mZSrgCbCRhoH8JXgcEKDYkBPciTYg5fSXP1FPuNHmhI2O8Jk
+t43LkaZlxF+y0Wsq3/84Vsxt8djl88m4GMlt3ueNNPfyAcjid2UN9uw/kQ+H8lw8
+G+Y8Y3Nk8GBPwh0OKAbl7P6IM1plcV3tXSS6xHKkOFnyAn1zMpBgNq6sCyBjZ66U
+bP0aYlue/RpPa91nWU4L
+=qFjt
+-----END PGP SIGNATURE-----
+
+--ZsxMXj7gRnSZQ7B8--
