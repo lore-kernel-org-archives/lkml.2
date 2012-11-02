@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab2KBTxX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 15:53:23 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:37917 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab2KBTxW (ORCPT
+	id S1752692Ab2KBT4L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 15:56:11 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:59042 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750949Ab2KBT4J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 15:53:22 -0400
-Message-ID: <1351885999.3161.11.camel@lorien2>
-Subject: Re: [PATCH RFT RESEND linux-next] c6x: dma-mapping: support
- debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Mark Salter <msalter@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, a-jacquiot@ti.com,
-        linux-c6x-dev@linux-c6x.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Fri, 02 Nov 2012 13:53:19 -0600
-In-Reply-To: <1351883445.15973.24.camel@deneb.redhat.com>
-References: <1351206082.6851.6.camel@lorien2>
-	 <1351266055.4013.1.camel@lorien2> <1351874655.2721.16.camel@lorien2>
-	 <1351883445.15973.24.camel@deneb.redhat.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 2 Nov 2012 15:56:09 -0400
+Date: Fri, 2 Nov 2012 15:56:00 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Lasse =?iso-8859-1?Q?K=E4rkk=E4inen?= <ljkarkk2@cc.hut.fi>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: urandom is too slow
+Message-ID: <20121102195600.GA32632@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Lasse =?iso-8859-1?Q?K=E4rkk=E4inen?= <ljkarkk2@cc.hut.fi>,
+	linux-kernel@vger.kernel.org
+References: <508FEA5A.7010406@cc.hut.fi>
+ <20121030185403.GA5044@thunk.org>
+ <20121030213850.7b987ddf@pyramind.ukuu.org.uk>
+ <50931D6D.2080402@cc.hut.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <50931D6D.2080402@cc.hut.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-02 at 15:10 -0400, Mark Salter wrote:
-> On Fri, 2012-11-02 at 10:44 -0600, Shuah Khan wrote:
-> > On Fri, 2012-10-26 at 09:40 -0600, Shuah Khan wrote:
-> > > Add support for debug_dma_mapping_error() call to avoid warning from
-> > > debug_dma_unmap() interface when it checks for mapping error checked
-> > > status. Without this patch, device driver failed to check map error
-> > > warning is generated.
-> > > 
-> > > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> > > ---
-> > >  arch/c6x/include/asm/dma-mapping.h |    1 +
-> > >  1 file changed, 1 insertion(+)
-> 
-> > Would you like to this patch go through c6x arch tree or linux-next?
-> > Please let me know your preference.
-> 
-> I tried to test this but I get a build error with CONFIG_DMA_API_DEBUG:
-> 
-> /linux-next/lib/dma-debug.c: In function 'has_mapping_error':
-> /linux-next/lib/dma-debug.c:863:15: error: implicit declaration of function 'get_dma_ops' [-Werror=implicit-function-declaration]
-> /linux-next/lib/dma-debug.c:863:34: warning: initialization makes pointer from integer without a cast [enabled by default]
-> 
-> C6X (along with some other architectures) doesn't have a get_dma_ops()
-> function defined.
+On Fri, Nov 02, 2012 at 03:10:05AM +0200, Lasse Kärkkäinen wrote:
+> Thank you for your answers, they should be very helpful for someone
+> who is actually blanking or shredding their disks. However, I am
+> just genuinely interested on why is no better CSPRNG algorithm used
+> in the kernel (is it simply because no-one sent a patch or am I
+> missing something?).
 
-That is a problem I didn't think about. I did a check and looks like c6x
-and frv are the only ones that don't have get_dma_ops() defined. frv is
-in a different category as it doesn't use dma_debug interfaces. IN the
-case c6x, now with my change to add debug_dma_mapping_error(), we will
-start seeing warnings since dma_map_page() and dma_map_single() are
-debugged with a call to debug_dma_map_page() and the corresponding
-dma_mapping_error() interface doesn't call debug_dma_mapping_error()
-interface
+The answer is that the goal of /dev/urandom is not to be a
+cryptographic random number generator (CRNG); a CRNG relies on the
+security of the cryptographic primitive for its strength.  For
+example, a CRNG which is based on DES or AES encrypting an
+incrementing counter using a secret key, is fundamentally reliant on
+the strength of DES or AES.  If DES were to be broken, for example, an
+attacker would be able to determine secret key and thus predict all
+future outputs of a DES-based CRNG.
 
-- Does adding get_dma_ops() make sense? Doesn't look like c6x exports
-dma_ops?
+The design of the /dev/random and /dev/urandom is to take advantage of
+the kernel's access to unpredictability from the hardware, and to
+avoid being "brittle" even in the face of a discovery of a weakness of
+its cryptographic primitives.
 
-Any other ideas?
+Regards,
 
--- Shuah
-
-
+						- Ted
