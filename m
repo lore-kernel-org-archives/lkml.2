@@ -1,129 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762472Ab2KBKyY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 06:54:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50792 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762210Ab2KBKyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 06:54:22 -0400
-Date: Fri, 2 Nov 2012 11:54:20 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wen Congyang <wency@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Jiang Liu <liuj97@gmail.com>, bsingharora@gmail.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        paul.gortmaker@windriver.com, Tang Chen <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH] memcg: fix hotplugged memory zone oops
-Message-ID: <20121102105420.GB24073@dhcp22.suse.cz>
-References: <505187D4.7070404@cn.fujitsu.com>
- <20120913205935.GK1560@cmpxchg.org>
- <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
- <507CF789.6050307@cn.fujitsu.com>
- <alpine.LSU.2.00.1210181129180.2137@eggly.anvils>
- <20121018220306.GA1739@cmpxchg.org>
- <alpine.LNX.2.00.1211011822190.20048@eggly.anvils>
- <20121102102159.GA24073@dhcp22.suse.cz>
+	id S1762619Ab2KBKya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 06:54:30 -0400
+Received: from shrek-modem2.podlesie.net ([83.13.132.46]:60981 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1762490Ab2KBKy0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 06:54:26 -0400
+Date: Fri, 2 Nov 2012 11:54:24 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+Cc: davem@davemloft.net, dwmw2@infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
+Message-ID: <20121102105424.GA19410@shrek.podlesie.net>
+References: <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
+ <201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
+ <20121030182001.GA30373@shrek.podlesie.net>
+ <20121031094147.GA1004@shrek.podlesie.net>
+ <20121031160352.68353ecc@thirdoffive.cmf.nrl.navy.mil>
+ <20121031220435.GA25157@shrek.podlesie.net>
+ <20121101102628.6e3d3cae@thirdoffive.cmf.nrl.navy.mil>
+ <20121102094018.GA14960@shrek.podlesie.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121102102159.GA24073@dhcp22.suse.cz>
+In-Reply-To: <20121102094018.GA14960@shrek.podlesie.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 02-11-12 11:21:59, Michal Hocko wrote:
-> On Thu 01-11-12 18:28:02, Hugh Dickins wrote:
-[...]
+On Fri, Nov 02, 2012 at 10:40:18AM +0100, Krzysztof Mazur wrote:
+> On Thu, Nov 01, 2012 at 10:26:28AM -0400, chas williams - CONTRACTOR wrote:
+> > On Wed, 31 Oct 2012 23:04:35 +0100
+> > Krzysztof Mazur <krzysiek@podlesie.net> wrote:
+> > > 	- missing check for SS_CONNECTED in pppoatm_ioctl,
+> > 
+> > in practice you will never run into this because a pvc is immediately
+> > put into SS_CONNECTED mode (right before the userspace open()
+> > returns).  however, should it check?  yes.  i dont see anything
+> > preventing you from running ppp on svc's.
+> 
+> I can confirm that the problem really exists, without connect() in pppoatm
+> plugin in pppd, I have seen an Oops and panic. I will send appropriate
+> patch.
 
-And I forgot to mention that the following hunk will clash with
-"memcg: Simplify mem_cgroup_force_empty_list error handling" which is in
-linux-next already (via Tejun's tree). 
-Would it be easier to split the patch into the real fix and the hunk
-bellow? That one doesn't have to go into stable anyway and we would save
-some merging conflicts. The updated fix on top of -mm tree is bellow for
-your convinience.
+I'm sending the patch that fixes this issue. Works correctly with original
+pppd, and does not crash with pppd without connect() - the pppd just
+logs:
 
-> >  /**
-> > @@ -3688,17 +3712,17 @@ unsigned long mem_cgroup_soft_limit_recl
-> >  static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
-> >  				int node, int zid, enum lru_list lru)
-> >  {
-> > -	struct mem_cgroup_per_zone *mz;
-> > +	struct lruvec *lruvec;
-> >  	unsigned long flags, loop;
-> >  	struct list_head *list;
-> >  	struct page *busy;
-> >  	struct zone *zone;
-> >  
-> >  	zone = &NODE_DATA(node)->node_zones[zid];
-> > -	mz = mem_cgroup_zoneinfo(memcg, node, zid);
-> > -	list = &mz->lruvec.lists[lru];
-> > +	lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-> > +	list = &lruvec->lists[lru];
-> >  
-> > -	loop = mz->lru_size[lru];
-> > +	loop = mem_cgroup_get_lru_size(lruvec, lru);
-> >  	/* give some margin against EBUSY etc...*/
-> >  	loop += 256;
-> >  	busy = NULL;
+pppd[3460]: ioctl(ATM_SETBACKEND): Invalid argument
 
+and exits.
+
+Krzysiek
+
+-- >8 --
+Subject: [PATCH] pppoatm: allow assign only on a connected socket
+
+The pppoatm does not check if the used vcc is in connected state,
+causing an Oops in pppoatm_send() when vcc->send() is called
+on not fully connected socket.
+
+Now pppoatm can be assigned only on connected sockets; otherwise
+-EINVAL error is returned.
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
 ---
->From 0e55c305a050502a4b2f5167efed58bb6585520b Mon Sep 17 00:00:00 2001
-From: Hugh Dickins <hughd@google.com>
-Date: Fri, 2 Nov 2012 11:47:48 +0100
-Subject: [PATCH] memcg: use mem_cgroup_zone_lruvec in
- mem_cgroup_force_empty_list
+BUG: unable to handle kernel NULL pointer dereference at   (null)
+IP: [<  (null)>]   (null)
+*pde = 00000000 
+Oops: 0000 [#1] PREEMPT 
+Pid: 4154, comm: pppd Not tainted 3.6.0-krzysiek-00002-g3ff1093 #95    /AK32 
+EIP: 0060:[<00000000>] EFLAGS: 00010202 CPU: 0
+EIP is at 0x0
+EAX: d95f7800 EBX: d9d4ba80 ECX: d95f7800 EDX: d9d4ba80
+ESI: ffffffff EDI: 00000001 EBP: 000001c0 ESP: d9823f34
+ DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+CR0: 8005003b CR2: 00000000 CR3: 1e7b6000 CR4: 000007d0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process pppd (pid: 4154, ti=d9822000 task=d99918a0 task.ti=d9822000)
+Stack:
+ c060cd9b c043a2ca d99ed860 d99ed864 d9d4ba80 08094f22 c043a228 d9d4ba80
+ d99ed860 0000000c c043a347 ffffffff 0000000c d94311a0 08094f22 c043a290
+ c019f72e d9823f9c 00000003 09df1090 d94311a0 08094f22 00000008 d9822000
+Call Trace:
+ [<c060cd9b>] ? pppoatm_send+0x6b/0x300
+ [<c043a2ca>] ? ppp_write+0x3a/0xe0
+ [<c043a228>] ? ppp_channel_push+0x38/0xa0
+ [<c043a347>] ? ppp_write+0xb7/0xe0
+ [<c043a290>] ? ppp_channel_push+0xa0/0xa0
+ [<c019f72e>] ? vfs_write+0x8e/0x140
+ [<c019f88c>] ? sys_write+0x3c/0x70
+ [<c062ab50>] ? sysenter_do_call+0x12/0x26
+Code:  Bad EIP value.
+EIP: [<00000000>] 0x0 SS:ESP 0068:d9823f34
+CR2: 0000000000000000
+---[ end trace e29cf1805f576278 ]---
+Kernel panic - not syncing: Fatal exception in interrupt
 
-For no particularly good reason, mem_cgroup_force_empty_list() has
-its own code for deciding lruvec. Change it to use the standard
-mem_cgroup_zone_lruvec() and mem_cgroup_get_lru_size() too.
-In fact it was already safe against oops after memory hotadd (see
-"memcg: fix hotplugged memory zone oops" for more details) when lruvec
-is not initialized yet (the lru lists in danger could only be empty),
-but we're better proofed against future changes this way.
+ net/atm/pppoatm.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Reported-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
----
- mm/memcontrol.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6c72d65..32f0ecf 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3710,15 +3710,15 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
- static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
- 				int node, int zid, enum lru_list lru)
- {
--	struct mem_cgroup_per_zone *mz;
-+	struct lruvec *lruvec;
- 	unsigned long flags;
- 	struct list_head *list;
- 	struct page *busy;
- 	struct zone *zone;
- 
- 	zone = &NODE_DATA(node)->node_zones[zid];
--	mz = mem_cgroup_zoneinfo(memcg, node, zid);
--	list = &mz->lruvec.lists[lru];
-+	lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-+	list = &lruvec->lists[lru];
- 
- 	busy = NULL;
- 	do {
+diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
+index 226dca9..f27a07a 100644
+--- a/net/atm/pppoatm.c
++++ b/net/atm/pppoatm.c
+@@ -406,6 +406,8 @@ static int pppoatm_ioctl(struct socket *sock, unsigned int cmd,
+ 			return -ENOIOCTLCMD;
+ 		if (!capable(CAP_NET_ADMIN))
+ 			return -EPERM;
++		if (sock->state != SS_CONNECTED)
++			return -EINVAL;
+ 		return pppoatm_assign_vcc(atmvcc, argp);
+ 		}
+ 	case PPPIOCGCHAN:
 -- 
-1.7.10.4
+1.8.0.172.g62af90c
 
--- 
-Michal Hocko
-SUSE Labs
