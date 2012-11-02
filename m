@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763142Ab2KBRQP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:16:15 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33139 "EHLO mail.kernel.org"
+	id S1763212Ab2KBRQg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:16:36 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33126 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762949Ab2KBRHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:04 -0400
+	id S1762948Ab2KBRHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Markus Kanet <dvmailing@gmx.eu>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 06/11] b43: Fix oops on unload when firmware not found
-Date: Fri,  2 Nov 2012 10:06:41 -0700
-Message-Id: <20121102170314.673624996@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>, Jens Axboe <axboe@kernel.dk>
+Subject: [ 05/11] floppy: do put_disk on current dr if blk_init_queue fails
+Date: Fri,  2 Nov 2012 10:06:40 -0700
+Message-Id: <20121102170314.601052907@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170314.204845540@linuxfoundation.org>
 References: <20121102170314.204845540@linuxfoundation.org>
@@ -27,37 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-commit f89ff6441df06abc2d95f3ef67525923032d6283 upstream.
+commit 238ab78469c6ab7845b43d5061cd3c92331b2452 upstream.
 
-When b43 fails to find firmware when loaded, a subsequent unload will
-oops due to calling ieee80211_unregister_hw() when the corresponding
-register call was never made.
+If blk_init_queue fails, we do not call put_disk on the current dr
+(dr is decremented first in the error handling loop).
 
-Commit 2d838bb608e2d1f6cb4280e76748cb812dc822e7 fixed the same problem
-for b43legacy.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Tested-by: Markus Kanet <dvmailing@gmx.eu>
-Cc: Markus Kanet <dvmailing@gmx.eu>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/main.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/block/floppy.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -5430,6 +5430,8 @@ static void b43_ssb_remove(struct ssb_de
- 	cancel_work_sync(&wldev->restart_work);
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -4161,6 +4161,7 @@ static int __init floppy_init(void)
  
- 	B43_WARN_ON(!wl);
-+	if (!wldev->fw.ucode.data)
-+		return;			/* NULL if firmware never loaded */
- 	if (wl->current_dev == wldev) {
- 		/* Restore the queues count before unregistering, because firmware detect
- 		 * might have modified it. Restoring is important, so the networking
+ 		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
+ 		if (!disks[dr]->queue) {
++			put_disk(disks[dr]);
+ 			err = -ENOMEM;
+ 			goto out_put_disk;
+ 		}
 
 
