@@ -1,106 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934744Ab2KBS2b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 14:28:31 -0400
-Received: from smtp1.iwsservers.com ([205.251.132.4]:37741 "EHLO
-	smtp1.iwsservers.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934161Ab2KBS23 (ORCPT
+	id S934591Ab2KBS3c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 14:29:32 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:34951 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759416Ab2KBS3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 14:28:29 -0400
-X-Greylist: delayed 8204 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Nov 2012 14:28:29 EDT
-Message-ID: <20121102110639.146610babtt0ozv3@showspeyuyin.com>
-Date: Fri, 02 Nov 2012 11:06:39 -0500
-From: Apex Textile Company <info@apex.com>
-Reply-to: loganpowell@yandex.com
-To: undisclosed-recipients:;
-Subject: Urgent Respond
+	Fri, 2 Nov 2012 14:29:30 -0400
+Date: Fri, 2 Nov 2012 11:29:26 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Luca Clementi <luca.clementi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Brian Swetland <swetland@google.com>
+Subject: Re: [PATCH] Staging: Android: logger: module_exit implementationg
+Message-ID: <20121102182926.GA18824@kroah.com>
+References: <1351836952-3389-1-git-send-email-luca.clementi@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
-X-Filter-ID: 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
-X-Originating-IP: 75.127.85.62
-X-IWSSERVERS-Domain: out.iwsservers.com
-X-IWSSERVERS-Username: 75.127.85.62
-Authentication-Results: iwsservers.com; auth=pass smtp.auth=75.127.85.62
-X-IWSSERVERS-Outgoing-Class: ham
-X-IWSSERVERS-Outgoing-Evidence: Combined (0.86)
-X-Recommended-Action: accept
+In-Reply-To: <1351836952-3389-1-git-send-email-luca.clementi@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 01, 2012 at 11:15:52PM -0700, Luca Clementi wrote:
+> Created the module_exit for the android logger so that
+> it can be loaded and unloaded as a module. Fixed
+> module_init and some other minor issues.
 
+That's doing more than one thing here at once, care to break it up?
+Yeah, I know it seems funny for such a small patch, but it helps.
 
-Apex Textile Company
-Dear Candidate,
-We are a very small International trading company that deal on textile  
-materials with our co-operate headquarters based in Japan.We are in  
-need of representative in Europe,America and Canada to help us receive  
-payment from our customer in this region, then you earn Commission:10%  
-of every money order/check that is cashed.If you are interested in  
-this employment offer please do Contact the employment manager
-Logan Powell
-loganpowell@yandex.com
+Also, now that you've added this, the logger driver still can't be built
+as a module, as the build system isn't changed to let that happen,
+right?
 
-Thanks
-Randy Lee
+Also, why do you want to build this as a module?
 
+> Signed-off-by: Luca Clementi <luca.clementi@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Brian Swetland <swetland@google.com>
+> ---
+>  drivers/staging/android/logger.c |   30 +++++++++++++++++++++++++++++-
+>  1 file changed, 29 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+> index 1d5ed47..050be01 100644
+> --- a/drivers/staging/android/logger.c
+> +++ b/drivers/staging/android/logger.c
+> @@ -676,4 +676,32 @@ static int __init logger_init(void)
+>  out:
+>  	return ret;
+>  }
+> -device_initcall(logger_init);
+> +
+> +static void __exit logger_exit(void)
+> +{
+> +	struct logger_log *current_log, *next_log;
+> +
+> +	list_for_each_entry_safe(current_log, next_log, &log_list, logs) {
+> +		/* we have to delete all the entry inside log_list */
+> +		ret = misc_deregister(&current_log->misc);
+> +		if (unlikely(ret)) {
+> +			pr_err("failed to deregister misc device for log '%s'!\n",
+> +					current_log->misc.name);
+> +		}
+> +		pr_info("removed loggger '%s'\n", current_log->misc.name);
+
+Is that message really needed?
+
+> +		vfree(current_log->buffer);
+> +		kfree(current_log->misc.name);
+> +		kfree(current_log);
+> +	}
+> +
+> +	return;
+> +}
+> +
+> +
+> +module_init(logger_init);
+
+Is module_init() the same "level" as device_initcall()?  Did you test
+this out in an Android system?
+
+> +module_exit(logger_exit);
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Brian Swetland, <swetland@google.com>");
+> +MODULE_DESCRIPTION("Android Logger");
+> +
+> +
+
+What's with the unneeded trailing empty lines?
+
+thanks,
+
+greg k-h
