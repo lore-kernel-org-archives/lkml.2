@@ -1,81 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762672Ab2KBC0T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 22:26:19 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44393 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762588Ab2KBC0R (ORCPT
+	id S1762679Ab2KBC1F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 22:27:05 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:49414 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762588Ab2KBC1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 22:26:17 -0400
-X-AuditID: 9c930179-b7c8bae000003559-b5-50932f476354
-Date: Fri, 2 Nov 2012 11:32:20 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC] Support volatile range for anon vma
-Message-ID: <20121102023220.GA3326@bbox>
-References: <1351133820-14096-1-git-send-email-minchan@kernel.org>
- <0000013a9881a86c-c0fb5823-b6e7-4bea-8707-f6b8eddae14d-000000@email.amazonses.com>
- <20121026005851.GD15767@bbox>
- <0000013abda6fc7d-6cfbef1e-bc7d-4f4f-bb38-221729e8c9f9-000000@email.amazonses.com>
+	Thu, 1 Nov 2012 22:27:01 -0400
+Message-ID: <50932F6A.6090305@linux.vnet.ibm.com>
+Date: Fri, 02 Nov 2012 10:26:50 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013abda6fc7d-6cfbef1e-bc7d-4f4f-bb38-221729e8c9f9-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: "Paton J. Lewis" <palewis@adobe.com>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Baron <jbaron@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Holland <pholland@adobe.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v3] epoll: Support for disabling items, and a self-test
+ app.
+References: <1351210112-23238-1-git-send-email-palewis@adobe.com> <5090C5F6.6000603@linux.vnet.ibm.com> <5091749B.4060605@adobe.com> <5091C5C2.8060009@linux.vnet.ibm.com> <5092C3B9.2070909@adobe.com>
+In-Reply-To: <5092C3B9.2070909@adobe.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12110202-8256-0000-0000-000004D5A6D4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
-
-On Thu, Nov 01, 2012 at 08:26:09PM +0000, Christoph Lameter wrote:
-> On Fri, 26 Oct 2012, Minchan Kim wrote:
+On 11/02/2012 02:47 AM, Paton J. Lewis wrote:
+> On 10/31/12 5:43 PM, Michael Wang wrote:
+>> On 11/01/2012 02:57 AM, Paton J. Lewis wrote:
+>>> On 10/30/12 11:32 PM, Michael Wang wrote:
+>>>> On 10/26/2012 08:08 AM, Paton J. Lewis wrote:
+>>>>> From: "Paton J. Lewis" <palewis@adobe.com>
+>>>>>
+>>>>> It is not currently possible to reliably delete epoll items when
+>>>>> using the
+>>>>> same epoll set from multiple threads. After calling epoll_ctl with
+>>>>> EPOLL_CTL_DEL, another thread might still be executing code related
+>>>>> to an
+>>>>> event for that epoll item (in response to epoll_wait). Therefore the
+>>>>> deleting
+>>>>> thread does not know when it is safe to delete resources pertaining
+>>>>> to the
+>>>>> associated epoll item because another thread might be using those
+>>>>> resources.
+>>>>>
+>>>>> The deleting thread could wait an arbitrary amount of time after
+>>>>> calling
+>>>>> epoll_ctl with EPOLL_CTL_DEL and before deleting the item, but this is
+>>>>> inefficient and could result in the destruction of resources before
+>>>>> another
+>>>>> thread is done handling an event returned by epoll_wait.
+>>>>>
+>>>>> This patch enhances epoll_ctl to support EPOLL_CTL_DISABLE, which
+>>>>> disables an
+>>>>> epoll item. If epoll_ctl returns -EBUSY in this case, then another
+>>>>> thread may
+>>>>> handling a return from epoll_wait for this item. Otherwise if
+>>>>> epoll_ctl
+>>>>> returns 0, then it is safe to delete the epoll item. This allows
+>>>>> multiple
+>>>>> threads to use a mutex to determine when it is safe to delete an
+>>>>> epoll item
+>>>>> and its associated resources, which allows epoll items to be deleted
+>>>>> both
+>>>>> efficiently and without error in a multi-threaded environment. Note
+>>>>> that
+>>>>> EPOLL_CTL_DISABLE is only useful in conjunction with EPOLLONESHOT,
+>>>>> and using
+>>>>> EPOLL_CTL_DISABLE on an epoll item without EPOLLONESHOT returns
+>>>>> -EINVAL.
+>>>>>
+>>>>> This patch also adds a new test_epoll self-test program to both
+>>>>> demonstrate
+>>>>> the need for this feature and test it.
+>>>>
+>>>> Hi, Paton
+>>>>
+>>>> I'm just think about may be we could use this way.
+>>>>
+>>>> Seems like currently we are depending on the epoll_ctl() to indicate
+>>>> the
+>>>> start point of safe section and epoll_wait() for the end point, like:
+>>>>
+>>>>           while () {
+>>>>                   epoll_wait()                    --------------
+>>>>
+>>>>                   fd event arrived                safe section
+>>>>
+>>>>                   clear fd epi->event.events
+>>>>                                                   --------------
+>>>>                   if (fd need stop)
+>>>>                           continue;
+>>>>                                                   --------------
+>>>>                   ...fd data process...
+>>>>
+>>>>                   epoll_ctl(MOD)                  danger section
+>>>>
+>>>>                   set fd epi->event.events        --------------
+>>>>
+>>>>                   continue;
+>>>>           }
+>>>>
+>>>> So we got a safe section and do delete work in this section won't cause
+>>>> trouble since we have a stop check directly after it.
+>>>>
+>>>> Actually what we want is to make sure no one will touch the fd any more
+>>>> after we DISABLE it.
+>>>>
+>>>> Then what about we add a ref count and a stop flag in epi, maintain it
+>>>> like:
+>>>>
+>>>>           epoll_wait()
+>>>>
+>>>>           check user events and
+>>>>           dec the ref count of fd         ---------------------------
+>>>>
+>>>>           ...
+>>>>
+>>>>           fd event arrived                safe sec if ref count is 0
+>>>>
+>>>>           if epi stop flag set
+>>>>                   do nothing
+>>>>           else
+>>>>                   inc epi ref count       ---------------------------
+>>>
+>>> The pseudecode you provide below (for "DISABLE") seems to indicate that
+>>> this "epi ref count" must be maintained by the kernel. Therefore any
+>>> userspace modification of a ref count associated with an epoll item will
+>>> require a new or changed kernel API.
+>>>
+>>>>                   send event
+>>>>
+>>>> And what DISABLE do is:
+>>>>
+>>>>           set epi stop flag
+>>>>
+>>>>           if epi ref count is not 0
+>>>>                   wait until ref count be 0
+>>>
+>>> Perhaps I don't fully understand what you're proposing, but I don't
+>>> think it's reasonable for a kernel API (epoll_ctl in this case) to block
+>>> while waiting for a userspace action (decrementing the ref count) that
+>>> might never occur.
+>>>
+>>> Andrew Morton also proposed using ref counting in response to my initial
+>>> patch submission; my reply to his proposal might also be applicable to
+>>> your proposal. A link to that discussion thread:
+>>> http://thread.gmane.org/gmane.linux.kernel/1311457/focus=1315096
+>>>
+>>> Sorry if I am misunderstanding your proposal, but I don't see how it
+>>> solves the original problem.
+>>
+>> I just try to find out whether we could using DISABLE with out ONESHOT :)
+>>
+>> My currently understanding is:
+>>
+>> 1. we actually want to determine the part between each epoll_wait() in a
+>> while().
+>>
+>> 2. we can't count on epoll_wait() itself, since no info pass to kernel
+>> to indicate whether it was invoked after another epoll_wait() in the
+>> same while().
+>>
+>> 3. so we need epoll_ctl(MOD) to tell kernel: user finished process data
+>> after epoll_wait(), and those data belong to which epi.
+>>
+>> 4. since 3 we need ONESHOT to be enabled.
+>>
+>>
+>> Is this the reason we rely on ONESHOT to be enabled?
 > 
-> > I guess it would improve system performance very well.
-> > But as I wrote down in description, downside of the patch is that we have to
-> > age anon lru although we don't have swap. But gain via the patch is bigger than
-> > loss via aging of anon lru when memory pressure happens. I don't see other downside
-> > other than it. What do you think about it?
-> > (I didn't implement anon lru aging in case of no-swap but it's trivial
-> > once we decide)
-> 
-> 
-> I am a bit confused like some of the others as to why this patch is
-> necessary since we already have DONT_NEED.
+> No, we need to use EPOLLONESHOT to ensure that only one worker thread at
+> a time can ever be handling private data associated with a given fd.
+> This constraint allows a deletion thread to coordinate with that worker
+> thread via a mutex to cleanly and quickly delete the associated private
+> data (provided that the deletion thread knows whether or not such a
+> worker thread exists in that state, which the question that
+> EPOLL_CTL_DISABLE answers).
 
-Totally, my fault. I should have written clearly.
+So using ONESHOT is a demand for current epoll coding design, and
+DISABLE is try to solve the issue of that design?
 
-DONT_NEED have to zap all pte entries/tlb flush when system call
-happens so DONT_NEED isn't cheap.
-Even, later if user accesses address again, page fault happens.
+I don't have many using experience on epoll as you guys :), so allow me
+to ask one question:
 
-This patch is to remove above two overheads.
-while I discussed with KOSAKI, I found there was trial of simillar
-goal by Rik. https://lkml.org/lkml/2007/4/17/53
-But as I look over the code, it seems to have a cost about setting PG_lazyfree
-on all pages of range which isn't in my implementation.
+Will it be very useful if we can using DISABLE with out the limitation
+on ONESHOT?
 
-Anyway, I would like to know where Rik's patch wasn't merged at that time.
+Which means what ever the ep is, if DISABLE return 0, we are safe to
+erase that fd.
 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Regards,
+Michael Wang
 
--- 
-Kind regards,
-Minchan Kim
