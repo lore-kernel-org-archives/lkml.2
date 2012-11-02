@@ -1,120 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935489Ab2KBTFN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 15:05:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51588 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab2KBTFK (ORCPT
+	id S935588Ab2KBTFw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 15:05:52 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:58125 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932260Ab2KBTFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 15:05:10 -0400
-Message-ID: <50941960.3060407@wwwdotorg.org>
-Date: Fri, 02 Nov 2012 13:05:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Fri, 2 Nov 2012 15:05:50 -0400
+X-Sasl-enc: b89CxRrONKAg79nNiPPggi8/bOV9TbWFl3SwjeCSKz18 1351883149
+Date: Fri, 2 Nov 2012 12:05:48 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: linux-next: build failures after merge of the final tree (usb
+ tree related)
+Message-ID: <20121102190548.GA1607@kroah.com>
+References: <20121102170459.5e152727a2a38797ee493da0@canb.auug.org.au>
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: dwmw2@infradead.org, artem.bityutskiy@linux.intel.com,
-        b32955@freescale.com, shubhrajyoti@ti.com, wim@iguana.be, hs@denx.de,
-        nsekhar@ti.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, rob@landley.net, gregkh@linuxfoundation.org,
-        hdoyu@nvidia.com, santosh.shilimkar@ti.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com
-Subject: Re: [RFC PATCH 1/2] memory: davinci - add aemif controller platform
- driver
-References: <1351873278-27325-1-git-send-email-m-karicheri2@ti.com> <1351873278-27325-2-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1351873278-27325-2-git-send-email-m-karicheri2@ti.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121102170459.5e152727a2a38797ee493da0@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2012 10:21 AM, Murali Karicheri wrote:
-> This is a platform driver for asynchronous external memory interface
-> available on TI SoCs. This driver was previously located inside the
-> mach-davinci folder. As this DaVinci IP is re-used across multiple
-> family of devices such as c6x, keystone etc, the driver is moved to drivers.
-> The driver configures async bus parameters associated with a particular
-> chip select. For DaVinci controller driver and driver for other async
-> devices such as NOR flash, ASRAM etc, the bus confuguration is
-> done by this driver at init time. A set of APIs (set/get) provided to
-> update the values based on specific driver usage.
+On Fri, Nov 02, 2012 at 05:04:59PM +1100, Stephen Rothwell wrote:
+> Hi ,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> In file included from drivers/usb/host/ehci-platform.c:28:0:
+> drivers/usb/host/ehci.h: In function 'ehci_readl':
+> drivers/usb/host/ehci.h:662:3: error: implicit declaration of function 'readl_be' [-Werror=implicit-function-declaration]
+> drivers/usb/host/ehci.h:663:3: error: implicit declaration of function 'readl' [-Werror=implicit-function-declaration]
+> drivers/usb/host/ehci.h: In function 'ehci_writel':
+> drivers/usb/host/ehci.h:674:3: error: implicit declaration of function 'writel_be' [-Werror=implicit-function-declaration]
+> drivers/usb/host/ehci.h:675:3: error: implicit declaration of function 'writel' [-Werror=implicit-function-declaration]
+> 
+> Caused by commit 99f91934a907 ("USB: EHCI: make ehci-platform a separate
+> driver") from the usb tree.
+> 
+> I have reverted that commit for today.
+> 
+> I then got:
+> 
+> drivers/usb/chipidea/built-in.o: In function `ehci_init_driver':
+> (.opd+0x5a0): multiple definition of `ehci_init_driver'
+> drivers/usb/host/built-in.o:(.opd+0xb58): first defined here
+> drivers/usb/chipidea/built-in.o: In function `.ehci_init_driver':
+> (.text+0x6528): multiple definition of `.ehci_init_driver'
+> drivers/usb/host/built-in.o:(.text+0x9eb4): first defined here
+> drivers/usb/chipidea/built-in.o: In function `ehci_suspend':
+> (.opd+0xc18): multiple definition of `ehci_suspend'
+> drivers/usb/host/built-in.o:(.opd+0x11d0): first defined here
+> drivers/usb/chipidea/built-in.o: In function `ehci_resume':
+> (.opd+0x1020): multiple definition of `ehci_resume'
+> drivers/usb/host/built-in.o:(.opd+0x1680): first defined here
+> drivers/usb/chipidea/built-in.o: In function `.ehci_suspend':
+> (.text+0x100e4): multiple definition of `.ehci_suspend'
+> drivers/usb/host/built-in.o:(.text+0x13b00): first defined here
+> drivers/usb/chipidea/built-in.o: In function `.ehci_resume':
+> (.text+0x17760): multiple definition of `.ehci_resume'
+> drivers/usb/host/built-in.o:(.text+0x1b498): first defined here
+> drivers/usb/chipidea/built-in.o: In function `ehci_setup':
+> (.opd+0x1128): multiple definition of `ehci_setup'
+> drivers/usb/host/built-in.o:(.opd+0x17a0): first defined here
+> drivers/usb/chipidea/built-in.o: In function `.ehci_setup':
+> (.text+0x228f0): multiple definition of `.ehci_setup'
+> drivers/usb/host/built-in.o:(.text+0x266fc): first defined here
+> 
+> Which is caused by commit 3e0232039967 ("USB: EHCI: prepare to make
+> ehci-hcd a library module").
+> 
+> I have added the following patch to disable the chipidea driver for now:
 
-> +++ b/Documentation/devicetree/bindings/arm/davinci/aemif.txt
 
-If the HW/binding is generic, I'd assume the documentation would be
-place somewhere more like
-Documentation/devicetree/bindings/memory/davinci-aemif.txt?
+Both of these should now be fixed in my tree.
 
-> @@ -0,0 +1,62 @@
-> +* Texas Instruments Davinci AEMIF bus interface
-> +
-> +This file provides information for the davinci-emif chip select
-> +bindings.
+thanks,
 
-Shouldn't the binding be for an IP block (the AEMIF bus controller I
-assume), rather than for a particular chip-select generated by the
-controller?
-
-> +This is a sub device node inside the davinci-emif device node
-> +to describe a async bus for a specific chip select. For NAND,
-> +CFI flash device bindings described inside an aemif node,
-> +etc, a cs sub node is defined to associate the bus parameter
-> +bindings used by the device.
-
-Oh, this file only documents part of the controller's node? It seems
-unusual to do that; the documentation for an entire node would usually
-be in a single file, which seems to be
-Documentation/devicetree/bindings/arm/davinci/nand.txt right now. Is
-this "cs" sub-node really something that gets re-used across multiple
-different memory controller IPs?
-
-If so, I guess this file should be called something more like
-davinci-aemif-cs.txt than davinci-aemif.txt. I'd suggest moving
-arm/davinci/nand.txt into a common location too (and renaming it to
-davici-nand.txt to better represent the compatible value it documents).
-
-> +Required properties:=
-> +- compatible: "ti,davinci-cs";
-> +- #address-cells = <1>;
-> +- #size-cells = <1>;
-> +- cs - cs used by the device (NAND, CFI flash etc. values in the range: 2-5
-> +
-> +Optional properties:-
-> +- asize - asynchronous data bus width (0 - 8bit, 1 - 16 bit)
-> +  All of the params below in nanoseconds
-> +
-> +- ta - Minimum turn around time
-> +- rhold - read hold width
-> +- rstobe - read strobe width
-> +- rsetup - read setup width
-> +- whold - write hold width
-> +- wstrobe - write strobe width
-> +- wsetup - write setup width
-> +- ss - enable/disable select strobe (0 - disable, 1 - enable)
-> +- ew - enable/disable extended wait cycles (0 - disable, 1 - enable)
-
-I assume all of those are pretty custom to this binding, and not
-something you'd expect to re-use across multiple vendors' bindings? If
-so, shouldn't they have a "ti," vendor prefix?
-
-> +Example for davinci nand chip select
-> +
-> +aemif@60000000 {
-> +
-> +	compatible = "ti,davinci-aemif";
-
-You need a reg property here.
-
-> +	#address-cells = <2>;
-> +	#size-cells = <1>;
-> +
-> +	nand_cs:cs2@70000000 {
-> +		compatible = "ti,davinci-cs";
-
-You need a reg property here. The unit address "@70000000" in the node
-name only has one address cell, whereas the parent node sets
-#address-cells = <2>.
+greg k-h
