@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643Ab2KBEz0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 00:55:26 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44864 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab2KBEzW (ORCPT
+	id S1751838Ab2KBEz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 00:55:58 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:34554 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab2KBEzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 00:55:22 -0400
-Date: Fri, 2 Nov 2012 15:55:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kees Cook <keescook@google.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the drop-experimental tree with the
- net-next tree
-Message-Id: <20121102155514.939282b4682c521f07e7943c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__2_Nov_2012_15_55_14_+1100_ZesQDe77+ORwRkej"
+	Fri, 2 Nov 2012 00:55:55 -0400
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/comedi: Use dev_ printks in ni_tiocmd.c
+Date: Fri,  2 Nov 2012 13:55:48 +0900
+Message-Id: <1351832148-32098-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__2_Nov_2012_15_55_14_+1100_ZesQDe77+ORwRkej
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+fixed below checkpatch warnings.
+- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+- WARNING: Prefer netdev_notice(netdev, ... then dev_notice(dev, ... then pr_notice(...  to printk(KERN_NOTICE ...
 
-Hi Kees,
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+---
+ drivers/staging/comedi/drivers/ni_tiocmd.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
-Today's linux-next merge of the drop-experimental tree got a conflict in
-drivers/net/ethernet/intel/Kconfig between commit a24006ed1261 ("ptp:
-Enable clock drivers along with associated net/PHY drivers") from the
-net-next tree and commit 70c5056f413d ("drivers/net/ethernet/intel:
-remove depends on CONFIG_EXPERIMENTAL") from the drop-experimental tree.
+diff --git a/drivers/staging/comedi/drivers/ni_tiocmd.c b/drivers/staging/comedi/drivers/ni_tiocmd.c
+index 8ee93d3..11a377a 100644
+--- a/drivers/staging/comedi/drivers/ni_tiocmd.c
++++ b/drivers/staging/comedi/drivers/ni_tiocmd.c
+@@ -173,7 +173,8 @@ static int ni_tio_input_cmd(struct ni_gpct *counter, struct comedi_async *async)
+ static int ni_tio_output_cmd(struct ni_gpct *counter,
+ 			     struct comedi_async *async)
+ {
+-	printk(KERN_ERR "ni_tio: output commands not yet implemented.\n");
++	dev_err(counter->counter_dev->dev->class_dev,
++		"output commands not yet implemented.\n");
+ 	return -ENOTSUPP;
+ 
+ 	counter->mite_chan->dir = COMEDI_OUTPUT;
+@@ -219,7 +220,10 @@ int ni_tio_cmd(struct ni_gpct *counter, struct comedi_async *async)
+ 
+ 	spin_lock_irqsave(&counter->lock, flags);
+ 	if (counter->mite_chan == NULL) {
+-		printk(KERN_ERR "ni_tio: commands only supported with DMA.  Interrupt-driven commands not yet implemented.\n");
++		dev_err(counter->counter_dev->dev->class_dev,
++			"commands only supported with DMA.  ");
++		dev_err(counter->counter_dev->dev->class_dev,
++			"Interrupt-driven commands not yet implemented.\n");
+ 		retval = -EIO;
+ 	} else {
+ 		retval = ni_tio_cmd_setup(counter, async);
+@@ -427,8 +431,9 @@ void ni_tio_acknowledge_and_confirm(struct ni_gpct *counter, int *gate_error,
+ 				  NITIO_Gxx_Joint_Status2_Reg
+ 				  (counter->counter_index)) &
+ 		    Gi_Permanent_Stale_Bit(counter->counter_index)) {
+-			printk(KERN_INFO "%s: Gi_Permanent_Stale_Data detected.\n",
+-			       __func__);
++			dev_info(counter->counter_dev->dev->class_dev,
++				 "%s: Gi_Permanent_Stale_Data detected.\n",
++				 __func__);
+ 			if (perm_stale_data)
+ 				*perm_stale_data = 1;
+ 		}
+@@ -448,7 +453,8 @@ void ni_tio_handle_interrupt(struct ni_gpct *counter,
+ 	ni_tio_acknowledge_and_confirm(counter, &gate_error, &tc_error,
+ 				       &perm_stale_data, NULL);
+ 	if (gate_error) {
+-		printk(KERN_NOTICE "%s: Gi_Gate_Error detected.\n", __func__);
++		dev_notice(counter->counter_dev->dev->class_dev,
++			   "%s: Gi_Gate_Error detected.\n", __func__);
+ 		s->async->events |= COMEDI_CB_OVERFLOW;
+ 	}
+ 	if (perm_stale_data)
+@@ -459,8 +465,8 @@ void ni_tio_handle_interrupt(struct ni_gpct *counter,
+ 		if (read_register(counter,
+ 				NITIO_Gi_DMA_Status_Reg
+ 				(counter->counter_index)) & Gi_DRQ_Error_Bit) {
+-			printk(KERN_NOTICE "%s: Gi_DRQ_Error detected.\n",
+-							__func__);
++			dev_notice(counter->counter_dev->dev->class_dev,
++				   "%s: Gi_DRQ_Error detected.\n", __func__);
+ 			s->async->events |= COMEDI_CB_OVERFLOW;
+ 		}
+ 		break;
+-- 
+1.7.9.5
 
-The former removed some code that was changed by the latter, so I did
-that and can carry the fix as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__2_Nov_2012_15_55_14_+1100_ZesQDe77+ORwRkej
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQk1IyAAoJEECxmPOUX5FEChUP/1tZ0iPHeX3wRJGmLtqZajjR
-gGiCRv0lEKfPQwXhlYH9+vxS04Vmn9Q+YLwKsrrmhSllEgmUCFrK002ea9q3Surd
-ZwTvlkfXiySokO29t4sOdfG/iOo6+DjEWRB0CggJX5ffqeZz0WJJz/OkrExFiMPg
-jy7VK3bJerdOZ6eURGwJBixg7duYV1YguajCijQTDKOlYONS12qtse446q8lael5
-9h6VRu/4GSUvnaFu8P4n4G85Z4ZTbwydqNCci7cXLuX5lygwRJC9c4OxHcBc2CFA
-4SLS4/H4GskTmZrfnd7fmpqlnreH0LsQ6CpidT9RzJqpbVJYFMeidnmzyh9SvrFZ
-wzPfF7t4YgYuqFVyw9mDbTsCv51PD9cWMa+c7pMg/7h8XC6WjEjkTzbHJM0GXk7Z
-RVjaxfMdsSXJj4Tz5ZX1fQNmlNo4JZrUT+VXmclDQisBC1zahokx0F5PlsWDK/Q7
-EdMyyxV0jELsQJFbLLhnhUTa2AfyA4a+D3lwNVTt1gA/6pw3JrhRmNbjr4OzGxw1
-Vh5/peCRR41Kj+7fi+7GCIQPAQDlkqzptiXJi47ShizCgEBYeu4xC2RB2CqmPz0/
-ST3CtTCGbtFhgOA1QeVVlp1gUwTHZ0Tm/4j8WnrKdf4CNySigVzqzqd64ijf1SvJ
-UEKV3zli/rbe7AiF2e7d
-=eh0J
------END PGP SIGNATURE-----
-
---Signature=_Fri__2_Nov_2012_15_55_14_+1100_ZesQDe77+ORwRkej--
