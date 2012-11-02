@@ -1,229 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934547Ab2KBSSm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 14:18:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33253 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934132Ab2KBSOc (ORCPT
+	id S934434Ab2KBS0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 14:26:23 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:44891 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762175Ab2KBS0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 14:14:32 -0400
-X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=SSzgduZrY3MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=FbA2kkj90RoA:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=vR_tLfPqsBwRw38X8EMA:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=J1z37ABzf8eiYCYH:21 a=riljiUDZG5FoEZuW:21 a=YE06Q9Y8YUXigxV-hIIA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121102181431.607201290@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 14:13:41 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH 10/19] tracing: Cleanup unnecessary function declarations
-References: <20121102181331.513782854@goodmis.org>
-Content-Disposition: inline; filename=0010-tracing-Cleanup-unnecessary-function-declarations.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Fri, 2 Nov 2012 14:26:21 -0400
+Date: Fri, 2 Nov 2012 14:24:30 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        linux-mm@kvack.org, ngupta@vflare.org, minchan@kernel.org,
+        fschmaus@gmail.com, andor.daam@googlemail.com, ilendir@googlemail.com,
+        akpm@linux-foundation.org, mgorman@suse.de
+Subject: Re: [PATCH 2/5] mm: frontswap: lazy initialization to allow tmem
+ backends to build/run as modules
+Message-ID: <20121102182429.GA30100@konrad-lan.dumpdata.com>
+References: <1351696074-29362-1-git-send-email-dan.magenheimer@oracle.com>
+ <1351696074-29362-3-git-send-email-dan.magenheimer@oracle.com>
+ <50915A5C.8000303@linux.vnet.ibm.com>
+ <d7588a48-9f47-4f3a-852c-3fac916de75c@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <d7588a48-9f47-4f3a-852c-3fac916de75c@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> > > +	frontswap_enabled = 1;
+> > 
+> > If frontswap_enabled is going to be on all the time, then what point
+> > does it serve?  By extension, can all of the static inline wrappers in
+> > frontswap.h be done away with?
 
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Hm, or the frontswap_enabled can be converted to a "frontswap_flag"
+which has:
 
-The functions defined in include/trace/syscalls.h are not used directly
-since struct ftrace_event_class was introduced. Remove them from the
-header file and rearrange the ftrace_event_class declarations in
-trace_syscalls.c.
+#define FRONTSWAP_ON (1<<1)
+#define FRONTSWAP_BACKEND_ON (1<<2)
 
-Link: http://lkml.kernel.org/r/1339112785-21806-2-git-send-email-vnagarnaik=
-@google.com
+or so? And then we can see if we can squash the 'backend_registerd'
+and 'frontswap_enabled' together.
+> 
+> The intent of frontswap_enabled and cleancache_enabled was
+> to avoid the overhead of a function call at the point where
+> each frontswap/cleancache "hooks" is placed, using a global
+> variable check instead.  I'm not sure if this minor
+> performance tuning effort is worth preserving:  If not,
+> I agree frontswap_enabled and the static inline wrappers (as
+> well as their cleancache brethren) could be done away with **;
+> if worth preserving, then I think frontswap_enabled could
+> be set in the init method instead but the check for enabled
+> in the frontswap init method and the cleancache init_fs
+> method would need to be removed else lazy initialization
+> wouldn't work.
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/trace/syscall.h       |   21 --------------
- kernel/trace/trace_syscalls.c |   61 ++++++++++++++++++++-----------------=
-----
- 2 files changed, 29 insertions(+), 53 deletions(-)
-
-diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-index 0c95796..84bc419 100644
---- a/include/trace/syscall.h
-+++ b/include/trace/syscall.h
-@@ -31,25 +31,4 @@ struct syscall_metadata {
- 	struct ftrace_event_call *exit_event;
- };
-=20
--#ifdef CONFIG_FTRACE_SYSCALLS
--extern unsigned long arch_syscall_addr(int nr);
--extern int init_syscall_trace(struct ftrace_event_call *call);
--
--extern int reg_event_syscall_enter(struct ftrace_event_call *call);
--extern void unreg_event_syscall_enter(struct ftrace_event_call *call);
--extern int reg_event_syscall_exit(struct ftrace_event_call *call);
--extern void unreg_event_syscall_exit(struct ftrace_event_call *call);
--enum print_line_t print_syscall_enter(struct trace_iterator *iter, int fla=
-gs,
--				      struct trace_event *event);
--enum print_line_t print_syscall_exit(struct trace_iterator *iter, int flag=
-s,
--				     struct trace_event *event);
--#endif
--
--#ifdef CONFIG_PERF_EVENTS
--int perf_sysenter_enable(struct ftrace_event_call *call);
--void perf_sysenter_disable(struct ftrace_event_call *call);
--int perf_sysexit_enable(struct ftrace_event_call *call);
--void perf_sysexit_disable(struct ftrace_event_call *call);
--#endif
--
- #endif /* _TRACE_SYSCALL_H */
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 2485a7d..7609dd6 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -21,9 +21,6 @@ static int syscall_enter_register(struct ftrace_event_cal=
-l *event,
- static int syscall_exit_register(struct ftrace_event_call *event,
- 				 enum trace_reg type, void *data);
-=20
--static int syscall_enter_define_fields(struct ftrace_event_call *call);
--static int syscall_exit_define_fields(struct ftrace_event_call *call);
--
- static struct list_head *
- syscall_get_enter_fields(struct ftrace_event_call *call)
- {
-@@ -32,30 +29,6 @@ syscall_get_enter_fields(struct ftrace_event_call *call)
- 	return &entry->enter_fields;
- }
-=20
--struct trace_event_functions enter_syscall_print_funcs =3D {
--	.trace		=3D print_syscall_enter,
--};
--
--struct trace_event_functions exit_syscall_print_funcs =3D {
--	.trace		=3D print_syscall_exit,
--};
--
--struct ftrace_event_class event_class_syscall_enter =3D {
--	.system		=3D "syscalls",
--	.reg		=3D syscall_enter_register,
--	.define_fields	=3D syscall_enter_define_fields,
--	.get_fields	=3D syscall_get_enter_fields,
--	.raw_init	=3D init_syscall_trace,
--};
--
--struct ftrace_event_class event_class_syscall_exit =3D {
--	.system		=3D "syscalls",
--	.reg		=3D syscall_exit_register,
--	.define_fields	=3D syscall_exit_define_fields,
--	.fields		=3D LIST_HEAD_INIT(event_class_syscall_exit.fields),
--	.raw_init	=3D init_syscall_trace,
--};
--
- extern struct syscall_metadata *__start_syscalls_metadata[];
- extern struct syscall_metadata *__stop_syscalls_metadata[];
-=20
-@@ -432,7 +405,7 @@ void unreg_event_syscall_exit(struct ftrace_event_call =
-*call)
- 	mutex_unlock(&syscall_trace_lock);
- }
-=20
--int init_syscall_trace(struct ftrace_event_call *call)
-+static int init_syscall_trace(struct ftrace_event_call *call)
- {
- 	int id;
- 	int num;
-@@ -457,6 +430,30 @@ int init_syscall_trace(struct ftrace_event_call *call)
- 	return id;
- }
-=20
-+struct trace_event_functions enter_syscall_print_funcs =3D {
-+	.trace		=3D print_syscall_enter,
-+};
-+
-+struct trace_event_functions exit_syscall_print_funcs =3D {
-+	.trace		=3D print_syscall_exit,
-+};
-+
-+struct ftrace_event_class event_class_syscall_enter =3D {
-+	.system		=3D "syscalls",
-+	.reg		=3D syscall_enter_register,
-+	.define_fields	=3D syscall_enter_define_fields,
-+	.get_fields	=3D syscall_get_enter_fields,
-+	.raw_init	=3D init_syscall_trace,
-+};
-+
-+struct ftrace_event_class event_class_syscall_exit =3D {
-+	.system		=3D "syscalls",
-+	.reg		=3D syscall_exit_register,
-+	.define_fields	=3D syscall_exit_define_fields,
-+	.fields		=3D LIST_HEAD_INIT(event_class_syscall_exit.fields),
-+	.raw_init	=3D init_syscall_trace,
-+};
-+
- unsigned long __init __weak arch_syscall_addr(int nr)
- {
- 	return (unsigned long)sys_call_table[nr];
-@@ -537,7 +534,7 @@ static void perf_syscall_enter(void *ignore, struct pt_=
-regs *regs, long id)
- 	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
- }
-=20
--int perf_sysenter_enable(struct ftrace_event_call *call)
-+static int perf_sysenter_enable(struct ftrace_event_call *call)
- {
- 	int ret =3D 0;
- 	int num;
-@@ -558,7 +555,7 @@ int perf_sysenter_enable(struct ftrace_event_call *call)
- 	return ret;
- }
-=20
--void perf_sysenter_disable(struct ftrace_event_call *call)
-+static void perf_sysenter_disable(struct ftrace_event_call *call)
- {
- 	int num;
-=20
-@@ -615,7 +612,7 @@ static void perf_syscall_exit(void *ignore, struct pt_r=
-egs *regs, long ret)
- 	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
- }
-=20
--int perf_sysexit_enable(struct ftrace_event_call *call)
-+static int perf_sysexit_enable(struct ftrace_event_call *call)
- {
- 	int ret =3D 0;
- 	int num;
-@@ -636,7 +633,7 @@ int perf_sysexit_enable(struct ftrace_event_call *call)
- 	return ret;
- }
-=20
--void perf_sysexit_disable(struct ftrace_event_call *call)
-+static void perf_sysexit_disable(struct ftrace_event_call *call)
- {
- 	int num;
-=20
---=20
-1.7.10.4
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJQlA2HAAoJEOdOSU1xswtMnOMIAIjG9ViSX88p0Sd+9D9n8iK2
-YidqnYAYPS8Fj6Qja0lcMJAjhkAAHpC9KAooboP5X8EGIUOjKmCSNOpr1dXoAXHQ
-ndWb74vCxhV3MwYOIhGW4pCanYH/kKXTRL2J0TvQTm9/BQ0kKrCJt7prW2Z4IgX8
-E/hp8J03puE5kQZuggos1RvtImDio/IRGmCf7/Tqn9K9O0WRk3vi93HOYPDuJ002
-QhhynnZ19q4JGPi4fskA8tC7t+AumkLWjGuoIuBCb9z8QnDsHYcE2YwM5AnfuwjR
-rMK9ZQDYqa2ghIMdJ+n1+l5H+QBx0eJ2KJjPzi3NThf0fu2dH5KoNeM3M+T36qc=
-=BZ9n
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+Either way, that should be a seperate patch.
+> 
+> Dan
+> 
+> ** Note to anyone that tries this:  There is a subtle but
+> clever hack in the wrappers suggested by Jeremy Fitzhardinge
+> that disables the wrappers at compile-time as well as
+> runtime.  IOW, make sure you test-compile both with
+> CONFIG_{CLEANCACHE|FRONTSWAP} _and_ with them unconfig'd.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
