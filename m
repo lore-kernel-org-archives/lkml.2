@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934795Ab2KBSRn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 14:17:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22935 "EHLO
+	id S934641Ab2KBSRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 14:17:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12253 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934218Ab2KBSOd (ORCPT
+	with ESMTP id S934217Ab2KBSOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Nov 2012 14:14:33 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=dPG4pZMWmFYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=bAoo0TRVWEYA:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=zur_hE3pW_xaBMeJ4UEA:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=tQePFVSo2C1l0M4z:21 a=8injnqd8hiDfG_D6:21 a=QN9TC-Wkv769S6BzuGcA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=lwJ3fPhDQvUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=N_ud6Yt4TfYA:10 a=20KFwNOVAAAA:8 a=Hu_aRwiWeCxwcz0KctEA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=Jw80OEVvTVgN_fggRQUA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121102181431.404431230@goodmis.org>
+Message-Id: <20121102181430.874470137@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 14:13:40 -0400
+Date: Fri, 02 Nov 2012 14:13:37 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH 09/19] tracing: Trivial cleanup
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 06/19] tracing: Enable comm recording if trace_printk() is used
 References: <20121102181331.513782854@goodmis.org>
-Content-Disposition: inline; filename=0009-tracing-Trivial-cleanup.patch
+Content-Disposition: inline; filename=0006-tracing-Enable-comm-recording-if-trace_printk-is-use.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,63 +31,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: David Sharp <dhsharp@google.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-Remove ftrace_format_syscall() declaration; it is neither defined nor
-used. Also update a comment and formatting.
+If comm recording is not enabled when trace_printk() is used then
+you just get this type of output:
 
-Link: http://lkml.kernel.org/r/1339112785-21806-1-git-send-email-vnagarnaik=
-@google.com
+[ adding trace_printk("hello! %d", irq); in do_IRQ ]
 
-Signed-off-by: David Sharp <dhsharp@google.com>
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+           <...>-2843  [001] d.h.    80.812300: do_IRQ: hello! 14
+           <...>-2734  [002] d.h2    80.824664: do_IRQ: hello! 14
+           <...>-2713  [003] d.h.    80.829971: do_IRQ: hello! 14
+           <...>-2814  [000] d.h.    80.833026: do_IRQ: hello! 14
+
+By enabling the comm recorder when trace_printk is enabled:
+
+       hackbench-6715  [001] d.h.   193.233776: do_IRQ: hello! 21
+            sshd-2659  [001] d.h.   193.665862: do_IRQ: hello! 21
+          <idle>-0     [001] d.h1   193.665996: do_IRQ: hello! 21
+
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/trace/syscall.h    |    2 --
- kernel/trace/ring_buffer.c |    6 +++---
- 2 files changed, 3 insertions(+), 5 deletions(-)
+ kernel/trace/trace.c        |   36 ++++++++++++++++++++++++++++++++++--
+ kernel/trace/trace.h        |    1 +
+ kernel/trace/trace_events.c |    3 +++
+ 3 files changed, 38 insertions(+), 2 deletions(-)
 
-diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-index 31966a4..0c95796 100644
---- a/include/trace/syscall.h
-+++ b/include/trace/syscall.h
-@@ -39,8 +39,6 @@ extern int reg_event_syscall_enter(struct ftrace_event_ca=
-ll *call);
- extern void unreg_event_syscall_enter(struct ftrace_event_call *call);
- extern int reg_event_syscall_exit(struct ftrace_event_call *call);
- extern void unreg_event_syscall_exit(struct ftrace_event_call *call);
--extern int
--ftrace_format_syscall(struct ftrace_event_call *call, struct trace_seq *s);
- enum print_line_t print_syscall_enter(struct trace_iterator *iter, int fla=
-gs,
- 				      struct trace_event *event);
- enum print_line_t print_syscall_exit(struct trace_iterator *iter, int flag=
-s,
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 0ebeb1d..23a384b 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1821,7 +1821,7 @@ rb_add_time_stamp(struct ring_buffer_event *event, u6=
-4 delta)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index a5411b7..b90a827 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1559,10 +1559,10 @@ static int alloc_percpu_trace_buffer(void)
+ 	return -ENOMEM;
+ }
+=20
++static int buffers_allocated;
++
+ void trace_printk_init_buffers(void)
+ {
+-	static int buffers_allocated;
+-
+ 	if (buffers_allocated)
+ 		return;
+=20
+@@ -1575,6 +1575,34 @@ void trace_printk_init_buffers(void)
+ 	tracing_update_buffers();
+=20
+ 	buffers_allocated =3D 1;
++
++	/*
++	 * trace_printk_init_buffers() can be called by modules.
++	 * If that happens, then we need to start cmdline recording
++	 * directly here. If the global_trace.buffer is already
++	 * allocated here, then this was called by module code.
++	 */
++	if (global_trace.buffer)
++		tracing_start_cmdline_record();
++}
++
++void trace_printk_start_comm(void)
++{
++	/* Start tracing comms if trace printk is set */
++	if (!buffers_allocated)
++		return;
++	tracing_start_cmdline_record();
++}
++
++static void trace_printk_start_stop_comm(int enabled)
++{
++	if (!buffers_allocated)
++		return;
++
++	if (enabled)
++		tracing_start_cmdline_record();
++	else
++		tracing_stop_cmdline_record();
  }
 =20
  /**
-- * ring_buffer_update_event - update event type and data
-+ * rb_update_event - update event type and data
-  * @event: the even to update
-  * @type: the type of event
-  * @length: the size of the event field in the ring buffer
-@@ -2723,8 +2723,8 @@ EXPORT_SYMBOL_GPL(ring_buffer_discard_commit);
-  * and not the length of the event which would hold the header.
-  */
- int ring_buffer_write(struct ring_buffer *buffer,
--			unsigned long length,
--			void *data)
-+		      unsigned long length,
-+		      void *data)
- {
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	struct ring_buffer_event *event;
+@@ -2797,6 +2825,9 @@ static void set_tracer_flags(unsigned int mask, int e=
+nabled)
+=20
+ 	if (mask =3D=3D TRACE_ITER_OVERWRITE)
+ 		ring_buffer_change_overwrite(global_trace.buffer, enabled);
++
++	if (mask =3D=3D TRACE_ITER_PRINTK)
++		trace_printk_start_stop_comm(enabled);
+ }
+=20
+ static ssize_t
+@@ -5099,6 +5130,7 @@ __init static int tracer_alloc_buffers(void)
+=20
+ 	/* Only allocate trace_printk buffers if a trace_printk exists */
+ 	if (__stop___trace_bprintk_fmt !=3D __start___trace_bprintk_fmt)
++		/* Must be called before global_trace.buffer is allocated */
+ 		trace_printk_init_buffers();
+=20
+ 	/* To save memory, keep the ring buffer size to its minimum */
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index c56a233..7824a55 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -841,6 +841,7 @@ extern const char *__start___trace_bprintk_fmt[];
+ extern const char *__stop___trace_bprintk_fmt[];
+=20
+ void trace_printk_init_buffers(void);
++void trace_printk_start_comm(void);
+=20
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(call, struct_name, id, tstruct, print, filter)	\
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index d608d09..dec47e7 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1489,6 +1489,9 @@ static __init int event_trace_enable(void)
+ 		if (ret)
+ 			pr_warn("Failed to enable trace event: %s\n", token);
+ 	}
++
++	trace_printk_start_comm();
++
+ 	return 0;
+ }
+=20
 --=20
 1.7.10.4
 
@@ -100,13 +167,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJQlA2HAAoJEOdOSU1xswtM6a0H/2OXY3owuXBRS97x2aTjWOo/
-zm3NPNOjszH4NDjo8/Fydgu/6j2+SNyyJSQX5gWh0qBYIcVjkfMwQLtoZ2mbSjXA
-sDZpUNDfMAhVuCIUDQDClbIZkwNuszPZ4vW3E+Foiu0lssCj4ed0xa3OUylEWgn3
-Ictb8YJQJpFaez/Hva8s1BXkXvBDFGxVn0tdh9FYUAQNFe92A4fMFRC34IGNH8d5
-oElY3yCeRoji2SP6mWbjDT/BqyG6AoAS+uzPtQrMkW4+P7rKVxq/Ci7guxilrFQF
-GrOwWS7UesUk0VESfMg/MHXwtf9B537t9DSrwkCXtPHZPolT2ORaBmvOuoICpEk=
-=DguO
+iQEcBAABAgAGBQJQlA2GAAoJEOdOSU1xswtMAYsH/1m6tvwgJnQeG9M0NvTisl3m
+x7CIO1RuMwwtYMOVwvGjEONuTNps0smFAkYRedEcSgHi8478BdU5q9PRkRP//GOV
+h7vCRCRCX/cJ2c0Bra2klaGzWQBmplEbqObHkLFVoE/4FWii63nq8Zc3nDdzcYQA
+uL+2B61mz7zx4pyvQsSOvI/11vNm9P3O8nJzuRO9+7pMZOWS3UziEXCiYtog4pFA
+1MVOrFAGi7kmqHiCnwjlmiqJZRbxrEZlJsdAggwWPmpS1zmoE+/2aWRl9ZAPnQLH
+84Kywcv2oeHbrzMUx2tukiN2UKuzgr4TRV2YjDoh/Che2vHbmCq5tQGxzO1msLQ=
+=ZTaM
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
