@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422907Ab2KBKTL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 06:19:11 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:42828 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757279Ab2KBKTJ convert rfc822-to-8bit (ORCPT
+	id S934847Ab2KBKVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 06:21:00 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37366 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933559Ab2KBKU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 06:19:09 -0400
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 6.1 \(1498\))
-Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <509391CA.9040408@ti.com>
-Date: Fri, 2 Nov 2012 11:19:12 +0100
-Cc: Jason Kridner <jkridner@beagleboard.org>, Tony Lindgren <tony@atomide.com>,
-        <paul@pwsan.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, "Porter, Matt" <mporter@ti.com>,
-        Russ Dill <russ.dill@gmail.com>, <khilman@ti.com>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <FED5A9B3-836C-4284-AF61-5D81C65F3634@dominion.thruhere.net>
-References: <CA+T6QPk-etCT7EzwGR-tP+JTab_m4Vywh9qgHG_HW-oXKgn_AQ@mail.gmail.com> <509391CA.9040408@ti.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-X-Mailer: Apple Mail (2.1498)
+	Fri, 2 Nov 2012 06:20:59 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50939E76.1000801@jp.fujitsu.com>
+Date: Fri, 02 Nov 2012 19:20:38 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
+        bsingharora@gmail.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/8] cgroup: remove CGRP_WAIT_ON_RMDIR, cgroup_exclude_rmdir()
+ and cgroup_release_and_wakeup_rmdir()
+References: <1351712650-23709-1-git-send-email-tj@kernel.org> <1351712650-23709-6-git-send-email-tj@kernel.org>
+In-Reply-To: <1351712650-23709-6-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Op 2 nov. 2012, om 10:26 heeft "Cousson, Benoit" <b-cousson@ti.com> het volgende geschreven:
-
-> Hi Jason,
+(2012/11/01 4:44), Tejun Heo wrote:
+> CGRP_WAIT_ON_RMDIR is another kludge which was added to make cgroup
+> destruction rollback somewhat working.  cgroup_rmdir() used to drain
+> CSS references and CGRP_WAIT_ON_RMDIR and the associated waitqueue and
+> helpers were used to allow the task performing rmdir to wait for the
+> next relevant event.
 > 
-> On 11/1/2012 7:50 PM, Jason Kridner wrote:
->> My apologies for starting a new thread, but I don't have this thread
->> in my Inbox.
->> 
->> http://www.spinics.net/lists/linux-omap/msg81034.html
->> 
->> Tony Lindgren wrote:
->> 
->>> * Pantelis Antoniou <panto@xxxxxxxxxxxxxxxxxxxxxxx> [121031 15:02]:
->>>> 
->>>> So when device's node is 'disabled' of_platform_device_create_pdata()
->>>> will not create the device.
->>>> 
->>>> Now, of course it is possible to re-trigger the platform's probe method
->>>> to be called, and in fact I do so in the capebus patches.
->>> 
->>> You should fix this in generic way then rather than working
->>> around it in capebus. The same problem exists changing
->>> between different functionality for the shared pins,
->>> let's say between USB pins and UART pins if you want a
->>> serial debug console on some phone.
->> 
->> The current capebus solution goes a long way to fixing a huge issue
->> for BeagleBone users and I don't understand what seems to be a
->> push-back on principle. On BeagleBone capes, these conflicts cannot be
->> resolved early.
+> Unfortunately, the wait is visible to controllers too and the
+> mechanism got exposed to memcg by 887032670d ("cgroup avoid permanent
+> sleep at rmdir").
 > 
-> I don't think there is any push-back on the principle. It is a very valid problem that does not have any solution today.
+> Now that the draining and retries are gone, CGRP_WAIT_ON_RMDIR is
+> unnecessary.  Remove it and all the mechanisms supporting it.  Note
+> that memcontrol.c changes are essentially revert of 887032670d
+> ("cgroup avoid permanent sleep at rmdir").
 > 
-> The comments are more on the implementation.
-> 
->> Do you have suggestions on some more generic method? It seems to me
->> the proposed capebus approach strikes a good balance.
-> 
-> Well, yeah, that's a generic DT issue, not a beagle-cape issue.
-> We should not necessarily handle it by introducing some fake bus and some new binding like spi-dt / i2c-dt that does not mean anything in term of HW.
-> 
-> DT is about pure HW representation. Introducing some fake hierarchy to make SW life easier is not necessarily the good approach.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> Cc: Balbir Singh <bsingharora@gmail.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I see, pure HW. Let's look at this:
+plz forget my comments on v1...But...
 
-                gpio_keys {
-                        compatible = "gpio-keys";
-                        pinctrl-names = "default";
-                        pinctrl-0 = <&bone_lcd3_cape_keys_00A0_pins>;
+If swap-in makes a charge before css is deactivated, pre_destroy()->force_empty()
+will cause infinite loop until it finds a newly charged page in LRU. I think
+force_empty() will find it by lru_drain() and can make res_coutnter to be 0.
 
-                        #address-cells = <1>;
-                        #size-cells = <0>;
+I think we need some test with swap-in handling..Anyway, 
 
-                        button@1 {
-                                debounce_interval = <50>;
-                                linux,code = <105>;
-                                label = "left";
-                                gpios = <&gpio2 16 0x0>;
-                                gpio-key,wakeup;
-                                autorepeat;
-                        };
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Is the "linux,code" pure hardware or have there already been exceptions to that rule?
 
-regards,
-
-Koen
