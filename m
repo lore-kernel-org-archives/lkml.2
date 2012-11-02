@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762382Ab2KBRGY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:06:24 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33009 "EHLO mail.kernel.org"
+	id S1762466Ab2KBRG2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:06:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33031 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760792Ab2KBRGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:06:21 -0400
+	id S1762392Ab2KBRG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:06:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 3/4] mm: fix XFS oops due to dirty pages without buffers on s390
-Date: Fri,  2 Nov 2012 10:06:07 -0700
-Message-Id: <20121102170333.833821754@linuxfoundation.org>
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 4/4] drm/nouveau: silence modesetting spam on pre-gf8 chipsets
+Date: Fri,  2 Nov 2012 10:06:08 -0700
+Message-Id: <20121102170333.922503680@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170333.581931288@linuxfoundation.org>
 References: <20121102170333.581931288@linuxfoundation.org>
@@ -29,109 +25,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Ben Skeggs <bskeggs@redhat.com>
 
-commit ef5d437f71afdf4afdbab99213add99f4b1318fd upstream.
+commit cee59f15a60cc6269a25e3f6fbf1a577d6ab8115 upstream.
 
-On s390 any write to a page (even from kernel itself) sets architecture
-specific page dirty bit.  Thus when a page is written to via buffered
-write, HW dirty bit gets set and when we later map and unmap the page,
-page_remove_rmap() finds the dirty bit and calls set_page_dirty().
-
-Dirtying of a page which shouldn't be dirty can cause all sorts of
-problems to filesystems.  The bug we observed in practice is that
-buffers from the page get freed, so when the page gets later marked as
-dirty and writeback writes it, XFS crashes due to an assertion
-BUG_ON(!PagePrivate(page)) in page_buffers() called from
-xfs_count_page_state().
-
-Similar problem can also happen when zero_user_segment() call from
-xfs_vm_writepage() (or block_write_full_page() for that matter) set the
-hardware dirty bit during writeback, later buffers get freed, and then
-page unmapped.
-
-Fix the issue by ignoring s390 HW dirty bit for page cache pages of
-mappings with mapping_cap_account_dirty().  This is safe because for
-such mappings when a page gets marked as writeable in PTE it is also
-marked dirty in do_wp_page() or do_page_fault().  When the dirty bit is
-cleared by clear_page_dirty_for_io(), the page gets writeprotected in
-page_mkclean().  So pagecache page is writeable if and only if it is
-dirty.
-
-Thanks to Hugh Dickins for pointing out mapping has to have
-mapping_cap_account_dirty() for things to work and proposing a cleaned
-up variant of the patch.
-
-The patch has survived about two hours of running fsx-linux on tmpfs
-while heavily swapping and several days of running on out build machines
-where the original problem was triggered.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- mm/rmap.c |   21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/nouveau/nv04_dac.c |    8 ++++----
+ drivers/gpu/drm/nouveau/nv04_dfp.c |    6 +++---
+ drivers/gpu/drm/nouveau/nv04_tv.c  |    4 ++--
+ 3 files changed, 9 insertions(+), 9 deletions(-)
 
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -57,6 +57,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/migrate.h>
- #include <linux/hugetlb.h>
-+#include <linux/backing-dev.h>
+--- a/drivers/gpu/drm/nouveau/nv04_dac.c
++++ b/drivers/gpu/drm/nouveau/nv04_dac.c
+@@ -209,7 +209,7 @@ out:
+ 	NVWriteVgaCrtc(dev, 0, NV_CIO_CR_MODE_INDEX, saved_cr_mode);
  
- #include <asm/tlbflush.h>
- 
-@@ -936,11 +937,8 @@ int page_mkclean(struct page *page)
- 
- 	if (page_mapped(page)) {
- 		struct address_space *mapping = page_mapping(page);
--		if (mapping) {
-+		if (mapping)
- 			ret = page_mkclean_file(mapping, page);
--			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
--				ret = 1;
--		}
+ 	if (blue == 0x18) {
+-		NV_INFO(dev, "Load detected on head A\n");
++		NV_DEBUG(dev, "Load detected on head A\n");
+ 		return connector_status_connected;
  	}
  
- 	return ret;
-@@ -1121,6 +1119,8 @@ void page_add_file_rmap(struct page *pag
-  */
- void page_remove_rmap(struct page *page)
- {
-+	struct address_space *mapping = page_mapping(page);
-+
- 	/* page still mapped by someone else? */
- 	if (!atomic_add_negative(-1, &page->_mapcount))
+@@ -323,7 +323,7 @@ nv17_dac_detect(struct drm_encoder *enco
+ 
+ 	if (nv17_dac_sample_load(encoder) &
+ 	    NV_PRAMDAC_TEST_CONTROL_SENSEB_ALLHI) {
+-		NV_INFO(dev, "Load detected on output %c\n",
++		NV_DEBUG(dev, "Load detected on output %c\n",
+ 			'@' + ffs(dcb->or));
+ 		return connector_status_connected;
+ 	} else {
+@@ -398,7 +398,7 @@ static void nv04_dac_commit(struct drm_e
+ 
+ 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
+ 
+-	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
++	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
+ 		drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base),
+ 		nv_crtc->index, '@' + ffs(nv_encoder->dcb->or));
+ }
+@@ -447,7 +447,7 @@ static void nv04_dac_dpms(struct drm_enc
  		return;
-@@ -1131,8 +1131,19 @@ void page_remove_rmap(struct page *page)
- 	 * this if the page is anon, so about to be freed; but perhaps
- 	 * not if it's in swapcache - there might be another pte slot
- 	 * containing the swap entry, but page not yet written to swap.
-+	 *
-+	 * And we can skip it on file pages, so long as the filesystem
-+	 * participates in dirty tracking; but need to catch shm and tmpfs
-+	 * and ramfs pages which have been modified since creation by read
-+	 * fault.
-+	 *
-+	 * Note that mapping must be decided above, before decrementing
-+	 * mapcount (which luckily provides a barrier): once page is unmapped,
-+	 * it could be truncated and page->mapping reset to NULL at any moment.
-+	 * Note also that we are relying on page_mapping(page) to set mapping
-+	 * to &swapper_space when PageSwapCache(page).
- 	 */
--	if ((!PageAnon(page) || PageSwapCache(page)) &&
-+	if (mapping && !mapping_cap_account_dirty(mapping) &&
- 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
- 		set_page_dirty(page);
- 	/*
+ 	nv_encoder->last_dpms = mode;
+ 
+-	NV_INFO(dev, "Setting dpms mode %d on vga encoder (output %d)\n",
++	NV_DEBUG(dev, "Setting dpms mode %d on vga encoder (output %d)\n",
+ 		     mode, nv_encoder->dcb->index);
+ 
+ 	nv04_dac_update_dacclk(encoder, mode == DRM_MODE_DPMS_ON);
+--- a/drivers/gpu/drm/nouveau/nv04_dfp.c
++++ b/drivers/gpu/drm/nouveau/nv04_dfp.c
+@@ -468,7 +468,7 @@ static void nv04_dfp_commit(struct drm_e
+ 
+ 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
+ 
+-	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
++	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
+ 		drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base),
+ 		nv_crtc->index, '@' + ffs(nv_encoder->dcb->or));
+ }
+@@ -511,7 +511,7 @@ static void nv04_lvds_dpms(struct drm_en
+ 		return;
+ 	nv_encoder->last_dpms = mode;
+ 
+-	NV_INFO(dev, "Setting dpms mode %d on lvds encoder (output %d)\n",
++	NV_DEBUG(dev, "Setting dpms mode %d on lvds encoder (output %d)\n",
+ 		     mode, nv_encoder->dcb->index);
+ 
+ 	if (was_powersaving && is_powersaving_dpms(mode))
+@@ -556,7 +556,7 @@ static void nv04_tmds_dpms(struct drm_en
+ 		return;
+ 	nv_encoder->last_dpms = mode;
+ 
+-	NV_INFO(dev, "Setting dpms mode %d on tmds encoder (output %d)\n",
++	NV_DEBUG(dev, "Setting dpms mode %d on tmds encoder (output %d)\n",
+ 		     mode, nv_encoder->dcb->index);
+ 
+ 	nv04_dfp_update_backlight(encoder, mode);
+--- a/drivers/gpu/drm/nouveau/nv04_tv.c
++++ b/drivers/gpu/drm/nouveau/nv04_tv.c
+@@ -69,7 +69,7 @@ static void nv04_tv_dpms(struct drm_enco
+ 	struct nv04_mode_state *state = &dev_priv->mode_reg;
+ 	uint8_t crtc1A;
+ 
+-	NV_INFO(dev, "Setting dpms mode %d on TV encoder (output %d)\n",
++	NV_DEBUG(dev, "Setting dpms mode %d on TV encoder (output %d)\n",
+ 		mode, nv_encoder->dcb->index);
+ 
+ 	state->pllsel &= ~(PLLSEL_TV_CRTC1_MASK | PLLSEL_TV_CRTC2_MASK);
+@@ -162,7 +162,7 @@ static void nv04_tv_commit(struct drm_en
+ 
+ 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
+ 
+-	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
++	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
+ 		      drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base), nv_crtc->index,
+ 		      '@' + ffs(nv_encoder->dcb->or));
+ }
 
 
