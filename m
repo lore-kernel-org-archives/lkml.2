@@ -1,79 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759897Ab2KBWtP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 18:49:15 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51673 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754663Ab2KBWtM convert rfc822-to-8bit (ORCPT
+	id S1760493Ab2KBWuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 18:50:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39436 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758896Ab2KBWuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 18:49:12 -0400
+	Fri, 2 Nov 2012 18:50:16 -0400
+Date: Fri, 2 Nov 2012 15:49:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.7-rc0
+Message-ID: <20121102224933.GA7179@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <201211021439.02797.Martin@lichtvoll.de>
-References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-	<201211021439.02797.Martin@lichtvoll.de>
-Date: Sat, 3 Nov 2012 07:49:11 +0900
-Message-ID: <CAOtxgye-sqJFe17EyfJQ0RrMwQqsPbDv5m+4cJT0BjnRnGv56w@mail.gmail.com>
-Subject: Re: [PATCH 00/16 v3] f2fs: introduce flash-friendly file system
-From: Kim Jaegeuk <jaegeuk.kim@gmail.com>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: linux-kernel@vger.kernel.org, Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        linux-fsdevel@vger.kernel.org, gregkh@linuxfoundation.org,
-        viro@zeniv.linux.org.uk, arnd@arndb.de, tytso@mit.edu,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7JfCtLOvnd9MIVvH"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/2 Martin Steigerwald <Martin@lichtvoll.de>
->
-> Am Mittwoch, 31. Oktober 2012 schrieb Jaegeuk Kim:
-> > Change log from v2:
-> >
-> >  o Fix compilation error for arm [Max]
-> >  o Move proc entries to debugfs [Greg]
-> >  o Add i_atime, i_generation, etc [Neil]
-> >  o Support NFS export [Changman]
-> >  o Move the f2fs magic number [Marco]
-> >  o Add s_time_gran [Marco]
-> >  o Fix f2fs_truncate [Marco]
-> >  o Enhance f2fs document [Vyacheslav]
-> >  o Support uuid and add additional comments [Vyacheslav]
-> >  o Change superblock offset [Vyacheslav]
-> >  o Fix some bugs and return values [Vyacheslav]
-> >  o Improve initial mount time [Jaegeuk]
-> >  o Fix f2fs-tools environment [Mike]
-> >
-> > I've set up a git tree in sf.net for f2fs-tools.
-> > Please download f2fs-tools by tag: for_patch_set_v3.
->
-> I like to try this out.
->
-> Do you have kernel code available in some git repo? I didn´t find anything
-> on git.kernel.org? Otherwise I take the patches from your mails.
->
 
-At this moment, there is no f2fs-repo yet in public.
-If f2fs is merged, I'd like to make a dev tree somewhere.
-I really want to make the dev tree in kernel.org later, but it totally depends
-on the maintainers' decision.
-Before then, I apologize to retrieve f2fs sources from LKML.
-Thanks,
+--7JfCtLOvnd9MIVvH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
---
-Jaegeuk Kim
-Samsung
+Hi Linus,
 
-> Tools cloned nicely.
->
-> Thanks,
-> --
-> Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-> GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Please pull from:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem. Just a few driver fixes.
+
+Changelog:
+---------
+
+Hui Wang (1):
+      Input: egalax_ts - get gpio from devicetree
+
+Jason Gerecke (2):
+      Input: wacom - add INPUT_PROP_DIRECT flag to Cintiq 24HD
+      Input: wacom - correct bad Cintiq 24HD check
+
+Roland Stigge (1):
+      Input: lpc32xx-keys - select INPUT_MATRIXKMAP
+
+Rolf Eike Beer (1):
+      Input: tsc40 - remove wrong announcement of pressure support
+
+Vasily Khoruzhick (1):
+      Input: pxa27x_keypad - clear pending interrupts on keypad config
+
+
+Diffstat:
+--------
+
+ .../bindings/input/touchscreen/egalax-ts.txt       | 19 ++++++++++++++++++
+ drivers/input/keyboard/Kconfig                     |  1 +
+ drivers/input/keyboard/pxa27x_keypad.c             |  3 +++
+ drivers/input/tablet/wacom_sys.c                   |  2 +-
+ drivers/input/tablet/wacom_wac.c                   |  3 +++
+ drivers/input/touchscreen/Kconfig                  |  2 +-
+ drivers/input/touchscreen/egalax_ts.c              | 23 ++++++++++++++++++=
+++--
+ drivers/input/touchscreen/tsc40.c                  |  1 -
+ 8 files changed, 49 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/ega=
+lax-ts.txt
+
+--=20
+Dmitry
+
+
+--7JfCtLOvnd9MIVvH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQlE39AAoJEH70+W8r6ZYqMioP/iyLNvR56pGBnE+FV6HSqVGk
+h3D/nYKyJ68FyID5ZBRTh+CSoAzqgQq7KQK46EPsvvavQXikP43JnEx2U/B7ecrM
+47ZOXuu4zk7FBOVRGx1JXkirzyKOIDnxv3AACeE8a+Wces/sofBPRrTxv4lknnIt
+2vhdEN87evO07UsNZ9K7rhLo5ETI9RnjkiRAluH77qOeu7K7Ared9H4F0eg2DARy
+0/S00fJvDDAVO3sujBuEFbbtbHeHVu3skiUk4891H6v4LOOCC8nqAOfk4gHKbftw
+y3/lFSLLAl+msAyLSedXfRpGXvEf8OMDejwSeszC1gMgaCrWp4IiGU7TC+NiSxko
+LGk7QudTUcyLhfc72A4MqhpYNmXXEPbHLxHi6iFbKIaFsl0OLjg8wUV8VpP5cdb2
+aLeh0ab6mu/69ARmd1gbs86FV/rOy8MD0O1fapb85PQ1q6hQWXr/v2JrbU1k81B8
+y73z2qB39fSHih5UMdfgHCSPpwRYaS8YqFdS5RwSRKyVxadSmpefzf3QR32P3SN8
+qokqHd7AgqB0kxB1bvSqxeyNwywJmwCkt5NDN+8IkSqkDt4W2PQojiHKdS+Ra3V+
+03xByUnwXzrid2fEQEkzXiqw8/Go1eRmRQRPohbjtiERW1W64uJcu2IzySh86nHe
+SnYQj4cSdCiFaqmVDGLy
+=Tv1B
+-----END PGP SIGNATURE-----
+
+--7JfCtLOvnd9MIVvH--
