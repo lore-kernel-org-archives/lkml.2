@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759903Ab2KBM1f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 08:27:35 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35437 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755375Ab2KBM1e (ORCPT
+	id S1760852Ab2KBM3G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 08:29:06 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36046 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759315Ab2KBM3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 08:27:34 -0400
-Date: Fri, 2 Nov 2012 12:15:56 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH v2] ARM: plat-versatile: move FPGA irq driver to
-	drivers/irqchip
-Message-ID: <20121102121556.GV21164@n2100.arm.linux.org.uk>
-References: <1351805329-19576-1-git-send-email-linus.walleij@linaro.org> <20121101232010.78269291@skate>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121101232010.78269291@skate>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 2 Nov 2012 08:29:04 -0400
+Date: Fri, 2 Nov 2012 12:33:59 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Howard Chu <hyc@symas.com>
+Cc: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+        Vladislav Bolkhovitin <vst@vlnb.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        drh@hwaci.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [sqlite] light weight write barriers
+Message-ID: <20121102123359.2479a7dc@pyramind.ukuu.org.uk>
+In-Reply-To: <50931601.4060102@symas.com>
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
+	<m2fw5mtffg.fsf_-_@firstfloor.org>
+	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
+	<5086F5A7.9090406@vlnb.net>
+	<20121025051445.GA9860@thunk.org>
+	<508B3EED.2080003@vlnb.net>
+	<20121027044456.GA2764@thunk.org>
+	<5090532D.4050902@vlnb.net>
+	<20121031095404.0ac18a4b@pyramind.ukuu.org.uk>
+	<5092D90F.7020105@vlnb.net>
+	<20121101212418.140e3a82@pyramind.ukuu.org.uk>
+	<50931601.4060102@symas.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 11:20:10PM +0100, Thomas Petazzoni wrote:
-> Linus,
-> 
-> On Thu,  1 Nov 2012 22:28:49 +0100, Linus Walleij wrote:
-> 
-> > +void fpga_handle_irq(struct pt_regs *regs);
-> 
-> This function does not need to be exposed in a public header: as
-> proposed for the bcm2835 and armada-370-xp IRQ controller drivers, the
-> driver should directly do handle_arch_irq = fpga_handle_irq, and
-> therefore there is no need for the machine desc structure to reference
-> fpga_handle_irq anymore.
+> Isn't any type of kernel-side ordering an exercise in futility, since
+>    a) the kernel has no knowledge of the disk's actual geometry
+>    b) most drives will internally re-order requests anyway
 
-Err no, then you don't understand what's going on here.  This may or may
-not be a top-level IRQ handler.  Some ARM platforms have three of these
-cascaded, others have one of these cascaded off a VIC or GIC.
+They will but only as permitted by the commands queued, so you have some
+control depending upon the interface capabilities.
 
-To override the top level IRQ handler unconditionally is going to break
-platforms.
+>    c) cheap drives won't support barriers
+
+Barriers are pretty much universal as you need them for power off !
+
+> Even assuming the drives honored all your requests without lying, how would 
+> you really want this behavior exposed? From the userland perspective, there 
+> are very few apps that care. Probably only transactional databases, really.
+
+And file systems internally sometimes. A file system is after all a
+transactional database of sorts.
+
+Alan
