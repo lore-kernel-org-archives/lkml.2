@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761159Ab2KAXzD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 19:55:03 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35521 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565Ab2KAXy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 19:54:59 -0400
-Date: Fri, 2 Nov 2012 00:54:57 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC EDAC/GHES] edac: lock module owner to avoid error report
- conflicts
-Message-ID: <20121101235457.GA20890@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Luck, Tony" <tony.luck@intel.com>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>,
-	Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <048a00fa4a888b349be5954ce9fd063a7bcf2564.1351691230.git.mchehab@redhat.com>
- <20121101110512.GA31271@liondog.tnic>
- <20121101094721.2a57719c@redhat.com>
- <20121101195509.GE31271@liondog.tnic>
- <3908561D78D1C84285E8C5FCA982C28F19D5C13C@ORSMSX108.amr.corp.intel.com>
- <20121101220249.GI31271@liondog.tnic>
- <3908561D78D1C84285E8C5FCA982C28F19D5C22B@ORSMSX108.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D5C22B@ORSMSX108.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S2992677Ab2KBAE5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 20:04:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52478 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992641Ab2KBAE4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 20:04:56 -0400
+Date: Thu, 1 Nov 2012 17:04:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v6 00/29] kmem controller for memcg.
+Message-Id: <20121101170454.b7713bce.akpm@linux-foundation.org>
+In-Reply-To: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 11:47:52PM +0000, Luck, Tony wrote:
-> > Right, but at least in the csrow case, we still can compute back the
-> > csrow even with the interleaving, after we know how it is done exactly
-> > (on which address bits, etc). I think this should be doable on Intel
-> > controllers too but I don't know.
+On Thu,  1 Nov 2012 16:07:16 +0400
+Glauber Costa <glommer@parallels.com> wrote:
+
+> Hi,
 > 
-> No. Architecturally all Intel provides is the physical address in MCi_ADDR.
-> To do anything with that you are into per-system space, and the
-> registers that define the mappings are not necessarily available
-> to OS code ... sometimes they are, and sometimes they are even
-> documented in places where Mauro can use them to write an
-> EDAC driver ... but there are no guarantees.
+> This work introduces the kernel memory controller for memcg. Unlike previous
+> submissions, this includes the whole controller, comprised of slab and stack
+> memory.
 
-One more reason that we need some sort of tables telling us which
-rank/csrow maps to which DIMM and thus silkscreen label so that we can
-be able to say the following from software:
+I'm in the middle of (re)reading all this.  Meanwhile I'll push it all
+out to http://ozlabs.org/~akpm/mmots/ for the crazier testers.
 
-"You just had a single corrected ECC error in the DIMM with label
-P0_DIMM_A"
+One thing:
 
-or whatever unique naming each platform vendor comes up with.
+> Numbers can be found at https://lkml.org/lkml/2012/9/13/239
 
-The day hw people give me this, I'm going to throw a big party and
-invite all LKML.
+You claim in the above that the fork worload is 'slab intensive".  Or
+at least, you seem to - it's a bit fuzzy.
 
--- 
-Regards/Gruss,
-    Boris.
+But how slab intensive is it, really?
+
+What is extremely slab intensive is networking.  The networking guys
+are very sensitive to slab performance.  If this hasn't already been
+done, could you please determine what impact this has upon networking? 
+I expect Eric Dumazet, Dave Miller and Tom Herbert could suggest
+testing approaches.
+
