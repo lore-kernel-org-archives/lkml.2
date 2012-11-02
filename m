@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757631Ab2KBNXk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 09:23:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38581 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757399Ab2KBNXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 09:23:38 -0400
-Date: Fri, 2 Nov 2012 09:23:19 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Kees Cook <keescook@chromium.org>, Peter Jones <pjones@redhat.com>
-Subject: Re: Kdump with signed images
-Message-ID: <20121102132318.GA3300@redhat.com>
-References: <20121025185520.GA17995@redhat.com>
- <1351214158.18115.186.camel@falcor>
- <20121026023916.GA16762@srcf.ucam.org>
- <20121026170609.GB24687@redhat.com>
- <1351276649.18115.217.camel@falcor>
- <20121101131003.GA14573@redhat.com>
- <20121101135356.GA15659@redhat.com>
- <1351780159.15708.17.camel@falcor>
- <20121101144304.GA15821@redhat.com>
- <20121101145225.GB10269@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121101145225.GB10269@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757746Ab2KBNZE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 09:25:04 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:53564 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753102Ab2KBNZC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 09:25:02 -0400
+From: anish kumar <anish198519851985@gmail.com>
+To: rostedt@goodmis.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        akpm@linux-foundation.org, paul.gortmaker@windriver.com,
+        tglx@linutronix.de, mingo@kernel.org, fweisbec@gmail.com
+Cc: anish kumar <anish198519851985@gmail.com>
+Subject: [PATCH] IRQ CORE: irq_work_queue function return value not used.
+Date: Fri,  2 Nov 2012 22:24:36 +0900
+Message-Id: <1351862676-5426-1-git-send-email-anish198519851985@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 02:52:25PM +0000, Matthew Garrett wrote:
-> On Thu, Nov 01, 2012 at 10:43:04AM -0400, Vivek Goyal wrote:
-> 
-> > So I think this does satisfy the requirement matthew specified. Isn't it?
-> > Matthew, what do you think?
-> 
-> Sure, if you can ensure that. You'll need to figure out how to get the 
-> build system to sign the userspace binaries and you'll need to ensure 
-> that they're statically linked and don't dlopen anything (including the 
-> nsswitch modules), but otherwise that should work.
-> 
+From: anish kumar <anish198519851985@gmail.com>
 
-[ CC peter jones ]
+As no one is using the return value of irq_work_queue function
+it is better to just make it void.
+Signed-off-by: anish kumar <anish198519851985@gmail.com>
+---
+ kernel/irq_work.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Ok, so even if we build kexec-tools statically with glibc, we have the
-issue of name service switch modules. glibc will still do dlopen on
-these modules. So what are options now.
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 1588e3b..a85c4b3 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -79,17 +79,17 @@ static void __irq_work_queue(struct irq_work *work)
+  *
+  * Can be re-enqueued while the callback is still in progress.
+  */
+-bool irq_work_queue(struct irq_work *work)
++void irq_work_queue(struct irq_work *work)
+ {
+ 	if (!irq_work_claim(work)) {
+ 		/*
+ 		 * Already enqueued, can't do!
+ 		 */
+-		return false;
++		return;
+ 	}
+ 
+ 	__irq_work_queue(work);
+-	return true;
++	return;
+ }
+ EXPORT_SYMBOL_GPL(irq_work_queue);
+ 
+-- 
+1.7.1
 
-- Sign glibc and associated shared libraries. Do not allow unsigned
-  shared library to dynamically link with signed executable.
-
-- Peter mentioned that work with uClibc for kexec-tools.
-
-I personally think that however hard it is but first option sounds like
-a long term solution. We might have more user space processes which
-we might have to trust a generic solution will help with that. For example,
-we might have to sign and trust qemu at some point of time.
-
-Are there other ways of handing glibc issue?
-
-Thanks
-Vivek
