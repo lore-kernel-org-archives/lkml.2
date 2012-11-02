@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758701Ab2KBQs0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 12:48:26 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:2051 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab2KBQsY (ORCPT
+	id S1759313Ab2KBQsi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:48:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51890 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758988Ab2KBQsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 12:48:24 -0400
-Message-ID: <1351874901.2721.18.camel@lorien2>
-Subject: Re: [PATCH RFT RESEND linux-next] hexagon: dma-mapping: support
- debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: rkuo@codeaurora.org, Andrew Morton <akpm@linux-foundation.org>
-Cc: arnd@arndb.de, kyungmin.park@samsung.com, m.szyprowski@samsung.com,
-        linas@codeaurora.org, linux-hexagon@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Date: Fri, 02 Nov 2012 10:48:21 -0600
-In-Reply-To: <1351266197.4013.3.camel@lorien2>
-References: <1351206731.6851.10.camel@lorien2>
-	 <1351266197.4013.3.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 2 Nov 2012 12:48:35 -0400
+Date: Fri, 2 Nov 2012 09:48:28 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, Kay Sievers <kay@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
+ add queue-private command filter, editable via sysfs)
+Message-ID: <20121102164828.GA3823@mtj.dyndns.org>
+References: <20121025180045.GL11442@htj.dyndns.org>
+ <1657557410.1945557.1351190120407.JavaMail.root@redhat.com>
+ <20121031212241.GZ2945@htj.dyndns.org>
+ <5093DD5E.6030808@redhat.com>
+ <20121102153530.483453c7@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121102153530.483453c7@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 09:43 -0600, Shuah Khan wrote:
-> Add support for debug_dma_mapping_error() call to avoid warning from
-> debug_dma_unmap() interface when it checks for mapping error checked
-> status. Without this patch, device driver failed to check map error
-> warning is generated.
+Hey, Alan, Paolo.
+
+On Fri, Nov 02, 2012 at 03:35:30PM +0000, Alan Cox wrote:
+> > >> That would be a change with respect to what we have now.  After
+> > >> transferring a root-opened (better: CAP_SYS_RAWIO-opened) file
+> > >> descriptor to an unprivileged process your SG_IO commands get
+> > >> filtered.  So a ioctl is needed if you want to rely on SCM_RIGHTS.
+> > > 
+> > > Yeah, I get that it's a behavior change, but would that be a problem?
+> > 
+> > Worse, it's a potential security hole because previously you'd get
+> > filtering and now you wouldn't.
+> > 
+> > Considering that SCM_RIGHTS is usually used to transfer a file
+> > descriptor from a privileged process to an unprivileged one, I'd be very
+> > worried of that.
 > 
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> ---
->  arch/hexagon/include/asm/dma-mapping.h |    1 +
->  1 file changed, 1 insertion(+)
-
-Would you like se this patch go through arch tree or linux-next? Please
-let me know your preference.
-
--- Shuah
+> In other contexts you inherit file handles via exec and having a "root
+> opened so its special" model is bad. Historically it led to things like
+> the rlogin/rsh hacks on SunOS and friends where a program run by the rsh
+> daemon got a root opened socket as its stdin/out and could issue ifconfig
+> ioctls on it at will.
 > 
-> diff --git a/arch/hexagon/include/asm/dma-mapping.h b/arch/hexagon/include/asm/dma-mapping.h
-> index 85e9935..1957c4c 100644
-> --- a/arch/hexagon/include/asm/dma-mapping.h
-> +++ b/arch/hexagon/include/asm/dma-mapping.h
-> @@ -65,6 +65,7 @@ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
->  {
->  	struct dma_map_ops *dma_ops = get_dma_ops(dev);
->  
-> +	debug_dma_mapping_error(dev, dma_addr);
->  	if (dma_ops->mapping_error)
->  		return dma_ops->mapping_error(dev, dma_addr);
->  
+> Not a good model. Any removal of filters and passing them to a task
+> should be explicit. The behaviour really ought to be to permit the
+> intentional setting of explicit filters then passing them, not touch the
+> default behaviour.
 
+Yeah, well, then I guess it'll have to be a separate ioctl to switch
+SG_IO for !root users.
 
+Thanks.
+
+-- 
+tejun
