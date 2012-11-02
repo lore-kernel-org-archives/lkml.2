@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763120Ab2KBRIK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:08:10 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33536 "EHLO mail.kernel.org"
+	id S1763069Ab2KBRH5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:07:57 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33401 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763088Ab2KBRIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:08:00 -0400
+	id S1762995Ab2KBRHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 24/24] drm/nouveau: headless mode by default if pci class != vga display
-Date: Fri,  2 Nov 2012 10:07:12 -0700
-Message-Id: <20121102170249.143902627@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Alex Elder <elder@inktank.com>
+Subject: [ 13/24] libceph: check for invalid mapping
+Date: Fri,  2 Nov 2012 10:07:01 -0700
+Message-Id: <20121102170248.373543982@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170247.406319110@linuxfoundation.org>
 References: <20121102170247.406319110@linuxfoundation.org>
@@ -25,52 +25,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Sage Weil <sage@inktank.com>
 
-This is to prevent nouveau from taking over the console on headless boards
-such as Tesla.
+commit d63b77f4c552cc3a20506871046ab0fcbc332609 upstream.
 
-Backport of upstream commit: e412e95a268fa8544858ebfe066826b290430d51
+If we encounter an invalid (e.g., zeroed) mapping, return an error
+and avoid a divide by zero.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Sage Weil <sage@inktank.com>
+Reviewed-by: Alex Elder <elder@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_drv.c   |    2 --
- drivers/gpu/drm/nouveau/nouveau_state.c |    4 +++-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ include/linux/ceph/osd_client.h |    2 +-
+ include/linux/ceph/osdmap.h     |    6 +++---
+ net/ceph/osd_client.c           |   32 ++++++++++++++++++++------------
+ net/ceph/osdmap.c               |   18 ++++++++++++++++--
+ 4 files changed, 40 insertions(+), 18 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_drv.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drv.c
-@@ -488,9 +488,7 @@ static int __init nouveau_init(void)
- #ifdef CONFIG_VGA_CONSOLE
- 		if (vgacon_text_force())
- 			nouveau_modeset = 0;
--		else
- #endif
--			nouveau_modeset = 1;
- 	}
+--- a/include/linux/ceph/osd_client.h
++++ b/include/linux/ceph/osd_client.h
+@@ -207,7 +207,7 @@ extern void ceph_osdc_handle_reply(struc
+ extern void ceph_osdc_handle_map(struct ceph_osd_client *osdc,
+ 				 struct ceph_msg *msg);
  
- 	if (!nouveau_modeset)
---- a/drivers/gpu/drm/nouveau/nouveau_state.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_state.c
-@@ -50,6 +50,7 @@ static int nouveau_init_engine_ptrs(stru
+-extern void ceph_calc_raw_layout(struct ceph_osd_client *osdc,
++extern int ceph_calc_raw_layout(struct ceph_osd_client *osdc,
+ 			struct ceph_file_layout *layout,
+ 			u64 snapid,
+ 			u64 off, u64 *plen, u64 *bno,
+--- a/include/linux/ceph/osdmap.h
++++ b/include/linux/ceph/osdmap.h
+@@ -109,9 +109,9 @@ extern struct ceph_osdmap *osdmap_apply_
+ extern void ceph_osdmap_destroy(struct ceph_osdmap *map);
+ 
+ /* calculate mapping of a file extent to an object */
+-extern void ceph_calc_file_object_mapping(struct ceph_file_layout *layout,
+-					  u64 off, u64 *plen,
+-					  u64 *bno, u64 *oxoff, u64 *oxlen);
++extern int ceph_calc_file_object_mapping(struct ceph_file_layout *layout,
++					 u64 off, u64 *plen,
++					 u64 *bno, u64 *oxoff, u64 *oxlen);
+ 
+ /* calculate mapping of object to a placement group */
+ extern int ceph_calc_object_layout(struct ceph_object_layout *ol,
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -52,7 +52,7 @@ static int op_has_extent(int op)
+ 		op == CEPH_OSD_OP_WRITE);
+ }
+ 
+-void ceph_calc_raw_layout(struct ceph_osd_client *osdc,
++int ceph_calc_raw_layout(struct ceph_osd_client *osdc,
+ 			struct ceph_file_layout *layout,
+ 			u64 snapid,
+ 			u64 off, u64 *plen, u64 *bno,
+@@ -62,12 +62,15 @@ void ceph_calc_raw_layout(struct ceph_os
+ 	struct ceph_osd_request_head *reqhead = req->r_request->front.iov_base;
+ 	u64 orig_len = *plen;
+ 	u64 objoff, objlen;    /* extent in object */
++	int r;
+ 
+ 	reqhead->snapid = cpu_to_le64(snapid);
+ 
+ 	/* object extent? */
+-	ceph_calc_file_object_mapping(layout, off, plen, bno,
+-				      &objoff, &objlen);
++	r = ceph_calc_file_object_mapping(layout, off, plen, bno,
++					  &objoff, &objlen);
++	if (r < 0)
++		return r;
+ 	if (*plen < orig_len)
+ 		dout(" skipping last %llu, final file extent %llu~%llu\n",
+ 		     orig_len - *plen, off, *plen);
+@@ -83,7 +86,7 @@ void ceph_calc_raw_layout(struct ceph_os
+ 
+ 	dout("calc_layout bno=%llx %llu~%llu (%d pages)\n",
+ 	     *bno, objoff, objlen, req->r_num_pages);
+-
++	return 0;
+ }
+ EXPORT_SYMBOL(ceph_calc_raw_layout);
+ 
+@@ -112,20 +115,25 @@ EXPORT_SYMBOL(ceph_calc_raw_layout);
+  *
+  * fill osd op in request message.
+  */
+-static void calc_layout(struct ceph_osd_client *osdc,
+-			struct ceph_vino vino,
+-			struct ceph_file_layout *layout,
+-			u64 off, u64 *plen,
+-			struct ceph_osd_request *req,
+-			struct ceph_osd_req_op *op)
++static int calc_layout(struct ceph_osd_client *osdc,
++		       struct ceph_vino vino,
++		       struct ceph_file_layout *layout,
++		       u64 off, u64 *plen,
++		       struct ceph_osd_request *req,
++		       struct ceph_osd_req_op *op)
  {
- 	struct drm_nouveau_private *dev_priv = dev->dev_private;
- 	struct nouveau_engine *engine = &dev_priv->engine;
-+	u32 pclass = dev->pdev->class >> 8;
+ 	u64 bno;
++	int r;
  
- 	switch (dev_priv->chipset & 0xf0) {
- 	case 0x00:
-@@ -428,7 +429,8 @@ static int nouveau_init_engine_ptrs(stru
- 	}
+-	ceph_calc_raw_layout(osdc, layout, vino.snap, off,
+-			     plen, &bno, req, op);
++	r = ceph_calc_raw_layout(osdc, layout, vino.snap, off,
++				 plen, &bno, req, op);
++	if (r < 0)
++		return r;
  
- 	/* headless mode */
--	if (nouveau_modeset == 2) {
-+	if (nouveau_modeset == 2 ||
-+	    (nouveau_modeset < 0 && pclass != PCI_CLASS_DISPLAY_VGA)) {
- 		engine->display.early_init = nouveau_stub_init;
- 		engine->display.late_takedown = nouveau_stub_takedown;
- 		engine->display.create = nouveau_stub_init;
+ 	snprintf(req->r_oid, sizeof(req->r_oid), "%llx.%08llx", vino.ino, bno);
+ 	req->r_oid_len = strlen(req->r_oid);
++
++	return r;
+ }
+ 
+ /*
+--- a/net/ceph/osdmap.c
++++ b/net/ceph/osdmap.c
+@@ -984,7 +984,7 @@ bad:
+  * for now, we write only a single su, until we can
+  * pass a stride back to the caller.
+  */
+-void ceph_calc_file_object_mapping(struct ceph_file_layout *layout,
++int ceph_calc_file_object_mapping(struct ceph_file_layout *layout,
+ 				   u64 off, u64 *plen,
+ 				   u64 *ono,
+ 				   u64 *oxoff, u64 *oxlen)
+@@ -998,11 +998,17 @@ void ceph_calc_file_object_mapping(struc
+ 
+ 	dout("mapping %llu~%llu  osize %u fl_su %u\n", off, *plen,
+ 	     osize, su);
++	if (su == 0 || sc == 0)
++		goto invalid;
+ 	su_per_object = osize / su;
++	if (su_per_object == 0)
++		goto invalid;
+ 	dout("osize %u / su %u = su_per_object %u\n", osize, su,
+ 	     su_per_object);
+ 
+-	BUG_ON((su & ~PAGE_MASK) != 0);
++	if ((su & ~PAGE_MASK) != 0)
++		goto invalid;
++
+ 	/* bl = *off / su; */
+ 	t = off;
+ 	do_div(t, su);
+@@ -1030,6 +1036,14 @@ void ceph_calc_file_object_mapping(struc
+ 	*plen = *oxlen;
+ 
+ 	dout(" obj extent %llu~%llu\n", *oxoff, *oxlen);
++	return 0;
++
++invalid:
++	dout(" invalid layout\n");
++	*ono = 0;
++	*oxoff = 0;
++	*oxlen = 0;
++	return -EINVAL;
+ }
+ EXPORT_SYMBOL(ceph_calc_file_object_mapping);
+ 
 
 
