@@ -1,153 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763193Ab2KBRNa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:13:30 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33234 "EHLO mail.kernel.org"
+	id S1763183Ab2KBRN2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:13:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33269 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932557Ab2KBRHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:18 -0400
+	id S1751607Ab2KBRHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/24] 3.6.6-stable review
-Date: Fri,  2 Nov 2012 10:06:48 -0700
-Message-Id: <20121102170247.406319110@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Junichi Nomura <j-nomura@ce.jp.nec.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 02/24] blkcg: Fix use-after-free of q->root_blkg and q->root_rl.blkg
+Date: Fri,  2 Nov 2012 10:06:50 -0700
+Message-Id: <20121102170247.604224507@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
+In-Reply-To: <20121102170247.406319110@linuxfoundation.org>
+References: <20121102170247.406319110@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.6.6 release.
-There are 24 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Nov  4 17:02:39 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.6.6-rc1.gz
-and the diffstat can be found below.
+From: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
 
-thanks,
+commit 65635cbc37e011e71b208257a25e7c1078cd039b upstream.
 
-greg k-h
+blk_put_rl() does not call blkg_put() for q->root_rl because we
+don't take request list reference on q->root_blkg.
+However, if root_blkg is once attached then detached (freed),
+blk_put_rl() is confused by the bogus pointer in q->root_blkg.
 
--------------
-Pseudo-Shortlog of commits:
+For example, with !CONFIG_BLK_DEV_THROTTLING &&
+CONFIG_CFQ_GROUP_IOSCHED,
+switching IO scheduler from cfq to deadline will cause system stall
+after the following warning with 3.6:
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.6.6-rc1
+> WARNING: at /work/build/linux/block/blk-cgroup.h:250
+> blk_put_rl+0x4d/0x95()
+> Modules linked in: bridge stp llc sunrpc acpi_cpufreq freq_table mperf
+> ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4
+> Pid: 0, comm: swapper/0 Not tainted 3.6.0 #1
+> Call Trace:
+>  <IRQ>  [<ffffffff810453bd>] warn_slowpath_common+0x85/0x9d
+>  [<ffffffff810453ef>] warn_slowpath_null+0x1a/0x1c
+>  [<ffffffff811d5f8d>] blk_put_rl+0x4d/0x95
+>  [<ffffffff811d614a>] __blk_put_request+0xc3/0xcb
+>  [<ffffffff811d71a3>] blk_finish_request+0x232/0x23f
+>  [<ffffffff811d76c3>] ? blk_end_bidi_request+0x34/0x5d
+>  [<ffffffff811d76d1>] blk_end_bidi_request+0x42/0x5d
+>  [<ffffffff811d7728>] blk_end_request+0x10/0x12
+>  [<ffffffff812cdf16>] scsi_io_completion+0x207/0x4d5
+>  [<ffffffff812c6fcf>] scsi_finish_command+0xfa/0x103
+>  [<ffffffff812ce2f8>] scsi_softirq_done+0xff/0x108
+>  [<ffffffff811dcea5>] blk_done_softirq+0x8d/0xa1
+>  [<ffffffff810915d5>] ?
+>  generic_smp_call_function_single_interrupt+0x9f/0xd7
+>  [<ffffffff8104cf5b>] __do_softirq+0x102/0x213
+>  [<ffffffff8108a5ec>] ? lock_release_holdtime+0xb6/0xbb
+>  [<ffffffff8104d2b4>] ? raise_softirq_irqoff+0x9/0x3d
+>  [<ffffffff81424dfc>] call_softirq+0x1c/0x30
+>  [<ffffffff81011beb>] do_softirq+0x4b/0xa3
+>  [<ffffffff8104cdb0>] irq_exit+0x53/0xd5
+>  [<ffffffff8102d865>] smp_call_function_single_interrupt+0x34/0x36
+>  [<ffffffff8142486f>] call_function_single_interrupt+0x6f/0x80
+>  <EOI>  [<ffffffff8101800b>] ? mwait_idle+0x94/0xcd
+>  [<ffffffff81018002>] ? mwait_idle+0x8b/0xcd
+>  [<ffffffff81017811>] cpu_idle+0xbb/0x114
+>  [<ffffffff81401fbd>] rest_init+0xc1/0xc8
+>  [<ffffffff81401efc>] ? csum_partial_copy_generic+0x16c/0x16c
+>  [<ffffffff81cdbd3d>] start_kernel+0x3d4/0x3e1
+>  [<ffffffff81cdb79e>] ? kernel_init+0x1f7/0x1f7
+>  [<ffffffff81cdb2dd>] x86_64_start_reservations+0xb8/0xbd
+>  [<ffffffff81cdb3e3>] x86_64_start_kernel+0x101/0x110
 
-Ben Skeggs <bskeggs@redhat.com>
-    drm/nouveau: headless mode by default if pci class != vga display
+This patch clears q->root_blkg and q->root_rl.blkg when root blkg
+is destroyed.
 
-Ben Skeggs <bskeggs@redhat.com>
-    drm/nouveau: fix suspend/resume when in headless mode
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Ben Skeggs <bskeggs@redhat.com>
-    drm/nouveau: silence modesetting spam on pre-gf8 chipsets
+---
+ block/blk-cgroup.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Jiri Slaby <jslaby@suse.cz>
-    HID: microsoft: fix invalid rdesc for 3k kbd
-
-Nicholas Bellinger <nab@linux-iscsi.org>
-    target: Fix double-free of se_cmd in target_complete_tmr_failure
-
-Bernhard Kohl <bernhard.kohl@nsn.com>
-    target: reintroduce some obsolete SCSI-2 commands
-
-Roland Dreier <roland@purestorage.com>
-    qla2xxx: Update target lookup session tables when a target session changes
-
-Paul Bolle <pebolle@tiscali.nl>
-    USB: io_edgeport: remove unused variable
-
-Johan Hovold <jhovold@gmail.com>
-    USB: iuu_phoenix: fix backported patches
-
-Johan Hovold <jhovold@gmail.com>
-    USB: mos7840: fix port-data memory leak
-
-Alex Elder <elder@inktank.com>
-    ceph: avoid 32-bit page index overflow
-
-Sage Weil <sage@inktank.com>
-    libceph: check for invalid mapping
-
-Yan, Zheng <zheng.z.yan@intel.com>
-    ceph: Fix oops when handling mdsmap that decreases max_mds
-
-David Zafman <david.zafman@inktank.com>
-    ceph: fix dentry reference leak in encode_fh()
-
-Sage Weil <sage@inktank.com>
-    libceph: avoid NULL kref_put when osd reset races with alloc_msg
-
-Alex Elder <elder@inktank.com>
-    rbd: reset BACKOFF if unable to re-queue
-
-Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-    floppy: properly handle failure on add_disk loop
-
-Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-    floppy: do put_disk on current dr if blk_init_queue fails
-
-Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-    floppy: don't call alloc_ordered_workqueue inside the alloc_disk loop
-
-NeilBrown <neilb@suse.de>
-    md/raid1: Fix assembling of arrays containing Replacements.
-
-Mathias Nyman <mathias.nyman@linux.intel.com>
-    gpiolib: Don't return -EPROBE_DEFER to sysfs, or for invalid gpios
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    gpio-timberdale: fix a potential wrapping issue
-
-Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-    blkcg: Fix use-after-free of q->root_blkg and q->root_rl.blkg
-
-Eric Sandeen <sandeen@redhat.com>
-    ext4: fix unjournaled inode bitmap modification
-
-
--------------
-
-Diffstat:
-
- Makefile                                |   4 +-
- block/blk-cgroup.c                      |   7 ++
- drivers/block/floppy.c                  |  27 +++--
- drivers/gpio/gpio-timberdale.c          |   4 +-
- drivers/gpio/gpiolib.c                  |  10 +-
- drivers/gpu/drm/nouveau/nouveau_drv.c   |  20 ++--
- drivers/gpu/drm/nouveau/nouveau_state.c |   4 +-
- drivers/gpu/drm/nouveau/nv04_dac.c      |   8 +-
- drivers/gpu/drm/nouveau/nv04_dfp.c      |   6 +-
- drivers/gpu/drm/nouveau/nv04_tv.c       |   4 +-
- drivers/hid/hid-microsoft.c             |  18 ++-
- drivers/md/raid1.c                      |   2 +-
- drivers/scsi/qla2xxx/qla_target.c       |  25 ++--
- drivers/scsi/qla2xxx/qla_target.h       |   1 +
- drivers/scsi/qla2xxx/tcm_qla2xxx.c      |  73 ++++++++++++
- drivers/target/target_core_sbc.c        |  18 +++
- drivers/target/target_core_transport.c  |   1 -
- drivers/usb/serial/io_edgeport.c        |   1 -
- drivers/usb/serial/iuu_phoenix.c        |   3 +-
- drivers/usb/serial/mos7840.c            | 198 ++++++++++++--------------------
- fs/ceph/addr.c                          |  11 +-
- fs/ceph/export.c                        |   2 +
- fs/ceph/mds_client.c                    |   3 +-
- fs/ext4/ialloc.c                        |  19 ++-
- include/linux/ceph/osd_client.h         |   2 +-
- include/linux/ceph/osdmap.h             |   6 +-
- net/ceph/messenger.c                    |   6 +-
- net/ceph/osd_client.c                   |  32 ++++--
- net/ceph/osdmap.c                       |  18 ++-
- 29 files changed, 310 insertions(+), 223 deletions(-)
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -285,6 +285,13 @@ static void blkg_destroy_all(struct requ
+ 		blkg_destroy(blkg);
+ 		spin_unlock(&blkcg->lock);
+ 	}
++
++	/*
++	 * root blkg is destroyed.  Just clear the pointer since
++	 * root_rl does not take reference on root blkg.
++	 */
++	q->root_blkg = NULL;
++	q->root_rl.blkg = NULL;
+ }
+ 
+ static void blkg_rcu_free(struct rcu_head *rcu_head)
 
 
