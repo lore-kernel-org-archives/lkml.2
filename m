@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935604Ab2KBTKx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 15:10:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16203 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935357Ab2KBTKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 15:10:52 -0400
-Subject: Re: [PATCH RFT RESEND linux-next] c6x: dma-mapping: support
- debug_dma_mapping_error
-From: Mark Salter <msalter@redhat.com>
-To: shuah.khan@hp.com
-Cc: Andrew Morton <akpm@linux-foundation.org>, a-jacquiot@ti.com,
-        linux-c6x-dev@linux-c6x.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Fri, 02 Nov 2012 15:10:44 -0400
-In-Reply-To: <1351874655.2721.16.camel@lorien2>
-References: <1351206082.6851.6.camel@lorien2>
-	 <1351266055.4013.1.camel@lorien2> <1351874655.2721.16.camel@lorien2>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1351883445.15973.24.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1753406Ab2KBTSN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 15:18:13 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:62565 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab2KBTSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 15:18:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121102180458.GA12052@srcf.ucam.org>
+References: <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
+	<CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+	<20121101202701.GB20817@xo-6d-61-c0.localdomain>
+	<5092E361.7080901@genband.com>
+	<20121102163302.GA6080@elf.ucw.cz>
+	<1351875164.2439.42.camel@dabdike.int.hansenpartnership.com>
+	<20121102165456.GB9997@srcf.ucam.org>
+	<1351878511.2439.44.camel@dabdike.int.hansenpartnership.com>
+	<20121102175416.GA11816@srcf.ucam.org>
+	<1351879058.2439.46.camel@dabdike.int.hansenpartnership.com>
+	<20121102180458.GA12052@srcf.ucam.org>
+Date: Fri, 2 Nov 2012 15:18:06 -0400
+Message-ID: <CACLa4psWr4xW0xrJq11q9zQM5V=8-HhQxGf6kzRRkpeEM0iS3A@mail.gmail.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+From: Eric Paris <eparis@parisplace.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
+        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Josh Boyer <jwboyer@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-02 at 10:44 -0600, Shuah Khan wrote:
-> On Fri, 2012-10-26 at 09:40 -0600, Shuah Khan wrote:
-> > Add support for debug_dma_mapping_error() call to avoid warning from
-> > debug_dma_unmap() interface when it checks for mapping error checked
-> > status. Without this patch, device driver failed to check map error
-> > warning is generated.
-> > 
-> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> > ---
-> >  arch/c6x/include/asm/dma-mapping.h |    1 +
-> >  1 file changed, 1 insertion(+)
+I know I started it, but Windows really isn't necessary to see value,
+even if it is what pushed the timing.
 
-> Would you like to this patch go through c6x arch tree or linux-next?
-> Please let me know your preference.
+A user installs a package as root.  Absent any flaws in the Linux
+kernel (cough) that should be all it can do in a Secure Boot world.
+But if you can drop a small trusted Linux system in there and use that
+to boot a compromised Linux kernel, it can make itself persistent.
 
-I tried to test this but I get a build error with CONFIG_DMA_API_DEBUG:
-
-/linux-next/lib/dma-debug.c: In function 'has_mapping_error':
-/linux-next/lib/dma-debug.c:863:15: error: implicit declaration of function 'get_dma_ops' [-Werror=implicit-function-declaration]
-/linux-next/lib/dma-debug.c:863:34: warning: initialization makes pointer from integer without a cast [enabled by default]
-
-C6X (along with some other architectures) doesn't have a get_dma_ops()
-function defined.
-
-
+And like I said, I know there are cloud providers out there who want
+EXACTLY this type of system.  One in which root in the guest is
+untrusted and they want to keep them out of ring 0.
