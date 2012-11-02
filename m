@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab2KBUbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 16:31:42 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59906 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab2KBUbl (ORCPT
+	id S1752738Ab2KBUdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 16:33:44 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:26661 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122Ab2KBUdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 16:31:41 -0400
+	Fri, 2 Nov 2012 16:33:43 -0400
+Message-ID: <50942E05.9040607@oracle.com>
+Date: Fri, 02 Nov 2012 16:33:09 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFy9QSZhFpEt=iEvYTHMGhd3ARwpHfZ+PghHNAEcP6Ko7g@mail.gmail.com>
-References: <1351811167-14856-1-git-send-email-sasha.levin@oracle.com>
-	<CA+55aFxxdFCiOHEz_xWx1vjMkpQzab_Mdmd2dweknayhVBx6kA@mail.gmail.com>
-	<50932F6E.5060506@oracle.com>
-	<CA+55aFy9QSZhFpEt=iEvYTHMGhd3ARwpHfZ+PghHNAEcP6Ko7g@mail.gmail.com>
-Date: Fri, 2 Nov 2012 21:31:39 +0100
-Message-ID: <CA+MoWDqZjTGTx85MhyVuD+tAb5LzbY-Yf5EKvtQXEN+3kvWjFw@mail.gmail.com>
-Subject: Re: [RFC] hlist: drop the node parameter from iterators
-From: Peter Senna Tschudin <peter.senna@gmail.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, paulmck@linux.vnet.ibm.com,
-        dipankar@in.ibm.com, mingo@kernel.org, hpa@zytor.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+CC: paulmck@linux.vnet.ibm.com, dipankar@in.ibm.com, mingo@kernel.org,
+        hpa@zytor.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        peter.senna@gmail.com
+Subject: Re: [RFC] hlist: drop the node parameter from iterators
+References: <1351811167-14856-1-git-send-email-sasha.levin@oracle.com> <CA+55aFxxdFCiOHEz_xWx1vjMkpQzab_Mdmd2dweknayhVBx6kA@mail.gmail.com> <50932F6E.5060506@oracle.com> <CA+55aFy9QSZhFpEt=iEvYTHMGhd3ARwpHfZ+PghHNAEcP6Ko7g@mail.gmail.com>
+In-Reply-To: <CA+55aFy9QSZhFpEt=iEvYTHMGhd3ARwpHfZ+PghHNAEcP6Ko7g@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 2, 2012 at 9:16 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On 11/02/2012 04:16 PM, Linus Torvalds wrote:
 > On Thu, Nov 1, 2012 at 7:26 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
 >>
 >> Here are some stats:
@@ -39,21 +38,34 @@ On Fri, Nov 2, 2012 at 9:16 PM, Linus Torvalds
 >> in 18 conflicts.
 >>
 >>  - Applying the patch from 3.6 on top of 3.5 results in 25 conflicts.
->
+> 
 > Ok, that sounds slightly painful, but not unmanageable.
->
+> 
 > Can you send me the actual patch, and I'll mull on this a bit more? I
 > could run the coccinelle script myself, but I assume (maybe
 > incorrectly?) that there are manual fixes to clean some stuff up
 > afterwared..
 
-We're working on improvements for Sasha's Coccinelle script, but need
-some time to finish it.
+You're right about that. There are 2 things which needs to be done after
+running the script:
 
->
->                Linus
+ - Coccinelle doesn't handle cases where there are multiple variables in
+the declaration. That means that things like:
+
+	struct hlist_node *node, *tmp;
+
+Have to be fixed manually.
+
+That's common when hlist_for_each_entry_safe() is used afterwards.
+
+ - Some places actually use node for their needs, while coccinelle can
+automatically fix that to use '(ptr)->member', I'd rather go through those
+places manually and make sure we're doing the right thing.
 
 
+Do you want the patch on top of your git head, or on top of -next?
 
---
-Peter
+
+Thanks,
+Sasha
+
