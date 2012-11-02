@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab2KBPdV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 11:33:21 -0400
-Received: from exprod5og113.obsmtp.com ([64.18.0.26]:57832 "EHLO
-	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab2KBPdU (ORCPT
+	id S1757169Ab2KBPeL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 11:34:11 -0400
+Received: from exprod5og114.obsmtp.com ([64.18.0.28]:46814 "EHLO
+	exprod5og114.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab2KBPeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 11:33:20 -0400
-Message-ID: <5093E566.7030200@ge.com>
-Date: Fri, 02 Nov 2012 15:23:18 +0000
+	Fri, 2 Nov 2012 11:34:07 -0400
+Message-ID: <5093E57B.2020801@ge.com>
+Date: Fri, 02 Nov 2012 15:23:39 +0000
 From: Martyn Welch <martyn.welch@ge.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
@@ -16,18 +16,18 @@ To: Wei Yongjun <weiyj.lk@gmail.com>
 CC: manohar.vanga@gmail.com, gregkh@linuxfoundation.org,
         yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vme: vme_ca91cx42.c: use module_pci_driver to simplify
+Subject: Re: [PATCH] vme: vme_vmivme7805.c: use module_pci_driver to simplify
  the code
-References: <CAPgLHd__XiRNpPNqePy2Qa1_8-SMbyF54Ef-Cko5pR7+nPCxxw@mail.gmail.com>
-In-Reply-To: <CAPgLHd__XiRNpPNqePy2Qa1_8-SMbyF54Ef-Cko5pR7+nPCxxw@mail.gmail.com>
+References: <CAPgLHd-jNUdrUE5cwm=+iEbJQb+N_Bdduwa9kMh_rJMmU=tYuw@mail.gmail.com>
+In-Reply-To: <CAPgLHd-jNUdrUE5cwm=+iEbJQb+N_Bdduwa9kMh_rJMmU=tYuw@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Nov 2012 15:23:20.0091 (UTC) FILETIME=[FD6A06B0:01CDB90D]
+X-OriginalArrivalTime: 02 Nov 2012 15:23:41.0950 (UTC) FILETIME=[0A7171E0:01CDB90E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/10/2012 16:13, Wei Yongjun wrote:
+On 18/10/2012 16:15, Wei Yongjun wrote:
 > From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 >
 > Use the module_pci_driver() macro to make the code simpler
@@ -41,54 +41,54 @@ On 18/10/2012 16:13, Wei Yongjun wrote:
 Acked-by: Martyn Welch <martyn.welch@ge.com>
 
 > ---
->   drivers/vme/bridges/vme_ca91cx42.c | 15 +--------------
+>   drivers/vme/boards/vme_vmivme7805.c | 15 +--------------
 >   1 file changed, 1 insertion(+), 14 deletions(-)
 >
-> diff --git a/drivers/vme/bridges/vme_ca91cx42.c b/drivers/vme/bridges/vme_ca91cx42.c
-> index 1425d22c..64bfea3 100644
-> --- a/drivers/vme/bridges/vme_ca91cx42.c
-> +++ b/drivers/vme/bridges/vme_ca91cx42.c
-> @@ -34,10 +34,8 @@
->   #include "../vme_bridge.h"
->   #include "vme_ca91cx42.h"
+> diff --git a/drivers/vme/boards/vme_vmivme7805.c b/drivers/vme/boards/vme_vmivme7805.c
+> index 8e05bb4..dd22b50 100644
+> --- a/drivers/vme/boards/vme_vmivme7805.c
+> +++ b/drivers/vme/boards/vme_vmivme7805.c
+> @@ -19,10 +19,8 @@
 >   
-> -static int __init ca91cx42_init(void);
->   static int ca91cx42_probe(struct pci_dev *, const struct pci_device_id *);
->   static void ca91cx42_remove(struct pci_dev *);
-> -static void __exit ca91cx42_exit(void);
+>   #include "vme_vmivme7805.h"
 >   
->   /* Module parameters */
->   static int geoid;
-> @@ -1523,11 +1521,6 @@ static void ca91cx42_free_consistent(struct device *parent, size_t size,
->   	pci_free_consistent(pdev, size, vaddr, dma);
->   }
+> -static int __init vmic_init(void);
+>   static int vmic_probe(struct pci_dev *, const struct pci_device_id *);
+>   static void vmic_remove(struct pci_dev *);
+> -static void __exit vmic_exit(void);
 >   
-> -static int __init ca91cx42_init(void)
+>   /** Base address to access FPGA register */
+>   static void *vmic_base;
+> @@ -41,11 +39,6 @@ static struct pci_driver vmic_driver = {
+>   	.remove = vmic_remove,
+>   };
+>   
+> -static int __init vmic_init(void)
 > -{
-> -	return pci_register_driver(&ca91cx42_driver);
+> -	return pci_register_driver(&vmic_driver);
 > -}
 > -
->   /*
->    * Configure CR/CSR space
->    *
-> @@ -1944,16 +1937,10 @@ static void ca91cx42_remove(struct pci_dev *pdev)
->   	kfree(ca91cx42_bridge);
+>   static int vmic_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>   {
+>   	int retval;
+> @@ -109,15 +102,9 @@ static void vmic_remove(struct pci_dev *pdev)
+>   
 >   }
 >   
-> -static void __exit ca91cx42_exit(void)
+> -static void __exit vmic_exit(void)
 > -{
-> -	pci_unregister_driver(&ca91cx42_driver);
+> -	pci_unregister_driver(&vmic_driver);
 > -}
-> +module_pci_driver(ca91cx42_driver);
+> +module_pci_driver(vmic_driver);
 >   
->   MODULE_PARM_DESC(geoid, "Override geographical addressing");
->   module_param(geoid, int, 0);
->   
->   MODULE_DESCRIPTION("VME driver for the Tundra Universe II VME bridge");
+>   MODULE_DESCRIPTION("VMIVME-7805 board support driver");
+>   MODULE_AUTHOR("Arthur Benilov <arthur.benilov@iba-group.com>");
 >   MODULE_LICENSE("GPL");
+>   
+> -module_init(vmic_init);
+> -module_exit(vmic_exit);
 > -
-> -module_init(ca91cx42_init);
-> -module_exit(ca91cx42_exit);
+>
 >
 
 
