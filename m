@@ -1,145 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965830Ab2KBJb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 05:31:56 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:41762 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965767Ab2KBJbv (ORCPT
+	id S932898Ab2KBJeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 05:34:05 -0400
+Received: from smtp-out-184.synserver.de ([212.40.185.184]:1204 "EHLO
+	smtp-out-184.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932666Ab2KBJeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 05:31:51 -0400
-From: Robin Dong <robin.k.dong@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Robin Dong <sanbai@taobao.com>, Tejun Heo <tj@kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <boyu.mt@taobao.com>
-Subject: [PATCH 2/2 v5] block/throttle: Add IO submitted information in blkio.throttle
-Date: Fri,  2 Nov 2012 17:31:37 +0800
-Message-Id: <1351848697-26087-2-git-send-email-robin.k.dong@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1351848697-26087-1-git-send-email-robin.k.dong@gmail.com>
-References: <1351848697-26087-1-git-send-email-robin.k.dong@gmail.com>
+	Fri, 2 Nov 2012 05:34:02 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 12507
+Message-ID: <50939378.2050500@metafoo.de>
+Date: Fri, 02 Nov 2012 10:33:44 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+MIME-Version: 1.0
+To: Josh Cartwright <josh.cartwright@ni.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@ti.com>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Linn <John.Linn@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        Michal Simek <monstr@monstr.eu>
+Subject: Re: [PATCH 5/8] ARM: zynq: add COMMON_CLK support
+References: <cover.1351721190.git.josh.cartwright@ni.com> <94af5ee92c2d68f245eb902de74909aadf159be1.1351721190.git.josh.cartwright@ni.com>
+In-Reply-To: <94af5ee92c2d68f245eb902de74909aadf159be1.1351721190.git.josh.cartwright@ni.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robin Dong <sanbai@taobao.com>
+On 10/31/2012 07:58 PM, Josh Cartwright wrote:
+> [...]
+> +#define PERIPH_CLK_CTRL_SRC(x)	(periph_clk_parent_map[((x)&3)>>4])
+> +#define PERIPH_CLK_CTRL_DIV(x)	(((x)&0x3F00)>>8)
 
-Currently, if the IO is throttled by io-throttle, the system admin has no idea
-of the situation and can't report it to the real application user about that
-he/she has to do something.
+A few more spaces wouldn't hurt ;)
 
-So this patch adds a new interface named blkio.throttle.io_submitted which
-exposes the number of bios that have been sent into blk-throttle therefore the
-user could calculate the difference from throttle.io_serviced to see how many
-IOs are currently throttled.
+> [...]
+> +static void __init zynq_periph_clk_setup(struct device_node *np)
+> +{
+> +	struct zynq_periph_clk *periph;
+> +	const char *parent_names[3];
+> +	struct clk_init_data init;
+> +	struct clk *clk;
+> +	int err;
+> +	u32 reg;
+> +	int i;
+> +
+> +	err = of_property_read_u32(np, "reg", &reg);
+> +	WARN_ON(err);
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-Signed-off-by: Robin Dong <sanbai@taobao.com>
----
-v3 <-- v2:
- - Use nr-queued[] of struct throtl_grp for stats instaed of adding new blkg_rwstat.
+Shouldn't the function abort if a error happens somewhere? Continuing here
+will lead to undefined behavior. Same is probably true for the other WARN_ONs.
 
-v4 <-- v3:
- - Add two new blkg_rwstat arguments to count total bios be sent into blk_throttle.
+> +
+> +	periph = kzalloc(sizeof(*periph), GFP_KERNEL);
+> +	WARN_ON(!periph);
+> +
+> +	periph->clk_ctrl = slcr_base + reg;
+> +	spin_lock_init(&periph->clkact_lock);
+> +
+> +	init.name = np->name;
+> +	init.ops = &zynq_periph_clk_ops;
+> +	for (i = 0; i < ARRAY_SIZE(parent_names); i++)
+> +		parent_names[i] = of_clk_get_parent_name(np, i);
+> +	init.parent_names = parent_names;
+> +	init.num_parents = ARRAY_SIZE(parent_names);
+> +
+> +	periph->hw.init = &init;
+> +
+> +	clk = clk_register(NULL, &periph->hw);
+> +	WARN_ON(IS_ERR(clk));
+> +
+> +	err = of_clk_add_provider(np, of_clk_src_simple_get, clk);
+> +	WARN_ON(err);
+> +
+> +	for (i = 0; i < 2; i++) {
 
-v5 <-- v4:
- - Change name "io_submit_bytes" to "io_submitted_bytes".
+Not all of the peripheral clock generators have two output clocks. I think
+it makes sense to use the number entries in clock-output-names here.
 
- block/blk-throttle.c |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
-
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 46ddeff..c6391b5 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -46,6 +46,10 @@ struct tg_stats_cpu {
- 	struct blkg_rwstat		service_bytes;
- 	/* total IOs serviced, post merge */
- 	struct blkg_rwstat		serviced;
-+	/* total bytes submitted into blk-throttle */
-+	struct blkg_rwstat		submit_bytes;
-+	/* total IOs submitted into blk-throttle */
-+	struct blkg_rwstat		submitted;
- };
- 
- struct throtl_grp {
-@@ -266,6 +270,8 @@ static void throtl_pd_reset_stats(struct blkcg_gq *blkg)
- 
- 		blkg_rwstat_reset(&sc->service_bytes);
- 		blkg_rwstat_reset(&sc->serviced);
-+		blkg_rwstat_reset(&sc->submit_bytes);
-+		blkg_rwstat_reset(&sc->submitted);
- 	}
- }
- 
-@@ -699,6 +705,30 @@ static void throtl_update_dispatch_stats(struct throtl_grp *tg, u64 bytes,
- 	local_irq_restore(flags);
- }
- 
-+static void throtl_update_submit_stats(struct throtl_grp *tg, u64 bytes, int rw)
-+{
-+	struct tg_stats_cpu *stats_cpu;
-+	unsigned long flags;
-+
-+	/* If per cpu stats are not allocated yet, don't do any accounting. */
-+	if (tg->stats_cpu == NULL)
-+		return;
-+
-+	/*
-+	 * Disabling interrupts to provide mutual exclusion between two
-+	 * writes on same cpu. It probably is not needed for 64bit. Not
-+	 * optimizing that case yet.
-+	 */
-+	local_irq_save(flags);
-+
-+	stats_cpu = this_cpu_ptr(tg->stats_cpu);
-+
-+	blkg_rwstat_add(&stats_cpu->submitted, rw, 1);
-+	blkg_rwstat_add(&stats_cpu->submit_bytes, rw, bytes);
-+
-+	local_irq_restore(flags);
-+}
-+
- static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
- {
- 	bool rw = bio_data_dir(bio);
-@@ -1084,6 +1114,16 @@ static struct cftype throtl_files[] = {
- 		.private = offsetof(struct tg_stats_cpu, serviced),
- 		.read_seq_string = tg_print_cpu_rwstat,
- 	},
-+	{
-+		.name = "throttle.io_submitted_bytes",
-+		.private = offsetof(struct tg_stats_cpu, submit_bytes),
-+		.read_seq_string = tg_print_cpu_rwstat,
-+	},
-+	{
-+		.name = "throttle.io_submitted",
-+		.private = offsetof(struct tg_stats_cpu, submitted),
-+		.read_seq_string = tg_print_cpu_rwstat,
-+	},
- 	{ }	/* terminate */
- };
- 
-@@ -1128,6 +1168,8 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 		if (tg_no_rule_group(tg, rw)) {
- 			throtl_update_dispatch_stats(tg,
- 						     bio->bi_size, bio->bi_rw);
-+			throtl_update_submit_stats(tg,
-+					bio->bi_size, bio->bi_rw);
- 			goto out_unlock_rcu;
- 		}
- 	}
-@@ -1141,6 +1183,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 	if (unlikely(!tg))
- 		goto out_unlock;
- 
-+	throtl_update_submit_stats(tg, bio->bi_size, bio->bi_rw);
- 	if (tg->nr_queued[rw]) {
- 		/*
- 		 * There is already another bio queued in same dir. No
--- 
-1.7.1
+> +		const char *name;
+> +
+> +		err = of_property_read_string_index(np, "clock-output-names", i,
+> +						    &name);
+> +		WARN_ON(err);
+> +
+> +		periph->gates[i] = clk_register_gate(NULL, name, np->name, 0,
+> +						     periph->clk_ctrl, i, 0,
+> +						     &periph->clkact_lock);
+> +		WARN_ON(IS_ERR(periph->gates[i]));
+> +	}
+> +
+> +	periph->onecell_data.clks = periph->gates;
+> +	periph->onecell_data.clk_num = i;
+> +
+> +	err = of_clk_add_provider(np, of_clk_src_onecell_get,
+> +				  &periph->onecell_data);
+> +	WARN_ON(err);
+> +}
+> [...]
 
