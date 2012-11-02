@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab2KBIPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 04:15:19 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35669 "EHLO bear.ext.ti.com"
+	id S1756536Ab2KBIPq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 04:15:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35683 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754884Ab2KBIPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 04:15:08 -0400
+	id S1755222Ab2KBIPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 04:15:16 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <tony@atomide.com>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
         <kishon@ti.com>, <arnd@arndb.de>, <olof@lixom.net>,
         <rdunlap@xenotime.net>, <balbi@ti.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 3/3] ARM: OMAP: ocp2scp: create omap device for ocp2scp
-Date: Fri, 2 Nov 2012 13:44:48 +0530
-Message-ID: <1351844088-27059-4-git-send-email-kishon@ti.com>
+Subject: [PATCH v4 2/3] ARM: OMAP4: add _dev_attr_ to ocp2scp for representing usb_phy
+Date: Fri, 2 Nov 2012 13:44:47 +0530
+Message-ID: <1351844088-27059-3-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351844088-27059-1-git-send-email-kishon@ti.com>
 References: <1351844088-27059-1-git-send-email-kishon@ti.com>
@@ -24,118 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platfrom device for ocp2scp is created using omap_device_build in
-devices file. This is used for both omap4(musb) and omap5(dwc3).
+In order to reflect devices(usb_phy) attached to ocp2scp bus, ocp2scp
+is assigned a device attribute to represent the attached devices.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Benoit Cousson <b-cousson@ti.com>
 ---
- arch/arm/mach-omap2/devices.c |   79 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 79 insertions(+)
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
-index cba60e0..c72b5a7 100644
---- a/arch/arm/mach-omap2/devices.c
-+++ b/arch/arm/mach-omap2/devices.c
-@@ -19,6 +19,7 @@
- #include <linux/of.h>
- #include <linux/pinctrl/machine.h>
- #include <linux/platform_data/omap4-keypad.h>
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index 652d028..cf579b5 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -21,6 +21,7 @@
+ #include <linux/io.h>
+ #include <linux/platform_data/gpio-omap.h>
+ #include <linux/power/smartreflex.h>
 +#include <linux/platform_data/omap_ocp2scp.h>
  
- #include <asm/mach-types.h>
- #include <asm/mach/map.h>
-@@ -613,6 +614,83 @@ static void omap_init_vout(void)
- static inline void omap_init_vout(void) {}
- #endif
+ #include <plat/omap_hwmod.h>
+ #include <plat/i2c.h>
+@@ -2681,6 +2682,32 @@ static struct omap_hwmod_class omap44xx_ocp2scp_hwmod_class = {
+ 	.sysc	= &omap44xx_ocp2scp_sysc,
+ };
  
-+#if defined(CONFIG_OMAP_OCP2SCP) || defined(CONFIG_OMAP_OCP2SCP_MODULE)
-+static int count_ocp2scp_devices(struct omap_ocp2scp_dev *ocp2scp_dev)
-+{
-+	int cnt	= 0;
++/* ocp2scp dev_attr */
++static struct resource omap44xx_usb_phy_and_pll_addrs[] = {
++	{
++		.name		= "usb_phy",
++		.start		= 0x4a0ad080,
++		.end		= 0x4a0ae000,
++		.flags		= IORESOURCE_MEM,
++	},
++	{
++		/* XXX: Remove this once control module driver is in place */
++		.name		= "ctrl_dev",
++		.start		= 0x4a002300,
++		.end		= 0x4a002303,
++		.flags		= IORESOURCE_MEM,
++	},
++	{ }
++};
 +
-+	while (ocp2scp_dev->drv_name != NULL) {
-+		cnt++;
-+		ocp2scp_dev++;
-+	}
++static struct omap_ocp2scp_dev ocp2scp_dev_attr[] = {
++	{
++		.drv_name       = "omap-usb2",
++		.res		= omap44xx_usb_phy_and_pll_addrs,
++	},
++	{ }
++};
 +
-+	return cnt;
-+}
-+
-+static void omap_init_ocp2scp(void)
-+{
-+	struct omap_hwmod	*oh;
-+	struct platform_device	*pdev;
-+	int			bus_id = -1, dev_cnt = 0, i;
-+	struct omap_ocp2scp_dev	*ocp2scp_dev;
-+	const char		*oh_name, *name;
-+	struct omap_ocp2scp_platform_data *pdata;
-+
-+	if (!cpu_is_omap44xx())
-+		return;
-+
-+	oh_name = "ocp2scp_usb_phy";
-+	name	= "omap-ocp2scp";
-+
-+	oh = omap_hwmod_lookup(oh_name);
-+	if (!oh) {
-+		pr_err("%s: could not find omap_hwmod for %s\n", __func__,
-+								oh_name);
-+		return;
-+	}
-+
-+	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		pr_err("%s: No memory for ocp2scp pdata\n", __func__);
-+		return;
-+	}
-+
-+	ocp2scp_dev = oh->dev_attr;
-+	dev_cnt = count_ocp2scp_devices(ocp2scp_dev);
-+
-+	if (!dev_cnt) {
-+		pr_err("%s: No devices connected to ocp2scp\n", __func__);
-+		kfree(pdata);
-+		return;
-+	}
-+
-+	pdata->devices = kzalloc(sizeof(struct omap_ocp2scp_dev *)
-+					* dev_cnt, GFP_KERNEL);
-+	if (!pdata->devices) {
-+		pr_err("%s: No memory for ocp2scp pdata devices\n", __func__);
-+		kfree(pdata);
-+		return;
-+	}
-+
-+	for (i = 0; i < dev_cnt; i++, ocp2scp_dev++)
-+		pdata->devices[i] = ocp2scp_dev;
-+
-+	pdata->dev_cnt	= dev_cnt;
-+
-+	pdev = omap_device_build(name, bus_id, oh, pdata, sizeof(*pdata), NULL,
-+								0, false);
-+	if (IS_ERR(pdev)) {
-+		pr_err("Could not build omap_device for %s %s\n",
-+						name, oh_name);
-+		kfree(pdata->devices);
-+		kfree(pdata);
-+		return;
-+	}
-+}
-+#else
-+static inline void omap_init_ocp2scp(void) { }
-+#endif
-+
- /*-------------------------------------------------------------------------*/
+ /* ocp2scp_usb_phy */
+ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
+ 	.name		= "ocp2scp_usb_phy",
+@@ -2694,6 +2721,7 @@ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
+ 			.modulemode   = MODULEMODE_HWCTRL,
+ 		},
+ 	},
++	.dev_attr	= ocp2scp_dev_attr,
+ };
  
- static int __init omap2_init_devices(void)
-@@ -640,6 +718,7 @@ static int __init omap2_init_devices(void)
- 	omap_init_sham();
- 	omap_init_aes();
- 	omap_init_vout();
-+	omap_init_ocp2scp();
- 
- 	return 0;
- }
+ /*
 -- 
 1.7.9.5
 
