@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759389Ab2KBX0C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 19:26:02 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50539 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705Ab2KBXZ7 (ORCPT
+	id S1758124Ab2KBX30 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 19:29:26 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:48927 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750776Ab2KBX3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 19:25:59 -0400
-Date: Fri, 2 Nov 2012 16:26:03 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Dave Jones <davej@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: shmem_getpage_gfp VM_BUG_ON triggered. [3.7rc2]
-In-Reply-To: <20121102014336.GA1727@redhat.com>
-Message-ID: <alpine.LNX.2.00.1211021606580.11106@eggly.anvils>
-References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com> <alpine.LNX.2.00.1211011627120.19567@eggly.anvils>
- <20121102014336.GA1727@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 2 Nov 2012 19:29:24 -0400
+Date: Fri, 2 Nov 2012 16:29:37 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Suspend/resume without VT switches
+Message-ID: <20121102162937.1ec88cf1@jbarnes-desktop>
+In-Reply-To: <7608326.fQBj17U8Wv@vostro.rjw.lan>
+References: <1351892621-4840-1-git-send-email-jbarnes@virtuousgeek.org>
+	<7608326.fQBj17U8Wv@vostro.rjw.lan>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Nov 2012, Dave Jones wrote:
-> On Thu, Nov 01, 2012 at 04:48:41PM -0700, Hugh Dickins wrote:
->  > 
->  > Fedora turns on CONFIG_DEBUG_VM?
+On Fri, 02 Nov 2012 22:51:07 +0100
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+
+> On Friday, November 02, 2012 02:43:39 PM Jesse Barnes wrote:
+> > I've lightly tested this with X and it definitely makes my
+> > suspend/resume sequence a bit prettier.  It should speed things up
+> > trivally as well, but most of those gains come from other changes to the
+> > i915 driver (posted earlier to intel-gfx).
+> > 
+> > Any thoughts?
 > 
-> Yes.
->  
->  > All mm developers should thank you for the wider testing exposure;
->  > but I'm not so sure that Fedora users should thank you for turning
->  > it on - really it's for mm developers to wrap around !assertions or
->  > more expensive checks (e.g. checking calls) in their development.
+> I like the idea.
 > 
-> The last time I did some benchmarking the impact wasn't as ridiculous
-> as say lockdep, or spinlock debug.
-
-I think you're safe to assume that (outside of an individual developer's
-private tree) it will never be nearly as heavy as lockdep or debug
-pagealloc.  I hadn't thought of spinlock debug as a heavy one, but
-yes, I guess it would be heavier than almost all VM_BUG_ON()s.
-
-> Maybe the benchmarks I was using
-> weren't pushing the VM very hard, but it seemed to me that the value
-> in getting info in potential problems early was higher than a small
-> performance increase.
-
-We thank you.  I may have been over-estimating how much we put inside
-those VM_BUG_ON()s, sorry.  Just so long as you're aware that there's
-a danger that one day we might slip something heavier in there.
-
-Those few explicit #ifdef CONFIG_DEBUG_VMs sometimes found in mm/
-are probably the worst: you might want to check on the current crop.
-
+> > I suspect we'll have to be more defensive about the
+> > resume configuration in case the BIOS did something weird, but overall I
+> > think we should be able to do this one way or another.
 > 
->  > Or did I read a few months ago that some change had been made to
->  > such definitions, and VM_BUG_ON(contents) are evaluated even when
->  > the config option is off?  I do hope I'm mistaken on that.
-> 
-> Pretty sure that isn't the case. I remember Andrew chastising people
-> a few times for putting checks in VM_BUG_ON's that needed to stay around 
-> even when the config option was off. Perhaps you were thinking of one
-> of those incidents ?
+> Perhaps patch [1/2] should be [2/2] and vice versa? :-)
 
-Avoiding side-effects in BUG_ON and VM_BUG_ON.  Yes, that comes up
-from time to time, and I'm a believer on that.  I think the discussion
-I'm mis/remembering sprung out of one of those: someone was surprised
-by the disassembly they found when it was configured off.
+But then it wouldn't compile?  I added the variable first, defaulting
+to the current behavior, then made i915 support it and set the variable
+to false there...  At least, that's what I intended to do.
 
-The correct answer is to try it for myself and see.  Not today.
-
-Hugh
+-- 
+Jesse Barnes, Intel Open Source Technology Center
