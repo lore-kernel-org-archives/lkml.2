@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab2KBU0B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 16:26:01 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:52757 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568Ab2KBUZ7 (ORCPT
+	id S1757992Ab2KBU0O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 16:26:14 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:35061 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754568Ab2KBU0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 16:25:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <26004880.qboZkUVCy9@vostro.rjw.lan>
-References: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com>
- <26004880.qboZkUVCy9@vostro.rjw.lan>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 2 Nov 2012 13:25:37 -0700
-X-Google-Sender-Auth: Xz-x-NIhLKVEvL4O6whyJy0EEdM
-Message-ID: <CA+55aFxm0D77c0RYJuAiq2EDJxn+hGKTEGYJnHXNM8XkVAYOTA@mail.gmail.com>
-Subject: Re: Linux 3.7-rc3
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 2 Nov 2012 16:26:10 -0400
+Message-ID: <1351887967.3161.17.camel@lorien2>
+Subject: Re: [PATCH RFT RESEND linux-next] c6x: dma-mapping: support
+ debug_dma_mapping_error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Mark Salter <msalter@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, a-jacquiot@ti.com,
+        linux-c6x-dev@linux-c6x.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Fri, 02 Nov 2012 14:26:07 -0600
+In-Reply-To: <1351887326.15973.35.camel@deneb.redhat.com>
+References: <1351206082.6851.6.camel@lorien2>
+	 <1351266055.4013.1.camel@lorien2> <1351874655.2721.16.camel@lorien2>
+	 <1351883445.15973.24.camel@deneb.redhat.com>
+	 <1351885999.3161.11.camel@lorien2>
+	 <1351887326.15973.35.camel@deneb.redhat.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 5:10 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> Unfortunately, s2disk is broken with this one and previous -rc.  In the
-> majority of cases it just hangs the machine during hibernation, although
-> sometimes it returns to user space reporting freezing problems, suspicions
-> RCU usage and similar stuff, pretty much without any useful debug information.
+On Fri, 2012-11-02 at 16:15 -0400, Mark Salter wrote:
+> On Fri, 2012-11-02 at 13:53 -0600, Shuah Khan wrote:
+> > On Fri, 2012-11-02 at 15:10 -0400, Mark Salter wrote:
+> > > On Fri, 2012-11-02 at 10:44 -0600, Shuah Khan wrote:
+> > > > On Fri, 2012-10-26 at 09:40 -0600, Shuah Khan wrote:
+> > > > > Add support for debug_dma_mapping_error() call to avoid warning from
+> > > > > debug_dma_unmap() interface when it checks for mapping error checked
+> > > > > status. Without this patch, device driver failed to check map error
+> > > > > warning is generated.
+> > > > > 
+> > > > > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> > > > > ---
+> > > > >  arch/c6x/include/asm/dma-mapping.h |    1 +
+> > > > >  1 file changed, 1 insertion(+)
+> > > 
+> > > > Would you like to this patch go through c6x arch tree or linux-next?
+> > > > Please let me know your preference.
+> > > 
+> > > I tried to test this but I get a build error with CONFIG_DMA_API_DEBUG:
+> > > 
+> > > /linux-next/lib/dma-debug.c: In function 'has_mapping_error':
+> > > /linux-next/lib/dma-debug.c:863:15: error: implicit declaration of function 'get_dma_ops' [-Werror=implicit-function-declaration]
+> > > /linux-next/lib/dma-debug.c:863:34: warning: initialization makes pointer from integer without a cast [enabled by default]
+> > > 
+> > > C6X (along with some other architectures) doesn't have a get_dma_ops()
+> > > function defined.
+> > 
+> > That is a problem I didn't think about. I did a check and looks like c6x
+> > and frv are the only ones that don't have get_dma_ops() defined. frv is
+> 
+> By my count, there are 14 architectures with get_dma_ops() and 14
+> without.
+Right. I should have explained more. The following archs
 
-Ugh. I was hoping that we'd get more reports on this, right now
-there's not enough information to even make a guess about what's up.
+arch/avr32/include/asm/dma-mapping.h
+arch/blackfin/include/asm/dma-mapping.h
+arch/cris/include/asm/dma-mapping.h
+arch/mn10300/include/asm/dma-mapping.h
+arch/parisc/include/asm/dma-mapping.h
+arch/xtensa/include/asm/dma-mapping.h
 
-I also note that no actual i915 people were cc'd, despite your
-graphics driver suspect. Adding Daniel and Dave (one of the millions)
-to the cc since they probably do have lkml but probably don't react
-unless something gets pointed out.
+define dma_map_page() and dma_map_single() and not call
+debug_dma_map_page() interface. There is no risk of mis-matched debug
+and non-debug mapping and mapping error checks like in the case of other
+archs and c6x.
 
-Daniel/Dave, do you have any reports of hibernation failing (or VT
-switching problems) with i915 after 3.6?
+> > in a different category as it doesn't use dma_debug interfaces. IN the
+> > case c6x, now with my change to add debug_dma_mapping_error(), we will
+> > start seeing warnings since dma_map_page() and dma_map_single() are
+> > debugged with a call to debug_dma_map_page() and the corresponding
+> > dma_mapping_error() interface doesn't call debug_dma_mapping_error()
+> > interface
+> > 
+> > - Does adding get_dma_ops() make sense? Doesn't look like c6x exports
+> > dma_ops?
+> > 
+> > Any other ideas?
+> 
+> I'm not sure. I don't know what get_dma_ops() does and it doesn't seem
+> to be documented anywhere.
 
-Rafael, do you have logs of the suspicious RCU usage etc reports?
+It returns pointer to dma_ops like the one on alpha:
 
-               Linus
+static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+{
+        return dma_ops;
+}
+
+c6x doesn't define dma_ops looks like. Is that correct? Returning null
+from get_dma_ops() is not an option as get_dma_ops() return is assumed
+to be not null.
+
+Thanks,
+-- Shuah
+
+
