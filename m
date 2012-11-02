@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934001Ab2KBRx5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:53:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44836 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab2KBRxz (ORCPT
+	id S933930Ab2KBRy2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:54:28 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:60724 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260Ab2KBRy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:53:55 -0400
-Date: Fri, 2 Nov 2012 10:53:50 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Ric Wheeler <rwheeler@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kay Sievers <kay@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
- add queue-private command filter, editable via sysfs)
-Message-ID: <20121102175350.GB27843@mtj.dyndns.org>
-References: <20121025180045.GL11442@htj.dyndns.org>
- <1657557410.1945557.1351190120407.JavaMail.root@redhat.com>
- <20121031212241.GZ2945@htj.dyndns.org>
- <5093DD5E.6030808@redhat.com>
- <20121102165123.GB3823@mtj.dyndns.org>
- <509407B7.3030904@redhat.com>
+	Fri, 2 Nov 2012 13:54:26 -0400
+Date: Fri, 2 Nov 2012 17:54:16 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121102175416.GA11816@srcf.ucam.org>
+References: <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
+ <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
+ <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
+ <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+ <20121101202701.GB20817@xo-6d-61-c0.localdomain>
+ <5092E361.7080901@genband.com>
+ <20121102163302.GA6080@elf.ucw.cz>
+ <1351875164.2439.42.camel@dabdike.int.hansenpartnership.com>
+ <20121102165456.GB9997@srcf.ucam.org>
+ <1351878511.2439.44.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <509407B7.3030904@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351878511.2439.44.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Paolo.
-
-On Fri, Nov 02, 2012 at 06:49:43PM +0100, Paolo Bonzini wrote:
-> > No rule is really absolute.  To me, it seems the suggested in-kernel
-> > per-device command code filter is both too big for the given problem
+On Fri, Nov 02, 2012 at 05:48:31PM +0000, James Bottomley wrote:
+> On Fri, 2012-11-02 at 16:54 +0000, Matthew Garrett wrote:
+> > On Fri, Nov 02, 2012 at 04:52:44PM +0000, James Bottomley wrote:
+> > 
+> > > The first question is how many compromises do you need.  Without
+> > > co-operation from windows, you don't get to install something in the
+> > > boot system, so if you're looking for a single compromise vector, the
+> > > only realistic attack is to trick the user into booting a hacked linux
+> > > system from USB or DVD.
+> > 
+> > You run a binary. It pops up a box saying "Windows needs your permission 
+> > to continue", just like almost every other Windows binary that's any 
+> > use. Done.
 > 
-> Is it?  150 lines of code?  The per-class filters would share the first
-> two patches with this series, add a long list of commands to filter, and
-> the ioctl would be on top of that.
+> And if all the loaders do some type of present user test on a virgin
+> system, how do you propose to get that message up there?
 
-It's not really about the lines of code.  It adds a new userland
-visible interface.  As for the "long" list of commands, it depends on
-how you write it but even if it's textually long it's still very
-simple in terms of actual complexity.
-
-> > while being too limited for much beyond that.
-> 
-> What are the use cases beyond these?  AFAIK these were the first two in
-> ten years or so...
-
-If this is such a cold area, why do we want do anything other than the
-simplest possible?
-
-> > So, if we can get away
-> > with adding an ioctl, I personally think that would be a better
-> > approach.
-> 
-> I would really prefer to get a green light from Jens/James for per-class
-> filters in the kernel (which are worth a few hundred lines of data)
-> before implementing that.
-
-Sure, Jens, James?  Guys, come on.
-
-Thanks.
+? That's the message generated by the Windows access control mechanism 
+when you run a binary that requests elevated privileges.
 
 -- 
-tejun
+Matthew Garrett | mjg59@srcf.ucam.org
