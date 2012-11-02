@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763149Ab2KBRJD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:09:03 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33501 "EHLO mail.kernel.org"
+	id S1763056Ab2KBRHz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:07:55 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33333 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762995Ab2KBRH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:57 -0400
+	id S1750930Ab2KBRHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 22/24] drm/nouveau: silence modesetting spam on pre-gf8 chipsets
-Date: Fri,  2 Nov 2012 10:07:10 -0700
-Message-Id: <20121102170249.003372010@linuxfoundation.org>
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>, Jens Axboe <axboe@kernel.dk>
+Subject: [ 08/24] floppy: properly handle failure on add_disk loop
+Date: Fri,  2 Nov 2012 10:06:56 -0700
+Message-Id: <20121102170248.023906768@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170247.406319110@linuxfoundation.org>
 References: <20121102170247.406319110@linuxfoundation.org>
@@ -25,105 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Skeggs <bskeggs@redhat.com>
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-commit cee59f15a60cc6269a25e3f6fbf1a577d6ab8115 upstream.
+commit d60e7ec18c3fb2cbf90969ccd42889eb2d03aef9 upstream.
 
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+On floppy initialization, if something failed inside the loop we call
+add_disk, there was no cleanup of previous iterations in the error
+handling.
+
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nv04_dac.c |    8 ++++----
- drivers/gpu/drm/nouveau/nv04_dfp.c |    6 +++---
- drivers/gpu/drm/nouveau/nv04_tv.c  |    4 ++--
- 3 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/block/floppy.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/nouveau/nv04_dac.c
-+++ b/drivers/gpu/drm/nouveau/nv04_dac.c
-@@ -210,7 +210,7 @@ out:
- 	NVWriteVgaCrtc(dev, 0, NV_CIO_CR_MODE_INDEX, saved_cr_mode);
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -4293,7 +4293,7 @@ static int __init do_floppy_init(void)
  
- 	if (blue == 0x18) {
--		NV_INFO(dev, "Load detected on head A\n");
-+		NV_DEBUG(dev, "Load detected on head A\n");
- 		return connector_status_connected;
- 	}
+ 		err = platform_device_register(&floppy_device[drive]);
+ 		if (err)
+-			goto out_release_dma;
++			goto out_remove_drives;
  
-@@ -323,7 +323,7 @@ nv17_dac_detect(struct drm_encoder *enco
+ 		err = device_create_file(&floppy_device[drive].dev,
+ 					 &dev_attr_cmos);
+@@ -4311,6 +4311,15 @@ static int __init do_floppy_init(void)
  
- 	if (nv17_dac_sample_load(encoder) &
- 	    NV_PRAMDAC_TEST_CONTROL_SENSEB_ALLHI) {
--		NV_INFO(dev, "Load detected on output %c\n",
-+		NV_DEBUG(dev, "Load detected on output %c\n",
- 			'@' + ffs(dcb->or));
- 		return connector_status_connected;
- 	} else {
-@@ -398,7 +398,7 @@ static void nv04_dac_commit(struct drm_e
- 
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
- 
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base),
- 		nv_crtc->index, '@' + ffs(nv_encoder->dcb->or));
- }
-@@ -447,7 +447,7 @@ static void nv04_dac_dpms(struct drm_enc
- 		return;
- 	nv_encoder->last_dpms = mode;
- 
--	NV_INFO(dev, "Setting dpms mode %d on vga encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on vga encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	nv04_dac_update_dacclk(encoder, mode == DRM_MODE_DPMS_ON);
---- a/drivers/gpu/drm/nouveau/nv04_dfp.c
-+++ b/drivers/gpu/drm/nouveau/nv04_dfp.c
-@@ -476,7 +476,7 @@ static void nv04_dfp_commit(struct drm_e
- 
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
- 
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base),
- 		nv_crtc->index, '@' + ffs(nv_encoder->dcb->or));
- }
-@@ -519,7 +519,7 @@ static void nv04_lvds_dpms(struct drm_en
- 		return;
- 	nv_encoder->last_dpms = mode;
- 
--	NV_INFO(dev, "Setting dpms mode %d on lvds encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on lvds encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	if (was_powersaving && is_powersaving_dpms(mode))
-@@ -564,7 +564,7 @@ static void nv04_tmds_dpms(struct drm_en
- 		return;
- 	nv_encoder->last_dpms = mode;
- 
--	NV_INFO(dev, "Setting dpms mode %d on tmds encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on tmds encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	nv04_dfp_update_backlight(encoder, mode);
---- a/drivers/gpu/drm/nouveau/nv04_tv.c
-+++ b/drivers/gpu/drm/nouveau/nv04_tv.c
-@@ -69,7 +69,7 @@ static void nv04_tv_dpms(struct drm_enco
- 	struct nv04_mode_state *state = &dev_priv->mode_reg;
- 	uint8_t crtc1A;
- 
--	NV_INFO(dev, "Setting dpms mode %d on TV encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on TV encoder (output %d)\n",
- 		mode, nv_encoder->dcb->index);
- 
- 	state->pllsel &= ~(PLLSEL_TV_CRTC1_MASK | PLLSEL_TV_CRTC2_MASK);
-@@ -162,7 +162,7 @@ static void nv04_tv_commit(struct drm_en
- 
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
- 
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		      drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base), nv_crtc->index,
- 		      '@' + ffs(nv_encoder->dcb->or));
- }
+ out_unreg_platform_dev:
+ 	platform_device_unregister(&floppy_device[drive]);
++out_remove_drives:
++	while (drive--) {
++		if ((allowed_drive_mask & (1 << drive)) &&
++		    fdc_state[FDC(drive)].version != FDC_NONE) {
++			del_gendisk(disks[drive]);
++			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
++			platform_device_unregister(&floppy_device[drive]);
++		}
++	}
+ out_release_dma:
+ 	if (atomic_read(&usage_count))
+ 		floppy_release_irq_and_dma();
 
 
