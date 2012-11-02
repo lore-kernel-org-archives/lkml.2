@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932843Ab2KBRLh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:11:37 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33422 "EHLO mail.kernel.org"
+	id S1763021Ab2KBRLy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:11:54 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33412 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763006Ab2KBRHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:49 -0400
+	id S1763001Ab2KBRHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 16/24] USB: iuu_phoenix: fix backported patches
-Date: Fri,  2 Nov 2012 10:07:04 -0700
-Message-Id: <20121102170248.584117825@linuxfoundation.org>
+        Mohamed Pakkeer <pakkeer.mohideen@realimage.com>,
+        Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 14/24] ceph: avoid 32-bit page index overflow
+Date: Fri,  2 Nov 2012 10:07:02 -0700
+Message-Id: <20121102170248.443876993@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170247.406319110@linuxfoundation.org>
 References: <20121102170247.406319110@linuxfoundation.org>
@@ -26,41 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Alex Elder <elder@inktank.com>
 
-Fix two memory leaks involving dbgbuf that were introduced in port-probe
-error paths when backporting the following port-data fixes from v3.7
-(which doesn't have dbgbuf):
+commit 6285bc231277419255f3498d3eb5ddc9f8e7fe79 upstream.
 
-0978c94 USB: iuu_phoenix: fix sysfs-attribute creation
-5363655 USB: iuu_phoenix: fix port-data memory leak
+A pgoff_t is defined (by default) to have type (unsigned long).  On
+architectures such as i686 that's a 32-bit type.  The ceph address
+space code was attempting to produce 64 bit offsets by shifting a
+page's index by PAGE_CACHE_SHIFT, but the result was not what was
+desired because the shift occurred before the result got promoted
+to 64 bits.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Fix this by converting all uses of page->index used in this way to
+use the page_offset() macro, which ensures the 64-bit result has the
+intended value.
+
+This fixes http://tracker.newdream.net/issues/3112
+
+Reported-by:  Mohamed Pakkeer <pakkeer.mohideen@realimage.com>
+Signed-off-by: Alex Elder <elder@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/iuu_phoenix.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/ceph/addr.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/iuu_phoenix.c
-+++ b/drivers/usb/serial/iuu_phoenix.c
-@@ -105,7 +105,7 @@ static int iuu_port_probe(struct usb_ser
- 	}
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -205,7 +205,7 @@ static int readpage_nounlock(struct file
+ 	dout("readpage inode %p file %p page %p index %lu\n",
+ 	     inode, filp, page, page->index);
+ 	err = ceph_osdc_readpages(osdc, ceph_vino(inode), &ci->i_layout,
+-				  page->index << PAGE_CACHE_SHIFT, &len,
++				  (u64) page_offset(page), &len,
+ 				  ci->i_truncate_seq, ci->i_truncate_size,
+ 				  &page, 1, 0);
+ 	if (err == -ENOENT)
+@@ -286,7 +286,7 @@ static int start_read(struct inode *inod
+ 	int nr_pages = 0;
+ 	int ret;
  
- 	priv->dbgbuf = kzalloc(256, GFP_KERNEL);
--	if (!priv->writebuf) {
-+	if (!priv->dbgbuf) {
- 		kfree(priv->writebuf);
- 		kfree(priv->buf);
- 		kfree(priv);
-@@ -120,6 +120,7 @@ static int iuu_port_probe(struct usb_ser
+-	off = page->index << PAGE_CACHE_SHIFT;
++	off = (u64) page_offset(page);
  
- 	ret = iuu_create_sysfs_attrs(port);
- 	if (ret) {
-+		kfree(priv->dbgbuf);
- 		kfree(priv->writebuf);
- 		kfree(priv->buf);
- 		kfree(priv);
+ 	/* count pages */
+ 	next_index = page->index;
+@@ -426,7 +426,7 @@ static int writepage_nounlock(struct pag
+ 	struct ceph_inode_info *ci;
+ 	struct ceph_fs_client *fsc;
+ 	struct ceph_osd_client *osdc;
+-	loff_t page_off = page->index << PAGE_CACHE_SHIFT;
++	loff_t page_off = page_offset(page);
+ 	int len = PAGE_CACHE_SIZE;
+ 	loff_t i_size;
+ 	int err = 0;
+@@ -817,8 +817,7 @@ get_more_pages:
+ 			/* ok */
+ 			if (locked_pages == 0) {
+ 				/* prepare async write request */
+-				offset = (unsigned long long)page->index
+-					<< PAGE_CACHE_SHIFT;
++				offset = (u64) page_offset(page);
+ 				len = wsize;
+ 				req = ceph_osdc_new_request(&fsc->client->osdc,
+ 					    &ci->i_layout,
+@@ -1180,7 +1179,7 @@ static int ceph_page_mkwrite(struct vm_a
+ 	struct inode *inode = vma->vm_file->f_dentry->d_inode;
+ 	struct page *page = vmf->page;
+ 	struct ceph_mds_client *mdsc = ceph_inode_to_client(inode)->mdsc;
+-	loff_t off = page->index << PAGE_CACHE_SHIFT;
++	loff_t off = page_offset(page);
+ 	loff_t size, len;
+ 	int ret;
+ 
 
 
