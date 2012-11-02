@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934781Ab2KBSRC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 14:17:02 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18827 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934232Ab2KBSOe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934285Ab2KBSOe (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 2 Nov 2012 14:14:34 -0400
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=v4ulaLF1MHUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ganCZYQ3fQAA:10 a=20KFwNOVAAAA:8 a=NScBLMBZN6_eZyQlLGMA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=JTCHrAgd2eIJ2LFmxI8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22935 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933602Ab2KBSOb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 14:14:31 -0400
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=n-KLrdUYVzoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=-UbjtAS9mJwA:10 a=VwQbUJbxAAAA:8 a=CdcsjU14Wdp5J3HyGRoA:9 a=QEXdDO2ut3YA:10 a=mc44_r0X0dS75VJgpikA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121102181431.031622010@goodmis.org>
+Message-Id: <20121102181331.513782854@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 14:13:38 -0400
+Date: Fri, 02 Nov 2012 14:13:31 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 07/19] tracing: Have tracing_sched_wakeup_trace() use standard
- unlock_commit
-References: <20121102181331.513782854@goodmis.org>
-Content-Disposition: inline; filename=0007-tracing-Have-tracing_sched_wakeup_trace-use-standard.patch
+Subject: [PATCH 00/19] [GIT PULL][3.8] tracing: updates (v2)
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,37 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
 
-The functon tracing_sched_wakeup_trace() does an open coded unlock
-commit and save stack. This is what the trace_nowake_buffer_unlock_commit()
-is for.
+Ingo,
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_sched_switch.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+I removed the few problem patches (and their dependencies) and
+retested the result.
 
-diff --git a/kernel/trace/trace_sched_switch.c b/kernel/trace/trace_sched_s=
-witch.c
-index 7e62c0a..b0a136a 100644
---- a/kernel/trace/trace_sched_switch.c
-+++ b/kernel/trace/trace_sched_switch.c
-@@ -102,9 +102,7 @@ tracing_sched_wakeup_trace(struct trace_array *tr,
- 	entry->next_cpu			=3D task_cpu(wakee);
-=20
- 	if (!filter_check_discard(call, entry, buffer, event))
--		ring_buffer_unlock_commit(buffer, event);
--	ftrace_trace_stack(tr->buffer, flags, 6, pc);
--	ftrace_trace_userstack(tr->buffer, flags, pc);
-+		trace_nowake_buffer_unlock_commit(buffer, event, flags, pc);
- }
-=20
- static void
---=20
-1.7.10.4
+Please pull the latest tip/perf/core-2 tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/core-2
+
+Head SHA1: 7bcfaf54f591a0775254c4ea679faf615152ee3a
 
 
+Daniel Walter (1):
+      tracing: Replace strict_strto* with kstrto*
+
+David Sharp (2):
+      tracing: Trivial cleanup
+      tracing: Reset ring buffer when changing trace_clocks
+
+Hiraku Toyooka (1):
+      tracing: Change tracer's integer flags to bool
+
+Michal Hocko (1):
+      linux/kernel.h: Remove duplicate trace_printk declaration
+
+Slava Pestov (1):
+      ring-buffer: Add a 'dropped events' counter
+
+Steven Rostedt (11):
+      tracing: Allow tracers to start at core initcall
+      tracing: Expand ring buffer when trace_printk() is used
+      tracing: Enable comm recording if trace_printk() is used
+      tracing: Have tracing_sched_wakeup_trace() use standard unlock_commit
+      tracing: Cache comms only after an event occurred
+      tracing: Separate open function from set_event and available_events
+      tracing: Remove unused function unregister_tracer()
+      tracing: Make tracing_enabled be equal to tracing_on
+      tracing: Remove deprecated tracing_enabled file
+      tracing: Use irq_work for wake ups and remove *_nowake_*() functions
+      tracing: Add trace_options kernel command line parameter
+
+Vaibhav Nagarnaik (1):
+      tracing: Cleanup unnecessary function declarations
+
+Yoshihiro YUNOMAE (1):
+      ring-buffer: Change unsigned long type of ring_buffer_oldest_event_ts=
+() to u64
+
+----
+ Documentation/kernel-parameters.txt  |   16 ++
+ include/linux/ftrace_event.h         |   14 +-
+ include/linux/kernel.h               |    7 +-
+ include/linux/ring_buffer.h          |    3 +-
+ include/trace/ftrace.h               |    3 +-
+ include/trace/syscall.h              |   23 ---
+ kernel/trace/Kconfig                 |    1 +
+ kernel/trace/ftrace.c                |    6 +-
+ kernel/trace/ring_buffer.c           |   51 ++++-
+ kernel/trace/trace.c                 |  372 +++++++++++++++++-------------=
+----
+ kernel/trace/trace.h                 |   14 +-
+ kernel/trace/trace_branch.c          |    4 +-
+ kernel/trace/trace_events.c          |   51 +++--
+ kernel/trace/trace_events_filter.c   |    4 +-
+ kernel/trace/trace_functions.c       |    5 +-
+ kernel/trace/trace_functions_graph.c |    6 +-
+ kernel/trace/trace_irqsoff.c         |   14 +-
+ kernel/trace/trace_kprobe.c          |   10 +-
+ kernel/trace/trace_probe.c           |   14 +-
+ kernel/trace/trace_sched_switch.c    |    4 +-
+ kernel/trace/trace_sched_wakeup.c    |   10 +-
+ kernel/trace/trace_selftest.c        |   13 +-
+ kernel/trace/trace_syscalls.c        |   61 +++---
+ kernel/trace/trace_uprobe.c          |    2 +-
+ 24 files changed, 365 insertions(+), 343 deletions(-)
 
 --00GvhwF7k39YY
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -69,13 +112,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJQlA2HAAoJEOdOSU1xswtMpl4H/i0x98a1Jr3ksFrLkb48/Put
-ACUhcVzGZrLiKihJ2XbznWgIowjo2x/Lf8ehKOOKE37Rgf0iXHIApIsksq8irZmA
-Z9ov4fdoMMyL4H8VXB2XeLbOr8wJ332pG8QHxbyI75G70BENsvCPqeS9tXbZtJX7
-DRnQt4evcmNhdOGHm74/yNSvW5fZ11nByJnX7sefo+OBUc+tzA+YhqhWQ+gSpGf3
-HYj6UgqbWJ/60dERqiBox7RNDyYcFTeM4uRq5Wap/xifVej7pVFbYacuIpU7nmST
-IWv9PQZa9/4oVRBeEnj381o9Mjda/Bp2Ox9FoCSVIoS1ki52Fo+8wawxyh01IYk=
-=WzXx
+iQEcBAABAgAGBQJQlA2DAAoJEOdOSU1xswtM2jsH/R8iPBkqKL9Z8JnVHS8w8Dce
+BGFyrxS4nA9AE8AGgdaJBK+lOn2siVKR3a3vAlSHZyd2+xuShEEnwSaEDWR/ICKx
+ryhOXmrrUoIOX72v6e/LDkXoFOSpWdh7Kr2llJXwt+hJ8twyZXigCHv3WLJoboNf
+wE+bMYSwVMnqRE3Ci/C9HVaB8hMOZdFTaFL8mot2K1ZYBA4xjV7LhGTcE3bxS3o+
+WOqN8TZyNhIEpfNF6tbOui4unQswTvfIwYpzy8fePm4/hyNAqhNnXKiI1JFyoWHw
+eh7yx/gjQi5Xlas2dEWPdAbQMe/Ci/aqPGiTIJs6sJ+tw6tx0Oia3gWC778xMNc=
+=EP4v
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
