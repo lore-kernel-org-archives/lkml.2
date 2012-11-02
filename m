@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757691Ab2KBPjd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 11:39:33 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59642 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab2KBPja (ORCPT
+	id S1758030Ab2KBPmy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 11:42:54 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:42006 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757487Ab2KBPmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 11:39:30 -0400
-Date: Fri, 2 Nov 2012 08:39:31 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jan Beulich <JBeulich@suse.com>, sfr@canb.auug.org.au,
-        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: linux-next: Tree for Oct 31 (ehci, dbgp)
-Message-ID: <20121102153931.GA3755@kroah.com>
-References: <5093E0DF02000078000A6102@nat28.tlf.novell.com>
- <Pine.LNX.4.44L0.1211021019450.1356-100000@iolanthe.rowland.org>
+	Fri, 2 Nov 2012 11:42:52 -0400
+Date: Fri, 2 Nov 2012 15:42:48 +0000
+From: Matthew Garrett <mjg@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121102154248.GA7681@srcf.ucam.org>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+ <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+ <20121029174131.GC7580@srcf.ucam.org>
+ <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
+ <20121031150201.GA12394@srcf.ucam.org>
+ <20121102153047.GF3300@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1211021019450.1356-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121102153047.GF3300@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 10:20:27AM -0400, Alan Stern wrote:
-> On Fri, 2 Nov 2012, Jan Beulich wrote:
-> 
-> > >>> On 02.11.12 at 15:01, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > > On Thu, 1 Nov 2012, Jan Beulich wrote:
-> > > 
-> > >> >>> Alan Stern <stern@rowland.harvard.edu> 11/01/12 9:39 PM >>>
-> > >> >On Thu, 1 Nov 2012, Jan Beulich wrote:
-> > >> >> >>> Alan Stern <stern@rowland.harvard.edu> 11/01/12 4:28 PM >>>
-> > >> >> >Evidently we need to change your new test in
-> > >> >> >drivers/usb/early/ehci-dbgp.c to:
-> > >> >> >
-> > >> >> >#if IS_ENABLED(CONFIG_USB_HCD_EHCI) || defined(CONFIG_USB_CHIPIDEA_HOST)
-> > >> >> >
-> > >> >> >Upcoming changes to ehci-hcd will make this unnecessary in 3.8, but for 
-> > >> >> >now we need it.
-> > >> >> 
-> > >> >> Which tells me that the CONFIG_USB_SUPPORT version would have been
-> > >> >> the better one  (and I would favor that over the ugly variant you suggest
-> > >> >> above).
-> > >> >
-> > >> >I also suggested IS_ENABLED(CONFIG_USB), which is no uglier than what 
-> > >> >you submitted and would also fix this build error.  How about using it 
-> > >> >instead?
-> > >> 
-> > >> Yes, that's better. Question then is - updated original patch or incremental 
-> > > one?
-> > > 
-> > > Greg will probably want an incremental patch, because the original has 
-> > > already been merged.
-> > 
-> > I actually sent both (the incremental as attachment - I hope that's
-> > going to be acceptable to him) in a submission earlier today.
-> 
-> Ah, okay, good.
-> 
-> Greg, whichever version you take, you can add:
-> 
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+On Fri, Nov 02, 2012 at 11:30:48AM -0400, Vivek Goyal wrote:
 
-Thanks for that, as you guessed, I have to take the incremental one as
-the first is already applied.
+> "crash" utility has module which allows reading kernel memory. So leaking
+> this private key will be easier then you are thinking it to be.
 
-greg k-h
+That's not upstream, right?
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
