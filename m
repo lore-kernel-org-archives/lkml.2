@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab2KBTpO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 15:45:14 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45963 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab2KBTpM (ORCPT
+	id S1751750Ab2KBTxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 15:53:23 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:37917 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab2KBTxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 15:45:12 -0400
-Message-ID: <509422C3.1000803@suse.cz>
-Date: Fri, 02 Nov 2012 20:45:07 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Zdenek Kabelac <zkabelac@redhat.com>, Valdis.Kletnieks@vt.edu,
-        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: kswapd0: excessive CPU usage
-References: <507688CC.9000104@suse.cz> <106695.1349963080@turing-police.cc.vt.edu> <5076E700.2030909@suse.cz> <118079.1349978211@turing-police.cc.vt.edu> <50770905.5070904@suse.cz> <119175.1349979570@turing-police.cc.vt.edu> <5077434D.7080008@suse.cz> <50780F26.7070007@suse.cz> <20121012135726.GY29125@suse.de> <507BDD45.1070705@suse.cz> <20121015110937.GE29125@suse.de> <5093A3F4.8090108@redhat.com> <5093A631.5020209@suse.cz>
-In-Reply-To: <5093A631.5020209@suse.cz>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-15
+	Fri, 2 Nov 2012 15:53:22 -0400
+Message-ID: <1351885999.3161.11.camel@lorien2>
+Subject: Re: [PATCH RFT RESEND linux-next] c6x: dma-mapping: support
+ debug_dma_mapping_error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Mark Salter <msalter@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, a-jacquiot@ti.com,
+        linux-c6x-dev@linux-c6x.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Fri, 02 Nov 2012 13:53:19 -0600
+In-Reply-To: <1351883445.15973.24.camel@deneb.redhat.com>
+References: <1351206082.6851.6.camel@lorien2>
+	 <1351266055.4013.1.camel@lorien2> <1351874655.2721.16.camel@lorien2>
+	 <1351883445.15973.24.camel@deneb.redhat.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2012 11:53 AM, Jiri Slaby wrote:
-> On 11/02/2012 11:44 AM, Zdenek Kabelac wrote:
->>>> Yes, applying this instead of the revert fixes the issue as well.
->>
->> I've applied this patch on 3.7.0-rc3 kernel - and I still see excessive
->> CPU usage - mainly  after  suspend/resume
->>
->> Here is just simple  kswapd backtrace from running kernel:
+On Fri, 2012-11-02 at 15:10 -0400, Mark Salter wrote:
+> On Fri, 2012-11-02 at 10:44 -0600, Shuah Khan wrote:
+> > On Fri, 2012-10-26 at 09:40 -0600, Shuah Khan wrote:
+> > > Add support for debug_dma_mapping_error() call to avoid warning from
+> > > debug_dma_unmap() interface when it checks for mapping error checked
+> > > status. Without this patch, device driver failed to check map error
+> > > warning is generated.
+> > > 
+> > > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> > > ---
+> > >  arch/c6x/include/asm/dma-mapping.h |    1 +
+> > >  1 file changed, 1 insertion(+)
 > 
-> Yup, this is what we were seeing with the former patch only too. Try to
-> apply the other one too:
-> https://patchwork.kernel.org/patch/1673231/
+> > Would you like to this patch go through c6x arch tree or linux-next?
+> > Please let me know your preference.
 > 
-> For me I would say, it is fixed by the two patches now. I won't be able
-> to report later, since I'm leaving to a conference tomorrow.
+> I tried to test this but I get a build error with CONFIG_DMA_API_DEBUG:
+> 
+> /linux-next/lib/dma-debug.c: In function 'has_mapping_error':
+> /linux-next/lib/dma-debug.c:863:15: error: implicit declaration of function 'get_dma_ops' [-Werror=implicit-function-declaration]
+> /linux-next/lib/dma-debug.c:863:34: warning: initialization makes pointer from integer without a cast [enabled by default]
+> 
+> C6X (along with some other architectures) doesn't have a get_dma_ops()
+> function defined.
 
-Damn it. It recurred right now, with both patches applied. After I
-started a java program which consumed some more memory. Though there are
-still 2 gigs free, kswap is spinning:
-[<ffffffff810b00da>] __cond_resched+0x2a/0x40
-[<ffffffff811318a0>] shrink_slab+0x1c0/0x2d0
-[<ffffffff8113478d>] kswapd+0x66d/0xb60
-[<ffffffff810a25d0>] kthread+0xc0/0xd0
-[<ffffffff816aa29c>] ret_from_fork+0x7c/0xb0
-[<ffffffffffffffff>] 0xffffffffffffffff
+That is a problem I didn't think about. I did a check and looks like c6x
+and frv are the only ones that don't have get_dma_ops() defined. frv is
+in a different category as it doesn't use dma_debug interfaces. IN the
+case c6x, now with my change to add debug_dma_mapping_error(), we will
+start seeing warnings since dma_map_page() and dma_map_single() are
+debugged with a call to debug_dma_map_page() and the corresponding
+dma_mapping_error() interface doesn't call debug_dma_mapping_error()
+interface
 
--- 
-js
-suse labs
+- Does adding get_dma_ops() make sense? Doesn't look like c6x exports
+dma_ops?
+
+Any other ideas?
+
+-- Shuah
+
+
