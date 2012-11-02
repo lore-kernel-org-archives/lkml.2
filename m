@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933521Ab2KBJtH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 05:49:07 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54951 "EHLO
+	id S965833Ab2KBJtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 05:49:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54962 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760091Ab2KBJtE (ORCPT
+	with ESMTP id S933559Ab2KBJtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 05:49:04 -0400
+	Fri, 2 Nov 2012 05:49:12 -0400
 From: Sascha Hauer <s.hauer@pengutronix.de>
 To: linux-serial@vger.kernel.org
 Cc: Alan Cox <alan@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de
-Subject: [PATCH v3] linux,stdout-path helper
-Date: Fri,  2 Nov 2012 10:48:51 +0100
-Message-Id: <1351849734-9836-1-git-send-email-s.hauer@pengutronix.de>
+        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 3/3] serial: i.MX: evaluate linux,stdout-path property
+Date: Fri,  2 Nov 2012 10:48:54 +0100
+Message-Id: <1351849734-9836-4-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1351849734-9836-1-git-send-email-s.hauer@pengutronix.de>
+References: <1351849734-9836-1-git-send-email-s.hauer@pengutronix.de>
 X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
 X-SA-Exim-Mail-From: sha@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
@@ -26,30 +29,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following adds a helper for matching the linux,stdout-path property
-in the chosen node and makes use of it in the i.MX serial driver.
+devicetrees may have the linux,stdout-path property to specify the
+console. This patch adds support to the i.MX serial driver for this.
 
-changes since v2:
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ drivers/tty/serial/imx.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-- move helper to OF core and make it independent of serial devices
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 3a9337e..41be237 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -47,6 +47,7 @@
+ #include <linux/slab.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/of_stdout.h>
+ #include <linux/pinctrl/consumer.h>
+ 
+ #include <asm/io.h>
+@@ -1421,6 +1422,9 @@ static int serial_imx_probe_dt(struct imx_port *sport,
+ 
+ 	sport->devdata = of_id->data;
+ 
++	if (of_device_is_stdout_path(np))
++		add_preferred_console(imx_reg.cons->name, sport->port.line, 0);
++
+ 	return 0;
+ }
+ #else
+-- 
+1.7.10.4
 
-changes since v1:
-
-- move it out of the i.MX serial driver and make it generic for serial
-  devices.
-
-----------------------------------------------------------------
-Sascha Hauer (3):
-      OF: Add helper for matching against linux,stdout-path
-      serial: i.MX: Make console support non optional
-      serial: i.MX: evaluate linux,stdout-path property
-
- drivers/of/Kconfig         |    3 +++
- drivers/of/Makefile        |    1 +
- drivers/of/of_stdout.c     |   27 +++++++++++++++++++++++++++
- drivers/tty/serial/Kconfig |   16 +---------------
- drivers/tty/serial/imx.c   |   12 +++++-------
- include/linux/of_stdout.h  |   24 ++++++++++++++++++++++++
- 6 files changed, 61 insertions(+), 22 deletions(-)
- create mode 100644 drivers/of/of_stdout.c
- create mode 100644 include/linux/of_stdout.h
