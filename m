@@ -1,215 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761867Ab2KBWqu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 18:46:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19944 "EHLO
+	id S1760813Ab2KBWqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 18:46:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16388 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab2KBWpM (ORCPT
+	with ESMTP id S1755799Ab2KBWpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Nov 2012 18:45:12 -0400
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=qoE5wiWJrkgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3XMacsijJNIA:10 a=20KFwNOVAAAA:8 a=NsGViQVX46V2Rl0psYwA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Y39-H8YWJCMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=GY31fDRxNSIA:10 a=20KFwNOVAAAA:8 a=6zb1UeEMHATOxlxdAG0A:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121102224510.852095224@goodmis.org>
+Message-Id: <20121102224510.084404455@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 18:38:36 -0400
+Date: Fri, 02 Nov 2012 18:38:31 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 8/8][RFC] ring-buffer: User context bit recursion checking
+Subject: [PATCH 3/8][RFC] ftrace: Optimize the function tracer list loop
 References: <20121102223828.795874032@goodmis.org>
-Content-Disposition: inline; filename=0008-ring-buffer-User-context-bit-recursion-checking.patch
+Content-Disposition: inline; filename=0003-ftrace-Optimize-the-function-tracer-list-loop.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Using context bit recursion checking, we can help increase the
-performance of the ring buffer.
+There is lots of places that perform:
 
-Before this patch:
+       op = rcu_dereference_raw(ftrace_control_list);
+       while (op != &ftrace_list_end) {
 
- # echo function > /debug/tracing/current_tracer
- # for i in `seq 10`; do ./hackbench 50; done
-Time: 10.285
-Time: 10.407
-Time: 10.243
-Time: 10.372
-Time: 10.380
-Time: 10.198
-Time: 10.272
-Time: 10.354
-Time: 10.248
-Time: 10.253
+Add a helper macro to do this, and also optimize for a single
+entity. That is, gcc will optimize a loop for either no iterations
+or more than one iteration. But usually only a single callback
+is registered to the function tracer, thus the optimized case
+should be a single pass. to do this we now do:
 
-(average: 10.3012)
+	op = rcu_dereference_raw(list);
+	do {
+		[...]
+	} while (likely(op = rcu_dereference_raw((op)->next)) &&
+	       unlikely((op) != &ftrace_list_end));
 
-Now we have:
+An op is always registered (ftrace_list_end when no callbacks is
+registered), thus when a single callback is registered, the link
+list looks like:
 
- # echo function > /debug/tracing/current_tracer
- # for i in `seq 10`; do ./hackbench 50; done
-Time: 9.712
-Time: 9.824
-Time: 9.861
-Time: 9.827
-Time: 9.962
-Time: 9.905
-Time: 9.886
-Time: 10.088
-Time: 9.861
-Time: 9.834
+ top => callback => ftrace_list_end => NULL.
 
-(average: 9.876)
+The likely(op = op->next) still must be performed due to the race
+of removing the callback, where the first op assignment could
+equal ftrace_list_end. In that case, the op->next would be NULL.
+But this is unlikely (only happens in a race condition when
+removing the callback).
 
- a 4% savings!
+But it is very likely that the next op would be ftrace_list_end,
+unless more than one callback has been registered. This tells
+gcc what the most common case is and makes the fast path with
+the least amount of branches.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ring_buffer.c |   85 +++++++++++++++++++++++++++++++-------------
- kernel/trace/trace.h       |   13 +++----
- 2 files changed, 67 insertions(+), 31 deletions(-)
+ kernel/trace/ftrace.c |   48 ++++++++++++++++++++++++++----------------------
+ 1 file changed, 26 insertions(+), 22 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 3c7834c..e91877c 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2430,41 +2430,76 @@ rb_reserve_next_event(struct ring_buffer *buffer,
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 67e886e..cd6cd3c 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -111,6 +111,26 @@ static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip);
+ #define ftrace_ops_list_func ((ftrace_func_t)ftrace_ops_no_ops)
+ #endif
  
- #ifdef CONFIG_TRACING
- 
--#define TRACE_RECURSIVE_DEPTH 16
 +/*
-+ * The lock and unlock are done within a preempt disable section.
-+ * The current_context per_cpu variable can only be modified
-+ * by the current task between lock and unlock. But it can
-+ * be modified more than once via an interrupt. To pass this
-+ * information from the lock to the unlock without having to
-+ * access the 'in_interrupt()' functions again (which do show
-+ * a bit of overhead in something as critical as function tracing,
-+ * we use a bitmask trick.
++ * Traverse the ftrace_global_list, invoking all entries.  The reason that we
++ * can use rcu_dereference_raw() is that elements removed from this list
++ * are simply leaked, so there is no need to interact with a grace-period
++ * mechanism.  The rcu_dereference_raw() calls are needed to handle
++ * concurrent insertions into the ftrace_global_list.
 + *
-+ *  bit 0 =  NMI context
-+ *  bit 1 =  IRQ context
-+ *  bit 2 =  SoftIRQ context
-+ *  bit 3 =  normal context.
-+ *
-+ * This works because this is the order of contexts that can
-+ * preempt other contexts. A SoftIRQ never preempts an IRQ
-+ * context.
-+ *
-+ * When the context is determined, the corresponding bit is
-+ * checked and set (if it was set, then a recursion of that context
-+ * happened).
-+ *
-+ * On unlock, we need to clear this bit. To do so, just subtract
-+ * 1 from the current_context and AND it to itself.
-+ *
-+ * (binary)
-+ *  101 - 1 = 100
-+ *  101 & 100 = 100 (clearing bit zero)
-+ *
-+ *  1010 - 1 = 1001
-+ *  1010 & 1001 = 1000 (clearing bit 1)
-+ *
-+ * The least significant bit can be cleared this way, and it
-+ * just so happens that it is the same bit corresponding to
-+ * the current context.
++ * Silly Alpha and silly pointer-speculation compiler optimizations!
 + */
-+static DEFINE_PER_CPU(unsigned int, current_context);
- 
--/* Keep this code out of the fast path cache */
--static noinline void trace_recursive_fail(void)
-+static __always_inline int trace_recursive_lock(void)
- {
--	/* Disable all tracing before we do anything else */
--	tracing_off_permanent();
--
--	printk_once(KERN_WARNING "Tracing recursion: depth[%ld]:"
--		    "HC[%lu]:SC[%lu]:NMI[%lu]\n",
--		    trace_recursion_buffer(),
--		    hardirq_count() >> HARDIRQ_SHIFT,
--		    softirq_count() >> SOFTIRQ_SHIFT,
--		    in_nmi());
-+	unsigned int val = this_cpu_read(current_context);
-+	int bit;
- 
--	WARN_ON_ONCE(1);
--}
--
--static inline int trace_recursive_lock(void)
--{
--	trace_recursion_inc();
-+	if (in_interrupt()) {
-+		if (in_nmi())
-+			bit = 0;
-+		else if (in_irq())
-+			bit = 1;
-+		else
-+			bit = 2;
-+	} else
-+		bit = 3;
- 
--	if (likely(trace_recursion_buffer() < TRACE_RECURSIVE_DEPTH))
--		return 0;
-+	if (unlikely(val & (1 << bit)))
-+		return 1;
- 
--	trace_recursive_fail();
-+	val |= (1 << bit);
-+	this_cpu_write(current_context, val);
- 
--	return -1;
-+	return 0;
- }
- 
--static inline void trace_recursive_unlock(void)
-+static __always_inline void trace_recursive_unlock(void)
- {
--	WARN_ON_ONCE(!trace_recursion_buffer());
-+	unsigned int val = this_cpu_read(current_context);
- 
--	trace_recursion_dec();
-+	val--;
-+	val &= this_cpu_read(current_context);
-+	this_cpu_write(current_context, val);
- }
- 
- #else
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index e397f66..d0fe7fbc 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -291,11 +291,6 @@ struct tracer {
- 
- 
- /* Only current can touch trace_recursion */
--#define trace_recursion_inc() do { (current)->trace_recursion++; } while (0)
--#define trace_recursion_dec() do { (current)->trace_recursion--; } while (0)
--
--/* Ring buffer has the 10 LSB bits to count */
--#define trace_recursion_buffer() ((current)->trace_recursion & 0x3ff)
- 
- /*
-  * For function tracing recursion:
-@@ -323,7 +318,13 @@ struct tracer {
-  * caller, and we can skip the current check.
-  */
- enum {
--	TRACE_FTRACE_BIT = 11,
-+	TRACE_BUFFER_BIT,
-+	TRACE_BUFFER_NMI_BIT,
-+	TRACE_BUFFER_IRQ_BIT,
-+	TRACE_BUFFER_SIRQ_BIT,
++#define do_for_each_ftrace_op(op, list)			\
++	op = rcu_dereference_raw(list);			\
++	do
 +
-+	/* Start of function recursion bits */
-+	TRACE_FTRACE_BIT,
- 	TRACE_FTRACE_NMI_BIT,
- 	TRACE_FTRACE_IRQ_BIT,
- 	TRACE_FTRACE_SIRQ_BIT,
++/*
++ * Optimized for just a single item in the list (as that is the normal case).
++ */
++#define while_for_each_ftrace_op(op)				\
++	while (likely(op = rcu_dereference_raw((op)->next)) &&	\
++	       unlikely((op) != &ftrace_list_end))
++
+ /**
+  * ftrace_nr_registered_ops - return number of ops registered
+  *
+@@ -132,15 +152,6 @@ int ftrace_nr_registered_ops(void)
+ 	return cnt;
+ }
+ 
+-/*
+- * Traverse the ftrace_global_list, invoking all entries.  The reason that we
+- * can use rcu_dereference_raw() is that elements removed from this list
+- * are simply leaked, so there is no need to interact with a grace-period
+- * mechanism.  The rcu_dereference_raw() calls are needed to handle
+- * concurrent insertions into the ftrace_global_list.
+- *
+- * Silly Alpha and silly pointer-speculation compiler optimizations!
+- */
+ static void
+ ftrace_global_list_func(unsigned long ip, unsigned long parent_ip,
+ 			struct ftrace_ops *op, struct pt_regs *regs)
+@@ -149,11 +160,9 @@ ftrace_global_list_func(unsigned long ip, unsigned long parent_ip,
+ 		return;
+ 
+ 	trace_recursion_set(TRACE_GLOBAL_BIT);
+-	op = rcu_dereference_raw(ftrace_global_list); /*see above*/
+-	while (op != &ftrace_list_end) {
++	do_for_each_ftrace_op(op, ftrace_global_list) {
+ 		op->func(ip, parent_ip, op, regs);
+-		op = rcu_dereference_raw(op->next); /*see above*/
+-	};
++	} while_for_each_ftrace_op(op);
+ 	trace_recursion_clear(TRACE_GLOBAL_BIT);
+ }
+ 
+@@ -4104,14 +4113,11 @@ ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip,
+ 	 */
+ 	preempt_disable_notrace();
+ 	trace_recursion_set(TRACE_CONTROL_BIT);
+-	op = rcu_dereference_raw(ftrace_control_list);
+-	while (op != &ftrace_list_end) {
++	do_for_each_ftrace_op(op, ftrace_control_list) {
+ 		if (!ftrace_function_local_disabled(op) &&
+ 		    ftrace_ops_test(op, ip))
+ 			op->func(ip, parent_ip, op, regs);
+-
+-		op = rcu_dereference_raw(op->next);
+-	};
++	} while_for_each_ftrace_op(op);
+ 	trace_recursion_clear(TRACE_CONTROL_BIT);
+ 	preempt_enable_notrace();
+ }
+@@ -4139,12 +4145,10 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
+ 	 * they must be freed after a synchronize_sched().
+ 	 */
+ 	preempt_disable_notrace();
+-	op = rcu_dereference_raw(ftrace_ops_list);
+-	while (op != &ftrace_list_end) {
++	do_for_each_ftrace_op(op, ftrace_ops_list) {
+ 		if (ftrace_ops_test(op, ip))
+ 			op->func(ip, parent_ip, op, regs);
+-		op = rcu_dereference_raw(op->next);
+-	};
++	} while_for_each_ftrace_op(op);
+ 	preempt_enable_notrace();
+ 	trace_recursion_clear(TRACE_INTERNAL_BIT);
+ }
 -- 
 1.7.10.4
 
