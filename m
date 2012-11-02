@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763021Ab2KBRLy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:11:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33412 "EHLO mail.kernel.org"
+	id S1762993Ab2KBRHq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:07:46 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33342 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763001Ab2KBRHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:48 -0400
+	id S1762307Ab2KBRHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mohamed Pakkeer <pakkeer.mohideen@realimage.com>,
         Alex Elder <elder@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 14/24] ceph: avoid 32-bit page index overflow
-Date: Fri,  2 Nov 2012 10:07:02 -0700
-Message-Id: <20121102170248.443876993@linuxfoundation.org>
+Subject: [ 09/24] rbd: reset BACKOFF if unable to re-queue
+Date: Fri,  2 Nov 2012 10:06:57 -0700
+Message-Id: <20121102170248.094911668@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170247.406319110@linuxfoundation.org>
 References: <20121102170247.406319110@linuxfoundation.org>
@@ -28,77 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Elder <elder@inktank.com>
 
-commit 6285bc231277419255f3498d3eb5ddc9f8e7fe79 upstream.
+commit 588377d6199034c36d335e7df5818b731fea072c upstream.
 
-A pgoff_t is defined (by default) to have type (unsigned long).  On
-architectures such as i686 that's a 32-bit type.  The ceph address
-space code was attempting to produce 64 bit offsets by shifting a
-page's index by PAGE_CACHE_SHIFT, but the result was not what was
-desired because the shift occurred before the result got promoted
-to 64 bits.
+If ceph_fault() is unable to queue work after a delay, it sets the
+BACKOFF connection flag so con_work() will attempt to do so.
 
-Fix this by converting all uses of page->index used in this way to
-use the page_offset() macro, which ensures the 64-bit result has the
-intended value.
+In con_work(), when BACKOFF is set, if queue_delayed_work() doesn't
+result in newly-queued work, it simply ignores this condition and
+proceeds as if no backoff delay were desired.  There are two
+problems with this--one of which is a bug.
 
-This fixes http://tracker.newdream.net/issues/3112
+The first problem is simply that the intended behavior is to back
+off, and if we aren't able queue the work item to run after a delay
+we're not doing that.
 
-Reported-by:  Mohamed Pakkeer <pakkeer.mohideen@realimage.com>
+The only reason queue_delayed_work() won't queue work is if the
+provided work item is already queued.  In the messenger, this
+means that con_work() is already scheduled to be run again.  So
+if we simply set the BACKOFF flag again when this occurs, we know
+the next con_work() call will again attempt to hold off activity
+on the connection until after the delay.
+
+The second problem--the bug--is a leak of a reference count.  If
+queue_delayed_work() returns 0 in con_work(), con->ops->put() drops
+the connection reference held on entry to con_work().  However,
+processing is (was) allowed to continue, and at the end of the
+function a second con->ops->put() is called.
+
+This patch fixes both problems.
+
 Signed-off-by: Alex Elder <elder@inktank.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ceph/addr.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ net/ceph/messenger.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -205,7 +205,7 @@ static int readpage_nounlock(struct file
- 	dout("readpage inode %p file %p page %p index %lu\n",
- 	     inode, filp, page, page->index);
- 	err = ceph_osdc_readpages(osdc, ceph_vino(inode), &ci->i_layout,
--				  page->index << PAGE_CACHE_SHIFT, &len,
-+				  (u64) page_offset(page), &len,
- 				  ci->i_truncate_seq, ci->i_truncate_size,
- 				  &page, 1, 0);
- 	if (err == -ENOENT)
-@@ -286,7 +286,7 @@ static int start_read(struct inode *inod
- 	int nr_pages = 0;
- 	int ret;
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -2300,10 +2300,11 @@ restart:
+ 			mutex_unlock(&con->mutex);
+ 			return;
+ 		} else {
+-			con->ops->put(con);
+ 			dout("con_work %p FAILED to back off %lu\n", con,
+ 			     con->delay);
++			set_bit(CON_FLAG_BACKOFF, &con->flags);
+ 		}
++		goto done;
+ 	}
  
--	off = page->index << PAGE_CACHE_SHIFT;
-+	off = (u64) page_offset(page);
- 
- 	/* count pages */
- 	next_index = page->index;
-@@ -426,7 +426,7 @@ static int writepage_nounlock(struct pag
- 	struct ceph_inode_info *ci;
- 	struct ceph_fs_client *fsc;
- 	struct ceph_osd_client *osdc;
--	loff_t page_off = page->index << PAGE_CACHE_SHIFT;
-+	loff_t page_off = page_offset(page);
- 	int len = PAGE_CACHE_SIZE;
- 	loff_t i_size;
- 	int err = 0;
-@@ -817,8 +817,7 @@ get_more_pages:
- 			/* ok */
- 			if (locked_pages == 0) {
- 				/* prepare async write request */
--				offset = (unsigned long long)page->index
--					<< PAGE_CACHE_SHIFT;
-+				offset = (u64) page_offset(page);
- 				len = wsize;
- 				req = ceph_osdc_new_request(&fsc->client->osdc,
- 					    &ci->i_layout,
-@@ -1180,7 +1179,7 @@ static int ceph_page_mkwrite(struct vm_a
- 	struct inode *inode = vma->vm_file->f_dentry->d_inode;
- 	struct page *page = vmf->page;
- 	struct ceph_mds_client *mdsc = ceph_inode_to_client(inode)->mdsc;
--	loff_t off = page->index << PAGE_CACHE_SHIFT;
-+	loff_t off = page_offset(page);
- 	loff_t size, len;
- 	int ret;
- 
+ 	if (con->state == CON_STATE_STANDBY) {
 
 
