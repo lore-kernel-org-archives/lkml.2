@@ -1,334 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab2KBFNn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 01:13:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57388 "EHLO mga09.intel.com"
+	id S1752010Ab2KBFR2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 01:17:28 -0400
+Received: from mga14.intel.com ([143.182.124.37]:3816 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738Ab2KBFNl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 01:13:41 -0400
+	id S1751311Ab2KBFRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 01:17:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,696,1344236400"; 
-   d="scan'208";a="214286446"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Amit Dinel Kachhap <amit.kachhap@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Subject: RE: [PATCH v4] Thermal: exynos: Add sysfs node supporting exynos's
- emulation mode.
-Thread-Topic: [PATCH v4] Thermal: exynos: Add sysfs node supporting exynos's
- emulation mode.
-Thread-Index: AQHNuKFCQZrUeBXrjEKwvsyCzTSQhJfV/0+w
-Date: Fri, 2 Nov 2012 05:13:32 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB591FFA29@BGSMSX101.gar.corp.intel.com>
-References: <1351823091-2540-1-git-send-email-jonghwa3.lee@samsung.com>
-In-Reply-To: <1351823091-2540-1-git-send-email-jonghwa3.lee@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="163635556"
+Message-ID: <50935756.4090405@intel.com>
+Date: Fri, 02 Nov 2012 13:17:10 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Huang Ying <ying.huang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 5/7] ACPI / PM: Provide device PM functions operating
+ on struct acpi_device
+References: <1766582.8gdQKXoi0K@vostro.rjw.lan> <3903921.4RDYB7KMxW@vostro.rjw.lan> <20121030072844.GA6154@aaronlu.sh.intel.com> <2204038.IsGMuMD7u4@vostro.rjw.lan>
+In-Reply-To: <2204038.IsGMuMD7u4@vostro.rjw.lan>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
-
-> -----Original Message-----
-> From: Jonghwa Lee [mailto:jonghwa3.lee@samsung.com]
-> Sent: Friday, November 02, 2012 7:55 AM
-> To: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org; Brown, Len; R, Durgadoss; Rafael J.
-> Wysocki; Amit Dinel Kachhap; MyungJoo Ham; Kyungmin Park; Jonghwa Lee
-> Subject: [PATCH v4] Thermal: exynos: Add sysfs node supporting exynos's
-> emulation mode.
+On 10/30/2012 11:20 PM, Rafael J. Wysocki wrote:
+> On Tuesday, October 30, 2012 03:28:45 PM Aaron Lu wrote:
+>> On Mon, Oct 29, 2012 at 10:11:20AM +0100, Rafael J. Wysocki wrote:
+>>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>>
+>>> If the caller of acpi_bus_set_power() already has a pointer to the
+>>> struct acpi_device object corresponding to the device in question, it
+>>> doesn't make sense for it to go through acpi_bus_get_device(), which
+>>> may be costly, because it involves acquiring the global ACPI
+>>> namespace mutex.
+>>>
+>>> For this reason, export the function operating on struct acpi_device
+>>> objects used internally by acpi_bus_set_power(), so that it may be
+>>> called instead of acpi_bus_set_power() in the above case, and change
+>>> its name to acpi_device_set_power().
+>>>
+>>> Additionally, introduce two inline wrappers for checking ACPI PM
+>>> capabilities of devices represented by struct acpi_device objects.
+>>
+>> What about adding yet another wrapper to check power off capability of
+>> the device? If device has _PS3 or _PRx, it means the device can be
+>> powered off from ACPI's perspective. This is useful for ZPODD when
+>> deciding if platform has the required ability to support it.
 > 
-> This patch supports exynos's emulation mode with newly created sysfs node.
-> Exynos 4x12 (4212, 4412) and 5 series provide emulation mode for thermal
-> management unit. Thermal emulation mode supports software debug for
-> TMU's
-> operation. User can set temperature manually with software code and TMU
-> will read current temperature from user value not from sensor's value.
-> This patch includes also documentary placed under
-> Documentation/thermal/.
-> 
+> Sure, no problem with that.  Perhaps you can cut a patch for that
+> on top of this series?
 
-Thanks for fixing the comments. 
-Please CC linux-acpi, when you submit thermal patches, going forward.
-I am CCing Rui for now, for him to review/merge this patch.
+Do you think it is reasonable to add a new field to acpi_state.flags to
+represent if we, as OSPM, have a way to put the device into a ACPI
+device state? This field can be set once in acpi_bus_get_power_flags and
+used afterwards.
 
-Reviewed-by: Durgadoss R <durgadoss.r@intel.com>
+The valid field of acpi_state.flags is what we have today, and it means
+whether this ACPI device state is valid for the device, but not that if
+OSPM can actually put the device into that power state.
 
 Thanks,
-Durga
+Aaron
 
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> ---
-> v4
->  - Fix Typo.
->  - Remove unnecessary codes.
->  - Add comments about feature of exynos emulation operation to the
-> document.
 > 
-> v3
->  - Remove unnecessay variables.
->  - Do some code clean in exynos_tmu_emulation_store().
->  - Make wrapping function of sysfs node creation function to use
->    #ifdefs in minimum.
+> Rafael
 > 
-> v2
->  exynos_thermal.c
->  - Fix build error occured by wrong emulation control register name.
->  - Remove exynos5410 dependent codes.
->  exynos_thermal_emulation
->  - Align indentation.
 > 
->  Documentation/thermal/exynos_thermal_emulation |   56
-> +++++++++++++++
->  drivers/thermal/Kconfig                        |    9 +++
->  drivers/thermal/exynos_thermal.c               |   91
-> ++++++++++++++++++++++++
->  3 files changed, 156 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/thermal/exynos_thermal_emulation
-> 
-> diff --git a/Documentation/thermal/exynos_thermal_emulation
-> b/Documentation/thermal/exynos_thermal_emulation
-> new file mode 100644
-> index 0000000..a6ea06f
-> --- /dev/null
-> +++ b/Documentation/thermal/exynos_thermal_emulation
-> @@ -0,0 +1,56 @@
-> +EXYNOS EMULATION MODE
-> +========================
-> +
-> +Copyright (C) 2012 Samsung Electronics
-> +
-> +Written by Jonghwa Lee <jonghwa3.lee@samsung.com>
-> +
-> +Description
-> +-----------
-> +
-> +Exynos 4x12 (4212, 4412) and 5 series provide emulation mode for thermal
-> management unit.
-> +Thermal emulation mode supports software debug for TMU's operation.
-> User can set temperature
-> +manually with software code and TMU will read current temperature from
-> user value not from
-> +sensor's value.
-> +
-> +Enabling CONFIG_EXYNOS_THERMAL_EMUL option will make this support
-> in available.
-> +When it's enabled, sysfs node will be created under
-> +/sys/bus/platform/devices/'exynos device name'/ with name of
-> 'emulation'.
-> +
-> +The sysfs node, 'emulation', will contain value 0 for the initial state. When
-> you input any
-> +temperature you want to update to sysfs node, it automatically enable
-> emulation mode and
-> +current temperature will be changed into it.
-> +(Exynos also supports user changable delay time which would be used to
-> delay of
-> + changing temperature. However, this node only uses same delay of real
-> sensing time, 938us.)
-> +
-> +Exynos emulation mode requires synchronous of value changing and
-> enabling. It means when you
-> +want to update the any value of delay or next temperature, then you have
-> to enable emulation
-> +mode at the same time. (Or you have to keep the mode enabling.) If you
-> don't, it fails to
-> +change the value to updated one and just use last succeessful value
-> repeatedly. That's why
-> +this node gives users the right to change termerpature only. Just one
-> interface makes it more
-> +simply to use.
-> +
-> +Disabling emulation mode only requires writing value 0 to sysfs node.
-> +
-> +
-> +TEMP	120 |
-> +	    |
-> +	100 |
-> +	    |
-> +	 80 |
-> +	    |		     	 	 +-----------
-> +	 60 |      		     	 |	    |
-> +	    |	           +-------------|          |
-> +	 40 |              |         	 |          |
-> +   	    |		   |	     	 |          |
-> +	 20 |		   |	     	 |          +----------
-> +	    |	 	   |	     	 |          |          |
-> +  	  0
-> |______________|_____________|__________|__________|_______
-> __
-> +		   A	    	 A	    A	   	       A     TIME
-> +		   |<----->|	 |<----->|  |<----->|	       |
-> +		   | 938us |  	 |	 |  |       |          |
-> +emulation    :  0  50	   |  	 70      |  20      |          0
-> +current temp :   sensor   50		 70         20	      sensor
-> +
-> +
-> +
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index e1cb6bd..c02a66c 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -55,3 +55,12 @@ config EXYNOS_THERMAL
->  	help
->  	  If you say yes here you get support for TMU (Thermal Managment
->  	  Unit) on SAMSUNG EXYNOS series of SoC.
-> +
-> +config EXYNOS_THERMAL_EMUL
-> +	bool "EXYNOS TMU emulation mode support"
-> +	depends on !CPU_EXYNOS4210 && EXYNOS_THERMAL
-> +	help
-> +	  Exynos 4412 and 4414 and 5 series has emulation mode on TMU.
-> +	  Enable this option will be make sysfs node in exynos thermal
-> platform
-> +	  device directory to support emulation mode. With emulation mode
-> sysfs
-> +	  node, you can manually input temperature to TMU for simulation
-> purpose.
-> diff --git a/drivers/thermal/exynos_thermal.c
-> b/drivers/thermal/exynos_thermal.c
-> index fd03e85..eebd4e5 100644
-> --- a/drivers/thermal/exynos_thermal.c
-> +++ b/drivers/thermal/exynos_thermal.c
-> @@ -99,6 +99,14 @@
->  #define IDLE_INTERVAL 10000
->  #define MCELSIUS	1000
-> 
-> +#ifdef CONFIG_EXYNOS_THERMAL_EMUL
-> +#define EXYNOS_EMUL_TIME	0x57F0
-> +#define EXYNOS_EMUL_TIME_SHIFT	16
-> +#define EXYNOS_EMUL_DATA_SHIFT	8
-> +#define EXYNOS_EMUL_DATA_MASK	0xFF
-> +#define EXYNOS_EMUL_ENABLE	0x1
-> +#endif /* CONFIG_EXYNOS_THERMAL_EMUL */
-> +
->  /* CPU Zone information */
->  #define PANIC_ZONE      4
->  #define WARN_ZONE       3
-> @@ -832,6 +840,82 @@ static inline struct  exynos_tmu_platform_data
-> *exynos_get_driver_data(
->  	return (struct exynos_tmu_platform_data *)
->  			platform_get_device_id(pdev)->driver_data;
->  }
-> +
-> +#ifdef CONFIG_EXYNOS_THERMAL_EMUL
-> +static ssize_t exynos_tmu_emulation_show(struct device *dev,
-> +					 struct device_attribute *attr,
-> +					 char *buf)
-> +{
-> +	struct platform_device *pdev = container_of(dev,
-> +					struct platform_device, dev);
-> +	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
-> +	unsigned int reg;
-> +	u8 temp_code;
-> +	int temp = 0;
-> +
-> +	mutex_lock(&data->lock);
-> +	clk_enable(data->clk);
-> +	reg = readl(data->base + EXYNOS_EMUL_CON);
-> +	clk_disable(data->clk);
-> +	mutex_unlock(&data->lock);
-> +
-> +	if (reg & EXYNOS_EMUL_ENABLE) {
-> +		reg >>= EXYNOS_EMUL_DATA_SHIFT;
-> +		temp_code = reg & EXYNOS_EMUL_DATA_MASK;
-> +		temp = code_to_temp(data, temp_code);
-> +	}
-> +
-> +	return sprintf(buf, "%d\n", temp);
-> +}
-> +
-> +static ssize_t exynos_tmu_emulation_store(struct device *dev,
-> +					struct device_attribute *attr,
-> +					const char *buf, size_t count)
-> +{
-> +	struct platform_device *pdev = container_of(dev,
-> +					struct platform_device, dev);
-> +	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
-> +	unsigned int reg;
-> +	int temp;
-> +
-> +	if (!sscanf(buf, "%d\n", &temp) || temp < 0)
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&data->lock);
-> +	clk_enable(data->clk);
-> +
-> +	reg = readl(data->base + EXYNOS_EMUL_CON);
-> +
-> +	if (temp)
-> +		reg = (EXYNOS_EMUL_TIME << EXYNOS_EMUL_TIME_SHIFT)
-> |
-> +			(temp_to_code(data, temp) <<
-> EXYNOS_EMUL_DATA_SHIFT) |
-> +			EXYNOS_EMUL_ENABLE;
-> +	else
-> +		reg &= ~EXYNOS_EMUL_ENABLE;
-> +
-> +	writel(reg, data->base + EXYNOS_EMUL_CON);
-> +
-> +	clk_disable(data->clk);
-> +	mutex_unlock(&data->lock);
-> +
-> +	return count;
-> +}
-> +
-> +static DEVICE_ATTR(emulation, 0644, exynos_tmu_emulation_show,
-> +					exynos_tmu_emulation_store);
-> +static int create_emulation_sysfs(struct device *dev)
-> +{
-> +	return device_create_file(dev, &dev_attr_emulation);
-> +}
-> +static void remove_emulation_sysfs(struct device *dev)
-> +{
-> +	device_remove_file(dev, &dev_attr_emulation);
-> +}
-> +#else
-> +static inline int create_emulation_sysfs(struct device *dev) {return 0;}
-> +static inline void remove_emulation_sysfs(struct device *dev){}
-> +#endif
-> +
->  static int __devinit exynos_tmu_probe(struct platform_device *pdev)
->  {
->  	struct exynos_tmu_data *data;
-> @@ -930,6 +1014,11 @@ static int __devinit exynos_tmu_probe(struct
-> platform_device *pdev)
->  		dev_err(&pdev->dev, "Failed to register thermal
-> interface\n");
->  		goto err_clk;
->  	}
-> +
-> +	ret = create_emulation_sysfs(&pdev->dev);
-> +	if (ret)
-> +		dev_err(&pdev->dev, "Failed to create emulation mode
-> sysfs node\n");
-> +
->  	return 0;
->  err_clk:
->  	platform_set_drvdata(pdev, NULL);
-> @@ -941,6 +1030,8 @@ static int __devexit exynos_tmu_remove(struct
-> platform_device *pdev)
->  {
->  	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
-> 
-> +	remove_emulation_sysfs(&pdev->dev);
-> +
->  	exynos_tmu_control(pdev, false);
-> 
->  	exynos_unregister_thermal();
-> --
-> 1.7.4.1
+>>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>> ---
+>>>  drivers/acpi/bus.c      |   15 ++++++++++++---
+>>>  include/acpi/acpi_bus.h |   11 +++++++++++
+>>>  2 files changed, 23 insertions(+), 3 deletions(-)
+>>>
+>>> Index: linux/drivers/acpi/bus.c
+>>> ===================================================================
+>>> --- linux.orig/drivers/acpi/bus.c
+>>> +++ linux/drivers/acpi/bus.c
+>>> @@ -257,7 +257,15 @@ static int __acpi_bus_get_power(struct a
+>>>  }
+>>>  
+>>>  
+>>> -static int __acpi_bus_set_power(struct acpi_device *device, int state)
+>>> +/**
+>>> + * acpi_device_set_power - Set power state of an ACPI device.
+>>> + * @device: Device to set the power state of.
+>>> + * @state: New power state to set.
+>>> + *
+>>> + * Callers must ensure that the device is power manageable before using this
+>>> + * function.
+>>> + */
+>>> +int acpi_device_set_power(struct acpi_device *device, int state)
+>>>  {
+>>>  	int result = 0;
+>>>  	acpi_status status = AE_OK;
+>>> @@ -341,6 +349,7 @@ static int __acpi_bus_set_power(struct a
+>>>  
+>>>  	return result;
+>>>  }
+>>> +EXPORT_SYMBOL(acpi_device_set_power);
+>>>  
+>>>  
+>>>  int acpi_bus_set_power(acpi_handle handle, int state)
+>>> @@ -359,7 +368,7 @@ int acpi_bus_set_power(acpi_handle handl
+>>>  		return -ENODEV;
+>>>  	}
+>>>  
+>>> -	return __acpi_bus_set_power(device, state);
+>>> +	return acpi_device_set_power(device, state);
+>>>  }
+>>>  EXPORT_SYMBOL(acpi_bus_set_power);
+>>>  
+>>> @@ -402,7 +411,7 @@ int acpi_bus_update_power(acpi_handle ha
+>>>  	if (result)
+>>>  		return result;
+>>>  
+>>> -	result = __acpi_bus_set_power(device, state);
+>>> +	result = acpi_device_set_power(device, state);
+>>>  	if (!result && state_p)
+>>>  		*state_p = state;
+>>>  
+>>> Index: linux/include/acpi/acpi_bus.h
+>>> ===================================================================
+>>> --- linux.orig/include/acpi/acpi_bus.h
+>>> +++ linux/include/acpi/acpi_bus.h
+>>> @@ -338,6 +338,7 @@ acpi_status acpi_bus_get_status_handle(a
+>>>  				       unsigned long long *sta);
+>>>  int acpi_bus_get_status(struct acpi_device *device);
+>>>  int acpi_bus_set_power(acpi_handle handle, int state);
+>>> +int acpi_device_set_power(struct acpi_device *device, int state);
+>>>  int acpi_bus_update_power(acpi_handle handle, int *state_p);
+>>>  bool acpi_bus_power_manageable(acpi_handle handle);
+>>>  bool acpi_bus_can_wakeup(acpi_handle handle);
+>>> @@ -482,6 +483,16 @@ static inline int acpi_pm_device_sleep_w
+>>>  }
+>>>  #endif
+>>>  
+>>> +static inline bool acpi_device_power_manageable(struct acpi_device *adev)
+>>> +{
+>>> +	return adev->flags.power_manageable;
+>>> +}
+>>> +
+>>> +static inline bool acpi_device_can_wakeup(struct acpi_device *adev)
+>>> +{
+>>> +	return adev->wakeup.flags.valid;
+>>> +}
+>>> +
+>>>  #else	/* CONFIG_ACPI */
+>>>  
+>>>  static inline int register_acpi_bus_type(void *bus) { return 0; }
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
 
