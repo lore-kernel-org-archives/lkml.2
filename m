@@ -1,152 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935177Ab2KBKbW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 06:31:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7221 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933559Ab2KBKbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 06:31:20 -0400
-Date: Fri, 2 Nov 2012 11:30:57 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 02/25] perf tests: Move test objects into 'tests'
- directory
-Message-ID: <20121102103057.GB1157@krava.brq.redhat.com>
-References: <1351634526-1516-1-git-send-email-jolsa@redhat.com>
- <1351634526-1516-3-git-send-email-jolsa@redhat.com>
- <87k3u44vw6.fsf@sejong.aot.lge.com>
+	id S2992640Ab2KBKdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 06:33:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54529 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab2KBKdJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 06:33:09 -0400
+Date: Fri, 2 Nov 2012 03:32:48 -0700
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-279f1461432ccdec0b98c0bcbe0a8e2c0f6fdda5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de
+In-Reply-To: <1350941878.6017.31.camel@sbsiddha-desk.sc.intel.com>
+References: <1350941878.6017.31.camel@sbsiddha-desk.sc.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/timers] x86: apic:
+  Use tsc deadline for oneshot when available
+Git-Commit-ID: 279f1461432ccdec0b98c0bcbe0a8e2c0f6fdda5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <87k3u44vw6.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 02 Nov 2012 03:32:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 10:48:57AM +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> Despite its way to acme's tree, I'd like to leave a few comments. :)
-> 
-> 
-> On Tue, 30 Oct 2012 23:01:43 +0100, Jiri Olsa wrote:
-> > Separating test objects into 'tests' directory.
-> >
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > ---
-> >  tools/perf/Makefile                 |    9 +-
-> >  tools/perf/builtin-test.c           | 1559 -----------------------------------
-> >  tools/perf/tests/builtin-test.c     | 1559 +++++++++++++++++++++++++++++++++++
-> >  tools/perf/tests/dso-data.c         |  153 ++++
-> >  tools/perf/tests/parse-events.c     | 1116 +++++++++++++++++++++++++
-> >  tools/perf/util/dso-test-data.c     |  153 ----
-> >  tools/perf/util/parse-events-test.c | 1116 -------------------------
-> 
-> Looks like it should be considered as renames.  Isn't 'git format-patch
-> -M' working?
+Commit-ID:  279f1461432ccdec0b98c0bcbe0a8e2c0f6fdda5
+Gitweb:     http://git.kernel.org/tip/279f1461432ccdec0b98c0bcbe0a8e2c0f6fdda5
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Mon, 22 Oct 2012 14:37:58 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 2 Nov 2012 11:23:37 +0100
 
-I can see it is.. nice ;) first time I hear about it..
+x86: apic: Use tsc deadline for oneshot when available
 
-> 
-> 
-> >  7 files changed, 2833 insertions(+), 2832 deletions(-)
-> >  delete mode 100644 tools/perf/builtin-test.c
-> >  create mode 100644 tools/perf/tests/builtin-test.c
-> >  create mode 100644 tools/perf/tests/dso-data.c
-> >  create mode 100644 tools/perf/tests/parse-events.c
-> >  delete mode 100644 tools/perf/util/dso-test-data.c
-> >  delete mode 100644 tools/perf/util/parse-events-test.c
-> >
-> > diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> > index 3e807d7..2d3427f 100644
-> > --- a/tools/perf/Makefile
-> > +++ b/tools/perf/Makefile
-> > @@ -169,7 +169,7 @@ endif
-> >  
-> >  ### --- END CONFIGURATION SECTION ---
-> >  
-> > -BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-> > +BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -Iutil -I. -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-> 
-> Hmm..  Do you really want this?  AFAIK there're lots of places that
-> include header files under the util directory and they used relative
-> path.  I don't know how it affects them but at least they can be changed
-> to use simpler path with this change.
+If the TSC deadline mode is supported, LAPIC timer one-shot mode can be
+implemented using IA32_TSC_DEADLINE MSR. An interrupt will be generated
+when the TSC value equals or exceeds the value in the IA32_TSC_DEADLINE
+MSR.
 
-[jolsa@krava perf]$ make O=$PWD/../build/
-...
-    CC /home/jolsa/kernel.org/linux/tools/build/tests/parse-events.o
-tests/parse-events.c:2:26: fatal error: parse-events.h: No such file or directory
+This enables us to skip the APIC calibration during boot. Also, in
+xapic mode, this enables us to skip the uncached apic access to re-arm
+the APIC timer.
 
-yes, we could consolidate util includes globaly
+As this timer ticks at the high frequency TSC rate, we use the
+TSC_DIVISOR (32) to work with the 32-bit restrictions in the
+clockevent API's to avoid 64-bit divides etc (frequency is u32 and
+"unsigned long" in the set_next_event(), max_delta limits the next
+event to 32-bit for 32-bit kernel).
 
-> 
-> 
-> >  BASIC_LDFLAGS =
-> >  
-> >  ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
-> > @@ -371,7 +371,6 @@ LIB_OBJS += $(OUTPUT)util/help.o
-> >  LIB_OBJS += $(OUTPUT)util/levenshtein.o
-> >  LIB_OBJS += $(OUTPUT)util/parse-options.o
-> >  LIB_OBJS += $(OUTPUT)util/parse-events.o
-> > -LIB_OBJS += $(OUTPUT)util/parse-events-test.o
-> >  LIB_OBJS += $(OUTPUT)util/path.o
-> >  LIB_OBJS += $(OUTPUT)util/rbtree.o
-> >  LIB_OBJS += $(OUTPUT)util/bitmap.o
-> > @@ -389,7 +388,6 @@ LIB_OBJS += $(OUTPUT)util/sigchain.o
-> >  LIB_OBJS += $(OUTPUT)util/dso.o
-> >  LIB_OBJS += $(OUTPUT)util/symbol.o
-> >  LIB_OBJS += $(OUTPUT)util/symbol-elf.o
-> > -LIB_OBJS += $(OUTPUT)util/dso-test-data.o
-> >  LIB_OBJS += $(OUTPUT)util/color.o
-> >  LIB_OBJS += $(OUTPUT)util/pager.o
-> >  LIB_OBJS += $(OUTPUT)util/header.o
-> > @@ -430,6 +428,9 @@ LIB_OBJS += $(OUTPUT)ui/stdio/hist.o
-> >  
-> >  LIB_OBJS += $(OUTPUT)arch/common.o
-> >  
-> > +LIB_OBJS += $(OUTPUT)tests/parse-events.o
-> > +LIB_OBJS += $(OUTPUT)tests/dso-data.o
-> > +
-> 
-> Maybe TEST_OBJS?  I guess they don't need to be included in libperf?
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: venki@google.com
+Cc: len.brown@intel.com
+Link: http://lkml.kernel.org/r/1350941878.6017.31.camel@sbsiddha-desk.sc.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ Documentation/kernel-parameters.txt |    4 ++
+ arch/x86/include/asm/msr-index.h    |    2 +
+ arch/x86/kernel/apic/apic.c         |   73 +++++++++++++++++++++++++---------
+ 3 files changed, 59 insertions(+), 20 deletions(-)
 
-I guess we could have NO_TESTS Makefile variable to disable tests
-
-and '[x] Tests' directory under make menuconfig ;)
-
-> 
-> 
-> >  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
-> >  BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-> >  # Benchmark modules
-> > @@ -459,8 +460,8 @@ BUILTIN_OBJS += $(OUTPUT)builtin-probe.o
-> >  BUILTIN_OBJS += $(OUTPUT)builtin-kmem.o
-> >  BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
-> >  BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
-> > -BUILTIN_OBJS += $(OUTPUT)builtin-test.o
-> >  BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
-> > +BUILTIN_OBJS += $(OUTPUT)tests/builtin-test.o
-> 
-> Placing builtin command in a different directory looks little bit odd.
-
-well, it's full of tests ;)
-
-maybe we could have those tests placed in separate files and use
-builtin-test as runner only
-
-thanks,
-jirka
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 9776f06..4aa9ca0 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1304,6 +1304,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	lapic		[X86-32,APIC] Enable the local APIC even if BIOS
+ 			disabled it.
+ 
++	lapic=		[x86,APIC] "notscdeadline" Do not use TSC deadline
++			value for LAPIC timer one-shot implementation. Default
++			back to the programmable timer unit in the LAPIC.
++
+ 	lapic_timer_c2_ok	[X86,APIC] trust the local apic timer
+ 			in C2 power state.
+ 
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 7f0edce..e400cdb 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -337,6 +337,8 @@
+ #define MSR_IA32_MISC_ENABLE_TURBO_DISABLE	(1ULL << 38)
+ #define MSR_IA32_MISC_ENABLE_IP_PREF_DISABLE	(1ULL << 39)
+ 
++#define MSR_IA32_TSC_DEADLINE		0x000006E0
++
+ /* P4/Xeon+ specific */
+ #define MSR_IA32_MCG_EAX		0x00000180
+ #define MSR_IA32_MCG_EBX		0x00000181
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index b17416e..b994cc8 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -90,21 +90,6 @@ EXPORT_EARLY_PER_CPU_SYMBOL(x86_bios_cpu_apicid);
+  */
+ DEFINE_EARLY_PER_CPU_READ_MOSTLY(int, x86_cpu_to_logical_apicid, BAD_APICID);
+ 
+-/*
+- * Knob to control our willingness to enable the local APIC.
+- *
+- * +1=force-enable
+- */
+-static int force_enable_local_apic __initdata;
+-/*
+- * APIC command line parameters
+- */
+-static int __init parse_lapic(char *arg)
+-{
+-	force_enable_local_apic = 1;
+-	return 0;
+-}
+-early_param("lapic", parse_lapic);
+ /* Local APIC was disabled by the BIOS and enabled by the kernel */
+ static int enabled_via_apicbase;
+ 
+@@ -133,6 +118,25 @@ static inline void imcr_apic_to_pic(void)
+ }
+ #endif
+ 
++/*
++ * Knob to control our willingness to enable the local APIC.
++ *
++ * +1=force-enable
++ */
++static int force_enable_local_apic __initdata;
++/*
++ * APIC command line parameters
++ */
++static int __init parse_lapic(char *arg)
++{
++	if (config_enabled(CONFIG_X86_32) && !arg)
++		force_enable_local_apic = 1;
++	else if (!strncmp(arg, "notscdeadline", 13))
++		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
++	return 0;
++}
++early_param("lapic", parse_lapic);
++
+ #ifdef CONFIG_X86_64
+ static int apic_calibrate_pmtmr __initdata;
+ static __init int setup_apicpmtimer(char *s)
+@@ -315,6 +319,7 @@ int lapic_get_maxlvt(void)
+ 
+ /* Clock divisor */
+ #define APIC_DIVISOR 16
++#define TSC_DIVISOR  32
+ 
+ /*
+  * This function sets up the local APIC timer, with a timeout of
+@@ -333,6 +338,9 @@ static void __setup_APIC_LVTT(unsigned int clocks, int oneshot, int irqen)
+ 	lvtt_value = LOCAL_TIMER_VECTOR;
+ 	if (!oneshot)
+ 		lvtt_value |= APIC_LVT_TIMER_PERIODIC;
++	else if (boot_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER))
++		lvtt_value |= APIC_LVT_TIMER_TSCDEADLINE;
++
+ 	if (!lapic_is_integrated())
+ 		lvtt_value |= SET_APIC_TIMER_BASE(APIC_TIMER_BASE_DIV);
+ 
+@@ -341,6 +349,11 @@ static void __setup_APIC_LVTT(unsigned int clocks, int oneshot, int irqen)
+ 
+ 	apic_write(APIC_LVTT, lvtt_value);
+ 
++	if (lvtt_value & APIC_LVT_TIMER_TSCDEADLINE) {
++		printk_once(KERN_DEBUG "TSC deadline timer enabled\n");
++		return;
++	}
++
+ 	/*
+ 	 * Divide PICLK by 16
+ 	 */
+@@ -453,6 +466,16 @@ static int lapic_next_event(unsigned long delta,
+ 	return 0;
+ }
+ 
++static int lapic_next_deadline(unsigned long delta,
++			       struct clock_event_device *evt)
++{
++	u64 tsc;
++
++	rdtscll(tsc);
++	wrmsrl(MSR_IA32_TSC_DEADLINE, tsc + (((u64) delta) * TSC_DIVISOR));
++	return 0;
++}
++
+ /*
+  * Setup the lapic timer in periodic or oneshot mode
+  */
+@@ -533,7 +556,15 @@ static void __cpuinit setup_APIC_timer(void)
+ 	memcpy(levt, &lapic_clockevent, sizeof(*levt));
+ 	levt->cpumask = cpumask_of(smp_processor_id());
+ 
+-	clockevents_register_device(levt);
++	if (this_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER)) {
++		levt->features &= ~(CLOCK_EVT_FEAT_PERIODIC |
++				    CLOCK_EVT_FEAT_DUMMY);
++		levt->set_next_event = lapic_next_deadline;
++		clockevents_config_and_register(levt,
++						(tsc_khz / TSC_DIVISOR) * 1000,
++						0xF, ~0UL);
++	} else
++		clockevents_register_device(levt);
+ }
+ 
+ /*
+@@ -661,7 +692,9 @@ static int __init calibrate_APIC_clock(void)
+ 	 * in the clockevent structure and return.
+ 	 */
+ 
+-	if (lapic_timer_frequency) {
++	if (boot_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER)) {
++		return 0;
++	} else if (lapic_timer_frequency) {
+ 		apic_printk(APIC_VERBOSE, "lapic timer already calibrated %d\n",
+ 				lapic_timer_frequency);
+ 		lapic_clockevent.mult = div_sc(lapic_timer_frequency/APIC_DIVISOR,
+@@ -674,6 +707,9 @@ static int __init calibrate_APIC_clock(void)
+ 		return 0;
+ 	}
+ 
++	apic_printk(APIC_VERBOSE, "Using local APIC timer interrupts.\n"
++		    "calibrating APIC timer ...\n");
++
+ 	local_irq_disable();
+ 
+ 	/* Replace the global interrupt handler */
+@@ -811,9 +847,6 @@ void __init setup_boot_APIC_clock(void)
+ 		return;
+ 	}
+ 
+-	apic_printk(APIC_VERBOSE, "Using local APIC timer interrupts.\n"
+-		    "calibrating APIC timer ...\n");
+-
+ 	if (calibrate_APIC_clock()) {
+ 		/* No broadcast on UP ! */
+ 		if (num_possible_cpus() > 1)
