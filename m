@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763231Ab2KBRQt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:16:49 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36557 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763146Ab2KBRQq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:16:46 -0400
-Date: Fri, 2 Nov 2012 17:21:45 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Tejun Heo <tj@kernel.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, Kay Sievers <kay@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
- add queue-private command filter, editable via sysfs)
-Message-ID: <20121102172145.184abfe3@pyramind.ukuu.org.uk>
-In-Reply-To: <20121102164828.GA3823@mtj.dyndns.org>
-References: <20121025180045.GL11442@htj.dyndns.org>
-	<1657557410.1945557.1351190120407.JavaMail.root@redhat.com>
-	<20121031212241.GZ2945@htj.dyndns.org>
-	<5093DD5E.6030808@redhat.com>
-	<20121102153530.483453c7@pyramind.ukuu.org.uk>
-	<20121102164828.GA3823@mtj.dyndns.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1762869Ab2KBRRo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:17:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43088 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760873Ab2KBRRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:17:42 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@osdl.org
+cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] FRV fixes
+Date: Fri, 02 Nov 2012 17:17:37 +0000
+Message-ID: <22792.1351876657@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Not a good model. Any removal of filters and passing them to a task
-> > should be explicit. The behaviour really ought to be to permit the
-> > intentional setting of explicit filters then passing them, not touch the
-> > default behaviour.
-> 
-> Yeah, well, then I guess it'll have to be a separate ioctl to switch
-> SG_IO for !root users.
+
+Hi Linus,
+
+Can you pull these patches for FRV please?  They're a collection of small
+fixes for the FRV architecture.
+
+David
+---
+The following changes since commit 8c23f406c6d86808726ace580657186bc3b44587:
+
+  Merge git://git.kernel.org/pub/scm/virt/kvm/kvm (2012-11-01 08:27:02 -0700)
+
+are available in the git repository at:
 
 
-My first thought would be to have the basic behaviour as
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-frv.git tags/frv-fixes-20121102
 
+for you to fetch changes up to 1d72d9f83df057e71c7951def41138a0230bf737:
 
-allowed 	IFF	passes user filter
-		&&	CAP_SYS_RAWIO || passes 'root' filter
+  frv: fix the broken preempt (2012-11-02 12:08:25 -0400)
 
+----------------------------------------------------------------
+FRV fixes for 3.7
 
-that allows untrusted to also push unprivileged filters for their own
-purposes (consider things like exokernel experiments or just trying to
-ensure a raw disk emulation doesn't go wrong). The default user feature
-would be 'allow anything'.
+----------------------------------------------------------------
+Al Viro (2):
+      frv: switch to saner kernel_execve() semantics
+      frv: fix the broken preempt
 
-then add a way to 'set' the root filter only if you have CAP_SYS_RAWIO
-with the default 'root' filter being the current hardcoded filter.
+David Howells (5):
+      FRV: Add missing linux/export.h #inclusions
+      FRV: Don't objcopy the GNU build_id note
+      FRV: gcc-4.1.2 also inlines weak functions
+      FRV: Fix the preemption handling
+      FRV: Fix the new-style kernel_thread() stuff
 
-That also means that a normal app running as superuser for some reason
-would set its user filter and any accidentally inherited descriptors will
-be less dangerous as the are today. It also means a CAP_SYS_RAWIO capable
-app can still use filters itself as good programming practise.
-
-It effectively means you have to deliberately and intentionally set up an
-'inherited' extra rights case.
-
-Alan
+ arch/frv/Kconfig                      |  1 +
+ arch/frv/boot/Makefile                | 10 ++++++----
+ arch/frv/include/asm/unistd.h         |  1 -
+ arch/frv/kernel/entry.S               | 28 +++-------------------------
+ arch/frv/kernel/process.c             |  5 +++--
+ arch/frv/mb93090-mb00/pci-dma-nommu.c |  1 +
+ init/main.c                           |  2 ++
+ 7 files changed, 16 insertions(+), 32 deletions(-)
