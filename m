@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933788Ab2KBRuS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:50:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20938 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932452Ab2KBRuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:50:13 -0400
-Message-ID: <509407B7.3030904@redhat.com>
-Date: Fri, 02 Nov 2012 18:49:43 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S933287Ab2KBRxY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:53:24 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:54710 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260Ab2KBRxX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:53:23 -0400
+Date: Fri, 2 Nov 2012 18:53:21 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, davem@davemloft.net,
+        Rob Herring <rob.herring@calxeda.com>, sparclinux@vger.kernel.org,
+        software@gaisler.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of/address: sparc: Declare of_address_to_resource() as
+	an extern function for sparc again
+Message-ID: <20121102175321.GA6720@merkur.ravnborg.org>
+References: <1351854236-14230-1-git-send-email-andreas@gaisler.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Ric Wheeler <rwheeler@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kay Sievers <kay@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
- add queue-private command filter, editable via sysfs)
-References: <20121025180045.GL11442@htj.dyndns.org> <1657557410.1945557.1351190120407.JavaMail.root@redhat.com> <20121031212241.GZ2945@htj.dyndns.org> <5093DD5E.6030808@redhat.com> <20121102165123.GB3823@mtj.dyndns.org>
-In-Reply-To: <20121102165123.GB3823@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351854236-14230-1-git-send-email-andreas@gaisler.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 02/11/2012 17:51, Tejun Heo ha scritto:
->>> > > What disturbs me is that it's a completely new interface to userland
->>> > > and at the same a very limited one at that.  So, yeah, it's
->>> > > bothersome.  I personally would prefer SCM_RIGHTS behavior change +
->>> > > hard coded filters per device class.
->> > 
->> > I think hard-coded filters are bad (I prefer to move policy to
->> > userspace), and SCM_RIGHTS without a ioctl is out of question, really.
-> No rule is really absolute.  To me, it seems the suggested in-kernel
-> per-device command code filter is both too big for the given problem
+Hi Andreas.
+On Fri, Nov 02, 2012 at 12:03:56PM +0100, Andreas Larsson wrote:
+> This bug-fix makes sure that of_address_to_resource is defined extern for sparc
+> so that the sparc-specific implementation of of_address_to_resource() is once
+> again used when including include/linux/of_address.h in a sparc context. A
+> number of drivers in mainline relies on this function working for sparc.
 
-Is it?  150 lines of code?  The per-class filters would share the first
-two patches with this series, add a long list of commands to filter, and
-the ioctl would be on top of that.
+How about following (untested) approach.
+diff --git a/arch/sparc/include/asm/prom.h b/arch/sparc/include/asm/prom.h
+index c287651..8194801 100644
+--- a/arch/sparc/include/asm/prom.h
++++ b/arch/sparc/include/asm/prom.h
+@@ -63,5 +63,8 @@ extern char *of_console_options;
+ extern void irq_trans_init(struct device_node *dp);
+ extern char *build_path_component(struct device_node *dp);
+ 
++/* SPARC has a local implementation */
++#define of_address_to_resource of_address_to_resource
++
+ #endif /* __KERNEL__ */
+ #endif /* _SPARC_PROM_H */
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index a1984dd..e20e3af 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -28,11 +28,13 @@ static inline unsigned long pci_address_to_pio(phys_addr_t addr) { return -1; }
+ #endif
+ 
+ #else /* CONFIG_OF_ADDRESS */
++#ifndef of_address_to_resource
+ static inline int of_address_to_resource(struct device_node *dev, int index,
+ 					 struct resource *r)
+ {
+ 	return -EINVAL;
+ }
++#endif
+ static inline struct device_node *of_find_matching_node_by_address(
+ 					struct device_node *from,
+ 					const struct of_device_id *matches,
 
-Long lists are better kept in configuration files than in kernel
-sources; not to mention the higher cost of getting the API wrong for a
-ioctl vs. sysfs.
+We use prom.h to teach the general of layer what SPARC provides.
+In prom.h we define the symbol of_address_to_resource which tell
+of_address.h that we have a local definition of this function, and
+the static version is skipped.
 
-> while being too limited for much beyond that.
+This looks more elegant as we do not have to hardcode SPARC in of_address.h
+and this is easy to re-use the sme pattern in other places.
 
-What are the use cases beyond these?  AFAIK these were the first two in
-ten years or so...
+Also pci_address_to_pio already uses the same approach in the same file.
+pci_address_to_pio is defined if it was not defined before - I see no
+reason to do so which is why I omitted it in the above.
 
-> So, if we can get away
-> with adding an ioctl, I personally think that would be a better
-> approach.
-
-I would really prefer to get a green light from Jens/James for per-class
-filters in the kernel (which are worth a few hundred lines of data)
-before implementing that.
-
-Paolo
+	Sam
