@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933341Ab2KBRqt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:46:49 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15766 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932894Ab2KBRqD (ORCPT
+	id S933279Ab2KBRrg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:47:36 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:8039 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932906Ab2KBRre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:46:03 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 02 Nov 2012 10:46:01 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <sameo@linux.intel.com>, <linus.walleij@linaro.org>,
-        <grant.likely@secretlab.ca>
-CC: <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
-        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 3/3] mfd: tps6586x: implement gpio_to_irq
-Date: Fri, 2 Nov 2012 23:13:34 +0530
-Message-ID: <1351878214-11543-4-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1351878214-11543-1-git-send-email-ldewangan@nvidia.com>
-References: <1351878214-11543-1-git-send-email-ldewangan@nvidia.com>
+	Fri, 2 Nov 2012 13:47:34 -0400
+Date: Fri, 2 Nov 2012 17:47:32 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Shan Wei <shanwei88@gmail.com>
+cc: rostedt@goodmis.org, fweisbec@gmail.com,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>, mingo@redhat.com
+Subject: Re: [PATCH v2 7/9] trace: use this_cpu_ptr per-cpu helper
+In-Reply-To: <5093EE75.9040006@gmail.com>
+Message-ID: <0000013ac23c254a-853c069d-2a95-4dec-a7a1-2e43f6c9b35b-000000@email.amazonses.com>
+References: <5093EE75.9040006@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TPS6586x adds the interrupt of this device using
-linear mapping on irq domain.
-Hence, implement gpio_to_irq to get the irq number
-corresponding to TPS6586x GPIOs which is created
-dynamically.
+On Sat, 3 Nov 2012, Shan Wei wrote:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
----
-Reposting in case of patch missed.
-Also added Reviewed by Mark as he already reviewed the patches.
-Linus W has already acked it as adding his ack.
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 31e4f55..81ae35b 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -1513,7 +1513,7 @@ static char *get_trace_buf(void)
+>  	if (!percpu_buffer)
+>  		return NULL;
+>
+> -	buffer = per_cpu_ptr(percpu_buffer, smp_processor_id());
+> +	buffer = this_cpu_ptr(percpu_buffer);
+>
+>  	return buffer->buffer;
 
- drivers/gpio/gpio-tps6586x.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+	return this_cpu_read(percpu_buffer->buffer)
 
-diff --git a/drivers/gpio/gpio-tps6586x.c b/drivers/gpio/gpio-tps6586x.c
-index 2526b3b..62e9e1c 100644
---- a/drivers/gpio/gpio-tps6586x.c
-+++ b/drivers/gpio/gpio-tps6586x.c
-@@ -80,6 +80,14 @@ static int tps6586x_gpio_output(struct gpio_chip *gc, unsigned offset,
- 				val, mask);
- }
- 
-+static int tps6586x_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
-+{
-+	struct tps6586x_gpio *tps6586x_gpio = to_tps6586x_gpio(gc);
-+
-+	return tps6586x_irq_get_virq(tps6586x_gpio->parent,
-+				TPS6586X_INT_PLDO_0 + offset);
-+}
-+
- static int __devinit tps6586x_gpio_probe(struct platform_device *pdev)
- {
- 	struct tps6586x_platform_data *pdata;
-@@ -106,6 +114,7 @@ static int __devinit tps6586x_gpio_probe(struct platform_device *pdev)
- 	tps6586x_gpio->gpio_chip.direction_output = tps6586x_gpio_output;
- 	tps6586x_gpio->gpio_chip.set	= tps6586x_gpio_set;
- 	tps6586x_gpio->gpio_chip.get	= tps6586x_gpio_get;
-+	tps6586x_gpio->gpio_chip.to_irq	= tps6586x_gpio_to_irq;
- 
- #ifdef CONFIG_OF_GPIO
- 	tps6586x_gpio->gpio_chip.of_node = pdev->dev.parent->of_node;
--- 
-1.7.1.1
+and drop the this_cpu_ptr operation please.
 
