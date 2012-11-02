@@ -1,127 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760360Ab2KBJkY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 05:40:24 -0400
-Received: from shrek-modem2.podlesie.net ([83.13.132.46]:43568 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757555Ab2KBJkW (ORCPT
+	id S1760406Ab2KBJmz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 05:42:55 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48480 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757172Ab2KBJmx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 05:40:22 -0400
-Date: Fri, 2 Nov 2012 10:40:19 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-Cc: davem@davemloft.net, dwmw2@infradead.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] pppoatm: fix race condition with destroying of vcc
-Message-ID: <20121102094018.GA14960@shrek.podlesie.net>
-References: <1350926091-12642-2-git-send-email-krzysiek@podlesie.net>
- <201210301426.q9UEQkI7007209@thirdoffive.cmf.nrl.navy.mil>
- <20121030182001.GA30373@shrek.podlesie.net>
- <20121031094147.GA1004@shrek.podlesie.net>
- <20121031160352.68353ecc@thirdoffive.cmf.nrl.navy.mil>
- <20121031220435.GA25157@shrek.podlesie.net>
- <20121101102628.6e3d3cae@thirdoffive.cmf.nrl.navy.mil>
+	Fri, 2 Nov 2012 05:42:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121101102628.6e3d3cae@thirdoffive.cmf.nrl.navy.mil>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121102085718.GF17063@arwen.pp.htv.fi>
+References: <20121101110418.GF410@arwen.pp.htv.fi>
+	<3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com>
+	<20121101124025.GA12489@arwen.pp.htv.fi>
+	<A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com>
+	<20121101131609.GC12489@arwen.pp.htv.fi>
+	<E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com>
+	<20121101135148.382aec00@pyramind.ukuu.org.uk>
+	<9F25E89E-9194-4725-8A8C-053DCBADA1DB@antoniou-consulting.com>
+	<20121101220518.GE14982@arwen.pp.htv.fi>
+	<CA+Bv8XbAvEXe=zDaA8W2+ROD2duYMRcJu4-bms31OH=V_ScKow@mail.gmail.com>
+	<20121102085718.GF17063@arwen.pp.htv.fi>
+Date: Fri, 2 Nov 2012 02:42:51 -0700
+X-Google-Sender-Auth: kLU2VOyqtjgqHdt7gOx9-2UWfI4
+Message-ID: <CA+Bv8Xb4eAQ2po-nwCT6ZXNdaU7cwshVaGC795e3GYZ+B7L-jQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+From: Russ Dill <Russ.Dill@ti.com>
+To: balbi@ti.com
+Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
+        Matt Porter <mporter@ti.com>, linux-omap@vger.kernel.org,
+        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 10:26:28AM -0400, chas williams - CONTRACTOR wrote:
-> On Wed, 31 Oct 2012 23:04:35 +0100
-> Krzysztof Mazur <krzysiek@podlesie.net> wrote:
-> 
-> > There are also some minor potential issues in pppoatm driver:
-> > 
-> > 	- locking issues, but now only between pppoatm_send() and
-> > 	  vcc_sendmsg() and maybe some other functions,
-> 
-> these have been around for a while.  i agree that something should be
-> done about it.  just not sure what should be synchronizing this mess.
+On Fri, Nov 2, 2012 at 1:57 AM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Thu, Nov 01, 2012 at 04:49:23PM -0700, Russ Dill wrote:
+>> On Thu, Nov 1, 2012 at 3:05 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> > HI,
+>> >
+>> > On Thu, Nov 01, 2012 at 03:59:50PM +0200, Pantelis Antoniou wrote:
+>> >> Hi Alan,
+>> >>
+>> >> On Nov 1, 2012, at 3:51 PM, Alan Cox wrote:
+>> >>
+>> >> >> What they want, and what every user wants, is I plug this board in, and
+>> >> >> the driver make sure everything is loaded and ready. No, the end users
+>> >> >> don't want to see any of the implementation details of how the bitfile
+>> >> >> is transported; the driver can handle it.
+>> >> >
+>> >> > That doesn't necessarily make it a bus merely some kind of hotplug
+>> >> > enumeration of devices. That should all work properly both for devices
+>> >> > and busses with spi and i²c as the final bits needed for it got fixed
+>> >> > some time ago.
+>> >> >
+>> >> > In an ideal world you don't want to be writing custom drivers for stuff.
+>> >> > If your cape routes an i²c serial device to the existing system i²c
+>> >> > busses then you want to just create an instance of any existing driver on
+>> >> > the existing i²c bus not create a whole new layer of goop.
+>> >> >
+>> >> > It does need to do the plumbing and resource management for the plumbing
+>> >> > but thats not the same as being a bus.
+>> >> >
+>> >> > Alan
+>> >>
+>> >>
+>> >> Fair enough. But there's no such thing a 'hotplug enumeration
+>> >> construct' in Linux yet, and a bus is the closest thing to it. It does
+>> >> take advantage of the nice way device code matches drivers and devices
+>> >> though.
+>> >>
+>> >> I'm afraid that having the I2C/SPI drivers doing the detection won't
+>> >> work.  The capes can have arbitrary I2C/SPI devices (and even more
+>> >> weird components).  There is no way to assure for example that the I2C
+>> >> device responding to address 'foo' in cape A is the same I2C device
+>> >> responding to the same address in cape B.
+>> >
+>> > your ->detect() method should take care of that.
+>>
+>> There isn't some magical serial number in I²C devices that a
+>> ->detect() method can read and the implementation of I²C is somewhat
+>> flexible. One devices read may be another devices write. A detect
+>
+> look at what other drivers do. You can read a revision register, you can
+> write a command and see if the device responds as expected, it doesn't
+> matter.
 
-I think the ATM socket lock should be used. I'm sending the latest
-patch that adds this locking after David Woodhouse's comments. The vcc->flags
-check is now probably unnecessary.
+Since a "revision" register isn't required by the I²C spec, it isn't
+implemented on a huge number of chips. Also, having a few dozen probe
+routines come though and write to random address of every single I²C
+device can a) take a really long time, and b) have quite a few
+unintended side effects.
 
-> 
-> > 	- missing check for SS_CONNECTED in pppoatm_ioctl,
-> 
-> in practice you will never run into this because a pvc is immediately
-> put into SS_CONNECTED mode (right before the userspace open()
-> returns).  however, should it check?  yes.  i dont see anything
-> preventing you from running ppp on svc's.
+>> method that only performs reads could easily toggle a gpio that resets
+>> the board, rewrite and eeprom, or set the printer on fire. If you
+>
+> how ? It's just a read.
 
-I can confirm that the problem really exists, without connect() in pppoatm
-plugin in pppd, I have seen an Oops and panic. I will send appropriate
-patch.
+Because the I²C spec is incredibly flexible. For a lot of devices,
+reading from a register is done by writing the register address, and
+then reading the contents. For devices that don't implement registers
+in that way (such as many eeproms), this is just a write.
 
-Thanks.
+>> browse through various detect functions, yes, some of them key off an
+>> ID, but a lot of them just check various registers to see if certain
+>> bits are zero, or certain bits are one. A lot of I²C devices I've
+>> dealt with have no good way of probing them, especially GPIO chips
+>> (you'll notice none of the I²C GPIO expanders have detect functions)
+>
+> it doesn't mean it can't be done.
 
-Krzysiek
+Really? Please, do tell how you would write a detect function for a
+PCA9534. It has 4 registers, an input port registers, an output port
+register, a polarity inversion register, and a configuration register.
+And don't forget, since we are probing, every detect routine for every
+I²C driver will have to run with every I²C address on every bus,
+possibly with both address formats.
 
--- >8 --
-diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
-index f27a07a..ef19436 100644
---- a/net/atm/pppoatm.c
-+++ b/net/atm/pppoatm.c
-@@ -269,10 +269,23 @@ static inline int pppoatm_may_send(struct pppoatm_vcc *pvcc, int size)
- static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
- {
- 	struct pppoatm_vcc *pvcc = chan_to_pvcc(chan);
-+	struct atm_vcc *vcc;
-+	int ret;
-+
- 	ATM_SKB(skb)->vcc = pvcc->atmvcc;
- 	pr_debug("(skb=0x%p, vcc=0x%p)\n", skb, pvcc->atmvcc);
- 	if (skb->data[0] == '\0' && (pvcc->flags & SC_COMP_PROT))
- 		(void) skb_pull(skb, 1);
-+
-+	vcc = ATM_SKB(skb)->vcc;
-+	bh_lock_sock(sk_atm(vcc));
-+	if (sock_owned_by_user(sk_atm(vcc)))
-+		goto nospace;
-+	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
-+			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
-+			|| !test_bit(ATM_VF_READY, &vcc->flags))
-+		goto nospace;
-+
- 	switch (pvcc->encaps) {		/* LLC encapsulation needed */
- 	case e_llc:
- 		if (skb_headroom(skb) < LLC_LEN) {
-@@ -285,8 +298,10 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
- 			}
- 			consume_skb(skb);
- 			skb = n;
--			if (skb == NULL)
-+			if (skb == NULL) {
-+				bh_unlock_sock(sk_atm(vcc));
- 				return DROP_PACKET;
-+			}
- 		} else if (!pppoatm_may_send(pvcc, skb->truesize))
- 			goto nospace;
- 		memcpy(skb_push(skb, LLC_LEN), pppllc, LLC_LEN);
-@@ -296,6 +311,7 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
- 			goto nospace;
- 		break;
- 	case e_autodetect:
-+		bh_unlock_sock(sk_atm(vcc));
- 		pr_debug("Trying to send without setting encaps!\n");
- 		kfree_skb(skb);
- 		return 1;
-@@ -305,9 +321,12 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
- 	ATM_SKB(skb)->atm_options = ATM_SKB(skb)->vcc->atm_options;
- 	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n",
- 		 skb, ATM_SKB(skb)->vcc, ATM_SKB(skb)->vcc->dev);
--	return ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb)
-+	ret = ATM_SKB(skb)->vcc->send(ATM_SKB(skb)->vcc, skb)
- 	    ? DROP_PACKET : 1;
-+	bh_unlock_sock(sk_atm(vcc));
-+	return ret;
- nospace:
-+	bh_unlock_sock(sk_atm(vcc));
- 	/*
- 	 * We don't have space to send this SKB now, but we might have
- 	 * already applied SC_COMP_PROT compression, so may need to undo
+>> On top of all this the detect routine does not tell you if the alert
+>> pin is connected to some IRQ, or in the case of a GPIO expander, what
+>> those GPIOs are connected to, etc, etc.
+>
+> so what ? All you want to do with detect is figure out if the far end is
+> who you think it is, not what it's doing.
+
+If we already knew who was there, we wouldn't need a detect routine.
