@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933279Ab2KBRrg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:47:36 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:8039 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932906Ab2KBRre (ORCPT
+	id S1763279Ab2KBRp6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:45:58 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15752 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759255Ab2KBRp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:47:34 -0400
-Date: Fri, 2 Nov 2012 17:47:32 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Shan Wei <shanwei88@gmail.com>
-cc: rostedt@goodmis.org, fweisbec@gmail.com,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>, mingo@redhat.com
-Subject: Re: [PATCH v2 7/9] trace: use this_cpu_ptr per-cpu helper
-In-Reply-To: <5093EE75.9040006@gmail.com>
-Message-ID: <0000013ac23c254a-853c069d-2a95-4dec-a7a1-2e43f6c9b35b-000000@email.amazonses.com>
-References: <5093EE75.9040006@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 2 Nov 2012 13:45:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 02 Nov 2012 10:33:02 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <sameo@linux.intel.com>, <linus.walleij@linaro.org>,
+        <grant.likely@secretlab.ca>
+CC: <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH REPOST 0/3] mfd: tps6586x: Convert to irq domain
+Date: Fri, 2 Nov 2012 23:13:31 +0530
+Message-ID: <1351878214-11543-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 3 Nov 2012, Shan Wei wrote:
+This patch series convert the irq implementation to use the
+irq domain.
+Accordingly, gpio driver and rtc registration is updated.
 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 31e4f55..81ae35b 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -1513,7 +1513,7 @@ static char *get_trace_buf(void)
->  	if (!percpu_buffer)
->  		return NULL;
->
-> -	buffer = per_cpu_ptr(percpu_buffer, smp_processor_id());
-> +	buffer = this_cpu_ptr(percpu_buffer);
->
->  	return buffer->buffer;
+Reposting the series and adding the reviwed by Mark and acked by Linus W
+for the respective patches.
 
-	return this_cpu_read(percpu_buffer->buffer)
+Laxman Dewangan (3):
+  mfd: Convert tps6586x to irq_domain
+  mfd: tps6586x: add irq io-resource for rtc sub driver
+  mfd: tps6586x: implement gpio_to_irq
 
-and drop the this_cpu_ptr operation please.
+ drivers/gpio/gpio-tps6586x.c |    9 ++++
+ drivers/mfd/tps6586x.c       |  103 +++++++++++++++++++++++++++++++-----------
+ include/linux/mfd/tps6586x.h |    1 +
+ 3 files changed, 87 insertions(+), 26 deletions(-)
 
