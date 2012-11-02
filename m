@@ -1,120 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab2KBU7Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 16:59:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32573 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab2KBU7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 16:59:23 -0400
-Subject: Re: [PATCH RFT RESEND linux-next] c6x: dma-mapping: support
- debug_dma_mapping_error
-From: Mark Salter <msalter@redhat.com>
-To: shuah.khan@hp.com
-Cc: Andrew Morton <akpm@linux-foundation.org>, a-jacquiot@ti.com,
-        linux-c6x-dev@linux-c6x.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Fri, 02 Nov 2012 16:59:15 -0400
-In-Reply-To: <1351887967.3161.17.camel@lorien2>
-References: <1351206082.6851.6.camel@lorien2>
-	 <1351266055.4013.1.camel@lorien2> <1351874655.2721.16.camel@lorien2>
-	 <1351883445.15973.24.camel@deneb.redhat.com>
-	 <1351885999.3161.11.camel@lorien2>
-	 <1351887326.15973.35.camel@deneb.redhat.com>
-	 <1351887967.3161.17.camel@lorien2>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1351889957.15973.43.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1754552Ab2KBU7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 16:59:38 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:46791 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab2KBU72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 16:59:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <506B6CE0.1060800@linaro.org>
+References: <1348888593-23047-1-git-send-email-john.stultz@linaro.org>
+ <20121002173928.2062004e@notabene.brown> <506B6CE0.1060800@linaro.org>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Fri, 2 Nov 2012 21:59:07 +0100
+X-Google-Sender-Auth: 2Vl-W_VoN2d6mfariwlWRPeCKAs
+Message-ID: <CAHO5Pa0KvH+MTYm6BCM5LHj995HpO+t87szyJjjXgupVq2VTfA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Volatile Ranges (v7) & Lots of words
+To: John Stultz <john.stultz@linaro.org>
+Cc: NeilBrown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-02 at 14:26 -0600, Shuah Khan wrote:
-> On Fri, 2012-11-02 at 16:15 -0400, Mark Salter wrote:
-> > On Fri, 2012-11-02 at 13:53 -0600, Shuah Khan wrote:
-> > > On Fri, 2012-11-02 at 15:10 -0400, Mark Salter wrote:
-> > > > On Fri, 2012-11-02 at 10:44 -0600, Shuah Khan wrote:
-> > > > > On Fri, 2012-10-26 at 09:40 -0600, Shuah Khan wrote:
-> > > > > > Add support for debug_dma_mapping_error() call to avoid warning from
-> > > > > > debug_dma_unmap() interface when it checks for mapping error checked
-> > > > > > status. Without this patch, device driver failed to check map error
-> > > > > > warning is generated.
-> > > > > > 
-> > > > > > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> > > > > > ---
-> > > > > >  arch/c6x/include/asm/dma-mapping.h |    1 +
-> > > > > >  1 file changed, 1 insertion(+)
-> > > > 
-> > > > > Would you like to this patch go through c6x arch tree or linux-next?
-> > > > > Please let me know your preference.
-> > > > 
-> > > > I tried to test this but I get a build error with CONFIG_DMA_API_DEBUG:
-> > > > 
-> > > > /linux-next/lib/dma-debug.c: In function 'has_mapping_error':
-> > > > /linux-next/lib/dma-debug.c:863:15: error: implicit declaration of function 'get_dma_ops' [-Werror=implicit-function-declaration]
-> > > > /linux-next/lib/dma-debug.c:863:34: warning: initialization makes pointer from integer without a cast [enabled by default]
-> > > > 
-> > > > C6X (along with some other architectures) doesn't have a get_dma_ops()
-> > > > function defined.
-> > > 
-> > > That is a problem I didn't think about. I did a check and looks like c6x
-> > > and frv are the only ones that don't have get_dma_ops() defined. frv is
-> > 
-> > By my count, there are 14 architectures with get_dma_ops() and 14
-> > without.
-> Right. I should have explained more. The following archs
-> 
-> arch/avr32/include/asm/dma-mapping.h
-> arch/blackfin/include/asm/dma-mapping.h
-> arch/cris/include/asm/dma-mapping.h
-> arch/mn10300/include/asm/dma-mapping.h
-> arch/parisc/include/asm/dma-mapping.h
-> arch/xtensa/include/asm/dma-mapping.h
-> 
-> define dma_map_page() and dma_map_single() and not call
-> debug_dma_map_page() interface. There is no risk of mis-matched debug
-> and non-debug mapping and mapping error checks like in the case of other
-> archs and c6x.
+John,
 
-Ah, okay. Not all architectures support HAVE_DMA_API_DEBUG. So, of those
-that do, c6x seems to be the only one with dma_ops.
+A question at on one point:
 
-> 
-> > > in a different category as it doesn't use dma_debug interfaces. IN the
-> > > case c6x, now with my change to add debug_dma_mapping_error(), we will
-> > > start seeing warnings since dma_map_page() and dma_map_single() are
-> > > debugged with a call to debug_dma_map_page() and the corresponding
-> > > dma_mapping_error() interface doesn't call debug_dma_mapping_error()
-> > > interface
-> > > 
-> > > - Does adding get_dma_ops() make sense? Doesn't look like c6x exports
-> > > dma_ops?
-> > > 
-> > > Any other ideas?
-> > 
-> > I'm not sure. I don't know what get_dma_ops() does and it doesn't seem
-> > to be documented anywhere.
-> 
-> It returns pointer to dma_ops like the one on alpha:
-> 
-> static inline struct dma_map_ops *get_dma_ops(struct device *dev)
-> {
->         return dma_ops;
-> }
+On Wed, Oct 3, 2012 at 12:38 AM, John Stultz <john.stultz@linaro.org> wrote:
+> On 10/02/2012 12:39 AM, NeilBrown wrote:
+[...]
+>>   The SIGBUS interface could have some merit if it really reduces
+>> overhead.  I
+>>   worry about app bugs that could result from the non-deterministic
+>>   behaviour.   A range could get unmapped while it is in use and testing
+>> for
+>>   the case of "get a SIGBUS half way though accessing something" would not
+>>   be straight forward (SIGBUS on first step of access should be easy).
+>>   I guess that is up to the app writer, but I have never liked anything
+>> about
+>>   the signal interface and encouraging further use doesn't feel wise.
+>
+> Initially I didn't like the idea, but have warmed considerably to it. Mainly
+> due to the concern that the constant unmark/access/mark pattern would be too
+> much overhead, and having a lazy method will be much nicer for performance.
+> But yes, at the cost of additional complexity of handling the signal,
+> marking the faulted address range as non-volatile, restoring the data and
+> continuing.
 
-Okay, so what is dma_ops used for? Looks like maybe supporting different
-dma features/functionality on different busses/devices.
+At a finer level of detail, how do you see this as happening in the
+application. I mean: in the general case, repopulating the purged
+volatile page would have to be done outside the signal handler (I
+think, because async-signal-safety considerations would preclude too
+much compdex stuff going on inside the handler). That implies
+longjumping out of the handler, repopulating the pages with data, and
+then restarting whatever work was being done when the SIGBUS was
+generated.
 
-> 
-> c6x doesn't define dma_ops looks like. Is that correct? Returning null
-> from get_dma_ops() is not an option as get_dma_ops() return is assumed
-> to be not null.
+Cheers,
 
-As things stand, c6x DMA hw doesn't really need dma_ops and until this
-patch, I could build in DMA debug support without dma_ops. So do we
-really want to require dma_ops for dma debug support even for those
-architectures which don't otherwise need it? I could add dma_ops, but
-it seems silly to do so only for dma debug.
-
-
+Michael
