@@ -1,324 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762946Ab2KBOTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 10:19:47 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:51462 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762774Ab2KBOTp convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 2 Nov 2012 10:19:45 -0400
-Message-Id: <5093E4B802000078000A615E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 02 Nov 2012 14:20:24 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, "Jan Beulich" <JBeulich@suse.com>,
-        <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3, v2] x86: add alternative SSE implementation only
- prefetching once per 64-byte line
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1762956Ab2KBOT7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 10:19:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37190 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755403Ab2KBOT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 10:19:57 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: Re: [patch 01/10] scsi: make __scsi_alloc_queue numa-aware
+References: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
+	<1351628084-29358-4-git-send-email-jmoyer@redhat.com>
+	<5093AF19.5040707@acm.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 02 Nov 2012 10:19:52 -0400
+In-Reply-To: <5093AF19.5040707@acm.org> (Bart Van Assche's message of "Fri, 02
+	Nov 2012 12:31:37 +0100")
+Message-ID: <x49txt8xf1z.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On CPUs with 64-byte last level cache lines, this yields roughly 10%
-better performance, independent of CPU vendor or specific model (as far
-as I was able to test).
+Bart Van Assche <bvanassche@acm.org> writes:
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> On 10/30/12 21:14, Jeff Moyer wrote:
+>> Pass the numa node id set in the Scsi_Host on to blk_init_queue_node
+>> in order to keep all allocations local to the numa node the device is
+>> closest to.
+>>
+>> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+>> ---
+>>   drivers/scsi/scsi_lib.c |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+>> index da36a3a..8662a09 100644
+>> --- a/drivers/scsi/scsi_lib.c
+>> +++ b/drivers/scsi/scsi_lib.c
+>> @@ -1664,7 +1664,7 @@ struct request_queue *__scsi_alloc_queue(struct Scsi_Host *shost,
+>>   	struct request_queue *q;
+>>   	struct device *dev = shost->dma_dev;
+>>
+>> -	q = blk_init_queue(request_fn, NULL);
+>> +	q = blk_init_queue_node(request_fn, NULL, shost->numa_node);
+>>   	if (!q)
+>>   		return NULL;
+>
+> Hello Jeff,
+>
+> I haven't seen the patch that introduces numa_node in struct Scsi_Host
+> nor the cover letter of this patch series ? Have these been posted on
+> the linux-scsi mailing list ?
 
----
- arch/x86/include/asm/xor.h    |  172 ++++++++++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/xor_32.h |   23 ++---
- arch/x86/include/asm/xor_64.h |   10 --
- 3 files changed, 187 insertions(+), 18 deletions(-)
+Hi, Bart,
 
---- 3.7-rc3-x86-xor.orig/arch/x86/include/asm/xor.h
-+++ 3.7-rc3-x86-xor/arch/x86/include/asm/xor.h
-@@ -58,6 +58,14 @@
- #define XO2(x, y)	"	xorps "OFFS(x)"(%[p3]), %%xmm"#y"	;\n"
- #define XO3(x, y)	"	xorps "OFFS(x)"(%[p4]), %%xmm"#y"	;\n"
- #define XO4(x, y)	"	xorps "OFFS(x)"(%[p5]), %%xmm"#y"	;\n"
-+#define NOP(x)
-+
-+#define BLK64(pf, op, i)				\
-+		pf(i)					\
-+		op(i, 0)				\
-+			op(i + 1, 1)			\
-+				op(i + 2, 2)		\
-+					op(i + 3, 3)
- 
- static void
- xor_sse_2(unsigned long bytes, unsigned long *p1, unsigned long *p2)
-@@ -111,6 +119,40 @@ xor_sse_2(unsigned long bytes, unsigned
- }
- 
- static void
-+xor_sse_2_pf64(unsigned long bytes, unsigned long *p1, unsigned long *p2)
-+{
-+	unsigned long lines = bytes >> 8;
-+
-+	kernel_fpu_begin();
-+
-+	asm volatile(
-+#undef BLOCK
-+#define BLOCK(i)			\
-+		BLK64(PF0, LD, i)	\
-+		BLK64(PF1, XO1, i)	\
-+		BLK64(NOP, ST, i)	\
-+
-+	" .align 32			;\n"
-+	" 1:                            ;\n"
-+
-+		BLOCK(0)
-+		BLOCK(4)
-+		BLOCK(8)
-+		BLOCK(12)
-+
-+	"       add %[inc], %[p1]       ;\n"
-+	"       add %[inc], %[p2]       ;\n"
-+	"       dec %[cnt]              ;\n"
-+	"       jnz 1b                  ;\n"
-+	: [cnt] "+r" (lines),
-+	  [p1] "+r" (p1), [p2] "+r" (p2)
-+	: [inc] XOR_CONSTANT_CONSTRAINT (256UL)
-+	: "memory");
-+
-+	kernel_fpu_end();
-+}
-+
-+static void
- xor_sse_3(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	  unsigned long *p3)
- {
-@@ -170,6 +212,43 @@ xor_sse_3(unsigned long bytes, unsigned
- }
- 
- static void
-+xor_sse_3_pf64(unsigned long bytes, unsigned long *p1, unsigned long *p2,
-+	       unsigned long *p3)
-+{
-+	unsigned long lines = bytes >> 8;
-+
-+	kernel_fpu_begin();
-+
-+	asm volatile(
-+#undef BLOCK
-+#define BLOCK(i)			\
-+		BLK64(PF0, LD, i)	\
-+		BLK64(PF1, XO1, i)	\
-+		BLK64(PF2, XO2, i)	\
-+		BLK64(NOP, ST, i)	\
-+
-+	" .align 32			;\n"
-+	" 1:                            ;\n"
-+
-+		BLOCK(0)
-+		BLOCK(4)
-+		BLOCK(8)
-+		BLOCK(12)
-+
-+	"       add %[inc], %[p1]       ;\n"
-+	"       add %[inc], %[p2]       ;\n"
-+	"       add %[inc], %[p3]       ;\n"
-+	"       dec %[cnt]              ;\n"
-+	"       jnz 1b                  ;\n"
-+	: [cnt] "+r" (lines),
-+	  [p1] "+r" (p1), [p2] "+r" (p2), [p3] "+r" (p3)
-+	: [inc] XOR_CONSTANT_CONSTRAINT (256UL)
-+	: "memory");
-+
-+	kernel_fpu_end();
-+}
-+
-+static void
- xor_sse_4(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	  unsigned long *p3, unsigned long *p4)
- {
-@@ -236,6 +315,45 @@ xor_sse_4(unsigned long bytes, unsigned
- }
- 
- static void
-+xor_sse_4_pf64(unsigned long bytes, unsigned long *p1, unsigned long *p2,
-+	       unsigned long *p3, unsigned long *p4)
-+{
-+	unsigned long lines = bytes >> 8;
-+
-+	kernel_fpu_begin();
-+
-+	asm volatile(
-+#undef BLOCK
-+#define BLOCK(i)			\
-+		BLK64(PF0, LD, i)	\
-+		BLK64(PF1, XO1, i)	\
-+		BLK64(PF2, XO2, i)	\
-+		BLK64(PF3, XO3, i)	\
-+		BLK64(NOP, ST, i)	\
-+
-+	" .align 32			;\n"
-+	" 1:                            ;\n"
-+
-+		BLOCK(0)
-+		BLOCK(4)
-+		BLOCK(8)
-+		BLOCK(12)
-+
-+	"       add %[inc], %[p1]       ;\n"
-+	"       add %[inc], %[p2]       ;\n"
-+	"       add %[inc], %[p3]       ;\n"
-+	"       add %[inc], %[p4]       ;\n"
-+	"       dec %[cnt]              ;\n"
-+	"       jnz 1b                  ;\n"
-+	: [cnt] "+r" (lines), [p1] "+r" (p1),
-+	  [p2] "+r" (p2), [p3] "+r" (p3), [p4] "+r" (p4)
-+	: [inc] XOR_CONSTANT_CONSTRAINT (256UL)
-+	: "memory");
-+
-+	kernel_fpu_end();
-+}
-+
-+static void
- xor_sse_5(unsigned long bytes, unsigned long *p1, unsigned long *p2,
- 	  unsigned long *p3, unsigned long *p4, unsigned long *p5)
- {
-@@ -308,12 +426,63 @@ xor_sse_5(unsigned long bytes, unsigned
- 	kernel_fpu_end();
- }
- 
-+static void
-+xor_sse_5_pf64(unsigned long bytes, unsigned long *p1, unsigned long *p2,
-+	       unsigned long *p3, unsigned long *p4, unsigned long *p5)
-+{
-+	unsigned long lines = bytes >> 8;
-+
-+	kernel_fpu_begin();
-+
-+	asm volatile(
-+#undef BLOCK
-+#define BLOCK(i)			\
-+		BLK64(PF0, LD, i)	\
-+		BLK64(PF1, XO1, i)	\
-+		BLK64(PF2, XO2, i)	\
-+		BLK64(PF3, XO3, i)	\
-+		BLK64(PF4, XO4, i)	\
-+		BLK64(NOP, ST, i)	\
-+
-+	" .align 32			;\n"
-+	" 1:                            ;\n"
-+
-+		BLOCK(0)
-+		BLOCK(4)
-+		BLOCK(8)
-+		BLOCK(12)
-+
-+	"       add %[inc], %[p1]       ;\n"
-+	"       add %[inc], %[p2]       ;\n"
-+	"       add %[inc], %[p3]       ;\n"
-+	"       add %[inc], %[p4]       ;\n"
-+	"       add %[inc], %[p5]       ;\n"
-+	"       dec %[cnt]              ;\n"
-+	"       jnz 1b                  ;\n"
-+	: [cnt] "+r" (lines), [p1] "+r" (p1), [p2] "+r" (p2),
-+	  [p3] "+r" (p3), [p4] "+r" (p4), [p5] "+r" (p5)
-+	: [inc] XOR_CONSTANT_CONSTRAINT (256UL)
-+	: "memory");
-+
-+	kernel_fpu_end();
-+}
-+
-+static struct xor_block_template xor_block_sse_pf64 = {
-+	.name = "prefetch64-sse",
-+	.do_2 = xor_sse_2_pf64,
-+	.do_3 = xor_sse_3_pf64,
-+	.do_4 = xor_sse_4_pf64,
-+	.do_5 = xor_sse_5_pf64,
-+};
-+
- #undef LD
- #undef XO1
- #undef XO2
- #undef XO3
- #undef XO4
- #undef ST
-+#undef NOP
-+#undef BLK64
- #undef BLOCK
- 
- #undef XOR_CONSTANT_CONSTRAINT
-@@ -324,4 +493,7 @@ xor_sse_5(unsigned long bytes, unsigned
- # include <asm/xor_64.h>
- #endif
- 
-+#define XOR_SELECT_TEMPLATE(FASTEST) \
-+	AVX_SELECT(FASTEST)
-+
- #endif /* _ASM_X86_XOR_H */
---- 3.7-rc3-x86-xor.orig/arch/x86/include/asm/xor_32.h
-+++ 3.7-rc3-x86-xor/arch/x86/include/asm/xor_32.h
-@@ -543,26 +543,25 @@ static struct xor_block_template xor_blo
- /* Also try the generic routines.  */
- #include <asm-generic/xor.h>
- 
-+/* We force the use of the SSE xor block because it can write around L2.
-+   We may also be able to load into the L1 only depending on how the cpu
-+   deals with a load to a line that is being prefetched.  */
- #undef XOR_TRY_TEMPLATES
- #define XOR_TRY_TEMPLATES				\
- do {							\
--	xor_speed(&xor_block_8regs);			\
--	xor_speed(&xor_block_8regs_p);			\
--	xor_speed(&xor_block_32regs);			\
--	xor_speed(&xor_block_32regs_p);			\
- 	AVX_XOR_SPEED;					\
--	if (cpu_has_xmm)				\
-+	if (cpu_has_xmm) {				\
- 		xor_speed(&xor_block_pIII_sse);		\
--	if (cpu_has_mmx) {				\
-+		xor_speed(&xor_block_sse_pf64);		\
-+	} else if (cpu_has_mmx) {			\
- 		xor_speed(&xor_block_pII_mmx);		\
- 		xor_speed(&xor_block_p5_mmx);		\
-+	} else {					\
-+		xor_speed(&xor_block_8regs);		\
-+		xor_speed(&xor_block_8regs_p);		\
-+		xor_speed(&xor_block_32regs);		\
-+		xor_speed(&xor_block_32regs_p);		\
- 	}						\
- } while (0)
- 
--/* We force the use of the SSE xor block because it can write around L2.
--   We may also be able to load into the L1 only depending on how the cpu
--   deals with a load to a line that is being prefetched.  */
--#define XOR_SELECT_TEMPLATE(FASTEST)			\
--	AVX_SELECT(cpu_has_xmm ? &xor_block_pIII_sse : FASTEST)
--
- #endif /* _ASM_X86_XOR_32_H */
---- 3.7-rc3-x86-xor.orig/arch/x86/include/asm/xor_64.h
-+++ 3.7-rc3-x86-xor/arch/x86/include/asm/xor_64.h
-@@ -13,17 +13,15 @@ static struct xor_block_template xor_blo
- /* Also try the AVX routines */
- #include <asm/xor_avx.h>
- 
-+/* We force the use of the SSE xor block because it can write around L2.
-+   We may also be able to load into the L1 only depending on how the cpu
-+   deals with a load to a line that is being prefetched.  */
- #undef XOR_TRY_TEMPLATES
- #define XOR_TRY_TEMPLATES			\
- do {						\
- 	AVX_XOR_SPEED;				\
-+	xor_speed(&xor_block_sse_pf64);		\
- 	xor_speed(&xor_block_sse);		\
- } while (0)
- 
--/* We force the use of the SSE xor block because it can write around L2.
--   We may also be able to load into the L1 only depending on how the cpu
--   deals with a load to a line that is being prefetched.  */
--#define XOR_SELECT_TEMPLATE(FASTEST) \
--	AVX_SELECT(&xor_block_sse)
--
- #endif /* _ASM_X86_XOR_64_H */
+Wow, looks like I left out the first patch!  The cover letter I think
+only went to lkml.  I have to do a repost, so I'll be sure to send the
+cover to linux-scsi as well, and CC you (and credit you for the idea,
+which I totally forgot to do).  I'll send a repost out today.
 
-
+Cheers,
+Jeff
