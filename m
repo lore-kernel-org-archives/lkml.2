@@ -1,164 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab2KBFR2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 01:17:28 -0400
-Received: from mga14.intel.com ([143.182.124.37]:3816 "EHLO mga14.intel.com"
+	id S1752134Ab2KBFa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 01:30:26 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:36131 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751311Ab2KBFRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 01:17:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,696,1344236400"; 
-   d="scan'208";a="163635556"
-Message-ID: <50935756.4090405@intel.com>
-Date: Fri, 02 Nov 2012 13:17:10 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1750818Ab2KBFaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 01:30:23 -0400
+Date: Fri, 2 Nov 2012 10:33:50 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Anton Arapov <anton@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] uprobes/powerpc: Do not use arch_uprobe_*_step()
+ helpers
+Message-ID: <20121102050350.GE11125@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121028173900.GA14621@redhat.com>
+ <20121028173928.GA14649@redhat.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 5/7] ACPI / PM: Provide device PM functions operating
- on struct acpi_device
-References: <1766582.8gdQKXoi0K@vostro.rjw.lan> <3903921.4RDYB7KMxW@vostro.rjw.lan> <20121030072844.GA6154@aaronlu.sh.intel.com> <2204038.IsGMuMD7u4@vostro.rjw.lan>
-In-Reply-To: <2204038.IsGMuMD7u4@vostro.rjw.lan>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121028173928.GA14649@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110205-8974-0000-0000-0000107C95F4
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00187712; UDB=6.00042514; UTC=2012-11-02
+ 05:00:13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2012 11:20 PM, Rafael J. Wysocki wrote:
-> On Tuesday, October 30, 2012 03:28:45 PM Aaron Lu wrote:
->> On Mon, Oct 29, 2012 at 10:11:20AM +0100, Rafael J. Wysocki wrote:
->>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>
->>> If the caller of acpi_bus_set_power() already has a pointer to the
->>> struct acpi_device object corresponding to the device in question, it
->>> doesn't make sense for it to go through acpi_bus_get_device(), which
->>> may be costly, because it involves acquiring the global ACPI
->>> namespace mutex.
->>>
->>> For this reason, export the function operating on struct acpi_device
->>> objects used internally by acpi_bus_set_power(), so that it may be
->>> called instead of acpi_bus_set_power() in the above case, and change
->>> its name to acpi_device_set_power().
->>>
->>> Additionally, introduce two inline wrappers for checking ACPI PM
->>> capabilities of devices represented by struct acpi_device objects.
->>
->> What about adding yet another wrapper to check power off capability of
->> the device? If device has _PS3 or _PRx, it means the device can be
->> powered off from ACPI's perspective. This is useful for ZPODD when
->> deciding if platform has the required ability to support it.
-> 
-> Sure, no problem with that.  Perhaps you can cut a patch for that
-> on top of this series?
+* Oleg Nesterov <oleg@redhat.com> [2012-10-28 18:39:28]:
 
-Do you think it is reasonable to add a new field to acpi_state.flags to
-represent if we, as OSPM, have a way to put the device into a ACPI
-device state? This field can be set once in acpi_bus_get_power_flags and
-used afterwards.
-
-The valid field of acpi_state.flags is what we have today, and it means
-whether this ACPI device state is valid for the device, but not that if
-OSPM can actually put the device into that power state.
-
-Thanks,
-Aaron
-
+> No functional changes.
 > 
-> Rafael
+> powerpc is the only user of arch_uprobe_enable/disable_step() helpers,
+> but they should die. They can not be used correctly, every arch needs
+> its own implementation (like x86 does). And they do not really help
+> even as initial-and-almost-working code, arch_uprobe_*_xol() hooks can
+> easily use user_enable/disable_single_step() directly.
 > 
+> Change arch_uprobe_*_step() to do nothing, and convert powerpc to use
+> ptrace helpers. This is equally wrong, powerpc needs the arch-specific
+> fixes.
 > 
->>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>> ---
->>>  drivers/acpi/bus.c      |   15 ++++++++++++---
->>>  include/acpi/acpi_bus.h |   11 +++++++++++
->>>  2 files changed, 23 insertions(+), 3 deletions(-)
->>>
->>> Index: linux/drivers/acpi/bus.c
->>> ===================================================================
->>> --- linux.orig/drivers/acpi/bus.c
->>> +++ linux/drivers/acpi/bus.c
->>> @@ -257,7 +257,15 @@ static int __acpi_bus_get_power(struct a
->>>  }
->>>  
->>>  
->>> -static int __acpi_bus_set_power(struct acpi_device *device, int state)
->>> +/**
->>> + * acpi_device_set_power - Set power state of an ACPI device.
->>> + * @device: Device to set the power state of.
->>> + * @state: New power state to set.
->>> + *
->>> + * Callers must ensure that the device is power manageable before using this
->>> + * function.
->>> + */
->>> +int acpi_device_set_power(struct acpi_device *device, int state)
->>>  {
->>>  	int result = 0;
->>>  	acpi_status status = AE_OK;
->>> @@ -341,6 +349,7 @@ static int __acpi_bus_set_power(struct a
->>>  
->>>  	return result;
->>>  }
->>> +EXPORT_SYMBOL(acpi_device_set_power);
->>>  
->>>  
->>>  int acpi_bus_set_power(acpi_handle handle, int state)
->>> @@ -359,7 +368,7 @@ int acpi_bus_set_power(acpi_handle handl
->>>  		return -ENODEV;
->>>  	}
->>>  
->>> -	return __acpi_bus_set_power(device, state);
->>> +	return acpi_device_set_power(device, state);
->>>  }
->>>  EXPORT_SYMBOL(acpi_bus_set_power);
->>>  
->>> @@ -402,7 +411,7 @@ int acpi_bus_update_power(acpi_handle ha
->>>  	if (result)
->>>  		return result;
->>>  
->>> -	result = __acpi_bus_set_power(device, state);
->>> +	result = acpi_device_set_power(device, state);
->>>  	if (!result && state_p)
->>>  		*state_p = state;
->>>  
->>> Index: linux/include/acpi/acpi_bus.h
->>> ===================================================================
->>> --- linux.orig/include/acpi/acpi_bus.h
->>> +++ linux/include/acpi/acpi_bus.h
->>> @@ -338,6 +338,7 @@ acpi_status acpi_bus_get_status_handle(a
->>>  				       unsigned long long *sta);
->>>  int acpi_bus_get_status(struct acpi_device *device);
->>>  int acpi_bus_set_power(acpi_handle handle, int state);
->>> +int acpi_device_set_power(struct acpi_device *device, int state);
->>>  int acpi_bus_update_power(acpi_handle handle, int *state_p);
->>>  bool acpi_bus_power_manageable(acpi_handle handle);
->>>  bool acpi_bus_can_wakeup(acpi_handle handle);
->>> @@ -482,6 +483,16 @@ static inline int acpi_pm_device_sleep_w
->>>  }
->>>  #endif
->>>  
->>> +static inline bool acpi_device_power_manageable(struct acpi_device *adev)
->>> +{
->>> +	return adev->flags.power_manageable;
->>> +}
->>> +
->>> +static inline bool acpi_device_can_wakeup(struct acpi_device *adev)
->>> +{
->>> +	return adev->wakeup.flags.valid;
->>> +}
->>> +
->>>  #else	/* CONFIG_ACPI */
->>>  
->>>  static inline int register_acpi_bus_type(void *bus) { return 0; }
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  arch/powerpc/kernel/uprobes.c |    6 ++++++
+>  kernel/events/uprobes.c       |    2 --
+>  2 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/uprobes.c b/arch/powerpc/kernel/uprobes.c
+> index d2d46d1..bc77834 100644
+> --- a/arch/powerpc/kernel/uprobes.c
+> +++ b/arch/powerpc/kernel/uprobes.c
+> @@ -64,6 +64,8 @@ int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>  	autask->saved_trap_nr = current->thread.trap_nr;
+>  	current->thread.trap_nr = UPROBE_TRAP_NR;
+>  	regs->nip = current->utask->xol_vaddr;
+> +
+> +	user_enable_single_step(current);
+>  	return 0;
+>  }
+> 
+> @@ -119,6 +121,8 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>  	 * to be executed.
+>  	 */
+>  	regs->nip = utask->vaddr + MAX_UINSN_BYTES;
+> +
+> +	user_disable_single_step(current);
+>  	return 0;
+>  }
+> 
+> @@ -162,6 +166,8 @@ void arch_uprobe_abort_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+> 
+>  	current->thread.trap_nr = utask->autask.saved_trap_nr;
+>  	instruction_pointer_set(regs, utask->vaddr);
+> +
+> +	user_disable_single_step(current);
+>  }
+> 
+>  /*
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 672227a..916391e 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1432,12 +1432,10 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+> 
+>  void __weak arch_uprobe_enable_step(struct arch_uprobe *arch)
+>  {
+> -	user_enable_single_step(current);
+>  }
+> 
+>  void __weak arch_uprobe_disable_step(struct arch_uprobe *arch)
+>  {
+> -	user_disable_single_step(current);
+>  }
+> 
+>  /*
+> -- 
+> 1.5.5.1
+> 
 
