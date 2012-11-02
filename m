@@ -1,60 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762442Ab2KBNjM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 09:39:12 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:35429 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300Ab2KBNjF convert rfc822-to-8bit (ORCPT
+	id S1762829Ab2KBNi6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 09:38:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5843 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757890Ab2KBNfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 09:39:05 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
+	Fri, 2 Nov 2012 09:35:02 -0400
+X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=cMueaD29ucMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=N_ud6Yt4TfYA:10 a=20KFwNOVAAAA:8 a=Hu_aRwiWeCxwcz0KctEA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=jAdmATVaeXEJ-bQzdA4A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121102133458.986498053@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 02 Nov 2012 09:32:58 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/16 v3] f2fs: introduce flash-friendly file system
-Date: Fri, 2 Nov 2012 14:39:02 +0100
-User-Agent: KMail/1.13.7 (Linux/3.6.0-tp520; KDE/4.8.4; x86_64; ; )
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
-        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-References: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com> (sfid-20121031_185403_072544_FB971BEB)
-In-Reply-To: <003d01cdb74b$0c3fa420$24beec60$%kim@samsung.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201211021439.02797.Martin@lichtvoll.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 06/22] tracing: Enable comm recording if trace_printk() is used
+References: <20121102133251.998500247@goodmis.org>
+Content-Disposition: inline; filename=0006-tracing-Enable-comm-recording-if-trace_printk-is-use.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 31. Oktober 2012 schrieb Jaegeuk Kim:
-> Change log from v2:
-> 
->  o Fix compilation error for arm [Max]
->  o Move proc entries to debugfs [Greg]
->  o Add i_atime, i_generation, etc [Neil]
->  o Support NFS export [Changman]
->  o Move the f2fs magic number [Marco]
->  o Add s_time_gran [Marco]
->  o Fix f2fs_truncate [Marco]
->  o Enhance f2fs document [Vyacheslav]
->  o Support uuid and add additional comments [Vyacheslav]
->  o Change superblock offset [Vyacheslav]
->  o Fix some bugs and return values [Vyacheslav]
->  o Improve initial mount time [Jaegeuk]
->  o Fix f2fs-tools environment [Mike]
-> 
-> I've set up a git tree in sf.net for f2fs-tools.
-> Please download f2fs-tools by tag: for_patch_set_v3.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I like to try this out.
+From: Steven Rostedt <srostedt@redhat.com>
 
-Do you have kernel code available in some git repo? I didn´t find anything 
-on git.kernel.org? Otherwise I take the patches from your mails.
+If comm recording is not enabled when trace_printk() is used then
+you just get this type of output:
 
-Tools cloned nicely.
+[ adding trace_printk("hello! %d", irq); in do_IRQ ]
 
-Thanks,
--- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+           <...>-2843  [001] d.h.    80.812300: do_IRQ: hello! 14
+           <...>-2734  [002] d.h2    80.824664: do_IRQ: hello! 14
+           <...>-2713  [003] d.h.    80.829971: do_IRQ: hello! 14
+           <...>-2814  [000] d.h.    80.833026: do_IRQ: hello! 14
+
+By enabling the comm recorder when trace_printk is enabled:
+
+       hackbench-6715  [001] d.h.   193.233776: do_IRQ: hello! 21
+            sshd-2659  [001] d.h.   193.665862: do_IRQ: hello! 21
+          <idle>-0     [001] d.h1   193.665996: do_IRQ: hello! 21
+
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c        |   36 ++++++++++++++++++++++++++++++++++--
+ kernel/trace/trace.h        |    1 +
+ kernel/trace/trace_events.c |    3 +++
+ 3 files changed, 38 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index a5411b7..b90a827 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1559,10 +1559,10 @@ static int alloc_percpu_trace_buffer(void)
+ 	return -ENOMEM;
+ }
+=20
++static int buffers_allocated;
++
+ void trace_printk_init_buffers(void)
+ {
+-	static int buffers_allocated;
+-
+ 	if (buffers_allocated)
+ 		return;
+=20
+@@ -1575,6 +1575,34 @@ void trace_printk_init_buffers(void)
+ 	tracing_update_buffers();
+=20
+ 	buffers_allocated =3D 1;
++
++	/*
++	 * trace_printk_init_buffers() can be called by modules.
++	 * If that happens, then we need to start cmdline recording
++	 * directly here. If the global_trace.buffer is already
++	 * allocated here, then this was called by module code.
++	 */
++	if (global_trace.buffer)
++		tracing_start_cmdline_record();
++}
++
++void trace_printk_start_comm(void)
++{
++	/* Start tracing comms if trace printk is set */
++	if (!buffers_allocated)
++		return;
++	tracing_start_cmdline_record();
++}
++
++static void trace_printk_start_stop_comm(int enabled)
++{
++	if (!buffers_allocated)
++		return;
++
++	if (enabled)
++		tracing_start_cmdline_record();
++	else
++		tracing_stop_cmdline_record();
+ }
+=20
+ /**
+@@ -2797,6 +2825,9 @@ static void set_tracer_flags(unsigned int mask, int e=
+nabled)
+=20
+ 	if (mask =3D=3D TRACE_ITER_OVERWRITE)
+ 		ring_buffer_change_overwrite(global_trace.buffer, enabled);
++
++	if (mask =3D=3D TRACE_ITER_PRINTK)
++		trace_printk_start_stop_comm(enabled);
+ }
+=20
+ static ssize_t
+@@ -5099,6 +5130,7 @@ __init static int tracer_alloc_buffers(void)
+=20
+ 	/* Only allocate trace_printk buffers if a trace_printk exists */
+ 	if (__stop___trace_bprintk_fmt !=3D __start___trace_bprintk_fmt)
++		/* Must be called before global_trace.buffer is allocated */
+ 		trace_printk_init_buffers();
+=20
+ 	/* To save memory, keep the ring buffer size to its minimum */
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index c56a233..7824a55 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -841,6 +841,7 @@ extern const char *__start___trace_bprintk_fmt[];
+ extern const char *__stop___trace_bprintk_fmt[];
+=20
+ void trace_printk_init_buffers(void);
++void trace_printk_start_comm(void);
+=20
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(call, struct_name, id, tstruct, print, filter)	\
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index d608d09..dec47e7 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1489,6 +1489,9 @@ static __init int event_trace_enable(void)
+ 		if (ret)
+ 			pr_warn("Failed to enable trace event: %s\n", token);
+ 	}
++
++	trace_printk_start_comm();
++
+ 	return 0;
+ }
+=20
+--=20
+1.7.10.4
+
+
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAABAgAGBQJQk8wDAAoJEOdOSU1xswtM1B0H/ioo0PysX13WonbVXO0d+wby
+wyUjNUdkdaQY+QiU9oMCVRydK3/PV1emgtPCNRHeHOlnwto60D+rqQi2qTt2qOAd
+J5MFe4gjMJ4fzUct/4qjXh7ilzoVKGUySfyVUwvtQ+eg+ZxjQLLVip+UBnJxafpK
+Rs9TJ8bgfI030MUZDYd3vcLe2W9QYp54I/CUUYSQNk0c0lBB0NeiXReA6XMvE3G8
+UX8i9bw78ipu6nzVMIQ5KcBBtNXQkBltfdwk2s+xdSxCHRPLF5H6N8c24C6zMLNj
+fcUuz4G4rJDh18fkEWAJfPa7c9EzvfvXWmzmQO6w2R75OKW6mZrTpFlukl2Flag=
+=lcle
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
