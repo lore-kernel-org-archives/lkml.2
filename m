@@ -1,97 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab2KBOhb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 10:37:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13571 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015Ab2KBOh3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 10:37:29 -0400
-X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wowpZ7sFJ74A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Z-wZqcGM7j4A:10 a=fZvPyAdTvHJ97n_rM5EA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351867045.4004.141.camel@gandalf.local.home>
-Subject: Re: [PATCH 00/32] [RFC] nohz/cpuset: Start discussions on nohz CPUs
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <clark.williams@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>
-Date: Fri, 02 Nov 2012 10:37:25 -0400
-In-Reply-To: <0000013ac180f152-79f05c71-4d38-43b0-9b62-8a71c00dfda7-000000@email.amazonses.com>
-References: <20121029202711.062749374@goodmis.org>
-	 <0000013ac180f152-79f05c71-4d38-43b0-9b62-8a71c00dfda7-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753269Ab2KBOkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 10:40:23 -0400
+Received: from tundra.namei.org ([65.99.196.166]:57160 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750876Ab2KBOkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 10:40:19 -0400
+Date: Sat, 3 Nov 2012 01:41:49 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
+        benh@kernel.crashing.org
+Subject: Re: [PULL v2] IBM vTPM driver update
+In-Reply-To: <20121101203504.GB26935@ennui.austin.ibm.com>
+Message-ID: <alpine.LRH.2.02.1211030141370.31309@tundra.namei.org>
+References: <20121101203504.GB26935@ennui.austin.ibm.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-02 at 14:23 +0000, Christoph Lameter wrote:
-> On Mon, 29 Oct 2012, Steven Rostedt wrote:
-> 
-> > A while ago Frederic posted a series of patches to get an idea on
-> > how to implement nohz cpusets. Where you can add a task to a cpuset
-> > and mark the set to be 'nohz'. When the task runs on a CPU and is
-> > the only task scheduled (nr_running == 1), the tick will stop.
-> > The idea is to give the task the least amount of kernel interference
-> > as possible. If the task doesn't do any system calls (and possibly
-> > even if it does), no timer interrupt will bother it. By using
-> > isocpus and nohz cpuset, a task would be able to achieve true cpu
-> > isolation.
-> 
-> I thought isolcpus was on the way out? If there is no timer interrupt then
-> there will also be no scheduler activity. Why do we need both?
+On Thu, 1 Nov 2012, Kent Yoder wrote:
 
-I probably shouldn't have mentioned isolcpus. I was using that as
-something that is general to get everything off of a cpu (irq affinity
-for example).
+> Hi James,
+> 
+>   This time against security-next...
+
+Thanks, pulled.
 
 > 
-> Also could we have this support without cpusets? There are multiple means
-> to do system segmentation (f.e. cgroups) and something like hz control is
-> pretty basic. Control via some cpumask like irq affinities in f.e.
+> The following changes since commit 61d335dd27c67d656f114c091a46cf95cbeeb77c:
 > 
-> 	/sys/devices/system/cpu/nohz
+>   Merge branch 'security-next-keys' of git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/security-keys into next-queue (2012-10-03 13:00:17 +1000)
 > 
-> or a per cpu flag in
+> are available in the git repository at:
 > 
-> /sys/devices/system/cpu/cpu0/hz
+>   git://github.com/shpedoikal/linux.git tpmdd-11-1-12
 > 
-> would be easier and not be tied to something like cpusets.
+> for you to fetch changes up to b5666502700855a1eb1a15482005b22478b9460e:
+> 
+>   drivers/char/tpm: remove tasklet and cleanup (2012-11-01 15:23:14 -0500)
+> 
+> ----------------------------------------------------------------
+> Ashley Lai (1):
+>       drivers/char/tpm: remove tasklet and cleanup
+> 
+>  drivers/char/tpm/tpm_ibmvtpm.c | 81 +++++++++++++++---------------------------
+>  drivers/char/tpm/tpm_ibmvtpm.h |  5 ++-
+>  2 files changed, 30 insertions(+), 56 deletions(-)
+> 
+> diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
+> index efc4ab3..88a95ea 100644
+> --- a/drivers/char/tpm/tpm_ibmvtpm.c
+> +++ b/drivers/char/tpm/tpm_ibmvtpm.c
+> @@ -38,8 +38,6 @@ static struct vio_device_id tpm_ibmvtpm_device_table[] __devinitdata = {
+>  };
+>  MODULE_DEVICE_TABLE(vio, tpm_ibmvtpm_device_table);
+>  
+> -DECLARE_WAIT_QUEUE_HEAD(wq);
+> -
+>  /**
+>   * ibmvtpm_send_crq - Send a CRQ request
+>   * @vdev:	vio device struct
+> @@ -83,6 +81,7 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+>  {
+>  	struct ibmvtpm_dev *ibmvtpm;
+>  	u16 len;
+> +	int sig;
+>  
+>  	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
+>  
+> @@ -91,22 +90,23 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
+>  		return 0;
+>  	}
+>  
+> -	wait_event_interruptible(wq, ibmvtpm->crq_res.len != 0);
+> +	sig = wait_event_interruptible(ibmvtpm->wq, ibmvtpm->res_len != 0);
+> +	if (sig)
+> +		return -EINTR;
+> +
+> +	len = ibmvtpm->res_len;
+>  
+> -	if (count < ibmvtpm->crq_res.len) {
+> +	if (count < len) {
+>  		dev_err(ibmvtpm->dev,
+>  			"Invalid size in recv: count=%ld, crq_size=%d\n",
+> -			count, ibmvtpm->crq_res.len);
+> +			count, len);
+>  		return -EIO;
+>  	}
+>  
+>  	spin_lock(&ibmvtpm->rtce_lock);
+> -	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, ibmvtpm->crq_res.len);
+> -	memset(ibmvtpm->rtce_buf, 0, ibmvtpm->crq_res.len);
+> -	ibmvtpm->crq_res.valid = 0;
+> -	ibmvtpm->crq_res.msg = 0;
+> -	len = ibmvtpm->crq_res.len;
+> -	ibmvtpm->crq_res.len = 0;
+> +	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, len);
+> +	memset(ibmvtpm->rtce_buf, 0, len);
+> +	ibmvtpm->res_len = 0;
+>  	spin_unlock(&ibmvtpm->rtce_lock);
+>  	return len;
+>  }
+> @@ -273,7 +273,6 @@ static int __devexit tpm_ibmvtpm_remove(struct vio_dev *vdev)
+>  	int rc = 0;
+>  
+>  	free_irq(vdev->irq, ibmvtpm);
+> -	tasklet_kill(&ibmvtpm->tasklet);
+>  
+>  	do {
+>  		if (rc)
+> @@ -372,7 +371,6 @@ static int ibmvtpm_reset_crq(struct ibmvtpm_dev *ibmvtpm)
+>  static int tpm_ibmvtpm_resume(struct device *dev)
+>  {
+>  	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(dev);
+> -	unsigned long flags;
+>  	int rc = 0;
+>  
+>  	do {
+> @@ -387,10 +385,11 @@ static int tpm_ibmvtpm_resume(struct device *dev)
+>  		return rc;
+>  	}
+>  
+> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
+> -	vio_disable_interrupts(ibmvtpm->vdev);
+> -	tasklet_schedule(&ibmvtpm->tasklet);
+> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
+> +	rc = vio_enable_interrupts(ibmvtpm->vdev);
+> +	if (rc) {
+> +		dev_err(dev, "Error vio_enable_interrupts rc=%d\n", rc);
+> +		return rc;
+> +	}
+>  
+>  	rc = ibmvtpm_crq_send_init(ibmvtpm);
+>  	if (rc)
+> @@ -467,7 +466,7 @@ static struct ibmvtpm_crq *ibmvtpm_crq_get_next(struct ibmvtpm_dev *ibmvtpm)
+>  	if (crq->valid & VTPM_MSG_RES) {
+>  		if (++crq_q->index == crq_q->num_entry)
+>  			crq_q->index = 0;
+> -		rmb();
+> +		smp_rmb();
+>  	} else
+>  		crq = NULL;
+>  	return crq;
+> @@ -535,11 +534,9 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
+>  			ibmvtpm->vtpm_version = crq->data;
+>  			return;
+>  		case VTPM_TPM_COMMAND_RES:
+> -			ibmvtpm->crq_res.valid = crq->valid;
+> -			ibmvtpm->crq_res.msg = crq->msg;
+> -			ibmvtpm->crq_res.len = crq->len;
+> -			ibmvtpm->crq_res.data = crq->data;
+> -			wake_up_interruptible(&wq);
+> +			/* len of the data in rtce buffer */
+> +			ibmvtpm->res_len = crq->len;
+> +			wake_up_interruptible(&ibmvtpm->wq);
+>  			return;
+>  		default:
+>  			return;
+> @@ -559,38 +556,19 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
+>  static irqreturn_t ibmvtpm_interrupt(int irq, void *vtpm_instance)
+>  {
+>  	struct ibmvtpm_dev *ibmvtpm = (struct ibmvtpm_dev *) vtpm_instance;
+> -	unsigned long flags;
+> -
+> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
+> -	vio_disable_interrupts(ibmvtpm->vdev);
+> -	tasklet_schedule(&ibmvtpm->tasklet);
+> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
+> -
+> -	return IRQ_HANDLED;
+> -}
+> -
+> -/**
+> - * ibmvtpm_tasklet - Interrupt handler tasklet
+> - * @data:	ibm vtpm device struct
+> - *
+> - * Returns:
+> - *	Nothing
+> - **/
+> -static void ibmvtpm_tasklet(void *data)
+> -{
+> -	struct ibmvtpm_dev *ibmvtpm = data;
+>  	struct ibmvtpm_crq *crq;
+> -	unsigned long flags;
+>  
+> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
+> +	/* while loop is needed for initial setup (get version and
+> +	 * get rtce_size). There should be only one tpm request at any
+> +	 * given time.
+> +	 */
+>  	while ((crq = ibmvtpm_crq_get_next(ibmvtpm)) != NULL) {
+>  		ibmvtpm_crq_process(crq, ibmvtpm);
+>  		crq->valid = 0;
+> -		wmb();
+> +		smp_wmb();
+>  	}
+>  
+> -	vio_enable_interrupts(ibmvtpm->vdev);
+> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
+> +	return IRQ_HANDLED;
+>  }
+>  
+>  /**
+> @@ -650,9 +628,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
+>  		goto reg_crq_cleanup;
+>  	}
+>  
+> -	tasklet_init(&ibmvtpm->tasklet, (void *)ibmvtpm_tasklet,
+> -		     (unsigned long)ibmvtpm);
+> -
+>  	rc = request_irq(vio_dev->irq, ibmvtpm_interrupt, 0,
+>  			 tpm_ibmvtpm_driver_name, ibmvtpm);
+>  	if (rc) {
+> @@ -666,13 +641,14 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
+>  		goto init_irq_cleanup;
+>  	}
+>  
+> +	init_waitqueue_head(&ibmvtpm->wq);
+> +
+>  	crq_q->index = 0;
+>  
+>  	ibmvtpm->dev = dev;
+>  	ibmvtpm->vdev = vio_dev;
+>  	chip->vendor.data = (void *)ibmvtpm;
+>  
+> -	spin_lock_init(&ibmvtpm->lock);
+>  	spin_lock_init(&ibmvtpm->rtce_lock);
+>  
+>  	rc = ibmvtpm_crq_send_init(ibmvtpm);
+> @@ -689,7 +665,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
+>  
+>  	return rc;
+>  init_irq_cleanup:
+> -	tasklet_kill(&ibmvtpm->tasklet);
+>  	do {
+>  		rc1 = plpar_hcall_norets(H_FREE_CRQ, vio_dev->unit_address);
+>  	} while (rc1 == H_BUSY || H_IS_LONG_BUSY(rc1));
+> diff --git a/drivers/char/tpm/tpm_ibmvtpm.h b/drivers/char/tpm/tpm_ibmvtpm.h
+> index 4296eb4..bd82a79 100644
+> --- a/drivers/char/tpm/tpm_ibmvtpm.h
+> +++ b/drivers/char/tpm/tpm_ibmvtpm.h
+> @@ -38,13 +38,12 @@ struct ibmvtpm_dev {
+>  	struct vio_dev *vdev;
+>  	struct ibmvtpm_crq_queue crq_queue;
+>  	dma_addr_t crq_dma_handle;
+> -	spinlock_t lock;
+> -	struct tasklet_struct tasklet;
+>  	u32 rtce_size;
+>  	void __iomem *rtce_buf;
+>  	dma_addr_t rtce_dma_handle;
+>  	spinlock_t rtce_lock;
+> -	struct ibmvtpm_crq crq_res;
+> +	wait_queue_head_t wq;
+> +	u16 res_len;
+>  	u32 vtpm_version;
+>  };
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Frederic will have to answer this. I was just starting with his patches.
-Note, we are holding off this work for now until Frederic's other work
-is done (the irq_work and printk updates).
-
-> 
-> also it would be best to sync this conceptually with the processors
-> enabled for rcu processing.
-
-Processors can be disabled for rcu processing? Or are you talking about
-Paul's new work of offloading rcu callbacks?
-
-> 
-> Maybe have a series of cpumasks in /sys/devices/system/cpu/ ?
-> 
-> > This has been long asked for by those in the RT community. If a task
-> > requires uninterruptible CPU time, this would be able to give a task
-> > that, even without the full PREEMPT-RT patch set.
-> 
-> Also those interested in low latency are very very interested in this
-> feature in particular in support without any preempt support on in the
-> kernel.
-> 
-
-Yep understood. We really need to get things rolling.
-
--- Steve
-
-
+-- 
+James Morris
+<jmorris@namei.org>
