@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760500Ab2KBJsg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 05:48:36 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:5612 "EHLO
-	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753889Ab2KBJse (ORCPT
+	id S933521Ab2KBJtH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 05:49:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54951 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760091Ab2KBJtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 05:48:34 -0400
-X-IronPort-AV: E=Sophos;i="4.80,697,1344204000"; 
-   d="scan'208";a="161170867"
-Date: Fri, 2 Nov 2012 10:48:30 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Konstantin Ryabitsev <mricon@kernel.org>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>
-Subject: Re: Expressing linux-next collateral evolutions in formal grammar
-In-Reply-To: <CAB=NE6Xv5Lag0J2U3CHK9huzMQLyJEZmdrcqWWomn48w=xUnag@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1211021045200.2014@localhost6.localdomain6>
-References: <CAB=NE6Xv5Lag0J2U3CHK9huzMQLyJEZmdrcqWWomn48w=xUnag@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Fri, 2 Nov 2012 05:49:04 -0400
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-serial@vger.kernel.org
+Cc: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de
+Subject: [PATCH v3] linux,stdout-path helper
+Date: Fri,  2 Nov 2012 10:48:51 +0100
+Message-Id: <1351849734-9836-1-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The way I would envision this to be easier to manage is to break them
-> down by subsystem and the reviewer can then go and read the grammar
-> for their own subsystem of preference. The long term benefit of this
-> is that even if folks don't use SmPL for collateral evolutions we have
-> a possibility here of being able to backport a collateral evolution by
-> using the inverse of the SmPL grammar, if we can get to the point of
-> coming up with formal and proper grammar on each collateral evolution.
->
-> Thoughts?
+The following adds a helper for matching the linux,stdout-path property
+in the chosen node and makes use of it in the i.MX serial driver.
 
-I had liked the idea of lwn, because that makes it public but doesn't 
-bother anyone.  But another option would be to just send an email to the 
-relevant maintainer?  Perhaps it would be better to send the email just 
-to the specific maintainer for the file, and not all the way up the 
-maintainer hierarchy, because these would be just suggestions of things to 
-look at, and not actual patch proposals.
+changes since v2:
 
-thanks,
-julia
+- move helper to OF core and make it independent of serial devices
+
+changes since v1:
+
+- move it out of the i.MX serial driver and make it generic for serial
+  devices.
+
+----------------------------------------------------------------
+Sascha Hauer (3):
+      OF: Add helper for matching against linux,stdout-path
+      serial: i.MX: Make console support non optional
+      serial: i.MX: evaluate linux,stdout-path property
+
+ drivers/of/Kconfig         |    3 +++
+ drivers/of/Makefile        |    1 +
+ drivers/of/of_stdout.c     |   27 +++++++++++++++++++++++++++
+ drivers/tty/serial/Kconfig |   16 +---------------
+ drivers/tty/serial/imx.c   |   12 +++++-------
+ include/linux/of_stdout.h  |   24 ++++++++++++++++++++++++
+ 6 files changed, 61 insertions(+), 22 deletions(-)
+ create mode 100644 drivers/of/of_stdout.c
+ create mode 100644 include/linux/of_stdout.h
