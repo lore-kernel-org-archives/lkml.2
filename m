@@ -1,245 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992640Ab2KBKdL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 06:33:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54529 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab2KBKdJ (ORCPT
+	id S1754809Ab2KBKjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 06:39:40 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49411 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752520Ab2KBKji convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 06:33:09 -0400
-Date: Fri, 2 Nov 2012 03:32:48 -0700
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-279f1461432ccdec0b98c0bcbe0a8e2c0f6fdda5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de
-In-Reply-To: <1350941878.6017.31.camel@sbsiddha-desk.sc.intel.com>
-References: <1350941878.6017.31.camel@sbsiddha-desk.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/timers] x86: apic:
-  Use tsc deadline for oneshot when available
-Git-Commit-ID: 279f1461432ccdec0b98c0bcbe0a8e2c0f6fdda5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 02 Nov 2012 03:32:54 -0700 (PDT)
+	Fri, 2 Nov 2012 06:39:38 -0400
+Content-Type: text/plain; charset=iso-8859-1
+Mime-Version: 1.0 (Mac OS X Mail 6.1 \(1498\))
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <CA+Bv8Xb4eAQ2po-nwCT6ZXNdaU7cwshVaGC795e3GYZ+B7L-jQ@mail.gmail.com>
+Date: Fri, 2 Nov 2012 11:39:41 +0100
+Cc: balbi@ti.com, Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <041C30E9-0CD2-4CF4-823A-E27B7BFF1BE1@dominion.thruhere.net>
+References: <20121101110418.GF410@arwen.pp.htv.fi> <3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com> <20121101124025.GA12489@arwen.pp.htv.fi> <A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com> <20121101131609.GC12489@arwen.pp.htv.fi> <E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com> <20121101135148.382aec00@pyramind.ukuu.org.uk> <9F25E89E-9194-4725-8A8C-053DCBADA1DB@antoniou-consulting.com> <20121101220518.GE14982@arwen.pp.htv.fi> <CA+Bv8XbAvEXe=zDaA8W2+ROD2duYMRcJu4-bms31OH=V_ScKow@mail.gmail.com> <20121102085718.GF17063@arwen.pp.htv.fi> <CA+Bv8Xb4eAQ2po-nwCT6ZXNdaU7cwshVaGC795e3GYZ+B7L-jQ@mail.gmail.com>
+To: Russ Dill <Russ.Dill@ti.com>
+X-Mailer: Apple Mail (2.1498)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  279f1461432ccdec0b98c0bcbe0a8e2c0f6fdda5
-Gitweb:     http://git.kernel.org/tip/279f1461432ccdec0b98c0bcbe0a8e2c0f6fdda5
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Mon, 22 Oct 2012 14:37:58 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 2 Nov 2012 11:23:37 +0100
 
-x86: apic: Use tsc deadline for oneshot when available
+Op 2 nov. 2012, om 10:42 heeft Russ Dill <Russ.Dill@ti.com> het volgende geschreven:
 
-If the TSC deadline mode is supported, LAPIC timer one-shot mode can be
-implemented using IA32_TSC_DEADLINE MSR. An interrupt will be generated
-when the TSC value equals or exceeds the value in the IA32_TSC_DEADLINE
-MSR.
+> On Fri, Nov 2, 2012 at 1:57 AM, Felipe Balbi <balbi@ti.com> wrote:
+>> Hi,
+>> 
+>> On Thu, Nov 01, 2012 at 04:49:23PM -0700, Russ Dill wrote:
+>>> On Thu, Nov 1, 2012 at 3:05 PM, Felipe Balbi <balbi@ti.com> wrote:
+>>>> HI,
+>>>> 
+>>>> On Thu, Nov 01, 2012 at 03:59:50PM +0200, Pantelis Antoniou wrote:
+>>>>> Hi Alan,
+>>>>> 
+>>>>> On Nov 1, 2012, at 3:51 PM, Alan Cox wrote:
+>>>>> 
+>>>>>>> What they want, and what every user wants, is I plug this board in, and
+>>>>>>> the driver make sure everything is loaded and ready. No, the end users
+>>>>>>> don't want to see any of the implementation details of how the bitfile
+>>>>>>> is transported; the driver can handle it.
+>>>>>> 
+>>>>>> That doesn't necessarily make it a bus merely some kind of hotplug
+>>>>>> enumeration of devices. That should all work properly both for devices
+>>>>>> and busses with spi and i²c as the final bits needed for it got fixed
+>>>>>> some time ago.
+>>>>>> 
+>>>>>> In an ideal world you don't want to be writing custom drivers for stuff.
+>>>>>> If your cape routes an i²c serial device to the existing system i²c
+>>>>>> busses then you want to just create an instance of any existing driver on
+>>>>>> the existing i²c bus not create a whole new layer of goop.
+>>>>>> 
+>>>>>> It does need to do the plumbing and resource management for the plumbing
+>>>>>> but thats not the same as being a bus.
+>>>>>> 
+>>>>>> Alan
+>>>>> 
+>>>>> 
+>>>>> Fair enough. But there's no such thing a 'hotplug enumeration
+>>>>> construct' in Linux yet, and a bus is the closest thing to it. It does
+>>>>> take advantage of the nice way device code matches drivers and devices
+>>>>> though.
+>>>>> 
+>>>>> I'm afraid that having the I2C/SPI drivers doing the detection won't
+>>>>> work.  The capes can have arbitrary I2C/SPI devices (and even more
+>>>>> weird components).  There is no way to assure for example that the I2C
+>>>>> device responding to address 'foo' in cape A is the same I2C device
+>>>>> responding to the same address in cape B.
+>>>> 
+>>>> your ->detect() method should take care of that.
+>>> 
+>>> There isn't some magical serial number in I²C devices that a
+>>> ->detect() method can read and the implementation of I²C is somewhat
+>>> flexible. One devices read may be another devices write. A detect
+>> 
+>> look at what other drivers do. You can read a revision register, you can
+>> write a command and see if the device responds as expected, it doesn't
+>> matter.
+> 
+> Since a "revision" register isn't required by the I²C spec, it isn't
+> implemented on a huge number of chips. Also, having a few dozen probe
+> routines come though and write to random address of every single I²C
+> device can a) take a really long time, and b) have quite a few
+> unintended side effects.
+> 
+>>> method that only performs reads could easily toggle a gpio that resets
+>>> the board, rewrite and eeprom, or set the printer on fire. If you
+>> 
+>> how ? It's just a read.
+> 
+> Because the I²C spec is incredibly flexible. For a lot of devices,
+> reading from a register is done by writing the register address, and
+> then reading the contents. For devices that don't implement registers
+> in that way (such as many eeproms), this is just a write.
+> 
+>>> browse through various detect functions, yes, some of them key off an
+>>> ID, but a lot of them just check various registers to see if certain
+>>> bits are zero, or certain bits are one. A lot of I²C devices I've
+>>> dealt with have no good way of probing them, especially GPIO chips
+>>> (you'll notice none of the I²C GPIO expanders have detect functions)
+>> 
+>> it doesn't mean it can't be done.
+> 
+> Really? Please, do tell how you would write a detect function for a
+> PCA9534. It has 4 registers, an input port registers, an output port
+> register, a polarity inversion register, and a configuration register.
+> And don't forget, since we are probing, every detect routine for every
+> I²C driver will have to run with every I²C address on every bus,
+> possibly with both address formats.
 
-This enables us to skip the APIC calibration during boot. Also, in
-xapic mode, this enables us to skip the uncached apic access to re-arm
-the APIC timer.
+Worse, things like early revisions of the picoDLP projector will erase their firmware if you do a linear scan through all addresses. 
 
-As this timer ticks at the high frequency TSC rate, we use the
-TSC_DIVISOR (32) to work with the 32-bit restrictions in the
-clockevent API's to avoid 64-bit divides etc (frequency is u32 and
-"unsigned long" in the set_next_event(), max_delta limits the next
-event to 32-bit for 32-bit kernel).
+regards,
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: venki@google.com
-Cc: len.brown@intel.com
-Link: http://lkml.kernel.org/r/1350941878.6017.31.camel@sbsiddha-desk.sc.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- Documentation/kernel-parameters.txt |    4 ++
- arch/x86/include/asm/msr-index.h    |    2 +
- arch/x86/kernel/apic/apic.c         |   73 +++++++++++++++++++++++++---------
- 3 files changed, 59 insertions(+), 20 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 9776f06..4aa9ca0 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1304,6 +1304,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	lapic		[X86-32,APIC] Enable the local APIC even if BIOS
- 			disabled it.
- 
-+	lapic=		[x86,APIC] "notscdeadline" Do not use TSC deadline
-+			value for LAPIC timer one-shot implementation. Default
-+			back to the programmable timer unit in the LAPIC.
-+
- 	lapic_timer_c2_ok	[X86,APIC] trust the local apic timer
- 			in C2 power state.
- 
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index 7f0edce..e400cdb 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -337,6 +337,8 @@
- #define MSR_IA32_MISC_ENABLE_TURBO_DISABLE	(1ULL << 38)
- #define MSR_IA32_MISC_ENABLE_IP_PREF_DISABLE	(1ULL << 39)
- 
-+#define MSR_IA32_TSC_DEADLINE		0x000006E0
-+
- /* P4/Xeon+ specific */
- #define MSR_IA32_MCG_EAX		0x00000180
- #define MSR_IA32_MCG_EBX		0x00000181
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index b17416e..b994cc8 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -90,21 +90,6 @@ EXPORT_EARLY_PER_CPU_SYMBOL(x86_bios_cpu_apicid);
-  */
- DEFINE_EARLY_PER_CPU_READ_MOSTLY(int, x86_cpu_to_logical_apicid, BAD_APICID);
- 
--/*
-- * Knob to control our willingness to enable the local APIC.
-- *
-- * +1=force-enable
-- */
--static int force_enable_local_apic __initdata;
--/*
-- * APIC command line parameters
-- */
--static int __init parse_lapic(char *arg)
--{
--	force_enable_local_apic = 1;
--	return 0;
--}
--early_param("lapic", parse_lapic);
- /* Local APIC was disabled by the BIOS and enabled by the kernel */
- static int enabled_via_apicbase;
- 
-@@ -133,6 +118,25 @@ static inline void imcr_apic_to_pic(void)
- }
- #endif
- 
-+/*
-+ * Knob to control our willingness to enable the local APIC.
-+ *
-+ * +1=force-enable
-+ */
-+static int force_enable_local_apic __initdata;
-+/*
-+ * APIC command line parameters
-+ */
-+static int __init parse_lapic(char *arg)
-+{
-+	if (config_enabled(CONFIG_X86_32) && !arg)
-+		force_enable_local_apic = 1;
-+	else if (!strncmp(arg, "notscdeadline", 13))
-+		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
-+	return 0;
-+}
-+early_param("lapic", parse_lapic);
-+
- #ifdef CONFIG_X86_64
- static int apic_calibrate_pmtmr __initdata;
- static __init int setup_apicpmtimer(char *s)
-@@ -315,6 +319,7 @@ int lapic_get_maxlvt(void)
- 
- /* Clock divisor */
- #define APIC_DIVISOR 16
-+#define TSC_DIVISOR  32
- 
- /*
-  * This function sets up the local APIC timer, with a timeout of
-@@ -333,6 +338,9 @@ static void __setup_APIC_LVTT(unsigned int clocks, int oneshot, int irqen)
- 	lvtt_value = LOCAL_TIMER_VECTOR;
- 	if (!oneshot)
- 		lvtt_value |= APIC_LVT_TIMER_PERIODIC;
-+	else if (boot_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER))
-+		lvtt_value |= APIC_LVT_TIMER_TSCDEADLINE;
-+
- 	if (!lapic_is_integrated())
- 		lvtt_value |= SET_APIC_TIMER_BASE(APIC_TIMER_BASE_DIV);
- 
-@@ -341,6 +349,11 @@ static void __setup_APIC_LVTT(unsigned int clocks, int oneshot, int irqen)
- 
- 	apic_write(APIC_LVTT, lvtt_value);
- 
-+	if (lvtt_value & APIC_LVT_TIMER_TSCDEADLINE) {
-+		printk_once(KERN_DEBUG "TSC deadline timer enabled\n");
-+		return;
-+	}
-+
- 	/*
- 	 * Divide PICLK by 16
- 	 */
-@@ -453,6 +466,16 @@ static int lapic_next_event(unsigned long delta,
- 	return 0;
- }
- 
-+static int lapic_next_deadline(unsigned long delta,
-+			       struct clock_event_device *evt)
-+{
-+	u64 tsc;
-+
-+	rdtscll(tsc);
-+	wrmsrl(MSR_IA32_TSC_DEADLINE, tsc + (((u64) delta) * TSC_DIVISOR));
-+	return 0;
-+}
-+
- /*
-  * Setup the lapic timer in periodic or oneshot mode
-  */
-@@ -533,7 +556,15 @@ static void __cpuinit setup_APIC_timer(void)
- 	memcpy(levt, &lapic_clockevent, sizeof(*levt));
- 	levt->cpumask = cpumask_of(smp_processor_id());
- 
--	clockevents_register_device(levt);
-+	if (this_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER)) {
-+		levt->features &= ~(CLOCK_EVT_FEAT_PERIODIC |
-+				    CLOCK_EVT_FEAT_DUMMY);
-+		levt->set_next_event = lapic_next_deadline;
-+		clockevents_config_and_register(levt,
-+						(tsc_khz / TSC_DIVISOR) * 1000,
-+						0xF, ~0UL);
-+	} else
-+		clockevents_register_device(levt);
- }
- 
- /*
-@@ -661,7 +692,9 @@ static int __init calibrate_APIC_clock(void)
- 	 * in the clockevent structure and return.
- 	 */
- 
--	if (lapic_timer_frequency) {
-+	if (boot_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER)) {
-+		return 0;
-+	} else if (lapic_timer_frequency) {
- 		apic_printk(APIC_VERBOSE, "lapic timer already calibrated %d\n",
- 				lapic_timer_frequency);
- 		lapic_clockevent.mult = div_sc(lapic_timer_frequency/APIC_DIVISOR,
-@@ -674,6 +707,9 @@ static int __init calibrate_APIC_clock(void)
- 		return 0;
- 	}
- 
-+	apic_printk(APIC_VERBOSE, "Using local APIC timer interrupts.\n"
-+		    "calibrating APIC timer ...\n");
-+
- 	local_irq_disable();
- 
- 	/* Replace the global interrupt handler */
-@@ -811,9 +847,6 @@ void __init setup_boot_APIC_clock(void)
- 		return;
- 	}
- 
--	apic_printk(APIC_VERBOSE, "Using local APIC timer interrupts.\n"
--		    "calibrating APIC timer ...\n");
--
- 	if (calibrate_APIC_clock()) {
- 		/* No broadcast on UP ! */
- 		if (num_possible_cpus() > 1)
+Koen
