@@ -1,93 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935114Ab2KBKVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 06:21:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64532 "EHLO mx1.redhat.com"
+	id S965863Ab2KBKWH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 06:22:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49761 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933559Ab2KBKVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 06:21:05 -0400
-Date: Fri, 2 Nov 2012 15:50:47 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: sjur.brandeland@stericsson.com, "Michael S. Tsirkin" <mst@redhat.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, sjurbren@gmail.com
-Subject: Re: [PATCHv7 4/4] virtio_console: Add support for remoteproc serial
-Message-ID: <20121102102047.GE10483@amit.redhat.com>
-References: <1350287856-5284-1-git-send-email-sjur.brandeland@stericsson.com>
- <1350287856-5284-5-git-send-email-sjur.brandeland@stericsson.com>
- <878vayhsca.fsf@rustcorp.com.au>
- <20121101073951.GA17012@amit.redhat.com>
- <87r4oc52ov.fsf@rustcorp.com.au>
+	id S933559Ab2KBKWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 06:22:05 -0400
+Date: Fri, 2 Nov 2012 11:21:59 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wen Congyang <wency@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Jiang Liu <liuj97@gmail.com>, bsingharora@gmail.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        paul.gortmaker@windriver.com, Tang Chen <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH] memcg: fix hotplugged memory zone oops
+Message-ID: <20121102102159.GA24073@dhcp22.suse.cz>
+References: <505187D4.7070404@cn.fujitsu.com>
+ <20120913205935.GK1560@cmpxchg.org>
+ <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
+ <507CF789.6050307@cn.fujitsu.com>
+ <alpine.LSU.2.00.1210181129180.2137@eggly.anvils>
+ <20121018220306.GA1739@cmpxchg.org>
+ <alpine.LNX.2.00.1211011822190.20048@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87r4oc52ov.fsf@rustcorp.com.au>
+In-Reply-To: <alpine.LNX.2.00.1211011822190.20048@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Fri) 02 Nov 2012 [09:52:08], Rusty Russell wrote:
-> Amit Shah <amit.shah@redhat.com> writes:
-> > On (Tue) 23 Oct 2012 [12:17:49], Rusty Russell wrote:
-> >> sjur.brandeland@stericsson.com writes:
-> >> > From: Sjur Brændeland <sjur.brandeland@stericsson.com>
-> >
-> >> > @@ -1415,7 +1524,16 @@ static void remove_port_data(struct port *port)
-> >> >  
-> >> >  	/* Remove buffers we queued up for the Host to send us data in. */
-> >> >  	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
-> >> > -		free_buf(buf);
-> >> > +		free_buf(buf, true);
-> >> > +
-> >> > +	/*
-> >> > +	 * Remove buffers from out queue for rproc-serial. We cannot afford
-> >> > +	 * to leak any DMA mem, so reclaim this memory even if this might be
-> >> > +	 * racy for the remote processor.
-> >> > +	 */
-> >> > +	if (is_rproc_serial(port->portdev->vdev))
-> >> > +		while ((buf = virtqueue_detach_unused_buf(port->out_vq)))
-> >> > +			free_buf(buf, true);
-> >> >  }
-> >> 
-> >> This seems wrong; either this is needed even if !is_rproc_serial(), or
-> >> it's not necessary as the out_vq is empty.
-> >> 
-> >> Every path I can see has the device reset (in which case the queues
-> >> should not be active), or we got a VIRTIO_CONSOLE_PORT_REMOVE event (in
-> >> which case, the same).
-> >> 
-> >> I think we can have non-blocking writes which could leave buffers in
-> >> out_vq: Amit?
-> >
-> > Those get 'reclaimed' just above this hunk:
-> >
-> >
-> > static void remove_port_data(struct port *port)
-> > {
-> > 	struct port_buffer *buf;
-> >
-> > 	/* Remove unused data this port might have received. */
-> > 	discard_port_data(port);
-> >
-> > 	reclaim_consumed_buffers(port);
-> >
-> > 	/* Remove buffers we queued up for the Host to send us data in. */
-> > 	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
-> > 	      free_buf(buf, true);
+On Thu 01-11-12 18:28:02, Hugh Dickins wrote:
+> When MEMCG is configured on (even when it's disabled by boot option),
+> when adding or removing a page to/from its lru list, the zone pointer
+> used for stats updates is nowadays taken from the struct lruvec.
+> (On many configurations, calculating zone from page is slower.)
 > 
-> No, that's pending input buffers, not output buffers.
+> But we have no code to update all the lruvecs (per zone, per memcg)
+> when a memory node is hotadded.  Here's an extract from the oops which
+> results when running numactl to bind a program to a newly onlined node:
+> 
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000f60
+> IP: [<ffffffff811870b9>] __mod_zone_page_state+0x9/0x60
+> PGD 0 
+> Oops: 0000 [#1] SMP 
+> CPU 2 
+> Pid: 1219, comm: numactl Not tainted 3.6.0-rc5+ #180 Bochs Bochs
+> Process numactl (pid: 1219, threadinfo ffff880039abc000, task ffff8800383c4ce0)
+> Stack:
+>  ffff880039abdaf8 ffffffff8117390f ffff880039abdaf8 000000008167c601
+>  ffffffff81174162 ffff88003a480f00 0000000000000001 ffff8800395e0000
+>  ffff88003dbd0e80 0000000000000282 ffff880039abdb48 ffffffff81174181
+> Call Trace:
+>  [<ffffffff8117390f>] __pagevec_lru_add_fn+0xdf/0x140
+>  [<ffffffff81174181>] pagevec_lru_move_fn+0xb1/0x100
+>  [<ffffffff811741ec>] __pagevec_lru_add+0x1c/0x30
+>  [<ffffffff81174383>] lru_add_drain_cpu+0xa3/0x130
+>  [<ffffffff8117443f>] lru_add_drain+0x2f/0x40
+>  ...
+> 
+> The natural solution might be to use a memcg callback whenever memory
+> is hotadded; but that solution has not been scoped out, and it happens
+> that we do have an easy location at which to update lruvec->zone.  The
+> lruvec pointer is discovered either by mem_cgroup_zone_lruvec() or by
+> mem_cgroup_page_lruvec(), and both of those do know the right zone.
+> 
+> So check and set lruvec->zone in those; and remove the inadequate
+> attempt to set lruvec->zone from lruvec_init(), which is called
+> before NODE_DATA(node) has been allocated in such cases.
+> 
+> Ah, there was one exceptionr.  For no particularly good reason,
+> mem_cgroup_force_empty_list() has its own code for deciding lruvec.
+> Change it to use the standard mem_cgroup_zone_lruvec() and
+> mem_cgroup_get_lru_size() too.  In fact it was already safe against
+> such an oops (the lru lists in danger could only be empty),
+> but we're better proofed against future changes this way.
+> 
+> Reported-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Cc: Wen Congyang <wency@cn.fujitsu.com>
+> Cc: stable@vger.kernel.org
 
-You're right.  Nice catch.
+OK, it adds "an overhead" also when there is no hotadd going on but this
+is just one additional mem access&cmp&je so it shouldn't be noticable
+(lruvec->zone is used most of the time later so it not a pointless
+load).
+It is also easier to backport for stable. But is there any reason to fix
+it later properly in the hotadd hook?
 
-Sjur, can you remove the WARN_ON in your latest series, even generic
-ports may have buffers in the outq.
+Anyway
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-It'll also need to be done in the port_fops_release() function.  Let
-me know if you prefer I send a patch instead.
+Thanks!
+> ---
+> I've marked this for stable (3.6) since we introduced the problem
+> in 3.5 (now closed to stable); but I have no idea if this is the
+> only fix needed to get memory hotadd working with memcg in 3.6,
+> and received no answer when I enquired twice before.
+> 
+>  include/linux/mmzone.h |    2 -
+>  mm/memcontrol.c        |   46 +++++++++++++++++++++++++++++----------
+>  mm/mmzone.c            |    6 -----
+>  mm/page_alloc.c        |    2 -
+>  4 files changed, 38 insertions(+), 18 deletions(-)
+> 
+> --- 3.7-rc3/include/linux/mmzone.h	2012-10-14 16:16:57.665308933 -0700
+> +++ linux/include/linux/mmzone.h	2012-11-01 14:31:04.284185741 -0700
+> @@ -752,7 +752,7 @@ extern int init_currently_empty_zone(str
+>  				     unsigned long size,
+>  				     enum memmap_context context);
+>  
+> -extern void lruvec_init(struct lruvec *lruvec, struct zone *zone);
+> +extern void lruvec_init(struct lruvec *lruvec);
+>  
+>  static inline struct zone *lruvec_zone(struct lruvec *lruvec)
+>  {
+> --- 3.7-rc3/mm/memcontrol.c	2012-10-14 16:16:58.341309118 -0700
+> +++ linux/mm/memcontrol.c	2012-11-01 14:31:04.284185741 -0700
+> @@ -1055,12 +1055,24 @@ struct lruvec *mem_cgroup_zone_lruvec(st
+>  				      struct mem_cgroup *memcg)
+>  {
+>  	struct mem_cgroup_per_zone *mz;
+> +	struct lruvec *lruvec;
+>  
+> -	if (mem_cgroup_disabled())
+> -		return &zone->lruvec;
+> +	if (mem_cgroup_disabled()) {
+> +		lruvec = &zone->lruvec;
+> +		goto out;
+> +	}
+>  
+>  	mz = mem_cgroup_zoneinfo(memcg, zone_to_nid(zone), zone_idx(zone));
+> -	return &mz->lruvec;
+> +	lruvec = &mz->lruvec;
+> +out:
+> +	/*
+> +	 * Since a node can be onlined after the mem_cgroup was created,
+> +	 * we have to be prepared to initialize lruvec->zone here;
+> +	 * and if offlined then reonlined, we need to reinitialize it.
+> +	 */
+> +	if (unlikely(lruvec->zone != zone))
+> +		lruvec->zone = zone;
+> +	return lruvec;
+>  }
+>  
+>  /*
+> @@ -1087,9 +1099,12 @@ struct lruvec *mem_cgroup_page_lruvec(st
+>  	struct mem_cgroup_per_zone *mz;
+>  	struct mem_cgroup *memcg;
+>  	struct page_cgroup *pc;
+> +	struct lruvec *lruvec;
+>  
+> -	if (mem_cgroup_disabled())
+> -		return &zone->lruvec;
+> +	if (mem_cgroup_disabled()) {
+> +		lruvec = &zone->lruvec;
+> +		goto out;
+> +	}
+>  
+>  	pc = lookup_page_cgroup(page);
+>  	memcg = pc->mem_cgroup;
+> @@ -1107,7 +1122,16 @@ struct lruvec *mem_cgroup_page_lruvec(st
+>  		pc->mem_cgroup = memcg = root_mem_cgroup;
+>  
+>  	mz = page_cgroup_zoneinfo(memcg, page);
+> -	return &mz->lruvec;
+> +	lruvec = &mz->lruvec;
+> +out:
+> +	/*
+> +	 * Since a node can be onlined after the mem_cgroup was created,
+> +	 * we have to be prepared to initialize lruvec->zone here;
+> +	 * and if offlined then reonlined, we need to reinitialize it.
+> +	 */
+> +	if (unlikely(lruvec->zone != zone))
+> +		lruvec->zone = zone;
+> +	return lruvec;
+>  }
+>  
+>  /**
+> @@ -3688,17 +3712,17 @@ unsigned long mem_cgroup_soft_limit_recl
+>  static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+>  				int node, int zid, enum lru_list lru)
+>  {
+> -	struct mem_cgroup_per_zone *mz;
+> +	struct lruvec *lruvec;
+>  	unsigned long flags, loop;
+>  	struct list_head *list;
+>  	struct page *busy;
+>  	struct zone *zone;
+>  
+>  	zone = &NODE_DATA(node)->node_zones[zid];
+> -	mz = mem_cgroup_zoneinfo(memcg, node, zid);
+> -	list = &mz->lruvec.lists[lru];
+> +	lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+> +	list = &lruvec->lists[lru];
+>  
+> -	loop = mz->lru_size[lru];
+> +	loop = mem_cgroup_get_lru_size(lruvec, lru);
+>  	/* give some margin against EBUSY etc...*/
+>  	loop += 256;
+>  	busy = NULL;
+> @@ -4736,7 +4760,7 @@ static int alloc_mem_cgroup_per_zone_inf
+>  
+>  	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
+>  		mz = &pn->zoneinfo[zone];
+> -		lruvec_init(&mz->lruvec, &NODE_DATA(node)->node_zones[zone]);
+> +		lruvec_init(&mz->lruvec);
+>  		mz->usage_in_excess = 0;
+>  		mz->on_tree = false;
+>  		mz->memcg = memcg;
+> --- 3.7-rc3/mm/mmzone.c	2012-09-30 16:47:46.000000000 -0700
+> +++ linux/mm/mmzone.c	2012-11-01 14:31:04.284185741 -0700
+> @@ -87,7 +87,7 @@ int memmap_valid_within(unsigned long pf
+>  }
+>  #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
+>  
+> -void lruvec_init(struct lruvec *lruvec, struct zone *zone)
+> +void lruvec_init(struct lruvec *lruvec)
+>  {
+>  	enum lru_list lru;
+>  
+> @@ -95,8 +95,4 @@ void lruvec_init(struct lruvec *lruvec,
+>  
+>  	for_each_lru(lru)
+>  		INIT_LIST_HEAD(&lruvec->lists[lru]);
+> -
+> -#ifdef CONFIG_MEMCG
+> -	lruvec->zone = zone;
+> -#endif
+>  }
+> --- 3.7-rc3/mm/page_alloc.c	2012-10-28 13:48:00.021774166 -0700
+> +++ linux/mm/page_alloc.c	2012-11-01 14:31:04.284185741 -0700
+> @@ -4505,7 +4505,7 @@ static void __paginginit free_area_init_
+>  		zone->zone_pgdat = pgdat;
+>  
+>  		zone_pcp_init(zone);
+> -		lruvec_init(&zone->lruvec, zone);
+> +		lruvec_init(&zone->lruvec);
+>  		if (!size)
+>  			continue;
+>  
 
-Thanks,
-		Amit
+-- 
+Michal Hocko
+SUSE Labs
