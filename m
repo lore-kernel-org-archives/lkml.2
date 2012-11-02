@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab2KBU7i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 16:59:38 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:46791 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754019Ab2KBU72 (ORCPT
+	id S1754385Ab2KBVHO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 17:07:14 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36123 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016Ab2KBVHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 16:59:28 -0400
+	Fri, 2 Nov 2012 17:07:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <506B6CE0.1060800@linaro.org>
-References: <1348888593-23047-1-git-send-email-john.stultz@linaro.org>
- <20121002173928.2062004e@notabene.brown> <506B6CE0.1060800@linaro.org>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Fri, 2 Nov 2012 21:59:07 +0100
-X-Google-Sender-Auth: 2Vl-W_VoN2d6mfariwlWRPeCKAs
-Message-ID: <CAHO5Pa0KvH+MTYm6BCM5LHj995HpO+t87szyJjjXgupVq2VTfA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Volatile Ranges (v7) & Lots of words
-To: John Stultz <john.stultz@linaro.org>
-Cc: NeilBrown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Hellwig <hch@infradead.org>
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <CA+55aFxm0D77c0RYJuAiq2EDJxn+hGKTEGYJnHXNM8XkVAYOTA@mail.gmail.com>
+References: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com>
+	<26004880.qboZkUVCy9@vostro.rjw.lan>
+	<CA+55aFxm0D77c0RYJuAiq2EDJxn+hGKTEGYJnHXNM8XkVAYOTA@mail.gmail.com>
+Date: Fri, 2 Nov 2012 22:07:10 +0100
+Message-ID: <CAKMK7uEgnpTET0_VXWm7JyGePnXL-q_nHgSWq4g=qWodwrg38Q@mail.gmail.com>
+Subject: Re: Linux 3.7-rc3
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Airlie <airlied@linux.ie>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-John,
-
-A question at on one point:
-
-On Wed, Oct 3, 2012 at 12:38 AM, John Stultz <john.stultz@linaro.org> wrote:
-> On 10/02/2012 12:39 AM, NeilBrown wrote:
-[...]
->>   The SIGBUS interface could have some merit if it really reduces
->> overhead.  I
->>   worry about app bugs that could result from the non-deterministic
->>   behaviour.   A range could get unmapped while it is in use and testing
->> for
->>   the case of "get a SIGBUS half way though accessing something" would not
->>   be straight forward (SIGBUS on first step of access should be easy).
->>   I guess that is up to the app writer, but I have never liked anything
->> about
->>   the signal interface and encouraging further use doesn't feel wise.
+On Fri, Nov 2, 2012 at 9:25 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Oct 29, 2012 at 5:10 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>
+>> Unfortunately, s2disk is broken with this one and previous -rc.  In the
+>> majority of cases it just hangs the machine during hibernation, although
+>> sometimes it returns to user space reporting freezing problems, suspicions
+>> RCU usage and similar stuff, pretty much without any useful debug information.
 >
-> Initially I didn't like the idea, but have warmed considerably to it. Mainly
-> due to the concern that the constant unmark/access/mark pattern would be too
-> much overhead, and having a lazy method will be much nicer for performance.
-> But yes, at the cost of additional complexity of handling the signal,
-> marking the faulted address range as non-volatile, restoring the data and
-> continuing.
+> Ugh. I was hoping that we'd get more reports on this, right now
+> there's not enough information to even make a guess about what's up.
+>
+> I also note that no actual i915 people were cc'd, despite your
+> graphics driver suspect. Adding Daniel and Dave (one of the millions)
+> to the cc since they probably do have lkml but probably don't react
+> unless something gets pointed out.
+>
+> Daniel/Dave, do you have any reports of hibernation failing (or VT
+> switching problems) with i915 after 3.6?
 
-At a finer level of detail, how do you see this as happening in the
-application. I mean: in the general case, repopulating the purged
-volatile page would have to be done outside the signal handler (I
-think, because async-signal-safety considerations would preclude too
-much compdex stuff going on inside the handler). That implies
-longjumping out of the handler, repopulating the pages with data, and
-then restarting whatever work was being done when the SIGBUS was
-generated.
+Not that I've heard of. We did though rewrite the entire modeset
+sequence driving code in i915 for 3.7, removing massive amounts of
+hacks and stupid "let's disable/enable things harder" code simply
+because the old code couldn't keep track of the hw state well enough.
+So I wouldn't be surprised at all if that unearthed a hidden bug
+somewhere, but we've also added ridiculous amounts of self-checks. And
+thus far they caught all issues due to that rework (and some ancient
+bugs on top) when either the i915 driver or the bios did something
+nefarious ...
 
-Cheers,
-
-Michael
+I've rechecked the git log and otherwise there's nothing else which
+pops up that would fit VT-switching/hibernate going bad but the
+modeset rework.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
