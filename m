@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760364Ab2KBQd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 12:33:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17103 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759739Ab2KBQdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 12:33:39 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Tony Luck <tony.luck@intel.com>, Andi Kleen <andi.kleen@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 1/2 v2] HWPOISON: fix action_result() to print out dirty/clean
-Date: Fri,  2 Nov 2012 12:33:12 -0400
-Message-Id: <1351873993-9373-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1351873993-9373-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1351873993-9373-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1760229Ab2KBQfr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:35:47 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:36479 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab2KBQfn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 12:35:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121102155247.GH3300@redhat.com>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+	<20121029174131.GC7580@srcf.ucam.org>
+	<alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
+	<20121031150201.GA12394@srcf.ucam.org>
+	<20121102153047.GF3300@redhat.com>
+	<20121102154248.GA7681@srcf.ucam.org>
+	<20121102155247.GH3300@redhat.com>
+Date: Fri, 2 Nov 2012 10:35:43 -0600
+Message-ID: <CAKocOOMyfacUAzqaXLNQdBciFBS25A8AV2xai-yJs-TfsAWQ_A@mail.gmail.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-action_result() fails to print out "dirty" even if an error occurred on a
-dirty pagecache, because when we check PageDirty in action_result() it was
-cleared after page isolation even if it's dirty before error handling. This
-can break some applications that monitor this message, so should be fixed.
+On Fri, Nov 2, 2012 at 9:52 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Fri, Nov 02, 2012 at 03:42:48PM +0000, Matthew Garrett wrote:
+>> On Fri, Nov 02, 2012 at 11:30:48AM -0400, Vivek Goyal wrote:
+>>
+>> > "crash" utility has module which allows reading kernel memory. So leaking
+>> > this private key will be easier then you are thinking it to be.
+>>
+>> That's not upstream, right?
+>
+> Yes, checked with Dave, it is not upstream. Well, still it is a concern
+> for distro kernel.
+>
+> So if we keep private key in kernel, looks like we shall have to disable
+> one more feature in secureboot mode.
+>
+I have been following parts of this thread and beginning to think,
+"Are we over engineering" the solution for secureboot. Do we have a
+list of what is must to meet the Spec.? At this point, Linux
+secureboot solution is sounding so pervasive and will impact every
+aspect of Linux user's and kernel developer's use pattern. So far I
+picked up on the following:
 
-There are several callers of action_result() except page_action(), but
-either of them are not for LRU pages but for free pages or kernel pages,
-so we don't have to consider dirty or not for them.
+Kernel need to be signed.
+firmware kernel loads needs to be signed
+What else?
 
-Note that PG_dirty can be set outside page locks as described in commit
-554940dc8c1e, so this patch does not completely closes the race window,
-but just narrows it.
+Is there a list of what all needs to be signed? I am interested in
+seeing a list of requirements. At some point, OS will be so secure
+that, will it become so complex to run anything on it and continue to
+do development as we are used to doing today? I don't pretend to know
+much about secureboot, and I am asking as a concerned Linux user, and
+kernel developer.
 
-Changelog v2:
-  - Add comment about setting PG_dirty outside page lock
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
----
- mm/memory-failure.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
-
-diff --git v3.7-rc3.orig/mm/memory-failure.c v3.7-rc3/mm/memory-failure.c
-index 6c5899b..4377de9 100644
---- v3.7-rc3.orig/mm/memory-failure.c
-+++ v3.7-rc3/mm/memory-failure.c
-@@ -781,16 +781,16 @@ static struct page_state {
- 	{ compound,	compound,	"huge",		me_huge_page },
- #endif
- 
--	{ sc|dirty,	sc|dirty,	"swapcache",	me_swapcache_dirty },
--	{ sc|dirty,	sc,		"swapcache",	me_swapcache_clean },
-+	{ sc|dirty,	sc|dirty,	"dirty swapcache",	me_swapcache_dirty },
-+	{ sc|dirty,	sc,		"clean swapcache",	me_swapcache_clean },
- 
--	{ unevict|dirty, unevict|dirty,	"unevictable LRU", me_pagecache_dirty},
--	{ unevict,	unevict,	"unevictable LRU", me_pagecache_clean},
-+	{ unevict|dirty, unevict|dirty,	"dirty unevictable LRU", me_pagecache_dirty },
-+	{ unevict,	unevict,	"clean unevictable LRU", me_pagecache_clean },
- 
--	{ mlock|dirty,	mlock|dirty,	"mlocked LRU",	me_pagecache_dirty },
--	{ mlock,	mlock,		"mlocked LRU",	me_pagecache_clean },
-+	{ mlock|dirty,	mlock|dirty,	"dirty mlocked LRU",	me_pagecache_dirty },
-+	{ mlock,	mlock,		"clean mlocked LRU",	me_pagecache_clean },
- 
--	{ lru|dirty,	lru|dirty,	"LRU",		me_pagecache_dirty },
-+	{ lru|dirty,	lru|dirty,	"dirty LRU",	me_pagecache_dirty },
- 	{ lru|dirty,	lru,		"clean LRU",	me_pagecache_clean },
- 
- 	/*
-@@ -812,14 +812,14 @@ static struct page_state {
- #undef slab
- #undef reserved
- 
-+/*
-+ * "Dirty/Clean" indication is not 100% accurate due to the possibility of
-+ * setting PG_dirty outside page lock. See also comment above set_page_dirty().
-+ */
- static void action_result(unsigned long pfn, char *msg, int result)
- {
--	struct page *page = pfn_to_page(pfn);
--
--	printk(KERN_ERR "MCE %#lx: %s%s page recovery: %s\n",
--		pfn,
--		PageDirty(page) ? "dirty " : "",
--		msg, action_name[result]);
-+	pr_err("MCE %#lx: %s page recovery: %s\n",
-+		pfn, msg, action_name[result]);
- }
- 
- static int page_action(struct page_state *ps, struct page *p,
--- 
-1.7.11.7
-
+-- Shuah
