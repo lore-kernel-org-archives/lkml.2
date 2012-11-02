@@ -1,195 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760577Ab2KBQjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 12:39:10 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:65206 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760168Ab2KBQjG (ORCPT
+	id S1756694Ab2KBQoP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:44:15 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:47483 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab2KBQoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 12:39:06 -0400
+	Fri, 2 Nov 2012 12:44:13 -0400
+Date: Fri, 2 Nov 2012 12:44:09 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel <xen-devel@lists.xen.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] xen/hypercall: fix hypercall fallback code for very
+ old hypervisors
+Message-ID: <20121102164409.GB27213@konrad-lan.dumpdata.com>
+References: <1351519698-11069-1-git-send-email-konrad.wilk@oracle.com>
+ <1351519698-11069-2-git-send-email-konrad.wilk@oracle.com>
+ <20121030154450.GA3000@phenom.dumpdata.com>
+ <5090F5AA02000078000A5A0B@nat28.tlf.novell.com>
 MIME-Version: 1.0
-In-Reply-To: <1351128963-10347-1-git-send-email-ying.huang@intel.com>
-References: <1351128963-10347-1-git-send-email-ying.huang@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 2 Nov 2012 10:38:43 -0600
-Message-ID: <CAErSpo6Q9DGwBJNCY5g3gGVPMCngv6pfLXB6TfiFu3gyLiNp7Q@mail.gmail.com>
-Subject: Re: [BUGFIX] PCI/PM: Fix proc config reg access for D3cold and bridge suspending
-To: Huang Ying <ying.huang@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5090F5AA02000078000A5A0B@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 7:36 PM, Huang Ying <ying.huang@intel.com> wrote:
-> In
->
->   https://bugzilla.kernel.org/show_bug.cgi?id=48981
->
-> Peter reported that /proc/bus/pci/??/??.? does not works for 3.6.
-> This is This is because the device configuration space registers will
-> be not accessible if the corresponding parent bridge is suspended or
-> the device is put into D3cold state.
->
-> This is the same as /sys/bus/pci/devices/0000:??:??.?/config access
-> issue.  So the function used to solve sysfs issue is used to solve
-> this issue.
->
-> Cc: stable@vger.kernel.org
-> Reported-by: Peter <lekensteyn@gmail.com>
+On Wed, Oct 31, 2012 at 08:55:54AM +0000, Jan Beulich wrote:
+> >>> On 30.10.12 at 16:44, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > On Mon, Oct 29, 2012 at 10:08:17AM -0400, Konrad Rzeszutek Wilk wrote:
+> >> From: Jan Beulich <jbeulich@suse.com>
+> >> 
+> >> While copying the argument structures in HYPERVISOR_event_channel_op()
+> >> and HYPERVISOR_physdev_op() into the local variable is sufficiently
+> >> safe even if the actual structure is smaller than the container one,
+> >> copying back eventual output values the same way isn't: This may
+> >> collide with on-stack variables (particularly "rc") which may change
+> >> between the first and second memcpy() (i.e. the second memcpy() could
+> >> discard that change).
+> >> 
+> >> Move the fallback code into out-of-line functions, and handle all of
+> >> the operations known by this old a hypervisor individually: Some don't
+> >> require copying back anything at all, and for the rest use the
+> >> individual argument structures' sizes rather than the container's.
+> >> 
+> >> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+> >> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> >> [v2: Reduce #define/#undef usage in HYPERVISOR_physdev_op_compat().]
+> >> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > 
+> > And it looks like I get 
+> > 
+> > ERROR: "HYPERVISOR_event_channel_op_compat" [drivers/xen/xen-evtchn.ko] 
+> > undefined!
+> > 
+> > when I build xen-evtchn as module. Jan did you encounter this issue on 
+> > 2.6.18?
+> 
+> No - the event channel driver there can't be built as a module, and
+> for the forward ported kernels I apparently never tried to build with
+> a compat setting of 3.0.2 or less (and I didn't care that much either
+> because the oldest we're actually concerned about is 3.0.4 to cover
+> some of those very old EC2 systems; I'll add the export at the right
+> point nevertheless).
 
-Is this bug the same as the one originally reported by Forrest Loomis
-(original reporter of bug 48981)?  And
-https://bugzilla.kernel.org/show_bug.cgi?id=49031, reported by Micael
-Dias (Rafael marked 49031 as a duplicate of 48981)?
+Ok, ended up with this version which I was thinking to for v3.7-rc5:
 
-If so, I'll mention Forrest and Micael and bug 49031 here as well.
 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> ---
->  drivers/pci/pci-sysfs.c |   34 ----------------------------------
->  drivers/pci/pci.c       |   32 ++++++++++++++++++++++++++++++++
->  drivers/pci/pci.h       |    2 ++
->  drivers/pci/proc.c      |    8 ++++++++
->  4 files changed, 42 insertions(+), 34 deletions(-)
->
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -458,40 +458,6 @@ boot_vga_show(struct device *dev, struct
->  }
->  struct device_attribute vga_attr = __ATTR_RO(boot_vga);
->
-> -static void
-> -pci_config_pm_runtime_get(struct pci_dev *pdev)
-> -{
-> -       struct device *dev = &pdev->dev;
-> -       struct device *parent = dev->parent;
-> -
-> -       if (parent)
-> -               pm_runtime_get_sync(parent);
-> -       pm_runtime_get_noresume(dev);
-> -       /*
-> -        * pdev->current_state is set to PCI_D3cold during suspending,
-> -        * so wait until suspending completes
-> -        */
-> -       pm_runtime_barrier(dev);
-> -       /*
-> -        * Only need to resume devices in D3cold, because config
-> -        * registers are still accessible for devices suspended but
-> -        * not in D3cold.
-> -        */
-> -       if (pdev->current_state == PCI_D3cold)
-> -               pm_runtime_resume(dev);
-> -}
-> -
-> -static void
-> -pci_config_pm_runtime_put(struct pci_dev *pdev)
-> -{
-> -       struct device *dev = &pdev->dev;
-> -       struct device *parent = dev->parent;
-> -
-> -       pm_runtime_put(dev);
-> -       if (parent)
-> -               pm_runtime_put_sync(parent);
-> -}
-> -
->  static ssize_t
->  pci_read_config(struct file *filp, struct kobject *kobj,
->                 struct bin_attribute *bin_attr,
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -1858,6 +1858,38 @@ bool pci_dev_run_wake(struct pci_dev *de
->  }
->  EXPORT_SYMBOL_GPL(pci_dev_run_wake);
->
-> +void pci_config_pm_runtime_get(struct pci_dev *pdev)
-> +{
-> +       struct device *dev = &pdev->dev;
-> +       struct device *parent = dev->parent;
-> +
-> +       if (parent)
-> +               pm_runtime_get_sync(parent);
-> +       pm_runtime_get_noresume(dev);
-> +       /*
-> +        * pdev->current_state is set to PCI_D3cold during suspending,
-> +        * so wait until suspending completes
-> +        */
-> +       pm_runtime_barrier(dev);
-> +       /*
-> +        * Only need to resume devices in D3cold, because config
-> +        * registers are still accessible for devices suspended but
-> +        * not in D3cold.
-> +        */
-> +       if (pdev->current_state == PCI_D3cold)
-> +               pm_runtime_resume(dev);
-> +}
-> +
-> +void pci_config_pm_runtime_put(struct pci_dev *pdev)
-> +{
-> +       struct device *dev = &pdev->dev;
-> +       struct device *parent = dev->parent;
-> +
-> +       pm_runtime_put(dev);
-> +       if (parent)
-> +               pm_runtime_put_sync(parent);
-> +}
-> +
->  /**
->   * pci_pm_init - Initialize PM functions of given PCI device
->   * @dev: PCI device to handle.
-> --- a/drivers/pci/pci.h
-> +++ b/drivers/pci/pci.h
-> @@ -72,6 +72,8 @@ extern void pci_disable_enabled_device(s
->  extern int pci_finish_runtime_suspend(struct pci_dev *dev);
->  extern int __pci_pme_wakeup(struct pci_dev *dev, void *ign);
->  extern void pci_wakeup_bus(struct pci_bus *bus);
-> +extern void pci_config_pm_runtime_get(struct pci_dev *dev);
-> +extern void pci_config_pm_runtime_put(struct pci_dev *dev);
->  extern void pci_pm_init(struct pci_dev *dev);
->  extern void platform_pci_wakeup_init(struct pci_dev *dev);
->  extern void pci_allocate_cap_save_buffers(struct pci_dev *dev);
-> --- a/drivers/pci/proc.c
-> +++ b/drivers/pci/proc.c
-> @@ -76,6 +76,8 @@ proc_bus_pci_read(struct file *file, cha
->         if (!access_ok(VERIFY_WRITE, buf, cnt))
->                 return -EINVAL;
->
-> +       pci_config_pm_runtime_get(dev);
-> +
->         if ((pos & 1) && cnt) {
->                 unsigned char val;
->                 pci_user_read_config_byte(dev, pos, &val);
-> @@ -121,6 +123,8 @@ proc_bus_pci_read(struct file *file, cha
->                 cnt--;
->         }
->
-> +       pci_config_pm_runtime_put(dev);
-> +
->         *ppos = pos;
->         return nbytes;
->  }
-> @@ -146,6 +150,8 @@ proc_bus_pci_write(struct file *file, co
->         if (!access_ok(VERIFY_READ, buf, cnt))
->                 return -EINVAL;
->
-> +       pci_config_pm_runtime_get(dev);
-> +
->         if ((pos & 1) && cnt) {
->                 unsigned char val;
->                 __get_user(val, buf);
-> @@ -191,6 +197,8 @@ proc_bus_pci_write(struct file *file, co
->                 cnt--;
->         }
->
-> +       pci_config_pm_runtime_put(dev);
-> +
->         *ppos = pos;
->         i_size_write(ino, dp->size);
->         return nbytes;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>From 4ae4c7658a7c0501521c422d618038587c3edeca Mon Sep 17 00:00:00 2001
+From: Jan Beulich <jbeulich@suse.com>
+Date: Fri, 19 Oct 2012 15:25:37 -0400
+Subject: [PATCH] xen/hypercall: fix hypercall fallback code for very old
+ hypervisors
+
+While copying the argument structures in HYPERVISOR_event_channel_op()
+and HYPERVISOR_physdev_op() into the local variable is sufficiently
+safe even if the actual structure is smaller than the container one,
+copying back eventual output values the same way isn't: This may
+collide with on-stack variables (particularly "rc") which may change
+between the first and second memcpy() (i.e. the second memcpy() could
+discard that change).
+
+Move the fallback code into out-of-line functions, and handle all of
+the operations known by this old a hypervisor individually: Some don't
+require copying back anything at all, and for the rest use the
+individual argument structures' sizes rather than the container's.
+
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+[v2: Reduce #define/#undef usage in HYPERVISOR_physdev_op_compat().]
+[v3: Fix compile errors when modules use said hypercalls]
+[v4: Add xen_ prefix to the HYPERCALL_..]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/include/asm/xen/hypercall.h | 21 ++++------
+ drivers/xen/Makefile                 |  2 +-
+ drivers/xen/fallback.c               | 81 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 89 insertions(+), 15 deletions(-)
+ create mode 100644 drivers/xen/fallback.c
+
+diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
+index 59c226d..4055421 100644
+--- a/arch/x86/include/asm/xen/hypercall.h
++++ b/arch/x86/include/asm/xen/hypercall.h
+@@ -359,18 +359,14 @@ HYPERVISOR_update_va_mapping(unsigned long va, pte_t new_val,
+ 		return _hypercall4(int, update_va_mapping, va,
+ 				   new_val.pte, new_val.pte >> 32, flags);
+ }
++extern int __must_check xen_HYPERVISOR_event_channel_op_compat(int, void *);
+ 
+ static inline int
+ HYPERVISOR_event_channel_op(int cmd, void *arg)
+ {
+ 	int rc = _hypercall2(int, event_channel_op, cmd, arg);
+-	if (unlikely(rc == -ENOSYS)) {
+-		struct evtchn_op op;
+-		op.cmd = cmd;
+-		memcpy(&op.u, arg, sizeof(op.u));
+-		rc = _hypercall1(int, event_channel_op_compat, &op);
+-		memcpy(arg, &op.u, sizeof(op.u));
+-	}
++	if (unlikely(rc == -ENOSYS))
++		rc = xen_HYPERVISOR_event_channel_op_compat(cmd, arg);
+ 	return rc;
+ }
+ 
+@@ -386,17 +382,14 @@ HYPERVISOR_console_io(int cmd, int count, char *str)
+ 	return _hypercall3(int, console_io, cmd, count, str);
+ }
+ 
++extern int __must_check xen_HYPERVISOR_physdev_op_compat(int, void *);
++
+ static inline int
+ HYPERVISOR_physdev_op(int cmd, void *arg)
+ {
+ 	int rc = _hypercall2(int, physdev_op, cmd, arg);
+-	if (unlikely(rc == -ENOSYS)) {
+-		struct physdev_op op;
+-		op.cmd = cmd;
+-		memcpy(&op.u, arg, sizeof(op.u));
+-		rc = _hypercall1(int, physdev_op_compat, &op);
+-		memcpy(arg, &op.u, sizeof(op.u));
+-	}
++	if (unlikely(rc == -ENOSYS))
++		rc = xen_HYPERVISOR_physdev_op_compat(cmd, arg);
+ 	return rc;
+ }
+ 
+diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+index 0e863703..46de6cd 100644
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@ -2,7 +2,7 @@ ifneq ($(CONFIG_ARM),y)
+ obj-y	+= manage.o balloon.o
+ obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+ endif
+-obj-y	+= grant-table.o features.o events.o
++obj-y	+= grant-table.o features.o events.o fallback.o
+ obj-y	+= xenbus/
+ 
+ nostackp := $(call cc-option, -fno-stack-protector)
+diff --git a/drivers/xen/fallback.c b/drivers/xen/fallback.c
+new file mode 100644
+index 0000000..b29ce32
+--- /dev/null
++++ b/drivers/xen/fallback.c
+@@ -0,0 +1,81 @@
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/bug.h>
++#include <linux/export.h>
++#include <asm/hypervisor.h>
++#include <asm/xen/hypercall.h>
++
++int xen_HYPERVISOR_event_channel_op_compat(int cmd, void *arg)
++{
++	struct evtchn_op op;
++	int rc;
++
++	op.cmd = cmd;
++	memcpy(&op.u, arg, sizeof(op.u));
++	rc = _hypercall1(int, event_channel_op_compat, &op);
++
++	switch (cmd) {
++	case EVTCHNOP_close:
++	case EVTCHNOP_send:
++	case EVTCHNOP_bind_vcpu:
++	case EVTCHNOP_unmask:
++		/* no output */
++		break;
++
++#define COPY_BACK(eop) \
++	case EVTCHNOP_##eop: \
++		memcpy(arg, &op.u.eop, sizeof(op.u.eop)); \
++		break
++
++	COPY_BACK(bind_interdomain);
++	COPY_BACK(bind_virq);
++	COPY_BACK(bind_pirq);
++	COPY_BACK(status);
++	COPY_BACK(alloc_unbound);
++	COPY_BACK(bind_ipi);
++#undef COPY_BACK
++
++	default:
++		WARN_ON(rc != -ENOSYS);
++		break;
++	}
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(xen_HYPERVISOR_event_channel_op_compat);
++
++int xen_HYPERVISOR_physdev_op_compat(int cmd, void *arg)
++{
++	struct physdev_op op;
++	int rc;
++
++	op.cmd = cmd;
++	memcpy(&op.u, arg, sizeof(op.u));
++	rc = _hypercall1(int, physdev_op_compat, &op);
++
++	switch (cmd) {
++	case PHYSDEVOP_IRQ_UNMASK_NOTIFY:
++	case PHYSDEVOP_set_iopl:
++	case PHYSDEVOP_set_iobitmap:
++	case PHYSDEVOP_apic_write:
++		/* no output */
++		break;
++
++#define COPY_BACK(pop, fld) \
++	case PHYSDEVOP_##pop: \
++		memcpy(arg, &op.u.fld, sizeof(op.u.fld)); \
++		break
++
++	COPY_BACK(irq_status_query, irq_status_query);
++	COPY_BACK(apic_read, apic_op);
++	COPY_BACK(ASSIGN_VECTOR, irq_op);
++#undef COPY_BACK
++
++	default:
++		WARN_ON(rc != -ENOSYS);
++		break;
++	}
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(xen_HYPERVISOR_physdev_op_compat);
+-- 
+1.7.11.7
+
