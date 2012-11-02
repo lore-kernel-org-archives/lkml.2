@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762956Ab2KBOT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 10:19:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37190 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755403Ab2KBOT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 10:19:57 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: [patch 01/10] scsi: make __scsi_alloc_queue numa-aware
-References: <1351628084-29358-1-git-send-email-jmoyer@redhat.com>
-	<1351628084-29358-4-git-send-email-jmoyer@redhat.com>
-	<5093AF19.5040707@acm.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 02 Nov 2012 10:19:52 -0400
-In-Reply-To: <5093AF19.5040707@acm.org> (Bart Van Assche's message of "Fri, 02
-	Nov 2012 12:31:37 +0100")
-Message-ID: <x49txt8xf1z.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S934809Ab2KBOUd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 10:20:33 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38653 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932906Ab2KBOU2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 10:20:28 -0400
+Date: Fri, 2 Nov 2012 10:20:27 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jan Beulich <JBeulich@suse.com>
+cc: sfr@canb.auug.org.au, <rdunlap@infradead.org>,
+        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: linux-next: Tree for Oct 31 (ehci, dbgp)
+In-Reply-To: <5093E0DF02000078000A6102@nat28.tlf.novell.com>
+Message-ID: <Pine.LNX.4.44L0.1211021019450.1356-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bart Van Assche <bvanassche@acm.org> writes:
+On Fri, 2 Nov 2012, Jan Beulich wrote:
 
-> On 10/30/12 21:14, Jeff Moyer wrote:
->> Pass the numa node id set in the Scsi_Host on to blk_init_queue_node
->> in order to keep all allocations local to the numa node the device is
->> closest to.
->>
->> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
->> ---
->>   drivers/scsi/scsi_lib.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
->> index da36a3a..8662a09 100644
->> --- a/drivers/scsi/scsi_lib.c
->> +++ b/drivers/scsi/scsi_lib.c
->> @@ -1664,7 +1664,7 @@ struct request_queue *__scsi_alloc_queue(struct Scsi_Host *shost,
->>   	struct request_queue *q;
->>   	struct device *dev = shost->dma_dev;
->>
->> -	q = blk_init_queue(request_fn, NULL);
->> +	q = blk_init_queue_node(request_fn, NULL, shost->numa_node);
->>   	if (!q)
->>   		return NULL;
->
-> Hello Jeff,
->
-> I haven't seen the patch that introduces numa_node in struct Scsi_Host
-> nor the cover letter of this patch series ? Have these been posted on
-> the linux-scsi mailing list ?
+> >>> On 02.11.12 at 15:01, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > On Thu, 1 Nov 2012, Jan Beulich wrote:
+> > 
+> >> >>> Alan Stern <stern@rowland.harvard.edu> 11/01/12 9:39 PM >>>
+> >> >On Thu, 1 Nov 2012, Jan Beulich wrote:
+> >> >> >>> Alan Stern <stern@rowland.harvard.edu> 11/01/12 4:28 PM >>>
+> >> >> >Evidently we need to change your new test in
+> >> >> >drivers/usb/early/ehci-dbgp.c to:
+> >> >> >
+> >> >> >#if IS_ENABLED(CONFIG_USB_HCD_EHCI) || defined(CONFIG_USB_CHIPIDEA_HOST)
+> >> >> >
+> >> >> >Upcoming changes to ehci-hcd will make this unnecessary in 3.8, but for 
+> >> >> >now we need it.
+> >> >> 
+> >> >> Which tells me that the CONFIG_USB_SUPPORT version would have been
+> >> >> the better one  (and I would favor that over the ugly variant you suggest
+> >> >> above).
+> >> >
+> >> >I also suggested IS_ENABLED(CONFIG_USB), which is no uglier than what 
+> >> >you submitted and would also fix this build error.  How about using it 
+> >> >instead?
+> >> 
+> >> Yes, that's better. Question then is - updated original patch or incremental 
+> > one?
+> > 
+> > Greg will probably want an incremental patch, because the original has 
+> > already been merged.
+> 
+> I actually sent both (the incremental as attachment - I hope that's
+> going to be acceptable to him) in a submission earlier today.
 
-Hi, Bart,
+Ah, okay, good.
 
-Wow, looks like I left out the first patch!  The cover letter I think
-only went to lkml.  I have to do a repost, so I'll be sure to send the
-cover to linux-scsi as well, and CC you (and credit you for the idea,
-which I totally forgot to do).  I'll send a repost out today.
+Greg, whichever version you take, you can add:
 
-Cheers,
-Jeff
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
