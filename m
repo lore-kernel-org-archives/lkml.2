@@ -1,273 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab2KBOkX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 10:40:23 -0400
-Received: from tundra.namei.org ([65.99.196.166]:57160 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876Ab2KBOkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 10:40:19 -0400
-Date: Sat, 3 Nov 2012 01:41:49 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, adlai@linux.vnet.ibm.com,
-        benh@kernel.crashing.org
-Subject: Re: [PULL v2] IBM vTPM driver update
-In-Reply-To: <20121101203504.GB26935@ennui.austin.ibm.com>
-Message-ID: <alpine.LRH.2.02.1211030141370.31309@tundra.namei.org>
-References: <20121101203504.GB26935@ennui.austin.ibm.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754406Ab2KBOne (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 10:43:34 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:45299 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab2KBOn3 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
+	Fri, 2 Nov 2012 10:43:29 -0400
+Message-Id: <5093EA4802000078000A61D4@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 02 Nov 2012 14:44:08 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <akpm@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sscanf: don't ignore field widths for numeric
+ conversions
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Nov 2012, Kent Yoder wrote:
+This is another step towards better standard conformance. Rather than
+adding a local buffer to store the specified portion of the string
+(with the need to enforce an arbitrary maximum supported width to
+limit the buffer size), do a maximum width conversion and then drop as
+much of it as is necessary to meet the caller's request.
 
-> Hi James,
-> 
->   This time against security-next...
+Also fail on negative field widths.
 
-Thanks, pulled.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-> 
-> The following changes since commit 61d335dd27c67d656f114c091a46cf95cbeeb77c:
-> 
->   Merge branch 'security-next-keys' of git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/security-keys into next-queue (2012-10-03 13:00:17 +1000)
-> 
-> are available in the git repository at:
-> 
->   git://github.com/shpedoikal/linux.git tpmdd-11-1-12
-> 
-> for you to fetch changes up to b5666502700855a1eb1a15482005b22478b9460e:
-> 
->   drivers/char/tpm: remove tasklet and cleanup (2012-11-01 15:23:14 -0500)
-> 
-> ----------------------------------------------------------------
-> Ashley Lai (1):
->       drivers/char/tpm: remove tasklet and cleanup
-> 
->  drivers/char/tpm/tpm_ibmvtpm.c | 81 +++++++++++++++---------------------------
->  drivers/char/tpm/tpm_ibmvtpm.h |  5 ++-
->  2 files changed, 30 insertions(+), 56 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm_ibmvtpm.c b/drivers/char/tpm/tpm_ibmvtpm.c
-> index efc4ab3..88a95ea 100644
-> --- a/drivers/char/tpm/tpm_ibmvtpm.c
-> +++ b/drivers/char/tpm/tpm_ibmvtpm.c
-> @@ -38,8 +38,6 @@ static struct vio_device_id tpm_ibmvtpm_device_table[] __devinitdata = {
->  };
->  MODULE_DEVICE_TABLE(vio, tpm_ibmvtpm_device_table);
->  
-> -DECLARE_WAIT_QUEUE_HEAD(wq);
-> -
->  /**
->   * ibmvtpm_send_crq - Send a CRQ request
->   * @vdev:	vio device struct
-> @@ -83,6 +81,7 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
->  {
->  	struct ibmvtpm_dev *ibmvtpm;
->  	u16 len;
-> +	int sig;
->  
->  	ibmvtpm = (struct ibmvtpm_dev *)chip->vendor.data;
->  
-> @@ -91,22 +90,23 @@ static int tpm_ibmvtpm_recv(struct tpm_chip *chip, u8 *buf, size_t count)
->  		return 0;
->  	}
->  
-> -	wait_event_interruptible(wq, ibmvtpm->crq_res.len != 0);
-> +	sig = wait_event_interruptible(ibmvtpm->wq, ibmvtpm->res_len != 0);
-> +	if (sig)
-> +		return -EINTR;
-> +
-> +	len = ibmvtpm->res_len;
->  
-> -	if (count < ibmvtpm->crq_res.len) {
-> +	if (count < len) {
->  		dev_err(ibmvtpm->dev,
->  			"Invalid size in recv: count=%ld, crq_size=%d\n",
-> -			count, ibmvtpm->crq_res.len);
-> +			count, len);
->  		return -EIO;
->  	}
->  
->  	spin_lock(&ibmvtpm->rtce_lock);
-> -	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, ibmvtpm->crq_res.len);
-> -	memset(ibmvtpm->rtce_buf, 0, ibmvtpm->crq_res.len);
-> -	ibmvtpm->crq_res.valid = 0;
-> -	ibmvtpm->crq_res.msg = 0;
-> -	len = ibmvtpm->crq_res.len;
-> -	ibmvtpm->crq_res.len = 0;
-> +	memcpy((void *)buf, (void *)ibmvtpm->rtce_buf, len);
-> +	memset(ibmvtpm->rtce_buf, 0, len);
-> +	ibmvtpm->res_len = 0;
->  	spin_unlock(&ibmvtpm->rtce_lock);
->  	return len;
->  }
-> @@ -273,7 +273,6 @@ static int __devexit tpm_ibmvtpm_remove(struct vio_dev *vdev)
->  	int rc = 0;
->  
->  	free_irq(vdev->irq, ibmvtpm);
-> -	tasklet_kill(&ibmvtpm->tasklet);
->  
->  	do {
->  		if (rc)
-> @@ -372,7 +371,6 @@ static int ibmvtpm_reset_crq(struct ibmvtpm_dev *ibmvtpm)
->  static int tpm_ibmvtpm_resume(struct device *dev)
->  {
->  	struct ibmvtpm_dev *ibmvtpm = ibmvtpm_get_data(dev);
-> -	unsigned long flags;
->  	int rc = 0;
->  
->  	do {
-> @@ -387,10 +385,11 @@ static int tpm_ibmvtpm_resume(struct device *dev)
->  		return rc;
->  	}
->  
-> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> -	vio_disable_interrupts(ibmvtpm->vdev);
-> -	tasklet_schedule(&ibmvtpm->tasklet);
-> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> +	rc = vio_enable_interrupts(ibmvtpm->vdev);
-> +	if (rc) {
-> +		dev_err(dev, "Error vio_enable_interrupts rc=%d\n", rc);
-> +		return rc;
-> +	}
->  
->  	rc = ibmvtpm_crq_send_init(ibmvtpm);
->  	if (rc)
-> @@ -467,7 +466,7 @@ static struct ibmvtpm_crq *ibmvtpm_crq_get_next(struct ibmvtpm_dev *ibmvtpm)
->  	if (crq->valid & VTPM_MSG_RES) {
->  		if (++crq_q->index == crq_q->num_entry)
->  			crq_q->index = 0;
-> -		rmb();
-> +		smp_rmb();
->  	} else
->  		crq = NULL;
->  	return crq;
-> @@ -535,11 +534,9 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
->  			ibmvtpm->vtpm_version = crq->data;
->  			return;
->  		case VTPM_TPM_COMMAND_RES:
-> -			ibmvtpm->crq_res.valid = crq->valid;
-> -			ibmvtpm->crq_res.msg = crq->msg;
-> -			ibmvtpm->crq_res.len = crq->len;
-> -			ibmvtpm->crq_res.data = crq->data;
-> -			wake_up_interruptible(&wq);
-> +			/* len of the data in rtce buffer */
-> +			ibmvtpm->res_len = crq->len;
-> +			wake_up_interruptible(&ibmvtpm->wq);
->  			return;
->  		default:
->  			return;
-> @@ -559,38 +556,19 @@ static void ibmvtpm_crq_process(struct ibmvtpm_crq *crq,
->  static irqreturn_t ibmvtpm_interrupt(int irq, void *vtpm_instance)
->  {
->  	struct ibmvtpm_dev *ibmvtpm = (struct ibmvtpm_dev *) vtpm_instance;
-> -	unsigned long flags;
-> -
-> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> -	vio_disable_interrupts(ibmvtpm->vdev);
-> -	tasklet_schedule(&ibmvtpm->tasklet);
-> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> -
-> -	return IRQ_HANDLED;
-> -}
-> -
-> -/**
-> - * ibmvtpm_tasklet - Interrupt handler tasklet
-> - * @data:	ibm vtpm device struct
-> - *
-> - * Returns:
-> - *	Nothing
-> - **/
-> -static void ibmvtpm_tasklet(void *data)
-> -{
-> -	struct ibmvtpm_dev *ibmvtpm = data;
->  	struct ibmvtpm_crq *crq;
-> -	unsigned long flags;
->  
-> -	spin_lock_irqsave(&ibmvtpm->lock, flags);
-> +	/* while loop is needed for initial setup (get version and
-> +	 * get rtce_size). There should be only one tpm request at any
-> +	 * given time.
-> +	 */
->  	while ((crq = ibmvtpm_crq_get_next(ibmvtpm)) != NULL) {
->  		ibmvtpm_crq_process(crq, ibmvtpm);
->  		crq->valid = 0;
-> -		wmb();
-> +		smp_wmb();
->  	}
->  
-> -	vio_enable_interrupts(ibmvtpm->vdev);
-> -	spin_unlock_irqrestore(&ibmvtpm->lock, flags);
-> +	return IRQ_HANDLED;
->  }
->  
->  /**
-> @@ -650,9 +628,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
->  		goto reg_crq_cleanup;
->  	}
->  
-> -	tasklet_init(&ibmvtpm->tasklet, (void *)ibmvtpm_tasklet,
-> -		     (unsigned long)ibmvtpm);
-> -
->  	rc = request_irq(vio_dev->irq, ibmvtpm_interrupt, 0,
->  			 tpm_ibmvtpm_driver_name, ibmvtpm);
->  	if (rc) {
-> @@ -666,13 +641,14 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
->  		goto init_irq_cleanup;
->  	}
->  
-> +	init_waitqueue_head(&ibmvtpm->wq);
-> +
->  	crq_q->index = 0;
->  
->  	ibmvtpm->dev = dev;
->  	ibmvtpm->vdev = vio_dev;
->  	chip->vendor.data = (void *)ibmvtpm;
->  
-> -	spin_lock_init(&ibmvtpm->lock);
->  	spin_lock_init(&ibmvtpm->rtce_lock);
->  
->  	rc = ibmvtpm_crq_send_init(ibmvtpm);
-> @@ -689,7 +665,6 @@ static int __devinit tpm_ibmvtpm_probe(struct vio_dev *vio_dev,
->  
->  	return rc;
->  init_irq_cleanup:
-> -	tasklet_kill(&ibmvtpm->tasklet);
->  	do {
->  		rc1 = plpar_hcall_norets(H_FREE_CRQ, vio_dev->unit_address);
->  	} while (rc1 == H_BUSY || H_IS_LONG_BUSY(rc1));
-> diff --git a/drivers/char/tpm/tpm_ibmvtpm.h b/drivers/char/tpm/tpm_ibmvtpm.h
-> index 4296eb4..bd82a79 100644
-> --- a/drivers/char/tpm/tpm_ibmvtpm.h
-> +++ b/drivers/char/tpm/tpm_ibmvtpm.h
-> @@ -38,13 +38,12 @@ struct ibmvtpm_dev {
->  	struct vio_dev *vdev;
->  	struct ibmvtpm_crq_queue crq_queue;
->  	dma_addr_t crq_dma_handle;
-> -	spinlock_t lock;
-> -	struct tasklet_struct tasklet;
->  	u32 rtce_size;
->  	void __iomem *rtce_buf;
->  	dma_addr_t rtce_dma_handle;
->  	spinlock_t rtce_lock;
-> -	struct ibmvtpm_crq crq_res;
-> +	wait_queue_head_t wq;
-> +	u16 res_len;
->  	u32 vtpm_version;
->  };
->  
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+---
+ lib/vsprintf.c |   96 +++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 53 insertions(+), 43 deletions(-)
 
--- 
-James Morris
-<jmorris@namei.org>
+--- 3.7-rc3/lib/vsprintf.c
++++ 3.7-rc3-sscanf-field-width/lib/vsprintf.c
+@@ -23,12 +23,12 @@
+ #include <linux/ctype.h>
+ #include <linux/kernel.h>
+ #include <linux/kallsyms.h>
++#include <linux/math64.h>
+ #include <linux/uaccess.h>
+ #include <linux/ioport.h>
+ #include <net/addrconf.h>
+ 
+ #include <asm/page.h>		/* for PAGE_SIZE */
+-#include <asm/div64.h>
+ #include <asm/sections.h>	/* for dereference_function_descriptor() */
+ 
+ #include "kstrtox.h"
+@@ -2013,7 +2013,11 @@ int vsscanf(const char *buf, const char
+ 	char digit;
+ 	int num = 0;
+ 	u8 qualifier;
+-	u8 base;
++	unsigned int base;
++	union {
++		long long s;
++		unsigned long long u;
++	} val;
+ 	s16 field_width;
+ 	bool is_sign;
+ 
+@@ -2053,8 +2057,11 @@ int vsscanf(const char *buf, const char
+ 
+ 		/* get field width */
+ 		field_width = -1;
+-		if (isdigit(*fmt))
++		if (isdigit(*fmt)) {
+ 			field_width = skip_atoi(&fmt);
++			if (field_width <= 0)
++				break;
++		}
+ 
+ 		/* get conversion qualifier */
+ 		qualifier = -1;
+@@ -2154,58 +2161,61 @@ int vsscanf(const char *buf, const char
+ 		    || (base == 0 && !isdigit(digit)))
+ 			break;
+ 
++		if (is_sign)
++			val.s = qualifier != 'L' ?
++				simple_strtol(str, &next, base) :
++				simple_strtoll(str, &next, base);
++		else
++			val.u = qualifier != 'L' ?
++				simple_strtoul(str, &next, base) :
++				simple_strtoull(str, &next, base);
++
++		if (field_width > 0 && next - str > field_width) {
++			if (base == 0)
++				_parse_integer_fixup_radix(str, &base);
++			while (next - str > field_width) {
++				if (is_sign)
++					val.s = div_s64(val.s, base);
++				else
++					val.u = div_u64(val.u, base);
++				--next;
++			}
++		}
++
+ 		switch (qualifier) {
+ 		case 'H':	/* that's 'hh' in format */
+-			if (is_sign) {
+-				signed char *s = (signed char *)va_arg(args, signed char *);
+-				*s = (signed char)simple_strtol(str, &next, base);
+-			} else {
+-				unsigned char *s = (unsigned char *)va_arg(args, unsigned char *);
+-				*s = (unsigned char)simple_strtoul(str, &next, base);
+-			}
++			if (is_sign)
++				*va_arg(args, signed char *) = val.s;
++			else
++				*va_arg(args, unsigned char *) = val.u;
+ 			break;
+ 		case 'h':
+-			if (is_sign) {
+-				short *s = (short *)va_arg(args, short *);
+-				*s = (short)simple_strtol(str, &next, base);
+-			} else {
+-				unsigned short *s = (unsigned short *)va_arg(args, unsigned short *);
+-				*s = (unsigned short)simple_strtoul(str, &next, base);
+-			}
++			if (is_sign)
++				*va_arg(args, short *) = val.s;
++			else
++				*va_arg(args, unsigned short *) = val.u;
+ 			break;
+ 		case 'l':
+-			if (is_sign) {
+-				long *l = (long *)va_arg(args, long *);
+-				*l = simple_strtol(str, &next, base);
+-			} else {
+-				unsigned long *l = (unsigned long *)va_arg(args, unsigned long *);
+-				*l = simple_strtoul(str, &next, base);
+-			}
++			if (is_sign)
++				*va_arg(args, long *) = val.s;
++			else
++				*va_arg(args, unsigned long *) = val.u;
+ 			break;
+ 		case 'L':
+-			if (is_sign) {
+-				long long *l = (long long *)va_arg(args, long long *);
+-				*l = simple_strtoll(str, &next, base);
+-			} else {
+-				unsigned long long *l = (unsigned long long *)va_arg(args, unsigned long long *);
+-				*l = simple_strtoull(str, &next, base);
+-			}
++			if (is_sign)
++				*va_arg(args, long long *) = val.s;
++			else
++				*va_arg(args, unsigned long long *) = val.u;
+ 			break;
+ 		case 'Z':
+ 		case 'z':
+-		{
+-			size_t *s = (size_t *)va_arg(args, size_t *);
+-			*s = (size_t)simple_strtoul(str, &next, base);
+-		}
+-		break;
++			*va_arg(args, size_t *) = val.u;
++			break;
+ 		default:
+-			if (is_sign) {
+-				int *i = (int *)va_arg(args, int *);
+-				*i = (int)simple_strtol(str, &next, base);
+-			} else {
+-				unsigned int *i = (unsigned int *)va_arg(args, unsigned int*);
+-				*i = (unsigned int)simple_strtoul(str, &next, base);
+-			}
++			if (is_sign)
++				*va_arg(args, int *) = val.s;
++			else
++				*va_arg(args, unsigned int *) = val.u;
+ 			break;
+ 		}
+ 		num++;
+
+
