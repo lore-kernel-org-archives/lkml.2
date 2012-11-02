@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935346Ab2KBOVB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 10:21:01 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44258 "EHLO arroyo.ext.ti.com"
+	id S1757950Ab2KBOXD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 10:23:03 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49670 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934822Ab2KBOUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 10:20:45 -0400
+	id S1750880Ab2KBOXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 10:23:00 -0400
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
         <hs@denx.de>, <nsekhar@ti.com>, <mikedunn@newsguy.com>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
-        <linux-keystone@ti.com>
+        <linux-keystone@list.ti.com>
 CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH] mtd: davinci: add support for parition binding nodes
-Date: Fri, 2 Nov 2012 10:20:23 -0400
-Message-ID: <1351866023-15470-1-git-send-email-m-karicheri2@ti.com>
+Subject: [RESEND PATCH] mtd: davinci: add support for parition binding nodes
+Date: Fri, 2 Nov 2012 10:22:41 -0400
+Message-ID: <1351866161-15516-1-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
