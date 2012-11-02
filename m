@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab2KBP66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 11:58:58 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:11108 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab2KBP64 (ORCPT
+	id S1757570Ab2KBQBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:01:17 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58766 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab2KBQBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 11:58:56 -0400
-Message-ID: <1351871933.2721.10.camel@lorien2>
-Subject: Re: [PATCH linux-next] ARM64: dma-mapping: support
- debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: tony@atomide.com, olof@lixom.net, santosh.shilimkar@ti.com,
-        nico@linaro.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, shuahkhan@gmail.com
-Date: Fri, 02 Nov 2012 09:58:53 -0600
-In-Reply-To: <1351264983.2712.14.camel@lorien2>
-References: <1351205220.6851.3.camel@lorien2>
-	 <CAHkRjk6jDKsFMa1_Wapwr7y5n8Ut8xfNBKWniSfHN_01z7qWFQ@mail.gmail.com>
-	 <1351264983.2712.14.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 2 Nov 2012 12:01:16 -0400
+Message-ID: <5093EE40.5080405@gmail.com>
+Date: Sat, 03 Nov 2012 00:01:04 +0800
+From: Shan Wei <shanwei88@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: cl@linux-foundation.org, David Miller <davem@davemloft.net>,
+        NetDev <netdev@vger.kernel.org>,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>,
+        Shan Wei <shanwei88@gmail.com>
+Subject: [PATCH 0/9 v2] use efficient this_cpu_* helper
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 09:23 -0600, Shuah Khan wrote:
-> Add support for debug_dma_mapping_error() call to avoid warning from
-> debug_dma_unmap() interface when it checks for mapping error checked
-> status. Without this patch, device driver failed to check map error
-> warning is generated. 
-> 
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+this_cpu_ptr is faster than per_cpu_ptr(p, smp_processor_id()) 
+and can reduce  memory accesses.
+The latter helper needs to find the offset for current cpu,
+and needs more assembler instructions which objdump shows in following. 
 
-Do you want this patch going through linux-next or the ARM64 tree? Let
-me know your preference.
+per_cpu_ptr(p, smp_processor_id())：
+  1e:   65 8b 04 25 00 00 00 00         mov    %gs:0x0,%eax
+  26:   48 98                           cltq
+  28:   31 f6                           xor    %esi,%esi
+  2a:   48 c7 c7 00 00 00 00            mov    $0x0,%rdi
+  31:   48 8b 04 c5 00 00 00 00         mov    0x0(,%rax,8),%rax
+  39:   c7 44 10 04 14 00 00 00         movl   $0x14,0x4(%rax,%rdx,1)
 
--- Shuah
-> ---
->  arch/arm64/include/asm/dma-mapping.h |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
-> index 538f4b4..9947768 100644
-> --- a/arch/arm64/include/asm/dma-mapping.h
-> +++ b/arch/arm64/include/asm/dma-mapping.h
-> @@ -50,6 +50,7 @@ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
->  static inline int dma_mapping_error(struct device *dev, dma_addr_t dev_addr)
->  {
->  	struct dma_map_ops *ops = get_dma_ops(dev);
-> +	debug_dma_mapping_error(dev, dev_addr);
->  	return ops->mapping_error(dev, dev_addr);
->  }
->  
+this_cpu_ptr(p)
+  1e:   65 48 03 14 25 00 00 00 00      add    %gs:0x0,%rdx
+  27:   31 f6                           xor    %esi,%esi
+  29:   c7 42 04 14 00 00 00            movl   $0x14,0x4(%rdx)
+  30:   48 c7 c7 00 00 00 00            mov    $0x0,%rdi
 
-
+Changelog V2:
+1. Use this_cpu_read directly instead of ref to field of per-cpu variable.
+2. Patch5 about ftrace is dropped from this series.
+3. Add new patch9 to replace get_cpu;per_cpu_ptr;put_cpu with this_cpu_add opt.
+4. For preemption disable case, use __this_cpu_read instead.
+  
+$ git diff --stat b77bc2069d1e437d5a1a71bb5cfcf4556ee40015 
+ drivers/clocksource/arm_generic.c |    2 +-
+ kernel/padata.c                   |    5 ++---
+ kernel/rcutree.c                  |    2 +-
+ kernel/trace/blktrace.c           |    2 +-
+ kernel/trace/trace.c              |    4 +---
+ net/batman-adv/main.h             |    4 +---
+ net/core/flow.c                   |    4 +---
+ net/openvswitch/datapath.c        |    4 ++--
+ net/openvswitch/vport.c           |    5 ++---
+ net/rds/ib_recv.c                 |    2 +-
+ net/xfrm/xfrm_ipcomp.c            |    7 +++----
+ 11 files changed, 16 insertions(+), 25 deletions(-)
