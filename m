@@ -1,371 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934561Ab2KBS2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 14:28:12 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:29034 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933965Ab2KBS2K (ORCPT
+	id S934744Ab2KBS2b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 14:28:31 -0400
+Received: from smtp1.iwsservers.com ([205.251.132.4]:37741 "EHLO
+	smtp1.iwsservers.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934161Ab2KBS23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 14:28:10 -0400
-Date: Fri, 2 Nov 2012 14:27:49 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-mm@kvack.org, ngupta@vflare.org, minchan@kernel.org,
-        fschmaus@gmail.com, andor.daam@googlemail.com, ilendir@googlemail.com,
-        akpm@linux-foundation.org, mgorman@suse.de
-Subject: Re: [PATCH 2/5] mm: frontswap: lazy initialization to allow tmem
- backends to build/run as modules
-Message-ID: <20121102182749.GB30100@konrad-lan.dumpdata.com>
-References: <1351696074-29362-1-git-send-email-dan.magenheimer@oracle.com>
- <1351696074-29362-3-git-send-email-dan.magenheimer@oracle.com>
- <50915A5C.8000303@linux.vnet.ibm.com>
+	Fri, 2 Nov 2012 14:28:29 -0400
+X-Greylist: delayed 8204 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Nov 2012 14:28:29 EDT
+Message-ID: <20121102110639.146610babtt0ozv3@showspeyuyin.com>
+Date: Fri, 02 Nov 2012 11:06:39 -0500
+From: Apex Textile Company <info@apex.com>
+Reply-to: loganpowell@yandex.com
+To: undisclosed-recipients:;
+Subject: Urgent Respond
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-In-Reply-To: <50915A5C.8000303@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
+X-Filter-ID: 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
+X-Originating-IP: 75.127.85.62
+X-IWSSERVERS-Domain: out.iwsservers.com
+X-IWSSERVERS-Username: 75.127.85.62
+Authentication-Results: iwsservers.com; auth=pass smtp.auth=75.127.85.62
+X-IWSSERVERS-Outgoing-Class: ham
+X-IWSSERVERS-Outgoing-Evidence: Combined (0.86)
+X-Recommended-Action: accept
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 12:05:32PM -0500, Seth Jennings wrote:
-> On 10/31/2012 10:07 AM, Dan Magenheimer wrote:
-> > With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
-> > built/loaded as modules rather than built-in and enabled by a boot parameter,
-> > this patch provides "lazy initialization", allowing backends to register to
-> > frontswap even after swapon was run. Before a backend registers all calls
-> > to init are recorded and the creation of tmem_pools delayed until a backend
-> > registers or until a frontswap put is attempted.
-> > 
-> > Signed-off-by: Stefan Hengelein <ilendir@googlemail.com>
-> > Signed-off-by: Florian Schmaus <fschmaus@gmail.com>
-> > Signed-off-by: Andor Daam <andor.daam@googlemail.com>
-> > Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> > ---
-> >  include/linux/frontswap.h |    1 +
-> >  mm/frontswap.c            |   70 +++++++++++++++++++++++++++++++++++++++-----
-> >  2 files changed, 63 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
-> > index 3044254..ef6ada6 100644
-> > --- a/include/linux/frontswap.h
-> > +++ b/include/linux/frontswap.h
-> > @@ -23,6 +23,7 @@ extern void frontswap_writethrough(bool);
-> >  extern void frontswap_tmem_exclusive_gets(bool);
-> > 
-> >  extern void __frontswap_init(unsigned type);
-> > +#define FRONTSWAP_HAS_LAZY_INIT
-> >  extern int __frontswap_store(struct page *page);
-> >  extern int __frontswap_load(struct page *page);
-> >  extern void __frontswap_invalidate_page(unsigned, pgoff_t);
-> > diff --git a/mm/frontswap.c b/mm/frontswap.c
-> > index 2890e67..523a19b 100644
-> > --- a/mm/frontswap.c
-> > +++ b/mm/frontswap.c
-> > @@ -80,6 +80,19 @@ static inline void inc_frontswap_succ_stores(void) { }
-> >  static inline void inc_frontswap_failed_stores(void) { }
-> >  static inline void inc_frontswap_invalidates(void) { }
-> >  #endif
-> > +
-> > +/*
-> > + * When no backend is registered all calls to init are registered and
-> > + * remembered but fail to create tmem_pools. When a backend registers with
-> > + * frontswap the previous calls to init are executed to create tmem_pools
-> > + * and set the respective poolids.
-> > + * While no backend is registered all "puts", "gets" and "flushes" are
-> > + * ignored or fail.
-> > + */
-> > +#define MAX_INITIALIZABLE_SD 32
-> 
-> MAX_INITIALIZABLE_SD should just be MAX_SWAPFILES
-> 
-> > +static int sds[MAX_INITIALIZABLE_SD];
-> 
-> Rather than store and array of enabled types indexed by type, why not
-> an array of booleans indexed by type.  Or a bitfield if you really
-> want to save space.
-> 
-> > +static int backend_registered;
-> 
-> (backend_registered) is equivalent to checking (frontswap_ops != NULL)
-> right?
-> 
-> > +
-> >  /*
-> >   * Register operations for frontswap, returning previous thus allowing
-> >   * detection of multiple backends and possible nesting.
-> > @@ -87,9 +100,16 @@ static inline void inc_frontswap_invalidates(void) { }
-> >  struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
-> >  {
-> >  	struct frontswap_ops old = frontswap_ops;
-> > +	int i;
-> > 
-> >  	frontswap_ops = *ops;
-> >  	frontswap_enabled = true;
-> > +
-> > +	backend_registered = 1;
-> > +	for (i = 0; i < MAX_INITIALIZABLE_SD; i++) {
-> > +		if (sds[i] != -1)
-> > +			(*frontswap_ops.init)(sds[i]);
-> > +	}
-> >  	return old;
-> >  }
-> >  EXPORT_SYMBOL(frontswap_register_ops);
-> > @@ -122,7 +142,10 @@ void __frontswap_init(unsigned type)
-> >  	BUG_ON(sis == NULL);
-> >  	if (sis->frontswap_map == NULL)
-> >  		return;
-> > -	frontswap_ops.init(type);
-> > +	if (backend_registered) {
-> > +		(*frontswap_ops.init)(type);
-> > +		sds[type] = type;
-> 
-> This is weird, storing the type in an array indexed by type.  Hence my
-> suggestion above about an array of booleans or a bitfield.
-> 
-> > +	}
-> >  }
-> >  EXPORT_SYMBOL(__frontswap_init);
-> > 
-> > @@ -147,10 +170,20 @@ int __frontswap_store(struct page *page)
-> >  	struct swap_info_struct *sis = swap_info[type];
-> >  	pgoff_t offset = swp_offset(entry);
-> > 
-> > +	if (!backend_registered) {
-> > +		inc_frontswap_failed_stores();
-> > +		return ret;
-> > +	}
-> > +
-> >  	BUG_ON(!PageLocked(page));
-> >  	BUG_ON(sis == NULL);
-> >  	if (frontswap_test(sis, offset))
-> >  		dup = 1;
-> > +	if (type < MAX_INITIALIZABLE_SD && sds[type] == -1) {
-> > +		/* lazy init call to handle post-boot insmod backends*/
-> > +		(*frontswap_ops.init)(type);
-> > +		sds[type] = type;
-> > +	}
-> >  	ret = frontswap_ops.store(type, offset, page);
-> >  	if (ret == 0) {
-> >  		frontswap_set(sis, offset);
-> > @@ -186,6 +219,9 @@ int __frontswap_load(struct page *page)
-> >  	struct swap_info_struct *sis = swap_info[type];
-> >  	pgoff_t offset = swp_offset(entry);
-> > 
-> > +	if (!backend_registered)
-> > +		return ret;
-> > +
-> >  	BUG_ON(!PageLocked(page));
-> >  	BUG_ON(sis == NULL);
-> >  	if (frontswap_test(sis, offset))
-> > @@ -209,6 +245,9 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
-> >  {
-> >  	struct swap_info_struct *sis = swap_info[type];
-> > 
-> > +	if (!backend_registered)
-> > +		return;
-> > +
-> >  	BUG_ON(sis == NULL);
-> >  	if (frontswap_test(sis, offset)) {
-> >  		frontswap_ops.invalidate_page(type, offset);
-> > @@ -225,13 +264,23 @@ EXPORT_SYMBOL(__frontswap_invalidate_page);
-> >  void __frontswap_invalidate_area(unsigned type)
-> >  {
-> >  	struct swap_info_struct *sis = swap_info[type];
-> > -
-> > -	BUG_ON(sis == NULL);
-> > -	if (sis->frontswap_map == NULL)
-> > -		return;
-> > -	frontswap_ops.invalidate_area(type);
-> > -	atomic_set(&sis->frontswap_pages, 0);
-> > -	memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-> > +	int i;
-> > +
-> > +	if (backend_registered) {
-> > +		BUG_ON(sis == NULL);
-> > +		if (sis->frontswap_map == NULL)
-> > +			return;
-> > +		(*frontswap_ops.invalidate_area)(type);
-> > +		atomic_set(&sis->frontswap_pages, 0);
-> > +		memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-> > +	} else {
-> > +		for (i = 0; i < MAX_INITIALIZABLE_SD; i++) {
-> > +			if (sds[i] == type) {
-> 
-> Additional weirdness with sds.  It seems this whole for loop could
-> just be reduced to:
-> 
-> sds[type] = -1;
 
 
-How does this look? (I hadn't actually tested it, but did compile test
-it)
+Apex Textile Company
+Dear Candidate,
+We are a very small International trading company that deal on textile  
+materials with our co-operate headquarters based in Japan.We are in  
+need of representative in Europe,America and Canada to help us receive  
+payment from our customer in this region, then you earn Commission:10%  
+of every money order/check that is cashed.If you are interested in  
+this employment offer please do Contact the employment manager
+Logan Powell
+loganpowell@yandex.com
 
->From f545530e9ef2b0623ab9e78d490595e3b7eaa3fa Mon Sep 17 00:00:00 2001
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-Date: Wed, 31 Oct 2012 08:07:51 -0700
-Subject: [PATCH 2/2] mm: frontswap: lazy initialization to allow tmem
- backends to build/run as modules
-
-With the goal of allowing tmem backends (zcache, ramster, Xen tmem) to be
-built/loaded as modules rather than built-in and enabled by a boot parameter,
-this patch provides "lazy initialization", allowing backends to register to
-frontswap even after swapon was run. Before a backend registers all calls
-to init are recorded and the creation of tmem_pools delayed until a backend
-registers or until a frontswap put is attempted.
-
-Signed-off-by: Stefan Hengelein <ilendir@googlemail.com>
-Signed-off-by: Florian Schmaus <fschmaus@gmail.com>
-Signed-off-by: Andor Daam <andor.daam@googlemail.com>
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-[v1: Fixes per Seth Jennings suggestions]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- include/linux/frontswap.h |  1 +
- mm/frontswap.c            | 59 +++++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 53 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/frontswap.h b/include/linux/frontswap.h
-index 3044254..ef6ada6 100644
---- a/include/linux/frontswap.h
-+++ b/include/linux/frontswap.h
-@@ -23,6 +23,7 @@ extern void frontswap_writethrough(bool);
- extern void frontswap_tmem_exclusive_gets(bool);
- 
- extern void __frontswap_init(unsigned type);
-+#define FRONTSWAP_HAS_LAZY_INIT
- extern int __frontswap_store(struct page *page);
- extern int __frontswap_load(struct page *page);
- extern void __frontswap_invalidate_page(unsigned, pgoff_t);
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index 2890e67..4e04549 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -80,6 +80,18 @@ static inline void inc_frontswap_succ_stores(void) { }
- static inline void inc_frontswap_failed_stores(void) { }
- static inline void inc_frontswap_invalidates(void) { }
- #endif
-+
-+/*
-+ * When no backend is registered all calls to init are registered and
-+ * remembered but fail to create tmem_pools. When a backend registers with
-+ * frontswap the previous calls to init are executed to create tmem_pools
-+ * and set the respective poolids.
-+ * While no backend is registered all "puts", "gets" and "flushes" are
-+ * ignored or fail.
-+ */
-+static DECLARE_BITMAP(sds, MAX_SWAPFILES);
-+static bool backend_registered __read_mostly;
-+
- /*
-  * Register operations for frontswap, returning previous thus allowing
-  * detection of multiple backends and possible nesting.
-@@ -87,9 +99,16 @@ static inline void inc_frontswap_invalidates(void) { }
- struct frontswap_ops frontswap_register_ops(struct frontswap_ops *ops)
- {
- 	struct frontswap_ops old = frontswap_ops;
-+	int i;
- 
- 	frontswap_ops = *ops;
- 	frontswap_enabled = true;
-+
-+	backend_registered = true;
-+	for (i = 0; i < MAX_SWAPFILES; i++) {
-+		if (test_bit(i, sds))
-+			(*frontswap_ops.init)(sds[i]);
-+	}
- 	return old;
- }
- EXPORT_SYMBOL(frontswap_register_ops);
-@@ -122,7 +141,10 @@ void __frontswap_init(unsigned type)
- 	BUG_ON(sis == NULL);
- 	if (sis->frontswap_map == NULL)
- 		return;
--	frontswap_ops.init(type);
-+	if (backend_registered) {
-+		(*frontswap_ops.init)(type);
-+		set_bit(type, sds);
-+	}
- }
- EXPORT_SYMBOL(__frontswap_init);
- 
-@@ -147,10 +169,20 @@ int __frontswap_store(struct page *page)
- 	struct swap_info_struct *sis = swap_info[type];
- 	pgoff_t offset = swp_offset(entry);
- 
-+	if (!backend_registered) {
-+		inc_frontswap_failed_stores();
-+		return ret;
-+	}
-+
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset))
- 		dup = 1;
-+	if (type < MAX_SWAPFILES && !test_bit(type, sds)) {
-+		/* lazy init call to handle post-boot insmod backends*/
-+		(*frontswap_ops.init)(type);
-+		set_bit(type, sds);
-+	}
- 	ret = frontswap_ops.store(type, offset, page);
- 	if (ret == 0) {
- 		frontswap_set(sis, offset);
-@@ -186,6 +218,9 @@ int __frontswap_load(struct page *page)
- 	struct swap_info_struct *sis = swap_info[type];
- 	pgoff_t offset = swp_offset(entry);
- 
-+	if (!backend_registered)
-+		return ret;
-+
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset))
-@@ -209,6 +244,9 @@ void __frontswap_invalidate_page(unsigned type, pgoff_t offset)
- {
- 	struct swap_info_struct *sis = swap_info[type];
- 
-+	if (!backend_registered)
-+		return;
-+
- 	BUG_ON(sis == NULL);
- 	if (frontswap_test(sis, offset)) {
- 		frontswap_ops.invalidate_page(type, offset);
-@@ -226,12 +264,16 @@ void __frontswap_invalidate_area(unsigned type)
- {
- 	struct swap_info_struct *sis = swap_info[type];
- 
--	BUG_ON(sis == NULL);
--	if (sis->frontswap_map == NULL)
--		return;
--	frontswap_ops.invalidate_area(type);
--	atomic_set(&sis->frontswap_pages, 0);
--	memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-+	if (backend_registered) {
-+		BUG_ON(sis == NULL);
-+		if (sis->frontswap_map == NULL)
-+			return;
-+		(*frontswap_ops.invalidate_area)(type);
-+		atomic_set(&sis->frontswap_pages, 0);
-+		memset(sis->frontswap_map, 0, sis->max / sizeof(long));
-+	} else {
-+		bitmap_zero(sds, MAX_SWAPFILES);
-+	}
- }
- EXPORT_SYMBOL(__frontswap_invalidate_area);
- 
-@@ -364,6 +406,9 @@ static int __init init_frontswap(void)
- 	debugfs_create_u64("invalidates", S_IRUGO,
- 				root, &frontswap_invalidates);
- #endif
-+	bitmap_zero(sds, MAX_SWAPFILES);
-+
-+	frontswap_enabled = 1;
- 	return 0;
- }
- 
--- 
-1.7.11.7
+Thanks
+Randy Lee
 
