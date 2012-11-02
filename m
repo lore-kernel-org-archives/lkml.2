@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab2KBIX2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 04:23:28 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34574 "EHLO
+	id S1756463Ab2KBIaK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 04:30:10 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54888 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318Ab2KBIXW (ORCPT
+	with ESMTP id S1754296Ab2KBIaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 04:23:22 -0400
+	Fri, 2 Nov 2012 04:30:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <1351840367-4152-4-git-send-email-minchan@kernel.org>
-References: <1351840367-4152-1-git-send-email-minchan@kernel.org>
-	<1351840367-4152-4-git-send-email-minchan@kernel.org>
-Date: Fri, 2 Nov 2012 10:23:21 +0200
-X-Google-Sender-Auth: W4PZT8QF9HFntwljzGW5Odb6QjA
-Message-ID: <CAOJsxLFfH4R+mVtCgQB2xpRPBZerZLKLq5UNM0k2+2U5YyzRPw@mail.gmail.com>
-Subject: Re: [PATCH v4 3/3] zram: select ZSMALLOC when ZRAM is configured
+In-Reply-To: <20121101170454.b7713bce.akpm@linux-foundation.org>
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+	<20121101170454.b7713bce.akpm@linux-foundation.org>
+Date: Fri, 2 Nov 2012 10:30:06 +0200
+X-Google-Sender-Auth: tpDiSxVo2gZFizqZP63-q8VZthk
+Message-ID: <CAOJsxLH7w_qvMofLD3sNuWpyJ0FO8CNHVnYo03TvY46R2qryog@mail.gmail.com>
+Subject: Re: [PATCH v6 00/29] kmem controller for memcg.
 From: Pekka Enberg <penberg@kernel.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Jens Axboe <axboe@kernel.dk>, gaowanlong@cn.fujitsu.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 2, 2012 at 9:12 AM, Minchan Kim <minchan@kernel.org> wrote:
-> At the monent, we can configure zram in driver/block once zsmalloc
-> in /lib menu is configured firstly. It's not convenient.
+On Fri, Nov 2, 2012 at 2:04 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> One thing:
 >
-> User can configure zram in driver/block regardless of zsmalloc enabling
-> by this patch.
+>> Numbers can be found at https://lkml.org/lkml/2012/9/13/239
 >
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> You claim in the above that the fork worload is 'slab intensive".  Or
+> at least, you seem to - it's a bit fuzzy.
+>
+> But how slab intensive is it, really?
+>
+> What is extremely slab intensive is networking.  The networking guys
+> are very sensitive to slab performance.  If this hasn't already been
+> done, could you please determine what impact this has upon networking?
+> I expect Eric Dumazet, Dave Miller and Tom Herbert could suggest
+> testing approaches.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+IIRC, networking guys have reduced their dependency on slab
+performance recently.
+
+Few simple benchmarks to run are hackbench, netperf, and Christoph's
+famous microbenchmarks. The sad reality is that you usually have to
+wait for few release cycles before people notice that you've destroyed
+performance of their favourite workload. :-/
