@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536Ab2KBIPq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 04:15:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35683 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755222Ab2KBIPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756439Ab2KBIPm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 04:15:42 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34105 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755354Ab2KBIPQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Nov 2012 04:15:16 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <tony@atomide.com>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
@@ -12,80 +13,47 @@ To: <tony@atomide.com>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
         <rdunlap@xenotime.net>, <balbi@ti.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 2/3] ARM: OMAP4: add _dev_attr_ to ocp2scp for representing usb_phy
-Date: Fri, 2 Nov 2012 13:44:47 +0530
-Message-ID: <1351844088-27059-3-git-send-email-kishon@ti.com>
+Subject: [PATCH v4 0/3] ocp2scp: add non-dt support
+Date: Fri, 2 Nov 2012 13:44:45 +0530
+Message-ID: <1351844088-27059-1-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351844088-27059-1-git-send-email-kishon@ti.com>
-References: <1351844088-27059-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to reflect devices(usb_phy) attached to ocp2scp bus, ocp2scp
-is assigned a device attribute to represent the attached devices.
+This patch series allows ocp2scp driver to create its child devices
+from the platform data.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Benoit Cousson <b-cousson@ti.com>
----
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+In omap platforms, usb phy is connected to ocp2scp and usb phy is needed
+for MUSB to be functional. When ocp2scp driver was added, it had only dt
+support which means it wont create usb phy devices for non-dt boot.
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-index 652d028..cf579b5 100644
---- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-@@ -21,6 +21,7 @@
- #include <linux/io.h>
- #include <linux/platform_data/gpio-omap.h>
- #include <linux/power/smartreflex.h>
-+#include <linux/platform_data/omap_ocp2scp.h>
- 
- #include <plat/omap_hwmod.h>
- #include <plat/i2c.h>
-@@ -2681,6 +2682,32 @@ static struct omap_hwmod_class omap44xx_ocp2scp_hwmod_class = {
- 	.sysc	= &omap44xx_ocp2scp_sysc,
- };
- 
-+/* ocp2scp dev_attr */
-+static struct resource omap44xx_usb_phy_and_pll_addrs[] = {
-+	{
-+		.name		= "usb_phy",
-+		.start		= 0x4a0ad080,
-+		.end		= 0x4a0ae000,
-+		.flags		= IORESOURCE_MEM,
-+	},
-+	{
-+		/* XXX: Remove this once control module driver is in place */
-+		.name		= "ctrl_dev",
-+		.start		= 0x4a002300,
-+		.end		= 0x4a002303,
-+		.flags		= IORESOURCE_MEM,
-+	},
-+	{ }
-+};
-+
-+static struct omap_ocp2scp_dev ocp2scp_dev_attr[] = {
-+	{
-+		.drv_name       = "omap-usb2",
-+		.res		= omap44xx_usb_phy_and_pll_addrs,
-+	},
-+	{ }
-+};
-+
- /* ocp2scp_usb_phy */
- static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
- 	.name		= "ocp2scp_usb_phy",
-@@ -2694,6 +2721,7 @@ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
- 			.modulemode   = MODULEMODE_HWCTRL,
- 		},
- 	},
-+	.dev_attr	= ocp2scp_dev_attr,
- };
- 
- /*
+This patch series adds non-dt support to ocp2scp and this series is needed
+for getting MUSB functional in non-dt boot.
+
+Changes from v3:
+used PLATFORM_DEVID_AUTO while creating a device using platform_device_alloc
+
+Changes from v2:
+*if cpu is not 44xx, dont create ocp2scp device in mach-omap2/devices.c
+
+Changes from v1:
+* Fixed Sergei's comments on memory leaks
+
+Kishon Vijay Abraham I (3):
+  drivers: bus: ocp2scp: add pdata support
+  ARM: OMAP4: add _dev_attr_ to ocp2scp for representing usb_phy
+  ARM: OMAP: ocp2scp: create omap device for ocp2scp
+
+ arch/arm/mach-omap2/devices.c              |   79 ++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   28 ++++++++++
+ drivers/bus/omap-ocp2scp.c                 |   68 ++++++++++++++++++++++--
+ include/linux/platform_data/omap_ocp2scp.h |   31 +++++++++++
+ 4 files changed, 203 insertions(+), 3 deletions(-)
+ create mode 100644 include/linux/platform_data/omap_ocp2scp.h
+
 -- 
 1.7.9.5
 
