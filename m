@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759916Ab2KBQYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 12:24:09 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:62758 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759374Ab2KBQYH (ORCPT
+	id S1760199Ab2KBQdN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:33:13 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:32800 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759725Ab2KBQdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 12:24:07 -0400
-Message-ID: <5093F390.2090809@gmail.com>
-Date: Fri, 02 Nov 2012 12:23:44 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
+	Fri, 2 Nov 2012 12:33:08 -0400
+Date: Fri, 2 Nov 2012 17:33:02 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Chris Friesen <chris.friesen@genband.com>
+Cc: Eric Paris <eparis@parisplace.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121102163302.GA6080@elf.ucw.cz>
+References: <50919EED.3020601@genband.com>
+ <36538307.gzWq1oO7Kg@linux-lqwf.site>
+ <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
+ <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
+ <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
+ <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
+ <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
+ <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+ <20121101202701.GB20817@xo-6d-61-c0.localdomain>
+ <5092E361.7080901@genband.com>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 21/21] TTY: move tty buffers to tty_port
-References: <1350592007-9216-1-git-send-email-jslaby@suse.cz> <1350592007-9216-22-git-send-email-jslaby@suse.cz> <50897E98.5080502@gmail.com> <50911F67.3040303@suse.cz> <CA+1xoqfZ5DHVi44Y_a5EmXYeN6Eh=COSP4CiA6tM-aqJE1vBoQ@mail.gmail.com> <5091448D.3@suse.cz> <CA+1xoqdRBCQYBQdK-=KJohtua_wD_fp4akk6_jS0x3x82fRp5g@mail.gmail.com> <5093EC1B.2050800@suse.cz> <CA+1xoqdRV5LORTDM9iiTRQwCdGK9XqcW54zyh03M-c-mVU2YLQ@mail.gmail.com> <5093F262.6000301@suse.cz>
-In-Reply-To: <5093F262.6000301@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5092E361.7080901@genband.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2012 12:18 PM, Jiri Slaby wrote:
-> On 11/02/2012 05:07 PM, Sasha Levin wrote:
->> On Fri, Nov 2, 2012 at 11:51 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->>> On 10/31/2012 04:59 PM, Sasha Levin wrote:
->>>> So you probably want a lot more than 100k syscalls, why limit it at
->>>> all actually?
->>>
->>> I unset the limit but I still can't reproduce...
->>>
->>>> I've attached my .config for the guest kernel as reference.
->>>
->>> Even using this config does not help to reproduce that.
->>>
->>> Do you use some special trinity params?
->>
->> Not really:
->>
->>     ./trinity -m --quiet --dangerous -l off
+On Thu 2012-11-01 15:02:25, Chris Friesen wrote:
+> On 11/01/2012 02:27 PM, Pavel Machek wrote:
 > 
-> Oh, you run that as root??
+> >Could someone write down exact requirements for Linux kernel to be signed by Microsoft?
+> >Because thats apparently what you want, and I don't think crippling kexec/suspend is
+> >enough.
+> 
+> As I understand it, the kernel won't be signed by Microsoft.
 
-Yup, it runs inside a disposable VM.
+> Rather, the bootloader will be signed by Microsoft and the vendors
+> will be the ones that refuse to sign a kernel unless it is
+> reasonably assured that it won't be used as an attack vector.
 
+Yes. So can someone write down what "used as an attack vector" means?
 
-Thanks,
-Sasha
+Because, AFAICT, Linux kernel is _designed_ to work as an attact
+vector. We intentionally support wine, and want to keep that support.
+
+> With secure boot enabled, then the kernel should refuse to let an
+> unsigned kexec load new images, and kexec itself should refuse to
+> load unsigned images.  Also the kernel would need to sign its
+> "suspend-to-disk" images and refuse to resume unsigned images.
+
+I believe that attacking Windows using wine is easier than using
+suspend-to-disk.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
