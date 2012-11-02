@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab2KBISe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 04:18:34 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:58699 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab2KBISc convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
-	Fri, 2 Nov 2012 04:18:32 -0400
-Message-Id: <5093900B02000078000A5F29@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 02 Nov 2012 08:19:07 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: <rientjes@google.com>, <jeremy@goop.org>, <x86@kernel.org>,
-        <tglx@linutronix.de>, <torvalds@linux-foundation.org>,
-        <xen-devel@lists.xensource.com>, <mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [patch] x86, xen: fix build dependency when USB_SUPPORT is
- not enabled
-References: <alpine.DEB.2.00.1210312239120.31758@chino.kir.corp.google.com>
- <20121101124912.GA10743@localhost.localdomain>
- <5092D5EA020000780008EB85@nat28.tlf.novell.com>
- <20121101220520.GC18854@localhost.localdomain>
-In-Reply-To: <20121101220520.GC18854@localhost.localdomain>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755297Ab2KBIWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 04:22:51 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:53791 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318Ab2KBIWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 04:22:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <1351840367-4152-2-git-send-email-minchan@kernel.org>
+References: <1351840367-4152-1-git-send-email-minchan@kernel.org>
+	<1351840367-4152-2-git-send-email-minchan@kernel.org>
+Date: Fri, 2 Nov 2012 10:22:45 +0200
+X-Google-Sender-Auth: FjrJxjXhiu5xNsL-JIW1AhcW5hc
+Message-ID: <CAOJsxLEHDAj2R13riRY6TkR3sk9=o3mRigT4dQes0FZOcO2KLw@mail.gmail.com>
+Subject: Re: [PATCH v4 1/3] zsmalloc: promote to lib/
+From: Pekka Enberg <penberg@kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Jens Axboe <axboe@kernel.dk>, gaowanlong@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 01.11.12 at 23:05, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> On Thu, Nov 01, 2012 at 08:04:58PM +0000, Jan Beulich wrote:
->> >>> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> 11/01/12 1:49 PM >>>
->> >On Wed, Oct 31, 2012 at 10:42:30PM -0700, David Rientjes wrote:
->> >> CONFIG_XEN_DOM0 must depend on CONFIG_USB_SUPPORT, otherwise there is no 
->> >> definition of xen_dbgp_reset_prep() and xen_dbgp_external_startup() 
->> >> resulting in the following link error:
->> >> 
->> >> drivers/built-in.o: In function `dbgp_reset_prep':
->> >> (.text+0x1e03c5): undefined reference to `xen_dbgp_reset_prep'
->> >> drivers/built-in.o: In function `dbgp_external_startup':
->> >> (.text+0x1e0d55): undefined reference to `xen_dbgp_external_startup'
->> >
->> >There is another patch that needs to be Acked and picked up by
->> >Greg KH that fixes this.
->> >
->> >Let me poke Jan Beulich to repost it with the appropiate Acks.
->> 
->> It's been picked up already, but another dependency problem was found with
->> it (due to not having used CONFIG_USB_SUPPORT as dependency, as I had
->> first submitted).
-> 
-> Oh. I missed that part - so do you think that this patch should also
-> be used? Or do you think there is another way to fix this?
-> 
-> I am in transit right now so I can't prep a patch (and the laptop I've
-> is extremely slow to even do a test compile).
+On Fri, Nov 2, 2012 at 9:12 AM, Minchan Kim <minchan@kernel.org> wrote:
+> This patch promotes the slab-based zsmalloc memory allocator
+> from the staging tree to lib/
+>
+> zcache/zram depends on this allocator for storing compressed RAM pages
+> in an efficient way under system wide memory pressure where
+> high-order (greater than 0) page allocation are very likely to
+> fail.
+>
+> For more information on zsmalloc and its internals, read the
+> documentation at the top of the zsmalloc.c file.
+>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-Alan and I settled on relaxing the condition in ehci-dbgp.c to
-IS_ENABLED(USB). But it's not clear to me if I should send an
-incremental patch or a replacement one (neither he nor Greg
-answered my respective inquiry).
-
-Jan
-
+Acked-by: Pekka Enberg <penberg@kernel.org>
