@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758222Ab2KBQHc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 12:07:32 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55206 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179Ab2KBQH2 (ORCPT
+	id S1757928Ab2KBQOx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:14:53 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:64613 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab2KBQOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 12:07:28 -0400
+	Fri, 2 Nov 2012 12:14:51 -0400
+Date: Fri, 2 Nov 2012 12:14:47 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, Mel Gorman <mgorman@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [RFC] mm: add support for zsmalloc and zcache
+Message-ID: <20121102161444.GB4633@konrad-lan.dumpdata.com>
+References: <20120921180222.GA7220@phenom.dumpdata.com>
+ <505CB9BC.8040905@linux.vnet.ibm.com>
+ <42d62a30-bd6c-4bd7-97d1-bec2f237756b@default>
+ <50609794.8030508@linux.vnet.ibm.com>
+ <b34c65c9-4b25-431d-8b82-cbe911126be9@default>
+ <5064B647.3000906@linux.vnet.ibm.com>
+ <76d1a3f1-efc5-48b5-b485-604a94adcc1d@default>
+ <506B2C4B.3080508@linux.vnet.ibm.com>
+ <771b722f-3036-451a-a416-e6ab5b4a05f7@default>
+ <508B046A.6050006@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <5093EC1B.2050800@suse.cz>
-References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
- <1350592007-9216-22-git-send-email-jslaby@suse.cz> <50897E98.5080502@gmail.com>
- <50911F67.3040303@suse.cz> <CA+1xoqfZ5DHVi44Y_a5EmXYeN6Eh=COSP4CiA6tM-aqJE1vBoQ@mail.gmail.com>
- <5091448D.3@suse.cz> <CA+1xoqdRBCQYBQdK-=KJohtua_wD_fp4akk6_jS0x3x82fRp5g@mail.gmail.com>
- <5093EC1B.2050800@suse.cz>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Fri, 2 Nov 2012 12:07:07 -0400
-Message-ID: <CA+1xoqdRV5LORTDM9iiTRQwCdGK9XqcW54zyh03M-c-mVU2YLQ@mail.gmail.com>
-Subject: Re: [PATCH 21/21] TTY: move tty buffers to tty_port
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508B046A.6050006@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 2, 2012 at 11:51 AM, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 10/31/2012 04:59 PM, Sasha Levin wrote:
->> So you probably want a lot more than 100k syscalls, why limit it at
->> all actually?
->
-> I unset the limit but I still can't reproduce...
->
->> I've attached my .config for the guest kernel as reference.
->
-> Even using this config does not help to reproduce that.
->
-> Do you use some special trinity params?
+On Fri, Oct 26, 2012 at 04:45:14PM -0500, Seth Jennings wrote:
+> On 10/02/2012 01:17 PM, Dan Magenheimer wrote:
+> > If so, <shake hands> and move forward?  What do you see as next steps?
+> 
+> I've been reviewing the changes between zcache and zcache2 and getting
+> a feel for the scope and direction of those changes.
+> 
+> - Getting the community engaged to review zcache1 at ~2300SLOC was
+>   difficult.
+> - Adding RAMSter has meant adding RAMSter-specific code broadly across
+>   zcache and increases the size of code to review to ~7600SLOC.
 
-Not really:
+One can ignore the drivers/staging/ramster/ramster* directory.
 
-    ./trinity -m --quiet --dangerous -l off
+> - The changes have blurred zcache's internal layering and increased
+>   complexity beyond what a simple SLOC metric can reflect.
 
-Can I add something to my kernel to provide more info when it happens?
+Not sure I see a problem.
+> - Getting the community engaged in reviewing zcache2 will be difficult
+>   and will require an exceptional amount of effort for maintainer and
+>   reviewer.
 
+Exceptional? I think if we start trimming the code down and moving it
+around - and moving the 'ramster' specific calls to header files to
+not be compiled - that should make it easier to read.
 
-Thanks,
-Sasha
+I mean the goal of any review is to address all of the concern you saw
+when you were looking over the code. You probably have a page of
+questions you asked yourself - and in all likehood the other reviewers
+would ask the same questions. So if you address them - either by
+giving comments or making the code easier to read - that would do it.
+
+> 
+> It is difficult for me to know when it could be ready for mainline and
+> production use.  While zcache2 isn't getting broad code reviews yet,
+> how do suggest managing that complexity to make the code maintainable
+> and get it reviewed?
+
+There are Mel's feedback that is also applicable to zcache2.
+
+Thanks for looking at the code!
+> 
+> Seth
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
