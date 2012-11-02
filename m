@@ -1,249 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab2KBOgg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 10:36:36 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:46561 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab2KBOge (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Fri, 2 Nov 2012 10:36:34 -0400
-Message-Id: <5093E8A902000078000A61A7@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 02 Nov 2012 14:37:13 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] xen-pciback: reject out of range inputs
-Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="=__PartF8C93689.2__="
+	id S1755166Ab2KBOgx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 10:36:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43802 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752788Ab2KBOgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 10:36:49 -0400
+Date: Fri, 2 Nov 2012 10:36:03 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
+        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Kees Cook <keescook@chromium.org>, Peter Jones <pjones@redhat.com>
+Subject: Re: Kdump with signed images
+Message-ID: <20121102143603.GD3300@redhat.com>
+References: <20121026023916.GA16762@srcf.ucam.org>
+ <20121026170609.GB24687@redhat.com>
+ <1351276649.18115.217.camel@falcor>
+ <20121101131003.GA14573@redhat.com>
+ <20121101135356.GA15659@redhat.com>
+ <1351780159.15708.17.camel@falcor>
+ <20121101144304.GA15821@redhat.com>
+ <20121101145225.GB10269@srcf.ucam.org>
+ <20121102132318.GA3300@redhat.com>
+ <CAKTCnzkQwhWGJRTiuxv8wp7uPDFoT6eGsN0k51Bvw8=EqQFW=w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKTCnzkQwhWGJRTiuxv8wp7uPDFoT6eGsN0k51Bvw8=EqQFW=w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME message. If you are reading this text, you may want to 
-consider changing to a mail reader or gateway that understands how to 
-properly handle MIME multipart messages.
+On Fri, Nov 02, 2012 at 07:59:15PM +0530, Balbir Singh wrote:
+> On Fri, Nov 2, 2012 at 6:53 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Thu, Nov 01, 2012 at 02:52:25PM +0000, Matthew Garrett wrote:
+> >> On Thu, Nov 01, 2012 at 10:43:04AM -0400, Vivek Goyal wrote:
+> >>
+> >> > So I think this does satisfy the requirement matthew specified. Isn't it?
+> >> > Matthew, what do you think?
+> >>
+> >> Sure, if you can ensure that. You'll need to figure out how to get the
+> >> build system to sign the userspace binaries and you'll need to ensure
+> >> that they're statically linked and don't dlopen anything (including the
+> >> nsswitch modules), but otherwise that should work.
+> >>
+> >
+> > [ CC peter jones ]
+> >
+> > Ok, so even if we build kexec-tools statically with glibc, we have the
+> > issue of name service switch modules. glibc will still do dlopen on
+> > these modules. So what are options now.
+> >
+> > - Sign glibc and associated shared libraries. Do not allow unsigned
+> >   shared library to dynamically link with signed executable.
+> >
+> > - Peter mentioned that work with uClibc for kexec-tools.
+> >
+> > I personally think that however hard it is but first option sounds like
+> > a long term solution. We might have more user space processes which
+> > we might have to trust a generic solution will help with that. For example,
+> > we might have to sign and trust qemu at some point of time.
+> >
+> > Are there other ways of handing glibc issue?
+> >
+> 
+> Have you seen http://sourceware.org/glibc/wiki/FAQ - "Even statically
+> linked programs need some shared libraries which is not acceptable for
+> me. What can I do?" Probably, worth trying.
 
---=__PartF8C93689.2__=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
+Yes I have seen this. IIUC, it says that build libc with -enable-static-nss
+and then individual programs need to statically build against the nss
+modules program will use.
 
-This add checks for out of range numbers (including in cases where the
-folding of slot and function into a single value could yield false
-matches).
+I think building libc with -enable-static-nss part will be unacceptable
+for general server as other programs would like to make use of the
+existing nss functionality.
 
-It also removes the bogus field width restrictions in str_to_quirk() -
-nowhere else in the driver this is being done, and hence this function
-could reject input the equivalent of which would be happily accepted
-in other places (in particular, "0x" prefixes causing the effective
-width of the actual number to be either zero or less than what would be
-required to cover the full range of valid values). Note that for the
-moment this second part is cosmetic only, as the kernel's sscanf()
-currently ignores the field widths, but a patch to overcome this is on
-its way.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-
----
- drivers/xen/xen-pciback/pci_stub.c |   39 +++++++++++++++++++++++++-------=
------
- 1 file changed, 27 insertions(+), 12 deletions(-)
-
---- 3.7-rc3-xen-pciback.orig/drivers/xen/xen-pciback/pci_stub.c
-+++ 3.7-rc3-xen-pciback/drivers/xen/xen-pciback/pci_stub.c
-@@ -142,7 +142,8 @@ static struct pcistub_device *pcistub_de
- 		if (psdev->dev !=3D NULL
- 		    && domain =3D=3D pci_domain_nr(psdev->dev->bus)
- 		    && bus =3D=3D psdev->dev->bus->number
--		    && PCI_DEVFN(slot, func) =3D=3D psdev->dev->devfn) {
-+		    && slot =3D=3D PCI_SLOT(psdev->dev->devfn)
-+		    && func =3D=3D PCI_FUNC(psdev->dev->devfn)) {
- 			pcistub_device_get(psdev);
- 			goto out;
- 		}
-@@ -191,7 +192,8 @@ struct pci_dev *pcistub_get_pci_dev_by_s
- 		if (psdev->dev !=3D NULL
- 		    && domain =3D=3D pci_domain_nr(psdev->dev->bus)
- 		    && bus =3D=3D psdev->dev->bus->number
--		    && PCI_DEVFN(slot, func) =3D=3D psdev->dev->devfn) {
-+		    && slot =3D=3D PCI_SLOT(psdev->dev->devfn)
-+		    && func =3D=3D PCI_FUNC(psdev->dev->devfn)) {
- 			found_dev =3D pcistub_device_get_pci_dev(pdev, =
-psdev);
- 			break;
- 		}
-@@ -936,14 +938,14 @@ static inline int str_to_quirk(const cha
- {
- 	int parsed =3D 0;
-=20
--	sscanf(buf, " %4x:%2x:%2x.%d-%8x:%1x:%8x %n", domain, bus, slot, =
-func,
-+	sscanf(buf, " %x:%x:%x.%x-%x:%x:%x %n", domain, bus, slot, func,
- 	       reg, size, mask, &parsed);
- 	if (parsed && !buf[parsed])
- 		return 0;
-=20
- 	/* try again without domain */
- 	*domain =3D 0;
--	sscanf(buf, " %2x:%2x.%d-%8x:%1x:%8x %n", bus, slot, func, reg, =
-size,
-+	sscanf(buf, " %x:%x.%x-%x:%x:%x %n", bus, slot, func, reg, size,
- 	       mask, &parsed);
- 	if (parsed && !buf[parsed])
- 		return 0;
-@@ -955,7 +957,7 @@ static int pcistub_device_id_add(int dom
- {
- 	struct pcistub_device_id *pci_dev_id;
- 	unsigned long flags;
--	int rc =3D 0;
-+	int rc =3D 0, devfn =3D PCI_DEVFN(slot, func);
-=20
- 	if (slot < 0) {
- 		for (slot =3D 0; !rc && slot < 32; ++slot)
-@@ -969,13 +971,24 @@ static int pcistub_device_id_add(int dom
- 		return rc;
- 	}
-=20
-+	if ((
-+#if !defined(MODULE) /* pci_domains_supported is not being exported */ \
-+    || !defined(CONFIG_PCI_DOMAINS)
-+	     !pci_domains_supported ? domain :
-+#endif
-+	     domain < 0 || domain > 0xffff)
-+	    || bus < 0 || bus > 0xff
-+	    || PCI_SLOT(devfn) !=3D slot
-+	    || PCI_FUNC(devfn) !=3D func)
-+		return -EINVAL;
-+
- 	pci_dev_id =3D kmalloc(sizeof(*pci_dev_id), GFP_KERNEL);
- 	if (!pci_dev_id)
- 		return -ENOMEM;
-=20
- 	pci_dev_id->domain =3D domain;
- 	pci_dev_id->bus =3D bus;
--	pci_dev_id->devfn =3D PCI_DEVFN(slot, func);
-+	pci_dev_id->devfn =3D devfn;
-=20
- 	pr_debug(DRV_NAME ": wants to seize %04x:%02x:%02x.%d\n",
- 		 domain, bus, slot, func);
-@@ -1016,14 +1029,18 @@ static int pcistub_device_id_remove(int
- 	return err;
- }
-=20
--static int pcistub_reg_add(int domain, int bus, int slot, int func, int =
-reg,
--			   int size, int mask)
-+static int pcistub_reg_add(int domain, int bus, int slot, int func,
-+			   unsigned int reg, unsigned int size,
-+			   unsigned int mask)
- {
- 	int err =3D 0;
- 	struct pcistub_device *psdev;
- 	struct pci_dev *dev;
- 	struct config_field *field;
-=20
-+	if (reg > 0xfff || (size < 4 && (mask >> (size * 8))))
-+		return -EINVAL;
-+
- 	psdev =3D pcistub_device_find(domain, bus, slot, func);
- 	if (!psdev) {
- 		err =3D -ENODEV;
-@@ -1254,13 +1271,11 @@ static ssize_t permissive_add(struct dev
- 	int err;
- 	struct pcistub_device *psdev;
- 	struct xen_pcibk_dev_data *dev_data;
-+
- 	err =3D str_to_slot(buf, &domain, &bus, &slot, &func);
- 	if (err)
- 		goto out;
--	if (slot < 0 || func < 0) {
--		err =3D -EINVAL;
--		goto out;
--	}
-+
- 	psdev =3D pcistub_device_find(domain, bus, slot, func);
- 	if (!psdev) {
- 		err =3D -ENODEV;
-
-
-
---=__PartF8C93689.2__=
-Content-Type: text/plain; name="linux-3.7-rc3-xen-pciback-strict.patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment; filename="linux-3.7-rc3-xen-pciback-strict.patch"
-
-xen-pciback: reject out of range inputs=0A=0AThis add checks for out of =
-range numbers (including in cases where the=0Afolding of slot and function =
-into a single value could yield false=0Amatches).=0A=0AIt also removes the =
-bogus field width restrictions in str_to_quirk() -=0Anowhere else in the =
-driver this is being done, and hence this function=0Acould reject input =
-the equivalent of which would be happily accepted=0Ain other places (in =
-particular, "0x" prefixes causing the effective=0Awidth of the actual =
-number to be either zero or less than what would be=0Arequired to cover =
-the full range of valid values). Note that for the=0Amoment this second =
-part is cosmetic only, as the kernel's sscanf()=0Acurrently ignores the =
-field widths, but a patch to overcome this is on=0Aits way.=0A=0ASigned-off=
--by: Jan Beulich <jbeulich@suse.com>=0A=0A---=0A drivers/xen/xen-pciback/pc=
-i_stub.c |   39 +++++++++++++++++++++++++------------=0A 1 file changed, =
-27 insertions(+), 12 deletions(-)=0A=0A--- 3.7-rc3-xen-pciback.orig/drivers=
-/xen/xen-pciback/pci_stub.c=0A+++ 3.7-rc3-xen-pciback/drivers/xen/xen-pciba=
-ck/pci_stub.c=0A@@ -142,7 +142,8 @@ static struct pcistub_device *pcistub_d=
-e=0A 		if (psdev->dev !=3D NULL=0A 		    && domain =
-=3D=3D pci_domain_nr(psdev->dev->bus)=0A 		    && bus =3D=3D =
-psdev->dev->bus->number=0A-		    && PCI_DEVFN(slot, func) =
-=3D=3D psdev->dev->devfn) {=0A+		    && slot =3D=3D PCI_SLOT(psdev->=
-dev->devfn)=0A+		    && func =3D=3D PCI_FUNC(psdev->dev->devfn)) =
-{=0A 			pcistub_device_get(psdev);=0A 			=
-goto out;=0A 		}=0A@@ -191,7 +192,8 @@ struct pci_dev *pcistub_get=
-_pci_dev_by_s=0A 		if (psdev->dev !=3D NULL=0A 		   =
- && domain =3D=3D pci_domain_nr(psdev->dev->bus)=0A 		    && bus =
-=3D=3D psdev->dev->bus->number=0A-		    && PCI_DEVFN(slot, =
-func) =3D=3D psdev->dev->devfn) {=0A+		    && slot =3D=3D =
-PCI_SLOT(psdev->dev->devfn)=0A+		    && func =3D=3D PCI_FUNC(psdev->=
-dev->devfn)) {=0A 			found_dev =3D pcistub_device_get_pc=
-i_dev(pdev, psdev);=0A 			break;=0A 		}=0A@@ =
--936,14 +938,14 @@ static inline int str_to_quirk(const cha=0A {=0A 	=
-int parsed =3D 0;=0A =0A-	sscanf(buf, " %4x:%2x:%2x.%d-%8x:%1x:%8x =
-%n", domain, bus, slot, func,=0A+	sscanf(buf, " %x:%x:%x.%x-%x:%x:%x =
-%n", domain, bus, slot, func,=0A 	       reg, size, mask, =
-&parsed);=0A 	if (parsed && !buf[parsed])=0A 		return 0;=0A =0A 	=
-/* try again without domain */=0A 	*domain =3D 0;=0A-	sscanf(buf,=
- " %2x:%2x.%d-%8x:%1x:%8x %n", bus, slot, func, reg, size,=0A+	sscanf(buf,=
- " %x:%x.%x-%x:%x:%x %n", bus, slot, func, reg, size,=0A 	       =
-mask, &parsed);=0A 	if (parsed && !buf[parsed])=0A 		return =
-0;=0A@@ -955,7 +957,7 @@ static int pcistub_device_id_add(int dom=0A {=0A 	=
-struct pcistub_device_id *pci_dev_id;=0A 	unsigned long flags;=0A-	=
-int rc =3D 0;=0A+	int rc =3D 0, devfn =3D PCI_DEVFN(slot, func);=0A =
-=0A 	if (slot < 0) {=0A 		for (slot =3D 0; !rc && slot < 32; =
-++slot)=0A@@ -969,13 +971,24 @@ static int pcistub_device_id_add(int =
-dom=0A 		return rc;=0A 	}=0A =0A+	if ((=0A+#if !defined(MODUL=
-E) /* pci_domains_supported is not being exported */ \=0A+    || !defined(C=
-ONFIG_PCI_DOMAINS)=0A+	     !pci_domains_supported ? domain :=0A+#endif=0A=
-+	     domain < 0 || domain > 0xffff)=0A+	    || bus < 0 || bus > =
-0xff=0A+	    || PCI_SLOT(devfn) !=3D slot=0A+	    || PCI_FUNC(dev=
-fn) !=3D func)=0A+		return -EINVAL;=0A+=0A 	pci_dev_id =3D =
-kmalloc(sizeof(*pci_dev_id), GFP_KERNEL);=0A 	if (!pci_dev_id)=0A 		=
-return -ENOMEM;=0A =0A 	pci_dev_id->domain =3D domain;=0A 	pci_dev_id-=
->bus =3D bus;=0A-	pci_dev_id->devfn =3D PCI_DEVFN(slot, func);=0A+	=
-pci_dev_id->devfn =3D devfn;=0A =0A 	pr_debug(DRV_NAME ": wants to =
-seize %04x:%02x:%02x.%d\n",=0A 		 domain, bus, slot, func);=0A@@ =
--1016,14 +1029,18 @@ static int pcistub_device_id_remove(int=0A 	=
-return err;=0A }=0A =0A-static int pcistub_reg_add(int domain, int bus, =
-int slot, int func, int reg,=0A-			   int size, int =
-mask)=0A+static int pcistub_reg_add(int domain, int bus, int slot, int =
-func,=0A+			   unsigned int reg, unsigned int =
-size,=0A+			   unsigned int mask)=0A {=0A 	int err =
-=3D 0;=0A 	struct pcistub_device *psdev;=0A 	struct pci_dev =
-*dev;=0A 	struct config_field *field;=0A =0A+	if (reg > 0xfff || =
-(size < 4 && (mask >> (size * 8))))=0A+		return -EINVAL;=0A+=0A 	=
-psdev =3D pcistub_device_find(domain, bus, slot, func);=0A 	if =
-(!psdev) {=0A 		err =3D -ENODEV;=0A@@ -1254,13 +1271,11 @@ static =
-ssize_t permissive_add(struct dev=0A 	int err;=0A 	struct pcistub_devi=
-ce *psdev;=0A 	struct xen_pcibk_dev_data *dev_data;=0A+=0A 	err =3D =
-str_to_slot(buf, &domain, &bus, &slot, &func);=0A 	if (err)=0A 		=
-goto out;=0A-	if (slot < 0 || func < 0) {=0A-		err =3D -EINVAL;=0A=
--		goto out;=0A-	}=0A+=0A 	psdev =3D pcistub_device_fi=
-nd(domain, bus, slot, func);=0A 	if (!psdev) {=0A 		=
-err =3D -ENODEV;=0A
---=__PartF8C93689.2__=--
+Thanks
+Vivek
