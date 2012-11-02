@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758992Ab2KBVoQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 17:44:16 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:35517 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758193Ab2KBVnr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 17:43:47 -0400
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: rjw@sisk.pl
-Subject: [PATCH 1/2] PM: make VT switching to the suspend console optional
-Date: Fri,  2 Nov 2012 14:43:40 -0700
-Message-Id: <1351892621-4840-2-git-send-email-jbarnes@virtuousgeek.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351892621-4840-1-git-send-email-jbarnes@virtuousgeek.org>
-References: <1351892621-4840-1-git-send-email-jbarnes@virtuousgeek.org>
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S1758718Ab2KBVqO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 17:46:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2419 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757134Ab2KBVqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 17:46:13 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Cc: Bart Van Assche <bvanassche@acm.org>
+Subject: [patch,v2 00/10] make I/O path allocations more numa-friendly
+Date: Fri,  2 Nov 2012 17:45:53 -0400
+Message-Id: <1351892763-21325-1-git-send-email-jmoyer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KMS drivers can potentially restore the display configuration without
-userspace help.  Such drivers can set a new global, pm_vt_switch, to
-false if they support this feature.  In that case, the PM layer won't VT
-switch to the suspend console at suspend time and then back to the
-original VT on resume, but rather leave things alone for a nicer looking
-suspend and resume sequence.
+Hi,
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- include/linux/pm.h     |    3 +++
- kernel/power/console.c |    7 +++++++
- 2 files changed, 10 insertions(+)
+This patch set makes memory allocations for data structures used in
+the I/O path more numa friendly by allocating them from the same numa
+node as the storage device.  I've only converted a handfull of drivers
+at this point.  My testing showed that, for workloads where the I/O
+processes were not tied to the numa node housing the device, a speedup
+of around 6% was observed.  When the I/O processes were tied to the
+numa node of the device, there was no measurable difference in my test
+setup.  Given my relatively low-end setup[1], I wouldn't be surprised
+if others could show a more significant performance advantage.
 
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index 007e687..d8e7efb 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -35,6 +35,9 @@ extern void (*pm_idle)(void);
- extern void (*pm_power_off)(void);
- extern void (*pm_power_off_prepare)(void);
- 
-+/* VT switch to the suspend console or not */
-+extern bool pm_vt_switch; /* defaults to true in console.c */
-+
- /*
-  * Device power management
-  */
-diff --git a/kernel/power/console.c b/kernel/power/console.c
-index b1dc456..65376b4 100644
---- a/kernel/power/console.c
-+++ b/kernel/power/console.c
-@@ -13,9 +13,13 @@
- #define SUSPEND_CONSOLE	(MAX_NR_CONSOLES-1)
- 
- static int orig_fgconsole, orig_kmsg;
-+bool pm_vt_switch = true;
- 
- int pm_prepare_console(void)
- {
-+	if (!pm_vt_switch)
-+		return 0;
-+
- 	orig_fgconsole = vt_move_to_console(SUSPEND_CONSOLE, 1);
- 	if (orig_fgconsole < 0)
- 		return 1;
-@@ -26,6 +30,9 @@ int pm_prepare_console(void)
- 
- void pm_restore_console(void)
- {
-+	if (!pm_vt_switch)
-+		return;
-+
- 	if (orig_fgconsole >= 0) {
- 		vt_move_to_console(orig_fgconsole, 0);
- 		vt_kmsg_redirect(orig_kmsg);
--- 
-1.7.9.5
+Comments would be greatly appreciated.
+
+Cheers,
+Jeff
+
+[1] LSI Megaraid SAS controller with 1GB battery-backed cache,
+fronting a RAID 6 10+2.  The workload I used was tuned to not
+have to hit disk.  Fio file attached.
+
+--
+changes from v1->v2:
+- got rid of the vfs patch, as Al pointed out some fundamental
+  problems with it
+- credited Bart van Assche properly
+
+Jeff Moyer (10):
+  scsi: add scsi_host_alloc_node
+  scsi: make __scsi_alloc_queue numa-aware
+  scsi: make scsi_alloc_sdev numa-aware
+  scsi: allocate scsi_cmnd-s from the device's local numa node
+  sd: use alloc_disk_node
+  ata: use scsi_host_alloc_node
+  megaraid_sas: use scsi_host_alloc_node
+  mpt2sas: use scsi_host_alloc_node
+  lpfc: use scsi_host_alloc_node
+  cciss: use blk_init_queue_node
+
+ drivers/ata/libata-scsi.c                 |    3 ++-
+ drivers/block/cciss.c                     |    3 ++-
+ drivers/scsi/hosts.c                      |   13 +++++++++++--
+ drivers/scsi/lpfc/lpfc_init.c             |   10 ++++++----
+ drivers/scsi/megaraid/megaraid_sas_base.c |    5 +++--
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c      |    4 ++--
+ drivers/scsi/scsi.c                       |   17 +++++++++++------
+ drivers/scsi/scsi_lib.c                   |    2 +-
+ drivers/scsi/scsi_scan.c                  |    4 ++--
+ drivers/scsi/sd.c                         |    2 +-
+ include/scsi/scsi_host.h                  |    8 ++++++++
+ 11 files changed, 49 insertions(+), 22 deletions(-)
 
