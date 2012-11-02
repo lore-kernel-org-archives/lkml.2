@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759239Ab2KBWG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 18:06:28 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:46644 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757311Ab2KBWG0 (ORCPT
+	id S1755966Ab2KBWLI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 18:11:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39384 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab2KBWLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 18:06:26 -0400
-Subject: [GIT PULL] target fixes for v3.7-rc4 (round 2)
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Roland Dreier <roland@purestorage.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Nov 2012 15:06:23 -0700
-Message-ID: <1351893983.29493.239.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Nov 2012 18:11:04 -0400
+Date: Fri, 2 Nov 2012 23:11:03 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: [ANNOUNCE] 3.6.5-rt15
+Message-ID: <alpine.LFD.2.02.1211022303510.2756@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+Dear RT Folks,
 
-This series is a second round of target fixes for v3.7-rc4 that have
-come into target-devel over the last days, and are important enough to
-be applied ASAP.  Please go ahead and pull from:
+I'm pleased to announce the 3.6.5-rt15 brown paper bag release.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
+Changes since 3.6.5-rt14:
 
-All are being CC'ed to stable.  The most important two are:
+   * Fix typos and other stupidities^Wcrimes committed by an
+     overworked and tired RT maintainer (courtesy Paul Gortmaker)
 
-- target: Re-add explict zeroing of INQUIRY bounce buffer memory to fix
-a regression for handling zero-length payloads, a bug that went during
-v3.7-rc1, and hit >= v3.6.3 stable. (nab + paolo)
-- iscsi-target: Fix a long-standing missed R2T wakeup race in TX thread
-processing when using a single queue slot. (Roland)
+The embarrasing delta patch against 3.6.5-rt14 is appended below and
+can be found here:
 
-Thanks to Roland & PureStorage team for helping to track down this long
-standing race with iscsi-target single queue slot operation.
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.5-rt14-rt15.patch.xz
 
-Also, the tcm_fc(FCoE) regression bug that was observed recently with
--rc2 code has also been resolved with the cancel_delayed_work() return
-bugfix (commit c0158ca) now in -rc3.  Thanks again to Yi Zou, MDR,
-Robert Love @ Intel for helping to track this down.
+The RT patch against 3.6.5 can be found here:
 
-Thank you,
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.5-rt15.patch.xz
 
---nab
+The split quilt queue is available at:
 
-Nicholas Bellinger (1):
-  target: Re-add explict zeroing of INQUIRY bounce buffer memory
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.5-rt15.tar.xz
 
-Roland Dreier (3):
-  target: Don't return success from module_init() if setup fails
-  target: Avoid integer overflow in se_dev_align_max_sectors()
-  iscsi-target: Fix missed wakeup race in TX thread
+Enjoy,
 
-Steve Hodgson (1):
-  target: Fix incorrect usage of nested IRQ spinlocks in ABORT_TASK
-    path
+	tglx
 
- drivers/target/iscsi/iscsi_target.c       |    4 +++-
- drivers/target/iscsi/iscsi_target_core.h  |    1 +
- drivers/target/iscsi/iscsi_target_login.c |    1 +
- drivers/target/iscsi/iscsi_target_util.c  |   22 ++++++++++++++++++++--
- drivers/target/iscsi/iscsi_target_util.h  |    1 +
- drivers/target/target_core_configfs.c     |    3 ++-
- drivers/target/target_core_device.c       |   18 +++++++++---------
- drivers/target/target_core_spc.c          |    2 ++
- drivers/target/target_core_tmr.c          |    6 +++---
- 9 files changed, 42 insertions(+), 16 deletions(-)
-
+------------->
+Index: linux-stable/arch/x86/kernel/entry_32.S
+===================================================================
+--- linux-stable.orig/arch/x86/kernel/entry_32.S
++++ linux-stable/arch/x86/kernel/entry_32.S
+@@ -597,7 +597,7 @@ ENDPROC(system_call)
+ 	ALIGN
+ 	RING0_PTREGS_FRAME		# can't unwind into user space anyway
+ work_pending:
+-	testl $_TIF_NEED_RESCHED_MASK, %cx
++	testl $_TIF_NEED_RESCHED_MASK, %ecx
+ 	jz work_notifysig
+ work_resched:
+ 	call schedule
+Index: linux-stable/kernel/Kconfig.preempt
+===================================================================
+--- linux-stable.orig/kernel/Kconfig.preempt
++++ linux-stable/kernel/Kconfig.preempt
+@@ -10,7 +10,7 @@ config HAVE_PREEMPT_LAZY
+ 	bool
+ 
+ config PREEMPT_LAZY
+-	def_bool y if HAVE_PREEMPT_LAZE && PREEMPT_RT_FULL
++	def_bool y if HAVE_PREEMPT_LAZY && PREEMPT_RT_FULL
+ 
+ choice
+ 	prompt "Preemption Model"
+Index: linux-stable/kernel/sched/features.h
+===================================================================
+--- linux-stable.orig/kernel/sched/features.h
++++ linux-stable/kernel/sched/features.h
+@@ -76,4 +76,3 @@ SCHED_FEAT(PREEMPT_LAZY, true)
+ SCHED_FEAT(FORCE_SD_OVERLAP, false)
+ SCHED_FEAT(RT_RUNTIME_SHARE, true)
+ SCHED_FEAT(LB_MIN, false)
+-
+Index: linux-stable/localversion-rt
+===================================================================
+--- linux-stable.orig/localversion-rt
++++ linux-stable/localversion-rt
+@@ -1 +1 @@
+--rt14
++-rt15
