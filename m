@@ -1,166 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab2KBItA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 04:49:00 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38823 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755313Ab2KBIs5 (ORCPT
+	id S1757246Ab2KBItl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 04:49:41 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:44273 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757555Ab2KBItf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 04:48:57 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>, linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/media: Use dev_ printks in cxd2099/cxd2099.[ch]
-Date: Fri,  2 Nov 2012 17:48:48 +0900
-Message-Id: <1351846129-19432-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 2 Nov 2012 04:49:35 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+References: <CACLa4pvh3v3Mhq8oe3dzRL8ytBgmitPkCGUSfVCR5WdQopjRMQ@mail.gmail.com>
+	<1351783096.2391.77.camel@dabdike.int.hansenpartnership.com>
+	<CACLa4pu0yoB6CQX=3nuAT2vz4=oTNfM9fjMUvFXKJovYu+y4fw@mail.gmail.com>
+	<1351803800.2391.96.camel@dabdike.int.hansenpartnership.com>
+	<20121101210634.GA19723@srcf.ucam.org>
+	<20121101213127.5967327f@pyramind.ukuu.org.uk>
+	<20121101212843.GA20309@srcf.ucam.org>
+	<20121101213751.377ebaa8@pyramind.ukuu.org.uk>
+	<20121101213452.GA20564@srcf.ucam.org>
+	<20121101215817.79e50ec2@pyramind.ukuu.org.uk>
+	<20121101215752.GA21154@srcf.ucam.org>
+Date: Fri, 02 Nov 2012 01:49:25 -0700
+In-Reply-To: <20121101215752.GA21154@srcf.ucam.org> (Matthew Garrett's message
+	of "Thu, 1 Nov 2012 21:57:52 +0000")
+Message-ID: <87625ogzje.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18/qlkeAwnhhYHwCkqCXIoTAs4pJCjrZKo=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Matthew Garrett <mjg59@srcf.ucam.org>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warnings.
-- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
-- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
-- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+Matthew Garrett <mjg59@srcf.ucam.org> writes:
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/media/cxd2099/cxd2099.c |   29 +++++++++++++++--------------
- drivers/staging/media/cxd2099/cxd2099.h |    2 +-
- 2 files changed, 16 insertions(+), 15 deletions(-)
+> On Thu, Nov 01, 2012 at 09:58:17PM +0000, Alan Cox wrote:
+>> On Thu, 1 Nov 2012 21:34:52 +0000
+>> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>> > I think you've misunderstood. Blacklist updates are append only.
+>> 
+>> I think you've misunderstood - thats a technical detail that merely
+>> alters the cost to the people who did something improper.
+>
+> Winning a case is cold comfort if your software has been uninstallable 
+> for the years it took to get through the courts. If others want to take 
+> that risk, fine.
 
-diff --git a/drivers/staging/media/cxd2099/cxd2099.c b/drivers/staging/media/cxd2099/cxd2099.c
-index 0ff1972..822c487 100644
---- a/drivers/staging/media/cxd2099/cxd2099.c
-+++ b/drivers/staging/media/cxd2099/cxd2099.c
-@@ -66,8 +66,9 @@ static int i2c_write_reg(struct i2c_adapter *adapter, u8 adr,
- 	struct i2c_msg msg = {.addr = adr, .flags = 0, .buf = m, .len = 2};
- 
- 	if (i2c_transfer(adapter, &msg, 1) != 1) {
--		printk(KERN_ERR "Failed to write to I2C register %02x@%02x!\n",
--		       reg, adr);
-+		dev_err(&adapter->dev,
-+			"Failed to write to I2C register %02x@%02x!\n",
-+			reg, adr);
- 		return -1;
- 	}
- 	return 0;
-@@ -79,7 +80,7 @@ static int i2c_write(struct i2c_adapter *adapter, u8 adr,
- 	struct i2c_msg msg = {.addr = adr, .flags = 0, .buf = data, .len = len};
- 
- 	if (i2c_transfer(adapter, &msg, 1) != 1) {
--		printk(KERN_ERR "Failed to write to I2C!\n");
-+		dev_err(&adapter->dev, "Failed to write to I2C!\n");
- 		return -1;
- 	}
- 	return 0;
-@@ -94,7 +95,7 @@ static int i2c_read_reg(struct i2c_adapter *adapter, u8 adr,
- 				   .buf = val, .len = 1} };
- 
- 	if (i2c_transfer(adapter, msgs, 2) != 2) {
--		printk(KERN_ERR "error in i2c_read_reg\n");
-+		dev_err(&adapter->dev, "error in i2c_read_reg\n");
- 		return -1;
- 	}
- 	return 0;
-@@ -109,7 +110,7 @@ static int i2c_read(struct i2c_adapter *adapter, u8 adr,
- 				 .buf = data, .len = n} };
- 
- 	if (i2c_transfer(adapter, msgs, 2) != 2) {
--		printk(KERN_ERR "error in i2c_read\n");
-+		dev_err(&adapter->dev, "error in i2c_read\n");
- 		return -1;
- 	}
- 	return 0;
-@@ -277,7 +278,7 @@ static void cam_mode(struct cxd *ci, int mode)
- #ifdef BUFFER_MODE
- 		if (!ci->en.read_data)
- 			return;
--		printk(KERN_INFO "enable cam buffer mode\n");
-+		dev_info(&ci->i2c->dev, "enable cam buffer mode\n");
- 		/* write_reg(ci, 0x0d, 0x00); */
- 		/* write_reg(ci, 0x0e, 0x01); */
- 		write_regm(ci, 0x08, 0x40, 0x40);
-@@ -524,7 +525,7 @@ static int slot_reset(struct dvb_ca_en50221 *ca, int slot)
- 			msleep(10);
- #if 0
- 			read_reg(ci, 0x06, &val);
--			printk(KERN_INFO "%d:%02x\n", i, val);
-+			dev_info(&ci->i2c->dev, "%d:%02x\n", i, val);
- 			if (!(val&0x10))
- 				break;
- #else
-@@ -542,7 +543,7 @@ static int slot_shutdown(struct dvb_ca_en50221 *ca, int slot)
- {
- 	struct cxd *ci = ca->data;
- 
--	printk(KERN_INFO "slot_shutdown\n");
-+	dev_info(&ci->i2c->dev, "slot_shutdown\n");
- 	mutex_lock(&ci->lock);
- 	write_regm(ci, 0x09, 0x08, 0x08);
- 	write_regm(ci, 0x20, 0x80, 0x80); /* Reset CAM Mode */
-@@ -578,10 +579,10 @@ static int campoll(struct cxd *ci)
- 
- 	if (istat&0x40) {
- 		ci->dr = 1;
--		printk(KERN_INFO "DR\n");
-+		dev_info(&ci->i2c->dev, "DR\n");
- 	}
- 	if (istat&0x20)
--		printk(KERN_INFO "WC\n");
-+		dev_info(&ci->i2c->dev, "WC\n");
- 
- 	if (istat&2) {
- 		u8 slotstat;
-@@ -597,7 +598,7 @@ static int campoll(struct cxd *ci)
- 			if (ci->slot_stat) {
- 				ci->slot_stat = 0;
- 				write_regm(ci, 0x03, 0x00, 0x08);
--				printk(KERN_INFO "NO CAM\n");
-+				dev_info(&ci->i2c->dev, "NO CAM\n");
- 				ci->ready = 0;
- 			}
- 		}
-@@ -634,7 +635,7 @@ static int read_data(struct dvb_ca_en50221 *ca, int slot, u8 *ebuf, int ecount)
- 	campoll(ci);
- 	mutex_unlock(&ci->lock);
- 
--	printk(KERN_INFO "read_data\n");
-+	dev_info(&ci->i2c->dev, "read_data\n");
- 	if (!ci->dr)
- 		return 0;
- 
-@@ -687,7 +688,7 @@ struct dvb_ca_en50221 *cxd2099_attach(struct cxd2099_cfg *cfg,
- 	u8 val;
- 
- 	if (i2c_read_reg(i2c, cfg->adr, 0, &val) < 0) {
--		printk(KERN_INFO "No CXD2099 detected at %02x\n", cfg->adr);
-+		dev_info(&i2c->dev, "No CXD2099 detected at %02x\n", cfg->adr);
- 		return NULL;
- 	}
- 
-@@ -705,7 +706,7 @@ struct dvb_ca_en50221 *cxd2099_attach(struct cxd2099_cfg *cfg,
- 	ci->en = en_templ;
- 	ci->en.data = ci;
- 	init(ci);
--	printk(KERN_INFO "Attached CXD2099AR at %02x\n", ci->cfg.adr);
-+	dev_info(&i2c->dev, "Attached CXD2099AR at %02x\n", ci->cfg.adr);
- 	return &ci->en;
- }
- EXPORT_SYMBOL(cxd2099_attach);
-diff --git a/drivers/staging/media/cxd2099/cxd2099.h b/drivers/staging/media/cxd2099/cxd2099.h
-index 19c588a..0eb607c 100644
---- a/drivers/staging/media/cxd2099/cxd2099.h
-+++ b/drivers/staging/media/cxd2099/cxd2099.h
-@@ -43,7 +43,7 @@ struct dvb_ca_en50221 *cxd2099_attach(struct cxd2099_cfg *cfg,
- static inline struct dvb_ca_en50221 *cxd2099_attach(struct cxd2099_cfg *cfg,
- 					void *priv, struct i2c_adapter *i2c)
- {
--	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
-+	dev_warn(&i2c->dev, "%s: driver disabled by Kconfig\n", __func__);
- 	return NULL;
- }
- #endif
--- 
-1.7.9.5
+When the goal is to secure Linux I don't see how any of this helps.
+Windows 8 compromises are already available so if we turn most of these
+arguments around I am certain clever attackers can go through windows to
+run compromised kernel on a linux system, at least as easily as the
+reverse.
 
+Short of instructing UEFI to stop trusting the Microsoft signing key I
+don't see any of the secureboot dance gaining any security of computers
+running linux or security from keys being revoked for non-sense reasons.
+
+Eric
