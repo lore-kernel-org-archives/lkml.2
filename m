@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab2KBOzx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 10:55:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28833 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752516Ab2KBOzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 10:55:50 -0400
-Date: Fri, 2 Nov 2012 10:55:32 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121102145532.GE3300@redhat.com>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
- <2548314.3caaFsMVg6@linux-lqwf.site>
- <50919EED.3020601@genband.com>
- <36538307.gzWq1oO7Kg@linux-lqwf.site>
- <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
- <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
- <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
- <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
- <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
- <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+	id S1755427Ab2KBPAq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 11:00:46 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45516 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab2KBPAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 11:00:43 -0400
+Message-ID: <5093E015.1070504@wwwdotorg.org>
+Date: Fri, 02 Nov 2012 09:00:37 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: Michal Marek <mmarek@suse.cz>, David Gibson <david@gibson.dropbear.id.au>,
+        Jon Loeliger <jdl@jdl.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, linux-mips@linux-mips.org
+Subject: Re: [PATCH V5 1/2] kbuild: centralize .dts->.dtb rule
+References: <1351721431-26220-1-git-send-email-swarren@wwwdotorg.org> <20121102095801.GC17860@linux-mips.org> <20121102102335.GF2905@linux-mips.org>
+In-Reply-To: <20121102102335.GF2905@linux-mips.org>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 01, 2012 at 10:29:17AM -0400, Eric Paris wrote:
-> On Thu, Nov 1, 2012 at 5:59 AM, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
+On 11/02/2012 04:23 AM, Ralf Baechle wrote:
+> On Fri, Nov 02, 2012 at 10:58:01AM +0100, Ralf Baechle wrote:
 > 
-> > But that doesn't really help me: untrusted root is an oxymoron.
+>> Can you fold these MIPS bits into your patch?
 > 
-> Imagine you run windows and you've never heard of Linux.  You like
-> that only windows kernels can boot on your box and not those mean
-> nasty hacked up malware kernels.  Now some attacker manages to take
-> over your box because you clicked on that executable for young models
-> in skimpy bathing suits.  That executable rewrote your bootloader to
-> launch a very small carefully crafted Linux environment.  This
+> I missed Lantiq.
 
-Rewrote bootloader on disk so that it gets executed next time? It
-will not run as signature will not match.
-
-Thanks
-Vivek
+Thanks, I've squashed that in, and with a quick grep noticed that
+arch/{arm64,microblaze} also need updating.
