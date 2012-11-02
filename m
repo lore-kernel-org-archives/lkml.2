@@ -1,111 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762747Ab2KBLSB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 07:18:01 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:45304 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762691Ab2KBLR7 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Fri, 2 Nov 2012 07:17:59 -0400
-Message-Id: <5093BA1F02000078000A600E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 02 Nov 2012 11:18:39 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86-64: fix ordering of CFI directives and recent
- ASM_CLAC additions
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1762716Ab2KBLbm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 07:31:42 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:40598 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab2KBLbk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 07:31:40 -0400
+Message-ID: <5093AF19.5040707@acm.org>
+Date: Fri, 02 Nov 2012 12:31:37 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: Re: [patch 01/10] scsi: make __scsi_alloc_queue numa-aware
+References: <1351628084-29358-1-git-send-email-jmoyer@redhat.com> <1351628084-29358-4-git-send-email-jmoyer@redhat.com>
+In-Reply-To: <1351628084-29358-4-git-send-email-jmoyer@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While these got added in the right place everywhere else, entry_64.S
-is the odd one where they ended up before the initial CFI directive(s).
-In order to cover the full code ranges, the CFI directive must be
-first, though.
+On 10/30/12 21:14, Jeff Moyer wrote:
+> Pass the numa node id set in the Scsi_Host on to blk_init_queue_node
+> in order to keep all allocations local to the numa node the device is
+> closest to.
+>
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> ---
+>   drivers/scsi/scsi_lib.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index da36a3a..8662a09 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -1664,7 +1664,7 @@ struct request_queue *__scsi_alloc_queue(struct Scsi_Host *shost,
+>   	struct request_queue *q;
+>   	struct device *dev = shost->dma_dev;
+>
+> -	q = blk_init_queue(request_fn, NULL);
+> +	q = blk_init_queue_node(request_fn, NULL, shost->numa_node);
+>   	if (!q)
+>   		return NULL;
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Hello Jeff,
 
----
- arch/x86/kernel/entry_64.S |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+I haven't seen the patch that introduces numa_node in struct Scsi_Host 
+nor the cover letter of this patch series ? Have these been posted on 
+the linux-scsi mailing list ?
 
---- 3.7-rc3/arch/x86/kernel/entry_64.S
-+++ 3.7-rc3-x86_64-unwind-vs-clac/arch/x86/kernel/entry_64.S
-@@ -995,8 +995,8 @@ END(interrupt)
- 	 */
- 	.p2align CONFIG_X86_L1_CACHE_SHIFT
- common_interrupt:
--	ASM_CLAC
- 	XCPT_FRAME
-+	ASM_CLAC
- 	addq $-0x80,(%rsp)		/* Adjust vector to [-256,-1] range */
- 	interrupt do_IRQ
- 	/* 0(%rsp): old_rsp-ARGOFFSET */
-@@ -1135,8 +1135,8 @@ END(common_interrupt)
-  */
- .macro apicinterrupt num sym do_sym
- ENTRY(\sym)
--	ASM_CLAC
- 	INTR_FRAME
-+	ASM_CLAC
- 	pushq_cfi $~(\num)
- .Lcommon_\sym:
- 	interrupt \do_sym
-@@ -1190,8 +1190,8 @@ apicinterrupt IRQ_WORK_VECTOR \
-  */
- .macro zeroentry sym do_sym
- ENTRY(\sym)
--	ASM_CLAC
- 	INTR_FRAME
-+	ASM_CLAC
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
- 	subq $ORIG_RAX-R15, %rsp
-@@ -1208,8 +1208,8 @@ END(\sym)
- 
- .macro paranoidzeroentry sym do_sym
- ENTRY(\sym)
--	ASM_CLAC
- 	INTR_FRAME
-+	ASM_CLAC
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
- 	subq $ORIG_RAX-R15, %rsp
-@@ -1227,8 +1227,8 @@ END(\sym)
- #define INIT_TSS_IST(x) PER_CPU_VAR(init_tss) + (TSS_ist + ((x) - 1) * 8)
- .macro paranoidzeroentry_ist sym do_sym ist
- ENTRY(\sym)
--	ASM_CLAC
- 	INTR_FRAME
-+	ASM_CLAC
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
- 	subq $ORIG_RAX-R15, %rsp
-@@ -1247,8 +1247,8 @@ END(\sym)
- 
- .macro errorentry sym do_sym
- ENTRY(\sym)
--	ASM_CLAC
- 	XCPT_FRAME
-+	ASM_CLAC
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	subq $ORIG_RAX-R15, %rsp
- 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
-@@ -1266,8 +1266,8 @@ END(\sym)
- 	/* error code is on the stack already */
- .macro paranoiderrorentry sym do_sym
- ENTRY(\sym)
--	ASM_CLAC
- 	XCPT_FRAME
-+	ASM_CLAC
- 	PARAVIRT_ADJUST_EXCEPTION_FRAME
- 	subq $ORIG_RAX-R15, %rsp
- 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+Bart.
 
 
 
