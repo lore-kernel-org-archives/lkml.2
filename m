@@ -1,156 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab2KBUIN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 16:08:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12123 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753093Ab2KBUIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 16:08:10 -0400
-Date: Fri, 2 Nov 2012 16:08:00 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Robin Dong <robin.k.dong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Robin Dong <sanbai@taobao.com>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <boyu.mt@taobao.com>
-Subject: Re: [PATCH 2/2 v5] block/throttle: Add IO submitted information in
- blkio.throttle
-Message-ID: <20121102200800.GS3300@redhat.com>
-References: <1351848697-26087-1-git-send-email-robin.k.dong@gmail.com>
- <1351848697-26087-2-git-send-email-robin.k.dong@gmail.com>
+	id S1753991Ab2KBUJn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 16:09:43 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63060 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386Ab2KBUJl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 16:09:41 -0400
+X-Originating-IP: 108.223.40.66
+Date: Fri, 2 Nov 2012 13:09:54 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon patches for 3.7-rc4
+Message-ID: <20121102200954.GA32041@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mYCpIKhGyMATD0i+"
 Content-Disposition: inline
-In-Reply-To: <1351848697-26087-2-git-send-email-robin.k.dong@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 05:31:37PM +0800, Robin Dong wrote:
-> From: Robin Dong <sanbai@taobao.com>
-> 
-> Currently, if the IO is throttled by io-throttle, the system admin has no idea
-> of the situation and can't report it to the real application user about that
-> he/she has to do something.
-> 
-> So this patch adds a new interface named blkio.throttle.io_submitted which
-> exposes the number of bios that have been sent into blk-throttle therefore the
-> user could calculate the difference from throttle.io_serviced to see how many
-> IOs are currently throttled.
-> 
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-> Signed-off-by: Robin Dong <sanbai@taobao.com>
-> ---
 
-Looks good to me.
+--mYCpIKhGyMATD0i+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Hi Linus,
 
-Vivek
+Please pull hwmon patches for Linux 3.7-rc4 from signed tag:
 
-> v3 <-- v2:
->  - Use nr-queued[] of struct throtl_grp for stats instaed of adding new blkg_rwstat.
-> 
-> v4 <-- v3:
->  - Add two new blkg_rwstat arguments to count total bios be sent into blk_throttle.
-> 
-> v5 <-- v4:
->  - Change name "io_submit_bytes" to "io_submitted_bytes".
-> 
->  block/blk-throttle.c |   43 +++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 43 insertions(+), 0 deletions(-)
-> 
-> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> index 46ddeff..c6391b5 100644
-> --- a/block/blk-throttle.c
-> +++ b/block/blk-throttle.c
-> @@ -46,6 +46,10 @@ struct tg_stats_cpu {
->  	struct blkg_rwstat		service_bytes;
->  	/* total IOs serviced, post merge */
->  	struct blkg_rwstat		serviced;
-> +	/* total bytes submitted into blk-throttle */
-> +	struct blkg_rwstat		submit_bytes;
-> +	/* total IOs submitted into blk-throttle */
-> +	struct blkg_rwstat		submitted;
->  };
->  
->  struct throtl_grp {
-> @@ -266,6 +270,8 @@ static void throtl_pd_reset_stats(struct blkcg_gq *blkg)
->  
->  		blkg_rwstat_reset(&sc->service_bytes);
->  		blkg_rwstat_reset(&sc->serviced);
-> +		blkg_rwstat_reset(&sc->submit_bytes);
-> +		blkg_rwstat_reset(&sc->submitted);
->  	}
->  }
->  
-> @@ -699,6 +705,30 @@ static void throtl_update_dispatch_stats(struct throtl_grp *tg, u64 bytes,
->  	local_irq_restore(flags);
->  }
->  
-> +static void throtl_update_submit_stats(struct throtl_grp *tg, u64 bytes, int rw)
-> +{
-> +	struct tg_stats_cpu *stats_cpu;
-> +	unsigned long flags;
-> +
-> +	/* If per cpu stats are not allocated yet, don't do any accounting. */
-> +	if (tg->stats_cpu == NULL)
-> +		return;
-> +
-> +	/*
-> +	 * Disabling interrupts to provide mutual exclusion between two
-> +	 * writes on same cpu. It probably is not needed for 64bit. Not
-> +	 * optimizing that case yet.
-> +	 */
-> +	local_irq_save(flags);
-> +
-> +	stats_cpu = this_cpu_ptr(tg->stats_cpu);
-> +
-> +	blkg_rwstat_add(&stats_cpu->submitted, rw, 1);
-> +	blkg_rwstat_add(&stats_cpu->submit_bytes, rw, bytes);
-> +
-> +	local_irq_restore(flags);
-> +}
-> +
->  static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
->  {
->  	bool rw = bio_data_dir(bio);
-> @@ -1084,6 +1114,16 @@ static struct cftype throtl_files[] = {
->  		.private = offsetof(struct tg_stats_cpu, serviced),
->  		.read_seq_string = tg_print_cpu_rwstat,
->  	},
-> +	{
-> +		.name = "throttle.io_submitted_bytes",
-> +		.private = offsetof(struct tg_stats_cpu, submit_bytes),
-> +		.read_seq_string = tg_print_cpu_rwstat,
-> +	},
-> +	{
-> +		.name = "throttle.io_submitted",
-> +		.private = offsetof(struct tg_stats_cpu, submitted),
-> +		.read_seq_string = tg_print_cpu_rwstat,
-> +	},
->  	{ }	/* terminate */
->  };
->  
-> @@ -1128,6 +1168,8 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
->  		if (tg_no_rule_group(tg, rw)) {
->  			throtl_update_dispatch_stats(tg,
->  						     bio->bi_size, bio->bi_rw);
-> +			throtl_update_submit_stats(tg,
-> +					bio->bi_size, bio->bi_rw);
->  			goto out_unlock_rcu;
->  		}
->  	}
-> @@ -1141,6 +1183,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
->  	if (unlikely(!tg))
->  		goto out_unlock;
->  
-> +	throtl_update_submit_stats(tg, bio->bi_size, bio->bi_rw);
->  	if (tg->nr_queued[rw]) {
->  		/*
->  		 * There is already another bio queued in same dir. No
-> -- 
-> 1.7.1
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Thanks,
+Guenter
+------
+
+The following changes since commit 8f0d8163b50e01f398b14bcd4dc039ac5ab18d64:
+
+  Linux 3.7-rc3 (2012-10-28 12:24:48 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to eaa7cc60f7dff5e74ef387ace8228235fab8241b:
+
+  hwmon: Only include of_match_table with CONFIG_OF_GPIO (2012-11-01 17:31:20 -0700)
+
+----------------------------------------------------------------
+An e-mail address update, and fix a compile error on SPARC
+
+----------------------------------------------------------------
+Andreas Herrmann (1):
+      hwmon, fam15h_power: Change email address, MAINTAINERS entry
+
+Jamie Lentin (1):
+      hwmon: Only include of_match_table with CONFIG_OF_GPIO
+
+ Documentation/hwmon/fam15h_power |    2 +-
+ MAINTAINERS                      |    2 +-
+ drivers/hwmon/fam15h_power.c     |    4 ++--
+ drivers/hwmon/gpio-fan.c         |    2 ++
+ 4 files changed, 6 insertions(+), 4 deletions(-)
+
+--mYCpIKhGyMATD0i+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQlCiSAAoJEMsfJm/On5mB/cwP/1h0v+YcE/U6M3Jr0plsd9jE
+5kMDvYmcrm0MuHTnl0wIOQ+d1SfYPAxMtyWz/lG8s+GZ1JzLRIbD9w1S3nd1twOT
+jcck808ZOSH1wMaPRkFdbqpc7qD1c9sRVtAH5/qTYBmXxZ8hiO0lCiv7qlmp6uYU
+HUpeqx86OG9KQb/vC96J7a8bImjic09h38P0fR5kp0s7G9wfel2J9ZGmbrg1sTJA
+XbgPV0ODyq95gCwKKnO6Z7pBMRIwrXnJRWzWUe6Fw0j4trI1VLnC7rp+L6yWPtlY
+xp0YQ+3aVZsXykBbzmdGSVmhdWbJBQxd1czs+U3nPxxa2H0vDMEgzfmkEvVfbfVc
+6iR3zJBCbSyI8pGDfL2krow5MZwZrY+VIt7uhBOaiEEui4HyFmggeQDin2hfRmPI
+tOHIPRfDVEUeeFAuLA/mON43RBKmRRfBQIf6DLBVpg5ZdNbPczEmpbwhd0hLEXhf
+vFvdboI1NHpvrzn714tp6VMx+CnB1ZAqg/XReMW2poMqTUK7FYREvGFj2RvYYxUf
+LMqFgrQmlEEXRlBEleFoQfJOTUgIm+8EXuXeZ67pXZgl5rlIV43kx2Hw7GYL8Bhx
+x616qsCNYazGWN2Nf9IDqDVDLYGwGhRcOcTlAlLn6pbOUaVGiTWIWw3yWUeXe1Nn
+vvEJFgdWCRXOaN2djJm7
+=96mN
+-----END PGP SIGNATURE-----
+
+--mYCpIKhGyMATD0i+--
