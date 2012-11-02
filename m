@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757700Ab2KBTZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 15:25:59 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:25313 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756744Ab2KBTYD (ORCPT
+	id S1758065Ab2KBT0H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 15:26:07 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:38818 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757775Ab2KBT0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 15:24:03 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/XwLNBM66SnCK4UFuhU1WX
-Subject: [PATCH 2/6] ARM: OMAP2+: Move iopgtable header to drivers/iommu/
-To: linux-kernel@vger.kernel.org
-From: Tony Lindgren <tony@atomide.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Joerg Roedel <joro@8bytes.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Omar Ramirez Luna <omar.luna@linaro.org>, linux-omap@vger.kernel.org,
-        Ido Yariv <ido@wizery.com>, linux-arm-kernel@lists.infradead.org
-Date: Fri, 02 Nov 2012 12:24:00 -0700
-Message-ID: <20121102192400.4253.83596.stgit@muffinssi.local>
-In-Reply-To: <20121102192221.4253.34303.stgit@muffinssi.local>
-References: <20121102192221.4253.34303.stgit@muffinssi.local>
-User-Agent: StGit/0.16-2-g0d85
+	Fri, 2 Nov 2012 15:26:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <50937918.7080302@parallels.com>
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+	<20121101170454.b7713bce.akpm@linux-foundation.org>
+	<50937918.7080302@parallels.com>
+Date: Sat, 3 Nov 2012 04:25:59 +0900
+Message-ID: <CAAmzW4O74e3J9M3Q86Y0wXX6Pfp8GDpv6jAB5ebJPHfAxAeL0Q@mail.gmail.com>
+Subject: Re: [PATCH v6 00/29] kmem controller for memcg.
+From: JoonSoo Kim <js1304@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ido Yariv <ido@wizery.com>
+Hello, Glauber.
 
-The iopgtable header file is only used by the iommu & iovmm drivers, so
-move it to drivers/iommu/, as part of the single zImage effort.
+2012/11/2 Glauber Costa <glommer@parallels.com>:
+> On 11/02/2012 04:04 AM, Andrew Morton wrote:
+>> On Thu,  1 Nov 2012 16:07:16 +0400
+>> Glauber Costa <glommer@parallels.com> wrote:
+>>
+>>> Hi,
+>>>
+>>> This work introduces the kernel memory controller for memcg. Unlike previous
+>>> submissions, this includes the whole controller, comprised of slab and stack
+>>> memory.
+>>
+>> I'm in the middle of (re)reading all this.  Meanwhile I'll push it all
+>> out to http://ozlabs.org/~akpm/mmots/ for the crazier testers.
+>>
+>> One thing:
+>>
+>>> Numbers can be found at https://lkml.org/lkml/2012/9/13/239
+>>
+>> You claim in the above that the fork worload is 'slab intensive".  Or
+>> at least, you seem to - it's a bit fuzzy.
+>>
+>> But how slab intensive is it, really?
+>>
+>> What is extremely slab intensive is networking.  The networking guys
+>> are very sensitive to slab performance.  If this hasn't already been
+>> done, could you please determine what impact this has upon networking?
+>> I expect Eric Dumazet, Dave Miller and Tom Herbert could suggest
+>> testing approaches.
+>>
+>
+> I can test it, but unfortunately I am unlikely to get to prepare a good
+> environment before Barcelona.
+>
+> I know, however, that Greg Thelen was testing netperf in his setup.
+> Greg, do you have any publishable numbers you could share?
 
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Omar Ramirez Luna <omar.luna@linaro.org>
-Signed-off-by: Ido Yariv <ido@wizery.com>
-[tony@atomide.com: updated to be earlier in the series]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
----
- drivers/iommu/omap-iommu-debug.c            |    2 +-
- drivers/iommu/omap-iommu.c                  |    2 +-
- drivers/iommu/omap-iopgtable.h              |    0 
- drivers/iommu/omap-iovmm.c                  |    2 +-
- 4 files changed, 3 insertions(+), 3 deletions(-)
- rename arch/arm/plat-omap/include/plat/iopgtable.h => drivers/iommu/omap-iopgtable.h (100%)
+Below is my humble opinion.
+I am worrying about data cache footprint which is possibly caused by
+this patchset, especially slab implementation.
+If there are several memcg cgroups, each cgroup has it's own kmem_caches.
+When each group do slab-intensive job hard, data cache may be overflowed easily,
+and cache miss rate will be high, therefore this would decrease system
+performance highly.
+Is there any result about this?
 
-diff --git a/drivers/iommu/omap-iommu-debug.c b/drivers/iommu/omap-iommu-debug.c
-index f55fc5d..0cac372 100644
---- a/drivers/iommu/omap-iommu-debug.c
-+++ b/drivers/iommu/omap-iommu-debug.c
-@@ -22,7 +22,7 @@
- #include <plat/iommu.h>
- #include <plat/iovmm.h>
- 
--#include <plat/iopgtable.h>
-+#include "omap-iopgtable.h"
- 
- #define MAXCOLUMN 100 /* for short messages */
- 
-diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
-index d0b1234..f2bbfb0 100644
---- a/drivers/iommu/omap-iommu.c
-+++ b/drivers/iommu/omap-iommu.c
-@@ -26,7 +26,7 @@
- 
- #include <plat/iommu.h>
- 
--#include <plat/iopgtable.h>
-+#include "omap-iopgtable.h"
- 
- #define for_each_iotlb_cr(obj, n, __i, cr)				\
- 	for (__i = 0;							\
-diff --git a/arch/arm/plat-omap/include/plat/iopgtable.h b/drivers/iommu/omap-iopgtable.h
-similarity index 100%
-rename from arch/arm/plat-omap/include/plat/iopgtable.h
-rename to drivers/iommu/omap-iopgtable.h
-diff --git a/drivers/iommu/omap-iovmm.c b/drivers/iommu/omap-iovmm.c
-index 2e10c3e..b332392 100644
---- a/drivers/iommu/omap-iovmm.c
-+++ b/drivers/iommu/omap-iovmm.c
-@@ -24,7 +24,7 @@
- #include <plat/iommu.h>
- #include <plat/iovmm.h>
- 
--#include <plat/iopgtable.h>
-+#include "omap-iopgtable.h"
- 
- static struct kmem_cache *iovm_area_cachep;
- 
-
+Thanks.
