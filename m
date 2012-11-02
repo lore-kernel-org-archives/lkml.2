@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563Ab2KBRP4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:15:56 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33151 "EHLO mail.kernel.org"
+	id S1763142Ab2KBRQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:16:15 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33139 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762960Ab2KBRHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:05 -0400
+	id S1762949Ab2KBRHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Christoph Hellwig <hch@lst.de>, Roland Dreier <roland@purestorage.com>,
-        Andy Grover <agrover@redhat.com>
-Subject: [ 07/11] target: Fix double-free of se_cmd in target_complete_tmr_failure
-Date: Fri,  2 Nov 2012 10:06:42 -0700
-Message-Id: <20121102170314.743885627@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Markus Kanet <dvmailing@gmx.eu>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 06/11] b43: Fix oops on unload when firmware not found
+Date: Fri,  2 Nov 2012 10:06:41 -0700
+Message-Id: <20121102170314.673624996@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170314.204845540@linuxfoundation.org>
 References: <20121102170314.204845540@linuxfoundation.org>
@@ -27,41 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit e13d5fef88c40b87c8430f8274c3a9ca32ef90bc upstream.
+commit f89ff6441df06abc2d95f3ef67525923032d6283 upstream.
 
-Fabric drivers currently expect to internally release se_cmd in the event
-of a TMR failure during target_submit_tmr(), which means the immediate call
-to transport_generic_free_cmd() after TFO->queue_tm_rsp() from within
-target_complete_tmr_failure() workqueue context is wrong.
+When b43 fails to find firmware when loaded, a subsequent unload will
+oops due to calling ieee80211_unregister_hw() when the corresponding
+register call was never made.
 
-This is done as some fabrics expect TMR operations to be acknowledged
-before releasing the descriptor, so the assumption that core is releasing
-se_cmd associated TMR memory is incorrect.  This fixes a OOPs where
-transport_generic_free_cmd() was being called more than once.
+Commit 2d838bb608e2d1f6cb4280e76748cb812dc822e7 fixed the same problem
+for b43legacy.
 
-This bug was originally observed with tcm_qla2xxx fabric ports.
-
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Roland Dreier <roland@purestorage.com>
-Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Tested-by: Markus Kanet <dvmailing@gmx.eu>
+Cc: Markus Kanet <dvmailing@gmx.eu>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_transport.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/wireless/b43/main.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1748,7 +1748,6 @@ static void target_complete_tmr_failure(
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -5430,6 +5430,8 @@ static void b43_ssb_remove(struct ssb_de
+ 	cancel_work_sync(&wldev->restart_work);
  
- 	se_cmd->se_tmr_req->response = TMR_LUN_DOES_NOT_EXIST;
- 	se_cmd->se_tfo->queue_tm_rsp(se_cmd);
--	transport_generic_free_cmd(se_cmd, 0);
- }
- 
- /**
+ 	B43_WARN_ON(!wl);
++	if (!wldev->fw.ucode.data)
++		return;			/* NULL if firmware never loaded */
+ 	if (wl->current_dev == wldev) {
+ 		/* Restore the queues count before unregistering, because firmware detect
+ 		 * might have modified it. Restoring is important, so the networking
 
 
