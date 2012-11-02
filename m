@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760287Ab2KBQdq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 12:33:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50272 "EHLO mx1.redhat.com"
+	id S1760364Ab2KBQd7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:33:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17103 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760176Ab2KBQdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 12:33:43 -0400
+	id S1759739Ab2KBQdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 12:33:39 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Tony Luck <tony.luck@intel.com>, Andi Kleen <andi.kleen@intel.com>
 Cc: Wu Fengguang <fengguang.wu@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
         "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 2/2 v2] mm: print out information of file affected by memory error
-Date: Fri,  2 Nov 2012 12:33:13 -0400
-Message-Id: <1351873993-9373-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 1/2 v2] HWPOISON: fix action_result() to print out dirty/clean
+Date: Fri,  2 Nov 2012 12:33:12 -0400
+Message-Id: <1351873993-9373-2-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1351873993-9373-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1351873993-9373-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Printing out the information about which file can be affected by a
-memory error in generic_error_remove_page() is helpful for user to
-estimate the impact of the error.
+action_result() fails to print out "dirty" even if an error occurred on a
+dirty pagecache, because when we check PageDirty in action_result() it was
+cleared after page isolation even if it's dirty before error handling. This
+can break some applications that monitor this message, so should be fixed.
+
+There are several callers of action_result() except page_action(), but
+either of them are not for LRU pages but for free pages or kernel pages,
+so we don't have to consider dirty or not for them.
+
+Note that PG_dirty can be set outside page locks as described in commit
+554940dc8c1e, so this patch does not completely closes the race window,
+but just narrows it.
 
 Changelog v2:
-  - dereference mapping->host after if (!mapping) check for robustness
+  - Add comment about setting PG_dirty outside page lock
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Jan Kara <jack@suse.cz>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
 ---
- mm/truncate.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ mm/memory-failure.c | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-diff --git v3.7-rc3.orig/mm/truncate.c v3.7-rc3/mm/truncate.c
-index d51ce92..db1b216 100644
---- v3.7-rc3.orig/mm/truncate.c
-+++ v3.7-rc3/mm/truncate.c
-@@ -151,14 +151,20 @@ int truncate_inode_page(struct address_space *mapping, struct page *page)
-  */
- int generic_error_remove_page(struct address_space *mapping, struct page *page)
- {
-+	struct inode *inode;
-+
- 	if (!mapping)
- 		return -EINVAL;
-+	inode = mapping->host;
+diff --git v3.7-rc3.orig/mm/memory-failure.c v3.7-rc3/mm/memory-failure.c
+index 6c5899b..4377de9 100644
+--- v3.7-rc3.orig/mm/memory-failure.c
++++ v3.7-rc3/mm/memory-failure.c
+@@ -781,16 +781,16 @@ static struct page_state {
+ 	{ compound,	compound,	"huge",		me_huge_page },
+ #endif
+ 
+-	{ sc|dirty,	sc|dirty,	"swapcache",	me_swapcache_dirty },
+-	{ sc|dirty,	sc,		"swapcache",	me_swapcache_clean },
++	{ sc|dirty,	sc|dirty,	"dirty swapcache",	me_swapcache_dirty },
++	{ sc|dirty,	sc,		"clean swapcache",	me_swapcache_clean },
+ 
+-	{ unevict|dirty, unevict|dirty,	"unevictable LRU", me_pagecache_dirty},
+-	{ unevict,	unevict,	"unevictable LRU", me_pagecache_clean},
++	{ unevict|dirty, unevict|dirty,	"dirty unevictable LRU", me_pagecache_dirty },
++	{ unevict,	unevict,	"clean unevictable LRU", me_pagecache_clean },
+ 
+-	{ mlock|dirty,	mlock|dirty,	"mlocked LRU",	me_pagecache_dirty },
+-	{ mlock,	mlock,		"mlocked LRU",	me_pagecache_clean },
++	{ mlock|dirty,	mlock|dirty,	"dirty mlocked LRU",	me_pagecache_dirty },
++	{ mlock,	mlock,		"clean mlocked LRU",	me_pagecache_clean },
+ 
+-	{ lru|dirty,	lru|dirty,	"LRU",		me_pagecache_dirty },
++	{ lru|dirty,	lru|dirty,	"dirty LRU",	me_pagecache_dirty },
+ 	{ lru|dirty,	lru,		"clean LRU",	me_pagecache_clean },
+ 
  	/*
- 	 * Only punch for normal data pages for now.
- 	 * Handling other types like directories would need more auditing.
- 	 */
--	if (!S_ISREG(mapping->host->i_mode))
-+	if (!S_ISREG(inode->i_mode))
- 		return -EIO;
-+	pr_info("MCE %#lx: file info pgoff:%lu, inode:%lu, dev:%s\n",
-+		page_to_pfn(page), page_index(page),
-+		inode->i_ino, inode->i_sb->s_id);
- 	return truncate_inode_page(mapping, page);
+@@ -812,14 +812,14 @@ static struct page_state {
+ #undef slab
+ #undef reserved
+ 
++/*
++ * "Dirty/Clean" indication is not 100% accurate due to the possibility of
++ * setting PG_dirty outside page lock. See also comment above set_page_dirty().
++ */
+ static void action_result(unsigned long pfn, char *msg, int result)
+ {
+-	struct page *page = pfn_to_page(pfn);
+-
+-	printk(KERN_ERR "MCE %#lx: %s%s page recovery: %s\n",
+-		pfn,
+-		PageDirty(page) ? "dirty " : "",
+-		msg, action_name[result]);
++	pr_err("MCE %#lx: %s page recovery: %s\n",
++		pfn, msg, action_name[result]);
  }
- EXPORT_SYMBOL(generic_error_remove_page);
+ 
+ static int page_action(struct page_state *ps, struct page *p,
 -- 
 1.7.11.7
 
