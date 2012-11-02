@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762070Ab2KBKK3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 06:10:29 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:61185 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750927Ab2KBKK1 (ORCPT
+	id S1422907Ab2KBKTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 06:19:11 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42828 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757279Ab2KBKTJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 06:10:27 -0400
-Message-ID: <1351851021.1597.27.camel@x61.thuisdomein>
-Subject: [PATCH] xfs: silence GCC warning
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>
-Date: Fri, 02 Nov 2012 11:10:21 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 02 Nov 2012 10:10:22.0076 (UTC) FILETIME=[44D853C0:01CDB8E2]
-X-RcptDomain: vger.kernel.org
+	Fri, 2 Nov 2012 06:19:09 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.1 \(1498\))
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <509391CA.9040408@ti.com>
+Date: Fri, 2 Nov 2012 11:19:12 +0100
+Cc: Jason Kridner <jkridner@beagleboard.org>, Tony Lindgren <tony@atomide.com>,
+        <paul@pwsan.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, "Porter, Matt" <mporter@ti.com>,
+        Russ Dill <russ.dill@gmail.com>, <khilman@ti.com>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <FED5A9B3-836C-4284-AF61-5D81C65F3634@dominion.thruhere.net>
+References: <CA+T6QPk-etCT7EzwGR-tP+JTab_m4Vywh9qgHG_HW-oXKgn_AQ@mail.gmail.com> <509391CA.9040408@ti.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+X-Mailer: Apple Mail (2.1498)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building xfs_ioctl.o triggers this GCC warning:
-    In file included from fs/xfs/xfs_linux.h:49:0,
-                     from fs/xfs/xfs.h:27,
-                     from fs/xfs/xfs_ioctl.c:18:
-    fs/xfs/xfs_ioctl.c: In function ‘xfs_find_handle’:
-    include/linux/file.h:37:7: warning: ‘f.file’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-    fs/xfs/xfs_ioctl.c:73:13: note: ‘f.file’ was declared here
 
-In this function 'f' and ('f.file') are only used for the
-XFS_IOC_FD_TO_HANDLE command. It is clear that 'f.file' is always used
-initialized, but there appears to be no easy way to give GCC enough
-information to determine that. So let's silence this warning, using the
-pattern Ingo Molnar recently suggested.
+Op 2 nov. 2012, om 10:26 heeft "Cousson, Benoit" <b-cousson@ti.com> het volgende geschreven:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Compile tested only.
+> Hi Jason,
+> 
+> On 11/1/2012 7:50 PM, Jason Kridner wrote:
+>> My apologies for starting a new thread, but I don't have this thread
+>> in my Inbox.
+>> 
+>> http://www.spinics.net/lists/linux-omap/msg81034.html
+>> 
+>> Tony Lindgren wrote:
+>> 
+>>> * Pantelis Antoniou <panto@xxxxxxxxxxxxxxxxxxxxxxx> [121031 15:02]:
+>>>> 
+>>>> So when device's node is 'disabled' of_platform_device_create_pdata()
+>>>> will not create the device.
+>>>> 
+>>>> Now, of course it is possible to re-trigger the platform's probe method
+>>>> to be called, and in fact I do so in the capebus patches.
+>>> 
+>>> You should fix this in generic way then rather than working
+>>> around it in capebus. The same problem exists changing
+>>> between different functionality for the shared pins,
+>>> let's say between USB pins and UART pins if you want a
+>>> serial debug console on some phone.
+>> 
+>> The current capebus solution goes a long way to fixing a huge issue
+>> for BeagleBone users and I don't understand what seems to be a
+>> push-back on principle. On BeagleBone capes, these conflicts cannot be
+>> resolved early.
+> 
+> I don't think there is any push-back on the principle. It is a very valid problem that does not have any solution today.
+> 
+> The comments are more on the implementation.
+> 
+>> Do you have suggestions on some more generic method? It seems to me
+>> the proposed capebus approach strikes a good balance.
+> 
+> Well, yeah, that's a generic DT issue, not a beagle-cape issue.
+> We should not necessarily handle it by introducing some fake bus and some new binding like spi-dt / i2c-dt that does not mean anything in term of HW.
+> 
+> DT is about pure HW representation. Introducing some fake hierarchy to make SW life easier is not necessarily the good approach.
 
-1) I fear that the only way to give GCC the information it needs to do
-the flow analysis correctly is to split xfs_find_handle() into three
-separate functions, one for each command it handles, and add one or two
-helper functions for the code common to all three functions. That seemed
-a bit drastic. But perhaps we should try that.
+I see, pure HW. Let's look at this:
 
- fs/xfs/xfs_ioctl.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+                gpio_keys {
+                        compatible = "gpio-keys";
+                        pinctrl-names = "default";
+                        pinctrl-0 = <&bone_lcd3_cape_keys_00A0_pins>;
 
-diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-index 8305f2a..5c98ce3 100644
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -70,7 +70,7 @@ xfs_find_handle(
- 	int			hsize;
- 	xfs_handle_t		handle;
- 	struct inode		*inode;
--	struct fd		f;
-+	struct fd		f = { }; /* Avoid GCC warning */
- 	struct path		path;
- 	int			error;
- 	struct xfs_inode	*ip;
--- 
-1.7.11.7
+                        #address-cells = <1>;
+                        #size-cells = <0>;
 
+                        button@1 {
+                                debounce_interval = <50>;
+                                linux,code = <105>;
+                                label = "left";
+                                gpios = <&gpio2 16 0x0>;
+                                gpio-key,wakeup;
+                                autorepeat;
+                        };
+
+Is the "linux,code" pure hardware or have there already been exceptions to that rule?
+
+regards,
+
+Koen
