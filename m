@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336Ab2KBVqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 17:46:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7877 "EHLO mx1.redhat.com"
+	id S1759725Ab2KBVrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 17:47:14 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:53151 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758170Ab2KBVq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 17:46:29 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Cc: Bart Van Assche <bvanassche@acm.org>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [patch,v2 07/10] megaraid_sas: use scsi_host_alloc_node
-Date: Fri,  2 Nov 2012 17:46:00 -0400
-Message-Id: <1351892763-21325-8-git-send-email-jmoyer@redhat.com>
-In-Reply-To: <1351892763-21325-1-git-send-email-jmoyer@redhat.com>
-References: <1351892763-21325-1-git-send-email-jmoyer@redhat.com>
+	id S1758662Ab2KBVrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 17:47:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Suspend/resume without VT switches
+Date: Fri, 02 Nov 2012 22:51:07 +0100
+Message-ID: <7608326.fQBj17U8Wv@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1351892621-4840-1-git-send-email-jbarnes@virtuousgeek.org>
+References: <1351892621-4840-1-git-send-email-jbarnes@virtuousgeek.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday, November 02, 2012 02:43:39 PM Jesse Barnes wrote:
+> I've lightly tested this with X and it definitely makes my
+> suspend/resume sequence a bit prettier.  It should speed things up
+> trivally as well, but most of those gains come from other changes to the
+> i915 driver (posted earlier to intel-gfx).
+> 
+> Any thoughts?
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
----
- drivers/scsi/megaraid/megaraid_sas_base.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+I like the idea.
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-index d2c5366..707a6cd 100644
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -4020,8 +4020,9 @@ megasas_probe_one(struct pci_dev *pdev, const struct pci_device_id *id)
- 	if (megasas_set_dma_mask(pdev))
- 		goto fail_set_dma_mask;
- 
--	host = scsi_host_alloc(&megasas_template,
--			       sizeof(struct megasas_instance));
-+	host = scsi_host_alloc_node(&megasas_template,
-+				    sizeof(struct megasas_instance),
-+				    dev_to_node(&pdev->dev));
- 
- 	if (!host) {
- 		printk(KERN_DEBUG "megasas: scsi_host_alloc failed\n");
+> I suspect we'll have to be more defensive about the
+> resume configuration in case the BIOS did something weird, but overall I
+> think we should be able to do this one way or another.
+
+Perhaps patch [1/2] should be [2/2] and vice versa? :-)
+
+Thanks,
+Rafael
+
+
 -- 
-1.7.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
