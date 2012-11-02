@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762787Ab2KBNgm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 09:36:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13170 "EHLO
+	id S1762764Ab2KBNgl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 09:36:41 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13989 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761348Ab2KBNfF (ORCPT
+	with ESMTP id S1761200Ab2KBNfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Nov 2012 09:35:05 -0400
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=cEZLnVLY_d0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=fsuvUruio_gA:10 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=Bn7xxrpYSftJHWeE3oYA:9 a=QEXdDO2ut3YA:10 a=lSinr4eg3GwA:10 a=EvKJbDF4Ut8A:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Tx9Vf2JQ04_o3j1r65sA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=uio4Cusoyq4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=2KByqrNPVRQA:10 a=20KFwNOVAAAA:8 a=2N7iOkv7plfqhN_ov1EA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=R5ATijz0JB5yeC7kUQoA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121102133500.904920696@goodmis.org>
+Message-Id: <20121102133501.643958787@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 09:33:08 -0400
+Date: Fri, 02 Nov 2012 09:33:12 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        David Sharp <dhsharp@google.com>
-Subject: [PATCH 16/22] tracing: Show raw time stamp on stats per cpu using counter or tsc
- mode for trace_clock
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 20/22] tracing: Remove deprecated tracing_enabled file
 References: <20121102133251.998500247@goodmis.org>
-Content-Disposition: inline; filename=0016-tracing-Show-raw-time-stamp-on-stats-per-cpu-using-c.patch
+Content-Disposition: inline; filename=0020-tracing-Remove-deprecated-tracing_enabled-file.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,62 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-Show raw time stamp values for stats per cpu if you choose counter or tsc m=
-ode
-for trace_clock. Although a unit of tracing time stamp is nsec in local or =
-global mode,
-the units in counter and TSC mode are tracing counter and cycles respective=
-ly.
+The tracing_enabled file was used as a quick way to stop
+tracers, and try to bring down overhead for things like
+the latency tracers (irqsoff, wakeup, etc). But it didn't
+work that well.
 
-Link: http://lkml.kernel.org/r/1349998076-15495-6-git-send-email-dhsharp@go=
-ogle.com
+The tracing_on file was created as a really fast way to
+stop recording into the ftrace ring buffer and can interact
+with the kernel. That is a tracing_off() call in the kernel
+can disable recording of events, and then from userspace one
+could echo 1 into the tracing_on file to continue it. The
+tracing_enabled function did too much to allow for this.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Signed-off-by: David Sharp <dhsharp@google.com>
+The tracing_on has taken over as a way to start and stop tracing
+and the tracing_enabled file should not be used. But because of
+its existance, it still confuses people. Over a year ago the
+following commit was added:
+
+ commit 6752ab4a9c30d5411b2dfdb251a3f1cb18aae487
+ Author: Steven Rostedt <srostedt@redhat.com>
+ Date:   Tue Feb 8 13:54:06 2011 -0500
+
+    tracing: Deprecate tracing_enabled for tracing_on
+
+This commit added a WARN_ON() if the tracing_enabled file's variable
+was changed. After this was added, only LatencyTop complained, and
+they soon fixed their tool as there was no reason that LatencyTop
+should touch this file as it was using the perf ring buffers which
+this file does not interact with. But since that time no one else
+has complained about this WARN_ON(). Thus it is safe to assume that
+this file is no longer needed. Time to get rid of it.
+
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c |   23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
+ kernel/trace/trace.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index e0e7a8d..599b29a 100644
+index 4b83a03..8eaa837 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -4452,13 +4452,24 @@ tracing_stats_read(struct file *filp, char __user *=
-ubuf,
- 	cnt =3D ring_buffer_bytes_cpu(tr->buffer, cpu);
- 	trace_seq_printf(s, "bytes: %ld\n", cnt);
+@@ -4809,9 +4809,6 @@ static __init int tracer_init_debugfs(void)
 =20
--	t =3D ns2usecs(ring_buffer_oldest_event_ts(tr->buffer, cpu));
--	usec_rem =3D do_div(t, USEC_PER_SEC);
--	trace_seq_printf(s, "oldest event ts: %5llu.%06lu\n", t, usec_rem);
-+	if (trace_clocks[trace_clock_id].in_ns) {
-+		/* local or global for trace_clock */
-+		t =3D ns2usecs(ring_buffer_oldest_event_ts(tr->buffer, cpu));
-+		usec_rem =3D do_div(t, USEC_PER_SEC);
-+		trace_seq_printf(s, "oldest event ts: %5llu.%06lu\n",
-+								t, usec_rem);
-+
-+		t =3D ns2usecs(ring_buffer_time_stamp(tr->buffer, cpu));
-+		usec_rem =3D do_div(t, USEC_PER_SEC);
-+		trace_seq_printf(s, "now ts: %5llu.%06lu\n", t, usec_rem);
-+	} else {
-+		/* counter or tsc mode for trace_clock */
-+		trace_seq_printf(s, "oldest event ts: %llu\n",
-+				ring_buffer_oldest_event_ts(tr->buffer, cpu));
+ 	d_tracer =3D tracing_init_dentry();
 =20
--	t =3D ns2usecs(ring_buffer_time_stamp(tr->buffer, cpu));
--	usec_rem =3D do_div(t, USEC_PER_SEC);
--	trace_seq_printf(s, "now ts: %5llu.%06lu\n", t, usec_rem);
-+		trace_seq_printf(s, "now ts: %llu\n",
-+				ring_buffer_time_stamp(tr->buffer, cpu));
-+	}
+-	trace_create_file("tracing_enabled", 0644, d_tracer,
+-			  &global_trace, &rb_simple_fops);
+-
+ 	trace_create_file("trace_options", 0644, d_tracer,
+ 			NULL, &tracing_iter_fops);
 =20
- 	cnt =3D ring_buffer_dropped_events_cpu(tr->buffer, cpu);
- 	trace_seq_printf(s, "dropped events: %ld\n", cnt);
 --=20
 1.7.10.4
 
@@ -100,13 +97,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJQk8wFAAoJEOdOSU1xswtMrJoH/RQ22Dq5tOOJX2WkZIIODhoV
-GpEVjvvNQYCKqlr/QZdVPRhJ+kHsxWN2u15u5HX2PzRIG/C0rMLqWGUwanm4TVRR
-d5qsNCs2mPKXjoy0/fYxWut8TkUjlrSE2+R4quF+PE8jEZ6dyj/2MaYOJb9YTPPL
-6bJ0wmirPRL+NOvXcAsKxV9+gwdrEY8sYvQyzHLtojcJ1MOsAt14mBbLdmqakb/Y
-txKheo4/mgpXttxojNjwhcNc4uybeTXS/MPKYfQrX2y4yH8Czli3kiyGovCWwUKH
-gOAeG1ckwfVDmbaBKat7A0fc2nJEpeYzB3bdrSBfPhnHlj6ooFcwD1ah9ogP4GM=
-=p5Py
+iQEcBAABAgAGBQJQk8wFAAoJEOdOSU1xswtMw4YH/jqPQbJfePQYAZt4QtHodUkJ
+DIaoRmHZ0KFDlWUIDe7FtNTqpVSUmeRyWEMZAE0dO4+ocoikNHBHLqCE50yHAgxZ
+N9lMtMKUvnvi13V1Ss94grzy4E9acwuSrXee7U6BG5wN90+7QbKPvAp0hN4LlCgZ
+HmnSPQ2F2MvGUELK2hrpHqMaiUW3BikSDhuTHMc05E7PbZpQ7TzyOx7F9Zp4uaAE
+h/fhXPxt5S7DFFqG/ooa1TjS4pMrkbCMQBfHzZSsAzzY9n/sEXE8STfAxE7kVx+4
+piRieWGrHh/fMeEgfq5uAjDTCWBv8Ead0M2l2uf6Guz8xCYiMT0EvzigyLjMs2o=
+=ongz
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
