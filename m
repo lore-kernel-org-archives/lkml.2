@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762287Ab2KBAJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 20:09:18 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:17904 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab2KBAJR (ORCPT
+	id S1754658Ab2KBAOe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 20:14:34 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:40178 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915Ab2KBAOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 20:09:17 -0400
-X-Authority-Analysis: v=2.0 cv=Q6tQEvKa c=1 sm=0 a=5n8MYtQuEtJVLSjGe4Mkvw==:17 a=XAgHJMm7m9YA:10 a=wom5GMh1gUkA:10 a=8oWMSCevoaIA:10 a=zz6odIEfzeQA:10 a=kj9zAlcOel0A:10 a=7kYe3NcsAAAA:8 a=JI4LjjGMiQEA:10 a=aLX-4j0Fmed6UHGNywYA:9 a=CjuIK1q_8ugA:10 a=-XA83Ip703gA:10 a=5n8MYtQuEtJVLSjGe4Mkvw==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 108.176.196.169
-Date: Thu, 1 Nov 2012 20:09:09 -0400
-From: "Daniel M. Weeks" <dan@danweeks.net>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
+	Thu, 1 Nov 2012 20:14:31 -0400
+Date: Thu, 1 Nov 2012 17:14:29 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Stan Hu <stanhu@gmail.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] gpio-mcp23s08: Build I2C support even when CONFIG_I2C=m
-Message-ID: <20121102000902.GA21574@dev.danweeks.net>
+Subject: Re: help with diagnosing kernel oops in __mutex_lock_slowpath
+Message-ID: <20121102001429.GA2129@kroah.com>
+References: <CAMBWrQ=Xrp-_opV0ej4rn20p3yTUP0TmYQHr5nG79szC0=WUDA@mail.gmail.com>
+ <CAMBWrQm6CacSoUxZdNA9XPhDMqyAt2R15ZXxpCLEZcRvEeRiCg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAMBWrQm6CacSoUxZdNA9XPhDMqyAt2R15ZXxpCLEZcRvEeRiCg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver has both SPI and I2C pieces. The appropriate pieces are built based
-on whether SPI and/or I2C is/are enabled. However, it was only checking if I2C
-was built-in, never if it was built as a module. This patch checks for either
-since building both this driver and I2C as modules is possible.
+On Thu, Nov 01, 2012 at 03:02:45PM -0700, Stan Hu wrote:
+> Hello,
+> 
+> I'm getting this kernel oops sporadically with a custom Cortex-A8 ARM
+> board with a Linux 3.2.28 kernel.  The system is booting off an SD
+> card; interestingly this failure doesn't seem to happen when I boot
+> from NAND flash.   I would say 1 out 10 times it fails with a similar
+> backtrace.  Does anyone have any clue why this might be happening?
 
-Signed-off-by: Daniel M. Weeks <dan@danweeks.net>
----
- drivers/gpio/gpio-mcp23s08.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Does this also happen on the 3.6 kernel, or 3.7-rc3?
 
-diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
-index 0f42518..0f58d0f 100644
---- a/drivers/gpio/gpio-mcp23s08.c
-+++ b/drivers/gpio/gpio-mcp23s08.c
-@@ -77,7 +77,7 @@ struct mcp23s08_driver_data {
- 
- /*----------------------------------------------------------------------*/
- 
--#ifdef CONFIG_I2C
-+#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
- 
- static int mcp23008_read(struct mcp23s08 *mcp, unsigned reg)
- {
-@@ -399,7 +399,7 @@ static int mcp23s08_probe_one(struct mcp23s08 *mcp, struct device *dev,
- 		break;
- #endif /* CONFIG_SPI_MASTER */
- 
--#ifdef CONFIG_I2C
-+#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
- 	case MCP_TYPE_008:
- 		mcp->ops = &mcp23008_ops;
- 		mcp->chip.ngpio = 8;
-@@ -473,7 +473,7 @@ fail:
- 
- /*----------------------------------------------------------------------*/
- 
--#ifdef CONFIG_I2C
-+#if defined(CONFIG_I2C) || defined (CONFIG_I2C_MODULE)
- 
- static int __devinit mcp230xx_probe(struct i2c_client *client,
- 				    const struct i2c_device_id *id)
--- 
-Daniel M. Weeks
+thanks,
 
+greg k-h
