@@ -1,133 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935572Ab2KBTH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 15:07:28 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:53663 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935297Ab2KBTH0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 15:07:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121101050347.GD24883@bbox>
-References: <1351702597-10795-1-git-send-email-js1304@gmail.com>
-	<1351702597-10795-5-git-send-email-js1304@gmail.com>
-	<20121101050347.GD24883@bbox>
-Date: Sat, 3 Nov 2012 04:07:25 +0900
-Message-ID: <CAAmzW4P=YdFt9KFmHcQh=tJheuZuvZVojYGNTqfO4YDy+C8_1g@mail.gmail.com>
-Subject: Re: [PATCH v2 4/5] mm, highmem: makes flush_all_zero_pkmaps() return
- index of first flushed entry
-From: JoonSoo Kim <js1304@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S935604Ab2KBTKx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 15:10:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16203 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935357Ab2KBTKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 15:10:52 -0400
+Subject: Re: [PATCH RFT RESEND linux-next] c6x: dma-mapping: support
+ debug_dma_mapping_error
+From: Mark Salter <msalter@redhat.com>
+To: shuah.khan@hp.com
+Cc: Andrew Morton <akpm@linux-foundation.org>, a-jacquiot@ti.com,
+        linux-c6x-dev@linux-c6x.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Fri, 02 Nov 2012 15:10:44 -0400
+In-Reply-To: <1351874655.2721.16.camel@lorien2>
+References: <1351206082.6851.6.camel@lorien2>
+	 <1351266055.4013.1.camel@lorien2> <1351874655.2721.16.camel@lorien2>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1351883445.15973.24.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Minchan.
+On Fri, 2012-11-02 at 10:44 -0600, Shuah Khan wrote:
+> On Fri, 2012-10-26 at 09:40 -0600, Shuah Khan wrote:
+> > Add support for debug_dma_mapping_error() call to avoid warning from
+> > debug_dma_unmap() interface when it checks for mapping error checked
+> > status. Without this patch, device driver failed to check map error
+> > warning is generated.
+> > 
+> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> > ---
+> >  arch/c6x/include/asm/dma-mapping.h |    1 +
+> >  1 file changed, 1 insertion(+)
 
-2012/11/1 Minchan Kim <minchan@kernel.org>:
-> On Thu, Nov 01, 2012 at 01:56:36AM +0900, Joonsoo Kim wrote:
->> In current code, after flush_all_zero_pkmaps() is invoked,
->> then re-iterate all pkmaps. It can be optimized if flush_all_zero_pkmaps()
->> return index of first flushed entry. With this index,
->> we can immediately map highmem page to virtual address represented by index.
->> So change return type of flush_all_zero_pkmaps()
->> and return index of first flushed entry.
->>
->> Additionally, update last_pkmap_nr to this index.
->> It is certain that entry which is below this index is occupied by other mapping,
->> therefore updating last_pkmap_nr to this index is reasonable optimization.
->>
->> Cc: Mel Gorman <mel@csn.ul.ie>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Cc: Minchan Kim <minchan@kernel.org>
->> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
->>
->> diff --git a/include/linux/highmem.h b/include/linux/highmem.h
->> index ef788b5..97ad208 100644
->> --- a/include/linux/highmem.h
->> +++ b/include/linux/highmem.h
->> @@ -32,6 +32,7 @@ static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
->>
->>  #ifdef CONFIG_HIGHMEM
->>  #include <asm/highmem.h>
->> +#define PKMAP_INVALID_INDEX (LAST_PKMAP)
->>
->>  /* declarations for linux/mm/highmem.c */
->>  unsigned int nr_free_highpages(void);
->> diff --git a/mm/highmem.c b/mm/highmem.c
->> index d98b0a9..b365f7b 100644
->> --- a/mm/highmem.c
->> +++ b/mm/highmem.c
->> @@ -106,10 +106,10 @@ struct page *kmap_to_page(void *vaddr)
->>       return virt_to_page(addr);
->>  }
->>
->> -static void flush_all_zero_pkmaps(void)
->> +static unsigned int flush_all_zero_pkmaps(void)
->>  {
->>       int i;
->> -     int need_flush = 0;
->> +     unsigned int index = PKMAP_INVALID_INDEX;
->>
->>       flush_cache_kmaps();
->>
->> @@ -141,10 +141,13 @@ static void flush_all_zero_pkmaps(void)
->>                         &pkmap_page_table[i]);
->>
->>               set_page_address(page, NULL);
->> -             need_flush = 1;
->> +             if (index == PKMAP_INVALID_INDEX)
->> +                     index = i;
->>       }
->> -     if (need_flush)
->> +     if (index != PKMAP_INVALID_INDEX)
->>               flush_tlb_kernel_range(PKMAP_ADDR(0), PKMAP_ADDR(LAST_PKMAP));
->> +
->> +     return index;
->>  }
->>
->>  /**
->> @@ -152,14 +155,19 @@ static void flush_all_zero_pkmaps(void)
->>   */
->>  void kmap_flush_unused(void)
->>  {
->> +     unsigned int index;
->> +
->>       lock_kmap();
->> -     flush_all_zero_pkmaps();
->> +     index = flush_all_zero_pkmaps();
->> +     if (index != PKMAP_INVALID_INDEX && (index < last_pkmap_nr))
->> +             last_pkmap_nr = index;
->
-> I don't know how kmap_flush_unused is really fast path so how my nitpick
-> is effective. Anyway,
-> What problem happens if we do following as?
->
-> lock()
-> index = flush_all_zero_pkmaps();
-> if (index != PKMAP_INVALID_INDEX)
->         last_pkmap_nr = index;
-> unlock();
->
-> Normally, last_pkmap_nr is increased with searching empty slot in
-> map_new_virtual. So I expect return value of flush_all_zero_pkmaps
-> in kmap_flush_unused normally become either less than last_pkmap_nr
-> or last_pkmap_nr + 1.
+> Would you like to this patch go through c6x arch tree or linux-next?
+> Please let me know your preference.
 
-There is a case that return value of kmap_flush_unused() is larger
-than last_pkmap_nr.
-Look at the following example.
+I tried to test this but I get a build error with CONFIG_DMA_API_DEBUG:
 
-Assume last_pkmap = 20 and index 1-9, 11-19 is kmapped. 10 is kunmapped.
+/linux-next/lib/dma-debug.c: In function 'has_mapping_error':
+/linux-next/lib/dma-debug.c:863:15: error: implicit declaration of function 'get_dma_ops' [-Werror=implicit-function-declaration]
+/linux-next/lib/dma-debug.c:863:34: warning: initialization makes pointer from integer without a cast [enabled by default]
 
-do kmap_flush_unused() => flush index 10 => last_pkmap = 10;
-do kunmap() with index 17
-do kmap_flush_unused() => flush index 17
+C6X (along with some other architectures) doesn't have a get_dma_ops()
+function defined.
 
-So, little dirty implementation is needed.
 
-Thanks.
