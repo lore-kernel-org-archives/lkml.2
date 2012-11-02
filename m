@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934728Ab2KBSSp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 14:18:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18827 "EHLO
+	id S934547Ab2KBSSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 14:18:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33253 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934130Ab2KBSOc (ORCPT
+	with ESMTP id S934132Ab2KBSOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Nov 2012 14:14:32 -0400
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=IK9KjLBd890A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=UuwjzpaS_z8A:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=Ve_rBlQliS94wRw8MkYA:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=F7Ktqph0HaZtkVwZ:21 a=_pEONxIXbNfAPjHg:21 a=c_oVvCBZ_v6RS1arTF8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=SSzgduZrY3MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=FbA2kkj90RoA:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=vR_tLfPqsBwRw38X8EMA:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=J1z37ABzf8eiYCYH:21 a=riljiUDZG5FoEZuW:21 a=YE06Q9Y8YUXigxV-hIIA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121102181430.519736413@goodmis.org>
+Message-Id: <20121102181431.607201290@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 14:13:35 -0400
+Date: Fri, 02 Nov 2012 14:13:41 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Slava Pestov <slavapestov@google.com>
-Subject: [PATCH 04/19] ring-buffer: Add a dropped events counter
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH 10/19] tracing: Cleanup unnecessary function declarations
 References: <20121102181331.513782854@goodmis.org>
-Content-Disposition: inline; filename=0004-ring-buffer-Add-a-dropped-events-counter.patch
+Content-Disposition: inline; filename=0010-tracing-Cleanup-unnecessary-function-declarations.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,155 +30,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Slava Pestov <slavapestov@google.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
 
-The existing 'overrun' counter is incremented when the ring
-buffer wraps around, with overflow on (the default). We wanted
-a way to count requests lost from the buffer filling up with
-overflow off, too. I decided to add a new counter instead
-of retro-fitting the existing one because it seems like a
-different statistic to count conceptually, and also because
-of how the code was structured.
+The functions defined in include/trace/syscalls.h are not used directly
+since struct ftrace_event_class was introduced. Remove them from the
+header file and rearrange the ftrace_event_class declarations in
+trace_syscalls.c.
 
-Link: http://lkml.kernel.org/r/1310765038-26399-1-git-send-email-slavapesto=
-v@google.com
+Link: http://lkml.kernel.org/r/1339112785-21806-2-git-send-email-vnagarnaik=
+@google.com
 
-Signed-off-by: Slava Pestov <slavapestov@google.com>
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ring_buffer.h |    1 +
- kernel/trace/ring_buffer.c  |   41 +++++++++++++++++++++++++++++++++++----=
---
- kernel/trace/trace.c        |    3 +++
- 3 files changed, 39 insertions(+), 6 deletions(-)
+ include/trace/syscall.h       |   21 --------------
+ kernel/trace/trace_syscalls.c |   61 ++++++++++++++++++++-----------------=
+----
+ 2 files changed, 29 insertions(+), 53 deletions(-)
 
-diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
-index 6c8835f..2007375 100644
---- a/include/linux/ring_buffer.h
-+++ b/include/linux/ring_buffer.h
-@@ -166,6 +166,7 @@ unsigned long ring_buffer_overruns(struct ring_buffer *=
-buffer);
- unsigned long ring_buffer_entries_cpu(struct ring_buffer *buffer, int cpu);
- unsigned long ring_buffer_overrun_cpu(struct ring_buffer *buffer, int cpu);
- unsigned long ring_buffer_commit_overrun_cpu(struct ring_buffer *buffer, i=
-nt cpu);
-+unsigned long ring_buffer_dropped_events_cpu(struct ring_buffer *buffer, i=
-nt cpu);
+diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+index 0c95796..84bc419 100644
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -31,25 +31,4 @@ struct syscall_metadata {
+ 	struct ftrace_event_call *exit_event;
+ };
 =20
- u64 ring_buffer_time_stamp(struct ring_buffer *buffer, int cpu);
- void ring_buffer_normalize_time_stamp(struct ring_buffer *buffer,
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index b979426..0ebeb1d 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -460,9 +460,10 @@ struct ring_buffer_per_cpu {
- 	unsigned long			lost_events;
- 	unsigned long			last_overrun;
- 	local_t				entries_bytes;
--	local_t				commit_overrun;
--	local_t				overrun;
- 	local_t				entries;
-+	local_t				overrun;
-+	local_t				commit_overrun;
-+	local_t				dropped_events;
- 	local_t				committing;
- 	local_t				commits;
- 	unsigned long			read;
-@@ -2155,8 +2156,10 @@ rb_move_tail(struct ring_buffer_per_cpu *cpu_buffer,
- 			 * If we are not in overwrite mode,
- 			 * this is easy, just stop here.
- 			 */
--			if (!(buffer->flags & RB_FL_OVERWRITE))
-+			if (!(buffer->flags & RB_FL_OVERWRITE)) {
-+				local_inc(&cpu_buffer->dropped_events);
- 				goto out_reset;
-+			}
+-#ifdef CONFIG_FTRACE_SYSCALLS
+-extern unsigned long arch_syscall_addr(int nr);
+-extern int init_syscall_trace(struct ftrace_event_call *call);
+-
+-extern int reg_event_syscall_enter(struct ftrace_event_call *call);
+-extern void unreg_event_syscall_enter(struct ftrace_event_call *call);
+-extern int reg_event_syscall_exit(struct ftrace_event_call *call);
+-extern void unreg_event_syscall_exit(struct ftrace_event_call *call);
+-enum print_line_t print_syscall_enter(struct trace_iterator *iter, int fla=
+gs,
+-				      struct trace_event *event);
+-enum print_line_t print_syscall_exit(struct trace_iterator *iter, int flag=
+s,
+-				     struct trace_event *event);
+-#endif
+-
+-#ifdef CONFIG_PERF_EVENTS
+-int perf_sysenter_enable(struct ftrace_event_call *call);
+-void perf_sysenter_disable(struct ftrace_event_call *call);
+-int perf_sysexit_enable(struct ftrace_event_call *call);
+-void perf_sysexit_disable(struct ftrace_event_call *call);
+-#endif
+-
+ #endif /* _TRACE_SYSCALL_H */
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 2485a7d..7609dd6 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -21,9 +21,6 @@ static int syscall_enter_register(struct ftrace_event_cal=
+l *event,
+ static int syscall_exit_register(struct ftrace_event_call *event,
+ 				 enum trace_reg type, void *data);
 =20
- 			ret =3D rb_handle_head_page(cpu_buffer,
- 						  tail_page,
-@@ -2995,7 +2998,8 @@ unsigned long ring_buffer_entries_cpu(struct ring_buf=
-fer *buffer, int cpu)
- EXPORT_SYMBOL_GPL(ring_buffer_entries_cpu);
+-static int syscall_enter_define_fields(struct ftrace_event_call *call);
+-static int syscall_exit_define_fields(struct ftrace_event_call *call);
+-
+ static struct list_head *
+ syscall_get_enter_fields(struct ftrace_event_call *call)
+ {
+@@ -32,30 +29,6 @@ syscall_get_enter_fields(struct ftrace_event_call *call)
+ 	return &entry->enter_fields;
+ }
 =20
- /**
-- * ring_buffer_overrun_cpu - get the number of overruns in a cpu_buffer
-+ * ring_buffer_overrun_cpu - get the number of overruns caused by the ring
-+ * buffer wrapping around (only if RB_FL_OVERWRITE is on).
-  * @buffer: The ring buffer
-  * @cpu: The per CPU buffer to get the number of overruns from
-  */
-@@ -3015,7 +3019,9 @@ unsigned long ring_buffer_overrun_cpu(struct ring_buf=
-fer *buffer, int cpu)
- EXPORT_SYMBOL_GPL(ring_buffer_overrun_cpu);
+-struct trace_event_functions enter_syscall_print_funcs =3D {
+-	.trace		=3D print_syscall_enter,
+-};
+-
+-struct trace_event_functions exit_syscall_print_funcs =3D {
+-	.trace		=3D print_syscall_exit,
+-};
+-
+-struct ftrace_event_class event_class_syscall_enter =3D {
+-	.system		=3D "syscalls",
+-	.reg		=3D syscall_enter_register,
+-	.define_fields	=3D syscall_enter_define_fields,
+-	.get_fields	=3D syscall_get_enter_fields,
+-	.raw_init	=3D init_syscall_trace,
+-};
+-
+-struct ftrace_event_class event_class_syscall_exit =3D {
+-	.system		=3D "syscalls",
+-	.reg		=3D syscall_exit_register,
+-	.define_fields	=3D syscall_exit_define_fields,
+-	.fields		=3D LIST_HEAD_INIT(event_class_syscall_exit.fields),
+-	.raw_init	=3D init_syscall_trace,
+-};
+-
+ extern struct syscall_metadata *__start_syscalls_metadata[];
+ extern struct syscall_metadata *__stop_syscalls_metadata[];
 =20
- /**
-- * ring_buffer_commit_overrun_cpu - get the number of overruns caused by c=
-ommits
-+ * ring_buffer_commit_overrun_cpu - get the number of overruns caused by
-+ * commits failing due to the buffer wrapping around while there are uncom=
-mitted
-+ * events, such as during an interrupt storm.
-  * @buffer: The ring buffer
-  * @cpu: The per CPU buffer to get the number of overruns from
-  */
-@@ -3036,6 +3042,28 @@ ring_buffer_commit_overrun_cpu(struct ring_buffer *b=
-uffer, int cpu)
- EXPORT_SYMBOL_GPL(ring_buffer_commit_overrun_cpu);
+@@ -432,7 +405,7 @@ void unreg_event_syscall_exit(struct ftrace_event_call =
+*call)
+ 	mutex_unlock(&syscall_trace_lock);
+ }
 =20
- /**
-+ * ring_buffer_dropped_events_cpu - get the number of dropped events cause=
-d by
-+ * the ring buffer filling up (only if RB_FL_OVERWRITE is off).
-+ * @buffer: The ring buffer
-+ * @cpu: The per CPU buffer to get the number of overruns from
-+ */
-+unsigned long
-+ring_buffer_dropped_events_cpu(struct ring_buffer *buffer, int cpu)
-+{
-+	struct ring_buffer_per_cpu *cpu_buffer;
-+	unsigned long ret;
+-int init_syscall_trace(struct ftrace_event_call *call)
++static int init_syscall_trace(struct ftrace_event_call *call)
+ {
+ 	int id;
+ 	int num;
+@@ -457,6 +430,30 @@ int init_syscall_trace(struct ftrace_event_call *call)
+ 	return id;
+ }
+=20
++struct trace_event_functions enter_syscall_print_funcs =3D {
++	.trace		=3D print_syscall_enter,
++};
 +
-+	if (!cpumask_test_cpu(cpu, buffer->cpumask))
-+		return 0;
++struct trace_event_functions exit_syscall_print_funcs =3D {
++	.trace		=3D print_syscall_exit,
++};
 +
-+	cpu_buffer =3D buffer->buffers[cpu];
-+	ret =3D local_read(&cpu_buffer->dropped_events);
++struct ftrace_event_class event_class_syscall_enter =3D {
++	.system		=3D "syscalls",
++	.reg		=3D syscall_enter_register,
++	.define_fields	=3D syscall_enter_define_fields,
++	.get_fields	=3D syscall_get_enter_fields,
++	.raw_init	=3D init_syscall_trace,
++};
 +
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(ring_buffer_dropped_events_cpu);
++struct ftrace_event_class event_class_syscall_exit =3D {
++	.system		=3D "syscalls",
++	.reg		=3D syscall_exit_register,
++	.define_fields	=3D syscall_exit_define_fields,
++	.fields		=3D LIST_HEAD_INIT(event_class_syscall_exit.fields),
++	.raw_init	=3D init_syscall_trace,
++};
 +
-+/**
-  * ring_buffer_entries - get the number of entries in a buffer
-  * @buffer: The ring buffer
-  *
-@@ -3864,9 +3892,10 @@ rb_reset_cpu(struct ring_buffer_per_cpu *cpu_buffer)
- 	local_set(&cpu_buffer->reader_page->page->commit, 0);
- 	cpu_buffer->reader_page->read =3D 0;
+ unsigned long __init __weak arch_syscall_addr(int nr)
+ {
+ 	return (unsigned long)sys_call_table[nr];
+@@ -537,7 +534,7 @@ static void perf_syscall_enter(void *ignore, struct pt_=
+regs *regs, long id)
+ 	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
+ }
 =20
--	local_set(&cpu_buffer->commit_overrun, 0);
- 	local_set(&cpu_buffer->entries_bytes, 0);
- 	local_set(&cpu_buffer->overrun, 0);
-+	local_set(&cpu_buffer->commit_overrun, 0);
-+	local_set(&cpu_buffer->dropped_events, 0);
- 	local_set(&cpu_buffer->entries, 0);
- 	local_set(&cpu_buffer->committing, 0);
- 	local_set(&cpu_buffer->commits, 0);
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index f6928ed..36c213f 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4385,6 +4385,9 @@ tracing_stats_read(struct file *filp, char __user *ub=
-uf,
- 	usec_rem =3D do_div(t, USEC_PER_SEC);
- 	trace_seq_printf(s, "now ts: %5llu.%06lu\n", t, usec_rem);
+-int perf_sysenter_enable(struct ftrace_event_call *call)
++static int perf_sysenter_enable(struct ftrace_event_call *call)
+ {
+ 	int ret =3D 0;
+ 	int num;
+@@ -558,7 +555,7 @@ int perf_sysenter_enable(struct ftrace_event_call *call)
+ 	return ret;
+ }
 =20
-+	cnt =3D ring_buffer_dropped_events_cpu(tr->buffer, cpu);
-+	trace_seq_printf(s, "dropped events: %ld\n", cnt);
-+
- 	count =3D simple_read_from_buffer(ubuf, count, ppos, s->buffer, s->len);
+-void perf_sysenter_disable(struct ftrace_event_call *call)
++static void perf_sysenter_disable(struct ftrace_event_call *call)
+ {
+ 	int num;
 =20
- 	kfree(s);
+@@ -615,7 +612,7 @@ static void perf_syscall_exit(void *ignore, struct pt_r=
+egs *regs, long ret)
+ 	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
+ }
+=20
+-int perf_sysexit_enable(struct ftrace_event_call *call)
++static int perf_sysexit_enable(struct ftrace_event_call *call)
+ {
+ 	int ret =3D 0;
+ 	int num;
+@@ -636,7 +633,7 @@ int perf_sysexit_enable(struct ftrace_event_call *call)
+ 	return ret;
+ }
+=20
+-void perf_sysexit_disable(struct ftrace_event_call *call)
++static void perf_sysexit_disable(struct ftrace_event_call *call)
+ {
+ 	int num;
+=20
 --=20
 1.7.10.4
 
@@ -191,13 +217,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJQlA2GAAoJEOdOSU1xswtMXbAIAM6PyNA5X8sZ4YjknUtOTwK/
-EpEP88y+gwcUsQ/P1TWyk3gz1anOqIBmIiBWrUQbeqFPJ78irOwlTkT1cJU5ScEv
-bzOOtpzusS12yXxcqgEg0GJWiCrmsYCB9/fK/PCPmCOhIeIkLCmZkEMWUl35+sjg
-U//CMWOUJRdbrNUFdHoUN8F9YBOHcAYm1mN8ggf8SjH8JrUZiPVrPnueZeYr6NfT
-3V8j6tupq/ly8DKx0etQcX1wYjx8Y3s+RqIg8TUEdoDEr19lfR70TjeysD3I8Zxf
-KgC4B5+wGOvqnO2Blf8TI3AudB4RwtjcbvbEfmScd6VOu/BHVqqDRKXs9/bH9LM=
-=GiRm
+iQEcBAABAgAGBQJQlA2HAAoJEOdOSU1xswtMnOMIAIjG9ViSX88p0Sd+9D9n8iK2
+YidqnYAYPS8Fj6Qja0lcMJAjhkAAHpC9KAooboP5X8EGIUOjKmCSNOpr1dXoAXHQ
+ndWb74vCxhV3MwYOIhGW4pCanYH/kKXTRL2J0TvQTm9/BQ0kKrCJt7prW2Z4IgX8
+E/hp8J03puE5kQZuggos1RvtImDio/IRGmCf7/Tqn9K9O0WRk3vi93HOYPDuJ002
+QhhynnZ19q4JGPi4fskA8tC7t+AumkLWjGuoIuBCb9z8QnDsHYcE2YwM5AnfuwjR
+rMK9ZQDYqa2ghIMdJ+n1+l5H+QBx0eJ2KJjPzi3NThf0fu2dH5KoNeM3M+T36qc=
+=BZ9n
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
