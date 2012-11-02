@@ -1,66 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab2KBJCx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 05:02:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50520 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753802Ab2KBJCu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 05:02:50 -0400
-X-IronPort-AV: E=Sophos;i="4.80,698,1344182400"; 
-   d="scan'208";a="6124533"
-Message-ID: <50938C2D.90908@cn.fujitsu.com>
-Date: Fri, 02 Nov 2012 17:02:37 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S932772Ab2KBJDb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 05:03:31 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60479 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753802Ab2KBJD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 05:03:26 -0400
+Date: Fri, 2 Nov 2012 10:57:18 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Russ Dill <Russ.Dill@ti.com>
+CC: <balbi@ti.com>, Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        <linux-kernel@vger.kernel.org>, Koen Kooi <koen@dominion.thruhere.net>,
+        Matt Porter <mporter@ti.com>, <linux-omap@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+Message-ID: <20121102085718.GF17063@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20121101110418.GF410@arwen.pp.htv.fi>
+ <3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com>
+ <20121101124025.GA12489@arwen.pp.htv.fi>
+ <A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com>
+ <20121101131609.GC12489@arwen.pp.htv.fi>
+ <E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com>
+ <20121101135148.382aec00@pyramind.ukuu.org.uk>
+ <9F25E89E-9194-4725-8A8C-053DCBADA1DB@antoniou-consulting.com>
+ <20121101220518.GE14982@arwen.pp.htv.fi>
+ <CA+Bv8XbAvEXe=zDaA8W2+ROD2duYMRcJu4-bms31OH=V_ScKow@mail.gmail.com>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] namespace:unmount pid_namespace's proc_mnt when copy_net_ns
- failed
-References: <1351816703-8805-1-git-send-email-gaofeng@cn.fujitsu.com> <87ehkcij1a.fsf@xmission.com> <5093773B.5010706@cn.fujitsu.com> <87wqy4fkqx.fsf@xmission.com>
-In-Reply-To: <87wqy4fkqx.fsf@xmission.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/02 17:02:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/02 17:02:01
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yZnyZsPjQYjG7xG7"
+Content-Disposition: inline
+In-Reply-To: <CA+Bv8XbAvEXe=zDaA8W2+ROD2duYMRcJu4-bms31OH=V_ScKow@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年11月02日 16:54, Eric W. Biederman 写道:
-> Gao feng <gaofeng@cn.fujitsu.com> writes:
-> 
->> 于 2012年11月02日 15:02, Eric W. Biederman 写道:
->>> Gao feng <gaofeng@cn.fujitsu.com> writes:
->>>
->>>> we should call pid_ns_release_proc to unmount pid_namespace's
->>>> proc_mnt when copy_net_ns failed in function create_new_namespaces.
->>>>
->>>> otherwise,the proc_mnt will not be freed and because the super_block
->>>> of proc_mnt also add the reference of the pid_namespace,so this
->>>> pid_namespace will never be released too.
->>>
->>> Ouch!
->>>
->>> Have you encountered this failure in practice or is this just from
->>> review?
->>
->> I add some printk in pid_ns_release_proc,it's not called in above case.
->> when copy_net_ns failed,this pid_namespace is not used by any task,
->> so proc_flush_task can't call pid_ns_release_proc to umount this pidns->proc_mnt.
->> it's the only chance we can unmount this pindns->proc_mnt.
->>
->> With this patch,everything runs well.
-> 
-> I have reviewed the code and I don't doubt that this is necessary.
-> 
-> What caused you to look into this failure?  Is there some semi-practical
-> real world case that someone is hitting?
-> 
+--yZnyZsPjQYjG7xG7
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So far,there is no case hitting this problem.
-Thanks
+Hi,
 
+On Thu, Nov 01, 2012 at 04:49:23PM -0700, Russ Dill wrote:
+> On Thu, Nov 1, 2012 at 3:05 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > HI,
+> >
+> > On Thu, Nov 01, 2012 at 03:59:50PM +0200, Pantelis Antoniou wrote:
+> >> Hi Alan,
+> >>
+> >> On Nov 1, 2012, at 3:51 PM, Alan Cox wrote:
+> >>
+> >> >> What they want, and what every user wants, is I plug this board in,=
+ and
+> >> >> the driver make sure everything is loaded and ready. No, the end us=
+ers
+> >> >> don't want to see any of the implementation details of how the bitf=
+ile
+> >> >> is transported; the driver can handle it.
+> >> >
+> >> > That doesn't necessarily make it a bus merely some kind of hotplug
+> >> > enumeration of devices. That should all work properly both for devic=
+es
+> >> > and busses with spi and i=B2c as the final bits needed for it got fi=
+xed
+> >> > some time ago.
+> >> >
+> >> > In an ideal world you don't want to be writing custom drivers for st=
+uff.
+> >> > If your cape routes an i=B2c serial device to the existing system i=
+=B2c
+> >> > busses then you want to just create an instance of any existing driv=
+er on
+> >> > the existing i=B2c bus not create a whole new layer of goop.
+> >> >
+> >> > It does need to do the plumbing and resource management for the plum=
+bing
+> >> > but thats not the same as being a bus.
+> >> >
+> >> > Alan
+> >>
+> >>
+> >> Fair enough. But there's no such thing a 'hotplug enumeration
+> >> construct' in Linux yet, and a bus is the closest thing to it. It does
+> >> take advantage of the nice way device code matches drivers and devices
+> >> though.
+> >>
+> >> I'm afraid that having the I2C/SPI drivers doing the detection won't
+> >> work.  The capes can have arbitrary I2C/SPI devices (and even more
+> >> weird components).  There is no way to assure for example that the I2C
+> >> device responding to address 'foo' in cape A is the same I2C device
+> >> responding to the same address in cape B.
+> >
+> > your ->detect() method should take care of that.
+>=20
+> There isn't some magical serial number in I=B2C devices that a
+> ->detect() method can read and the implementation of I=B2C is somewhat
+> flexible. One devices read may be another devices write. A detect
+
+look at what other drivers do. You can read a revision register, you can
+write a command and see if the device responds as expected, it doesn't
+matter.
+
+> method that only performs reads could easily toggle a gpio that resets
+> the board, rewrite and eeprom, or set the printer on fire. If you
+
+how ? It's just a read.
+
+> browse through various detect functions, yes, some of them key off an
+> ID, but a lot of them just check various registers to see if certain
+> bits are zero, or certain bits are one. A lot of I=B2C devices I've
+> dealt with have no good way of probing them, especially GPIO chips
+> (you'll notice none of the I=B2C GPIO expanders have detect functions)
+
+it doesn't mean it can't be done.
+
+> On top of all this the detect routine does not tell you if the alert
+> pin is connected to some IRQ, or in the case of a GPIO expander, what
+> those GPIOs are connected to, etc, etc.
+
+so what ? All you want to do with detect is figure out if the far end is
+who you think it is, not what it's doing.
+
+--=20
+balbi
+
+--yZnyZsPjQYjG7xG7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQk4ruAAoJEIaOsuA1yqRE/oYP/RrMH4OT/KP6qBKpCh2IP8oj
+TUUTewsWGmGmhtWqjM+/1Ck1oJTtdbaYN/M+JI15J44/aLXwvFLQWN2h5SKF2piQ
+CcxF8lNckdrsL/33qpsTEwbaAsD3UqNbnlZpfAKS8cOTVOmbqWmVlBL0T5ZWT1lL
+J1y+0DH5A52sact2PXmdZJOkgdOOAUqdrBLYVQ+h56YerSxCBfh2a1qyTCzpYu6Z
+dx0We+7fcLubz69fbb84jg0AAqiMhjLD6JfE/bTElhQdPF3EkzJc7+9AqIcHdFbn
+8I2vVX/k8UlcAiJLu3TvS60aGsVrKGjJeLVi4IxCVL0tLdKDEk9Ubd2xYuqrfxva
+/dvil8+N439/TDj+0SFQOLhJbe+zZ3WFPzzVqS5mbpyjRS8wd64s4hpWYDNjEpAw
+k8EKL0IC8h/HG7i0VsNV83ZBvWM3z6uve4M666L0+kDKPA+nGbVOCTzhV16zdCxO
+77Xiiu3oSN/yXQFsO7iEQPPkOy07yEDvqPqJn4z28fHZ72HpwoVJwQ4wu0ZZIEpX
+jj5iFwcgSqP7+1wjff560/puupo9377HsI/BthXSQV0O9C1bowmZBE+YJNhHSYGp
+zWswCgjnPEEVypdiX7dmMTT+J5GU8kamNMeCCRjo78kPPwQBuyD7OFzQfbZ2MRIS
+cxJ2OTRGtD1A1xKhI0b0
+=znTI
+-----END PGP SIGNATURE-----
+
+--yZnyZsPjQYjG7xG7--
