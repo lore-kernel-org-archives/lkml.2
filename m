@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758364Ab2KBBAM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 21:00:12 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63239 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab2KBBAJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 21:00:09 -0400
+	id S1759292Ab2KBBJX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 21:09:23 -0400
+Received: from lirone.symas.net ([64.71.152.235]:33489 "EHLO lirone.symas.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772Ab2KBBJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 21:09:21 -0400
+X-Greylist: delayed 1823 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Nov 2012 21:09:21 EDT
+Message-ID: <50931601.4060102@symas.com>
+Date: Thu, 01 Nov 2012 17:38:25 -0700
+From: Howard Chu <hyc@symas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/19.0 Firefox/19.0 SeaMonkey/2.16a1
 MIME-Version: 1.0
-In-Reply-To: <1351811167-14856-1-git-send-email-sasha.levin@oracle.com>
-References: <1351811167-14856-1-git-send-email-sasha.levin@oracle.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 1 Nov 2012 17:59:47 -0700
-X-Google-Sender-Auth: sgJT51XLOSnF6JyfbHcApcS8-Ow
-Message-ID: <CA+55aFxxdFCiOHEz_xWx1vjMkpQzab_Mdmd2dweknayhVBx6kA@mail.gmail.com>
-Subject: Re: [RFC] hlist: drop the node parameter from iterators
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: paulmck@linux.vnet.ibm.com, dipankar@in.ibm.com, mingo@kernel.org,
-        hpa@zytor.com, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        peter.senna@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: General Discussion of SQLite Database <sqlite-users@sqlite.org>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Vladislav Bolkhovitin <vst@vlnb.net>,
+        "Theodore Ts'o" <tytso@mit.edu>, drh@hwaci.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [sqlite] light weight write barriers
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com> <m2fw5mtffg.fsf_-_@firstfloor.org> <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com> <5086F5A7.9090406@vlnb.net> <20121025051445.GA9860@thunk.org> <508B3EED.2080003@vlnb.net> <20121027044456.GA2764@thunk.org> <5090532D.4050902@vlnb.net> <20121031095404.0ac18a4b@pyramind.ukuu.org.uk> <5092D90F.7020105@vlnb.net> <20121101212418.140e3a82@pyramind.ukuu.org.uk>
+In-Reply-To: <20121101212418.140e3a82@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 1, 2012 at 4:06 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> I'm not sure why, but the hlist for each entry iterators were conceived
-> differently from the list ones. While the list ones are nice and elegant:
+Alan Cox wrote:
+>> How about that recently preliminary infrastructure to send ORDERED commands
+>> instead of queue draining was deleted from the kernel, because "there's no
+>> difference where to drain the queue, on the kernel or the storage side"?
 >
->         list_for_each_entry(pos, head, member)
->
-> The hlist ones were greedy and wanted an extra parameter:
->
->         hlist_for_each_entry(tpos, pos, head, member)
->
-> Why did they need an extra pos parameter? I'm not quite sure. Not only
-> they don't really need it, it also prevents the iterator from looking
-> exactly like the list iterator, which is unfortunate.
->
-> [..]
->  170 files changed, 481 insertions(+), 879 deletions(-)
->
-> Yes, beyond making hlist prettier, we also drop 400 lines. win-win?
+> Send patches.
 
-So this has been discussed before, and one of the problems with this
-is just the pain of maintenance. This tends to cause annoyances for
-merging, but also for -stable backporting etc, because it just results
-in a lot of noise.
+Isn't any type of kernel-side ordering an exercise in futility, since
+   a) the kernel has no knowledge of the disk's actual geometry
+   b) most drives will internally re-order requests anyway
+   c) cheap drives won't support barriers
 
-Now, the hlist_for_each() case isn't used by quite as many sites as
-some of the others helpers like this, so maybe the pain isn't horribly
-bad, but in general I do tend to get nervous about "let's clean it up"
-when it touches hundreds of files.
+Even assuming the drives honored all your requests without lying, how would 
+you really want this behavior exposed? From the userland perspective, there 
+are very few apps that care. Probably only transactional databases, really.
 
-Your thing looks nice in that it has the coccinelle script (which
-hopefully means that we really get them all), but just out of
-interest, how different is the patch after running the script on both
+As a DB author, I'm not sure I'd be keen on this as an open() or fcntl() 
+option. Databases that really care would be on dedicated filesystems and/or 
+devices, so per-file control would be tedious. You would most likely want to 
+say "all writes to this string of devices should be order-preserving" and 
+forget about it. With that guarantee, a careful writer can have perfectly 
+intact data structures all the time, without ever slowing down for a fsync.
 
- (a) my current -git head
- (b) linux-next
-
-because differences (other than just line numbers) imply conflicts.
-How many differences are we talking about? None? Two? Twenty?
-
-(That said, right now linux-next is tiny. It might be more interesting
-to look at the linux-3.5 vs linux-3.6 to get more of a feel for
-differences between releases. Doing just the diff+grep thing, there's
-quite a few changes around hlist_for_each_entry() uses)
-
-                     Linus
+-- 
+   -- Howard Chu
+   CTO, Symas Corp.           http://www.symas.com
+   Director, Highland Sun     http://highlandsun.com/hyc/
+   Chief Architect, OpenLDAP  http://www.openldap.org/project/
