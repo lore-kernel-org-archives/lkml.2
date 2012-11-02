@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762670Ab2KBCZZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 22:25:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63768 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762589Ab2KBCZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 22:25:22 -0400
-Date: Fri, 2 Nov 2012 00:25:08 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC EDAC/GHES] edac: lock module owner to avoid error report
- conflicts
-Message-ID: <20121102002508.6c0dcfc2@redhat.com>
-In-Reply-To: <20121101235457.GA20890@liondog.tnic>
-References: <048a00fa4a888b349be5954ce9fd063a7bcf2564.1351691230.git.mchehab@redhat.com>
-	<20121101110512.GA31271@liondog.tnic>
-	<20121101094721.2a57719c@redhat.com>
-	<20121101195509.GE31271@liondog.tnic>
-	<3908561D78D1C84285E8C5FCA982C28F19D5C13C@ORSMSX108.amr.corp.intel.com>
-	<20121101220249.GI31271@liondog.tnic>
-	<3908561D78D1C84285E8C5FCA982C28F19D5C22B@ORSMSX108.amr.corp.intel.com>
-	<20121101235457.GA20890@liondog.tnic>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1762672Ab2KBC0T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 22:26:19 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44393 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762588Ab2KBC0R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Nov 2012 22:26:17 -0400
+X-AuditID: 9c930179-b7c8bae000003559-b5-50932f476354
+Date: Fri, 2 Nov 2012 11:32:20 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC] Support volatile range for anon vma
+Message-ID: <20121102023220.GA3326@bbox>
+References: <1351133820-14096-1-git-send-email-minchan@kernel.org>
+ <0000013a9881a86c-c0fb5823-b6e7-4bea-8707-f6b8eddae14d-000000@email.amazonses.com>
+ <20121026005851.GD15767@bbox>
+ <0000013abda6fc7d-6cfbef1e-bc7d-4f4f-bb38-221729e8c9f9-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000013abda6fc7d-6cfbef1e-bc7d-4f4f-bb38-221729e8c9f9-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, 2 Nov 2012 00:54:57 +0100
-Borislav Petkov <bp@alien8.de> escreveu:
+Hi Christoph,
 
-> On Thu, Nov 01, 2012 at 11:47:52PM +0000, Luck, Tony wrote:
-> > > Right, but at least in the csrow case, we still can compute back the
-> > > csrow even with the interleaving, after we know how it is done exactly
-> > > (on which address bits, etc). I think this should be doable on Intel
-> > > controllers too but I don't know.
-> > 
-> > No. Architecturally all Intel provides is the physical address in MCi_ADDR.
-> > To do anything with that you are into per-system space, and the
-> > registers that define the mappings are not necessarily available
-> > to OS code ... sometimes they are, and sometimes they are even
-> > documented in places where Mauro can use them to write an
-> > EDAC driver ... but there are no guarantees.
+On Thu, Nov 01, 2012 at 08:26:09PM +0000, Christoph Lameter wrote:
+> On Fri, 26 Oct 2012, Minchan Kim wrote:
 > 
-> One more reason that we need some sort of tables telling us which
-> rank/csrow maps to which DIMM and thus silkscreen label so that we can
-> be able to say the following from software:
+> > I guess it would improve system performance very well.
+> > But as I wrote down in description, downside of the patch is that we have to
+> > age anon lru although we don't have swap. But gain via the patch is bigger than
+> > loss via aging of anon lru when memory pressure happens. I don't see other downside
+> > other than it. What do you think about it?
+> > (I didn't implement anon lru aging in case of no-swap but it's trivial
+> > once we decide)
+> 
+> 
+> I am a bit confused like some of the others as to why this patch is
+> necessary since we already have DONT_NEED.
 
-If you take a look at sb_edac driver, you'll see that most of the driver's
-logic is the part that do address->DIMM location mapping. It is a very
-complex logic.
+Totally, my fault. I should have written clearly.
+
+DONT_NEED have to zap all pte entries/tlb flush when system call
+happens so DONT_NEED isn't cheap.
+Even, later if user accesses address again, page fault happens.
+
+This patch is to remove above two overheads.
+while I discussed with KOSAKI, I found there was trial of simillar
+goal by Rik. https://lkml.org/lkml/2007/4/17/53
+But as I look over the code, it seems to have a cost about setting PG_lazyfree
+on all pages of range which isn't in my implementation.
+
+Anyway, I would like to know where Rik's patch wasn't merged at that time.
 
 > 
-> "You just had a single corrected ECC error in the DIMM with label
-> P0_DIMM_A"
-
-Converting from a DIMM location into a DIMM label is trivial, through:
-just a simple table lookup.
-
-As APEI/GHES seem to provide the DIMM location, a simple table lookup
-should also work there, as I said before.
- 
-> or whatever unique naming each platform vendor comes up with.
-> 
-> The day hw people give me this, I'm going to throw a big party and
-> invite all LKML.
-> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Regards,
-Mauro
+Kind regards,
+Minchan Kim
