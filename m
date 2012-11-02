@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760728Ab2KBXhh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 19:37:37 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:45032 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760301Ab2KBXhf (ORCPT
+	id S1761183Ab2KBXh4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 19:37:56 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36978 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758881Ab2KBXhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 19:37:35 -0400
-Date: Fri, 2 Nov 2012 16:37:37 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Michal Hocko <mhocko@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wen Congyang <wency@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Jiang Liu <liuj97@gmail.com>, bsingharora@gmail.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        paul.gortmaker@windriver.com, Tang Chen <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH] memcg: fix hotplugged memory zone oops
-In-Reply-To: <20121102105420.GB24073@dhcp22.suse.cz>
-Message-ID: <alpine.LNX.2.00.1211021631260.11106@eggly.anvils>
-References: <505187D4.7070404@cn.fujitsu.com> <20120913205935.GK1560@cmpxchg.org> <alpine.LSU.2.00.1209131816070.1908@eggly.anvils> <507CF789.6050307@cn.fujitsu.com> <alpine.LSU.2.00.1210181129180.2137@eggly.anvils> <20121018220306.GA1739@cmpxchg.org>
- <alpine.LNX.2.00.1211011822190.20048@eggly.anvils> <20121102102159.GA24073@dhcp22.suse.cz> <20121102105420.GB24073@dhcp22.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 2 Nov 2012 19:37:54 -0400
+Date: Fri, 2 Nov 2012 23:43:02 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org, rjw@sisk.pl
+Subject: Re: [PATCH 1/2] PM: make VT switching to the suspend console
+ optional
+Message-ID: <20121102234302.28b773a7@pyramind.ukuu.org.uk>
+In-Reply-To: <1351892621-4840-2-git-send-email-jbarnes@virtuousgeek.org>
+References: <1351892621-4840-1-git-send-email-jbarnes@virtuousgeek.org>
+	<1351892621-4840-2-git-send-email-jbarnes@virtuousgeek.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Nov 2012, Michal Hocko wrote:
-> On Fri 02-11-12 11:21:59, Michal Hocko wrote:
-> > On Thu 01-11-12 18:28:02, Hugh Dickins wrote:
-> [...]
-> 
-> And I forgot to mention that the following hunk will clash with
-> "memcg: Simplify mem_cgroup_force_empty_list error handling" which is in
-> linux-next already (via Tejun's tree). 
+On Fri,  2 Nov 2012 14:43:40 -0700
+Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
 
-Oh, via Tejun's tree.  Right, when I checked mmotm there was no problem.
+> KMS drivers can potentially restore the display configuration without
+> userspace help.  Such drivers can set a new global, pm_vt_switch, to
+> false if they support this feature.  In that case, the PM layer won't VT
+> switch to the suspend console at suspend time and then back to the
+> original VT on resume, but rather leave things alone for a nicer looking
+> suspend and resume sequence.
 
-> Would it be easier to split the patch into the real fix and the hunk
-> bellow? That one doesn't have to go into stable anyway and we would save
-> some merging conflicts. The updated fix on top of -mm tree is bellow for
-> your convinience.
+What if you are multi-head ? What are the locking rules for a suspend/kms
+module unload race, what happens when you load/unload and hand over
+multiple frame buffers ? What if you have vts split across two adapters ?
 
-I'd prefer to leave it as one patch, so even the "future proof" part
-of the fix goes into 3.7 and stable.  But your point is that you have
-already seen the future, and it forks in a slightly different direction!
+Put me down as 100% in favour of the feature but we need to be a bit more
+careful about the implementation. The logic probably needs to be in the
+vt layer.
 
-Well, I don't want to be obstructive, but it doesn't look difficult
-to resolve.  Perhaps if I hold off on splitting them, and see if akpm
-barks at me or not :)
+I suspect we actually need a per vt flag for this, or a flag on the
+underlying object below the vt somewhere.
 
-Hugh
+So NAK for the implementation ACK for the idea.
 
-> > >  /**
-> > > @@ -3688,17 +3712,17 @@ unsigned long mem_cgroup_soft_limit_recl
-> > >  static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
-> > >  				int node, int zid, enum lru_list lru)
-> > >  {
-> > > -	struct mem_cgroup_per_zone *mz;
-> > > +	struct lruvec *lruvec;
-> > >  	unsigned long flags, loop;
-> > >  	struct list_head *list;
-> > >  	struct page *busy;
-> > >  	struct zone *zone;
-> > >  
-> > >  	zone = &NODE_DATA(node)->node_zones[zid];
-> > > -	mz = mem_cgroup_zoneinfo(memcg, node, zid);
-> > > -	list = &mz->lruvec.lists[lru];
-> > > +	lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-> > > +	list = &lruvec->lists[lru];
-> > >  
-> > > -	loop = mz->lru_size[lru];
-> > > +	loop = mem_cgroup_get_lru_size(lruvec, lru);
-> > >  	/* give some margin against EBUSY etc...*/
-> > >  	loop += 256;
-> > >  	busy = NULL;
+Alan
