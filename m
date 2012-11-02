@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab2KBUWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 16:22:25 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:53002 "EHLO ogre.sisk.pl"
+	id S1757412Ab2KBUWi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 16:22:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22011 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754078Ab2KBUWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 16:22:23 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [BUGFIX 2/2] PCI/PM: Resume device before shutdown
-Date: Fri, 02 Nov 2012 21:26:29 +0100
-Message-ID: <16107326.eE4GfcYGSM@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CAErSpo5bKDrfOC86Cxv+0yFiyj1bMgWF=6XuY+DWFjaMBTQC0A@mail.gmail.com>
-References: <1351061654-8339-1-git-send-email-ying.huang@intel.com> <1351061654-8339-2-git-send-email-ying.huang@intel.com> <CAErSpo5bKDrfOC86Cxv+0yFiyj1bMgWF=6XuY+DWFjaMBTQC0A@mail.gmail.com>
+	id S1754834Ab2KBUWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 16:22:36 -0400
+Date: Fri, 2 Nov 2012 16:22:32 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Robin Dong <robin.k.dong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Robin Dong <sanbai@taobao.com>
+Subject: Re: [PATCH 1/2 v5] block/throttle: remove redundant type transition
+Message-ID: <20121102202232.GU3300@redhat.com>
+References: <1351848697-26087-1-git-send-email-robin.k.dong@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351848697-26087-1-git-send-email-robin.k.dong@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 02, 2012 10:52:45 AM Bjorn Helgaas wrote:
-> On Wed, Oct 24, 2012 at 12:54 AM, Huang Ying <ying.huang@intel.com> wrote:
-> > Some actions during shutdown need device to be in D0 state, such as
-> > MSI shutdown etc, so resume device before shutdown.
+On Fri, Nov 02, 2012 at 05:31:36PM +0800, Robin Dong wrote:
+> From: Robin Dong <sanbai@taobao.com>
 > 
-> Is there a problem report or bugzilla for this issue?  What are the
-> symptoms by which a user could figure out that he needs this fix?
+> We don't need to convert tg to blkg and then convert it back in
+> throtl_update_dispatch_stats().
 > 
-> Should this be put in the stable tree as well?  If so, for v3.6 only?
+> Signed-off-by: Robin Dong <sanbai@taobao.com>
+> ---
 
-Yes, it should be -stable for v3.6.y.
+Looks good to me.
 
-Thanks,
-Rafael
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
+Vivek
 
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > ---
-> >  drivers/pci/pci-driver.c |   12 ++----------
-> >  1 file changed, 2 insertions(+), 10 deletions(-)
-> >
-> > --- a/drivers/pci/pci-driver.c
-> > +++ b/drivers/pci/pci-driver.c
-> > @@ -398,6 +398,8 @@ static void pci_device_shutdown(struct d
-> >         struct pci_dev *pci_dev = to_pci_dev(dev);
-> >         struct pci_driver *drv = pci_dev->driver;
-> >
-> > +       pm_runtime_resume(dev);
-> > +
-> >         if (drv && drv->shutdown)
-> >                 drv->shutdown(pci_dev);
-> >         pci_msi_shutdown(pci_dev);
-> > @@ -408,16 +410,6 @@ static void pci_device_shutdown(struct d
-> >          * continue to do DMA
-> >          */
-> >         pci_disable_device(pci_dev);
-> > -
-> > -       /*
-> > -        * Devices may be enabled to wake up by runtime PM, but they need not
-> > -        * be supposed to wake up the system from its "power off" state (e.g.
-> > -        * ACPI S5).  Therefore disable wakeup for all devices that aren't
-> > -        * supposed to wake up the system at this point.  The state argument
-> > -        * will be ignored by pci_enable_wake().
-> > -        */
-> > -       if (!device_may_wakeup(dev))
-> > -               pci_enable_wake(pci_dev, PCI_UNKNOWN, false);
-> >  }
-> >
-> >  #ifdef CONFIG_PM
+>  block/blk-throttle.c |    7 +++----
+>  1 files changed, 3 insertions(+), 4 deletions(-)
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index a9664fa..46ddeff 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -674,10 +674,9 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+>  	return 0;
+>  }
+>  
+> -static void throtl_update_dispatch_stats(struct blkcg_gq *blkg, u64 bytes,
+> +static void throtl_update_dispatch_stats(struct throtl_grp *tg, u64 bytes,
+>  					 int rw)
+>  {
+> -	struct throtl_grp *tg = blkg_to_tg(blkg);
+>  	struct tg_stats_cpu *stats_cpu;
+>  	unsigned long flags;
+>  
+> @@ -708,7 +707,7 @@ static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
+>  	tg->bytes_disp[rw] += bio->bi_size;
+>  	tg->io_disp[rw]++;
+>  
+> -	throtl_update_dispatch_stats(tg_to_blkg(tg), bio->bi_size, bio->bi_rw);
+> +	throtl_update_dispatch_stats(tg, bio->bi_size, bio->bi_rw);
+>  }
+>  
+>  static void throtl_add_bio_tg(struct throtl_data *td, struct throtl_grp *tg,
+> @@ -1127,7 +1126,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+>  	tg = throtl_lookup_tg(td, blkcg);
+>  	if (tg) {
+>  		if (tg_no_rule_group(tg, rw)) {
+> -			throtl_update_dispatch_stats(tg_to_blkg(tg),
+> +			throtl_update_dispatch_stats(tg,
+>  						     bio->bi_size, bio->bi_rw);
+>  			goto out_unlock_rcu;
+>  		}
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
