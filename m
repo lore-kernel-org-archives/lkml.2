@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758950Ab2KBXK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 19:10:58 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35083 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928Ab2KBXK4 (ORCPT
+	id S1759389Ab2KBX0C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 19:26:02 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:50539 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705Ab2KBXZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 19:10:56 -0400
+	Fri, 2 Nov 2012 19:25:59 -0400
+Date: Fri, 2 Nov 2012 16:26:03 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Jones <davej@redhat.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: shmem_getpage_gfp VM_BUG_ON triggered. [3.7rc2]
+In-Reply-To: <20121102014336.GA1727@redhat.com>
+Message-ID: <alpine.LNX.2.00.1211021606580.11106@eggly.anvils>
+References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com> <alpine.LNX.2.00.1211011627120.19567@eggly.anvils>
+ <20121102014336.GA1727@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <2859519.IO8aRDjQvR@vostro.rjw.lan>
-References: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com>
- <2471412.ilAVQkroSv@vostro.rjw.lan> <CA+55aFzfbvb4HsY0viCXC0FnVt7fcyhzyZgR4R6tu5uYC8qzPA@mail.gmail.com>
- <2859519.IO8aRDjQvR@vostro.rjw.lan>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 2 Nov 2012 16:10:34 -0700
-X-Google-Sender-Auth: KIisW5roydiuEhExYHzo5X1LXC4
-Message-ID: <CA+55aFx+w2hFifGTr_u76D9d_sDKxKJBDd2L4p0GVk-RXCczMA@mail.gmail.com>
-Subject: Re: Linux 3.7-rc3
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Airlie <airlied@linux.ie>, Michal Hocko <mhocko@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 2, 2012 at 3:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> Well, not everything is rosy in the suspend land, though.  This is a
-> failure to freeze khubd during the second in a row attempt to suspend to
-> RAM (your current tree):
+On Thu, 1 Nov 2012, Dave Jones wrote:
+> On Thu, Nov 01, 2012 at 04:48:41PM -0700, Hugh Dickins wrote:
+>  > 
+>  > Fedora turns on CONFIG_DEBUG_VM?
+> 
+> Yes.
+>  
+>  > All mm developers should thank you for the wider testing exposure;
+>  > but I'm not so sure that Fedora users should thank you for turning
+>  > it on - really it's for mm developers to wrap around !assertions or
+>  > more expensive checks (e.g. checking calls) in their development.
+> 
+> The last time I did some benchmarking the impact wasn't as ridiculous
+> as say lockdep, or spinlock debug.
 
-Ugh. So khubd is blocked in usb_start_wait_urb(), and apparently the
-timeout for that block is longer than the freezing timeout.
+I think you're safe to assume that (outside of an individual developer's
+private tree) it will never be nearly as heavy as lockdep or debug
+pagealloc.  I hadn't thought of spinlock debug as a heavy one, but
+yes, I guess it would be heavier than almost all VM_BUG_ON()s.
 
-There's a comment about why khubd needs to be freezable, but I wonder
-if that whole thing isn't doing something wrong. Causing the suspend
-to fail is definitely always the wrong thing.
+> Maybe the benchmarks I was using
+> weren't pushing the VM very hard, but it seemed to me that the value
+> in getting info in potential problems early was higher than a small
+> performance increase.
 
-Greg?
+We thank you.  I may have been over-estimating how much we put inside
+those VM_BUG_ON()s, sorry.  Just so long as you're aware that there's
+a danger that one day we might slip something heavier in there.
 
-> [  125.780766] [ INFO: suspicious RCU usage. ]
-> [  125.780804] 3.7.0-rc3+ #988 Not tainted
-> [  125.780838] -------------------------------
-> [  125.780875] /home/rafael/src/linux/kernel/sched/core.c:4497 suspicious rcu_dereference_check() usage!
+Those few explicit #ifdef CONFIG_DEBUG_VMs sometimes found in mm/
+are probably the worst: you might want to check on the current crop.
 
-Heh. The RCU usage is from the debug printout from sched_show_task(),
-so it's "related", but it's a totally independent issue.
+> 
+>  > Or did I read a few months ago that some change had been made to
+>  > such definitions, and VM_BUG_ON(contents) are evaluated even when
+>  > the config option is off?  I do hope I'm mistaken on that.
+> 
+> Pretty sure that isn't the case. I remember Andrew chastising people
+> a few times for putting checks in VM_BUG_ON's that needed to stay around 
+> even when the config option was off. Perhaps you were thinking of one
+> of those incidents ?
 
-It's apparently because we've not done a "rcu_read_lock()" around that
-sequence, but I seriously doubt we care. But it's technically a real
-bug - even if the fix might be to just not print out the parent pid
-(or to just ignore the bug and turn the rcu dereference into an
-ACCESS_ONCE() or something.
+Avoiding side-effects in BUG_ON and VM_BUG_ON.  Yes, that comes up
+from time to time, and I'm a believer on that.  I think the discussion
+I'm mis/remembering sprung out of one of those: someone was surprised
+by the disassembly they found when it was configured off.
 
-Ingo, Peter, any comments about that sched/core.c:4497 RCU usage?
+The correct answer is to try it for myself and see.  Not today.
 
-                Linus
+Hugh
