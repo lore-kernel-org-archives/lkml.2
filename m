@@ -1,163 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762850Ab2KBNkx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 09:40:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24583 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520Ab2KBNfA (ORCPT
+	id S1762865Ab2KBNk6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 09:40:58 -0400
+Received: from mailserver6.natinst.com ([130.164.80.6]:39099 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762852Ab2KBNky convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 09:35:00 -0400
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=fz1N-I78POgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=xd8suKrzqM0A:10 a=VwQbUJbxAAAA:8 a=RRjX4gSIN2mM1jyp2sgA:9 a=QEXdDO2ut3YA:10 a=LqS25OiqWZ3DsDmMaFsA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121102133251.998500247@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 09:32:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 00/22] [GIT PULL][3.8] tracing: updates
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Fri, 2 Nov 2012 09:40:54 -0400
+Date: Fri, 2 Nov 2012 07:38:50 -0600
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@ti.com>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Linn <John.Linn@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
+        Michal Simek <monstr@monstr.eu>
+Subject: Re: [PATCH 5/8] ARM: zynq: add COMMON_CLK support
+Message-ID: <20121102133850.GO5190@beefymiracle.amer.corp.natinst.com>
+References: <cover.1351721190.git.josh.cartwright@ni.com>
+ <94af5ee92c2d68f245eb902de74909aadf159be1.1351721190.git.josh.cartwright@ni.com>
+ <50939378.2050500@metafoo.de>
+MIME-Version: 1.0
+In-Reply-To: <50939378.2050500@metafoo.de>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 11/02/2012 08:38:42 AM,
+	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 11/02/2012 08:38:43 AM,
+	Serialize complete at 11/02/2012 08:38:43 AM
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-11-02_02:2012-11-02,2012-11-02,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thanks for the review.
 
+On Fri, Nov 02, 2012 at 10:33:44AM +0100, Lars-Peter Clausen wrote:
+> On 10/31/2012 07:58 PM, Josh Cartwright wrote:
+> > [...]
+> > +#define PERIPH_CLK_CTRL_SRC(x)	(periph_clk_parent_map[((x)&3)>>4])
+> > +#define PERIPH_CLK_CTRL_DIV(x)	(((x)&0x3F00)>>8)
+> 
+> A few more spaces wouldn't hurt ;)
 
-Ingo,
+Okay, sure.
 
-I've been focusing on -rt related things lately and let my tracing
-queue pile up on me. I've ran these through my own vigorous tests,
-and think they are ready for 3.8.
+> > [...]
+> > +static void __init zynq_periph_clk_setup(struct device_node *np)
+> > +{
+> > +	struct zynq_periph_clk *periph;
+> > +	const char *parent_names[3];
+> > +	struct clk_init_data init;
+> > +	struct clk *clk;
+> > +	int err;
+> > +	u32 reg;
+> > +	int i;
+> > +
+> > +	err = of_property_read_u32(np, "reg", &reg);
+> > +	WARN_ON(err);
+>
+> Shouldn't the function abort if a error happens somewhere? Continuing here
+> will lead to undefined behavior. Same is probably true for the other WARN_ONs.
 
-Please pull the latest tip/perf/core tree, which can be found at:
+The way I see it is: the kernel is will be left in a bad state in the
+case of any failure, regardless of if we bail out or continue.  AFAICT,
+there is no clean way to recover from a failure this early.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/core
+Given that, it seems simpler (albeit marginally so) just to continue; so
+that's what I chose to do.  I'm not opposed to bailing out, just not
+convinced it does anything for us.
 
-Head SHA1: 9b194e6cb864506da693d26149370cb7272af99f
+> > +
+> > +	periph = kzalloc(sizeof(*periph), GFP_KERNEL);
+> > +	WARN_ON(!periph);
+> > +
+> > +	periph->clk_ctrl = slcr_base + reg;
+> > +	spin_lock_init(&periph->clkact_lock);
+> > +
+> > +	init.name = np->name;
+> > +	init.ops = &zynq_periph_clk_ops;
+> > +	for (i = 0; i < ARRAY_SIZE(parent_names); i++)
+> > +		parent_names[i] = of_clk_get_parent_name(np, i);
+> > +	init.parent_names = parent_names;
+> > +	init.num_parents = ARRAY_SIZE(parent_names);
+> > +
+> > +	periph->hw.init = &init;
+> > +
+> > +	clk = clk_register(NULL, &periph->hw);
+> > +	WARN_ON(IS_ERR(clk));
+> > +
+> > +	err = of_clk_add_provider(np, of_clk_src_simple_get, clk);
+> > +	WARN_ON(err);
+> > +
+> > +	for (i = 0; i < 2; i++) {
+> 
+> Not all of the peripheral clock generators have two output clocks. I think
+> it makes sense to use the number entries in clock-output-names here.
 
+Yes, I agree.  I'll also update the bindings documentation.
 
-Daniel Walter (1):
-      tracing: Replace strict_strto* with kstrto*
-
-David Sharp (4):
-      tracing: Trivial cleanup
-      tracing,x86: Add a TSC trace_clock
-      tracing: Reset ring buffer when changing trace_clocks
-      tracing: Format non-nanosec times from tsc clock without a decimal po=
-int.
-
-Hiraku Toyooka (1):
-      tracing: Change tracer's integer flags to bool
-
-Michal Hocko (1):
-      linux/kernel.h: Remove duplicate trace_printk declaration
-
-Slava Pestov (1):
-      ring-buffer: Add a 'dropped events' counter
-
-Steven Rostedt (11):
-      tracing: Allow tracers to start at core initcall
-      tracing: Expand ring buffer when trace_printk() is used
-      tracing: Enable comm recording if trace_printk() is used
-      tracing: Have tracing_sched_wakeup_trace() use standard unlock_commit
-      tracing: Cache comms only after an event occurred
-      tracing: Separate open function from set_event and available_events
-      tracing: Remove unused function unregister_tracer()
-      tracing: Make tracing_enabled be equal to tracing_on
-      tracing: Remove deprecated tracing_enabled file
-      tracing: Use irq_work for wake ups and remove *_nowake_*() functions
-      tracing: Add trace_options kernel command line parameter
-
-Vaibhav Nagarnaik (1):
-      tracing: Cleanup unnecessary function declarations
-
-Yoshihiro YUNOMAE (2):
-      ring-buffer: Change unsigned long type of ring_buffer_oldest_event_ts=
-() to u64
-      tracing: Show raw time stamp on stats per cpu using counter or tsc mo=
-de for trace_clock
-
-----
- Documentation/kernel-parameters.txt  |   16 ++
- arch/alpha/include/asm/Kbuild        |    1 +
- arch/arm/include/asm/Kbuild          |    1 +
- arch/arm64/include/asm/Kbuild        |    1 +
- arch/avr32/include/asm/Kbuild        |    1 +
- arch/blackfin/include/asm/Kbuild     |    1 +
- arch/c6x/include/asm/Kbuild          |    1 +
- arch/cris/include/asm/Kbuild         |    1 +
- arch/frv/include/asm/Kbuild          |    1 +
- arch/h8300/include/asm/Kbuild        |    1 +
- arch/hexagon/include/asm/Kbuild      |    1 +
- arch/ia64/include/asm/Kbuild         |    1 +
- arch/m32r/include/asm/Kbuild         |    1 +
- arch/m68k/include/asm/Kbuild         |    1 +
- arch/microblaze/include/asm/Kbuild   |    1 +
- arch/mips/include/asm/Kbuild         |    1 +
- arch/mn10300/include/asm/Kbuild      |    1 +
- arch/openrisc/include/asm/Kbuild     |    1 +
- arch/parisc/include/asm/Kbuild       |    2 +-
- arch/powerpc/include/asm/Kbuild      |    1 +
- arch/s390/include/asm/Kbuild         |    1 +
- arch/score/include/asm/Kbuild        |    1 +
- arch/sh/include/asm/Kbuild           |    1 +
- arch/sparc/include/asm/Kbuild        |    1 +
- arch/tile/include/asm/Kbuild         |    1 +
- arch/um/include/asm/Kbuild           |    1 +
- arch/unicore32/include/asm/Kbuild    |    1 +
- arch/x86/include/asm/trace_clock.h   |   16 ++
- arch/x86/kernel/Makefile             |    1 +
- arch/x86/kernel/trace_clock.c        |   21 ++
- arch/xtensa/include/asm/Kbuild       |    1 +
- include/asm-generic/trace_clock.h    |   16 ++
- include/linux/ftrace_event.h         |   20 +-
- include/linux/kernel.h               |    7 +-
- include/linux/ring_buffer.h          |    3 +-
- include/linux/trace_clock.h          |    2 +
- include/trace/ftrace.h               |    3 +-
- include/trace/syscall.h              |   23 --
- kernel/trace/Kconfig                 |    1 +
- kernel/trace/ftrace.c                |    6 +-
- kernel/trace/ring_buffer.c           |   51 ++++-
- kernel/trace/trace.c                 |  411 ++++++++++++++++++------------=
-----
- kernel/trace/trace.h                 |   18 +-
- kernel/trace/trace_branch.c          |    4 +-
- kernel/trace/trace_events.c          |   51 +++--
- kernel/trace/trace_events_filter.c   |    4 +-
- kernel/trace/trace_functions.c       |    5 +-
- kernel/trace/trace_functions_graph.c |    6 +-
- kernel/trace/trace_irqsoff.c         |   14 +-
- kernel/trace/trace_kprobe.c          |   10 +-
- kernel/trace/trace_output.c          |   80 ++++---
- kernel/trace/trace_probe.c           |   14 +-
- kernel/trace/trace_sched_switch.c    |    4 +-
- kernel/trace/trace_sched_wakeup.c    |   10 +-
- kernel/trace/trace_selftest.c        |   13 +-
- kernel/trace/trace_syscalls.c        |   61 +++--
- kernel/trace/trace_uprobe.c          |    2 +-
- 57 files changed, 539 insertions(+), 382 deletions(-)
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJQk8v9AAoJEOdOSU1xswtM5z4IAJ7dTsKdqnLDVbx+FvQd1kDd
-CWoYO5RrmSn4yUgGRuES+1pvJ9znyQL5LSpw1BmIqOcZR26gXif7PJS0sUwRKS7/
-zXWxcQJQ9feOm/yASmCzlRUZQh8G2BJjtF3D+UwgKL9sJfRun8lX4iwuf2mHdxTc
-mC/uyYHiTbB9apugxDVHReSRmRA/BMTN2P3k0F72hA9mfJv9iPAR0xj7lvTgrhS6
-L3UMm7lGqIARLZbtQyVPgVlKy3k+PtkVwSiy8IdpzMYZnTuzVHwgEvdZP+3PC+Tx
-wrpRWSE9KBolgQ0uOftqqwb4PrjVELU+MsweggbxFiYiIwUVaOHGZPLX4RfX9zw=
-=0mdX
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+Thanks again,
+  Josh
