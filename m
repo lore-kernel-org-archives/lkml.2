@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933330Ab2KBRsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:48:10 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:8659 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932442Ab2KBRsF (ORCPT
+	id S933227Ab2KBRsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:48:39 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:41460 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932260Ab2KBRsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:48:05 -0400
-Date: Fri, 2 Nov 2012 17:48:04 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Shan Wei <shanwei88@gmail.com>
-cc: lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de, ordex@autistici.org,
-        b.a.t.m.a.n@lists.open-mesh.org, David Miller <davem@davemloft.net>,
-        NetDev <netdev@vger.kernel.org>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 9/9] net: batman-adv: use per_cpu_add helper
-In-Reply-To: <5093EE7E.6040400@gmail.com>
-Message-ID: <0000013ac23ca1c8-740e6cfa-8166-4369-80d6-88bdfa8117d6-000000@email.amazonses.com>
-References: <5093EE7E.6040400@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+	Fri, 2 Nov 2012 13:48:36 -0400
+Message-ID: <1351878511.2439.44.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Date: Fri, 02 Nov 2012 17:48:31 +0000
+In-Reply-To: <20121102165456.GB9997@srcf.ucam.org>
+References: <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
+	 <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
+	 <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
+	 <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
+	 <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
+	 <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+	 <20121101202701.GB20817@xo-6d-61-c0.localdomain>
+	 <5092E361.7080901@genband.com> <20121102163302.GA6080@elf.ucw.cz>
+	 <1351875164.2439.42.camel@dabdike.int.hansenpartnership.com>
+	 <20121102165456.GB9997@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 3 Nov 2012, Shan Wei wrote:
+On Fri, 2012-11-02 at 16:54 +0000, Matthew Garrett wrote:
+> On Fri, Nov 02, 2012 at 04:52:44PM +0000, James Bottomley wrote:
+> 
+> > The first question is how many compromises do you need.  Without
+> > co-operation from windows, you don't get to install something in the
+> > boot system, so if you're looking for a single compromise vector, the
+> > only realistic attack is to trick the user into booting a hacked linux
+> > system from USB or DVD.
+> 
+> You run a binary. It pops up a box saying "Windows needs your permission 
+> to continue", just like almost every other Windows binary that's any 
+> use. Done.
 
-> diff --git a/net/batman-adv/main.h b/net/batman-adv/main.h
-> index 897ba6a..3aef5b2 100644
-> --- a/net/batman-adv/main.h
-> +++ b/net/batman-adv/main.h
-> @@ -263,9 +263,7 @@ static inline bool batadv_has_timed_out(unsigned long timestamp,
->  static inline void batadv_add_counter(struct batadv_priv *bat_priv, size_t idx,
->  				      size_t count)
->  {
-> -	int cpu = get_cpu();
-> -	per_cpu_ptr(bat_priv->bat_counters, cpu)[idx] += count;
-> -	put_cpu();
-> +	this_cpu_add(bat_priv->bat_counters[idx], count);
->  }
+And if all the loaders do some type of present user test on a virgin
+system, how do you propose to get that message up there?
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
+James
+
 
