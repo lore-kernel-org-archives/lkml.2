@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762906Ab2KBOLe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 10:11:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9593 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab2KBOLc (ORCPT
+	id S934026Ab2KBOPV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 10:15:21 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:29632 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932906Ab2KBOPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 10:11:32 -0400
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=EaluEUCYuSkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=U_9UZLlTPtUA:10 a=O83BuzuMcfAV-u9xNgIA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351865489.4004.137.camel@gandalf.local.home>
-Subject: Re: [PATCH] [PATCH] x86: Don't clobber top of pt_regs in nested NMI
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: sqazi@google.com, peterz@infradead.org, tglx@linutronix.de,
-        torvalds@linux-foundation.org, hpa@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Date: Fri, 02 Nov 2012 10:11:29 -0400
-In-Reply-To: <5093E22302000078000A611A@nat28.tlf.novell.com>
-References: <20121002002919.27236.14388.stgit@dungbeetle.mtv.corp.google.com>
-	 <1351731872.4004.112.camel@gandalf.local.home>
-	 <5092D31C020000780008EB6B@nat28.tlf.novell.com>
-	 <1351864310.4004.130.camel@gandalf.local.home>
-	 <1351864429.4004.131.camel@gandalf.local.home>
-	 <5093E22302000078000A611A@nat28.tlf.novell.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
+	Fri, 2 Nov 2012 10:15:19 -0400
+Message-ID: <1351865256.19172.105.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v3 0/2] ACPI: CPU hot-remove support
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, imammedo@redhat.com,
+        vijaymohan.pandarathil@hp.com, prarit@redhat.com, bhelgaas@google.com
+Date: Fri, 02 Nov 2012 08:07:36 -0600
+In-Reply-To: <1678274.pulvZO82Js@vostro.rjw.lan>
+References: <1351780933-30560-1-git-send-email-toshi.kani@hp.com>
+	 <1678274.pulvZO82Js@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-02 at 14:09 +0000, Jan Beulich wrote:
-
-> >>  	subq $(5*8), %rsp
-> >> +	CFI_ADJUST_CFA_OFFSET 5*8
-> >>  
-> >>  	CFI_DEF_CFA_OFFSET SS+8-RIP
-> >>  end_repeat_nmi:
-> >> 
+On Fri, 2012-11-02 at 13:46 +0100, Rafael J. Wysocki wrote:
+> On Thursday, November 01, 2012 08:42:11 AM Toshi Kani wrote:
+> > This patchset adds support of CPU hot-remove via an ACPI eject
+> > notification to the ACPI processor driver.  The CPU hot-remove
+> > operation shares the same code path with the sysfs eject operation.
 > > 
-> > Is that second one even needed? Or will the CFI_DEF_CFA_OFFSET SS+8-RIP
-> > fix it?
+> > The patchset also exports two functions necessary to initiate
+> > hot-remove operations from modules, such as the processor driver.
+> > 
+> > The patchset is based on the current Linus's tree.
+> > 
+> > v3:
+> > - Added patch 1/2 to export functions for hot-remove
+> > 
+> > v2:
+> > - Rebased to the latest baseline
+> > 
+> > ---
+> > Toshi Kani (2):
+> >  ACPI: Export functions for hot-remove
+> >  ACPI: Add ACPI CPU hot-remove support
 > 
-> Yes it will (as long as no intervening instructions get added; that's
-> to say that I'd recommend removing the blank line to make clear
-> that instruction and annotation belong together).
+> Both patches applied to the linux-next branch of the linux-pm.git
+> tree as v3.8 material.
 
-OK, will do.
+Great!!  Thanks Rafael!
+-Toshi
 
-Thanks!
 
--- Steve
+> 
+> Thanks,
+> Rafael
+> 
+> 
+> > ---
+> >  drivers/acpi/osl.c              |  1 +
+> >  drivers/acpi/processor_driver.c | 27 +++++++++++++++++----------
+> >  drivers/acpi/scan.c             |  1 +
+> >  3 files changed, 19 insertions(+), 10 deletions(-)
+> > 
 
 
