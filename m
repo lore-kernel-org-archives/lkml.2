@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2KBT4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 15:56:11 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:59042 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750949Ab2KBT4J convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 15:56:09 -0400
-Date: Fri, 2 Nov 2012 15:56:00 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Lasse =?iso-8859-1?Q?K=E4rkk=E4inen?= <ljkarkk2@cc.hut.fi>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: urandom is too slow
-Message-ID: <20121102195600.GA32632@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Lasse =?iso-8859-1?Q?K=E4rkk=E4inen?= <ljkarkk2@cc.hut.fi>,
-	linux-kernel@vger.kernel.org
-References: <508FEA5A.7010406@cc.hut.fi>
- <20121030185403.GA5044@thunk.org>
- <20121030213850.7b987ddf@pyramind.ukuu.org.uk>
- <50931D6D.2080402@cc.hut.fi>
+	id S1753249Ab2KBUCZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 16:02:25 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:52948 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970Ab2KBUCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 16:02:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Lin Ming <ming.m.lin@intel.com>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH] acpi: add missing newline to printk
+Date: Fri, 02 Nov 2012 21:06:30 +0100
+Message-ID: <2755585.b9GScQZuQJ@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1351875078-5843-1-git-send-email-cesarb@cesarb.net>
+References: <1351875078-5843-1-git-send-email-cesarb@cesarb.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <50931D6D.2080402@cc.hut.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 03:10:05AM +0200, Lasse Kärkkäinen wrote:
-> Thank you for your answers, they should be very helpful for someone
-> who is actually blanking or shredding their disks. However, I am
-> just genuinely interested on why is no better CSPRNG algorithm used
-> in the kernel (is it simply because no-one sent a patch or am I
-> missing something?).
+On Friday, November 02, 2012 02:51:18 PM Cesar Eduardo Barros wrote:
+> The missing newline causes messages like this on dmesg:
+> 
+> [    2.578212] ACPI: Invalid Power Resource to register!<5>[2.578456] ...
+> 
+> Cc: Lin Ming <ming.m.lin@intel.com>
+> Cc: Len Brown <len.brown@intel.com>
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 
-The answer is that the goal of /dev/urandom is not to be a
-cryptographic random number generator (CRNG); a CRNG relies on the
-security of the cryptographic primitive for its strength.  For
-example, a CRNG which is based on DES or AES encrypting an
-incrementing counter using a secret key, is fundamentally reliant on
-the strength of DES or AES.  If DES were to be broken, for example, an
-attacker would be able to determine secret key and thus predict all
-future outputs of a DES-based CRNG.
+An equivalent patch has been applied already.
 
-The design of the /dev/random and /dev/urandom is to take advantage of
-the kernel's access to unpredictability from the hardware, and to
-avoid being "brittle" even in the face of a discovery of a weakness of
-its cryptographic primitives.
+Thanks,
+Rafael
 
-Regards,
 
-						- Ted
+> ---
+>  drivers/acpi/power.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+> index 40e38a0..7db61b8 100644
+> --- a/drivers/acpi/power.c
+> +++ b/drivers/acpi/power.c
+> @@ -473,7 +473,7 @@ int acpi_power_resource_register_device(struct device *dev, acpi_handle handle)
+>  	return ret;
+>  
+>  no_power_resource:
+> -	printk(KERN_DEBUG PREFIX "Invalid Power Resource to register!");
+> +	printk(KERN_DEBUG PREFIX "Invalid Power Resource to register!\n");
+>  	return -ENODEV;
+>  }
+>  EXPORT_SYMBOL_GPL(acpi_power_resource_register_device);
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
