@@ -1,95 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab2KBAkH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 20:40:07 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:58864 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab2KBAkE (ORCPT
+	id S1758534Ab2KBAkf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 20:40:35 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60222 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab2KBAka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 20:40:04 -0400
-To: Gustavo Padovan <gustavo@padovan.org>
-Subject: Re: [PATCH] ath3k: Add support for VAIO VPCEH [0489:e027]
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-From: Marcos Chaparro <marcos@mrkindustries.com.ar>
-Organization: Mrk Industries
-Date: Thu, 1 Nov 2012 21:38:20 -0300
+	Thu, 1 Nov 2012 20:40:30 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211012138.20988.marcos@mrkindustries.com.ar>
+In-Reply-To: <alpine.LFD.2.02.1211012358280.2756@ionos>
+References: <20121031003258.811955127@goodmis.org>
+	<20121031003314.763160265@goodmis.org>
+	<CAN8Q1EcVfzJJh+XMeXMMk33kwyyyRoEWsuEbSQqVW0Vz3i3Vuw@mail.gmail.com>
+	<alpine.LFD.2.02.1211012213460.2756@ionos>
+	<CAN8Q1Ecq9T5HC60_ta8Xr9kKyAe8Fjrd8znV9MpDTYqkSSptOw@mail.gmail.com>
+	<alpine.LFD.2.02.1211012358280.2756@ionos>
+Date: Thu, 1 Nov 2012 17:40:28 -0700
+X-Google-Sender-Auth: Sc791NoEsQDs4BTdaIO_hfEtzDQ
+Message-ID: <CAN8Q1EcKiBG_S5NuKpw3viHFM7kW5WYuzvpVvL+Pnj1dekWUug@mail.gmail.com>
+Subject: Re: [PATCH RT 3/4] net: netfilter: Serialize xt_write_recseq sections
+ on RT
+From: Peter LaDow <petela@gocougs.wsu.edu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>, John Kacur <jkacur@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added Atheros AR3011 internal bluetooth device found in Sony VAIO VPCEH to the 
-devices list.
-Before this, the bluetooth module was identified as an Foxconn / Hai bluetooth 
-device [0489:e027], now it claims to be an AtherosAR3011 Bluetooth 
-[0cf3:3005].
+> git log v3.0.36-rt58..3.0.48-rt72
+>
+> That's what a source version control system is designed for AFAICT
 
-# cat /sys/kernel/debug/usb/devices
-T:  Bus=01 Lev=02 Prnt=02 Port=04 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0489 ProdID=e027 Rev= 0.01
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+Thanks for the tip.  I (naively) presumed there were published
+changelogs and was looking for them.  Nor did I know the git logs were
+limited to releases, and didn't look there because I feared a huge
+number of mid-release commits.  Thanks for the pointer.
 
-Signed-off by: Marcos A Chaparro <marcos@mrkindustries.com.ar>
----
+I've gone through all the commits from 3.0.36-rt58 to 3.0.48-rt72 and
+see a few items we need to pull in.  The majority are irrelevant to
+our platform/configuration (ALSA, SCSI, x86, etc).  But the few I did
+find point to us moving to rt72 when we can.
 
-Updated usb /sys/kernel/debug/usb/devices output. A complete powercycle flushed 
-the device firmware.
-
-diff --git a/linux-3.7-rc3.orig/drivers/bluetooth/ath3k.c b/linux-3.7-
-rc3.new/drivers/bluetooth/ath3k.c
-index fc2de55..b00000e 100644
---- a/linux-3.7-rc3.orig/drivers/bluetooth/ath3k.c
-+++ b/linux-3.7-rc3.new/drivers/bluetooth/ath3k.c
-@@ -67,6 +67,7 @@ static struct usb_device_id ath3k_table[] = {
-        { USB_DEVICE(0x13d3, 0x3304) },
-        { USB_DEVICE(0x0930, 0x0215) },
-        { USB_DEVICE(0x0489, 0xE03D) },
-+       { USB_DEVICE(0x0489, 0xE027) },
- 
-        /* Atheros AR9285 Malbec with sflash firmware */
-        { USB_DEVICE(0x03F0, 0x311D) },
-diff --git a/linux-3.7-rc3.orig/drivers/bluetooth/btusb.c b/linux-3.7-
-rc3.new/drivers/bluetooth/btusb.c
-index debda27..ee82f2f 100644
---- a/linux-3.7-rc3.orig/drivers/bluetooth/btusb.c
-+++ b/linux-3.7-rc3.new/drivers/bluetooth/btusb.c
-@@ -124,6 +124,7 @@ static struct usb_device_id blacklist_table[] = {
-        { USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
-        { USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
-        { USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
-+       { USB_DEVICE(0x0489, 0xe027), .driver_info = BTUSB_IGNORE },
- 
-        /* Atheros AR9285 Malbec with sflash firmware */
-        { USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
-
---
-Marcos
+Thanks,
+Pete
