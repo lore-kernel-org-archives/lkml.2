@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758130Ab2KBPwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 11:52:01 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:65349 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab2KBPv7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 11:51:59 -0400
-Message-ID: <5093EC1B.2050800@suse.cz>
-Date: Fri, 02 Nov 2012 16:51:55 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1758340Ab2KBPww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 11:52:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754415Ab2KBPwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 11:52:50 -0400
+Date: Fri, 2 Nov 2012 11:52:47 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121102155247.GH3300@redhat.com>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+ <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+ <20121029174131.GC7580@srcf.ucam.org>
+ <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
+ <20121031150201.GA12394@srcf.ucam.org>
+ <20121102153047.GF3300@redhat.com>
+ <20121102154248.GA7681@srcf.ucam.org>
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 21/21] TTY: move tty buffers to tty_port
-References: <1350592007-9216-1-git-send-email-jslaby@suse.cz> <1350592007-9216-22-git-send-email-jslaby@suse.cz> <50897E98.5080502@gmail.com> <50911F67.3040303@suse.cz> <CA+1xoqfZ5DHVi44Y_a5EmXYeN6Eh=COSP4CiA6tM-aqJE1vBoQ@mail.gmail.com> <5091448D.3@suse.cz> <CA+1xoqdRBCQYBQdK-=KJohtua_wD_fp4akk6_jS0x3x82fRp5g@mail.gmail.com>
-In-Reply-To: <CA+1xoqdRBCQYBQdK-=KJohtua_wD_fp4akk6_jS0x3x82fRp5g@mail.gmail.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121102154248.GA7681@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2012 04:59 PM, Sasha Levin wrote:
-> So you probably want a lot more than 100k syscalls, why limit it at
-> all actually?
+On Fri, Nov 02, 2012 at 03:42:48PM +0000, Matthew Garrett wrote:
+> On Fri, Nov 02, 2012 at 11:30:48AM -0400, Vivek Goyal wrote:
+> 
+> > "crash" utility has module which allows reading kernel memory. So leaking
+> > this private key will be easier then you are thinking it to be.
+> 
+> That's not upstream, right?
 
-I unset the limit but I still can't reproduce...
+Yes, checked with Dave, it is not upstream. Well, still it is a concern
+for distro kernel.
 
-> I've attached my .config for the guest kernel as reference.
+So if we keep private key in kernel, looks like we shall have to disable
+one more feature in secureboot mode.
 
-Even using this config does not help to reproduce that.
-
-Do you use some special trinity params?
-
-thanks,
--- 
-js
-suse labs
+Thanks
+Vivek
