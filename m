@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759964Ab2KBVsu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 17:48:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23646 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759059Ab2KBVq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 17:46:26 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Cc: Bart Van Assche <bvanassche@acm.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [patch,v2 04/10] scsi: allocate scsi_cmnd-s from the device's local numa node
-Date: Fri,  2 Nov 2012 17:45:57 -0400
-Message-Id: <1351892763-21325-5-git-send-email-jmoyer@redhat.com>
-In-Reply-To: <1351892763-21325-1-git-send-email-jmoyer@redhat.com>
-References: <1351892763-21325-1-git-send-email-jmoyer@redhat.com>
+	id S1761217Ab2KBVty (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 17:49:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39337 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758535Ab2KBVtv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 17:49:51 -0400
+Date: Fri, 2 Nov 2012 22:49:45 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: anish kumar <anish198519851985@gmail.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, mingo@kernel.org, fweisbec@gmail.com
+Subject: Re: [PATCH] IRQ CORE: irq_work_queue function return value not
+ used.
+In-Reply-To: <1351863814.4004.126.camel@gandalf.local.home>
+Message-ID: <alpine.LFD.2.02.1211022249150.2756@ionos>
+References: <1351862676-5426-1-git-send-email-anish198519851985@gmail.com> <1351863814.4004.126.camel@gandalf.local.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2 Nov 2012, Steven Rostedt wrote:
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
----
- drivers/scsi/scsi.c |   17 +++++++++++------
- 1 files changed, 11 insertions(+), 6 deletions(-)
+> On Fri, 2012-11-02 at 22:24 +0900, anish kumar wrote:
+> > From: anish kumar <anish198519851985@gmail.com>
+> > 
+> > As no one is using the return value of irq_work_queue function
+> > it is better to just make it void.
+> 
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> Peter, like to take this patch? Or is there a reason you have for
+> irq_work_queue() returning a value?
+> 
+> -- Steve
+> 
+> > Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> > ---
+> >  kernel/irq_work.c |    6 +++---
+> >  1 files changed, 3 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+> > index 1588e3b..a85c4b3 100644
+> > --- a/kernel/irq_work.c
+> > +++ b/kernel/irq_work.c
+> > @@ -79,17 +79,17 @@ static void __irq_work_queue(struct irq_work *work)
+> >   *
+> >   * Can be re-enqueued while the callback is still in progress.
+> >   */
+> > -bool irq_work_queue(struct irq_work *work)
+> > +void irq_work_queue(struct irq_work *work)
+> >  {
+> >  	if (!irq_work_claim(work)) {
+> >  		/*
+> >  		 * Already enqueued, can't do!
+> >  		 */
+> > -		return false;
+> > +		return;
+> >  	}
+> >  
+> >  	__irq_work_queue(work);
+> > -	return true;
+> > +	return;
 
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 2936b44..4db6973 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -173,16 +173,20 @@ static DEFINE_MUTEX(host_cmd_pool_mutex);
-  * NULL on failure
-  */
- static struct scsi_cmnd *
--scsi_pool_alloc_command(struct scsi_host_cmd_pool *pool, gfp_t gfp_mask)
-+scsi_pool_alloc_command(struct scsi_host_cmd_pool *pool, gfp_t gfp_mask,
-+			int node)
- {
- 	struct scsi_cmnd *cmd;
- 
--	cmd = kmem_cache_zalloc(pool->cmd_slab, gfp_mask | pool->gfp_mask);
-+	cmd = kmem_cache_alloc_node(pool->cmd_slab,
-+				    gfp_mask | pool->gfp_mask | __GFP_ZERO,
-+				    node);
- 	if (!cmd)
- 		return NULL;
- 
--	cmd->sense_buffer = kmem_cache_alloc(pool->sense_slab,
--					     gfp_mask | pool->gfp_mask);
-+	cmd->sense_buffer = kmem_cache_alloc_node(pool->sense_slab,
-+					gfp_mask | pool->gfp_mask | __GFP_ZERO,
-+					node);
- 	if (!cmd->sense_buffer) {
- 		kmem_cache_free(pool->cmd_slab, cmd);
- 		return NULL;
-@@ -223,7 +227,8 @@ scsi_host_alloc_command(struct Scsi_Host *shost, gfp_t gfp_mask)
- {
- 	struct scsi_cmnd *cmd;
- 
--	cmd = scsi_pool_alloc_command(shost->cmd_pool, gfp_mask);
-+	cmd = scsi_pool_alloc_command(shost->cmd_pool, gfp_mask,
-+				      shost->numa_node);
- 	if (!cmd)
- 		return NULL;
- 
-@@ -435,7 +440,7 @@ struct scsi_cmnd *scsi_allocate_command(gfp_t gfp_mask)
- 	if (!pool)
- 		return NULL;
- 
--	return scsi_pool_alloc_command(pool, gfp_mask);
-+	return scsi_pool_alloc_command(pool, gfp_mask, NUMA_NO_NODE);
- }
- EXPORT_SYMBOL(scsi_allocate_command);
- 
--- 
-1.7.1
+And while at it please zap that pointless "return;" statement.
 
+> >  }
+> >  EXPORT_SYMBOL_GPL(irq_work_queue);
+> >  
+> 
+> 
+> 
