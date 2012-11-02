@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763050Ab2KBRKo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:10:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33456 "EHLO mail.kernel.org"
+	id S1763102Ab2KBRK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:10:58 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33443 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762975Ab2KBRHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:52 -0400
+	id S1763027Ab2KBRHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bernhard Kohl <bernhard.kohl@nsn.com>, Christoph Hellwig <hch@lst.de>,
+        Roland Dreier <roland@purestorage.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>, Arun Easi <arun.easi@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 19/24] target: reintroduce some obsolete SCSI-2 commands
-Date: Fri,  2 Nov 2012 10:07:07 -0700
-Message-Id: <20121102170248.792646812@linuxfoundation.org>
+Subject: [ 18/24] qla2xxx: Update target lookup session tables when a target session changes
+Date: Fri,  2 Nov 2012 10:07:06 -0700
+Message-Id: <20121102170248.723655248@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170247.406319110@linuxfoundation.org>
 References: <20121102170247.406319110@linuxfoundation.org>
@@ -26,67 +28,199 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bernhard Kohl <bernhard.kohl@nsn.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 1a1ff38c4cebf23be8bf0009a76b082a13bd25cb upstream.
+commit c8292d1da53fa60c7516ab03a9d83f7ea266d335 upstream.
 
-With kernel 3.6 some obsolete SCSI-2 commands including SEEK_10 have
-have been removed by commit 1fd032ee10d2816c947f5d5b9abda95e728f0a8f
-"target: move code for CDB emulation".
+It is possible for the target code to change the loop_id or s_id of a
+target session in reaction to an FC fabric change.  However, the
+session structures are stored in tables that are indexed by these two
+keys, and if we just change the session structure but leave the
+pointers to it in the old places in the table, havoc can ensue.  For
+example, a new session might come along that should go in the old slot
+in the table and overwrite the old session pointer.
 
-There are still clients out there which use these old SCSI-2 commands.
-This mainly happens when running VMs with legacy guest systems,
-connected via SCSI command pass-through to iSCSI targets. Make them
-happy and return status GOOD.
+To handle this, add a new tgt_ops->update_sess() method that also
+updates the "by loop_id" and "by s_id" lookup tables when a session
+changes, so that the keys where a session pointer is stored in these
+tables always matches the keys in the session structure itself.
 
-Many real SCSI disks or external iSCSI storage devices still support
-these old commands. So let's make LIO backward compatible as well.
+(nab: Drop unnecessary double inversion with FCF_CONF_COMP_SUPPORTED
+      usage)
 
-This patch adds support for the previously removed SEEK_10 and
-additionally the SEEK_6 and REZERO_UNIT commands.
-
-Signed-off-by: Bernhard Kohl <bernhard.kohl@nsn.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Cc: Chad Dupuis <chad.dupuis@qlogic.com>
+Cc: Arun Easi <arun.easi@qlogic.com>
+Cc: Saurav Kashyap <saurav.kashyap@qlogic.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_sbc.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/scsi/qla2xxx/qla_target.c  |   25 +++++-------
+ drivers/scsi/qla2xxx/qla_target.h  |    1 
+ drivers/scsi/qla2xxx/tcm_qla2xxx.c |   73 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 85 insertions(+), 14 deletions(-)
 
---- a/drivers/target/target_core_sbc.c
-+++ b/drivers/target/target_core_sbc.c
-@@ -128,6 +128,12 @@ static int sbc_emulate_verify(struct se_
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -557,6 +557,7 @@ static bool qlt_check_fcport_exist(struc
+ 	int pmap_len;
+ 	fc_port_t *fcport;
+ 	int global_resets;
++	unsigned long flags;
+ 
+ retry:
+ 	global_resets = atomic_read(&ha->tgt.qla_tgt->tgt_global_resets_count);
+@@ -625,10 +626,10 @@ retry:
+ 	    sess->s_id.b.area, sess->loop_id, fcport->d_id.b.domain,
+ 	    fcport->d_id.b.al_pa, fcport->d_id.b.area, fcport->loop_id);
+ 
+-	sess->s_id = fcport->d_id;
+-	sess->loop_id = fcport->loop_id;
+-	sess->conf_compl_supported = !!(fcport->flags &
+-	    FCF_CONF_COMP_SUPPORTED);
++	spin_lock_irqsave(&ha->hardware_lock, flags);
++	ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
++				(fcport->flags & FCF_CONF_COMP_SUPPORTED));
++	spin_unlock_irqrestore(&ha->hardware_lock, flags);
+ 
+ 	res = true;
+ 
+@@ -740,10 +741,9 @@ static struct qla_tgt_sess *qlt_create_s
+ 				qlt_undelete_sess(sess);
+ 
+ 			kref_get(&sess->se_sess->sess_kref);
+-			sess->s_id = fcport->d_id;
+-			sess->loop_id = fcport->loop_id;
+-			sess->conf_compl_supported = !!(fcport->flags &
+-			    FCF_CONF_COMP_SUPPORTED);
++			ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
++						(fcport->flags & FCF_CONF_COMP_SUPPORTED));
++
+ 			if (sess->local && !local)
+ 				sess->local = 0;
+ 			spin_unlock_irqrestore(&ha->hardware_lock, flags);
+@@ -796,8 +796,7 @@ static struct qla_tgt_sess *qlt_create_s
+ 	 */
+ 	kref_get(&sess->se_sess->sess_kref);
+ 
+-	sess->conf_compl_supported = !!(fcport->flags &
+-	    FCF_CONF_COMP_SUPPORTED);
++	sess->conf_compl_supported = (fcport->flags & FCF_CONF_COMP_SUPPORTED);
+ 	BUILD_BUG_ON(sizeof(sess->port_name) != sizeof(fcport->port_name));
+ 	memcpy(sess->port_name, fcport->port_name, sizeof(sess->port_name));
+ 
+@@ -869,10 +868,8 @@ void qlt_fc_port_added(struct scsi_qla_h
+ 			ql_dbg(ql_dbg_tgt_mgt, vha, 0xf007,
+ 			    "Reappeared sess %p\n", sess);
+ 		}
+-		sess->s_id = fcport->d_id;
+-		sess->loop_id = fcport->loop_id;
+-		sess->conf_compl_supported = !!(fcport->flags &
+-		    FCF_CONF_COMP_SUPPORTED);
++		ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
++					(fcport->flags & FCF_CONF_COMP_SUPPORTED));
+ 	}
+ 
+ 	if (sess && sess->local) {
+--- a/drivers/scsi/qla2xxx/qla_target.h
++++ b/drivers/scsi/qla2xxx/qla_target.h
+@@ -648,6 +648,7 @@ struct qla_tgt_func_tmpl {
+ 
+ 	int (*check_initiator_node_acl)(struct scsi_qla_host *, unsigned char *,
+ 					void *, uint8_t *, uint16_t);
++	void (*update_sess)(struct qla_tgt_sess *, port_id_t, uint16_t, bool);
+ 	struct qla_tgt_sess *(*find_sess_by_loop_id)(struct scsi_qla_host *,
+ 						const uint16_t);
+ 	struct qla_tgt_sess *(*find_sess_by_s_id)(struct scsi_qla_host *,
+--- a/drivers/scsi/qla2xxx/tcm_qla2xxx.c
++++ b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
+@@ -1468,6 +1468,78 @@ static int tcm_qla2xxx_check_initiator_n
  	return 0;
  }
  
-+static int sbc_emulate_noop(struct se_cmd *cmd)
++static void tcm_qla2xxx_update_sess(struct qla_tgt_sess *sess, port_id_t s_id,
++				    uint16_t loop_id, bool conf_compl_supported)
 +{
-+	target_complete_cmd(cmd, GOOD);
-+	return 0;
++	struct qla_tgt *tgt = sess->tgt;
++	struct qla_hw_data *ha = tgt->ha;
++	struct tcm_qla2xxx_lport *lport = ha->tgt.target_lport_ptr;
++	struct se_node_acl *se_nacl = sess->se_sess->se_node_acl;
++	struct tcm_qla2xxx_nacl *nacl = container_of(se_nacl,
++			struct tcm_qla2xxx_nacl, se_node_acl);
++	u32 key;
++
++
++	if (sess->loop_id != loop_id || sess->s_id.b24 != s_id.b24)
++		pr_info("Updating session %p from port %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x loop_id %d -> %d s_id %x:%x:%x -> %x:%x:%x\n",
++			sess,
++			sess->port_name[0], sess->port_name[1],
++			sess->port_name[2], sess->port_name[3],
++			sess->port_name[4], sess->port_name[5],
++			sess->port_name[6], sess->port_name[7],
++			sess->loop_id, loop_id,
++			sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa,
++			s_id.b.domain, s_id.b.area, s_id.b.al_pa);
++
++	if (sess->loop_id != loop_id) {
++		/*
++		 * Because we can shuffle loop IDs around and we
++		 * update different sessions non-atomically, we might
++		 * have overwritten this session's old loop ID
++		 * already, and we might end up overwriting some other
++		 * session that will be updated later.  So we have to
++		 * be extra careful and we can't warn about those things...
++		 */
++		if (lport->lport_loopid_map[sess->loop_id].se_nacl == se_nacl)
++			lport->lport_loopid_map[sess->loop_id].se_nacl = NULL;
++
++		lport->lport_loopid_map[loop_id].se_nacl = se_nacl;
++
++		sess->loop_id = loop_id;
++	}
++
++	if (sess->s_id.b24 != s_id.b24) {
++		key = (((u32) sess->s_id.b.domain << 16) |
++		       ((u32) sess->s_id.b.area   <<  8) |
++		       ((u32) sess->s_id.b.al_pa));
++
++		if (btree_lookup32(&lport->lport_fcport_map, key))
++			WARN(btree_remove32(&lport->lport_fcport_map, key) != se_nacl,
++			     "Found wrong se_nacl when updating s_id %x:%x:%x\n",
++			     sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa);
++		else
++			WARN(1, "No lport_fcport_map entry for s_id %x:%x:%x\n",
++			     sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa);
++
++		key = (((u32) s_id.b.domain << 16) |
++		       ((u32) s_id.b.area   <<  8) |
++		       ((u32) s_id.b.al_pa));
++
++		if (btree_lookup32(&lport->lport_fcport_map, key)) {
++			WARN(1, "Already have lport_fcport_map entry for s_id %x:%x:%x\n",
++			     s_id.b.domain, s_id.b.area, s_id.b.al_pa);
++			btree_update32(&lport->lport_fcport_map, key, se_nacl);
++		} else {
++			btree_insert32(&lport->lport_fcport_map, key, se_nacl, GFP_ATOMIC);
++		}
++
++		sess->s_id = s_id;
++		nacl->nport_id = key;
++	}
++
++	sess->conf_compl_supported = conf_compl_supported;
 +}
 +
- static inline u32 sbc_get_size(struct se_cmd *cmd, u32 sectors)
- {
- 	return cmd->se_dev->se_sub_dev->se_dev_attrib.block_size * sectors;
-@@ -524,6 +530,18 @@ int sbc_parse_cdb(struct se_cmd *cmd, st
- 		size = 0;
- 		cmd->execute_cmd = sbc_emulate_verify;
- 		break;
-+	case REZERO_UNIT:
-+	case SEEK_6:
-+	case SEEK_10:
-+		/*
-+		 * There are still clients out there which use these old SCSI-2
-+		 * commands. This mainly happens when running VMs with legacy
-+		 * guest systems, connected via SCSI command pass-through to
-+		 * iSCSI targets. Make them happy and return status GOOD.
-+		 */
-+		size = 0;
-+		cmd->execute_cmd = sbc_emulate_noop;
-+		break;
- 	default:
- 		ret = spc_parse_cdb(cmd, &size);
- 		if (ret)
+ /*
+  * Calls into tcm_qla2xxx used by qla2xxx LLD I/O path.
+  */
+@@ -1478,6 +1550,7 @@ static struct qla_tgt_func_tmpl tcm_qla2
+ 	.free_cmd		= tcm_qla2xxx_free_cmd,
+ 	.free_mcmd		= tcm_qla2xxx_free_mcmd,
+ 	.free_session		= tcm_qla2xxx_free_session,
++	.update_sess		= tcm_qla2xxx_update_sess,
+ 	.check_initiator_node_acl = tcm_qla2xxx_check_initiator_node_acl,
+ 	.find_sess_by_s_id	= tcm_qla2xxx_find_sess_by_s_id,
+ 	.find_sess_by_loop_id	= tcm_qla2xxx_find_sess_by_loop_id,
 
 
