@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760770Ab2KBW7T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 18:59:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34585 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760565Ab2KBW7R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 18:59:17 -0400
-Date: Fri, 2 Nov 2012 15:59:12 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, Kay Sievers <kay@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
- add queue-private command filter, editable via sysfs)
-Message-ID: <20121102225912.GD27843@mtj.dyndns.org>
-References: <1657557410.1945557.1351190120407.JavaMail.root@redhat.com>
- <20121031212241.GZ2945@htj.dyndns.org>
- <5093DD5E.6030808@redhat.com>
- <20121102153530.483453c7@pyramind.ukuu.org.uk>
- <20121102164828.GA3823@mtj.dyndns.org>
- <20121102172145.184abfe3@pyramind.ukuu.org.uk>
- <20121102173022.GA27843@mtj.dyndns.org>
- <20121102201824.41b2516d@pyramind.ukuu.org.uk>
- <20121102202131.GE9169@htj.dyndns.org>
- <20121102204825.7e4bd641@pyramind.ukuu.org.uk>
+	id S1761486Ab2KBXAX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 19:00:23 -0400
+Received: from spam1.webland.se ([91.207.112.90]:56762 "EHLO spam1.webland.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759999Ab2KBXAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 19:00:22 -0400
+X-Greylist: delayed 639 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Nov 2012 19:00:22 EDT
+From: Arvid Brodin <Arvid.Brodin@xdin.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Arvid Brodin <Arvid.Brodin@xdin.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Al Viro" <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "David Rientjes" <rientjes@google.com>
+Subject: Re: fs/proc/base.c: text md5sums; tgid vs tid; and INF vs ONE?
+Thread-Topic: fs/proc/base.c: text md5sums; tgid vs tid; and INF vs ONE?
+Thread-Index: AQHNtuHiwCMp4/hqTEiwDalQNzY3mQ==
+Date: Fri, 2 Nov 2012 22:49:40 +0000
+Message-ID: <50944E03.80802@xdin.com>
+References: <50904066.4060404@xdin.com> <87ip9refzk.fsf@xmission.com>
+ <5092DBA4.3070707@xdin.com>
+In-Reply-To: <5092DBA4.3070707@xdin.com>
+Accept-Language: sv-SE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20120410
+ Thunderbird/8.0
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <70612FBF8A3D5C428E9A15C20D877FC3@redbull.xdin.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121102204825.7e4bd641@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA2N0RIo032299
 
-Hello, Alan.
-
-On Fri, Nov 02, 2012 at 08:48:25PM +0000, Alan Cox wrote:
-> If you look back through the archive you'll find people have been
-> spending a good decade bitching about the lack of filter configurability
-> and trying to get someone else to fix it.
+On 2012-11-01 21:29, Arvid Brodin wrote:
+> On 2012-10-30 23:45, Eric W. Biederman wrote:
+>> I recommend you checkout the code in security/ima/ looks like it can
+>> already do what you are trying to do.
 > 
-> The BPF filter is simpler than just about any other implementation
-> because the tools exist and are used for lots of other things and it has
-> an API that is precisely defined as well as kernel calls to run the
-> filter.
-
-Sure, if we *have* to go for flexible filtering, BPF would be the
-right way to do it.  I'm just not convinced such flexibility is
-justified.
-
-> Some reasons for it
+> Ah. I did actually check this out a year and a half ago or something like that. Seems like
+> it has gotten a bit more capable since then with the new patches (immutable executables
+> etc)! I'll take a look at it again to see if it might fit our needs. Thanks!
 > 
-> - giving people access to parts of disks
 
-Are we gonna implement random range restriction inside a partition
-too?  If we want to check against partition ranges for allowed SG_IO
-commands, by all means, but it can easily be implemented as part of
-the fixed filter.
-
-> - allowing access to specific vendor specific commands on certain
->   non-standard CD and DVD drives so they can be used for burning but you
->   can't trash them
-
-At this point, most burning commands are standardized, and optical
-drives are generally on the way out.  If you absolutely have to use
-some vendor specific commands, be root.
-
-> - giving end users minimal access to things like SMART but only on drives
->   where it is safe
-
-End users already have pretty good access to SMART data via udisks and
-it's way more flexible and intelligent than some in-kernel filter.
-
-> - giving a user a SCSI disk or partition to play with but preventing them
->   issuing weird ass commands that can disrupt other devices in the fabric
->   (like drive to drive transfers, some kinds of resets, management
->   commands)
-> - minimising the ability of a VM to do damage if compromised while
->   maximising its raw access to a device
-
-Maybe, I don't know.  It all sounds highly marginal to me.
-
-For complex/intelligent access policies, kernel isn't the right place
-to do it anyway - you want strong integration with the rest of the
-system especially for desktop.  Ones which can justify kernel-side
-filtering would be things which are pretty low-level and require low
-overhead.  I think VMs fall in this category, but then again being
-able to bypass standard filters seems workable enough for that.  Sure,
-an extra layer of filtering on top could be nice but again I just
-don't think that's a strong enough justification.
-
-Thanks.
+It looks like IMA only checks files when they are accessed; I cannot find any mechanism
+for checking code that is already executing. So it won't help us, unfortunately.
 
 -- 
-tejun
+Arvid Brodin | Consultant (Linux)
+XDIN AB | KnarrarnÃ¤sgatan 7 | SE-164 40 Kista | Sweden | xdin.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
