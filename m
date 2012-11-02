@@ -1,82 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965849Ab2KBKF0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 06:05:26 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42305 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753491Ab2KBKFZ (ORCPT
+	id S1945970Ab2KBKFr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 06:05:47 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45331 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965839Ab2KBKFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 06:05:25 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50939AD0.4040507@jp.fujitsu.com>
-Date: Fri, 02 Nov 2012 19:05:04 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Fri, 2 Nov 2012 06:05:44 -0400
+Message-ID: <50939AF5.6080201@kernel.org>
+Date: Fri, 02 Nov 2012 10:05:41 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121012 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
-        bsingharora@gmail.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH 4/8] cgroup: deactivate CSS's and mark cgroup dead before
- invoking ->pre_destroy()
-References: <1351712650-23709-1-git-send-email-tj@kernel.org> <1351712650-23709-5-git-send-email-tj@kernel.org>
-In-Reply-To: <1351712650-23709-5-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Axel Lin <axel.lin@ingics.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>,
+        srinivas pandruvada <srinivas.pandruvada@intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: hid-sensor: Use __devexit annotation for remove()
+References: <1351349317.10004.1.camel@phoenix>
+In-Reply-To: <1351349317.10004.1.camel@phoenix>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/11/01 4:44), Tejun Heo wrote:
-> Because ->pre_destroy() could fail and can't be called under
-> cgroup_mutex, cgroup destruction did something very ugly.
+On 10/27/2012 03:48 PM, Axel Lin wrote:
+> Use __devexit rather than __devinit annotation for remove().
+> Also adds __devexit_p around remove callback.
 > 
->    1. Grab cgroup_mutex and verify it can be destroyed; fail otherwise.
-> 
->    2. Release cgroup_mutex and call ->pre_destroy().
-> 
->    3. Re-grab cgroup_mutex and verify it can still be destroyed; fail
->       otherwise.
-> 
->    4. Continue destroying.
-> 
-> In addition to being ugly, it has been always broken in various ways.
-> For example, memcg ->pre_destroy() expects the cgroup to be inactive
-> after it's done but tasks can be attached and detached between #2 and
-> #3 and the conditions that memcg verified in ->pre_destroy() might no
-> longer hold by the time control reaches #3.
-> 
-> Now that ->pre_destroy() is no longer allowed to fail.  We can switch
-> to the following.
-> 
->    1. Grab cgroup_mutex and verify it can be destroyed; fail otherwise.
-> 
->    2. Deactivate CSS's and mark the cgroup removed thus preventing any
->       further operations which can invalidate the verification from #1.
-> 
->    3. Release cgroup_mutex and call ->pre_destroy().
-> 
->    4. Re-grab cgroup_mutex and continue destroying.
-> 
-> After this change, controllers can safely assume that ->pre_destroy()
-> will only be called only once for a given cgroup and, once
-> ->pre_destroy() is called, the cgroup will stay dormant till it's
-> destroyed.
-> 
-> This removes the only reason ->pre_destroy() can fail - new task being
-> attached or child cgroup being created inbetween.  Error out path is
-> removed and ->pre_destroy() invocation is open coded in
-> cgroup_rmdir().
-> 
-> v2: cgroup_call_pre_destroy() removal moved to this patch per Michal.
->      Commit message updated per Glauber.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
-> Cc: Glauber Costa <glommer@parallels.com>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Added to fixes-togreg branch of iio.git
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-
-
+oops on this one. Should have picked that up in review.
+Thanks Axel!
+> ---
+>  drivers/iio/accel/hid-sensor-accel-3d.c       |    4 ++--
+>  drivers/iio/gyro/hid-sensor-gyro-3d.c         |    4 ++--
+>  drivers/iio/light/hid-sensor-als.c            |    4 ++--
+>  drivers/iio/magnetometer/hid-sensor-magn-3d.c |    4 ++--
+>  4 files changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
+> index 314a405..1b49931 100644
+> --- a/drivers/iio/accel/hid-sensor-accel-3d.c
+> +++ b/drivers/iio/accel/hid-sensor-accel-3d.c
+> @@ -388,7 +388,7 @@ error_ret:
+>  }
+>  
+>  /* Function to deinitialize the processing for usage id */
+> -static int __devinit hid_accel_3d_remove(struct platform_device *pdev)
+> +static int __devexit hid_accel_3d_remove(struct platform_device *pdev)
+>  {
+>  	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
+>  	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+> @@ -409,7 +409,7 @@ static struct platform_driver hid_accel_3d_platform_driver = {
+>  		.owner	= THIS_MODULE,
+>  	},
+>  	.probe		= hid_accel_3d_probe,
+> -	.remove		= hid_accel_3d_remove,
+> +	.remove		= __devexit_p(hid_accel_3d_remove),
+>  };
+>  module_platform_driver(hid_accel_3d_platform_driver);
+>  
+> diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+> index 4c56ada..705dc49 100644
+> --- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
+> +++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+> @@ -388,7 +388,7 @@ error_ret:
+>  }
+>  
+>  /* Function to deinitialize the processing for usage id */
+> -static int __devinit hid_gyro_3d_remove(struct platform_device *pdev)
+> +static int __devexit hid_gyro_3d_remove(struct platform_device *pdev)
+>  {
+>  	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
+>  	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+> @@ -409,7 +409,7 @@ static struct platform_driver hid_gyro_3d_platform_driver = {
+>  		.owner	= THIS_MODULE,
+>  	},
+>  	.probe		= hid_gyro_3d_probe,
+> -	.remove		= hid_gyro_3d_remove,
+> +	.remove		= __devexit_p(hid_gyro_3d_remove),
+>  };
+>  module_platform_driver(hid_gyro_3d_platform_driver);
+>  
+> diff --git a/drivers/iio/light/hid-sensor-als.c b/drivers/iio/light/hid-sensor-als.c
+> index 96e3691..4c35ac7 100644
+> --- a/drivers/iio/light/hid-sensor-als.c
+> +++ b/drivers/iio/light/hid-sensor-als.c
+> @@ -355,7 +355,7 @@ error_ret:
+>  }
+>  
+>  /* Function to deinitialize the processing for usage id */
+> -static int __devinit hid_als_remove(struct platform_device *pdev)
+> +static int __devexit hid_als_remove(struct platform_device *pdev)
+>  {
+>  	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
+>  	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+> @@ -376,7 +376,7 @@ static struct platform_driver hid_als_platform_driver = {
+>  		.owner	= THIS_MODULE,
+>  	},
+>  	.probe		= hid_als_probe,
+> -	.remove		= hid_als_remove,
+> +	.remove		= __devexit_p(hid_als_remove),
+>  };
+>  module_platform_driver(hid_als_platform_driver);
+>  
+> diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+> index c4f0d27..a02dc98 100644
+> --- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+> +++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+> @@ -389,7 +389,7 @@ error_ret:
+>  }
+>  
+>  /* Function to deinitialize the processing for usage id */
+> -static int __devinit hid_magn_3d_remove(struct platform_device *pdev)
+> +static int __devexit hid_magn_3d_remove(struct platform_device *pdev)
+>  {
+>  	struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
+>  	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+> @@ -410,7 +410,7 @@ static struct platform_driver hid_magn_3d_platform_driver = {
+>  		.owner	= THIS_MODULE,
+>  	},
+>  	.probe		= hid_magn_3d_probe,
+> -	.remove		= hid_magn_3d_remove,
+> +	.remove		= __devexit_p(hid_magn_3d_remove),
+>  };
+>  module_platform_driver(hid_magn_3d_platform_driver);
+>  
+> 
