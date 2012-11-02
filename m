@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760643Ab2KBQ5z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 12:57:55 -0400
-Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:36441 "EHLO
-	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753234Ab2KBQ5y (ORCPT
+	id S1760899Ab2KBQ6s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:58:48 -0400
+Received: from mail.windriver.com ([147.11.1.11]:52586 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759255Ab2KBQ6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 12:57:54 -0400
-Message-ID: <1351875469.25914.51.camel@rhapsody>
-Subject: Re: Kdump with signed images
-From: Khalid Aziz <khalid@gonehiking.org>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, horms@verge.net.au,
-        Dave Young <dyoung@redhat.com>, kexec@lists.infradead.org,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>, Vivek Goyal <vgoyal@redhat.com>
-Date: Fri, 02 Nov 2012 10:57:49 -0600
-In-Reply-To: <20121101162315.GA13132@srcf.ucam.org>
-References: <1351214158.18115.186.camel@falcor>
-	 <20121026023916.GA16762@srcf.ucam.org> <20121026170609.GB24687@redhat.com>
-	 <1351276649.18115.217.camel@falcor> <20121101131003.GA14573@redhat.com>
-	 <20121101135356.GA15659@redhat.com> <1351780159.15708.17.camel@falcor>
-	 <20121101145149.GB15821@redhat.com> <20121101145731.GB10662@srcf.ucam.org>
-	 <1351782656.3782.58.camel@rhapsody> <20121101162315.GA13132@srcf.ucam.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 2 Nov 2012 12:58:47 -0400
+Date: Fri, 2 Nov 2012 12:58:35 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.6.5-rt14
+Message-ID: <20121102165835.GI25658@windriver.com>
+References: <alpine.LFD.2.02.1211012148170.2756@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1211012148170.2756@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-01 at 16:23 +0000, Matthew Garrett wrote:
-> On Thu, Nov 01, 2012 at 09:10:56AM -0600, Khalid Aziz wrote:
-> > How would a customer go about getting that userspace binary signed and 
-> > re-signed every time they update their app? There is the option of 
-> > turning the whole SecureBoot thing off for a system like that but let 
-> > us assume customer wants to leave that on or does not have the option 
-> > to turn it off?
+[[ANNOUNCE] 3.6.5-rt14] On 01/11/2012 (Thu 21:57) Thomas Gleixner wrote:
+
+> Dear RT Folks,
 > 
-> There's ongoing work for providing mechanisms for trusting user keys. If 
-> you want Secure Boot turned on, you don't want any untrusted code 
-> running in your kernel. If you're happy with untrusted code in your 
-> kernel, why are you using Secure Boot?
-> 
+> I'm pleased to announce the 3.6.5-rt14 release. 3.6.4-rt12 is an
+> intermediate release with a few changes. 3.6.5-rt13 is an update to
+> 3.6.5 and 3.6.5-rt14 has a fix for my stupidity to release from the
+> wrong tree missing a fix for x86-32.
 
-I would argue code written by a customer to run on their own systems is
-inherently trusted code and does not invalidate need/desire for Secure
-Boot. So the customer will still need some way to get their binary
-signed very painlessly just so they could use their own binary on their
-own system, simply because of a heavily locked down system design by
-Linux community.
+The rt14 content is available at the split queue repo on the master
+branch.  I've also created a 3.6.5-rt14-fixes branch, which contains:
 
---
-Khalid
+1) another %cx --> %ecx mismatch warning fix
+2) fixes a bogus PREEMPT_LAZE in a select line
+3) pointless newline removal fix carried over from 3.6.4-rt11-fixes
 
+All patches are fixed in-place directly within the existing patches
+without changing the series file (vs adding a separate patch for
+later folding).  So they should be a drop in for integration even
+if folks aren't using this git repo to provide history tracking.
+Patches on the 3.6.5-rt14-fixes pass a basic boot test on x86_32 UP.
+
+For those who didn't catch one of the earlier posts[1] about the split
+patch queue repo, it is a history tracking repo of all the releases of
+the patches-3.6.X-rtY.tar.xz  (X=gregkh stable, Y=rt version).
+
+Having the history repo allows you to track how each patch evolves,
+how the ordering changes and so on.
+
+You can use it just like a split queue tarball, in that you git am (or
+git quiltimport) the patches in the repo onto a gregkh stable tree, and
+then you can run "git blame path/to/somefile" to see seamless history
+across rt and back into stable/mainline as to who mangled what lines.
+
+The plus is, that rather than download and untar each time, you just go
+into where you've cloned this repo, and issue a "git pull" to get the
+latest update.  Go to your kernel tree, checkout the appropriate gregkh
+stable baseline and reapply the patches and you are done.
+
+Folks can browse the repo at:
+
+http://git.kernel.org/?p=linux/kernel/git/paulg/3.6-rt-patches.git
+
+Paul.
+
+[1] http://permalink.gmane.org/gmane.linux.rt.user/8864
+---
+
+The following changes since commit 3f2b22edd602ef42f77abf345a0a777ccd4033ac:
+
+  patches-3.6.5-rt14.tar.xz (2012-11-02 11:52:35 -0400)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulg/3.6-rt-patches.git v3.6.5-rt14-fixes
+
+for you to fetch changes up to a1221218459505df9a2d6c63d29432c637804a91:
+
+  x86_32: fix %cx -> %ecx mismatch on testl (2012-11-02 12:27:51 -0400)
+
+----------------------------------------------------------------
+Paul Gortmaker (3):
+      preempt-lazy-support.patch: delete trailing newline addition
+      fix bogus HAVE_PREEMPT_LAZE in preempt-lazy-support.patch
+      x86_32: fix %cx -> %ecx mismatch on testl
+
+ preempt-lazy-support.patch | 7 ++-----
+ x86-preempt-lazy.patch     | 2 +-
+ 2 files changed, 3 insertions(+), 6 deletions(-)
