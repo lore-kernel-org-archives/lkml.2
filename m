@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507Ab2KBRHQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:07:16 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33202 "EHLO mail.kernel.org"
+	id S1763153Ab2KBROw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:14:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33183 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762363Ab2KBRHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:11 -0400
+	id S1762965Ab2KBRHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 11/11] drm/nouveau: headless mode by default if pci class != vga display
-Date: Fri,  2 Nov 2012 10:06:46 -0700
-Message-Id: <20121102170315.043690403@linuxfoundation.org>
+Subject: [ 10/11] drm/nouveau: fix suspend/resume when in headless mode
+Date: Fri,  2 Nov 2012 10:06:45 -0700
+Message-Id: <20121102170314.974313334@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170314.204845540@linuxfoundation.org>
 References: <20121102170314.204845540@linuxfoundation.org>
@@ -27,55 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Skeggs <bskeggs@redhat.com>
 
-This is to prevent nouveau from taking over the console on headless boards
-such as Tesla.
-
-Backport of upstream commit: e412e95a268fa8544858ebfe066826b290430d51
+Backport of fixes from upstream commit:
+9430738d80223a1cd791a2baa74fa170d3df1262
 
 Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
+---
+ drivers/gpu/drm/nouveau/nouveau_drv.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
 --- a/drivers/gpu/drm/nouveau/nouveau_drv.c
 +++ b/drivers/gpu/drm/nouveau/nouveau_drv.c
-@@ -488,9 +488,7 @@ static int __init nouveau_init(void)
- #ifdef CONFIG_VGA_CONSOLE
- 		if (vgacon_text_force())
- 			nouveau_modeset = 0;
--		else
- #endif
--			nouveau_modeset = 1;
+@@ -186,11 +186,13 @@ nouveau_pci_suspend(struct pci_dev *pdev
+ 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
+ 		return 0;
+ 
+-	NV_INFO(dev, "Disabling display...\n");
+-	nouveau_display_fini(dev);
++	if (dev->mode_config.num_crtc) {
++		NV_INFO(dev, "Disabling display...\n");
++		nouveau_display_fini(dev);
+ 
+-	NV_INFO(dev, "Disabling fbcon...\n");
+-	nouveau_fbcon_set_suspend(dev, 1);
++		NV_INFO(dev, "Disabling fbcon...\n");
++		nouveau_fbcon_set_suspend(dev, 1);
++	}
+ 
+ 	NV_INFO(dev, "Unpinning framebuffer(s)...\n");
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
+@@ -363,10 +365,12 @@ nouveau_pci_resume(struct pci_dev *pdev)
+ 			NV_ERROR(dev, "Could not pin/map cursor.\n");
  	}
  
- 	if (!nouveau_modeset)
-diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c b/drivers/gpu/drm/nouveau/nouveau_state.c
-index c610144..f5e9584 100644
---- a/drivers/gpu/drm/nouveau/nouveau_state.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_state.c
-@@ -50,6 +50,7 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
- {
- 	struct drm_nouveau_private *dev_priv = dev->dev_private;
- 	struct nouveau_engine *engine = &dev_priv->engine;
-+	u32 pclass = dev->pdev->class >> 8;
+-	nouveau_fbcon_set_suspend(dev, 0);
+-	nouveau_fbcon_zfill_all(dev);
++	if (dev->mode_config.num_crtc) {
++		nouveau_fbcon_set_suspend(dev, 0);
++		nouveau_fbcon_zfill_all(dev);
  
- 	switch (dev_priv->chipset & 0xf0) {
- 	case 0x00:
-@@ -428,7 +429,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
- 	}
+-	nouveau_display_init(dev);
++		nouveau_display_init(dev);
++	}
  
- 	/* headless mode */
--	if (nouveau_modeset == 2) {
-+	if (nouveau_modeset == 2 ||
-+	    (nouveau_modeset < 0 && pclass != PCI_CLASS_DISPLAY_VGA)) {
- 		engine->display.early_init = nouveau_stub_init;
- 		engine->display.late_takedown = nouveau_stub_takedown;
- 		engine->display.create = nouveau_stub_init;
--- 
-1.7.12.4
-
---
-To unsubscribe from this list: send the line "unsubscribe stable" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+ 	/* Force CLUT to get re-loaded during modeset */
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
 
 
