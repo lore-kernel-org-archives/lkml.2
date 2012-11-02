@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab2KBEz6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 00:55:58 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:34554 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab2KBEzz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 00:55:55 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/comedi: Use dev_ printks in ni_tiocmd.c
-Date: Fri,  2 Nov 2012 13:55:48 +0900
-Message-Id: <1351832148-32098-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751720Ab2KBFJD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 01:09:03 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:36672 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311Ab2KBFJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 01:09:00 -0400
+Date: Fri, 2 Nov 2012 10:32:18 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Anton Arapov <anton@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] uprobes/powerpc: Don't clear TIF_UPROBE in
+ do_notify_resume()
+Message-ID: <20121102050218.GD11125@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121028173900.GA14621@redhat.com>
+ <20121028173925.GA14642@redhat.com>
+ <20121029052707.GA3400@in.ibm.com>
+ <20121029124325.GA31397@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121029124325.GA31397@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110204-5930-0000-0000-00000DB6BD01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warnings.
-- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
-- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
-- WARNING: Prefer netdev_notice(netdev, ... then dev_notice(dev, ... then pr_notice(...  to printk(KERN_NOTICE ...
+> Subject: [PATCH 1/4] uprobes/powerpc: Don't clear TIF_UPROBE in do_notify_resume()
+> 
+> Cleanup. No need to clear TIF_UPROBE, uprobe_notify_resume() does this.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/comedi/drivers/ni_tiocmd.c |   20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_tiocmd.c b/drivers/staging/comedi/drivers/ni_tiocmd.c
-index 8ee93d3..11a377a 100644
---- a/drivers/staging/comedi/drivers/ni_tiocmd.c
-+++ b/drivers/staging/comedi/drivers/ni_tiocmd.c
-@@ -173,7 +173,8 @@ static int ni_tio_input_cmd(struct ni_gpct *counter, struct comedi_async *async)
- static int ni_tio_output_cmd(struct ni_gpct *counter,
- 			     struct comedi_async *async)
- {
--	printk(KERN_ERR "ni_tio: output commands not yet implemented.\n");
-+	dev_err(counter->counter_dev->dev->class_dev,
-+		"output commands not yet implemented.\n");
- 	return -ENOTSUPP;
- 
- 	counter->mite_chan->dir = COMEDI_OUTPUT;
-@@ -219,7 +220,10 @@ int ni_tio_cmd(struct ni_gpct *counter, struct comedi_async *async)
- 
- 	spin_lock_irqsave(&counter->lock, flags);
- 	if (counter->mite_chan == NULL) {
--		printk(KERN_ERR "ni_tio: commands only supported with DMA.  Interrupt-driven commands not yet implemented.\n");
-+		dev_err(counter->counter_dev->dev->class_dev,
-+			"commands only supported with DMA.  ");
-+		dev_err(counter->counter_dev->dev->class_dev,
-+			"Interrupt-driven commands not yet implemented.\n");
- 		retval = -EIO;
- 	} else {
- 		retval = ni_tio_cmd_setup(counter, async);
-@@ -427,8 +431,9 @@ void ni_tio_acknowledge_and_confirm(struct ni_gpct *counter, int *gate_error,
- 				  NITIO_Gxx_Joint_Status2_Reg
- 				  (counter->counter_index)) &
- 		    Gi_Permanent_Stale_Bit(counter->counter_index)) {
--			printk(KERN_INFO "%s: Gi_Permanent_Stale_Data detected.\n",
--			       __func__);
-+			dev_info(counter->counter_dev->dev->class_dev,
-+				 "%s: Gi_Permanent_Stale_Data detected.\n",
-+				 __func__);
- 			if (perm_stale_data)
- 				*perm_stale_data = 1;
- 		}
-@@ -448,7 +453,8 @@ void ni_tio_handle_interrupt(struct ni_gpct *counter,
- 	ni_tio_acknowledge_and_confirm(counter, &gate_error, &tc_error,
- 				       &perm_stale_data, NULL);
- 	if (gate_error) {
--		printk(KERN_NOTICE "%s: Gi_Gate_Error detected.\n", __func__);
-+		dev_notice(counter->counter_dev->dev->class_dev,
-+			   "%s: Gi_Gate_Error detected.\n", __func__);
- 		s->async->events |= COMEDI_CB_OVERFLOW;
- 	}
- 	if (perm_stale_data)
-@@ -459,8 +465,8 @@ void ni_tio_handle_interrupt(struct ni_gpct *counter,
- 		if (read_register(counter,
- 				NITIO_Gi_DMA_Status_Reg
- 				(counter->counter_index)) & Gi_DRQ_Error_Bit) {
--			printk(KERN_NOTICE "%s: Gi_DRQ_Error detected.\n",
--							__func__);
-+			dev_notice(counter->counter_dev->dev->class_dev,
-+				   "%s: Gi_DRQ_Error detected.\n", __func__);
- 			s->async->events |= COMEDI_CB_OVERFLOW;
- 		}
- 		break;
--- 
-1.7.9.5
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  arch/powerpc/kernel/signal.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
+> index a2dc757..3b99711 100644
+> --- a/arch/powerpc/kernel/signal.c
+> +++ b/arch/powerpc/kernel/signal.c
+> @@ -158,10 +158,8 @@ static int do_signal(struct pt_regs *regs)
+> 
+>  void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+>  {
+> -	if (thread_info_flags & _TIF_UPROBE) {
+> -		clear_thread_flag(TIF_UPROBE);
+> +	if (thread_info_flags & _TIF_UPROBE)
+>  		uprobe_notify_resume(regs);
+> -	}
+> 
+>  	if (thread_info_flags & _TIF_SIGPENDING)
+>  		do_signal(regs);
+> -- 
+> 1.5.5.1
+> 
+> 
 
