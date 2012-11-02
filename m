@@ -1,169 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab2KBThz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 15:37:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34209 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab2KBThx (ORCPT
+	id S1752093Ab2KBTpO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 15:45:14 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45963 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab2KBTpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 15:37:53 -0400
-Date: Fri, 2 Nov 2012 12:37:34 -0700
-From: tip-bot for Salman Qazi <sqazi@google.com>
-Message-ID: <tip-28696f434fef0efa97534b59986ad33b9c4df7f8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, sqazi@google.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, sqazi@google.com, tglx@linutronix.de
-In-Reply-To: <20121002002919.27236.14388.stgit@dungbeetle.mtv.corp.google.com>
-References: <20121002002919.27236.14388.stgit@dungbeetle.mtv.corp.google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86: Don't clobber top of pt_regs in nested NMI
-Git-Commit-ID: 28696f434fef0efa97534b59986ad33b9c4df7f8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 2 Nov 2012 15:45:12 -0400
+Message-ID: <509422C3.1000803@suse.cz>
+Date: Fri, 02 Nov 2012 20:45:07 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 02 Nov 2012 12:37:40 -0700 (PDT)
+To: Mel Gorman <mgorman@suse.de>
+CC: Zdenek Kabelac <zkabelac@redhat.com>, Valdis.Kletnieks@vt.edu,
+        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: kswapd0: excessive CPU usage
+References: <507688CC.9000104@suse.cz> <106695.1349963080@turing-police.cc.vt.edu> <5076E700.2030909@suse.cz> <118079.1349978211@turing-police.cc.vt.edu> <50770905.5070904@suse.cz> <119175.1349979570@turing-police.cc.vt.edu> <5077434D.7080008@suse.cz> <50780F26.7070007@suse.cz> <20121012135726.GY29125@suse.de> <507BDD45.1070705@suse.cz> <20121015110937.GE29125@suse.de> <5093A3F4.8090108@redhat.com> <5093A631.5020209@suse.cz>
+In-Reply-To: <5093A631.5020209@suse.cz>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  28696f434fef0efa97534b59986ad33b9c4df7f8
-Gitweb:     http://git.kernel.org/tip/28696f434fef0efa97534b59986ad33b9c4df7f8
-Author:     Salman Qazi <sqazi@google.com>
-AuthorDate: Mon, 1 Oct 2012 17:29:25 -0700
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Fri, 2 Nov 2012 11:29:36 -0400
+On 11/02/2012 11:53 AM, Jiri Slaby wrote:
+> On 11/02/2012 11:44 AM, Zdenek Kabelac wrote:
+>>>> Yes, applying this instead of the revert fixes the issue as well.
+>>
+>> I've applied this patch on 3.7.0-rc3 kernel - and I still see excessive
+>> CPU usage - mainly  after  suspend/resume
+>>
+>> Here is just simple  kswapd backtrace from running kernel:
+> 
+> Yup, this is what we were seeing with the former patch only too. Try to
+> apply the other one too:
+> https://patchwork.kernel.org/patch/1673231/
+> 
+> For me I would say, it is fixed by the two patches now. I won't be able
+> to report later, since I'm leaving to a conference tomorrow.
 
-x86: Don't clobber top of pt_regs in nested NMI
+Damn it. It recurred right now, with both patches applied. After I
+started a java program which consumed some more memory. Though there are
+still 2 gigs free, kswap is spinning:
+[<ffffffff810b00da>] __cond_resched+0x2a/0x40
+[<ffffffff811318a0>] shrink_slab+0x1c0/0x2d0
+[<ffffffff8113478d>] kswapd+0x66d/0xb60
+[<ffffffff810a25d0>] kthread+0xc0/0xd0
+[<ffffffff816aa29c>] ret_from_fork+0x7c/0xb0
+[<ffffffffffffffff>] 0xffffffffffffffff
 
-The nested NMI modifies the place (instruction, flags and stack)
-that the first NMI will iret to.  However, the copy of registers
-modified is exactly the one that is the part of pt_regs in
-the first NMI.  This can change the behaviour of the first NMI.
-
-In particular, Google's arch_trigger_all_cpu_backtrace handler
-also prints regions of memory surrounding addresses appearing in
-registers.  This results in handled exceptions, after which nested NMIs
-start coming in.  These nested NMIs change the value of registers
-in pt_regs.  This can cause the original NMI handler to produce
-incorrect output.
-
-We solve this problem by interchanging the position of the preserved
-copy of the iret registers ("saved") and the copy subject to being
-trampled by nested NMI ("copied").
-
-Link: http://lkml.kernel.org/r/20121002002919.27236.14388.stgit@dungbeetle.mtv.corp.google.com
-
-Signed-off-by: Salman Qazi <sqazi@google.com>
-[ Added a needed CFI_ADJUST_CFA_OFFSET ]
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/kernel/entry_64.S |   41 +++++++++++++++++++++++++++--------------
- 1 files changed, 27 insertions(+), 14 deletions(-)
-
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b51b2c7..811795d 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1699,9 +1699,10 @@ nested_nmi:
- 
- 1:
- 	/* Set up the interrupted NMIs stack to jump to repeat_nmi */
--	leaq -6*8(%rsp), %rdx
-+	leaq -1*8(%rsp), %rdx
- 	movq %rdx, %rsp
--	CFI_ADJUST_CFA_OFFSET 6*8
-+	CFI_ADJUST_CFA_OFFSET 1*8
-+	leaq -10*8(%rsp), %rdx
- 	pushq_cfi $__KERNEL_DS
- 	pushq_cfi %rdx
- 	pushfq_cfi
-@@ -1709,8 +1710,8 @@ nested_nmi:
- 	pushq_cfi $repeat_nmi
- 
- 	/* Put stack back */
--	addq $(11*8), %rsp
--	CFI_ADJUST_CFA_OFFSET -11*8
-+	addq $(6*8), %rsp
-+	CFI_ADJUST_CFA_OFFSET -6*8
- 
- nested_nmi_out:
- 	popq_cfi %rdx
-@@ -1736,18 +1737,18 @@ first_nmi:
- 	 * +-------------------------+
- 	 * | NMI executing variable  |
- 	 * +-------------------------+
--	 * | Saved SS                |
--	 * | Saved Return RSP        |
--	 * | Saved RFLAGS            |
--	 * | Saved CS                |
--	 * | Saved RIP               |
--	 * +-------------------------+
- 	 * | copied SS               |
- 	 * | copied Return RSP       |
- 	 * | copied RFLAGS           |
- 	 * | copied CS               |
- 	 * | copied RIP              |
- 	 * +-------------------------+
-+	 * | Saved SS                |
-+	 * | Saved Return RSP        |
-+	 * | Saved RFLAGS            |
-+	 * | Saved CS                |
-+	 * | Saved RIP               |
-+	 * +-------------------------+
- 	 * | pt_regs                 |
- 	 * +-------------------------+
- 	 *
-@@ -1763,9 +1764,14 @@ first_nmi:
- 	/* Set the NMI executing variable on the stack. */
- 	pushq_cfi $1
- 
-+	/*
-+	 * Leave room for the "copied" frame
-+	 */
-+	subq $(5*8), %rsp
-+
- 	/* Copy the stack frame to the Saved frame */
- 	.rept 5
--	pushq_cfi 6*8(%rsp)
-+	pushq_cfi 11*8(%rsp)
- 	.endr
- 	CFI_DEF_CFA_OFFSET SS+8-RIP
- 
-@@ -1786,12 +1792,15 @@ repeat_nmi:
- 	 * is benign for the non-repeat case, where 1 was pushed just above
- 	 * to this very stack slot).
- 	 */
--	movq $1, 5*8(%rsp)
-+	movq $1, 10*8(%rsp)
- 
- 	/* Make another copy, this one may be modified by nested NMIs */
-+	addq $(10*8), %rsp
-+	CFI_ADJUST_CFA_OFFSET -10*8
- 	.rept 5
--	pushq_cfi 4*8(%rsp)
-+	pushq_cfi -6*8(%rsp)
- 	.endr
-+	subq $(5*8), %rsp
- 	CFI_DEF_CFA_OFFSET SS+8-RIP
- end_repeat_nmi:
- 
-@@ -1842,8 +1851,12 @@ nmi_swapgs:
- 	SWAPGS_UNSAFE_STACK
- nmi_restore:
- 	RESTORE_ALL 8
-+
-+	/* Pop the extra iret frame */
-+	addq $(5*8), %rsp
-+
- 	/* Clear the NMI executing stack variable */
--	movq $0, 10*8(%rsp)
-+	movq $0, 5*8(%rsp)
- 	jmp irq_return
- 	CFI_ENDPROC
- END(nmi)
+-- 
+js
+suse labs
