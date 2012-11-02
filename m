@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762537Ab2KBAFx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Nov 2012 20:05:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52505 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762520Ab2KBAFu (ORCPT
+	id S1762287Ab2KBAJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Nov 2012 20:09:18 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:17904 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593Ab2KBAJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Nov 2012 20:05:50 -0400
-Date: Thu, 1 Nov 2012 17:05:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v6 23/29] memcg: destroy memcg caches
-Message-Id: <20121101170548.86e0c7e5.akpm@linux-foundation.org>
-In-Reply-To: <1351771665-11076-24-git-send-email-glommer@parallels.com>
-References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
-	<1351771665-11076-24-git-send-email-glommer@parallels.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Nov 2012 20:09:17 -0400
+X-Authority-Analysis: v=2.0 cv=Q6tQEvKa c=1 sm=0 a=5n8MYtQuEtJVLSjGe4Mkvw==:17 a=XAgHJMm7m9YA:10 a=wom5GMh1gUkA:10 a=8oWMSCevoaIA:10 a=zz6odIEfzeQA:10 a=kj9zAlcOel0A:10 a=7kYe3NcsAAAA:8 a=JI4LjjGMiQEA:10 a=aLX-4j0Fmed6UHGNywYA:9 a=CjuIK1q_8ugA:10 a=-XA83Ip703gA:10 a=5n8MYtQuEtJVLSjGe4Mkvw==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 108.176.196.169
+Date: Thu, 1 Nov 2012 20:09:09 -0400
+From: "Daniel M. Weeks" <dan@danweeks.net>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] gpio-mcp23s08: Build I2C support even when CONFIG_I2C=m
+Message-ID: <20121102000902.GA21574@dev.danweeks.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  1 Nov 2012 16:07:39 +0400
-Glauber Costa <glommer@parallels.com> wrote:
+The driver has both SPI and I2C pieces. The appropriate pieces are built based
+on whether SPI and/or I2C is/are enabled. However, it was only checking if I2C
+was built-in, never if it was built as a module. This patch checks for either
+since building both this driver and I2C as modules is possible.
 
-> This patch implements destruction of memcg caches. Right now,
-> only caches where our reference counter is the last remaining are
-> deleted. If there are any other reference counters around, we just
-> leave the caches lying around until they go away.
-> 
-> When that happen, a destruction function is called from the cache
-> code. Caches are only destroyed in process context, so we queue them
-> up for later processing in the general case.
-> 
->
-> ...
->
-> @@ -5950,6 +6012,7 @@ static int mem_cgroup_pre_destroy(struct cgroup *cont)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->  
-> +	mem_cgroup_destroy_all_caches(memcg);
->  	return mem_cgroup_force_empty(memcg, false);
->  }
->  
+Signed-off-by: Daniel M. Weeks <dan@danweeks.net>
+---
+ drivers/gpio/gpio-mcp23s08.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Conflicts with linux-next cgroup changes.  Looks pretty simple:
-
-
-static int mem_cgroup_pre_destroy(struct cgroup *cont)
-{
-	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-	int ret;
-
-	css_get(&memcg->css);
-	ret = mem_cgroup_reparent_charges(memcg);
-	mem_cgroup_destroy_all_caches(memcg);
-	css_put(&memcg->css);
-
-	return ret;
-}
+diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
+index 0f42518..0f58d0f 100644
+--- a/drivers/gpio/gpio-mcp23s08.c
++++ b/drivers/gpio/gpio-mcp23s08.c
+@@ -77,7 +77,7 @@ struct mcp23s08_driver_data {
+ 
+ /*----------------------------------------------------------------------*/
+ 
+-#ifdef CONFIG_I2C
++#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+ 
+ static int mcp23008_read(struct mcp23s08 *mcp, unsigned reg)
+ {
+@@ -399,7 +399,7 @@ static int mcp23s08_probe_one(struct mcp23s08 *mcp, struct device *dev,
+ 		break;
+ #endif /* CONFIG_SPI_MASTER */
+ 
+-#ifdef CONFIG_I2C
++#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+ 	case MCP_TYPE_008:
+ 		mcp->ops = &mcp23008_ops;
+ 		mcp->chip.ngpio = 8;
+@@ -473,7 +473,7 @@ fail:
+ 
+ /*----------------------------------------------------------------------*/
+ 
+-#ifdef CONFIG_I2C
++#if defined(CONFIG_I2C) || defined (CONFIG_I2C_MODULE)
+ 
+ static int __devinit mcp230xx_probe(struct i2c_client *client,
+ 				    const struct i2c_device_id *id)
+-- 
+Daniel M. Weeks
 
