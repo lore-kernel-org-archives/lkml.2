@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762800Ab2KBNgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 09:36:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5843 "EHLO
+	id S1762787Ab2KBNgm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 09:36:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13170 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761244Ab2KBNfF (ORCPT
+	with ESMTP id S1761348Ab2KBNfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Nov 2012 09:35:05 -0400
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=tlxsXpNCEJwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=FbA2kkj90RoA:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=vR_tLfPqsBwRw38X8EMA:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=J1z37ABzf8eiYCYH:21 a=riljiUDZG5FoEZuW:21 a=MKSM97eRnRw54cQz8i8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=cEZLnVLY_d0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=fsuvUruio_gA:10 a=3nbZYyFuAAAA:8 a=VwQbUJbxAAAA:8 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=Bn7xxrpYSftJHWeE3oYA:9 a=QEXdDO2ut3YA:10 a=lSinr4eg3GwA:10 a=EvKJbDF4Ut8A:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Tx9Vf2JQ04_o3j1r65sA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121102133459.787988315@goodmis.org>
+Message-Id: <20121102133500.904920696@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 02 Nov 2012 09:33:02 -0400
+Date: Fri, 02 Nov 2012 09:33:08 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH 10/22] tracing: Cleanup unnecessary function declarations
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        David Sharp <dhsharp@google.com>
+Subject: [PATCH 16/22] tracing: Show raw time stamp on stats per cpu using counter or tsc
+ mode for trace_clock
 References: <20121102133251.998500247@goodmis.org>
-Content-Disposition: inline; filename=0010-tracing-Cleanup-unnecessary-function-declarations.patch
+Content-Disposition: inline; filename=0016-tracing-Show-raw-time-stamp-on-stats-per-cpu-using-c.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,181 +32,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 
-The functions defined in include/trace/syscalls.h are not used directly
-since struct ftrace_event_class was introduced. Remove them from the
-header file and rearrange the ftrace_event_class declarations in
-trace_syscalls.c.
+Show raw time stamp values for stats per cpu if you choose counter or tsc m=
+ode
+for trace_clock. Although a unit of tracing time stamp is nsec in local or =
+global mode,
+the units in counter and TSC mode are tracing counter and cycles respective=
+ly.
 
-Link: http://lkml.kernel.org/r/1339112785-21806-2-git-send-email-vnagarnaik=
-@google.com
+Link: http://lkml.kernel.org/r/1349998076-15495-6-git-send-email-dhsharp@go=
+ogle.com
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Signed-off-by: David Sharp <dhsharp@google.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/trace/syscall.h       |   21 --------------
- kernel/trace/trace_syscalls.c |   61 ++++++++++++++++++++-----------------=
-----
- 2 files changed, 29 insertions(+), 53 deletions(-)
+ kernel/trace/trace.c |   23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
 
-diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-index 0c95796..84bc419 100644
---- a/include/trace/syscall.h
-+++ b/include/trace/syscall.h
-@@ -31,25 +31,4 @@ struct syscall_metadata {
- 	struct ftrace_event_call *exit_event;
- };
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e0e7a8d..599b29a 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4452,13 +4452,24 @@ tracing_stats_read(struct file *filp, char __user *=
+ubuf,
+ 	cnt =3D ring_buffer_bytes_cpu(tr->buffer, cpu);
+ 	trace_seq_printf(s, "bytes: %ld\n", cnt);
 =20
--#ifdef CONFIG_FTRACE_SYSCALLS
--extern unsigned long arch_syscall_addr(int nr);
--extern int init_syscall_trace(struct ftrace_event_call *call);
--
--extern int reg_event_syscall_enter(struct ftrace_event_call *call);
--extern void unreg_event_syscall_enter(struct ftrace_event_call *call);
--extern int reg_event_syscall_exit(struct ftrace_event_call *call);
--extern void unreg_event_syscall_exit(struct ftrace_event_call *call);
--enum print_line_t print_syscall_enter(struct trace_iterator *iter, int fla=
-gs,
--				      struct trace_event *event);
--enum print_line_t print_syscall_exit(struct trace_iterator *iter, int flag=
-s,
--				     struct trace_event *event);
--#endif
--
--#ifdef CONFIG_PERF_EVENTS
--int perf_sysenter_enable(struct ftrace_event_call *call);
--void perf_sysenter_disable(struct ftrace_event_call *call);
--int perf_sysexit_enable(struct ftrace_event_call *call);
--void perf_sysexit_disable(struct ftrace_event_call *call);
--#endif
--
- #endif /* _TRACE_SYSCALL_H */
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 2485a7d..7609dd6 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -21,9 +21,6 @@ static int syscall_enter_register(struct ftrace_event_cal=
-l *event,
- static int syscall_exit_register(struct ftrace_event_call *event,
- 				 enum trace_reg type, void *data);
-=20
--static int syscall_enter_define_fields(struct ftrace_event_call *call);
--static int syscall_exit_define_fields(struct ftrace_event_call *call);
--
- static struct list_head *
- syscall_get_enter_fields(struct ftrace_event_call *call)
- {
-@@ -32,30 +29,6 @@ syscall_get_enter_fields(struct ftrace_event_call *call)
- 	return &entry->enter_fields;
- }
-=20
--struct trace_event_functions enter_syscall_print_funcs =3D {
--	.trace		=3D print_syscall_enter,
--};
--
--struct trace_event_functions exit_syscall_print_funcs =3D {
--	.trace		=3D print_syscall_exit,
--};
--
--struct ftrace_event_class event_class_syscall_enter =3D {
--	.system		=3D "syscalls",
--	.reg		=3D syscall_enter_register,
--	.define_fields	=3D syscall_enter_define_fields,
--	.get_fields	=3D syscall_get_enter_fields,
--	.raw_init	=3D init_syscall_trace,
--};
--
--struct ftrace_event_class event_class_syscall_exit =3D {
--	.system		=3D "syscalls",
--	.reg		=3D syscall_exit_register,
--	.define_fields	=3D syscall_exit_define_fields,
--	.fields		=3D LIST_HEAD_INIT(event_class_syscall_exit.fields),
--	.raw_init	=3D init_syscall_trace,
--};
--
- extern struct syscall_metadata *__start_syscalls_metadata[];
- extern struct syscall_metadata *__stop_syscalls_metadata[];
-=20
-@@ -432,7 +405,7 @@ void unreg_event_syscall_exit(struct ftrace_event_call =
-*call)
- 	mutex_unlock(&syscall_trace_lock);
- }
-=20
--int init_syscall_trace(struct ftrace_event_call *call)
-+static int init_syscall_trace(struct ftrace_event_call *call)
- {
- 	int id;
- 	int num;
-@@ -457,6 +430,30 @@ int init_syscall_trace(struct ftrace_event_call *call)
- 	return id;
- }
-=20
-+struct trace_event_functions enter_syscall_print_funcs =3D {
-+	.trace		=3D print_syscall_enter,
-+};
+-	t =3D ns2usecs(ring_buffer_oldest_event_ts(tr->buffer, cpu));
+-	usec_rem =3D do_div(t, USEC_PER_SEC);
+-	trace_seq_printf(s, "oldest event ts: %5llu.%06lu\n", t, usec_rem);
++	if (trace_clocks[trace_clock_id].in_ns) {
++		/* local or global for trace_clock */
++		t =3D ns2usecs(ring_buffer_oldest_event_ts(tr->buffer, cpu));
++		usec_rem =3D do_div(t, USEC_PER_SEC);
++		trace_seq_printf(s, "oldest event ts: %5llu.%06lu\n",
++								t, usec_rem);
 +
-+struct trace_event_functions exit_syscall_print_funcs =3D {
-+	.trace		=3D print_syscall_exit,
-+};
-+
-+struct ftrace_event_class event_class_syscall_enter =3D {
-+	.system		=3D "syscalls",
-+	.reg		=3D syscall_enter_register,
-+	.define_fields	=3D syscall_enter_define_fields,
-+	.get_fields	=3D syscall_get_enter_fields,
-+	.raw_init	=3D init_syscall_trace,
-+};
-+
-+struct ftrace_event_class event_class_syscall_exit =3D {
-+	.system		=3D "syscalls",
-+	.reg		=3D syscall_exit_register,
-+	.define_fields	=3D syscall_exit_define_fields,
-+	.fields		=3D LIST_HEAD_INIT(event_class_syscall_exit.fields),
-+	.raw_init	=3D init_syscall_trace,
-+};
-+
- unsigned long __init __weak arch_syscall_addr(int nr)
- {
- 	return (unsigned long)sys_call_table[nr];
-@@ -537,7 +534,7 @@ static void perf_syscall_enter(void *ignore, struct pt_=
-regs *regs, long id)
- 	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
- }
++		t =3D ns2usecs(ring_buffer_time_stamp(tr->buffer, cpu));
++		usec_rem =3D do_div(t, USEC_PER_SEC);
++		trace_seq_printf(s, "now ts: %5llu.%06lu\n", t, usec_rem);
++	} else {
++		/* counter or tsc mode for trace_clock */
++		trace_seq_printf(s, "oldest event ts: %llu\n",
++				ring_buffer_oldest_event_ts(tr->buffer, cpu));
 =20
--int perf_sysenter_enable(struct ftrace_event_call *call)
-+static int perf_sysenter_enable(struct ftrace_event_call *call)
- {
- 	int ret =3D 0;
- 	int num;
-@@ -558,7 +555,7 @@ int perf_sysenter_enable(struct ftrace_event_call *call)
- 	return ret;
- }
+-	t =3D ns2usecs(ring_buffer_time_stamp(tr->buffer, cpu));
+-	usec_rem =3D do_div(t, USEC_PER_SEC);
+-	trace_seq_printf(s, "now ts: %5llu.%06lu\n", t, usec_rem);
++		trace_seq_printf(s, "now ts: %llu\n",
++				ring_buffer_time_stamp(tr->buffer, cpu));
++	}
 =20
--void perf_sysenter_disable(struct ftrace_event_call *call)
-+static void perf_sysenter_disable(struct ftrace_event_call *call)
- {
- 	int num;
-=20
-@@ -615,7 +612,7 @@ static void perf_syscall_exit(void *ignore, struct pt_r=
-egs *regs, long ret)
- 	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head, NULL);
- }
-=20
--int perf_sysexit_enable(struct ftrace_event_call *call)
-+static int perf_sysexit_enable(struct ftrace_event_call *call)
- {
- 	int ret =3D 0;
- 	int num;
-@@ -636,7 +633,7 @@ int perf_sysexit_enable(struct ftrace_event_call *call)
- 	return ret;
- }
-=20
--void perf_sysexit_disable(struct ftrace_event_call *call)
-+static void perf_sysexit_disable(struct ftrace_event_call *call)
- {
- 	int num;
-=20
+ 	cnt =3D ring_buffer_dropped_events_cpu(tr->buffer, cpu);
+ 	trace_seq_printf(s, "dropped events: %ld\n", cnt);
 --=20
 1.7.10.4
 
@@ -217,13 +100,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJQk8wDAAoJEOdOSU1xswtMwVIH/i4IXWPV54U4v1uHTWyB7uk1
-M0DDKDuEiI51VnQcUiFKvA244+2wYn1OtwVsWYRQi6RY3nazVNIqQl6FstH3Ve5l
-japOGtjwUwvoZYk/C4iuH83yfllGeHP+ET7eJSki5rQdAZVJ5KuKlt/geEixPyoU
-k6+YIeoVx8c2dDMaThnixH9ZXq+Y7nNt3aZmDVfkJTmylmQ2vcurBfmDCCkV2Lb4
-FnVlbauNKhL8+YcthRvs/cpNJsWt26V0mwJx5GwjofJcVHqiXHEsD0dx9B2Df2vd
-BQ80h9GmNjsQ3snC2XasoiW2YvH+mK09AlblMbB7gie6oxBFrePosypbUErUUd0=
-=3e+v
+iQEcBAABAgAGBQJQk8wFAAoJEOdOSU1xswtMrJoH/RQ22Dq5tOOJX2WkZIIODhoV
+GpEVjvvNQYCKqlr/QZdVPRhJ+kHsxWN2u15u5HX2PzRIG/C0rMLqWGUwanm4TVRR
+d5qsNCs2mPKXjoy0/fYxWut8TkUjlrSE2+R4quF+PE8jEZ6dyj/2MaYOJb9YTPPL
+6bJ0wmirPRL+NOvXcAsKxV9+gwdrEY8sYvQyzHLtojcJ1MOsAt14mBbLdmqakb/Y
+txKheo4/mgpXttxojNjwhcNc4uybeTXS/MPKYfQrX2y4yH8Czli3kiyGovCWwUKH
+gOAeG1ckwfVDmbaBKat7A0fc2nJEpeYzB3bdrSBfPhnHlj6ooFcwD1ah9ogP4GM=
+=p5Py
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
