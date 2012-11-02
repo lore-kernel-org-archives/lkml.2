@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757874Ab2KBPoO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 11:44:14 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33072 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757832Ab2KBPoM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 11:44:12 -0400
-Date: Fri, 2 Nov 2012 11:44:07 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] (xen) stable/for-linus-3.7-rc4-tag
-Message-ID: <20121102154332.GA3923@konrad-lan.dumpdata.com>
+	id S1756417Ab2KBPtS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 11:49:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53793 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752595Ab2KBPtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 11:49:13 -0400
+Date: Fri, 2 Nov 2012 11:48:33 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chris Friesen <chris.friesen@genband.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121102154833.GG3300@redhat.com>
+References: <50919EED.3020601@genband.com>
+ <36538307.gzWq1oO7Kg@linux-lqwf.site>
+ <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
+ <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
+ <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
+ <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
+ <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
+ <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
+ <20121101202701.GB20817@xo-6d-61-c0.localdomain>
+ <5092E361.7080901@genband.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3siQDZowHQqNOShm"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <5092E361.7080901@genband.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 01, 2012 at 03:02:25PM -0600, Chris Friesen wrote:
+> On 11/01/2012 02:27 PM, Pavel Machek wrote:
+> 
+> >Could someone write down exact requirements for Linux kernel to be signed by Microsoft?
+> >Because thats apparently what you want, and I don't think crippling kexec/suspend is
+> >enough.
+> 
+> As I understand it, the kernel won't be signed by Microsoft.
+> 
+> Rather, the bootloader will be signed by Microsoft and the vendors
+> will be the ones that refuse to sign a kernel unless it is
+> reasonably assured that it won't be used as an attack vector.
+> 
+> If you want fully-open behaviour it's still possible, you just need
+> to turn off secure boot.
+> 
+> With secure boot enabled, then the kernel should refuse to let an
+> unsigned kexec load new images, and kexec itself should refuse to
+> load unsigned images.
 
---3siQDZowHQqNOShm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yep, good in theory. Now that basically means reimplementing kexec-tools
+in kernel. That also means creating a new system call. It also
+also means cutting down on future flexibility (assuming new system
+call interface will be able to support existing features provided by
+kernel). And it is lot of code in user space which needs to be
+reimplemented in kernel and bloat kernel.
 
-Hey Linus,
+Keeping most of the logic in kexec-tools provided flexibility and keeps
+kernel small. So now re-architect kexec and reverse a good design completely
+for secureboot. It is a huge pain.
 
-Please git pull the following tag:
-
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stabl=
-e/for-linus-3.7-rc4-tag
-
-which has the following fixes (copy-n-paste from the signed tag):
-
-<tag>
-Bug-fixes:
- * Use appropriate macros instead of hand-rolling our own (ARM).
- * Fixes if FB/KBD closed unexpectedly.
- * Fix memory leak in /dev/gntdev ioctl calls.
- * Fix overflow check in xenbus_file_write.
- * Document cleanup.
- * Performance optimization when migrating guests.
-</tag>
-
-Nothing major - rather just incremental fixes.
-=20
-
- arch/arm/xen/hypercall.S                 | 14 +++++--------
- arch/x86/include/asm/xen/hypervisor.h    |  1 -
- arch/x86/xen/mmu.c                       | 21 ++++++++++++++++++-
- drivers/input/misc/xen-kbdfront.c        |  5 ++++-
- drivers/video/xen-fbfront.c              |  5 ++++-
- drivers/xen/gntdev.c                     | 36 +++++++++++++++++-----------=
-----
- drivers/xen/xenbus/xenbus_dev_frontend.c |  2 +-
- include/trace/events/xen.h               |  8 +++++++
- 8 files changed, 61 insertions(+), 31 deletions(-)
-
-David Vrabel (3):
-      xen/gntdev: don't leak memory from IOCTL_GNTDEV_MAP_GRANT_REF
-      xen-fbfront: handle backend CLOSED without CLOSING
-      xen-kbdfront: handle backend CLOSED without CLOSING
-
-Jan Beulich (1):
-      xen/xenbus: fix overflow check in xenbus_file_write()
-
-Konrad Rzeszutek Wilk (1):
-      xen/mmu: Use Xen specific TLB flush instead of the generic one.
-
-Olaf Hering (1):
-      x86: remove obsolete comment from asm/xen/hypervisor.h
-
-Stefano Stabellini (1):
-      xen/arm: use the __HVC macro
-
-
---3siQDZowHQqNOShm
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAEBAgAGBQJQk+pDAAoJEFjIrFwIi8fJAScIAKuc0wQbCHv9kJZzzMphc9e+
-Uf55JXpHOrXFykRlXADwrhws6Oav2x60Y1A4iImegGZMh0DC05TP74sGPuyhuJLx
-EfBEiHKNCnBvvzu7f1NjyirFP37Is/atnaTbXKPm76mR8iEQWhKfm+kIVIl0uXG1
-X9DM6lkyTIK8eCXO5/pIfPLyUvRYsMcx6wnb4MC+IPY57dGpNRIYdLfRXXykGjQZ
-ILJSc9q1QYGvlFeP65++PlDe8c2a8D+upBZTrKOfJb/6yfUtwC30/tQ3uT/CSuZ5
-yFKsH6eF1DykJ3R2iYD/iqzfZiC7Lx/anQQ7yQqjIHx3Bg7pWUVMc0zk9i/fdi8=
-=Otce
------END PGP SIGNATURE-----
-
---3siQDZowHQqNOShm--
+Thanks
+Vivek
