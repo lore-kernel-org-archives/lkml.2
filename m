@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762970Ab2KBRHJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:07:09 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33114 "EHLO mail.kernel.org"
+	id S932667Ab2KBRHT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:07:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33195 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762937Ab2KBRHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:01 -0400
+	id S1762937Ab2KBRHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [ 04/11] md/raid1: Fix assembling of arrays containing Replacements.
-Date: Fri,  2 Nov 2012 10:06:39 -0700
-Message-Id: <20121102170314.514290515@linuxfoundation.org>
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [ 03/11] gpiolib: Dont return -EPROBE_DEFER to sysfs, or for invalid gpios
+Date: Fri,  2 Nov 2012 10:06:38 -0700
+Message-Id: <20121102170314.444398718@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 In-Reply-To: <20121102170314.204845540@linuxfoundation.org>
 References: <20121102170314.204845540@linuxfoundation.org>
@@ -25,44 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 02b898f2f04e418094f0093a3ad0b415bcdbe8eb upstream.
+commit ad2fab36d7922401c4576fb7ea9b21a47a29a17f upstream.
 
-setup_conf in raid1.c uses conf->raid_disks before assigning
-a value.  It is used when including 'Replacement' devices.
+gpios requested with invalid numbers, or gpios requested from userspace via sysfs
+should not try to be deferred on failure.
 
-The consequence is that assembling an array which contains a
-replacement will misbehave and either not include the replacement, or
-not include the device being replaced.
-
-Though this doesn't lead directly to data corruption, it could lead to
-reduced data safety.
-
-So use mddev->raid_disks, which is initialised, instead.
-
-Bug was introduced by commit c19d57980b38a5bb613a898937a1cf85f422fb9b
-      md/raid1: recognise replacements when assembling arrays.
-
-in 3.3, so fix is suitable for 3.3.y thru 3.6.y.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpio/gpiolib.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -2564,7 +2564,7 @@ static struct r1conf *setup_conf(struct
- 		    || disk_idx < 0)
- 			continue;
- 		if (test_bit(Replacement, &rdev->flags))
--			disk = conf->mirrors + conf->raid_disks + disk_idx;
-+			disk = conf->mirrors + mddev->raid_disks + disk_idx;
- 		else
- 			disk = conf->mirrors + disk_idx;
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -623,9 +623,11 @@ static ssize_t export_store(struct class
+ 	 */
  
+ 	status = gpio_request(gpio, "sysfs");
+-	if (status < 0)
++	if (status < 0) {
++		if (status == -EPROBE_DEFER)
++			status = -ENODEV;
+ 		goto done;
+-
++	}
+ 	status = gpio_export(gpio, true);
+ 	if (status < 0)
+ 		gpio_free(gpio);
+@@ -1191,8 +1193,10 @@ int gpio_request(unsigned gpio, const ch
+ 
+ 	spin_lock_irqsave(&gpio_lock, flags);
+ 
+-	if (!gpio_is_valid(gpio))
++	if (!gpio_is_valid(gpio)) {
++		status = -EINVAL;
+ 		goto done;
++	}
+ 	desc = &gpio_desc[gpio];
+ 	chip = desc->chip;
+ 	if (chip == NULL)
 
 
