@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab2KBOrE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 10:47:04 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:40819 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933Ab2KBOrB convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Fri, 2 Nov 2012 10:47:01 -0400
-Message-Id: <5093EB1C02000078000A61D7@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 02 Nov 2012 14:47:40 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <akpm@linux-foundation.org>, <rusty@rustcorp.com.au>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] utilize _Static_assert() for BUILD_BUG_ON() when the
- compiler supports it
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754523Ab2KBOtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 10:49:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735Ab2KBOtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 10:49:15 -0400
+Message-ID: <5093DD5E.6030808@redhat.com>
+Date: Fri, 02 Nov 2012 15:49:02 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Ric Wheeler <rwheeler@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
+        Kay Sievers <kay@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
+ add queue-private command filter, editable via sysfs)
+References: <20121025180045.GL11442@htj.dyndns.org> <1657557410.1945557.1351190120407.JavaMail.root@redhat.com> <20121031212241.GZ2945@htj.dyndns.org>
+In-Reply-To: <20121031212241.GZ2945@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the resulting diagnostics quite a bit more useful.
+Il 31/10/2012 22:22, Tejun Heo ha scritto:
+> Hello, Paolo.
+> 
+> On Thu, Oct 25, 2012 at 02:35:20PM -0400, Paolo Bonzini wrote:
+>>> Disabling filters if opened by root and tranfering via SCM_RIGHTS
+>>> would be the simplest interface-wise (there's no new interface at
+>>> all).  Would that be too dangerous security-wise?
+>>
+>> That would be a change with respect to what we have now.  After
+>> transferring a root-opened (better: CAP_SYS_RAWIO-opened) file
+>> descriptor to an unprivileged process your SG_IO commands get
+>> filtered.  So a ioctl is needed if you want to rely on SCM_RIGHTS.
+> 
+> Yeah, I get that it's a behavior change, but would that be a problem?
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Worse, it's a potential security hole because previously you'd get
+filtering and now you wouldn't.
 
----
- include/linux/bug.h |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+Considering that SCM_RIGHTS is usually used to transfer a file
+descriptor from a privileged process to an unprivileged one, I'd be very
+worried of that.
 
---- 3.7-rc3/include/linux/bug.h
-+++ 3.7-rc3-static-assert/include/linux/bug.h
-@@ -27,8 +27,15 @@ struct pt_regs;
-    result (of value 0 and type size_t), so the expression can be used
-    e.g. in a structure initializer (or where-ever else comma expressions
-    aren't permitted). */
-+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-+#define BUILD_BUG_ON_ZERO(e) \
-+	sizeof(struct { _Static_assert(!(e), "!(" #e ")"); })
-+#define BUILD_BUG_ON_NULL(e) \
-+	((void *)sizeof(struct { _Static_assert(!(e), "!(" #e ")"); }))
-+#else
- #define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int:-!!(e); }))
- #define BUILD_BUG_ON_NULL(e) ((void *)sizeof(struct { int:-!!(e); }))
-+#endif
- 
- /*
-  * BUILD_BUG_ON_INVALID() permits the compiler to check the validity of the
-@@ -54,6 +61,15 @@ struct pt_regs;
-  */
- #ifndef __OPTIMIZE__
- #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
-+#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
-+#define __build_bug_on_failed(n) __build_bug_on_##n##_failed
-+#define _BUILD_BUG_ON(n, condition)				\
-+	do {							\
-+		extern void __compiletime_error(#condition)	\
-+		__build_bug_on_failed(n)(void);			\
-+		if (condition) __build_bug_on_failed(n)();	\
-+	} while(0)
-+#define BUILD_BUG_ON(condition...) _BUILD_BUG_ON(__COUNTER__, ##condition)
- #else
- extern int __build_bug_on_failed;
- #define BUILD_BUG_ON(condition)					\
+>>> I guess I just feel quite reluctant to expose another rather obscure
+>>> userland configurable in-kernel filter and at the same time I'm not
+>>> sure whether this is flexible enough.  What if a device is shared by
+>>> multiple virtual machines which are trusted at different levels?
+>>
+>> No, you just don't do that.  If a device is passed through to virtual
+>> machines, it is between similar virtual machines (for some definition
+>> of similar).  The only case where you have this sharing is in practice
+>> if either the device is read-only (my patch does give you a basic
+>> two-level filtering, with two separate bitmaps for RO and RW) or if you
+>> allow persistent reservations (which is as close to full trust as you
+>> can get).
+> 
+> What disturbs me is that it's a completely new interface to userland
+> and at the same a very limited one at that.  So, yeah, it's
+> bothersome.  I personally would prefer SCM_RIGHTS behavior change +
+> hard coded filters per device class.
 
+I think hard-coded filters are bad (I prefer to move policy to
+userspace), and SCM_RIGHTS without a ioctl is out of question, really.
 
+> But, I'd really like to hear what other guys are thinking.  Jens?
+> Jens? Jens? Jens? Jens? Jens? Jens? Jens? Jens? Jens? Jens? Jens? :P
+
+:P
+
+Paolo
 
