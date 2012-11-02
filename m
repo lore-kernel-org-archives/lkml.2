@@ -1,56 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab2KBEYP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 00:24:15 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:57313 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab2KBEYJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 00:24:09 -0400
+	id S1946017Ab2KBEZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 00:25:27 -0400
+Received: from ozlabs.org ([203.10.76.45]:58485 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750997Ab2KBEZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 00:25:17 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Leach <matthew@mattleach.net>
+Subject: Re: linux-next: build failure after merge of the modules tree
+In-Reply-To: <20121102125711.6cca854164da5372700db109@canb.auug.org.au>
+References: <20121102125711.6cca854164da5372700db109@canb.auug.org.au>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Fri, 02 Nov 2012 13:46:04 +1030
+Message-ID: <87objg4ruy.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxK+xr0Gc+ZLgi3Ch8YgoV78vvr+Q-7cP=kC7asFB5k5w@mail.gmail.com>
-References: <1351622772-16400-1-git-send-email-levinsasha928@gmail.com>
- <20121030214257.GB2681@htj.dyndns.org> <CA+1xoqeCKS2E4TWCUCELjDqV2pWS4v6EyV6K-=w-GRi_K6quiQ@mail.gmail.com>
- <1351646186.4004.41.camel@gandalf.local.home> <CA+55aFzFMrOUwdHHJ5-YUtEzTHGvdRosQc+K+trjub0K-w-D3A@mail.gmail.com>
- <CA+1xoqd8vAn+N1JuhpXRjSr74OPtnnw_1UBhf8=c4WDC3jOirw@mail.gmail.com> <CA+55aFxK+xr0Gc+ZLgi3Ch8YgoV78vvr+Q-7cP=kC7asFB5k5w@mail.gmail.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Fri, 2 Nov 2012 00:23:48 -0400
-Message-ID: <CA+1xoqdu-ar=-hh-+uVPtj=jy=rN0OiOGr09OxZsyphYzyJuEw@mail.gmail.com>
-Subject: Re: [PATCH v8 01/16] hashtable: introduce a small and naive hashtable
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 10:23 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Oct 30, 2012 at 6:36 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
->>
->> I can either rebase that on top of mainline, or we can ask maintainers
->> to take it to their own trees if you take only 01/16 into mainline.
->> What would you prefer?
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
+> Hi Rusty,
 >
-> I don't really care deeply. The only reason to merge it now would be
-> to avoid any pain with it during the next merge window. Just taking
-> 01/16 might be the sanest way to do that, then the rest can trickle in
-> independently at their own leisure.
+> After merging the modules tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 
-Okay, I'll keep working on converting everything else as soon as 01/16
-makes it in your tree.
-
+As this is in Andrew's tree, I've reverted it from my modules-next tree.
 
 Thanks,
-Sasha
+Rusty.
