@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085Ab2KBUVq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 16:21:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53884 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab2KBUVo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 16:21:44 -0400
-Date: Fri, 2 Nov 2012 13:21:31 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, Kay Sievers <kay@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
- add queue-private command filter, editable via sysfs)
-Message-ID: <20121102202131.GE9169@htj.dyndns.org>
-References: <20121025180045.GL11442@htj.dyndns.org>
- <1657557410.1945557.1351190120407.JavaMail.root@redhat.com>
- <20121031212241.GZ2945@htj.dyndns.org>
- <5093DD5E.6030808@redhat.com>
- <20121102153530.483453c7@pyramind.ukuu.org.uk>
- <20121102164828.GA3823@mtj.dyndns.org>
- <20121102172145.184abfe3@pyramind.ukuu.org.uk>
- <20121102173022.GA27843@mtj.dyndns.org>
- <20121102201824.41b2516d@pyramind.ukuu.org.uk>
+	id S1753454Ab2KBUWZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 16:22:25 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:53002 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754078Ab2KBUWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 16:22:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [BUGFIX 2/2] PCI/PM: Resume device before shutdown
+Date: Fri, 02 Nov 2012 21:26:29 +0100
+Message-ID: <16107326.eE4GfcYGSM@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CAErSpo5bKDrfOC86Cxv+0yFiyj1bMgWF=6XuY+DWFjaMBTQC0A@mail.gmail.com>
+References: <1351061654-8339-1-git-send-email-ying.huang@intel.com> <1351061654-8339-2-git-send-email-ying.huang@intel.com> <CAErSpo5bKDrfOC86Cxv+0yFiyj1bMgWF=6XuY+DWFjaMBTQC0A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121102201824.41b2516d@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Friday, November 02, 2012 10:52:45 AM Bjorn Helgaas wrote:
+> On Wed, Oct 24, 2012 at 12:54 AM, Huang Ying <ying.huang@intel.com> wrote:
+> > Some actions during shutdown need device to be in D0 state, such as
+> > MSI shutdown etc, so resume device before shutdown.
+> 
+> Is there a problem report or bugzilla for this issue?  What are the
+> symptoms by which a user could figure out that he needs this fix?
+> 
+> Should this be put in the stable tree as well?  If so, for v3.6 only?
 
-On Fri, Nov 02, 2012 at 08:18:24PM +0000, Alan Cox wrote:
-> a - there are lots of cases you want to allow only a subset of commands.
+Yes, it should be -stable for v3.6.y.
 
-Care to spell them out.  At least the cases Paolo listed should be
-served by what's described.
+Thanks,
+Rafael
 
-> b - if you are using a BPF filter which is the obvious way to do it then
-> the flexibility comes for free without any extra complexity as the kernel
-> provides a generic implementation, and even a JIT for complex cases.
 
-Yeah, sure, but it's all about what tool to use where and maybe it's
-my ignorance about the problem space but it's difficult for me to
-believe that we need full-blown BPF filter here when this is the only
-activity we've got in a decade.
-
-Thanks.
-
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > ---
+> >  drivers/pci/pci-driver.c |   12 ++----------
+> >  1 file changed, 2 insertions(+), 10 deletions(-)
+> >
+> > --- a/drivers/pci/pci-driver.c
+> > +++ b/drivers/pci/pci-driver.c
+> > @@ -398,6 +398,8 @@ static void pci_device_shutdown(struct d
+> >         struct pci_dev *pci_dev = to_pci_dev(dev);
+> >         struct pci_driver *drv = pci_dev->driver;
+> >
+> > +       pm_runtime_resume(dev);
+> > +
+> >         if (drv && drv->shutdown)
+> >                 drv->shutdown(pci_dev);
+> >         pci_msi_shutdown(pci_dev);
+> > @@ -408,16 +410,6 @@ static void pci_device_shutdown(struct d
+> >          * continue to do DMA
+> >          */
+> >         pci_disable_device(pci_dev);
+> > -
+> > -       /*
+> > -        * Devices may be enabled to wake up by runtime PM, but they need not
+> > -        * be supposed to wake up the system from its "power off" state (e.g.
+> > -        * ACPI S5).  Therefore disable wakeup for all devices that aren't
+> > -        * supposed to wake up the system at this point.  The state argument
+> > -        * will be ignored by pci_enable_wake().
+> > -        */
+> > -       if (!device_may_wakeup(dev))
+> > -               pci_enable_wake(pci_dev, PCI_UNKNOWN, false);
+> >  }
+> >
+> >  #ifdef CONFIG_PM
+> 
 -- 
-tejun
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
