@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab2KBUJn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 16:09:43 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63060 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386Ab2KBUJl (ORCPT
+	id S1754295Ab2KBUJx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 16:09:53 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:33394 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab2KBUJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 16:09:41 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 2 Nov 2012 13:09:54 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon patches for 3.7-rc4
-Message-ID: <20121102200954.GA32041@roeck-us.net>
+	Fri, 2 Nov 2012 16:09:51 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mYCpIKhGyMATD0i+"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKKZj2Do+ViFbdmeA9y4qZ4Dd_CrW_wmVWc0_CB4BAAwO6SfJg@mail.gmail.com>
+References: <CAKKZj2Do+ViFbdmeA9y4qZ4Dd_CrW_wmVWc0_CB4BAAwO6SfJg@mail.gmail.com>
+From: Michal Zatloukal <myxal.mxl@gmail.com>
+Date: Fri, 2 Nov 2012 21:09:10 +0100
+Message-ID: <CAKKZj2Av0TN9MbYk=-2ZB_jxDnUCWfrN5tJNZ7azgSHyOrMzvg@mail.gmail.com>
+Subject: Fwd: Nice processes prevent frequency increases - possible scheduler
+ regression (known good in 2.6.35)
+To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
+Note 1: I'm not subscribed, please Cc me into replies.
+Note 2: I haven't kept up-to-date with the latest kernels in quite
+some time so I've only noticed this when I switched my machine from
+Kubuntu 10.10 (kernel 2.6.35) to 12.10 (kernel 3.5) last week (both
+amd64 arch). I've done some trials to determine what's happening and
+think I've got it. It may be a corner case, I'm not sure.
+So here's the situation:
+- dual-core laptop running BOINC projects (nice-19, single-thread
+process on each core, very little IO) without restriction (the
+processes are not terminated until they finish themselves or the boinc
+daemon is stopped).
+- to make the fan noise levels bearable with such a load, I set the
+on-demand governor's ignore_nice_load parameter to YES. This makes the
+CPU run at 800 MHz when it's only running the BOINC projects and
+nothing demanding for the user (nice=0).
+On the old kernel, playing an HD video with BOINC running in the
+background is not a problem - the CPU immediately kicks into 2.5 GHz
+and the video plays smoothly. User tasks which take all the CPU they
+can get (compressing files, starting Chromium with ~70 tabs), take all
+the CPU they can get, making ondemad governor switch the CPU to full
+speed and BOINC projects are starved.
+On the new kernel, the nice processes are never starved - even when
+starting a tab-laden chromium session, the processes for BOINC keep
+about 20% CPU each (that is normalized to all CPUs, ie 40% nice load
+on each core). The problem is, the governor now seems to consider the
+non-nice task unable to saturate the CPU, and the cores' frequencies
+are hovering between 1.0 and 1.8 GHz. The scheduler keeps scheduling
+the nice tasks, and the non-nice tasks are progressing much slower,
+caused by the lower CPU speed as well as less processing time
+allocated to them. HD video stutters often, and Chromium takes at
+least 2-3 times longer to fully load.
 
---mYCpIKhGyMATD0i+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Questions:
+Q1: Is the usage of ignore_nice_load=Y obscure? Ubuntu defaults to
+"N", not sure about other distros.
+Q2. Is this considered a bug? If so, I'll try to devise a test case
+that doesn't require a 30-minute setup and an account on BOINC
+projects. Any hints on what I should look out for when I want to
+emulate the load of BOINC projects with readily-available tools,
+regarding the scheduler? Cgroup, tty, session, thread count?
 
-Hi Linus,
-
-Please pull hwmon patches for Linux 3.7-rc4 from signed tag:
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-Thanks,
-Guenter
-------
-
-The following changes since commit 8f0d8163b50e01f398b14bcd4dc039ac5ab18d64:
-
-  Linux 3.7-rc3 (2012-10-28 12:24:48 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to eaa7cc60f7dff5e74ef387ace8228235fab8241b:
-
-  hwmon: Only include of_match_table with CONFIG_OF_GPIO (2012-11-01 17:31:20 -0700)
-
-----------------------------------------------------------------
-An e-mail address update, and fix a compile error on SPARC
-
-----------------------------------------------------------------
-Andreas Herrmann (1):
-      hwmon, fam15h_power: Change email address, MAINTAINERS entry
-
-Jamie Lentin (1):
-      hwmon: Only include of_match_table with CONFIG_OF_GPIO
-
- Documentation/hwmon/fam15h_power |    2 +-
- MAINTAINERS                      |    2 +-
- drivers/hwmon/fam15h_power.c     |    4 ++--
- drivers/hwmon/gpio-fan.c         |    2 ++
- 4 files changed, 6 insertions(+), 4 deletions(-)
-
---mYCpIKhGyMATD0i+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQlCiSAAoJEMsfJm/On5mB/cwP/1h0v+YcE/U6M3Jr0plsd9jE
-5kMDvYmcrm0MuHTnl0wIOQ+d1SfYPAxMtyWz/lG8s+GZ1JzLRIbD9w1S3nd1twOT
-jcck808ZOSH1wMaPRkFdbqpc7qD1c9sRVtAH5/qTYBmXxZ8hiO0lCiv7qlmp6uYU
-HUpeqx86OG9KQb/vC96J7a8bImjic09h38P0fR5kp0s7G9wfel2J9ZGmbrg1sTJA
-XbgPV0ODyq95gCwKKnO6Z7pBMRIwrXnJRWzWUe6Fw0j4trI1VLnC7rp+L6yWPtlY
-xp0YQ+3aVZsXykBbzmdGSVmhdWbJBQxd1czs+U3nPxxa2H0vDMEgzfmkEvVfbfVc
-6iR3zJBCbSyI8pGDfL2krow5MZwZrY+VIt7uhBOaiEEui4HyFmggeQDin2hfRmPI
-tOHIPRfDVEUeeFAuLA/mON43RBKmRRfBQIf6DLBVpg5ZdNbPczEmpbwhd0hLEXhf
-vFvdboI1NHpvrzn714tp6VMx+CnB1ZAqg/XReMW2poMqTUK7FYREvGFj2RvYYxUf
-LMqFgrQmlEEXRlBEleFoQfJOTUgIm+8EXuXeZ67pXZgl5rlIV43kx2Hw7GYL8Bhx
-x616qsCNYazGWN2Nf9IDqDVDLYGwGhRcOcTlAlLn6pbOUaVGiTWIWw3yWUeXe1Nn
-vvEJFgdWCRXOaN2djJm7
-=96mN
------END PGP SIGNATURE-----
-
---mYCpIKhGyMATD0i+--
+MZ
