@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760731Ab2KBQzR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 12:55:17 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:32773 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759459Ab2KBQzM (ORCPT
+	id S1760755Ab2KBQz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 12:55:58 -0400
+Received: from exprod7og109.obsmtp.com ([64.18.2.171]:59699 "EHLO
+	exprod7og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759459Ab2KBQz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 12:55:12 -0400
-Date: Fri, 2 Nov 2012 16:54:56 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121102165456.GB9997@srcf.ucam.org>
-References: <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com>
- <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz>
- <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
- <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz>
- <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
- <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
- <20121101202701.GB20817@xo-6d-61-c0.localdomain>
- <5092E361.7080901@genband.com>
- <20121102163302.GA6080@elf.ucw.cz>
- <1351875164.2439.42.camel@dabdike.int.hansenpartnership.com>
+	Fri, 2 Nov 2012 12:55:56 -0400
+Message-ID: <5093FADA.2040004@genband.com>
+Date: Fri, 02 Nov 2012 10:54:50 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351875164.2439.42.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+References: <50919EED.3020601@genband.com> <36538307.gzWq1oO7Kg@linux-lqwf.site> <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com> <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz> <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com> <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz> <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com> <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com> <20121101202701.GB20817@xo-6d-61-c0.localdomain> <5092E361.7080901@genband.com> <20121102154833.GG3300@redhat.com>
+In-Reply-To: <20121102154833.GG3300@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Nov 2012 16:54:51.0584 (UTC) FILETIME=[C6995C00:01CDB91A]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19334.000
+X-TM-AS-Result: No--8.384300-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 04:52:44PM +0000, James Bottomley wrote:
+On 11/02/2012 09:48 AM, Vivek Goyal wrote:
+> On Thu, Nov 01, 2012 at 03:02:25PM -0600, Chris Friesen wrote:
 
-> The first question is how many compromises do you need.  Without
-> co-operation from windows, you don't get to install something in the
-> boot system, so if you're looking for a single compromise vector, the
-> only realistic attack is to trick the user into booting a hacked linux
-> system from USB or DVD.
+>> With secure boot enabled, then the kernel should refuse to let an
+>> unsigned kexec load new images, and kexec itself should refuse to
+>> load unsigned images.
+>
+> Yep, good in theory. Now that basically means reimplementing kexec-tools
+> in kernel.
 
-You run a binary. It pops up a box saying "Windows needs your permission 
-to continue", just like almost every other Windows binary that's any 
-use. Done.
+Maybe I'm missing something, but couldn't the vendors provide a signed 
+kexec?  Why does extra stuff need to be pushed into the kernel?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Chris
