@@ -1,73 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667Ab2KBRHT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 13:07:19 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33195 "EHLO mail.kernel.org"
+	id S1762973Ab2KBRHf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 13:07:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33259 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762937Ab2KBRHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 13:07:10 -0400
+	id S1750930Ab2KBRH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 13:07:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [ 03/11] gpiolib: Dont return -EPROBE_DEFER to sysfs, or for invalid gpios
-Date: Fri,  2 Nov 2012 10:06:38 -0700
-Message-Id: <20121102170314.444398718@linuxfoundation.org>
+        Nix <nix@esperi.org.uk>, Eric Sandeen <sandeen@redhat.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 01/24] ext4: fix unjournaled inode bitmap modification
+Date: Fri,  2 Nov 2012 10:06:49 -0700
+Message-Id: <20121102170247.528566015@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
-In-Reply-To: <20121102170314.204845540@linuxfoundation.org>
-References: <20121102170314.204845540@linuxfoundation.org>
+In-Reply-To: <20121102170247.406319110@linuxfoundation.org>
+References: <20121102170247.406319110@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit ad2fab36d7922401c4576fb7ea9b21a47a29a17f upstream.
+commit ffb5387e85d528fb6d0d924abfa3fbf0fc484071 upstream.
 
-gpios requested with invalid numbers, or gpios requested from userspace via sysfs
-should not try to be deferred on failure.
+commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31 changed
+ext4_new_inode() such that the inode bitmap was being modified
+outside a transaction, which could lead to corruption, and was
+discovered when journal_checksum found a bad checksum in the
+journal during log replay.
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Nix ran into this when using the journal_async_commit mount
+option, which enables journal checksumming.  The ensuing
+journal replay failures due to the bad checksums led to
+filesystem corruption reported as the now infamous
+"Apparent serious progressive ext4 data corruption bug"
+
+[ Changed by tytso to only call ext4_journal_get_write_access() only
+  when we're fairly certain that we're going to allocate the inode. ]
+
+I've tested this by mounting with journal_checksum and
+running fsstress then dropping power; I've also tested by
+hacking DM to create snapshots w/o first quiescing, which
+allows me to test journal replay repeatedly w/o actually
+power-cycling the box.  Without the patch I hit a journal
+checksum error every time.  With this fix it survives
+many iterations.
+
+Reported-by: Nix <nix@esperi.org.uk>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpiolib.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ fs/ext4/ialloc.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -623,9 +623,11 @@ static ssize_t export_store(struct class
- 	 */
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -716,6 +716,10 @@ repeat_in_this_group:
+ 				   "inode=%lu", ino + 1);
+ 			continue;
+ 		}
++		BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
++		err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
++		if (err)
++			goto fail;
+ 		ext4_lock_group(sb, group);
+ 		ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
+ 		ext4_unlock_group(sb, group);
+@@ -729,6 +733,11 @@ repeat_in_this_group:
+ 	goto out;
  
- 	status = gpio_request(gpio, "sysfs");
--	if (status < 0)
-+	if (status < 0) {
-+		if (status == -EPROBE_DEFER)
-+			status = -ENODEV;
- 		goto done;
+ got:
++	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
++	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
++	if (err)
++		goto fail;
++
+ 	/* We may have to initialize the block bitmap if it isn't already */
+ 	if (ext4_has_group_desc_csum(sb) &&
+ 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
+@@ -762,11 +771,6 @@ got:
+ 			goto fail;
+ 	}
+ 
+-	BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
+-	err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
+-	if (err)
+-		goto fail;
 -
-+	}
- 	status = gpio_export(gpio, true);
- 	if (status < 0)
- 		gpio_free(gpio);
-@@ -1191,8 +1193,10 @@ int gpio_request(unsigned gpio, const ch
+ 	BUFFER_TRACE(group_desc_bh, "get_write_access");
+ 	err = ext4_journal_get_write_access(handle, group_desc_bh);
+ 	if (err)
+@@ -814,11 +818,6 @@ got:
+ 	}
+ 	ext4_unlock_group(sb, group);
  
- 	spin_lock_irqsave(&gpio_lock, flags);
- 
--	if (!gpio_is_valid(gpio))
-+	if (!gpio_is_valid(gpio)) {
-+		status = -EINVAL;
- 		goto done;
-+	}
- 	desc = &gpio_desc[gpio];
- 	chip = desc->chip;
- 	if (chip == NULL)
+-	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
+-	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
+-	if (err)
+-		goto fail;
+-
+ 	BUFFER_TRACE(group_desc_bh, "call ext4_handle_dirty_metadata");
+ 	err = ext4_handle_dirty_metadata(handle, NULL, group_desc_bh);
+ 	if (err)
 
 
