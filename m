@@ -1,136 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935293Ab2KBOUs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 10:20:48 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:51494 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755403Ab2KBOUn convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 2 Nov 2012 10:20:43 -0400
-Message-Id: <5093E4F302000078000A6162@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 02 Nov 2012 14:21:23 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3, v2] x86/xor: make virtualization friendly
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S935346Ab2KBOVB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 10:21:01 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44258 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934822Ab2KBOUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Nov 2012 10:20:45 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
+        <hs@denx.de>, <nsekhar@ti.com>, <mikedunn@newsguy.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
+        <linux-keystone@ti.com>
+CC: Murali Karicheri <m-karicheri2@ti.com>
+Subject: [PATCH] mtd: davinci: add support for parition binding nodes
+Date: Fri, 2 Nov 2012 10:20:23 -0400
+Message-ID: <1351866023-15470-1-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In virtualized environments, the CR0.TS management needed here can be a
-lot slower than anticipated by the original authors of this code, which
-particularly means that in such cases forcing the use of SSE- (or MMX-)
-based implementations is not desirable - actual measurements should
-always be done in that case.
+Enhance the driver to support partition subnodes inside the nand
+device bindings to describe partions on the nand device.
 
-For consistency, pull into the shared (32- and 64-bit) header not only
-the inclusion of the generic code, but also that of the AVX variants.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 ---
- arch/x86/include/asm/xor.h    |    8 +++++++-
- arch/x86/include/asm/xor_32.h |   22 ++++++++++------------
- arch/x86/include/asm/xor_64.h |   10 ++++++----
- 3 files changed, 23 insertions(+), 17 deletions(-)
+ .../devicetree/bindings/arm/davinci/nand.txt       |    8 ++++++++
+ drivers/mtd/nand/davinci_nand.c                    |   13 ++++++++++---
+ 2 files changed, 18 insertions(+), 3 deletions(-)
 
---- 3.7-rc3-x86-xor.orig/arch/x86/include/asm/xor.h
-+++ 3.7-rc3-x86-xor/arch/x86/include/asm/xor.h
-@@ -487,6 +487,12 @@ static struct xor_block_template xor_blo
+diff --git a/Documentation/devicetree/bindings/arm/davinci/nand.txt b/Documentation/devicetree/bindings/arm/davinci/nand.txt
+index e37241f..4746452 100644
+--- a/Documentation/devicetree/bindings/arm/davinci/nand.txt
++++ b/Documentation/devicetree/bindings/arm/davinci/nand.txt
+@@ -23,6 +23,9 @@ Recommended properties :
+ - ti,davinci-nand-buswidth: buswidth 8 or 16
+ - ti,davinci-nand-use-bbt: use flash based bad block table support.
  
- #undef XOR_CONSTANT_CONSTRAINT
- 
-+/* Also try the AVX routines */
-+#include <asm/xor_avx.h>
++nand device bindings may contain additional sub-nodes describing
++partitions of the address space. See partition.txt for more detail.
 +
-+/* Also try the generic routines. */
-+#include <asm-generic/xor.h>
+ Example (enbw_cmc board):
+ aemif@60000000 {
+ 	compatible = "ti,davinci-aemif";
+@@ -47,5 +50,10 @@ aemif@60000000 {
+ 		ti,davinci-ecc-mode = "hw";
+ 		ti,davinci-ecc-bits = <4>;
+ 		ti,davinci-nand-use-bbt;
 +
- #ifdef CONFIG_X86_32
- # include <asm/xor_32.h>
- #else
-@@ -494,6 +500,6 @@ static struct xor_block_template xor_blo
- #endif
- 
- #define XOR_SELECT_TEMPLATE(FASTEST) \
--	AVX_SELECT(FASTEST)
-+	(cpu_has_hypervisor ? (FASTEST) : AVX_SELECT(FASTEST))
- 
- #endif /* _ASM_X86_XOR_H */
---- 3.7-rc3-x86-xor.orig/arch/x86/include/asm/xor_32.h
-+++ 3.7-rc3-x86-xor/arch/x86/include/asm/xor_32.h
-@@ -537,12 +537,6 @@ static struct xor_block_template xor_blo
- 	.do_5 = xor_sse_5,
++		partition@180000 {
++			label = "ubifs";
++			reg = <0x180000 0x7e80000>;
++		};
+ 	};
  };
+diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+index df1ab7d..321b053 100644
+--- a/drivers/mtd/nand/davinci_nand.c
++++ b/drivers/mtd/nand/davinci_nand.c
+@@ -821,9 +821,16 @@ syndrome_done:
+ 	if (ret < 0)
+ 		goto err_scan;
  
--/* Also try the AVX routines */
--#include <asm/xor_avx.h>
+-	ret = mtd_device_parse_register(&info->mtd, NULL, NULL, pdata->parts,
+-					pdata->nr_parts);
 -
--/* Also try the generic routines.  */
--#include <asm-generic/xor.h>
--
- /* We force the use of the SSE xor block because it can write around L2.
-    We may also be able to load into the L1 only depending on how the cpu
-    deals with a load to a line that is being prefetched.  */
-@@ -553,15 +547,19 @@ do {							\
- 	if (cpu_has_xmm) {				\
- 		xor_speed(&xor_block_pIII_sse);		\
- 		xor_speed(&xor_block_sse_pf64);		\
--	} else if (cpu_has_mmx) {			\
-+		if (!cpu_has_hypervisor)		\
-+			break;				\
-+	}						\
-+	if (cpu_has_mmx) {				\
- 		xor_speed(&xor_block_pII_mmx);		\
- 		xor_speed(&xor_block_p5_mmx);		\
--	} else {					\
--		xor_speed(&xor_block_8regs);		\
--		xor_speed(&xor_block_8regs_p);		\
--		xor_speed(&xor_block_32regs);		\
--		xor_speed(&xor_block_32regs_p);		\
-+		if (!cpu_has_hypervisor)		\
-+			break;				\
- 	}						\
-+	xor_speed(&xor_block_8regs);			\
-+	xor_speed(&xor_block_8regs_p);			\
-+	xor_speed(&xor_block_32regs);			\
-+	xor_speed(&xor_block_32regs_p);			\
- } while (0)
++	if (pdata->parts)
++		ret = mtd_device_parse_register(&info->mtd, NULL, NULL,
++					pdata->parts, pdata->nr_parts);
++	else {
++		struct mtd_part_parser_data	ppdata;
++
++		ppdata.of_node = pdev->dev.of_node;
++		ret = mtd_device_parse_register(&info->mtd, NULL, &ppdata,
++						NULL, 0);
++	}
+ 	if (ret < 0)
+ 		goto err_scan;
  
- #endif /* _ASM_X86_XOR_32_H */
---- 3.7-rc3-x86-xor.orig/arch/x86/include/asm/xor_64.h
-+++ 3.7-rc3-x86-xor/arch/x86/include/asm/xor_64.h
-@@ -9,10 +9,6 @@ static struct xor_block_template xor_blo
- 	.do_5 = xor_sse_5,
- };
- 
--
--/* Also try the AVX routines */
--#include <asm/xor_avx.h>
--
- /* We force the use of the SSE xor block because it can write around L2.
-    We may also be able to load into the L1 only depending on how the cpu
-    deals with a load to a line that is being prefetched.  */
-@@ -22,6 +18,12 @@ do {						\
- 	AVX_XOR_SPEED;				\
- 	xor_speed(&xor_block_sse_pf64);		\
- 	xor_speed(&xor_block_sse);		\
-+	if (cpu_has_hypervisor) {		\
-+		xor_speed(&xor_block_8regs);	\
-+		xor_speed(&xor_block_8regs_p);	\
-+		xor_speed(&xor_block_32regs);	\
-+		xor_speed(&xor_block_32regs_p);	\
-+	}					\
- } while (0)
- 
- #endif /* _ASM_X86_XOR_64_H */
-
-
+-- 
+1.7.9.5
 
