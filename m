@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761315Ab2KBWDR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 18:03:17 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:42085 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab2KBWDO (ORCPT
+	id S1759239Ab2KBWG2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 18:06:28 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:46644 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757311Ab2KBWG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 18:03:14 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-References: <CACLa4pu0yoB6CQX=3nuAT2vz4=oTNfM9fjMUvFXKJovYu+y4fw@mail.gmail.com>
-	<1351803800.2391.96.camel@dabdike.int.hansenpartnership.com>
-	<20121101210634.GA19723@srcf.ucam.org>
-	<20121101213127.5967327f@pyramind.ukuu.org.uk>
-	<20121101212843.GA20309@srcf.ucam.org>
-	<20121101213751.377ebaa8@pyramind.ukuu.org.uk>
-	<20121101213452.GA20564@srcf.ucam.org>
-	<20121101215817.79e50ec2@pyramind.ukuu.org.uk>
-	<20121101215752.GA21154@srcf.ucam.org> <87625ogzje.fsf@xmission.com>
-	<20121102140057.GA4668@srcf.ucam.org>
-Date: Fri, 02 Nov 2012 15:03:02 -0700
-In-Reply-To: <20121102140057.GA4668@srcf.ucam.org> (Matthew Garrett's message
-	of "Fri, 2 Nov 2012 14:00:57 +0000")
-Message-ID: <87liejacix.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+OxKqi3+uCD0EecW6qkwuuFAzVq32efc4=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Matthew Garrett <mjg59@srcf.ucam.org>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Fri, 2 Nov 2012 18:06:26 -0400
+Subject: [GIT PULL] target fixes for v3.7-rc4 (round 2)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Roland Dreier <roland@purestorage.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Nov 2012 15:06:23 -0700
+Message-ID: <1351893983.29493.239.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett <mjg59@srcf.ucam.org> writes:
+Hello Linus,
 
-> On Fri, Nov 02, 2012 at 01:49:25AM -0700, Eric W. Biederman wrote:
->
->> When the goal is to secure Linux I don't see how any of this helps.
->> Windows 8 compromises are already available so if we turn most of these
->> arguments around I am certain clever attackers can go through windows to
->> run compromised kernel on a linux system, at least as easily as the
->> reverse.
->
-> And if any of them are used to attack Linux, we'd expect those versions 
-> of Windows to be blacklisted.
+This series is a second round of target fixes for v3.7-rc4 that have
+come into target-devel over the last days, and are important enough to
+be applied ASAP.  Please go ahead and pull from:
 
-I fail to see the logic here.  It is ok to trust Microsofts signing key
-because after I have been p0wned they will blacklist the version of
-windows that has was used to compromise my system?
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git master
 
-A key revokation will help me when my system is p0wned how?
+All are being CC'ed to stable.  The most important two are:
 
-I don't want my system p0wned in the first place and I don't want to run
-windows.  Why should I trust Microsoft's signing key?
+- target: Re-add explict zeroing of INQUIRY bounce buffer memory to fix
+a regression for handling zero-length payloads, a bug that went during
+v3.7-rc1, and hit >= v3.6.3 stable. (nab + paolo)
+- iscsi-target: Fix a long-standing missed R2T wakeup race in TX thread
+processing when using a single queue slot. (Roland)
 
-Eric
+Thanks to Roland & PureStorage team for helping to track down this long
+standing race with iscsi-target single queue slot operation.
+
+Also, the tcm_fc(FCoE) regression bug that was observed recently with
+-rc2 code has also been resolved with the cancel_delayed_work() return
+bugfix (commit c0158ca) now in -rc3.  Thanks again to Yi Zou, MDR,
+Robert Love @ Intel for helping to track this down.
+
+Thank you,
+
+--nab
+
+Nicholas Bellinger (1):
+  target: Re-add explict zeroing of INQUIRY bounce buffer memory
+
+Roland Dreier (3):
+  target: Don't return success from module_init() if setup fails
+  target: Avoid integer overflow in se_dev_align_max_sectors()
+  iscsi-target: Fix missed wakeup race in TX thread
+
+Steve Hodgson (1):
+  target: Fix incorrect usage of nested IRQ spinlocks in ABORT_TASK
+    path
+
+ drivers/target/iscsi/iscsi_target.c       |    4 +++-
+ drivers/target/iscsi/iscsi_target_core.h  |    1 +
+ drivers/target/iscsi/iscsi_target_login.c |    1 +
+ drivers/target/iscsi/iscsi_target_util.c  |   22 ++++++++++++++++++++--
+ drivers/target/iscsi/iscsi_target_util.h  |    1 +
+ drivers/target/target_core_configfs.c     |    3 ++-
+ drivers/target/target_core_device.c       |   18 +++++++++---------
+ drivers/target/target_core_spc.c          |    2 ++
+ drivers/target/target_core_tmr.c          |    6 +++---
+ 9 files changed, 42 insertions(+), 16 deletions(-)
+
