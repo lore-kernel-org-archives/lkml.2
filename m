@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab2KCIhY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 04:37:24 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:47415 "EHLO
+	id S1754361Ab2KCIi7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 04:38:59 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:36901 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120Ab2KCIhR (ORCPT
+	with ESMTP id S1753873Ab2KCIix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 04:37:17 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oneukum@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org, Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH v4 6/6] USB: forbid memory allocation with I/O during bus reset
-Date: Sat,  3 Nov 2012 16:35:14 +0800
-Message-Id: <1351931714-11689-7-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351931714-11689-1-git-send-email-ming.lei@canonical.com>
-References: <1351931714-11689-1-git-send-email-ming.lei@canonical.com>
+	Sat, 3 Nov 2012 04:38:53 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com, mhocko@suse.cz, rjw@sisk.pl
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        fweisbec@gmail.com
+Subject: [PATCHSET cgroup/for-3.8] cgroup_freezer: implement proper hierarchy support
+Date: Sat,  3 Nov 2012 01:38:26 -0700
+Message-Id: <1351931915-1701-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If one storage interface or usb network interface(iSCSI case)
-exists in current configuration, memory allocation with
-GFP_KERNEL during usb_device_reset() might trigger I/O transfer
-on the storage interface itself and cause deadlock because
-the 'us->dev_mutex' is held in .pre_reset() and the storage
-interface can't do I/O transfer when the reset is triggered
-by other interface, or the error handling can't be completed
-if the reset is triggered by the storage itself(error handling path).
+Hello,
 
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
-v4:
-	- mark current memalloc_noio for every usb device reset
----
- drivers/usb/core/hub.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+This patchset implement proper hierarchy support for cgroup_freezer as
+discussed in "[RFC] cgroup TODOs"[1].
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 5b131b6..788e652 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -5044,6 +5044,7 @@ int usb_reset_device(struct usb_device *udev)
- {
- 	int ret;
- 	int i;
-+	unsigned int noio_flag;
- 	struct usb_host_config *config = udev->actconfig;
- 
- 	if (udev->state == USB_STATE_NOTATTACHED ||
-@@ -5053,6 +5054,17 @@ int usb_reset_device(struct usb_device *udev)
- 		return -EINVAL;
- 	}
- 
-+	/*
-+	 * Don't allocate memory with GFP_KERNEL in current
-+	 * context to avoid possible deadlock if usb mass
-+	 * storage interface or usbnet interface(iSCSI case)
-+	 * is included in current configuration. The easist
-+	 * approach is to do it for every device reset,
-+	 * because the device 'memalloc_noio' flag may have
-+	 * not been set before reseting the usb device.
-+	 */
-+	memalloc_noio_save(noio_flag);
-+
- 	/* Prevent autosuspend during the reset */
- 	usb_autoresume_device(udev);
- 
-@@ -5097,6 +5109,7 @@ int usb_reset_device(struct usb_device *udev)
- 	}
- 
- 	usb_autosuspend_device(udev);
-+	memalloc_noio_restore(noio_flag);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(usb_reset_device);
--- 
-1.7.9.5
+The patchset first implements generic cgroup iteration macros -
+cgroup_for_each_children(), cgroup_for_each_descendant_{pre|post}().
+Combined with the newly introduced ->post_create() callback, this
+allows controllers to implement reliable iteration over descendants
+without messing with cgroup internal locking.  Controllers can perform
+reliable walking using simple hierarchy-wide locking or finer-grained
+parent-children locking.
 
+Using the iteration macros and ->post_create(), cgroup_freezer is
+updated to propagate state updates to and collect FROZEN completions
+from the descendants.  This removes .broken_hierarchy marking from
+cgroup_freezer.
+
+cgroup_freezer hierarchy support is implemented using finer-grained
+locking not necessarily because it's necessary but more because I
+wanted an example controller doing that.
+
+This patchset contains the following nine patches.
+
+ 0001-cgroup-add-cgroup_subsys-post_create.patch
+ 0002-cgroup-Use-rculist-ops-for-cgroup-children.patch
+ 0003-cgroup-implement-generic-child-descendant-walk-macro.patch
+ 0004-cgroup_freezer-trivial-cleanups.patch
+ 0005-cgroup_freezer-prepare-freezer_change_state-for-full.patch
+ 0006-cgroup_freezer-make-freezer-state-mask-of-flags.patch
+ 0007-cgroup_freezer-introduce-CGROUP_FREEZING_-SELF-PAREN.patch
+ 0008-cgroup_freezer-add-post_create-and-pre_destroy-and-t.patch
+ 0009-cgroup_freezer-implement-proper-hierarchy-support.patch
+
+0001-0003 implement cgroup descendant iterators.
+
+0004-0008 prepare cgroup_freezer for hierarchy support.  0009
+implements it.
+
+This patchset is on top of
+
+ v3.6 (a0d271cbfe)
++ [2] the first three patches of
+      "memcg/cgroup: do not fail fail on pre_destroy callbacks" patchset
++ [3] "cgroup: simplify cgroup removal path" v2 patchset
+
+with cgroup/for-3.8 pulled into it.  The branch is rather floaty at
+the moment so it would be the easiest to pull the following branch for
+review.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup_freezer-hierarchy
+
+Thanks.
+
+ kernel/cgroup.c         |  106 +++++++++++++-
+ kernel/cgroup_freezer.c |  359 +++++++++++++++++++++++++++++++++++-------------
+ 3 files changed, 445 insertions(+), 104 deletions(-)
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel.containers/23698
+[2] http://thread.gmane.org/gmane.linux.kernel.cgroups/4757
+[3] http://thread.gmane.org/gmane.linux.kernel.cgroups/4861
