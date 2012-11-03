@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab2KCPN3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 11:13:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4877 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab2KCPN1 (ORCPT
+	id S1755957Ab2KCPlk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 11:41:40 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:37483 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755404Ab2KCPli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 11:13:27 -0400
-X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1FDNxFMC7OYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=zNXoGfytzK0A:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=ZAH4KCEHR5VkbgX2vy8A:9 a=PUjeQqilurYA:10 a=U62fhAwekXMA:10 a=dGJ0OcVc7YAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351955605.4004.159.camel@gandalf.local.home>
-Subject: Re: [ 0/4] 3.0.51-stable review
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Rafael Aquini <aquini@redhat.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Date: Sat, 03 Nov 2012 11:13:25 -0400
-In-Reply-To: <20121103144340.GA1383@kroah.com>
-References: <20121102170333.581931288@linuxfoundation.org>
-	 <20121103003108.GA1981@optiplex.redhat.com>
-	 <20121103040711.GD1602@kroah.com>
-	 <20121103114501.GA1688@optiplex.redhat.com>
-	 <20121103144340.GA1383@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 3 Nov 2012 11:41:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <1351943332.16850.25.camel@maggy.simpson.net>
+References: <CAKKZj2Do+ViFbdmeA9y4qZ4Dd_CrW_wmVWc0_CB4BAAwO6SfJg@mail.gmail.com>
+ <CAKKZj2Av0TN9MbYk=-2ZB_jxDnUCWfrN5tJNZ7azgSHyOrMzvg@mail.gmail.com>
+ <1351942405.16850.23.camel@maggy.simpson.net> <1351943332.16850.25.camel@maggy.simpson.net>
+From: Michal Zatloukal <myxal.mxl@gmail.com>
+Date: Sat, 3 Nov 2012 16:40:57 +0100
+Message-ID: <CAKKZj2D-jCkAbEKPX75OFYWrdSYxwh6fFBFy9UBDxy_XHHX3Gg@mail.gmail.com>
+Subject: Re: Fwd: Nice processes prevent frequency increases - possible
+ scheduler regression (known good in 2.6.35)
+To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-11-03 at 07:43 -0700, Greg Kroah-Hartman wrote:
-> On Sat, Nov 03, 2012 at 09:45:02AM -0200, Rafael Aquini wrote:
-> > On Fri, Nov 02, 2012 at 09:07:11PM -0700, Greg Kroah-Hartman wrote:
-> > > > 
-> > > > Howdy Greg,
-> > > > 
-> > > > Somehow the following patch is missing for this series submission:
-> > > > > Len Brown <len.brown@intel.com>
-> > > > >     x86: Remove the ancient and deprecated disable_hlt() and enable_hlt() facility
-> > > > 
-> > > > I glanced at the the downloadable consolidated patch and its hunks seem to be present,
-> > > > though.
-> > > 
-> > > I do not understand.  Where do you not see it?  It's in the patch on
-> > > kernel.org, right?  Where is it missing?
-> > > 
-> > 
-> > The LKML patch series is missing PATCH 02/04.
-> 
-> Odd, I received a copy, but I don't know if it came from lkml or as a
-> copy sent to me directly.  I'll bounce it to you if you are curious
-> about it.
-> 
+On Sat, Nov 3, 2012 at 12:48 PM, Mike Galbraith <efault@gmx.de> wrote:
+> On Sat, 2012-11-03 at 04:33 -0700, Mike Galbraith wrote:
+>> On Fri, 2012-11-02 at 21:09 +0100, Michal Zatloukal wrote:
+>>
+>> > On the new kernel, the nice processes are never starved - even when
+>> > starting a tab-laden chromium session, the processes for BOINC keep
+>> > about 20% CPU each (that is normalized to all CPUs, ie 40% nice load
+>> > on each core). The problem is, the governor now seems to consider the
+>> > non-nice task unable to saturate the CPU, and the cores' frequencies
+>> > are hovering between 1.0 and 1.8 GHz. The scheduler keeps scheduling
+>> > the nice tasks, and the non-nice tasks are progressing much slower,
+>> > caused by the lower CPU speed as well as less processing time
+>> > allocated to them. HD video stutters often, and Chromium takes at
+>> > least 2-3 times longer to fully load.
+>>
+>> Your nice 19 tasks receiving 'too much' CPU when there are other
+>> runnable tasks around sounds like you have SCHED_AUTOGROUP enabled.
+>
+> (forgot to mention: if that's the case, you can add noautogroup to your
+> kernel command line to turn it off if distro turned it on in .config)
+>
 
-Yeah, 2/4 is missing. Probably had too many Cc's. I really wish David
-Miller would remove that limit. I bet it's kept more legitimate emails
-from making LKML than it has spam.
+Thanks, Ubuntu's kernel is indeed configured with that option enabled,
+and passing "noautogroup" at grub restores the previous behaviour. I'm
+back to happy days again :) BTW, isn't this the "magic 200-line patch"
+I was reading about ~2 years ago?
 
-I know I've been burnt by it a few times :-/
-
--- Steve
-
-
+MZ
