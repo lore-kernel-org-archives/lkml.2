@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab2KCNqn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 09:46:43 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:34075 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504Ab2KCNql (ORCPT
+	id S1756172Ab2KCOJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 10:09:58 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56852 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883Ab2KCOJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 09:46:41 -0400
-Date: Sat, 3 Nov 2012 13:46:31 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121103134630.GA28166@srcf.ucam.org>
-References: <20121102163302.GA6080@elf.ucw.cz>
- <1351875164.2439.42.camel@dabdike.int.hansenpartnership.com>
- <20121102165456.GB9997@srcf.ucam.org>
- <1351878511.2439.44.camel@dabdike.int.hansenpartnership.com>
- <20121102175416.GA11816@srcf.ucam.org>
- <1351879058.2439.46.camel@dabdike.int.hansenpartnership.com>
- <20121102180458.GA12052@srcf.ucam.org>
- <1351899503.2439.49.camel@dabdike.int.hansenpartnership.com>
- <20121103002244.GC18691@srcf.ucam.org>
- <1351944236.2417.7.camel@dabdike.int.hansenpartnership.com>
+	Sat, 3 Nov 2012 10:09:56 -0400
+Date: Sat, 3 Nov 2012 15:09:53 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
+Subject: [PULL REQUEST] i2c-embedded for 3.7
+Message-ID: <20121103140953.GA26557@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Qxx1br4bt0+wmkIi"
 Content-Disposition: inline
-In-Reply-To: <1351944236.2417.7.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-Mutt-PGP: S<0x7D7F551B>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 03, 2012 at 12:03:56PM +0000, James Bottomley wrote:
-> On Sat, 2012-11-03 at 00:22 +0000, Matthew Garrett wrote:
-> > Why would an attacker use one of those Linux systems? There's going to 
-> > be plenty available that don't have that restriction.
-> 
-> It's called best practices.  If someone else releases something that
-> doesn't conform to them, then it's their signing key in jeopardy, not
-> yours.  You surely must see that the goal of securing "everything"
-> against "anything" isn't achievable because if someone releases a
-> bootloader not conforming to the best practices, why would they have
-> bothered to include your secure boot lockdowns in their kernel.  In
-> other words, you lost ab initio, so it's pointless to cite this type of
-> thing as a rationale for a kernel lockdown patch.
 
-I... what? Our signed bootloader will boot our signed kernel without any 
-physically present end-user involvement. We therefore need to make it 
-as difficult as practically possible for an attacker to use our signed 
-bootloader and our signed kernel as an attack vector against other 
-operating systems, which includes worrying about hibernate and kexec. If 
-people want to support this use case then patches to deal with that need 
-to be present in the upstream kernel.
+--Qxx1br4bt0+wmkIi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Linus,
+
+please pull bugfixes for i2c-embedded. 2 patches are usual stuff. The
+bigger patch is needed to correct a wrong decision made in this merge
+window. We hoped to get the PIOQUEUE mode in the mxs driver working with
+DMA, but it turned out to be too broken (leading to data loss), so we
+now think it is best to remove it entirely and work only with DMA now.
+The patch should be in 3.7. IMO, so users never get the chance to use
+both modes in parallel.
+
+Thanks,
+
+   Wolfram
+
+The following changes since commit 8f0d8163b50e01f398b14bcd4dc039ac5ab18d64:
+
+  Linux 3.7-rc3 (2012-10-28 12:24:48 -0700)
+
+are available in the git repository at:
+
+  git://git.pengutronix.de/git/wsa/linux.git i2c-embedded/for-current
+
+for you to fetch changes up to 91b370a0dbda5de92c2cf4c3bc0d18d6bf08f05f:
+
+  i2c: tegra: set irq name as device name (2012-11-02 10:52:52 +0100)
+
+----------------------------------------------------------------
+Laxman Dewangan (1):
+      i2c: tegra: set irq name as device name
+
+Philippe Begnic (1):
+      i2c-nomadik: Fixup clock handling
+
+Wolfram Sang (1):
+      i2c: mxs: remove broken PIOQUEUE support
+
+ drivers/i2c/busses/i2c-mxs.c     |  186 +++-------------------------------=
+----
+ drivers/i2c/busses/i2c-nomadik.c |    9 +-
+ drivers/i2c/busses/i2c-tegra.c   |    2 +-
+ 3 files changed, 22 insertions(+), 175 deletions(-)
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--Qxx1br4bt0+wmkIi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlCVJbEACgkQD27XaX1/VRsPOgCfZMNUMgpO43QOGLFOP6LN82PI
+CtQAnRhadRmasFvR87tbSpyqmYVjsQed
+=I87I
+-----END PGP SIGNATURE-----
+
+--Qxx1br4bt0+wmkIi--
