@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763274Ab2KCBnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 21:43:55 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:43302 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285Ab2KCBnx (ORCPT
+	id S1763288Ab2KCBrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 21:47:14 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:33960 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757489Ab2KCBrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 21:43:53 -0400
-Date: Sat, 3 Nov 2012 01:43:32 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121103014332.GA20065@srcf.ucam.org>
-References: <20121101212843.GA20309@srcf.ucam.org>
- <20121101213751.377ebaa8@pyramind.ukuu.org.uk>
- <20121101213452.GA20564@srcf.ucam.org>
- <20121101215817.79e50ec2@pyramind.ukuu.org.uk>
- <20121101215752.GA21154@srcf.ucam.org>
- <87625ogzje.fsf@xmission.com>
- <20121102140057.GA4668@srcf.ucam.org>
- <87liejacix.fsf@xmission.com>
- <20121103002033.GA18691@srcf.ucam.org>
- <87sj8rwm0p.fsf@xmission.com>
+	Fri, 2 Nov 2012 21:47:12 -0400
+Message-ID: <5094779C.6030506@xenotime.net>
+Date: Fri, 02 Nov 2012 18:47:08 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87sj8rwm0p.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Olof Johansson <olof@lixom.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Simon Arlott <simon@fire.lp0.eu>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Chris Boot <bootc@bootc.net>, Dom Cobley <popcornmix@gmail.com>,
+        Dom Cobley <dc4@broadcom.com>, Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: linux-next: Tree for Sept 24 (irqchip)
+References: <20120925005328.f748dfa3d077cebb345a4291@canb.auug.org.au>	<50607E99.6040303@xenotime.net>	<20120925020744.cc5beb9e65473605e5ca2240@canb.auug.org.au> <CAOesGMjYE0WgPr4ahPUdBVCZP=dkVPia-dmpDKgiOM_2HgsJgg@mail.gmail.com>
+In-Reply-To: <CAOesGMjYE0WgPr4ahPUdBVCZP=dkVPia-dmpDKgiOM_2HgsJgg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 05:47:02PM -0700, Eric W. Biederman wrote:
+On 09/24/2012 09:46 AM, Olof Johansson wrote:
 
-> No reason to?  How can I configure an off the shelf system originally
-> sold with windows 8 installed to boot in UEFI secure boot mode using
-> shim without trusting Microsoft's key?
+> On Mon, Sep 24, 2012 at 9:07 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi Randy,
+>>
+>> On Mon, 24 Sep 2012 08:39:05 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
+>>>
+>>> On 09/24/2012 07:53 AM, Stephen Rothwell wrote:
+>>>
+>>>> Today was a train wreck, with lots of new conflicts across several trees
+>>>> and a few build failures as well.
+>>>
+>>> I agree.  I mostly get this:
+>>>
+>>> drivers/Kconfig:157: can't open file "drivers/irqchip/Kconfig"
+>>>
+>>> i.e., no such file.
+>>>
+>>> How does this happen?  :(
+>>>
+>>> who handles irqchip?
+>>
+>> Hmm, commit 89214f009c1d ("ARM: bcm2835: add interrupt controller
+>> driver") from the arm-soc tree adds that file as an empty file (I have
+>> the empty file in my tree).  Nothing adds anything to it.
+> 
+> Yeah, the directory came in through arm-soc for-next (since the
+> bcm2835 driver was added), but there is an empty Kconfig in arm-soc. I
+> can see it in linux-next as well.
+> 
+> I wonder why it doesn't show up in your tree, Randy. You just did a
+> regular git checkout?
 
-Delete the installed keys, install your choice of keys, make sure your 
-bootloader is signed with a key you trust. You're guaranteed to be able 
-to do this on any Windows 8 certified hardware.
+
+Sorry for the very delayed reply (and this is already fixed).
+
+It doesn't show up in my kernel tree because I use linux-v3.x tarballs
+and patch-3.x-rcY patches and linux-next patches, and
+'patch' does not keep empty files around.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+~Randy
