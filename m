@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147Ab2KCBwX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 21:52:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5662 "EHLO
+	id S1763295Ab2KCBx1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 21:53:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29184 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757489Ab2KCBwW (ORCPT
+	with ESMTP id S1753686Ab2KCBx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 21:52:22 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=1sJ11zoWL4i7RTlY1icA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 2 Nov 2012 21:53:26 -0400
+X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=1sJ11zoWL4i7RTlY1icA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-ID: <1351907539.4004.154.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.4.15-rt26
+Message-ID: <1351907604.4004.155.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.2.32-rt49
 From: Steven Rostedt <rostedt@goodmis.org>
 To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>
-Date: Fri, 02 Nov 2012 21:52:19 -0400
+Date: Fri, 02 Nov 2012 21:53:24 -0400
 Content-Type: text/plain; charset="ISO-8859-15"
 X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
@@ -28,28 +28,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Dear RT Folks,
 
-I'm pleased to announce the 3.4.15-rt26 stable release.
+I'm pleased to announce the 3.2.32-rt49 stable release.
 
 
 You can get this release via the git tree at:
 
   git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
 
-  Head SHA1: ea7a096a3d06bcdc415e534863a69921bc758327
+  Head SHA1: cbced358ac79dfeea8ec0be224edb6087730b112
 
 
-Or to build 3.4.15-rt26 directly, the following patches should be applied:
+Or to build 3.2.32-rt49 directly, the following patches should be applied:
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.15.xz
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.32.xz
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.15-rt26.patch.xz
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.32-rt49.patch.xz
 
 
-You can also build from 3.4.15-rt25 by applying the incremental patch:
+You can also build from 3.2.32-rt48 by applying the incremental patch:
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.15-rt25-rt26.patch.xz
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.32-rt48-rt49.patch.xz
 
 
 
@@ -58,12 +58,12 @@ Enjoy,
 -- Steve
 
 
-Changes from 3.4.15-rt25:
+Changes from 3.2.32-rt48:
 
 ---
 
 Steven Rostedt (1):
-      Linux 3.4.15-rt26
+      Linux 3.2.32-rt49
 
 Thomas Gleixner (2):
       rcu: Disable RCU_FAST_NO_HZ on RT
@@ -104,7 +104,7 @@ index f1804a3..a5eea5d 100644
  static inline void local_irq_lock_init(int lvar) { }
  
 diff --git a/include/linux/netfilter/x_tables.h b/include/linux/netfilter/x_tables.h
-index 8d674a7..3f2bc57 100644
+index 32cddf7..bed90da2 100644
 --- a/include/linux/netfilter/x_tables.h
 +++ b/include/linux/netfilter/x_tables.h
 @@ -186,6 +186,7 @@ struct xt_counters_info {
@@ -143,20 +143,20 @@ index 8d674a7..3f2bc57 100644
  
  /*
 diff --git a/init/Kconfig b/init/Kconfig
-index c06208b..87afda5 100644
+index 720c182..aa6545f 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
-@@ -474,7 +474,7 @@ config RCU_FANOUT_EXACT
+@@ -469,7 +469,7 @@ config RCU_FANOUT_EXACT
  
  config RCU_FAST_NO_HZ
  	bool "Accelerate last non-dyntick-idle CPU's grace periods"
--	depends on NO_HZ && SMP
-+	depends on NO_HZ && SMP && !PREEMPT_RT_FULL
+-	depends on TREE_RCU && NO_HZ && SMP
++	depends on TREE_RCU && NO_HZ && SMP && !PREEMPT_RT_FULL
  	default n
  	help
  	  This option causes RCU to attempt to accelerate grace periods
 diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 8b3d423..9114899 100644
+index bca6928..9c09d02 100644
 --- a/kernel/hrtimer.c
 +++ b/kernel/hrtimer.c
 @@ -1527,11 +1527,7 @@ retry:
@@ -183,14 +183,14 @@ index 8b3d423..9114899 100644
  
  /*
 diff --git a/localversion-rt b/localversion-rt
-index c5b71f9..2e9afd4 100644
+index 2470798..4b7dca6 100644
 --- a/localversion-rt
 +++ b/localversion-rt
 @@ -1 +1 @@
---rt25
-+-rt26
+--rt48
++-rt49
 diff --git a/net/netfilter/core.c b/net/netfilter/core.c
-index e1b7e05..151061b 100644
+index afca6c7..aa3f87b 100644
 --- a/net/netfilter/core.c
 +++ b/net/netfilter/core.c
 @@ -20,11 +20,17 @@
