@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361Ab2KCIi7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 04:38:59 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:36901 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873Ab2KCIix (ORCPT
+	id S1754540Ab2KCIjL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 04:39:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33714 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010Ab2KCIi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 04:38:53 -0400
+	Sat, 3 Nov 2012 04:38:58 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, mhocko@suse.cz, rjw@sisk.pl
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        fweisbec@gmail.com
-Subject: [PATCHSET cgroup/for-3.8] cgroup_freezer: implement proper hierarchy support
-Date: Sat,  3 Nov 2012 01:38:26 -0700
-Message-Id: <1351931915-1701-1-git-send-email-tj@kernel.org>
+        fweisbec@gmail.com, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH 1/9] cgroup: add cgroup_subsys->post_create()
+Date: Sat,  3 Nov 2012 01:38:27 -0700
+Message-Id: <1351931915-1701-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1351931915-1701-1-git-send-email-tj@kernel.org>
+References: <1351931915-1701-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Currently, there's no way for a controller to find out whether a new
+cgroup finished all ->create() allocatinos successfully and is
+considered "live" by cgroup.
 
-This patchset implement proper hierarchy support for cgroup_freezer as
-discussed in "[RFC] cgroup TODOs"[1].
+This becomes a problem later when we add generic descendants walking
+to cgroup which can be used by controllers as controllers don't have a
+synchronization point where it can synchronize against new cgroups
+appearing in such walks.
 
-The patchset first implements generic cgroup iteration macros -
-cgroup_for_each_children(), cgroup_for_each_descendant_{pre|post}().
-Combined with the newly introduced ->post_create() callback, this
-allows controllers to implement reliable iteration over descendants
-without messing with cgroup internal locking.  Controllers can perform
-reliable walking using simple hierarchy-wide locking or finer-grained
-parent-children locking.
+This patch adds ->post_create().  It's called after all ->create()
+succeeded and the cgroup is linked into the generic cgroup hierarchy.
+This plays the counterpart of ->pre_destroy().
 
-Using the iteration macros and ->post_create(), cgroup_freezer is
-updated to propagate state updates to and collect FROZEN completions
-from the descendants.  This removes .broken_hierarchy marking from
-cgroup_freezer.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>
+---
+ include/linux/cgroup.h |  1 +
+ kernel/cgroup.c        | 12 ++++++++++--
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
-cgroup_freezer hierarchy support is implemented using finer-grained
-locking not necessarily because it's necessary but more because I
-wanted an example controller doing that.
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index fe876a7..b442122 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -438,6 +438,7 @@ int cgroup_taskset_size(struct cgroup_taskset *tset);
+ 
+ struct cgroup_subsys {
+ 	struct cgroup_subsys_state *(*create)(struct cgroup *cgrp);
++	void (*post_create)(struct cgroup *cgrp);
+ 	void (*pre_destroy)(struct cgroup *cgrp);
+ 	void (*destroy)(struct cgroup *cgrp);
+ 	int (*can_attach)(struct cgroup *cgrp, struct cgroup_taskset *tset);
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index e3045ad..f05d992 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4060,10 +4060,15 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	if (err < 0)
+ 		goto err_remove;
+ 
+-	/* each css holds a ref to the cgroup's dentry */
+-	for_each_subsys(root, ss)
++	for_each_subsys(root, ss) {
++		/* each css holds a ref to the cgroup's dentry */
+ 		dget(dentry);
+ 
++		/* creation succeeded, notify subsystems */
++		if (ss->post_create)
++			ss->post_create(cgrp);
++	}
++
+ 	/* The cgroup directory was pre-locked for us */
+ 	BUG_ON(!mutex_is_locked(&cgrp->dentry->d_inode->i_mutex));
+ 
+@@ -4281,6 +4286,9 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+ 
+ 	ss->active = 1;
+ 
++	if (ss->post_create)
++		ss->post_create(&ss->root->top_cgroup);
++
+ 	/* this function shouldn't be used with modular subsystems, since they
+ 	 * need to register a subsys_id, among other things */
+ 	BUG_ON(ss->module);
+-- 
+1.7.11.7
 
-This patchset contains the following nine patches.
-
- 0001-cgroup-add-cgroup_subsys-post_create.patch
- 0002-cgroup-Use-rculist-ops-for-cgroup-children.patch
- 0003-cgroup-implement-generic-child-descendant-walk-macro.patch
- 0004-cgroup_freezer-trivial-cleanups.patch
- 0005-cgroup_freezer-prepare-freezer_change_state-for-full.patch
- 0006-cgroup_freezer-make-freezer-state-mask-of-flags.patch
- 0007-cgroup_freezer-introduce-CGROUP_FREEZING_-SELF-PAREN.patch
- 0008-cgroup_freezer-add-post_create-and-pre_destroy-and-t.patch
- 0009-cgroup_freezer-implement-proper-hierarchy-support.patch
-
-0001-0003 implement cgroup descendant iterators.
-
-0004-0008 prepare cgroup_freezer for hierarchy support.  0009
-implements it.
-
-This patchset is on top of
-
- v3.6 (a0d271cbfe)
-+ [2] the first three patches of
-      "memcg/cgroup: do not fail fail on pre_destroy callbacks" patchset
-+ [3] "cgroup: simplify cgroup removal path" v2 patchset
-
-with cgroup/for-3.8 pulled into it.  The branch is rather floaty at
-the moment so it would be the easiest to pull the following branch for
-review.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup_freezer-hierarchy
-
-Thanks.
-
- kernel/cgroup.c         |  106 +++++++++++++-
- kernel/cgroup_freezer.c |  359 +++++++++++++++++++++++++++++++++++-------------
- 3 files changed, 445 insertions(+), 104 deletions(-)
-
---
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel.containers/23698
-[2] http://thread.gmane.org/gmane.linux.kernel.cgroups/4757
-[3] http://thread.gmane.org/gmane.linux.kernel.cgroups/4861
