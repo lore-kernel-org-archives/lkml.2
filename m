@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762890Ab2KCBbP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 21:31:15 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49260 "EHLO
+	id S1763030Ab2KCBg4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 21:36:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49317 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755797Ab2KCBbN (ORCPT
+	with ESMTP id S1753257Ab2KCBgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 21:31:13 -0400
-Date: Fri, 02 Nov 2012 21:31:10 -0400 (EDT)
-Message-Id: <20121102.213110.2070365320544608145.davem@davemloft.net>
-To: mst@redhat.com
-Cc: vyasevic@redhat.com, edumazet@google.com, akpm@linux-foundation.org,
-        alexander.h.duyck@intel.com, Ian.Campbell@citrix.com,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 net-next 0/8] enable/disable zero copy tx dynamically
+	Fri, 2 Nov 2012 21:36:54 -0400
+Date: Fri, 02 Nov 2012 21:36:52 -0400 (EDT)
+Message-Id: <20121102.213652.471891990686700974.davem@davemloft.net>
+To: peter.senna@gmail.com
+Cc: stigge@antcom.de, edumazet@google.com, djduanjiong@gmail.com,
+        aletes.xgr@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/2] drivers/net/ethernet/nxp/lpc_eth.c: Call
+ mdiobus_unregister before mdiobus_free
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <cover.1351797353.git.mst@redhat.com>
-References: <cover.1351797353.git.mst@redhat.com>
+In-Reply-To: <1351440721-9121-1-git-send-email-peter.senna@gmail.com>
+References: <1351440721-9121-1-git-send-email-peter.senna@gmail.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -26,21 +26,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Thu, 1 Nov 2012 21:16:17 +0200
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+Date: Sun, 28 Oct 2012 17:12:00 +0100
 
+> Based on commit b27393aecf66199f5ddad37c302d3e0cfadbe6c0
 > 
-> tun supports zero copy transmit since 0690899b4d4501b3505be069b9a687e68ccbe15b,
-> however you can only enable this mode if you know your workload does not
-> trigger heavy guest to host/host to guest traffic - otherwise you
-> get a (minor) performance regression.
-> This patchset addresses this problem by notifying the owner
-> device when callback is invoked because of a data copy.
-> This makes it possible to detect whether zero copy is appropriate
-> dynamically: we start in zero copy mode, when we detect
-> data copied we disable zero copy for a while.
+> Calling mdiobus_free without calling mdiobus_unregister causes
+> BUG_ON(). This patch fixes the issue.
 > 
-> With this patch applied, I get the same performance for
-> guest to host and guest to guest both with and without zero copy tx.
+> The semantic patch that found this issue(http://coccinelle.lip6.fr/):
+> // <smpl>
+> @@
+> expression E;
+> @@
+>   ... when != mdiobus_unregister(E);
+> 
+> + mdiobus_unregister(E);
+>   mdiobus_free(E);
+> // </smpl>
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Series applied, thanks Michael.
+Applied.
