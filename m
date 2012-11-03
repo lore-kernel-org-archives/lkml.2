@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab2KCK64 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 06:58:56 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:9242 "EHLO
-	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751904Ab2KCK6s (ORCPT
+	id S1755745Ab2KCLAA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 07:00:00 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:62865
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754813Ab2KCK6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 06:58:48 -0400
+	Sat, 3 Nov 2012 06:58:55 -0400
 X-IronPort-AV: E=Sophos;i="4.80,705,1344204000"; 
-   d="scan'208";a="161245664"
+   d="scan'208";a="161245677"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Neil Brown <neilb@suse.de>
-Cc: kernel-janitors@vger.kernel.org, linux-raid@vger.kernel.org,
+To: Faisal Latif <faisal.latif@intel.com>
+Cc: kernel-janitors@vger.kernel.org, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/16] drivers/md/raid5.c: use WARN
-Date: Sat,  3 Nov 2012 11:58:24 +0100
-Message-Id: <1351940317-14812-4-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 16/16] drivers/infiniband/hw/nes: use WARN
+Date: Sat,  3 Nov 2012 11:58:37 +0100
+Message-Id: <1351940317-14812-17-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -44,27 +46,44 @@ expression list es;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/md/raid5.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/infiniband/hw/nes/nes_cm.c  |    6 ++----
+ drivers/infiniband/hw/nes/nes_mgt.c |    6 ++----
+ 2 files changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 320df0c..8c3b9bb 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -373,13 +373,11 @@ static void init_stripe(struct stripe_head *sh, sector_t sector, int previous)
- 		struct r5dev *dev = &sh->dev[i];
+diff --git a/drivers/infiniband/hw/nes/nes_cm.c b/drivers/infiniband/hw/nes/nes_cm.c
+index cfaacaf..8a15a1d 100644
+--- a/drivers/infiniband/hw/nes/nes_cm.c
++++ b/drivers/infiniband/hw/nes/nes_cm.c
+@@ -629,11 +629,9 @@ static void build_rdma0_msg(struct nes_cm_node *cm_node, struct nes_qp **nesqp_a
  
- 		if (dev->toread || dev->read || dev->towrite || dev->written ||
--		    test_bit(R5_LOCKED, &dev->flags)) {
--			printk(KERN_ERR "sector=%llx i=%d %p %p %p %p %d\n",
-+		    test_bit(R5_LOCKED, &dev->flags))
-+			WARN(1, KERN_ERR "sector=%llx i=%d %p %p %p %p %d\n",
- 			       (unsigned long long)sh->sector, i, dev->toread,
- 			       dev->read, dev->towrite, dev->written,
- 			       test_bit(R5_LOCKED, &dev->flags));
+ 	case SEND_RDMA_READ_ZERO:
+ 	default:
+-		if (cm_node->send_rdma0_op != SEND_RDMA_READ_ZERO) {
+-			printk(KERN_ERR "%s[%u]: Unsupported RDMA0 len operation=%u\n",
++		if (cm_node->send_rdma0_op != SEND_RDMA_READ_ZERO)
++			WARN(1, KERN_ERR "%s[%u]: Unsupported RDMA0 len operation=%u\n",
+ 				 __func__, __LINE__, cm_node->send_rdma0_op);
 -			WARN_ON(1);
 -		}
- 		dev->flags = 0;
- 		raid5_build_block(sh, i, previous);
- 	}
+ 		nes_debug(NES_DBG_CM, "Sending first rdma operation.\n");
+ 		wqe->wqe_words[NES_IWARP_SQ_WQE_MISC_IDX] =
+ 			cpu_to_le32(NES_IWARP_SQ_OP_RDMAR);
+diff --git a/drivers/infiniband/hw/nes/nes_mgt.c b/drivers/infiniband/hw/nes/nes_mgt.c
+index 3ba7be3..53bb88c 100644
+--- a/drivers/infiniband/hw/nes/nes_mgt.c
++++ b/drivers/infiniband/hw/nes/nes_mgt.c
+@@ -649,11 +649,9 @@ static void nes_chg_qh_handler(struct nes_device *nesdev, struct nes_cqp_request
+ 	nesqp = qh_chg->nesqp;
+ 
+ 	/* Should we handle the bad completion */
+-	if (cqp_request->major_code) {
+-		printk(KERN_ERR PFX "Invalid cqp_request major_code=0x%x\n",
++	if (cqp_request->major_code)
++		WARN(1, KERN_ERR PFX "Invalid cqp_request major_code=0x%x\n",
+ 		       cqp_request->major_code);
+-		WARN_ON(1);
+-	}
+ 
+ 	switch (nesqp->pau_state) {
+ 	case PAU_DEL_QH:
 
