@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab2KCHAM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 03:00:12 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46966 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab2KCHAJ (ORCPT
+	id S1751675Ab2KCHdK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 03:33:10 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:52459 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab2KCHdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 03:00:09 -0400
-Date: Sat, 3 Nov 2012 08:00:06 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wen Congyang <wency@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        Jiang Liu <liuj97@gmail.com>, bsingharora@gmail.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        paul.gortmaker@windriver.com, Tang Chen <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH] memcg: fix hotplugged memory zone oops
-Message-ID: <20121103070006.GA12038@dhcp22.suse.cz>
-References: <505187D4.7070404@cn.fujitsu.com>
- <20120913205935.GK1560@cmpxchg.org>
- <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
- <507CF789.6050307@cn.fujitsu.com>
- <alpine.LSU.2.00.1210181129180.2137@eggly.anvils>
- <20121018220306.GA1739@cmpxchg.org>
- <alpine.LNX.2.00.1211011822190.20048@eggly.anvils>
- <20121102102159.GA24073@dhcp22.suse.cz>
- <20121102105420.GB24073@dhcp22.suse.cz>
- <alpine.LNX.2.00.1211021631260.11106@eggly.anvils>
+	Sat, 3 Nov 2012 03:33:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1211021631260.11106@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120928201506.526781717@linuxfoundation.org>
+References: <20120928201501.208384923@linuxfoundation.org>
+	<20120928201506.526781717@linuxfoundation.org>
+Date: Sat, 3 Nov 2012 00:33:07 -0700
+Message-ID: <CAMbhsRRP5ui-10hMEFYk2Rh93XrvKeircsZXsySE7YXF92qigQ@mail.gmail.com>
+Subject: Re: [ 044/218] Staging: Android alarm: IOCTL command encoding fix
+From: Colin Cross <ccross@google.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, "Dae S. Kim" <dae@velatum.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 02-11-12 16:37:37, Hugh Dickins wrote:
-> On Fri, 2 Nov 2012, Michal Hocko wrote:
-> > On Fri 02-11-12 11:21:59, Michal Hocko wrote:
-> > > On Thu 01-11-12 18:28:02, Hugh Dickins wrote:
-> > [...]
-> > 
-> > And I forgot to mention that the following hunk will clash with
-> > "memcg: Simplify mem_cgroup_force_empty_list error handling" which is in
-> > linux-next already (via Tejun's tree). 
-> 
-> Oh, via Tejun's tree.  Right, when I checked mmotm there was no problem.
+On Fri, Sep 28, 2012 at 1:14 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: "Dae S. Kim" <dae@velatum.com>
+>
+> commit 6bd4a5d96c08dc2380f8053b1bd4f879f55cd3c9 upstream.
+>
+> Fixed a bug. Data was being written to user space using an IOCTL
+> command encoded with _IOC_WRITE access mode.
+>
+> Signed-off-by: Dae S. Kim <dae@velatum.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> ---
+>  drivers/staging/android/android_alarm.h |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> --- a/drivers/staging/android/android_alarm.h
+> +++ b/drivers/staging/android/android_alarm.h
+> @@ -110,10 +110,12 @@ enum android_alarm_return_flags {
+>  #define ANDROID_ALARM_WAIT                  _IO('a', 1)
+>
+>  #define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
+> +#define ALARM_IOR(c, type, size)            _IOR('a', (c) | ((type) << 4), size)
+> +
+>  /* Set alarm */
+>  #define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
+>  #define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
+> -#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
+> +#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOR(4, type, struct timespec)
+>  #define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
+>  #define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
+>  #define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Yeah, whole that thing goes through Tejun's tree because there are many
-follow up clean ups depending on that change.
+This patch breaks Android userspace by changing the ioctl ABI to
+/dev/alarm.  It's definitely not a bug fix, as the IOW vs. IOR flag is
+only ever used by drivers, and is not used by alarm-dev.c.
 
-> > Would it be easier to split the patch into the real fix and the hunk
-> > bellow? That one doesn't have to go into stable anyway and we would save
-> > some merging conflicts. The updated fix on top of -mm tree is bellow for
-> > your convinience.
-> 
-> I'd prefer to leave it as one patch, so even the "future proof" part
-> of the fix goes into 3.7 and stable.  But your point is that you have
-> already seen the future, and it forks in a slightly different direction!
-> 
-> Well, I don't want to be obstructive, but it doesn't look difficult
-> to resolve.  
-
-True.
-
-> Perhaps if I hold off on splitting them, and see if akpm barks at me
-> or not :)
-> 
-> Hugh
-> 
-> > > >  /**
-> > > > @@ -3688,17 +3712,17 @@ unsigned long mem_cgroup_soft_limit_recl
-> > > >  static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
-> > > >  				int node, int zid, enum lru_list lru)
-> > > >  {
-> > > > -	struct mem_cgroup_per_zone *mz;
-> > > > +	struct lruvec *lruvec;
-> > > >  	unsigned long flags, loop;
-> > > >  	struct list_head *list;
-> > > >  	struct page *busy;
-> > > >  	struct zone *zone;
-> > > >  
-> > > >  	zone = &NODE_DATA(node)->node_zones[zid];
-> > > > -	mz = mem_cgroup_zoneinfo(memcg, node, zid);
-> > > > -	list = &mz->lruvec.lists[lru];
-> > > > +	lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-> > > > +	list = &lruvec->lists[lru];
-> > > >  
-> > > > -	loop = mz->lru_size[lru];
-> > > > +	loop = mem_cgroup_get_lru_size(lruvec, lru);
-> > > >  	/* give some margin against EBUSY etc...*/
-> > > >  	loop += 256;
-> > > >  	busy = NULL;
-
--- 
-Michal Hocko
-SUSE Labs
+I would have commented sooner, but the original patch was not sent to
+any lists I am on, nor any lists that Google can find.
