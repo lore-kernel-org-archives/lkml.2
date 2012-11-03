@@ -1,53 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab2KCPlk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 11:41:40 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:37483 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404Ab2KCPli (ORCPT
+	id S1756515Ab2KCPoY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 11:44:24 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:48484 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756421Ab2KCPoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 11:41:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <1351943332.16850.25.camel@maggy.simpson.net>
-References: <CAKKZj2Do+ViFbdmeA9y4qZ4Dd_CrW_wmVWc0_CB4BAAwO6SfJg@mail.gmail.com>
- <CAKKZj2Av0TN9MbYk=-2ZB_jxDnUCWfrN5tJNZ7azgSHyOrMzvg@mail.gmail.com>
- <1351942405.16850.23.camel@maggy.simpson.net> <1351943332.16850.25.camel@maggy.simpson.net>
-From: Michal Zatloukal <myxal.mxl@gmail.com>
-Date: Sat, 3 Nov 2012 16:40:57 +0100
-Message-ID: <CAKKZj2D-jCkAbEKPX75OFYWrdSYxwh6fFBFy9UBDxy_XHHX3Gg@mail.gmail.com>
-Subject: Re: Fwd: Nice processes prevent frequency increases - possible
- scheduler regression (known good in 2.6.35)
-To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sat, 3 Nov 2012 11:44:21 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Eilon Greenstein <eilong@broadcom.com>, netdev@vger.kernel.org
+Subject: [PATCH v2 02/11] random32: introduce random32_get_bytes() and random32_get_bytes_state()
+Date: Sun,  4 Nov 2012 00:43:33 +0900
+Message-Id: <1351957422-23243-3-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1351957422-23243-1-git-send-email-akinobu.mita@gmail.com>
+References: <1351957422-23243-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 3, 2012 at 12:48 PM, Mike Galbraith <efault@gmx.de> wrote:
-> On Sat, 2012-11-03 at 04:33 -0700, Mike Galbraith wrote:
->> On Fri, 2012-11-02 at 21:09 +0100, Michal Zatloukal wrote:
->>
->> > On the new kernel, the nice processes are never starved - even when
->> > starting a tab-laden chromium session, the processes for BOINC keep
->> > about 20% CPU each (that is normalized to all CPUs, ie 40% nice load
->> > on each core). The problem is, the governor now seems to consider the
->> > non-nice task unable to saturate the CPU, and the cores' frequencies
->> > are hovering between 1.0 and 1.8 GHz. The scheduler keeps scheduling
->> > the nice tasks, and the non-nice tasks are progressing much slower,
->> > caused by the lower CPU speed as well as less processing time
->> > allocated to them. HD video stutters often, and Chromium takes at
->> > least 2-3 times longer to fully load.
->>
->> Your nice 19 tasks receiving 'too much' CPU when there are other
->> runnable tasks around sounds like you have SCHED_AUTOGROUP enabled.
->
-> (forgot to mention: if that's the case, you can add noautogroup to your
-> kernel command line to turn it off if distro turned it on in .config)
->
+Add functions to get the requested number of pseudo-random bytes.
 
-Thanks, Ubuntu's kernel is indeed configured with that option enabled,
-and passing "noautogroup" at grub restores the previous behaviour. I'm
-back to happy days again :) BTW, isn't this the "magic 200-line patch"
-I was reading about ~2 years ago?
+The difference from get_random_bytes() is that it generates pseudo-random
+numbers by random32().  It is fast, suitable for generating random bytes
+for testing, and reproducible if random32_get_bytes_state() is used.
 
-MZ
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-mtd@lists.infradead.org
+Cc: Eilon Greenstein <eilong@broadcom.com>
+Cc: netdev@vger.kernel.org
+---
+* v2
+- rename prandom32_get_bytes to random32_get_bytes_state
+
+ include/linux/random.h |  2 ++
+ lib/random32.c         | 38 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 40 insertions(+)
+
+diff --git a/include/linux/random.h b/include/linux/random.h
+index bb96f79..4176762 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -27,8 +27,10 @@ unsigned long randomize_range(unsigned long start, unsigned long end, unsigned l
+ 
+ u32 random32(void);
+ void srandom32(u32 seed);
++void random32_get_bytes(void *buf, int nbytes);
+ 
+ u32 random32_state(struct rnd_state *);
++void random32_get_bytes_state(struct rnd_state *state, void *buf, int nbytes);
+ 
+ /*
+  * Handle minimum values for seeds
+diff --git a/lib/random32.c b/lib/random32.c
+index 7a3e0c7..9557417 100644
+--- a/lib/random32.c
++++ b/lib/random32.c
+@@ -61,6 +61,44 @@ u32 random32_state(struct rnd_state *state)
+ EXPORT_SYMBOL(random32_state);
+ 
+ /**
++ *	random32_get_bytes_state - get the pseudo-random bytes
++ *	@state: pointer to state structure holding seeded state.
++ *	@buf: where to copy the pseudo-random bytes to
++ *	@bytes: the requested number of bytes
++ *
++ *	This is used for pseudo-randomness with no outside seeding.
++ *	For more random results, use random32_get_bytes().
++ */
++void random32_get_bytes_state(struct rnd_state *state, void *buf, int bytes)
++{
++	unsigned char *p = buf;
++
++	for (; bytes > 0 && ((unsigned long)p) % sizeof(u32); bytes--, p++)
++		*p = random32_state(state);
++
++	for (; bytes > sizeof(u32) - 1; bytes -= sizeof(u32), p += sizeof(u32))
++		*(u32 *)p = random32_state(state);
++
++	for (; bytes > 0; bytes--, p++)
++		*p = random32_state(state);
++}
++EXPORT_SYMBOL(random32_get_bytes_state);
++
++/**
++ *	random32_get_bytes - get the requested number of pseudo-random bytes
++ *	@buf: where to copy the pseudo-random bytes to
++ *	@bytes: the requested number of bytes
++ */
++void random32_get_bytes(void *buf, int bytes)
++{
++	struct rnd_state *state = &get_cpu_var(net_rand_state);
++
++	random32_get_bytes_state(state, buf, bytes);
++	put_cpu_var(state);
++}
++EXPORT_SYMBOL(random32_get_bytes);
++
++/**
+  *	random32 - pseudo random number generator
+  *
+  *	A 32 bit pseudo-random number is generated using a fast
+-- 
+1.7.11.7
+
