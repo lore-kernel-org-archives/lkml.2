@@ -1,112 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762004Ab2KBX6S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 19:58:18 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43480 "EHLO
+	id S1762037Ab2KCAD4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 20:03:56 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59517 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759695Ab2KBX6Q (ORCPT
+	with ESMTP id S1761912Ab2KCADx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 19:58:16 -0400
-Date: Fri, 2 Nov 2012 16:58:11 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, Kay Sievers <kay@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
- add queue-private command filter, editable via sysfs)
-Message-ID: <20121102235811.GG27843@mtj.dyndns.org>
-References: <5093DD5E.6030808@redhat.com>
- <20121102153530.483453c7@pyramind.ukuu.org.uk>
- <20121102164828.GA3823@mtj.dyndns.org>
- <20121102172145.184abfe3@pyramind.ukuu.org.uk>
- <20121102173022.GA27843@mtj.dyndns.org>
- <20121102201824.41b2516d@pyramind.ukuu.org.uk>
- <20121102202131.GE9169@htj.dyndns.org>
- <20121102204825.7e4bd641@pyramind.ukuu.org.uk>
- <20121102225912.GD27843@mtj.dyndns.org>
- <20121102235243.60dfa772@pyramind.ukuu.org.uk>
+	Fri, 2 Nov 2012 20:03:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121102235243.60dfa772@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D4138B435F@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D4138B435F@USINDEM103.corp.hds.com>
+From: Mike Waychison <mikew@google.com>
+Date: Fri, 2 Nov 2012 17:03:32 -0700
+Message-ID: <CAGTjWtBvFvx2A9FFpDw+18p_58JiX=zpqHAd0T=JS=r8YkZHiw@mail.gmail.com>
+Subject: Re: [RESEND][PATCH v4 0/7] efi_pstore: multiple event logging support
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Alan.
+Series Acked-by: Mike Waychison <mikew@google.com>
 
-On Fri, Nov 02, 2012 at 11:52:43PM +0000, Alan Cox wrote:
-> Really. Can your filter implement it only for certain commands, and only
-> for certain vendor specific commands ? Not really because your filter is
-> fixed - it has policy in kernel which is the wrong place for device
-> specific stuff.
-> 
-> And if you add it to the "fixed" policy how much code and ioctls is that
-> to specify ranges by command and pass partitions when they are device
-> mapper user space created mappings ? More code than the BPF interface and
-> more new APIs.
+Tony: Did you want to pull this?
 
-Hmmm?  You know which commands you're allowing.  You can definitely
-filter those commands for their ranges.  What ioctls?
-
-> > At this point, most burning commands are standardized, and optical
-> > drives are generally on the way out.  If you absolutely have to use
-> > some vendor specific commands, be root.
-> 
-> So that translates to me as "There is a good reason, but if your drive is
-> one of the awkward ones then f**k you go use root". Again policy in the
-> kernel just creates inflexibility and is the wrong place for it.
-
-Yes, pretty much.  I don't think it's unreasonable for this one.  It's
-not like we aim for ultimate flexibility all the time.  Everything is
-a trade-off.  BPF filter for vendor-specific CD/DVD burning commands
-seems way off to me, especially these days.
-
-> > > - giving end users minimal access to things like SMART but only on drives
-> > >   where it is safe
-> > 
-> > End users already have pretty good access to SMART data via udisks and
-> > it's way more flexible and intelligent than some in-kernel filter.
-> 
-> Thats a bit Gnome developer - "Our way or the highway". The point of
-> having a filter is that you put policy in user space. If you don't care
-> the default filter carries on just working, if you do care you can change
-> stuff with BPF.
-
-We already have it implemented in userspace and it works well.
-Actually it works better than anything we can do in kernel (e.g. how
-is the kernel gonna know who's logged in front of the machine has
-physical access to the hardware?).  What's the justification
-duplicating it worse in kernel?
-
-> > Maybe, I don't know.  It all sounds highly marginal to me.
-> 
-> If you are doing virtual machines it is far from marginal.
-
-Yeah, I agree VMs are the only one which isn't marginal, but then
-again, VMs can work reasonably well with far simpler mechanism.
-
-> > For complex/intelligent access policies, kernel isn't the right place
-> > to do it anyway
-> 
-> So why are you arguing for kernel policies which is exactly what the
-> fixed ones are ? The BPF ones moves the policy to user space !
-
-No, it's doing something half-way inbetween in unnecessarily complex
-way when you can get by with much simpler mechanism.  We are stuck
-with the in-kernel whitelist for historical reasons (the proper way
-would be implementing burning service in userspace with proper
-integration with the rest of userland).  The in-kernel whitelist is
-broken for different classes of devices, so let's fix that in simple
-way and give userland a simple mechanism to solve the VM case.
-
-It's unfortunate that we have this SG_IO filtering in kernel at all.
-Let's please not make it larger.
-
-Thanks.
-
--- 
-tejun
+On Thu, Nov 1, 2012 at 3:59 PM, Seiji Aguchi <seiji.aguchi@hds.com> wrote:
+> Changelog
+>
+> v3 -> v4
+>    - Rebase to 3.7-rc3
+>    - Add ctime to an argument of efi_pstore_erase to build successfully
+>      in case where CONFIG_PTORE=n is specified. (Patch 4/7)
+>    - Add count to an argument of efi_pstore_erase and efi_pstore_write to
+>      build successfully in case where CONFIG_PTORE=n is specified (Patch 5/7)
+>    - Fix a white space damage (Patch 6/7)
+>    - Modify a logic checking a 3-variable format of a variable name (Patch 7/7)
+>
+> v2 -> v3
+>    - Create patches 6/7 and 7/7 to work with an existing format of variable name
+>
+> v1 -> v2
+>    - Separate into 5 patches in accordance with Mike's comment
+>    - Erase an extra line of comment in patch 1/5
+>
+> [Issue]
+>
+>     Currently, efi_pstore driver simply overwrites existing panic messages in NVRAM.
+>     So, in the following scenario, we will lose 1st panic messages.
+>
+>     1. kernel panics.
+>     2. efi_pstore is kicked and writes panic messages to NVRAM.
+>     3. system reboots.
+>     4. kernel panics again before a user checks the 1st panic messages in NVRAM.
+>
+> [Solution]
+>
+>    Solutions of this problem has been discussed among Tony, Matthew, Don, Mike and me.
+>
+>    http://marc.info/?l=linux-kernel&m=134273270704586&w=2
+>
+>    And there are two possible solutions right now.
+>      - First one is introducing some policy overwriting existing logs.
+>      - Second one is simply holding multiple log without overwriting any entries.
+>
+>    We haven't decided the overwriting policy which is reasonable to all users yet.
+>    But I believe we agree that just holding multiple logs is a reasonable way.
+>
+>    We may need further discussions to find the possibility of introducing overwriting
+>    policy, especially getting critical messages in multiple oops case.
+>    But I would like to begin with a simple and reasonable way to everyone.
+>    So, this patch takes an approach just holding multiple logs.
+>
+> [Patch Description]
+>
+> Seiji Aguchi (7):
+>   efi_pstore: Check remaining space with QueryVariableInfo() before
+>     writing data
+>   efi_pstore: Add a logic erasing entries to an erase callback
+>   efi_pstore: Remove a logic erasing entries from a write callback to
+>     hold multiple logs
+>   efi_pstore: Add ctime to argument of erase callback
+>   efi_pstore: Add a sequence counter to a variable name
+>   efi_pstore: Add a format check for an existing variable name at
+>     reading time
+>   Add a format check for an existing variable name at erasing time
+>
+>  drivers/acpi/apei/erst.c   |   16 ++--
+>  drivers/firmware/efivars.c |  163 ++++++++++++++++++++++++++++++-------------
+>  fs/pstore/inode.c          |    7 ++-
+>  fs/pstore/internal.h       |    2 +-
+>  fs/pstore/platform.c       |   11 ++--
+>  fs/pstore/ram.c            |    9 +--
+>  include/linux/efi.h        |    1 +
+>  include/linux/pstore.h     |    6 +-
+>  8 files changed, 143 insertions(+), 72 deletions(-)
