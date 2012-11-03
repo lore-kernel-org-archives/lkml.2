@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471Ab2KCEtf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 00:49:35 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44346 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893Ab2KCEtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 00:49:33 -0400
-Date: Sat, 3 Nov 2012 05:49:29 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: AMD A10: MCE Instruction Cache Error
-Message-ID: <20121103044929.GB21829@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Alexander Holler <holler@ahsoftware.de>,
-	linux-kernel@vger.kernel.org
-References: <5093A592.9070605@ahsoftware.de>
- <5093D069.20901@ahsoftware.de>
+	id S1751901Ab2KCEva (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 00:51:30 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:38986 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902Ab2KCEv3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 00:51:29 -0400
+Message-ID: <5094A2CB.8040208@gmail.com>
+Date: Sat, 03 Nov 2012 12:51:23 +0800
+From: Shan Wei <shanwei88@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5093D069.20901@ahsoftware.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Lameter <cl@linux.com>
+CC: rostedt@goodmis.org, fweisbec@gmail.com,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>, mingo@redhat.com
+Subject: Re: [PATCH 8/9] trace: use this_cpu_ptr per-cpu helper
+References: <50910A1E.3040009@gmail.com> <0000013ab7f1e47a-68c5ce3c-06bb-48f8-93f7-1ce012b36a75-000000@email.amazonses.com> <5093E5FF.5050000@gmail.com> <0000013ac24187fb-694b1865-baeb-4e3b-970e-50bdcd631de7-000000@email.amazonses.com>
+In-Reply-To: <0000013ac24187fb-694b1865-baeb-4e3b-970e-50bdcd631de7-000000@email.amazonses.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 02:53:45PM +0100, Alexander Holler wrote:
-> Am 02.11.2012 11:50, schrieb Alexander Holler:
-> >Hello,
-> >
-> >I've just got the following on an AMD A10 5800K:
-> >
-> >------
-> >[ 8395.999581] [Hardware Error]: CPU:0
-> >MC1_STATUS[-|CE|MiscV|-|AddrV|-|-]: 0x8c00002000010151
-> >[ 8395.999586] [Hardware Error]:        MC1_ADDR: 0x0000ffffa00e1203
-> >[ 8395.999588] [Hardware Error]: Instruction Cache Error: Parity error
-> >during data load from IC.
-> >[ 8395.999590] [Hardware Error]: cache level: L1, tx: INSN, mem-tx: IRD
-> >------
-> >
-> >Kernel is 3.6.5, MB is an Asus F2A85-M with BIOS 5103 (the latest).
-> >
-> >Can someone enlight me about what might be wrong with my (new) system
-> >(memtest didn't show an errors)?
-> >
-> >What IC is meant? As far as I know, this processor doesn't support ECC,
-> >so I wonder where that parity error does come from.
+Christoph Lameter said, at 2012/11/3 1:53:
 > 
-> I assume IC means Instruction Cache. ;)
-
-It says so earlier in the sentence: "Instruction Cache Error" :)
-
-> As the kernel didn't reboot or halt, this seems to have been a
-> correctable error.
-
-Yes, it is (the "CE" bit in MC1_STATUS). Btw, I have reworked this code
-to spit human-readable information first. It also says what the error
-severity is now.
-
-> Which leads me to another question. I have mcelog running, but it
-> doesn't seem to receive the error. With my previous Intel-HW and an
-> older kernel, mcelog received MCE errors (trip temperatur). But
-> since the kernel now decodes those message themself, that doesn't
-> seem to happen anymore. mcelog is silent, but now I've seen the
-> above message on all my consoles.
-
-Yes, AMD doesn't use mcelog.
-
-> So now I have two question:
+> hmm.... what is actually returned is a pointer to char right? And buffer
+> is char[1024] so I guess then you need to pass a pointer to char to
+> this_cpu_read.
 > 
-> - First, if the error is something I should ask AMD about,
+> return this_cpu_read(&(percpu_buffer->buffer))
+ 
+still error....
 
-Not really, it is a single bit flip which got corrected, simply watch
-out if you get more of those.
+kernel/trace/trace.c: In function 'get_trace_buf':
+kernel/trace/trace.c:1517: error: lvalue required as unary '&' operand
+kernel/trace/trace.c:1517: warning: type defaults to 'int' in declaration of 'type name'
+kernel/trace/trace.c:1517: warning: cast from pointer to integer of different size
+kernel/trace/trace.c:1517: warning: return from incompatible pointer type
+kernel/trace/trace.c:1498: warning: unused variable 'buffer'
+kernel/trace/trace.c:1517: error: memory input 1 is not directly addressable
+kernel/trace/trace.c:1517: error: memory input 1 is not directly addressable
 
-> - Second, if the kernel could mention that it is an recoverable
-> error. And if so and if such errors aren't something to get panic
-> (e.g. it isn't unusual to receive such), if the kernel could output
-> that message with another priority.
+this_cpu_read just read the actual value which a pointer point to.
+some case, we just need the pointer.
+It's better to use this_cpu_ptr.
+return (char *)this_cpu_ptr(&percpu_buffer->buffer);
 
-As I said above, it got corrected. If it were critical, it would've
-either panicked or you wouldnt've seen it at all (probably only after
-reboot).
-
-HTH.
-
--- 
-Regards/Gruss,
-    Boris.
