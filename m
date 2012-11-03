@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab2KCUas (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 16:30:48 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:36725
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757078Ab2KCUaf (ORCPT
+	id S932150Ab2KCUar (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 16:30:47 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:3579 "EHLO
+	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751575Ab2KCUaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 3 Nov 2012 16:30:35 -0400
 X-IronPort-AV: E=Sophos;i="4.80,705,1344204000"; 
-   d="scan'208";a="161264929"
+   d="scan'208";a="161264928"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Tony Lindgren <tony@atomide.com>
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] arch/arm/mach-omap2/dpll3xxx.c: drop if around WARN_ON
-Date: Sat,  3 Nov 2012 21:30:23 +0100
-Message-Id: <1351974625-10282-7-git-send-email-Julia.Lawall@lip6.fr>
+To: Andrew Vasquez <andrew.vasquez@qlogic.com>
+Cc: kernel-janitors@vger.kernel.org, linux-driver@qlogic.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/8] drivers/scsi/qla2xxx/qla_nx.c: drop if around WARN_ON
+Date: Sat,  3 Nov 2012 21:30:22 +0100
+Message-Id: <1351974625-10282-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1351974625-10282-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1351974625-10282-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -42,21 +42,21 @@ expression e;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- arch/arm/mach-omap2/dpll3xxx.c |    3 +--
+ drivers/scsi/qla2xxx/qla_nx.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/dpll3xxx.c b/arch/arm/mach-omap2/dpll3xxx.c
-index eacf51f..ed855b0 100644
---- a/arch/arm/mach-omap2/dpll3xxx.c
-+++ b/arch/arm/mach-omap2/dpll3xxx.c
-@@ -478,8 +478,7 @@ int omap3_noncore_dpll_set_rate(struct clk *clk, unsigned long rate)
- 		if (!soc_is_am33xx() && !cpu_is_omap44xx() && !cpu_is_omap3630()) {
- 			freqsel = _omap3_dpll_compute_freqsel(clk,
- 						dd->last_rounded_n);
--			if (!freqsel)
--				WARN_ON(1);
-+			WARN_ON(!freqsel);
- 		}
+diff --git a/drivers/scsi/qla2xxx/qla_nx.c b/drivers/scsi/qla2xxx/qla_nx.c
+index f5e297c..4c62a5d 100644
+--- a/drivers/scsi/qla2xxx/qla_nx.c
++++ b/drivers/scsi/qla2xxx/qla_nx.c
+@@ -388,8 +388,7 @@ qla82xx_pci_set_crbwindow(struct qla_hw_data *ha, u64 off)
  
- 		pr_debug("clock: %s: set rate: locking rate to %lu.\n",
+ 	if ((off >= QLA82XX_CRB_PCIX_HOST) && (off < QLA82XX_CRB_PCIX_HOST2)) {
+ 		/* We are in first CRB window */
+-		if (ha->curr_window != 0)
+-			WARN_ON(1);
++		WARN_ON(ha->curr_window != 0);
+ 		return off;
+ 	}
+ 
 
