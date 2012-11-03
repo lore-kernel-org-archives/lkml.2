@@ -1,139 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab2KCXkj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 19:40:39 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:39220 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2KCXkg (ORCPT
+	id S1757553Ab2KCX6B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 19:58:01 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:60322 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab2KCX6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 19:40:36 -0400
-From: Mladen Mijatov <meaneye.rcf@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Mladen Mijatov <meaneye.rcf@gmail.com>
-Subject: [PATCH] Staging: rtl8187se: Fixed coding style issues.
-Date: Sun,  4 Nov 2012 00:40:26 +0100
-Message-Id: <1351986026-26580-1-git-send-email-meaneye.rcf@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 3 Nov 2012 19:58:00 -0400
+Date: Sun, 4 Nov 2012 00:57:58 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Call perf_event_comm under task_lock
+Message-ID: <20121103235758.GD18106@order.stressinduktion.org>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed coding style issues.
----
- drivers/staging/rtl8187se/r8185b_init.c |   57 ++++++++++++++++---------------
- 1 file changed, 30 insertions(+), 27 deletions(-)
+Following RCU warning showed up while executing a script under perf-record
+(could even be an empty script) on a 3.6.5 stable kernel:
 
-diff --git a/drivers/staging/rtl8187se/r8185b_init.c b/drivers/staging/rtl8187se/r8185b_init.c
-index bf34319..da4f592 100644
---- a/drivers/staging/rtl8187se/r8185b_init.c
-+++ b/drivers/staging/rtl8187se/r8185b_init.c
-@@ -579,13 +579,13 @@ void ZEBRA_Config_85BASIC_HardCode(struct net_device *dev)
- 	RF_WriteReg(dev, 0x0a, 0x0001);		mdelay(1);
- 	/* For crystal calibration, added by Roger, 2007.12.11. */
- 	if (priv->bXtalCalibration) { /* reg 30.	*/
--	 /*
-- 	  *  enable crystal calibration.
--	  *		RF Reg[30], (1)Xin:[12:9], Xout:[8:5],  addr[4:0].
--	  *		(2)PA Pwr delay timer[15:14], default: 2.4us, set BIT15=0
--	  *		(3)RF signal on/off when calibration[13], default: on, set BIT13=0.
--	  *		So we should minus 4 BITs offset. 
--	  */
-+		/*
-+		 *  enable crystal calibration.
-+		 *		RF Reg[30], (1)Xin:[12:9], Xout:[8:5],  addr[4:0].
-+		 *		(2)PA Pwr delay timer[15:14], default: 2.4us, set BIT15=0
-+		 *		(3)RF signal on/off when calibration[13], default: on, set BIT13=0.
-+		 *		So we should minus 4 BITs offset.
-+		 */
- 		RF_WriteReg(dev, 0x0f, (priv->XtalCal_Xin<<5) | (priv->XtalCal_Xout<<1) | BIT11 | BIT9); mdelay(1);
- 		printk("ZEBRA_Config_85BASIC_HardCode(): (%02x)\n",
- 		      (priv->XtalCal_Xin<<5) | (priv->XtalCal_Xout<<1) | BIT11 | BIT9);
-@@ -1120,24 +1120,24 @@ void ActSetWirelessMode8185(struct net_device *dev, u8 btWirelessMode)
- 		}
- 	}
- 
--	/* 
-- 	 * 2. Swtich band: RF or BB specific actions,
-+	/*
-+	 * 2. Swtich band: RF or BB specific actions,
- 	 * for example, refresh tables in omc8255, or change initial gain if necessary.
- 	 * Nothing to do for Zebra to switch band.
--	 * Update current wireless mode if we switch to specified band successfully. 
-+	 * Update current wireless mode if we switch to specified band successfully.
- 	 */
- 
- 	ieee->mode = (WIRELESS_MODE)btWirelessMode;
- 
- 	/* 3. Change related setting. */
--	if( ieee->mode == WIRELESS_MODE_A ) {
-+	if (ieee->mode == WIRELESS_MODE_A) {
- 		DMESG("WIRELESS_MODE_A\n");
--	} else if( ieee->mode == WIRELESS_MODE_B ) {
-+	} else if (ieee->mode == WIRELESS_MODE_B) {
- 		DMESG("WIRELESS_MODE_B\n");
--	} else if( ieee->mode == WIRELESS_MODE_G ) {
-+	} else if (ieee->mode == WIRELESS_MODE_G) {
- 		DMESG("WIRELESS_MODE_G\n");
- 	}
--	ActUpdateChannelAccessSetting( dev, ieee->mode, &priv->ChannelAccessSetting);
-+	ActUpdateChannelAccessSetting(dev, ieee->mode, &priv->ChannelAccessSetting);
+  [  735.600772]
+  [  735.600866] ===============================
+  [  735.600939] [ INFO: suspicious RCU usage. ]
+  [  735.601004] 3.6.5+ #1 Not tainted
+  [  735.601016] -------------------------------
+  [  735.601016] include/linux/cgroup.h:546 suspicious rcu_dereference_check() usage!
+  [  735.601016]
+  [  735.601016] other info that might help us debug this:
+  [  735.601016]
+  [  735.601016]
+  [  735.601016] rcu_scheduler_active = 1, debug_locks = 0
+  [  735.601016] 1 lock held by test3.sh/562:
+  [  735.601016]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811cfa86>] prepare_bprm_creds+0x36/0x80
+  [  735.601016]
+  [  735.601016] stack backtrace:
+  [  735.601016] Pid: 562, comm: test3.sh Not tainted 3.6.5+ #1
+  [  735.601016] Call Trace:
+  [  735.601016]  [<ffffffff810d1d1d>] lockdep_rcu_suspicious+0xfd/0x130
+  [  735.601016]  [<ffffffff81151a26>] perf_event_comm+0x436/0x610
+  [  735.601016]  [<ffffffff810d01fd>] ? trace_hardirqs_off+0xd/0x10
+  [  735.601016]  [<ffffffff810ac12f>] ? local_clock+0x6f/0x80
+  [  735.601016]  [<ffffffff810d0b5f>] ? lock_release_holdtime.part.26+0xf/0x180
+  [  735.601016]  [<ffffffff811cf943>] set_task_comm+0x73/0x180
+  [  735.601016]  [<ffffffff811d022e>] setup_new_exec+0x9e/0x340
+  [  735.601016]  [<ffffffff81221143>] load_elf_binary+0x3e3/0x1a80
+  [  735.601016]  [<ffffffff810abea5>] ? sched_clock_local+0x25/0xa0
+  [  735.601016]  [<ffffffff810ac048>] ? sched_clock_cpu+0xa8/0x120
+  [  735.601016]  [<ffffffff810d01fd>] ? trace_hardirqs_off+0xd/0x10
+  [  735.601016]  [<ffffffff810ac12f>] ? local_clock+0x6f/0x80
+  [  735.601016]  [<ffffffff81220d60>] ? load_elf_library+0x240/0x240
+  [  735.601016]  [<ffffffff81220d60>] ? load_elf_library+0x240/0x240
+  [  735.601016]  [<ffffffff811cf214>] search_binary_handler+0x194/0x4f0
+  [  735.601016]  [<ffffffff811cf0e1>] ? search_binary_handler+0x61/0x4f0
+  [  735.601016]  [<ffffffff81220670>] ? compat_sys_ioctl+0x1360/0x1360
+  [  735.601016]  [<ffffffff81220904>] load_script+0x294/0x2c0
+  [  735.601016]  [<ffffffff810d0b5f>] ? lock_release_holdtime.part.26+0xf/0x180
+  [  735.601016]  [<ffffffff81220670>] ? compat_sys_ioctl+0x1360/0x1360
+  [  735.601016]  [<ffffffff811cf214>] search_binary_handler+0x194/0x4f0
+  [  735.601016]  [<ffffffff811cf0e1>] ? search_binary_handler+0x61/0x4f0
+  [  735.601016]  [<ffffffff811d003b>] do_execve_common.isra.32+0x50b/0x5b0
+  [  735.601016]  [<ffffffff811cfc5a>] ? do_execve_common.isra.32+0x12a/0x5b0
+  [  735.601016]  [<ffffffff811ad330>] ? kmem_cache_alloc+0xe0/0x260
+  [  735.601016]  [<ffffffff811d00fb>] do_execve+0x1b/0x20
+  [  735.601016]  [<ffffffff810243f7>] sys_execve+0x47/0x70
+  [  735.601016]  [<ffffffff816b49ac>] stub_execve+0x6c/0xc0
+
+I think this dereference qualifies for the task_lock exception, thus
+this patch ensures calling perf_event_comm before giving up the task_lock.
+
+Patch based on linux-stable v3.6.5.
+
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+---
+ fs/exec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index fab2c6d..781cf77 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1065,8 +1065,8 @@ void set_task_comm(struct task_struct *tsk, char *buf)
+ 	memset(tsk->comm, 0, TASK_COMM_LEN);
+ 	wmb();
+ 	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
+-	task_unlock(tsk);
+ 	perf_event_comm(tsk);
++	task_unlock(tsk);
  }
  
- void rtl8185b_irq_enable(struct net_device *dev)
-@@ -1167,13 +1167,14 @@ void MgntDisconnectIBSS(struct net_device *dev)
- 
- 	priv->ieee80211->state = IEEE80211_NOLINK;
- 	/*
--	 *	Stop Beacon.
-+	 * Stop Beacon.
- 	 *
--	 *	Vista add a Adhoc profile, HW radio off until OID_DOT11_RESET_REQUEST
--	 *	Driver would set MSR=NO_LINK, then HW Radio ON, MgntQueue Stuck.
--	 *	Because Bcn DMA isn't complete, mgnt queue would stuck until Bcn packet send.
-+	 * Vista add a Adhoc profile, HW radio off until OID_DOT11_RESET_REQUEST
-+	 * Driver would set MSR=NO_LINK, then HW Radio ON, MgntQueue Stuck.
-+	 * Because Bcn DMA isn't complete, mgnt queue would stuck until Bcn
-+	 * packet send.
- 	 *
--	 *	Disable Beacon Queue Own bit, suggested by jong	
-+	 * Disable Beacon Queue Own bit, suggested by jong
- 	 */
- 	ieee80211_stop_send_beacons(priv->ieee80211);
- 
-@@ -1208,10 +1209,12 @@ void MgntDisconnectAP(struct net_device *dev, u8 asRsn)
- 	 * Commented out by rcnjko, 2005.01.27:
- 	 * I move SecClearAllKeys() to MgntActSet_802_11_DISASSOCIATE().
- 	 *
--	 *	2004/09/15, kcwu, the key should be cleared, or the new handshaking will not success
-+	 * 2004/09/15, kcwu, the key should be cleared, or
-+	 * the new handshaking will not success
- 	 *
--	 *	In WPA WPA2 need to Clear all key ... because new key will set after new handshaking.
--	 *	2004.10.11, by rcnjko. 
-+	 * In WPA WPA2 need to Clear all key ... because new key
-+	 * will set after new handshaking.
-+	 * 2004.10.11, by rcnjko.
- 	 */
- 	MlmeDisassociateRequest(dev, priv->ieee80211->current_network.bssid, asRsn);
- 
-@@ -1234,11 +1237,11 @@ bool MgntDisconnect(struct net_device *dev, u8 asRsn)
- 
- 		if (priv->ieee80211->iw_mode == IW_MODE_INFRA) {
- 			/*
-- 			 * 	We clear key here instead of MgntDisconnectAP() because that
--			 *	MgntActSet_802_11_DISASSOCIATE() is an interface called by OS,
--			 *	e.g. OID_802_11_DISASSOCIATE in Windows while as MgntDisconnectAP() is
--			 *	used to handle disassociation related things to AP, e.g. send Disassoc
--			 *	frame to AP.  2005.01.27, by rcnjko. 
-+			 * We clear key here instead of MgntDisconnectAP() because that
-+			 * MgntActSet_802_11_DISASSOCIATE() is an interface called by OS,
-+			 * e.g. OID_802_11_DISASSOCIATE in Windows while as MgntDisconnectAP() is
-+			 * used to handle disassociation related things to AP, e.g. send Disassoc
-+			 * frame to AP.  2005.01.27, by rcnjko.
- 			 */
- 			MgntDisconnectAP(dev, asRsn);
- 		}
--- 
-1.7.10.4
+ static void filename_to_taskname(char *tcomm, const char *fn, unsigned int len)
 
