@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab2KCOPk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 10:15:40 -0400
-Received: from na01-bl2-obe.ptr.protection.outlook.com ([65.55.169.29]:31807
-	"EHLO na01-bl2-obe.mail.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752923Ab2KCOPf convert rfc822-to-8bit (ORCPT
+	id S1756349Ab2KCOQs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 10:16:48 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34211 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab2KCOQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 10:15:35 -0400
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -8
-X-BigFish: PS-8(zz98dI9371I542M1432Izz1de0h1202h1d1ah1d2ahzz8275dhz31h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: drivres/hv
-Thread-Topic: drivres/hv
-Thread-Index: AQHNuVMSKsS+A6hin0OaOHj7ziCoypfYJUFA
-Date: Sat, 3 Nov 2012 14:13:44 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF930DF8FCD@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1351894283-12902-1-git-send-email-kys@microsoft.com>
- <20121102233717.GB3239@kroah.com>
-In-Reply-To: <20121102233717.GB3239@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [70.192.140.80]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 3 Nov 2012 10:16:45 -0400
+Message-ID: <50952744.4090203@gmail.com>
+Date: Sat, 03 Nov 2012 15:16:36 +0100
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT005.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC103.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(13464001)(24454001)(377454001)(51704002)(47736001)(46102001)(6806001)(76482001)(33656001)(31966008)(51856001)(54316001)(48376001)(44976002)(16676001)(50466001)(47976001)(53806001)(47776002)(54356001)(50986001)(49866001)(74662001)(74502001)(5343655001)(4396001)(47446002);DIR:OUT;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0654257CF5
+To: Christof Meerwald <cmeerw@cmeerw.org>
+CC: "Artem S. Tashkinov" <t.artem@lycos.com>, pavel@ucw.cz,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        security@kernel.org, linux-media@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: A reliable kernel panic (3.6.2) and system crash when visiting
+ a particular website
+References: <2104474742.26357.1350734815286.JavaMail.mail@webmail05> <20121020162759.GA12551@liondog.tnic> <966148591.30347.1350754909449.JavaMail.mail@webmail08> <20121020203227.GC555@elf.ucw.cz> <20121020225849.GA8976@liondog.tnic> <1781795634.31179.1350774917965.JavaMail.mail@webmail04> <20121103141049.GA24238@edge.cmeerw.net>
+In-Reply-To: <20121103141049.GA24238@edge.cmeerw.net>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Friday, November 02, 2012 7:37 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org
-> Subject: Re: drivres/hv
+On 03.11.2012 15:10, Christof Meerwald wrote:
+> On Sat, 20 Oct 2012 23:15:17 +0000 (GMT), Artem S. Tashkinov wrote:
+>> It's almost definitely either a USB driver bug or video4linux driver bug:
+>>
+>> I'm CC'ing linux-media and linux-usb mailing lists, the problem is described here:
+>> https://lkml.org/lkml/2012/10/20/35
+>> https://lkml.org/lkml/2012/10/20/148
 > 
-> On Fri, Nov 02, 2012 at 03:11:23PM -0700, K. Y. Srinivasan wrote:
-> >
-> > Greg,
-> >
-> > Recently, I had  re-sent a few patches. You have applied all the patches except
-> the balloon driver
-> > related patches. Should I resend the balloon driver  patches. Let me know.
-> 
-> I can't apply the balloon driver until you get an ack from the
-> maintainers of the code you were exporting the symbols from.
-> 
-> Get that, and then resend them, as they are long gone from my "to-apply"
-> queue.
+> Not sure if it's related, but I am seeing a kernel freeze with a
+> usb-audio headset (connected via an external USB hub) on Linux 3.5.0
+> (Ubuntu 12.10) - see
 
-I was under  the impression Andrew was ok with the export - I have resent the original email
-from Andrew on this. Let me know if this is enough. I will resend the patches once I hear from you.
+Does Ubuntu 12.10 really ship with 3.5.0? Not any more recent
 
-Regards,
+> http://comments.gmane.org/gmane.comp.voip.twinkle/3052 and
+> http://pastebin.com/aHGe1S1X for a self-contained C test.
 
-K. Y 
+Some questions:
 
+ - Are you seeing the same issue with 3.6.x?
+ - If you can reproduce this issue, could you paste the messages in
+dmesg when this happens? Do they resemble to the list corruption that
+was reported?
+ - Do you see the same problem with 3.4?
+ - Are you able to apply the patch Alan Stern posted in this thread earlier?
+
+We should really sort this out, but I unfortunately lack a system or
+setup that shows the bug.
+
+
+Thanks,
+Daniel
 
