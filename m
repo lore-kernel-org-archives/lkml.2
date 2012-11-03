@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932668Ab2KCUaz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 16:30:55 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:36725
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753643Ab2KCUad (ORCPT
+	id S932584Ab2KCUaw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 16:30:52 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:3579 "EHLO
+	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753207Ab2KCUag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 16:30:33 -0400
+	Sat, 3 Nov 2012 16:30:36 -0400
 X-IronPort-AV: E=Sophos;i="4.80,705,1344204000"; 
-   d="scan'208";a="161264924"
+   d="scan'208";a="161264931"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Chris Mason <chris.mason@fusionio.com>
-Cc: kernel-janitors@vger.kernel.org, linux-btrfs@vger.kernel.org,
+To: Kalle Valo <kvalo@qca.qualcomm.com>
+Cc: kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8] fs/btrfs: drop if around WARN_ON
-Date: Sat,  3 Nov 2012 21:30:18 +0100
-Message-Id: <1351974625-10282-2-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 8/8] drivers/net/wireless/ath/ath6kl/hif.c: drop if around WARN_ON
+Date: Sat,  3 Nov 2012 21:30:25 +0100
+Message-Id: <1351974625-10282-9-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1351974625-10282-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1351974625-10282-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -41,64 +43,31 @@ expression e;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- fs/btrfs/backref.c |    3 +--
- fs/btrfs/ctree.c   |    9 +++------
- fs/btrfs/inode.c   |    3 +--
- 3 files changed, 5 insertions(+), 10 deletions(-)
+ drivers/net/wireless/ath/ath6kl/hif.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/fs/btrfs/backref.c b/fs/btrfs/backref.c
-index 208d8aa..a321952 100644
---- a/fs/btrfs/backref.c
-+++ b/fs/btrfs/backref.c
-@@ -890,8 +890,7 @@ again:
- 	while (!list_empty(&prefs)) {
- 		ref = list_first_entry(&prefs, struct __prelim_ref, list);
- 		list_del(&ref->list);
--		if (ref->count < 0)
--			WARN_ON(1);
-+		WARN_ON(ref->count < 0);
- 		if (ref->count && ref->root_id && ref->parent == 0) {
- 			/* no parent == root of tree */
- 			ret = ulist_add(roots, ref->root_id, 0, GFP_NOFS);
-diff --git a/fs/btrfs/ctree.c b/fs/btrfs/ctree.c
-index cdfb4c4..8ecb995 100644
---- a/fs/btrfs/ctree.c
-+++ b/fs/btrfs/ctree.c
-@@ -1469,10 +1469,8 @@ int btrfs_realloc_node(struct btrfs_trans_handle *trans,
- 	if (cache_only && parent_level != 1)
- 		return 0;
+diff --git a/drivers/net/wireless/ath/ath6kl/hif.c b/drivers/net/wireless/ath/ath6kl/hif.c
+index 68ed6c2..9e47c4a 100644
+--- a/drivers/net/wireless/ath/ath6kl/hif.c
++++ b/drivers/net/wireless/ath/ath6kl/hif.c
+@@ -338,8 +338,7 @@ static int ath6kl_hif_proc_err_intr(struct ath6kl_device *dev)
+ 	status = hif_read_write_sync(dev->ar, ERROR_INT_STATUS_ADDRESS,
+ 				     reg_buf, 4, HIF_WR_SYNC_BYTE_FIX);
  
--	if (trans->transaction != root->fs_info->running_transaction)
+-	if (status)
 -		WARN_ON(1);
--	if (trans->transid != root->fs_info->generation)
--		WARN_ON(1);
-+	WARN_ON(trans->transaction != root->fs_info->running_transaction);
-+	WARN_ON(trans->transid != root->fs_info->generation);
++	WARN_ON(status);
  
- 	parent_nritems = btrfs_header_nritems(parent);
- 	blocksize = btrfs_level_size(root, parent_level - 1);
-@@ -3403,8 +3401,7 @@ static noinline int __push_leaf_right(struct btrfs_trans_handle *trans,
- 	if (push_items == 0)
- 		goto out_unlock;
+ 	return status;
+ }
+@@ -383,8 +382,7 @@ static int ath6kl_hif_proc_cpu_intr(struct ath6kl_device *dev)
+ 	status = hif_read_write_sync(dev->ar, CPU_INT_STATUS_ADDRESS,
+ 				     reg_buf, 4, HIF_WR_SYNC_BYTE_FIX);
  
--	if (!empty && push_items == left_nritems)
+-	if (status)
 -		WARN_ON(1);
-+	WARN_ON(!empty && push_items == left_nritems);
++	WARN_ON(status);
  
- 	/* push left to right */
- 	right_nritems = btrfs_header_nritems(right);
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 95542a1..0d169ab 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -1657,8 +1657,7 @@ static noinline int add_pending_csums(struct btrfs_trans_handle *trans,
- int btrfs_set_extent_delalloc(struct inode *inode, u64 start, u64 end,
- 			      struct extent_state **cached_state)
- {
--	if ((end & (PAGE_CACHE_SIZE - 1)) == 0)
--		WARN_ON(1);
-+	WARN_ON((end & (PAGE_CACHE_SIZE - 1)) == 0);
- 	return set_extent_delalloc(&BTRFS_I(inode)->io_tree, start, end,
- 				   cached_state, GFP_NOFS);
+ 	return status;
  }
 
