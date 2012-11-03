@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310Ab2KCPoS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 11:44:18 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48484 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755755Ab2KCPoR (ORCPT
+	id S1756598Ab2KCQHx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 12:07:53 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64768 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211Ab2KCQHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 11:44:17 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Eilon Greenstein <eilong@broadcom.com>, netdev@vger.kernel.org,
-        Robert Love <robert.w.love@intel.com>, devel@open-fcoe.org,
-        Michel Lespinasse <walken@google.com>
-Subject: [PATCH v2 00/11] introduce random32_get_bytes() and random32_get_bytes_state()
-Date: Sun,  4 Nov 2012 00:43:31 +0900
-Message-Id: <1351957422-23243-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	Sat, 3 Nov 2012 12:07:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121103115129.GA4508@cachalot>
+References: <20121101183516.GA18332@www.outflux.net>
+	<20121103115129.GA4508@cachalot>
+Date: Sat, 3 Nov 2012 09:07:49 -0700
+X-Google-Sender-Auth: 0NifLt01aOAcxhpk9Z4d0H6FtqU
+Message-ID: <CAGXu5j+MmOfh2xSg6vzaK8RWYr_+tDnT=95VAKSm_4GKM0zm6A@mail.gmail.com>
+Subject: Re: [PATCH v2] proc: add "Seccomp" to status
+From: Kees Cook <keescook@chromium.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Will Drewry <wad@chromium.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset introduces new functions into random32 library for
-getting the requested number of pseudo-random bytes.
+On Sat, Nov 3, 2012 at 4:51 AM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> On Thu, Nov 01, 2012 at 11:35 -0700, Kees Cook wrote:
+>> @@ -327,6 +327,13 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+>>       render_cap_t(m, "CapBnd:\t", &cap_bset);
+>>  }
+>>
+>> +static inline void task_seccomp(struct seq_file *m, struct task_struct *p)
+>> +{
+>> +#ifdef CONFIG_SECCOMP
+>> +     seq_printf(m, "Seccomp:\t%d\n", p->seccomp.mode);
+>> +#endif
+>
+> Hmm, probably it's better to always show this line, not only on
+> SECCOMP'ed kernel?  If it is disabled just print "0".  It will simplify
+> parsing of /proc/pid/status.
 
-Before introducing these new functions into random32 library,
-prandom32() and prandom32_seed() with "prandom32" prefix are
-renamed to random32_state() and srandom32_state() respectively.
+I disagree -- if the line is missing it means the kernel doesn't
+support it, which is a different state from seccomp being inactive in
+the process.
 
-The purpose of this renaming is to prevent some kernel developers
-from assuming that prandom32() and random32() might imply that only
-prandom32() was the one using a pseudo-random number generator by
-prandom32's "p", and the result may be a very embarassing security
-exposure.
+And since other things when not built into the kernel are similarly
+missing from status, this is the consistent behavior for such
+situations.
 
-Changelog
-
-* v2
-- rename prandom32 to random32_state
-- dropped lib/uuid.c patch
-- add bnx2 and mtd_stresstest patches
-
-Akinobu Mita (11):
-  random32: rename prandom32 to random32_state
-  random32: introduce random32_get_bytes() and
-    random32_get_bytes_state()
-  bnx2x: use random32_get_bytes()
-  mtd: nandsim: use random32_get_bytes
-  ubifs: use random32_get_bytes
-  mtd: mtd_nandecctest: use random32_get_bytes instead of
-    get_random_bytes()
-  mtd: mtd_oobtest: convert to use random32_get_bytes_state()
-  mtd: mtd_pagetest: convert to use random32_get_bytes_state()
-  mtd: mtd_speedtest: use random32_get_bytes
-  mtd: mtd_subpagetest: convert to use random32_get_bytes_state()
-  mtd: mtd_stresstest: use random32_get_bytes()
-
- drivers/mtd/nand/nandsim.c                      |  5 +--
- drivers/mtd/tests/mtd_nandecctest.c             |  2 +-
- drivers/mtd/tests/mtd_oobtest.c                 | 49 +++++++-------------
- drivers/mtd/tests/mtd_pagetest.c                | 43 ++++++------------
- drivers/mtd/tests/mtd_speedtest.c               |  9 +---
- drivers/mtd/tests/mtd_stresstest.c              |  3 +-
- drivers/mtd/tests/mtd_subpagetest.c             | 42 +++++------------
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |  5 +--
- drivers/scsi/fcoe/fcoe_ctlr.c                   |  4 +-
- fs/ubifs/debug.c                                |  8 ++--
- include/linux/random.h                          |  8 ++--
- lib/interval_tree_test_main.c                   |  7 +--
- lib/random32.c                                  | 60 ++++++++++++++++++++-----
- lib/rbtree_test.c                               |  6 +--
- 14 files changed, 112 insertions(+), 139 deletions(-)
-
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
-Cc: Eilon Greenstein <eilong@broadcom.com>
-Cc: netdev@vger.kernel.org
-Cc: Robert Love <robert.w.love@intel.com>
-Cc: devel@open-fcoe.org
-Cc: Michel Lespinasse <walken@google.com>
+-Kees
 
 -- 
-1.7.11.7
-
+Kees Cook
+Chrome OS Security
