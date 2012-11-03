@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab2KCIla (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 04:41:30 -0400
+	id S1754629Ab2KCImM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 04:42:12 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:51998 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754233Ab2KCIjW (ORCPT
+	with ESMTP id S1754460Ab2KCIjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 04:39:22 -0400
+	Sat, 3 Nov 2012 04:39:08 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, mhocko@suse.cz, rjw@sisk.pl
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         fweisbec@gmail.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/9] cgroup_freezer: make freezer->state mask of flags
-Date: Sat,  3 Nov 2012 01:38:32 -0700
-Message-Id: <1351931915-1701-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 3/9] cgroup: implement generic child / descendant walk macros
+Date: Sat,  3 Nov 2012 01:38:29 -0700
+Message-Id: <1351931915-1701-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351931915-1701-1-git-send-email-tj@kernel.org>
 References: <1351931915-1701-1-git-send-email-tj@kernel.org>
@@ -22,192 +22,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-freezer->state was an enum value - one of THAWED, FREEZING and FROZEN.
-As the scheduled full hierarchy support requires more than one
-freezing condition, switch it to mask of flags.  If FREEZING is not
-set, it's thawed.  FREEZING is set if freezing or frozen.  If frozen,
-both FREEZING and FROZEN are set.  Now that tasks can be attached to
-an already frozen cgroup, this also makes freezing condition checks
-more natural.
+Currently, cgroup doesn't provide any generic helper for walking a
+given cgroup's children or descendants.  This patch adds the following
+three macros.
 
-This patch doesn't introduce any behavior change.
+* cgroup_for_each_child() - walk immediate children of a cgroup.
+
+* cgroup_for_each_descendant_pre() - visit all descendants of a cgroup
+  in pre-order tree traversal.
+
+* cgroup_for_each_descendant_post() - visit all descendants of a
+  cgroup in post-order tree traversal.
+
+All three only require the user to hold RCU read lock during
+traversal.  Verifying that each iterated cgroup is online is the
+responsibility of the user.  When used with proper synchronization,
+cgroup_for_each_descendant_pre() can be used to propagate config
+updates to descendants in reliable way.  See comments for details.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup_freezer.c | 60 ++++++++++++++++++++++---------------------------
- 1 file changed, 27 insertions(+), 33 deletions(-)
+ include/linux/cgroup.h | 82 +++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/cgroup.c        | 86 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 168 insertions(+)
 
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index 2690830..e76aa9f 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -22,15 +22,14 @@
- #include <linux/freezer.h>
- #include <linux/seq_file.h>
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 90c33eb..0020329 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -534,6 +534,88 @@ static inline struct cgroup* task_cgroup(struct task_struct *task,
+ 	return task_subsys_state(task, subsys_id)->cgroup;
+ }
  
--enum freezer_state {
--	CGROUP_THAWED = 0,
--	CGROUP_FREEZING,
--	CGROUP_FROZEN,
-+enum freezer_state_flags {
-+	CGROUP_FREEZING		= (1 << 1), /* this freezer is freezing */
-+	CGROUP_FROZEN		= (1 << 3), /* this and its descendants frozen */
- };
++/**
++ * cgroup_for_each_child - iterate through children of a cgroup
++ * @pos: the cgroup * to use as the loop cursor
++ * @cgroup: cgroup whose children to walk
++ *
++ * Walk @cgroup's children.  Must be called under rcu_read_lock().  A child
++ * cgroup which hasn't finished ->post_create() or already has finished
++ * ->pre_destroy() may show up during traversal and it's each subsystem's
++ * responsibility to verify that each @pos is alive.
++ *
++ * If a subsystem synchronizes against the parent in its ->post_create()
++ * and before starting iterating, a cgroup which finished ->post_create()
++ * is guaranteed to be visible in the future iterations.
++ */
++#define cgroup_for_each_child(pos, cgroup)				\
++	list_for_each_entry_rcu(pos, &(cgroup)->children, sibling)
++
++struct cgroup *cgroup_next_descendant_pre(struct cgroup *pos,
++					  struct cgroup *cgroup);
++
++/**
++ * cgroup_for_each_descendant_pre - pre-order walk of a cgroup's descendants
++ * @pos: the cgroup * to use as the loop cursor
++ * @cgroup: cgroup whose descendants to walk
++ *
++ * Walk @cgroup's descendants.  Must be called under rcu_read_lock().  A
++ * descendant cgroup which hasn't finished ->post_create() or already has
++ * finished ->pre_destroy() may show up during traversal and it's each
++ * subsystem's responsibility to verify that each @pos is alive.
++ *
++ * If a subsystem synchronizes against the parent in its ->post_create()
++ * and before starting iterating, and synchronizes against @pos on each
++ * iteration, any descendant cgroup which finished ->post_create() is
++ * guaranteed to be visible in the future iterations.
++ *
++ * In other words, the following guarantees that a descendant can't escape
++ * configuration of its ancestors.
++ *
++ * my_post_create(@cgrp)
++ * {
++ *	Lock @cgrp->parent and @cgrp;
++ *	Inherit config from @cgrp->parent;
++ *	Unlock both.
++ * }
++ *
++ * my_update_config(@cgrp)
++ * {
++ *	Lock @cgrp;
++ *	Update @cgrp's config;
++ *	Unlock @cgrp;
++ *
++ *	cgroup_for_each_descendant_pre(@pos, @cgrp) {
++ *		Lock @pos;
++ *		Verify @pos is alive and inherit config from @pos->parent;
++ *		Unlock @pos;
++ *	}
++ * }
++ *
++ * Alternatively, a subsystem may choose to use a single global lock to
++ * synchronize ->post_create() and ->pre_destroy() against tree-walking
++ * operations.
++ */
++#define cgroup_for_each_descendant_pre(pos, cgroup)			\
++	for (pos = cgroup_next_descendant_pre(NULL, (cgroup)); (pos);	\
++	     pos = cgroup_next_descendant_pre((pos), (cgroup)))
++
++struct cgroup *cgroup_next_descendant_post(struct cgroup *pos,
++					   struct cgroup *cgroup);
++
++/**
++ * cgroup_for_each_descendant_post - post-order walk of a cgroup's descendants
++ * @pos: the cgroup * to use as the loop cursor
++ * @cgroup: cgroup whose descendants to walk
++ *
++ * Similar to cgroup_for_each_descendant_pre() but performs post-order
++ * traversal instead.  Note that the walk visibility guarantee described in
++ * pre-order walk doesn't apply the same to post-order walks.
++ */
++#define cgroup_for_each_descendant_post(pos, cgroup)			\
++	for (pos = cgroup_next_descendant_post(NULL, (cgroup)); (pos);	\
++	     pos = cgroup_next_descendant_post((pos), (cgroup)))
++
+ /* A cgroup_iter should be treated as an opaque object */
+ struct cgroup_iter {
+ 	struct list_head *cg_link;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index cc5d2a0..8bd662c 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2985,6 +2985,92 @@ static void cgroup_enable_task_cg_lists(void)
+ 	write_unlock(&css_set_lock);
+ }
  
- struct freezer {
- 	struct cgroup_subsys_state	css;
--	enum freezer_state		state;
-+	unsigned int			state;
- 	spinlock_t			lock;
- };
- 
-@@ -48,12 +47,10 @@ static inline struct freezer *task_freezer(struct task_struct *task)
- 
- bool cgroup_freezing(struct task_struct *task)
- {
--	enum freezer_state state;
- 	bool ret;
- 
- 	rcu_read_lock();
--	state = task_freezer(task)->state;
--	ret = state == CGROUP_FREEZING || state == CGROUP_FROZEN;
-+	ret = task_freezer(task)->state & CGROUP_FREEZING;
- 	rcu_read_unlock();
- 
- 	return ret;
-@@ -63,10 +60,13 @@ bool cgroup_freezing(struct task_struct *task)
-  * cgroups_write_string() limits the size of freezer state strings to
-  * CGROUP_LOCAL_BUFFER_SIZE
-  */
--static const char *freezer_state_strs[] = {
--	"THAWED",
--	"FREEZING",
--	"FROZEN",
-+static const char *freezer_state_strs(unsigned int state)
++/**
++ * cgroup_next_descendant_pre - find the next descendant for pre-order walk
++ * @pos: the current position (%NULL to initiate traversal)
++ * @cgroup: cgroup whose descendants to walk
++ *
++ * To be used by cgroup_for_each_descendant_pre().  Find the next
++ * descendant to visit for pre-order traversal of @cgroup's descendants.
++ */
++struct cgroup *cgroup_next_descendant_pre(struct cgroup *pos,
++					  struct cgroup *cgroup)
 +{
-+	if (state & CGROUP_FROZEN)
-+		return "FROZEN";
-+	if (state & CGROUP_FREEZING)
-+		return "FREEZING";
-+	return "THAWED";
- };
- 
- /*
-@@ -91,7 +91,6 @@ static struct cgroup_subsys_state *freezer_create(struct cgroup *cgroup)
- 		return ERR_PTR(-ENOMEM);
- 
- 	spin_lock_init(&freezer->lock);
--	freezer->state = CGROUP_THAWED;
- 	return &freezer->css;
- }
- 
-@@ -99,7 +98,7 @@ static void freezer_destroy(struct cgroup *cgroup)
++	struct cgroup *next;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	/* if first iteration, pretend we just visited @cgroup */
++	if (!pos) {
++		if (list_empty(&cgroup->children))
++			return NULL;
++		pos = cgroup;
++	}
++
++	/* visit the first child if exists */
++	next = list_first_or_null_rcu(&pos->children, struct cgroup, sibling);
++	if (next)
++		return next;
++
++	/* no child, visit my or the closest ancestor's next sibling */
++	do {
++		next = list_entry_rcu(pos->sibling.next, struct cgroup,
++				      sibling);
++		if (&next->sibling != &pos->parent->children)
++			return next;
++
++		pos = pos->parent;
++	} while (pos != cgroup);
++
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(cgroup_next_descendant_pre);
++
++static struct cgroup *cgroup_leftmost_descendant(struct cgroup *pos)
++{
++	struct cgroup *last;
++
++	do {
++		last = pos;
++		pos = list_first_or_null_rcu(&pos->children, struct cgroup,
++					     sibling);
++	} while (pos);
++
++	return last;
++}
++
++/**
++ * cgroup_next_descendant_post - find the next descendant for post-order walk
++ * @pos: the current position (%NULL to initiate traversal)
++ * @cgroup: cgroup whose descendants to walk
++ *
++ * To be used by cgroup_for_each_descendant_post().  Find the next
++ * descendant to visit for post-order traversal of @cgroup's descendants.
++ */
++struct cgroup *cgroup_next_descendant_post(struct cgroup *pos,
++					   struct cgroup *cgroup)
++{
++	struct cgroup *next;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	/* if first iteration, visit the leftmost descendant */
++	if (!pos) {
++		next = cgroup_leftmost_descendant(cgroup);
++		return next != cgroup ? next : NULL;
++	}
++
++	/* if there's an unvisited sibling, visit its leftmost descendant */
++	next = list_entry_rcu(pos->sibling.next, struct cgroup, sibling);
++	if (&next->sibling != &pos->parent->children)
++		return cgroup_leftmost_descendant(next);
++
++	/* no sibling left, visit parent */
++	next = pos->parent;
++	return next != cgroup ? next : NULL;
++}
++EXPORT_SYMBOL_GPL(cgroup_next_descendant_post);
++
+ void cgroup_iter_start(struct cgroup *cgrp, struct cgroup_iter *it)
+ 	__acquires(css_set_lock)
  {
- 	struct freezer *freezer = cgroup_freezer(cgroup);
- 
--	if (freezer->state != CGROUP_THAWED)
-+	if (freezer->state & CGROUP_FREEZING)
- 		atomic_dec(&system_freezing_cnt);
- 	kfree(freezer);
- }
-@@ -129,15 +128,13 @@ static void freezer_attach(struct cgroup *new_cgrp, struct cgroup_taskset *tset)
- 	 * Tasks in @tset are on @new_cgrp but may not conform to its
- 	 * current state before executing the following - !frozen tasks may
- 	 * be visible in a FROZEN cgroup and frozen tasks in a THAWED one.
--	 * This means that, to determine whether to freeze, one should test
--	 * whether the state equals THAWED.
- 	 */
- 	cgroup_taskset_for_each(task, new_cgrp, tset) {
--		if (freezer->state == CGROUP_THAWED) {
-+		if (!(freezer->state & CGROUP_FREEZING)) {
- 			__thaw_task(task);
- 		} else {
- 			freeze_task(task);
--			freezer->state = CGROUP_FREEZING;
-+			freezer->state &= ~CGROUP_FROZEN;
- 		}
- 	}
- 
-@@ -159,11 +156,7 @@ static void freezer_fork(struct task_struct *task)
- 		goto out;
- 
- 	spin_lock_irq(&freezer->lock);
--	/*
--	 * @task might have been just migrated into a FROZEN cgroup.  Test
--	 * equality with THAWED.  Read the comment in freezer_attach().
--	 */
--	if (freezer->state != CGROUP_THAWED)
-+	if (freezer->state & CGROUP_FREEZING)
- 		freeze_task(task);
- 	spin_unlock_irq(&freezer->lock);
- out:
-@@ -184,7 +177,8 @@ static void update_if_frozen(struct freezer *freezer)
- 	struct cgroup_iter it;
- 	struct task_struct *task;
- 
--	if (freezer->state != CGROUP_FREEZING)
-+	if (!(freezer->state & CGROUP_FREEZING) ||
-+	    (freezer->state & CGROUP_FROZEN))
- 		return;
- 
- 	cgroup_iter_start(cgroup, &it);
-@@ -202,7 +196,7 @@ static void update_if_frozen(struct freezer *freezer)
- 		}
- 	}
- 
--	freezer->state = CGROUP_FROZEN;
-+	freezer->state |= CGROUP_FROZEN;
- notyet:
- 	cgroup_iter_end(cgroup, &it);
- }
-@@ -211,14 +205,14 @@ static int freezer_read(struct cgroup *cgroup, struct cftype *cft,
- 			struct seq_file *m)
- {
- 	struct freezer *freezer = cgroup_freezer(cgroup);
--	enum freezer_state state;
-+	unsigned int state;
- 
- 	spin_lock_irq(&freezer->lock);
- 	update_if_frozen(freezer);
- 	state = freezer->state;
- 	spin_unlock_irq(&freezer->lock);
- 
--	seq_puts(m, freezer_state_strs[state]);
-+	seq_puts(m, freezer_state_strs(state));
- 	seq_putc(m, '\n');
- 	return 0;
- }
-@@ -258,14 +252,14 @@ static void freezer_apply_state(struct freezer *freezer, bool freeze)
- 	lockdep_assert_held(&freezer->lock);
- 
- 	if (freeze) {
--		if (freezer->state == CGROUP_THAWED)
-+		if (!(freezer->state & CGROUP_FREEZING))
- 			atomic_inc(&system_freezing_cnt);
--		freezer->state = CGROUP_FREEZING;
-+		freezer->state |= CGROUP_FREEZING;
- 		freeze_cgroup(freezer);
- 	} else {
--		if (freezer->state != CGROUP_THAWED)
-+		if (freezer->state & CGROUP_FREEZING)
- 			atomic_dec(&system_freezing_cnt);
--		freezer->state = CGROUP_THAWED;
-+		freezer->state &= ~(CGROUP_FREEZING | CGROUP_FROZEN);
- 		unfreeze_cgroup(freezer);
- 	}
- }
-@@ -290,9 +284,9 @@ static int freezer_write(struct cgroup *cgroup, struct cftype *cft,
- {
- 	bool freeze;
- 
--	if (strcmp(buffer, freezer_state_strs[CGROUP_THAWED]) == 0)
-+	if (strcmp(buffer, freezer_state_strs(0)) == 0)
- 		freeze = false;
--	else if (strcmp(buffer, freezer_state_strs[CGROUP_FROZEN]) == 0)
-+	else if (strcmp(buffer, freezer_state_strs(CGROUP_FROZEN)) == 0)
- 		freeze = true;
- 	else
- 		return -EINVAL;
 -- 
 1.7.11.7
 
