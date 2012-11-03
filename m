@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab2KCE7A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 00:59:00 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48077 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab2KCE66 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 00:58:58 -0400
-Message-ID: <5094A485.4060409@gmail.com>
-Date: Sat, 03 Nov 2012 12:58:45 +0800
-From: Shan Wei <shanwei88@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Sven Eckelmann <sven@narfation.org>
-CC: b.a.t.m.a.n@lists.open-mesh.org, lindner_marek@yahoo.de,
-        siwu@hrz.tu-chemnitz.de, ordex@autistici.org,
-        David Miller <davem@davemloft.net>, NetDev <netdev@vger.kernel.org>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [B.A.T.M.A.N.] [PATCH v2 9/9] net: batman-adv: use per_cpu_add
- helper
-References: <5093EE7E.6040400@gmail.com> <5905519.yWN2Ke3YlE@bentobox>
-In-Reply-To: <5905519.yWN2Ke3YlE@bentobox>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752105Ab2KCFHJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 01:07:09 -0400
+Received: from mga03.intel.com ([143.182.124.21]:30648 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751100Ab2KCFHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 01:07:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,704,1344236400"; 
+   d="scan'208";a="212969050"
+Message-ID: <1351919112.13106.1.camel@yhuang-mobile.sh.intel.com>
+Subject: Re: [BUGFIX 2/2] PCI/PM: Resume device before shutdown
+From: Huang Ying <ying.huang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Date: Sat, 03 Nov 2012 13:05:12 +0800
+In-Reply-To: <CAErSpo5bKDrfOC86Cxv+0yFiyj1bMgWF=6XuY+DWFjaMBTQC0A@mail.gmail.com>
+References: <1351061654-8339-1-git-send-email-ying.huang@intel.com>
+	 <1351061654-8339-2-git-send-email-ying.huang@intel.com>
+	 <CAErSpo5bKDrfOC86Cxv+0yFiyj1bMgWF=6XuY+DWFjaMBTQC0A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sven Eckelmann said, at 2012/11/3 1:55:
-> On Saturday 03 November 2012 00:02:06 Shan Wei wrote:
->> From: Shan Wei <davidshan@tencent.com>
->>
->> As Christoph Lameter said:
->>> In addition, following usage of per_cpu_ptr can be replaced by
->>> this_cpu_read.
->>>
->>> cpu=get_cpu()
->>> ....
->>> *per_cpu_ptr(p,cpu)
->>> ....
->>> ....
->>> put_cpu()
->>
->> Right.
->>
->> Signed-off-by: Shan Wei <davidshan@tencent.com>
->> ---
+On Fri, 2012-11-02 at 10:52 -0600, Bjorn Helgaas wrote:
+> On Wed, Oct 24, 2012 at 12:54 AM, Huang Ying <ying.huang@intel.com> wrote:
+> > Some actions during shutdown need device to be in D0 state, such as
+> > MSI shutdown etc, so resume device before shutdown.
 > 
-> Is this really supposed to be the commit message?
+> Is there a problem report or bugzilla for this issue?  What are the
+> symptoms by which a user could figure out that he needs this fix?
 
-Maybe it's ok when Linus said this. :-)
+No bugzilla for this issue.  This issue will cause the corresponding
+device lost in kexeced kernel.
 
-Christoph is the maintainer of per-cpu.
-So........
+Best Regards,
+Huang Ying
 
-PER-CPU MEMORY ALLOCATOR
-M:      Tejun Heo <tj@kernel.org>
-M:      Christoph Lameter <cl@linux-foundation.org>
-T:      git git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git
-S:      Maintained
-F:      include/linux/percpu*.h
-F:      mm/percpu*.c
-F:      arch/*/include/asm/percpu.h
-
+> Should this be put in the stable tree as well?  If so, for v3.6 only?
 > 
-> Kind regards,
-> 	Sven
-> 
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > ---
+> >  drivers/pci/pci-driver.c |   12 ++----------
+> >  1 file changed, 2 insertions(+), 10 deletions(-)
+> >
+> > --- a/drivers/pci/pci-driver.c
+> > +++ b/drivers/pci/pci-driver.c
+> > @@ -398,6 +398,8 @@ static void pci_device_shutdown(struct d
+> >         struct pci_dev *pci_dev = to_pci_dev(dev);
+> >         struct pci_driver *drv = pci_dev->driver;
+> >
+> > +       pm_runtime_resume(dev);
+> > +
+> >         if (drv && drv->shutdown)
+> >                 drv->shutdown(pci_dev);
+> >         pci_msi_shutdown(pci_dev);
+> > @@ -408,16 +410,6 @@ static void pci_device_shutdown(struct d
+> >          * continue to do DMA
+> >          */
+> >         pci_disable_device(pci_dev);
+> > -
+> > -       /*
+> > -        * Devices may be enabled to wake up by runtime PM, but they need not
+> > -        * be supposed to wake up the system from its "power off" state (e.g.
+> > -        * ACPI S5).  Therefore disable wakeup for all devices that aren't
+> > -        * supposed to wake up the system at this point.  The state argument
+> > -        * will be ignored by pci_enable_wake().
+> > -        */
+> > -       if (!device_may_wakeup(dev))
+> > -               pci_enable_wake(pci_dev, PCI_UNKNOWN, false);
+> >  }
+> >
+> >  #ifdef CONFIG_PM
+
 
