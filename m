@@ -1,208 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab2KCVNc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 17:13:32 -0400
-Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:60912 "EHLO
-	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab2KCVNb (ORCPT
+	id S1752978Ab2KCVf5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 17:35:57 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59989 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab2KCVf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 17:13:31 -0400
-From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
-        =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Subject: [PATCH resend] printk: drop ambiguous LOG_CONT flag
-Date: Sat,  3 Nov 2012 22:12:56 +0100
-Message-Id: <1351977176-28381-1-git-send-email-schnhrr@cs.tu-berlin.de>
-X-Mailer: git-send-email 1.8.0.316.g291341c.dirty
-In-Reply-To: <20121102233610.GA3239@kroah.com>
-References: <20121102233610.GA3239@kroah.com>
+	Sat, 3 Nov 2012 17:35:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE9FiQVXzOQG2XmA5Y_DX1JCGg_-LdM9tG3Chq7-7rNvUseRhg@mail.gmail.com>
+References: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
+	<alpine.DEB.2.02.1210101609170.2689@kaball.uk.xensource.com>
+	<CAE9FiQW952+jHBHxhKu2PX_fpwb8fXVQp2xX0i=HdzgKWuGFCA@mail.gmail.com>
+	<20121030134442.GB27463@phenom.dumpdata.com>
+	<CAE9FiQVXzOQG2XmA5Y_DX1JCGg_-LdM9tG3Chq7-7rNvUseRhg@mail.gmail.com>
+Date: Sat, 3 Nov 2012 14:35:54 -0700
+X-Google-Sender-Auth: henL_qGvPeE6JUU0eH6lmvdAhgA
+Message-ID: <CAE9FiQW+B8_vBT4A10ab4iOAQD9b-Ef84dsSX7p3nVQSN2w0=Q@mail.gmail.com>
+Subject: Re: [PATCH -v3 0/7] x86: Use BRK to pre mapping page table to make
+ xen happy
+From: Yinghai Lu <yinghai@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
+On Tue, Oct 30, 2012 at 7:47 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Oct 30, 2012 at 6:44 AM, Konrad Rzeszutek Wilk
+> <konrad@kernel.org> wrote:
+>> On Wed, Oct 10, 2012 at 11:13:45PM -0700, Yinghai Lu wrote:
+>> So which branch should I try out? Do you have one with all of the
+>> required patches so I can just do a 3.7-rc3 'git pull' and try it out?
+>
+> add for-x86-mm-test branch, and it is based on 3.7-rc3, and merged
+> with for-x86-mm branch.
+>
+> so you can try
+>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+> for-x86-mm-test
+>
+> there is conflicts between for-x86-mm and 3.7-rc3, and attached patch
+> could be used to fix them
+>
 
-The meaning of LOG_CONT is unclear, i. e., whether a message is a starting,
-ending, or middle fragment. Unfortunately, this cannot be inferred from
-the LOG_PREFIX and LOG_NEWLINE flags, as they are not always kept.
-Furthermore, in some cases LOG_CONT is set, although it is unknown if
-there will be a continuation. This leads to wrongly concatenated output.
+Peter/Ingo,
 
-Fix this by dropping LOG_CONT and rely on LOG_PREFIX and LOG_NEWLINE to
-distinguish the type of fragment. That is, if LOG_PREFIX is set, this
-fragment does not continue the previous fragment. And if LOG_NEWLINE is
-set, this fragment is not continued by the next fragment.
+can you put for-x86-mm-test to tip for more testing?
 
-(Unfortunately, we still have to look at the previous fragment to catch the
-case of an unset LOG_PREFIX on this fragment, but a set LOG_NEWLINE on
-the previous fragment.)
+or you want to rebase the whole patchset?
 
-Tested-By: Kay Sievers <kay@vrfy.org>
-Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
----
-Against linux-next from 20121102, added Kay's tested-by.
----
- kernel/printk.c | 57 +++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 33 insertions(+), 24 deletions(-)
+Thanks
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 22e070f..e8e4e67 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -203,7 +203,6 @@ enum log_flags {
- 	LOG_NOCONS	= 1,	/* already flushed, do not print to console */
- 	LOG_NEWLINE	= 2,	/* text ended with a newline */
- 	LOG_PREFIX	= 4,	/* text started with a prefix */
--	LOG_CONT	= 8,	/* text is a fragment of a continuation line */
- };
- 
- struct log {
-@@ -487,10 +486,9 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
- 	 * better readable output. 'c' in the record flags mark the first
- 	 * fragment of a line, '+' the following.
- 	 */
--	if (msg->flags & LOG_CONT && !(user->prev & LOG_CONT))
-+	if (!(msg->flags & LOG_NEWLINE) && msg->flags & LOG_PREFIX)
- 		cont = 'c';
--	else if ((msg->flags & LOG_CONT) ||
--		 ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX)))
-+	else if (!(user->prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
- 		cont = '+';
- 
- 	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
-@@ -893,15 +891,17 @@ static size_t msg_print_text(const struct log *msg, enum log_flags prev,
- 	bool newline = true;
- 	size_t len = 0;
- 
--	if ((prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
-+	if (!(prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
- 		prefix = false;
- 
--	if (msg->flags & LOG_CONT) {
--		if ((prev & LOG_CONT) && !(prev & LOG_NEWLINE))
--			prefix = false;
-+	if (!(msg->flags & LOG_NEWLINE))
-+		newline = false;
- 
--		if (!(msg->flags & LOG_NEWLINE))
--			newline = false;
-+	if (!(prev & LOG_NEWLINE) && prefix) {
-+		if (buf)
-+			buf[len++] = '\n';
-+		else
-+			len++;
- 	}
- 
- 	do {
-@@ -1406,35 +1406,36 @@ static void cont_flush(enum log_flags flags)
- 	if (cont.len == 0)
- 		return;
- 
-+	cont.flags |= flags;
- 	if (cont.cons) {
- 		/*
- 		 * If a fragment of this line was directly flushed to the
- 		 * console; wait for the console to pick up the rest of the
- 		 * line. LOG_NOCONS suppresses a duplicated output.
- 		 */
--		log_store(cont.facility, cont.level, flags | LOG_NOCONS,
-+		log_store(cont.facility, cont.level, cont.flags | LOG_NOCONS,
- 			  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
--		cont.flags = flags;
- 		cont.flushed = true;
- 	} else {
- 		/*
- 		 * If no fragment of this line ever reached the console,
- 		 * just submit it to the store and free the buffer.
- 		 */
--		log_store(cont.facility, cont.level, flags, 0,
-+		log_store(cont.facility, cont.level, cont.flags, 0,
- 			  NULL, 0, cont.buf, cont.len);
- 		cont.len = 0;
- 	}
- }
- 
--static bool cont_add(int facility, int level, const char *text, size_t len)
-+static bool cont_add(int facility, int level, enum log_flags flags,
-+		     const char *text, size_t len)
- {
- 	if (cont.len && cont.flushed)
- 		return false;
- 
- 	if (cont.len + len > sizeof(cont.buf)) {
- 		/* the line gets too long, split it up in separate records */
--		cont_flush(LOG_CONT);
-+		cont_flush(0);
- 		return false;
- 	}
- 
-@@ -1443,7 +1444,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
- 		cont.level = level;
- 		cont.owner = current;
- 		cont.ts_nsec = local_clock();
--		cont.flags = 0;
-+		cont.flags = flags;
- 		cont.cons = 0;
- 		cont.flushed = false;
- 	}
-@@ -1452,7 +1453,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
- 	cont.len += len;
- 
- 	if (cont.len > (sizeof(cont.buf) * 80) / 100)
--		cont_flush(LOG_CONT);
-+		cont_flush(0);
- 
- 	return true;
- }
-@@ -1462,8 +1463,11 @@ static size_t cont_print_text(char *text, size_t size)
- 	size_t textlen = 0;
- 	size_t len;
- 
--	if (cont.cons == 0 && (console_prev & LOG_NEWLINE)) {
--		textlen += print_time(cont.ts_nsec, text);
-+	if (cont.cons == 0 && (console_prev & LOG_NEWLINE ||
-+						cont.flags & LOG_PREFIX)) {
-+		if (!(console_prev & LOG_NEWLINE))
-+			text[textlen++] = '\n';
-+		textlen += print_time(cont.ts_nsec, text + textlen);
- 		size -= textlen;
- 	}
- 
-@@ -1581,12 +1585,16 @@ asmlinkage int vprintk_emit(int facility, int level,
- 		 * Flush the conflicting buffer. An earlier newline was missing,
- 		 * or another task also prints continuation lines.
- 		 */
--		if (cont.len && (lflags & LOG_PREFIX || cont.owner != current))
--			cont_flush(LOG_NEWLINE);
-+		if (cont.len) {
-+			if (cont.owner != current)
-+				lflags |= LOG_PREFIX;
-+			if (lflags & LOG_PREFIX)
-+				cont_flush(LOG_NEWLINE);
-+		}
- 
- 		/* buffer line if possible, otherwise store it right away */
--		if (!cont_add(facility, level, text, text_len))
--			log_store(facility, level, lflags | LOG_CONT, 0,
-+		if (!cont_add(facility, level, lflags, text, text_len))
-+			log_store(facility, level, lflags, 0,
- 				  dict, dictlen, text, text_len);
- 	} else {
- 		bool stored = false;
-@@ -1599,7 +1607,8 @@ asmlinkage int vprintk_emit(int facility, int level,
- 		 */
- 		if (cont.len && cont.owner == current) {
- 			if (!(lflags & LOG_PREFIX))
--				stored = cont_add(facility, level, text, text_len);
-+				stored = cont_add(facility, level, lflags,
-+							text, text_len);
- 			cont_flush(LOG_NEWLINE);
- 		}
- 
--- 
-1.8.0.316.g291341c.dirty
-
+Yinghai
