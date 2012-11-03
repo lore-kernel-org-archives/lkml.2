@@ -1,200 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab2KCDq5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 23:46:57 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:50140 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab2KCDqy (ORCPT
+	id S1753816Ab2KCDv2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 23:51:28 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:50485 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752569Ab2KCDv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 23:46:54 -0400
-Date: Fri, 02 Nov 2012 23:46:51 -0400 (EDT)
-Message-Id: <20121102.234651.536037174791637359.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Nov 2012 23:51:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <5089A05E.7040000@gmail.com>
+References: <508086DA.3010600@oracle.com> <5089A05E.7040000@gmail.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Fri, 2 Nov 2012 23:51:06 -0400
+Message-ID: <CA+1xoqf2v_jEapwU68BzXyi4abSRmi_=AiaJVHM3dBbHtsBnqQ@mail.gmail.com>
+Subject: Re: mm: NULL ptr deref in anon_vma_interval_tree_verify
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Michel Lespinasse <walken@google.com>, hughd@google.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ping?
 
-First post-Sandy pull request, here goes:
-
-1) Fix antenna gain handling and initialization of chan->max_reg_power
-   in wireless, from Felix Fietkau.
-
-2) Fix nexthop handling in H.232 conntrack helper, from Julian
-   Anastasov.
-
-3) Only process 80211 mesh config header in certain kinds of frames,
-   from Javier Cardona.
-
-4) 80211 management frame header length needs to be validated, from
-   Johannes Berg.
-
-5) Don't access free'd SKBs in ath9k driver, from Felix Fietkay.
-
-6) Test for permanent state correctly in VXLAN driver, from Stephen
-   Hemminger.
-
-7) BNX2X bug fixes from Yaniv Rosner and Dmitry Kravkov.
-
-8) Fix off by one errors in bonding, from Nikolay ALeksandrov.
-
-9) Fix divide by zero in TCP-Illinois congestion control.  From
-   Jesper Dangaard Brouer.
-
-10) TCP metrics code says "Yo dawg, I heard you like sizeof, so I
-    did a sizeof of a sizeof, so you can size your size" Fix from
-    Julian Anastasov.
-
-11) Several drivers do mdiobus_free without first doing an
-    mdiobus_unregister leading to stray pointer references.
-    Fix from Peter Senna Tschudin.
-
-12) Fix OOPS in l2tp_eth_create() error path, it's another danling
-    pointer kinda situation.  Fix from Tom Parkin.
-
-13) Hardware driven by the vmxnet driver can't handle larger than 16K
-    fragments, so split them up when necessary.  From Eric Dumazet.
-
-14) Handle zero length data length in tcp_send_rcvq() properly.  Fix
-    from Pavel Emelyanov.
-
-Please pull, thanks a lot!
-
-The following changes since commit e657e078d3dfa9f96976db7a2b5fd7d7c9f1f1a6:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-10-26 15:00:48 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
-
-for you to fetch changes up to c454e6111d1ef4268fe98e87087216e51c2718c3:
-
-  tcp-repair: Handle zero-length data put in rcv queue (2012-11-02 22:01:45 -0400)
-
-----------------------------------------------------------------
-Antonio Quartulli (1):
-      mac80211: fix SSID copy on IBSS JOIN
-
-David S. Miller (2):
-      Merge branch 'master' of git://1984.lsi.us.es/nf
-      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
-
-Dmitry Kravkov (2):
-      bnx2x: Disable FCoE for 57840 since not yet supported by FW
-      bnx2x: fix HW initialization using fw 7.8.x
-
-Eric Dumazet (1):
-      vmxnet3: must split too big fragments
-
-Felix Fietkau (3):
-      cfg80211: fix antenna gain handling
-      cfg80211: fix initialization of chan->max_reg_power
-      ath9k: fix stale pointers potentially causing access to free'd skbs
-
-Hein Tibosch (1):
-      netfilter: nf_defrag_ipv6: solve section mismatch in nf_conntrack_reasm
-
-Jacob Keller (1):
-      ixgbe: PTP get_ts_info missing software support
-
-Javier Cardona (3):
-      mac80211: Only process mesh config header on frames that RA_MATCH
-      mac80211: Don't drop frames received with mesh ttl == 1
-      mac80211: don't inspect Sequence Control field on control frames
-
-Jesper Dangaard Brouer (1):
-      net: fix divide by zero in tcp algorithm illinois
-
-Johannes Berg (5):
-      mac80211: use blacklist for duplicate IE check
-      wireless: drop invalid mesh address extension frames
-      mac80211: check management frame header length
-      mac80211: verify that skb data is present
-      mac80211: make sure data is accessible in EAPOL check
-
-John W. Linville (2):
-      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Julian Anastasov (2):
-      netfilter: nf_conntrack: fix rt_gateway checks for H.323 helper
-      tcp: Fix double sizeof in new tcp_metrics code
-
-Masanari Iida (1):
-      net: sctp: Fix typo in net/sctp
-
-Pavel Emelyanov (1):
-      tcp-repair: Handle zero-length data put in rcv queue
-
-Peter Senna Tschudin (2):
-      drivers/net/ethernet/nxp/lpc_eth.c: Call mdiobus_unregister before mdiobus_free
-      drivers/net/phy/mdio-bitbang.c: Call mdiobus_unregister before mdiobus_free
-
-Stanislaw Gruszka (1):
-      rt2800: validate step value for temperature compensation
-
-Sven Eckelmann (1):
-      ath9k: Test for TID only in BlockAcks while checking tx status
-
-Tom Parkin (1):
-      l2tp: fix oops in l2tp_eth_create() error path
-
-Ulrich Weber (1):
-      netfilter: nf_nat: don't check for port change on ICMP tuples
-
-Vipul Pandya (1):
-      cxgb4: Fix unable to get UP event from the LLD
-
-Yaniv Rosner (6):
-      bnx2x: Fix 57810 1G-KR link against certain switches.
-      bnx2x: Fix link down in 57712 following LFA
-      bnx2x: Restore global registers back to default.
-      bnx2x: Fix potential incorrect link speed provision
-      bnx2x: Fix unrecognized SFP+ module after driver is loaded
-      bnx2x: Fix no link on 577xx 10G-baseT
-
-nikolay@redhat.com (2):
-      bonding: fix off-by-one error
-      bonding: fix second off-by-one error
-
-stephen hemminger (1):
-      vxlan: don't expire permanent entries
-
- drivers/net/bonding/bond_sysfs.c                 |   4 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c | 158 +++++++++++++++++++++++++++++++++++--------------
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |  13 +++-
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c  |  10 ----
- drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |   3 +
- drivers/net/ethernet/nxp/lpc_eth.c               |   1 +
- drivers/net/phy/mdio-bitbang.c                   |   1 +
- drivers/net/vmxnet3/vmxnet3_drv.c                |  65 +++++++++++++-------
- drivers/net/vxlan.c                              |   2 +-
- drivers/net/wireless/ath/ath9k/xmit.c            |  10 +++-
- drivers/net/wireless/rt2x00/rt2800lib.c          |   2 +-
- include/net/cfg80211.h                           |   9 +++
- net/ipv4/netfilter/iptable_nat.c                 |   4 +-
- net/ipv4/tcp_illinois.c                          |   8 ++-
- net/ipv4/tcp_input.c                             |   3 +
- net/ipv4/tcp_metrics.c                           |   2 +-
- net/ipv6/netfilter/ip6table_nat.c                |   4 +-
- net/ipv6/netfilter/nf_conntrack_reasm.c          |   4 +-
- net/l2tp/l2tp_eth.c                              |   1 +
- net/mac80211/ibss.c                              |   2 +-
- net/mac80211/rx.c                                |  74 +++++++++++++++++------
- net/mac80211/util.c                              |  42 ++++++++++---
- net/netfilter/nf_conntrack_h323_main.c           |   3 +-
- net/sctp/socket.c                                |   2 +-
- net/wireless/core.c                              |   3 +-
- net/wireless/reg.c                               |   5 +-
- net/wireless/util.c                              |  14 +++--
- 27 files changed, 320 insertions(+), 129 deletions(-)
+On Thu, Oct 25, 2012 at 4:26 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> On 10/18/2012 06:46 PM, Sasha Levin wrote:
+>> Hi all,
+>>
+>> While fuzzing with trinity inside a KVM tools (lkvm) guest, on today's linux-next kernel,
+>> I saw the following:
+>>
+>> [ 1857.278176] BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
+>> [ 1857.283725] IP: [<ffffffff81229d0f>] anon_vma_interval_tree_verify+0xf/0xa0
+>> [ 1857.283725] PGD 6e19e067 PUD 6e19f067 PMD 0
+>> [ 1857.283725] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>> [ 1857.283725] Dumping ftrace buffer:
+>> [ 1857.283725]    (ftrace buffer empty)
+>> [ 1857.283725] CPU 2
+>> [ 1857.283725] Pid: 15637, comm: trinity-child18 Tainted: G        W    3.7.0-rc1-next-20121018-sasha-00002-g60a870d-dirty #61
+>> [ 1857.283725] RIP: 0010:[<ffffffff81229d0f>]  [<ffffffff81229d0f>] anon_vma_interval_tree_verify+0xf/0xa0
+>> [ 1857.283725] RSP: 0018:ffff88007df0fce8  EFLAGS: 00010296
+>> [ 1857.283725] RAX: ffff880089db1000 RBX: ffff880089db0ff0 RCX: ffff8800869e6928
+>> [ 1857.283725] RDX: 0000000000000000 RSI: ffff880089db1008 RDI: ffff880089db0ff0
+>> [ 1857.283725] RBP: ffff88007df0fcf8 R08: ffff88006427d508 R09: ffff88012bb95f20
+>> [ 1857.283725] R10: 0000000000000001 R11: ffff8800c8525c60 R12: ffff88006e199370
+>> [ 1857.283725] R13: ffff88006e199300 R14: 0000000000000000 R15: ffff880089db1000
+>> [ 1857.283725] FS:  00007f322fd4c700(0000) GS:ffff88004d600000(0000) knlGS:0000000000000000
+>> [ 1857.283725] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [ 1857.283725] CR2: 0000000000000090 CR3: 000000006e19d000 CR4: 00000000000406e0
+>> [ 1857.283725] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [ 1857.283725] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [ 1857.283725] Process trinity-child18 (pid: 15637, threadinfo ffff88007df0e000, task ffff88007ac80000)
+>> [ 1857.283725] Stack:
+>> [ 1857.283725]  ffff88007df0fd38 ffff880089db0ff0 ffff88007df0fd48 ffffffff81233b58
+>> [ 1857.283725]  ffff88007df0fd38 ffff880089db1000 00000000000080d0 ffff880089db1000
+>> [ 1857.283725]  ffff88012bb95f20 ffff8800005d97c8 ffff8800005d97d8 ffff880089db1000
+>> [ 1857.283725] Call Trace:
+>> [ 1857.283725]  [<ffffffff81233b58>] validate_mm+0x58/0x1e0
+>> [ 1857.283725]  [<ffffffff81233da4>] vma_link+0x94/0xe0
+>> [ 1857.283725]  [<ffffffff83a67fd4>] ? _raw_spin_unlock_irqrestore+0x84/0xb0
+>> [ 1857.283725]  [<ffffffff81235f75>] mmap_region+0x3f5/0x5c0
+>> [ 1857.283725]  [<ffffffff812363f7>] do_mmap_pgoff+0x2b7/0x330
+>> [ 1857.283725]  [<ffffffff81220fd1>] ? vm_mmap_pgoff+0x61/0xa0
+>> [ 1857.283725]  [<ffffffff81220fea>] vm_mmap_pgoff+0x7a/0xa0
+>> [ 1857.283725]  [<ffffffff81234c72>] sys_mmap_pgoff+0x182/0x1a0
+>> [ 1857.283725]  [<ffffffff8107dc40>] ? syscall_trace_enter+0x20/0x2e0
+>> [ 1857.283725]  [<ffffffff810738dd>] sys_mmap+0x1d/0x20
+>> [ 1857.283725]  [<ffffffff83a69ad8>] tracesys+0xe1/0xe6
+>> [ 1857.283725] Code: 48 39 ce 77 9e f3 c3 0f 1f 44 00 00 31 c0 c3 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 53 48 89 fb
+>> 48 83 ec 08 48 8b 17 <48> 8b 8a 90 00 00 00 48 39 4f 40 74 34 80 3d a6 82 5b 04 00 75
+>> [ 1857.283725] RIP  [<ffffffff81229d0f>] anon_vma_interval_tree_verify+0xf/0xa0
+>> [ 1857.283725]  RSP <ffff88007df0fce8>
+>> [ 1857.283725] CR2: 0000000000000090
+>> [ 1858.611277] ---[ end trace b51cc425e9b07fc0 ]---
+>>
+>> The obvious part is that anon_vma_interval_tree_verify() got called with node == NULL, but when
+>> looking at the caller:
+>>
+>>                 list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
+>>                         anon_vma_interval_tree_verify(avc);
+>>
+>> How it got called with said NULL becomes less obvious.
+>
+> I've hit a similar one with today's -next. It isn't exactly the same, but
+> I suspect it's the same issue.
+>
+> [ 1523.657950] BUG: unable to handle kernel paging request at fffffffffffffff0
+> [ 1523.660022] IP: [<ffffffff8122c29c>] anon_vma_interval_tree_verify+0xc/0xa0
+> [ 1523.660022] PGD 4e28067 PUD 4e29067 PMD 0
+> [ 1523.675725] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 1523.750066] CPU 0
+> [ 1523.750066] Pid: 9050, comm: trinity-child64 Tainted: G        W    3.7.0-rc2-next-20121025-sasha-00001-g673f98e-dirty #77
+> [ 1523.750066] RIP: 0010:[<ffffffff8122c29c>]  [<ffffffff8122c29c>] anon_vma_interval_tree_verify+0xc/0xa0
+> [ 1523.750066] RSP: 0018:ffff880045f81d48  EFLAGS: 00010296
+> [ 1523.750066] RAX: 0000000000000000 RBX: fffffffffffffff0 RCX: 0000000000000000
+> [ 1523.750066] RDX: 0000000000000000 RSI: 0000000000000001 RDI: fffffffffffffff0
+> [ 1523.750066] RBP: ffff880045f81d58 R08: 0000000000000000 R09: 0000000000000f14
+> [ 1523.750066] R10: 0000000000000f12 R11: 0000000000000000 R12: ffff8800096c8d70
+> [ 1523.750066] R13: ffff8800096c8d00 R14: 0000000000000000 R15: ffff8800095b45e0
+> [ 1523.750066] FS:  00007f7a923f3700(0000) GS:ffff880013600000(0000) knlGS:0000000000000000
+> [ 1523.750066] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [ 1523.750066] CR2: fffffffffffffff0 CR3: 000000000969d000 CR4: 00000000000406f0
+> [ 1523.750066] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 1523.750066] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 1523.750066] Process trinity-child64 (pid: 9050, threadinfo ffff880045f80000, task ffff880048eb0000)
+> [ 1523.750066] Stack:
+> [ 1523.750066]  ffff88000d7533f0 fffffffffffffff0 ffff880045f81da8 ffffffff812361d8
+> [ 1523.750066]  ffff880045f81d98 ffff880048ee9000 ffff8800095b4580 ffff8800095b4580
+> [ 1523.750066]  ffff88001d1cdb00 ffff8800095b45f0 ffff880022a4d630 ffff8800095b45e0
+> [ 1523.750066] Call Trace:
+> [ 1523.750066]  [<ffffffff812361d8>] validate_mm+0x58/0x1e0
+> [ 1523.750066]  [<ffffffff81236aa5>] vma_adjust+0x635/0x6b0
+> [ 1523.750066]  [<ffffffff81236c81>] __split_vma.isra.22+0x161/0x220
+> [ 1523.750066]  [<ffffffff81237934>] split_vma+0x24/0x30
+> [ 1523.750066]  [<ffffffff8122ce6a>] sys_madvise+0x5da/0x7b0
+> [ 1523.750066]  [<ffffffff811cd14c>] ? rcu_eqs_exit+0x9c/0xb0
+> [ 1523.750066]  [<ffffffff811802cd>] ? trace_hardirqs_on+0xd/0x10
+> [ 1523.750066]  [<ffffffff83aee198>] tracesys+0xe1/0xe6
+> [ 1523.750066] Code: 4c 09 ff 48 39 ce 77 9e f3 c3 0f 1f 44 00 00 31 c0 c3 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 53
+> 48 89 fb 48 83 ec 08 <48> 8b 17 48 8b 8a 90 00 00 00 48 39 4f 40 74 34 80 3d f7 1f 5c
+> [ 1523.750066] RIP  [<ffffffff8122c29c>] anon_vma_interval_tree_verify+0xc/0xa0
+> [ 1523.750066]  RSP <ffff880045f81d48>
+> [ 1523.750066] CR2: fffffffffffffff0
+> [ 1523.750066] ---[ end trace e35e5fa49072faf9 ]---
+>
