@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab2KCLAo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 07:00:44 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:9242 "EHLO
-	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754587Ab2KCK6y (ORCPT
+	id S1755695Ab2KCLBD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 07:01:03 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:11958
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754397Ab2KCK6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 3 Nov 2012 06:58:54 -0400
 X-IronPort-AV: E=Sophos;i="4.80,705,1344204000"; 
-   d="scan'208";a="161245676"
+   d="scan'208";a="161245675"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: kernel-janitors@vger.kernel.org, Helge Deller <deller@gmx.de>,
-        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 15/16] drivers/parisc/pdc_stable.c: use WARN
-Date: Sat,  3 Nov 2012 11:58:36 +0100
-Message-Id: <1351940317-14812-16-git-send-email-Julia.Lawall@lip6.fr>
+To: Michael Buesch <m@bues.ch>
+Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 14/16] drivers/ssb/main.c: use WARN
+Date: Sat,  3 Nov 2012 11:58:35 +0100
+Message-Id: <1351940317-14812-15-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -44,26 +44,21 @@ expression list es;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/parisc/pdc_stable.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/ssb/main.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/parisc/pdc_stable.c b/drivers/parisc/pdc_stable.c
-index 246a92f..0f54ab6 100644
---- a/drivers/parisc/pdc_stable.c
-+++ b/drivers/parisc/pdc_stable.c
-@@ -212,12 +212,10 @@ pdcspath_store(struct pdcspath_entry *entry)
- 			entry, devpath, entry->addr);
- 
- 	/* addr, devpath and count must be word aligned */
--	if (pdc_stable_write(entry->addr, devpath, sizeof(*devpath)) != PDC_OK) {
--		printk(KERN_ERR "%s: an error occurred when writing to PDC.\n"
-+	if (pdc_stable_write(entry->addr, devpath, sizeof(*devpath)) != PDC_OK)
-+		WARN(1, KERN_ERR "%s: an error occurred when writing to PDC.\n"
- 				"It is likely that the Stable Storage data has been corrupted.\n"
- 				"Please check it carefully upon next reboot.\n", __func__);
+diff --git a/drivers/ssb/main.c b/drivers/ssb/main.c
+index df0f145..519688d 100644
+--- a/drivers/ssb/main.c
++++ b/drivers/ssb/main.c
+@@ -1118,8 +1118,7 @@ static u32 ssb_tmslow_reject_bitmask(struct ssb_device *dev)
+ 	case SSB_IDLOW_SSBREV_27:     /* same here */
+ 		return SSB_TMSLOW_REJECT;	/* this is a guess */
+ 	default:
+-		printk(KERN_INFO "ssb: Backplane Revision 0x%.8X\n", rev);
 -		WARN_ON(1);
--	}
- 		
- 	/* kobject is already registered */
- 	entry->ready = 2;
++		WARN(1, KERN_INFO "ssb: Backplane Revision 0x%.8X\n", rev);
+ 	}
+ 	return (SSB_TMSLOW_REJECT | SSB_TMSLOW_REJECT_23);
+ }
 
