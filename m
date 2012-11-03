@@ -1,269 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab2KCULL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 16:11:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12803 "EHLO mga02.intel.com"
+	id S1757488Ab2KCUMc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 16:12:32 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:3538 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896Ab2KCULJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 16:11:09 -0400
-X-ExtLoop1: 1
+	id S1751444Ab2KCUMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 16:12:30 -0400
 X-IronPort-AV: E=Sophos;i="4.80,705,1344236400"; 
-   d="scan'208";a="214854311"
-Date: Sat, 3 Nov 2012 22:13:10 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Message-ID: <20121103201310.GQ16648@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <1351928793-14375-3-git-send-email-mika.westerberg@linux.intel.com>
- <CAErSpo5q64uEse3aYYZkuQrD+9AJ9HFP_VVB1TabYfO-_BvY3g@mail.gmail.com>
+   d="scan'208";a="706689002"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Richard Ems <richard.ems@cape-horn-eng.com>,
+        Brian Walker <bwalker@nvidia.com>
+Subject: Re: [ 243/262] NFS: Fix Oopses in nfs_lookup_revalidate and
+ nfs4_lookup_revalidate
+Thread-Topic: [ 243/262] NFS: Fix Oopses in nfs_lookup_revalidate and
+ nfs4_lookup_revalidate
+Thread-Index: AQHNnaxpo8h7bu4ynEicbxMymjayy5fZORaA
+Date: Sat, 3 Nov 2012 20:12:28 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9092A6B26@SACEXCMBX04-PRD.hq.netapp.com>
+References: <20120928182957.993484211@linuxfoundation.org>
+	 <20120928183027.108406252@linuxfoundation.org>
+In-Reply-To: <20120928183027.108406252@linuxfoundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <2086FCBDC044734D839FD40E971ED95D@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo5q64uEse3aYYZkuQrD+9AJ9HFP_VVB1TabYfO-_BvY3g@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA3KCYK0002752
 
-On Sat, Nov 03, 2012 at 01:42:02PM -0600, Bjorn Helgaas wrote:
-> On Sat, Nov 3, 2012 at 1:46 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
-> > configure the SPI slave devices behind the SPI controller. This patch adds
-> > support for this to the SPI core.
-> >
-> > In addition we bind ACPI nodes to SPI devices. This makes it possible for
-> > the slave drivers to get the ACPI handle for further configuration.
-> >
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/spi/spi.c |  231 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
-> >  1 file changed, 230 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-> > index 84c2861..de22a6e 100644
-> > --- a/drivers/spi/spi.c
-> > +++ b/drivers/spi/spi.c
-> > @@ -35,6 +35,7 @@
-> >  #include <linux/sched.h>
-> >  #include <linux/delay.h>
-> >  #include <linux/kthread.h>
-> > +#include <linux/acpi.h>
-> >
-> >  static void spidev_release(struct device *dev)
-> >  {
-> > @@ -93,6 +94,10 @@ static int spi_match_device(struct device *dev, struct device_driver *drv)
-> >         if (of_driver_match_device(dev, drv))
-> >                 return 1;
-> >
-> > +       /* Then try ACPI */
-> > +       if (acpi_driver_match_device(dev, drv))
-> > +               return 1;
-> > +
-> >         if (sdrv->id_table)
-> >                 return !!spi_match_id(sdrv->id_table, spi);
-> >
-> > @@ -888,6 +893,227 @@ static void of_register_spi_devices(struct spi_master *master)
-> >  static void of_register_spi_devices(struct spi_master *master) { }
-> >  #endif
-> >
-> > +#ifdef CONFIG_ACPI
-> > +struct acpi_spi {
-> > +       acpi_status (*callback)(struct acpi_device *, void *);
-> > +       void *data;
-> > +};
-> > +
-> > +static acpi_status acpi_spi_enumerate_device(acpi_handle handle, u32 level,
-> > +                                            void *data, void **return_value)
-> > +{
-> > +       struct acpi_spi *acpi_spi = data;
-> > +       struct acpi_device *adev;
-> > +
-> > +       if (acpi_bus_get_device(handle, &adev))
-> > +               return AE_OK;
-> > +       if (acpi_bus_get_status(adev) || !adev->status.present)
-> > +               return AE_OK;
-> > +
-> > +       return acpi_spi->callback(adev, acpi_spi->data);
-> > +}
-> > +
-> > +static acpi_status acpi_spi_enumerate(acpi_handle handle,
-> > +       acpi_status (*callback)(struct acpi_device *, void *), void *data)
-> > +{
-> > +       struct acpi_spi acpi_spi;
-> > +
-> > +       acpi_spi.callback = callback;
-> > +       acpi_spi.data = data;
-> > +
-> > +       return acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
-> > +                                  acpi_spi_enumerate_device, NULL,
-> > +                                  &acpi_spi, NULL);
-> > +}
-> > +
-> > +struct acpi_spi_device_info {
-> > +       struct spi_device *spi;
-> > +       int triggering;
-> > +       int polarity;
-> > +       int gsi;
-> > +       bool valid;
-> > +};
-> > +
-> > +static acpi_status acpi_spi_add_resources(struct acpi_resource *res, void *data)
-> > +{
-> > +       struct acpi_spi_device_info *info = data;
-> > +       struct acpi_resource_spi_serialbus *sb;
-> > +       struct spi_device *spi = info->spi;
-> > +
-> > +       switch (res->type) {
-> > +       case ACPI_RESOURCE_TYPE_SERIAL_BUS:
-> > +               sb = &res->data.spi_serial_bus;
-> > +               if (sb->type == ACPI_RESOURCE_SERIAL_TYPE_SPI) {
-> > +                       spi->chip_select = sb->device_selection;
-> > +                       spi->max_speed_hz = sb->connection_speed;
-> > +
-> > +                       /* Mode (clock phase/polarity/etc. */
-> > +                       if (sb->clock_phase == ACPI_SPI_SECOND_PHASE)
-> > +                               spi->mode |= SPI_CPHA;
-> > +                       if (sb->clock_polarity == ACPI_SPI_START_HIGH)
-> > +                               spi->mode |= SPI_CPOL;
-> > +                       if (sb->device_polarity == ACPI_SPI_ACTIVE_HIGH)
-> > +                               spi->mode |= SPI_CS_HIGH;
-> > +
-> > +                       /*
-> > +                        * The info is valid once we have found the
-> > +                        * SPISerialBus resource.
-> > +                        */
-> > +                       info->valid = true;
-> > +               }
-> > +               break;
-> > +
-> > +       case ACPI_RESOURCE_TYPE_IRQ:
-> > +               info->gsi = res->data.irq.interrupts[0];
-> > +               info->triggering = res->data.irq.triggering;
-> > +               info->polarity = res->data.irq.polarity;
-> > +               break;
-> > +
-> > +       case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
-> > +               info->gsi = res->data.extended_irq.interrupts[0];
-> > +               info->triggering = res->data.extended_irq.triggering;
-> > +               info->polarity = res->data.extended_irq.polarity;
+On Fri, 2012-09-28 at 11:52 -0700, Greg Kroah-Hartman wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
 > 
-> A driver doesn't seem like the right place for _CRS parsing code.  I
-> think the intent of _CRS is to describe resources that need to be
-> coordinated across all devices, e.g., MMIO space, I/O port space, and
-> IRQs.  Since these resources require system-wide coordination, even
-> when we don't have drivers for some devices, the ACPI core should be
-> able to parse _CRS without needing any device-specific knowledge.
+> 3.5-stable review patch.  If anyone has any objections, please let me know.
 
-I think the driver is the only one who really knows the resources it needs
-in order to talk the hardware.
 
-The purpose of the above code is to extract the resources in a suitable
-form so that we can create a struct spi_device out of them automatically,
-in a similar way than the Device Tree does.
+Hi Greg,
 
-There are other things which we cannot do in the generic code, such as GPIO
-resources and FixedDMA resources. These should be handled by the actual
-driver with the help of dev->acpi_handle IMO.
+Can we please apply this patch to the older stable kernels too? I see
+that Ben has already applied it to the 3.2 kernel, but it really wants
+to go into 3.4 and 3.0 as well...
 
-> I know the Linux ACPI core doesn't parse _CRS today, but it should.
-> The only reason we get away with the core ignoring _CRS is because the
-> BIOS sets up most ACPI devices and we never change them.  If we change
-> any resource assignments, we have to know where all the other devices
-> are so we can avoid conflicts.
+Thanks!
+  Trond
 
-I agree but these devices are typically "fixed" so that they wont be
-hot-plugged (although we should prepare for such devices as well) so
-basically we don't need to do change any assignments for resources.
-
-And if the ACPI core parses the _CRS, how does it pass all the resources to
-the drivers?
-
-The idea here is to reuse the existing drivers as much as possible. That's
-why we follow what Device Tree did already.
-
+> ------------------
 > 
-> > +               break;
-> > +       }
-> > +
-> > +       return AE_OK;
-> > +}
-> > +
-> > +static acpi_status acpi_spi_add_device(struct acpi_device *adev, void *data)
-> > +{
-> > +       struct acpi_spi_device_info info;
-> > +       struct spi_master *master = data;
-> > +       struct spi_device *spi;
-> > +       acpi_status status;
-> > +
-> > +       spi = spi_alloc_device(master);
-> > +       if (!spi) {
-> > +               dev_err(&master->dev, "failed to allocate SPI device\n");
-> > +               return AE_ERROR;
-> > +       }
-> > +
-> > +       memset(&info, 0, sizeof(info));
-> > +       info.spi = spi;
-> > +       info.gsi = -1;
-> > +
-> > +       status = acpi_walk_resources(adev->handle, METHOD_NAME__CRS,
-> > +                                    acpi_spi_add_resources, &info);
-> > +       if (ACPI_FAILURE(status) || !info.valid)
-> > +               goto fail_put_dev;
-> > +
-> > +       strlcpy(spi->modalias, acpi_device_hid(adev), sizeof(spi->modalias));
-> > +       if (info.gsi >= 0)
-> > +               spi->irq = acpi_register_gsi(&adev->dev, info.gsi,
-> > +                                            info.triggering, info.polarity);
-> > +       request_module(spi->modalias);
-> > +       if (spi_add_device(spi)) {
-> > +               dev_err(&master->dev, "failed to add SPI device from ACPI\n");
-> > +               goto fail_unregister_gsi;
-> > +       }
-> > +
-> > +       return AE_OK;
-> > +
-> > + fail_unregister_gsi:
-> > +       if (info.gsi >= 0)
-> > +               acpi_unregister_gsi(info.gsi);
-> > + fail_put_dev:
-> > +       spi_dev_put(spi);
-> > +
-> > +       return AE_OK;
-> > +}
-> > +
-> > +static void acpi_register_spi_devices(struct spi_master *master)
-> > +{
-> > +       acpi_status status;
-> > +       acpi_handle handle;
-> > +
-> > +       handle = master->dev.acpi_handle;
-> > +       if (!handle)
-> > +               return;
-> > +
-> > +       status = acpi_spi_enumerate(handle, acpi_spi_add_device, master);
+> From: Trond Myklebust <Trond.Myklebust@netapp.com>
 > 
-> How does this work with hot-plug?  acpi_spi_enumerate() walks a
-> portion of the namespace.  How do we deal with changes to that part of
-> the namespace?  For example, what happens if this part of the
-> namespace gets pruned because an enclosing device is removed?  Is
-> there a way to discover new SPI devices if they get added?
+> [Fixed upstream as part of 0b728e1911c, but that's a much larger patch,
+> this is only the nfs portion backported as needed.]
+> 
+> Fix the following Oops in 3.5.1:
+> 
+>  BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+>  IP: [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+>  PGD 337c63067 PUD 0
+>  Oops: 0000 [#1] SMP
+>  CPU 5
+>  Modules linked in: nfs fscache nfsd lockd nfs_acl auth_rpcgss sunrpc af_packet binfmt_misc cpufreq_conservative cpufreq_userspace cpufreq_powersave dm_mod acpi_cpufreq mperf coretemp gpio_ich kvm_intel joydev kvm ioatdma hid_generic igb lpc_ich i7core_edac edac_core ptp serio_raw dca pcspkr i2c_i801 mfd_core sg pps_core usbhid crc32c_intel microcode button autofs4 uhci_hcd ttm drm_kms_helper drm i2c_algo_bit sysimgblt sysfillrect syscopyarea ehci_hcd usbcore usb_common scsi_dh_rdac scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh edd fan ata_piix thermal processor thermal_sys
+> 
+>  Pid: 30431, comm: java Not tainted 3.5.1-2-default #1 Supermicro X8DTT/X8DTT
+>  RIP: 0010:[<ffffffffa03789cd>]  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+>  RSP: 0018:ffff8801b418bd38  EFLAGS: 00010292
+>  RAX: 00000000fffffff6 RBX: ffff88032016d800 RCX: 0000000000000020
+>  RDX: ffffffff00000000 RSI: 0000000000000000 RDI: ffff8801824a7b00
+>  RBP: ffff8801b418bdf8 R08: 7fffff0034323030 R09: fffffffff04c03ed
+>  R10: ffff8801824a7b00 R11: 0000000000000002 R12: ffff8801824a7b00
+>  R13: ffff8801824a7b00 R14: 0000000000000000 R15: ffff8803201725d0
+>  FS:  00002b53a46cb700(0000) GS:ffff88033fc20000(0000) knlGS:0000000000000000
+>  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>  CR2: 0000000000000038 CR3: 000000020a426000 CR4: 00000000000007e0
+>  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>  Process java (pid: 30431, threadinfo ffff8801b418a000, task ffff8801b5d20600)
+>  Stack:
+>   ffff8801b418be44 ffff88032016d800 ffff8801b418bdf8 0000000000000000
+>   ffff8801824a7b00 ffff8801b418bdd7 ffff8803201725d0 ffffffff8116a9c0
+>   ffff8801b5c38dc0 0000000000000007 ffff88032016d800 0000000000000000
+>  Call Trace:
+>   [<ffffffff8116a9c0>] lookup_dcache+0x80/0xe0
+>   [<ffffffff8116aa43>] __lookup_hash+0x23/0x90
+>   [<ffffffff8116b4a5>] lookup_one_len+0xc5/0x100
+>   [<ffffffffa03869a3>] nfs_sillyrename+0xe3/0x210 [nfs]
+>   [<ffffffff8116cadf>] vfs_unlink.part.25+0x7f/0xe0
+>   [<ffffffff8116f22c>] do_unlinkat+0x1ac/0x1d0
+>   [<ffffffff815717b9>] system_call_fastpath+0x16/0x1b
+>   [<00002b5348b5f527>] 0x2b5348b5f526
+>  Code: ec 38 b8 f6 ff ff ff 4c 89 64 24 18 4c 89 74 24 28 49 89 fc 48 89 5c 24 08 48 89 6c 24 10 49 89 f6 4c 89 6c 24 20 4c 89 7c 24 30 <f6> 46 38 40 0f 85 d1 00 00 00 e8 c4 c4 df e0 48 8b 58 30 49 89
+>  RIP  [<ffffffffa03789cd>] nfs_lookup_revalidate+0x2d/0x480 [nfs]
+>   RSP <ffff8801b418bd38>
+>  CR2: 0000000000000038
+>  ---[ end trace 845113ed191985dd ]---
+> 
+> This Oops affects 3.5 kernels and older, and is due to lookup_one_len()
+> calling down to the dentry revalidation code with a NULL pointer
+> to struct nameidata.
+> 
+> It is fixed upstream by commit 0b728e1911c (stop passing nameidata *
+> to ->d_revalidate())
+> 
+> Reported-by: Richard Ems <richard.ems@cape-horn-eng.com>
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  fs/nfs/dir.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- a/fs/nfs/dir.c
+> +++ b/fs/nfs/dir.c
+> @@ -1123,7 +1123,7 @@ static int nfs_lookup_revalidate(struct
+>  	struct nfs_fattr *fattr = NULL;
+>  	int error;
+>  
+> -	if (nd->flags & LOOKUP_RCU)
+> +	if (nd && (nd->flags & LOOKUP_RCU))
+>  		return -ECHILD;
+>  
+>  	parent = dget_parent(dentry);
+> @@ -1526,7 +1526,7 @@ static int nfs4_lookup_revalidate(struct
+>  	struct inode *dir;
+>  	int openflags, ret = 0;
+>  
+> -	if (nd->flags & LOOKUP_RCU)
+> +	if (nd && (nd->flags & LOOKUP_RCU))
+>  		return -ECHILD;
+>  
+>  	inode = dentry->d_inode;
+> 
+> 
 
-I'm not aware that we even support SPI hot-plug in the first place (well,
-I'm not sure that the SPI bus even supports such thing).
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Typically SPI devices are pretty much "static", at least that is my
-understanding. The platform device type ACPI support doesn't yet handle
-removing of the device and same goes with this code (typically the SPI
-master is based on a platform device).
-
-Eventually we should prepare for hot-plugging the SPI master device and
-delete the slave device when the master is removed.
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
