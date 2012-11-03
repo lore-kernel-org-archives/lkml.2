@@ -1,42 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab2KCI3S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 04:29:18 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47097 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab2KCI3P (ORCPT
+	id S1753543Ab2KCIfn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 04:35:43 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:38139 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247Ab2KCIfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 04:29:15 -0400
-Message-ID: <5094D44E.8030808@gmail.com>
-Date: Sat, 03 Nov 2012 09:22:38 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-CC: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: BUG: enabling psacct breaks fsfreeze
-References: <20121023094351.GC27919@pcnci.linuxbox.cz> <20121031121517.GD18424@quack.suse.cz> <20121031124600.GM20752@pcnci.linuxbox.cz> <20121101093723.GC6584@quack.suse.cz> <20121101111957.GD6584@quack.suse.cz> <20121101142325.GD20752@pcnci.linuxbox.cz> <20121101225053.GB31937@quack.suse.cz> <5093977A.9010507@gmail.com> <20121102104018.GG20752@pcnci.linuxbox.cz>
-In-Reply-To: <20121102104018.GG20752@pcnci.linuxbox.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 3 Nov 2012 04:35:39 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oneukum@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH v4 0/6] solve deadlock caused by memory allocation with I/O
+Date: Sat,  3 Nov 2012 16:35:08 +0800
+Message-Id: <1351931714-11689-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 02/11/2012 11:40, Nikola Ciprich ha scritto:
->> I saw this behavior (task-hang) when I tested the fsfreeze code. I was
->> writing a little patch to replace fsfreeze's wait queue with a killable
->> queue, in this way the user can do at least "kill -9", but since the
->> behavior was the same before your patch I didn't send it. I don't know if we
->> can break any previous behavior. The funny thing here is that it's like if
->> fsfreeze freezes itself :)
->
-> I think freezing all tasks ain't that bad, my problem is it's not possible to
-> start fsfreeze -u to thaw filesystem..
->
->
+This patchset try to solve one deadlock problem which might be caused
+by memory allocation with block I/O during runtime PM and block device
+error handling path. Traditionly, the problem is addressed by passing
+GFP_NOIO statically to mm, but that is not a effective solution, see
+detailed description in patch 1's commit log.
 
-Yes, of course. It was only a general comment.
+This patch set introduces one process flag and trys to fix the deadlock
+problem on block device/network device during runtime PM or usb bus reset.
 
-Marco
+The 1st one is the change on include/sched.h and mm.
+
+The 2nd patch introduces the flag of memalloc_noio on 'dev_pm_info',
+and pm_runtime_set_memalloc_noio(), so that PM Core can teach mm to not
+allocate mm with GFP_IOFS during the runtime_resume callback only on
+device with the flag set.
+
+The following 2 patches apply the introduced pm_runtime_set_memalloc_noio()
+to mark all devices as memalloc_noio_resume in the path from the block or
+network device to the root device in device tree.
+
+The last 2 patches are applied again PM and USB subsystem to demonstrate
+how to use the introduced mechanism to fix the deadlock problem.
+
+Change logs:
+V4:
+	- patches from the 2nd to the 6th changed	
+	- call pm_runtime_set_memalloc_noio() after device_add() as pointed
+	by Alan
+	- set PF_MEMALLOC_NOIO during runtime_suspend()
+
+V3:
+        - patch 2/6 and 5/6 changed, see their commit log
+        - remove RFC from title since several guys have expressed that
+        it is a reasonable solution
+V2:
+        - remove changes on 'may_writepage' and 'may_swap'(1/6)
+        - unset GFP_IOFS in try_to_free_pages() path(1/6)
+        - introduce pm_runtime_set_memalloc_noio()
+        - only apply the meachnism on block/network device and its ancestors
+        for runtime resume context
+V1:
+        - take Minchan's change to avoid the check in alloc_page hot path
+        - change the helpers' style into save/restore as suggested by Alan
+        - memory allocation with no io in usb bus reset path for all devices
+        as suggested by Greg and Oliver
+
+ block/genhd.c                |    9 +++++
+ drivers/base/power/runtime.c |   89 +++++++++++++++++++++++++++++++++++++++++-
+ drivers/usb/core/hub.c       |   13 ++++++
+ include/linux/pm.h           |    1 +
+ include/linux/pm_runtime.h   |    3 ++
+ include/linux/sched.h        |   10 +++++
+ mm/page_alloc.c              |   10 ++++-
+ mm/vmscan.c                  |   12 ++++++
+ net/core/net-sysfs.c         |    5 +++
+
+
+Thanks,
+--
+Ming Lei
+
