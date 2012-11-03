@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806Ab2KCLC7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 07:02:59 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:9242 "EHLO
-	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750901Ab2KCK6t (ORCPT
+	id S932243Ab2KCLDW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 07:03:22 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:11958
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751154Ab2KCK6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 06:58:49 -0400
+	Sat, 3 Nov 2012 06:58:47 -0400
 X-IronPort-AV: E=Sophos;i="4.80,705,1344204000"; 
-   d="scan'208";a="161245667"
+   d="scan'208";a="161245663"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Steve Wise <swise@chelsio.com>
-Cc: kernel-janitors@vger.kernel.org, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/16] drivers/infiniband/hw/cxgb4/cm.c: use WARN
-Date: Sat,  3 Nov 2012 11:58:27 +0100
-Message-Id: <1351940317-14812-7-git-send-email-Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/16] fs/hfsplus/bnode.c: use WARN
+Date: Sat,  3 Nov 2012 11:58:23 +0100
+Message-Id: <1351940317-14812-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -46,33 +43,21 @@ expression list es;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/infiniband/hw/cxgb4/cm.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ fs/hfsplus/bnode.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
-index 6cfd4d8..ed048b9 100644
---- a/drivers/infiniband/hw/cxgb4/cm.c
-+++ b/drivers/infiniband/hw/cxgb4/cm.c
-@@ -151,9 +151,8 @@ static void stop_ep_timer(struct c4iw_ep *ep)
- {
- 	PDBG("%s ep %p\n", __func__, ep);
- 	if (!timer_pending(&ep->timer)) {
--		printk(KERN_ERR "%s timer stopped when its not running! "
-+		WARN(1, KERN_ERR "%s timer stopped when its not running! "
- 		       "ep %p state %u\n", __func__, ep, ep->com.state);
+diff --git a/fs/hfsplus/bnode.c b/fs/hfsplus/bnode.c
+index 5c125ce..7a92c2c 100644
+--- a/fs/hfsplus/bnode.c
++++ b/fs/hfsplus/bnode.c
+@@ -588,8 +588,7 @@ struct hfs_bnode *hfs_bnode_create(struct hfs_btree *tree, u32 num)
+ 	node = hfs_bnode_findhash(tree, num);
+ 	spin_unlock(&tree->hash_lock);
+ 	if (node) {
+-		printk(KERN_CRIT "new node %u already hashed?\n", num);
 -		WARN_ON(1);
- 		return;
++		WARN(1, KERN_CRIT "new node %u already hashed?\n", num);
+ 		return node;
  	}
- 	del_timer_sync(&ep->timer);
-@@ -2551,9 +2550,8 @@ static void process_timeout(struct c4iw_ep *ep)
- 		__state_set(&ep->com, ABORTING);
- 		break;
- 	default:
--		printk(KERN_ERR "%s unexpected state ep %p tid %u state %u\n",
-+		WARN(1, KERN_ERR "%s unexpected state ep %p tid %u state %u\n",
- 			__func__, ep, ep->hwtid, ep->com.state);
--		WARN_ON(1);
- 		abort = 0;
- 	}
- 	mutex_unlock(&ep->com.mutex);
+ 	node = __hfs_bnode_create(tree, num);
 
