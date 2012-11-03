@@ -1,135 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab2KCEil (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 00:38:41 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50050 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab2KCEij (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 00:38:39 -0400
-Message-ID: <50949FC9.6050202@gmail.com>
-Date: Sat, 03 Nov 2012 12:38:33 +0800
-From: Shan Wei <asweisun@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1751471Ab2KCEtf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 00:49:35 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44346 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750893Ab2KCEtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 00:49:33 -0400
+Date: Sat, 3 Nov 2012 05:49:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: AMD A10: MCE Instruction Cache Error
+Message-ID: <20121103044929.GB21829@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Alexander Holler <holler@ahsoftware.de>,
+	linux-kernel@vger.kernel.org
+References: <5093A592.9070605@ahsoftware.de>
+ <5093D069.20901@ahsoftware.de>
 MIME-Version: 1.0
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        Shan Wei <shanwei88@gmail.com>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: [PATCH cleanup RFC] ftrace: kill unused and puzzled sample code in
- ftrace.h
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5093D069.20901@ahsoftware.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shan Wei <davidshan@tencent.com>
+On Fri, Nov 02, 2012 at 02:53:45PM +0100, Alexander Holler wrote:
+> Am 02.11.2012 11:50, schrieb Alexander Holler:
+> >Hello,
+> >
+> >I've just got the following on an AMD A10 5800K:
+> >
+> >------
+> >[ 8395.999581] [Hardware Error]: CPU:0
+> >MC1_STATUS[-|CE|MiscV|-|AddrV|-|-]: 0x8c00002000010151
+> >[ 8395.999586] [Hardware Error]:        MC1_ADDR: 0x0000ffffa00e1203
+> >[ 8395.999588] [Hardware Error]: Instruction Cache Error: Parity error
+> >during data load from IC.
+> >[ 8395.999590] [Hardware Error]: cache level: L1, tx: INSN, mem-tx: IRD
+> >------
+> >
+> >Kernel is 3.6.5, MB is an Asus F2A85-M with BIOS 5103 (the latest).
+> >
+> >Can someone enlight me about what might be wrong with my (new) system
+> >(memtest didn't show an errors)?
+> >
+> >What IC is meant? As far as I know, this processor doesn't support ECC,
+> >so I wonder where that parity error does come from.
+> 
+> I assume IC means Instruction Cache. ;)
 
-When doing per-cpu helper optimizing work, find that this code is so puzzled.
-1. It's mark as comment text, maybe a sample function for guidelines 
-   or a todo work.
-2. But, this sample code is odd where struct perf_trace_buf is nonexistent.
-   commit ce71b9 delete struct perf_trace_buf definition.
+It says so earlier in the sentence: "Instruction Cache Error" :)
 
-   Author: Frederic Weisbecker <fweisbec@gmail.com>
-   Date:   Sun Nov 22 05:26:55 2009 +0100
+> As the kernel didn't reboot or halt, this seems to have been a
+> correctable error.
 
-   tracing: Use the perf recursion protection from trace event
+Yes, it is (the "CE" bit in MC1_STATUS). Btw, I have reworked this code
+to spit human-readable information first. It also says what the error
+severity is now.
 
-Is it necessary to keep there?
-just compile test. 
+> Which leads me to another question. I have mcelog running, but it
+> doesn't seem to receive the error. With my previous Intel-HW and an
+> older kernel, mcelog received MCE errors (trip temperatur). But
+> since the kernel now decodes those message themself, that doesn't
+> seem to happen anymore. mcelog is silent, but now I've seen the
+> above message on all my consoles.
 
+Yes, AMD doesn't use mcelog.
 
+> So now I have two question:
+> 
+> - First, if the error is something I should ask AMD about,
 
-Signed-off-by: Shan Wei <davidshan@tencent.com>
----
- include/trace/ftrace.h |   73 ------------------------------------------------
- 1 files changed, 0 insertions(+), 73 deletions(-)
+Not really, it is a single bit flip which got corrected, simply watch
+out if you get more of those.
 
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index a763888..4f993c2 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -620,79 +620,6 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- 
- #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
- 
--/*
-- * Define the insertion callback to perf events
-- *
-- * The job is very similar to ftrace_raw_event_<call> except that we don't
-- * insert in the ring buffer but in a perf counter.
-- *
-- * static void ftrace_perf_<call>(proto)
-- * {
-- *	struct ftrace_data_offsets_<call> __maybe_unused __data_offsets;
-- *	struct ftrace_event_call *event_call = &event_<call>;
-- *	extern void perf_tp_event(int, u64, u64, void *, int);
-- *	struct ftrace_raw_##call *entry;
-- *	struct perf_trace_buf *trace_buf;
-- *	u64 __addr = 0, __count = 1;
-- *	unsigned long irq_flags;
-- *	struct trace_entry *ent;
-- *	int __entry_size;
-- *	int __data_size;
-- *	int __cpu
-- *	int pc;
-- *
-- *	pc = preempt_count();
-- *
-- *	__data_size = ftrace_get_offsets_<call>(&__data_offsets, args);
-- *
-- *	// Below we want to get the aligned size by taking into account
-- *	// the u32 field that will later store the buffer size
-- *	__entry_size = ALIGN(__data_size + sizeof(*entry) + sizeof(u32),
-- *			     sizeof(u64));
-- *	__entry_size -= sizeof(u32);
-- *
-- *	// Protect the non nmi buffer
-- *	// This also protects the rcu read side
-- *	local_irq_save(irq_flags);
-- *	__cpu = smp_processor_id();
-- *
-- *	if (in_nmi())
-- *		trace_buf = rcu_dereference_sched(perf_trace_buf_nmi);
-- *	else
-- *		trace_buf = rcu_dereference_sched(perf_trace_buf);
-- *
-- *	if (!trace_buf)
-- *		goto end;
-- *
-- *	trace_buf = per_cpu_ptr(trace_buf, __cpu);
-- *
-- * 	// Avoid recursion from perf that could mess up the buffer
-- * 	if (trace_buf->recursion++)
-- *		goto end_recursion;
-- *
-- * 	raw_data = trace_buf->buf;
-- *
-- *	// Make recursion update visible before entering perf_tp_event
-- *	// so that we protect from perf recursions.
-- *
-- *	barrier();
-- *
-- *	//zero dead bytes from alignment to avoid stack leak to userspace:
-- *	*(u64 *)(&raw_data[__entry_size - sizeof(u64)]) = 0ULL;
-- *	entry = (struct ftrace_raw_<call> *)raw_data;
-- *	ent = &entry->ent;
-- *	tracing_generic_entry_update(ent, irq_flags, pc);
-- *	ent->type = event_call->id;
-- *
-- *	<tstruct> <- do some jobs with dynamic arrays
-- *
-- *	<assign>  <- affect our values
-- *
-- *	perf_tp_event(event_call->id, __addr, __count, entry,
-- *		     __entry_size);  <- submit them to perf counter
-- *
-- * }
-- */
- 
- #ifdef CONFIG_PERF_EVENTS
- 
+> - Second, if the kernel could mention that it is an recoverable
+> error. And if so and if such errors aren't something to get panic
+> (e.g. it isn't unusual to receive such), if the kernel could output
+> that message with another priority.
+
+As I said above, it got corrected. If it were critical, it would've
+either panicked or you wouldnt've seen it at all (probably only after
+reboot).
+
+HTH.
+
 -- 
-1.7.1
-
+Regards/Gruss,
+    Boris.
