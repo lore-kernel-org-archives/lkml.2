@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab2KCQKK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 12:10:10 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:57221 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756206Ab2KCQKB (ORCPT
+	id S1757223Ab2KCQKq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 12:10:46 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:43958 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756943Ab2KCQJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 12:10:01 -0400
+	Sat, 3 Nov 2012 12:09:57 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3/3] cputime: Generic on-demand virtual cputime accounting
-Date: Sat,  3 Nov 2012 17:09:43 +0100
-Message-Id: <1351958983-31355-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/3] cputime: Allow dynamic switch between tick/virtual based cputime accounting
+Date: Sat,  3 Nov 2012 17:09:42 +0100
+Message-Id: <1351958983-31355-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1351958983-31355-1-git-send-email-fweisbec@gmail.com>
 References: <1351958983-31355-1-git-send-email-fweisbec@gmail.com>
@@ -26,41 +26,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we want to stop the tick further idle, we need to be
-able to account the cputime without using the tick.
+Allow to dynamically switch between tick and virtual based cputime accounting.
+This way we can provide a kind of "on-demand" virtual based cputime
+accounting. In this mode, the kernel will rely on the user hooks
+subsystem to dynamically hook on kernel boundaries.
 
-Virtual based cputime accounting solves that problem by
-hooking into kernel/user boundaries.
+This is in preparation for beeing able to stop the timer tick further
+idle. Doing so will depend on CONFIG_VIRT_CPU_ACCOUNTING which makes
+it possible to account the cputime without the tick by hooking on
+kernel/user boundaries.
 
-However implementing CONFIG_VIRT_CPU_ACCOUNTING require
-to set low level hooks and involves more overhead. But
-we already have a generic context tracking subsystem
-that is required for RCU needs by archs which will want to
-shut down the tick outside idle.
-
-This patch implements a generic virtual based cputime
-accounting that relies on these generic kernel/user hooks.
-
-There are some upsides of doing this:
-
-- This requires no arch code to implement CONFIG_VIRT_CPU_ACCOUNTING
-if context tracking is already built (already necessary for RCU in full
-tickless mode).
-
-- We can rely on the generic context tracking subsystem to dynamically
-(de)activate the hooks, so that we can switch anytime between virtual
-and tick based accounting. This way we don't have the overhead
-of the virtual accounting when the tick is running periodically.
-
-And a few downsides:
-
-- It relies on jiffies and the hooks are set in high level code. This
-results in less precise cputime accounting than with a true native
-virtual based cputime accounting which hooks on low level code and use
-a cpu hardware clock. Precision is not the goal of this though.
-
-- There is probably more overhead than a native virtual based cputime
-accounting. But this relies on hooks that are already set anyway.
+Depending whether the tick is stopped or not, we can switch between
+tick and vtime based accounting anytime in order to minimize the
+overhead associated to user hooks.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -71,282 +49,286 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/context_tracking.h |   28 ++++++++++
- include/linux/vtime.h            |    7 +++
- init/Kconfig                     |   11 ++++-
- kernel/context_tracking.c        |   16 +-----
- kernel/sched/cputime.c           |  112 ++++++++++++++++++++++++++++++++++++--
- 5 files changed, 154 insertions(+), 20 deletions(-)
+ arch/ia64/include/asm/cputime.h    |    5 ++++
+ arch/ia64/kernel/time.c            |    2 +-
+ arch/powerpc/include/asm/cputime.h |    5 ++++
+ arch/powerpc/kernel/time.c         |    2 +-
+ arch/s390/include/asm/cputime.h    |    5 ++++
+ arch/s390/kernel/vtime.c           |    2 +-
+ include/linux/sched.h              |    5 +---
+ include/linux/vtime.h              |    7 ++++++
+ kernel/fork.c                      |    3 +-
+ kernel/sched/cputime.c             |   40 ++++++++++++++++-------------------
+ kernel/time/tick-sched.c           |    5 ++-
+ 11 files changed, 48 insertions(+), 33 deletions(-)
 
-diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index e24339c..3b63210 100644
---- a/include/linux/context_tracking.h
-+++ b/include/linux/context_tracking.h
-@@ -3,12 +3,40 @@
+diff --git a/arch/ia64/include/asm/cputime.h b/arch/ia64/include/asm/cputime.h
+index 3deac95..49782fe 100644
+--- a/arch/ia64/include/asm/cputime.h
++++ b/arch/ia64/include/asm/cputime.h
+@@ -103,5 +103,10 @@ static inline void cputime_to_timeval(const cputime_t ct, struct timeval *val)
+ #define cputime64_to_clock_t(__ct)	\
+ 	cputime_to_clock_t((__force cputime_t)__ct)
  
- #ifdef CONFIG_CONTEXT_TRACKING
- #include <linux/sched.h>
-+#include <linux/percpu.h>
-+
-+struct context_tracking {
-+	/*
-+	 * When active is false, hooks are not set to
-+	 * minimize overhead: TIF flags are cleared
-+	 * and calls to user_enter/exit are ignored. This
-+	 * may be further optimized using static keys.
-+	 */
-+	bool active;
-+	enum {
-+		IN_KERNEL = 0,
-+		IN_USER,
-+	} state;
-+};
-+
-+DECLARE_PER_CPU(struct context_tracking, context_tracking);
-+
-+static inline bool context_tracking_in_user(void)
++static inline bool vtime_accounting(void)
 +{
-+	return __this_cpu_read(context_tracking.state) == IN_USER;
++	return true;
 +}
 +
-+static inline bool context_tracking_active(void)
-+{
-+	return __this_cpu_read(context_tracking.active);
-+}
+ #endif /* CONFIG_VIRT_CPU_ACCOUNTING */
+ #endif /* __IA64_CPUTIME_H */
+diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
+index 5e48503..7b1fa3d 100644
+--- a/arch/ia64/kernel/time.c
++++ b/arch/ia64/kernel/time.c
+@@ -151,7 +151,7 @@ void __vtime_account_idle(struct task_struct *tsk)
+  * Called from the timer interrupt handler to charge accumulated user time
+  * to the current process.  Must be called with interrupts disabled.
+  */
+-void account_process_tick(struct task_struct *p, int user_tick)
++void vtime_account_process_tick(struct task_struct *p, int user_tick)
+ {
+ 	vtime_account_user(p);
+ }
+diff --git a/arch/powerpc/include/asm/cputime.h b/arch/powerpc/include/asm/cputime.h
+index 487d46f..e84c2b3 100644
+--- a/arch/powerpc/include/asm/cputime.h
++++ b/arch/powerpc/include/asm/cputime.h
+@@ -228,6 +228,11 @@ static inline cputime_t clock_t_to_cputime(const unsigned long clk)
  
- extern void user_enter(void);
- extern void user_exit(void);
- extern void context_tracking_task_switch(struct task_struct *prev,
- 					 struct task_struct *next);
- #else
-+static inline bool context_tracking_in_user(void) { return false; }
- static inline void user_enter(void) { }
- static inline void user_exit(void) { }
- static inline void context_tracking_task_switch(struct task_struct *prev,
+ #define cputime64_to_clock_t(ct)	cputime_to_clock_t((cputime_t)(ct))
+ 
++static inline bool vtime_accounting(void)
++{
++	return true;
++}
++
+ #endif /* __KERNEL__ */
+ #endif /* CONFIG_VIRT_CPU_ACCOUNTING */
+ #endif /* __POWERPC_CPUTIME_H */
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index 0db456f..1c9a3b8 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -363,7 +363,7 @@ void __vtime_account_idle(struct task_struct *tsk)
+  * (i.e. since the last entry from usermode) so that
+  * get_paca()->user_time_scaled is up to date.
+  */
+-void account_process_tick(struct task_struct *tsk, int user_tick)
++void vtime_account_process_tick(struct task_struct *tsk, int user_tick)
+ {
+ 	cputime_t utime, utimescaled;
+ 
+diff --git a/arch/s390/include/asm/cputime.h b/arch/s390/include/asm/cputime.h
+index 023d5ae..a96161b 100644
+--- a/arch/s390/include/asm/cputime.h
++++ b/arch/s390/include/asm/cputime.h
+@@ -191,4 +191,9 @@ static inline int s390_nohz_delay(int cpu)
+ 
+ #define arch_needs_cpu(cpu) s390_nohz_delay(cpu)
+ 
++static inline bool vtime_accounting(void)
++{
++	return true;
++}
++
+ #endif /* _S390_CPUTIME_H */
+diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
+index 783e988..ab180de 100644
+--- a/arch/s390/kernel/vtime.c
++++ b/arch/s390/kernel/vtime.c
+@@ -112,7 +112,7 @@ void vtime_task_switch(struct task_struct *prev)
+ 	S390_lowcore.system_timer = ti->system_timer;
+ }
+ 
+-void account_process_tick(struct task_struct *tsk, int user_tick)
++void vtime_account_process_tick(struct task_struct *tsk, int user_tick)
+ {
+ 	if (do_account_vtime(tsk, HARDIRQ_OFFSET))
+ 		virt_timer_expire();
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 6c13fe3..2f9bba0 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -580,9 +580,7 @@ struct signal_struct {
+ 	cputime_t utime, stime, cutime, cstime;
+ 	cputime_t gtime;
+ 	cputime_t cgtime;
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	cputime_t prev_utime, prev_stime;
+-#endif
+ 	unsigned long nvcsw, nivcsw, cnvcsw, cnivcsw;
+ 	unsigned long min_flt, maj_flt, cmin_flt, cmaj_flt;
+ 	unsigned long inblock, oublock, cinblock, coublock;
+@@ -1339,9 +1337,8 @@ struct task_struct {
+ 
+ 	cputime_t utime, stime, utimescaled, stimescaled;
+ 	cputime_t gtime;
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	cputime_t prev_utime, prev_stime;
+-#endif
++
+ 	unsigned long nvcsw, nivcsw; /* context switch counts */
+ 	struct timespec start_time; 		/* monotonic time */
+ 	struct timespec real_start_time;	/* boot based time */
 diff --git a/include/linux/vtime.h b/include/linux/vtime.h
-index 85a1f0f..3ea63a1 100644
+index 0c2a2d3..85a1f0f 100644
 --- a/include/linux/vtime.h
 +++ b/include/linux/vtime.h
-@@ -23,6 +23,13 @@ static inline void vtime_account(struct task_struct *tsk) { }
- static inline bool vtime_accounting(void) { return false; }
+@@ -8,12 +8,19 @@ extern void vtime_task_switch(struct task_struct *prev);
+ extern void __vtime_account_system(struct task_struct *tsk);
+ extern void vtime_account_system(struct task_struct *tsk);
+ extern void __vtime_account_idle(struct task_struct *tsk);
++extern void vtime_account_process_tick(struct task_struct *tsk,
++				       int user_tick);
+ extern void vtime_account(struct task_struct *tsk);
+ #else
+ static inline void vtime_task_switch(struct task_struct *prev) { }
+ static inline void __vtime_account_system(struct task_struct *tsk) { }
+ static inline void vtime_account_system(struct task_struct *tsk) { }
++
++static inline void
++vtime_account_process_tick(struct task_struct *tsk, int user_tick) { }
++
+ static inline void vtime_account(struct task_struct *tsk) { }
++static inline bool vtime_accounting(void) { return false; }
  #endif
  
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-+extern void __vtime_account_user(struct task_struct *tsk);
-+extern bool vtime_accounting(void);
-+#else
-+static inline void __vtime_account_user(struct task_struct *tsk) { }
-+#endif
-+
  #ifdef CONFIG_IRQ_TIME_ACCOUNTING
- extern void irqtime_account_irq(struct task_struct *tsk);
- #else
-diff --git a/init/Kconfig b/init/Kconfig
-index 15e44e7..ad96572 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -344,7 +344,9 @@ config TICK_CPU_ACCOUNTING
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 8b20ab7..66bf627 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1221,9 +1221,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
  
- config VIRT_CPU_ACCOUNTING
- 	bool "Deterministic task and CPU time accounting"
--	depends on HAVE_VIRT_CPU_ACCOUNTING
-+	depends on HAVE_VIRT_CPU_ACCOUNTING || HAVE_CONTEXT_TRACKING
-+	select VIRT_CPU_ACCOUNTING_GEN if !HAVE_VIRT_CPU_ACCOUNTING
-+	default y if PPC64
- 	help
- 	  Select this option to enable more accurate task and CPU time
- 	  accounting.  This is done by reading a CPU counter on each
-@@ -367,6 +369,13 @@ config IRQ_TIME_ACCOUNTING
- 
- endchoice
- 
-+config VIRT_CPU_ACCOUNTING_GEN
-+	select CONTEXT_TRACKING
-+	bool
-+	help
-+	  Implement a generic virtual based cputime accounting by using
-+	  the context tracking subsystem.
+ 	p->utime = p->stime = p->gtime = 0;
+ 	p->utimescaled = p->stimescaled = 0;
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	p->prev_utime = p->prev_stime = 0;
+-#endif
 +
- config BSD_PROCESS_ACCT
- 	bool "BSD Process Accounting"
- 	help
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index d7983ea..1a1ded6 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -1,22 +1,8 @@
- #include <linux/context_tracking.h>
- #include <linux/rcupdate.h>
- #include <linux/sched.h>
--#include <linux/percpu.h>
- #include <linux/hardirq.h>
- 
--struct context_tracking {
--	/*
--	 * When active is false, hooks are not set to
--	 * minimize overhead: TIF flags are cleared
--	 * and calls to user_enter/exit are ignored. This
--	 * may be further optimized using static keys.
--	 */
--	bool active;
--	enum {
--		IN_KERNEL = 0,
--		IN_USER,
--	} state;
--};
- 
- DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
- #ifdef CONFIG_CONTEXT_TRACKING_FORCE
-@@ -45,6 +31,7 @@ void user_enter(void)
- 	if (__this_cpu_read(context_tracking.active) &&
- 	    __this_cpu_read(context_tracking.state) != IN_USER) {
- 		__this_cpu_write(context_tracking.state, IN_USER);
-+		__vtime_account_system(current);
- 		rcu_user_enter();
- 	}
- 	local_irq_restore(flags);
-@@ -69,6 +56,7 @@ void user_exit(void)
- 	if (__this_cpu_read(context_tracking.state) == IN_USER) {
- 		__this_cpu_write(context_tracking.state, IN_KERNEL);
- 		rcu_user_exit();
-+		__vtime_account_user(current);
- 	}
- 	local_irq_restore(flags);
- }
+ #if defined(SPLIT_RSS_COUNTING)
+ 	memset(&p->rss_stat, 0, sizeof(p->rss_stat));
+ #endif
 diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index ff608f6..53990e7 100644
+index 8d859da..ff608f6 100644
 --- a/kernel/sched/cputime.c
 +++ b/kernel/sched/cputime.c
-@@ -3,6 +3,7 @@
- #include <linux/tsacct_kern.h>
- #include <linux/kernel_stat.h>
- #include <linux/static_key.h>
-+#include <linux/context_tracking.h>
- #include "sched.h"
+@@ -288,8 +288,6 @@ static __always_inline bool steal_account_process_tick(void)
+ 	return false;
+ }
  
- 
-@@ -444,11 +445,25 @@ void vtime_account(struct task_struct *tsk)
- 
- 	local_irq_save(flags);
- 
--	if (in_interrupt() || !is_idle_task(tsk))
--		__vtime_account_system(tsk);
--	else
--		__vtime_account_idle(tsk);
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
 -
-+	if (!in_interrupt()) {
-+		/*
-+		 * If we interrupted user, context_tracking_in_user()
-+		 * is 1 because the context tracking don't hook
-+		 * on irq entry/exit. This way we know if
-+		 * we need to flush user time on kernel entry.
-+		 */
-+		if (context_tracking_in_user()) {
-+			__vtime_account_user(tsk);
-+			goto out;
-+		}
-+
-+		if (is_idle_task(tsk)) {
-+			__vtime_account_idle(tsk);
-+			goto out;
-+		}
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+ /*
+  * Account a tick to a process and cpustat
+@@ -369,6 +367,11 @@ void account_process_tick(struct task_struct *p, int user_tick)
+ 	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+ 	struct rq *rq = this_rq();
+ 
++	if (vtime_accounting()) {
++		vtime_account_process_tick(p, user_tick);
++		return;
 +	}
-+	__vtime_account_system(tsk);
-+out:
- 	local_irq_restore(flags);
++
+ 	if (sched_clock_irqtime) {
+ 		irqtime_account_process_tick(p, user_tick, rq);
+ 		return;
+@@ -411,28 +414,11 @@ void account_idle_ticks(unsigned long ticks)
+ 	account_idle_time(jiffies_to_cputime(ticks));
+ }
+ 
+-#endif
+ 
+ /*
+  * Use precise platform statistics if available:
+  */
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING
+-void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-{
+-	*ut = p->utime;
+-	*st = p->stime;
+-}
+-
+-void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+-{
+-	struct task_cputime cputime;
+-
+-	thread_group_cputime(p, &cputime);
+-
+-	*ut = cputime.utime;
+-	*st = cputime.stime;
+-}
+-
+ void vtime_account_system(struct task_struct *tsk)
+ {
+ 	unsigned long flags;
+@@ -467,8 +453,7 @@ void vtime_account(struct task_struct *tsk)
  }
  EXPORT_SYMBOL_GPL(vtime_account);
-@@ -534,3 +549,90 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ #endif /* __ARCH_HAS_VTIME_ACCOUNT */
+-
+-#else
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
+ 
+ #ifndef nsecs_to_cputime
+ # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
+@@ -492,6 +477,12 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ {
+ 	cputime_t rtime, utime = p->utime, total = utime + p->stime;
+ 
++	if (vtime_accounting()) {
++		*ut = p->utime;
++		*st = p->stime;
++		return;
++	}
++
+ 	/*
+ 	 * Use CFS's precise accounting:
+ 	 */
+@@ -523,6 +514,12 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 
+ 	thread_group_cputime(p, &cputime);
+ 
++	if (vtime_accounting()) {
++		*ut = cputime.utime;
++		*st = cputime.stime;
++		return;
++	}
++
+ 	total = cputime.utime + cputime.stime;
+ 	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
+ 
+@@ -537,4 +534,3 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
  	*ut = sig->prev_utime;
  	*st = sig->prev_stime;
  }
+-#endif
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index a402608..2c82751 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -586,8 +586,10 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
+ 
+ static void tick_nohz_account_idle_ticks(struct tick_sched *ts)
+ {
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	unsigned long ticks;
 +
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-+static DEFINE_PER_CPU(long, last_jiffies) = INITIAL_JIFFIES;
-+
-+static cputime_t get_vtime_delta(void)
-+{
-+	long delta;
-+
-+	delta = jiffies - __this_cpu_read(last_jiffies);
-+	__this_cpu_add(last_jiffies, delta);
-+
-+	return jiffies_to_cputime(delta);
-+}
-+
-+void __vtime_account_system(struct task_struct *tsk)
-+{
-+	cputime_t delta_cpu = get_vtime_delta();
-+
-+	account_system_time(tsk, irq_count(), delta_cpu, cputime_to_scaled(delta_cpu));
-+}
-+
-+void __vtime_account_user(struct task_struct *tsk)
-+{
-+	cputime_t delta_cpu = get_vtime_delta();
-+
-+	account_user_time(tsk, delta_cpu, cputime_to_scaled(delta_cpu));
-+}
-+
-+void __vtime_account_idle(struct task_struct *tsk)
-+{
-+	cputime_t delta_cpu = get_vtime_delta();
-+
-+	account_idle_time(delta_cpu);
-+}
-+
-+void vtime_task_switch(struct task_struct *prev)
-+{
-+	if (is_idle_task(prev))
-+		__vtime_account_idle(prev);
-+	else
-+		__vtime_account_system(prev);
-+}
-+
-+/*
-+ * This is an unfortunate hack: if we flush user time only on
-+ * irq entry, we miss the jiffies update and the time is spuriously
-+ * accounted to system time.
-+ */
-+void vtime_account_process_tick(struct task_struct *p, int user_tick)
-+{
-+	if (context_tracking_in_user())
-+		__vtime_account_user(p);
-+}
-+
-+bool vtime_accounting(void)
-+{
-+	return context_tracking_active();
-+}
-+
-+static int __cpuinit vtime_cpu_notify(struct notifier_block *self,
-+				      unsigned long action, void *hcpu)
-+{
-+	long cpu = (long)hcpu;
-+	long *last_jiffies_cpu = per_cpu_ptr(&last_jiffies, cpu);
-+
-+	switch (action) {
-+	case CPU_UP_PREPARE:
-+	case CPU_UP_PREPARE_FROZEN:
-+		/*
-+		 * CHECKME: ensure that's visible by the CPU
-+		 * once it wakes up
-+		 */
-+		*last_jiffies_cpu = jiffies;
-+	default:
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static int __init init_vtime(void)
-+{
-+	cpu_notifier(vtime_cpu_notify, 0);
-+	return 0;
-+}
-+early_initcall(init_vtime);
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
++	if (vtime_accounting())
++		return;
+ 	/*
+ 	 * We stopped the tick in idle. Update process times would miss the
+ 	 * time we slept as update_process_times does only a 1 tick
+@@ -599,7 +601,6 @@ static void tick_nohz_account_idle_ticks(struct tick_sched *ts)
+ 	 */
+ 	if (ticks && ticks < LONG_MAX)
+ 		account_idle_ticks(ticks);
+-#endif
+ }
+ 
+ /**
 -- 
 1.7.5.4
 
