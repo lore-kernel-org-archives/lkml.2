@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab2KCQhl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 12:37:41 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:60989 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756502Ab2KCQhj (ORCPT
+	id S1757491Ab2KCQhv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 12:37:51 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:51510 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757454Ab2KCQhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 12:37:39 -0400
-Message-ID: <50954852.5050209@acm.org>
-Date: Sat, 03 Nov 2012 17:37:38 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
+	Sat, 3 Nov 2012 12:37:46 -0400
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [patch,v2 05/10] sd: use alloc_disk_node
-References: <1351892763-21325-1-git-send-email-jmoyer@redhat.com> <1351892763-21325-6-git-send-email-jmoyer@redhat.com>
-In-Reply-To: <1351892763-21325-6-git-send-email-jmoyer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121103163152.1405e2cb@pyramind.ukuu.org.uk>
+References: <20121101212843.GA20309@srcf.ucam.org>
+	<20121101213751.377ebaa8@pyramind.ukuu.org.uk>
+	<20121101213452.GA20564@srcf.ucam.org>
+	<20121101215817.79e50ec2@pyramind.ukuu.org.uk>
+	<20121101215752.GA21154@srcf.ucam.org>
+	<87625ogzje.fsf@xmission.com>
+	<20121102140057.GA4668@srcf.ucam.org>
+	<87liejacix.fsf@xmission.com>
+	<20121103002033.GA18691@srcf.ucam.org>
+	<87sj8rwm0p.fsf@xmission.com>
+	<20121103014332.GA20065@srcf.ucam.org>
+	<20121103163152.1405e2cb@pyramind.ukuu.org.uk>
+Date: Sat, 3 Nov 2012 12:37:44 -0400
+Message-ID: <CACLa4pt3_Fc5fHKf=ihzV0zDb7zvCyzWp92YLakjGqL7MCaiEA@mail.gmail.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+From: Eric Paris <eparis@parisplace.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Josh Boyer <jwboyer@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/12 22:45, Jeff Moyer wrote:
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-> ---
->   drivers/scsi/sd.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
+On Sat, Nov 3, 2012 at 12:31 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> You're guaranteed to be able
+>> to do this on any Windows 8 certified hardware.
 >
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index 12f6fdf..8deb915 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -2714,7 +2714,7 @@ static int sd_probe(struct device *dev)
->   	if (!sdkp)
->   		goto out;
->
-> -	gd = alloc_disk(SD_MINORS);
-> +	gd = alloc_disk_node(SD_MINORS, dev_to_node(dev));
->   	if (!gd)
->   		goto out_free;
+> Thats not my understanding of the situation.
 
-shost->numa_node can be another NUMA node than dev_to_node(dev). Have 
-you considered using shost->numa_node here ?
+Windows 8 certification has this as a requirement for x86 hardware.  I
+belied the opposite is a requirement for arm hardware.  However it's
+possible that it just doesn't specifiy at all for arm.
 
-Bart.
-
+So yes, you're guaranteed to be able to do this on any Windows 8
+certified x86 hardware.
