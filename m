@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab2KCIjO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 04:39:14 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51998 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376Ab2KCIjD (ORCPT
+	id S1754864Ab2KCIjd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 04:39:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33714 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754694Ab2KCIj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 04:39:03 -0400
+	Sat, 3 Nov 2012 04:39:27 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, mhocko@suse.cz, rjw@sisk.pl
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         fweisbec@gmail.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/9] cgroup: Use rculist ops for cgroup->children
-Date: Sat,  3 Nov 2012 01:38:28 -0700
-Message-Id: <1351931915-1701-3-git-send-email-tj@kernel.org>
+Subject: [PATCH 7/9] cgroup_freezer: introduce CGROUP_FREEZING_[SELF|PARENT]
+Date: Sat,  3 Nov 2012 01:38:33 -0700
+Message-Id: <1351931915-1701-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351931915-1701-1-git-send-email-tj@kernel.org>
 References: <1351931915-1701-1-git-send-email-tj@kernel.org>
@@ -22,78 +22,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use RCU safe list operations for cgroup->children.  This will be used
-to implement cgroup children / descendant walking which can be used by
-controllers.
+Introduce FREEZING_SELF and FREEZING_PARENT and make FREEZING OR of
+the two flags.  This is to prepare for full hierarchy support.
 
-Note that cgroup_create() now puts a new cgroup at the end of the
-->children list instead of head.  This isn't strictly necessary but is
-done so that the iteration order is more conventional.
+freezer_apply_date() is updated such that it can handle setting and
+clearing of both flags.  The two flags are also exposed to userland
+via read-only files self_freezing and parent_freezing.
+
+Other than the added cgroupfs files, this patch doesn't introduce any
+behavior change.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/cgroup.h | 1 +
- kernel/cgroup.c        | 8 +++-----
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ kernel/cgroup_freezer.c | 55 ++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 47 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index b442122..90c33eb 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -12,6 +12,7 @@
- #include <linux/cpumask.h>
- #include <linux/nodemask.h>
- #include <linux/rcupdate.h>
-+#include <linux/rculist.h>
- #include <linux/cgroupstats.h>
- #include <linux/prio_heap.h>
- #include <linux/rwsem.h>
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index f05d992..cc5d2a0 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1650,7 +1650,6 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+index e76aa9f..b8ad93c 100644
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -23,8 +23,12 @@
+ #include <linux/seq_file.h>
  
- 		free_cg_links(&tmp_cg_links);
+ enum freezer_state_flags {
+-	CGROUP_FREEZING		= (1 << 1), /* this freezer is freezing */
++	CGROUP_FREEZING_SELF	= (1 << 1), /* this freezer is freezing */
++	CGROUP_FREEZING_PARENT	= (1 << 2), /* the parent freezer is freezing */
+ 	CGROUP_FROZEN		= (1 << 3), /* this and its descendants frozen */
++
++	/* mask for all FREEZING flags */
++	CGROUP_FREEZING		= CGROUP_FREEZING_SELF | CGROUP_FREEZING_PARENT,
+ };
  
--		BUG_ON(!list_empty(&root_cgrp->sibling));
- 		BUG_ON(!list_empty(&root_cgrp->children));
- 		BUG_ON(root->number_of_cgroups != 1);
- 
-@@ -1699,7 +1698,6 @@ static void cgroup_kill_sb(struct super_block *sb) {
- 
- 	BUG_ON(root->number_of_cgroups != 1);
- 	BUG_ON(!list_empty(&cgrp->children));
--	BUG_ON(!list_empty(&cgrp->sibling));
- 
- 	mutex_lock(&cgroup_mutex);
- 	mutex_lock(&cgroup_root_mutex);
-@@ -4053,7 +4051,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 		}
+ struct freezer {
+@@ -245,8 +249,13 @@ static void unfreeze_cgroup(struct freezer *freezer)
+  * freezer_apply_state - apply state change to a single cgroup_freezer
+  * @freezer: freezer to apply state change to
+  * @freeze: whether to freeze or unfreeze
++ * @state: CGROUP_FREEZING_* flag to set or clear
++ *
++ * Set or clear @state on @cgroup according to @freeze, and perform
++ * freezing or thawing as necessary.
+  */
+-static void freezer_apply_state(struct freezer *freezer, bool freeze)
++static void freezer_apply_state(struct freezer *freezer, bool freeze,
++				unsigned int state)
+ {
+ 	/* also synchronizes against task migration, see freezer_attach() */
+ 	lockdep_assert_held(&freezer->lock);
+@@ -254,13 +263,19 @@ static void freezer_apply_state(struct freezer *freezer, bool freeze)
+ 	if (freeze) {
+ 		if (!(freezer->state & CGROUP_FREEZING))
+ 			atomic_inc(&system_freezing_cnt);
+-		freezer->state |= CGROUP_FREEZING;
++		freezer->state |= state;
+ 		freeze_cgroup(freezer);
+ 	} else {
+-		if (freezer->state & CGROUP_FREEZING)
+-			atomic_dec(&system_freezing_cnt);
+-		freezer->state &= ~(CGROUP_FREEZING | CGROUP_FROZEN);
+-		unfreeze_cgroup(freezer);
++		bool was_freezing = freezer->state & CGROUP_FREEZING;
++
++		freezer->state &= ~state;
++
++		if (!(freezer->state & CGROUP_FREEZING)) {
++			if (was_freezing)
++				atomic_dec(&system_freezing_cnt);
++			freezer->state &= ~CGROUP_FROZEN;
++			unfreeze_cgroup(freezer);
++		}
  	}
+ }
  
--	list_add(&cgrp->sibling, &cgrp->parent->children);
-+	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
- 	root->number_of_cgroups++;
+@@ -275,7 +290,7 @@ static void freezer_change_state(struct freezer *freezer, bool freeze)
+ {
+ 	/* update @freezer */
+ 	spin_lock_irq(&freezer->lock);
+-	freezer_apply_state(freezer, freeze);
++	freezer_apply_state(freezer, freeze, CGROUP_FREEZING_SELF);
+ 	spin_unlock_irq(&freezer->lock);
+ }
  
- 	err = cgroup_create_dir(cgrp, dentry, mode);
-@@ -4084,7 +4082,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+@@ -295,6 +310,20 @@ static int freezer_write(struct cgroup *cgroup, struct cftype *cft,
+ 	return 0;
+ }
  
-  err_remove:
- 
--	list_del(&cgrp->sibling);
-+	list_del_rcu(&cgrp->sibling);
- 	root->number_of_cgroups--;
- 
-  err_destroy:
-@@ -4210,7 +4208,7 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
- 	raw_spin_unlock(&release_list_lock);
- 
- 	/* delete this cgroup from parent->children */
--	list_del_init(&cgrp->sibling);
-+	list_del_rcu(&cgrp->sibling);
- 
- 	list_del_init(&cgrp->allcg_node);
++static u64 freezer_self_freezing_read(struct cgroup *cgroup, struct cftype *cft)
++{
++	struct freezer *freezer = cgroup_freezer(cgroup);
++
++	return (bool)(freezer->state & CGROUP_FREEZING_SELF);
++}
++
++static u64 freezer_parent_freezing_read(struct cgroup *cgroup, struct cftype *cft)
++{
++	struct freezer *freezer = cgroup_freezer(cgroup);
++
++	return (bool)(freezer->state & CGROUP_FREEZING_PARENT);
++}
++
+ static struct cftype files[] = {
+ 	{
+ 		.name = "state",
+@@ -302,6 +331,16 @@ static struct cftype files[] = {
+ 		.read_seq_string = freezer_read,
+ 		.write_string = freezer_write,
+ 	},
++	{
++		.name = "self_freezing",
++		.flags = CFTYPE_NOT_ON_ROOT,
++		.read_u64 = freezer_self_freezing_read,
++	},
++	{
++		.name = "parent_freezing",
++		.flags = CFTYPE_NOT_ON_ROOT,
++		.read_u64 = freezer_parent_freezing_read,
++	},
+ 	{ }	/* terminate */
+ };
  
 -- 
 1.7.11.7
