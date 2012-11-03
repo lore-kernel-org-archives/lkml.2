@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab2KCF2N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 01:28:13 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59264 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062Ab2KCF2I (ORCPT
+	id S1752672Ab2KCFkx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 01:40:53 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:48450 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab2KCFkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 01:28:08 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: [PATCH 3/3] fat: warn when discard request fails other than EOPNOTSUPP
-Date: Sat,  3 Nov 2012 14:27:58 +0900
-Message-Id: <1351920478-3326-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 3 Nov 2012 01:40:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121102182926.GA18824@kroah.com>
+References: <1351836952-3389-1-git-send-email-luca.clementi@gmail.com>
+	<20121102182926.GA18824@kroah.com>
+Date: Fri, 2 Nov 2012 22:40:51 -0700
+Message-ID: <CANqkERC11jHdEpgX=Z+7Fb-5U5xjyEcxEqeEeBcuy8amuvu4PA@mail.gmail.com>
+Subject: Re: [PATCH] Staging: Android: logger: module_exit implementationg
+From: Brian Swetland <swetland@google.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Luca Clementi <luca.clementi@gmail.com>, linux-kernel@vger.kernel.org,
+        Robert Love <rlove@google.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FAT also warn user then the discard request fails
-as ext4(http://patchwork.ozlabs.org/patch/192669/)
+On Fri, Nov 2, 2012 at 11:29 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Nov 01, 2012 at 11:15:52PM -0700, Luca Clementi wrote:
+>> +
+>> +
+>> +module_init(logger_init);
+>
+> Is module_init() the same "level" as device_initcall()?  Did you test
+> this out in an Android system?
+>
+>> +module_exit(logger_exit);
+>> +MODULE_LICENSE("GPL");
+>> +MODULE_AUTHOR("Brian Swetland, <swetland@google.com>");
+>> +MODULE_DESCRIPTION("Android Logger");
+>> +
+>> +
+>
+> What's with the unneeded trailing empty lines?
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
----
- fs/fat/fatent.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+Also, module author should be Robert Love (cc'd), unless he'd rather
+not be credited, in which case "Google, Inc" or no listed author is
+fine.
 
-diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
-index 260705c..fc1f407 100644
---- a/fs/fat/fatent.c
-+++ b/fs/fat/fatent.c
-@@ -583,12 +583,15 @@ int fat_free_clusters(struct inode *inode, int cluster)
- 			 */
- 			if (cluster != fatent.entry + 1) {
- 				int nr_clus = fatent.entry - first_cl + 1;
--
--				sb_issue_discard(sb,
--					fat_clus_to_blknr(sbi, first_cl),
--					nr_clus * sbi->sec_per_clus,
--					GFP_NOFS, 0);
--
-+				sector_t sblk = fat_clus_to_blknr(sbi, first_cl);
-+				sector_t nrblk = nr_clus * sbi->sec_per_clus;
-+
-+				err = sb_issue_discard(sb,
-+						sblk, nrblk, GFP_NOFS, 0);
-+				if (err && err != -EOPNOTSUPP)
-+					fat_msg(sb, KERN_WARNING, "discard request for"
-+							" block:%llu count:%llu failed"
-+							" with %d", sblk, nrblk, err);
- 				first_cl = cluster;
- 			}
- 		}
--- 
-1.7.9.5
-
+Brian
