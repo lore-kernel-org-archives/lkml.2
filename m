@@ -1,100 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab2KCJaf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 05:30:35 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:37469 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367Ab2KCJac (ORCPT
+	id S1754672Ab2KCJa4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 05:30:56 -0400
+Received: from ermis.materials.uoc.gr ([147.52.136.196]:56604 "EHLO
+	ermis.materials.uoc.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753103Ab2KCJax convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 05:30:32 -0400
-Message-ID: <5094E2AB.9050807@gmail.com>
-Date: Sat, 03 Nov 2012 10:23:55 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
+	Sat, 3 Nov 2012 05:30:53 -0400
+X-Greylist: delayed 682 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Nov 2012 05:30:53 EDT
+Message-Id: <201211030913.qA399lwu003267@ermis.materials.uoc.gr>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: reiserfs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/21] reiserfs: drop vmtruncate
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: **Alert Notification!!!
+To: Recipients <admin@upgrade.co.uk>
+From: "Webmail Communications" <admin@upgrade.co.uk>
+Date: Sat, 03 Nov 2012 10:21:46 +0100
+Reply-To: admin@upgrade.co.uk
+X-UOC-MailScanner-Information: Please contact the ISP for more information
+X-UOC-MailScanner-ID: qA399lwu003267
+X-UOC-MailScanner: Found to be clean
+X-UOC-MailScanner-From: admin@upgrade.co.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed vmtruncate
+This Email is from Webmail Communications, We have been monitoring this account through our server's log file and have noticed that this account is been accessed from different distinct location simultaneously and also been used to send out spam messages as against webmail policy, for security purpose we will be shutting down this Account unless you click link below in order for us to re-validate your mailbox.
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
- fs/reiserfs/file.c     |    3 +--
- fs/reiserfs/inode.c    |   15 +++++++++++----
- fs/reiserfs/reiserfs.h |    1 +
- 3 files changed, 13 insertions(+), 6 deletions(-)
+https://docs.google.com/spreadsheet/embeddedform?formkey=dEVoamZFQXptN3lSOWpBWktRRXB3VFE6MQ
 
-diff --git a/fs/reiserfs/file.c b/fs/reiserfs/file.c
-index 8375c92..50302d6 100644
---- a/fs/reiserfs/file.c
-+++ b/fs/reiserfs/file.c
-@@ -126,7 +126,7 @@ static int reiserfs_file_open(struct inode *inode, struct file *file)
- 	return err;
- }
- 
--static void reiserfs_vfs_truncate_file(struct inode *inode)
-+void reiserfs_vfs_truncate_file(struct inode *inode)
- {
- 	mutex_lock(&(REISERFS_I(inode)->tailpack));
- 	reiserfs_truncate_file(inode, 1);
-@@ -312,7 +312,6 @@ const struct file_operations reiserfs_file_operations = {
- };
- 
- const struct inode_operations reiserfs_file_inode_operations = {
--	.truncate = reiserfs_vfs_truncate_file,
- 	.setattr = reiserfs_setattr,
- 	.setxattr = reiserfs_setxattr,
- 	.getxattr = reiserfs_getxattr,
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index f27f01a..ffb3993 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -3082,8 +3082,10 @@ static ssize_t reiserfs_direct_IO(int rw, struct kiocb *iocb,
- 		loff_t isize = i_size_read(inode);
- 		loff_t end = offset + iov_length(iov, nr_segs);
- 
--		if (end > isize)
--			vmtruncate(inode, isize);
-+		if ((end > isize) && inode_newsize_ok(inode, isize) == 0) {
-+			truncate_setsize(inode, isize);
-+			reiserfs_vfs_truncate_file(inode);
-+		}
- 	}
- 
- 	return ret;
-@@ -3196,8 +3198,13 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
- 	 */
- 	reiserfs_write_unlock_once(inode->i_sb, depth);
- 	if ((attr->ia_valid & ATTR_SIZE) &&
--	    attr->ia_size != i_size_read(inode))
--		error = vmtruncate(inode, attr->ia_size);
-+	    attr->ia_size != i_size_read(inode)) {
-+		error = inode_newsize_ok(inode, attr->ia_size);
-+		if (!error) {
-+			truncate_setsize(inode, attr->ia_size);
-+			reiserfs_vfs_truncate_file(inode);
-+		}
-+	}
- 
- 	if (!error) {
- 		setattr_copy(inode, attr);
-diff --git a/fs/reiserfs/reiserfs.h b/fs/reiserfs/reiserfs.h
-index 33215f5..157e474 100644
---- a/fs/reiserfs/reiserfs.h
-+++ b/fs/reiserfs/reiserfs.h
-@@ -2455,6 +2455,7 @@ struct reiserfs_transaction_handle *reiserfs_persistent_transaction(struct
- 								    *,
- 								    int count);
- int reiserfs_end_persistent_transaction(struct reiserfs_transaction_handle *);
-+void reiserfs_vfs_truncate_file(struct inode *inode);
- int reiserfs_commit_page(struct inode *inode, struct page *page,
- 			 unsigned from, unsigned to);
- void reiserfs_flush_old_commits(struct super_block *);
+Failure to update this account after three days of receiving this warning will be tantamount to losing this account permanently.
+
+Thank you for using our email.
+Copyright ©2012 Webmail Communications.
+
 -- 
-1.7.3.4
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
+
