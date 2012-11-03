@@ -1,209 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab2KCUzX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 16:55:23 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:54155 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752770Ab2KCUzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 16:55:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Date: Sat, 03 Nov 2012 21:59:28 +0100
-Message-ID: <1535917.BaYBBNgGy0@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <20121103201310.GQ16648@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <CAErSpo5q64uEse3aYYZkuQrD+9AJ9HFP_VVB1TabYfO-_BvY3g@mail.gmail.com> <20121103201310.GQ16648@intel.com>
+	id S1754169Ab2KCVNc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 17:13:32 -0400
+Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:60912 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab2KCVNb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 17:13:31 -0400
+From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
+        =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+Subject: [PATCH resend] printk: drop ambiguous LOG_CONT flag
+Date: Sat,  3 Nov 2012 22:12:56 +0100
+Message-Id: <1351977176-28381-1-git-send-email-schnhrr@cs.tu-berlin.de>
+X-Mailer: git-send-email 1.8.0.316.g291341c.dirty
+In-Reply-To: <20121102233610.GA3239@kroah.com>
+References: <20121102233610.GA3239@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 03, 2012 10:13:10 PM Mika Westerberg wrote:
-> On Sat, Nov 03, 2012 at 01:42:02PM -0600, Bjorn Helgaas wrote:
-> > On Sat, Nov 3, 2012 at 1:46 AM, Mika Westerberg
-> > <mika.westerberg@linux.intel.com> wrote:
-> > > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
-> > > configure the SPI slave devices behind the SPI controller. This patch adds
-> > > support for this to the SPI core.
-> > >
-> > > In addition we bind ACPI nodes to SPI devices. This makes it possible for
-> > > the slave drivers to get the ACPI handle for further configuration.
-> > >
-> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > ---
-> > >  drivers/spi/spi.c |  231 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
-> > >  1 file changed, 230 insertions(+), 1 deletion(-)
-> > >
-> > > diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-> > > index 84c2861..de22a6e 100644
-> > > --- a/drivers/spi/spi.c
-> > > +++ b/drivers/spi/spi.c
-> > > @@ -35,6 +35,7 @@
-> > >  #include <linux/sched.h>
-> > >  #include <linux/delay.h>
-> > >  #include <linux/kthread.h>
-> > > +#include <linux/acpi.h>
-> > >
-> > >  static void spidev_release(struct device *dev)
-> > >  {
-> > > @@ -93,6 +94,10 @@ static int spi_match_device(struct device *dev, struct device_driver *drv)
-> > >         if (of_driver_match_device(dev, drv))
-> > >                 return 1;
-> > >
-> > > +       /* Then try ACPI */
-> > > +       if (acpi_driver_match_device(dev, drv))
-> > > +               return 1;
-> > > +
-> > >         if (sdrv->id_table)
-> > >                 return !!spi_match_id(sdrv->id_table, spi);
-> > >
-> > > @@ -888,6 +893,227 @@ static void of_register_spi_devices(struct spi_master *master)
-> > >  static void of_register_spi_devices(struct spi_master *master) { }
-> > >  #endif
-> > >
-> > > +#ifdef CONFIG_ACPI
-> > > +struct acpi_spi {
-> > > +       acpi_status (*callback)(struct acpi_device *, void *);
-> > > +       void *data;
-> > > +};
-> > > +
-> > > +static acpi_status acpi_spi_enumerate_device(acpi_handle handle, u32 level,
-> > > +                                            void *data, void **return_value)
-> > > +{
-> > > +       struct acpi_spi *acpi_spi = data;
-> > > +       struct acpi_device *adev;
-> > > +
-> > > +       if (acpi_bus_get_device(handle, &adev))
-> > > +               return AE_OK;
-> > > +       if (acpi_bus_get_status(adev) || !adev->status.present)
-> > > +               return AE_OK;
-> > > +
-> > > +       return acpi_spi->callback(adev, acpi_spi->data);
-> > > +}
-> > > +
-> > > +static acpi_status acpi_spi_enumerate(acpi_handle handle,
-> > > +       acpi_status (*callback)(struct acpi_device *, void *), void *data)
-> > > +{
-> > > +       struct acpi_spi acpi_spi;
-> > > +
-> > > +       acpi_spi.callback = callback;
-> > > +       acpi_spi.data = data;
-> > > +
-> > > +       return acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
-> > > +                                  acpi_spi_enumerate_device, NULL,
-> > > +                                  &acpi_spi, NULL);
-> > > +}
-> > > +
-> > > +struct acpi_spi_device_info {
-> > > +       struct spi_device *spi;
-> > > +       int triggering;
-> > > +       int polarity;
-> > > +       int gsi;
-> > > +       bool valid;
-> > > +};
-> > > +
-> > > +static acpi_status acpi_spi_add_resources(struct acpi_resource *res, void *data)
-> > > +{
-> > > +       struct acpi_spi_device_info *info = data;
-> > > +       struct acpi_resource_spi_serialbus *sb;
-> > > +       struct spi_device *spi = info->spi;
-> > > +
-> > > +       switch (res->type) {
-> > > +       case ACPI_RESOURCE_TYPE_SERIAL_BUS:
-> > > +               sb = &res->data.spi_serial_bus;
-> > > +               if (sb->type == ACPI_RESOURCE_SERIAL_TYPE_SPI) {
-> > > +                       spi->chip_select = sb->device_selection;
-> > > +                       spi->max_speed_hz = sb->connection_speed;
-> > > +
-> > > +                       /* Mode (clock phase/polarity/etc. */
-> > > +                       if (sb->clock_phase == ACPI_SPI_SECOND_PHASE)
-> > > +                               spi->mode |= SPI_CPHA;
-> > > +                       if (sb->clock_polarity == ACPI_SPI_START_HIGH)
-> > > +                               spi->mode |= SPI_CPOL;
-> > > +                       if (sb->device_polarity == ACPI_SPI_ACTIVE_HIGH)
-> > > +                               spi->mode |= SPI_CS_HIGH;
-> > > +
-> > > +                       /*
-> > > +                        * The info is valid once we have found the
-> > > +                        * SPISerialBus resource.
-> > > +                        */
-> > > +                       info->valid = true;
-> > > +               }
-> > > +               break;
-> > > +
-> > > +       case ACPI_RESOURCE_TYPE_IRQ:
-> > > +               info->gsi = res->data.irq.interrupts[0];
-> > > +               info->triggering = res->data.irq.triggering;
-> > > +               info->polarity = res->data.irq.polarity;
-> > > +               break;
-> > > +
-> > > +       case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
-> > > +               info->gsi = res->data.extended_irq.interrupts[0];
-> > > +               info->triggering = res->data.extended_irq.triggering;
-> > > +               info->polarity = res->data.extended_irq.polarity;
-> > 
-> > A driver doesn't seem like the right place for _CRS parsing code.  I
-> > think the intent of _CRS is to describe resources that need to be
-> > coordinated across all devices, e.g., MMIO space, I/O port space, and
-> > IRQs.  Since these resources require system-wide coordination, even
-> > when we don't have drivers for some devices, the ACPI core should be
-> > able to parse _CRS without needing any device-specific knowledge.
-> 
-> I think the driver is the only one who really knows the resources it needs
-> in order to talk the hardware.
-> 
-> The purpose of the above code is to extract the resources in a suitable
-> form so that we can create a struct spi_device out of them automatically,
-> in a similar way than the Device Tree does.
-> 
-> There are other things which we cannot do in the generic code, such as GPIO
-> resources and FixedDMA resources. These should be handled by the actual
-> driver with the help of dev->acpi_handle IMO.
-> 
-> > I know the Linux ACPI core doesn't parse _CRS today, but it should.
-> > The only reason we get away with the core ignoring _CRS is because the
-> > BIOS sets up most ACPI devices and we never change them.  If we change
-> > any resource assignments, we have to know where all the other devices
-> > are so we can avoid conflicts.
-> 
-> I agree but these devices are typically "fixed" so that they wont be
-> hot-plugged (although we should prepare for such devices as well) so
-> basically we don't need to do change any assignments for resources.
-> 
-> And if the ACPI core parses the _CRS, how does it pass all the resources to
-> the drivers?
+From: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
 
-Pretty much the same way the $subject patch does.
+The meaning of LOG_CONT is unclear, i. e., whether a message is a starting,
+ending, or middle fragment. Unfortunately, this cannot be inferred from
+the LOG_PREFIX and LOG_NEWLINE flags, as they are not always kept.
+Furthermore, in some cases LOG_CONT is set, although it is unknown if
+there will be a continuation. This leads to wrongly concatenated output.
 
-Instead of parsing the entire subtree below an SPI controller and trying
-acpi_spi_add_device() for each device node in there, it could call
-acpi_spi_add_device() whenever it finds a device of type
-ACPI_RESOURCE_TYPE_SERIAL_BUS/ACPI_RESOURCE_SERIAL_TYPE_SPI.
-The only problem is how to pass "master" to it.
+Fix this by dropping LOG_CONT and rely on LOG_PREFIX and LOG_NEWLINE to
+distinguish the type of fragment. That is, if LOG_PREFIX is set, this
+fragment does not continue the previous fragment. And if LOG_NEWLINE is
+set, this fragment is not continued by the next fragment.
 
-So Bjorn, do you have any idea how we could pass the "master" pointer from the
-ACPI core to acpi_spi_add_device() in a sensible way?
+(Unfortunately, we still have to look at the previous fragment to catch the
+case of an unset LOG_PREFIX on this fragment, but a set LOG_NEWLINE on
+the previous fragment.)
 
-An alternative might be to store the information obtained from _CRS in
-struct acpi_device objects created by the ACPI core while parsing the
-namespace.  We do that already for things like _PRW, so we might as well do it
-for _CRS.  Then, the SPI core could just walk the subtree of the device hierarchy
-below the SPI controller's acpi_device to extract that information.
-Maybe that's the way to go?
+Tested-By: Kay Sievers <kay@vrfy.org>
+Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
+---
+Against linux-next from 20121102, added Kay's tested-by.
+---
+ kernel/printk.c | 57 +++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 33 insertions(+), 24 deletions(-)
 
-Rafael
-
-
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 22e070f..e8e4e67 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -203,7 +203,6 @@ enum log_flags {
+ 	LOG_NOCONS	= 1,	/* already flushed, do not print to console */
+ 	LOG_NEWLINE	= 2,	/* text ended with a newline */
+ 	LOG_PREFIX	= 4,	/* text started with a prefix */
+-	LOG_CONT	= 8,	/* text is a fragment of a continuation line */
+ };
+ 
+ struct log {
+@@ -487,10 +486,9 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+ 	 * better readable output. 'c' in the record flags mark the first
+ 	 * fragment of a line, '+' the following.
+ 	 */
+-	if (msg->flags & LOG_CONT && !(user->prev & LOG_CONT))
++	if (!(msg->flags & LOG_NEWLINE) && msg->flags & LOG_PREFIX)
+ 		cont = 'c';
+-	else if ((msg->flags & LOG_CONT) ||
+-		 ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX)))
++	else if (!(user->prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
+ 		cont = '+';
+ 
+ 	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
+@@ -893,15 +891,17 @@ static size_t msg_print_text(const struct log *msg, enum log_flags prev,
+ 	bool newline = true;
+ 	size_t len = 0;
+ 
+-	if ((prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
++	if (!(prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
+ 		prefix = false;
+ 
+-	if (msg->flags & LOG_CONT) {
+-		if ((prev & LOG_CONT) && !(prev & LOG_NEWLINE))
+-			prefix = false;
++	if (!(msg->flags & LOG_NEWLINE))
++		newline = false;
+ 
+-		if (!(msg->flags & LOG_NEWLINE))
+-			newline = false;
++	if (!(prev & LOG_NEWLINE) && prefix) {
++		if (buf)
++			buf[len++] = '\n';
++		else
++			len++;
+ 	}
+ 
+ 	do {
+@@ -1406,35 +1406,36 @@ static void cont_flush(enum log_flags flags)
+ 	if (cont.len == 0)
+ 		return;
+ 
++	cont.flags |= flags;
+ 	if (cont.cons) {
+ 		/*
+ 		 * If a fragment of this line was directly flushed to the
+ 		 * console; wait for the console to pick up the rest of the
+ 		 * line. LOG_NOCONS suppresses a duplicated output.
+ 		 */
+-		log_store(cont.facility, cont.level, flags | LOG_NOCONS,
++		log_store(cont.facility, cont.level, cont.flags | LOG_NOCONS,
+ 			  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
+-		cont.flags = flags;
+ 		cont.flushed = true;
+ 	} else {
+ 		/*
+ 		 * If no fragment of this line ever reached the console,
+ 		 * just submit it to the store and free the buffer.
+ 		 */
+-		log_store(cont.facility, cont.level, flags, 0,
++		log_store(cont.facility, cont.level, cont.flags, 0,
+ 			  NULL, 0, cont.buf, cont.len);
+ 		cont.len = 0;
+ 	}
+ }
+ 
+-static bool cont_add(int facility, int level, const char *text, size_t len)
++static bool cont_add(int facility, int level, enum log_flags flags,
++		     const char *text, size_t len)
+ {
+ 	if (cont.len && cont.flushed)
+ 		return false;
+ 
+ 	if (cont.len + len > sizeof(cont.buf)) {
+ 		/* the line gets too long, split it up in separate records */
+-		cont_flush(LOG_CONT);
++		cont_flush(0);
+ 		return false;
+ 	}
+ 
+@@ -1443,7 +1444,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 		cont.level = level;
+ 		cont.owner = current;
+ 		cont.ts_nsec = local_clock();
+-		cont.flags = 0;
++		cont.flags = flags;
+ 		cont.cons = 0;
+ 		cont.flushed = false;
+ 	}
+@@ -1452,7 +1453,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 	cont.len += len;
+ 
+ 	if (cont.len > (sizeof(cont.buf) * 80) / 100)
+-		cont_flush(LOG_CONT);
++		cont_flush(0);
+ 
+ 	return true;
+ }
+@@ -1462,8 +1463,11 @@ static size_t cont_print_text(char *text, size_t size)
+ 	size_t textlen = 0;
+ 	size_t len;
+ 
+-	if (cont.cons == 0 && (console_prev & LOG_NEWLINE)) {
+-		textlen += print_time(cont.ts_nsec, text);
++	if (cont.cons == 0 && (console_prev & LOG_NEWLINE ||
++						cont.flags & LOG_PREFIX)) {
++		if (!(console_prev & LOG_NEWLINE))
++			text[textlen++] = '\n';
++		textlen += print_time(cont.ts_nsec, text + textlen);
+ 		size -= textlen;
+ 	}
+ 
+@@ -1581,12 +1585,16 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 * Flush the conflicting buffer. An earlier newline was missing,
+ 		 * or another task also prints continuation lines.
+ 		 */
+-		if (cont.len && (lflags & LOG_PREFIX || cont.owner != current))
+-			cont_flush(LOG_NEWLINE);
++		if (cont.len) {
++			if (cont.owner != current)
++				lflags |= LOG_PREFIX;
++			if (lflags & LOG_PREFIX)
++				cont_flush(LOG_NEWLINE);
++		}
+ 
+ 		/* buffer line if possible, otherwise store it right away */
+-		if (!cont_add(facility, level, text, text_len))
+-			log_store(facility, level, lflags | LOG_CONT, 0,
++		if (!cont_add(facility, level, lflags, text, text_len))
++			log_store(facility, level, lflags, 0,
+ 				  dict, dictlen, text, text_len);
+ 	} else {
+ 		bool stored = false;
+@@ -1599,7 +1607,8 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 */
+ 		if (cont.len && cont.owner == current) {
+ 			if (!(lflags & LOG_PREFIX))
+-				stored = cont_add(facility, level, text, text_len);
++				stored = cont_add(facility, level, lflags,
++							text, text_len);
+ 			cont_flush(LOG_NEWLINE);
+ 		}
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.0.316.g291341c.dirty
+
