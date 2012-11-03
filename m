@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab2KCK7E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 06:59:04 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:9242 "EHLO
-	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754298Ab2KCK6x (ORCPT
+	id S1755712Ab2KCK7B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 06:59:01 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:11958
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753398Ab2KCK6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 06:58:53 -0400
+	Sat, 3 Nov 2012 06:58:52 -0400
 X-IronPort-AV: E=Sophos;i="4.80,705,1344204000"; 
-   d="scan'208";a="161245673"
+   d="scan'208";a="161245672"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Joern Engel <joern@logfs.org>
+To: Arnd Bergmann <arnd@arndb.de>
 Cc: kernel-janitors@vger.kernel.org,
-        Prasad Joshi <prasadjoshi.linux@gmail.com>, logfs@logfs.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 12/16] fs/logfs/gc.c: use WARN
-Date: Sat,  3 Nov 2012 11:58:33 +0100
-Message-Id: <1351940317-14812-13-git-send-email-Julia.Lawall@lip6.fr>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH 11/16] drivers/misc/kgdbts.c: use WARN
+Date: Sat,  3 Nov 2012 11:58:32 +0100
+Message-Id: <1351940317-14812-12-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -45,21 +46,23 @@ expression list es;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- fs/logfs/gc.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/misc/kgdbts.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/fs/logfs/gc.c b/fs/logfs/gc.c
-index d4efb06..62dee03 100644
---- a/fs/logfs/gc.c
-+++ b/fs/logfs/gc.c
-@@ -55,9 +55,8 @@ static u8 root_distance(struct super_block *sb, gc_level_t __gc_level)
- 		/* inode file data or indirect blocks */
- 		return super->s_ifile_levels - (gc_level - 6);
- 	default:
--		printk(KERN_ERR"LOGFS: segment of unknown level %x found\n",
-+		WARN(1, KERN_ERR "LOGFS: segment of unknown level %x found\n",
- 				gc_level);
--		WARN_ON(1);
- 		return super->s_ifile_levels + super->s_iblock_levels;
- 	}
- }
+diff --git a/drivers/misc/kgdbts.c b/drivers/misc/kgdbts.c
+index 3aa9a96..8b367db 100644
+--- a/drivers/misc/kgdbts.c
++++ b/drivers/misc/kgdbts.c
+@@ -114,9 +114,8 @@
+ 		touch_nmi_watchdog();	\
+ 	} while (0)
+ #define eprintk(a...) do { \
+-		printk(KERN_ERR a); \
+-		WARN_ON(1); \
+-	} while (0)
++		WARN(1, KERN_ERR a); \
++		} while (0)
+ #define MAX_CONFIG_LEN		40
+ 
+ static struct kgdb_io kgdbts_io_ops;
+
