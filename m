@@ -1,91 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab2KCNbT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 09:31:19 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36649 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278Ab2KCNbS (ORCPT
+	id S1756032Ab2KCNiM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 09:38:12 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51380 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755945Ab2KCNiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 09:31:18 -0400
-Message-ID: <50951C81.5050501@ti.com>
-Date: Sat, 3 Nov 2012 19:00:41 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
-        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
-        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
-        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
-Subject: Re: [PATCH v3 05/11] clk: davinci - add dm644x clock initialization
-References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-6-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1351181518-11882-6-git-send-email-m-karicheri2@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	Sat, 3 Nov 2012 09:38:10 -0400
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/comedi: Use dev_ printks in drivers/adl_pci9118.c
+Date: Sat,  3 Nov 2012 22:38:03 +0900
+Message-Id: <1351949883-16164-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2012 9:41 PM, Murali Karicheri wrote:
-> This patch adds dm644x clock initialization code that consists of
-> clocks data for various clocks and clock register callouts to
-> various clock drivers. It uses following clk drivers for this
-> 
->  1. clk-fixed-rate - for ref clock
->  2. clk-mux - for mux at the input and output of main pll
->  3. davinci specific clk-pll for main pll clock
->  4. davinci specific clk-div for pll divider clock
->  5. clk-fixed-factor for fixed factor clock such as auxclk
->  6. davinci specific clk-psc for psc clocks
-> 
-> This patch also moves all of the PLL and PSC register definitions
-> from clock.h and psc.h under davinci to the clk/davinci folder so
-> that various soc specific clock initialization code can share these
-> definitions.
+fixed below checkpatch warnings.
+- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
 
-Except this patch does not move the defines, it creates a copy of them
-(which is bad since you quickly lose track of which is the correct
-copy). Is this done to avoid including mach/ header files here? It will
-actually be better to include the mach/ files here as a temporary
-solution and then remove the include mach/ files once all the SoCs have
-been converted over.
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+---
+ drivers/staging/comedi/drivers/adl_pci9118.c |   31 ++++++++++++++------------
+ 1 file changed, 17 insertions(+), 14 deletions(-)
 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> ---
->  drivers/clk/davinci/dm644x-clock.c |  304 ++++++++++++++++++++++++++++++++++++
->  drivers/clk/davinci/pll.h          |   83 ++++++++++
->  drivers/clk/davinci/psc.h          |  215 +++++++++++++++++++++++++
->  3 files changed, 602 insertions(+)
->  create mode 100644 drivers/clk/davinci/dm644x-clock.c
->  create mode 100644 drivers/clk/davinci/pll.h
->  create mode 100644 drivers/clk/davinci/psc.h
-> 
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+index a5d0be2..e9d45c2 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -1888,7 +1888,7 @@ static struct pci_dev *pci9118_find_pci(struct comedi_device *dev,
+ 		 */
+ 		if (comedi_pci_enable(pcidev, "adl_pci9118"))
+ 			continue;
+-		printk(KERN_ERR ", b:s:f=%d:%d:%d, io=0x%4lx, 0x%4lx",
++		dev_err(dev->class_dev, ", b:s:f=%d:%d:%d, io=0x%4lx, 0x%4lx",
+ 			pcidev->bus->number,
+ 			PCI_SLOT(pcidev->devfn),
+ 			PCI_FUNC(pcidev->devfn),
+@@ -1896,9 +1896,9 @@ static struct pci_dev *pci9118_find_pci(struct comedi_device *dev,
+ 			(unsigned long)pci_resource_start(pcidev, 0));
+ 		return pcidev;
+ 	}
+-	printk(KERN_ERR
+-		"comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
+-		dev->minor, bus, slot);
++	dev_err(dev->class_dev,
++		"no supported board found! (req. bus/slot : %d/%d)\n",
++		bus, slot);
+ 	return NULL;
+ }
+ 
+@@ -1914,7 +1914,7 @@ static int pci9118_attach(struct comedi_device *dev,
+ 	unsigned int irq;
+ 	u16 u16w;
+ 
+-	printk("comedi%d: adl_pci9118: board=%s", dev->minor, this_board->name);
++	dev_dbg(dev->class_dev, "board=%s", this_board->name);
+ 
+ 	if (it->options[3] & 1)
+ 		master = 0;	/* user don't want use bus master */
+@@ -1947,14 +1947,15 @@ static int pci9118_attach(struct comedi_device *dev,
+ 	if (irq > 0) {
+ 		if (request_irq(irq, interrupt_pci9118, IRQF_SHARED,
+ 				"ADLink PCI-9118", dev)) {
+-			printk(", unable to allocate IRQ %d, DISABLING IT",
+-			       irq);
++			dev_dbg(dev->class_dev,
++				", unable to allocate IRQ %d, DISABLING IT",
++				irq);
+ 			irq = 0;	/* Can't use IRQ */
+ 		} else {
+-			printk(", irq=%u", irq);
++			dev_dbg(dev->class_dev, ", irq=%u", irq);
+ 		}
+ 	} else {
+-		printk(", IRQ disabled");
++		dev_dbg(dev->class_dev, ", IRQ disabled");
+ 	}
+ 
+ 	dev->irq = irq;
+@@ -1980,7 +1981,8 @@ static int pci9118_attach(struct comedi_device *dev,
+ 			}
+ 		}
+ 		if (!devpriv->dmabuf_virt[0]) {
+-			printk(", Can't allocate DMA buffer, DMA disabled!");
++			dev_dbg(dev->class_dev,
++				", Can't allocate DMA buffer, DMA disabled!");
+ 			master = 0;
+ 		}
+ 
+@@ -1991,9 +1993,9 @@ static int pci9118_attach(struct comedi_device *dev,
+ 
+ 	devpriv->master = master;
+ 	if (devpriv->master)
+-		printk(", bus master");
++		dev_dbg(dev->class_dev, ", bus master");
+ 	else
+-		printk(", no bus master");
++		dev_dbg(dev->class_dev, ", no bus master");
+ 
+ 	devpriv->usemux = 0;
+ 	if (it->options[2] > 0) {
+@@ -2005,7 +2007,8 @@ static int pci9118_attach(struct comedi_device *dev,
+ 				devpriv->usemux = 128;
+ 					/* max 128 channels with softare S&H! */
+ 			}
+-		printk(", ext. mux %d channels", devpriv->usemux);
++		dev_dbg(dev->class_dev,
++			", ext. mux %d channels", devpriv->usemux);
+ 	}
+ 
+ 	devpriv->softsshdelay = it->options[4];
+@@ -2019,7 +2022,7 @@ static int pci9118_attach(struct comedi_device *dev,
+ 		devpriv->softsshhold = 0x80;
+ 	}
+ 
+-	printk(".\n");
++	dev_dbg(dev->class_dev, ".\n");
+ 
+ 	pci_read_config_word(pcidev, PCI_COMMAND, &u16w);
+ 	pci_write_config_word(pcidev, PCI_COMMAND, u16w | 64);
+-- 
+1.7.9.5
 
-> +/* all clocks available in DM644x SoCs */
-> +enum dm644x_clk {
-> +	clkin, oscin, ref_clk_mux, pll1, pll1_plldiv_clk_mux, auxclk,
-> +	clk_pll1_sysclk1, clk_pll1_sysclk2, clk_pll1_sysclk3, clk_pll1_sysclk4,
-> +	clk_pll1_sysclk5, clk_pll1_sysclkbp, pll2, pll2_plldiv_clk_mux,
-> +	clk_pll2_sysclk1, clk_pll2_sysclk2, clk_pll2_sysclkbp, dsp, arm, vicp,
-> +	vpss_master, vpss_slave, uart0, uart1, uart2, emac, i2c, ide, asp,
-> +	mmcsd, spi, gpio, usb, vlynq, aemif, pwm0, pwm1, pwm2, timer0, timer1,
-> +	timer2, clk_max
-> +};
-> +
-> +static struct davinci_clk *psc_clocks[] = {
-> +	&clk_dsp, &clk_arm, &clk_vicp, &clk_vpss_master, &clk_vpss_slave,
-> +	&clk_uart0, &clk_uart1, &clk_uart2, &clk_emac, &clk_i2c, &clk_ide,
-> +	&clk_asp0, &clk_mmcsd, &clk_spi, &clk_gpio, &clk_usb, &clk_vlynq,
-> +	&clk_aemif, &clk_pwm0, &clk_pwm1, &clk_pwm2, &clk_timer0, &clk_timer1,
-> +	&clk_timer2
-> +};
-
-You rely on perfect order between this array and dm644x_clk enum above.
-Can you initialize this array using the enum as the index so that it is
-clear. Current method is too error prone.
-
-Thanks,
-Sekhar
