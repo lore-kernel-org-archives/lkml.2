@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab2KCPqo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 11:46:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:45412 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756434Ab2KCPoX (ORCPT
+	id S1756310Ab2KCPoS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 11:44:18 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:48484 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755755Ab2KCPoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 11:44:23 -0400
+	Sat, 3 Nov 2012 11:44:17 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Eilon Greenstein <eilong@broadcom.com>, netdev@vger.kernel.org
-Subject: [PATCH v2 03/11] bnx2x: use random32_get_bytes()
-Date: Sun,  4 Nov 2012 00:43:34 +0900
-Message-Id: <1351957422-23243-4-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Eilon Greenstein <eilong@broadcom.com>, netdev@vger.kernel.org,
+        Robert Love <robert.w.love@intel.com>, devel@open-fcoe.org,
+        Michel Lespinasse <walken@google.com>
+Subject: [PATCH v2 00/11] introduce random32_get_bytes() and random32_get_bytes_state()
+Date: Sun,  4 Nov 2012 00:43:31 +0900
+Message-Id: <1351957422-23243-1-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351957422-23243-1-git-send-email-akinobu.mita@gmail.com>
-References: <1351957422-23243-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use random32_get_bytes() to fill rss key with pseudo-random bytes.
+This patchset introduces new functions into random32 library for
+getting the requested number of pseudo-random bytes.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Before introducing these new functions into random32 library,
+prandom32() and prandom32_seed() with "prandom32" prefix are
+renamed to random32_state() and srandom32_state() respectively.
+
+The purpose of this renaming is to prevent some kernel developers
+from assuming that prandom32() and random32() might imply that only
+prandom32() was the one using a pseudo-random number generator by
+prandom32's "p", and the result may be a very embarassing security
+exposure.
+
+Changelog
+
+* v2
+- rename prandom32 to random32_state
+- dropped lib/uuid.c patch
+- add bnx2 and mtd_stresstest patches
+
+Akinobu Mita (11):
+  random32: rename prandom32 to random32_state
+  random32: introduce random32_get_bytes() and
+    random32_get_bytes_state()
+  bnx2x: use random32_get_bytes()
+  mtd: nandsim: use random32_get_bytes
+  ubifs: use random32_get_bytes
+  mtd: mtd_nandecctest: use random32_get_bytes instead of
+    get_random_bytes()
+  mtd: mtd_oobtest: convert to use random32_get_bytes_state()
+  mtd: mtd_pagetest: convert to use random32_get_bytes_state()
+  mtd: mtd_speedtest: use random32_get_bytes
+  mtd: mtd_subpagetest: convert to use random32_get_bytes_state()
+  mtd: mtd_stresstest: use random32_get_bytes()
+
+ drivers/mtd/nand/nandsim.c                      |  5 +--
+ drivers/mtd/tests/mtd_nandecctest.c             |  2 +-
+ drivers/mtd/tests/mtd_oobtest.c                 | 49 +++++++-------------
+ drivers/mtd/tests/mtd_pagetest.c                | 43 ++++++------------
+ drivers/mtd/tests/mtd_speedtest.c               |  9 +---
+ drivers/mtd/tests/mtd_stresstest.c              |  3 +-
+ drivers/mtd/tests/mtd_subpagetest.c             | 42 +++++------------
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |  5 +--
+ drivers/scsi/fcoe/fcoe_ctlr.c                   |  4 +-
+ fs/ubifs/debug.c                                |  8 ++--
+ include/linux/random.h                          |  8 ++--
+ lib/interval_tree_test_main.c                   |  7 +--
+ lib/random32.c                                  | 60 ++++++++++++++++++++-----
+ lib/rbtree_test.c                               |  6 +--
+ 14 files changed, 112 insertions(+), 139 deletions(-)
+
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-mtd@lists.infradead.org
 Cc: Eilon Greenstein <eilong@broadcom.com>
 Cc: netdev@vger.kernel.org
----
-new patch from v2
+Cc: Robert Love <robert.w.love@intel.com>
+Cc: devel@open-fcoe.org
+Cc: Michel Lespinasse <walken@google.com>
 
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
-
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index 4833b6a..9a25658 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -1741,7 +1741,6 @@ int bnx2x_config_rss_pf(struct bnx2x *bp, struct bnx2x_rss_config_obj *rss_obj,
- 			bool config_hash)
- {
- 	struct bnx2x_config_rss_params params = {NULL};
--	int i;
- 
- 	/* Although RSS is meaningless when there is a single HW queue we
- 	 * still need it enabled in order to have HW Rx hash generated.
-@@ -1773,9 +1772,7 @@ int bnx2x_config_rss_pf(struct bnx2x *bp, struct bnx2x_rss_config_obj *rss_obj,
- 
- 	if (config_hash) {
- 		/* RSS keys */
--		for (i = 0; i < sizeof(params.rss_key) / 4; i++)
--			params.rss_key[i] = random32();
--
-+		random32_get_bytes(params.rss_key, sizeof(params.rss_key));
- 		__set_bit(BNX2X_RSS_SET_SRCH, &params.rss_flags);
- 	}
- 
 -- 
 1.7.11.7
 
