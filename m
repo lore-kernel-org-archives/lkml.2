@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab2KCOjD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 10:39:03 -0400
-Received: from blackhole.sdinet.de ([176.9.52.58]:51149 "EHLO mail.sdinet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751682Ab2KCOjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 10:39:00 -0400
-X-Greylist: delayed 586 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Nov 2012 10:39:00 EDT
-Date: Sat, 3 Nov 2012 15:28:51 +0100 (CET)
-From: Sven-Haegar Koch <haegar@sdinet.de>
-To: Daniel Mack <zonque@gmail.com>
-cc: Christof Meerwald <cmeerw@cmeerw.org>,
-        "Artem S. Tashkinov" <t.artem@lycos.com>, pavel@ucw.cz,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        security@kernel.org, linux-media@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: A reliable kernel panic (3.6.2) and system crash when visiting
- a particular website
-In-Reply-To: <50952744.4090203@gmail.com>
-Message-ID: <alpine.DEB.2.02.1211031527540.28042@aurora.sdinet.de>
-References: <2104474742.26357.1350734815286.JavaMail.mail@webmail05> <20121020162759.GA12551@liondog.tnic> <966148591.30347.1350754909449.JavaMail.mail@webmail08> <20121020203227.GC555@elf.ucw.cz> <20121020225849.GA8976@liondog.tnic>
- <1781795634.31179.1350774917965.JavaMail.mail@webmail04> <20121103141049.GA24238@edge.cmeerw.net> <50952744.4090203@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754001Ab2KCOnw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 10:43:52 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:55624 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab2KCOnu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 10:43:50 -0400
+Date: Sat, 3 Nov 2012 07:43:40 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [ 0/4] 3.0.51-stable review
+Message-ID: <20121103144340.GA1383@kroah.com>
+References: <20121102170333.581931288@linuxfoundation.org>
+ <20121103003108.GA1981@optiplex.redhat.com>
+ <20121103040711.GD1602@kroah.com>
+ <20121103114501.GA1688@optiplex.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121103114501.GA1688@optiplex.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 3 Nov 2012, Daniel Mack wrote:
-
-> On 03.11.2012 15:10, Christof Meerwald wrote:
-> > On Sat, 20 Oct 2012 23:15:17 +0000 (GMT), Artem S. Tashkinov wrote:
-> >> It's almost definitely either a USB driver bug or video4linux driver bug:
-> >>
-> >> I'm CC'ing linux-media and linux-usb mailing lists, the problem is described here:
-> >> https://lkml.org/lkml/2012/10/20/35
-> >> https://lkml.org/lkml/2012/10/20/148
+On Sat, Nov 03, 2012 at 09:45:02AM -0200, Rafael Aquini wrote:
+> On Fri, Nov 02, 2012 at 09:07:11PM -0700, Greg Kroah-Hartman wrote:
+> > > 
+> > > Howdy Greg,
+> > > 
+> > > Somehow the following patch is missing for this series submission:
+> > > > Len Brown <len.brown@intel.com>
+> > > >     x86: Remove the ancient and deprecated disable_hlt() and enable_hlt() facility
+> > > 
+> > > I glanced at the the downloadable consolidated patch and its hunks seem to be present,
+> > > though.
 > > 
-> > Not sure if it's related, but I am seeing a kernel freeze with a
-> > usb-audio headset (connected via an external USB hub) on Linux 3.5.0
-> > (Ubuntu 12.10) - see
+> > I do not understand.  Where do you not see it?  It's in the patch on
+> > kernel.org, right?  Where is it missing?
+> > 
 > 
-> Does Ubuntu 12.10 really ship with 3.5.0? Not any more recent
+> The LKML patch series is missing PATCH 02/04.
 
-They ship 3.5.7 plus some more fixes, but call it 3.5.0-18.29
+Odd, I received a copy, but I don't know if it came from lkml or as a
+copy sent to me directly.  I'll bounce it to you if you are curious
+about it.
 
-c'ya
-sven-haegar
-
--- 
-Three may keep a secret, if two of them are dead.
-- Ben F.
+greg k-h
