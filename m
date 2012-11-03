@@ -1,68 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab2KCMED (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 08:04:03 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48695 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751390Ab2KCMEB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 08:04:01 -0400
-Message-ID: <1351944236.2417.7.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Date: Sat, 03 Nov 2012 12:03:56 +0000
-In-Reply-To: <20121103002244.GC18691@srcf.ucam.org>
-References: <20121101202701.GB20817@xo-6d-61-c0.localdomain>
-	 <5092E361.7080901@genband.com> <20121102163302.GA6080@elf.ucw.cz>
-	 <1351875164.2439.42.camel@dabdike.int.hansenpartnership.com>
-	 <20121102165456.GB9997@srcf.ucam.org>
-	 <1351878511.2439.44.camel@dabdike.int.hansenpartnership.com>
-	 <20121102175416.GA11816@srcf.ucam.org>
-	 <1351879058.2439.46.camel@dabdike.int.hansenpartnership.com>
-	 <20121102180458.GA12052@srcf.ucam.org>
-	 <1351899503.2439.49.camel@dabdike.int.hansenpartnership.com>
-	 <20121103002244.GC18691@srcf.ucam.org>
+	id S1755906Ab2KCMEa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 08:04:30 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57429 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755004Ab2KCME1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 08:04:27 -0400
+Message-ID: <50950820.3050505@ti.com>
+Date: Sat, 3 Nov 2012 17:33:44 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
+        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 04/11] clk: davinci - add pll divider clock driver
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-5-git-send-email-m-karicheri2@ti.com> <5093AF8A.8000707@ti.com> <5093D070.7060900@ti.com>
+In-Reply-To: <5093D070.7060900@ti.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-11-03 at 00:22 +0000, Matthew Garrett wrote:
-> On Fri, Nov 02, 2012 at 11:38:23PM +0000, James Bottomley wrote:
-> > On Fri, 2012-11-02 at 18:04 +0000, Matthew Garrett wrote:
-> > > A user runs a binary that elevates itself to admin. Absent any flaws in 
-> > > Windows (cough), that should be all it can do in a Secure Boot world. 
-> > > But if you can drop a small trusted Linux system in there and use that 
-> > > to boot a compromised Windows kernel, it can make itself persistent.
-> > 
-> > We seem to be talking past each other.  Assume you managed to install a
-> > Linux boot system on the windows machine.  If the linux boot requires
-> > present user on first boot (either because the key of the bootloader
-> > isn't in db or because the MOK database isn't initialised), you still
-> > don't have a compromise because the loader won't start automatically.
+On 11/2/2012 7:23 PM, Murali Karicheri wrote:
+> On 11/02/2012 07:33 AM, Sekhar Nori wrote:
+>> On 10/25/2012 9:41 PM, Murali Karicheri wrote:
+>>
+>>> pll dividers are present in the pll controller of DaVinci and Other
+>>> SoCs that re-uses the same hardware IP. This has a enable bit for
+>>> bypass the divider or enable the driver. This is a sub class of the
+>>> clk-divider clock checks the enable bit to calculare the rate and
+>>> invoke the recalculate() function of the clk-divider if enabled.
+>>>
+>>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>>> ---
+
+>>> +/**
+>>> + * clk_register_davinci_plldiv - register function for DaVinci PLL
+>>> divider clk
+>>> + *
+>>> + * @dev: device ptr
+>>> + * @name: name of the clock
+>>> + * @parent_name: name of parent clock
+>>> + * @plldiv_data: ptr to pll divider data
+>>> + * @lock: ptr to spinlock passed to divider clock
+>>> + */
+>>> +struct clk *clk_register_davinci_plldiv(struct device *dev,
+>> Why do you need a dev pointer here and which device does it point to? In
+>> the only usage of this API in the series, you pass a NULL here. I should
+>> have probably asked this question on one of the earlier patches itself.
+>>
+> I did a grep in the drivers/clk directory. All of the platform drivers
+> are having the device ptr and all of them are called with NULL. I am not
+> sure what is the intent of this arg in the API.  As per documentation of
+
+I just took a look at the mxs example you referenced below and it does
+not take a dev pointer.
+
+struct clk *mxs_clk_div(const char *name, const char *parent_name,
+                        void __iomem *reg, u8 shift, u8 width, u8 busy)
+{
+
+> the clk_register() API, the device ptr points to the device that is
+> registering this clk. So if a specific device driver ever has to
+> register a PLL div clk, this will be non NULL. In  the normal use case,
+> clk is registered in a platform specific code and is always passed NULL.
 > 
-> Why would an attacker use one of those Linux systems? There's going to 
-> be plenty available that don't have that restriction.
+> The platform/SoC specific clock initialization code will be using
+> davinci_plldiv_clk() that doesn't have a device ptr arg.
+> So this can be changed in future in sync with other drivers (assuming
+> this will get removed if unused), and changes
+> doesn't impact the platform code that initialize the clock. So IMO, we
+> should keep this arg so that it is in sync with other driver APIs.
 
-It's called best practices.  If someone else releases something that
-doesn't conform to them, then it's their signing key in jeopardy, not
-yours.  You surely must see that the goal of securing "everything"
-against "anything" isn't achievable because if someone releases a
-bootloader not conforming to the best practices, why would they have
-bothered to include your secure boot lockdowns in their kernel.  In
-other words, you lost ab initio, so it's pointless to cite this type of
-thing as a rationale for a kernel lockdown patch.
+I think you should get rid of this unused arg and introduce it when you
+actually need it. That way we are clear about why we need it.
 
-James
+> 
+> +            const char *name, const char *parent_name,
+> +            struct clk_plldiv_data *plldiv_data,
+> +            spinlock_t *lock)
+> +{
+> +    struct clk_div *div;
+> +    struct clk *clk;
+> +    struct clk_init_data init;
+> +
+> +    div = kzalloc(sizeof(*div), GFP_KERNEL);
+> +    if (!div)
+> +        return ERR_PTR(-ENOMEM);
+> +
+> +    init.name = name;
+> +    init.ops = &clk_div_ops;
+> +    init.flags = plldiv_data->flags;
+> +    init.parent_names = (parent_name ? &parent_name : NULL);
+> +    init.num_parents = (parent_name ? 1 : 0);
+> +
+> +    div->reg = plldiv_data->reg;
+> +    div->en_id = plldiv_data->en_id;
+> +
+> +    div->divider.reg = plldiv_data->reg;
+> +    div->divider.shift = plldiv_data->shift;
+> +    div->divider.width = plldiv_data->width;
+> +    div->divider.flags = plldiv_data->divider_flags;
+> +    div->divider.lock = lock;
+> +    div->divider.hw.init = &init;
+> +    div->ops = &clk_divider_ops;
+> +
+> +    clk = clk_register(NULL, &div->divider.hw);
+> 
+>> Shouldn't you be calling clk_register_divider() here which in turn will
+>> do clk_register()?
+> As stated in the top of the file, this is a subclass driver of clk-div
+> similar in line with mxs/clk-div.c. The
+> driver registers the clock instead of calling clk_register_divider() so
+> that it's ops function has a chance to do whatever it wants to do and
+> call the divider ops function after that.
 
+I see that now. I should have paid more attention.
 
-
+Regards,
+Sekhar
