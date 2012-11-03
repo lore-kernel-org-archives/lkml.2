@@ -1,31 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab2KCQSd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 12:18:33 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:39915
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	id S1757022Ab2KCQ0o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 12:26:44 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:30262 "EHLO mx01.sz.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752564Ab2KCQSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 12:18:31 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Subject: Drivers: scsi 
-Date: Sat,  3 Nov 2012 09:40:06 -0700
-Message-Id: <1351960806-16240-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756396Ab2KCQ0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 12:26:42 -0400
+Message-ID: <509545C0.5050000@bfs.de>
+Date: Sat, 03 Nov 2012 17:26:40 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: netdev@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/16] drivers/net/ethernet/ibm/emac/mal.c: use WARN
+References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr> <1351940317-14812-11-git-send-email-Julia.Lawall@lip6.fr> <50950055.8040307@bfs.de> <alpine.DEB.2.02.1211031513220.1955@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1211031513220.1955@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do we currently support dynamic re-sizing of LUNs. Hyper-V can
-notify capacity change via sense data and I was wondering if this
-is handled in the generic scsi code.
 
 
-Regards,
+Am 03.11.2012 15:14, schrieb Julia Lawall:
+> On Sat, 3 Nov 2012, walter harms wrote:
+> 
+>>
+>>
+>> Am 03.11.2012 11:58, schrieb Julia Lawall:
+>>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>>
+>>> Use WARN rather than printk followed by WARN_ON(1), for conciseness.
+>>>
+>>> A simplified version of the semantic patch that makes this
+>>> transformation
+>>> is as follows: (http://coccinelle.lip6.fr/)
+>>>
+>>> // <smpl>
+>>> @@
+>>> expression list es;
+>>> @@
+>>>
+>>> -printk(
+>>> +WARN(1,
+>>>   es);
+>>> -WARN_ON(1);
+>>> // </smpl>
+>>>
+>>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>>>
+>>> ---
+>>>  drivers/net/ethernet/ibm/emac/mal.c |    6 ++----
+>>>  1 file changed, 2 insertions(+), 4 deletions(-)
+>>>
+>>> diff --git a/drivers/net/ethernet/ibm/emac/mal.c
+>>> b/drivers/net/ethernet/ibm/emac/mal.c
+>>> index 479e43e..84c6b6c 100644
+>>> --- a/drivers/net/ethernet/ibm/emac/mal.c
+>>> +++ b/drivers/net/ethernet/ibm/emac/mal.c
+>>> @@ -738,13 +738,11 @@ static int __devexit mal_remove(struct
+>>> platform_device *ofdev)
+>>>      /* Synchronize with scheduled polling */
+>>>      napi_disable(&mal->napi);
+>>>
+>>> -    if (!list_empty(&mal->list)) {
+>>> +    if (!list_empty(&mal->list))
+>>>          /* This is *very* bad */
+>>> -        printk(KERN_EMERG
+>>> +        WARN(1, KERN_EMERG
+>>>                 "mal%d: commac list is not empty on remove!\n",
+>>>                 mal->index);
+>>> -        WARN_ON(1);
+>>> -    }
+>>>
+>>>      dev_set_drvdata(&ofdev->dev, NULL);
+>>>
+>>>
+>>
+>> Hi Julia,
+>> you are removing the {} behin the if. I prefer to be a bit conservative
+>> about {}. There is suggest to keep them because WARN may be expanded in
+>> future (with a second line) and that will cause subtle changes that do
+>> no break the code. (Yes i know it is possible to write macros that
+>> contain savely more than one line.)
+> 
+> WARN is already multi-line, surrounded by ({ }).  It seems to be set up
+> to be used as an expression.  Is it necessary to assume that it might
+> someday be changed from safe to unsafe?
+> 
 
-K. Y
+my bad,
+NTL looks like a candidate for a function.
+
+While looking i have noticed that a lot of drivers define there private "assert" macro.
+It is very similar to warn.
+
+(e.g.)
+ #define RTL819x_DEBUG
+ #ifdef RTL819x_DEBUG
+ #define assert(expr) \
+        if (!(expr)) {                                  \
+                 printk( "Assertion failed! %s,%s,%s,line=%d\n", \
+                #expr,__FILE__,__FUNCTION__,__LINE__);          \
+        }
+
+re,
+ wh
