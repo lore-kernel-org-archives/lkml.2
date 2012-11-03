@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab2KCJ2w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 05:28:52 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:61064 "EHLO
+	id S1754467Ab2KCJaI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 05:30:08 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:64430 "EHLO
 	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab2KCJ2v (ORCPT
+	with ESMTP id S1753179Ab2KCJaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 05:28:51 -0400
-Message-ID: <5094E247.5010602@gmail.com>
-Date: Sat, 03 Nov 2012 10:22:15 +0100
+	Sat, 3 Nov 2012 05:30:06 -0400
+Message-ID: <5094E292.3040207@gmail.com>
+Date: Sat, 03 Nov 2012 10:23:30 +0100
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
 MIME-Version: 1.0
-CC: Evgeniy Dushistov <dushistov@mail.ru>, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/21] ufs: drop vmtruncate
+To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
+CC: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 02/21] sysv: drop vmtruncate
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,39 +25,67 @@ Removed vmtruncate
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/ufs/inode.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+ fs/sysv/file.c  |    5 +++--
+ fs/sysv/itree.c |   17 ++++++++++++-----
+ 2 files changed, 15 insertions(+), 7 deletions(-)
 
-diff --git a/fs/ufs/inode.c b/fs/ufs/inode.c
-index eb6d0b7..ff24e44 100644
---- a/fs/ufs/inode.c
-+++ b/fs/ufs/inode.c
-@@ -526,6 +526,14 @@ int ufs_prepare_chunk(struct page *page, loff_t pos, unsigned len)
- 	return __block_write_begin(page, pos, len, ufs_getfrag_block);
+diff --git a/fs/sysv/file.c b/fs/sysv/file.c
+index 0a65939..9d4dc68 100644
+--- a/fs/sysv/file.c
++++ b/fs/sysv/file.c
+@@ -41,9 +41,11 @@ static int sysv_setattr(struct dentry *dentry, struct iattr *attr)
+ 
+ 	if ((attr->ia_valid & ATTR_SIZE) &&
+ 	    attr->ia_size != i_size_read(inode)) {
+-		error = vmtruncate(inode, attr->ia_size);
++		error = inode_newsize_ok(inode, attr->ia_size);
+ 		if (error)
+ 			return error;
++		truncate_setsize(inode, attr->ia_size);
++		sysv_truncate(inode);
+ 	}
+ 
+ 	setattr_copy(inode, attr);
+@@ -52,7 +54,6 @@ static int sysv_setattr(struct dentry *dentry, struct iattr *attr)
  }
  
-+static void ufs_write_failed(struct address_space *mapping, loff_t to)
+ const struct inode_operations sysv_file_inode_operations = {
+-	.truncate	= sysv_truncate,
+ 	.setattr	= sysv_setattr,
+ 	.getattr	= sysv_getattr,
+ };
+diff --git a/fs/sysv/itree.c b/fs/sysv/itree.c
+index 90b54b4..c1a591a 100644
+--- a/fs/sysv/itree.c
++++ b/fs/sysv/itree.c
+@@ -464,6 +464,16 @@ int sysv_prepare_chunk(struct page *page, loff_t pos, unsigned len)
+ 	return __block_write_begin(page, pos, len, get_block);
+ }
+ 
++static void sysv_write_failed(struct address_space *mapping, loff_t to)
 +{
 +	struct inode *inode = mapping->host;
 +
-+	if (to > inode->i_size)
++	if (to > inode->i_size) {
 +		truncate_pagecache(inode, to, inode->i_size);
++		sysv_truncate(inode);
++	}
 +}
 +
- static int ufs_write_begin(struct file *file, struct address_space *mapping,
+ static int sysv_write_begin(struct file *file, struct address_space *mapping,
  			loff_t pos, unsigned len, unsigned flags,
  			struct page **pagep, void **fsdata)
-@@ -534,11 +542,8 @@ static int ufs_write_begin(struct file *file, struct address_space *mapping,
+@@ -471,11 +481,8 @@ static int sysv_write_begin(struct file *file, struct address_space *mapping,
+ 	int ret;
  
- 	ret = block_write_begin(mapping, pos, len, flags, pagep,
- 				ufs_getfrag_block);
+ 	ret = block_write_begin(mapping, pos, len, flags, pagep, get_block);
 -	if (unlikely(ret)) {
 -		loff_t isize = mapping->host->i_size;
 -		if (pos + len > isize)
 -			vmtruncate(mapping->host, isize);
 -	}
 +	if (unlikely(ret))
-+		ufs_write_failed(mapping, pos + len);
++		sysv_write_failed(mapping, pos + len);
  
  	return ret;
  }
