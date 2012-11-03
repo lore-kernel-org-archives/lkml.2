@@ -1,118 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab2KCMQt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 08:16:49 -0400
-Received: from mga03.intel.com ([143.182.124.21]:29904 "EHLO mga03.intel.com"
+	id S932467Ab2KCMWG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 08:22:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34946 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932075Ab2KCMQr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 08:16:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,705,1344236400"; 
-   d="scan'208";a="164103494"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Jan Beulich <JBeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <jbeulich@suse.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Index: AQHNuRoMTi91BiFLfUibRvXA4zlK85fX//8g
-Date: Sat, 3 Nov 2012 12:16:44 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233537A2A5@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
- <5089676602000078000A4928@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
- <508A89CB020000780008E6ED@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
- <20121026201409.GF2708@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC8292335377346@SHSMSX101.ccr.corp.intel.com>
- <20121102164937.GC27213@konrad-lan.dumpdata.com>
-In-Reply-To: <20121102164937.GC27213@konrad-lan.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932075Ab2KCMWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 08:22:04 -0400
+Date: Sat, 3 Nov 2012 12:21:57 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Alex Shi <lkml.alex@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 00/31] numa/core patches
+Message-ID: <20121103122157.GH8218@suse.de>
+References: <20121025121617.617683848@chello.nl>
+ <20121030122032.GC3888@suse.de>
+ <CAGjg+kHrbjr8T0+TOEKp6Mx4zZBbrh_3VPUt81nWj6u3xi=NNQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAGjg+kHrbjr8T0+TOEKp6Mx4zZBbrh_3VPUt81nWj6u3xi=NNQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
->>> From f514b97628945cfac00efb0d456f133d44754c9d Mon Sep 17 00:00:00
->>> 2001 
->> From: Liu, Jinsong <jinsong.liu@intel.com>
->> Date: Thu, 1 Nov 2012 21:02:36 +0800
->> Subject: [PATCH 1/2] Xen acpi pad implement
->> 
->> PAD is acpi Processor Aggregator Device which provides a control
->> point 
->> that enables the platform to perform specific processor configuration
->> and control that applies to all processors in the platform.
->> 
->> This patch is to implement Xen acpi pad logic. When running under Xen
->> virt platform, native pad driver would not work. Instead Xen pad
->> driver, 
->> a self-contained and very thin logic level, would take over acpi pad
->> staff. When acpi pad notify OSPM, xen pad logic intercept and parse
->> _PUR object 
->> and then hypercall to hyervisor for the rest work, say, core parking.
+On Sat, Nov 03, 2012 at 07:04:04PM +0800, Alex Shi wrote:
+> >
+> > In reality, this report is larger but I chopped it down a bit for
+> > brevity. autonuma beats schednuma *heavily* on this benchmark both in
+> > terms of average operations per numa node and overall throughput.
+> >
+> > SPECJBB PEAKS
+> >                                        3.7.0                      3.7.0                      3.7.0
+> >                               rc2-stats-v2r1         rc2-autonuma-v27r8         rc2-schednuma-v1r3
+> >  Expctd Warehouse                   12.00 (  0.00%)                   12.00 (  0.00%)                   12.00 (  0.00%)
+> >  Expctd Peak Bops               442225.00 (  0.00%)               596039.00 ( 34.78%)               555342.00 ( 25.58%)
+> >  Actual Warehouse                    7.00 (  0.00%)                    9.00 ( 28.57%)                    8.00 ( 14.29%)
+> >  Actual Peak Bops               550747.00 (  0.00%)               646124.00 ( 17.32%)               560635.00 (  1.80%)
 > 
-> Two comments:
->  - Did you look at the SuSE tree? Jan mentioned that they did some
->    fixes? Did you carry them over?
-
-I didn't look at Suse tree.
-
-Jan, would you please tell me where can I pull Suse tree? have you implemented xen-acpi-pad logic at Suse dom0 and which points you have fixed?
-
-
->  - The init function should not make hypercalls before checking if it
->    in facts run under Xen.
-
-OK.
-
->> +
->> +static const struct acpi_device_id pad_device_ids[] = {
->> +	{"ACPI000C", 0}, +	{"", 0},
->> +};
->> +
->> +static struct acpi_driver xen_acpi_pad_driver = {
->> +	.name = "processor_aggregator",
->> +	.class = ACPI_PROCESSOR_AGGREGATOR_CLASS,
->> +	.ids = pad_device_ids,
->> +	.ops = {
->> +		.add = xen_acpi_pad_add,
->> +		.remove = xen_acpi_pad_remove,
->> +	},
->> +};
->> +
->> +static int __init xen_acpi_pad_init(void)
->> +{
->> +	int ret = -ENOSYS;
->> +	unsigned int version = HYPERVISOR_xen_version(XENVER_version,
->> NULL); 
+> It is impressive report!
 > 
-> Heh. so if you run this on baremetal I wonder what will happen.
+> Could you like to share the what JVM and options are you using in the
+> testing, and based on which kinds of platform?
 > 
->> +	unsigned int major = version >> 16;
->> +	unsigned int minor = version & 0xffff;
->> +
->> +	/* Only DOM0 is responsible for Xen acpi pad */
->> +	if (!xen_initial_domain())
->> +		return -ENODEV;
->> +
-> 
-> I think the check for version should happen here.
 
-Got it, will update later.
+Oracle JVM version "1.7.0_07"
+Java(TM) SE Runtime Environment (build 1.7.0_07-b10)
+Java HotSpot(TM) 64-Bit Server VM (build 23.3-b01, mixed mode)
 
-Thanks,
-Jinsong
+4 JVMs were run, one for each node.
 
+JVM switch specified was -Xmx12901m so it would consume roughly 80% of
+memory overall.
+
+Machine is x86-64 4-node, 64G of RAM, CPUs are E7-4807, 48 cores in
+total with HT enabled.
+
+-- 
+Mel Gorman
+SUSE Labs
