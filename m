@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab2KCXHM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 19:07:12 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:34297 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2KCXHH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 19:07:07 -0400
-Message-ID: <5095A384.5080205@gmail.com>
-Date: Sat, 03 Nov 2012 19:06:44 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
+	id S1757594Ab2KCXKN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 19:10:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50608 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752019Ab2KCXKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 19:10:07 -0400
+Date: Sun, 4 Nov 2012 00:09:55 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Chris Friesen <chris.friesen@genband.com>, Pavel Machek <pavel@ucw.cz>,
+        Eric Paris <eparis@parisplace.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+In-Reply-To: <20121102154833.GG3300@redhat.com>
+Message-ID: <alpine.LNX.2.00.1211040008280.24253@pobox.suse.cz>
+References: <50919EED.3020601@genband.com> <36538307.gzWq1oO7Kg@linux-lqwf.site> <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com> <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz> <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
+ <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz> <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com> <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com> <20121101202701.GB20817@xo-6d-61-c0.localdomain> <5092E361.7080901@genband.com>
+ <20121102154833.GG3300@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 21/21] TTY: move tty buffers to tty_port
-References: <1350592007-9216-1-git-send-email-jslaby@suse.cz> <1350592007-9216-22-git-send-email-jslaby@suse.cz> <50897E98.5080502@gmail.com> <50911F67.3040303@suse.cz> <CA+1xoqfZ5DHVi44Y_a5EmXYeN6Eh=COSP4CiA6tM-aqJE1vBoQ@mail.gmail.com> <5091448D.3@suse.cz> <CA+1xoqdRBCQYBQdK-=KJohtua_wD_fp4akk6_jS0x3x82fRp5g@mail.gmail.com> <5093EC1B.2050800@suse.cz> <CA+1xoqdRV5LORTDM9iiTRQwCdGK9XqcW54zyh03M-c-mVU2YLQ@mail.gmail.com> <5093F262.6000301@suse.cz> <50947B7B.8080601@gmail.com> <50953E8D.9000504@suse.cz>
-In-Reply-To: <50953E8D.9000504@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2012 11:55 AM, Jiri Slaby wrote:
-> On 11/03/2012 03:03 AM, Sasha Levin wrote:
->> On 11/02/2012 12:18 PM, Jiri Slaby wrote:
->>> On 11/02/2012 05:07 PM, Sasha Levin wrote:
->>>> On Fri, Nov 2, 2012 at 11:51 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->>>>> On 10/31/2012 04:59 PM, Sasha Levin wrote:
->>>>>> So you probably want a lot more than 100k syscalls, why limit it at
->>>>>> all actually?
->>>>>
->>>>> I unset the limit but I still can't reproduce...
->>>>>
->>>>>> I've attached my .config for the guest kernel as reference.
->>>>>
->>>>> Even using this config does not help to reproduce that.
->>>>>
->>>>> Do you use some special trinity params?
->>>>
->>>> Not really:
->>>>
->>>>     ./trinity -m --quiet --dangerous -l off
->>>
->>> Oh, you run that as root??
->>>
->>>> Can I add something to my kernel to provide more info when it happens?
->>>
->>> Maybe the attached patch can tell us more...
->>>
->>
->> Nope, I see the warnings mentioned before, without the new 'HUH' warnings.
-> 
-> Actually it does. It is exactly as you wrote some time earlier. The work
-> is scheduled after is was cancelled and should not trigger anymore. Or,
-> it is scheduled before it is supposed to do. Could you try the attached
-> patch and report what happens with that patch?
-> 
-> PS I can't reproduce by whatever I tried.
-> 
-> thanks,
-> 
+On Fri, 2 Nov 2012, Vivek Goyal wrote:
 
-Interesting...
+> > With secure boot enabled, then the kernel should refuse to let an
+> > unsigned kexec load new images, and kexec itself should refuse to
+> > load unsigned images.
+> 
+> Yep, good in theory. Now that basically means reimplementing kexec-tools
+> in kernel. 
 
-[  388.783955] tty is bad=0 ops=          (null)Pid: 6480, comm: kworker/1:2 Tainted: G        W
-3.7.0-rc3-next-20121102-sasha-00002-gbb570e0-dirty #111
+Why is "when kernel has been securely booted, the in-kernel kexec 
+mechanism has to verify the signature of the supplied image before 
+kexecing it" not enough? (basically the same thing we are doing for signed 
+modules already).
 
-
-Thanks,
-Sasha
+-- 
+Jiri Kosina
+SUSE Labs
