@@ -1,137 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab2KCRye (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 13:54:34 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47769 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313Ab2KCRyd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 13:54:33 -0400
-Message-ID: <50953E8D.9000504@suse.cz>
-Date: Sat, 03 Nov 2012 16:55:57 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751793Ab2KCSII (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 14:08:08 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:59135 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750802Ab2KCSIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 14:08:06 -0400
+Date: Sat, 3 Nov 2012 14:07:59 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jani Nikula <jani.nikula@intel.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] i915: failure to interoperate with HP ZR30w using
+ an X230
+Message-ID: <20121103180759.GA5486@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Jani Nikula <jani.nikula@intel.com>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <nsxa9v4ssgz.fsf@closure.thunk.org>
+ <87hapcqu97.fsf@intel.com>
+ <87zk34gok8.fsf@intel.com>
+ <20121030203221.GA4537@thunk.org>
+ <20121103005831.GA3978@thunk.org>
+ <20121103102158.GP5755@phenom.ffwll.local>
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 21/21] TTY: move tty buffers to tty_port
-References: <1350592007-9216-1-git-send-email-jslaby@suse.cz> <1350592007-9216-22-git-send-email-jslaby@suse.cz> <50897E98.5080502@gmail.com> <50911F67.3040303@suse.cz> <CA+1xoqfZ5DHVi44Y_a5EmXYeN6Eh=COSP4CiA6tM-aqJE1vBoQ@mail.gmail.com> <5091448D.3@suse.cz> <CA+1xoqdRBCQYBQdK-=KJohtua_wD_fp4akk6_jS0x3x82fRp5g@mail.gmail.com> <5093EC1B.2050800@suse.cz> <CA+1xoqdRV5LORTDM9iiTRQwCdGK9XqcW54zyh03M-c-mVU2YLQ@mail.gmail.com> <5093F262.6000301@suse.cz> <50947B7B.8080601@gmail.com>
-In-Reply-To: <50947B7B.8080601@gmail.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: multipart/mixed;
- boundary="------------090000070301080804040707"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121103102158.GP5755@phenom.ffwll.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090000070301080804040707
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-
-On 11/03/2012 03:03 AM, Sasha Levin wrote:
-> On 11/02/2012 12:18 PM, Jiri Slaby wrote:
->> On 11/02/2012 05:07 PM, Sasha Levin wrote:
->>> On Fri, Nov 2, 2012 at 11:51 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->>>> On 10/31/2012 04:59 PM, Sasha Levin wrote:
->>>>> So you probably want a lot more than 100k syscalls, why limit it at
->>>>> all actually?
->>>>
->>>> I unset the limit but I still can't reproduce...
->>>>
->>>>> I've attached my .config for the guest kernel as reference.
->>>>
->>>> Even using this config does not help to reproduce that.
->>>>
->>>> Do you use some special trinity params?
->>>
->>> Not really:
->>>
->>>     ./trinity -m --quiet --dangerous -l off
->>
->> Oh, you run that as root??
->>
->>> Can I add something to my kernel to provide more info when it happens?
->>
->> Maybe the attached patch can tell us more...
->>
+On Sat, Nov 03, 2012 at 11:21:58AM +0100, Daniel Vetter wrote:
 > 
-> Nope, I see the warnings mentioned before, without the new 'HUH' warnings.
+> Well, we know for sure that fdi link training is broken - it doesn't match
+> at all what the spec says we should do. I've been working on this lately,
+> since in quite a few circumstances the link train fails without the
+> relevent bits indicating so. While testing I've also noticed that this
+> entire thing is highly timing dependent, e.g. denpending upon which
+> desktop is running and which tool I use to change the configuration it
+> fails or succeeds.
 
-Actually it does. It is exactly as you wrote some time earlier. The work
-is scheduled after is was cancelled and should not trigger anymore. Or,
-it is scheduled before it is supposed to do. Could you try the attached
-patch and report what happens with that patch?
+So it is still (somewhat) broken in 3.7-rcX?  Certainly it seems to be
+better (at least for me) than what was in 3.6.3.  Or are you saying I
+may have just gotten lucky?  :-)
 
-PS I can't reproduce by whatever I tried.
+> So I have no suggestions for what could help your system and what should
+> get backported, since the current code is still broken.
 
-thanks,
--- 
-js
-suse labs
+Thanks for your response and for your work in making the i915 driver
+better.  I really appreciate your efforts.
 
---------------090000070301080804040707
-Content-Type: text/x-patch;
- name="0001-tty-debug-part-2.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-tty-debug-part-2.patch"
+Cheers,
 
->From eeffa986dfd4ffcca1ed3332ffd3ff4645a4cf1d Mon Sep 17 00:00:00 2001
-From: Jiri Slaby <jslaby@suse.cz>
-Date: Sat, 3 Nov 2012 16:49:29 +0100
-Subject: [PATCH] tty debug part 2
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/tty/pty.c        | 2 +-
- drivers/tty/tty_buffer.c | 2 +-
- drivers/tty/tty_io.c     | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 4219f04..7438589 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -372,7 +372,7 @@ static void pty_unix98_shutdown(struct tty_struct *tty)
- 
- static void pty_cleanup(struct tty_struct *tty)
- {
--	tty->port->itty = NULL;
-+	tty->port->itty = ERR_PTR(-2);
- 	kfree(tty->port);
- }
- 
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index ef020e2..a672f67 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -471,7 +471,7 @@ static void flush_to_ldisc(struct work_struct *work)
- 	struct tty_ldisc *disc;
- 
- 	tty = port->itty;
--	if (WARN_RATELIMIT(tty == NULL, "tty is NULL"))
-+	if (WARN_RATELIMIT(IS_ERR_OR_NULL(tty), "tty is bad=%ld ops=%ps", PTR_ERR(tty), port->ops))
- 		return;
- 
- 	disc = tty_ldisc_ref(tty);
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index a3eba7f..d06b978 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1553,7 +1553,7 @@ static void release_tty(struct tty_struct *tty, int idx)
- 		tty->ops->shutdown(tty);
- 	tty_free_termios(tty);
- 	tty_driver_remove_tty(tty->driver, tty);
--	tty->port->itty = NULL;
-+	tty->port->itty = ERR_PTR(-1);
- 
- 	if (tty->link)
- 		tty_kref_put(tty->link);
--- 
-1.8.0
-
-
---------------090000070301080804040707--
+						- Ted
