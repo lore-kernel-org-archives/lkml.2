@@ -1,189 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426Ab2KCFIB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 01:08:01 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7772 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752165Ab2KCFH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 01:07:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,704,1344236400"; 
-   d="scan'208";a="242080762"
-Message-ID: <1351919165.13106.2.camel@yhuang-mobile.sh.intel.com>
-Subject: Re: [BUGFIX 1/2] PCI/PM: Fix deadlock when unbind device if its
- parent in D3cold
-From: Huang Ying <ying.huang@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Zhang Yanmin <yanmin.zhang@intel.com>
-Date: Sat, 03 Nov 2012 13:06:05 +0800
-In-Reply-To: <CAErSpo7hiFQOC+OPZretkyp5EcL84zEWCAiQgEE5Ewq--gUziQ@mail.gmail.com>
-References: <1351061654-8339-1-git-send-email-ying.huang@intel.com>
-	 <CAErSpo7hiFQOC+OPZretkyp5EcL84zEWCAiQgEE5Ewq--gUziQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752352Ab2KCF1j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 01:27:39 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:34559 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab2KCF1h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 01:27:37 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH 1/3] fat: use s_blocksize_bits where SECTOR SIZE alignment is needed
+Date: Sat,  3 Nov 2012 14:27:19 +0900
+Message-Id: <1351920439-3253-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-02 at 10:50 -0600, Bjorn Helgaas wrote:
-> On Wed, Oct 24, 2012 at 12:54 AM, Huang Ying <ying.huang@intel.com> wrote:
-> > If a PCI device and its parents are put into D3cold, unbinding the
-> > device will trigger deadlock as follow:
-> >
-> > - driver_unbind
-> >   - device_release_driver
-> >     - device_lock(dev)                          <--- previous lock here
-> >     - __device_release_driver
-> >       - pm_runtime_get_sync
-> >         ...
-> >           - rpm_resume(dev)
-> >             - rpm_resume(dev->parent)
-> >               ...
-> >                 - pci_pm_runtime_resume
-> >                   ...
-> >                   - pci_set_power_state
-> >                     - __pci_start_power_transition
-> >                       - pci_wakeup_bus(dev->parent->subordinate)
-> >                         - pci_walk_bus
-> >                           - device_lock(dev)    <--- dead lock here
-> >
-> >
-> > If we do not do device_lock in pci_walk_bus, we can avoid dead lock.
-> > Device_lock in pci_walk_bus is introduced in commit:
-> > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
-> > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
-> > said device_lock is added to pci_walk_bus because:
-> >
-> >   Some error handling functions call pci_walk_bus. For example, PCIe
-> >   aer. Here we lock the device, so the driver wouldn't detach from the
-> >   device, as the cb might call driver's callback function.
-> >
-> > So I fixed the dead lock as follow:
-> >
-> > - remove device_lock from pci_walk_bus
-> > - add device_lock into callback if callback will call driver's callback
-> >
-> > I checked pci_walk_bus users one by one, and found only PCIe aer needs
-> > device lock.
-> 
-> Is there a problem report or bugzilla for this issue?
+Currently there is hard-coding at various places in FAT for using
+the SECTOR size alignment. So, In order to remove the hard coding
+we need to change the usage of '9' in FAT code.
 
-No.  I found this issue when I developed kexec fixing.
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+---
+ fs/fat/file.c  |    3 ++-
+ fs/fat/inode.c |    9 ++++++---
+ fs/fat/misc.c  |    9 ++++++---
+ 3 files changed, 14 insertions(+), 7 deletions(-)
 
-Best Regards,
-Huang Ying
-
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > Cc: Zhang Yanmin <yanmin.zhang@intel.com>
-> 
-> Should this go to stable as well?  The D3cold support appeared in
-> v3.6, so my guess is that this fix could go to v3.6.x.
-> 
-> > ---
-> >  drivers/pci/bus.c                  |    3 ---
-> >  drivers/pci/pcie/aer/aerdrv_core.c |   20 ++++++++++++++++----
-> >  2 files changed, 16 insertions(+), 7 deletions(-)
-> >
-> > --- a/drivers/pci/bus.c
-> > +++ b/drivers/pci/bus.c
-> > @@ -320,10 +320,7 @@ void pci_walk_bus(struct pci_bus *top, i
-> >                 } else
-> >                         next = dev->bus_list.next;
-> >
-> > -               /* Run device routines with the device locked */
-> > -               device_lock(&dev->dev);
-> >                 retval = cb(dev, userdata);
-> > -               device_unlock(&dev->dev);
-> >                 if (retval)
-> >                         break;
-> >         }
-> > --- a/drivers/pci/pcie/aer/aerdrv_core.c
-> > +++ b/drivers/pci/pcie/aer/aerdrv_core.c
-> > @@ -213,6 +213,7 @@ static int report_error_detected(struct
-> >         struct aer_broadcast_data *result_data;
-> >         result_data = (struct aer_broadcast_data *) data;
-> >
-> > +       device_lock(&dev->dev);
-> >         dev->error_state = result_data->state;
-> >
-> >         if (!dev->driver ||
-> > @@ -231,12 +232,14 @@ static int report_error_detected(struct
-> >                                    dev->driver ?
-> >                                    "no AER-aware driver" : "no driver");
-> >                 }
-> > -               return 0;
-> > +               goto out;
-> >         }
-> >
-> >         err_handler = dev->driver->err_handler;
-> >         vote = err_handler->error_detected(dev, result_data->state);
-> >         result_data->result = merge_result(result_data->result, vote);
-> > +out:
-> > +       device_unlock(&dev->dev);
-> >         return 0;
-> >  }
-> >
-> > @@ -247,14 +250,17 @@ static int report_mmio_enabled(struct pc
-> >         struct aer_broadcast_data *result_data;
-> >         result_data = (struct aer_broadcast_data *) data;
-> >
-> > +       device_lock(&dev->dev);
-> >         if (!dev->driver ||
-> >                 !dev->driver->err_handler ||
-> >                 !dev->driver->err_handler->mmio_enabled)
-> > -               return 0;
-> > +               goto out;
-> >
-> >         err_handler = dev->driver->err_handler;
-> >         vote = err_handler->mmio_enabled(dev);
-> >         result_data->result = merge_result(result_data->result, vote);
-> > +out:
-> > +       device_unlock(&dev->dev);
-> >         return 0;
-> >  }
-> >
-> > @@ -265,14 +271,17 @@ static int report_slot_reset(struct pci_
-> >         struct aer_broadcast_data *result_data;
-> >         result_data = (struct aer_broadcast_data *) data;
-> >
-> > +       device_lock(&dev->dev);
-> >         if (!dev->driver ||
-> >                 !dev->driver->err_handler ||
-> >                 !dev->driver->err_handler->slot_reset)
-> > -               return 0;
-> > +               goto out;
-> >
-> >         err_handler = dev->driver->err_handler;
-> >         vote = err_handler->slot_reset(dev);
-> >         result_data->result = merge_result(result_data->result, vote);
-> > +out:
-> > +       device_unlock(&dev->dev);
-> >         return 0;
-> >  }
-> >
-> > @@ -280,15 +289,18 @@ static int report_resume(struct pci_dev
-> >  {
-> >         const struct pci_error_handlers *err_handler;
-> >
-> > +       device_lock(&dev->dev);
-> >         dev->error_state = pci_channel_io_normal;
-> >
-> >         if (!dev->driver ||
-> >                 !dev->driver->err_handler ||
-> >                 !dev->driver->err_handler->resume)
-> > -               return 0;
-> > +               goto out;
-> >
-> >         err_handler = dev->driver->err_handler;
-> >         err_handler->resume(dev);
-> > +out:
-> > +       device_unlock(&dev->dev);
-> >         return 0;
-> >  }
-> >
-
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index 1f81cb4..e6dd081 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -276,7 +276,8 @@ static int fat_free(struct inode *inode, int skip)
+ 
+ 		free_start = ret;
+ 	}
+-	inode->i_blocks = skip << (MSDOS_SB(sb)->cluster_bits - 9);
++	inode->i_blocks = skip << (MSDOS_SB(sb)->cluster_bits -
++						sb->s_blocksize_bits);
+ 
+ 	/* Freeing the remained cluster chain */
+ 	return fat_free_clusters(inode, free_start);
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 80c6fdd..d077f57 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -387,7 +387,8 @@ static int fat_calc_dir_size(struct inode *inode)
+ /* doesn't deal with root inode */
+ static int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
+ {
+-	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
++	struct super_block *sb = inode->i_sb;
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+ 	int error;
+ 
+ 	MSDOS_I(inode)->i_pos = 0;
+@@ -431,7 +432,8 @@ static int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
+ 	fat_save_attrs(inode, de->attr);
+ 
+ 	inode->i_blocks = ((inode->i_size + (sbi->cluster_size - 1))
+-			   & ~((loff_t)sbi->cluster_size - 1)) >> 9;
++			   & ~((loff_t)sbi->cluster_size - 1)) >>
++			   sb->s_blocksize_bits;
+ 
+ 	fat_time_fat2unix(sbi, &inode->i_mtime, de->time, de->date, 0);
+ 	if (sbi->options.isvfat) {
+@@ -1148,7 +1150,8 @@ static int fat_read_root(struct inode *inode)
+ 		inode->i_size = sbi->dir_entries * sizeof(struct msdos_dir_entry);
+ 	}
+ 	inode->i_blocks = ((inode->i_size + (sbi->cluster_size - 1))
+-			   & ~((loff_t)sbi->cluster_size - 1)) >> 9;
++			   & ~((loff_t)sbi->cluster_size - 1)) >>
++			   sb->s_blocksize_bits;
+ 	MSDOS_I(inode)->i_logstart = 0;
+ 	MSDOS_I(inode)->mmu_private = inode->i_size;
+ 
+diff --git a/fs/fat/misc.c b/fs/fat/misc.c
+index 6d93360..f78469f 100644
+--- a/fs/fat/misc.c
++++ b/fs/fat/misc.c
+@@ -150,13 +150,16 @@ int fat_chain_add(struct inode *inode, int new_dclus, int nr_cluster)
+ 		} else
+ 			mark_inode_dirty(inode);
+ 	}
+-	if (new_fclus != (inode->i_blocks >> (sbi->cluster_bits - 9))) {
++	if (new_fclus != (inode->i_blocks >> (sbi->cluster_bits -
++			 sb->s_blocksize_bits))) {
+ 		fat_fs_error(sb, "clusters badly computed (%d != %llu)",
+ 			     new_fclus,
+-			     (llu)(inode->i_blocks >> (sbi->cluster_bits - 9)));
++			     (llu)(inode->i_blocks >> (sbi->cluster_bits -
++			     sb->s_blocksize_bits)));
+ 		fat_cache_inval_inode(inode);
+ 	}
+-	inode->i_blocks += nr_cluster << (sbi->cluster_bits - 9);
++	inode->i_blocks += nr_cluster << (sbi->cluster_bits -
++			   sb->s_blocksize_bits);
+ 
+ 	return 0;
+ }
+-- 
+1.7.9.5
 
