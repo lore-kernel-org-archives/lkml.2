@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab2KCIVB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 04:21:01 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:59652 "EHLO a.mx.secunet.com"
+	id S1753266Ab2KCIZI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 04:25:08 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:59677 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134Ab2KCIU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 04:20:57 -0400
-Date: Sat, 3 Nov 2012 09:20:47 +0100
+	id S1752039Ab2KCIZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 04:25:05 -0400
+Date: Sat, 3 Nov 2012 09:24:55 +0100
 From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Shan Wei <shanwei88@gmail.com>, David Miller <davem@davemloft.net>,
-        timo.teras@iki.fi, NetDev <netdev@vger.kernel.org>,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/9] net: core: use this_cpu_ptr per-cpu helper
-Message-ID: <20121103082047.GA20868@secunet.com>
-References: <5093EE47.20700@gmail.com>
- <0000013ac239c004-87f4c3e0-5c6a-4979-817f-0a0c4445a4e9-000000@email.amazonses.com>
+To: Shan Wei <shanwei88@gmail.com>
+Cc: Kernel-Maillist <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, cl@linux-foundation.org
+Subject: Re: [PATCH v2 5/9] kernel: padata : use this_cpu_read per-cpu helper
+Message-ID: <20121103082455.GB20868@secunet.com>
+References: <5093EE63.5000005@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0000013ac239c004-87f4c3e0-5c6a-4979-817f-0a0c4445a4e9-000000@email.amazonses.com>
+In-Reply-To: <5093EE63.5000005@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 03 Nov 2012 08:20:47.0699 (UTC) FILETIME=[209FC230:01CDB99C]
+X-OriginalArrivalTime: 03 Nov 2012 08:24:55.0563 (UTC) FILETIME=[B45CCDB0:01CDB99C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 05:44:55PM +0000, Christoph Lameter wrote:
-> On Sat, 3 Nov 2012, Shan Wei wrote:
-> > +++ b/net/core/flow.c
-> > @@ -327,11 +327,9 @@ static void flow_cache_flush_tasklet(unsigned long data)
-> >  static void flow_cache_flush_per_cpu(void *data)
-> >  {
-> >  	struct flow_flush_info *info = data;
-> > -	int cpu;
-> >  	struct tasklet_struct *tasklet;
-> >
-> > -	cpu = smp_processor_id();
-> > -	tasklet = &per_cpu_ptr(info->cache->percpu, cpu)->flush_tasklet;
-> > +	tasklet = &this_cpu_ptr(info->cache->percpu)->flush_tasklet
-> 
-> Another case for the use of this_cpu_read
+>  
+> @@ -204,8 +204,7 @@ static struct padata_priv *padata_get_next(struct parallel_data *pd)
+>  		goto out;
+>  	}
+>  
+> -	queue = per_cpu_ptr(pd->pqueue, smp_processor_id());
+> -	if (queue->cpu_index == next_queue->cpu_index) {
+> +	if (this_cpu_read(pd->pqueue->cpu_index) == next_queue->cpu_index) {
 
-Actually, smp_processor_id() is used if either preemtion is off or
-in a thread that is bound to the current cpu. So all code that uses
-smp_processor_id() should be able to use __this_cpu_read instead of
-this_cpu_read.
-
-In this case, flow_cache_flush_per_cpu() is called via smp_call_function(),
-so it is bound on the current cpu.
+This runs with bottom halves off, so we can use __this_cpu_read here.
