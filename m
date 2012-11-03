@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab2KCG3H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 02:29:07 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:54545 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab2KCG3D (ORCPT
+	id S1751691Ab2KCHAM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 03:00:12 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46966 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916Ab2KCHAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 02:29:03 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: [PATCH v2 3/3] fat: warn when discard request fails other than EOPNOTSUPP
-Date: Sat,  3 Nov 2012 15:28:54 +0900
-Message-Id: <1351924134-14320-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 3 Nov 2012 03:00:09 -0400
+Date: Sat, 3 Nov 2012 08:00:06 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wen Congyang <wency@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        Jiang Liu <liuj97@gmail.com>, bsingharora@gmail.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        paul.gortmaker@windriver.com, Tang Chen <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH] memcg: fix hotplugged memory zone oops
+Message-ID: <20121103070006.GA12038@dhcp22.suse.cz>
+References: <505187D4.7070404@cn.fujitsu.com>
+ <20120913205935.GK1560@cmpxchg.org>
+ <alpine.LSU.2.00.1209131816070.1908@eggly.anvils>
+ <507CF789.6050307@cn.fujitsu.com>
+ <alpine.LSU.2.00.1210181129180.2137@eggly.anvils>
+ <20121018220306.GA1739@cmpxchg.org>
+ <alpine.LNX.2.00.1211011822190.20048@eggly.anvils>
+ <20121102102159.GA24073@dhcp22.suse.cz>
+ <20121102105420.GB24073@dhcp22.suse.cz>
+ <alpine.LNX.2.00.1211021631260.11106@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1211021631260.11106@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FAT also warn user then the discard request fails
-as ext4(http://patchwork.ozlabs.org/patch/192669/)
+On Fri 02-11-12 16:37:37, Hugh Dickins wrote:
+> On Fri, 2 Nov 2012, Michal Hocko wrote:
+> > On Fri 02-11-12 11:21:59, Michal Hocko wrote:
+> > > On Thu 01-11-12 18:28:02, Hugh Dickins wrote:
+> > [...]
+> > 
+> > And I forgot to mention that the following hunk will clash with
+> > "memcg: Simplify mem_cgroup_force_empty_list error handling" which is in
+> > linux-next already (via Tejun's tree). 
+> 
+> Oh, via Tejun's tree.  Right, when I checked mmotm there was no problem.
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
----
- fs/fat/fatent.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+Yeah, whole that thing goes through Tejun's tree because there are many
+follow up clean ups depending on that change.
 
-diff --git a/fs/fat/fatent.c b/fs/fat/fatent.c
-index 260705c..fc1f407 100644
---- a/fs/fat/fatent.c
-+++ b/fs/fat/fatent.c
-@@ -583,12 +583,15 @@ int fat_free_clusters(struct inode *inode, int cluster)
- 			 */
- 			if (cluster != fatent.entry + 1) {
- 				int nr_clus = fatent.entry - first_cl + 1;
--
--				sb_issue_discard(sb,
--					fat_clus_to_blknr(sbi, first_cl),
--					nr_clus * sbi->sec_per_clus,
--					GFP_NOFS, 0);
--
-+				sector_t sblk = fat_clus_to_blknr(sbi, first_cl);
-+				sector_t nrblk = nr_clus * sbi->sec_per_clus;
-+
-+				err = sb_issue_discard(sb,
-+						sblk, nrblk, GFP_NOFS, 0);
-+				if (err && err != -EOPNOTSUPP)
-+					fat_msg(sb, KERN_WARNING, "discard request for"
-+							" block:%llu count:%llu failed"
-+							" with %d", sblk, nrblk, err);
- 				first_cl = cluster;
- 			}
- 		}
+> > Would it be easier to split the patch into the real fix and the hunk
+> > bellow? That one doesn't have to go into stable anyway and we would save
+> > some merging conflicts. The updated fix on top of -mm tree is bellow for
+> > your convinience.
+> 
+> I'd prefer to leave it as one patch, so even the "future proof" part
+> of the fix goes into 3.7 and stable.  But your point is that you have
+> already seen the future, and it forks in a slightly different direction!
+> 
+> Well, I don't want to be obstructive, but it doesn't look difficult
+> to resolve.  
+
+True.
+
+> Perhaps if I hold off on splitting them, and see if akpm barks at me
+> or not :)
+> 
+> Hugh
+> 
+> > > >  /**
+> > > > @@ -3688,17 +3712,17 @@ unsigned long mem_cgroup_soft_limit_recl
+> > > >  static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
+> > > >  				int node, int zid, enum lru_list lru)
+> > > >  {
+> > > > -	struct mem_cgroup_per_zone *mz;
+> > > > +	struct lruvec *lruvec;
+> > > >  	unsigned long flags, loop;
+> > > >  	struct list_head *list;
+> > > >  	struct page *busy;
+> > > >  	struct zone *zone;
+> > > >  
+> > > >  	zone = &NODE_DATA(node)->node_zones[zid];
+> > > > -	mz = mem_cgroup_zoneinfo(memcg, node, zid);
+> > > > -	list = &mz->lruvec.lists[lru];
+> > > > +	lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+> > > > +	list = &lruvec->lists[lru];
+> > > >  
+> > > > -	loop = mz->lru_size[lru];
+> > > > +	loop = mem_cgroup_get_lru_size(lruvec, lru);
+> > > >  	/* give some margin against EBUSY etc...*/
+> > > >  	loop += 256;
+> > > >  	busy = NULL;
+
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
