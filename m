@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab2KCLEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 07:04:09 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:43997 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760Ab2KCLEG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 07:04:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121030122032.GC3888@suse.de>
-References: <20121025121617.617683848@chello.nl>
-	<20121030122032.GC3888@suse.de>
-Date: Sat, 3 Nov 2012 19:04:04 +0800
-Message-ID: <CAGjg+kHrbjr8T0+TOEKp6Mx4zZBbrh_3VPUt81nWj6u3xi=NNQ@mail.gmail.com>
-Subject: Re: [PATCH 00/31] numa/core patches
-From: Alex Shi <lkml.alex@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755646Ab2KCLIo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 07:08:44 -0400
+Received: from mga14.intel.com ([143.182.124.37]:3749 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751541Ab2KCLIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 07:08:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,705,1344236400"; 
+   d="scan'208";a="164093045"
+Message-ID: <1351940915.2523.15.camel@rzhang1-mobl4>
+Subject: [GIT PULL] Thermal management & ACPI update for v3.7-rc4
+From: Zhang Rui <rui.zhang@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <lenb@kernel.org>, "Wu, Fengguang" <fengguang.wu@intel.com>
+Date: Sat, 03 Nov 2012 19:08:35 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> In reality, this report is larger but I chopped it down a bit for
-> brevity. autonuma beats schednuma *heavily* on this benchmark both in
-> terms of average operations per numa node and overall throughput.
->
-> SPECJBB PEAKS
->                                        3.7.0                      3.7.0                      3.7.0
->                               rc2-stats-v2r1         rc2-autonuma-v27r8         rc2-schednuma-v1r3
->  Expctd Warehouse                   12.00 (  0.00%)                   12.00 (  0.00%)                   12.00 (  0.00%)
->  Expctd Peak Bops               442225.00 (  0.00%)               596039.00 ( 34.78%)               555342.00 ( 25.58%)
->  Actual Warehouse                    7.00 (  0.00%)                    9.00 ( 28.57%)                    8.00 ( 14.29%)
->  Actual Peak Bops               550747.00 (  0.00%)               646124.00 ( 17.32%)               560635.00 (  1.80%)
+Hi Linus,
 
-It is impressive report!
+Could you please pull from the git repository at
 
-Could you like to share the what JVM and options are you using in the
-testing, and based on which kinds of platform?
+  git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git release
 
--- 
-Thanks
-    Alex
+to receive three thermal and acpi fixes for v3.7-rc4.
+
+thanks,
+rui
+
+
+The following changes since commit
+1e207eb1c3f0e8b690401f02fe08e7b53903f010:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending
+(2012-10-31 15:42:08 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git 
+
+for you to fetch changes up to 2566285df1863f69a6552dbcd8f38153db8d2e15:
+
+  exynos4_tmu_driver_ids should be exynos_tmu_driver_ids. (2012-11-01
+09:21:54 +0800)
+
+----------------------------------------------------------------
+Devendra Naga (1):
+      thermal: solve compilation errors in rcar_thermal
+
+Igor Murzov (1):
+      ACPI video: Ignore errors after _DOD evaluation.
+
+Jonghwan Choi (1):
+      exynos4_tmu_driver_ids should be exynos_tmu_driver_ids.
+
+ drivers/acpi/video.c             |   11 +++++++----
+ drivers/thermal/exynos_thermal.c |    2 +-
+ drivers/thermal/rcar_thermal.c   |    2 +-
+ 3 files changed, 9 insertions(+), 6 deletions(-)
+
+
