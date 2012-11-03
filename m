@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584Ab2KCUaw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 16:30:52 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:3579 "EHLO
-	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753207Ab2KCUag (ORCPT
+	id S932541Ab2KCUat (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 16:30:49 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:15625
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757518Ab2KCUaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 16:30:36 -0400
+	Sat, 3 Nov 2012 16:30:35 -0400
 X-IronPort-AV: E=Sophos;i="4.80,705,1344204000"; 
-   d="scan'208";a="161264931"
+   d="scan'208";a="161264930"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: kernel-janitors@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 8/8] drivers/net/wireless/ath/ath6kl/hif.c: drop if around WARN_ON
-Date: Sat,  3 Nov 2012 21:30:25 +0100
-Message-Id: <1351974625-10282-9-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 7/8] drivers/scsi/scsi_transport_fc.c: drop if around WARN_ON
+Date: Sat,  3 Nov 2012 21:30:24 +0100
+Message-Id: <1351974625-10282-8-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1351974625-10282-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1351974625-10282-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -43,31 +41,23 @@ expression e;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/wireless/ath/ath6kl/hif.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/scsi/scsi_transport_fc.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath6kl/hif.c b/drivers/net/wireless/ath/ath6kl/hif.c
-index 68ed6c2..9e47c4a 100644
---- a/drivers/net/wireless/ath/ath6kl/hif.c
-+++ b/drivers/net/wireless/ath/ath6kl/hif.c
-@@ -338,8 +338,7 @@ static int ath6kl_hif_proc_err_intr(struct ath6kl_device *dev)
- 	status = hif_read_write_sync(dev->ar, ERROR_INT_STATUS_ADDRESS,
- 				     reg_buf, 4, HIF_WR_SYNC_BYTE_FIX);
+diff --git a/drivers/scsi/scsi_transport_fc.c b/drivers/scsi/scsi_transport_fc.c
+index e894ca7..f54c945 100644
+--- a/drivers/scsi/scsi_transport_fc.c
++++ b/drivers/scsi/scsi_transport_fc.c
+@@ -1699,9 +1699,8 @@ fc_stat_show(const struct device *dev, char *buf, unsigned long offset)
+ 	struct fc_host_statistics *stats;
+ 	ssize_t ret = -ENOENT;
  
--	if (status)
+-	if (offset > sizeof(struct fc_host_statistics) ||
+-	    offset % sizeof(u64) != 0)
 -		WARN_ON(1);
-+	WARN_ON(status);
++	WARN_ON(offset > sizeof(struct fc_host_statistics) ||
++		offset % sizeof(u64) != 0);
  
- 	return status;
- }
-@@ -383,8 +382,7 @@ static int ath6kl_hif_proc_cpu_intr(struct ath6kl_device *dev)
- 	status = hif_read_write_sync(dev->ar, CPU_INT_STATUS_ADDRESS,
- 				     reg_buf, 4, HIF_WR_SYNC_BYTE_FIX);
- 
--	if (status)
--		WARN_ON(1);
-+	WARN_ON(status);
- 
- 	return status;
- }
+ 	if (i->f->get_fc_host_stats) {
+ 		stats = (i->f->get_fc_host_stats)(shost);
 
