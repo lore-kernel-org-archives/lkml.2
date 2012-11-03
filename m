@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab2KCK67 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 06:58:59 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:62865
+	id S1755613Ab2KCK65 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 06:58:57 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:11958
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753057Ab2KCK6w (ORCPT
+	by vger.kernel.org with ESMTP id S1752632Ab2KCK6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 06:58:52 -0400
+	Sat, 3 Nov 2012 06:58:48 -0400
 X-IronPort-AV: E=Sophos;i="4.80,705,1344204000"; 
-   d="scan'208";a="161245671"
+   d="scan'208";a="161245666"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: netdev@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/16] drivers/net/ethernet/ibm/emac/mal.c: use WARN
-Date: Sat,  3 Nov 2012 11:58:31 +0100
-Message-Id: <1351940317-14812-11-git-send-email-Julia.Lawall@lip6.fr>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/16] drivers/scsi: use WARN
+Date: Sat,  3 Nov 2012 11:58:26 +0100
+Message-Id: <1351940317-14812-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -43,27 +44,38 @@ expression list es;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/ethernet/ibm/emac/mal.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/scsi/initio.c   |    3 +--
+ drivers/scsi/scsi_lib.c |    3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/ibm/emac/mal.c b/drivers/net/ethernet/ibm/emac/mal.c
-index 479e43e..84c6b6c 100644
---- a/drivers/net/ethernet/ibm/emac/mal.c
-+++ b/drivers/net/ethernet/ibm/emac/mal.c
-@@ -738,13 +738,11 @@ static int __devexit mal_remove(struct platform_device *ofdev)
- 	/* Synchronize with scheduled polling */
- 	napi_disable(&mal->napi);
- 
--	if (!list_empty(&mal->list)) {
-+	if (!list_empty(&mal->list))
- 		/* This is *very* bad */
--		printk(KERN_EMERG
-+		WARN(1, KERN_EMERG
- 		       "mal%d: commac list is not empty on remove!\n",
- 		       mal->index);
+diff --git a/drivers/scsi/initio.c b/drivers/scsi/initio.c
+index dd741bc..1572860 100644
+--- a/drivers/scsi/initio.c
++++ b/drivers/scsi/initio.c
+@@ -2774,8 +2774,7 @@ static void i91uSCBPost(u8 * host_mem, u8 * cblk_mem)
+ 	host = (struct initio_host *) host_mem;
+ 	cblk = (struct scsi_ctrl_blk *) cblk_mem;
+ 	if ((cmnd = cblk->srb) == NULL) {
+-		printk(KERN_ERR "i91uSCBPost: SRB pointer is empty\n");
 -		WARN_ON(1);
--	}
++		WARN(1, KERN_ERR "i91uSCBPost: SRB pointer is empty\n");
+ 		initio_release_scb(host, cblk);	/* Release SCB for current channel */
+ 		return;
+ 	}
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index da36a3a..e5fdcae 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -2573,10 +2573,9 @@ void *scsi_kmap_atomic_sg(struct scatterlist *sgl, int sg_count,
+ 	}
  
- 	dev_set_drvdata(&ofdev->dev, NULL);
+ 	if (unlikely(i == sg_count)) {
+-		printk(KERN_ERR "%s: Bytes in sg: %zu, requested offset %zu, "
++		WARN(1, KERN_ERR "%s: Bytes in sg: %zu, requested offset %zu, "
+ 			"elements %d\n",
+ 		       __func__, sg_len, *offset, sg_count);
+-		WARN_ON(1);
+ 		return NULL;
+ 	}
  
 
