@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab2KCLad (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 07:30:33 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:61842 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752952Ab2KCLac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 07:30:32 -0400
-Message-ID: <50950055.8040307@bfs.de>
-Date: Sat, 03 Nov 2012 12:30:29 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: netdev@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/16] drivers/net/ethernet/ibm/emac/mal.c: use WARN
-References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr> <1351940317-14812-11-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1351940317-14812-11-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=UTF-8
+	id S1755873Ab2KCLcw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 07:32:52 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:56259 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752952Ab2KCLcu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 07:32:50 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19iAlUvP0ZiegOH8PyFAfdBrycJbXN3zklVv6SaMj
+	WJKZph/FJ+tfQA
+Message-ID: <1351942405.16850.23.camel@maggy.simpson.net>
+Subject: Re: Fwd: Nice processes prevent frequency increases - possible
+ scheduler regression (known good in 2.6.35)
+From: Mike Galbraith <efault@gmx.de>
+To: Michal Zatloukal <myxal.mxl@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
+Date: Sat, 03 Nov 2012 04:33:25 -0700
+In-Reply-To: <CAKKZj2Av0TN9MbYk=-2ZB_jxDnUCWfrN5tJNZ7azgSHyOrMzvg@mail.gmail.com>
+References: <CAKKZj2Do+ViFbdmeA9y4qZ4Dd_CrW_wmVWc0_CB4BAAwO6SfJg@mail.gmail.com>
+	 <CAKKZj2Av0TN9MbYk=-2ZB_jxDnUCWfrN5tJNZ7azgSHyOrMzvg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2012-11-02 at 21:09 +0100, Michal Zatloukal wrote:
 
+> On the new kernel, the nice processes are never starved - even when
+> starting a tab-laden chromium session, the processes for BOINC keep
+> about 20% CPU each (that is normalized to all CPUs, ie 40% nice load
+> on each core). The problem is, the governor now seems to consider the
+> non-nice task unable to saturate the CPU, and the cores' frequencies
+> are hovering between 1.0 and 1.8 GHz. The scheduler keeps scheduling
+> the nice tasks, and the non-nice tasks are progressing much slower,
+> caused by the lower CPU speed as well as less processing time
+> allocated to them. HD video stutters often, and Chromium takes at
+> least 2-3 times longer to fully load.
 
-Am 03.11.2012 11:58, schrieb Julia Lawall:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Use WARN rather than printk followed by WARN_ON(1), for conciseness.
-> 
-> A simplified version of the semantic patch that makes this transformation
-> is as follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression list es;
-> @@
-> 
-> -printk(
-> +WARN(1,
->   es);
-> -WARN_ON(1);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  drivers/net/ethernet/ibm/emac/mal.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/ibm/emac/mal.c b/drivers/net/ethernet/ibm/emac/mal.c
-> index 479e43e..84c6b6c 100644
-> --- a/drivers/net/ethernet/ibm/emac/mal.c
-> +++ b/drivers/net/ethernet/ibm/emac/mal.c
-> @@ -738,13 +738,11 @@ static int __devexit mal_remove(struct platform_device *ofdev)
->  	/* Synchronize with scheduled polling */
->  	napi_disable(&mal->napi);
->  
-> -	if (!list_empty(&mal->list)) {
-> +	if (!list_empty(&mal->list))
->  		/* This is *very* bad */
-> -		printk(KERN_EMERG
-> +		WARN(1, KERN_EMERG
->  		       "mal%d: commac list is not empty on remove!\n",
->  		       mal->index);
-> -		WARN_ON(1);
-> -	}
->  
->  	dev_set_drvdata(&ofdev->dev, NULL);
->  
-> 
+Your nice 19 tasks receiving 'too much' CPU when there are other
+runnable tasks around sounds like you have SCHED_AUTOGROUP enabled.
 
-Hi Julia,
-you are removing the {} behin the if. I prefer to be a bit conservative
-about {}. There is suggest to keep them because WARN may be expanded in
-future (with a second line) and that will cause subtle changes that do
-no break the code. (Yes i know it is possible to write macros that
-contain savely more than one line.)
+With this enabled (or if tasks are placed in cgroups by another means),
+group A and group B will each receive equal CPU if group shares/weight
+are equal, regardless of group content.  Task nice level will affect CPU
+distribution within a group, but group A containing a gaggle of nice 19
+tasks will receive the same amount of CPU as group B containing your
+nice 0 browser with zillion tabs.  Add nice 0 hogs to group A, the nice
+19 tasks will receive much less CPU, but the total for group A will
+remain unchanged relative to group B, unless group shares/weights are
+twiddled.
 
-re,
- wh
+(no idea what's going on with ondemand)
+
+-Mike
 
