@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763314Ab2KCB6n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 21:58:43 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49496 "EHLO
+	id S1763322Ab2KCCAh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 22:00:37 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49514 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757489Ab2KCB6l (ORCPT
+	with ESMTP id S1757510Ab2KCCAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 21:58:41 -0400
-Date: Fri, 02 Nov 2012 21:58:40 -0400 (EDT)
-Message-Id: <20121102.215840.116110325989713705.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: sbhatewara@vmware.com, pv-drivers@vmware.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jongman.heo@samsung.com
-Subject: Re: [PATCH] vmxnet3: must split too big fragments
+	Fri, 2 Nov 2012 22:00:35 -0400
+Date: Fri, 02 Nov 2012 22:00:33 -0400 (EDT)
+Message-Id: <20121102.220033.278425350670801966.davem@davemloft.net>
+To: joe@perches.com
+Cc: divy@chelsio.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/16] ethernet: Convert dev_printk(KERN_<LEVEL> to
+ dev_<level>(
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1351531849.12280.54.camel@edumazet-glaptop>
-References: <1351000246.8609.1926.camel@edumazet-glaptop>
-	<1351021160.8609.2503.camel@edumazet-glaptop>
-	<1351531849.12280.54.camel@edumazet-glaptop>
+In-Reply-To: <78c3d489101b08588cb067181171eb070bdac756.1351411047.git.joe@perches.com>
+References: <cover.1351411047.git.joe@perches.com>
+	<78c3d489101b08588cb067181171eb070bdac756.1351411047.git.joe@perches.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -26,20 +25,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Mon, 29 Oct 2012 18:30:49 +0100
+From: Joe Perches <joe@perches.com>
+Date: Sun, 28 Oct 2012 01:05:48 -0700
 
-> From: Eric Dumazet <edumazet@google.com>
+> dev_<level> calls take less code than dev_printk(KERN_<LEVEL>
+> and reducing object size is good.
+> Coalesce formats for easier grep.
 > 
-> vmxnet3 has a 16Kbytes limit per tx descriptor, that happened to work
-> as long as we provided PAGE_SIZE fragments.
-> 
-> Our stack can now build larger fragments, so we need to split them to
-> the 16kbytes boundary.
-> 
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
-> Reported-by: jongman heo <jongman.heo@samsung.com>
-> Tested-by: jongman heo <jongman.heo@samsung.com>
-> Cc: Shreyas Bhatewara <sbhatewara@vmware.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Applied, thanks everyone.
+I forgot the other day so indicate that I applied this to
+net-next, thanks.
