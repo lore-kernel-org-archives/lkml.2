@@ -1,38 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763322Ab2KCCAh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Nov 2012 22:00:37 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49514 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757510Ab2KCCAf (ORCPT
+	id S1752273Ab2KCCEG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Nov 2012 22:04:06 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:33476 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab2KCCED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Nov 2012 22:00:35 -0400
-Date: Fri, 02 Nov 2012 22:00:33 -0400 (EDT)
-Message-Id: <20121102.220033.278425350670801966.davem@davemloft.net>
-To: joe@perches.com
-Cc: divy@chelsio.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/16] ethernet: Convert dev_printk(KERN_<LEVEL> to
- dev_<level>(
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <78c3d489101b08588cb067181171eb070bdac756.1351411047.git.joe@perches.com>
-References: <cover.1351411047.git.joe@perches.com>
-	<78c3d489101b08588cb067181171eb070bdac756.1351411047.git.joe@perches.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 2 Nov 2012 22:04:03 -0400
+Message-ID: <50947B7B.8080601@gmail.com>
+Date: Fri, 02 Nov 2012 22:03:39 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 21/21] TTY: move tty buffers to tty_port
+References: <1350592007-9216-1-git-send-email-jslaby@suse.cz> <1350592007-9216-22-git-send-email-jslaby@suse.cz> <50897E98.5080502@gmail.com> <50911F67.3040303@suse.cz> <CA+1xoqfZ5DHVi44Y_a5EmXYeN6Eh=COSP4CiA6tM-aqJE1vBoQ@mail.gmail.com> <5091448D.3@suse.cz> <CA+1xoqdRBCQYBQdK-=KJohtua_wD_fp4akk6_jS0x3x82fRp5g@mail.gmail.com> <5093EC1B.2050800@suse.cz> <CA+1xoqdRV5LORTDM9iiTRQwCdGK9XqcW54zyh03M-c-mVU2YLQ@mail.gmail.com> <5093F262.6000301@suse.cz>
+In-Reply-To: <5093F262.6000301@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Sun, 28 Oct 2012 01:05:48 -0700
-
-> dev_<level> calls take less code than dev_printk(KERN_<LEVEL>
-> and reducing object size is good.
-> Coalesce formats for easier grep.
+On 11/02/2012 12:18 PM, Jiri Slaby wrote:
+> On 11/02/2012 05:07 PM, Sasha Levin wrote:
+>> On Fri, Nov 2, 2012 at 11:51 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+>>> On 10/31/2012 04:59 PM, Sasha Levin wrote:
+>>>> So you probably want a lot more than 100k syscalls, why limit it at
+>>>> all actually?
+>>>
+>>> I unset the limit but I still can't reproduce...
+>>>
+>>>> I've attached my .config for the guest kernel as reference.
+>>>
+>>> Even using this config does not help to reproduce that.
+>>>
+>>> Do you use some special trinity params?
+>>
+>> Not really:
+>>
+>>     ./trinity -m --quiet --dangerous -l off
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> Oh, you run that as root??
+> 
+>> Can I add something to my kernel to provide more info when it happens?
+> 
+> Maybe the attached patch can tell us more...
+> 
 
-I forgot the other day so indicate that I applied this to
-net-next, thanks.
+Nope, I see the warnings mentioned before, without the new 'HUH' warnings.
+
+
+Thanks,
+Sasha
