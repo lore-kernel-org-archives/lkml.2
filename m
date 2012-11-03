@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083Ab2KCOpx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 10:45:53 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37517 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab2KCOpw (ORCPT
+	id S1755403Ab2KCPN3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 11:13:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4877 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab2KCPN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 10:45:52 -0400
-Date: Sat, 3 Nov 2012 14:50:52 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Ric Wheeler <rwheeler@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, Kay Sievers <kay@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
- add queue-private command filter, editable via sysfs)
-Message-ID: <20121103145052.0da49071@pyramind.ukuu.org.uk>
-In-Reply-To: <50951A0E.9010103@redhat.com>
-References: <20121025180045.GL11442@htj.dyndns.org>
-	<1657557410.1945557.1351190120407.JavaMail.root@redhat.com>
-	<20121031212241.GZ2945@htj.dyndns.org>
-	<5093DD5E.6030808@redhat.com>
-	<20121102165123.GB3823@mtj.dyndns.org>
-	<509407B7.3030904@redhat.com>
-	<20121102175350.GB27843@mtj.dyndns.org>
-	<50951A0E.9010103@redhat.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Sat, 3 Nov 2012 11:13:27 -0400
+X-Authority-Analysis: v=2.0 cv=dvhZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1FDNxFMC7OYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=zNXoGfytzK0A:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=ZAH4KCEHR5VkbgX2vy8A:9 a=PUjeQqilurYA:10 a=U62fhAwekXMA:10 a=dGJ0OcVc7YAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351955605.4004.159.camel@gandalf.local.home>
+Subject: Re: [ 0/4] 3.0.51-stable review
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Rafael Aquini <aquini@redhat.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Date: Sat, 03 Nov 2012 11:13:25 -0400
+In-Reply-To: <20121103144340.GA1383@kroah.com>
+References: <20121102170333.581931288@linuxfoundation.org>
+	 <20121103003108.GA1981@optiplex.redhat.com>
+	 <20121103040711.GD1602@kroah.com>
+	 <20121103114501.GA1688@optiplex.redhat.com>
+	 <20121103144340.GA1383@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > It's not really about the lines of code.  It adds a new userland
-> > visible interface.  As for the "long" list of commands, it depends on
-> > how you write it but even if it's textually long it's still very
-> > simple in terms of actual complexity.
+On Sat, 2012-11-03 at 07:43 -0700, Greg Kroah-Hartman wrote:
+> On Sat, Nov 03, 2012 at 09:45:02AM -0200, Rafael Aquini wrote:
+> > On Fri, Nov 02, 2012 at 09:07:11PM -0700, Greg Kroah-Hartman wrote:
+> > > > 
+> > > > Howdy Greg,
+> > > > 
+> > > > Somehow the following patch is missing for this series submission:
+> > > > > Len Brown <len.brown@intel.com>
+> > > > >     x86: Remove the ancient and deprecated disable_hlt() and enable_hlt() facility
+> > > > 
+> > > > I glanced at the the downloadable consolidated patch and its hunks seem to be present,
+> > > > though.
+> > > 
+> > > I do not understand.  Where do you not see it?  It's in the patch on
+> > > kernel.org, right?  Where is it missing?
+> > > 
+> > 
+> > The LKML patch series is missing PATCH 02/04.
 > 
-> Sure, but its place is not the kernel.
+> Odd, I received a copy, but I don't know if it came from lkml or as a
+> copy sent to me directly.  I'll bounce it to you if you are curious
+> about it.
 > 
-> As to implementing the ioctl, it's all but trivial.  For one thing, you
-> have to make the block device ioctl op take a "struct file".  I have
-> been asking Al Viro about it for 6 months and I haven't got any answer yet.
 
-Just do it - if Al cared he'd have replied about it.
+Yeah, 2/4 is missing. Probably had too many Cc's. I really wish David
+Miller would remove that limit. I bet it's kept more legitimate emails
+from making LKML than it has spam.
 
-> I proposed a way to implement the ultimately flexible solution (BPF) and
-> you shot it down because it was too complex.  Alan is showing you with
-> multiple examples of why the flexibility would be useful (perhaps nobody
-> would use it, but the use cases _are_ there), and you are mostly
-> ignoring them.
+I know I've been burnt by it a few times :-/
 
-My feeling too - It feels to me like Tejun is trying to railroad a broken
-non-solution into the system without regards for anyone else and by
-simply dismissing any other input.
+-- Steve
 
-Alan
+
