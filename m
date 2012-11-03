@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab2KCLpV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 07:45:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59768 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab2KCLpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 07:45:19 -0400
-Date: Sat, 3 Nov 2012 09:45:02 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [ 0/4] 3.0.51-stable review
-Message-ID: <20121103114501.GA1688@optiplex.redhat.com>
-References: <20121102170333.581931288@linuxfoundation.org>
- <20121103003108.GA1981@optiplex.redhat.com>
- <20121103040711.GD1602@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121103040711.GD1602@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754901Ab2KCLsS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 07:48:18 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:45665 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750875Ab2KCLsR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 07:48:17 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+wNbAAqpmwwby+t725P+Wd2j2UAPNwG8C4Rzj4wj
+	JvtURKLFDP2Fq6
+Message-ID: <1351943332.16850.25.camel@maggy.simpson.net>
+Subject: Re: Fwd: Nice processes prevent frequency increases - possible
+ scheduler regression (known good in 2.6.35)
+From: Mike Galbraith <efault@gmx.de>
+To: Michal Zatloukal <myxal.mxl@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
+Date: Sat, 03 Nov 2012 04:48:52 -0700
+In-Reply-To: <1351942405.16850.23.camel@maggy.simpson.net>
+References: <CAKKZj2Do+ViFbdmeA9y4qZ4Dd_CrW_wmVWc0_CB4BAAwO6SfJg@mail.gmail.com>
+	 <CAKKZj2Av0TN9MbYk=-2ZB_jxDnUCWfrN5tJNZ7azgSHyOrMzvg@mail.gmail.com>
+	 <1351942405.16850.23.camel@maggy.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 09:07:11PM -0700, Greg Kroah-Hartman wrote:
-> > 
-> > Howdy Greg,
-> > 
-> > Somehow the following patch is missing for this series submission:
-> > > Len Brown <len.brown@intel.com>
-> > >     x86: Remove the ancient and deprecated disable_hlt() and enable_hlt() facility
-> > 
-> > I glanced at the the downloadable consolidated patch and its hunks seem to be present,
-> > though.
+On Sat, 2012-11-03 at 04:33 -0700, Mike Galbraith wrote: 
+> On Fri, 2012-11-02 at 21:09 +0100, Michal Zatloukal wrote:
 > 
-> I do not understand.  Where do you not see it?  It's in the patch on
-> kernel.org, right?  Where is it missing?
+> > On the new kernel, the nice processes are never starved - even when
+> > starting a tab-laden chromium session, the processes for BOINC keep
+> > about 20% CPU each (that is normalized to all CPUs, ie 40% nice load
+> > on each core). The problem is, the governor now seems to consider the
+> > non-nice task unable to saturate the CPU, and the cores' frequencies
+> > are hovering between 1.0 and 1.8 GHz. The scheduler keeps scheduling
+> > the nice tasks, and the non-nice tasks are progressing much slower,
+> > caused by the lower CPU speed as well as less processing time
+> > allocated to them. HD video stutters often, and Chromium takes at
+> > least 2-3 times longer to fully load.
 > 
+> Your nice 19 tasks receiving 'too much' CPU when there are other
+> runnable tasks around sounds like you have SCHED_AUTOGROUP enabled.
 
-The LKML patch series is missing PATCH 02/04.
+(forgot to mention: if that's the case, you can add noautogroup to your
+kernel command line to turn it off if distro turned it on in .config)
 
-
-
-> confused,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
