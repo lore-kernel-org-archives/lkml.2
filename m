@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab2KCIf7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 04:35:59 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38139 "EHLO
+	id S1754061Ab2KCIg2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 04:36:28 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37605 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab2KCIfs (ORCPT
+	with ESMTP id S1751134Ab2KCIgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 04:35:48 -0400
+	Sat, 3 Nov 2012 04:36:22 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oneukum@suse.de>,
@@ -16,14 +16,10 @@ Cc: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oneukum@suse.de>,
         "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
         linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org, Ming Lei <ming.lei@canonical.com>,
-        Jiri Kosina <jiri.kosina@suse.com>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH v4 1/6] mm: teach mm by current context info to not do I/O during memory allocation
-Date: Sat,  3 Nov 2012 16:35:09 +0800
-Message-Id: <1351931714-11689-2-git-send-email-ming.lei@canonical.com>
+        linux-mm@kvack.org, Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH v4 3/6] block/genhd.c: apply pm_runtime_set_memalloc_noio on block devices
+Date: Sat,  3 Nov 2012 16:35:11 +0800
+Message-Id: <1351931714-11689-4-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351931714-11689-1-git-send-email-ming.lei@canonical.com>
 References: <1351931714-11689-1-git-send-email-ming.lei@canonical.com>
@@ -31,212 +27,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces PF_MEMALLOC_NOIO on process flag('flags' field of
-'struct task_struct'), so that the flag can be set by one task
-to avoid doing I/O inside memory allocation in the task's context.
+This patch applyes the introduced pm_runtime_set_memalloc_noio on
+block device so that PM core will teach mm to not allocate memory with
+GFP_IOFS when calling the runtime_resume and runtime_suspend callback
+for block devices and its ancestors.
 
-The patch trys to solve one deadlock problem caused by block device,
-and the problem may happen at least in the below situations:
-
-- during block device runtime resume, if memory allocation with
-GFP_KERNEL is called inside runtime resume callback of any one
-of its ancestors(or the block device itself), the deadlock may be
-triggered inside the memory allocation since it might not complete
-until the block device becomes active and the involed page I/O finishes.
-The situation is pointed out first by Alan Stern. It is not a good
-approach to convert all GFP_KERNEL[1] in the path into GFP_NOIO because
-several subsystems may be involved(for example, PCI, USB and SCSI may
-be involved for usb mass stoarage device, network devices involved too
-in the iSCSI case)
-
-- during block device runtime suspend, because runtime resume need
-to wait for completion of concurrent runtime suspend.
-
-- during error handling of usb mass storage deivce, USB bus reset
-will be put on the device, so there shouldn't have any
-memory allocation with GFP_KERNEL during USB bus reset, otherwise
-the deadlock similar with above may be triggered. Unfortunately, any
-usb device may include one mass storage interface in theory, so it
-requires all usb interface drivers to handle the situation. In fact,
-most usb drivers don't know how to handle bus reset on the device
-and don't provide .pre_set() and .post_reset() callback at all, so
-USB core has to unbind and bind driver for these devices. So it
-is still not practical to resort to GFP_NOIO for solving the problem.
-
-Also the introduced solution can be used by block subsystem or block
-drivers too, for example, set the PF_MEMALLOC_NOIO flag before doing
-actual I/O transfer.
-
-It is not a good idea to convert all these GFP_KERNEL in the
-affected path into GFP_NOIO because these functions doing that may be
-implemented as library and will be called in many other contexts.
-
-In fact, memalloc_noio() can convert some of current static GFP_NOIO
-allocation into GFP_KERNEL back in other non-affected contexts, at least
-almost all GFP_NOIO in USB subsystem can be converted into GFP_KERNEL
-after applying the approach and make allocation with GFP_IO
-only happen in runtime resume/bus reset/block I/O transfer contexts
-generally.
-
-[1], several GFP_KERNEL allocation examples in runtime resume path
-
-- pci subsystem
-acpi_os_allocate
-	<-acpi_ut_allocate
-		<-ACPI_ALLOCATE_ZEROED
-			<-acpi_evaluate_object
-				<-__acpi_bus_set_power
-					<-acpi_bus_set_power
-						<-acpi_pci_set_power_state
-							<-platform_pci_set_power_state
-								<-pci_platform_power_transition
-									<-__pci_complete_power_transition
-										<-pci_set_power_state
-											<-pci_restore_standard_config
-												<-pci_pm_runtime_resume
-- usb subsystem
-usb_get_status
-	<-finish_port_resume
-		<-usb_port_resume
-			<-generic_resume
-				<-usb_resume_device
-					<-usb_resume_both
-						<-usb_runtime_resume
-
-- some individual usb drivers
-usblp, uvc, gspca, most of dvb-usb-v2 media drivers, cpia2, az6007, ....
-
-That is just what I have found.  Unfortunately, this allocation can
-only be found by human being now, and there should be many not found
-since any function in the resume path(call tree) may allocate memory
-with GFP_KERNEL.
-
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Oliver Neukum <oneukum@suse.de>
-Cc: Jiri Kosina <jiri.kosina@suse.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
 v4:
-	- fix comment
-v3:
-	- no change
-v2:
-        - remove changes on 'may_writepage' and 'may_swap' because that
-          isn't related with the patchset, and can't introduce I/O in
-          allocation path if GFP_IOFS is unset, so handing 'may_swap'
-          and may_writepage on GFP_NOIO or GFP_NOFS  should be a
-          mm internal thing, and let mm guys deal with that, :-).
-
-          Looks clearing the two may_XXX flag only excludes dirty pages
-	  	  and anon pages for relaiming, and the behaviour should be decided
-          by GFP FLAG, IMO.
-
-        - unset GFP_IOFS in try_to_free_pages() path since
-          alloc_page_buffers()
-          and dma_alloc_from_contiguous may drop into the path, as
-          pointed by KAMEZAWA Hiroyuki
-v1:
-        - take Minchan's change to avoid the check in alloc_page hot
-          path
-
-        - change the helpers' style into save/restore as suggested by
-          Alan Stern
+	- call pm_runtime_set_memalloc_noio(ddev, true) after device_add
 ---
- include/linux/sched.h |   10 ++++++++++
- mm/page_alloc.c       |   10 +++++++++-
- mm/vmscan.c           |   12 ++++++++++++
- 3 files changed, 31 insertions(+), 1 deletion(-)
+ block/genhd.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index fb27acd..283fe86 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1805,6 +1805,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define PF_FROZEN	0x00010000	/* frozen for system suspend */
- #define PF_FSTRANS	0x00020000	/* inside a filesystem transaction */
- #define PF_KSWAPD	0x00040000	/* I am kswapd */
-+#define PF_MEMALLOC_NOIO 0x00080000	/* Allocating memory without IO involved */
- #define PF_LESS_THROTTLE 0x00100000	/* Throttle me less: I clean memory */
- #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
- #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
-@@ -1842,6 +1843,15 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
- #define used_math() tsk_used_math(current)
+diff --git a/block/genhd.c b/block/genhd.c
+index 9e02cd6..f3fe3aa 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -18,6 +18,7 @@
+ #include <linux/mutex.h>
+ #include <linux/idr.h>
+ #include <linux/log2.h>
++#include <linux/pm_runtime.h>
  
-+#define memalloc_noio() (current->flags & PF_MEMALLOC_NOIO)
-+#define memalloc_noio_save(flag) do { \
-+	(flag) = current->flags & PF_MEMALLOC_NOIO; \
-+	current->flags |= PF_MEMALLOC_NOIO; \
-+} while (0)
-+#define memalloc_noio_restore(flag) do { \
-+	current->flags = (current->flags & ~PF_MEMALLOC_NOIO) | flag; \
-+} while (0)
+ #include "blk.h"
+ 
+@@ -532,6 +533,13 @@ static void register_disk(struct gendisk *disk)
+ 			return;
+ 		}
+ 	}
 +
- /*
-  * task->jobctl flags
-  */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 45c916b..3c47049 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2634,10 +2634,18 @@ retry_cpuset:
- 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
- 			zonelist, high_zoneidx, alloc_flags,
- 			preferred_zone, migratetype);
--	if (unlikely(!page))
-+	if (unlikely(!page)) {
-+		/*
-+		 * Runtime PM, block IO and its error handling path
-+		 * can deadlock because I/O on the device might not
-+		 * complete.
-+		 */
-+		if (unlikely(memalloc_noio()))
-+			gfp_mask &= ~GFP_IOFS;
- 		page = __alloc_pages_slowpath(gfp_mask, order,
- 				zonelist, high_zoneidx, nodemask,
- 				preferred_zone, migratetype);
-+	}
- 
- 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 10090c8..035088a 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2304,6 +2304,12 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 		.gfp_mask = sc.gfp_mask,
- 	};
- 
-+	if (unlikely(memalloc_noio())) {
-+		gfp_mask &= ~GFP_IOFS;
-+		sc.gfp_mask = gfp_mask;
-+		shrink.gfp_mask = sc.gfp_mask;
-+	}
++	/* avoid probable deadlock caused by allocating memory with
++	 * GFP_KERNEL in runtime_resume callback of its all ancestor
++	 * deivces
++	 */
++	pm_runtime_set_memalloc_noio(ddev, true);
 +
- 	throttle_direct_reclaim(gfp_mask, zonelist, nodemask);
+ 	disk->part0.holder_dir = kobject_create_and_add("holders", &ddev->kobj);
+ 	disk->slave_dir = kobject_create_and_add("slaves", &ddev->kobj);
  
- 	/*
-@@ -3304,6 +3310,12 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 	};
- 	unsigned long nr_slab_pages0, nr_slab_pages1;
- 
-+	if (unlikely(memalloc_noio())) {
-+		gfp_mask &= ~GFP_IOFS;
-+		sc.gfp_mask = gfp_mask;
-+		shrink.gfp_mask = sc.gfp_mask;
-+	}
-+
- 	cond_resched();
- 	/*
- 	 * We need to be able to allocate from the reserves for RECLAIM_SWAP
+@@ -661,6 +669,7 @@ void del_gendisk(struct gendisk *disk)
+ 	disk->driverfs_dev = NULL;
+ 	if (!sysfs_deprecated)
+ 		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
++	pm_runtime_set_memalloc_noio(disk_to_dev(disk), false);
+ 	device_del(disk_to_dev(disk));
+ }
+ EXPORT_SYMBOL(del_gendisk);
 -- 
 1.7.9.5
 
