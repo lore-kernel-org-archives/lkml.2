@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab2KCRq1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 13:46:27 -0400
-Received: from ermis.materials.uoc.gr ([147.52.136.196]:52135 "EHLO
+	id S1756763Ab2KCRqe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 13:46:34 -0400
+Received: from ermis.materials.uoc.gr ([147.52.136.196]:52138 "EHLO
 	ermis.materials.uoc.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875Ab2KCRq0 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754729Ab2KCRqd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 13:46:26 -0400
-Message-Id: <201211030900.qA38tIOU001893@ermis.materials.uoc.gr>
+	Sat, 3 Nov 2012 13:46:33 -0400
+Message-Id: <201211030923.qA39Knf9006309@ermis.materials.uoc.gr>
 Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
@@ -15,10 +15,10 @@ Content-Description: Mail message body
 Subject: **Alert Notification!!!
 To: Recipients <admin@upgrade.co.uk>
 From: "Webmail Communications" <admin@upgrade.co.uk>
-Date: Sat, 03 Nov 2012 10:07:18 +0100
+Date: Sat, 03 Nov 2012 10:32:48 +0100
 Reply-To: admin@upgrade.co.uk
 X-UOC-MailScanner-Information: Please contact the ISP for more information
-X-UOC-MailScanner-ID: qA38tIOU001893
+X-UOC-MailScanner-ID: qA39Knf9006309
 X-UOC-MailScanner: Found to be clean
 X-UOC-MailScanner-From: admin@upgrade.co.uk
 Sender: linux-kernel-owner@vger.kernel.org
