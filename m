@@ -1,110 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab2KDOET (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 09:04:19 -0500
-Received: from smtp.getmail.no ([84.208.15.66]:65129 "EHLO smtp.getmail.no"
+	id S1754428Ab2KDOGc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 09:06:32 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:44499 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754412Ab2KDOEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 09:04:16 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-To: linux-kernel@vger.kernel.org, el es <el.es.cr@gmail.com>
-Subject: Re: The uncatchable jitter, or may the scheduler wars be over?
-References: <loom.20121005T132825-464@post.gmane.org>
-Date: Sun, 04 Nov 2012 15:04:13 +0100
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wm85dbb76426ze@localhost.localdomain>
-In-reply-to: <loom.20121005T132825-464@post.gmane.org>
-User-Agent: Opera Mail/12.02 (Linux)
+	id S1752664Ab2KDOGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 09:06:30 -0500
+Message-ID: <50967641.4090503@ti.com>
+Date: Sun, 4 Nov 2012 19:35:53 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
+        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 07/11] ARM: davinci - restructure header files for
+ common clock migration
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-8-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1351181518-11882-8-git-send-email-m-karicheri2@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 05 Oct 2012 14:04:29 +0200, el es <el.es.cr@gmail.com> wrote:
 
-> Hello,
->
-> first of all, the posts that inspired me to write this up,
-> were from Uwaysi Bin Kareem (paradoxuncreated dot com).
->
-> Here is what I think:
-> could the source of graphic/video jitter as most people
-> perceive it, be something that could be technically defined
-> as 'graphic buffer underrun', caused by the scheduler
-> unable to align the deadline for some userspace programs
-> that are crucial to video/opengl output v-refresh, that
-> being really HARD RT ? As in, say the scheduler could
-> sometimes decide to preempt the userspace in the middle of
-> OpenGL/fb call [pretty easy to imagine this : userspace that
-> often blocks on calls to the video hardware, or has a
-> usespace thread that does that, and is unable to finish
-> some opengl pipeline calls before end of its slice, or
-> in case of misalignment, can execute enough commands to
-> create one (or several) frame(s), and then is cut in the
-> middle of creating another one and has to wait for its
-> turn again, and in the mean time, vsync/video buffer swap
-> occurs, and that last frame is lost/discarded/created with
-> time settings from previous slice which are wrong]
->
-> Bearing in mind, that the most length the video/fb/opengl
-> buffer can have, is probably 3 (triple buffering as in
-> some game settings), as opposed to (at least some)
-> sound hw which can have buffers several ms long,
-> it's not hard to imagine what happens if userspace cannot
-> make it in time to update the buffer, causing 'underruns'.
->
-> This would also explain why it doesn't matter to 'server'
-> people - they don't have RT video hw/buffers they care for...
-> (but they tune the below for max throughput instead)
->
-> But whether it is measurable or not - I don't know.
->
-> The OP (Uwaysi) has been fiddling with HZ value and the
-> averaging period of the scheduler (which he called 'filter')
-> (and granularity too). He's had some interesting results IMO.
->
-> Hope the above makes sense and not much gibberish :)
->
-> Lukasz
->
 
-I have now tried both CFS and BFS.Doom 3 is now running with very low  
-jitter on both. Both need a 90hz timer, no highres timer, and a  
-granularity/interval suited for "natural" (psychovisual profile).
-I also compiled them with some optimizations, and options for low jitter.
-(KBUILD_CFLAGS	+= -O3 -fno-defer-pop --param prefetch-latency=200)
-With Vsync on in doom3, it runs very smooth. Vsync off, BFS has less  
-jitter than CFS.
-Doom 3 does 3 passes to opengl, and therefore seems more jitter-sensitive,  
-so getting it to run well, means minimizing jitter.
-Compatibility layers, like Wine adds complexity though, and I have HL2  
-running in an intensely tweaked XP install, perfectly (without jitter).  
-With wine and BFS, it runs as good, but with some major one second  
-jitters. With CFS, some more smaller jitters / higher average jitter. But  
-the major jitters are of less lenght. Videojitter on youtube, seems less  
-with CFS aswell.
+On 10/25/2012 9:41 PM, Murali Karicheri wrote:
+> pll.h is added to migrate some of the PLL controller defines for sleep.S.
+> psc.h is modified to keep only PSC modules definitions needed by sleep.S
+> after migrating to common clock. The definitions under
+> ifdef CONFIG_COMMON_CLK will be removed in a subsequent patch.
+> davinci_watchdog_reset prototype is moved to time.h as clock.h is
+> being obsoleted. sleep.S and pm.c is modified to include the new header
+> file replacements.
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> ---
+>  arch/arm/mach-davinci/devices.c           |    2 ++
+>  arch/arm/mach-davinci/include/mach/pll.h  |   46 +++++++++++++++++++++++++++++
+>  arch/arm/mach-davinci/include/mach/psc.h  |    4 +++
+>  arch/arm/mach-davinci/include/mach/time.h |    4 ++-
+>  arch/arm/mach-davinci/pm.c                |    4 +++
+>  arch/arm/mach-davinci/sleep.S             |    4 +++
+>  6 files changed, 63 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/arm/mach-davinci/include/mach/pll.h
 
-So for "scheduler wars" indeed, identifying those jitters, and getting the  
-best of both, is optimal.
+With this patch a _third_ copy of PLL definitions is created in kernel
+sources. The existing PLL definitions in clock.h inside mach-davinci
+should be moved to mach/pll.h and the pll.h you introduced inside
+drivers/clk in 5/11 should be removed (this patch should appear before
+5/11).
 
-This with "low-latency desktop" preemption.
+The biggest disadvantage of this approach is inclusion of mach/ includes
+in drivers/clk. But duplicating code is definitely not the fix for this.
+Anyway, mach/ includes are not uncommon in drivers/clk (they are all
+probably suffering from the same issue).
 
-I have yet to get the realtime patch/threadirqs working, however within  
-the month I will have a new e5 computer, which probably will be a whole  
-lot more fun to test that on.
+$ grep -rl "include <mach/" drivers/clk/*
+drivers/clk/clk-u300.c
+drivers/clk/mmp/clk-pxa168.c
+drivers/clk/mmp/clk-mmp2.c
+drivers/clk/mmp/clk-pxa910.c
+drivers/clk/mxs/clk-imx23.c
+drivers/clk/mxs/clk-imx28.c
+drivers/clk/spear/spear6xx_clock.c
+drivers/clk/spear/spear3xx_clock.c
+drivers/clk/spear/spear1340_clock.c
+drivers/clk/spear/spear1310_clock.c
+drivers/clk/ux500/clk-prcc.c
+drivers/clk/versatile/clk-integrator.c
+drivers/clk/versatile/clk-realview.c
 
-Also like I stated elsewhere, since daemons seem to make a difference,  
-optimally putting daemons or processes that can, on a low-jitter queue,  
-transparent to the user, seems optimal. Unfortunately realtime is not  
-quite working as one would expect, causing input to be choked at times, if  
-you want to have one main app, and the rest on sched_other, as a  
-low-jitter queue. So I am still iterating this.
+pll.h can probably be moved to include/linux/clk/ to avoid this. Would
+like to hear from Mike on this before going ahead.
 
-Reducing jitter, seems to generally improve the computing experience,  
-setting also higher expectations to quality. Also a machine with jitter  
-ofcourse, behaves like a lower-end computer. So reducing jitter, seems to  
-be central to an enjoyable computing experience. This all without  
-unreasonable effort ofcourse.
+Anyway, instead of just commenting, I though I will be more useful and
+went ahead and made some of the changes I have been talking about. I
+fixed the multiple PLL definitions issue, the build infrastructure issue
+and the commit ordering too.
 
-Peace Be With You.
+I pushed the patches I fixed to devel-common-clk branch of my git tree.
+It is build tested using davinci_all_defconfig but its not runtime tested.
+
+Can you start from here and provide me incremental changes on top of
+this? That way we can collaborate to finish this faster.
+
+Thanks,
+Sekhar
