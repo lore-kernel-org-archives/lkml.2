@@ -1,86 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab2KDP05 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 10:26:57 -0500
-Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.30]:18544
-	"EHLO na01-by2-obe.mail.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755413Ab2KDP0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 10:26:52 -0500
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -10
-X-BigFish: PS-10(zz98dI9371I936eI542M1432I1447Izz1de0h1202h1d1ah1d2ahzz8275dhz31h2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: Drivers: scsi
-Thread-Topic: Drivers: scsi
-Thread-Index: AQHNunBNeEv0vukYrkymMIfn7qPLvJfZzHSA
-Date: Sun, 4 Nov 2012 15:26:31 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF930DF9113@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <1351960806-16240-1-git-send-email-kys@microsoft.com>
- <1352021949.2427.19.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1352021949.2427.19.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [70.192.129.74]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT005.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%HANSENPARTNERSHIP.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%INFRADEAD.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377424002)(377454001)(51704002)(51914002)(13464001)(24454001)(6806001)(74662001)(47976001)(53806001)(50466001)(54356001)(44976002)(49866001)(47776002)(16676001)(54316001)(47736001)(50986001)(31966008)(4396001)(51856001)(23676001)(46102001)(74502001)(33656001)(47446002)(76482001)(5343655001)(550254004);DIR:OUT;SFP:;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0655F9F006
+	id S1755468Ab2KDP1T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 10:27:19 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52244 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755054Ab2KDPY3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 10:24:29 -0500
+From: Jiang Liu <liuj97@gmail.com>
+To: "Rafael J . Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Huang Ying <ying.huang@intel.com>, Bob Moore <robert.moore@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
+        Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [ACPIHP PATCH part4 2/9] ACPIHP/processor: reorganize ACPI processor driver for new hotplug framework
+Date: Sun,  4 Nov 2012 23:23:55 +0800
+Message-Id: <1352042642-7306-3-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1352042642-7306-1-git-send-email-jiang.liu@huawei.com>
+References: <1352042642-7306-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA4FQxY0004580
 
+This patch reorganizes code in processor_driver.c to parepare for
+integration with the new hotplug framework. Common code could be
+shared among acpi_processor_add(), acpi_processor_remove() and hotplug
+has been reorganized as:
+acpi_processor_start()
+acpi_processor_stop()
+acpi_processor_link()
+acpi_processor_unlink()
 
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+---
+ drivers/acpi/processor_driver.c |  179 +++++++++++++++++++++++----------------
+ include/acpi/processor.h        |    2 +
+ 2 files changed, 108 insertions(+), 73 deletions(-)
 
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Sent: Sunday, November 04, 2012 4:39 AM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
-> scsi@vger.kernel.org
-> Subject: Re: Drivers: scsi
-> 
-> On Sat, 2012-11-03 at 09:40 -0700, K. Y. Srinivasan wrote:
-> > Do we currently support dynamic re-sizing of LUNs. Hyper-V can
-> > notify capacity change via sense data and I was wondering if this
-> > is handled in the generic scsi code.
-> 
-> Depends what you mean by "dynamic".  Experience shows that most users
-> really don't want all this to happen without manual intervention
-> (particularly on shrink).  However, we have the mechanics in place.
-> Just send ASC/Q 2A/09 and it can get vectored up to LVM which resizes
-> the volume and can be scripted automatically to resize the filesystem.
-> 
-> hypervisor people tend to have problems with scripting, so there are
-> some hacks that do this outside of the normal event system ... see for
-> example virtio_scsi.c
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index aa9c43a..28add34 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -105,6 +105,8 @@ static struct acpi_driver acpi_processor_driver = {
+ #define INSTALL_NOTIFY_HANDLER		1
+ #define UNINSTALL_NOTIFY_HANDLER	2
+ 
++static DEFINE_PER_CPU(void *, processor_device_array);
++
+ DEFINE_PER_CPU(struct acpi_processor *, processors);
+ EXPORT_PER_CPU_SYMBOL(processors);
+ 
+@@ -327,11 +329,11 @@ static int acpi_processor_get_info(struct acpi_device *device)
+ 	 * \_SB.SCK1.CPU0
+ 	 * Rename the processor device bus id. And the new bus id will be
+ 	 * generated as the following format:
+-	 * CPU+CPU ID.
++	 * CPU+ACPI ID.
+ 	 */
+-	sprintf(acpi_device_bid(device), "CPU%X", pr->id);
+-	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Processor [%d:%d]\n", pr->id,
+-			  pr->acpi_id));
++	sprintf(acpi_device_bid(device), "CPU%X", pr->acpi_id);
++	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Processor [%d:%d]\n", pr->acpi_id,
++			  pr->id));
+ 
+ 	if (!object.processor.pblk_address)
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "No PBLK (NULL address)\n"));
+@@ -355,19 +357,67 @@ static int acpi_processor_get_info(struct acpi_device *device)
+ 		request_region(pr->throttling.address, 6, "ACPI CPU throttle");
+ 	}
+ 
++	return 0;
++}
++
++static int acpi_processor_link(struct acpi_device *device,
++			       struct acpi_processor *pr)
++{
++	struct device *dev;
++	acpi_status status;
++	unsigned long long value;
++
++	if (pr->flags.device_linked)
++		return 0;
++
+ 	/*
+ 	 * If ACPI describes a slot number for this CPU, we can use it
+ 	 * ensure we get the right value in the "physical id" field
+ 	 * of /proc/cpuinfo
+ 	 */
+-	status = acpi_evaluate_object(pr->handle, "_SUN", NULL, &buffer);
++	status = acpi_evaluate_integer(pr->handle, "_SUN", NULL, &value);
+ 	if (ACPI_SUCCESS(status))
+-		arch_fix_phys_package_id(pr->id, object.integer.value);
++		arch_fix_phys_package_id(pr->id, value);
++
++	/*
++	 * Buggy BIOS check
++	 * ACPI id of processors can be reported wrongly by the BIOS.
++	 * Don't trust it blindly
++	 */
++	if (per_cpu(processor_device_array, pr->id) != NULL &&
++	    per_cpu(processor_device_array, pr->id) != device) {
++		dev_warn(&device->dev,
++			 "BIOS reported wrong ACPI id for the processor\n");
++		return -ENODEV;
++	}
++	per_cpu(processor_device_array, pr->id) = device;
++	per_cpu(processors, pr->id) = pr;
++
++	dev = get_cpu_device(pr->id);
++	if (sysfs_create_link(&device->dev.kobj, &dev->kobj, "sysdev")) {
++		/*
++		 * processor_device_array is not cleared to allow checks
++		 * for buggy BIOS
++		 */
++		per_cpu(processors, pr->id) = NULL;
++		return -EFAULT;
++	}
++
++	pr->flags.device_linked = 1;
+ 
+ 	return 0;
+ }
+ 
+-static DEFINE_PER_CPU(void *, processor_device_array);
++static void acpi_processor_unlink(struct acpi_device *device,
++				  struct acpi_processor *pr)
++{
++	if (pr->flags.device_linked) {
++		sysfs_remove_link(&device->dev.kobj, "sysdev");
++		per_cpu(processor_device_array, pr->id) = NULL;
++		per_cpu(processors, pr->id) = NULL;
++		pr->flags.device_linked = 0;
++	}
++}
+ 
+ static void acpi_processor_notify(struct acpi_device *device, u32 event)
+ {
+@@ -422,11 +472,11 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
+ 		if (pr->flags.need_hotplug_init) {
+ 			printk(KERN_INFO "Will online and init hotplugged "
+ 			       "CPU: %d\n", pr->id);
+-			WARN(acpi_processor_start(pr), "Failed to start CPU:"
+-				" %d\n", pr->id);
++			WARN(acpi_processor_start(pr),
++				"Failed to start CPU: %d\n", pr->id);
+ 			pr->flags.need_hotplug_init = 0;
+ 		/* Normal CPU soft online event */
+-		} else {
++		} else if (pr->flags.device_started) {
+ 			acpi_processor_ppc_has_changed(pr, 0);
+ 			acpi_processor_hotplug(pr);
+ 			acpi_processor_reevaluate_tstate(pr, action);
+@@ -458,6 +508,9 @@ static __ref int acpi_processor_start(struct acpi_processor *pr)
+ 	struct acpi_device *device = per_cpu(processor_device_array, pr->id);
+ 	int result = 0;
+ 
++	if (pr->flags.device_started)
++		return 0;
++
+ #ifdef CONFIG_CPU_FREQ
+ 	acpi_processor_ppc_has_changed(pr, 0);
+ 	acpi_processor_load_module(pr);
+@@ -493,6 +546,8 @@ static __ref int acpi_processor_start(struct acpi_processor *pr)
+ 		goto err_remove_sysfs_thermal;
+ 	}
+ 
++	pr->flags.device_started = 1;
++
+ 	return 0;
+ 
+ err_remove_sysfs_thermal:
+@@ -505,6 +560,21 @@ err_power_exit:
+ 	return result;
+ }
+ 
++static void acpi_processor_stop(struct acpi_device *device,
++				struct acpi_processor *pr)
++{
++	if (pr->flags.device_started) {
++		acpi_processor_power_exit(pr);
++		if (pr->cdev) {
++			sysfs_remove_link(&device->dev.kobj, "thermal_cooling");
++			sysfs_remove_link(&pr->cdev->device.kobj, "device");
++			thermal_cooling_device_unregister(pr->cdev);
++			pr->cdev = NULL;
++		}
++		pr->flags.device_started = 0;
++	}
++}
++
+ /*
+  * Do not put anything in here which needs the core to be online.
+  * For example MSR access or setting up things which check for cpuinfo_x86
+@@ -513,9 +583,8 @@ err_power_exit:
+  */
+ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+ {
+-	struct acpi_processor *pr = NULL;
+-	int result = 0;
+-	struct device *dev;
++	struct acpi_processor *pr;
++	int result;
+ 
+ 	pr = kzalloc(sizeof(struct acpi_processor), GFP_KERNEL);
+ 	if (!pr)
+@@ -532,60 +601,36 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+ 	device->driver_data = pr;
+ 
+ 	result = acpi_processor_get_info(device);
+-	if (result) {
+-		/* Processor is physically not present */
+-		return 0;
+-	}
+-
+-#ifdef CONFIG_SMP
+-	if (pr->id >= setup_max_cpus && pr->id != 0)
+-		return 0;
+-#endif
+-
+-	BUG_ON((pr->id >= nr_cpu_ids) || (pr->id < 0));
+-
+-	/*
+-	 * Buggy BIOS check
+-	 * ACPI id of processors can be reported wrongly by the BIOS.
+-	 * Don't trust it blindly
+-	 */
+-	if (per_cpu(processor_device_array, pr->id) != NULL &&
+-	    per_cpu(processor_device_array, pr->id) != device) {
+-		printk(KERN_WARNING "BIOS reported wrong ACPI id "
+-			"for the processor\n");
+-		result = -ENODEV;
++	if (result)
+ 		goto err_free_cpumask;
+-	}
+-	per_cpu(processor_device_array, pr->id) = device;
+-
+-	per_cpu(processors, pr->id) = pr;
+-
+-	dev = get_cpu_device(pr->id);
+-	if (sysfs_create_link(&device->dev.kobj, &dev->kobj, "sysdev")) {
+-		result = -EFAULT;
+-		goto err_clear_processor;
+-	}
+ 
+ 	/*
+-	 * Do not start hotplugged CPUs now, but when they
+-	 * are onlined the first time
++	 * Delay linking with logical CPU device if:
++	 * 1) no CPUID assigned yet
++	 * 2) processor won't be boot if CPUID is bigger than setup_max_cpus
++	 * They will be handled by CPU hotplug logical later.
+ 	 */
+-	if (pr->flags.need_hotplug_init)
++	if (pr->id == -1)
+ 		return 0;
++	if (IS_BUILTIN(CONFIG_SMP) && pr->id >= setup_max_cpus && pr->id != 0)
++		return 0;
++	BUG_ON((pr->id >= nr_cpu_ids) || (pr->id < 0));
+ 
+-	result = acpi_processor_start(pr);
++	result = acpi_processor_link(device, pr);
+ 	if (result)
+-		goto err_remove_sysfs;
++		goto err_unlock;
++	if (cpu_online(pr->id)) {
++		result = acpi_processor_start(pr);
++		if (result)
++			goto err_unlink;
++	}
+ 
+ 	return 0;
+ 
+-err_remove_sysfs:
+-	sysfs_remove_link(&device->dev.kobj, "sysdev");
+-err_clear_processor:
+-	/*
+-	 * processor_device_array is not cleared to allow checks for buggy BIOS
+-	 */ 
+-	per_cpu(processors, pr->id) = NULL;
++err_unlink:
++	acpi_processor_unlink(device, pr);
++err_unlock:
++	put_online_cpus();
+ err_free_cpumask:
+ 	free_cpumask_var(pr->throttling.shared_cpu_map);
+ err_free_pr:
+@@ -595,14 +640,12 @@ err_free_pr:
+ 
+ static int acpi_processor_remove(struct acpi_device *device, int type)
+ {
+-	struct acpi_processor *pr = NULL;
+-
++	struct acpi_processor *pr;
+ 
+ 	if (!device || !acpi_driver_data(device))
+ 		return -EINVAL;
+ 
+ 	pr = acpi_driver_data(device);
+-
+ 	if (pr->id >= nr_cpu_ids)
+ 		goto free;
+ 
+@@ -611,21 +654,11 @@ static int acpi_processor_remove(struct acpi_device *device, int type)
+ 			return -EINVAL;
+ 	}
+ 
+-	acpi_processor_power_exit(pr);
+-
+-	sysfs_remove_link(&device->dev.kobj, "sysdev");
+-
+-	if (pr->cdev) {
+-		sysfs_remove_link(&device->dev.kobj, "thermal_cooling");
+-		sysfs_remove_link(&pr->cdev->device.kobj, "device");
+-		thermal_cooling_device_unregister(pr->cdev);
+-		pr->cdev = NULL;
+-	}
+-
+-	per_cpu(processors, pr->id) = NULL;
+-	per_cpu(processor_device_array, pr->id) = NULL;
++	acpi_processor_stop(device, pr);
++	acpi_processor_unlink(device, pr);
+ 
+ free:
++	device->driver_data = NULL;
+ 	free_cpumask_var(pr->throttling.shared_cpu_map);
+ 	kfree(pr);
+ 
+diff --git a/include/acpi/processor.h b/include/acpi/processor.h
+index 555d033..9e1c980 100644
+--- a/include/acpi/processor.h
++++ b/include/acpi/processor.h
+@@ -190,6 +190,8 @@ struct acpi_processor_flags {
+ 	u8 power_setup_done:1;
+ 	u8 bm_rld_set:1;
+ 	u8 need_hotplug_init:1;
++	u8 device_linked:1;
++	u8 device_started:1;
+ };
+ 
+ struct acpi_processor {
+-- 
+1.7.9.5
 
-Thanks for the prompt response.
-
-Regards,
-
-K. Y
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
