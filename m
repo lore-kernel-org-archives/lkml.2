@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab2KDT7t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 14:59:49 -0500
-Received: from smtp.getmail.no ([84.208.15.66]:55935 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab2KDT7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 14:59:46 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-In-reply-to: <op.wm9i6bu76426ze@localhost.localdomain>
-References: <op.wm9b7wnn6426ze@localhost.localdomain>
- <op.wm9i6bu76426ze@localhost.localdomain>
-Subject: Re: sched: SCHED_DEADLINE v6
-To: juri.lelli@gmail.com, linux-kernel@vger.kernel.org
-Date: Sun, 04 Nov 2012 20:30:16 +0100
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wm9kgqki6426ze@localhost.localdomain>
-User-Agent: Opera Mail/12.02 (Linux)
+	id S1752041Ab2KDU0F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 15:26:05 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:37232
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751543Ab2KDU0B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 15:26:01 -0500
+X-IronPort-AV: E=Sophos;i="4.80,711,1344204000"; 
+   d="scan'208";a="161333628"
+Date: Sun, 4 Nov 2012 21:25:53 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: linux-kernel@vger.kernel.org, airlied@linux.ie, netdev@vger.kernel.org,
+        arnd@arndb.de, joern@logfs.org, chris.mason@fusionio.com, m@bues.ch,
+        jejb@parisc-linux.org, faisal.latif@intel.com, neilb@suse.de,
+        gregkh@linuxfoundation.org, JBottomley@parallels.com,
+        swise@chelsio.com, achim_leubner@adaptec.com, swise@chelsio.com,
+        tytso@mit.edu
+cc: dri-devel@lists.freedesktop.org, jason.wessel@windriver.com,
+        kgdb-bugreport@lists.sourceforge.net,
+        Prasad Joshi <prasadjoshi.linux@gmail.com>, logfs@logfs.org,
+        linux-btrfs@vger.kernel.org, Helge Deller <deller@gmx.de>,
+        linux-parisc@vger.kernel.org, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>, hal.rosenstock@gmail.com,
+        linux-rdma@vger.kernel.org, linux-raid@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: merging printk and WARN
+Message-ID: <alpine.DEB.2.02.1211042120200.1960@localhost6.localdomain6>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nobody knows? This is really obscure for an EDF patch. Making things a bit  
-more accessible should be a priority. I think a lot of enthusiasts would  
-like to have smooth control over stuff, without windows-jitter. If you can  
-do a robot arm, jitter-free with this, then I am very interested.
+It looks like these patches were not a good idea, because in each case the 
+printk provides an error level, and WARN then provides another one.
 
-uwaysi@Millennium:~/Kildekode/sched_deadline-schedtool-dl$ ./schedtool -E
--t 500:1000 3718
-ERROR: could not set PID 3718 to E: SCHED_DEADLINE - Function not
-implemented
-uwaysi@Millennium:~/Kildekode/sched_deadline-schedtool-dl$
+Sorry for the noise.
 
-On Sun, 04 Nov 2012 20:02:25 +0100, Uwaysi Bin Kareem
-<uwaysi.bin.kareem@paradoxuncreated.com> wrote:
-
-> How does the modified schedtool work? There is no updated documentation.
->
-> http://gitorious.org/sched_deadline/schedtool-dl/commits/latest/2.6.36-dl-V3
->
-> If anyone could give an example of a 1000uS period / 500uS time, with  
-> schedtool, or any other relevant information.
-> Most examples online use parameters that are no longer supported.
->
-> Peace Be With You.
+julia
