@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab2KDMuq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 07:50:46 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63072 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab2KDMue (ORCPT
+	id S1753770Ab2KDMu5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 07:50:57 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46858 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab2KDMur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 07:50:34 -0500
+	Sun, 4 Nov 2012 07:50:47 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: "Rafael J . Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
         Tony Luck <tony.luck@intel.com>,
@@ -24,9 +24,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>,
         Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-mm@kvack.org, Gaohuai Han <hangaohuai@huawei.com>
-Subject: [ACPIHP PATCH part2 01/13] ACPIHP: introduce interfaces to scan and walk ACPI devices attached to a slot
-Date: Sun,  4 Nov 2012 20:50:03 +0800
-Message-Id: <1352033415-5606-2-git-send-email-jiang.liu@huawei.com>
+Subject: [ACPIHP PATCH part2 03/13] ACPIHP: add callbacks into acpi_device_ops to support new hotplug framework
+Date: Sun,  4 Nov 2012 20:50:05 +0800
+Message-Id: <1352033415-5606-4-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352033415-5606-1-git-send-email-jiang.liu@huawei.com>
 References: <1352033415-5606-1-git-send-email-jiang.liu@huawei.com>
@@ -34,260 +34,244 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enhances acpi_bus_scan() to implement acpihp_add_devices(),
-which creates ACPI devices for hot-added system devices attached to
-an ACPI hotplug slot, but don't cross the slot boundary.
+Add new callbacks into struct acpi_device_ops to provide better error
+handling, error recovery and cancellation for ACPI based system device
+hotplug.
 
-It also introduces a new interface to walk all ACPI devices attached
-to an ACPI hotplug slot.
+There are three major operations and each major operation is divided
+into three minor steps.
+1) pre_configure, configure, post_configure
+	Add an ACPI device into running system and rollback if error
+	happens or has been cancelled.
+2) pre_release, release, post_release
+	Reclaim an ACPI device from running system and rollback if error
+	happens or has been cancelled. It's very important to privode a
+	mechanism to cancel ongoing memory hot-removal operations
+	because it's may take very long or even endless time to reclaim
+	a memory device.
+3) pre_unconfigure, unconfigure, post_unconfigure
+	remove an ACPI device from running system and release all
+	resources associated with it.
+
+There's also another callback to query status and information about an
+ACPI device.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Signed-off-by: Hanjun Guo <guohanjun@huawei.com>
 Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
 ---
- drivers/acpi/hotplug/Makefile |    2 +-
- drivers/acpi/hotplug/acpihp.h |    1 +
- drivers/acpi/hotplug/device.c |  121 +++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/internal.h       |    3 +
- drivers/acpi/scan.c           |   12 +++-
- include/acpi/acpi_bus.h       |    2 +
- include/acpi/acpi_hotplug.h   |   15 +++++
- 7 files changed, 153 insertions(+), 3 deletions(-)
- create mode 100644 drivers/acpi/hotplug/device.c
+ drivers/acpi/hotplug/device.c |   93 +++++++++++++++++++++++++++++++++++++++++
+ include/acpi/acpi_bus.h       |    3 ++
+ include/acpi/acpi_hotplug.h   |   64 ++++++++++++++++++++++++++++
+ 3 files changed, 160 insertions(+)
 
-diff --git a/drivers/acpi/hotplug/Makefile b/drivers/acpi/hotplug/Makefile
-index c19b350..6e5daf6 100644
---- a/drivers/acpi/hotplug/Makefile
-+++ b/drivers/acpi/hotplug/Makefile
-@@ -3,7 +3,7 @@
- #
- 
- obj-$(CONFIG_ACPI_HOTPLUG)			+= acpihp.o
--acpihp-y					= core.o
-+acpihp-y					= core.o device.o
- 
- obj-$(CONFIG_ACPI_HOTPLUG_SLOT)			+= acpihp_slot.o
- acpihp_slot-y					= slot.o
-diff --git a/drivers/acpi/hotplug/acpihp.h b/drivers/acpi/hotplug/acpihp.h
-index 7c49eab..54d9d95 100644
---- a/drivers/acpi/hotplug/acpihp.h
-+++ b/drivers/acpi/hotplug/acpihp.h
-@@ -26,6 +26,7 @@
- #include <acpi/acpi.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_hotplug.h>
-+#include "../internal.h"
- 
- extern struct acpi_device *acpi_root;
- extern struct acpihp_slot_ops acpihp_slot_ej0;
 diff --git a/drivers/acpi/hotplug/device.c b/drivers/acpi/hotplug/device.c
-new file mode 100644
-index 0000000..2dcdd83
---- /dev/null
+index 2dcdd83..c9d550f 100644
+--- a/drivers/acpi/hotplug/device.c
 +++ b/drivers/acpi/hotplug/device.c
-@@ -0,0 +1,121 @@
-+/*
-+ * Copyright (C) 2012 Huawei Tech. Co., Ltd.
-+ * Copyright (C) 2012 Jiang Liu <jiang.liu@huawei.com>
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ */
-+#include <linux/types.h>
-+#include <linux/device.h>
-+#include <acpi/acpi.h>
-+#include <acpi/acpi_bus.h>
-+#include <acpi/acpi_hotplug.h>
-+#include "acpihp.h"
-+
-+/*
-+ * When creating ACPI devices for hot-added system devices connecting to
-+ * a slot, don't cross the slot boundary. Otherwise it will cause
-+ * inconsistence to other hotplug slots.
-+ */
-+static acpi_status acpihp_filter_device(acpi_handle hdl, u32 level, void *arg)
-+{
-+	/* Skip if the handle corresponds to a child hotplug slot. */
-+	if (level > 0 && acpihp_is_slot(hdl))
-+		return AE_CTRL_DEPTH;
-+
-+	return AE_OK;
-+}
-+
-+/* Create ACPI devices for hot-added system devices connecting to a slot. */
-+int acpihp_add_devices(acpi_handle handle, struct acpi_device **child)
-+{
-+	struct acpi_bus_ops ops;
-+
-+	memset(&ops, 0, sizeof(ops));
-+	ops.acpi_op_add = 1;
-+	ops.acpi_op_filter = &acpihp_filter_device;
-+	ops.acpi_op_filter_arg = NULL;
-+
-+	return acpi_bus_scan(handle, &ops, child);
-+}
-+EXPORT_SYMBOL_GPL(acpihp_add_devices);
-+
-+struct acpihp_walk_arg {
-+	acpihp_walk_device_cb cb;
-+	void *arg;
-+	acpi_status status;
-+};
-+
-+static int acpihp_walk_cb(struct device *dev, void *data)
-+{
-+	acpi_status status;
-+	struct acpihp_walk_arg *argp = (struct acpihp_walk_arg *)data;
-+	struct acpi_device *acpi_dev;
-+
-+	if (dev->bus != &acpi_bus_type)
-+		return 0;
-+
-+	/* Skip if the handle corresponds to a child hotplug slot. */
-+	acpi_dev = container_of(dev, struct acpi_device, dev);
-+	if (acpihp_is_slot(acpi_dev->handle))
-+		return 0;
-+
-+	status = argp->cb(acpi_dev, argp->arg);
-+	if (status == AE_OK) {
-+		return device_for_each_child(dev, data, &acpihp_walk_cb);
-+	} else if (status == AE_CTRL_DEPTH || status == AE_CTRL_SKIP) {
-+		return 0;
-+	} else {
-+		argp->status = status;
-+		return -1;
-+	}
-+}
-+
-+/*
-+ * Walk all ACPI devices connecting to a hotplug slot, but don't cross the
-+ * hotplug slot boundary.
-+ */
-+int acpihp_walk_devices(acpi_handle handle, acpihp_walk_device_cb cb,
-+			void *argp)
-+{
-+	acpi_status status;
-+	struct acpi_device *device;
-+	struct acpihp_walk_arg arg;
-+
-+	if (acpi_bus_get_device(handle, &device))
-+		return -ENODEV;
-+
-+	status = (*cb)(device, argp);
-+	if (ACPI_SUCCESS(status)) {
-+		arg.cb = cb;
-+		arg.arg = argp;
-+		arg.status = AE_OK;
-+		(void) device_for_each_child(&device->dev, &arg,
-+					     &acpihp_walk_cb);
-+		status = arg.status;
-+	}
-+
-+	if (status == AE_CTRL_DEPTH || status == AE_CTRL_TERMINATE ||
-+	    status == AE_CTRL_SKIP)
-+		status = AE_OK;
-+	else if (ACPI_FAILURE(status))
-+		ACPIHP_DEBUG("fails to walk devices under %p.\n", handle);
-+
-+	return status == AE_OK ? 0 : -ENODEV;
-+}
-+EXPORT_SYMBOL_GPL(acpihp_walk_devices);
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index ca75b9c..d2c4d83 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -93,4 +93,7 @@ static inline int suspend_nvs_save(void) { return 0; }
- static inline void suspend_nvs_restore(void) {}
- #endif
+@@ -1,6 +1,7 @@
+ /*
+  * Copyright (C) 2012 Huawei Tech. Co., Ltd.
+  * Copyright (C) 2012 Jiang Liu <jiang.liu@huawei.com>
++ * Copyright (C) 2012 Hanjun Guo <guohanjun@huawei.com>
+  *
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  *
+@@ -27,6 +28,98 @@
+ #include <acpi/acpi_hotplug.h>
+ #include "acpihp.h"
  
-+int acpi_bus_scan(acpi_handle handle, struct acpi_bus_ops *ops,
-+		  struct acpi_device **child);
++int acpihp_dev_get_info(struct acpi_device *device,
++			struct acpihp_dev_info *info)
++{
++	int ret = -ENOSYS;
 +
- #endif /* _ACPI_INTERNAL_H_ */
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 1fcb867..f621333 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -1477,6 +1477,14 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl,
- 		return AE_CTRL_DEPTH;
- 	}
- 
-+	/* Hooks for ACPI based system device hotplug */
-+	if (ops->acpi_op_filter) {
-+		result = ops->acpi_op_filter(handle, lvl,
-+					     ops->acpi_op_filter_arg);
-+		if (ACPI_FAILURE(result))
-+			return result;
-+	}
++	acpihp_dev_get_type(device->handle, &info->type);
 +
- 	/*
- 	 * We may already have an acpi_device from a previous enumeration.  If
- 	 * so, we needn't add it again, but we may still have to start it.
-@@ -1500,8 +1508,8 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl,
- 	return AE_OK;
- }
- 
--static int acpi_bus_scan(acpi_handle handle, struct acpi_bus_ops *ops,
--			 struct acpi_device **child)
-+int acpi_bus_scan(acpi_handle handle, struct acpi_bus_ops *ops,
-+		  struct acpi_device **child)
- {
- 	acpi_status status;
- 	void *device = NULL;
++	device_lock(&device->dev);
++	if (device->driver && device->driver->ops.hp_ops &&
++	    device->driver->ops.hp_ops->get_info)
++		ret = device->driver->ops.hp_ops->get_info(device, info);
++	else
++#if 0
++		/* Turn on this once all system devices have been converted
++		 * to the new hotplug framework
++		 */
++		info->status |= ACPIHP_DEV_STATUS_IRREMOVABLE;
++#else
++		ret = 0;
++#endif
++
++	if (device->driver)
++		info->status |= ACPIHP_DEV_STATUS_ATTACHED;
++	device_unlock(&device->dev);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(acpihp_dev_get_info);
++
++#define	ACPIHP_DEFINE_FUNC1(method, def, err, type) \
++int acpihp_dev_##method(struct acpi_device *device, type val) \
++{ \
++	int ret; \
++	BUG_ON(device == NULL); \
++	device_lock(&device->dev); \
++	if (!device->driver || !device->driver->ops.hp_ops) \
++		ret = (err); \
++	else if (!device->driver->ops.hp_ops->method) \
++		ret = (def); \
++	else \
++		ret = device->driver->ops.hp_ops->method(device, val); \
++	device_unlock(&device->dev); \
++	return ret; \
++} \
++EXPORT_SYMBOL_GPL(acpihp_dev_##method)
++
++#define	ACPIHP_DEFINE_FUNC2(method, def, err, type) \
++int acpihp_dev_##method(struct acpi_device *device, type val) \
++{ \
++	int ret = 0; \
++	BUG_ON(device == NULL); \
++	device_lock(&device->dev); \
++	if (!device->driver || !device->driver->ops.hp_ops) \
++		ret = (err); \
++	else if (!device->driver->ops.hp_ops->method) \
++		ret = (def); \
++	else \
++		device->driver->ops.hp_ops->method(device, val); \
++	device_unlock(&device->dev); \
++	return ret; \
++} \
++EXPORT_SYMBOL_GPL(acpihp_dev_##method)
++
++#define	ACPIHP_DEFINE_FUNC3(method, def, err) \
++int acpihp_dev_##method(struct acpi_device *device) \
++{ \
++	int ret = 0; \
++	BUG_ON(device == NULL); \
++	device_lock(&device->dev); \
++	if (!device->driver || !device->driver->ops.hp_ops) \
++		ret = (err); \
++	else if (!device->driver->ops.hp_ops->method) \
++		ret = (def); \
++	else \
++		device->driver->ops.hp_ops->method(device);\
++	device_unlock(&device->dev); \
++	return ret; \
++} \
++EXPORT_SYMBOL_GPL(acpihp_dev_##method)
++
++ACPIHP_DEFINE_FUNC1(pre_configure, 0, 0, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC1(configure, 0, -ENOSYS, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC2(post_configure, 0, 0, enum acpihp_dev_post_cmd);
++
++ACPIHP_DEFINE_FUNC1(pre_release, 0, 0, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC1(release, 0, 0, struct acpihp_cancel_context *);
++ACPIHP_DEFINE_FUNC2(post_release, 0, 0, enum acpihp_dev_post_cmd);
++
++ACPIHP_DEFINE_FUNC3(pre_unconfigure, 0, 0);
++ACPIHP_DEFINE_FUNC3(unconfigure, 0, -ENOSYS);
++ACPIHP_DEFINE_FUNC3(post_unconfigure, 0, 0);
++
+ /*
+  * When creating ACPI devices for hot-added system devices connecting to
+  * a slot, don't cross the slot boundary. Otherwise it will cause
 diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 0daa0fb..361a5ea 100644
+index 361a5ea..7c15521 100644
 --- a/include/acpi/acpi_bus.h
 +++ b/include/acpi/acpi_bus.h
-@@ -98,6 +98,8 @@ typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
- struct acpi_bus_ops {
- 	u32 acpi_op_add:1;
- 	u32 acpi_op_start:1;
-+	acpi_status (*acpi_op_filter)(acpi_handle, u32, void *);
-+	void *acpi_op_filter_arg;
+@@ -109,6 +109,9 @@ struct acpi_device_ops {
+ 	acpi_op_bind bind;
+ 	acpi_op_unbind unbind;
+ 	acpi_op_notify notify;
++#ifdef	CONFIG_ACPI_HOTPLUG
++	struct acpihp_dev_ops *hp_ops;
++#endif	/* CONFIG_ACPI_HOTPLUG */
  };
  
- struct acpi_device_ops {
+ #define ACPI_DRIVER_ALL_NOTIFY_EVENTS	0x1	/* system AND device events */
 diff --git a/include/acpi/acpi_hotplug.h b/include/acpi/acpi_hotplug.h
-index 298f679..d39dece 100644
+index d733f7f..35f15a8 100644
 --- a/include/acpi/acpi_hotplug.h
 +++ b/include/acpi/acpi_hotplug.h
-@@ -183,6 +183,21 @@ extern acpi_status acpihp_slot_get_status(struct acpihp_slot *slot,
- extern acpi_status acpihp_slot_poweron(struct acpihp_slot *slot);
- extern acpi_status acpihp_slot_poweroff(struct acpihp_slot *slot);
+@@ -63,6 +63,51 @@ struct acpihp_dev_node {
+ 	struct klist_node	node;
+ };
  
-+/*
-+ * Scan and create ACPI device objects for devices attached to the handle,
-+ * but don't cross the hotplug slot boundary.
-+ */
-+extern int acpihp_add_devices(acpi_handle handle, struct acpi_device **child);
++/* Status of ACPI system devices. */
++#define	ACPIHP_DEV_STATUS_ATTACHED	0x1	/* Device driver attached */
++#define	ACPIHP_DEV_STATUS_STARTED	0x2	/* Device started */
++#define	ACPIHP_DEV_STATUS_IRREMOVABLE	0x10000 /* Device can't be removed */
++#define	ACPIHP_DEV_STATUS_FAULT		0x20000 /* Device in fault state */
 +
-+typedef acpi_status (*acpihp_walk_device_cb)(struct acpi_device *acpi_device,
-+					     void *argp);
-+/*
-+ * Walk all ACPI device objects attached to an ACPI hotplug slot,
-+ * but don't cross the hotplug slot boundary.
-+ */
-+extern int acpihp_walk_devices(acpi_handle handle,
-+			       acpihp_walk_device_cb cb, void *argp);
++struct acpihp_dev_info {
++	enum acpihp_dev_type		type;
++	uint32_t			status;
++};
 +
- extern int acpihp_debug;
++/* Rollback or commit changes in post_{confiure|release} */
++enum acpihp_dev_post_cmd {
++	ACPIHP_DEV_POST_CMD_ROLLBACK,
++	ACPIHP_DEV_POST_CMD_COMMIT
++};
++
++/*
++ * ACPI system device drivers may check cancellations of hotplug operations
++ * by invoking the callback.
++ */
++struct acpihp_cancel_context {
++	int (*check_cancel)(struct acpihp_cancel_context *ctx);
++};
++
++/*
++ * Callback hooks provided by ACPI device drivers to support system device
++ * hotplug. To support hotplug, an ACPI system device driver should implement
++ * configure(), unconfigure() and get_info() at a minimal.
++ */
++struct acpihp_dev_ops {
++	int (*get_info)(struct acpi_device *, struct acpihp_dev_info *info);
++	int (*pre_configure)(struct acpi_device *,
++			     struct acpihp_cancel_context *);
++	int (*configure)(struct acpi_device *, struct acpihp_cancel_context *);
++	void (*post_configure)(struct acpi_device *, enum acpihp_dev_post_cmd);
++	int (*pre_release)(struct acpi_device *,
++			   struct acpihp_cancel_context *);
++	int (*release)(struct acpi_device *, struct acpihp_cancel_context *);
++	void (*post_release)(struct acpi_device *, enum acpihp_dev_post_cmd);
++	void (*pre_unconfigure)(struct acpi_device *);
++	void (*unconfigure)(struct acpi_device *);
++	void (*post_unconfigure)(struct acpi_device *);
++};
++
+ /*
+  * ACPI hotplug slot is an abstraction of receptacles where a group of
+  * system devices could be attached, just like PCI slot in PCI hotplug.
+@@ -173,6 +218,25 @@ extern int acpihp_core_init(void);
+ /* Deinitialize the ACPI based system device hotplug core logic */
+ extern void acpihp_core_fini(void);
  
- #define ACPIHP_WARN(fmt, ...) \
++/* Interfaces to invoke ACPI device driver's hotplug callbacks. */
++extern int acpihp_dev_get_info(struct acpi_device *device,
++			       struct acpihp_dev_info *info);
++extern int acpihp_dev_pre_configure(struct acpi_device *device,
++				    struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_configure(struct acpi_device *device,
++				struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_post_configure(struct acpi_device *device,
++				     enum acpihp_dev_post_cmd cmd);
++extern int acpihp_dev_pre_release(struct acpi_device *device,
++				  struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_release(struct acpi_device *device,
++			      struct acpihp_cancel_context *ctx);
++extern int acpihp_dev_post_release(struct acpi_device *device,
++				   enum acpihp_dev_post_cmd cmd);
++extern int acpihp_dev_pre_unconfigure(struct acpi_device *device);
++extern int acpihp_dev_unconfigure(struct acpi_device *device);
++extern int acpihp_dev_post_unconfigure(struct acpi_device *device);
++
+ /* Utility routines */
+ extern int acpihp_dev_get_type(acpi_handle handle, enum acpihp_dev_type *type);
+ extern bool acpihp_dev_match_ids(struct acpi_device_info *infop, char **ids);
 -- 
 1.7.9.5
 
