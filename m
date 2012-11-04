@@ -1,58 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab2KDXsM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 18:48:12 -0500
-Received: from ozlabs.org ([203.10.76.45]:47787 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752432Ab2KDXrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 18:47:45 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jason Wang <jasowang@redhat.com>, mst@redhat.com, davem@davemloft.net,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        krkumar2@in.ibm.com
-Cc: kvm@vger.kernel.org, Jason Wang <jasowang@redhat.com>
-Subject: Re: [rfc net-next v6 2/3] virtio_net: multiqueue support
-In-Reply-To: <1351591403-23065-3-git-send-email-jasowang@redhat.com>
-References: <1351591403-23065-1-git-send-email-jasowang@redhat.com> <1351591403-23065-3-git-send-email-jasowang@redhat.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 05 Nov 2012 09:46:58 +1030
-Message-ID: <874nl5yn4k.fsf@rustcorp.com.au>
+	id S1752001Ab2KDX5U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 18:57:20 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:60734 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab2KDX5R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 18:57:17 -0500
+Message-ID: <509700D7.1010809@gmail.com>
+Date: Mon, 05 Nov 2012 10:57:11 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Luca Clementi <luca.clementi@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Brian Swetland <swetland@google.com>
+Subject: Re: [PATCH] Staging: Android: logger: module_exit implementation
+References: <1351836952-3389-1-git-send-email-luca.clementi@gmail.com>
+In-Reply-To: <1351836952-3389-1-git-send-email-luca.clementi@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jason Wang <jasowang@redhat.com> writes:
-> This addes multiqueue support to virtio_net driver. There's two mode supported:
-> single queue pair mode and multiple queue pairs mode. An obvious
-> difference compared with a physical mq card is that virtio-net reserve
-> first two virtqueues when it is working in multiqueue mode, this is
-> used for implementing adaptive mode switching in the future. The
-> virtqueues that were in both mq and sq mode were initialized and only
-> one queue pair (single queue mode) were used at default. User could
-> use ethtool -L to switch to multiqueue mode withe the next patch.
+On 02/11/12 17:15, Luca Clementi wrote:
+> Created the module_exit for the android logger so that
+> it can be loaded and unloaded as a module. Fixed
+> module_init and some other minor issues.
+> 
+> Signed-off-by: Luca Clementi <luca.clementi@gmail.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Brian Swetland <swetland@google.com>
+> ---
+>  drivers/staging/android/logger.c |   30 +++++++++++++++++++++++++++++-
+>  1 file changed, 29 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+> index 1d5ed47..050be01 100644
+> --- a/drivers/staging/android/logger.c
+> +++ b/drivers/staging/android/logger.c
+> @@ -676,4 +676,32 @@ static int __init logger_init(void)
+>  out:
+>  	return ret;
+>  }
+> -device_initcall(logger_init);
+> +
+> +static void __exit logger_exit(void)
+> +{
+> +	struct logger_log *current_log, *next_log;
+> +
+> +	list_for_each_entry_safe(current_log, next_log, &log_list, logs) {
+> +		/* we have to delete all the entry inside log_list */
+> +		ret = misc_deregister(&current_log->misc);
 
-Hi Jason,
+ret is undeclared? Has this been tested?
 
-        This first patch looks good, but conflates three things
-together:
-(1) Separate per-queue structures from struct virtnet_info to allow
-    multiple queues.  This is the mechanical part of the patch.
-(2) An annotation bugfix, see below.
-(3) Enabling mq using a new feature and negotiation.
+> +		if (unlikely(ret)) {
+> +			pr_err("failed to deregister misc device for log '%s'!\n",
+> +					current_log->misc.name);
+> +		}
 
-> @@ -700,7 +767,8 @@ static struct rtnl_link_stats64 *virtnet_stats(struct net_device *dev,
->  	unsigned int start;
->  
->  	for_each_possible_cpu(cpu) {
-> -		struct virtnet_stats *stats = per_cpu_ptr(vi->stats, cpu);
-> +		struct virtnet_stats __percpu *stats
-> +			= per_cpu_ptr(vi->stats, cpu);
->  		u64 tpackets, tbytes, rpackets, rbytes;
->  
->  		do {
+Don't need braces on single line if statements, and unlikely is not
+needed here (it isn't a hotpath). The whole error can probably just be
+removed since it looks like misc_deregister already does a WARN_ON if it
+fails.
 
-Cheers,
-Rusty.
+> +		pr_info("removed loggger '%s'\n", current_log->misc.name);
+
+Don't spam the log with stuff like this. Either change to pr_debug, or
+probably just remove it.
+
+> +		vfree(current_log->buffer);
+> +		kfree(current_log->misc.name);
+> +		kfree(current_log);
+
+Missing:
+
+	list_del(&current_log->logs);
+
+?
+
+> +	}
+> +
+> +	return;
+
+This is pointless.
+
+> +}
+> +
+> +
+> +module_init(logger_init);
+> +module_exit(logger_exit);
+
+Nitpick - Blank line here.
+
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Brian Swetland, <swetland@google.com>");
+
+Should be Robert Love according to the header comment.
+
+> +MODULE_DESCRIPTION("Android Logger");
+> +
+> +
+
+Don't need extra blank lines at the end of the file.
+
+~Ryan
+
