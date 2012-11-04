@@ -1,81 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab2KDIjG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 03:39:06 -0500
-Received: from mail-in-05.arcor-online.net ([151.189.21.45]:59696 "EHLO
-	mail-in-05.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751065Ab2KDIjA (ORCPT
+	id S1752873Ab2KDIrq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 03:47:46 -0500
+Received: from science.horizon.com ([71.41.210.146]:34282 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751522Ab2KDIro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 03:39:00 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-16.arcor-online.net 2FF588576
-Subject: [PATCH 2/4] HID: roccat: Enabling Savu device reset
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Rob Landley <rob@landley.net>, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 04 Nov 2012 09:38:58 +0100
-Message-ID: <1352018338.2673.132.camel@neuromancer.tessier-ashpool>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Sun, 4 Nov 2012 03:47:44 -0500
+Date: 4 Nov 2012 03:47:43 -0500
+Message-ID: <20121104084743.21804.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: oleg@redhat.com, torvalds@linux-foundation.org
+Subject: Re: [PATCH 1/1] percpu_rw_semaphore: reimplement to not block the readers unnecessarily
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device can be reset to factory state by sending a command via info sysfs attr.
-Changed from ro to rw to enable this feature.
+Grand poo-bah Linus wrote:
+> Now, I doubt you'll find an architecture or C compiler where this will
+> actually ever make a difference, but the fact remains that you
+> shouldn't use signed integers for counters like this. You should use
+> unsigned, and you should rely on the well-defined modulo-2**n
+> semantics.
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
----
- .../ABI/testing/sysfs-driver-hid-roccat-savu       |    3 +--
- drivers/hid/hid-roccat-savu.c                      |    4 ++--
- 2 files changed, 3 insertions(+), 4 deletions(-)
+Actually, this is another C standard undefined case that recent versions of
+GCC exploit for optimization.
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-hid-roccat-savu b/Documentation/ABI/testing/sysfs-driver-hid-roccat-savu
-index b42922c..f1e02a9 100644
---- a/Documentation/ABI/testing/sysfs-driver-hid-roccat-savu
-+++ b/Documentation/ABI/testing/sysfs-driver-hid-roccat-savu
-@@ -40,8 +40,8 @@ What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-
- Date:		Mai 2012
- Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
- Description:	When read, this file returns general data like firmware version.
-+		When written, the device can be reset.
- 		The data is 8 bytes long.
--		This file is readonly.
- Users:		http://roccat.sourceforge.net
- 
- What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/savu/roccatsavu<minor>/macro
-@@ -74,4 +74,3 @@ Description:	The mouse has a Avago ADNS-3090 sensor.
- 		This file allows reading and writing of the mouse sensors registers.
- 		The data has to be 4 bytes long.
- Users:		http://roccat.sourceforge.net
--
-diff --git a/drivers/hid/hid-roccat-savu.c b/drivers/hid/hid-roccat-savu.c
-index 014afba..31747a2 100644
---- a/drivers/hid/hid-roccat-savu.c
-+++ b/drivers/hid/hid-roccat-savu.c
-@@ -120,7 +120,7 @@ SAVU_SYSFS_RW(profile, PROFILE)
- SAVU_SYSFS_RW(general, GENERAL)
- SAVU_SYSFS_RW(buttons, BUTTONS)
- SAVU_SYSFS_RW(macro, MACRO)
--SAVU_SYSFS_R(info, INFO)
-+SAVU_SYSFS_RW(info, INFO)
- SAVU_SYSFS_RW(sensor, SENSOR)
- 
- static struct bin_attribute savu_bin_attributes[] = {
-@@ -129,7 +129,7 @@ static struct bin_attribute savu_bin_attributes[] = {
- 	SAVU_BIN_ATTRIBUTE_RW(general, GENERAL),
- 	SAVU_BIN_ATTRIBUTE_RW(buttons, BUTTONS),
- 	SAVU_BIN_ATTRIBUTE_RW(macro, MACRO),
--	SAVU_BIN_ATTRIBUTE_R(info, INFO),
-+	SAVU_BIN_ATTRIBUTE_RW(info, INFO),
- 	SAVU_BIN_ATTRIBUTE_RW(sensor, SENSOR),
- 	__ATTR_NULL
- };
--- 
-1.7.3.4
+When using signed integers, GCC's optimizer assumes that, if b > 0,
+then a + b > a.
 
+For example, the loop:
+	for (i = 1; i; i++)
+		/* Code */
+will never terminate!  Feed the following to gcc -O2 and see for yourself:
 
+extern void foo(int x);
 
+void bar(void)
+{
+	int i;
+	for (i = 0; i >= 0; i++)
+		foo(i);
+}
+
+here's what I get:
+
+        .file   "test.c"
+        .text
+        .p2align 4,,15
+        .globl  bar
+        .type   bar, @function
+bar:
+.LFB0:
+        .cfi_startproc
+        pushl   %ebx
+        .cfi_def_cfa_offset 8
+        .cfi_offset 3, -8
+        movl    $1, %ebx
+        subl    $24, %esp
+        .cfi_def_cfa_offset 32
+        .p2align 4,,7
+        .p2align 3
+.L2:
+        movl    %ebx, (%esp)
+        addl    $1, %ebx
+        call    foo
+        jmp     .L2
+        .cfi_endproc
+.LFE0:
+        .size   bar, .-bar
+        .ident  "GCC: (Debian 4.7.2-4) 4.7.2"
+        .section        .note.GNU-stack,"",@progbits
+
+Notice the lack of test in the "jmp .L2" loop.
+
+It can even handle more complicated cases like:
+
+void bar(int j)
+{
+        int i = 0;
+        do {
+                foo(i);
+                if (j >= 0)
+                        i += j;
+                else
+                        i -= j;
+        } while (i >= 0);
+}
+
+... which gcc -O3 neatly splits into two infinite loops, as if I had written:
+
+void bar(int j)
+{
+        int i = 0;
+	if (j >= 0)
+		for (; ; i += j)
+			foo(i);
+	else
+		for (; ; i -= j)
+			foo(i);
+}
