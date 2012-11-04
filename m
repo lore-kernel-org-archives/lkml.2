@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab2KDVGw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 16:06:52 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:47959 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab2KDVGu convert rfc822-to-8bit (ORCPT
+	id S1752659Ab2KDVH0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 16:07:26 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:36012 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab2KDVHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 16:06:50 -0500
+	Sun, 4 Nov 2012 16:07:25 -0500
+Message-ID: <5096D90A.401@gmail.com>
+Date: Sun, 04 Nov 2012 22:07:22 +0100
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1350646126-28537-1-git-send-email-jslaby@suse.cz>
-References: <1350646126-28537-1-git-send-email-jslaby@suse.cz>
-Date: Sun, 4 Nov 2012 22:06:49 +0100
-X-Google-Sender-Auth: 7L20eQPAsyDJeU3EF4aGQdYJl-s
-Message-ID: <CAMuHMdWzNxhs1+14qwr0=G+_uGVWm9QKb4wBDBy-6rx5+pxv7w@mail.gmail.com>
-Subject: Re: [PATCH 1/1] HID: microsoft, fix invalid rdesc for 3k kbd
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: jkosina@suse.cz, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Luming Yu <luming.yu@gmail.com>
+CC: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Luming Yu <luming.yu@intel.com>
+Subject: Re: [PATCH 01/13] HW-latency: hardware latency test 0.10
+References: <1352080784-30839-1-git-send-email-luming.yu@gmail.com> <1352080784-30839-2-git-send-email-luming.yu@gmail.com>
+In-Reply-To: <1352080784-30839-2-git-send-email-luming.yu@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 1:28 PM, Jiri Slaby <jslaby@suse.cz> wrote:
-> +       if ((quirks & MS_RDESC_3K) && *rsize == 106 &&
-> +                       !memcmp((char []){ 0x19, 0x00, 0x29, 0xff },
-> +                               &rdesc[94], 4)) {
+Hey,
 
-Which version of gcc are you using?
+Op 05-11-12 02:59, Luming Yu schreef:
+> This patch is the first step to test some basic hardware functions like
+> TSC to help people understand if there is any hardware latency as well
+> as throughput problem exposed on bare metal or left behind by BIOS or
+> interfered by SMI. Currently the patch tests TSC, CPU Frequency and
+> RDRAND which is a new CPU instruction to get random number introduced in
+> new CPU like Intel Ivy Bridge in stop_machine context,which is choosen to
+> make sure testers fully control their system under test to rule out some
+> level of unwanted noise.
+>
+> Signed-off-by: Luming Yu <luming.yu@intel.com>
+> ---
+>  drivers/misc/Kconfig           |   7 +
+>  drivers/misc/Makefile          |   1 +
+>  drivers/misc/hw_latency_test.c | 833 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 841 insertions(+)
+>  create mode 100644 drivers/misc/hw_latency_test.c
+>
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index b151b7c..5ed440b 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -114,6 +114,13 @@ config IBM_ASM
+>  	  for information on the specific driver level and support statement
+>  	  for your IBM server.
+>  
+> +config HW_LATENCY_TEST
+> +	tristate "Testing module to detect hardware lattency and throughput"
+> +	depends on DEBUG_FS
+> +	depends on RING_BUFFER
+> +	depends on X86
+> +	default m
+Is there any reason this tester couldn't easily be made to work for !x86?
 
-I'm getting (m68k-linux-gnu-gcc 4.1.2):
+Also I think it would make more sense to squash all fixes, and submit fixes for the things like
+'[PATCH 07/13] HW-latency: delete too many "Fast TSC calibration using PIT" in cpufreq sampling'
+before the actual patch. It seems this is not necessarily a hw-latency specific patch to me.
 
-drivers/hid/hid-microsoft.c:51:18: error: macro "memcmp" passed 6
-arguments, but takes just 3
-drivers/hid/hid-microsoft.c: In function ‘ms_report_fixup’:
-drivers/hid/hid-microsoft.c:50: error: ‘memcmp’ undeclared (first use
-in this function)
-drivers/hid/hid-microsoft.c:50: error: (Each undeclared identifier is
-reported only once
-/drivers/hid/hid-microsoft.c:50: error: for each function it appears in.)
-
-Extracted into this test case:
-
----snip---
-#include <string.h>
-
-#define memcmp(a, b, c) memcmp((a), (b), (c))
-
-int f(unsigned char *rdesc)
-{
-    return memcmp((char []){ 0x19, 0x00, 0x29, 0xff }, &rdesc[94], 4);
-}
----snip---
-
-it also fails with gcc-3.4/4.1/4.2/4.3/4.4 of Ubuntu 10.04 on amd64.
-
-Interestingly, it doesn't fail if I remove the #define for memcmp. So it seems
-to work if memcmp() is a real function, not a #define.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+~Maarten
