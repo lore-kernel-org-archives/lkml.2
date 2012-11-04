@@ -1,96 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab2KCX6B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 19:58:01 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:60322 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752746Ab2KCX6A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 19:58:00 -0400
-Date: Sun, 4 Nov 2012 00:57:58 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Call perf_event_comm under task_lock
-Message-ID: <20121103235758.GD18106@order.stressinduktion.org>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	id S1757602Ab2KDASG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 20:18:06 -0400
+Received: from 173-160-178-141-Washington.hfc.comcastbusiness.net ([173.160.178.141]:46398
+	"EHLO relay" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751184Ab2KDASB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 20:18:01 -0400
+From: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
+To: andrey.smirnov@convergeddevices.net
+Cc: broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] [RFC] regmap: Add no-"bus" configuration possibility
+Date: Sat,  3 Nov 2012 17:18:17 -0700
+Message-Id: <1351988297-16145-1-git-send-email-andrey.smirnov@convergeddevices.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following RCU warning showed up while executing a script under perf-record
-(could even be an empty script) on a 3.6.5 stable kernel:
+This patch proposes extension to the API that was suggested by Mark in
+the following thread:
+http://article.gmane.org/gmane.linux.kernel/1383734
 
-  [  735.600772]
-  [  735.600866] ===============================
-  [  735.600939] [ INFO: suspicious RCU usage. ]
-  [  735.601004] 3.6.5+ #1 Not tainted
-  [  735.601016] -------------------------------
-  [  735.601016] include/linux/cgroup.h:546 suspicious rcu_dereference_check() usage!
-  [  735.601016]
-  [  735.601016] other info that might help us debug this:
-  [  735.601016]
-  [  735.601016]
-  [  735.601016] rcu_scheduler_active = 1, debug_locks = 0
-  [  735.601016] 1 lock held by test3.sh/562:
-  [  735.601016]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811cfa86>] prepare_bprm_creds+0x36/0x80
-  [  735.601016]
-  [  735.601016] stack backtrace:
-  [  735.601016] Pid: 562, comm: test3.sh Not tainted 3.6.5+ #1
-  [  735.601016] Call Trace:
-  [  735.601016]  [<ffffffff810d1d1d>] lockdep_rcu_suspicious+0xfd/0x130
-  [  735.601016]  [<ffffffff81151a26>] perf_event_comm+0x436/0x610
-  [  735.601016]  [<ffffffff810d01fd>] ? trace_hardirqs_off+0xd/0x10
-  [  735.601016]  [<ffffffff810ac12f>] ? local_clock+0x6f/0x80
-  [  735.601016]  [<ffffffff810d0b5f>] ? lock_release_holdtime.part.26+0xf/0x180
-  [  735.601016]  [<ffffffff811cf943>] set_task_comm+0x73/0x180
-  [  735.601016]  [<ffffffff811d022e>] setup_new_exec+0x9e/0x340
-  [  735.601016]  [<ffffffff81221143>] load_elf_binary+0x3e3/0x1a80
-  [  735.601016]  [<ffffffff810abea5>] ? sched_clock_local+0x25/0xa0
-  [  735.601016]  [<ffffffff810ac048>] ? sched_clock_cpu+0xa8/0x120
-  [  735.601016]  [<ffffffff810d01fd>] ? trace_hardirqs_off+0xd/0x10
-  [  735.601016]  [<ffffffff810ac12f>] ? local_clock+0x6f/0x80
-  [  735.601016]  [<ffffffff81220d60>] ? load_elf_library+0x240/0x240
-  [  735.601016]  [<ffffffff81220d60>] ? load_elf_library+0x240/0x240
-  [  735.601016]  [<ffffffff811cf214>] search_binary_handler+0x194/0x4f0
-  [  735.601016]  [<ffffffff811cf0e1>] ? search_binary_handler+0x61/0x4f0
-  [  735.601016]  [<ffffffff81220670>] ? compat_sys_ioctl+0x1360/0x1360
-  [  735.601016]  [<ffffffff81220904>] load_script+0x294/0x2c0
-  [  735.601016]  [<ffffffff810d0b5f>] ? lock_release_holdtime.part.26+0xf/0x180
-  [  735.601016]  [<ffffffff81220670>] ? compat_sys_ioctl+0x1360/0x1360
-  [  735.601016]  [<ffffffff811cf214>] search_binary_handler+0x194/0x4f0
-  [  735.601016]  [<ffffffff811cf0e1>] ? search_binary_handler+0x61/0x4f0
-  [  735.601016]  [<ffffffff811d003b>] do_execve_common.isra.32+0x50b/0x5b0
-  [  735.601016]  [<ffffffff811cfc5a>] ? do_execve_common.isra.32+0x12a/0x5b0
-  [  735.601016]  [<ffffffff811ad330>] ? kmem_cache_alloc+0xe0/0x260
-  [  735.601016]  [<ffffffff811d00fb>] do_execve+0x1b/0x20
-  [  735.601016]  [<ffffffff810243f7>] sys_execve+0x47/0x70
-  [  735.601016]  [<ffffffff816b49ac>] stub_execve+0x6c/0xc0
+The idea behind extensions is to allow the devices that expose some
+register-like interface but whose protocol for reading or writing
+those registers could not be simplified to serialized bytestream
+writes to be used within 'regmap' framework
 
-I think this dereference qualifies for the task_lock exception, thus
-this patch ensures calling perf_event_comm before giving up the task_lock.
+This patch adds two callbacks to the 'regmap' configuration which user
+is expected to set with their implementation of read and write
+functionality for the device.
 
-Patch based on linux-stable v3.6.5.
+I am not very well versed with the code of the remap framework so I
+apologize if my proposal has some glaring mistakes and I would
+welcome any suggestion or criticism on how to either improve the code
+or implement the proposal in a better way.
 
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+This commit has only purpose of illustrating the proposed extension of
+the 'regmap' API. It has never been compiled or tested.
 ---
- fs/exec.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/regmap/internal.h |    4 ++
+ drivers/base/regmap/regmap.c   |   93 +++++++++++++++++++++++++++++-----------
+ include/linux/regmap.h         |   12 +++++-
+ 3 files changed, 83 insertions(+), 26 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index fab2c6d..781cf77 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1065,8 +1065,8 @@ void set_task_comm(struct task_struct *tsk, char *buf)
- 	memset(tsk->comm, 0, TASK_COMM_LEN);
- 	wmb();
- 	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
--	task_unlock(tsk);
- 	perf_event_comm(tsk);
-+	task_unlock(tsk);
- }
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 80f9ab9..7326357 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -58,6 +58,10 @@ struct regmap {
+ 	bool (*volatile_reg)(struct device *dev, unsigned int reg);
+ 	bool (*precious_reg)(struct device *dev, unsigned int reg);
  
- static void filename_to_taskname(char *tcomm, const char *fn, unsigned int len)
++
++	int (*nbstr_read)(void *context, unsigned int reg, unsigned int *val);
++	int (*nbstr_write)(void *context, unsigned int reg, unsigned int val);
++
+ 	u8 read_flag_mask;
+ 	u8 write_flag_mask;
+ 
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index c241ae2..9b409ff 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -326,7 +326,8 @@ struct regmap *regmap_init(struct device *dev,
+ 	enum regmap_endian reg_endian, val_endian;
+ 	int i, j;
+ 
+-	if (!bus || !config)
++	if (!config ||
++	    (!bus && !config->nbstr_read && !config->nbstr_write))
+ 		goto err;
+ 
+ 	map = kzalloc(sizeof(*map), GFP_KERNEL);
+@@ -335,15 +336,16 @@ struct regmap *regmap_init(struct device *dev,
+ 		goto err;
+ 	}
+ 
+-	if (bus->fast_io) {
+-		spin_lock_init(&map->spinlock);
+-		map->lock = regmap_lock_spinlock;
+-		map->unlock = regmap_unlock_spinlock;
+-	} else {
++	if (!bus || !bus->fast_io) {
+ 		mutex_init(&map->mutex);
+ 		map->lock = regmap_lock_mutex;
+ 		map->unlock = regmap_unlock_mutex;
++	} else {
++		spin_lock_init(&map->spinlock);
++		map->lock = regmap_lock_spinlock;
++		map->unlock = regmap_unlock_spinlock;
+ 	}
++
+ 	map->format.reg_bytes = DIV_ROUND_UP(config->reg_bits, 8);
+ 	map->format.pad_bytes = config->pad_bits / 8;
+ 	map->format.val_bytes = DIV_ROUND_UP(config->val_bits, 8);
+@@ -355,14 +357,16 @@ struct regmap *regmap_init(struct device *dev,
+ 	else
+ 		map->reg_stride = 1;
+ 	map->use_single_rw = config->use_single_rw;
+-	map->dev = dev;
+ 	map->bus = bus;
++	map->dev = dev;
+ 	map->bus_context = bus_context;
+ 	map->max_register = config->max_register;
+ 	map->writeable_reg = config->writeable_reg;
+ 	map->readable_reg = config->readable_reg;
+ 	map->volatile_reg = config->volatile_reg;
+ 	map->precious_reg = config->precious_reg;
++	map->nbstr_read = config->nbstr_read;
++	map->nbstr_wrtie = config->nbstr_write;
+ 	map->cache_type = config->cache_type;
+ 	map->name = config->name;
+ 
+@@ -373,6 +377,9 @@ struct regmap *regmap_init(struct device *dev,
+ 		map->read_flag_mask = bus->read_flag_mask;
+ 	}
+ 
++	if (!bus)
++		goto skip_format_initialization;
++
+ 	reg_endian = config->reg_format_endian;
+ 	if (reg_endian == REGMAP_ENDIAN_DEFAULT)
+ 		reg_endian = bus->reg_format_endian_default;
+@@ -512,6 +519,7 @@ struct regmap *regmap_init(struct device *dev,
+ 	    !(map->format.format_reg && map->format.format_val))
+ 		goto err_map;
+ 
++skip_format_initialization:
+ 	map->work_buf = kzalloc(map->format.buf_size, GFP_KERNEL);
+ 	if (map->work_buf == NULL) {
+ 		ret = -ENOMEM;
+@@ -884,7 +892,8 @@ int _regmap_write(struct regmap *map, unsigned int reg,
+ 	int ret;
+ 	BUG_ON(!map->format.format_write && !map->format.format_val);
+ 
+-	if (!map->cache_bypass && map->format.format_write) {
++	if (!map->cache_bypass &&
++	    (map->format.format_write || map->nbstr_write)) {
+ 		ret = regcache_write(map, reg, val);
+ 		if (ret != 0)
+ 			return ret;
+@@ -901,7 +910,15 @@ int _regmap_write(struct regmap *map, unsigned int reg,
+ 
+ 	trace_regmap_reg_write(map->dev, reg, val);
+ 
+-	if (map->format.format_write) {
++	if (map->nbstr_write) {
++		trace_regmap_hw_write_start(map->dev, reg, 1);
++
++		ret = map->nbstr_write(map->bus_context, reg, val);
++
++		trace_regmap_hw_write_done(map->dev, reg, 1);
++
++		return ret;
++	} else if (map->format.format_write) {
+ 		ret = _regmap_select_page(map, &reg, 1);
+ 		if (ret < 0)
+ 			return ret;
+@@ -975,6 +992,8 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ {
+ 	int ret;
+ 
++	if (map->nbstr_write)
++		return -EINVAL;
+ 	if (val_len % map->format.val_bytes)
+ 		return -EINVAL;
+ 	if (reg % map->reg_stride)
+@@ -1011,7 +1030,7 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 	size_t val_bytes = map->format.val_bytes;
+ 	void *wval;
+ 
+-	if (!map->format.parse_val)
++	if (!map->format.parse_val && !map->nbstr_write)
+ 		return -EINVAL;
+ 	if (reg % map->reg_stride)
+ 		return -EINVAL;
+@@ -1021,7 +1040,7 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 	/* No formatting is require if val_byte is 1 */
+ 	if (val_bytes == 1) {
+ 		wval = (void *)val;
+-	} else {
++	} else if (map->format.parse_val) {
+ 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
+ 		if (!wval) {
+ 			ret = -ENOMEM;
+@@ -1035,12 +1054,29 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 	 * Some devices does not support bulk write, for
+ 	 * them we have a series of single write operations.
+ 	 */
+-	if (map->use_single_rw) {
++	if (map->nbstr_write) {
+ 		for (i = 0; i < val_count; i++) {
++			ret = _regmap_write(map,
++					    reg + (i * map->reg_stride),
++					    val + (i * val_bytes));
++			if (ret != 0)
++				goto out;
++		}
++	} else if (map->use_single_rw) {
++		for (i = 0; i < val_count; i++) {
++			/*
++			   TODO: this code is left as it was in
++			   the original function(pre nbstr_write) but
++			   it looks like it could be a bug since
++			   returning at this point would not unlock
++			   regmap. Shouldn't it also be _regmap_raw_write
++			   since the map->lock has already been
++			   called? Need to investigate this further.
++			 */
+ 			ret = regmap_raw_write(map,
+-						reg + (i * map->reg_stride),
+-						val + (i * val_bytes),
+-						val_bytes);
++					       reg + (i * map->reg_stride),
++					       val + (i * val_bytes),
++					       val_bytes);
+ 			if (ret != 0)
+ 				return ret;
+ 		}
+@@ -1101,26 +1137,30 @@ static int _regmap_read(struct regmap *map, unsigned int reg,
+ 			return 0;
+ 	}
+ 
+-	if (!map->format.parse_val)
++	if (!map->format.parse_val && !map->nbstr_read)
+ 		return -EINVAL;
+ 
+ 	if (map->cache_only)
+ 		return -EBUSY;
+ 
+-	ret = _regmap_raw_read(map, reg, map->work_buf, map->format.val_bytes);
+-	if (ret == 0) {
+-		*val = map->format.parse_val(map->work_buf);
++	if (map->nbstr_read) {
++		ret = map->nbstr_read(map->bus_context, reg, val);
++	} else {
++		ret = _regmap_raw_read(map, reg, map->work_buf, map->format.val_bytes);
++		if (ret == 0)
++			*val = map->format.parse_val(map->work_buf);
++	}
+ 
++	if (ret == 0) {
+ #ifdef LOG_DEVICE
+ 		if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
+ 			dev_info(map->dev, "%x => %x\n", reg, *val);
+ #endif
+-
+ 		trace_regmap_reg_read(map->dev, reg, *val);
+-	}
+ 
+-	if (ret == 0 && !map->cache_bypass)
+-		regcache_write(map, reg, *val);
++		if (!map->cache_bypass)
++			regcache_write(map, reg, *val);
++	}
+ 
+ 	return ret;
+ }
+@@ -1171,6 +1211,8 @@ int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 	unsigned int v;
+ 	int ret, i;
+ 
++	if (map->nbstr_read)
++		return -EINVAL;
+ 	if (val_len % map->format.val_bytes)
+ 		return -EINVAL;
+ 	if (reg % map->reg_stride)
+@@ -1222,12 +1264,13 @@ int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
+ 	size_t val_bytes = map->format.val_bytes;
+ 	bool vol = regmap_volatile_range(map, reg, val_count);
+ 
+-	if (!map->format.parse_val)
++	if (!map->format.parse_val && !map->nbstr_read)
+ 		return -EINVAL;
+ 	if (reg % map->reg_stride)
+ 		return -EINVAL;
+ 
+-	if (vol || map->cache_type == REGCACHE_NONE) {
++	if (!map->nbstr_read &&
++	    (vol || map->cache_type == REGCACHE_NONE)) {
+ 		/*
+ 		 * Some devices does not support bulk read, for
+ 		 * them we have a series of single read operations.
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 7f7e00d..4f0e14d 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -75,7 +75,14 @@ enum regmap_endian {
+  * @precious_reg: Optional callback returning true if the rgister
+  *                should not be read outside of a call from the driver
+  *                (eg, a clear on read interrupt status register).
+- *
++ * @nbstr_read: Read operation for devices that do not expose
++ *              interface in which read operations can be serialized
++ *              into a byte stream and therefore "bus" abstraction
++ *              cannot be used for this device.
++ * @nbstr_write: Write operation for devices that do not expose
++ *               interface in which read operations can be serialized
++ *               into a byte stream and therefore "bus" abstraction
++ *               cannot be used for this device.
+  * @max_register: Optional, specifies the maximum valid register index.
+  * @reg_defaults: Power on reset values for registers (for use with
+  *                register cache support).
+@@ -117,6 +124,9 @@ struct regmap_config {
+ 	bool (*volatile_reg)(struct device *dev, unsigned int reg);
+ 	bool (*precious_reg)(struct device *dev, unsigned int reg);
+ 
++	int (*nbstr_read)(void *context, unsigned int reg, unsigned int *val);
++	int (*nbstr_write)(void *context, unsigned int reg, unsigned int val);
++
+ 	unsigned int max_register;
+ 	const struct reg_default *reg_defaults;
+ 	unsigned int num_reg_defaults;
+-- 
+1.7.10.4
 
