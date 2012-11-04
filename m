@@ -1,135 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab2KDNe5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 08:34:57 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:43587 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752313Ab2KDNey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 08:34:54 -0500
-Message-ID: <50966ED8.6070404@ti.com>
-Date: Sun, 4 Nov 2012 19:04:16 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1754499Ab2KDNxK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 08:53:10 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:39240 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754293Ab2KDNxF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 08:53:05 -0500
+Date: Sun, 4 Nov 2012 13:52:51 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121104135251.GA17894@srcf.ucam.org>
+References: <20121102175416.GA11816@srcf.ucam.org>
+ <1351879058.2439.46.camel@dabdike.int.hansenpartnership.com>
+ <20121102180458.GA12052@srcf.ucam.org>
+ <1351899503.2439.49.camel@dabdike.int.hansenpartnership.com>
+ <20121103002244.GC18691@srcf.ucam.org>
+ <1351944236.2417.7.camel@dabdike.int.hansenpartnership.com>
+ <20121103134630.GA28166@srcf.ucam.org>
+ <1351983400.2417.21.camel@dabdike.int.hansenpartnership.com>
+ <20121104042802.GA11295@srcf.ucam.org>
+ <1352020487.2427.5.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
-        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
-        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
-        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
-Subject: Re: [PATCH v3 06/11] clk: davinci - add build infrastructure for
- DaVinci clock drivers
-References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-7-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1351181518-11882-7-git-send-email-m-karicheri2@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352020487.2427.5.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2012 9:41 PM, Murali Karicheri wrote:
-> This updates clk Makefile and Kconfig to integrate the DaVinci specific
-> clock drivers. Also add new Kconfig and Makefile for these drivers.
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+On Sun, Nov 04, 2012 at 09:14:47AM +0000, James Bottomley wrote:
 
-As mentioned before, this should be folded into previous patches which
-actually add the particular functionality.
+> I've actually had more than enough experience with automated installs
+> over my career: they're either done by paying someone or using a
+> provisioning system.  In either case, they provision a static image and
+> boot environment description, including EFI boot services variables, so
+> you can provision a default MOK database if you want the ignition image
+> not to pause on firstboot.
 
-> ---
->  drivers/clk/Kconfig          |    2 ++
->  drivers/clk/Makefile         |    1 +
->  drivers/clk/davinci/Kconfig  |   44 ++++++++++++++++++++++++++++++++++++++++++
->  drivers/clk/davinci/Makefile |    5 +++++
->  4 files changed, 52 insertions(+)
->  create mode 100644 drivers/clk/davinci/Kconfig
->  create mode 100644 drivers/clk/davinci/Makefile
-> 
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 7f0b5ca..1ad2ab0 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -33,6 +33,8 @@ config COMMON_CLK_DEBUG
->  	  clk_flags, clk_prepare_count, clk_enable_count &
->  	  clk_notifier_count.
->  
-> +source "drivers/clk/davinci/Kconfig"
-> +
->  config COMMON_CLK_WM831X
->  	tristate "Clock driver for WM831x/2x PMICs"
->  	depends on MFD_WM831X
-> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-> index 5869ea3..b127b6f 100644
-> --- a/drivers/clk/Makefile
-> +++ b/drivers/clk/Makefile
-> @@ -10,6 +10,7 @@ obj-$(CONFIG_ARCH_SOCFPGA)	+= socfpga/
->  obj-$(CONFIG_PLAT_SPEAR)	+= spear/
->  obj-$(CONFIG_ARCH_U300)		+= clk-u300.o
->  obj-$(CONFIG_ARCH_INTEGRATOR)	+= versatile/
-> +obj-$(CONFIG_DAVINCI_CLKS)	+= davinci/
->  
->  # Chip specific
->  obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
-> diff --git a/drivers/clk/davinci/Kconfig b/drivers/clk/davinci/Kconfig
-> new file mode 100644
-> index 0000000..e53bbc3
-> --- /dev/null
-> +++ b/drivers/clk/davinci/Kconfig
-> @@ -0,0 +1,44 @@
-> +menu "TI DaVinci Clock drivers"
-> +	depends on COMMON_CLK
-> +
-> +config  CLK_DAVINCI_PSC
-> +	bool "TI DaVici PSC clock driver"
-> +	default n
-> +	---help---
-> +	  Selects clock driver for DaVinci PSC clocks. This clock
-> +	  hardware is found on TI DaVinci SoCs and other SoCs that
-> +	  uses this hardware IP. This hardware has a local power
-> +	  sleep control module that gate the clock to the IP.
-> +
-> +config  CLK_DAVINCI_PLL
-> +	bool "DaVici main PLL clock"
-> +	---help---
-> +	  Selects clock driver for DaVinci main PLL. This clock
-> +	  hardware is found on TI DaVinci SoCs. This typically has
-> +	  a multiplier, a pre divider and post driver. Some of the
-> +	  SoCs has the the dividers fixed, and others have it
-> +	  programmable
-> +
-> +config  CLK_DAVINCI_PLLDIV
-> +	bool "DaVici PLL divider clock"
-> +	---help---
-> +	  Selects clock driver for DaVinci PLL divider. This clock
-> +	  hardware is found on TI DaVinci SoCs. This typically has
-> +	  a divider and an enable bit to bypass or enable the
-> +	  divider.
-> +
-> +config DAVINCI_CLKS
-> +	bool "TI DaVinci common clocks"
-> +	default n
-> +	select CLK_DAVINCI_PSC
-> +	select CLK_DAVINCI_PLLDIV
-> +	---help---
-> +	  Selects common clock drivers for DaVinci. These clocks
-> +	  are re-used across many TI SoCs that are based on DaVinci and
-> +	  Keystone (c6x) families. This config option is used to select
-> +	  the common clock driver for DaVinci based SoCs. SoCs specific
-> +	  Kconfig option needs to select the driver for clocks specific
-> +	  to the SoC.
-> +
-> +endmenu
+And now you've moved the attack vector to a copy of your provisioning 
+system instead.
 
-I wonder if all these configurations are really required. For complete
-clock functionality you anyway require all this functionality so I
-wonder why anyone would not select any of these. And to differentiate
-between architecture changes, conditional build based on architecture
-can be used:
+> There is obviously the question of making the provisioning systems
+> secure, but it's a separate one from making boot secure.
 
-obj-$(CONFIG_ARCH_DAVINCI)	+= clk-pll.o
-obj-$(CONFIG_ARCH_KEYSTONE)	+= clk-pll-keystone.o
+You don't get to punt on making the kernel secure by simply asserting 
+that some other system can be secure instead. The chain of trust needs 
+to go all the way back - if your security model is based on all installs 
+needing a physically present end user, all installs need a physically 
+present end user. That's not acceptable, so we need a different security 
+model.
 
-Thanks,
-Sekhar
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
