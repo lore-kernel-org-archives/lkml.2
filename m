@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab2KDNUF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 08:20:05 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:59777 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab2KDNUC convert rfc822-to-8bit (ORCPT
+	id S1753827Ab2KDNeU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 08:34:20 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36039 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200Ab2KDNeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 08:20:02 -0500
+	Sun, 4 Nov 2012 08:34:19 -0500
+Date: Sun, 4 Nov 2012 13:34:13 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>
+Subject: lzma targets always get rebuilt
+Message-ID: <20121104133412.GA19301@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1348553352-14334-2-git-send-email-dhobsong@igel.co.jp>
-References: <1348553352-14334-1-git-send-email-dhobsong@igel.co.jp>
-	<1348553352-14334-2-git-send-email-dhobsong@igel.co.jp>
-Date: Sun, 4 Nov 2012 14:20:00 +0100
-X-Google-Sender-Auth: 1_pVaqjf_UwAKCd5umZS9tUl3IM
-Message-ID: <CAMuHMdWKByLXR-2wkiej=F1WPf7xePf3nMkUqwSf_hEJNNZbvg@mail.gmail.com>
-Subject: Re: [v2 PATCH 1/2] Add new uio device for dynamic memory allocation
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Damian Hobson-Garcia <dhobsong@igel.co.jp>
-Cc: hjk@hansjkoch.de, gregkh@linuxfoundation.org, magnus.damm@gmail.com,
-        horms@verge.net.au, linux-kernel@vger.kernel.org,
-        linux-sh@vger.kernel.org, hdk@igel.co.jp,
-        Linux-Next <linux-next@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 8:09 AM, Damian Hobson-Garcia
-<dhobsong@igel.co.jp> wrote:
-> are holding the device file open, the address returned to userspace is
-> DMA_ERROR_CODE.
+$ emake -j2 O=../build/omap4/ uImage V=2
+...
+  CHK     include/generated/compile.h
+echo '  Kernel: arch/arm/boot/Image is ready'
+  Kernel: arch/arm/boot/Image is ready
+  LZMA    arch/arm/boot/compressed/piggy.lzma - due to command line change
+  AS      arch/arm/boot/compressed/piggy.lzma.o - due to: arch/arm/boot/compressed/piggy.lzma
+  LD      arch/arm/boot/compressed/vmlinux - due to: arch/arm/boot/compressed/piggy.lzma.o
+  OBJCOPY arch/arm/boot/zImage - due to: arch/arm/boot/compressed/vmlinux
+echo '  Kernel: arch/arm/boot/zImage is ready'
+  Kernel: arch/arm/boot/zImage is ready
+  UIMAGE  arch/arm/boot/uImage - due to: arch/arm/boot/zImage
+Image Name:   Linux-3.7.0-rc3+
+Created:      Sun Nov  4 13:31:13 2012
+Image Type:   ARM Linux Kernel Image (uncompressed)
+Data Size:    1756112 Bytes = 1714.95 kB = 1.67 MB
+Load Address: 0x80008000
+Entry Point:  0x80008000
+echo '  Image arch/arm/boot/uImage is ready'
+  Image arch/arm/boot/uImage is ready
 
-Only a small subset of the architectures
-(arm/ia64/microblaze/openrisc/powerpc/sparc/x86)
-seem to define DMA_ERROR_CODE, causing everywhere else:
+This happens every time - Kbuild always thinks that the LZMA command has
+changed.  Here's the .cmd file for this:
 
-drivers/uio/uio_dmem_genirq.c: In function ‘uio_dmem_genirq_release’:
-drivers/uio/uio_dmem_genirq.c:95: error: ‘DMA_ERROR_CODE’ undeclared
-(first use in this function)
-drivers/uio/uio_dmem_genirq.c:95: error: (Each undeclared identifier
-is reported only once
-drivers/uio/uio_dmem_genirq.c:95: error: for each function it appears in.)
-drivers/uio/uio_dmem_genirq.c: In function ‘uio_dmem_genirq_probe’:
-drivers/uio/uio_dmem_genirq.c:238: error: ‘DMA_ERROR_CODE’ undeclared
-(first use in this function)
-make[1]: *** [drivers/uio/uio_dmem_genirq.o] Error 1
-make: *** [drivers/uio/] Error 2
+cmd_arch/arm/boot/compressed/piggy.lzma := (cat arch/arm/boot/compressed/../Image | lzma -9 && printf \\\\200\\\\111\\\\113\\\\000) > arch/arm/boot/compressed/piggy.lzma || (rm -f arch/arm/boot/compressed/piggy.lzma ; false)
 
-(e.g. http://kisskb.ellerman.id.au/kisskb/buildresult/7462173/)
+I suspect it's those multiple \ which are causing problems...
 
-Furthermore, none of them define it in <uapi/...>, so DMA_ERROR_CODE is not
-part of the userspace API (yet), while it is architecture-specific (some use 0,
-others ~0).
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
