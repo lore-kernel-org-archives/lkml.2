@@ -1,261 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab2KDP0b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 10:26:31 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42549 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755012Ab2KDPYq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 10:24:46 -0500
-From: Jiang Liu <liuj97@gmail.com>
-To: "Rafael J . Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Huang Ying <ying.huang@intel.com>, Bob Moore <robert.moore@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
-        Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [ACPIHP PATCH part4 5/9] CPU: introduce busy flag to temporarily disable CPU online sysfs interface
-Date: Sun,  4 Nov 2012 23:23:58 +0800
-Message-Id: <1352042642-7306-6-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1352042642-7306-1-git-send-email-jiang.liu@huawei.com>
-References: <1352042642-7306-1-git-send-email-jiang.liu@huawei.com>
+	id S1755608Ab2KDP05 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 10:26:57 -0500
+Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.30]:18544
+	"EHLO na01-by2-obe.mail.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755413Ab2KDP0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 10:26:52 -0500
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -10
+X-BigFish: PS-10(zz98dI9371I936eI542M1432I1447Izz1de0h1202h1d1ah1d2ahzz8275dhz31h2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
+From: KY Srinivasan <kys@microsoft.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: Drivers: scsi
+Thread-Topic: Drivers: scsi
+Thread-Index: AQHNunBNeEv0vukYrkymMIfn7qPLvJfZzHSA
+Date: Sun, 4 Nov 2012 15:26:31 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930DF9113@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1351960806-16240-1-git-send-email-kys@microsoft.com>
+ <1352021949.2427.19.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1352021949.2427.19.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [70.192.129.74]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PRD0310HT005.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%HANSENPARTNERSHIP.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%INFRADEAD.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377424002)(377454001)(51704002)(51914002)(13464001)(24454001)(6806001)(74662001)(47976001)(53806001)(50466001)(54356001)(44976002)(49866001)(47776002)(16676001)(54316001)(47736001)(50986001)(31966008)(4396001)(51856001)(23676001)(46102001)(74502001)(33656001)(47446002)(76482001)(5343655001)(550254004);DIR:OUT;SFP:;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 0655F9F006
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA4FQxY0004580
 
-When doing physical processor hotplug, all affected CPUs need to be
-handled in atomic and shouldn't be disturbed by online/offline requests
-from CPU device's online sysfs interface. So introduce a busy flag
-into struct cpu to temporariliy reject requests from online sysfs
-interface.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
----
- arch/ia64/include/asm/cpu.h     |    2 +-
- arch/ia64/kernel/topology.c     |   10 ++++++----
- arch/x86/include/asm/cpu.h      |    2 +-
- arch/x86/kernel/topology.c      |   10 ++++++----
- drivers/acpi/processor_driver.c |    3 ++-
- drivers/base/cpu.c              |   22 ++++++++++++++++++++++
- drivers/xen/cpu_hotplug.c       |    2 +-
- include/linux/cpu.h             |    2 ++
- 8 files changed, 41 insertions(+), 12 deletions(-)
 
-diff --git a/arch/ia64/include/asm/cpu.h b/arch/ia64/include/asm/cpu.h
-index fcca30b..192fa2f 100644
---- a/arch/ia64/include/asm/cpu.h
-+++ b/arch/ia64/include/asm/cpu.h
-@@ -15,7 +15,7 @@ DECLARE_PER_CPU(struct ia64_cpu, cpu_devices);
- DECLARE_PER_CPU(int, cpu_state);
- 
- #ifdef CONFIG_HOTPLUG_CPU
--extern int arch_register_cpu(int num);
-+extern int arch_register_cpu(int num, int busy);
- extern void arch_unregister_cpu(int);
- #endif
- 
-diff --git a/arch/ia64/kernel/topology.c b/arch/ia64/kernel/topology.c
-index c64460b..11d47a4 100644
---- a/arch/ia64/kernel/topology.c
-+++ b/arch/ia64/kernel/topology.c
-@@ -40,15 +40,17 @@ EXPORT_SYMBOL_GPL(arch_fix_phys_package_id);
- 
- 
- #ifdef CONFIG_HOTPLUG_CPU
--int __ref arch_register_cpu(int num)
-+int __ref arch_register_cpu(int num, int busy)
- {
- #ifdef CONFIG_ACPI
- 	/*
- 	 * If CPEI can be re-targeted or if this is not
- 	 * CPEI target, then it is hotpluggable
- 	 */
--	if (can_cpei_retarget() || !is_cpu_cpei_target(num))
-+	if (can_cpei_retarget() || !is_cpu_cpei_target(num)) {
- 		sysfs_cpus[num].cpu.hotpluggable = 1;
-+		sysfs_cpus[num].cpu.busy = busy;
-+	}
- 	map_cpu_to_node(num, node_cpuid[num].nid);
- #endif
- 	return register_cpu(&sysfs_cpus[num].cpu, num);
-@@ -64,7 +66,7 @@ void __ref arch_unregister_cpu(int num)
- }
- EXPORT_SYMBOL(arch_unregister_cpu);
- #else
--static int __init arch_register_cpu(int num)
-+static int __init arch_register_cpu(int num, int busy)
- {
- 	return register_cpu(&sysfs_cpus[num].cpu, num);
- }
-@@ -90,7 +92,7 @@ static int __init topology_init(void)
- 		panic("kzalloc in topology_init failed - NR_CPUS too big?");
- 
- 	for_each_present_cpu(i) {
--		if((err = arch_register_cpu(i)))
-+		if((err = arch_register_cpu(i, 0)))
- 			goto out;
- 	}
- out:
-diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
-index 4564c8e..724c777 100644
---- a/arch/x86/include/asm/cpu.h
-+++ b/arch/x86/include/asm/cpu.h
-@@ -26,7 +26,7 @@ struct x86_cpu {
- };
- 
- #ifdef CONFIG_HOTPLUG_CPU
--extern int arch_register_cpu(int num);
-+extern int arch_register_cpu(int num, int busy);
- extern void arch_unregister_cpu(int);
- #endif
- 
-diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
-index 76ee977..c66ef53 100644
---- a/arch/x86/kernel/topology.c
-+++ b/arch/x86/kernel/topology.c
-@@ -35,7 +35,7 @@
- static DEFINE_PER_CPU(struct x86_cpu, cpu_devices);
- 
- #ifdef CONFIG_HOTPLUG_CPU
--int __ref arch_register_cpu(int num)
-+int __ref arch_register_cpu(int num, int busy)
- {
- 	/*
- 	 * CPU0 cannot be offlined due to several
-@@ -46,8 +46,10 @@ int __ref arch_register_cpu(int num)
- 	 * Also certain PCI quirks require not to enable hotplug control
- 	 * for all CPU's.
- 	 */
--	if (num)
-+	if (num) {
- 		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
-+		per_cpu(cpu_devices, num).cpu.busy = busy;
-+	}
- 
- 	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
- }
-@@ -60,7 +62,7 @@ void arch_unregister_cpu(int num)
- EXPORT_SYMBOL(arch_unregister_cpu);
- #else /* CONFIG_HOTPLUG_CPU */
- 
--static int __init arch_register_cpu(int num)
-+static int __init arch_register_cpu(int num, int busy)
- {
- 	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
- }
-@@ -76,7 +78,7 @@ static int __init topology_init(void)
- #endif
- 
- 	for_each_present_cpu(i)
--		arch_register_cpu(i);
-+		arch_register_cpu(i, 0);
- 
- 	return 0;
- }
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index b8c3684..53e364d 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -702,7 +702,8 @@ static int acpi_processor_pre_configure(struct acpi_device *device,
- 		if (result)
- 			return result;
- 		BUG_ON((pr->id >= nr_cpu_ids) || (pr->id < 0));
--		result = arch_register_cpu(pr->id);
-+
-+		result = arch_register_cpu(pr->id, 0);
- 		if (result) {
- 			acpi_unmap_lsapic(pr->id);
- 			pr->id = -1;
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 6345294..dc6246c 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -42,6 +42,11 @@ static ssize_t __ref store_online(struct device *dev,
- 	ssize_t ret;
- 
- 	cpu_hotplug_driver_lock();
-+	if (cpu->busy) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
-+
- 	switch (buf[0]) {
- 	case '0':
- 		ret = cpu_down(cpu->dev.id);
-@@ -56,6 +61,8 @@ static ssize_t __ref store_online(struct device *dev,
- 	default:
- 		ret = -EINVAL;
- 	}
-+
-+out:
- 	cpu_hotplug_driver_unlock();
- 
- 	if (ret >= 0)
-@@ -308,6 +315,21 @@ bool cpu_is_hotpluggable(unsigned cpu)
- }
- EXPORT_SYMBOL_GPL(cpu_is_hotpluggable);
- 
-+int cpu_set_busy(unsigned int id, int busy)
-+{
-+	int old;
-+	struct device *device = get_cpu_device(id);
-+	struct cpu *cpu = container_of(device, struct cpu, dev);
-+
-+	cpu_hotplug_driver_lock();
-+	old = cpu->busy;
-+	cpu->busy = busy;
-+	cpu_hotplug_driver_unlock();
-+
-+	return old;
-+}
-+EXPORT_SYMBOL_GPL(cpu_set_busy);
-+
- #ifdef CONFIG_GENERIC_CPU_DEVICES
- static DEFINE_PER_CPU(struct cpu, cpu_devices);
- #endif
-diff --git a/drivers/xen/cpu_hotplug.c b/drivers/xen/cpu_hotplug.c
-index 4dcfced..95bde8a 100644
---- a/drivers/xen/cpu_hotplug.c
-+++ b/drivers/xen/cpu_hotplug.c
-@@ -9,7 +9,7 @@
- static void enable_hotplug_cpu(int cpu)
- {
- 	if (!cpu_present(cpu))
--		arch_register_cpu(cpu);
-+		arch_register_cpu(cpu, 0);
- 
- 	set_cpu_present(cpu, true);
- }
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index ce7a074..557501b 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -23,12 +23,14 @@ struct device;
- struct cpu {
- 	int node_id;		/* The node which contains the CPU */
- 	int hotpluggable;	/* creates sysfs control file if hotpluggable */
-+	int busy;
- 	struct device dev;
- };
- 
- extern int register_cpu(struct cpu *cpu, int num);
- extern struct device *get_cpu_device(unsigned cpu);
- extern bool cpu_is_hotpluggable(unsigned cpu);
-+extern int cpu_set_busy(unsigned int cpu, int busy);
- 
- extern int cpu_add_dev_attr(struct device_attribute *attr);
- extern void cpu_remove_dev_attr(struct device_attribute *attr);
--- 
-1.7.9.5
+> -----Original Message-----
+> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> Sent: Sunday, November 04, 2012 4:39 AM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
+> scsi@vger.kernel.org
+> Subject: Re: Drivers: scsi
+> 
+> On Sat, 2012-11-03 at 09:40 -0700, K. Y. Srinivasan wrote:
+> > Do we currently support dynamic re-sizing of LUNs. Hyper-V can
+> > notify capacity change via sense data and I was wondering if this
+> > is handled in the generic scsi code.
+> 
+> Depends what you mean by "dynamic".  Experience shows that most users
+> really don't want all this to happen without manual intervention
+> (particularly on shrink).  However, we have the mechanics in place.
+> Just send ASC/Q 2A/09 and it can get vectored up to LVM which resizes
+> the volume and can be scripted automatically to resize the filesystem.
+> 
+> hypervisor people tend to have problems with scripting, so there are
+> some hacks that do this outside of the normal event system ... see for
+> example virtio_scsi.c
 
+Thanks for the prompt response.
+
+Regards,
+
+K. Y
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
