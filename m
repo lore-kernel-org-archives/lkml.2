@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab2KDRoL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 12:44:11 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34220 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab2KDRoI (ORCPT
+	id S1751733Ab2KDRrT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 12:47:19 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:45180 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab2KDRrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 12:44:08 -0500
+	Sun, 4 Nov 2012 12:47:15 -0500
 MIME-Version: 1.0
-In-Reply-To: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
-References: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
-Date: Sun, 4 Nov 2012 17:44:05 +0000
-X-Google-Sender-Auth: WPAM_f-lFJqxXF9wlF0VwyUa5TE
-Message-ID: <CAHR064isMXk8qkqhBJ==9sRRP7xC_j_K5rqXApza-LNkosp5mg@mail.gmail.com>
-Subject: Re: [PATCH] samsung-laptop: Disable if CONFIG_EFI=y
-From: Corentin Chary <corentincj@iksaif.net>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Matthew Garrett <mjg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        Alessandro Crismani <alessandro.crismani@gmail.com>,
-        Mikhail Bakhterev <mike.bakhterev@gmail.com>,
-        Patrick H <kernel@feystorm.net>, Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1351666855-23854-2-git-send-email-yuanhan.liu@linux.intel.com>
+References: <1351666855-23854-1-git-send-email-yuanhan.liu@linux.intel.com>
+	<1351666855-23854-2-git-send-email-yuanhan.liu@linux.intel.com>
+Date: Sun, 4 Nov 2012 18:47:12 +0100
+Message-ID: <CACRpkdapHWJAMFn0hUQF52RjBz38MZzD3GS+5+pLfhsKJ+p_GQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] gpio: do not call __gpio_xxx under !CONFIG_GPIOLIB
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 4, 2012 at 5:35 PM, Matt Fleming <matt@console-pimps.org> wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
->
-> We've started getting reports of users seeing Machine Check Exceptions
-> when booting their Samsung laptops in UEFI mode,
->
->      https://bugzilla.kernel.org/show_bug.cgi?id=47121
->
-> This module seems to be the culprit as it's grovelling around in the
-> 0xf0000 region which has no mapping in either the e820 or EFI memory
-> maps on the affected machines.
->
-> Reported-by: Alessandro Crismani <alessandro.crismani@gmail.com>
-> Reported-by: Mikhail Bakhterev <mike.bakhterev@gmail.com>
-> Tested-by: Patrick H <kernel@feystorm.net>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: Corentin Chary <corentincj@iksaif.net>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
->  drivers/platform/x86/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index c86bae8..0fe5200 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -717,7 +717,7 @@ config XO15_EBOOK
->
->  config SAMSUNG_LAPTOP
->         tristate "Samsung Laptop driver"
-> -       depends on X86
-> +       depends on X86 && !EFI
->         depends on RFKILL || RFKILL = n
->         depends on BACKLIGHT_CLASS_DEVICE
->         select LEDS_CLASS
-> --
-> 1.7.11.7
->
+On Wed, Oct 31, 2012 at 8:00 AM, Yuanhan Liu
+<yuanhan.liu@linux.intel.com> wrote:
 
-Acked-by: Corentin Chary <corentin.chary@gmail.com>
+> Those functions are availabe only when CONFIG_GPIOLIB is set. So, we
+> should not call them under !CONFIG_GPIOLIB block.
+>
+> This would fix following build errros:
+> include/asm-generic/gpio.h: In function 'gpio_get_value_cansleep':
+> include/asm-generic/gpio.h:220:2: error: implicit declaration of function '__gpio_get_value'
+> include/asm-generic/gpio.h: In function 'gpio_set_value_cansleep':
+> nclude/asm-generic/gpio.h:226:2: error: implicit declaration of function '__gpio_set_value'
 
-Matthew could you merge this in your tree ? Thanks.
+OK...
 
-Matt, any idea if SABI doesn't exist on these machines, or is just
-mapped somewhere else ?
-By any luck, could Samsung tell you how to safely detect SABI aware machines ?
+>  static inline int gpio_get_value_cansleep(unsigned gpio)
+>  {
+> -       might_sleep();
 
---
-Corentin Chary
-http://xf.iksaif.net
+So why are you deleting this very useful might_sleep() runtime
+semantic check?
+
+> -       return __gpio_get_value(gpio);
+> +       WARN_ON(1);
+> +       return 0;
+>  }
+>
+>  static inline void gpio_set_value_cansleep(unsigned gpio, int value)
+>  {
+> -       might_sleep();
+> -       __gpio_set_value(gpio, value);
+> +       WARN_ON(1);
+>  }
+
+Yours,
+Linus Walleij
