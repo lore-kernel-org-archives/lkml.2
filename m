@@ -1,99 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab2KDK5J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 05:57:09 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52434 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab2KDK5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 05:57:07 -0500
-Date: Sun, 4 Nov 2012 11:57:02 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/9] ARM: at91: Remove unused struct
- at91sam9g45_isi_device and its resources
-Message-ID: <20121104105702.GD27124@gmail.com>
-References: <1351980150-24145-1-git-send-email-lee.jones@linaro.org>
- <1351980150-24145-3-git-send-email-lee.jones@linaro.org>
- <20121104101502.GI19021@game.jcrosoft.org>
+	id S1753332Ab2KDL0s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 06:26:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751951Ab2KDL0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 06:26:45 -0500
+Message-ID: <509650EA.5060508@redhat.com>
+Date: Sun, 04 Nov 2012 12:26:34 +0100
+From: Zdenek Kabelac <zkabelac@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121104101502.GI19021@game.jcrosoft.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Slaby <jslaby@suse.cz>
+CC: Mel Gorman <mgorman@suse.de>, Valdis.Kletnieks@vt.edu,
+        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: kswapd0: excessive CPU usage
+References: <507688CC.9000104@suse.cz> <106695.1349963080@turing-police.cc.vt.edu> <5076E700.2030909@suse.cz> <118079.1349978211@turing-police.cc.vt.edu> <50770905.5070904@suse.cz> <119175.1349979570@turing-police.cc.vt.edu> <5077434D.7080008@suse.cz> <50780F26.7070007@suse.cz> <20121012135726.GY29125@suse.de> <507BDD45.1070705@suse.cz> <20121015110937.GE29125@suse.de> <5093A3F4.8090108@redhat.com> <5093A631.5020209@suse.cz> <509422C3.1000803@suse.cz>
+In-Reply-To: <509422C3.1000803@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 04 Nov 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 23:02 Sat 03 Nov     , Lee Jones wrote:
-> > This the at91sam9g45_isi_device structure and its associated resources
-> > were added in 2008 and have been unused ever since. Let's remove them.
-> next time you need to Cc the matinaers
+Dne 2.11.2012 20:45, Jiri Slaby napsal(a):
+> On 11/02/2012 11:53 AM, Jiri Slaby wrote:
+>> On 11/02/2012 11:44 AM, Zdenek Kabelac wrote:
+>>>>> Yes, applying this instead of the revert fixes the issue as well.
+>>>
+>>> I've applied this patch on 3.7.0-rc3 kernel - and I still see excessive
+>>> CPU usage - mainly  after  suspend/resume
+>>>
+>>> Here is just simple  kswapd backtrace from running kernel:
+>>
+>> Yup, this is what we were seeing with the former patch only too. Try to
+>> apply the other one too:
+>> https://patchwork.kernel.org/patch/1673231/
+>>
+>> For me I would say, it is fixed by the two patches now. I won't be able
+>> to report later, since I'm leaving to a conference tomorrow.
+>
+> Damn it. It recurred right now, with both patches applied. After I
+> started a java program which consumed some more memory. Though there are
+> still 2 gigs free, kswap is spinning:
+> [<ffffffff810b00da>] __cond_resched+0x2a/0x40
+> [<ffffffff811318a0>] shrink_slab+0x1c0/0x2d0
+> [<ffffffff8113478d>] kswapd+0x66d/0xb60
+> [<ffffffff810a25d0>] kthread+0xc0/0xd0
+> [<ffffffff816aa29c>] ret_from_fork+0x7c/0xb0
+> [<ffffffffffffffff>] 0xffffffffffffffff
+>
 
-I did:
+Yep - wanted to report myself again and noticed your replay.
 
-$ git show <sha1> | scripts/get_maintainer.pl
-  Russell King <linux@arm.linux.org.uk> (maintainer:ARM PORT)
-  linux-arm-kernel@lists.infradead.org (moderated list:ARM SUB-ARCHITECT...)
-  linux-kernel@vger.kernel.org (open list)
+Yes - I've now also both patches installed - and I still observe kswapd eating 
+my CPU.  It seems (at least for me) that  prior suspend and resume is way to 
+trigger it more frequently.
 
-> NACK
+However there is a change in behaviour - while before kswapd was running 
+almost indefinitely now the> CPU spikes are in the range of minutes.
+(i.e. uptime  ~2days -   kswapd has over 32minutes CPU time)
+My machine has 4GB, and no swap (disabled)
 
-Any particular reason?
+firefox (22mins), thunderbird(3mins) and pidgin(0.5min) are the 3 most memory 
+and CPU hungry apps for this moment.
 
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  arch/arm/mach-at91/at91sam9263_devices.c |   20 --------------------
-> >  1 file changed, 20 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
-> > index cb85da2..0562a9d 100644
-> > --- a/arch/arm/mach-at91/at91sam9263_devices.c
-> > +++ b/arch/arm/mach-at91/at91sam9263_devices.c
-> > @@ -901,26 +901,6 @@ void __init at91_add_device_lcdc(struct atmel_lcdfb_info *data) {}
-> >  
-> >  #if defined(CONFIG_VIDEO_AT91_ISI) || defined(CONFIG_VIDEO_AT91_ISI_MODULE)
-> >  
-> > -struct resource isi_resources[] = {
-> > -	[0] = {
-> > -		.start	= AT91SAM9263_BASE_ISI,
-> > -		.end	= AT91SAM9263_BASE_ISI + SZ_16K - 1,
-> > -		.flags	= IORESOURCE_MEM,
-> > -	},
-> > -	[1] = {
-> > -		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_ISI,
-> > -		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_ISI,
-> > -		.flags	= IORESOURCE_IRQ,
-> > -	},
-> > -};
-> > -
-> > -static struct platform_device at91sam9263_isi_device = {
-> > -	.name		= "at91_isi",
-> > -	.id		= -1,
-> > -	.resource	= isi_resources,
-> > -	.num_resources	= ARRAY_SIZE(isi_resources),
-> > -};
-> > -
-> >  void __init at91_add_device_isi(struct isi_platform_data *data,
-> >  		bool use_pck_as_mck)
-> >  {
-> > -- 
-> > 1.7.9.5
-> > 
-> > 
-> > _______________________________________________
-> > linux-arm-kernel mailing list
-> > linux-arm-kernel@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Zdenek
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
