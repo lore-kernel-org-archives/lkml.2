@@ -1,64 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab2KDRfS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 12:35:18 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:40985 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751285Ab2KDRfP (ORCPT
+	id S1753114Ab2KDRlL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 12:41:11 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:39314 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab2KDRlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 12:35:15 -0500
-From: Matt Fleming <matt@console-pimps.org>
-To: Corentin Chary <corentincj@iksaif.net>, Matthew Garrett <mjg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Alessandro Crismani <alessandro.crismani@gmail.com>,
-        Mikhail Bakhterev <mike.bakhterev@gmail.com>,
-        Patrick H <kernel@feystorm.net>, Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org
-Subject: [PATCH] samsung-laptop: Disable if CONFIG_EFI=y
-Date: Sun,  4 Nov 2012 17:35:06 +0000
-Message-Id: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.11.7
+	Sun, 4 Nov 2012 12:41:07 -0500
+Date: Sun, 04 Nov 2012 12:41:05 -0500 (EST)
+Message-Id: <20121104.124105.1180255461095055631.davem@davemloft.net>
+To: axel.lin@ingics.com
+Cc: herbert@gondor.hengli.com.au, jamie@jamieiles.com,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] crypto: picoxcell: Add terminating entry for
+ platform_device_id table
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1352043385.11324.4.camel@phoenix>
+References: <1352043385.11324.4.camel@phoenix>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Axel Lin <axel.lin@ingics.com>
+Date: Sun, 04 Nov 2012 23:36:25 +0800
 
-We've started getting reports of users seeing Machine Check Exceptions
-when booting their Samsung laptops in UEFI mode,
+> The platform_device_id table is supposed to be zero-terminated.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-     https://bugzilla.kernel.org/show_bug.cgi?id=47121
-
-This module seems to be the culprit as it's grovelling around in the
-0xf0000 region which has no mapping in either the e820 or EFI memory
-maps on the affected machines.
-
-Reported-by: Alessandro Crismani <alessandro.crismani@gmail.com>
-Reported-by: Mikhail Bakhterev <mike.bakhterev@gmail.com>
-Tested-by: Patrick H <kernel@feystorm.net>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Corentin Chary <corentincj@iksaif.net>
-Cc: stable@vger.kernel.org
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- drivers/platform/x86/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index c86bae8..0fe5200 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -717,7 +717,7 @@ config XO15_EBOOK
- 
- config SAMSUNG_LAPTOP
- 	tristate "Samsung Laptop driver"
--	depends on X86
-+	depends on X86 && !EFI
- 	depends on RFKILL || RFKILL = n
- 	depends on BACKLIGHT_CLASS_DEVICE
- 	select LEDS_CLASS
--- 
-1.7.11.7
-
+Acked-by: David S. Miller <davem@davemloft.net>
