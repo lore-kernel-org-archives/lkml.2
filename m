@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab2KDUwG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 15:52:06 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:49324 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab2KDUwD (ORCPT
+	id S1752306Ab2KDU6v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 15:58:51 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:42092 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751275Ab2KDU6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 15:52:03 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] drivers/misc/kgdbts.c: remove eprintk
-Date: Sun, 4 Nov 2012 20:51:58 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: walter harms <wharms@bfs.de>, kernel-janitors@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
-References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr> <201211041939.51608.arnd@arndb.de> <alpine.DEB.2.02.1211042051190.1960@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1211042051190.1960@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Sun, 4 Nov 2012 15:58:49 -0500
+Message-ID: <1352062724.14888.206.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] samsung-laptop: Disable if CONFIG_EFI=y
+From: Matt Fleming <matt@console-pimps.org>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Corentin Chary <corentincj@iksaif.net>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Alessandro Crismani <alessandro.crismani@gmail.com>,
+        Mikhail Bakhterev <mike.bakhterev@gmail.com>,
+        Patrick H <kernel@feystorm.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Sun, 04 Nov 2012 20:58:44 +0000
+In-Reply-To: <20121104174713.GA28414@elie.Belkin>
+References: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
+	 <20121104174713.GA28414@elie.Belkin>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211042051.58473.arnd@arndb.de>
-X-Provags-ID: V02:K0:xRwbcVeb1yeDBY2mPSftPQLckQX0jMjGQ0gppMnGnAj
- LuxMzFCbDYfAXW5QOuAx6KSBY5CmutsX7sUjLz+H6KN6r1LlmK
- YcooEk3G3/TLojoPzRpbXaB+HhF4wG/Vw0NFzA0C4/ZpsynG89
- aXoHM9osjexnvggbQ0b1PXFUwIB9KVQEnLUoykkW8M9/ZsqW+E
- XEp0gEupOlazde4znXLTXJ00HCzR/YUmPTwzTj1FOQ40yr3fc/
- kHEHwFWUXsun2zCJv47vKYW49uuxt7N5vZl+aQGF0DBpGPxFdd
- gw3RwQMfE/9h+klYosl/YawLvhg6YEYxndS+yD5WC9v6mll8u+
- 4UEhCFGr/VE1X0/LVpZk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 04 November 2012, Julia Lawall wrote:
-
-> > Hmm, I did not think that WARN() took a KERN_ERR argument, which should
-> > really be implied here. Looking at the code, it really seems to be required
-> > at the moment, but only 5 out of 117 callers use it this way.
-> >
-> > Any idea what is going on here?
+On Sun, 2012-11-04 at 09:47 -0800, Jonathan Nieder wrote:
+> Matt Fleming wrote:
 > 
-> I'm not sure to understand the 5 and 117.  Using grep, I get 30 with 
-> KERN_ERR, 61 with some KERN thing, and 1207 without KERN. 
+> > --- a/drivers/platform/x86/Kconfig
+> > +++ b/drivers/platform/x86/Kconfig
+> > @@ -717,7 +717,7 @@ config XO15_EBOOK
+> > 
+> >  config SAMSUNG_LAPTOP
+> >  	tristate "Samsung Laptop driver"
+> > -	depends on X86
+> > +	depends on X86 && !EFI
+> 
+> That means distros would just not get the samsung-laptop driver.
+> Is there a runtime check that could be used instead?
 
-Right, I was using 'grep -w', which misses a lot of the instances, although
-I see still much fewer in the last category.
+Well, the closest thing we have at the moment is the 'efi_enabled'
+variable, but that doesn't actually mean "We were booted from EFI?", it
+means "Do we have EFI runtime services?", and that's not a broad enough
+check for this case. We don't have access to the EFI runtime services
+when a 64-bit kernel is booted from 32-bit EFI firmware or vice-versa.
+Notably the chromebooks use this scheme. And seeing as Samsung make
+chromebooks, I'm not convinced we won't hit that case.
 
-> If things are 
-> set up such that warn_slowpath_fmt is called, then that function adds
-> KERN_WARNING.  There is an alternate definition of __WARN_printf that just 
-> does a printk.
+But yeah, you've got a valid point. Clearly we need a way to check this
+at runtime. I'll repsin this patch.
 
-I don't see yet where that KERN_WARNING gets added. Looking at
-warn_slowpath_common, there are two or three lines that get printed at 
-KERN_WARNING level, followed by the format that got passed into WARN(),
-which may or may not include a printk level, but I don't see one getting
-added.
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
-
-	Arnd
