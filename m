@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab2KDIQs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 03:16:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59902 "EHLO mx2.suse.de"
+	id S1752652Ab2KDIXU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 03:23:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60023 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751929Ab2KDIQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 03:16:46 -0500
-Date: Sun, 04 Nov 2012 09:16:44 +0100
-Message-ID: <s5hd2ztsryr.wl%tiwai@suse.de>
+	id S1752130Ab2KDIXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 03:23:19 -0500
+Date: Sun, 04 Nov 2012 09:23:17 +0100
+Message-ID: <s5ha9uxsrnu.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Daniel J Blueman <daniel@quora.org>
-Cc: alsa-devel@alsa-project.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Jaroslav Kysela <perex@perex.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] HDA: Fix digital microphone on CS420x
-In-Reply-To: <1352006344-3378-1-git-send-email-daniel@quora.org>
-References: <1352006344-3378-1-git-send-email-daniel@quora.org>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, trivial@kernel.org, perex@perex.cz,
+        alsa-devel@alsa-project.org
+Subject: Re: [alsa-devel] [PATCH] [trivial] sound: Fix typo in drivers sound
+In-Reply-To: <1351783730-24714-1-git-send-email-standby24x7@gmail.com>
+References: <1351783730-24714-1-git-send-email-standby24x7@gmail.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,67 +25,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun,  4 Nov 2012 13:19:03 +0800,
-Daniel J Blueman wrote:
+At Fri,  2 Nov 2012 00:28:50 +0900,
+Masanari Iida wrote:
 > 
-> Correctly enable the digital microphones with the right bits in the right coeffecient
-> registers on Cirrus CS4206/7 codecs. It also prevents misconfiguring ADC1/2.
+> Correct spelling typo in debug messages within drivers/sound
 > 
-> This fixes the digital mic on the Macbook Pro 10,1/Retina.
-> 
-> Based-on-patch-by: Alexander Stein <alexander.stein@systec-electronic.com>
-> Signed-off-by: Daniel J Blueman <daniel@quora.org>
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-Thanks, this looks more comprehensive.  DIG1 and DIG2 seem to have
-been set wrongly in the original code, based on the Cirrus's example
-code.  Is the right-only recording problem fixed by this patch?
+Thanks, applied now.
 
-Alexander, could you check this doesn't break your machine?
+Mark, this patch contains a couple of typo fixes.  I applied it as is
+(to for-linus branch) since ASoC changes here are just typos in kernel
+messages.
 
 
 Takashi
 
 > ---
->  sound/pci/hda/patch_cirrus.c |   16 ++++++++++------
->  1 file changed, 10 insertions(+), 6 deletions(-)
+>  sound/i2c/other/ak4113.c   | 2 +-
+>  sound/i2c/other/ak4114.c   | 2 +-
+>  sound/i2c/other/ak4117.c   | 2 +-
+>  sound/pci/rme9652/hdspm.c  | 2 +-
+>  sound/soc/codecs/cs42l52.c | 2 +-
+>  sound/soc/codecs/wm8994.c  | 2 +-
+>  6 files changed, 6 insertions(+), 6 deletions(-)
 > 
-> diff --git a/sound/pci/hda/patch_cirrus.c b/sound/pci/hda/patch_cirrus.c
-> index 61a7113..859a119 100644
-> --- a/sound/pci/hda/patch_cirrus.c
-> +++ b/sound/pci/hda/patch_cirrus.c
-> @@ -101,8 +101,8 @@ enum {
->  #define CS420X_VENDOR_NID	0x11
->  #define CS_DIG_OUT1_PIN_NID	0x10
->  #define CS_DIG_OUT2_PIN_NID	0x15
-> -#define CS_DMIC1_PIN_NID	0x12
-> -#define CS_DMIC2_PIN_NID	0x0e
-> +#define CS_DMIC1_PIN_NID	0x0e
-> +#define CS_DMIC2_PIN_NID	0x12
+> diff --git a/sound/i2c/other/ak4113.c b/sound/i2c/other/ak4113.c
+> index ef68d71..e04e750 100644
+> --- a/sound/i2c/other/ak4113.c
+> +++ b/sound/i2c/other/ak4113.c
+> @@ -426,7 +426,7 @@ static struct snd_kcontrol_new snd_ak4113_iec958_controls[] = {
+>  },
+>  {
+>  	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
+> -	.name =		"IEC958 Preample Capture Default",
+> +	.name =		"IEC958 Preamble Capture Default",
+>  	.access =	SNDRV_CTL_ELEM_ACCESS_READ |
+>  		SNDRV_CTL_ELEM_ACCESS_VOLATILE,
+>  	.info =		snd_ak4113_spdif_pinfo,
+> diff --git a/sound/i2c/other/ak4114.c b/sound/i2c/other/ak4114.c
+> index 816e7d2..5bf4fca 100644
+> --- a/sound/i2c/other/ak4114.c
+> +++ b/sound/i2c/other/ak4114.c
+> @@ -401,7 +401,7 @@ static struct snd_kcontrol_new snd_ak4114_iec958_controls[] = {
+>  },
+>  {
+>  	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
+> -	.name =		"IEC958 Preample Capture Default",
+> +	.name =		"IEC958 Preamble Capture Default",
+>  	.access =	SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
+>  	.info =		snd_ak4114_spdif_pinfo,
+>  	.get =		snd_ak4114_spdif_pget,
+> diff --git a/sound/i2c/other/ak4117.c b/sound/i2c/other/ak4117.c
+> index b4b2a51..40e33c9 100644
+> --- a/sound/i2c/other/ak4117.c
+> +++ b/sound/i2c/other/ak4117.c
+> @@ -380,7 +380,7 @@ static struct snd_kcontrol_new snd_ak4117_iec958_controls[] = {
+>  },
+>  {
+>  	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
+> -	.name =		"IEC958 Preample Capture Default",
+> +	.name =		"IEC958 Preamble Capture Default",
+>  	.access =	SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
+>  	.info =		snd_ak4117_spdif_pinfo,
+>  	.get =		snd_ak4117_spdif_pget,
+> diff --git a/sound/pci/rme9652/hdspm.c b/sound/pci/rme9652/hdspm.c
+> index f1cd1e3..9a8d5ce 100644
+> --- a/sound/pci/rme9652/hdspm.c
+> +++ b/sound/pci/rme9652/hdspm.c
+> @@ -4899,7 +4899,7 @@ snd_hdspm_proc_read_madi(struct snd_info_entry * entry,
+>  		insel = "Coaxial";
+>  		break;
+>  	default:
+> -		insel = "Unkown";
+> +		insel = "Unknown";
+>  	}
 >  
->  /* coef indices */
->  #define IDX_SPDIF_STAT		0x0000
-> @@ -1079,14 +1079,18 @@ static void init_input(struct hda_codec *codec)
->  			cs_automic(codec, NULL);
->  
->  		coef = 0x000a; /* ADC1/2 - Digital and Analog Soft Ramp */
-> +		cs_vendor_coef_set(codec, IDX_ADC_CFG, coef);
-> +
-> +		coef = cs_vendor_coef_get(codec, IDX_BEEP_CFG);
->  		if (is_active_pin(codec, CS_DMIC2_PIN_NID))
-> -			coef |= 0x0500; /* DMIC2 2 chan on, GPIO1 off */
-> +			coef |= 1 << 4; /* DMIC2 2 chan on, GPIO1 off */
->  		if (is_active_pin(codec, CS_DMIC1_PIN_NID))
-> -			coef |= 0x1800; /* DMIC1 2 chan on, GPIO0 off
-> +			coef |= 1 << 3; /* DMIC1 2 chan on, GPIO0 off
->  					 * No effect if SPDIF_OUT2 is
->  					 * selected in IDX_SPDIF_CTL.
->  					*/
-> -		cs_vendor_coef_set(codec, IDX_ADC_CFG, coef);
-> +
-> +		cs_vendor_coef_set(codec, IDX_BEEP_CFG, coef);
+>  	snd_iprintf(buffer,
+> diff --git a/sound/soc/codecs/cs42l52.c b/sound/soc/codecs/cs42l52.c
+> index 6159929..4d8db36 100644
+> --- a/sound/soc/codecs/cs42l52.c
+> +++ b/sound/soc/codecs/cs42l52.c
+> @@ -763,7 +763,7 @@ static int cs42l52_set_sysclk(struct snd_soc_dai *codec_dai,
+>  	if ((freq >= CS42L52_MIN_CLK) && (freq <= CS42L52_MAX_CLK)) {
+>  		cs42l52->sysclk = freq;
 >  	} else {
->  		if (spec->mic_detect)
->  			cs_automic(codec, NULL);
+> -		dev_err(codec->dev, "Invalid freq paramter\n");
+> +		dev_err(codec->dev, "Invalid freq parameter\n");
+>  		return -EINVAL;
+>  	}
+>  	return 0;
+> diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
+> index 11982bf..88dbabc 100644
+> --- a/sound/soc/codecs/wm8994.c
+> +++ b/sound/soc/codecs/wm8994.c
+> @@ -3734,7 +3734,7 @@ static irqreturn_t wm8958_mic_irq(int irq, void *data)
+>  	} while (count--);
+>  
+>  	if (count == 0)
+> -		dev_warn(codec->dev, "No impedence range reported for jack\n");
+> +		dev_warn(codec->dev, "No impedance range reported for jack\n");
+>  
+>  #ifndef CONFIG_SND_SOC_WM8994_MODULE
+>  	trace_snd_soc_jack_irq(dev_name(codec->dev));
 > -- 
-> 1.7.10.4
+> 1.8.0.rc3.16.g8ead1bf
+> 
+> _______________________________________________
+> Alsa-devel mailing list
+> Alsa-devel@alsa-project.org
+> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
 > 
