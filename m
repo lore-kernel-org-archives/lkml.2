@@ -1,35 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab2KDQ3z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 11:29:55 -0500
-Received: from zappa.uenf.br ([200.20.228.33]:34841 "EHLO zappa.uenf.br"
+	id S1753209Ab2KDQcO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 11:32:14 -0500
+Received: from smtp.getmail.no ([84.208.15.66]:40797 "EHLO smtp.getmail.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030Ab2KDQ3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 11:29:54 -0500
-Message-ID: <20121104102838.py4k7gx068gw4k8s@zappa.uenf.br>
-Date: Sun, 04 Nov 2012 10:28:38 -0200
-From: nilton@uenf.br
-To: undisclosed-recipients:;
-Subject: Do You Want To Be Comfortable
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.5)
+	id S1750813Ab2KDQcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 11:32:12 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 8BIT
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Sun, 04 Nov 2012 17:32:10 +0100
+Subject: re: sched: SCHED_DEADLINE v6
+To: juri.lelli@gmail.com, linux-kernel@vger.kernel.org
+From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
+Message-id: <op.wm9b7wnn6426ze@localhost.localdomain>
+User-Agent: Opera Mail/12.02 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, My name is Nilton secretary to Mr.Norman Chan, I got your email  
-contact from an online directory; Mr.Norman Chan would need your  
-assistance on a business proposal. Contact me him through mail;  
-normchan2@live.com for more detailed.
+Hi. I am trying the Sched_deadline patch.
 
+I am getting an error compiling:
 
--------------------------------------------------------------------------
-"O usuario e integralmente responsavel por todo conteudo enviado
-de sua conta de e-mail. Sua senha e pessoal e intransferivel."
+kernel/sched/dl.c: In function ‘dl_runtime_exceeded’:
+kernel/sched/dl.c:551:7: warning: unused variable ‘damount’  
+[-Wunused-variable]
+kernel/sched/dl.c:558:7: warning: unused variable ‘ramount’  
+[-Wunused-variable]
+kernel/sched/dl.c: In function ‘init_sched_dl_class’:
+kernel/sched/dl.c:1521:6: error: ‘GFP_KERNEL’ undeclared (first use in  
+this function)
+kernel/sched/dl.c:1521:6: note: each undeclared identifier is reported  
+only once for each function it appears in
+kernel/sched/dl.c: At top level:
+kernel/sched/dl.c:965:13: warning: ‘start_hrtick_dl’ defined but not used  
+[-Wunused-function]
+make[2]: *** [kernel/sched/dl.o] Error 1
+make[1]: *** [kernel/sched] Error 2
+make: *** [kernel] Error 2
+make: *** Waiting for unfinished jobs....
 
+Peace Be With You.
