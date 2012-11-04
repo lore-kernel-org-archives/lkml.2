@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab2KDKry (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 05:47:54 -0500
-Received: from mga02.intel.com ([134.134.136.20]:49090 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751154Ab2KDKrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 05:47:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,710,1344236400"; 
-   d="scan'208";a="236952757"
-Date: Sun, 4 Nov 2012 12:50:07 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 3/3] i2c / ACPI: add ACPI enumeration support
-Message-ID: <20121104105007.GS16648@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <1351928793-14375-4-git-send-email-mika.westerberg@linux.intel.com>
- <20121103225246.66d4f094@endymion.delvare>
- <20121104072316.GR16648@intel.com>
- <20121104095031.5e6465ae@endymion.delvare>
-MIME-Version: 1.0
+	id S1753364Ab2KDKtE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 05:49:04 -0500
+Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:44359 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751154Ab2KDKtC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 05:49:02 -0500
+Subject: Re: [PATCH 2/16] fs/hfsplus/bnode.c: use WARN
+Mime-Version: 1.0 (Apple Message framework v1085)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121104095031.5e6465ae@endymion.delvare>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+In-Reply-To: <1351940317-14812-3-git-send-email-Julia.Lawall@lip6.fr>
+Date: Sun, 4 Nov 2012 14:49:00 +0300
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FAC63AFE-A6FD-43BB-B34B-3324F930278B@dubeyko.com>
+References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr> <1351940317-14812-3-git-send-email-Julia.Lawall@lip6.fr>
+To: Julia Lawall <julia.lawall@lip6.fr>
+X-Mailer: Apple Mail (2.1085)
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 04, 2012 at 09:50:31AM +0100, Jean Delvare wrote:
-> On Sun, 4 Nov 2012 09:23:17 +0200, Mika Westerberg wrote:
-> > On Sat, Nov 03, 2012 at 10:52:46PM +0100, Jean Delvare wrote:
-> > > On Sat,  3 Nov 2012 09:46:33 +0200, Mika Westerberg wrote:
-> > > > --- /dev/null
-> > > > +++ b/drivers/acpi/acpi_i2c.c
-> > > > @@ -0,0 +1,234 @@
-> > > > +/*
-> > > > + * ACPI I2C enumeration support
-> > > > + *
-> > > > + * Copyright (C) 2012, Intel Corporation
-> > > > + * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > > + *
-> > > > + * This program is free software; you can redistribute it and/or modify
-> > > > + * it under the terms of the GNU General Public License version 2 as
-> > > > + * published by the Free Software Foundation.
-> > > > + */
-> > > > +
-> > > > +#include <linux/acpi.h>
-> > > > +#include <linux/i2c.h>
-> > > > +#include <linux/module.h>
-> > > 
-> > > You also need <linux/device.h> for dev_err() etc., and <linux/err.h> for
-> > > ENODEV etc.
-> > 
-> > I think <acpi.h> already includes <device.h> but I'll double check. At
-> > least this compiles without those headers in place :)
+
+On Nov 3, 2012, at 1:58 PM, Julia Lawall wrote:
+
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> That's not really the point. You never know which header inclusions
-> will be removed from other header files in the future, so you should
-> include what you need explicitly. This avoids future build breakages as
-> well as build breakages on other architectures.
+> Use WARN rather than printk followed by WARN_ON(1), for conciseness.
+> 
+> A simplified version of the semantic patch that makes this transformation
+> is as follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression list es;
+> @@
+> 
+> -printk(
+> +WARN(1,
+>  es);
+> -WARN_ON(1);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+> fs/hfsplus/bnode.c |    3 +--
+> 1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/fs/hfsplus/bnode.c b/fs/hfsplus/bnode.c
+> index 5c125ce..7a92c2c 100644
+> --- a/fs/hfsplus/bnode.c
+> +++ b/fs/hfsplus/bnode.c
+> @@ -588,8 +588,7 @@ struct hfs_bnode *hfs_bnode_create(struct hfs_btree *tree, u32 num)
+> 	node = hfs_bnode_findhash(tree, num);
+> 	spin_unlock(&tree->hash_lock);
+> 	if (node) {
+> -		printk(KERN_CRIT "new node %u already hashed?\n", num);
+> -		WARN_ON(1);
+> +		WARN(1, KERN_CRIT "new node %u already hashed?\n", num);
+> 		return node;
+> 	}
+> 	node = __hfs_bnode_create(tree, num);
+> 
 
-Right. I've actually seen this problem few times before. I added the
-inclusion of <devide.h> and <err.h> to the file.
+Looks good.
 
-Thanks.
+Reviewed-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+
+Thanks,
+Vyacheslav Dubeyko.
+
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
