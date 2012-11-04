@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab2KDBUX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 21:20:23 -0400
-Received: from smtp.getmail.no ([84.208.15.66]:46093 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864Ab2KDBUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 21:20:22 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-Subject: Fwd: Re: Scheduler queues for less os-jitter?
-References: <op.wly58nr56426ze@localhost.localdomain>
- <1349923594.6989.19.camel@marge.simpson.net>
- <op.wm75y11n6426ze@localhost.localdomain>
-Date: Sun, 04 Nov 2012 02:20:20 +0100
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wm75z6uw6426ze@localhost.localdomain>
-In-reply-to: <op.wm75y11n6426ze@localhost.localdomain>
-User-Agent: Opera Mail/12.02 (Linux)
+	id S1752065Ab2KDBkl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 21:40:41 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:43844 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab2KDBkh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 21:40:37 -0400
+Message-ID: <1351993233.4369.2.camel@lorien2>
+Subject: [PATCH] wireless: iwlwifi - add dma_mapping_error() checks to avoid
+ warnings
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: johannes.berg@intel.com, wey-yi.w.guy@intel.com, linville@tuxdriver.com,
+        ilw@linux.intel.com, emmanuel.grumbach@intel.com,
+        donald.h.fry@intel.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Date: Sat, 03 Nov 2012 19:40:33 -0600
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add missing dma_mapping_error() checks to validate dma addresses returned by
+dma_map_page() calls to avoid the following warning:
+
+[   28.475686] WARNING: at lib/dma-debug.c:933 check_unmap+0x459/0x8a0()
+[   28.475688] Hardware name: HP EliteBook 6930p
+[   28.475690] iwlwifi 0000:03:00.0: DMA-API: device driver failed to check map error[device address=0x00000000ffffa000] [size=8192 bytes] [mapped as page]
+[   28.475691] Modules linked in: arc4 bnep rfcomm iwldvm mac80211 snd_hda_codec_analog radeon snd_hda_intel snd_hda_codec coretemp kvm_intel snd_hwdep snd_pcm iwlwifi kvm btusb bluetooth snd_seq_midi snd_rawmidi ttm cfg80211 snd_seq_midi_event drm_kms_helper pata_pcmcia drm snd_seq binfmt_misc pcmcia snd_timer snd_seq_device tpm_infineon snd dm_multipath yenta_socket joydev pcmcia_rsrc pcmcia_core hp_wmi psmouse hp_accel microcode soundcore i2c_algo_bit sparse_keymap wmi ppdev lpc_ich lis3lv02d snd_page_alloc video tpm_tis serio_raw parport_pc input_polldev mac_hid lp parport firewire_ohci firewire_core crc_itu_t sdhci_pci sdhci e1000e
+[   28.475727] Pid: 0, comm: swapper/1 Not tainted 3.7.0-rc2-next-20121026+ #2
+[   28.475728] Call Trace:
+[   28.475729]  <IRQ>  [<ffffffff8105832f>] warn_slowpath_common+0x7f/0xc0
+[   28.475736]  [<ffffffff81058426>] warn_slowpath_fmt+0x46/0x50
+[   28.475738]  [<ffffffff81347599>] check_unmap+0x459/0x8a0
+[   28.475741]  [<ffffffff81347b7c>] debug_dma_unmap_page+0x5c/0x60
+[   28.475751]  [<ffffffffa041e2dd>] iwl_irq_tasklet+0x4dd/0x1040 [iwlwifi]
+[   28.475755]  [<ffffffffa041d50a>] ? iwl_read32+0x2a/0xa0 [iwlwifi]
+[   28.475759]  [<ffffffff81410131>] ? add_interrupt_randomness+0x41/0x190
+[   28.475763]  [<ffffffff813b6e53>] ? arch_local_irq_enable+0x8/0xd
+[   28.475766]  [<ffffffff81060f54>] tasklet_action+0x64/0xe0
+[   28.475768]  [<ffffffff81060a90>] __do_softirq+0xc0/0x240
+[   28.475772]  [<ffffffff816950ae>] ? _raw_spin_lock+0xe/0x20
+[   28.475774]  [<ffffffff8169ed1c>] call_softirq+0x1c/0x30
+[   28.475778]  [<ffffffff810162e5>] do_softirq+0x65/0xa0
+[   28.475780]  [<ffffffff81060d6e>] irq_exit+0x8e/0xb0
+[   28.475782]  [<ffffffff8169f5a3>] do_IRQ+0x63/0xe0
+[   28.475785]  [<ffffffff816956ad>] common_interrupt+0x6d/0x6d
+[   28.475786]  <EOI>  [<ffffffff813b6e53>] ? arch_local_irq_enable+0x8/0xd
+[   28.475790]  [<ffffffff813b79e9>] acpi_idle_enter_c1+0x94/0xb9
+[   28.475793]  [<ffffffff815404f9>] cpuidle_enter+0x19/0x20
+[   28.475795]  [<ffffffff81540b8c>] cpuidle_idle_call+0xac/0x2b0
+[   28.475798]  [<ffffffff8101d56f>] cpu_idle+0xcf/0x120
+[   28.475801]  [<ffffffff8168050e>] start_secondary+0x1ec/0x1f3
+[   28.475802] ---[ end trace 4c30cc65c19b6dc1 ]---
+[   28.475803] Mapped at:
+[   28.475804]  [<ffffffff813465f9>] debug_dma_map_page+0xb9/0x160
+[   28.475806]  [<ffffffffa041d704>] iwl_rx_allocate+0x94/0x2b0 [iwlwifi]
+[   28.475811]  [<ffffffffa041ddad>] iwl_rx_replenish+0x2d/0x60 [iwlwifi]
+[   28.475815]  [<ffffffffa0424c1b>] iwl_trans_pcie_start_fw+0x1fb/0x1450 [iwlwifi]
+[   28.475819]  [<ffffffffa05ba57e>] iwl_load_ucode_wait_alive+0xbe/0x540 [iwldvm]
+
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ drivers/net/wireless/iwlwifi/pcie/rx.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/net/wireless/iwlwifi/pcie/rx.c b/drivers/net/wireless/iwlwifi/pcie/rx.c
+index 137af4c..3731442 100644
+--- a/drivers/net/wireless/iwlwifi/pcie/rx.c
++++ b/drivers/net/wireless/iwlwifi/pcie/rx.c
+@@ -321,6 +321,8 @@ static void iwl_rx_allocate(struct iwl_trans *trans, gfp_t priority)
+ 			dma_map_page(trans->dev, page, 0,
+ 				     PAGE_SIZE << trans_pcie->rx_page_order,
+ 				     DMA_FROM_DEVICE);
++		if (dma_mapping_error(trans->dev, rxb->page_dma))
++			BUG();
+ 		/* dma address must be no more than 36 bits */
+ 		BUG_ON(rxb->page_dma & ~DMA_BIT_MASK(36));
+ 		/* and also 256 byte aligned! */
+@@ -489,6 +491,8 @@ static void iwl_rx_handle_rxbuf(struct iwl_trans *trans,
+ 			dma_map_page(trans->dev, rxb->page, 0,
+ 				     PAGE_SIZE << trans_pcie->rx_page_order,
+ 				     DMA_FROM_DEVICE);
++		if (dma_mapping_error(trans->dev, rxb->page_dma))
++			BUG();
+ 		list_add_tail(&rxb->list, &rxq->rx_free);
+ 		rxq->free_count++;
+ 	} else
+-- 
+1.7.9.5
 
 
-------- Forwarded message -------
-From: "Uwaysi Bin Kareem" <uwaysi.bin.kareem@paradoxuncreated.com>
-To: "Mike Galbraith" <efault@gmx.de>
-Cc:
-Subject: Re: Scheduler queues for less os-jitter?
-Date: Sun, 04 Nov 2012 02:19:39 +0100
 
-On Thu, 11 Oct 2012 04:46:34 +0200, Mike Galbraith <efault@gmx.de> wrote:
-
-> On Wed, 2012-10-10 at 20:13 +0200, Uwaysi Bin Kareem wrote:
->> I was just wondering, have you considered this?
->>
->> If daemons are contributing to os-jitter, wouldn`t having them all on
->> their own queue reduce jitter? So people could have the stuff like in
->> Ubuntu they want, without affecting jitter, or needing stuff like Tiny
->> Core, for tiny jitter?
->>
->> So you get (simplified) something like mainapp - process1 in queue 2,
->> mainapp - process2 in queue 2, mainapp - process 3 in queue 2, etc.
->>
->> Or is that already batch maybe, lol.
->
-> You could try SCHED_AUTOGROUP, or create whatever task groups manually,
-> or use systemd to do that for you.  Like everything else having anything
-> to do with scheduling, all are double edged swords, so may help, may
-> hurt.
->
-> -Mike
->
-
-Actually I did achieve this with fifo-relatime. Low jitter OpenGL seems to
-be able to do, running the opengl app as realtime, with a low
-sched_rt_period_us value and a high sched_rt_runtime_us value.
-
-Peace Be With You.
