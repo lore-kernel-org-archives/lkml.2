@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab2KDPZp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 10:25:45 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:40017 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755341Ab2KDPZI (ORCPT
+	id S1755564Ab2KDP0b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 10:26:31 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42549 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755012Ab2KDPYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 10:25:08 -0500
+	Sun, 4 Nov 2012 10:24:46 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: "Rafael J . Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
         Tony Luck <tony.luck@intel.com>,
@@ -24,9 +24,9 @@ Cc: Jiang Liu <jiang.liu@huawei.com>,
         Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [ACPIHP PATCH part4 9/9] x86: simplify _acpi_map_lsapic() implementation
-Date: Sun,  4 Nov 2012 23:24:02 +0800
-Message-Id: <1352042642-7306-10-git-send-email-jiang.liu@huawei.com>
+Subject: [ACPIHP PATCH part4 5/9] CPU: introduce busy flag to temporarily disable CPU online sysfs interface
+Date: Sun,  4 Nov 2012 23:23:58 +0800
+Message-Id: <1352042642-7306-6-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352042642-7306-1-git-send-email-jiang.liu@huawei.com>
 References: <1352042642-7306-1-git-send-email-jiang.liu@huawei.com>
@@ -34,159 +34,228 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify implementation of function _acpi_map_lsapic().
+When doing physical processor hotplug, all affected CPUs need to be
+handled in atomic and shouldn't be disturbed by online/offline requests
+from CPU device's online sysfs interface. So introduce a busy flag
+into struct cpu to temporariliy reject requests from online sysfs
+interface.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- arch/x86/include/asm/mpspec.h |    2 +-
- arch/x86/kernel/acpi/boot.c   |   44 +++++++++--------------------------------
- arch/x86/kernel/apic/apic.c   |    8 +++++---
- 3 files changed, 15 insertions(+), 39 deletions(-)
+ arch/ia64/include/asm/cpu.h     |    2 +-
+ arch/ia64/kernel/topology.c     |   10 ++++++----
+ arch/x86/include/asm/cpu.h      |    2 +-
+ arch/x86/kernel/topology.c      |   10 ++++++----
+ drivers/acpi/processor_driver.c |    3 ++-
+ drivers/base/cpu.c              |   22 ++++++++++++++++++++++
+ drivers/xen/cpu_hotplug.c       |    2 +-
+ include/linux/cpu.h             |    2 ++
+ 8 files changed, 41 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index 3e2f42a..f1d6487 100644
---- a/arch/x86/include/asm/mpspec.h
-+++ b/arch/x86/include/asm/mpspec.h
-@@ -94,7 +94,7 @@ static inline void early_reserve_e820_mpc_new(void) { }
- #define default_get_smp_config x86_init_uint_noop
+diff --git a/arch/ia64/include/asm/cpu.h b/arch/ia64/include/asm/cpu.h
+index fcca30b..192fa2f 100644
+--- a/arch/ia64/include/asm/cpu.h
++++ b/arch/ia64/include/asm/cpu.h
+@@ -15,7 +15,7 @@ DECLARE_PER_CPU(struct ia64_cpu, cpu_devices);
+ DECLARE_PER_CPU(int, cpu_state);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+-extern int arch_register_cpu(int num);
++extern int arch_register_cpu(int num, int busy);
+ extern void arch_unregister_cpu(int);
  #endif
  
--void __cpuinit generic_processor_info(int apicid, int version);
-+int __cpuinit generic_processor_info(int apicid, int version);
+diff --git a/arch/ia64/kernel/topology.c b/arch/ia64/kernel/topology.c
+index c64460b..11d47a4 100644
+--- a/arch/ia64/kernel/topology.c
++++ b/arch/ia64/kernel/topology.c
+@@ -40,15 +40,17 @@ EXPORT_SYMBOL_GPL(arch_fix_phys_package_id);
+ 
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+-int __ref arch_register_cpu(int num)
++int __ref arch_register_cpu(int num, int busy)
+ {
  #ifdef CONFIG_ACPI
- extern void mp_register_ioapic(int id, u32 address, u32 gsi_base);
- extern void mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger,
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 5e76952..f354446 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -195,24 +195,24 @@ static int __init acpi_parse_madt(struct acpi_table_header *table)
+ 	/*
+ 	 * If CPEI can be re-targeted or if this is not
+ 	 * CPEI target, then it is hotpluggable
+ 	 */
+-	if (can_cpei_retarget() || !is_cpu_cpei_target(num))
++	if (can_cpei_retarget() || !is_cpu_cpei_target(num)) {
+ 		sysfs_cpus[num].cpu.hotpluggable = 1;
++		sysfs_cpus[num].cpu.busy = busy;
++	}
+ 	map_cpu_to_node(num, node_cpuid[num].nid);
+ #endif
+ 	return register_cpu(&sysfs_cpus[num].cpu, num);
+@@ -64,7 +66,7 @@ void __ref arch_unregister_cpu(int num)
+ }
+ EXPORT_SYMBOL(arch_unregister_cpu);
+ #else
+-static int __init arch_register_cpu(int num)
++static int __init arch_register_cpu(int num, int busy)
+ {
+ 	return register_cpu(&sysfs_cpus[num].cpu, num);
+ }
+@@ -90,7 +92,7 @@ static int __init topology_init(void)
+ 		panic("kzalloc in topology_init failed - NR_CPUS too big?");
+ 
+ 	for_each_present_cpu(i) {
+-		if((err = arch_register_cpu(i)))
++		if((err = arch_register_cpu(i, 0)))
+ 			goto out;
+ 	}
+ out:
+diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
+index 4564c8e..724c777 100644
+--- a/arch/x86/include/asm/cpu.h
++++ b/arch/x86/include/asm/cpu.h
+@@ -26,7 +26,7 @@ struct x86_cpu {
+ };
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+-extern int arch_register_cpu(int num);
++extern int arch_register_cpu(int num, int busy);
+ extern void arch_unregister_cpu(int);
+ #endif
+ 
+diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
+index 76ee977..c66ef53 100644
+--- a/arch/x86/kernel/topology.c
++++ b/arch/x86/kernel/topology.c
+@@ -35,7 +35,7 @@
+ static DEFINE_PER_CPU(struct x86_cpu, cpu_devices);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+-int __ref arch_register_cpu(int num)
++int __ref arch_register_cpu(int num, int busy)
+ {
+ 	/*
+ 	 * CPU0 cannot be offlined due to several
+@@ -46,8 +46,10 @@ int __ref arch_register_cpu(int num)
+ 	 * Also certain PCI quirks require not to enable hotplug control
+ 	 * for all CPU's.
+ 	 */
+-	if (num)
++	if (num) {
+ 		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
++		per_cpu(cpu_devices, num).cpu.busy = busy;
++	}
+ 
+ 	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
+ }
+@@ -60,7 +62,7 @@ void arch_unregister_cpu(int num)
+ EXPORT_SYMBOL(arch_unregister_cpu);
+ #else /* CONFIG_HOTPLUG_CPU */
+ 
+-static int __init arch_register_cpu(int num)
++static int __init arch_register_cpu(int num, int busy)
+ {
+ 	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
+ }
+@@ -76,7 +78,7 @@ static int __init topology_init(void)
+ #endif
+ 
+ 	for_each_present_cpu(i)
+-		arch_register_cpu(i);
++		arch_register_cpu(i, 0);
+ 
  	return 0;
  }
- 
--static void __cpuinit acpi_register_lapic(int id, u8 enabled)
-+static int __cpuinit acpi_register_lapic(int id, u8 enabled)
- {
- 	unsigned int ver = 0;
- 
- 	if (id >= (MAX_LOCAL_APIC-1)) {
- 		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
--		return;
-+		return -1;
- 	}
- 
- 	if (!enabled) {
- 		++disabled_cpus;
--		return;
-+		return -1;
- 	}
- 
- 	if (boot_cpu_physical_apicid != -1U)
- 		ver = apic_version[boot_cpu_physical_apicid];
- 
--	generic_processor_info(id, ver);
-+	return generic_processor_info(id, ver);
- }
- 
- static int __init
-@@ -610,44 +610,19 @@ static void __cpuinit acpi_map_cpu2node(acpi_handle handle, int cpu, int physid)
- 
- static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int physid, int *pcpu)
- {
--	cpumask_var_t tmp_map, new_map;
- 	int cpu;
--	int retval = -ENOMEM;
- 
--	if (!alloc_cpumask_var(&tmp_map, GFP_KERNEL))
--		goto out;
--
--	if (!alloc_cpumask_var(&new_map, GFP_KERNEL))
--		goto free_tmp_map;
--
--	cpumask_copy(tmp_map, cpu_present_mask);
--	acpi_register_lapic(physid, ACPI_MADT_ENABLED);
--
--	/*
--	 * If acpi_register_lapic successfully generates a new logical cpu
--	 * number, then the following will get us exactly what was mapped
--	 */
--	cpumask_andnot(new_map, cpu_present_mask, tmp_map);
--	if (cpumask_empty(new_map)) {
-+	cpu = acpi_register_lapic(physid, ACPI_MADT_ENABLED);
-+	if (cpu == -1) {
- 		printk ("Unable to map lapic to logical cpu number\n");
--		retval = -EINVAL;
--		goto free_new_map;
-+		return -EINVAL;
- 	}
- 
- 	acpi_processor_set_pdc(handle);
--
--	cpu = cpumask_first(new_map);
- 	acpi_map_cpu2node(handle, cpu, physid);
--
- 	*pcpu = cpu;
--	retval = 0;
--
--free_new_map:
--	free_cpumask_var(new_map);
--free_tmp_map:
--	free_cpumask_var(tmp_map);
--out:
--	return retval;
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index b8c3684..53e364d 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -702,7 +702,8 @@ static int acpi_processor_pre_configure(struct acpi_device *device,
+ 		if (result)
+ 			return result;
+ 		BUG_ON((pr->id >= nr_cpu_ids) || (pr->id < 0));
+-		result = arch_register_cpu(pr->id);
 +
-+	return 0;
- }
++		result = arch_register_cpu(pr->id, 0);
+ 		if (result) {
+ 			acpi_unmap_lsapic(pr->id);
+ 			pr->id = -1;
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 6345294..dc6246c 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -42,6 +42,11 @@ static ssize_t __ref store_online(struct device *dev,
+ 	ssize_t ret;
  
- /* wrapper to silence section mismatch warning */
-@@ -665,7 +640,6 @@ int acpi_unmap_lsapic(int cpu)
- 
- 	return (0);
- }
--
- EXPORT_SYMBOL(acpi_unmap_lsapic);
- #endif				/* CONFIG_ACPI_HOTPLUG_CPU */
- 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index b17416e..9fdc293 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -2030,7 +2030,7 @@ void disconnect_bsp_APIC(int virt_wire_setup)
- 	apic_write(APIC_LVT1, value);
- }
- 
--void __cpuinit generic_processor_info(int apicid, int version)
-+int __cpuinit generic_processor_info(int apicid, int version)
- {
- 	int cpu, max = nr_cpu_ids;
- 	bool boot_cpu_detected = physid_isset(boot_cpu_physical_apicid,
-@@ -2050,7 +2050,7 @@ void __cpuinit generic_processor_info(int apicid, int version)
- 			"  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
- 
- 		disabled_cpus++;
--		return;
-+		return -1;
+ 	cpu_hotplug_driver_lock();
++	if (cpu->busy) {
++		ret = -EBUSY;
++		goto out;
++	}
++
+ 	switch (buf[0]) {
+ 	case '0':
+ 		ret = cpu_down(cpu->dev.id);
+@@ -56,6 +61,8 @@ static ssize_t __ref store_online(struct device *dev,
+ 	default:
+ 		ret = -EINVAL;
  	}
++
++out:
+ 	cpu_hotplug_driver_unlock();
  
- 	if (num_processors >= nr_cpu_ids) {
-@@ -2061,7 +2061,7 @@ void __cpuinit generic_processor_info(int apicid, int version)
- 			"  Processor %d/0x%x ignored.\n", max, thiscpu, apicid);
+ 	if (ret >= 0)
+@@ -308,6 +315,21 @@ bool cpu_is_hotpluggable(unsigned cpu)
+ }
+ EXPORT_SYMBOL_GPL(cpu_is_hotpluggable);
  
- 		disabled_cpus++;
--		return;
-+		return -1;
- 	}
- 
- 	num_processors++;
-@@ -2106,6 +2106,8 @@ void __cpuinit generic_processor_info(int apicid, int version)
++int cpu_set_busy(unsigned int id, int busy)
++{
++	int old;
++	struct device *device = get_cpu_device(id);
++	struct cpu *cpu = container_of(device, struct cpu, dev);
++
++	cpu_hotplug_driver_lock();
++	old = cpu->busy;
++	cpu->busy = busy;
++	cpu_hotplug_driver_unlock();
++
++	return old;
++}
++EXPORT_SYMBOL_GPL(cpu_set_busy);
++
+ #ifdef CONFIG_GENERIC_CPU_DEVICES
+ static DEFINE_PER_CPU(struct cpu, cpu_devices);
  #endif
- 	set_cpu_possible(cpu, true);
- 	set_cpu_present(cpu, true);
-+
-+	return cpu;
- }
+diff --git a/drivers/xen/cpu_hotplug.c b/drivers/xen/cpu_hotplug.c
+index 4dcfced..95bde8a 100644
+--- a/drivers/xen/cpu_hotplug.c
++++ b/drivers/xen/cpu_hotplug.c
+@@ -9,7 +9,7 @@
+ static void enable_hotplug_cpu(int cpu)
+ {
+ 	if (!cpu_present(cpu))
+-		arch_register_cpu(cpu);
++		arch_register_cpu(cpu, 0);
  
- int hard_smp_processor_id(void)
+ 	set_cpu_present(cpu, true);
+ }
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index ce7a074..557501b 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -23,12 +23,14 @@ struct device;
+ struct cpu {
+ 	int node_id;		/* The node which contains the CPU */
+ 	int hotpluggable;	/* creates sysfs control file if hotpluggable */
++	int busy;
+ 	struct device dev;
+ };
+ 
+ extern int register_cpu(struct cpu *cpu, int num);
+ extern struct device *get_cpu_device(unsigned cpu);
+ extern bool cpu_is_hotpluggable(unsigned cpu);
++extern int cpu_set_busy(unsigned int cpu, int busy);
+ 
+ extern int cpu_add_dev_attr(struct device_attribute *attr);
+ extern void cpu_remove_dev_attr(struct device_attribute *attr);
 -- 
 1.7.9.5
 
