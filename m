@@ -1,110 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab2KDEmP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 00:42:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:27415 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab2KDEmK (ORCPT
+	id S1752092Ab2KDEmL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 00:42:11 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23720 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab2KDEmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 00:42:10 -0400
+	Sun, 4 Nov 2012 00:42:05 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Jiang Liu <jiang.liu@huawei.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org
-Subject: [PATCH 3/8] PCI, x86: Let pcibios_allocate_bus_resources() take bus instead
-Date: Sat,  3 Nov 2012 21:39:26 -0700
-Message-Id: <1352003971-22278-4-git-send-email-yinghai@kernel.org>
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 0/8] PCI, ACPI, x86: Reserve fw allocated resource for hot-add root bus
+Date: Sat,  3 Nov 2012 21:39:23 -0700
+Message-Id: <1352003971-22278-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1352003971-22278-1-git-send-email-yinghai@kernel.org>
+In-Reply-To: <20121030040237.GA10472@google.com>
 References: <20121030040237.GA10472@google.com>
- <1352003971-22278-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will need call the same code for one single root bus during hot add.
-So make it take bus instead of bus list.
+For root bus hot add, fw could assign some resource for the devices for
+that root bus before notifying os via acpi, we should check and use those
+resources at first just like we do for booting path.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: x86@kernel.org
----
- arch/x86/pci/i386.c |   38 +++++++++++++++++++++++++-------------
- 1 files changed, 25 insertions(+), 13 deletions(-)
+At first, we need to refactor x86 pci pcibios_allocate related functions
+for booting path to take bus as parameter.
 
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 5817cf2..84696ed 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -215,16 +215,15 @@ static void __init pcibios_allocate_bridge_resources(struct pci_dev *dev)
- 	}
- }
- 
--static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
-+static void __init pcibios_allocate_bus_resources(struct pci_bus *bus)
- {
--	struct pci_bus *bus;
-+	struct pci_bus *child;
- 
- 	/* Depth-First Search on bus tree */
--	list_for_each_entry(bus, bus_list, node) {
--		if (bus->self)
--			pcibios_allocate_bridge_resources(bus->self);
--		pcibios_allocate_bus_resources(&bus->children);
--	}
-+	if (bus->self)
-+		pcibios_allocate_bridge_resources(bus->self);
-+	list_for_each_entry(child, &bus->children, node)
-+		pcibios_allocate_bus_resources(child);
- }
- 
- struct pci_check_idx_range {
-@@ -285,12 +284,18 @@ static void __init pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
- 	}
- }
- 
--static void __init pcibios_allocate_resources(int pass)
-+static void __init pcibios_allocate_resources(struct pci_bus *bus, int pass)
- {
--	struct pci_dev *dev = NULL;
-+	struct pci_dev *dev;
-+	struct pci_bus *child;
- 
--	for_each_pci_dev(dev)
-+	list_for_each_entry(dev, &bus->devices, bus_list) {
- 		pcibios_allocate_dev_resources(dev, pass);
-+
-+		child = dev->subordinate;
-+		if (child)
-+			pcibios_allocate_resources(child, pass);
-+	}
- }
- 
- static int __init pcibios_assign_resources(void)
-@@ -323,10 +328,17 @@ static int __init pcibios_assign_resources(void)
- 
- void __init pcibios_resource_survey(void)
- {
-+	struct pci_bus *bus;
-+
- 	DBG("PCI: Allocating resources\n");
--	pcibios_allocate_bus_resources(&pci_root_buses);
--	pcibios_allocate_resources(0);
--	pcibios_allocate_resources(1);
-+
-+	list_for_each_entry(bus, &pci_root_buses, node)
-+		pcibios_allocate_bus_resources(bus);
-+
-+	list_for_each_entry(bus, &pci_root_buses, node)
-+		pcibios_allocate_resources(bus, 0);
-+	list_for_each_entry(bus, &pci_root_buses, node)
-+		pcibios_allocate_resources(bus, 1);
- 
- 	e820_reserve_resources_late();
- 	/*
+After that, we could use the survey function for hot add root bus.
+
+based on pci/yinghai-for-pci-root-bus-hotplug
+
+could get from
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-survey-resources
+
+Yinghai Lu (8):
+  PCI, x86: Separate out pcibios_allocate_bridge_resources()
+  PCI, x86: Separate out pcibios_allocate_dev_resources()
+  PCI, x86: Let pcibios_allocate_bus_resources() take bus instead
+  PCI, x86: Separate out rom resource claim
+  PCI, x86: Add pcibios_fw_addr_done
+  PCI, x86: Remove __init for hw/fw allocated functions
+  PCI, x86: Claim FW allocated resources in hot add path.
+  PCI, ACPI: reserve fw allocated resource for hot added root bus
+
+ arch/x86/pci/i386.c     |  185 +++++++++++++++++++++++++++++++----------------
+ drivers/acpi/pci_root.c |    4 +-
+ drivers/pci/bus.c       |    2 +
+ include/linux/pci.h     |    1 +
+ 4 files changed, 127 insertions(+), 65 deletions(-)
+
 -- 
 1.7.7
 
