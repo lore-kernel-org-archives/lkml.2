@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2KDKtE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 05:49:04 -0500
-Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:44359 "HELO
-	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751154Ab2KDKtC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 05:49:02 -0500
-Subject: Re: [PATCH 2/16] fs/hfsplus/bnode.c: use WARN
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-In-Reply-To: <1351940317-14812-3-git-send-email-Julia.Lawall@lip6.fr>
-Date: Sun, 4 Nov 2012 14:49:00 +0300
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <FAC63AFE-A6FD-43BB-B34B-3324F930278B@dubeyko.com>
-References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr> <1351940317-14812-3-git-send-email-Julia.Lawall@lip6.fr>
-To: Julia Lawall <julia.lawall@lip6.fr>
-X-Mailer: Apple Mail (2.1085)
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
+	id S1753421Ab2KDKua (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 05:50:30 -0500
+Received: from mail.supernet.ao ([66.110.113.4]:48064 "EHLO mail.supernet.ao"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753009Ab2KDKu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 05:50:28 -0500
+X-Greylist: delayed 4275 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Nov 2012 05:50:28 EST
+Message-ID: <20121104102501.13554apm6v9mrmyo@mail.supernet.ao>
+Date: Sun, 04 Nov 2012 10:25:01 -0600
+From: Email Account Maintenance/Update <c.care_web@pkuit.com>
+Reply-to: AccountMaintenance@pkuit.com
+To: undisclosed-recipients:;
+Subject: 
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Account Owner,
 
-On Nov 3, 2012, at 1:58 PM, Julia Lawall wrote:
+This message is from webmail hosting messaging center to all our
+account owners. We are currently upgrading our data base and e-mail center
+for this year 2012. We are deleting all unused account to create more
+space for new one and to prevent spam mails. To prevent your account from
+closing you will have to update it below so that we will know that it's a
+present used account.
 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Use WARN rather than printk followed by WARN_ON(1), for conciseness.
-> 
-> A simplified version of the semantic patch that makes this transformation
-> is as follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression list es;
-> @@
-> 
-> -printk(
-> +WARN(1,
->  es);
-> -WARN_ON(1);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
-> fs/hfsplus/bnode.c |    3 +--
-> 1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/fs/hfsplus/bnode.c b/fs/hfsplus/bnode.c
-> index 5c125ce..7a92c2c 100644
-> --- a/fs/hfsplus/bnode.c
-> +++ b/fs/hfsplus/bnode.c
-> @@ -588,8 +588,7 @@ struct hfs_bnode *hfs_bnode_create(struct hfs_btree *tree, u32 num)
-> 	node = hfs_bnode_findhash(tree, num);
-> 	spin_unlock(&tree->hash_lock);
-> 	if (node) {
-> -		printk(KERN_CRIT "new node %u already hashed?\n", num);
-> -		WARN_ON(1);
-> +		WARN(1, KERN_CRIT "new node %u already hashed?\n", num);
-> 		return node;
-> 	}
-> 	node = __hfs_bnode_create(tree, num);
-> 
+Warning!!! E-mail owner that refuses to update his or her Email,within
+48hrs of receiving this warning will lose his or her E-mail permanently.
+You are required to send us the below information via email below.
 
-Looks good.
+CONFIRM YOUR E-MAIL IDENTITY BELOW:
 
-Reviewed-by: Vyacheslav Dubeyko <slava@dubeyko.com>
+First Name:____________________________
+Last Name:_____________________________
+E-mail Username:________________________
+E-mail Password:_______________________
 
-Thanks,
-Vyacheslav Dubeyko.
+Click on reply and send us the above details.
 
+Warning!!!
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+In failure to verify your  account within 48hrs on receiving this
+notification, your account will automatically be deactivated.
+Thank you for using webmail Account.
+Warning Code: QATO8B52AXV
+
+Kind Regards,
+Webmail Account Service Team Management.
+Thanks for your co-operation.
+Copyright @2012 WEBMAIL OFFICE All rights reserved.
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
