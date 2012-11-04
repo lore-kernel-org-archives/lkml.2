@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab2KDH4E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 02:56:04 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:43236 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab2KDHz7 (ORCPT
+	id S1752548Ab2KDIN1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 03:13:27 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:56854 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751929Ab2KDIN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 02:55:59 -0500
-Date: Sun, 4 Nov 2012 08:55:55 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, shemminger@vyatta.com,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 9/9] Avoid 'statement with no effect' compiler warnings
-Message-ID: <20121104075555.GB24262@gmail.com>
-References: <1351980150-24145-1-git-send-email-lee.jones@linaro.org>
- <1351980150-24145-10-git-send-email-lee.jones@linaro.org>
- <20121104.010043.1842614952525101679.davem@davemloft.net>
+	Sun, 4 Nov 2012 03:13:26 -0500
+Message-ID: <509623B0.2020605@metafoo.de>
+Date: Sun, 04 Nov 2012 09:13:36 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121027 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Lee Jones <lee.jones@linaro.org>
+CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [alsa-devel] [PATCH 5/9] ASoC: Only compile adav80x codec when
+ a	bus is defined
+References: <1351980150-24145-1-git-send-email-lee.jones@linaro.org> <1351980150-24145-6-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1351980150-24145-6-git-send-email-lee.jones@linaro.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121104.010043.1842614952525101679.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 04 Nov 2012, David Miller wrote:
-
-> From: Lee Jones <lee.jones@linaro.org>
-> Date: Sat,  3 Nov 2012 23:02:30 +0100
+On 11/03/2012 11:02 PM, Lee Jones wrote:
+> If !CONFIG_SPI and !CONFIG_I2C* then there is no point adding support
+> for the adav80x codec as it relies on a bus to operate. This patch
+> fixes the build warnings below when SPI and I2C are not specified in
+> the configuration.
 > 
-> > Instead of issuing (0) statements when !CONFIG_SYSFS which will cause
-> > 'warning: ', we'll use inline statements instead. This will effectively
-> > do the same thing, but suppress any unnecessary warnings.
-> > 
-> > Cc: Stephen Hemminger <shemminger@vyatta.com>
-> > Cc: bridge@lists.linux-foundation.org
-> > Cc: netdev@vger.kernel.org
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> sound/soc/codecs/adav80x.c:842:22: warning: ‘adav80x_bus_probe’ defined but not used [-Wunused-function]
+> sound/soc/codecs/adav80x.c:863:22: warning: ‘adav80x_bus_remove’ defined but not used [-Wunused-function]
 > 
-> Applied, but please use more informative subject lines.
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: alsa-devel@alsa-project.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  sound/soc/codecs/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> You should prefix your subject line after [PATCH ...] with
-> the name of the subsystem you are touching, a ": " then
-> the headline description.
-> 
-> So here you would have used "bridge: " and that's what I added when I
-> commited this patch.
+> diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+> index b92759a..0d8135a 100644
+> --- a/sound/soc/codecs/Kconfig
+> +++ b/sound/soc/codecs/Kconfig
+> @@ -19,7 +19,7 @@ config SND_SOC_ALL_CODECS
+>  	select SND_SOC_AD1980 if SND_SOC_AC97_BUS
+>  	select SND_SOC_AD73311
+>  	select SND_SOC_ADAU1373 if I2C
+> -	select SND_SOC_ADAV80X
+> +	select SND_SOC_ADAV80X if (I2C || I2C_MODULE || SPI_MASTER)
 
-Yes, of course I should have done, and usually do.
+That should be 'if SND_SOC_I2C_AND_SPI', but otherwise agreed.
 
-This was an oversight, sorry about that.
+>  	select SND_SOC_ADS117X
+>  	select SND_SOC_AK4104 if SPI_MASTER
+>  	select SND_SOC_AK4535 if I2C
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
