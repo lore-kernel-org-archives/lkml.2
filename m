@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800Ab2KDAnt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 20:43:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52764 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711Ab2KDAnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 20:43:45 -0400
-Date: Sun, 4 Nov 2012 01:43:40 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Johannes Thumshirn <morbidrsa@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        morbidrsa@googlemail.com
-Subject: Re: [PATCH] hid-apple.c: Set APPLE_ISO_KEYBOARD at
- USB_DEVICE_ID_APPLE_GEYSER4_HF_ISO
-In-Reply-To: <1351935811-4911-1-git-send-email-morbidrsa@googlemail.com>
-Message-ID: <alpine.LNX.2.00.1211040143300.24253@pobox.suse.cz>
-References: <1351935811-4911-1-git-send-email-morbidrsa@googlemail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752272Ab2KDAoo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 20:44:44 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:46701 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab2KDAol (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 20:44:41 -0400
+Date: Sun, 4 Nov 2012 09:44:31 +0900
+From: Norbert Preining <preining@logic.at>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: drm i915 hangs on heavy io load
+Message-ID: <20121104004431.GG6196@gamma.logic.tuwien.ac.at>
+References: <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <CAPM=9txr4TzuG-BbL0bXeEK6AzkOK9pH0kh-nP=Njv53sgFZew@mail.gmail.com> <20121024003659.GA30962@gamma.logic.tuwien.ac.at> <b94cdc$72fm1r@fmsmga001.fm.intel.com> <20121028024753.GA4254@gamma.logic.tuwien.ac.at> <eeac1e$4q1mqm@AZSMGA002.ch.intel.com> <A941F80C-7EDB-4FCF-A8DE-4AE5532D2CB5@logic.at> <20121029071715.GA17023@mac.home> <20121030004958.GA6976@gamma.logic.tuwien.ac.at> <CAPM=9tw_0vDcRG25i2ypJEKT+JNqWzkXw2+jg=qj6H5M1hoJXg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9tw_0vDcRG25i2ypJEKT+JNqWzkXw2+jg=qj6H5M1hoJXg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 3 Nov 2012, Johannes Thumshirn wrote:
+Hi all,
 
-> Set APPLE_ISO_KEYBOARD flag on USB_DEVICE_ID_APPLE_GEYSER4_HF_ISO so we get
-> the ISO translation on German keyboards for the MacBook4,1 as well.
-> 
-> Signed-off-by: Johannes Thumshirn <morbidrsa@googlemail.com>
-> ---
->  drivers/hid/hid-apple.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
-> index 06ebdbb..5df5e20 100644
-> --- a/drivers/hid/hid-apple.c
-> +++ b/drivers/hid/hid-apple.c
-> @@ -439,7 +439,8 @@ static const struct hid_device_id apple_devices[] = {
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER4_HF_ANSI),
->  		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER4_HF_ISO),
-> -		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
-> +		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN |
-> +			APPLE_ISO_KEYBOARD },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER4_HF_JIS),
->  		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN |
->  			APPLE_RDESC_JIS },
+On Di, 30 Okt 2012, Dave Airlie wrote:
+> I would suggest starting a bisect on drivers/gpu/drm/i915 from 3.6
+> final to 3.7-rc1 or maybe -rc2.
 
-Applied, thanks Johannes.
+Sorry for my ignorance ... I did on master branch
+	$ git checkout v3.7-rc1
+	...
+	$ git bisect start drivers/gpu/drm/i915
+	$ git bisect bad
+	$ git bisect good v3.6
+	Bisecting: 121 revisions left to test after this (roughly 7 steps)
+	[25c5b2665fe4cc5a93edd29b62e7c05c15dddd26] drm/i915: implement new set_mode code flow
+	$
+after that I am back somewhere around
+	3.6.0-rc2
+???
 
--- 
-Jiri Kosina
-SUSE Labs
+Am I doing something wrong? I thought I am bisecting between 3.6 and 3.7.-rc2?
+How can I go back to 3.6.0-rc2?
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+SCREEB (n.)
+To make the noise of a nylon anorak rubbing against a pair of corduroy
+trousers.
+			--- Douglas Adams, The Meaning of Liff
