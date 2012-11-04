@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab2KDSOM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 13:14:12 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:37734 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751650Ab2KDSOG (ORCPT
+	id S1752952Ab2KDSQU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 13:16:20 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:62014 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877Ab2KDSQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 13:14:06 -0500
-Message-ID: <1352052841.14888.190.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH] x86: remove dummy long from EFI stub
-From: Matt Fleming <matt@console-pimps.org>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Jordan Justen <jordan.l.justen@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Sun, 04 Nov 2012 18:14:01 +0000
-In-Reply-To: <1351377255-21092-2-git-send-email-cesarb@cesarb.net>
-References: <1351377255-21092-2-git-send-email-cesarb@cesarb.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 4 Nov 2012 13:16:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121102000902.GA21574@dev.danweeks.net>
+References: <20121102000902.GA21574@dev.danweeks.net>
+Date: Sun, 4 Nov 2012 19:16:17 +0100
+Message-ID: <CACRpkda932GWz=kyKOv8940jDCHu3Qu0ALvD9cCi++s5VWOWUA@mail.gmail.com>
+Subject: Re: [PATCH] gpio-mcp23s08: Build I2C support even when CONFIG_I2C=m
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Daniel M. Weeks" <dan@danweeks.net>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-10-27 at 20:34 -0200, Cesar Eduardo Barros wrote:
-> Commit 2e064b1 (x86, efi: Fix issue of overlapping .reloc section for
-> EFI_STUB) removed a dummy reloc added by commit 291f363 (x86, efi: EFI
-> boot stub support), but forgot to remove the dummy long used by that
-> reloc.
-> 
-> Cc: Jordan Justen <jordan.l.justen@intel.com>
-> Cc: Matt Fleming <matt.fleming@intel.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-> ---
->  arch/x86/boot/header.S | 3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
-> index 2a01744..8c132a6 100644
-> --- a/arch/x86/boot/header.S
-> +++ b/arch/x86/boot/header.S
-> @@ -476,6 +476,3 @@ die:
->  setup_corrupt:
->  	.byte	7
->  	.string	"No setup signature found...\n"
-> -
-> -	.data
-> -dummy:	.long	0
+On Fri, Nov 2, 2012 at 1:09 AM, Daniel M. Weeks <dan@danweeks.net> wrote:
 
-This change seems fine to me. Jordan, would you mind ACKing this if
-you're OK with it?
+> The driver has both SPI and I2C pieces. The appropriate pieces are built based
+> on whether SPI and/or I2C is/are enabled. However, it was only checking if I2C
+> was built-in, never if it was built as a module. This patch checks for either
+> since building both this driver and I2C as modules is possible.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Good catch!
 
+> -#ifdef CONFIG_I2C
+> +#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+
+But don't do it like this, there are already helpers for exactly this.
+
+Do:
+
+#if IS_ENABLED(CONFIG_I2C)
+
+Read include/linux/kconfig.h if in doubt...
+
+Looking forward to v2!
+
+Yours,
+Linus Walleij
