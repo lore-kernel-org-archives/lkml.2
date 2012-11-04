@@ -1,46 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555Ab2KDJQs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 04:16:48 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:60774 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab2KDJQj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 04:16:39 -0500
-Message-ID: <1352020617.10072.0.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] wireless: iwlwifi - add dma_mapping_error() checks to
- avoid warnings
-From: Johannes Berg <johannes@sipsolutions.net>
-To: shuah.khan@hp.com
-Cc: johannes.berg@intel.com, wey-yi.w.guy@intel.com, linville@tuxdriver.com,
-        ilw@linux.intel.com, emmanuel.grumbach@intel.com,
-        donald.h.fry@intel.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Sun, 04 Nov 2012 10:16:57 +0100
-In-Reply-To: <1351993233.4369.2.camel@lorien2> (sfid-20121104_024119_271188_5372C13E)
-References: <1351993233.4369.2.camel@lorien2>
-	 (sfid-20121104_024119_271188_5372C13E)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.1-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751727Ab2KDJUe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 04:20:34 -0500
+Received: from smtp.getmail.no ([84.208.15.66]:49203 "EHLO smtp.getmail.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750715Ab2KDJUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 04:20:31 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+In-reply-to: <op.wm75y11n6426ze@localhost.localdomain>
+References: <op.wly58nr56426ze@localhost.localdomain>
+ <1349923594.6989.19.camel@marge.simpson.net>
+ <op.wm75y11n6426ze@localhost.localdomain>
+Subject: Re: Scheduler queues for less os-jitter?
+To: linux-kernel@vger.kernel.org, efault@gmx.de
+Date: Sun, 04 Nov 2012 10:20:29 +0100
+From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
+Message-id: <op.wm8r8fjw6426ze@localhost.localdomain>
+User-Agent: Opera Mail/12.02 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-11-03 at 19:40 -0600, Shuah Khan wrote:
-> Add missing dma_mapping_error() checks to validate dma addresses returned by
-> dma_map_page() calls to avoid the following warning:
-> 
-> [   28.475686] WARNING: at lib/dma-debug.c:933 check_unmap+0x459/0x8a0()
-> [   28.475688] Hardware name: HP EliteBook 6930p
-> [   28.475690] iwlwifi 0000:03:00.0: DMA-API: device driver failed to check map error[device address=0x00000000ffffa000] [size=8192 bytes] [mapped as page]
-> [   28.475691] Modules linked in: arc4 bnep rfcomm iwldvm mac80211 snd_hda_codec_analog radeon snd_hda_intel snd_hda_codec coretemp kvm_intel snd_hwdep snd_pcm iwlwifi kvm btusb bluetooth snd_seq_midi snd_rawmidi ttm cfg80211 snd_seq_midi_event drm_kms_helper pata_pcmcia drm snd_seq binfmt_misc pcmcia snd_timer snd_seq_device tpm_infineon snd dm_multipath yenta_socket joydev pcmcia_rsrc pcmcia_core hp_wmi psmouse hp_accel microcode soundcore i2c_algo_bit sparse_keymap wmi ppdev lpc_ich lis3lv02d snd_page_alloc video tpm_tis serio_raw parport_pc input_polldev mac_hid lp parport firewire_ohci firewire_core crc_itu_t sdhci_pci sdhci e1000e
+Ok, anyway realtime processes did not work quite as expected.  
+("overloaded" machine, even though cpu-time is only 10%). So I guess I  
+have to enable cgroups and live with the overhead then.
 
-Thanks for the report. Since I think doing BUG_ON() in such a scenario
-is a really bad idea, I've applied a different patch with your
-Reported-by.
+If I set cpu-limits there, does that involve an absolute value, or is it  
+normalized, so that even if I do 0.001% cpu for processes, they get all  
+cpu, when there is nothing running?
 
-johannes
-
+Peace Be With You.
