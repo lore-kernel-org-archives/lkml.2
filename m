@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751733Ab2KDRrT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 12:47:19 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:45180 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755Ab2KDRrP (ORCPT
+	id S1752447Ab2KDRr3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 12:47:29 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:55769 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab2KDRrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 12:47:15 -0500
+	Sun, 4 Nov 2012 12:47:24 -0500
+Date: Sun, 4 Nov 2012 09:47:13 -0800
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Corentin Chary <corentincj@iksaif.net>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        Alessandro Crismani <alessandro.crismani@gmail.com>,
+        Mikhail Bakhterev <mike.bakhterev@gmail.com>,
+        Patrick H <kernel@feystorm.net>, Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] samsung-laptop: Disable if CONFIG_EFI=y
+Message-ID: <20121104174713.GA28414@elie.Belkin>
+References: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-In-Reply-To: <1351666855-23854-2-git-send-email-yuanhan.liu@linux.intel.com>
-References: <1351666855-23854-1-git-send-email-yuanhan.liu@linux.intel.com>
-	<1351666855-23854-2-git-send-email-yuanhan.liu@linux.intel.com>
-Date: Sun, 4 Nov 2012 18:47:12 +0100
-Message-ID: <CACRpkdapHWJAMFn0hUQF52RjBz38MZzD3GS+5+pLfhsKJ+p_GQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gpio: do not call __gpio_xxx under !CONFIG_GPIOLIB
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 8:00 AM, Yuanhan Liu
-<yuanhan.liu@linux.intel.com> wrote:
+Matt Fleming wrote:
 
-> Those functions are availabe only when CONFIG_GPIOLIB is set. So, we
-> should not call them under !CONFIG_GPIOLIB block.
->
-> This would fix following build errros:
-> include/asm-generic/gpio.h: In function 'gpio_get_value_cansleep':
-> include/asm-generic/gpio.h:220:2: error: implicit declaration of function '__gpio_get_value'
-> include/asm-generic/gpio.h: In function 'gpio_set_value_cansleep':
-> nclude/asm-generic/gpio.h:226:2: error: implicit declaration of function '__gpio_set_value'
+> --- a/drivers/platform/x86/Kconfig
+> +++ b/drivers/platform/x86/Kconfig
+> @@ -717,7 +717,7 @@ config XO15_EBOOK
+> 
+>  config SAMSUNG_LAPTOP
+>  	tristate "Samsung Laptop driver"
+> -	depends on X86
+> +	depends on X86 && !EFI
 
-OK...
+That means distros would just not get the samsung-laptop driver.
+Is there a runtime check that could be used instead?
 
->  static inline int gpio_get_value_cansleep(unsigned gpio)
->  {
-> -       might_sleep();
-
-So why are you deleting this very useful might_sleep() runtime
-semantic check?
-
-> -       return __gpio_get_value(gpio);
-> +       WARN_ON(1);
-> +       return 0;
->  }
->
->  static inline void gpio_set_value_cansleep(unsigned gpio, int value)
->  {
-> -       might_sleep();
-> -       __gpio_set_value(gpio, value);
-> +       WARN_ON(1);
->  }
-
-Yours,
-Linus Walleij
+Thanks,
+Jonathan
