@@ -1,100 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab2KDBkl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Nov 2012 21:40:41 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:43844 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab2KDBkh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Nov 2012 21:40:37 -0400
-Message-ID: <1351993233.4369.2.camel@lorien2>
-Subject: [PATCH] wireless: iwlwifi - add dma_mapping_error() checks to avoid
- warnings
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: johannes.berg@intel.com, wey-yi.w.guy@intel.com, linville@tuxdriver.com,
-        ilw@linux.intel.com, emmanuel.grumbach@intel.com,
-        donald.h.fry@intel.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Date: Sat, 03 Nov 2012 19:40:33 -0600
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752898Ab2KDCPp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Nov 2012 22:15:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9855 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751024Ab2KDCPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Nov 2012 22:15:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,707,1344236400"; 
+   d="scan'208";a="236866742"
+Date: Sun, 4 Nov 2012 10:15:39 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Yoshinori Sato <ysato@users.sourceforge.jp>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] h8300: add missing L1_CACHE_SHIFT
+Message-ID: <20121104021539.GA12616@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing dma_mapping_error() checks to validate dma addresses returned by
-dma_map_page() calls to avoid the following warning:
+To fix build error
 
-[   28.475686] WARNING: at lib/dma-debug.c:933 check_unmap+0x459/0x8a0()
-[   28.475688] Hardware name: HP EliteBook 6930p
-[   28.475690] iwlwifi 0000:03:00.0: DMA-API: device driver failed to check map error[device address=0x00000000ffffa000] [size=8192 bytes] [mapped as page]
-[   28.475691] Modules linked in: arc4 bnep rfcomm iwldvm mac80211 snd_hda_codec_analog radeon snd_hda_intel snd_hda_codec coretemp kvm_intel snd_hwdep snd_pcm iwlwifi kvm btusb bluetooth snd_seq_midi snd_rawmidi ttm cfg80211 snd_seq_midi_event drm_kms_helper pata_pcmcia drm snd_seq binfmt_misc pcmcia snd_timer snd_seq_device tpm_infineon snd dm_multipath yenta_socket joydev pcmcia_rsrc pcmcia_core hp_wmi psmouse hp_accel microcode soundcore i2c_algo_bit sparse_keymap wmi ppdev lpc_ich lis3lv02d snd_page_alloc video tpm_tis serio_raw parport_pc input_polldev mac_hid lp parport firewire_ohci firewire_core crc_itu_t sdhci_pci sdhci e1000e
-[   28.475727] Pid: 0, comm: swapper/1 Not tainted 3.7.0-rc2-next-20121026+ #2
-[   28.475728] Call Trace:
-[   28.475729]  <IRQ>  [<ffffffff8105832f>] warn_slowpath_common+0x7f/0xc0
-[   28.475736]  [<ffffffff81058426>] warn_slowpath_fmt+0x46/0x50
-[   28.475738]  [<ffffffff81347599>] check_unmap+0x459/0x8a0
-[   28.475741]  [<ffffffff81347b7c>] debug_dma_unmap_page+0x5c/0x60
-[   28.475751]  [<ffffffffa041e2dd>] iwl_irq_tasklet+0x4dd/0x1040 [iwlwifi]
-[   28.475755]  [<ffffffffa041d50a>] ? iwl_read32+0x2a/0xa0 [iwlwifi]
-[   28.475759]  [<ffffffff81410131>] ? add_interrupt_randomness+0x41/0x190
-[   28.475763]  [<ffffffff813b6e53>] ? arch_local_irq_enable+0x8/0xd
-[   28.475766]  [<ffffffff81060f54>] tasklet_action+0x64/0xe0
-[   28.475768]  [<ffffffff81060a90>] __do_softirq+0xc0/0x240
-[   28.475772]  [<ffffffff816950ae>] ? _raw_spin_lock+0xe/0x20
-[   28.475774]  [<ffffffff8169ed1c>] call_softirq+0x1c/0x30
-[   28.475778]  [<ffffffff810162e5>] do_softirq+0x65/0xa0
-[   28.475780]  [<ffffffff81060d6e>] irq_exit+0x8e/0xb0
-[   28.475782]  [<ffffffff8169f5a3>] do_IRQ+0x63/0xe0
-[   28.475785]  [<ffffffff816956ad>] common_interrupt+0x6d/0x6d
-[   28.475786]  <EOI>  [<ffffffff813b6e53>] ? arch_local_irq_enable+0x8/0xd
-[   28.475790]  [<ffffffff813b79e9>] acpi_idle_enter_c1+0x94/0xb9
-[   28.475793]  [<ffffffff815404f9>] cpuidle_enter+0x19/0x20
-[   28.475795]  [<ffffffff81540b8c>] cpuidle_idle_call+0xac/0x2b0
-[   28.475798]  [<ffffffff8101d56f>] cpu_idle+0xcf/0x120
-[   28.475801]  [<ffffffff8168050e>] start_secondary+0x1ec/0x1f3
-[   28.475802] ---[ end trace 4c30cc65c19b6dc1 ]---
-[   28.475803] Mapped at:
-[   28.475804]  [<ffffffff813465f9>] debug_dma_map_page+0xb9/0x160
-[   28.475806]  [<ffffffffa041d704>] iwl_rx_allocate+0x94/0x2b0 [iwlwifi]
-[   28.475811]  [<ffffffffa041ddad>] iwl_rx_replenish+0x2d/0x60 [iwlwifi]
-[   28.475815]  [<ffffffffa0424c1b>] iwl_trans_pcie_start_fw+0x1fb/0x1450 [iwlwifi]
-[   28.475819]  [<ffffffffa05ba57e>] iwl_load_ucode_wait_alive+0xbe/0x540 [iwldvm]
+lib/atomic64.c: In function 'lock_addr':
+lib/atomic64.c:40:11: error: 'L1_CACHE_SHIFT' undeclared (first use in this function)
+lib/atomic64.c:40:11: note: each undeclared identifier is reported only once for each function it appears in
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 ---
- drivers/net/wireless/iwlwifi/pcie/rx.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/h8300/include/asm/cache.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/pcie/rx.c b/drivers/net/wireless/iwlwifi/pcie/rx.c
-index 137af4c..3731442 100644
---- a/drivers/net/wireless/iwlwifi/pcie/rx.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/rx.c
-@@ -321,6 +321,8 @@ static void iwl_rx_allocate(struct iwl_trans *trans, gfp_t priority)
- 			dma_map_page(trans->dev, page, 0,
- 				     PAGE_SIZE << trans_pcie->rx_page_order,
- 				     DMA_FROM_DEVICE);
-+		if (dma_mapping_error(trans->dev, rxb->page_dma))
-+			BUG();
- 		/* dma address must be no more than 36 bits */
- 		BUG_ON(rxb->page_dma & ~DMA_BIT_MASK(36));
- 		/* and also 256 byte aligned! */
-@@ -489,6 +491,8 @@ static void iwl_rx_handle_rxbuf(struct iwl_trans *trans,
- 			dma_map_page(trans->dev, rxb->page, 0,
- 				     PAGE_SIZE << trans_pcie->rx_page_order,
- 				     DMA_FROM_DEVICE);
-+		if (dma_mapping_error(trans->dev, rxb->page_dma))
-+			BUG();
- 		list_add_tail(&rxb->list, &rxq->rx_free);
- 		rxq->free_count++;
- 	} else
--- 
-1.7.9.5
-
-
-
+--- linux-next.orig/arch/h8300/include/asm/cache.h	2012-11-04 09:52:43.852745306 +0800
++++ linux-next/arch/h8300/include/asm/cache.h	2012-11-04 09:53:09.652745920 +0800
+@@ -2,7 +2,8 @@
+ #define __ARCH_H8300_CACHE_H
+ 
+ /* bytes per L1 cache line */
+-#define        L1_CACHE_BYTES  4
++#define        L1_CACHE_SHIFT  2
++#define        L1_CACHE_BYTES  (1 << L1_CACHE_SHIFT)
+ 
+ /* m68k-elf-gcc  2.95.2 doesn't like these */
+ 
