@@ -1,12 +1,11 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1752332Ab2KDDUR (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Sat, 3 Nov 2012 23:20:17 -0400
-Received: from danae.med.uoc.gr ([147.52.72.200]:52090 "EHLO danae.med.uoc.gr"
+        id S1751101Ab2KDFib (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Sun, 4 Nov 2012 01:38:31 -0400
+Received: from danae.med.uoc.gr ([147.52.72.200]:40334 "EHLO danae.med.uoc.gr"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751562Ab2KDDUN convert rfc822-to-8bit (ORCPT
+        id S1750747Ab2KDFia convert rfc822-to-8bit (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Sat, 3 Nov 2012 23:20:13 -0400
-X-Greylist: delayed 10288 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Nov 2012 23:20:13 EDT
+        Sun, 4 Nov 2012 01:38:30 -0400
 Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
@@ -14,11 +13,11 @@ Content-Description: Mail message body
 Subject: {Spam?} web mail active account problem service upgrade against spam and virus
 To: Recipients <info@iprghana.com>
 From: "Webmail System Administrator" <info@iprghana.com>
-Date: Sun, 04 Nov 2012 01:20:53 +0100
+Date: Sun, 04 Nov 2012 02:06:06 +0100
 Reply-To: info@iprghana.com
-Message-Id: <20121104002053.8E773140184@danae.med.uoc.gr>
+Message-Id: <20121104010638.3A9D5140CFE@danae.med.uoc.gr>
 X-UOC-Medicine-Dep-MailScanner-Information: Please contact the ISP for more information
-X-UOC-Medicine-Dep-MailScanner-ID: 8E773140184.A74F4
+X-UOC-Medicine-Dep-MailScanner-ID: 3A9D5140CFE.A701A
 X-UOC-Medicine-Dep-MailScanner: Found to be clean
 X-UOC-Medicine-Dep-MailScanner-SpamCheck: spam, spamhaus-ZEN, spamcop.net,
         SBL+XBL, CBL, spamhaus-XBL
