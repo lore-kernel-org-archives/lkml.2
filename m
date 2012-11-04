@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab2KDNH3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 08:07:29 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:49603 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752059Ab2KDNH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 08:07:28 -0500
-Message-ID: <50966861.4040500@ti.com>
-Date: Sun, 4 Nov 2012 18:36:41 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1753834Ab2KDNUF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 08:20:05 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59777 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab2KDNUC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 08:20:02 -0500
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
-        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
-        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
-        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
-Subject: Re: [PATCH v3 10/11] ARM: davinci - migrate to common clock
-References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-11-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1351181518-11882-11-git-send-email-m-karicheri2@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1348553352-14334-2-git-send-email-dhobsong@igel.co.jp>
+References: <1348553352-14334-1-git-send-email-dhobsong@igel.co.jp>
+	<1348553352-14334-2-git-send-email-dhobsong@igel.co.jp>
+Date: Sun, 4 Nov 2012 14:20:00 +0100
+X-Google-Sender-Auth: 1_pVaqjf_UwAKCd5umZS9tUl3IM
+Message-ID: <CAMuHMdWKByLXR-2wkiej=F1WPf7xePf3nMkUqwSf_hEJNNZbvg@mail.gmail.com>
+Subject: Re: [v2 PATCH 1/2] Add new uio device for dynamic memory allocation
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Cc: hjk@hansjkoch.de, gregkh@linuxfoundation.org, magnus.damm@gmail.com,
+        horms@verge.net.au, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org, hdk@igel.co.jp,
+        Linux-Next <linux-next@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2012 9:41 PM, Murali Karicheri wrote:
-> Currently migrate only DM644x as this is being reviewed. Once all
-> platforms are migrated, the Makefile will be cleaned up to remove
-> obsoleted files clock.o and psc.o
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> ---
->  arch/arm/Kconfig               |    1 +
->  arch/arm/mach-davinci/Kconfig  |    2 ++
->  arch/arm/mach-davinci/Makefile |   11 ++++++++++-
->  3 files changed, 13 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index c5f9ae5..4611987 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -967,6 +967,7 @@ config ARCH_DAVINCI
->  	select ARCH_REQUIRE_GPIOLIB
->  	select ZONE_DMA
->  	select HAVE_IDE
-> +	select COMMON_CLK
->  	select CLKDEV_LOOKUP
->  	select GENERIC_ALLOCATOR
->  	select GENERIC_IRQ_CHIP
+On Tue, Sep 25, 2012 at 8:09 AM, Damian Hobson-Garcia
+<dhobsong@igel.co.jp> wrote:
+> are holding the device file open, the address returned to userspace is
+> DMA_ERROR_CODE.
 
-This list has to be sorted. Russell has a patch which fixed this all
-across arch/arm/* which got merged for v3.7. This patch does not apply
-to v3.7-rc3 anymore due to the same reason.
+Only a small subset of the architectures
+(arm/ia64/microblaze/openrisc/powerpc/sparc/x86)
+seem to define DMA_ERROR_CODE, causing everywhere else:
 
-Thanks,
-Sekhar
+drivers/uio/uio_dmem_genirq.c: In function ‘uio_dmem_genirq_release’:
+drivers/uio/uio_dmem_genirq.c:95: error: ‘DMA_ERROR_CODE’ undeclared
+(first use in this function)
+drivers/uio/uio_dmem_genirq.c:95: error: (Each undeclared identifier
+is reported only once
+drivers/uio/uio_dmem_genirq.c:95: error: for each function it appears in.)
+drivers/uio/uio_dmem_genirq.c: In function ‘uio_dmem_genirq_probe’:
+drivers/uio/uio_dmem_genirq.c:238: error: ‘DMA_ERROR_CODE’ undeclared
+(first use in this function)
+make[1]: *** [drivers/uio/uio_dmem_genirq.o] Error 1
+make: *** [drivers/uio/] Error 2
+
+(e.g. http://kisskb.ellerman.id.au/kisskb/buildresult/7462173/)
+
+Furthermore, none of them define it in <uapi/...>, so DMA_ERROR_CODE is not
+part of the userspace API (yet), while it is architecture-specific (some use 0,
+others ~0).
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
