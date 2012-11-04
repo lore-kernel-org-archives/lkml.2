@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab2KDKbU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 05:31:20 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:51251 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab2KDKbR (ORCPT
+	id S1753280Ab2KDKio (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 05:38:44 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45892 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891Ab2KDKim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 05:31:17 -0500
-Date: Sun, 4 Nov 2012 11:31:13 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [alsa-devel] [PATCH 5/9] ASoC: Only compile adav80x codec when a
-	bus is defined
-Message-ID: <20121104103113.GB27124@gmail.com>
-References: <1351980150-24145-1-git-send-email-lee.jones@linaro.org>
- <1351980150-24145-6-git-send-email-lee.jones@linaro.org>
- <509623B0.2020605@metafoo.de>
+	Sun, 4 Nov 2012 05:38:42 -0500
+Message-ID: <509645A5.5070901@gmail.com>
+Date: Sun, 04 Nov 2012 18:38:29 +0800
+From: Shan Wei <shanwei88@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <509623B0.2020605@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: paulmck@linux.vnet.ibm.com
+CC: Christoph Lameter <cl@linux.com>, dipankar@in.ibm.com,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 6/9] rcu: use __this_cpu_read helper instead of per_cpu_ptr(p,
+ raw_smp_processor_id())
+References: <5093EE6B.3070906@gmail.com> <20121102181026.GY3027@linux.vnet.ibm.com> <0000013ac2c6e1f0-c10ec42d-70bb-4e24-99d6-8e70653eca83-000000@email.amazonses.com> <20121103091909.GI3027@linux.vnet.ibm.com>
+In-Reply-To: <20121103091909.GI3027@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for reviewing Lars. Here's the result:
+Paul E. McKenney said, at 2012/11/3 17:19:
+> OK, I do understand why it happens to work.  My question is instead why
+> it is considered a good idea.  
 
-commit c4f60d00d04abfb730a54a97204873dafc6473ae
-Author: Lee Jones <lee.jones@linaro.org>
-Date:   Sat Nov 3 22:54:23 2012 +0100
+Maybe objdump gives the answer.
+ __this_cpu_read which read member pointer of per-cpu variable
+can reduce two instructions on x86-64 arch.
 
-    ASoC: Only compile adav80x codec when a bus is defined
-    
-    If !CONFIG_SPI and !CONFIG_I2C* then there is no point adding support
-    for the adav80x codec as it relies on a bus to operate. This patch
-    fixes the build warnings below when SPI and I2C are not specified in
-    the configuration.
-    
-    sound/soc/codecs/adav80x.c:842:22: warning: ‘adav80x_bus_probe’ defined but not used [-Wunused-function]
-    sound/soc/codecs/adav80x.c:863:22: warning: ‘adav80x_bus_remove’ defined but not used [-Wunused-function]
-    
-    Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-    Cc: alsa-devel@alsa-project.org
-    Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index b92759a..3ae3a4b 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -19,7 +19,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_AD1980 if SND_SOC_AC97_BUS
- 	select SND_SOC_AD73311
- 	select SND_SOC_ADAU1373 if I2C
--	select SND_SOC_ADAV80X
-+	select SND_SOC_ADAV80X if SND_SOC_I2C_AND_SPI
- 	select SND_SOC_ADS117X
- 	select SND_SOC_AK4104 if SPI_MASTER
- 	select SND_SOC_AK4535 if I2C
+*test code:* 
+struct eater_state {
+        u32 state;
+        struct eater __percpu *eater_info;
+};
+
+struct eater {
+        char name[4];
+        u32 age;
+};
+
+static u32 test_func(struct eater_state *tstas)
+{
+        struct eater *aeater;
+
+        //aeater = __this_cpu_ptr(tstas->eater_info);   <-----------------1
+        //return aeater->age;
+        return  __this_cpu_read(tstas->eater_info->age); <-----------------2
+}
+
+static int __init demo_init(void)
+{
+        int ret = 0 ;
+        int age;
+        struct eater_state as;
+        struct eater david;
+
+        as.state = 1;
+        as.eater_info = &david;
+
+        age = test_func(&as);
+
+        return ret;
+}
+
+
+__this_cpu_ptr <-----------------1
+0000000000000000 <init_module>:
+   0:   55                      push   %rbp
+   1:   48 89 e5                mov    %rsp,%rbp
+   4:   48 83 ec 10             sub    $0x10,%rsp
+   8:   48 8d 45 f0             lea    -0x10(%rbp),%rax
+   c:   65 48 03 04 25 00 00 00 00      add    %gs:0x0,%rax
+  15:   31 c0                   xor    %eax,%eax
+  17:   c9                      leaveq 
+  18:   c3                      retq   
+
+
+ __this_cpu_read<-----------------2
+0000000000000000 <init_module>:
+   0:   55                      push   %rbp
+   1:   31 c0                   xor    %eax,%eax
+   3:   48 89 e5                mov    %rsp,%rbp
+   6:   48 83 ec 10             sub    $0x10,%rsp
+   a:   c9                      leaveq 
+   b:   c3                      retq   
+
+
