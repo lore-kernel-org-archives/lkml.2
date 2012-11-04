@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053Ab2KDJjR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 04:39:17 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50255 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750831Ab2KDJjO (ORCPT
+	id S1752201Ab2KDJkT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 04:40:19 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:51492 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120Ab2KDJkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 04:39:14 -0500
-Message-ID: <1352021949.2427.19.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: Drivers: scsi
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, ohering@suse.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Date: Sun, 04 Nov 2012 09:39:09 +0000
-In-Reply-To: <1351960806-16240-1-git-send-email-kys@microsoft.com>
-References: <1351960806-16240-1-git-send-email-kys@microsoft.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 
+	Sun, 4 Nov 2012 04:40:14 -0500
+Date: Sun, 4 Nov 2012 10:17:52 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: David Miller <davem@davemloft.net>
+Cc: hayeswang@realtek.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agnescheng@google.com
+Subject: Re: [PATCH v2 net-next] r8169: enable internal ASPM and clock request settings
+Message-ID: <20121104091752.GA14093@electric-eye.fr.zoreil.com>
+References: <1351780651-1271-1-git-send-email-hayeswang@realtek.com> <1351824388-1225-1-git-send-email-hayeswang@realtek.com> <20121104.010135.1162785749638710718.davem@davemloft.net>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121104.010135.1162785749638710718.davem@davemloft.net>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-11-03 at 09:40 -0700, K. Y. Srinivasan wrote:
-> Do we currently support dynamic re-sizing of LUNs. Hyper-V can
-> notify capacity change via sense data and I was wondering if this
-> is handled in the generic scsi code.
+David Miller <davem@davemloft.net> :
+[...]
+> Francois?
 
-Depends what you mean by "dynamic".  Experience shows that most users
-really don't want all this to happen without manual intervention
-(particularly on shrink).  However, we have the mechanics in place.
-Just send ASC/Q 2A/09 and it can get vectored up to LVM which resizes
-the volume and can be scripted automatically to resize the filesystem.
+Please apply.
 
-hypervisor people tend to have problems with scripting, so there are
-some hacks that do this outside of the normal event system ... see for
-example virtio_scsi.c
+Thanks.
 
-James
-
-
+-- 
+Ueimor
