@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab2KDQcO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 11:32:14 -0500
-Received: from smtp.getmail.no ([84.208.15.66]:40797 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813Ab2KDQcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 11:32:12 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Sun, 04 Nov 2012 17:32:10 +0100
-Subject: re: sched: SCHED_DEADLINE v6
-To: juri.lelli@gmail.com, linux-kernel@vger.kernel.org
-From: Uwaysi Bin Kareem <uwaysi.bin.kareem@paradoxuncreated.com>
-Message-id: <op.wm9b7wnn6426ze@localhost.localdomain>
-User-Agent: Opera Mail/12.02 (Linux)
+	id S1753900Ab2KDQdT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 11:33:19 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49928 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711Ab2KDQdQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 11:33:16 -0500
+Message-ID: <509698C3.5070700@gmail.com>
+Date: Mon, 05 Nov 2012 00:33:07 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, bhelgaas@google.com,
+        lenb@kernel.org, jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/3] ACPI: container hot remove support.
+References: <1351668471-31436-1-git-send-email-tangchen@cn.fujitsu.com> <509106E2.70008@jp.fujitsu.com> <CAE9FiQVrMj2KunOMDvftnu=MG=t=UpKTA4-t_YTYdgVL-rg_7Q@mail.gmail.com>
+In-Reply-To: <CAE9FiQVrMj2KunOMDvftnu=MG=t=UpKTA4-t_YTYdgVL-rg_7Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi. I am trying the Sched_deadline patch.
+On 11/01/2012 12:48 AM, Yinghai Lu wrote:
+> On Wed, Oct 31, 2012 at 4:09 AM, Yasuaki Ishimatsu
+> <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>>> patch 2. Introduce a new function container_device_remove() to handle
+>>>           ACPI_NOTIFY_EJECT_REQUEST event for container.
+>>
+>> If container device contains memory device, the function is
+>> very danger. As you know, we are developing a memory hotplug.
+>> If memory has kernel memory, memory hot remove operations fails.
+>> But container_device_remove() cannot realize it. So even if
+>> the memory hot remove operation fails, container_device_remove()
+>> keeps hot remove operation. Finally, the function sends _EJ0
+>> to firmware. In this case, if the memory is accessed, kernel
+>> panic occurs.
+>> The example is as follows:
+>>
+>>  https://lkml.org/lkml/2012/9/26/318
+> 
+> so what is the overall status memory hot-remove?
+> how are following memory get processed ?
+> 1. memory for kernel text, module
+> 2. page table
+> 3. vmemmap
+> 4. memory for kmalloc, for dma
+Hi Yinghai,
+	I have given a talk about the CPU/memory/PCI host bridge hotplug
+current status and next step plan on China Linux Kernel Developer Conference,
+please refer to
+https://github.com/downloads/jiangliu/linux/ACPI%20Based%20System%20Device%20Dynamic%20Reconfiguration.pdf
+	Thanks!
+	Gerry
 
-I am getting an error compiling:
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-kernel/sched/dl.c: In function ‘dl_runtime_exceeded’:
-kernel/sched/dl.c:551:7: warning: unused variable ‘damount’  
-[-Wunused-variable]
-kernel/sched/dl.c:558:7: warning: unused variable ‘ramount’  
-[-Wunused-variable]
-kernel/sched/dl.c: In function ‘init_sched_dl_class’:
-kernel/sched/dl.c:1521:6: error: ‘GFP_KERNEL’ undeclared (first use in  
-this function)
-kernel/sched/dl.c:1521:6: note: each undeclared identifier is reported  
-only once for each function it appears in
-kernel/sched/dl.c: At top level:
-kernel/sched/dl.c:965:13: warning: ‘start_hrtick_dl’ defined but not used  
-[-Wunused-function]
-make[2]: *** [kernel/sched/dl.o] Error 1
-make[1]: *** [kernel/sched] Error 2
-make: *** [kernel] Error 2
-make: *** Waiting for unfinished jobs....
-
-Peace Be With You.
