@@ -1,125 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab2KDVXO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 16:23:14 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:50375 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020Ab2KDVXK (ORCPT
+	id S1752083Ab2KDVsW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 16:48:22 -0500
+Received: from smtprelay-h31.telenor.se ([213.150.131.4]:55123 "EHLO
+	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927Ab2KDVsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 16:23:10 -0500
+	Sun, 4 Nov 2012 16:48:19 -0500
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuSwAHHillBV5h1yPGdsb2JhbABEhS6FI7dbAgKBBxkBAQEBHxkNJ4IeAQEEAScTHCMFCwgDRhQlChoTiAQKuFsUi20aIIENhBRhA5V6hXuDT4lrgWM
+X-IronPort-AV: E=Sophos;i="4.80,712,1344204000"; 
+   d="scan'208";a="145760800"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sun, 4 Nov 2012 22:53:35 +0100
+To: Alexandra Chin <Alexandra.Chin@tw.synaptics.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Mahesh Srinivasan <msrinivasan@synaptics.com>,
+        Alex Chang <alex.chang@tw.synaptics.com>,
+        Scott Lin <scott.lin@tw.synaptics.com>,
+        Christopher Heiny <Cheiny@synaptics.com>
+Subject: Re: [PATCH v3] staging: ste_rmi4: Convert to Type-B support
+Message-ID: <20121104215335.GA1060@polaris.bitmath.org>
+References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
 MIME-Version: 1.0
-In-Reply-To: <1352080784-30839-2-git-send-email-luming.yu@gmail.com>
-References: <1352080784-30839-1-git-send-email-luming.yu@gmail.com>
-	<1352080784-30839-2-git-send-email-luming.yu@gmail.com>
-Date: Sun, 4 Nov 2012 22:23:09 +0100
-X-Google-Sender-Auth: f2zGTB4DJWOXOtEBphNUo8LlftQ
-Message-ID: <CAONaPpEfbkkE_zd4m8AHo4zfg9-UL_ojS2aQLQquyKDQRYyc6Q@mail.gmail.com>
-Subject: Re: [PATCH 01/13] HW-latency: hardware latency test 0.10
-From: John Kacur <jkacur@redhat.com>
-To: Luming Yu <luming.yu@gmail.com>, Jon Masters <jonathan@jonmasters.org>,
-        Jon Masters <jcm@redhat.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Luming Yu <luming.yu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 2:59 AM, Luming Yu <luming.yu@gmail.com> wrote:
->
-> This patch is the first step to test some basic hardware functions like
-> TSC to help people understand if there is any hardware latency as well
-> as throughput problem exposed on bare metal or left behind by BIOS or
-> interfered by SMI. Currently the patch tests TSC, CPU Frequency and
-> RDRAND which is a new CPU instruction to get random number introduced in
-> new CPU like Intel Ivy Bridge in stop_machine context,which is choosen to
-> make sure testers fully control their system under test to rule out some
-> level of unwanted noise.
->
-> Signed-off-by: Luming Yu <luming.yu@intel.com>
-> ---
->  drivers/misc/Kconfig           |   7 +
->  drivers/misc/Makefile          |   1 +
->  drivers/misc/hw_latency_test.c | 833 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 841 insertions(+)
->  create mode 100644 drivers/misc/hw_latency_test.c
->
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index b151b7c..5ed440b 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -114,6 +114,13 @@ config IBM_ASM
->           for information on the specific driver level and support statement
->           for your IBM server.
->
-> +config HW_LATENCY_TEST
-> +       tristate "Testing module to detect hardware lattency and throughput"
-> +       depends on DEBUG_FS
-> +       depends on RING_BUFFER
-> +       depends on X86
-> +       default m
-> +
->  config PHANTOM
->         tristate "Sensable PHANToM (PCI)"
->         depends on PCI
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 2129377..c195cce 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -49,3 +49,4 @@ obj-y                         += carma/
->  obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
->  obj-$(CONFIG_ALTERA_STAPL)     +=altera-stapl/
->  obj-$(CONFIG_INTEL_MEI)                += mei/
-> +obj-$(CONFIG_HW_LATENCY_TEST)  += hw_latency_test.o
-> diff --git a/drivers/misc/hw_latency_test.c b/drivers/misc/hw_latency_test.c
-> new file mode 100644
-> index 0000000..2aa3a74
-> --- /dev/null
-> +++ b/drivers/misc/hw_latency_test.c
-> @@ -0,0 +1,833 @@
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/ring_buffer.h>
-> +#include <linux/stop_machine.h>
-> +#include <linux/time.h>
-> +#include <linux/hrtimer.h>
-> +#include <linux/kthread.h>
-> +#include <linux/debugfs.h>
-> +#include <linux/seq_file.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/version.h>
-> +#include <linux/delay.h>
-> +#include <linux/slab.h>
-> +#include <linux/random.h>
-> +#include <asm/tlbflush.h>
-> +
-> +#define BUF_SIZE_DEFAULT       262144UL
-> +#define BUF_FLAGS      (RB_FL_OVERWRITE)
-> +#define        U64STR_SIZE     22
-> +#define DEBUGFS_BUF_SIZE       1024
-> +#define DEBUGFS_NAME_SIZE      32
-> +
-> +#define        VERSION         "0.1.0"
-> +#define BANNER         "hardware latency test"
-> +#define DRVNAME                "hw_latency_test"
-> +
-> +#define DEFAULT_SAMPLE_WINDOW  1000000
-> +#define        DEFAULT_SAMPLE_WIDTH    500000
-> +#define        DEFAULT_LAT_THRESHOLD   10
-> +
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Luming Yu <luming.yu@gmail.com>");
-> +MODULE_DESCRIPTION("A simple hardware latency test");
-> +MODULE_VERSION(VERSION);
+Hi Alexandra,
 
+Thanks for making changes.
 
--------->o SNIP
+> This patch converts to MT-B because Synaptics touch devices are
+> capable of tracking identifiable fingers
+> 
+> This patch was tested on pandaboard, except input_mt_sync_frame(),
+> which is a quite new function.
 
-Ok, hopefully this is just an unintentional oversight - but I don't
-see where you are acknowledging that the original author of most of
-this code is Jon Masters. It's fine for you to work on it, but you
-have to somewhere acknowledge where it comes from.
+I am not sure how to interpret this. Is the patch untested, or tested
+on something different from a pandaboard?
 
-Thanks
+> I changed to use sylpheed as my mail client. Please let me know
+> if there is any problem.
+> Greatly appreciate your time.
 
-John
+As mentioned, the commit message of the patch should not contain mail conversation.
+
+>  drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c |  122 ++++++++++++-------------
+>  1 files changed, 57 insertions(+), 65 deletions(-)
+> 
+> diff --git a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+> index 277491a..7876f6b 100644
+> --- a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+> +++ b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
+> @@ -1,7 +1,7 @@
+>  /**
+>   *
+> - * Synaptics Register Mapped Interface (RMI4) I2C Physical Layer Driver.
+> - * Copyright (c) 2007-2010, Synaptics Incorporated
+> + * Synaptics Register Mapped Interface (RMI4) I2C Touchscreen Driver.
+> + * Copyright (c) 2007-2012, Synaptics Incorporated
+>   *
+>   * Author: Js HA <js.ha@stericsson.com> for ST-Ericsson
+>   * Author: Naveen Kumar G <naveen.gaddipati@stericsson.com> for ST-Ericsson
+> @@ -31,6 +31,7 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/module.h>
+> +#include <linux/input/mt.h>
+>  #include "synaptics_i2c_rmi4.h"
+>  
+>  /* TODO: for multiple device support will need a per-device mutex */
+> @@ -63,12 +64,11 @@
+>  #define MASK_4BIT		0x0F
+>  #define MASK_3BIT		0x07
+>  #define MASK_2BIT		0x03
+> -#define TOUCHPAD_CTRL_INTR	0x8
+> +#define TOUCHSCREEN_CTRL_INTR	0x8
+>  #define PDT_START_SCAN_LOCATION (0x00E9)
+>  #define PDT_END_SCAN_LOCATION	(0x000A)
+>  #define PDT_ENTRY_SIZE		(0x0006)
+> -#define RMI4_NUMBER_OF_MAX_FINGERS		(8)
+> -#define SYNAPTICS_RMI4_TOUCHPAD_FUNC_NUM	(0x11)
+> +#define SYNAPTICS_RMI4_TOUCHSCREEN_FUNC_NUM	(0x11)
+>  #define SYNAPTICS_RMI4_DEVICE_CONTROL_FUNC_NUM	(0x01)
+>  
+>  /**
+> @@ -164,6 +164,7 @@ struct synaptics_rmi4_device_info {
+>   * @regulator: pointer to the regulator structure
+>   * @wait: wait queue structure variable
+>   * @touch_stopped: flag to stop the thread function
+> + * @fingers_supported: maximum supported fingers
+>   *
+>   * This structure gives the device data information.
+>   */
+> @@ -184,6 +185,7 @@ struct synaptics_rmi4_data {
+>  	struct regulator	*regulator;
+>  	wait_queue_head_t	wait;
+>  	bool			touch_stopped;
+> +	unsigned char		fingers_supported;
+>  };
+>  
+>  /**
+> @@ -291,34 +293,33 @@ exit:
+>  }
+>  
+>  /**
+> - * synpatics_rmi4_touchpad_report() - reports for the rmi4 touchpad device
+> + * synpatics_rmi4_touchscreen_report() - reports for the rmi4 touchscreen device
+>   * @pdata: pointer to synaptics_rmi4_data structure
+>   * @rfi: pointer to synaptics_rmi4_fn structure
+>   *
+> - * This function calls to reports for the rmi4 touchpad device
+> + * This function calls to reports for the rmi4 touchscreen device
+>   */
+> -static int synpatics_rmi4_touchpad_report(struct synaptics_rmi4_data *pdata,
+> +static int synpatics_rmi4_touchscreen_report(struct synaptics_rmi4_data *pdata,
+>  						struct synaptics_rmi4_fn *rfi)
+>  {
+>  	/* number of touch points - fingers down in this case */
+>  	int	touch_count = 0;
+>  	int	finger;
+> -	int	fingers_supported;
+>  	int	finger_registers;
+>  	int	reg;
+>  	int	finger_shift;
+>  	int	finger_status;
+>  	int	retval;
+> +	int	x, y;
+> +	int	wx, wy;
+>  	unsigned short	data_base_addr;
+>  	unsigned short	data_offset;
+>  	unsigned char	data_reg_blk_size;
+>  	unsigned char	values[2];
+>  	unsigned char	data[DATA_LEN];
+> -	int	x[RMI4_NUMBER_OF_MAX_FINGERS];
+> -	int	y[RMI4_NUMBER_OF_MAX_FINGERS];
+> -	int	wx[RMI4_NUMBER_OF_MAX_FINGERS];
+> -	int	wy[RMI4_NUMBER_OF_MAX_FINGERS];
+> +	unsigned char	fingers_supported = pdata->fingers_supported;
+>  	struct	i2c_client *client = pdata->i2c_client;
+> +	struct	input_dev *input_dev = pdata->input_dev;
+
+The patch is definitely an improvement over the existing code, but I
+would very much recommend a follow-up patch which splits this
+function.
+
+>  
+>  	/* get 2D sensor finger data */
+>  	/*
+> @@ -333,7 +334,6 @@ static int synpatics_rmi4_touchpad_report(struct synaptics_rmi4_data *pdata,
+>  	 *	10 = finger present but data may not be accurate,
+>  	 *	11 = reserved for product use.
+>  	 */
+> -	fingers_supported	= rfi->num_of_data_points;
+>  	finger_registers	= (fingers_supported + 3)/4;
+>  	data_base_addr		= rfi->fn_desc.data_base_addr;
+>  	retval = synaptics_rmi4_i2c_block_read(pdata, data_base_addr, values,
+> @@ -353,12 +353,16 @@ static int synpatics_rmi4_touchpad_report(struct synaptics_rmi4_data *pdata,
+>  		reg = finger/4;
+>  		/* bit shift to get finger's status */
+>  		finger_shift	= (finger % 4) * 2;
+> -		finger_status	= (values[reg] >> finger_shift) & 3;
+> +		finger_status	= (values[reg] >> finger_shift) & MASK_2BIT;
+>  		/*
+>  		 * if finger status indicates a finger is present then
+>  		 * read the finger data and report it
+>  		 */
+> -		if (finger_status == 1 || finger_status == 2) {
+> +		input_mt_slot(input_dev, finger);
+> +		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER,
+> +							finger_status != 0);
+> +
+> +		if (finger_status) {
+>  			/* Read the finger data */
+>  			data_offset = data_base_addr +
+>  					((finger * data_reg_blk_size) +
+> @@ -367,50 +371,33 @@ static int synpatics_rmi4_touchpad_report(struct synaptics_rmi4_data *pdata,
+>  						data_offset, data,
+>  						data_reg_blk_size);
+>  			if (retval != data_reg_blk_size) {
+> -				printk(KERN_ERR "%s:read data failed\n",
+> +				dev_err(&client->dev, "%s:read data failed\n",
+>  								__func__);
+>  				return 0;
+> -			} else {
+> -				x[touch_count]	=
+> -					(data[0] << 4) | (data[2] & MASK_4BIT);
+> -				y[touch_count]	=
+> -					(data[1] << 4) |
+> -					((data[2] >> 4) & MASK_4BIT);
+> -				wy[touch_count]	=
+> -						(data[3] >> 4) & MASK_4BIT;
+> -				wx[touch_count]	=
+> -						(data[3] & MASK_4BIT);
+> -
+> -				if (pdata->board->x_flip)
+> -					x[touch_count] =
+> -						pdata->sensor_max_x -
+> -								x[touch_count];
+> -				if (pdata->board->y_flip)
+> -					y[touch_count] =
+> -						pdata->sensor_max_y -
+> -								y[touch_count];
+>  			}
+> +			x = (data[0] << 4) | (data[2] & MASK_4BIT);
+> +			y = (data[1] << 4) | ((data[2] >> 4) & MASK_4BIT);
+> +			wy = (data[3] >> 4) & MASK_4BIT;
+> +			wx = (data[3] & MASK_4BIT);
+> +
+> +			if (pdata->board->x_flip)
+> +				x = pdata->sensor_max_x - x;
+> +			if (pdata->board->y_flip)
+> +				y = pdata->sensor_max_y - y;
+> +
+> +			input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR,
+> +								max(wx, wy));
+> +			input_report_abs(input_dev, ABS_MT_POSITION_X, x);
+> +			input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
+> +
+>  			/* number of active touch points */
+>  			touch_count++;
+>  		}
+>  	}
+>  
+> -	/* report to input subsystem */
+> -	if (touch_count) {
+> -		for (finger = 0; finger < touch_count; finger++) {
+> -			input_report_abs(pdata->input_dev, ABS_MT_TOUCH_MAJOR,
+> -						max(wx[finger] , wy[finger]));
+> -			input_report_abs(pdata->input_dev, ABS_MT_POSITION_X,
+> -								x[finger]);
+> -			input_report_abs(pdata->input_dev, ABS_MT_POSITION_Y,
+> -								y[finger]);
+> -			input_mt_sync(pdata->input_dev);
+> -		}
+> -	} else
+> -		input_mt_sync(pdata->input_dev);
+> -
+>  	/* sync after groups of events */
+> -	input_sync(pdata->input_dev);
+> +	input_mt_sync_frame(input_dev);
+> +	input_sync(input_dev);
+>  	/* return the number of touch points */
+>  	return touch_count;
+>  }
+> @@ -428,13 +415,13 @@ static int synaptics_rmi4_report_device(struct synaptics_rmi4_data *pdata,
+>  	int touch = 0;
+>  	struct	i2c_client *client = pdata->i2c_client;
+>  	static int num_error_reports;
+> -	if (rfi->fn_number != SYNAPTICS_RMI4_TOUCHPAD_FUNC_NUM) {
+> +	if (rfi->fn_number != SYNAPTICS_RMI4_TOUCHSCREEN_FUNC_NUM) {
+>  		num_error_reports++;
+>  		if (num_error_reports < MAX_ERROR_REPORT)
+>  			dev_err(&client->dev, "%s:report not supported\n",
+>  								__func__);
+>  	} else
+> -		touch = synpatics_rmi4_touchpad_report(pdata, rfi);
+> +		touch = synpatics_rmi4_touchscreen_report(pdata, rfi);
+>  	return touch;
+>  }
+>  /**
+> @@ -510,15 +497,15 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
+>  }
+>  
+>  /**
+> - * synpatics_rmi4_touchpad_detect() - detects the rmi4 touchpad device
+> + * synpatics_rmi4_touchscreen_detect() - detects the rmi4 touchscreen device
+>   * @pdata: pointer to synaptics_rmi4_data structure
+>   * @rfi: pointer to synaptics_rmi4_fn structure
+>   * @fd: pointer to synaptics_rmi4_fn_desc structure
+>   * @interruptcount: count the number of interrupts
+>   *
+> - * This function calls to detects the rmi4 touchpad device
+> + * This function calls to detects the rmi4 touchscreen device
+>   */
+> -static int synpatics_rmi4_touchpad_detect(struct synaptics_rmi4_data *pdata,
+> +static int synpatics_rmi4_touchscreen_detect(struct synaptics_rmi4_data *pdata,
+>  					struct synaptics_rmi4_fn *rfi,
+>  					struct synaptics_rmi4_fn_desc *fd,
+>  					unsigned int interruptcount)
+> @@ -575,6 +562,7 @@ static int synpatics_rmi4_touchpad_detect(struct synaptics_rmi4_data *pdata,
+>  		if ((queries[1] & MASK_3BIT) == 5)
+>  			rfi->num_of_data_points = 10;
+>  	}
+> +	pdata->fingers_supported = rfi->num_of_data_points;
+>  	/* Need to get interrupt info for handling interrupts */
+>  	rfi->index_to_intr_reg = (interruptcount + 7)/8;
+>  	if (rfi->index_to_intr_reg != 0)
+> @@ -655,13 +643,13 @@ static int synpatics_rmi4_touchpad_detect(struct synaptics_rmi4_data *pdata,
+>  }
+>  
+>  /**
+> - * synaptics_rmi4_touchpad_config() - configures the rmi4 touchpad device
+> + * synaptics_rmi4_touchscreen_config() - configures the rmi4 touchscreen device
+>   * @pdata: pointer to synaptics_rmi4_data structure
+>   * @rfi: pointer to synaptics_rmi4_fn structure
+>   *
+> - * This function calls to configures the rmi4 touchpad device
+> + * This function calls to configures the rmi4 touchscreen device
+>   */
+> -int synaptics_rmi4_touchpad_config(struct synaptics_rmi4_data *pdata,
+> +int synaptics_rmi4_touchscreen_config(struct synaptics_rmi4_data *pdata,
+>  						struct synaptics_rmi4_fn *rfi)
+>  {
+>  	/*
+> @@ -751,7 +739,7 @@ static int synaptics_rmi4_i2c_query_device(struct synaptics_rmi4_data *pdata)
+>  				pdata->fn01_data_base_addr =
+>  						rmi_fd.data_base_addr;
+>  				break;
+> -			case SYNAPTICS_RMI4_TOUCHPAD_FUNC_NUM:
+> +			case SYNAPTICS_RMI4_TOUCHSCREEN_FUNC_NUM:
+>  				if (rmi_fd.intr_src_count) {
+>  					rfi = kmalloc(sizeof(*rfi),
+>  								GFP_KERNEL);
+> @@ -761,7 +749,8 @@ static int synaptics_rmi4_i2c_query_device(struct synaptics_rmi4_data *pdata)
+>  								__func__);
+>  							return -ENOMEM;
+>  					}
+> -					retval = synpatics_rmi4_touchpad_detect
+> +					retval =
+> +					synpatics_rmi4_touchscreen_detect
+>  								(pdata,	rfi,
+>  								&rmi_fd,
+>  								intr_count);
+
+Odd line break is a clear sign that something could be broken out into its own function.
+
+> @@ -854,8 +843,9 @@ static int synaptics_rmi4_i2c_query_device(struct synaptics_rmi4_data *pdata)
+>  		list_for_each_entry(rfi, &rmi->support_fn_list, link) {
+>  			if (rfi->num_of_data_sources) {
+>  				if (rfi->fn_number ==
+> -					SYNAPTICS_RMI4_TOUCHPAD_FUNC_NUM) {
+> -					retval = synaptics_rmi4_touchpad_config
+> +					SYNAPTICS_RMI4_TOUCHSCREEN_FUNC_NUM) {
+> +					retval =
+> +					synaptics_rmi4_touchscreen_config
+>  								(pdata, rfi);
+>  					if (retval < 0)
+>  						return retval;
+
+Same here.
+
+> @@ -988,6 +978,8 @@ static int __devinit synaptics_rmi4_probe
+>  					rmi4_data->sensor_max_y, 0, 0);
+>  	input_set_abs_params(rmi4_data->input_dev, ABS_MT_TOUCH_MAJOR, 0,
+>  						MAX_TOUCH_MAJOR, 0, 0);
+> +	input_mt_init_slots(rmi4_data->input_dev,
+> +				rmi4_data->fingers_supported, INPUT_MT_DIRECT);
+>  
+>  	/* Clear interrupts */
+>  	synaptics_rmi4_i2c_block_read(rmi4_data,
+> @@ -1076,7 +1068,7 @@ static int synaptics_rmi4_suspend(struct device *dev)
+>  
+>  	retval = synaptics_rmi4_i2c_byte_write(rmi4_data,
+>  					rmi4_data->fn01_ctrl_base_addr + 1,
+> -					(intr_status & ~TOUCHPAD_CTRL_INTR));
+> +					(intr_status & ~TOUCHSCREEN_CTRL_INTR));
+>  	if (retval < 0)
+>  		return retval;
+>  
+> @@ -1112,7 +1104,7 @@ static int synaptics_rmi4_resume(struct device *dev)
+>  
+>  	retval = synaptics_rmi4_i2c_byte_write(rmi4_data,
+>  					rmi4_data->fn01_ctrl_base_addr + 1,
+> -					(intr_status | TOUCHPAD_CTRL_INTR));
+> +					(intr_status | TOUCHSCREEN_CTRL_INTR));
+>  	if (retval < 0)
+>  		return retval;
+>  
+> -- 
+> 1.7.5.4
+> 
+
+Ok, with a final polish and a proper commit message, this looks like it will work.
+
+Thanks,
+Henrik
