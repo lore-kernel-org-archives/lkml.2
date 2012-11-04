@@ -1,77 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab2KDSEg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 13:04:36 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55515 "EHLO
+	id S1752311Ab2KDSIN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 13:08:13 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48063 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab2KDSEf (ORCPT
+	with ESMTP id S1751373Ab2KDSIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 13:04:35 -0500
+	Sun, 4 Nov 2012 13:08:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <38620644.IyR5R8rjKP@percival>
-References: <38620644.IyR5R8rjKP@percival>
-Date: Sun, 4 Nov 2012 19:04:33 +0100
-Message-ID: <CACRpkdZc3cEGfSKW-b=G31yuw_E-GOXid3jkxZ0tuKYGYRE5Nw@mail.gmail.com>
-Subject: Re: How about a gpio_get(device *, char *) function?
+In-Reply-To: <1351765331-30617-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1351765331-30617-1-git-send-email-thierry.reding@avionic-design.de>
+Date: Sun, 4 Nov 2012 19:08:09 +0100
+Message-ID: <CACRpkday69Os+Yuv8r-_uS2PBqFeAJo8TBSrCOtG9U4gBamzog@mail.gmail.com>
+Subject: Re: [PATCH] gpio: adnp: Depend on OF_GPIO instead of OF
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Alex Courbot <acourbot@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jamie Lentin <jm@lentin.co.uk>,
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 10:04 AM, Alex Courbot <acourbot@nvidia.com> wrote:
+On Thu, Nov 1, 2012 at 11:22 AM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
 
-> Would anyone be opposed to having a gpio_get() function that works similarly
-> to e.g. regulator_get() and clk_get()?
+> The driver accesses the of_node field of struct gpio_chip, which is only
+> available if OF_GPIO is selected. This solves a build issue on SPARC
+> which conflicts with OF_GPIO and therefore does not provide this field.
+>
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-I understand the concept and why you want to do this.
-
-However I think the global GPIO numberspace defeats the
-purpose.
-
-gpio_get() should get an abstract handle just like clk_get() or
-regulator_get(), not a fixed numeral.
-
-That is the only way to really transit away from the global GPIO
-numberspace.
-
-The proper refactoring I can see is to introduce an orthogonal
-mechanism that will return something like a struct gpio_handle *
-when you call gpio_get(), and then use a new set of accessor
-functions to manipulate the GPIO, like gpio_handle_set()/ etc
-for all known GPIO operations.
-
-So defined in a new #ifdef CONFIG_GPIO_HANDLES or so
-in a new <linux/gpio-handles.h> header and like the other
-subsystems handling abstract resources just passing an
-opaque pointer cookie around.
-
-Then when migrating a driver to use this mechanism, only
-include <linux/gpio-handles.h> and make that one driver only
-use the abstract interface and get rid of the global numberspace.
-
-Then we can have drivers that under a transition period will
-support both the global numberspace and this new
-handle-based access pattern.
-
-Then migrate all clients over to <linux/gpio-handle.h> and
-finally kill off the old global numberspace and only use
-handles with that driver.
-
-So a much more thorough refactoring is needed, just doing
-a simple int lookup returning global GPIO numbers will likely
-only make the current mess worse.
-
-This more ambitious refactoring path is going to be a large
-endavour and will likely go through a lot of reviews and
-debate, but something like this is badly needed for the
-GPIO subsystem.
-
-Maybe Grant will have different opinions though so this is
-not the final word on this issue...
+Thanks! Patch applied.
 
 Yours,
 Linus Walleij
