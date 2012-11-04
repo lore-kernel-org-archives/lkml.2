@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751057Ab2KDE2X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 00:28:23 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:33477 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706Ab2KDE2V (ORCPT
+	id S1751357Ab2KDEj5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 00:39:57 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:27162 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706Ab2KDEjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 00:28:21 -0400
-Date: Sun, 4 Nov 2012 04:28:02 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121104042802.GA11295@srcf.ucam.org>
-References: <20121102165456.GB9997@srcf.ucam.org>
- <1351878511.2439.44.camel@dabdike.int.hansenpartnership.com>
- <20121102175416.GA11816@srcf.ucam.org>
- <1351879058.2439.46.camel@dabdike.int.hansenpartnership.com>
- <20121102180458.GA12052@srcf.ucam.org>
- <1351899503.2439.49.camel@dabdike.int.hansenpartnership.com>
- <20121103002244.GC18691@srcf.ucam.org>
- <1351944236.2417.7.camel@dabdike.int.hansenpartnership.com>
- <20121103134630.GA28166@srcf.ucam.org>
- <1351983400.2417.21.camel@dabdike.int.hansenpartnership.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351983400.2417.21.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Sun, 4 Nov 2012 00:39:54 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 8/8] PCI, ACPI: reserve fw allocated resource for hot added root bus
+Date: Sat,  3 Nov 2012 21:39:31 -0700
+Message-Id: <1352003971-22278-9-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1352003971-22278-1-git-send-email-yinghai@kernel.org>
+References: <20121030040237.GA10472@google.com>
+ <1352003971-22278-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 03, 2012 at 10:56:40PM +0000, James Bottomley wrote:
-> On Sat, 2012-11-03 at 13:46 +0000, Matthew Garrett wrote:
-> > I... what? Our signed bootloader will boot our signed kernel without any 
-> > physically present end-user involvement. We therefore need to make it 
-> > as difficult as practically possible for an attacker to use our signed 
-> > bootloader and our signed kernel as an attack vector against other 
-> > operating systems, which includes worrying about hibernate and kexec. If 
-> > people want to support this use case then patches to deal with that need 
-> > to be present in the upstream kernel.
-> 
-> Right, but what I'm telling you is that by deciding to allow automatic
-> first boot, you're causing the windows attack vector problem.  You could
-> easily do a present user test only on first boot which would eliminate
-> it.  Instead, we get all of this.
+FW could already allocate resource in pci bar registers, and we need to
+reserve it before try to allocate another one.
 
-Your definition of "Best practices" is "Automated installs are 
-impossible"? Have you ever actually spoken to a user?
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/acpi/pci_root.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index 012f40d..bc09567 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -644,8 +644,10 @@ static int acpi_pci_root_start(struct acpi_device *device)
+ 	struct acpi_pci_root *root = acpi_driver_data(device);
+ 	struct acpi_pci_driver *driver;
+ 
+-	if (system_state != SYSTEM_BOOTING)
++	if (system_state != SYSTEM_BOOTING) {
++		pcibios_resource_survey_bus(root->bus);
+ 		pci_assign_unassigned_bus_resources(root->bus);
++	}
+ 
+ 	mutex_lock(&acpi_pci_root_lock);
+ 	list_for_each_entry(driver, &acpi_pci_drivers, node)
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.7
+
