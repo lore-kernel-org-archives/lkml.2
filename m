@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389Ab2KENcO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:32:14 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:33577 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754276Ab2KENbf (ORCPT
+	id S1754290Ab2KENcV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:32:21 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:46516 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab2KENcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:31:35 -0500
-From: Thomas Hellstrom <thellstrom@vmware.com>
-To: airlied@gmail.com, airlied@redhat.com
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>
-Subject: [PATCH 2/4] kref: Implement kref_get_unless_zero
-Date: Mon,  5 Nov 2012 14:31:16 +0100
-Message-Id: <1352122278-12896-3-git-send-email-thellstrom@vmware.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1352122278-12896-1-git-send-email-thellstrom@vmware.com>
-References: <1352122278-12896-1-git-send-email-thellstrom@vmware.com>
+	Mon, 5 Nov 2012 08:32:17 -0500
+Subject: [Q][Process Step Wise]
+From: anish kumar <anish198519851985@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Nov 2012 22:32:05 +0900
+Message-ID: <1352122325.4968.18.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is intended to simplify locking around refcounting for
-objects that can be looked up from a lookup structure, and which are
-removed from that lookup structure in the object destructor.
-Operations on such objects require at least a read lock around
-lookup + kref_get, and a write lock around kref_put + remove from lookup
-structure. Furthermore, RCU implementations become extremely tricky.
-With a lookup followed by a kref_get_unless_zero *with return value check*
-locking in the kref_put path can be deferred to the actual removal from
-the lookup structure and RCU lookups become trivial.
+Hello,
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
----
- include/linux/kref.h |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+I have below question and I would really appreciate a _CORRECT_ answer.
 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 65af688..fd16042 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -111,4 +111,25 @@ static inline int kref_put_mutex(struct kref *kref,
- 	}
- 	return 0;
- }
-+
-+/**
-+ * kref_get_unless_zero - Increment refcount for object unless it is zero.
-+ * @kref: object.
-+ *
-+ * Return 0 if the increment succeeded. Otherwise return non-zero.
-+
-+ * This function is intended to simplify locking around refcounting for
-+ * objects that can be looked up from a lookup structure, and which are
-+ * removed from that lookup structure in the object destructor.
-+ * Operations on such objects require at least a read lock around
-+ * lookup + kref_get, and a write lock around kref_put + remove from lookup
-+ * structure. Furthermore, RCU implementations become extremely tricky.
-+ * With a lookup followed by a kref_get_unless_zero *with return value check*
-+ * locking in the kref_put path can be deferred to the actual removal from
-+ * the lookup structure and RCU lookups become trivial.
-+ */
-+static inline int __must_check kref_get_unless_zero(struct kref *kref)
-+{
-+	return !atomic_add_unless(&kref->refcount, 1, 0);
-+}
- #endif /* _KREF_H_ */
--- 
-1.7.4.4
+What are the sequence of steps that happen in CPU, cache, TLB, VM, HDD
+leading to execution of “x = 7” which isn’t present in cache or sysmem
+nor translation in TLB. Also specify if any interrupts, exceptions or
+faults are generated.
+
+I have given a rough idea here. Not very clear about specific interrupts
+at each step.I request to please correct me and provide a precise
+answer.
+
+1) CPU first fetches the instruction x = 7 from the Instruction cache
+(when it reads this address in the PC/IR)
+2) After decoding and executing the instruction, it sees that, it needs
+to access the memory location of variable x (which will be a virtual
+address)
+3) Hence it issues a request to the TLB to return the physical
+address/tag. 
+Assuming the cache is Virtually indexed, it will parallely calculate the
+index for this virtual address.
+4) Since it's a TLB miss, it accesses the Page table which resides
+mostly in Memory.Page table can also reside in Hardware as well in that
+case it will page traversal.
+//Not sure what the interrupt here is?
+5) But since, the translation is not found, meaning the page for this
+address is not in RAM, it issues a DMA request to transfer the page from
+Secondary storage to the RAM. It knows the address of the page on
+Secondary storage through the vm_area struct for this process, which
+maintains the location of all the pages. 
+// This is done in page fault handler. Page fault is raised when this
+even occurs.
+6) Once DMA is complete, the processor is interrupted with this event.
+It then updates the page table with this entry and also the TLB.
+//This would be an I/O interrupt to the processor
+7) Once it gets the tag, it checks if that tag matches in the cache. 
+8) It won't, since cache does not have this entry. 
+9) Hence it fetches this block (cache block) from memory and places into
+the cache and restarts the execution. 
+10) In the MEM phase of the execution pipeline, it writes the value 7 to
+this location in the cache.
+
+As I understand the exact steps which happens in the processor is
+specific to the arch but what I want is the standard way in which linux
+deals with different archs.
+
+As always thanks to Linux and the community.
 
