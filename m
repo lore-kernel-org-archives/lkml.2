@@ -1,136 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab2KEKAy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:00:54 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:26028 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175Ab2KEKAx (ORCPT
+	id S1753907Ab2KEKBD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:01:03 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:46621 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab2KEKBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:00:53 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-58-50978e536f43
+	Mon, 5 Nov 2012 05:01:00 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-e9-50978e5bf221
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: djbw@fb.com, dwmw2@infradead.org, hskinnemoen@gmail.com,
         iws@ovro.caltech.edu, vinod.koul@intel.com, vipin.kumar@st.com,
         t.figa@samsung.com, kyungmin.park@samsung.com,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [PATCH 00/20] DMA: DMA unmap fixes
-Date: Mon, 05 Nov 2012 11:00:11 +0100
-Message-id: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH 02/20] ioat: add missing DMA unmap to ioat_dma_self_test()
+Date: Mon, 05 Nov 2012 11:00:13 +0100
+Message-id: <1352109631-3385-3-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t9jAd3gvukBBnMvKVlc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MjzeesRasVanYO/UmYwPjT8kuRk4OCQETiRWHJ7NB2GISF+6t
-	B7K5OIQEFjFKrP47kwnCWc0k8X3OSlaQKjYBK4mJ7asYQWwRAQWJzb3PWEGKmAWeMUrMuN3N
-	DJIQFtCWuH59BQuIzSKgKvHr91KwOK+Au8SnSc2sEOvkJZ7e72ObwMi9gJFhFaNoakFyQXFS
-	eq6hXnFibnFpXrpecn7uJkawF59J7WBc2WBxiFGAg1GJh3em2PQAIdbEsuLK3EOMEhzMSiK8
-	HAxAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rzNHikBQgLpiSWp2ampBalFMFkmDk6pBkaPTomY
-	OzFNmvuE/R88KqvKbfiw/t7dTfc0HsxxDnrQK1sgG9ufOdN4vv/Uh1ON6r7tmdZ3n5mn9fXX
-	h8Z5z1p2HanQZitoe2pv49y8RSHMyI89YGXmjWQtkXkSsbefbAudxthdw+ww470bt3Jq5pN2
-	O9sarp5gYZbjXrxJC95x/BFNNLvOr8RSnJFoqMVcVJwIAM3AXeneAQAA
+In-reply-to: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIJMWRmVeSWpSXmKPExsVy+t9jAd3ovukBBlv7FCwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGhes3mQoaBSu2XFzP3sA4la+LkZNDQsBEYsHGSewQtpjEhXvr
+	2boYuTiEBBYxSnTumMsCkhASWM0kcfVHFIjNJmAlMbF9FSOILSKgILG59xkrSAOzwDNGiRm3
+	u5lBEsICXhIPp+5n6mLk4GARUJW4PNsIJMwr4C7xpQ2iV0JAXuLp/T42EJtTwEOisWEKK8Qu
+	d4nLnceZJzDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kR7PFn0jsYVzVYHGIU4GBU
+	4uH9JDE9QIg1say4MvcQowQHs5IILwcDUIg3JbGyKrUoP76oNCe1+BCjNAeLkjhvs0dKgJBA
+	emJJanZqakFqEUyWiYNTqoHRIP/K+0sRGxUZvntMXZ/YOeXkPkkWizhX+396fq6P7xq5L5y6
+	7tqbw0t3zW7fd6npOuOhxzv17a8Geq458W6n4+EotQmz+ndNYWv3X/4tZfms3gQ/FaMMe84A
+	0fLSs0p8YWtcn5z71OFm3bzw5bQuV9m2BRenW99dcyz4bpGheEqcC+f2PzdFlFiKMxINtZiL
+	ihMBFuAy8/QBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Make ioat_dma_self_test() do DMA unmapping itself and fix handling
+of failure cases.
 
-Currently DMA subsystem does DMA mapping in the core code and DMA
-unmapping is done by device drivers.  This is counterintuitive,
-causes code duplication and subtle errors (some drivers like PL330
-one don't implement DMA unmapping code).  The following patchset
-modifies DMA subsystem to do DMA unmapping in the core code.
-It results in simpler code, less code duplication (more than 400
-LOC is gone) and fixes the issue with missing DMA unmapping code
-in some drivers.  Additionally many cases when DMA wasn't unmapped
-on a failure are also fixed.
+Cc: Dan Williams <djbw@fb.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/dma/ioat/dma.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-
-patches #1-3 add missing DMA unmap on failure to async_tx core
-code (async_memcpy()), ioat and fsmc_nand drivers
-
-patch #4 fixes DMA flags used by carma-fpga driver
-
-patches #5-7 fix core code and dmatest driver to DMA unmap for
-MEMCPY operations 
-
-patch #8 adds missing DMA unmap on failure to ioat3 driver
-
-patch #9 fixes build for async_memset.c
-
-patch #10 adds missing DMA unmap on failure to async tx core
-code (async_memset())
-
-patches #11-18 fix async_tx core code and dmatest driver to do
-DMA unmap for MEMSET, XOR, XOR_VAL, PQ and PQ_VAL operations
-
-patches #19-20 remove no longer needed DMA unmap code from
-device drivers and DMA unmap flags from code code
-
-
-This patchset was tested on PL330 DMA controller using MEMCPY
-operations.  It would be great if somebody could test it on
-more advanced controller capable of MEMSET, XOR, XOR_VAL,
-PQ and PQ_VAL operations (especially since the conversion of
-XOR and PQ operations was not obvious).
-
-
-Bartlomiej Zolnierkiewicz (20):
-  async_tx: add missing DMA unmap to async_memcpy()
-  ioat: add missing DMA unmap to ioat_dma_self_test()
-  mtd: fsmc_nand: add missing DMA unmap to dma_xfer()
-  carma-fpga: pass correct flags to ->device_prep_dma_memcpy()
-  dmatest: do DMA unmap for MEMCPY operations
-  DMA: do DMA unmap in core for MEMCPY operations
-  async_tx: do DMA unmap in core for MEMCPY operations
-  ioat3: add missing DMA unmap to ioat_xor_val_self_test()
-  async_tx: fix build for async_memset
-  async_tx: add missing DMA unmap to async_memset()
-  async_tx: do DMA unmap in core for MEMSET operations
-  dmatest: do DMA unmap for XOR operations
-  async_tx: do DMA unmap in core for XOR operations
-  async_tx: do DMA unmap in core for XOR_VAL operations
-  dmatest: do DMA unmap for PQ operations
-  async_tx: do DMA unmap in async_raid6_recov.c for PQ operations
-  async_tx: do DMA unmap in core for PQ operations
-  async_tx: do DMA unmap in core for PQ_VAL operations
-  DMA: remove DMA unmap from drivers
-  DMA: remove DMA unmap flags
-
- arch/arm/include/asm/hardware/iop3xx-adma.h |  30 ----
- arch/arm/mach-iop13xx/include/mach/adma.h   |  26 ---
- crypto/async_tx/async_memcpy.c              |  27 ++-
- crypto/async_tx/async_memset.c              |  23 ++-
- crypto/async_tx/async_pq.c                  | 129 +++++++++----
- crypto/async_tx/async_raid6_recov.c         |  42 ++++-
- crypto/async_tx/async_tx.c                  |  25 ++-
- crypto/async_tx/async_xor.c                 |  98 +++++++---
- drivers/ata/pata_arasan_cf.c                |   3 +-
- drivers/dma/amba-pl08x.c                    |  31 ----
- drivers/dma/at_hdmac.c                      |  25 ---
- drivers/dma/dmaengine.c                     |  59 +++++-
- drivers/dma/dmatest.c                       |  14 +-
- drivers/dma/dw_dmac.c                       |  20 ---
- drivers/dma/ep93xx_dma.c                    |  32 +---
- drivers/dma/fsldma.c                        |  16 --
- drivers/dma/ioat/dma.c                      |  28 +--
- drivers/dma/ioat/dma.h                      |  12 --
- drivers/dma/ioat/dma_v2.c                   |   1 -
- drivers/dma/ioat/dma_v3.c                   | 179 +++++-------------
- drivers/dma/iop-adma.c                      |  70 +-------
- drivers/dma/mv_xor.c                        |  45 +----
- drivers/dma/ppc4xx/adma.c                   | 270 ----------------------------
- drivers/dma/timb_dma.c                      |  36 ----
- drivers/dma/txx9dmac.c                      |  24 ---
- drivers/media/platform/m2m-deinterlace.c    |   3 +-
- drivers/media/platform/timblogiw.c          |   2 +-
- drivers/misc/carma/carma-fpga.c             |   3 +-
- drivers/mtd/nand/atmel_nand.c               |   3 +-
- drivers/mtd/nand/fsmc_nand.c                |  20 ++-
- drivers/net/ethernet/micrel/ks8842.c        |   6 +-
- drivers/spi/spi-dw-mid.c                    |   4 +-
- include/linux/async_tx.h                    |   4 +
- include/linux/dmaengine.h                   |  34 ++--
- 34 files changed, 446 insertions(+), 898 deletions(-)
-
+diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
+index 73b2b65..464138a 100644
+--- a/drivers/dma/ioat/dma.c
++++ b/drivers/dma/ioat/dma.c
+@@ -833,14 +833,14 @@ int __devinit ioat_dma_self_test(struct ioatdma_device *device)
+ 
+ 	dma_src = dma_map_single(dev, src, IOAT_TEST_SIZE, DMA_TO_DEVICE);
+ 	dma_dest = dma_map_single(dev, dest, IOAT_TEST_SIZE, DMA_FROM_DEVICE);
+-	flags = DMA_COMPL_SRC_UNMAP_SINGLE | DMA_COMPL_DEST_UNMAP_SINGLE |
++	flags = DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP |
+ 		DMA_PREP_INTERRUPT;
+ 	tx = device->common.device_prep_dma_memcpy(dma_chan, dma_dest, dma_src,
+ 						   IOAT_TEST_SIZE, flags);
+ 	if (!tx) {
+ 		dev_err(dev, "Self-test prep failed, disabling\n");
+ 		err = -ENODEV;
+-		goto free_resources;
++		goto unmap_dma;
+ 	}
+ 
+ 	async_tx_ack(tx);
+@@ -851,7 +851,7 @@ int __devinit ioat_dma_self_test(struct ioatdma_device *device)
+ 	if (cookie < 0) {
+ 		dev_err(dev, "Self-test setup failed, disabling\n");
+ 		err = -ENODEV;
+-		goto free_resources;
++		goto unmap_dma;
+ 	}
+ 	dma->device_issue_pending(dma_chan);
+ 
+@@ -862,7 +862,7 @@ int __devinit ioat_dma_self_test(struct ioatdma_device *device)
+ 					!= DMA_SUCCESS) {
+ 		dev_err(dev, "Self-test copy timed out, disabling\n");
+ 		err = -ENODEV;
+-		goto free_resources;
++		goto unmap_dma;
+ 	}
+ 	if (memcmp(src, dest, IOAT_TEST_SIZE)) {
+ 		dev_err(dev, "Self-test copy failed compare, disabling\n");
+@@ -870,6 +870,9 @@ int __devinit ioat_dma_self_test(struct ioatdma_device *device)
+ 		goto free_resources;
+ 	}
+ 
++unmap_dma:
++	dma_unmap_single(dev, dma_src, IOAT_TEST_SIZE, DMA_TO_DEVICE);
++	dma_unmap_single(dev, dma_dest, IOAT_TEST_SIZE, DMA_FROM_DEVICE);
+ free_resources:
+ 	dma->device_free_chan_resources(dma_chan);
+ out:
 -- 
 1.8.0
 
