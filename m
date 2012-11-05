@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162Ab2KEXV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 18:21:59 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:42908 "EHLO smtp.outflux.net"
+	id S1755140Ab2KEXV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 18:21:58 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:48491 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755118Ab2KEXF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755120Ab2KEXF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Nov 2012 18:05:26 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Neil Brown <neilb@suse.de>
-Subject: [PATCH 058/104] drivers/md: remove depends on CONFIG_EXPERIMENTAL
-Date: Mon,  5 Nov 2012 15:04:15 -0800
-Message-Id: <1352156701-4038-59-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Alexander Graf <agraf@suse.de>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 033/104] arch/powerpc/kvm: remove depends on CONFIG_EXPERIMENTAL
+Date: Mon,  5 Nov 2012 15:03:50 -0800
+Message-Id: <1352156701-4038-34-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352156701-4038-1-git-send-email-keescook@chromium.org>
 References: <1352156701-4038-1-git-send-email-keescook@chromium.org>
@@ -24,85 +27,65 @@ The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-CC: Neil Brown <neilb@suse.de>
+CC: Alexander Graf <agraf@suse.de>
+CC: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/md/Kconfig |   23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
+ arch/powerpc/kvm/Kconfig |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
-index 91a02ee..3631846 100644
---- a/drivers/md/Kconfig
-+++ b/drivers/md/Kconfig
-@@ -158,7 +158,6 @@ config MULTICORE_RAID456
- 	bool "RAID-4/RAID-5/RAID-6 Multicore processing (EXPERIMENTAL)"
- 	depends on MD_RAID456
- 	depends on SMP
--	depends on EXPERIMENTAL
+diff --git a/arch/powerpc/kvm/Kconfig b/arch/powerpc/kvm/Kconfig
+index f4dacb9..2bac5b1 100644
+--- a/arch/powerpc/kvm/Kconfig
++++ b/arch/powerpc/kvm/Kconfig
+@@ -39,7 +39,7 @@ config KVM_BOOK3S_PR
+ 
+ config KVM_BOOK3S_32
+ 	tristate "KVM support for PowerPC book3s_32 processors"
+-	depends on EXPERIMENTAL && PPC_BOOK3S_32 && !SMP && !PTE_64BIT
++	depends on PPC_BOOK3S_32 && !SMP && !PTE_64BIT
+ 	select KVM
+ 	select KVM_BOOK3S_32_HANDLER
+ 	select KVM_BOOK3S_PR
+@@ -54,7 +54,7 @@ config KVM_BOOK3S_32
+ 
+ config KVM_BOOK3S_64
+ 	tristate "KVM support for PowerPC book3s_64 processors"
+-	depends on EXPERIMENTAL && PPC_BOOK3S_64
++	depends on PPC_BOOK3S_64
+ 	select KVM_BOOK3S_64_HANDLER
+ 	select KVM
  	---help---
- 	  Enable the raid456 module to dispatch per-stripe raid operations to a
- 	  thread pool.
-@@ -210,7 +209,7 @@ config DM_DEBUG
+@@ -95,7 +95,7 @@ config KVM_BOOKE_HV
  
- config DM_BUFIO
-        tristate
--       depends on BLK_DEV_DM && EXPERIMENTAL
-+       depends on BLK_DEV_DM
-        ---help---
- 	 This interface allows you to do buffered I/O on a device and acts
- 	 as a cache, holding recently-read blocks in memory and performing
-@@ -251,8 +250,8 @@ config DM_SNAPSHOT
-          Allow volume managers to take writable snapshots of a device.
- 
- config DM_THIN_PROVISIONING
--       tristate "Thin provisioning target (EXPERIMENTAL)"
--       depends on BLK_DEV_DM && EXPERIMENTAL
-+       tristate "Thin provisioning target"
-+       depends on BLK_DEV_DM
-        select DM_PERSISTENT_DATA
-        select DM_BIO_PRISON
-        ---help---
-@@ -302,8 +301,8 @@ config DM_RAID
- 	 in one of the available parity distribution methods.
- 
- config DM_LOG_USERSPACE
--	tristate "Mirror userspace logging (EXPERIMENTAL)"
--	depends on DM_MIRROR && EXPERIMENTAL && NET
-+	tristate "Mirror userspace logging"
-+	depends on DM_MIRROR && NET
- 	select CONNECTOR
+ config KVM_440
+ 	bool "KVM support for PowerPC 440 processors"
+-	depends on EXPERIMENTAL && 44x
++	depends on 44x
+ 	select KVM
+ 	select KVM_MMIO
  	---help---
- 	  The userspace logging module provides a mechanism for
-@@ -350,8 +349,8 @@ config DM_MULTIPATH_ST
- 	  If unsure, say N.
+@@ -120,7 +120,7 @@ config KVM_EXIT_TIMING
  
- config DM_DELAY
--	tristate "I/O delaying target (EXPERIMENTAL)"
--	depends on BLK_DEV_DM && EXPERIMENTAL
-+	tristate "I/O delaying target"
-+	depends on BLK_DEV_DM
+ config KVM_E500V2
+ 	bool "KVM support for PowerPC E500v2 processors"
+-	depends on EXPERIMENTAL && E500 && !PPC_E500MC
++	depends on E500 && !PPC_E500MC
+ 	select KVM
+ 	select KVM_MMIO
  	---help---
- 	A target that delays reads and/or writes and can send
- 	them to different devices.  Useful for testing.
-@@ -365,14 +364,14 @@ config DM_UEVENT
- 	Generate udev events for DM events.
+@@ -134,7 +134,7 @@ config KVM_E500V2
  
- config DM_FLAKEY
--       tristate "Flakey target (EXPERIMENTAL)"
--       depends on BLK_DEV_DM && EXPERIMENTAL
-+       tristate "Flakey target"
-+       depends on BLK_DEV_DM
-        ---help---
-          A target that intermittently fails I/O for debugging purposes.
- 
- config DM_VERITY
--	tristate "Verity target support (EXPERIMENTAL)"
--	depends on BLK_DEV_DM && EXPERIMENTAL
-+	tristate "Verity target support"
-+	depends on BLK_DEV_DM
- 	select CRYPTO
- 	select CRYPTO_HASH
- 	select DM_BUFIO
+ config KVM_E500MC
+ 	bool "KVM support for PowerPC E500MC/E5500 processors"
+-	depends on EXPERIMENTAL && PPC_E500MC
++	depends on PPC_E500MC
+ 	select KVM
+ 	select KVM_MMIO
+ 	select KVM_BOOKE_HV
 -- 
 1.7.9.5
 
