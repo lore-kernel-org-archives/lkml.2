@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412Ab2KEPrm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:47:42 -0500
-Received: from twin.jikos.cz ([89.185.236.188]:54509 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785Ab2KEPrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:47:40 -0500
-Date: Mon, 5 Nov 2012 16:42:32 +0100
-From: David Sterba <dave@jikos.cz>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: linux-kernel@vger.kernel.org, airlied@linux.ie, netdev@vger.kernel.org,
-        arnd@arndb.de, joern@logfs.org, chris.mason@fusionio.com, m@bues.ch,
-        jejb@parisc-linux.org, faisal.latif@intel.com, neilb@suse.de,
-        gregkh@linuxfoundation.org, JBottomley@parallels.com,
-        swise@chelsio.com, achim_leubner@adaptec.com, tytso@mit.edu,
-        dri-devel@lists.freedesktop.org, jason.wessel@windriver.com,
-        kgdb-bugreport@lists.sourceforge.net,
-        Prasad Joshi <prasadjoshi.linux@gmail.com>, logfs@logfs.org,
-        linux-btrfs@vger.kernel.org, Helge Deller <deller@gmx.de>,
-        linux-parisc@vger.kernel.org, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>, hal.rosenstock@gmail.com,
-        linux-rdma@vger.kernel.org, linux-raid@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: Re: merging printk and WARN
-Message-ID: <20121105154232.GL3102@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Julia Lawall <julia.lawall@lip6.fr>,
-	linux-kernel@vger.kernel.org, airlied@linux.ie,
-	netdev@vger.kernel.org, arnd@arndb.de, joern@logfs.org,
-	chris.mason@fusionio.com, m@bues.ch, jejb@parisc-linux.org,
-	faisal.latif@intel.com, neilb@suse.de, gregkh@linuxfoundation.org,
-	JBottomley@parallels.com, swise@chelsio.com,
-	achim_leubner@adaptec.com, tytso@mit.edu,
-	dri-devel@lists.freedesktop.org, jason.wessel@windriver.com,
-	kgdb-bugreport@lists.sourceforge.net,
-	Prasad Joshi <prasadjoshi.linux@gmail.com>, logfs@logfs.org,
-	linux-btrfs@vger.kernel.org, Helge Deller <deller@gmx.de>,
-	linux-parisc@vger.kernel.org, Roland Dreier <roland@kernel.org>,
-	Sean Hefty <sean.hefty@intel.com>, hal.rosenstock@gmail.com,
-	linux-rdma@vger.kernel.org, linux-raid@vger.kernel.org,
-	linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	linux-ext4@vger.kernel.org
-References: <alpine.DEB.2.02.1211042120200.1960@localhost6.localdomain6>
+	id S1751614Ab2KEPrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:47:48 -0500
+Received: from host-176-100-244-43.masterbit.su ([176.100.244.43]:58369 "EHLO
+	tservice.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751460Ab2KEPrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 10:47:46 -0500
+Date: Mon, 5 Nov 2012 19:47:45 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] w1-gpio: Simplify & get rid of defines
+Message-ID: <20121105154745.GB12922@ioremap.net>
+References: <1351699064-4619-1-git-send-email-panto@antoniou-consulting.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1211042120200.1960@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+In-Reply-To: <1351699064-4619-1-git-send-email-panto@antoniou-consulting.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 04, 2012 at 09:25:53PM +0100, Julia Lawall wrote:
-> It looks like these patches were not a good idea, because in each case the
-> printk provides an error level, and WARN then provides another one.
+Hi
 
-I think this is not a problem within btrfs at the place where this has
-changed.
+On Wed, Oct 31, 2012 at 05:57:44PM +0200, Pantelis Antoniou (panto@antoniou-consulting.com) wrote:
+> There's no reason to have the OF defines; it complicates the driver.
+> There's also no need for the funky platform_driver_probe.
+> 
+> Add a few warnings in case there's a failure; helps us find out
+> what went wrong.
+> 
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 
-david
+Looks good to me, but I'm hardly an expert in omap platform.
+Feel free to add my ack, but please submit this patch through
+appropriate tree.
+Thank you.
+
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+
+-- 
+	Evgeniy Polyakov
