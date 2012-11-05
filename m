@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab2KEITe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 03:19:34 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64642 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab2KEITd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 03:19:33 -0500
-Date: Mon, 5 Nov 2012 09:19:25 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Josh Wu <josh.wu@atmel.com>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH 2/9] ARM: at91: Remove unused struct
- at91sam9g45_isi_device and its resources
-Message-ID: <20121105081925.GA2699@gmail.com>
-References: <1351980150-24145-1-git-send-email-lee.jones@linaro.org>
- <1351980150-24145-3-git-send-email-lee.jones@linaro.org>
- <5097753F.7080307@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1753237Ab2KEIUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 03:20:10 -0500
+Received: from 1wt.eu ([62.212.114.60]:35563 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751979Ab2KEIUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 03:20:09 -0500
+Date: Mon, 5 Nov 2012 09:19:52 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>, bernhard.kohl@nsn.com,
+        herton.krzesinski@canonical.com
+Subject: Re: [ 00/24] 3.6.6-stable review
+Message-ID: <20121105081952.GA6601@1wt.eu>
+References: <20121102170247.406319110@linuxfoundation.org> <CAEH94LhVHXEEk0XzL3z_EyUDpRMeP02MTUGBxzV5=oOxWGDu3g@mail.gmail.com> <20121105074149.GA1947@kroah.com> <CAEH94Li35RG4RtCDF400xq-PTGTh4E+2AJCA30C5KVVpoDGY7A@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5097753F.7080307@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAEH94Li35RG4RtCDF400xq-PTGTh4E+2AJCA30C5KVVpoDGY7A@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >This the at91sam9g45_isi_device structure and its associated resources
-> >were added in 2008 and have been unused ever since. Let's remove them.
-> 
-> I'm the maintainer of the Atmel ISI driver. Currently the ISI still
-> not work on at91sam9263 board.
-> But this task is in my plan. So keep those code and I will enable
-> ISI support for 9263 in the future. Thanks.
+On Mon, Nov 05, 2012 at 03:46:31PM +0800, Zhi Yong Wu wrote:
+> > And really, the 80 characters is just a "hint", it's not a hard and fast
+> > rule for anything here.  Especially for the old, and horrible, floppy
+> > and scsi drivers :)
+> ok, thanks.
 
-No problem at all. Thanks for getting back to me Josh.
+And even worse, look at the staging/panel driver I wrote a long time ago,
+someone found it smart to truncate it to 80 chars, resulting in some
+expressions being written on 10 lines between the 75 and 80th column...
+Now it's unreadable. Definitely not something to do.
 
-Kind regards,
-Lee
+Willy
 
-> >Cc: Russell King <linux@arm.linux.org.uk>
-> >Cc: linux-arm-kernel@lists.infradead.org
-> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >---
-> >  arch/arm/mach-at91/at91sam9263_devices.c |   20 --------------------
-> >  1 file changed, 20 deletions(-)
-> >
-> >diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
-> >index cb85da2..0562a9d 100644
-> >--- a/arch/arm/mach-at91/at91sam9263_devices.c
-> >+++ b/arch/arm/mach-at91/at91sam9263_devices.c
-> >@@ -901,26 +901,6 @@ void __init at91_add_device_lcdc(struct atmel_lcdfb_info *data) {}
-> >  #if defined(CONFIG_VIDEO_AT91_ISI) || defined(CONFIG_VIDEO_AT91_ISI_MODULE)
-> >-struct resource isi_resources[] = {
-> >-	[0] = {
-> >-		.start	= AT91SAM9263_BASE_ISI,
-> >-		.end	= AT91SAM9263_BASE_ISI + SZ_16K - 1,
-> >-		.flags	= IORESOURCE_MEM,
-> >-	},
-> >-	[1] = {
-> >-		.start	= NR_IRQS_LEGACY + AT91SAM9263_ID_ISI,
-> >-		.end	= NR_IRQS_LEGACY + AT91SAM9263_ID_ISI,
-> >-		.flags	= IORESOURCE_IRQ,
-> >-	},
-> >-};
-> >-
-> >-static struct platform_device at91sam9263_isi_device = {
-> >-	.name		= "at91_isi",
-> >-	.id		= -1,
-> >-	.resource	= isi_resources,
-> >-	.num_resources	= ARRAY_SIZE(isi_resources),
-> >-};
-> >-
-> >  void __init at91_add_device_isi(struct isi_platform_data *data,
-> >  		bool use_pck_as_mck)
-> >  {
-> 
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
