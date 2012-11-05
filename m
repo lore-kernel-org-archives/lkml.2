@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932804Ab2KEQzH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:55:07 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61342 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932728Ab2KEQzE (ORCPT
+	id S1754550Ab2KEQ54 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:57:56 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:15354
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753019Ab2KEQ5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:55:04 -0500
+	Mon, 5 Nov 2012 11:57:54 -0500
+X-IronPort-AV: E=Sophos;i="4.80,715,1344204000"; 
+   d="scan'208";a="161450435"
+Date: Mon, 5 Nov 2012 17:57:42 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Julia Lawall <julia.lawall@lip6.fr>, walter harms <wharms@bfs.de>,
+        kernel-janitors@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/misc/kgdbts.c: remove eprintk
+In-Reply-To: <201211051626.29317.arnd@arndb.de>
+Message-ID: <alpine.DEB.2.02.1211051754080.1973@hadrien>
+References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr> <201211042051.58473.arnd@arndb.de> <alpine.DEB.2.02.1211042202240.1960@localhost6.localdomain6> <201211051626.29317.arnd@arndb.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <4052192.ry8JrGTr6H@vostro.rjw.lan>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <20121103201310.GQ16648@intel.com> <1535917.BaYBBNgGy0@vostro.rjw.lan> <4052192.ry8JrGTr6H@vostro.rjw.lan>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 5 Nov 2012 09:54:42 -0700
-Message-ID: <CAErSpo6gfL+QFoWK+8ahYAj+vnp4OCn4B=-vALGbU_LnsyT8oQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 3:31 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Saturday, November 03, 2012 09:59:28 PM Rafael J. Wysocki wrote:
->> On Saturday, November 03, 2012 10:13:10 PM Mika Westerberg wrote:
->> > On Sat, Nov 03, 2012 at 01:42:02PM -0600, Bjorn Helgaas wrote:
->> > > On Sat, Nov 3, 2012 at 1:46 AM, Mika Westerberg
->> > > <mika.westerberg@linux.intel.com> wrote:
->> > > > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
->> > > > configure the SPI slave devices behind the SPI controller. This patch adds
->> > > > support for this to the SPI core.
-> [...]
->> > And if the ACPI core parses the _CRS, how does it pass all the resources to
->> > the drivers?
->>
->> Pretty much the same way the $subject patch does.
->>
->> Instead of parsing the entire subtree below an SPI controller and trying
->> acpi_spi_add_device() for each device node in there, it could call
->> acpi_spi_add_device() whenever it finds a device of type
->> ACPI_RESOURCE_TYPE_SERIAL_BUS/ACPI_RESOURCE_SERIAL_TYPE_SPI.
->> The only problem is how to pass "master" to it.
->>
->> So Bjorn, do you have any idea how we could pass the "master" pointer from the
->> ACPI core to acpi_spi_add_device() in a sensible way?
->>
->> An alternative might be to store the information obtained from _CRS in
->> struct acpi_device objects created by the ACPI core while parsing the
->> namespace.  We do that already for things like _PRW, so we might as well do it
->> for _CRS.  Then, the SPI core could just walk the subtree of the device hierarchy
->> below the SPI controller's acpi_device to extract that information.
->> Maybe that's the way to go?
->
-> The general idea is to move the _CRS parsing routine from acpi_platform.c
-> to scan.c and make it attach resource objects to struct acpi_device.
->
-> I'm thinking about adding a list head to struct acpi_device pointing to a
-> list of entries like:
->
-> struct resource_list_entry {
->         struct list_head node;
->         struct resource *resources;
->         unsigned int count;
-> };
->
-> where "resources" is an array of resources (e.g. interrupts) in the given
-> entry and count is the size of that array.
->
-> That list would contain common resources like ACPI_RESOURCE_TYPE_FIXED_MEMORY32,
-> ACPI_RESOURCE_TYPE_IRQ, ACPI_RESOURCE_TYPE_ADDRESS32, ACPI_RESOURCE_TYPE_EXTENDED_IRQ.
+On Mon, 5 Nov 2012, Arnd Bergmann wrote:
 
-This is exactly what PNPACPI already does.  For every Device node in
-the namespace, pnpacpi/rsparser.c parses _CRS and builds a list of
-struct resources that correspond to it.  If you put this functionality
-in acpi/scan.c, should we get rid of PNPACPI?
+> On Sunday 04 November 2012, Julia Lawall wrote:
+> > >
+> > > I don't see yet where that KERN_WARNING gets added. Looking at
+> > > warn_slowpath_common, there are two or three lines that get printed at
+> > > KERN_WARNING level, followed by the format that got passed into WARN(),
+> > > which may or may not include a printk level, but I don't see one getting
+> > > added.
+> >
+> > OK, I agree.  There are lots of KERN_WARNINGs, but not on the string that
+> > was passed in.  Still, maybe it is not so good to pass a KERN_XXX for some
+> > other XXX to WARN.
+>
+> Given that most users don't pass anything here, and that those that do pass
+> something are somewhat inconsistent, could we make the messages always get
+> printed at KERN_WARNING level from WARN(), and kill off the instances
+> that already pass a level?
 
-Bjorn
+OK, I could try proposing that, and if someone doesn't think it is the
+right thing to do, they can ignore the patch.
+
+Concretely, KERN_WARNING should be added in the printk called from WARN,
+and all KERN information should be removed from the calls?
+
+thanks,
+julia
