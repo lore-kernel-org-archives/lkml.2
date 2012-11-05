@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488Ab2KECej (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 21:34:39 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47640 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab2KECei (ORCPT
+	id S1752637Ab2KECe6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 21:34:58 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54174 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab2KECe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 21:34:38 -0500
+	Sun, 4 Nov 2012 21:34:56 -0500
+Message-ID: <509725CA.4030809@igel.co.jp>
+Date: Mon, 05 Nov 2012 11:34:50 +0900
+From: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121102201048.GA20993@blackbox.djwong.org>
-References: <CAEH94LjTedn0n00ZtqFxBL=kDA3u8G39q+x79-vPoMYvEKW1gw@mail.gmail.com>
-	<CAEH94LgUcAL6RquMZKTrDg87_0J2sEqTsDXUbnhrQ37KuMJ4sg@mail.gmail.com>
-	<20121102084109.GA19753@gmail.com>
-	<20121102201048.GA20993@blackbox.djwong.org>
-Date: Mon, 5 Nov 2012 10:34:34 +0800
-Message-ID: <CAEH94Lg-m=BAaaUfpN=vYWKjJQEZLXED=znSiH5OCnaY+6JzCQ@mail.gmail.com>
-Subject: Re: VFS hot tracking: How to calculate data temperature?
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        Dave Chinner <david@fromorbit.com>, cmm@us.ibm.com,
-        Ben Chociej <bchociej@gmail.com>,
-        James Northrup <northrup.james@gmail.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: hjk@hansjkoch.de, gregkh@linuxfoundation.org, magnus.damm@gmail.com,
+        horms@verge.net.au, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org, hdk@igel.co.jp,
+        Linux-Next <linux-next@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [v2 PATCH 1/2] Add new uio device for dynamic memory allocation
+References: <1348553352-14334-1-git-send-email-dhobsong@igel.co.jp> <1348553352-14334-2-git-send-email-dhobsong@igel.co.jp> <CAMuHMdWKByLXR-2wkiej=F1WPf7xePf3nMkUqwSf_hEJNNZbvg@mail.gmail.com>
+In-Reply-To: <CAMuHMdWKByLXR-2wkiej=F1WPf7xePf3nMkUqwSf_hEJNNZbvg@mail.gmail.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 3, 2012 at 4:10 AM, Darrick J. Wong <darrick.wong@oracle.com> wrote:
-> On Fri, Nov 02, 2012 at 04:41:09PM +0800, Zheng Liu wrote:
->> On Fri, Nov 02, 2012 at 02:38:29PM +0800, Zhi Yong Wu wrote:
->> > Here also has another question.
->> >
->> > How to save the file temperature among the umount to be able to
->> > preserve the file tempreture after reboot?
->> >
->> > This above is the requirement from DB product.
->> > I thought that we can save file temperature in its inode struct, that
->> > is, add one new field in struct inode, then this info will be written
->> > to disk with inode.
->> >
->> > Any comments or ideas are appreciated, thanks.
->>
->> Hi Zhiyong,
->>
->> I think that we might define a callback function.  If a filesystem wants
->> to save these data, it can implement a function to save them.  The
->> filesystem can decide whether adding it or not by themselves.
->>
->> BTW, actually I don't really care about how to save these data because I
->> only want to observe which file is accessed in real time, which is very
->> useful for me to track a problem in our product system.
->
-> <shrug> I _think_ the vfs quota code simply asks the filesystem for a special
-> inode where it save the quota data in whatever (FS-agnostic) format it wants.
-> Have you considered something like that?
-No, but it is one good hint for my issue. thanks.
->
-> (Or, maybe everyone secretly hates doing that?  Secret files, yaaay...)
-ah, do you think of doing that?
+Hi Geert,
 
->
-> --D
->>
->> Regards,
->> Zheng
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On 2012/11/04 22:20, Geert Uytterhoeven wrote:
+> On Tue, Sep 25, 2012 at 8:09 AM, Damian Hobson-Garcia
+> <dhobsong@igel.co.jp> wrote:
+>> are holding the device file open, the address returned to userspace is
+>> DMA_ERROR_CODE.
+> 
+> Only a small subset of the architectures
+> (arm/ia64/microblaze/openrisc/powerpc/sparc/x86)
+> seem to define DMA_ERROR_CODE, causing everywhere else:
+> 
+> drivers/uio/uio_dmem_genirq.c: In function ‘uio_dmem_genirq_release’:
+> drivers/uio/uio_dmem_genirq.c:95: error: ‘DMA_ERROR_CODE’ undeclared
+> (first use in this function)
+> drivers/uio/uio_dmem_genirq.c:95: error: (Each undeclared identifier
+> is reported only once
+> drivers/uio/uio_dmem_genirq.c:95: error: for each function it appears in.)
+> drivers/uio/uio_dmem_genirq.c: In function ‘uio_dmem_genirq_probe’:
+> drivers/uio/uio_dmem_genirq.c:238: error: ‘DMA_ERROR_CODE’ undeclared
+> (first use in this function)
+> make[1]: *** [drivers/uio/uio_dmem_genirq.o] Error 1
+> make: *** [drivers/uio/] Error 2
+> 
+> (e.g. http://kisskb.ellerman.id.au/kisskb/buildresult/7462173/)
+> 
+> Furthermore, none of them define it in <uapi/...>, so DMA_ERROR_CODE is not
+> part of the userspace API (yet), while it is architecture-specific (some use 0,
+> others ~0).
+> 
+Good points, thank you.  In that case, does fixing the value to
+something like ~0 sound like a better (more portable) solution?
 
-
+Damian
 
 -- 
-Regards,
-
-Zhi Yong Wu
+Damian Hobson-Garcia
+IGEL Co.,Ltd
+http://www.igel.co.jp
