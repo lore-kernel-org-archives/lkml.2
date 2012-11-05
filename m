@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932517Ab2KEOfs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:35:48 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40566 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932369Ab2KEOfr (ORCPT
+	id S932540Ab2KEOkU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:40:20 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:63736 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932495Ab2KEOkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:35:47 -0500
-Date: Mon, 5 Nov 2012 15:35:41 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH] virtio-mmio: Fix irq parsing in command line parameter
-Message-ID: <20121105143541.GD5220@gmail.com>
-References: <1352120454.10947.5.camel@hornet>
- <1352120572-16256-1-git-send-email-pawel.moll@arm.com>
- <20121105134413.GC5220@gmail.com>
- <1352124778.10947.8.camel@hornet>
+	Mon, 5 Nov 2012 09:40:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1352124778.10947.8.camel@hornet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <2396674.M1Yl70Z09T@vostro.rjw.lan>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+	<4684026.MA6h34pt1X@vostro.rjw.lan>
+	<CACRpkdbRWPYHBwLVTm-TDRVyp9Kmoaxw0uZg0schn7i0koDKJw@mail.gmail.com>
+	<2396674.M1Yl70Z09T@vostro.rjw.lan>
+Date: Mon, 5 Nov 2012 15:40:14 +0100
+Message-ID: <CACRpkda6jNsKwowdJZ6d7kua5uBPH2tZT8Ka9vheEiPjvEJuUg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] gpio / ACPI: add ACPI support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
+        grant.likely@secretlab.ca, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 05 Nov 2012, Pawel Moll wrote:
+On Mon, Nov 5, 2012 at 2:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday, November 05, 2012 02:28:45 PM Linus Walleij wrote:
+>> But since Grant merged the gpiolib-of.c thing and is still the
+>> main maintainer I can atleast chicken out by referring to him
+>> this time ... hit me back if he doesn't respond and I will
+>> have to refactor the world or something.
+>
+> No need to be grumpy. :-)
 
-> On Mon, 2012-11-05 at 13:44 +0000, Lee Jones wrote:
-> > On Mon, 05 Nov 2012, Pawel Moll wrote:
-> > 
-> > > On 64-bit machines resource_size_t is a 64-bit value, while
-> > > sscanf() format for this argument was defined as "%u". Fixed
-> > > by using an intermediate local value of a known length.
-> > > 
-> > > Also added cleaned up the resource creation and adde extra
-> > > comments to make the parameters parsing easier to follow.
-> > > 
-> > > Reported-by: Lee Jones <lee.jones@linaro.org>
-> > > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-> > > ---
-> > >  drivers/virtio/virtio_mmio.c |   26 ++++++++++++++++++--------
-> > >  1 file changed, 18 insertions(+), 8 deletions(-)
-> > 
-> > Resorted to poaching now have we Pawel? ;)
-> 
-> Sure thing - the poached eggs are my firm favourite :-P ;-)
-> 
-> But seriously speaking - it's an old patch (all the comments and
-> resources creation, the IRQ stuff is a new thing :-), but never had
-> enough motivation to push it out...
+Just a little bit ... sorry.
 
-I believe you, many would not. ;)
+> I forgot to mention that we want to hook up _existing_ drivers to those things,
+> and they already use the global GPIO numbers, don't they?
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yes they do, usually this is either passed from the platform using platform
+data or handled by device tree lookups to individual drivers.
+
+So you will have to modify each such existing driver to do ACPI
+probe akin to the DT codepath and call acpi_get_gpio() on every pin they
+need going forward. But that is the plan I guess.
+
+Yours,
+Linus Walleij
