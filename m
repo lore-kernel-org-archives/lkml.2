@@ -1,62 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab2KEMLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:11:54 -0500
-Received: from mga14.intel.com ([143.182.124.37]:16804 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab2KEMLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:11:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,714,1344236400"; 
-   d="scan'208";a="164599125"
-Message-ID: <5097AD9D.7060808@linux.intel.com>
-Date: Mon, 05 Nov 2012 14:14:21 +0200
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752834Ab2KEMMG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:12:06 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:47665 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752584Ab2KEMMC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 07:12:02 -0500
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 1/3] gpio / ACPI: add ACPI support
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <1351928793-14375-2-git-send-email-mika.westerberg@linux.intel.com> <CACRpkdYGbNCzV7QOURcEzhrNWv=kbWq+r3i66GtC75Aytso5rw@mail.gmail.com>
-In-Reply-To: <CACRpkdYGbNCzV7QOURcEzhrNWv=kbWq+r3i66GtC75Aytso5rw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87wqy54vo0.fsf@rustcorp.com.au>
+References: <1351723614-4145-1-git-send-email-sjur@brendeland.net>
+	<87wqy54vo0.fsf@rustcorp.com.au>
+Date: Mon, 5 Nov 2012 13:12:00 +0100
+Message-ID: <CANHm3PgrsTD4uYuXN0AMuZFX794CJmmus4AST=G0+nP1ha3VyQ@mail.gmail.com>
+Subject: Re: [RFC virtio-next 0/4] Introduce CAIF Virtio and reversed Vrings
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbr@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        dmitry.tarnyagin@stericsson.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2012 01:53 PM, Linus Walleij wrote:
-> On Sat, Nov 3, 2012 at 8:46 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com>  wrote:
+Hi Rusty,
+
+> So, this adds another host-side virtqueue implementation.
 >
->> +/**
->> + * acpi_get_gpio() - Translate ACPI GPIO pin to GPIO number usable with GPIO API
->> + * @path:      ACPI GPIO controller full path name, (e.g. "\\_SB.GPO1")
->> + * @pin:       ACPI GPIO pin number (0-based, controller-relative)
->> + *
->> + * Returns GPIO number to use with Linux generic GPIO API, or errno error value
->> + */
+> Can we combine them together conveniently?  You pulled out more stuff
+> into vring.h which is a start, but it's a bit overloaded.
+> Perhaps we should separate the common fields into struct vring, and use
+> it to build:
 >
-> So by just looking at that we can see that this is yet another
-> instance of papering
-> over the fact that the Linux GPIO numbers are global to the kernel and not
-> per-chip, as would be preferred.
-
-Yes, it is. ACPI5 GPIO resources are numbered per-chip. This is just a 
-way for device drivers to find the corresponding Linux GPIO.
-
-per-chip based numbering sounds saner, but this deals with what we 
-currently have.
-
+>         struct vring_guest {
+>                 struct vring vr;
+>                 u16 last_used_idx;
+>         };
 >
-> Can you please contribute to the parallel discussion on how to get rid of
-> the global GPIO numberspace, thread named:
-> "How about a gpio_get(device *, char *) function?"
+>         struct vring_host {
+>                 struct vring vr;
+>                 u16 last_avail_idx;
+>         };
+> I haven't looked closely at vhost to see what it wants, but I would
+> think we could share more code.
 
-I'll take a look at it, (and see if I got anything of value to add)
+I have played around with the code in vhost.c to explore your idea.
+The main issue I run into is that vhost.c is accessing user data while my new
+code does not. So I end up with some quirky code testing if the ring lives in
+user memory or not.  Another issue is sparse warnings when
+accessing user memory.
 
--Mathias
+With your suggested changes I end up sharing about 100 lines of code.
+So in sum, I feel this add more complexity than what we gain by sharing.
+
+Below is an initial draft of the re-usable code. I added "is_uaccess" to struct
+virtio_ring in order to know if the ring lives in user memory.
+
+Let me know what you think.
+
+[snip]
+int virtqueue_add_used(struct vring_host *vr, unsigned int head, int len,
+		    struct vring_used_elem  **used)
+{
+	/* The virtqueue contains a ring of used buffers.  Get a pointer to the
+	 * next entry in that used ring. */
+	*used = &vr->vring.used->ring[vr->last_used_idx % vr->vring.num];
+	if (vr->is_uaccess) {
+		if(unlikely(__put_user(head, &(*used)->id))) {
+			pr_debug("Failed to write used id");
+			return -EFAULT;
+		}
+		if (unlikely(__put_user(len, &(*used)->len))) {
+			pr_debug("Failed to write used len");
+			return -EFAULT;
+		}
+		smp_wmb();
+		if (__put_user(vr->last_used_idx + 1,
+			       &vr->vring.used->idx)) {
+			pr_debug("Failed to increment used idx");
+			return -EFAULT;
+		}
+	} else {
+		(*used)->id = head;
+		(*used)->len = len;
+		smp_wmb();
+		vr->vring.used->idx = vr->last_used_idx + 1;
+	}
+	vr->last_used_idx++;
+	return 0;
+}
+
+/* Each buffer in the virtqueues is actually a chain of descriptors.  This
+ * function returns the next descriptor in the chain,
+ * or -1U if we're at the end. */
+unsigned virtqueue_next_desc(struct vring_desc *desc)
+{
+	unsigned int next;
+
+	/* If this descriptor says it doesn't chain, we're done. */
+	if (!(desc->flags & VRING_DESC_F_NEXT))
+		return -1U;
+
+	/* Check they're not leading us off end of descriptors. */
+	next = desc->next;
+	/* Make sure compiler knows to grab that: we don't want it changing! */
+	/* We will use the result as an index in an array, so most
+	 * architectures only need a compiler barrier here. */
+	read_barrier_depends();
+
+	return next;
+}
+
+static int virtqueue_next_avail_desc(struct vring_host *vr)
+{
+	int head;
+	u16 last_avail_idx;
+
+	/* Check it isn't doing very strange things with descriptor numbers. */
+	last_avail_idx = vr->last_avail_idx;
+	if (vr->is_uaccess) {
+		if (__get_user(vr->avail_idx, &vr->vring.avail->idx)) {
+			pr_debug("Failed to access avail idx at %p\n",
+				 &vr->vring.avail->idx);
+			return -EFAULT;
+		}
+	} else
+		vr->avail_idx = vr->vring.avail->idx;
+
+	if (unlikely((u16)(vr->avail_idx - last_avail_idx) > vr->vring.num)) {
+		pr_debug("Guest moved used index from %u to %u",
+		       last_avail_idx, vr->avail_idx);
+		return -EFAULT;
+	}
+
+	/* If there's nothing new since last we looked, return invalid. */
+	if (vr->avail_idx == last_avail_idx)
+		return vr->vring.num;
+
+	/* Only get avail ring entries after they have been exposed by guest. */
+	smp_rmb();
+
+	/* Grab the next descriptor number they're advertising, and increment
+	 * the index we've seen. */
+	if (vr->is_uaccess) {
+		if (unlikely(__get_user(head,
+				&vr->vring.avail->ring[last_avail_idx
+						       % vr->vring.num]))) {
+			pr_debug("Failed to read head: idx %d address %p\n",
+				 last_avail_idx,
+				 &vr->vring.avail->ring[last_avail_idx %
+							vr->vring.num]);
+			return -EFAULT;
+		}
+	} else
+		head = vr->vring.avail->ring[last_avail_idx % vr->vring.num];
+
+	/* If their number is silly, that's an error. */
+	if (unlikely(head >= vr->vring.num)) {
+		pr_debug("Guest says index %u > %u is available",
+		       head, vr->vring.num);
+		return -EINVAL;
+	}
+
+	return head;
+}
+
+Thanks,
+Sjur
