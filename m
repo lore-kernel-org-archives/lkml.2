@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab2KEQOk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:14:40 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:34240 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752829Ab2KEQN5 (ORCPT
+	id S1753143Ab2KEQQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:16:28 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:55206 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab2KEQQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:13:57 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+rkg0fGrk6zhcMy8sJkQRa
-Date: Mon, 5 Nov 2012 08:13:53 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] w1-gpio: Pinctrl-fy
-Message-ID: <20121105161352.GJ4953@atomide.com>
-References: <1351699058-4576-1-git-send-email-panto@antoniou-consulting.com>
- <20121030182625.GP11908@atomide.com>
- <20121105154523.GA12922@ioremap.net>
+	Mon, 5 Nov 2012 11:16:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 1/8] mfd: ab8500-core: Remove unused ab8500-gpio IRQ ranges
+Date: Mon, 5 Nov 2012 16:16:24 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, linus.walleij@stericsson.com
+References: <1352128236-11554-1-git-send-email-lee.jones@linaro.org> <1352128236-11554-2-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1352128236-11554-2-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121105154523.GA12922@ioremap.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211051616.24257.arnd@arndb.de>
+X-Provags-ID: V02:K0:+t3JtubHqrbXIpF9YbaAZIFRZ8LRDYEksF7r/HZTqvM
+ cgmV6pvyLl68IVAgzirVwnRlzXLaWVknwnWwJiA3EFz6/7dJfN
+ WAw4wBCr5DV1ShdRC5hM+r0WfWA+88YywtNdRo/I+Omj6gq7Mf
+ OVskU4veVvaU7JenMxUZl2OnlhPT1ufu/Ep907PKVOPKu8CCqW
+ ZZDHqYJnF0s7E1MvUoyKqVkAJp0Sj8Pewi1O0XmwWT6n3JfRvY
+ YroLKEIXiUZ0YZtI8Hb7Vq1nCtwaWMXlknzyiEw3vf0sRACY2j
+ x2Kv4ANtWEVKG4dsOhEkSspeeOBlm+EOI21WNzRedj8eRQXAx1
+ 1hWKsz3Xt15vwXcueFkM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Evgeniy Polyakov <zbr@ioremap.net> [121105 07:47]:
-> Hi
+On Monday 05 November 2012, Lee Jones wrote:
+> The IRQ ranges provided in ab8500-core to be passed on to the
+> ab8500-gpio driver are not only redundant, but they are also
+> causing a warning in the boot log. These IRQ ranges, like any
+> other MFD related IRQ resource are passed though MFD core for
+> automatic conversion to virtual IRQs; however, MFD core does
+> not support IRQ mapping of IRQ ranges. Let's just remove them.
 > 
-> On Tue, Oct 30, 2012 at 11:26:25AM -0700, Tony Lindgren (tony@atomide.com) wrote:
-> > * Pantelis Antoniou <panto@antoniou-consulting.com> [121030 11:17]:
-> > > Enable pinctrl for w1-gpio.
-> > >
-> > > Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> > 
-> > Acked-by: Tony Lindgren <tony@atomide.com>
-> 
-> Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-> 
-> Please submit patches through the appropriate tree, or you want me to
-> push them upstream?
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-I prefer you queue it.
-
-Thanks,
-
-Tony
+Acked-by: Arnd Bergmann <arnd@arndb.de>
