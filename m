@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab2KEJWe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 04:22:34 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:53242 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab2KEJWc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 04:22:32 -0500
-Date: Mon, 5 Nov 2012 10:22:19 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "David S. Miller" <davm@davemloft.net>
-Cc: sparclinux@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Subject: SPARC and OF_GPIO
-Message-ID: <20121105092218.GC5847@avionic-0098.mockup.avionic-design.de>
+	id S1753335Ab2KEJ3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 04:29:23 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48148 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750876Ab2KEJ3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 04:29:21 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <thierry.reding@avionic-design.de>, <paul@pwsan.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <b-cousson@ti.com>
+CC: <hvaibhav@ti.com>, <anilkumar@ti.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>
+Subject: [PATCH 0/8] Support for AM33xx PWM Susbsytem
+Date: Mon, 5 Nov 2012 14:42:21 +0530
+Message-ID: <1352106749-9437-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2/5bycvrmDh4d1IB"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:hoq0Vv7QgW7V5slr1X8Dm9aWFfPLKFsZkUwQ5F4iGQA
- c3SDX/4uW2TLfonDKI0PYpxJU6v63QMX4Ar7LSQNmGUTxKC8AW
- Ag9RDbvLL+h0SdFcVLcg1a4/cgYpfoe+VrYVbMyqbi6Z12FwCE
- xud5nA1yxEiBRbBH1lUvkxfTgJ4JsBDx9mg3KKTGJkNkb/h3FM
- Q/KC5zbdG/JyyKOWTUqCLd5ji3DOjLvjiKgRIiyvJfYdVjWygf
- JBpISCg1sbk3NsQgV+3K21jjzIGsKZZFksXnFAF32khWB87DuZ
- 5EkrM+ZkKkNbBKMF377/ykeo+nQZaqyKcvO5GFX3lxPHP+XF8l
- cKjWLpzcxRy77tQpyHOuvrKjfdt+b3y3vjIGzfMhKtTT4/bRxm
- Qv8cFIqhGfeGlv07opHtsNhqmyevnGD9pU=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In AM33xx PWM sub modules like ECAP, EHRPWM & EQEP are  integrated to
+PWM subsystem. All these submodules shares the resources (clock) & has
+a clock gating register in PWM Subsystem. This patch series creates a
+parent PWM Subsystem driver to handle access synchronization of shared
+resources & clock gating from PWM Subsystem configuration space.
+Also Device tree nodes populated to support parent child relation
+between PWMSS, ECAP & EHRPWM submodules.
+In addition EHRPWM module requires explicit clock gating from control
+module & is handled by patch #2 & 6.
 
---2/5bycvrmDh4d1IB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Patch #4 & 5 submitted is a second revision as suggested by  Thierry
+for handling clock gating with a global function . This requires config
+space handling done independent from driver and is done at parent driver.
+So the parent<->child relation adopted to handle
+1. pm runtime synchronization
+2. PWM subsystem common config space clock gating for PWM submodules.
 
-Hi David,
+Patches supports
+- Driver support for parent child relation handled patch #1
+- Optional EHRPWM tb clock in patch #2
+- Parent child in HWMOD handled at patch #3
+- Device tree binding support handled in patch #4-6
+- DT node populated in patch #7-8.
 
-There have been a number of reports that Linux kernel builds fail on
-SPARC because it doesn't support OF_GPIO, which provides the of_node
-field of the struct gpio_chip.
+This patch series based on linux-next/20121102 and tested on AM335x-evm.
+It depends on [1]
 
-One of the drivers I wrote (gpio-adnp) accesses this unconditionally but
-only depends on OF and not OF_GPIO, so it fails to build on SPARC. A
-similar problem happens with the gpio-fan driver, which defines the OF
-match table only if OF_GPIO is selected, but uses it even if only OF but
-not OF_GPIO is selected.
+1. https://lkml.org/lkml/2012/10/29/589
+pwm: Device tree support for PWM polarity
 
-While it is clearly the drivers which are at fault here it still raises
-the question as to why SPARC still conflicts with OF_GPIO. Over two
-years ago, commit 5ab5fc7 made most of the OF symbols available to all
-platforms except SPARC. The commit message explicitly states that this
-should probably be re-evaluated.
+Philip, Avinash (8):
+  PWMSS: Add PWM Subsystem driver for parent<->child relationship
+  ARM: am33xx: clk: Add optional clock for EHRPWM
+  ARM: OMAP: AM33xx hwmod: Add parent-child relationship for PWM
+    subsystem
+  pwm: pwm-tiecap: Add device-tree binding support for APWM driver
+  pwm: pwm-tiehrpwm: Add device-tree binding support for EHRPWM driver
+  pwm: pwm-tiehrpwm: Adding TBCLK gating support.
+  ARM: dts: AM33XX: Add PWMSS device tree nodes
+  ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evm
 
-Are you aware of any reasons why this conflict would still be necessary?
-This is not only the case for OF_GPIO but likely also for OF_SPI,
-OF_I2C, OF_IRQ and OF_ADDRESS. Shouldn't those all work even on SPARC
-nowadays?
+ .../devicetree/bindings/pwm/pwm-tiecap.txt         |   22 +
+ .../devicetree/bindings/pwm/pwm-tiehrpwm.txt       |   25 ++
+ Documentation/devicetree/bindings/pwm/tipwmss.txt  |   30 ++
+ arch/arm/boot/dts/am335x-evm.dts                   |   21 +
+ arch/arm/boot/dts/am33xx.dtsi                      |   90 +++++
+ arch/arm/mach-omap2/clock33xx_data.c               |   37 ++
+ arch/arm/mach-omap2/control.h                      |    8 +
+ arch/arm/mach-omap2/omap_hwmod_33xx_data.c         |  414 +++++++++++++-------
+ drivers/pwm/Kconfig                                |   11 +
+ drivers/pwm/Makefile                               |    1 +
+ drivers/pwm/pwm-tiecap.c                           |   36 ++-
+ drivers/pwm/pwm-tiehrpwm.c                         |   53 +++-
+ drivers/pwm/tipwmss.c                              |  136 +++++++
+ drivers/pwm/tipwmss.h                              |    8 +
+ 14 files changed, 754 insertions(+), 138 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tiecap.txt
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-tiehrpwm.txt
+ create mode 100644 Documentation/devicetree/bindings/pwm/tipwmss.txt
+ create mode 100644 drivers/pwm/tipwmss.c
+ create mode 100644 drivers/pwm/tipwmss.h
 
-Thierry
-
---2/5bycvrmDh4d1IB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQl4VKAAoJEN0jrNd/PrOhSwMQAK5hcpHzexhkfrD2MKvh4Sy6
-Bz2wtVn8LpjBczKmYD9cAK7jz674I8Tl9OfpaJ4U8cZcpYAbZJSj0mTx11Uef8yO
-MSsdS5yLP6Wfy1CFNV5C+sArcXkhuyhnce9gpMKIZRoZOQF77sueb+8OQcNFNwIW
-wxR6lnH+Jj+v4j/9KLRsw45I4WmwJVLuqlWUyfAFbEQwHx0nOekcXVTzz/jUbnFu
-mH0y58RcyrGCzHa9w3EaZrZO178pH2y/yAkNbCcLkSb7urRigcA3dO2Y4jq6OGqU
-v/WFgcDftPzETOpYTBy8FxXWDadIfbJwNgfptayenD6XJMasbsUtYcduxVOiF9WJ
-cvcelarHSFsTxzE9rrNv85R9KlF0WtiKC8Fgb7UIgfFxFhfiB28EK7h+HgUTO+Pw
-GpNQWiaWrVtTAZBjX2CUBPGlGbHfS6frvE8fvUVoeib9t5r47H18cEbGZm2hLcIH
-T7VigvvX8nqutsXjB2jU2kMWWRsriIQdTqzlfC8szBq6fiQ9iKdy/VrH5u9RkHtz
-VOvyKGQHoIdixrw9ZCefNyErDE6J3IYJnRuMcJd1Jb2D6MVcb7Z+/7wDMIVBelIT
-tsl8qRyGUASM0M4BSAeizoHV86DrLFSIt3bVRbgFxLCi5OHz7dI6wMrfIKugkSJs
-nK2mXtBf/s5HQoH9A1jJ
-=CyMA
------END PGP SIGNATURE-----
-
---2/5bycvrmDh4d1IB--
