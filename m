@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785Ab2KEMCI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:02:08 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5559 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab2KEMCH (ORCPT
+	id S1751978Ab2KEMCm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:02:42 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39246 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab2KEMCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:02:07 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 05 Nov 2012 03:48:59 -0800
-Message-ID: <5097AA42.8090407@nvidia.com>
-Date: Mon, 5 Nov 2012 17:30:02 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>, "lrg@ti.com" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] regulator: tps80031: add regulator driver for tps80031
-References: <1352108658-14289-1-git-send-email-ldewangan@nvidia.com> <1352108658-14289-3-git-send-email-ldewangan@nvidia.com> <20121105104246.GC1385@opensource.wolfsonmicro.com>
-In-Reply-To: <20121105104246.GC1385@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Mon, 5 Nov 2012 07:02:40 -0500
+Date: Mon, 5 Nov 2012 12:07:36 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Matthew Garrett <mjg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        Alessandro Crismani <alessandro.crismani@gmail.com>,
+        Mikhail Bakhterev <mike.bakhterev@gmail.com>,
+        Patrick H <kernel@feystorm.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] samsung-laptop: Disable if CONFIG_EFI=y
+Message-ID: <20121105120736.33af173b@pyramind.ukuu.org.uk>
+In-Reply-To: <1352116219.14888.262.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
+	<CAHR064isMXk8qkqhBJ==9sRRP7xC_j_K5rqXApza-LNkosp5mg@mail.gmail.com>
+	<20121104193741.7b4ca37b@pyramind.ukuu.org.uk>
+	<CAHR064jwe=diZ9B-D+-SroCW1ZevkRDMosB7uDuc2VXZkFxmdA@mail.gmail.com>
+	<20121105103031.GA25659@kroah.com>
+	<1352116219.14888.262.camel@mfleming-mobl1.ger.corp.intel.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for quickest review.
-
-On Monday 05 November 2012 04:12 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Mon, Nov 05, 2012 at 03:14:18PM +0530, Laxman Dewangan wrote:
->
->> +	switch (ri->device_flags) {
->> +	case 0:
-> Should we be using different versions of the ops depending on the device
-> flags rather than having these switches?  It seems like we can't change
-> at runtime and it would make the code a lot simpler.
-
-I have single dcdc ops for all DCDC VIO, SMPS1 to 3.
-There is different configuration bit for selecting any DCDC to normal, 
-extended or offset. As this ops are share, I can not change the callbacks.
-However, I rewrite this apis using tables and equation to reduce code size.
+> There is the 'efi_enabled' variable, but it doesn't strictly mean
+> "this_is_a_uefi_system()", it actually means "Do we have EFI runtime
+> services?". The whole thing is a bit of a mess and I'm planning on
+> cleaning it up this week.
 
 
-> Why the + 1 (and - 1 in the get()).  I'd expect we can just use the
-> register value directly as a selector.
+As far as I can understand it we should be reserving those areas on a
+UEFI booted machine and just marking them as busy so that they are not
+available to any drivers to go peering into.
 
-The device sets vout = 0 if vsel = 0 and then equation talk about the 
-Vmin + vsel * step.
-I exported the Vout minimum as Vmin for sel = 0 and hence this is there.
-
-I will export this in true equation in my next patch.
-
->> +	if (!(ri->config_flags&  VBUS_SW_ONLY)) {
->> +		dev_err(&rdev->dev, "%s() is not supported with flag 0x%08x\n",
->> +			 __func__, ri->config_flags);
->> +		return -EIO;
->> +	}
-> Same as the device flags above - we should this be set by changing the
-> ops when we register?
-
-Ok, so I will have two ops, hw (empty) and sw(implemented). If sw is 
-selected then only sw ops will get initialized and so it will not need 
-any checks.
+Alan
 
