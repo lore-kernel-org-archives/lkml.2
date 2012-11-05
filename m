@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab2KERNL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 12:13:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37596 "EHLO mx2.suse.de"
+	id S932105Ab2KERS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 12:18:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37795 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab2KERNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 12:13:08 -0500
-Date: Mon, 05 Nov 2012 18:13:07 +0100
-Message-ID: <s5hip9k9dng.wl%tiwai@suse.de>
+	id S1751993Ab2KERSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 12:18:25 -0500
+Date: Mon, 05 Nov 2012 18:18:24 +0100
+Message-ID: <s5hhap49den.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: joeyli <jlee@suse.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, joeyli <jlee@suse.com>,
+        Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-In-Reply-To: <20121101131849.752df6fd@pyramind.ukuu.org.uk>
+Subject: [PATCH RFC 0/4] Add firmware signature file check
 References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
 	<20121029174131.GC7580@srcf.ucam.org>
@@ -23,6 +23,7 @@ References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 	<s5h390utqv3.wl%tiwai@suse.de>
 	<1351743715.21227.95.camel@linux-s257.site>
 	<20121101131849.752df6fd@pyramind.ukuu.org.uk>
+	<s5hip9k9dng.wl%tiwai@suse.de>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -32,43 +33,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 1 Nov 2012 13:18:49 +0000,
-Alan Cox wrote:
-> 
-> > I think it make sense because the private key is still protected by
-> > signer. Any hacker who modified firmware is still need use private key
-> > to generate signature, but hacker's private key is impossible to match
-> > with the public key that kernel used to verify firmware.
-> > 
-> > And, I afraid we have no choice that we need put the firmware signature
-> > in a separate file. Contacting with those company's legal department
-> > will be very time-consuming, and I am not sure all company will agree we
-> > put the signature with firmware then distribute.
-> 
-> Then you'd better stop storing it on disk because your disk drive is FEC
-> encoding it and adding a CRC 8)
-> 
-> It does want checking with a lawyer but my understanding is that if you
-> have a file which is a package that contains the firmware and a signature
-> then there is not generally a problem, any more than putting it in an RPM
-> file - it's packaging/aggregation. This should be referred to the Linux
-> Foundation folks perhaps - no point designing something badly to work
-> around a non existant issue.
-> 
-> Also the interface needs to consider that a lot of device firmware is
-> already signed. Nobody notices because they don't ever try and do their
-> own thus many drivers don't need extra signatures in fact.
+Hi,
 
-Besides the legal concern, embedding the signature into the firmware
-makes the file incompatible with old kernel that has no support for
-signed firmware.  That's the reason I put the files into a new
-location in my test patch, /lib/firmware/signed/.  Having a separate
-signature file would make this easier.
+this is a patch series to add the support for firmware signature
+check.  At this time, the kernel checks extra signature file (*.sig)
+for each firmware, instead of embedded signature.
+It's just a quick hack using the existing module signing mechanism,
+thus provided only as a proof of concept for now.
 
-I cooked again quickly firmware loader code for the separate signature
-files.  I'm going to send a series of test patches.
+To be noted, it doesn't support the firmwares via udev but only the
+direct loading, and the check for built-in firmware is missing, too.
 
-
-thanks,
 
 Takashi
