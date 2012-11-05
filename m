@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932435Ab2KENqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:46:37 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:40737 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab2KENqf (ORCPT
+	id S1754333Ab2KENsb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:48:31 -0500
+Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:49583 "EHLO
+	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754215Ab2KENsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:46:35 -0500
-Date: Mon, 5 Nov 2012 13:46:04 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121105134604.GA6068@srcf.ucam.org>
-References: <20121103134630.GA28166@srcf.ucam.org>
- <1351983400.2417.21.camel@dabdike.int.hansenpartnership.com>
- <20121104042802.GA11295@srcf.ucam.org>
- <1352020487.2427.5.camel@dabdike.int.hansenpartnership.com>
- <20121104135251.GA17894@srcf.ucam.org>
- <87d2zsmv8r.fsf@xmission.com>
- <509766DB.9090906@zytor.com>
- <87625kh5r2.fsf@xmission.com>
- <20121105123858.GB4374@srcf.ucam.org>
- <20121105134436.08993fd6@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121105134436.08993fd6@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 5 Nov 2012 08:48:30 -0500
+From: Lars Poeschel <larsi@wh2.tu-dresden.de>
+To: linus.walleij@linaro.org
+Cc: poeschel@lemonage.de, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        jic23@cam.ac.uk, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, grant.likely@secretlab.ca,
+        linux-iio@vger.kernel.org
+Subject: [PATCH v3 1/5] mfd: set device type of mfd platform devices to a mfd type
+Date: Mon,  5 Nov 2012 15:48:22 +0100
+Message-Id: <1352126906-4560-1-git-send-email-larsi@wh2.tu-dresden.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 01:44:36PM +0000, Alan Cox wrote:
-> On Mon, 5 Nov 2012 12:38:58 +0000
-> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > No, in the general case the system will do that once it fails to find a 
-> > bootable OS on the drive.
-> 
-> So your "secure" system can be wiped by a random Windows 8 install media.
-> Ooh thats good stuff 8)
+From: Lars Poeschel <poeschel@lemonage.de>
 
-Once you've booted trusted code you can change the boot order.
+This sets the type of the platform devices that are added
+to the mfd core to some mfd-cell type. This enables us
+to add mfd cells to platform devices, that are in use by
+other cores (e.g. the usb core).
+Otherwise by removing the mfd cell from a platform device
+that already has some "childs" would remove all childs,
+not only the mfd ones.
+Thanks to Lars-Peter Clausen for proposing this.
 
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+---
+ drivers/mfd/mfd-core.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index f8b7771..d317b50 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -21,6 +21,10 @@
+ #include <linux/irqdomain.h>
+ #include <linux/of.h>
+ 
++static struct device_type const mfd_device_type = {
++	.name = "mfd-cell",
++};
++
+ int mfd_cell_enable(struct platform_device *pdev)
+ {
+ 	const struct mfd_cell *cell = mfd_get_cell(pdev);
+@@ -91,6 +95,7 @@ static int mfd_add_device(struct device *parent, int id,
+ 		goto fail_device;
+ 
+ 	pdev->dev.parent = parent;
++	pdev->dev.type = &mfd_device_type;
+ 
+ 	if (parent->of_node && cell->of_compatible) {
+ 		for_each_child_of_node(parent->of_node, np) {
+@@ -204,10 +209,16 @@ EXPORT_SYMBOL(mfd_add_devices);
+ 
+ static int mfd_remove_devices_fn(struct device *dev, void *c)
+ {
+-	struct platform_device *pdev = to_platform_device(dev);
+-	const struct mfd_cell *cell = mfd_get_cell(pdev);
++	struct platform_device *pdev;
++	const struct mfd_cell *cell;
+ 	atomic_t **usage_count = c;
+ 
++	if (dev->type != &mfd_device_type)
++		return 0;
++
++	pdev = to_platform_device(dev);
++	cell = mfd_get_cell(pdev);
++
+ 	/* find the base address of usage_count pointers (for freeing) */
+ 	if (!*usage_count || (cell->usage_count < *usage_count))
+ 		*usage_count = cell->usage_count;
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.10.4
+
