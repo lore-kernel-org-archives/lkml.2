@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932818Ab2KEPLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:11:21 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:39723 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754378Ab2KEPLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:11:17 -0500
-Message-ID: <1352128271.16194.8.camel@joe-AO722>
-Subject: Re: [PATCH] staging/media: Use dev_ printks in go7007/s2250-loader.c
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: YAMANE Toshiaki <yamanetoshi@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 05 Nov 2012 07:11:11 -0800
-In-Reply-To: <20121105131108.GC27238@kroah.com>
-References: <1352115282-8081-1-git-send-email-yamanetoshi@gmail.com>
-	 <20121105131108.GC27238@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
+	id S932833Ab2KEPLl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:11:41 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47379 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932780Ab2KEPLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 10:11:09 -0500
+Message-ID: <5097D6FC.7040202@ti.com>
+Date: Mon, 5 Nov 2012 10:10:52 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Sekhar Nori <nsekhar@ti.com>
+CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
+        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 02/11] clk: davinci - add PSC clock driver
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-3-git-send-email-m-karicheri2@ti.com> <50950908.1060302@ti.com>
+In-Reply-To: <50950908.1060302@ti.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-05 at 14:11 +0100, Greg Kroah-Hartman wrote:
-> On Mon, Nov 05, 2012 at 08:34:42PM +0900, YAMANE Toshiaki wrote:
-> > fixed below checkpatch warnings.
-> > - WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
-> > - WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
-> > 
-> > Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
-> > ---
-> >  drivers/staging/media/go7007/s2250-loader.c |   35 ++++++++++++++-------------
-> >  1 file changed, 18 insertions(+), 17 deletions(-)
-> 
-> Please note that I don't touch the drivers/staging/media/* files, so
-> copying me on these patches doesn't do anything :)
+On 11/03/2012 08:07 AM, Sekhar Nori wrote:
+> On 10/25/2012 9:41 PM, Murali Karicheri wrote:
+>> This is the driver for the Power Sleep Controller (PSC) hardware
+>> found on DM SoCs as well Keystone SoCs (c6x). This driver borrowed
+>> code from arch/arm/mach-davinci/psc.c and implemented the driver
+>> as per common clock provider API. The PSC module is responsible for
+>> enabling/disabling the Power Domain and Clock domain for different IPs
+>> present in the SoC. The driver is configured through the clock data
+>> passed to the driver through struct clk_psc_data.
+>>
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>> ---
+>> +/**
+>> + * struct clk_psc - DaVinci PSC clock driver data
+>> + *
+>> + * @hw: clk_hw for the psc
+>> + * @psc_data: Driver specific data
+>> + */
+>> +struct clk_psc {
+>> +	struct clk_hw hw;
+>> +	struct clk_psc_data *psc_data;
+>> +	spinlock_t *lock;
+> Unused member? I don't see this being used.
 
-Maybe:
-
- MAINTAINERS |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index b062349..542a541 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6906,6 +6906,7 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
- L:	devel@driverdev.osuosl.org
- S:	Supported
- F:	drivers/staging/
-+X:	drivers/staging/media/
- 
- STAGING - AGERE HERMES II and II.5 WIRELESS DRIVERS
- M:	Henk de Groot <pe1dnn@amsat.org>
-
+OK. Will remove.
+>
+> Thanks,
+> Sekhar
+>
 
