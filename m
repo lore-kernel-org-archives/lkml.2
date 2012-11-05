@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab2KEQJY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:09:24 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:19151 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab2KEQJX (ORCPT
+	id S932618Ab2KEQNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:13:00 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:38195 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752920Ab2KEQMy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:09:23 -0500
-From: Jan Kiszka <jan.kiszka@siemens.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 05/13] scripts/gdb: Add read_u16/32/64 helpers
-Date: Mon,  5 Nov 2012 17:08:58 +0100
-Message-Id: <64b45194dcc11c9418458499a2b24086f604095f.1352131730.git.jan.kiszka@siemens.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <cover.1352131729.git.jan.kiszka@siemens.com>
-References: <cover.1352131729.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1352131729.git.jan.kiszka@siemens.com>
-References: <cover.1352131729.git.jan.kiszka@siemens.com>
+	Mon, 5 Nov 2012 11:12:54 -0500
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Xiaotian Feng <xtfeng@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Xiaotian Feng <dannyfeng@tencent.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: RE: [PATCH] rapidio/tsi721: use tasklet_kill in device
+ remove/release process
+Thread-Topic: [PATCH] rapidio/tsi721: use tasklet_kill in device
+ remove/release process
+Thread-Index: AQHNt1oyKBA0kBHm8UKtHzr2wNWnqJfbbmDA
+Date: Mon, 5 Nov 2012 16:11:40 +0000
+Message-ID: <8D983423E7EDF846BB3056827B8CC5D14BC03AFB@corpmail1.na.ads.idt.com>
+References: <1351680769-27306-1-git-send-email-xtfeng@gmail.com>
+In-Reply-To: <1351680769-27306-1-git-send-email-xtfeng@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.165.140.29]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add helpers for reading integers from target memory buffers. Required
-when caching the memory access is more efficient than reading individual
-values via gdb.
+On Wed, October 31, 2012 6:53 AM
+Xiaotian Feng <xtfeng@gmail.com> wrote:
+> 
+> Some driver uses tasklet_disable in device remove/release process,
+> tasklet_disable will inc tasklet->count and return. If the tasklet
+> is not handled yet under some softirq pressure, the tasklet will be
+> placed on the tasklet_vec, never have a chance to be excuted. This
+> might
+> lead to a heavy loaded ksoftirqd, wakeup with pending_softirq, but
+> tasklet is disabled. tasklet_kill should be used in this case.
+> 
+> Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+> Cc: Matt Porter <mporter@kernel.crashing.org>
+> Cc: Alexandre Bounine <alexandre.bounine@idt.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  drivers/rapidio/devices/tsi721_dma.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/rapidio/devices/tsi721_dma.c
+> b/drivers/rapidio/devices/tsi721_dma.c
+> index 92e06a5..a098fbc 100644
+> --- a/drivers/rapidio/devices/tsi721_dma.c
+> +++ b/drivers/rapidio/devices/tsi721_dma.c
+> @@ -589,7 +589,7 @@ static void tsi721_free_chan_resources(struct
+> dma_chan *dchan)
+>  	BUG_ON(!list_empty(&bdma_chan->active_list));
+>  	BUG_ON(!list_empty(&bdma_chan->queue));
+> 
+> -	tasklet_disable(&bdma_chan->tasklet);
+> +	tasklet_kill(&bdma_chan->tasklet);
+> 
+>  	spin_lock_bh(&bdma_chan->lock);
+>  	list_splice_init(&bdma_chan->free_list, &list);
+> --
+> 1.7.9.5
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/utils.py |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+I agree with reported issue.
+Switching to tasklet_kill() also requires to disable interrupts first.
+I will update that part and post a new patch.
 
-diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
-index a4e6df2..18e3bfc 100644
---- a/scripts/gdb/utils.py
-+++ b/scripts/gdb/utils.py
-@@ -70,3 +70,21 @@ def get_target_endianness():
- 		else:
- 			raise gdb.GdgError("unknown endianness '%s'" % endian)
- 	return target_endianness
-+
-+def read_u16(buffer):
-+	if get_target_endianness() == LITTLE_ENDIAN:
-+		return ord(buffer[0]) + (ord(buffer[1]) << 8)
-+	else:
-+		return ord(buffer[1]) + (ord(buffer[0]) << 8)
-+
-+def read_u32(buffer):
-+	if get_target_endianness() == LITTLE_ENDIAN:
-+		return read_u16(buffer[0:2]) + (read_u16(buffer[2:4]) << 16)
-+	else:
-+		return read_u16(buffer[2:4]) + (read_u16(buffer[0:2]) << 16)
-+
-+def read_u64(buffer):
-+	if get_target_endianness() == LITTLE_ENDIAN:
-+		return read_u32(buffer[0:4]) + (read_u32(buffer[4:8]) << 32)
-+	else:
-+		return read_u32(buffer[4:8]) + (read_u32(buffer[0:4]) << 32)
--- 
-1.7.3.4
-
+    
