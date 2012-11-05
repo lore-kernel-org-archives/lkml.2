@@ -1,149 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab2KEQGG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:06:06 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:7191 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab2KEQGE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:06:04 -0500
-Date: Mon, 5 Nov 2012 17:05:54 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>
-Subject: [PATCH] MAINTAINERS: i2c: 7 years, this is it
-Message-ID: <20121105170554.1972f3c2@endymion.delvare>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753237Ab2KEQJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:09:29 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:23908 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752862Ab2KEQJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 11:09:26 -0500
+From: Jan Kiszka <jan.kiszka@siemens.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH 12/13] scripts/gdb: Add internal helper and convenience function for per-cpu lookup
+Date: Mon,  5 Nov 2012 17:09:05 +0100
+Message-Id: <58adfd22c32ae200ead1e0e0d602fc38be33ccaa.1352131731.git.jan.kiszka@siemens.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <cover.1352131729.git.jan.kiszka@siemens.com>
+References: <cover.1352131729.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1352131729.git.jan.kiszka@siemens.com>
+References: <cover.1352131729.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have been maintaining the i2c subsystem for 7 years now, it's about
-time to let someone else take over. Just before I leave, I would like
-to thank several individuals who made this possible at all:
+This function allows to obtain a per-cpu variable, either of the current
+or an explicitly specified CPU.
 
-* Greg Kroah-Hartman, for his faith in my potential subsystem
-  maintainer skills. Greg, I hope I met your expectations.
-* Late David Brownell, for helping me convert the i2c subsystem to the
-  standard device driver model. Rest in peace David, we're missing you.
-* Ben Dooks, for stepping in when I asked for someone to take care of
-  the huge flow of new i2c adapter drivers for embedded systems.
-* Wolfram Sang, for joining the crew when it became clear that there
-  was more review work than Ben and myself could deal with.
+Note: sparc64 version is untested.
 
-I hope I did not forget anyone, please forgive me if I did.
-
-Another big thank is due to Wolfram again, who quickly proposed to
-take over as the main i2c subsystem maintainer. This will allow for a
-smooth and fast transition.
-
-Note that I will keep maintaining all I2C/SMBus controller drivers for
-PC systems as well as a few others. I am hereby updating MAINTAINERS
-accordingly. I'll also keep maintaining user-space i2c-tools.
-
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Wolfram Sang <w.sang@pengutronix.de>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: sparclinux@vger.kernel.org
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- MAINTAINERS |   60 ++++++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 51 insertions(+), 9 deletions(-)
+ scripts/gdb/percpu.py      |   61 ++++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |    1 +
+ 2 files changed, 62 insertions(+), 0 deletions(-)
+ create mode 100644 scripts/gdb/percpu.py
 
---- linux-3.7-rc4.orig/MAINTAINERS	2012-11-05 16:35:07.797419133 +0100
-+++ linux-3.7-rc4/MAINTAINERS	2012-11-05 17:00:25.958721344 +0100
-@@ -3598,6 +3598,49 @@ F:	drivers/hid/hid-hyperv.c
- F:	drivers/net/hyperv/
- F:	drivers/staging/hv/
- 
-+I2C OVER PARALLEL PORT
-+M:	Jean Delvare <khali@linux-fr.org>
-+L:	linux-i2c@vger.kernel.org
-+S:	Maintained
-+F:	Documentation/i2c/busses/i2c-parport
-+F:	Documentation/i2c/busses/i2c-parport-light
-+F:	drivers/i2c/busses/i2c-parport.c
-+F:	drivers/i2c/busses/i2c-parport-light.c
+diff --git a/scripts/gdb/percpu.py b/scripts/gdb/percpu.py
+new file mode 100644
+index 0000000..6e24400
+--- /dev/null
++++ b/scripts/gdb/percpu.py
+@@ -0,0 +1,61 @@
++#
++# gdb helper commands and functions for Linux kernel debugging
++#
++#  per-cpu tools
++#
++# Copyright (c) 2011, 2012 Siemens AG
++#
++# Authors:
++#  Jan Kiszka <jan.kiszka@siemens.com>
++#
++# This work is licensed under the terms of the GNU GPL version 2.
++#
 +
-+I2C/SMBUS CONTROLLER DRIVERS FOR PC
-+M:	Jean Delvare <khali@linux-fr.org>
-+L:	linux-i2c@vger.kernel.org
-+S:	Maintained
-+F:	Documentation/i2c/busses/i2c-ali1535
-+F:	Documentation/i2c/busses/i2c-ali1563
-+F:	Documentation/i2c/busses/i2c-ali15x3
-+F:	Documentation/i2c/busses/i2c-amd756
-+F:	Documentation/i2c/busses/i2c-amd8111
-+F:	Documentation/i2c/busses/i2c-i801
-+F:	Documentation/i2c/busses/i2c-nforce2
-+F:	Documentation/i2c/busses/i2c-piix4
-+F:	Documentation/i2c/busses/i2c-sis5595
-+F:	Documentation/i2c/busses/i2c-sis630
-+F:	Documentation/i2c/busses/i2c-sis96x
-+F:	Documentation/i2c/busses/i2c-via
-+F:	Documentation/i2c/busses/i2c-viapro
-+F:	drivers/i2c/busses/i2c-ali1535.c
-+F:	drivers/i2c/busses/i2c-ali1563.c
-+F:	drivers/i2c/busses/i2c-ali15x3.c
-+F:	drivers/i2c/busses/i2c-amd756.c
-+F:	drivers/i2c/busses/i2c-amd756-s4882.c
-+F:	drivers/i2c/busses/i2c-amd8111.c
-+F:	drivers/i2c/busses/i2c-i801.c
-+F:	drivers/i2c/busses/i2c-isch.c
-+F:	drivers/i2c/busses/i2c-nforce2.c
-+F:	drivers/i2c/busses/i2c-nforce2-s4985.c
-+F:	drivers/i2c/busses/i2c-piix4.c
-+F:	drivers/i2c/busses/i2c-sis5595.c
-+F:	drivers/i2c/busses/i2c-sis630.c
-+F:	drivers/i2c/busses/i2c-sis96x.c
-+F:	drivers/i2c/busses/i2c-via.c
-+F:	drivers/i2c/busses/i2c-viapro.c
++import gdb
 +
- I2C/SMBUS STUB DRIVER
- M:	"Mark M. Hoffman" <mhoffman@lightlink.com>
- L:	linux-i2c@vger.kernel.org
-@@ -3605,9 +3648,8 @@ S:	Maintained
- F:	drivers/i2c/busses/i2c-stub.c
- 
- I2C SUBSYSTEM
--M:	"Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
-+M:	Wolfram Sang <w.sang@pengutronix.de>
- M:	"Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
--M:	"Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>
- L:	linux-i2c@vger.kernel.org
- W:	http://i2c.wiki.kernel.org/
- T:	quilt kernel.org/pub/linux/kernel/people/jdelvare/linux-2.6/jdelvare-i2c/
-@@ -3618,6 +3660,13 @@ F:	drivers/i2c/
- F:	include/linux/i2c.h
- F:	include/linux/i2c-*.h
- 
-+I2C-TAOS-EVM DRIVER
-+M:	Jean Delvare <khali@linux-fr.org>
-+L:	linux-i2c@vger.kernel.org
-+S:	Maintained
-+F:	Documentation/i2c/busses/i2c-taos-evm
-+F:	drivers/i2c/busses/i2c-taos-evm.c
++from utils import *
++from task import *
 +
- I2C-TINY-USB DRIVER
- M:	Till Harbaum <till@harbaum.org>
- L:	linux-i2c@vger.kernel.org
-@@ -7887,13 +7936,6 @@ M:	Roger Luethi <rl@hellgate.ch>
- S:	Maintained
- F:	drivers/net/ethernet/via/via-rhine.c
- 
--VIAPRO SMBUS DRIVER
--M:	Jean Delvare <khali@linux-fr.org>
--L:	linux-i2c@vger.kernel.org
--S:	Maintained
--F:	Documentation/i2c/busses/i2c-viapro
--F:	drivers/i2c/busses/i2c-viapro.c
--
- VIA SD/MMC CARD CONTROLLER DRIVER
- M:	Bruce Chang <brucechang@via.com.tw>
- M:	Harald Welte <HaraldWelte@viatech.com>
-
++MAX_CPUS = 4096
++
++def get_current_cpu():
++	if get_gdbserver_type() == GDBSERVER_QEMU:
++		return gdb.selected_thread().num - 1
++	elif get_gdbserver_type() == GDBSERVER_KGDB:
++		tid = gdb.selected_thread().ptid[2]
++		if tid > (0x100000000 - MAX_CPUS - 2):
++			return 0x100000000 - tid - 2
++		else:
++			return get_thread_info(get_task_by_pid(tid))['cpu']
++	else:
++		raise gdb.GdbError("Sorry, obtaining the current CPU is "
++				   "not yet supported with this gdb server.")
++
++def per_cpu(var_name, cpu):
++	var = gdb.parse_and_eval("&" + var_name)
++	if cpu == -1:
++		cpu = get_current_cpu()
++	if is_target_arch("sparc:v9"):
++		offset = gdb.parse_and_eval("trap_block[" + str(cpu) +
++					    "].__per_cpu_base")
++	else:
++		offset = gdb.parse_and_eval("__per_cpu_offset[" + str(cpu) +
++					    "]")
++	pointer = var.cast(get_long_type()) + offset
++	return pointer.cast(var.type).dereference()
++
++
++class PerCpu(gdb.Function):
++	__doc__ = "Return per-cpu variable.\n" \
++		  "\n" \
++		  "$lx_per_cpu(\"VAR\"[, CPU]): Return the per-cpu variable called VAR for the\n" \
++		  "given CPU number. If CPU is omitted, the CPU of the current context is used.\n" \
++		  "Note that VAR has to be quoted as string."
++
++	def __init__(self):
++		super(PerCpu, self).__init__("lx_per_cpu")
++
++	def invoke(self, var_name, cpu = -1):
++		return per_cpu(var_name.string(), cpu)
++
++PerCpu()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index deaf652..1d952b5 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -23,3 +23,4 @@ else:
+ 	import symbols
+ 	import dmesg
+ 	import task
++	import percpu
 -- 
-Jean Delvare
+1.7.3.4
+
