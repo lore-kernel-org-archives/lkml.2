@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932955Ab2KERSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 12:18:54 -0500
-Received: from casper.infradead.org ([85.118.1.10]:33329 "EHLO
+	id S932908Ab2KERSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 12:18:50 -0500
+Received: from casper.infradead.org ([85.118.1.10]:33330 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932758Ab2KERSb (ORCPT
+	with ESMTP id S932734Ab2KERSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Nov 2012 12:18:31 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 17/32] perf tests: Add attr record no delay test
-Date: Mon,  5 Nov 2012 14:17:58 -0300
-Message-Id: <1352135893-7564-18-git-send-email-acme@infradead.org>
+Subject: [PATCH 21/32] perf tests: Add attr stat group test
+Date: Mon,  5 Nov 2012 14:18:02 -0300
+Message-Id: <1352135893-7564-22-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1352135893-7564-1-git-send-email-acme@infradead.org>
 References: <1352135893-7564-1-git-send-email-acme@infradead.org>
@@ -31,37 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Jiri Olsa <jolsa@redhat.com>
 
 Adding test to validate perf_event_attr data for command:
-  'record -D'
+  'stat --group -e cycles,instructions'
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1351634526-1516-16-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1351634526-1516-21-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/attr/test-record-no-delay |    9 +++++++++
- 1 file changed, 9 insertions(+)
- create mode 100644 tools/perf/tests/attr/test-record-no-delay
+ tools/perf/tests/attr/test-stat-group |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+ create mode 100644 tools/perf/tests/attr/test-stat-group
 
-diff --git a/tools/perf/tests/attr/test-record-no-delay b/tools/perf/tests/attr/test-record-no-delay
+diff --git a/tools/perf/tests/attr/test-stat-group b/tools/perf/tests/attr/test-stat-group
 new file mode 100644
-index 0000000..f253b78
+index 0000000..fdc1596
 --- /dev/null
-+++ b/tools/perf/tests/attr/test-record-no-delay
-@@ -0,0 +1,9 @@
++++ b/tools/perf/tests/attr/test-stat-group
+@@ -0,0 +1,15 @@
 +[config]
-+command = record
-+args    = -D kill >/dev/null 2>&1
++command = stat
++args    = --group -e cycles,instructions kill >/dev/null 2>&1
++ret     = 1
 +
-+[event:base-record]
-+sample_period=4000
-+sample_type=263
-+watermark=0
-+wakeup_events=1
++[event-1:base-stat]
++fd=1
++group_fd=-1
++
++[event-2:base-stat]
++fd=2
++group_fd=1
++config=1
++disabled=0
++enable_on_exec=0
 -- 
 1.7.9.2.358.g22243
 
