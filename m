@@ -1,135 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab2KELrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 06:47:37 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57353 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab2KELrf (ORCPT
+	id S1754092Ab2KELu1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 06:50:27 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:39716 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752059Ab2KELuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 06:47:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352113625.2705.10.camel@menhir>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	<1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
-	<1352113625.2705.10.camel@menhir>
-Date: Mon, 5 Nov 2012 19:47:33 +0800
-Message-ID: <CAEH94Li9M7fda5AExMvU_JbAKYHJHnZjTK6kpUQDTO5jnfS9eQ@mail.gmail.com>
-Subject: Re: [RFC v4+ hot_track 03/19] vfs: add I/O frequency update function
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 5 Nov 2012 06:50:25 -0500
+Message-ID: <1352116219.14888.262.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] samsung-laptop: Disable if CONFIG_EFI=y
+From: Matt Fleming <matt@console-pimps.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Corentin Chary <corentincj@iksaif.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Matthew Garrett <mjg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        Alessandro Crismani <alessandro.crismani@gmail.com>,
+        Mikhail Bakhterev <mike.bakhterev@gmail.com>,
+        Patrick H <kernel@feystorm.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        stable@vger.kernel.org
+Date: Mon, 05 Nov 2012 11:50:19 +0000
+In-Reply-To: <20121105103031.GA25659@kroah.com>
+References: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
+	 <CAHR064isMXk8qkqhBJ==9sRRP7xC_j_K5rqXApza-LNkosp5mg@mail.gmail.com>
+	 <20121104193741.7b4ca37b@pyramind.ukuu.org.uk>
+	 <CAHR064jwe=diZ9B-D+-SroCW1ZevkRDMosB7uDuc2VXZkFxmdA@mail.gmail.com>
+	 <20121105103031.GA25659@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 7:07 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
-> Hi,
->
-> On Mon, 2012-10-29 at 12:30 +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->>   Add some util helpers to update access frequencies
->> for one file or its range.
->>
->> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> ---
->>  fs/hot_tracking.c            |  179 ++++++++++++++++++++++++++++++++++++++++++
->>  fs/hot_tracking.h            |    7 ++
->>  include/linux/hot_tracking.h |    2 +
->>  3 files changed, 188 insertions(+), 0 deletions(-)
->>
->> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
->> index 68591f0..0a7d9a3 100644
->> --- a/fs/hot_tracking.c
->> +++ b/fs/hot_tracking.c
->> @@ -172,6 +172,137 @@ static void hot_inode_tree_exit(struct hot_info *root)
->>       }
->>  }
->>
->> +struct hot_inode_item
->> +*hot_inode_item_find(struct hot_info *root, u64 ino)
->> +{
->> +     struct hot_inode_item *he;
->> +     int ret;
->> +
->> +again:
->> +     spin_lock(&root->lock);
->> +     he = radix_tree_lookup(&root->hot_inode_tree, ino);
->> +     if (he) {
->> +             kref_get(&he->hot_inode.refs);
->> +             spin_unlock(&root->lock);
->> +             return he;
->> +     }
->> +     spin_unlock(&root->lock);
->> +
->> +     he = kmem_cache_zalloc(hot_inode_item_cachep,
->> +                             GFP_KERNEL | GFP_NOFS);
-> This doesn't look quite right... which of these two did you mean? I
-> assume probably just GFP_NOFS
-Yes, good catch, thanks.
->
->> +     if (!he)
->> +             return ERR_PTR(-ENOMEM);
->> +
->> +     hot_inode_item_init(he, ino, &root->hot_inode_tree);
->> +
->> +     ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
->> +     if (ret) {
->> +             kmem_cache_free(hot_inode_item_cachep, he);
->> +             return ERR_PTR(ret);
->> +     }
->> +
->> +     spin_lock(&root->lock);
->> +     ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
->> +     if (ret == -EEXIST) {
->> +             kmem_cache_free(hot_inode_item_cachep, he);
->> +             spin_unlock(&root->lock);
->> +             radix_tree_preload_end();
->> +             goto again;
->> +     }
->> +     spin_unlock(&root->lock);
->> +     radix_tree_preload_end();
->> +
->> +     kref_get(&he->hot_inode.refs);
->> +     return he;
->> +}
->> +EXPORT_SYMBOL_GPL(hot_inode_item_find);
->> +
->> +static struct hot_range_item
->> +*hot_range_item_find(struct hot_inode_item *he,
->> +                     u32 start)
->> +{
->> +     struct hot_range_item *hr;
->> +     int ret;
->> +
->> +again:
->> +     spin_lock(&he->lock);
->> +     hr = radix_tree_lookup(&he->hot_range_tree, start);
->> +     if (hr) {
->> +             kref_get(&hr->hot_range.refs);
->> +             spin_unlock(&he->lock);
->> +             return hr;
->> +     }
->> +     spin_unlock(&he->lock);
->> +
->> +     hr = kmem_cache_zalloc(hot_range_item_cachep,
->> +                             GFP_KERNEL | GFP_NOFS);
-> Likewise, here too.
-ditto
->
-> Steve.
->
->
->
+On Mon, 2012-11-05 at 11:30 +0100, Greg KH wrote:
+> Odds are, the windows driver just isn't even loaded on the newer
+> machines, as ACPI works just fine for this.  But, we don't have the
+> option of shipping custom systems for different laptops like Samsung
+> does, so we have to probe for this somehow.
+> 
+> Initally we were looking at the DMI strings for specific laptop models,
+> but that got annoying as we had to keep adding new models.  So we now
+> just check the memory locations for all Samsung laptops, which was
+> working fine.
+> 
+> What is the problem if we try to access this memory on UEFI machines?
+> What is the error that is caused?
 
+Machine Check Exceptions are generated.
 
+> Is there any "this_is_a_uefi_system()" type call drivers can make to
+> just opt-out if that call is true?
+
+There is the 'efi_enabled' variable, but it doesn't strictly mean
+"this_is_a_uefi_system()", it actually means "Do we have EFI runtime
+services?". The whole thing is a bit of a mess and I'm planning on
+cleaning it up this week.
 
 -- 
-Regards,
+Matt Fleming, Intel Open Source Technology Center
 
-Zhi Yong Wu
