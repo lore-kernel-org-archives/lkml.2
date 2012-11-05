@@ -1,80 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933348Ab2KEWG3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 17:06:29 -0500
-Received: from [204.155.152.216] ([204.155.152.216]:44787 "EHLO shutemov.name"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932222Ab2KEWG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 17:06:28 -0500
-Date: Tue, 6 Nov 2012 00:08:03 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v3 1/8] x86: Improve __phys_addr performance by making
- use of carry flags and inlining
-Message-ID: <20121105220803.GA26132@shutemov.name>
-References: <20121105185657.10205.27419.stgit@gitlad.jf.intel.com>
- <20121105190332.10205.22300.stgit@gitlad.jf.intel.com>
- <20121105202425.GA25671@shutemov.name>
- <5098360C.6090805@intel.com>
+	id S933364Ab2KEWKx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 17:10:53 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:38310
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933111Ab2KEWKw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 17:10:52 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Id799hzz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
+Message-ID: <50983966.4080805@freescale.com>
+Date: Mon, 5 Nov 2012 16:10:46 -0600
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Firefox/16.0 SeaMonkey/2.13.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5098360C.6090805@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Varun Sethi <Varun.Sethi@freescale.com>
+CC: <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <scottwood@freescale.com>
+Subject: Re: [PATCH 3/4 v4] iommu/fsl: Add iommu domain attributes required
+ by fsl PAMU driver.
+References: <1352114361-25192-1-git-send-email-Varun.Sethi@freescale.com> <1352114361-25192-2-git-send-email-Varun.Sethi@freescale.com> <1352114361-25192-3-git-send-email-Varun.Sethi@freescale.com>
+In-Reply-To: <1352114361-25192-3-git-send-email-Varun.Sethi@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 01:56:28PM -0800, Alexander Duyck wrote:
-> On 11/05/2012 12:24 PM, Kirill A. Shutemov wrote:
-> > On Mon, Nov 05, 2012 at 11:04:06AM -0800, Alexander Duyck wrote:
-> >> This patch is meant to improve overall system performance when making use of
-> >> the __phys_addr call.  To do this I have implemented several changes.
-> >>
-> >> First if CONFIG_DEBUG_VIRTUAL is not defined __phys_addr is made an inline,
-> >> similar to how this is currently handled in 32 bit.  However in order to do
-> >> this it is required to export phys_base so that it is available if __phys_addr
-> >> is used in kernel modules.
-> >>
-> >> The second change was to streamline the code by making use of the carry flag
-> >> on an add operation instead of performing a compare on a 64 bit value.  The
-> >> advantage to this is that it allows us to significantly reduce the overall
-> >> size of the call.  On my Xeon E5 system the entire __phys_addr inline call
-> >> consumes a little less than 32 bytes and 5 instructions.  I also applied
-> >> similar logic to the debug version of the function.  My testing shows that the
-> >> debug version of the function with this patch applied is slightly faster than
-> >> the non-debug version without the patch.
-> >>
-> >> When building the kernel with the first two changes applied I saw build
-> >> warnings about __START_KERNEL_map and PAGE_OFFSET constants not fitting in
-> >> their type.  In order to resolve the build warning I changed their type from
-> >> UL to ULL.
-> > What kind of warning messages did you see?
-> > It's strange: sizeof(unsinged long) == sizeof(unsinged long long) on
-> > x86_64
+Varun Sethi wrote:
+> Added the following domain attributes required by FSL PAMU driver:
+> 1. Subwindows field added to the iommu domain geometry attribute.
+> 2. Added new iommu stash attribute, which allows setting of the
+>    LIODN specific stash id parameter through IOMMU API.
+> 3. Added an attribute for enabling/disabling DMA to a particular
+>    memory window.
 > 
-> One of the warnings is included below:
 > 
-> In file included from /usr/src/kernels/linux-next/arch/x86/include/asm/page_types.h:37,
->                  from /usr/src/kernels/linux-next/arch/x86/include/asm/pgtable_types.h:5,
->                  from /usr/src/kernels/linux-next/arch/x86/include/asm/boot.h:11,
->                  from arch/x86/realmode/rm/../../boot/boot.h:26,
->                  from arch/x86/realmode/rm/../../boot/regs.c:19,
->                  from arch/x86/realmode/rm/regs.c:1:
-> /usr/src/kernels/linux-next/arch/x86/include/asm/page_64_types.h: In function '__phys_addr_nodebug':
-> /usr/src/kernels/linux-next/arch/x86/include/asm/page_64_types.h:63: warning: integer constant is too large for 'unsigned long' type
-> /usr/src/kernels/linux-next/arch/x86/include/asm/page_64_types.h:66: warning: integer constant is too large for 'unsigned long' type
-> /usr/src/kernels/linux-next/arch/x86/include/asm/page_64_types.h:66: warning: integer constant is too large for 'unsigned long' type
+> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> ---
+> changes in v4:
+> - Updated comment explaining subwindows(as mentioned by Scott).
+> change in v3:
+> -renamed the stash attribute targets
+>  include/linux/iommu.h |   36 ++++++++++++++++++++++++++++++++++++
+>  1 files changed, 36 insertions(+), 0 deletions(-)
 > 
-> The warnings all seemed to originate from several different spots
-> throughout the x86 tree.  All of the warning messages include
-> arch/x86/boot/boot.h:26 and then from there up the included from list is
-> always the same.
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> index f3b99e1..e72f5e5 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -44,6 +44,34 @@ struct iommu_domain_geometry {
+>  	dma_addr_t aperture_start; /* First address that can be mapped    */
+>  	dma_addr_t aperture_end;   /* Last address that can be mapped     */
+>  	bool force_aperture;       /* DMA only allowed in mappable range? */
+> +
+> +	/**
 
-Realmode code compiles with -m32. I guess it's just wrong that it tries to
-include <asm/page_64_types.h>.
+/** is used by kerneldoc to indicate a kerneldoc-style comment.  Normal
+comments should start with just "/*".
+
+> +	 * There could be a single contiguous window tha maps the entire
+> +	 * geometry or it could be split in to multiple subwindows.
+> +	 * Subwindows allow for supporting physically discontiguous mappings.
+> +	 * This attribute indicates number of DMA subwindows supported by
+> +	 * the geometry. If there is a single window that maps the entire
+> +	 * geometry, attribute must be set to "1". A value of "0" implies
+> +	 * that there are 256 subwindows each of size 4K. Value other than
+> +	 * "0" or "1" indicates the actual number of subwindows.
+> +	 */
+> +	u32 subwindows;
+
+Why is this a sized integer?
+
+> +};
+> +
+> +/* cache stash targets */
+> +#define IOMMU_ATTR_CACHE_L1 1
+> +#define IOMMU_ATTR_CACHE_L2 2
+> +#define IOMMU_ATTR_CACHE_L3 3
+
+This seems kinda silly.  The value of the enum is in the enum name.
+
+> +
+> +/* This attribute corresponds to IOMMUs capable of generating
+> + * a stash transaction. A stash transaction is typically a
+> + * hardware initiated prefetch of data from memory to cache.
+> + * This attribute allows configuring stashig specific parameters
+> + * in the IOMMU hardware.
+> + */
+> +struct iommu_stash_attribute {
+> +	u32 	cpu;	/* cpu number */
+> +	u32 	cache;	/* cache to stash to: L1,L2,L3 */
+>  };
+>  
+>  struct iommu_domain {
+> @@ -60,6 +88,14 @@ struct iommu_domain {
+>  enum iommu_attr {
+>  	DOMAIN_ATTR_MAX,
+>  	DOMAIN_ATTR_GEOMETRY,
+> +	/* Set the IOMMU hardware stashing
+> +	 * parameters.
+> +	 */
+> +	DOMAIN_ATTR_STASH,
+> +	/* Explicity enable/disable DMA for a
+> +         * particular memory window.
+> +         */
+> +	DOMAIN_ATTR_ENABLE,
+>  };
+>  
+>  #ifdef CONFIG_IOMMU_API
+> 
+
 
 -- 
- Kirill A. Shutemov
+Timur Tabi
+Linux kernel developer at Freescale
+
