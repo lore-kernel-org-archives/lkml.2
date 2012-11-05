@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab2KEN6D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:58:03 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:55103 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932466Ab2KENxP (ORCPT
+	id S932521Ab2KEN6v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:58:51 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46896 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932418Ab2KENxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:53:15 -0500
+	Mon, 5 Nov 2012 08:53:05 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v2 05/16] perf, tools: Add arbitary aliases and support names with -
-Date: Mon,  5 Nov 2012 14:50:52 +0100
-Message-Id: <1352123463-7346-6-git-send-email-eranian@google.com>
+Subject: [PATCH v2 01/16] perf/x86: improve sysfs event mapping with event string
+Date: Mon,  5 Nov 2012 14:50:48 +0100
+Message-Id: <1352123463-7346-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352123463-7346-1-git-send-email-eranian@google.com>
 References: <1352123463-7346-1-git-send-email-eranian@google.com>
@@ -21,38 +21,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+This patch extends Jiri's changes to make generic
+events mapping visible via sysfs. The patch extends
+the mechanism to non-generic events by allowing
+the mappings to be hardcoded in strings.
 
-- Add missing scanner symbol for arbitrary aliases inside the config
-region.
-- looks nicer than _, so allow - in the event names. Used for various
-of the arch perfmon and Haswell events.
+This mechanism will be used by the PEBS-LL patch
+later on.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/util/parse-events.l |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/cpu/perf_event.c |   28 +++++++++++++---------------
+ arch/x86/kernel/cpu/perf_event.h |   26 ++++++++++++++++++++++++++
+ 2 files changed, 39 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index c87efc1..66959fa 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -81,6 +81,7 @@ num_dec		[0-9]+
- num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
- name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
-+name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
- modifier_event	[ukhpGH]{1,8}
- modifier_bp	[rwx]{1,3}
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 4428fd1..aeca46d 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1316,20 +1316,22 @@ static struct attribute_group x86_pmu_format_group = {
+ 	.attrs = NULL,
+ };
  
-@@ -168,6 +169,7 @@ period			{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_SAMPLE_PERIOD); }
- branch_type		{ return term(yyscanner, PARSE_EVENTS__TERM_TYPE_BRANCH_SAMPLE_TYPE); }
- ,			{ return ','; }
- "/"			{ BEGIN(INITIAL); return '/'; }
-+{name_minus}		{ return str(yyscanner, PE_NAME); }
+-struct perf_pmu_events_attr {
+-	struct device_attribute attr;
+-	u64 id;
+-};
+-
+ /*
+  * Remove all undefined events (x86_pmu.event_map(id) == 0)
+  * out of events_attr attributes.
+  */
+ static void __init filter_events(struct attribute **attrs)
+ {
++	struct device_attribute *d;
++	struct perf_pmu_events_attr *pmu_attr;
+ 	int i, j;
+ 
+ 	for (i = 0; attrs[i]; i++) {
++		d = (struct device_attribute *)attrs[i];
++		pmu_attr = container_of(d, struct perf_pmu_events_attr, attr);
++		/* str trumps id */
++		if (pmu_attr->event_str)
++			continue;
+ 		if (x86_pmu.event_map(i))
+ 			continue;
+ 
+@@ -1341,24 +1343,20 @@ static void __init filter_events(struct attribute **attrs)
+ 	}
  }
  
- mem:			{ BEGIN(mem); return PE_PREFIX_MEM; }
+-static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
++ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
+ 			  char *page)
+ {
+ 	struct perf_pmu_events_attr *pmu_attr = \
+ 		container_of(attr, struct perf_pmu_events_attr, attr);
+ 
+ 	u64 config = x86_pmu.event_map(pmu_attr->id);
+-	return x86_pmu.events_sysfs_show(page, config);
+-}
+ 
+-#define EVENT_VAR(_id)  event_attr_##_id
+-#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
++	/* string trumps id */
++	if (pmu_attr->event_str)
++		return sprintf(page, "%s", pmu_attr->event_str);
+ 
+-#define EVENT_ATTR(_name, _id)					\
+-static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
+-	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
+-	.id   =  PERF_COUNT_HW_##_id,				\
+-};
++	return x86_pmu.events_sysfs_show(page, config);
++}
+ 
+ EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
+ EVENT_ATTR(instructions,		INSTRUCTIONS		);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 115c1ea..41479da 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -419,6 +419,29 @@ do {									\
+ #define ERF_NO_HT_SHARING	1
+ #define ERF_HAS_RSP_1		2
+ 
++#define EVENT_VAR(_id)  event_attr_##_id
++#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
++
++#define EVENT_ATTR(_name, _id)					\
++static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
++	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
++	.id   =  PERF_COUNT_HW_##_id,				\
++	.event_str = NULL,					\
++};
++
++#define EVENT_ATTR_STR(_name, v, str)				  \
++static struct perf_pmu_events_attr event_attr_##v = {		  \
++	.attr      = __ATTR(_name, 0444, events_sysfs_show, NULL),\
++	.id        =  0,					  \
++	.event_str =  str,					  \
++};
++
++struct perf_pmu_events_attr {
++	struct device_attribute attr;
++	u64 id;
++	const char *event_str;
++};
++
+ extern struct x86_pmu x86_pmu __read_mostly;
+ 
+ DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
+@@ -633,6 +656,9 @@ int p6_pmu_init(void);
+ 
+ int knc_pmu_init(void);
+ 
++ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
++			  char *page);
++
+ #else /* CONFIG_CPU_SUP_INTEL */
+ 
+ static inline void reserve_ds_buffers(void)
 -- 
 1.7.9.5
 
