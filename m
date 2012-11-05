@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276Ab2KETTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 14:19:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754753Ab2KETTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 14:19:09 -0500
-Date: Mon, 5 Nov 2012 14:19:04 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Bruno Wolff III <bruno@wolff.to>, dhowells@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] MODSIGN: Only sign modules if built in-tree
-Message-ID: <20121105191903.GG27352@hansolo.jdub.homelinux.org>
-References: <20121031132749.GH6627@hansolo.jdub.homelinux.org>
- <87390t6bs0.fsf@rustcorp.com.au>
- <20121101112655.GM6627@hansolo.jdub.homelinux.org>
- <20121101145013.GN6627@hansolo.jdub.homelinux.org>
- <87liek4rt5.fsf@rustcorp.com.au>
- <20121102123404.GO6627@hansolo.jdub.homelinux.org>
- <87vcdkyfi4.fsf@rustcorp.com.au>
+	id S1754767Ab2KET0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 14:26:43 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:59598 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab2KET0l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 14:26:41 -0500
+Date: Mon, 5 Nov 2012 11:26:36 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Glauber Costa <glommer@parallels.com>, rjw@sisk.pl,
+        linux-pm@vger.kernel.org, fweisbec@gmail.com,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mhocko@suse.cz, cgroups@vger.kernel.org
+Subject: Re: [RFC] cgroup: deprecate clone_children
+Message-ID: <20121105192636.GG19354@mtj.dyndns.org>
+References: <1351931915-1701-1-git-send-email-tj@kernel.org>
+ <1351931915-1701-2-git-send-email-tj@kernel.org>
+ <5097C23B.3040808@parallels.com>
+ <20121105180213.GB19354@mtj.dyndns.org>
+ <20121105191714.GA24560@sergelap>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87vcdkyfi4.fsf@rustcorp.com.au>
+In-Reply-To: <20121105191714.GA24560@sergelap>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 12:31:39PM +1030, Rusty Russell wrote:
-> Josh Boyer <jwboyer@redhat.com> writes:
-> > diff --git a/Makefile b/Makefile
-> > index 14c93b3..7e27d51 100644
-> > --- a/Makefile
-> > +++ b/Makefile
-> > @@ -722,8 +722,14 @@ export mod_strip_cmd
-> >  ifeq ($(CONFIG_MODULE_SIG),y)
-> >  MODSECKEY = ./signing_key.priv
-> >  MODPUBKEY = ./signing_key.x509
-> > +ifeq ($(KBUILD_EXTMOD),)
-> > +SIGNFAIL = false
-> > +else
-> > +# External builds might not have a signing key, don't break module_install.
-> > +SIGNFAIL = true
-> > +endif # KBUILD_EXTMOD
-> >  export MODPUBKEY
-> > -mod_sign_cmd = perl $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY)
-> > +mod_sign_cmd = $(SIGNFAIL) || perl $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY)
-> >  else
-> >  mod_sign_cmd = true
-> >  endif
+Hello, Serge.
+
+On Mon, Nov 05, 2012 at 01:17:14PM -0600, Serge Hallyn wrote:
+> > As this is unnecessary feature with very limited use and awkward in
 > 
-> Huh?  'true || perl' never runs perl due to short circuiting.
+> clone_children is currently required by lxc.  Of course lxc could
+> manually set the .cpus and .mems in the newly created child, but if
+> those interfaces or others like it ever change (i.e. any new ones which
+> must be set before a task can join a cgroup) we'll get into yet more of
+> a rats nets of code to support different kernel versions.
 
-Ah.  Maybe you were going for "sign all modules if keys are available,
-but don't break external if they aren't" semantics.  I was just skipping
-it entirely for external modules.
+If lxc is using it, this will have to stay then.  I'll try to make it
+a cpuset specific thing.
 
-> Let's do this instead.  Tested here, please ack.
+> (Just as an idea, if there was a way to generically tell from the list
+> of files in my cgroups dir which files need to be initialized before a
+> task can join, I think that would suffice.  Maybe a cgroups.needssetup
+> file which right now contains 'cpuset.mems\ncpuset.cpus'. Then if we
+> find a file we don't recognize in there we can throw an intelligent
+> error, or guess at duplicating the parent value.)
 
-Either method works for me, and I tested this locally as you asked.
-Seems to be working well.
+Hmmm... I think the root problem is that different controllers don't
+agree on the way they inherit configurations from parents.  cgroup
+really is a trainwreck.  :(
 
-> modules: don't break modules_install on external modules with no key.
+I don't know whether "needssetup" is the right way to deal with it.
+I'll think more about it.
+
+> > co-mounted use cases, let's try to deprecate it.  Whine on the mount
+> > option and accesses to cgroupfs knobs.
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Cc: Glauber Costa <glommer@parallels.com>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > ---
+> > Glauber, I think this is more befitting change for .post_clone().  If
 > 
-> The script still spits out an error ("Can't read private key") but we
-> don't break modules_install.
-> 
-> Reported-by: Bruno Wolff III <bruno@wolff.to>
-> Original-patch-by: Josh Boyer <jwboyer@redhat.com>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> What do you mean by that?  That he is working on a patch-set which will
+> remove post_clone and this belongs there, or that there is a proposed
+> alternative?
 
-Acked-by: Josh Boyer <jwboyer@redhat.com>
+The former.  There was a patchset from Glauber updating ->post_clone()
+(which didn't change the behavior).
 
-josh
+Thanks.
 
-> 
-> diff --git a/scripts/Makefile.modinst b/scripts/Makefile.modinst
-> index dda4b2b..ecbb447 100644
-> --- a/scripts/Makefile.modinst
-> +++ b/scripts/Makefile.modinst
-> @@ -16,8 +16,9 @@ PHONY += $(modules)
->  __modinst: $(modules)
->  	@:
->  
-> +# Don't stop modules_install if we can't sign external modules.
->  quiet_cmd_modules_install = INSTALL $@
-> -      cmd_modules_install = mkdir -p $(2); cp $@ $(2) ; $(mod_strip_cmd) $(2)/$(notdir $@) ; $(mod_sign_cmd) $(2)/$(notdir $@)
-> +      cmd_modules_install = mkdir -p $(2); cp $@ $(2) ; $(mod_strip_cmd) $(2)/$(notdir $@) ; $(mod_sign_cmd) $(2)/$(notdir $@) $(patsubst %,|| true,$(KBUILD_EXTMOD))
->  
->  # Modules built outside the kernel source tree go into extra by default
->  INSTALL_MOD_DIR ?= extra
+-- 
+tejun
