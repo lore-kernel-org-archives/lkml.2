@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab2KEIkk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 03:40:40 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:61523 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab2KEIkj (ORCPT
+	id S1753397Ab2KEIlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 03:41:51 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56887 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052Ab2KEIlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 03:40:39 -0500
+	Mon, 5 Nov 2012 03:41:49 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121105092904.74d7ff6703f984b0b05f8e16@studenti.unina.it>
-References: <20121029231624.1476a25a62a0c219cc25627a@studenti.unina.it>
-	<20121105092904.74d7ff6703f984b0b05f8e16@studenti.unina.it>
-Date: Mon, 5 Nov 2012 08:40:38 +0000
-Message-ID: <CAPM=9tyU6yYeYBkUJHqofm2iX5BKdSA6C73O7h2iBqsrEZHr9g@mail.gmail.com>
-Subject: Re: nouveau, linux3.7-rc3: BUG: unable to handle kernel paging
- request at fffffffffffffff8
-From: Dave Airlie <airlied@gmail.com>
-To: Antonio Ospite <ospite@studenti.unina.it>
-Cc: dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        Ben Skeggs <bskeggs@redhat.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20121030072415.17199f9a@nehalam.linuxnetplumber.net>
+References: <20121030060056.GA3373@paolo-ThinkPad-W520>
+	<20121030072415.17199f9a@nehalam.linuxnetplumber.net>
+Date: Mon, 5 Nov 2012 16:41:49 +0800
+Message-ID: <CAM_iQpUbru0EiO8yJYO2Uke_Y5v7047PEijkBHHpBn5DUbke5Q@mail.gmail.com>
+Subject: Re: [PATCH RFC] pkt_sched: enable QFQ to support TSO/GSO
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Paolo Valente <paolo.valente@unimore.it>, jhs@mojatatu.com,
+        David Miller <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        rizzo@iet.unipi.it, fchecconi@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 8:29 AM, Antonio Ospite <ospite@studenti.unina.it> wrote:
-> On Mon, 29 Oct 2012 23:16:24 +0100
-> Antonio Ospite <ospite@studenti.unina.it> wrote:
+On Tue, Oct 30, 2012 at 10:24 PM, Stephen Hemminger
+<shemminger@vyatta.com> wrote:
+> On Tue, 30 Oct 2012 07:00:56 +0100
+> Paolo Valente <paolo.valente@unimore.it> wrote:
 >
 >> Hi,
+>> if the max packet size for some class (configured through tc) is
+>> violated by the actual size of the packets of that class, then QFQ
+>> would not schedule classes correctly, and the data structures
+>> implementing the bucket lists may get corrupted. This problem occurs
+>> with TSO/GSO even if the max packet size is set to the MTU, and is,
+>> e.g., the cause of the failure reported in [1]. Two patches have been
+>> proposed to solve this problem in [2], one of them is a preliminary
+>> version of this patch.
 >>
->> I am experiencing a bug with nouveau with linux-3.7-rc3 (and since rc1),
->> my video adapter is the one integrated on the MSI M3N78-VM motherboard
->> (hence x86_64):
+>> This patch addresses the above issues by: 1) setting QFQ parameters to
+>> proper values for supporting TSO/GSO (in particular, setting the
+>> maximum possible packet size to 64KB), 2) automatically increasing the
+>> max packet size for a class, lmax, when a packet with a larger size
+>> than the current value of lmax arrives.
 >>
-> [...]
->> [ 1943.858601] BUG: unable to handle kernel paging request at fffffffffffffff8
->> [ 1943.858669] IP: [<ffffffffa031a67a>] nouveau_mm_head+0x30/0x127 [nouveau]
->> [ 1943.858779] PGD 160d067 PUD 160e067 PMD 0
->> [ 1943.858803] Oops: 0000 [#1] SMP
-> [..]
->> [ 1943.860018] Call Trace:
->> [ 1943.860019]  [<ffffffff810fa13d>] ? kmem_cache_alloc_trace+0xbf/0xcf
->> [ 1943.860019]  [<ffffffff81060f13>] ? should_resched+0x5/0x23
->> [ 1943.860019]  [<ffffffffa032a10a>] ? nv50_fb_vram_new+0xc5/0x1f2 [nouveau]
+>> The drawback of the first point is that the maximum weight for a class
+>> is now limited to 4096, which is equal to 1/16 of the maximum weight
+>> sum.
+>>
+>> Finally, this patch also forcibly caps the timestamps of a class if
+>> they are too high to be stored in the bucket list. This capping, taken
+>> from QFQ+ [3], handles the unfrequent case described in the comment to
+>> the function slot_insert.
+>>
+>> [1] http://marc.info/?l=linux-netdev&m=134968777902077&w=2
+>> [2] http://marc.info/?l=linux-netdev&m=135096573507936&w=2
+>> [3] http://marc.info/?l=linux-netdev&m=134902691421670&w=2
+>>
+>> Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
+>> Tested-by: Cong Wang <amwang@redhat.com>
 >
-> Ben, I cannot reproduce the crash with 3.7-rc4, I spotted commits
-> a7dbf00 and 5cad16a which seem to be related to the problem I was
-> having; would you mind elaborating a bit about what you think was
-> causing the crash on my side? Maybe the chipset used on this motherboard
-> doesn't support some feature? And how did you figured out from the logs?
->
+> Acked-by: Stephen Hemminger <shemminger@vyatta.com>
 
-5cad16acd25b16681a060d28d10eeacf98d07701 is the actual fix
 
-The chipset hasn't got Z compression support, and the oops once decoded pointed
-out the new code was trying to allocate Z tags from a NULL memory block. The old
-code use to allocate an empty memory block instead of NULL, and it got
-lost in the
-rewrite, Ben just fixed it to allow empty memory blocks again.
+David, could you take this patch? Stephen acked it.
 
-Dave.
+Thanks!
