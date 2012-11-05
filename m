@@ -1,154 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab2KEJDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 04:03:01 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52505 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab2KEJC5 (ORCPT
+	id S1753558Ab2KEJFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 04:05:00 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:51245 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab2KEJE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 04:02:57 -0500
-From: Melby Sjamsuddin <melby.s@vulytrampolines.com>
-Content-Type: multipart/signed; boundary="Apple-Mail=_D1538A37-7FB8-4DF6-A56E-960D1654092C"; protocol="application/pkcs7-signature"; micalg=sha1
-Subject: Network routing problem after upgrading to 3.6.2
-Date: Mon, 5 Nov 2012 19:02:51 +1000
-Message-Id: <E3FFC807-CA31-45EA-A8EF-1266A27F9A0D@vulytrampolines.com>
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1283)
-X-Mailer: Apple Mail (2.1283)
+	Mon, 5 Nov 2012 04:04:57 -0500
+Date: Mon, 5 Nov 2012 10:04:51 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Shiraz Hashim <shiraz.hashim@st.com>
+Cc: linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH V5] PWM: Add SPEAr PWM chip driver support
+Message-ID: <20121105090451.GA5847@avionic-0098.mockup.avionic-design.de>
+References: <1351138153-584-1-git-send-email-shiraz.hashim@st.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
+Content-Disposition: inline
+In-Reply-To: <1351138153-584-1-git-send-email-shiraz.hashim@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:bT58XhfXIBSAFTIzMOkMLLqWol35Hemu5Zt6piQVcAw
+ hxmKkcLem829Mmu5gN6SFKYLKIqVJ4HlPfMLeCOMLJZLgrZGkh
+ tQbrr9A30CSA7iYiIPuh0bE8yJfu4J8l8lLlXTv5ukek5eLDXL
+ GvdtNIHxi6+ZP3+ZJsfq+O0wSw2K1MhzEPtrmn0Jeyal4ZkZDY
+ thw6913Ry+weehpocUstmU+abCXP6SCMW+8ihq2AJm1SzWjDNd
+ aYVSeD4ZfCZBWJg9s0N8mcpgGdxcta9WNrEAfgeuI8rjXiqZMO
+ 04HcxLTSgBEh4NL8pkSnfVyXICVhWwddTRbDZUXWZjmwl9OmQq
+ qY624PbgmmhgzWm22PBrD4SU6NTt6Y19AlH4gsJMSX+BDS2pS+
+ pKp1ozxvOD751XHAmnk6xeGLIg6XGrmLTw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Apple-Mail=_D1538A37-7FB8-4DF6-A56E-960D1654092C
+--pf9I7BMVVzbSWLtt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=utf-8
 
-Hi All,
+On Thu, Oct 25, 2012 at 09:39:13AM +0530, Shiraz Hashim wrote:
+> Add support for PWM chips present on SPEAr platforms. These PWM
+> chips support 4 channel output with programmable duty cycle and
+> frequency.
+>=20
+> More details on these PWM chips can be obtained from relevant
+> chapter of reference manual, present at following[1] location.
+>=20
+> 1. http://www.st.com/internet/mcu/product/251211.jsp
+>=20
+> Cc: Thierry Reding <thierry.reding@avionic-design.de>
+> Signed-off-by: Shiraz Hashim <shiraz.hashim@st.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Reviewed-by: Vipin Kumar <vipin.kumar@st.com>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> Changes:-
+> V4 --> V5:
+>    * replace tab by space in structure element declaration
+>    * restructure probe to register pwm_chip at end when clk is prepared, =
+and
+>      all initializations done.
+>    * move clk_enable/disable in probe under if block which checks "1340"
+>      compatibility=20
+>    * Replace (ret < 0) if condition by (!ret) at places where ret should =
+be 0
+>      on success
+>=20
+> V3 --> V4:
+>    * simplify remove
+>    * maintain alphabetical order in Makefile
+>    * donot check for device node in probe
+>    * move few assignment lines in probe
+>=20
+> V2 --> V3:
+>    * remove "disabled" line from pwm dt binding documentation
+>    * remove un-necessary check on pwm chip (for NULL) in remove.
+>=20
+> V1 --> V2:
+>    * make proper reference to pwm and pwm chip
+>    * take care to capitalize PWM at appropriate places
+>    * fix compatible string to the SoC where pwm chip was introduced
+>    * Rename the documentation file to the name of driver
+>    * Fix cosmetic changes like names, function name alignment, paragraph
+>      formating, comments placement and formating, etc.
+>    * Group and associate the bit field definitions to their registers
+>    * Fix kerneldoc for structure definition
+>    * Use chip to name pwm device and pwm for the channel instance
+>    * Remove init section qualifiers
+>    * Remove ifdefs around device tree from code and add dependency on CON=
+FIG_OF
+>    * prepare/unprepare clock once in probe/remove and just enable/disable
+>      at rest of the places.
+>    * Use _relaxed for readl/writel.
+>    * Fix pwm disable part in remove
+>=20
+>  .../devicetree/bindings/pwm/spear-pwm.txt          |   18 ++
+>  drivers/pwm/Kconfig                                |   11 +
+>  drivers/pwm/Makefile                               |    1 +
+>  drivers/pwm/pwm-spear.c                            |  276 ++++++++++++++=
+++++++
+>  4 files changed, 306 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pwm/spear-pwm.txt
+>  create mode 100644 drivers/pwm/pwm-spear.c
 
+Applied, thanks.
 
-I have a network issue with two routers at work. They're setup with vrrp =
-and do load balancing with
-'ip route nexthop' and iptables connmark, using different vlan to =
-connect to different modems.
+Thierry
 
-They have been working fine until recently where suddenly http =
-connections just never finish
-loading and very slow. I thought it was just slow until I recall that it =
-started to happen after fedora 16
-updated the kernel to 3.6.2.
+--pf9I7BMVVzbSWLtt
+Content-Type: application/pgp-signature
 
-If I boot to older kernel (3.4.11), everything becomes normal again.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-Also, they only slow down if I use multiple gateway. They work fine when =
-set with one default gateway,
-except that it's slower because there's less link available.
+iQIcBAEBAgAGBQJQl4EzAAoJEN0jrNd/PrOhIYcP/27FN5I9HyxkcMllZJNSRRlA
+O9HEM8tMir/tpXCa2SGUwa3yq+rP0wBWDXareIBnL7ZVakD0U7d8hvIlJfC14aDM
+IZySUu98eB5ueTuFunIo96SwKYO+jCLpxMFS+njWyxf/VlcKhYZHBRaCr236DcC+
+prreG70/7VdTrEGxrfmMYl+3/1yIdRuZVMK7e+oJbZc7CY7cbnuRsk4RUVzWDGc+
+qJcuHDY5vzBUkLuRvRSBkeJJaOaYDyeAllgPUXXCNzbbCI5UK19ryWl7Lsf8biY3
+Sbz+1IWLa2ADG9rv5gvh6qt+bPQyTkSmqgLmv5mi5ePF3otC2fdix1RXdE28AhIS
+LX3QHPlCE0zUZ9qleKRPHrfO20+3xzH53lGKCDI6I8USV+Bn/AB9KAIuuM13H/ZG
+l2ne2pmKgV03yAwG4zO44spf+bRBw8RJXfk+lKQ8mqc8VwOnd+RRzwaDmjWYFt2A
+QaGMT4VxMiGf4ODyqbyJBD4UOPsSjGckIl9fbQ8vUH4DY8dDgZbebTJ7yRQwK8Jm
+nm4ts0sr/hFydXIEkX1acY+CGZaYn9DPXyiqqTZYK+00IddmtcYY3mglWh4f132x
+6SQwlcwLS6l9ECTMGyIvK/M6WCcM/00x3DKIDtsa+Ma0m+wkjuAI0a6DPFZzuzrM
+rfwMfbwefG3bNl2gRwV+
+=UFz4
+-----END PGP SIGNATURE-----
 
-Sorry, if I can't narrow it down further. I last read this list about 10 =
-years ago, I'm so rusty now.
-Please cc me as I'm not on the list.
-
-Cheers,
-
-
-Melby Sjamsuddin
-Software Developermobile. 0403 714 482
-www.vulytrampolines.com  =E2=97=A6  like us on Facebook
-For more general enquiries email: sales@vulytrampolines.com or call 1300 =
-667 514
-
---Apple-Mail=_D1538A37-7FB8-4DF6-A56E-960D1654092C
-Content-Disposition: attachment;
-	filename=smime.p7s
-Content-Type: application/pkcs7-signature;
-	name=smime.p7s
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIO5zCCBIow
-ggNyoAMCAQICECf06hH0eobEbp27bqkXBwcwDQYJKoZIhvcNAQEFBQAwbzELMAkGA1UEBhMCU0Ux
-FDASBgNVBAoTC0FkZFRydXN0IEFCMSYwJAYDVQQLEx1BZGRUcnVzdCBFeHRlcm5hbCBUVFAgTmV0
-d29yazEiMCAGA1UEAxMZQWRkVHJ1c3QgRXh0ZXJuYWwgQ0EgUm9vdDAeFw0wNTA2MDcwODA5MTBa
-Fw0yMDA1MzAxMDQ4MzhaMIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMCVVQxFzAVBgNVBAcTDlNh
-bHQgTGFrZSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxITAfBgNVBAsTGGh0
-dHA6Ly93d3cudXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVROLVVTRVJGaXJzdC1DbGllbnQgQXV0
-aGVudGljYXRpb24gYW5kIEVtYWlsMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsjmF
-pPJ9q0E7YkY3rs3BYHW8OWX5ShpHornMSMxqmNVNNRm5pELlzkniii8efNIxB8dOtINknS4p1aJk
-xIW9hVE1eaROaJB7HHqkkqgX8pgV8pPMyaQylbsMTzC9mKALi+VuG6JG+ni8om+rWV6lL8/K2m2q
-L+usobNqqrcuZzWLeeEeaYji5kbNoKXqvgvOdjp6Dpvq/NonWz1zHyLmSGHGTPNpsaguG7bUMSAs
-vIKKjqQOpdeJQ/wWWq8dcdcRWdq6hw2v+vPhwvCkxWeM1tZUOt4KpLoDd7NlyP0e03RiqhjKaJMe
-oYV+9Udly/hNVyh00jT/MLbu9mIwFIws6wIDAQABo4HhMIHeMB8GA1UdIwQYMBaAFK29mHo0tCb3
-+sQmVO8DveAky1QaMB0GA1UdDgQWBBSJgmd9xJ0mcABLtFBIfN49rgRufTAOBgNVHQ8BAf8EBAMC
-AQYwDwYDVR0TAQH/BAUwAwEB/zB7BgNVHR8EdDByMDigNqA0hjJodHRwOi8vY3JsLmNvbW9kb2Nh
-LmNvbS9BZGRUcnVzdEV4dGVybmFsQ0FSb290LmNybDA2oDSgMoYwaHR0cDovL2NybC5jb21vZG8u
-bmV0L0FkZFRydXN0RXh0ZXJuYWxDQVJvb3QuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQAZ2IkRbyis
-pgCi54fBm5AD236hEv0e8+LwAamUVEJrmgnEoG3XkJIEA2Z5Q3H8+G+v23ZF4jcaPd3kWQR4rBz0
-g0bzes9bhHIt5UbBuhgRKfPLSXmHPLptBZ2kbWhPrXIUNqi5sf2/z3/wpGqUNVCPz4FtVbHdWTBK
-322gnGQfSXzvNrv042n0+DmPWq1LhTq3Du3Tzw1EovsEv+QvcI4l+1pUBrPQxLxtjftzMizpm4Qk
-LdZ/kXpoAlAfDj9N6cz1u2fo3BwuO/xOzf4CjuOoEwqlJkRl6RDyTVKnrtw+ymsyXEFs/vVdoOr/
-0fqbhlhtPZZH5f4ulQTCAMyOofK7MIIFGjCCBAKgAwIBAgIQbRnqpxlPajMi5iIyeqpx3jANBgkq
-hkiG9w0BAQUFADCBrjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExh
-a2UgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8v
-d3d3LnVzZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRp
-Y2F0aW9uIGFuZCBFbWFpbDAeFw0xMTA0MjgwMDAwMDBaFw0yMDA1MzAxMDQ4MzhaMIGTMQswCQYD
-VQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYDVQQHEwdTYWxmb3JkMRow
-GAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09NT0RPIENsaWVudCBBdXRoZW50
-aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC
-AQEAkoSEW0tXmNReL4uk4UDIo1NYX2Zl8TJO958yfVXQeExVt0KU4PkncQfFxmmkuTLE8UAakMwn
-VmJ/F7Vxaa7lIBvky2NeYMqiQfZq4aP/uN8fSG1lQ4wqLitjOHffsReswtqCAtbUMmrUZ28gE49c
-NfrlVICv2HEKHTcKAlBTbJUdqRAUtJmVWRIx/wmi0kzcUtve4kABW0ho3cVKtODtJB86r3FfB+Os
-vxQ7sCVxaD30D9YXWEYVgTxoi4uDD216IVfmNLDbMn7jSuGlUnJkJpFOpZIP/+CxYP0ab2hRmWON
-GoulzEKbm30iY9OpoPzOnpDfRBn0XFs1uhbzp5v/wQIDAQABo4IBSzCCAUcwHwYDVR0jBBgwFoAU
-iYJnfcSdJnAAS7RQSHzePa4Ebn0wHQYDVR0OBBYEFHoTTgB0W8Z4Y2QnwS/ioFu8ecV7MA4GA1Ud
-DwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMBEGA1UdIAQKMAgwBgYEVR0gADBYBgNVHR8E
-UTBPME2gS6BJhkdodHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vVVROLVVTRVJGaXJzdC1DbGllbnRB
-dXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDB0BggrBgEFBQcBAQRoMGYwPQYIKwYBBQUHMAKGMWh0
-dHA6Ly9jcnQudXNlcnRydXN0LmNvbS9VVE5BZGRUcnVzdENsaWVudF9DQS5jcnQwJQYIKwYBBQUH
-MAGGGWh0dHA6Ly9vY3NwLnVzZXJ0cnVzdC5jb20wDQYJKoZIhvcNAQEFBQADggEBAIXWvnhXVW0z
-f0RS/kLVBqgBA4CK+w2y/Uq/9q9BSfUbWsXSrRtzbj7pJnzmTJjBMCjfy/tCPKElPgp11tA9OYZm
-0aGbtU2bb68obB2v5ep0WqjascDxdXovnrqTecr+4pEeVnSy+I3T4ENyG+2P/WA5IEf7i686ZUg8
-mD2lJb+972DgSeUWyOs/Q4Pw4O4NwdPNM1+b0L1garM7/vrUyTo8H+2b/5tJM75CKTmD7jNpLoKd
-RU2oadqAGx490hpdfEeZpZsIbRKZhtZdVwcbpzC+S0lEuJB+ytF5OOu0M/qgOl0mWJ5hVRi0IdWZ
-1eBDQEIwvuql55TSsP7zdfl/bucwggU3MIIEH6ADAgECAhBqUIrac7KF3+wys6cyG9+SMA0GCSqG
-SIb3DQEBBQUAMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAw
-DgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09N
-T0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMB4XDTEyMDkxMzAw
-MDAwMFoXDTEzMDkxMzIzNTk1OVowLDEqMCgGCSqGSIb3DQEJARYbbWVsYnkuc0B2dWx5dHJhbXBv
-bGluZXMuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmpFpF7UjME3G4fwKKyUI
-afTMn60d0Fqs7y4cMtqjbKGG+zCFpCMcrsgCBa7CDSBKTPcrb8eg/3JmVLfNZGJd+8gOiU/izr+E
-0NwBP3KpVDYSdRFAie8TunNI7v1wxLRGhVl3+rppNHjurt3KXyfSlNGWElj4sCt7VW9syGjizcxV
-Az2hrZrhOKTU95pcd6tRtzmK/9CjcEFkVkyaIqOUthXjyycBNKWjG4F1iziwkFM5CTOqucsGCrKT
-0Qepdb7znTt+n0EMFG9+P0xXAIb0BjXibFc6RC/JVbbsos4kBvf8KA/sDSPJ6CBXCaF/7B64e0m1
-mArW4jPKBXeiPuczvwIDAQABo4IB6zCCAecwHwYDVR0jBBgwFoAUehNOAHRbxnhjZCfBL+KgW7x5
-xXswHQYDVR0OBBYEFAI8y4Ea2zyDlvbcpkwCYuh8YoCkMA4GA1UdDwEB/wQEAwIFoDAMBgNVHRMB
-Af8EAjAAMCAGA1UdJQQZMBcGCCsGAQUFBwMEBgsrBgEEAbIxAQMFAjARBglghkgBhvhCAQEEBAMC
-BSAwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIBAQEwKzApBggrBgEFBQcCARYdaHR0cHM6Ly9zZWN1
-cmUuY29tb2RvLm5ldC9DUFMwVwYDVR0fBFAwTjBMoEqgSIZGaHR0cDovL2NybC5jb21vZG9jYS5j
-b20vQ09NT0RPQ2xpZW50QXV0aGVudGljYXRpb25hbmRTZWN1cmVFbWFpbENBLmNybDCBiAYIKwYB
-BQUHAQEEfDB6MFIGCCsGAQUFBzAChkZodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9DT01PRE9DbGll
-bnRBdXRoZW50aWNhdGlvbmFuZFNlY3VyZUVtYWlsQ0EuY3J0MCQGCCsGAQUFBzABhhhodHRwOi8v
-b2NzcC5jb21vZG9jYS5jb20wJgYDVR0RBB8wHYEbbWVsYnkuc0B2dWx5dHJhbXBvbGluZXMuY29t
-MA0GCSqGSIb3DQEBBQUAA4IBAQBA0ThKvqXaDulNCv7SiNT3vjgE2EciuU9uRGI2YZldutxaOnxT
-0UdLkXeU8KMaYJSbbx7RbpBERmgtMYGNdZd4V66vONRNfeqCRDvInyl1Lcg7Wmm9Z8jDo0n364wF
-ya89WkGgnvm+T9Fll7hscNB2RGYbNSplxopKIyC/aQEtwUTdNfk2BD/MOO6MCqNOEA/hRqYvqP/e
-VSX9nJiaxMGaK/+UKSCLy8awU5JcyQkTCYz4P+OZYVDraY49rPVvuS/zpF6kLX9C32Guid0+oHOw
-4FiDfGYSVAY//WIBKR1oE2sk5SHd4aSb0XksieBYmIXMnEDubMxM4dzHrNXptJjyMYIDqzCCA6cC
-AQEwgagwgZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNV
-BAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8g
-Q2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEGpQitpzsoXf7DKzpzIb
-35IwCQYFKw4DAhoFAKCCAdcwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-DxcNMTIxMTA1MDkwMjUyWjAjBgkqhkiG9w0BCQQxFgQUqQX3V7dy3Hy1F6fAmRrhFmbzcqAwgbkG
-CSsGAQQBgjcQBDGBqzCBqDCBkzELMAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hl
-c3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgGA1UEChMRQ09NT0RPIENBIExpbWl0ZWQxOTA3BgNV
-BAMTMENPTU9ETyBDbGllbnQgQXV0aGVudGljYXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQalCK
-2nOyhd/sMrOnMhvfkjCBuwYLKoZIhvcNAQkQAgsxgauggagwgZMxCzAJBgNVBAYTAkdCMRswGQYD
-VQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9E
-TyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8gQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBT
-ZWN1cmUgRW1haWwgQ0ECEGpQitpzsoXf7DKzpzIb35IwDQYJKoZIhvcNAQEBBQAEggEAE+xmamtM
-JNlx7nkGn1MlyCtme6fJjNLzX8JGY4SpvDJX5FMIxvENR7EMRlOrQxBykZN3mKh14CONY8NIoPGr
-7Ex6GAzKAu5n7tIVmGHlUhv7WzA+u9H+asdiG2DfoY2D1PVnD4AxerN0//fKCAFMmVw9261nUyrM
-VttqQG5fnRMovSUpJ/Co+YYFCBHHlJJTs/FPqHrWsMK/5cf5EOe7ggmqT19NsKCfflx/YiVmWTcW
-oVOa4UCA6yNHvp8FFHZrzIJCW+uj2SS2zF2lMS+Vg3gJLqu04BKfsY1/oFfdswpLoMHDP8fkC6b2
-MnHGo3WkAc92q8cU6FVrku4S1n4z8AAAAAAAAA==
-
---Apple-Mail=_D1538A37-7FB8-4DF6-A56E-960D1654092C--
+--pf9I7BMVVzbSWLtt--
