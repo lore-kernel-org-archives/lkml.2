@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933240Ab2KER2A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 12:28:00 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44888 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932786Ab2KERSd (ORCPT
+	id S933196Ab2KER15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 12:27:57 -0500
+Received: from casper.infradead.org ([85.118.1.10]:33343 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932787Ab2KERSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 12:18:33 -0500
+	Mon, 5 Nov 2012 12:18:34 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
@@ -15,14 +15,14 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 23/32] perf tests: Add attr stat default test
-Date: Mon,  5 Nov 2012 14:18:04 -0300
-Message-Id: <1352135893-7564-24-git-send-email-acme@infradead.org>
+Subject: [PATCH 18/32] perf tests: Add attr record branch any test
+Date: Mon,  5 Nov 2012 14:17:59 -0300
+Message-Id: <1352135893-7564-19-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1352135893-7564-1-git-send-email-acme@infradead.org>
 References: <1352135893-7564-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,7 +31,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Jiri Olsa <jolsa@redhat.com>
 
 Adding test to validate perf_event_attr data for command:
-  'stat'
+  'record -b'
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -40,83 +40,27 @@ Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1351634526-1516-23-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1351634526-1516-17-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/attr/test-stat-default |   64 +++++++++++++++++++++++++++++++
- 1 file changed, 64 insertions(+)
- create mode 100644 tools/perf/tests/attr/test-stat-default
+ tools/perf/tests/attr/test-record-branch-any |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+ create mode 100644 tools/perf/tests/attr/test-record-branch-any
 
-diff --git a/tools/perf/tests/attr/test-stat-default b/tools/perf/tests/attr/test-stat-default
+diff --git a/tools/perf/tests/attr/test-record-branch-any b/tools/perf/tests/attr/test-record-branch-any
 new file mode 100644
-index 0000000..19270f5
+index 0000000..1421960
 --- /dev/null
-+++ b/tools/perf/tests/attr/test-stat-default
-@@ -0,0 +1,64 @@
++++ b/tools/perf/tests/attr/test-record-branch-any
+@@ -0,0 +1,8 @@
 +[config]
-+command = stat
-+args    = kill >/dev/null 2>&1
-+ret     = 1
++command = record
++args    = -b kill >/dev/null 2>&1
 +
-+# PERF_TYPE_SOFTWARE / PERF_COUNT_SW_TASK_CLOCK
-+[event1:base-stat]
-+fd=1
-+type=1
-+config=1
-+
-+# PERF_TYPE_SOFTWARE / PERF_COUNT_SW_CONTEXT_SWITCHES
-+[event2:base-stat]
-+fd=2
-+type=1
-+config=3
-+
-+# PERF_TYPE_SOFTWARE / PERF_COUNT_SW_CPU_MIGRATIONS
-+[event3:base-stat]
-+fd=3
-+type=1
-+config=4
-+
-+# PERF_TYPE_SOFTWARE / PERF_COUNT_SW_PAGE_FAULTS
-+[event4:base-stat]
-+fd=4
-+type=1
-+config=2
-+
-+# PERF_TYPE_HARDWARE / PERF_COUNT_HW_CPU_CYCLES
-+[event5:base-stat]
-+fd=5
-+type=0
-+config=0
-+
-+# PERF_TYPE_HARDWARE / PERF_COUNT_HW_STALLED_CYCLES_FRONTEND
-+[event6:base-stat]
-+fd=6
-+type=0
-+config=7
-+
-+# PERF_TYPE_HARDWARE / PERF_COUNT_HW_STALLED_CYCLES_BACKEND
-+[event7:base-stat]
-+fd=7
-+type=0
-+config=8
-+
-+# PERF_TYPE_HARDWARE / PERF_COUNT_HW_INSTRUCTIONS
-+[event8:base-stat]
-+fd=8
-+type=0
-+config=1
-+
-+# PERF_TYPE_HARDWARE / PERF_COUNT_HW_BRANCH_INSTRUCTIONS
-+[event9:base-stat]
-+fd=9
-+type=0
-+config=4
-+
-+# PERF_TYPE_HARDWARE / PERF_COUNT_HW_BRANCH_MISSES
-+[event10:base-stat]
-+fd=10
-+type=0
-+config=5
++[event:base-record]
++sample_period=4000
++sample_type=2311
++branch_sample_type=8
 -- 
 1.7.9.2.358.g22243
 
