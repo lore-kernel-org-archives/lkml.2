@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab2KEPpa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:45:30 -0500
-Received: from host-176-100-244-43.masterbit.su ([176.100.244.43]:58344 "EHLO
-	tservice.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751378Ab2KEPp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:45:28 -0500
-Date: Mon, 5 Nov 2012 19:45:23 +0400
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] w1-gpio: Pinctrl-fy
-Message-ID: <20121105154523.GA12922@ioremap.net>
-References: <1351699058-4576-1-git-send-email-panto@antoniou-consulting.com>
- <20121030182625.GP11908@atomide.com>
+	id S1751412Ab2KEPrm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:47:42 -0500
+Received: from twin.jikos.cz ([89.185.236.188]:54509 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785Ab2KEPrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 10:47:40 -0500
+Date: Mon, 5 Nov 2012 16:42:32 +0100
+From: David Sterba <dave@jikos.cz>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: linux-kernel@vger.kernel.org, airlied@linux.ie, netdev@vger.kernel.org,
+        arnd@arndb.de, joern@logfs.org, chris.mason@fusionio.com, m@bues.ch,
+        jejb@parisc-linux.org, faisal.latif@intel.com, neilb@suse.de,
+        gregkh@linuxfoundation.org, JBottomley@parallels.com,
+        swise@chelsio.com, achim_leubner@adaptec.com, tytso@mit.edu,
+        dri-devel@lists.freedesktop.org, jason.wessel@windriver.com,
+        kgdb-bugreport@lists.sourceforge.net,
+        Prasad Joshi <prasadjoshi.linux@gmail.com>, logfs@logfs.org,
+        linux-btrfs@vger.kernel.org, Helge Deller <deller@gmx.de>,
+        linux-parisc@vger.kernel.org, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>, hal.rosenstock@gmail.com,
+        linux-rdma@vger.kernel.org, linux-raid@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: Re: merging printk and WARN
+Message-ID: <20121105154232.GL3102@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Julia Lawall <julia.lawall@lip6.fr>,
+	linux-kernel@vger.kernel.org, airlied@linux.ie,
+	netdev@vger.kernel.org, arnd@arndb.de, joern@logfs.org,
+	chris.mason@fusionio.com, m@bues.ch, jejb@parisc-linux.org,
+	faisal.latif@intel.com, neilb@suse.de, gregkh@linuxfoundation.org,
+	JBottomley@parallels.com, swise@chelsio.com,
+	achim_leubner@adaptec.com, tytso@mit.edu,
+	dri-devel@lists.freedesktop.org, jason.wessel@windriver.com,
+	kgdb-bugreport@lists.sourceforge.net,
+	Prasad Joshi <prasadjoshi.linux@gmail.com>, logfs@logfs.org,
+	linux-btrfs@vger.kernel.org, Helge Deller <deller@gmx.de>,
+	linux-parisc@vger.kernel.org, Roland Dreier <roland@kernel.org>,
+	Sean Hefty <sean.hefty@intel.com>, hal.rosenstock@gmail.com,
+	linux-rdma@vger.kernel.org, linux-raid@vger.kernel.org,
+	linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org
+References: <alpine.DEB.2.02.1211042120200.1960@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121030182625.GP11908@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.02.1211042120200.1960@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sun, Nov 04, 2012 at 09:25:53PM +0100, Julia Lawall wrote:
+> It looks like these patches were not a good idea, because in each case the
+> printk provides an error level, and WARN then provides another one.
 
-On Tue, Oct 30, 2012 at 11:26:25AM -0700, Tony Lindgren (tony@atomide.com) wrote:
-> * Pantelis Antoniou <panto@antoniou-consulting.com> [121030 11:17]:
-> > Enable pinctrl for w1-gpio.
-> >
-> > Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> 
-> Acked-by: Tony Lindgren <tony@atomide.com>
+I think this is not a problem within btrfs at the place where this has
+changed.
 
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-
-Please submit patches through the appropriate tree, or you want me to
-push them upstream?
-
--- 
-	Evgeniy Polyakov
+david
