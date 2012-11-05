@@ -1,56 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933266Ab2KETGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 14:06:14 -0500
-Received: from mga02.intel.com ([134.134.136.20]:36218 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933202Ab2KETGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 14:06:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,716,1344236400"; 
-   d="scan'208";a="237514588"
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [PATCH v3 8/8] x86/lguest: Use __pa_symbol instead of __pa on C
-	visible symbols
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-Date: Mon, 05 Nov 2012 11:06:20 -0800
-Message-ID: <20121105190618.10205.95341.stgit@gitlad.jf.intel.com>
-In-Reply-To: <20121105185657.10205.27419.stgit@gitlad.jf.intel.com>
-References: <20121105185657.10205.27419.stgit@gitlad.jf.intel.com>
-User-Agent: StGIT/0.14.2
+	id S964786Ab2KETKu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 14:10:50 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59272 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab2KETKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 14:10:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AC5129F0-FF30-46ED-AD57-3FA6CA919F99@antoniou-consulting.com>
+References: <50924DA3.1060901@ti.com> <F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com>
+ <20121101110418.GF410@arwen.pp.htv.fi> <3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com>
+ <20121101124025.GA12489@arwen.pp.htv.fi> <A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com>
+ <20121101131609.GC12489@arwen.pp.htv.fi> <E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com>
+ <20121101135148.382aec00@pyramind.ukuu.org.uk> <9F25E89E-9194-4725-8A8C-053DCBADA1DB@antoniou-consulting.com>
+ <20121101220518.GE14982@arwen.pp.htv.fi> <CA+Bv8XbAvEXe=zDaA8W2+ROD2duYMRcJu4-bms31OH=V_ScKow@mail.gmail.com>
+ <20121102112104.4657fb7b@pyramind.ukuu.org.uk> <0EC43413-1DD7-4E2A-879B-0B5B926FFDFE@antoniou-consulting.com>
+ <CACxGe6uuK6ew5uxh0BjtYAtPZCTLeUpHc4emXRAnMUtNmEzmGg@mail.gmail.com> <AC5129F0-FF30-46ED-AD57-3FA6CA919F99@antoniou-consulting.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 5 Nov 2012 19:10:27 +0000
+X-Google-Sender-Auth: yzMyzymsFUZcnCO_UA-Y1yTZvtQ
+Message-ID: <CACxGe6v9cyybV4+5tQJ-DG8qdyEHfsLa7t+-3CTL+97Q9msrFw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Russ Dill <Russ.Dill@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <robherring2@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function lguest_write_cr3 is using __pa to convert swapper_pg_dir and
-initial_page_table from virtual addresses to physical.  The correct function
-to use for these values is __pa_symbol since they are C visible symbols.
+On Mon, Nov 5, 2012 at 3:37 PM, Pantelis Antoniou
+<panto@antoniou-consulting.com> wrote:
+> Hi Grant,
+>
+> On Nov 5, 2012, at 1:37 AM, Grant Likely wrote:
+>
+>> On Fri, Nov 2, 2012 at 12:32 PM, Pantelis Antoniou
+>> <panto@antoniou-consulting.com> wrote:
+>>> The i2c2 alias cannot be resolved at compile time; there has to be
+>>>
+>>> a) A DT object format where unresolved aliases (symbols) are tracked
+>>> b) A runtime DT linker that will resolve the alias, and will insert the
+>>>   i2c2-devices child nodes as children in the i2c2 node.
+>>> c) A method to trigger platform device creation for the child nodes just
+>>>   inserted.
+>>>
+>>> DT core changes aren't bound to be easily accepted, so without having a clear
+>>> signal from the DT maintainers that they would consider such a method people
+>>> are just hesitant to go down this road.
+>>
+>> I do agree and will accept such a method.
+>>
+>> g.
+>
+> Understood.
+>
+> I'll think about the issues and come up with a design for the format, but
+> let's talk about this in the open for a while.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
----
+Agreed. I'm planning to post my first draft/RFC tonight.
 
- arch/x86/lguest/boot.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> I don't want to modify the DTB format, in order to avoid impacting any other
+> DT users.
 
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index df4176c..1cbd89c 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -552,7 +552,8 @@ static void lguest_write_cr3(unsigned long cr3)
- 	current_cr3 = cr3;
- 
- 	/* These two page tables are simple, linear, and used during boot */
--	if (cr3 != __pa(swapper_pg_dir) && cr3 != __pa(initial_page_table))
-+	if (cr3 != __pa_symbol(swapper_pg_dir) &&
-+	    cr3 != __pa_symbol(initial_page_table))
- 		cr3_changed = true;
- }
- 
+Ditto. It should be a direct extension.
 
+> So would something like this work for you?
+[...]
+> The dt-resolution node, can be appended to the dt fragment contents and
+> can be generated by the compiler.
+>
+> Upon injection of the DT fragment the in-kernel loader can perform
+> symbol resolution and replace the phandles with the in-kernel values.
+>
+> I know there's an aliases node, but I don't know if it's wise to modify it.
+>
+> What do you think?
+
+If I'm reading your intent correctly, your primary worry is the
+problem of matching up phandles from the base dt with (potentially
+different) phandle values in the overlay. This solution solves it by
+encoding all of the phandle locations as offsets from the start of the
+file into the dt-resolution node. Correct? My concern with this
+approach is that it is fragile. Any changes to the fragment file, such
+as to add extra properties or nodes, or even to repack the tree will
+break all the offsets; probably silently.
+
+It would be less fragile if each property containing phandles had some
+kind of .<prop>-phandle-offsets companion property that listed the
+phandles that need to be fixed up as an offset to the beginning of
+only that properties' data. Better, in that modifying the tree won't
+break the links, but I still worry that it is fragile and possibly too
+complex.
+
+However, the problem is based on the assumption that phandles are
+effectively random and could change ever time the tree is recompiled.
+Well, what if they weren't? What if dtc generated phandles using a
+hash of the node full name so that the value changed rarely? Also,
+what if the format was oriented around detecting if the phandles don't
+match instead of fixing things up? The solution becomes a lot simpler
+if the parser only has to verify that the referenced phandles already
+exist at the right path in the tree.
+
+Something like this:
+
+/include/ "base-file.dts"  /* include might not be the right syntax here */
+&i2c0 {         /* i2c0 resolved by label */
+        touchpad@10 {
+                compatible = "acme,touchpad";
+                reg = <0x10>;
+                interrupt-parent = <&intc>;
+                interrupts = <100>;
+        };
+};
+
+And the generated overlay dtb may look like this:
+
+/ {
+        .readonly;
+        interrupt-controller@0x10005000 {
+                .readonly;
+                phandle = <0x1234>;
+        };
+
+        peripheral-bus {
+                .readonly;
+                i2c@20001000 {
+                        touchpad@10 {
+                                compatible = "acme,touchpad";
+                                reg = <0x10>;
+                                interrupt-parent = <0x1234>;
+                                interrupts = <100>;
+                        };
+                };
+        };
+};
+
+Which is obviously missing a bunch of information for the rest of the
+system, but contains enough data to ensure that the path to the touchpad
+node is valid and that the phandle has not changed.
+
+This handles many of the use cases, but it assumes that an overlay is
+board specific. If it ever is required to support multiple base boards
+with a single overlay file then there is a problem. The .dtb overlays
+generated in this manor cannot handle different phandles or nodes that
+are in a different place. On the other hand, the overlay source files
+should have no problem being compiled for multiple targets, so maybe
+it isn't an issue. Plus if dtc is installed on the target, then the
+live tree from /proc can be used as the reference when compiling the
+overlay.
+
+g.
