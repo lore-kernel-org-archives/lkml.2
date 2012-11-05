@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933455Ab2KEWvF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 17:51:05 -0500
-Received: from mga09.intel.com ([134.134.136.24]:44218 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933360Ab2KEWvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 17:51:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,718,1344236400"; 
-   d="scan'208";a="215538479"
-Date: Mon, 5 Nov 2012 14:51:01 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@elte.hu, jolsa@redhat.com,
-        namhyung.kim@lge.com
-Subject: Re: [PATCH v2 03/16] perf, core: Add a concept of a weightened sample
-Message-ID: <20121105225101.GB25167@tassilo.jf.intel.com>
-References: <1352123463-7346-1-git-send-email-eranian@google.com>
- <1352123463-7346-4-git-send-email-eranian@google.com>
- <20121105200147.GB7962@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121105200147.GB7962@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S964790Ab2KEWvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 17:51:25 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:40367 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab2KEWrn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 17:47:43 -0500
+From: Michel Lespinasse <walken@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
+        William Irwin <wli@holomorphy.com>
+Cc: linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
+        linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: [PATCH 07/16] mm: fix cache coloring on x86_64 architecture
+Date: Mon,  5 Nov 2012 14:47:04 -0800
+Message-Id: <1352155633-8648-8-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1352155633-8648-1-git-send-email-walken@google.com>
+References: <1352155633-8648-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +
-> >  	if (sample_type & PERF_SAMPLE_READ)
-> >  		size += event->read_size;
-> >  
-> > @@ -4080,6 +4083,9 @@ void perf_output_sample(struct perf_output_handle *handle,
-> >  	if (sample_type & PERF_SAMPLE_PERIOD)
-> >  		perf_output_put(handle, data->period);
-> >  
-> > +	if (sample_type & PERF_SAMPLE_WEIGHT)
-> > +		perf_output_put(handle, data->weight);
-> > +
-> 
-> Yeap, it should go after PERF_SAMPLE_STACK_USER
+Fix the x86-64 cache alignment code to take pgoff into account.
+Use the x86 and MIPS cache alignment code as the basis for a generic
+cache alignment function.
 
-There was a bug I recently noticed but haven't investigated so far.
+The old x86 code will always align the mmap to aliasing boundaries,
+even if the program mmaps the file with a non-zero pgoff.
 
-When I do -b -W --transaction the flags/weights get corrupted.
+If program A mmaps the file with pgoff 0, and program B mmaps the
+file with pgoff 1. The old code would align the mmaps, resulting in
+misaligned pages:
 
-May be related to that.
+A:  0123
+B:  123
 
--Andi
+After this patch, they are aligned so the pages line up:
 
+A: 0123
+B:  123
+
+Signed-off-by: Michel Lespinasse <walken@google.com>
+Proposed-by: Rik van Riel <riel@redhat.com>
+
+---
+ arch/x86/kernel/sys_x86_64.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
+index f00d006d60fd..97ef74b88e0f 100644
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -136,7 +136,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	info.low_limit = begin;
+ 	info.high_limit = end;
+ 	info.align_mask = filp ? get_align_mask() : 0;
+-	info.align_offset = 0;
++	info.align_offset = pgoff << PAGE_SHIFT;
+ 	return vm_unmapped_area(&info);
+ }
+ 
+@@ -175,7 +175,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	info.low_limit = PAGE_SIZE;
+ 	info.high_limit = mm->mmap_base;
+ 	info.align_mask = filp ? get_align_mask() : 0;
+-	info.align_offset = 0;
++	info.align_offset = pgoff << PAGE_SHIFT;
+ 	addr = vm_unmapped_area(&info);
+ 	if (!(addr & ~PAGE_MASK))
+ 		return addr;
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.7.3
