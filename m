@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab2KEI31 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 03:29:27 -0500
-Received: from smtp206.alice.it ([82.57.200.102]:46954 "EHLO smtp206.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751979Ab2KEI30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 03:29:26 -0500
-Date: Mon, 5 Nov 2012 09:29:04 +0100
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: dri-devel@lists.freedesktop.org
-Cc: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: nouveau, linux3.7-rc3: BUG: unable to handle kernel paging
- request at fffffffffffffff8
-Message-Id: <20121105092904.74d7ff6703f984b0b05f8e16@studenti.unina.it>
-In-Reply-To: <20121029231624.1476a25a62a0c219cc25627a@studenti.unina.it>
-References: <20121029231624.1476a25a62a0c219cc25627a@studenti.unina.it>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+	id S1753329Ab2KEI3l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 03:29:41 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:41627 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067Ab2KEI3k convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Mon, 5 Nov 2012 03:29:40 -0500
+Message-Id: <509786FF02000078000A6491@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 05 Nov 2012 08:29:35 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Jinsong Liu" <jinsong.liu@intel.com>
+Cc: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
+ <5089676602000078000A4928@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
+ <508A89CB020000780008E6ED@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
+ <20121026201409.GF2708@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC8292335377346@SHSMSX101.ccr.corp.intel.com>
+ <20121102164937.GC27213@konrad-lan.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC829233537A2A5@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233537A2A5@SHSMSX101.ccr.corp.intel.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Oct 2012 23:16:24 +0100
-Antonio Ospite <ospite@studenti.unina.it> wrote:
-
-> Hi,
+>>> On 03.11.12 at 13:16, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
+> Konrad Rzeszutek Wilk wrote:
+>>>> From f514b97628945cfac00efb0d456f133d44754c9d Mon Sep 17 00:00:00
+>>>> 2001 
+>>> From: Liu, Jinsong <jinsong.liu@intel.com>
+>>> Date: Thu, 1 Nov 2012 21:02:36 +0800
+>>> Subject: [PATCH 1/2] Xen acpi pad implement
+>>> 
+>>> PAD is acpi Processor Aggregator Device which provides a control
+>>> point 
+>>> that enables the platform to perform specific processor configuration
+>>> and control that applies to all processors in the platform.
+>>> 
+>>> This patch is to implement Xen acpi pad logic. When running under Xen
+>>> virt platform, native pad driver would not work. Instead Xen pad
+>>> driver, 
+>>> a self-contained and very thin logic level, would take over acpi pad
+>>> staff. When acpi pad notify OSPM, xen pad logic intercept and parse
+>>> _PUR object 
+>>> and then hypercall to hyervisor for the rest work, say, core parking.
+>> 
+>> Two comments:
+>>  - Did you look at the SuSE tree? Jan mentioned that they did some
+>>    fixes? Did you carry them over?
 > 
-> I am experiencing a bug with nouveau with linux-3.7-rc3 (and since rc1),
-> my video adapter is the one integrated on the MSI M3N78-VM motherboard
-> (hence x86_64):
+> I didn't look at Suse tree.
 > 
-[...]
-> [ 1943.858601] BUG: unable to handle kernel paging request at fffffffffffffff8
-> [ 1943.858669] IP: [<ffffffffa031a67a>] nouveau_mm_head+0x30/0x127 [nouveau]
-> [ 1943.858779] PGD 160d067 PUD 160e067 PMD 0 
-> [ 1943.858803] Oops: 0000 [#1] SMP 
-[..]
-> [ 1943.860018] Call Trace:
-> [ 1943.860019]  [<ffffffff810fa13d>] ? kmem_cache_alloc_trace+0xbf/0xcf
-> [ 1943.860019]  [<ffffffff81060f13>] ? should_resched+0x5/0x23
-> [ 1943.860019]  [<ffffffffa032a10a>] ? nv50_fb_vram_new+0xc5/0x1f2 [nouveau]
+> Jan, would you please tell me where can I pull Suse tree?
 
-Ben, I cannot reproduce the crash with 3.7-rc4, I spotted commits
-a7dbf00 and 5cad16a which seem to be related to the problem I was
-having; would you mind elaborating a bit about what you think was
-causing the crash on my side? Maybe the chipset used on this motherboard
-doesn't support some feature? And how did you figured out from the logs?
+http://kernel.opensuse.org/git
 
-Thanks,
-   Antonio
+> have you 
+> implemented xen-acpi-pad logic at Suse dom0 and which points you have fixed?
 
--- 
-Antonio Ospite
-http://ao2.it
+Yes, we've been carrying this for quite some time. I don't recall
+the specific cleanups to the code I did, so I can only refer you
+to the trees above.
 
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
+Jan
+
