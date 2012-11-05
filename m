@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358Ab2KENlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:41:21 -0500
-Received: from mga01.intel.com ([192.55.52.88]:59272 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932208Ab2KENlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:41:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,715,1344236400"; 
-   d="scan'208";a="242677462"
-Date: Mon, 5 Nov 2012 15:43:38 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jean Delvare <khali@linux-fr.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rafael.j.wysocki@intel.com, grant.likely@secretlab.ca,
-        ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Message-ID: <20121105134338.GH24532@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <20121105120219.GF24532@intel.com>
- <20121105132350.59c6e4d9@endymion.delvare>
- <1983976.4JKTfcThF7@vostro.rjw.lan>
- <20121105131519.GG24532@intel.com>
- <CACRpkdaZqka7g2ECAyD_bKhnoULhCP6cTJwMyEsTuVxiUiHy+A@mail.gmail.com>
+	id S932393Ab2KENlb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:41:31 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55540 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932208Ab2KENl2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 08:41:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaZqka7g2ECAyD_bKhnoULhCP6cTJwMyEsTuVxiUiHy+A@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANN689HfmX8uBa17t38PYv2Ap5d3LPjShq81tbcgET5ZqzjzeQ@mail.gmail.com>
+References: <508086DA.3010600@oracle.com>
+	<5089A05E.7040000@gmail.com>
+	<CA+1xoqf2v_jEapwU68BzXyi4abSRmi_=AiaJVHM3dBbHtsBnqQ@mail.gmail.com>
+	<CAA_GA1d-rw_vkDF98fcf9E0=h86dsp+83-0_RE5b482juxaGVw@mail.gmail.com>
+	<CANN689HXoCMTP4ZRMUNOGAdOBmizKyo6jMqbqAFx8wwPXp+AzQ@mail.gmail.com>
+	<CAA_GA1eYHi4zWZwKp5KGi4gP7V8bfnSF=aLKMiN-Wi5JyLaCdw@mail.gmail.com>
+	<CANN689HfmX8uBa17t38PYv2Ap5d3LPjShq81tbcgET5ZqzjzeQ@mail.gmail.com>
+Date: Mon, 5 Nov 2012 05:41:27 -0800
+Message-ID: <CANN689HM=h2k33sJcoDYys9LHVadv+NaGz00kG7O-OEH=qadvA@mail.gmail.com>
+Subject: Re: mm: NULL ptr deref in anon_vma_interval_tree_verify
+From: Michel Lespinasse <walken@google.com>
+To: Bob Liu <lliubbo@gmail.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, hughd@google.com,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 02:20:52PM +0100, Linus Walleij wrote:
-> >
-> > It looks like some PMICs for example have two I2C control interfaces, like
-> > TI's TWL6030 if I'm not mistaken. If both are put behind the same I2C
-> > controller with different address, you have the situation like above.
-> 
-> This is quite common. So for example the AB8500 (drivers/mfd/ab8500-core.c)
-> has this. The reason is usually that the device has more than 256 registers
-> to the address space simply is not big enough.
-> 
-> What we do is refer to the subaddresses as "banks" and they happen
-> to always be at the next consecutive address so n+1.
-> 
-> So the same device appear behind several addresses just to support
-> a lot of registers.
-> 
-> So you're not actually modelling the devices on the other end but the
-> multiple addresses of a single device.
+On Sun, Nov 4, 2012 at 8:44 PM, Michel Lespinasse <walken@google.com> wrote:
+> On Sun, Nov 4, 2012 at 8:14 PM, Bob Liu <lliubbo@gmail.com> wrote:
+>> Hmm, I attached a simple fix patch.
+>
+> Reviewed-by: Michel Lespinasse <walken@google.com>
+> (also ran some tests with it, but I could never reproduce the original
+> issue anyway).
 
-That makes sense. Thanks for the explanation.
+Wait a minute, this is actually wrong. You need to call
+vma_lock_anon_vma() / vma_unlock_anon_vma() to avoid the issue with
+vma->anon_vma == NULL.
 
-> If the addresses are consecutive like ours it makes sense
-> to just instantiate one device and have the driver know that it will
-> also be able to access address +1, +2 ... +n. So is it possible
-> to group the consecutive related addresses after each other
-> here at the acpi-spi level and just create a single device?
+I'll fix it and integrate it into my next patch series, which I intend
+to send later today. (I am adding new code into validate_mm(), so that
+it's easier to have it in the same patch series to avoid merge
+conflicts)
 
-Not sure if it should be done there, unless we really can be sure that we
-have a single device with multiple addresses (and that is usually something
-that is only known by the actual driver) and not some device that has two
-unrelated interfaces connecting the same controller.
-
-> If the addresses are not consecutive I guess you need to have
-> one device driver bind to several devices and return -EPROBE_DEFER
-> until the driver has been probed for all of them or something like
-> that, this is what multi-block GPIO drivers sometimes do.
-
-The addresses in the DSDT table for this particular device are not
-consecutive so we could do something like you propose above.
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
