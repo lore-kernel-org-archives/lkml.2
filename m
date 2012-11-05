@@ -1,61 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830Ab2KEBGG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 20:06:06 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61410 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab2KEBGB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 20:06:01 -0500
+	id S1752389Ab2KEBJL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 20:09:11 -0500
+Received: from ozlabs.org ([203.10.76.45]:38076 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750954Ab2KEBJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 20:09:09 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jason Wang <jasowang@redhat.com>, mst@redhat.com, davem@davemloft.net,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        krkumar2@in.ibm.com
+Cc: kvm@vger.kernel.org, Jason Wang <jasowang@redhat.com>
+Subject: Re: [rfc net-next v6 2/3] virtio_net: multiqueue support
+In-Reply-To: <1351591403-23065-3-git-send-email-jasowang@redhat.com>
+References: <1351591403-23065-1-git-send-email-jasowang@redhat.com> <1351591403-23065-3-git-send-email-jasowang@redhat.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 05 Nov 2012 11:38:39 +1030
+Message-ID: <87y5igyhyg.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <CA+T6QPkWLXx6-Bh-4VdsdoHypHNkJ4hTdkk-rqUEyGEswpW6fQ@mail.gmail.com>
-References: <50924DA3.1060901@ti.com> <F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com>
- <20121101110418.GF410@arwen.pp.htv.fi> <3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com>
- <20121101124025.GA12489@arwen.pp.htv.fi> <A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com>
- <20121101131609.GC12489@arwen.pp.htv.fi> <E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com>
- <20121101135148.382aec00@pyramind.ukuu.org.uk> <9F25E89E-9194-4725-8A8C-053DCBADA1DB@antoniou-consulting.com>
- <20121101220518.GE14982@arwen.pp.htv.fi> <CA+Bv8XbAvEXe=zDaA8W2+ROD2duYMRcJu4-bms31OH=V_ScKow@mail.gmail.com>
- <20121102112104.4657fb7b@pyramind.ukuu.org.uk> <CA+T6QPkWLXx6-Bh-4VdsdoHypHNkJ4hTdkk-rqUEyGEswpW6fQ@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 5 Nov 2012 01:05:39 +0000
-X-Google-Sender-Auth: oTZJ0g0XrUM_qYiKId77_SGMy0A
-Message-ID: <CACxGe6uKag_7kKvqKPHa_3W_F3=HLLR9SmyTo8vHRYN3VU+XnQ@mail.gmail.com>
-Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
-To: Jason Kridner <jkridner@beagleboard.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Russ Dill <Russ.Dill@ti.com>,
-        balbi@ti.com, Pantelis Antoniou <panto@antoniou-consulting.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
-        Matt Porter <mporter@ti.com>, linux-omap@vger.kernel.org,
-        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 2, 2012 at 4:07 PM, Jason Kridner <jkridner@beagleboard.org> wrote:
->> Take a look at arch/x86/platform/mrst/mrst.c. It's a specific example of
->> a platform which parses tables and attaches devices to the right physical
->> bus in a manner they can be reliably probed even when the device has no
->> sane autodetect.
->
-> I know I *am* the slow person in the room, but doesn't this approach
-> require the code to be compiled into the kernel to support the devices
-> ahead of time? While I think it might be reasonable to have hardware
-> developers provide DT fragments in their EEPROMs, there's no way to
-> get them to submit code patches in order to get their hardware to
-> work. They need to ship hardware that works with pre-existing
-> software, since there will be hundreds of boards created by people
-> with little to no previous Linux experience (akin to Arduino). I seem
-> to be missing how that approach would get us there.
+Jason Wang <jasowang@redhat.com> writes:
+> +struct virtnet_info {
+> +	u16 num_queue_pairs;		/* # of RX/TX vq pairs */
+> +	u16 total_queue_pairs;
+> +
+> +	struct send_queue *sq;
+> +	struct receive_queue *rq;
+> +	struct virtqueue *cvq;
+> +
+> +	struct virtio_device *vdev;
+> +	struct net_device *dev;
+> +	unsigned int status;
 
-If it is truly new hardware, then there really is no way around them
-either a) submitting new kernel drivers or b) driving them from
-userspace.
+status seems unused?
 
-If it is devices with existing drivers populated onto new custom cape
-boards, then the DT fragment approach should be sufficient for
-populating them into the Linux driver model. (assuming of course those
-drivers are already compiled into the kernel)
+> +static const struct ethtool_ops virtnet_ethtool_ops;
 
-g.
+Strange hoist, but I can't tell from the patch if this is necessary.
+Assume it is.
+
+> +static inline int vq2txq(struct virtqueue *vq)
+> +{
+> +	int index = virtqueue_get_queue_index(vq);
+> +	return index == 1 ? 0 : (index - 3) / 2;
+> +}
+> +
+> +static inline int txq2vq(int txq)
+> +{
+> +	return txq ? 2 * txq + 3 : 1;
+> +}
+> +
+> +static inline int vq2rxq(struct virtqueue *vq)
+> +{
+> +	int index = virtqueue_get_queue_index(vq);
+> +	return index ? (index - 2) / 2 : 0;
+> +}
+> +
+> +static inline int rxq2vq(int rxq)
+> +{
+> +	return rxq ? 2 * rxq + 2 : 0;
+> +}
+> +
+>  static inline struct skb_vnet_hdr *skb_vnet_hdr(struct sk_buff *skb)
+
+I know skb_vnet_hdr() does it, but I generally dislike inline in C
+files; gcc is generally smart enough these days, and inline suppresses
+unused function warnings.
+
+I guess these mappings have to work even when we're switching from mq to
+single queue mode; otherwise we could simplify them using a 'bool mq'
+flag.
+
+> +static int virtnet_set_queues(struct virtnet_info *vi)
+> +{
+> +	struct scatterlist sg;
+> +	struct virtio_net_ctrl_steering s;
+> +	struct net_device *dev = vi->dev;
+> +
+> +	if (vi->num_queue_pairs == 1) {
+> +		s.current_steering_rule = VIRTIO_NET_CTRL_STEERING_SINGLE;
+> +		s.current_steering_param = 1;
+> +	} else {
+> +		s.current_steering_rule =
+> +			VIRTIO_NET_CTRL_STEERING_RX_FOLLOWS_TX;
+> +		s.current_steering_param = vi->num_queue_pairs;
+> +	}
+
+(BTW, VIRTIO_NET_CTRL_STEERING_RX_FOLLOWS_TX etc not defined anywhere?)
+
+Hmm, it's not clear that anything other than RX_FOLLOWS_TX will ever
+make sense, so this is really just turning mq on and off.
+
+Unfortunately, we can't turn feature bits on and off after startup, so
+if we want this level of control (and I think we do), there does need to
+be a mechanism.
+
+Michael?  I'd prefer this to be further simplfied, to just
+disable/enable.  We can extend it later, but for now the second
+parameter is redundant, ie.:
+
+        struct virtio_net_ctrl_steering {
+                u8 mode; /* 0 == off, 1 == on */
+        } __attribute__((packed));
+
+
+> @@ -924,11 +1032,10 @@ static void virtnet_get_ringparam(struct net_device *dev,
+>  {
+>  	struct virtnet_info *vi = netdev_priv(dev);
+>  
+> -	ring->rx_max_pending = virtqueue_get_vring_size(vi->rvq);
+> -	ring->tx_max_pending = virtqueue_get_vring_size(vi->svq);
+> +	ring->rx_max_pending = virtqueue_get_vring_size(vi->rq[0].vq);
+> +	ring->tx_max_pending = virtqueue_get_vring_size(vi->sq[0].vq);
+>  	ring->rx_pending = ring->rx_max_pending;
+>  	ring->tx_pending = ring->tx_max_pending;
+> -
+>  }
+
+This assumes all vqs are the same size.  I think this should probably
+check: for mq mode, use the first vq, otherewise use the 0th.
+
+For bonus points, check this assertion at probe time.
+
+> +	/*
+> +	 * We expect 1 RX virtqueue followed by 1 TX virtqueue, followd by
+> +	 * possible control virtqueue, followed by 1 reserved vq, followed
+> +	 * by RX/TX queue pairs used in multiqueue mode.
+> +	 */
+> +	if (vi->total_queue_pairs == 1)
+> +		total_vqs = 2 + virtio_has_feature(vi->vdev,
+> +						   VIRTIO_NET_F_CTRL_VQ);
+> +	else
+> +		total_vqs = 2 * vi->total_queue_pairs + 2;
+
+What's the allergy to odd numbers?  Why the reserved queue?
+
+> +	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+> +		vi->has_cvq = true;
+> +
+> +	/* Use single tx/rx queue pair as default */
+> +	vi->num_queue_pairs = 1;
+> +	vi->total_queue_pairs = num_queue_pairs;
+> +
+> +	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
+> +	err = virtnet_setup_vqs(vi);
+>  	if (err)
+>  		goto free_stats;
+>  
+> +	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ) &&
+> +	    virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VLAN))
+> +		dev->features |= NETIF_F_HW_VLAN_FILTER;
+
+We should be using has_cvq here...
+
+> -#ifdef CONFIG_PM
+> -static int virtnet_freeze(struct virtio_device *vdev)
+> +static void virtnet_stop(struct virtnet_info *vi)
+
+I think you still want this under CONFIG_PM, right?  Doesn't seem used
+elsewhere.
+
+Cheers,
+Rusty.
