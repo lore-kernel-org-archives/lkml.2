@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab2KEMYK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:24:10 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:10694 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab2KEMYJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:24:09 -0500
-Date: Mon, 5 Nov 2012 13:23:50 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Message-ID: <20121105132350.59c6e4d9@endymion.delvare>
-In-Reply-To: <20121105120219.GF24532@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
-	<20121103201310.GQ16648@intel.com>
-	<1535917.BaYBBNgGy0@vostro.rjw.lan>
-	<4052192.ry8JrGTr6H@vostro.rjw.lan>
-	<20121105105602.GC24532@intel.com>
-	<20121105105639.GE1385@opensource.wolfsonmicro.com>
-	<20121105120219.GF24532@intel.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754154Ab2KEMYu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:24:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48617 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753295Ab2KEMYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 07:24:47 -0500
+Date: Mon, 5 Nov 2012 13:24:43 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 0/4] HID: roccat: New functionalities and cleanup
+In-Reply-To: <1352018326.2673.130.camel@neuromancer.tessier-ashpool>
+Message-ID: <alpine.LNX.2.00.1211051322150.24253@pobox.suse.cz>
+References: <1352018326.2673.130.camel@neuromancer.tessier-ashpool>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Nov 2012 14:02:19 +0200, Mika Westerberg wrote:
-> On Mon, Nov 05, 2012 at 11:56:39AM +0100, Mark Brown wrote:
-> > I've got practical systems where there are multiple buses physically
-> > connected, though in practice almost always only one is actually used at
-> > runtime when it's I2C and SPI there are some systems (usually with other
-> > buses) where you might want to use more than one bus.  Not sure those
-> > buses will fit in here though.
-> 
-> Yeah, I just went through DSDT table of one of our machines and found a
-> device that actually has two I2CSerialBus connectors (and those are to the
-> same controller). What I'm not sure is that is it used to select between
-> two different addresses or doest the device really have two physical I2C
-> connections.
+On Sun, 4 Nov 2012, Stefan Achatz wrote:
 
-Neither would make sense from a hardware perspective.
+> koneplus driver now supports updated model KoneXTD.
+> Added support for device reset for koneplus and savu drivers.
+> Removed a lot of unnecessary code for koneplus driver, bringing it
+> nearer to the looks of my newer roccat drivers.
+
+I have now applied the series.
 
 -- 
-Jean Delvare
+Jiri Kosina
+SUSE Labs
