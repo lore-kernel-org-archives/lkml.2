@@ -1,200 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701Ab2KEOuw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:50:52 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:34697 "EHLO
+	id S932749Ab2KEOu5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:50:57 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:34839 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932646Ab2KEOut (ORCPT
+	with ESMTP id S932646Ab2KEOux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:50:49 -0500
+	Mon, 5 Nov 2012 09:50:53 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, sjenning@linux.vnet.ibm.com,
         dan.magenheimer@oracle.com, ngupta@vflare.org, minchan@kernel.org,
         rcj@linux.vnet.ibm.com, linux-mm@kvack.org, gregkh@linuxfoundation.org,
         devel@driverdev.osuosl.org
 Cc: akpm@linux-foundation.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 09/11] zcache: Use an array to initialize/use debugfs attributes.
-Date: Mon,  5 Nov 2012 09:37:32 -0500
-Message-Id: <1352126254-28933-10-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 04/11] zcache: Provide accessory functions for counter decrease.
+Date: Mon,  5 Nov 2012 09:37:27 -0500
+Message-Id: <1352126254-28933-5-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352126254-28933-1-git-send-email-konrad.wilk@oracle.com>
 References: <1352126254-28933-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It makes it neater and also allows us to piggyback on that
-in the zcache_dump function.
+This way we can have all wrapped with these functions and
+can disable/enable this with CONFIG_DEBUG_FS.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/staging/ramster/debug.c |  141 +++++++++++++--------------------------
- 1 files changed, 47 insertions(+), 94 deletions(-)
+ drivers/staging/ramster/zcache-main.c |   88 +++++++++++++++++++--------------
+ 1 files changed, 51 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/staging/ramster/debug.c b/drivers/staging/ramster/debug.c
-index 0d19715..3a252a5 100644
---- a/drivers/staging/ramster/debug.c
-+++ b/drivers/staging/ramster/debug.c
-@@ -3,111 +3,64 @@
- 
- #ifdef CONFIG_DEBUG_FS
- #include <linux/debugfs.h>
--#define	zdfs	debugfs_create_size_t
--#define	zdfs64	debugfs_create_u64
-+
-+#define ATTR(x)  { .name = #x, .val = &zcache_##x, }
-+static struct debug_entry {
-+	const char *name;
-+	ssize_t *val;
-+} attrs[] = {
-+	ATTR(obj_count), ATTR(obj_count_max),
-+	ATTR(objnode_count), ATTR(objnode_count_max),
-+	ATTR(flush_total), ATTR(flush_found),
-+	ATTR(flobj_total), ATTR(flobj_found),
-+	ATTR(failed_eph_puts), ATTR(failed_pers_puts),
-+	ATTR(failed_getfreepages), ATTR(failed_alloc),
-+	ATTR(put_to_flush),
-+	ATTR(compress_poor), ATTR(mean_compress_poor),
-+	ATTR(eph_ate_tail), ATTR(eph_ate_tail_failed),
-+	ATTR(pers_ate_eph), ATTR(pers_ate_eph_failed),
-+	ATTR(evicted_eph_zpages), ATTR(evicted_eph_pageframes),
-+	ATTR(eph_pageframes), ATTR(eph_pageframes_max),
-+	ATTR(eph_zpages), ATTR(eph_zpages_max),
-+	ATTR(pers_zpages), ATTR(pers_zpages_max),
-+	ATTR(last_active_file_pageframes),
-+	ATTR(last_inactive_file_pageframes),
-+	ATTR(last_active_anon_pageframes),
-+	ATTR(last_inactive_anon_pageframes),
-+	ATTR(eph_nonactive_puts_ignored),
-+	ATTR(pers_nonactive_puts_ignored),
+diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
+index 6fd7f0e..29ffbf1 100644
+--- a/drivers/staging/ramster/zcache-main.c
++++ b/drivers/staging/ramster/zcache-main.c
+@@ -141,8 +141,12 @@ static inline void inc_zcache_obj_count(void)
+ 	if (zcache_obj_count > zcache_obj_count_max)
+ 		zcache_obj_count_max = zcache_obj_count;
+ }
+-
+ static long zcache_objnode_count;
++static inline void dec_zcache_obj_count(void)
++{
++	zcache_obj_count = atomic_dec_return(&zcache_obj_atomic);
++	BUG_ON(zcache_obj_count < 0);
 +};
-+#undef ATTR
- int zcache_debugfs_init(void)
- {
-+	unsigned int i;
- 	struct dentry *root = debugfs_create_dir("zcache", NULL);
- 	if (root == NULL)
- 		return -ENXIO;
- 
--	zdfs("obj_count", S_IRUGO, root, &zcache_obj_count);
--	zdfs("obj_count_max", S_IRUGO, root, &zcache_obj_count_max);
--	zdfs("objnode_count", S_IRUGO, root, &zcache_objnode_count);
--	zdfs("objnode_count_max", S_IRUGO, root, &zcache_objnode_count_max);
--	zdfs("flush_total", S_IRUGO, root, &zcache_flush_total);
--	zdfs("flush_found", S_IRUGO, root, &zcache_flush_found);
--	zdfs("flobj_total", S_IRUGO, root, &zcache_flobj_total);
--	zdfs("flobj_found", S_IRUGO, root, &zcache_flobj_found);
--	zdfs("failed_eph_puts", S_IRUGO, root, &zcache_failed_eph_puts);
--	zdfs("failed_pers_puts", S_IRUGO, root, &zcache_failed_pers_puts);
--	zdfs("failed_get_free_pages", S_IRUGO, root,
--				&zcache_failed_getfreepages);
--	zdfs("failed_alloc", S_IRUGO, root, &zcache_failed_alloc);
--	zdfs("put_to_flush", S_IRUGO, root, &zcache_put_to_flush);
--	zdfs("compress_poor", S_IRUGO, root, &zcache_compress_poor);
--	zdfs("mean_compress_poor", S_IRUGO, root, &zcache_mean_compress_poor);
--	zdfs("eph_ate_tail", S_IRUGO, root, &zcache_eph_ate_tail);
--	zdfs("eph_ate_tail_failed", S_IRUGO, root, &zcache_eph_ate_tail_failed);
--	zdfs("pers_ate_eph", S_IRUGO, root, &zcache_pers_ate_eph);
--	zdfs("pers_ate_eph_failed", S_IRUGO, root, &zcache_pers_ate_eph_failed);
--	zdfs("evicted_eph_zpages", S_IRUGO, root, &zcache_evicted_eph_zpages);
--	zdfs("evicted_eph_pageframes", S_IRUGO, root,
--				&zcache_evicted_eph_pageframes);
--	zdfs("eph_pageframes", S_IRUGO, root, &zcache_eph_pageframes);
--	zdfs("eph_pageframes_max", S_IRUGO, root, &zcache_eph_pageframes_max);
--	zdfs("pers_pageframes", S_IRUGO, root, &zcache_pers_pageframes);
--	zdfs("pers_pageframes_max", S_IRUGO, root, &zcache_pers_pageframes_max);
--	zdfs("eph_zpages", S_IRUGO, root, &zcache_eph_zpages);
--	zdfs("eph_zpages_max", S_IRUGO, root, &zcache_eph_zpages_max);
--	zdfs("pers_zpages", S_IRUGO, root, &zcache_pers_zpages);
--	zdfs("pers_zpages_max", S_IRUGO, root, &zcache_pers_zpages_max);
--	zdfs("last_active_file_pageframes", S_IRUGO, root,
--				&zcache_last_active_file_pageframes);
--	zdfs("last_inactive_file_pageframes", S_IRUGO, root,
--				&zcache_last_inactive_file_pageframes);
--	zdfs("last_active_anon_pageframes", S_IRUGO, root,
--				&zcache_last_active_anon_pageframes);
--	zdfs("last_inactive_anon_pageframes", S_IRUGO, root,
--				&zcache_last_inactive_anon_pageframes);
--	zdfs("eph_nonactive_puts_ignored", S_IRUGO, root,
--				&zcache_eph_nonactive_puts_ignored);
--	zdfs("pers_nonactive_puts_ignored", S_IRUGO, root,
--				&zcache_pers_nonactive_puts_ignored);
--	zdfs64("eph_zbytes", S_IRUGO, root, &zcache_eph_zbytes);
--	zdfs64("eph_zbytes_max", S_IRUGO, root, &zcache_eph_zbytes_max);
--	zdfs64("pers_zbytes", S_IRUGO, root, &zcache_pers_zbytes);
--	zdfs64("pers_zbytes_max", S_IRUGO, root, &zcache_pers_zbytes_max);
-+	for (i = 0; i < ARRAY_SIZE(attrs); i++)
-+		if (!debugfs_create_size_t(attrs[i].name, S_IRUGO, root, attrs[i].val))
-+			goto out;
-+
-+	debugfs_create_u64("eph_zbytes", S_IRUGO, root, &zcache_eph_zbytes);
-+	debugfs_create_u64("eph_zbytes_max", S_IRUGO, root, &zcache_eph_zbytes_max);
-+	debugfs_create_u64("pers_zbytes", S_IRUGO, root, &zcache_pers_zbytes);
-+	debugfs_create_u64("pers_zbytes_max", S_IRUGO, root, &zcache_pers_zbytes_max);
- 	return 0;
-+out:
-+	return -ENODEV;
+ static atomic_t zcache_objnode_atomic = ATOMIC_INIT(0);
+ static long zcache_objnode_count_max;
+ static inline void inc_zcache_objnode_count(void)
+@@ -151,6 +155,11 @@ static inline void inc_zcache_objnode_count(void)
+ 	if (zcache_objnode_count > zcache_objnode_count_max)
+ 		zcache_objnode_count_max = zcache_objnode_count;
+ };
++static inline void dec_zcache_objnode_count(void)
++{
++	zcache_objnode_count = atomic_dec_return(&zcache_objnode_atomic);
++	BUG_ON(zcache_objnode_count < 0);
++};
+ static u64 zcache_eph_zbytes;
+ static atomic_long_t zcache_eph_zbytes_atomic = ATOMIC_INIT(0);
+ static u64 zcache_eph_zbytes_max;
+@@ -160,6 +169,10 @@ static inline void inc_zcache_eph_zbytes(unsigned clen)
+ 	if (zcache_eph_zbytes > zcache_eph_zbytes_max)
+ 		zcache_eph_zbytes_max = zcache_eph_zbytes;
+ };
++static inline void dec_zcache_eph_zbytes(unsigned zsize)
++{
++	zcache_eph_zbytes = atomic_long_sub_return(zsize, &zcache_eph_zbytes_atomic);
++};
+ static u64 zcache_pers_zbytes;
+ static atomic_long_t zcache_pers_zbytes_atomic = ATOMIC_INIT(0);
+ static u64 zcache_pers_zbytes_max;
+@@ -170,6 +183,10 @@ static inline void inc_zcache_pers_zbytes(unsigned clen)
+ 		zcache_pers_zbytes_max = zcache_pers_zbytes;
  }
--#undef	zdebugfs
--#undef	zdfs64
- 
- /* developers can call this in case of ooms, e.g. to find memory leaks */
- void zcache_dump(void)
- {
--	pr_debug("zcache: obj_count=%u\n", zcache_obj_count);
--	pr_debug("zcache: obj_count_max=%u\n", zcache_obj_count_max);
--	pr_debug("zcache: objnode_count=%u\n", zcache_objnode_count);
--	pr_debug("zcache: objnode_count_max=%u\n", zcache_objnode_count_max);
--	pr_debug("zcache: flush_total=%u\n", zcache_flush_total);
--	pr_debug("zcache: flush_found=%u\n", zcache_flush_found);
--	pr_debug("zcache: flobj_total=%u\n", zcache_flobj_total);
--	pr_debug("zcache: flobj_found=%u\n", zcache_flobj_found);
--	pr_debug("zcache: failed_eph_puts=%u\n", zcache_failed_eph_puts);
--	pr_debug("zcache: failed_pers_puts=%u\n", zcache_failed_pers_puts);
--	pr_debug("zcache: failed_get_free_pages=%u\n",
--				zcache_failed_getfreepages);
--	pr_debug("zcache: failed_alloc=%u\n", zcache_failed_alloc);
--	pr_debug("zcache: put_to_flush=%u\n", zcache_put_to_flush);
--	pr_debug("zcache: compress_poor=%u\n", zcache_compress_poor);
--	pr_debug("zcache: mean_compress_poor=%u\n",
--				zcache_mean_compress_poor);
--	pr_debug("zcache: eph_ate_tail=%u\n", zcache_eph_ate_tail);
--	pr_debug("zcache: eph_ate_tail_failed=%u\n",
--				zcache_eph_ate_tail_failed);
--	pr_debug("zcache: pers_ate_eph=%u\n", zcache_pers_ate_eph);
--	pr_debug("zcache: pers_ate_eph_failed=%u\n",
--				zcache_pers_ate_eph_failed);
--	pr_debug("zcache: evicted_eph_zpages=%u\n", zcache_evicted_eph_zpages);
--	pr_debug("zcache: evicted_eph_pageframes=%u\n",
--				zcache_evicted_eph_pageframes);
--	pr_debug("zcache: eph_pageframes=%u\n", zcache_eph_pageframes);
--	pr_debug("zcache: eph_pageframes_max=%u\n", zcache_eph_pageframes_max);
--	pr_debug("zcache: pers_pageframes=%u\n", zcache_pers_pageframes);
--	pr_debug("zcache: pers_pageframes_max=%u\n",
--				zcache_pers_pageframes_max);
--	pr_debug("zcache: eph_zpages=%u\n", zcache_eph_zpages);
--	pr_debug("zcache: eph_zpages_max=%u\n", zcache_eph_zpages_max);
--	pr_debug("zcache: pers_zpages=%u\n", zcache_pers_zpages);
--	pr_debug("zcache: pers_zpages_max=%u\n", zcache_pers_zpages_max);
--	pr_debug("zcache: eph_zbytes=%llu\n",
--				(unsigned long long)zcache_eph_zbytes);
--	pr_debug("zcache: eph_zbytes_max=%llu\n",
--				(unsigned long long)zcache_eph_zbytes_max);
--	pr_debug("zcache: pers_zbytes=%llu\n",
--				(unsigned long long)zcache_pers_zbytes);
--	pr_debug("zcache: pers_zbytes_max=%llu\n",
--			(unsigned long long)zcache_pers_zbytes_max);
-+	unsigned int i;
-+	for (i = 0; i < ARRAY_SIZE(attrs); i++)
-+		pr_debug("zcache: %s=%u\n", attrs[i].name, *attrs[i].val);
-+
-+	pr_debug("zcache: eph_zbytes=%llu\n", (unsigned long long)zcache_eph_zbytes);
-+	pr_debug("zcache: eph_zbytes_max=%llu\n", (unsigned long long)zcache_eph_zbytes_max);
-+	pr_debug("zcache: pers_zbytes=%llu\n", (unsigned long long)zcache_pers_zbytes);
-+	pr_debug("zcache: pers_zbytes_max=%llu\n", (unsigned long long)zcache_pers_zbytes_max);
+ static long zcache_eph_pageframes;
++static inline void dec_zcache_pers_zbytes(unsigned zsize)
++{
++	zcache_pers_zbytes = atomic_long_sub_return(zsize, &zcache_pers_zbytes_atomic);
++}
+ static atomic_t zcache_eph_pageframes_atomic = ATOMIC_INIT(0);
+ static long zcache_eph_pageframes_max;
+ static inline void inc_zcache_eph_pageframes(void)
+@@ -179,6 +196,10 @@ static inline void inc_zcache_eph_pageframes(void)
+ 		zcache_eph_pageframes_max = zcache_eph_pageframes;
+ };
+ static long zcache_pers_pageframes;
++static inline void dec_zcache_eph_pageframes(void)
++{
++	zcache_eph_pageframes = atomic_dec_return(&zcache_eph_pageframes_atomic);
++};
+ static atomic_t zcache_pers_pageframes_atomic = ATOMIC_INIT(0);
+ static long zcache_pers_pageframes_max;
+ static inline void inc_zcache_pers_pageframes(void)
+@@ -188,6 +209,10 @@ static inline void inc_zcache_pers_pageframes(void)
+ 		zcache_pers_pageframes_max = zcache_pers_pageframes;
  }
- #endif
+ static long zcache_pageframes_alloced;
++static inline void dec_zcache_pers_pageframes(void)
++{
++	zcache_pers_pageframes = atomic_dec_return(&zcache_pers_pageframes_atomic);
++}
+ static atomic_t zcache_pageframes_alloced_atomic = ATOMIC_INIT(0);
+ static inline void inc_zcache_pageframes_alloced(void)
+ {
+@@ -209,6 +234,10 @@ static inline void inc_zcache_eph_zpages(void)
+ 		zcache_eph_zpages_max = zcache_eph_zpages;
+ }
+ static long zcache_pers_zpages;
++static inline void dec_zcache_eph_zpages(unsigned zpages)
++{
++	zcache_eph_zpages = atomic_sub_return(zpages, &zcache_eph_zpages_atomic);
++}
+ static atomic_t zcache_pers_zpages_atomic = ATOMIC_INIT(0);
+ static long zcache_pers_zpages_max;
+ static inline void inc_zcache_pers_zpages(void)
+@@ -217,6 +246,10 @@ static inline void inc_zcache_pers_zpages(void)
+ 	if (zcache_pers_zpages > zcache_pers_zpages_max)
+ 		zcache_pers_zpages_max = zcache_pers_zpages;
+ }
++static inline void dec_zcache_pers_zpages(unsigned zpages)
++{
++	zcache_pers_zpages = atomic_sub_return(zpages, &zcache_pers_zpages_atomic);
++}
+ /* but for the rest of these, counting races are ok */
+ static unsigned long zcache_flush_total;
+ static unsigned long zcache_flush_found;
+@@ -461,9 +494,7 @@ static struct tmem_objnode *zcache_objnode_alloc(struct tmem_pool *pool)
+ static void zcache_objnode_free(struct tmem_objnode *objnode,
+ 					struct tmem_pool *pool)
+ {
+-	zcache_objnode_count =
+-		atomic_dec_return(&zcache_objnode_atomic);
+-	BUG_ON(zcache_objnode_count < 0);
++	dec_zcache_objnode_count();
+ 	kmem_cache_free(zcache_objnode_cache, objnode);
+ }
+ 
+@@ -482,9 +513,7 @@ static struct tmem_obj *zcache_obj_alloc(struct tmem_pool *pool)
+ 
+ static void zcache_obj_free(struct tmem_obj *obj, struct tmem_pool *pool)
+ {
+-	zcache_obj_count =
+-		atomic_dec_return(&zcache_obj_atomic);
+-	BUG_ON(zcache_obj_count < 0);
++	dec_zcache_obj_count();
+ 	kmem_cache_free(zcache_obj_cache, obj);
+ }
+ 
+@@ -811,20 +840,14 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
+ 					&zsize, &zpages);
+ 	if (eph) {
+ 		if (page)
+-			zcache_eph_pageframes =
+-			    atomic_dec_return(&zcache_eph_pageframes_atomic);
+-		zcache_eph_zpages =
+-		    atomic_sub_return(zpages, &zcache_eph_zpages_atomic);
+-		zcache_eph_zbytes =
+-		    atomic_long_sub_return(zsize, &zcache_eph_zbytes_atomic);
++			dec_zcache_eph_pageframes();
++		dec_zcache_eph_zpages(zpages);
++		dec_zcache_eph_zbytes(zsize);
+ 	} else {
+ 		if (page)
+-			zcache_pers_pageframes =
+-			    atomic_dec_return(&zcache_pers_pageframes_atomic);
+-		zcache_pers_zpages =
+-		    atomic_sub_return(zpages, &zcache_pers_zpages_atomic);
+-		zcache_pers_zbytes =
+-		    atomic_long_sub_return(zsize, &zcache_pers_zbytes_atomic);
++			dec_zcache_pers_pageframes();
++		dec_zcache_pers_zpages(zpages);
++		dec_zcache_pers_zbytes(zsize);
+ 	}
+ 	if (!is_local_client(pool->client))
+ 		ramster_count_foreign_pages(eph, -1);
+@@ -854,23 +877,17 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
+ 		page = zbud_free_and_delist((struct zbudref *)pampd,
+ 						true, &zsize, &zpages);
+ 		if (page)
+-			zcache_eph_pageframes =
+-			    atomic_dec_return(&zcache_eph_pageframes_atomic);
+-		zcache_eph_zpages =
+-		    atomic_sub_return(zpages, &zcache_eph_zpages_atomic);
+-		zcache_eph_zbytes =
+-		    atomic_long_sub_return(zsize, &zcache_eph_zbytes_atomic);
++			dec_zcache_eph_pageframes();
++		dec_zcache_eph_zpages(zpages);
++		dec_zcache_eph_zbytes(zsize);
+ 		/* FIXME CONFIG_RAMSTER... check acct parameter? */
+ 	} else {
+ 		page = zbud_free_and_delist((struct zbudref *)pampd,
+ 						false, &zsize, &zpages);
+ 		if (page)
+-			zcache_pers_pageframes =
+-			    atomic_dec_return(&zcache_pers_pageframes_atomic);
+-		zcache_pers_zpages =
+-		     atomic_sub_return(zpages, &zcache_pers_zpages_atomic);
+-		zcache_pers_zbytes =
+-		    atomic_long_sub_return(zsize, &zcache_pers_zbytes_atomic);
++			dec_zcache_pers_pageframes();
++		dec_zcache_pers_zpages(zpages);
++		dec_zcache_pers_zbytes(zsize);
+ 	}
+ 	if (!is_local_client(pool->client))
+ 		ramster_count_foreign_pages(is_ephemeral(pool), -1);
+@@ -992,13 +1009,10 @@ static struct page *zcache_evict_eph_pageframe(void)
+ 	page = zbud_evict_pageframe_lru(&zsize, &zpages);
+ 	if (page == NULL)
+ 		goto out;
+-	zcache_eph_zbytes = atomic_long_sub_return(zsize,
+-					&zcache_eph_zbytes_atomic);
+-	zcache_eph_zpages = atomic_sub_return(zpages,
+-					&zcache_eph_zpages_atomic);
++	dec_zcache_eph_zbytes(zsize);
++	dec_zcache_eph_zpages(zpages);
+ 	zcache_evicted_eph_zpages++;
+-	zcache_eph_pageframes =
+-		atomic_dec_return(&zcache_eph_pageframes_atomic);
++	dec_zcache_eph_pageframes();
+ 	zcache_evicted_eph_pageframes++;
+ out:
+ 	return page;
 -- 
 1.7.7.6
 
