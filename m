@@ -1,57 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab2KEWwM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 17:52:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55886 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540Ab2KEWwJ (ORCPT
+	id S1752320Ab2KEWrf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 17:47:35 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35034 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2KEWrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 17:52:09 -0500
-Date: Mon, 5 Nov 2012 14:52:07 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC PATCH] tasklet: ignore disabled tasklet in tasklet_action
-Message-Id: <20121105145207.6d2fae92.akpm@linux-foundation.org>
-In-Reply-To: <1351824534-2861-1-git-send-email-xtfeng@gmail.com>
-References: <1351824534-2861-1-git-send-email-xtfeng@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Nov 2012 17:47:31 -0500
+From: Michel Lespinasse <walken@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
+        William Irwin <wli@holomorphy.com>
+Cc: linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
+        linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: [PATCH 00/16] mm: use augmented rbtrees for finding unmapped areas
+Date: Mon,  5 Nov 2012 14:46:57 -0800
+Message-Id: <1352155633-8648-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  2 Nov 2012 10:48:54 +0800
-Xiaotian Feng <xtfeng@gmail.com> wrote:
+Earlier this year, Rik proposed using augmented rbtrees to optimize
+our search for a suitable unmapped area during mmap(). This prompted
+my work on improving the augmented rbtree code. Rik doesn't seem to
+have time to follow up on his idea at this time, so I'm sending this
+series to revive the idea.
 
-> We met a ksoftirqd 100% issue, the perf top shows kernel is busy
-> with tasklet_action(), but no actual action is shown. From dumped
-> kernel, there's only one disabled tasklet on the tasklet_vec.
-> 
-> tasklet_action might be handled after tasklet is disabled, this will
-> make disabled tasklet stayed on tasklet_vec. tasklet_action will not
-> handle disabled tasklet, but place it on the tail of tasklet_vec,
-> still raise softirq for this tasklet. Things will become worse if
-> device driver uses tasklet_disable on its device remove/close code.
-> The disabled tasklet will stay on the vec, frequently __raise_softirq_off()
-> and make ksoftirqd wakeup even if no tasklets need to be handled.
-> 
-> This patch introduced a new TASKLET_STATE_HI bit to indicate HI_SOFTIRQ,
-> in tasklet_action(), simply ignore the disabled tasklet and don't raise
-> the softirq nr. In my previous patch, I remove tasklet_hi_enable() since
-> it is the same as tasklet_enable(). So only tasklet_enable() needs to be
-> modified, if tasklet state is changed from disable to enable, use
-> __tasklet_schedule() to put it on the right vec.
+These changes are against v3.7-rc4. I have not converted all applicable
+architectuers yet, but we don't necessarily need to get them all onboard
+at once - the series is fully bisectable and additional architectures
+can be added later on. I am confident enough in my tests for patches 1-8;
+however the second half of the series basically didn't get tested as
+I don't have access to all the relevant architectures.
 
-gee, I haven't looked at the tasklet code in 100 years.  I think I'll
-send this in Thomas's direction ;)
+Change log  since the previous (RFC) send:
+- Added bug fix in validate_mm(), noticed by Sasha Levin and figured
+  out by Bob Liu, which sometimes caused NULL pointer dereference when
+  running with CONFIG_DEBUG_VM_RB=y
+- Fixed generic and x86_64 arch_get_unmapped_area_topdown to avoid
+  allocating new areas at addr=0 as suggested by Rik Van Riel
+- Converted more architectures to use the new vm_unmapped_area()
+  search function
+- Converted hugetlbfs (generic / i386 / sparc64 / tile) to use the new
+  vm_unmapped_area() search function as well.
 
-The race description seems real and the patch looks sane to me.  Are
-you sure we can get away with never clearing TASKLET_STATE_HI?  For
-example, what would happen if code does a tasklet_hi_schedule(t) and
-later does a tasklet_schedule(t)?
+In this resend, I have kept Rik's Reviewed-by tags from the original
+RFC submission for patches that haven't been updated other than applying
+his suggestions.
 
+Patch 1 is the validate_mm() fix from Bob Liu (+ fixed-the-fix from me :)
 
+Patch 2 augments the VMA rbtree with a new rb_subtree_gap field,
+indicating the length of the largest gap immediately preceding any
+VMAs in a subtree.
+
+Patch 3 adds new checks to CONFIG_DEBUG_VM_RB to verify the above
+information is correctly maintained.
+
+Patch 4 rearranges the vm_area_struct layout so that rbtree searches only
+need data that is contained in the first cacheline (this one is from
+Rik's original patch series)
+
+Patch 5 adds a generic vm_unmapped_area() search function, which
+allows for searching for an address space of any desired length,
+within [low; high[ address constraints, with any desired alignment.
+The generic arch_get_unmapped_area[_topdown] functions are also converted
+to use this.
+
+Patch 6 converts the x86_64 arch_get_unmapped_area[_topdown] functions
+to use vm_unmapped_area() as well.
+
+Patch 7 fixes cache coloring on x86_64, as suggested by Rik in his
+previous series.
+
+Patch 8 and 9 convert the generic and i386 hugetlbfs code to use
+vm_unmapped_area()
+
+Patches 10-16 convert extra architectures to use vm_unmapped_area()
+
+I'm happy that this series removes more code than it adds, as calling
+vm_unmapped_area() with the desired arguments is quite shorter than
+duplicating the brute force algorithm all over the place. There is
+still a bit of repetition between various implementations of
+arch_get_unmapped_area[_topdown] functions that could probably be
+simplified somehow, but I feel we can keep that for a later step...
+
+Michel Lespinasse (15):
+  mm: add anon_vma_lock to validate_mm()
+  mm: augment vma rbtree with rb_subtree_gap
+  mm: check rb_subtree_gap correctness
+  mm: vm_unmapped_area() lookup function
+  mm: use vm_unmapped_area() on x86_64 architecture
+  mm: fix cache coloring on x86_64 architecture
+  mm: use vm_unmapped_area() in hugetlbfs
+  mm: use vm_unmapped_area() in hugetlbfs on i386 architecture
+  mm: use vm_unmapped_area() on mips architecture
+  mm: use vm_unmapped_area() on arm architecture
+  mm: use vm_unmapped_area() on sh architecture
+  mm: use vm_unmapped_area() on sparc64 architecture
+  mm: use vm_unmapped_area() in hugetlbfs on sparc64 architecture
+  mm: use vm_unmapped_area() on sparc32 architecture
+  mm: use vm_unmapped_area() in hugetlbfs on tile architecture
+
+Rik van Riel (1):
+  mm: rearrange vm_area_struct for fewer cache misses
+
+ arch/arm/mm/mmap.c               |  119 ++--------
+ arch/mips/mm/mmap.c              |   99 ++-------
+ arch/sh/mm/mmap.c                |  126 ++---------
+ arch/sparc/kernel/sys_sparc_32.c |   24 +--
+ arch/sparc/kernel/sys_sparc_64.c |  132 +++---------
+ arch/sparc/mm/hugetlbpage.c      |  123 +++--------
+ arch/tile/mm/hugetlbpage.c       |  139 ++----------
+ arch/x86/include/asm/elf.h       |    6 +-
+ arch/x86/kernel/sys_x86_64.c     |  151 +++----------
+ arch/x86/mm/hugetlbpage.c        |  130 ++---------
+ arch/x86/vdso/vma.c              |    2 +-
+ fs/hugetlbfs/inode.c             |   42 +---
+ include/linux/mm.h               |   31 +++
+ include/linux/mm_types.h         |   19 ++-
+ mm/mmap.c                        |  452 +++++++++++++++++++++++++++++---------
+ 15 files changed, 616 insertions(+), 979 deletions(-)
+
+-- 
+1.7.7.3
