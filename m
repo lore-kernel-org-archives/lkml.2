@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749Ab2KEOu5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:50:57 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:34839 "EHLO
+	id S932721Ab2KEOuz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:50:55 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:34840 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932646Ab2KEOux (ORCPT
+	with ESMTP id S932705Ab2KEOux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Nov 2012 09:50:53 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -13,217 +13,217 @@ To: linux-kernel@vger.kernel.org, sjenning@linux.vnet.ibm.com,
         rcj@linux.vnet.ibm.com, linux-mm@kvack.org, gregkh@linuxfoundation.org,
         devel@driverdev.osuosl.org
 Cc: akpm@linux-foundation.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 04/11] zcache: Provide accessory functions for counter decrease.
-Date: Mon,  5 Nov 2012 09:37:27 -0500
-Message-Id: <1352126254-28933-5-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 03/11] zcache: Provide accessory functions for counter increase
+Date: Mon,  5 Nov 2012 09:37:26 -0500
+Message-Id: <1352126254-28933-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1352126254-28933-1-git-send-email-konrad.wilk@oracle.com>
 References: <1352126254-28933-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way we can have all wrapped with these functions and
-can disable/enable this with CONFIG_DEBUG_FS.
+This is the first step in moving the debugfs code out of the
+main file in-to another file. And also allow the code to run
+without CONFIG_DEBUG_FS defined.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/staging/ramster/zcache-main.c |   88 +++++++++++++++++++--------------
- 1 files changed, 51 insertions(+), 37 deletions(-)
+ drivers/staging/ramster/zcache-main.c |  103 ++++++++++++++++++++++-----------
+ 1 files changed, 68 insertions(+), 35 deletions(-)
 
 diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
-index 6fd7f0e..29ffbf1 100644
+index 2b9ad55..6fd7f0e 100644
 --- a/drivers/staging/ramster/zcache-main.c
 +++ b/drivers/staging/ramster/zcache-main.c
-@@ -141,8 +141,12 @@ static inline void inc_zcache_obj_count(void)
- 	if (zcache_obj_count > zcache_obj_count_max)
- 		zcache_obj_count_max = zcache_obj_count;
- }
--
- static long zcache_objnode_count;
-+static inline void dec_zcache_obj_count(void)
+@@ -135,32 +135,88 @@ static DEFINE_PER_CPU(struct zcache_preload, zcache_preloads) = { 0, };
+ static long zcache_obj_count;
+ static atomic_t zcache_obj_atomic = ATOMIC_INIT(0);
+ static long zcache_obj_count_max;
++static inline void inc_zcache_obj_count(void)
 +{
-+	zcache_obj_count = atomic_dec_return(&zcache_obj_atomic);
-+	BUG_ON(zcache_obj_count < 0);
-+};
++	zcache_obj_count = atomic_inc_return(&zcache_obj_atomic);
++	if (zcache_obj_count > zcache_obj_count_max)
++		zcache_obj_count_max = zcache_obj_count;
++}
++
+ static long zcache_objnode_count;
  static atomic_t zcache_objnode_atomic = ATOMIC_INIT(0);
  static long zcache_objnode_count_max;
- static inline void inc_zcache_objnode_count(void)
-@@ -151,6 +155,11 @@ static inline void inc_zcache_objnode_count(void)
- 	if (zcache_objnode_count > zcache_objnode_count_max)
- 		zcache_objnode_count_max = zcache_objnode_count;
- };
-+static inline void dec_zcache_objnode_count(void)
++static inline void inc_zcache_objnode_count(void)
 +{
-+	zcache_objnode_count = atomic_dec_return(&zcache_objnode_atomic);
-+	BUG_ON(zcache_objnode_count < 0);
++	zcache_objnode_count = atomic_inc_return(&zcache_objnode_atomic);
++	if (zcache_objnode_count > zcache_objnode_count_max)
++		zcache_objnode_count_max = zcache_objnode_count;
 +};
  static u64 zcache_eph_zbytes;
  static atomic_long_t zcache_eph_zbytes_atomic = ATOMIC_INIT(0);
  static u64 zcache_eph_zbytes_max;
-@@ -160,6 +169,10 @@ static inline void inc_zcache_eph_zbytes(unsigned clen)
- 	if (zcache_eph_zbytes > zcache_eph_zbytes_max)
- 		zcache_eph_zbytes_max = zcache_eph_zbytes;
- };
-+static inline void dec_zcache_eph_zbytes(unsigned zsize)
++static inline void inc_zcache_eph_zbytes(unsigned clen)
 +{
-+	zcache_eph_zbytes = atomic_long_sub_return(zsize, &zcache_eph_zbytes_atomic);
++	zcache_eph_zbytes = atomic_long_add_return(clen, &zcache_eph_zbytes_atomic);
++	if (zcache_eph_zbytes > zcache_eph_zbytes_max)
++		zcache_eph_zbytes_max = zcache_eph_zbytes;
 +};
  static u64 zcache_pers_zbytes;
  static atomic_long_t zcache_pers_zbytes_atomic = ATOMIC_INIT(0);
  static u64 zcache_pers_zbytes_max;
-@@ -170,6 +183,10 @@ static inline void inc_zcache_pers_zbytes(unsigned clen)
- 		zcache_pers_zbytes_max = zcache_pers_zbytes;
- }
- static long zcache_eph_pageframes;
-+static inline void dec_zcache_pers_zbytes(unsigned zsize)
++static inline void inc_zcache_pers_zbytes(unsigned clen)
 +{
-+	zcache_pers_zbytes = atomic_long_sub_return(zsize, &zcache_pers_zbytes_atomic);
++	zcache_pers_zbytes = atomic_long_add_return(clen, &zcache_pers_zbytes_atomic);
++	if (zcache_pers_zbytes > zcache_pers_zbytes_max)
++		zcache_pers_zbytes_max = zcache_pers_zbytes;
 +}
+ static long zcache_eph_pageframes;
  static atomic_t zcache_eph_pageframes_atomic = ATOMIC_INIT(0);
  static long zcache_eph_pageframes_max;
- static inline void inc_zcache_eph_pageframes(void)
-@@ -179,6 +196,10 @@ static inline void inc_zcache_eph_pageframes(void)
- 		zcache_eph_pageframes_max = zcache_eph_pageframes;
- };
- static long zcache_pers_pageframes;
-+static inline void dec_zcache_eph_pageframes(void)
++static inline void inc_zcache_eph_pageframes(void)
 +{
-+	zcache_eph_pageframes = atomic_dec_return(&zcache_eph_pageframes_atomic);
++	zcache_eph_pageframes = atomic_inc_return(&zcache_eph_pageframes_atomic);
++	if (zcache_eph_pageframes > zcache_eph_pageframes_max)
++		zcache_eph_pageframes_max = zcache_eph_pageframes;
 +};
+ static long zcache_pers_pageframes;
  static atomic_t zcache_pers_pageframes_atomic = ATOMIC_INIT(0);
  static long zcache_pers_pageframes_max;
- static inline void inc_zcache_pers_pageframes(void)
-@@ -188,6 +209,10 @@ static inline void inc_zcache_pers_pageframes(void)
- 		zcache_pers_pageframes_max = zcache_pers_pageframes;
- }
++static inline void inc_zcache_pers_pageframes(void)
++{
++	zcache_pers_pageframes = atomic_inc_return(&zcache_pers_pageframes_atomic);
++	if (zcache_pers_pageframes > zcache_pers_pageframes_max)
++		zcache_pers_pageframes_max = zcache_pers_pageframes;
++}
  static long zcache_pageframes_alloced;
-+static inline void dec_zcache_pers_pageframes(void)
-+{
-+	zcache_pers_pageframes = atomic_dec_return(&zcache_pers_pageframes_atomic);
-+}
  static atomic_t zcache_pageframes_alloced_atomic = ATOMIC_INIT(0);
- static inline void inc_zcache_pageframes_alloced(void)
- {
-@@ -209,6 +234,10 @@ static inline void inc_zcache_eph_zpages(void)
- 		zcache_eph_zpages_max = zcache_eph_zpages;
- }
- static long zcache_pers_zpages;
-+static inline void dec_zcache_eph_zpages(unsigned zpages)
++static inline void inc_zcache_pageframes_alloced(void)
 +{
-+	zcache_eph_zpages = atomic_sub_return(zpages, &zcache_eph_zpages_atomic);
++	zcache_pageframes_alloced = atomic_inc_return(&zcache_pageframes_alloced_atomic);
++};
+ static long zcache_pageframes_freed;
+ static atomic_t zcache_pageframes_freed_atomic = ATOMIC_INIT(0);
++static inline void inc_zcache_pageframes_freed(void)
++{
++	zcache_pageframes_freed = atomic_inc_return(&zcache_pageframes_freed_atomic);
 +}
+ static long zcache_eph_zpages;
+ static atomic_t zcache_eph_zpages_atomic = ATOMIC_INIT(0);
+ static long zcache_eph_zpages_max;
++static inline void inc_zcache_eph_zpages(void)
++{
++	zcache_eph_zpages = atomic_inc_return(&zcache_eph_zpages_atomic);
++	if (zcache_eph_zpages > zcache_eph_zpages_max)
++		zcache_eph_zpages_max = zcache_eph_zpages;
++}
+ static long zcache_pers_zpages;
  static atomic_t zcache_pers_zpages_atomic = ATOMIC_INIT(0);
  static long zcache_pers_zpages_max;
- static inline void inc_zcache_pers_zpages(void)
-@@ -217,6 +246,10 @@ static inline void inc_zcache_pers_zpages(void)
- 	if (zcache_pers_zpages > zcache_pers_zpages_max)
- 		zcache_pers_zpages_max = zcache_pers_zpages;
- }
-+static inline void dec_zcache_pers_zpages(unsigned zpages)
+-
++static inline void inc_zcache_pers_zpages(void)
 +{
-+	zcache_pers_zpages = atomic_sub_return(zpages, &zcache_pers_zpages_atomic);
++	zcache_pers_zpages = atomic_inc_return(&zcache_pers_zpages_atomic);
++	if (zcache_pers_zpages > zcache_pers_zpages_max)
++		zcache_pers_zpages_max = zcache_pers_zpages;
 +}
  /* but for the rest of these, counting races are ok */
  static unsigned long zcache_flush_total;
  static unsigned long zcache_flush_found;
-@@ -461,9 +494,7 @@ static struct tmem_objnode *zcache_objnode_alloc(struct tmem_pool *pool)
- static void zcache_objnode_free(struct tmem_objnode *objnode,
- 					struct tmem_pool *pool)
- {
--	zcache_objnode_count =
--		atomic_dec_return(&zcache_objnode_atomic);
--	BUG_ON(zcache_objnode_count < 0);
-+	dec_zcache_objnode_count();
- 	kmem_cache_free(zcache_objnode_cache, objnode);
+@@ -398,9 +454,7 @@ static struct tmem_objnode *zcache_objnode_alloc(struct tmem_pool *pool)
+ 		}
+ 	}
+ 	BUG_ON(objnode == NULL);
+-	zcache_objnode_count = atomic_inc_return(&zcache_objnode_atomic);
+-	if (zcache_objnode_count > zcache_objnode_count_max)
+-		zcache_objnode_count_max = zcache_objnode_count;
++	inc_zcache_objnode_count();
+ 	return objnode;
  }
  
-@@ -482,9 +513,7 @@ static struct tmem_obj *zcache_obj_alloc(struct tmem_pool *pool)
- 
- static void zcache_obj_free(struct tmem_obj *obj, struct tmem_pool *pool)
- {
--	zcache_obj_count =
--		atomic_dec_return(&zcache_obj_atomic);
--	BUG_ON(zcache_obj_count < 0);
-+	dec_zcache_obj_count();
- 	kmem_cache_free(zcache_obj_cache, obj);
+@@ -422,9 +476,7 @@ static struct tmem_obj *zcache_obj_alloc(struct tmem_pool *pool)
+ 	obj = kp->obj;
+ 	BUG_ON(obj == NULL);
+ 	kp->obj = NULL;
+-	zcache_obj_count = atomic_inc_return(&zcache_obj_atomic);
+-	if (zcache_obj_count > zcache_obj_count_max)
+-		zcache_obj_count_max = zcache_obj_count;
++	inc_zcache_obj_count();
+ 	return obj;
  }
  
-@@ -811,20 +840,14 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *sizep, bool raw,
- 					&zsize, &zpages);
- 	if (eph) {
- 		if (page)
--			zcache_eph_pageframes =
--			    atomic_dec_return(&zcache_eph_pageframes_atomic);
--		zcache_eph_zpages =
--		    atomic_sub_return(zpages, &zcache_eph_zpages_atomic);
--		zcache_eph_zbytes =
--		    atomic_long_sub_return(zsize, &zcache_eph_zbytes_atomic);
-+			dec_zcache_eph_pageframes();
-+		dec_zcache_eph_zpages(zpages);
-+		dec_zcache_eph_zbytes(zsize);
- 	} else {
- 		if (page)
--			zcache_pers_pageframes =
--			    atomic_dec_return(&zcache_pers_pageframes_atomic);
--		zcache_pers_zpages =
--		    atomic_sub_return(zpages, &zcache_pers_zpages_atomic);
--		zcache_pers_zbytes =
--		    atomic_long_sub_return(zsize, &zcache_pers_zbytes_atomic);
-+			dec_zcache_pers_pageframes();
-+		dec_zcache_pers_zpages(zpages);
-+		dec_zcache_pers_zbytes(zsize);
- 	}
- 	if (!is_local_client(pool->client))
- 		ramster_count_foreign_pages(eph, -1);
-@@ -854,23 +877,17 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
- 		page = zbud_free_and_delist((struct zbudref *)pampd,
- 						true, &zsize, &zpages);
- 		if (page)
--			zcache_eph_pageframes =
--			    atomic_dec_return(&zcache_eph_pageframes_atomic);
--		zcache_eph_zpages =
--		    atomic_sub_return(zpages, &zcache_eph_zpages_atomic);
--		zcache_eph_zbytes =
--		    atomic_long_sub_return(zsize, &zcache_eph_zbytes_atomic);
-+			dec_zcache_eph_pageframes();
-+		dec_zcache_eph_zpages(zpages);
-+		dec_zcache_eph_zbytes(zsize);
- 		/* FIXME CONFIG_RAMSTER... check acct parameter? */
- 	} else {
- 		page = zbud_free_and_delist((struct zbudref *)pampd,
- 						false, &zsize, &zpages);
- 		if (page)
--			zcache_pers_pageframes =
--			    atomic_dec_return(&zcache_pers_pageframes_atomic);
--		zcache_pers_zpages =
--		     atomic_sub_return(zpages, &zcache_pers_zpages_atomic);
--		zcache_pers_zbytes =
--		    atomic_long_sub_return(zsize, &zcache_pers_zbytes_atomic);
-+			dec_zcache_pers_pageframes();
-+		dec_zcache_pers_zpages(zpages);
-+		dec_zcache_pers_zbytes(zsize);
- 	}
- 	if (!is_local_client(pool->client))
- 		ramster_count_foreign_pages(is_ephemeral(pool), -1);
-@@ -992,13 +1009,10 @@ static struct page *zcache_evict_eph_pageframe(void)
- 	page = zbud_evict_pageframe_lru(&zsize, &zpages);
- 	if (page == NULL)
- 		goto out;
--	zcache_eph_zbytes = atomic_long_sub_return(zsize,
--					&zcache_eph_zbytes_atomic);
--	zcache_eph_zpages = atomic_sub_return(zpages,
--					&zcache_eph_zpages_atomic);
-+	dec_zcache_eph_zbytes(zsize);
-+	dec_zcache_eph_zpages(zpages);
- 	zcache_evicted_eph_zpages++;
--	zcache_eph_pageframes =
--		atomic_dec_return(&zcache_eph_pageframes_atomic);
-+	dec_zcache_eph_pageframes();
- 	zcache_evicted_eph_pageframes++;
- out:
+@@ -448,16 +500,14 @@ static struct page *zcache_alloc_page(void)
+ 	struct page *page = alloc_page(ZCACHE_GFP_MASK);
+ 
+ 	if (page != NULL)
+-		zcache_pageframes_alloced =
+-			atomic_inc_return(&zcache_pageframes_alloced_atomic);
++		inc_zcache_pageframes_alloced();
  	return page;
+ }
+ 
+ #ifdef FRONTSWAP_HAS_UNUSE
+ static void zcache_unacct_page(void)
+ {
+-	zcache_pageframes_freed =
+-		atomic_inc_return(&zcache_pageframes_freed_atomic);
++	inc_zcache_pageframes_freed();
+ }
+ #endif
+ 
+@@ -469,8 +519,7 @@ static void zcache_free_page(struct page *page)
+ 	if (page == NULL)
+ 		BUG();
+ 	__free_page(page);
+-	zcache_pageframes_freed =
+-		atomic_inc_return(&zcache_pageframes_freed_atomic);
++	inc_zcache_pageframes_freed();
+ 	curr_pageframes = zcache_pageframes_alloced -
+ 			atomic_read(&zcache_pageframes_freed_atomic) -
+ 			atomic_read(&zcache_eph_pageframes_atomic) -
+@@ -535,19 +584,11 @@ static void *zcache_pampd_eph_create(char *data, size_t size, bool raw,
+ create_in_new_page:
+ 	pampd = (void *)zbud_create_prep(th, true, cdata, clen, newpage);
+ 	BUG_ON(pampd == NULL);
+-	zcache_eph_pageframes =
+-		atomic_inc_return(&zcache_eph_pageframes_atomic);
+-	if (zcache_eph_pageframes > zcache_eph_pageframes_max)
+-		zcache_eph_pageframes_max = zcache_eph_pageframes;
++	inc_zcache_eph_pageframes();
+ 
+ got_pampd:
+-	zcache_eph_zbytes =
+-		atomic_long_add_return(clen, &zcache_eph_zbytes_atomic);
+-	if (zcache_eph_zbytes > zcache_eph_zbytes_max)
+-		zcache_eph_zbytes_max = zcache_eph_zbytes;
+-	zcache_eph_zpages = atomic_inc_return(&zcache_eph_zpages_atomic);
+-	if (zcache_eph_zpages > zcache_eph_zpages_max)
+-		zcache_eph_zpages_max = zcache_eph_zpages;
++	inc_zcache_eph_zbytes(clen);
++	inc_zcache_eph_zpages();
+ 	if (ramster_enabled && raw)
+ 		ramster_count_foreign_pages(true, 1);
+ out:
+@@ -617,19 +658,11 @@ create_pampd:
+ create_in_new_page:
+ 	pampd = (void *)zbud_create_prep(th, false, cdata, clen, newpage);
+ 	BUG_ON(pampd == NULL);
+-	zcache_pers_pageframes =
+-		atomic_inc_return(&zcache_pers_pageframes_atomic);
+-	if (zcache_pers_pageframes > zcache_pers_pageframes_max)
+-		zcache_pers_pageframes_max = zcache_pers_pageframes;
++	inc_zcache_pers_pageframes();
+ 
+ got_pampd:
+-	zcache_pers_zpages = atomic_inc_return(&zcache_pers_zpages_atomic);
+-	if (zcache_pers_zpages > zcache_pers_zpages_max)
+-		zcache_pers_zpages_max = zcache_pers_zpages;
+-	zcache_pers_zbytes =
+-		atomic_long_add_return(clen, &zcache_pers_zbytes_atomic);
+-	if (zcache_pers_zbytes > zcache_pers_zbytes_max)
+-		zcache_pers_zbytes_max = zcache_pers_zbytes;
++	inc_zcache_pers_zpages();
++	inc_zcache_pers_zbytes(clen);
+ 	if (ramster_enabled && raw)
+ 		ramster_count_foreign_pages(false, 1);
+ out:
 -- 
 1.7.7.6
 
