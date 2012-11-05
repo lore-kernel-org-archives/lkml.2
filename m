@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933307Ab2KERUG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 12:20:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37840 "EHLO mx2.suse.de"
+	id S964782Ab2KERUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 12:20:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37858 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932757Ab2KERUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 12:20:00 -0500
-Date: Mon, 05 Nov 2012 18:19:59 +0100
-Message-ID: <s5hehk89dc0.wl%tiwai@suse.de>
+	id S932757Ab2KERUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 12:20:30 -0500
+Date: Mon, 05 Nov 2012 18:20:29 +0100
+Message-ID: <s5hd2zs9db6.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Matthew Garrett <mjg59@srcf.ucam.org>
 Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, joeyli <jlee@suse.com>,
         Jiri Kosina <jkosina@suse.cz>, David Howells <dhowells@redhat.com>,
         Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: [PATCH RFC 2/4] scripts/sign-file: Support firmware signing
+Subject: [PATCH RFC 3/4] firmware: Add a signature check
 References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
 	<20121029174131.GC7580@srcf.ucam.org>
@@ -34,110 +34,222 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add -f option to give a firmware signature file.
+Add a feature to check the firmware signature, specified via Kconfig
+CONFIG_FIRMWARE_SIG.  The signature check is performed only for the
+direct fw loading without udev.  Also no check for built-in firmware
+blobs is implemented yet.
 
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 ---
- scripts/sign-file | 30 +++++++++++++++++++++++-------
- 1 file changed, 23 insertions(+), 7 deletions(-)
+ drivers/base/Kconfig          |  6 +++++
+ drivers/base/firmware_class.c | 56 +++++++++++++++++++++++++++++++++++---
+ include/linux/firmware.h      |  7 +++++
+ kernel/module_signing.c       | 63 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 128 insertions(+), 4 deletions(-)
 
-diff --git a/scripts/sign-file b/scripts/sign-file
-index 45c771d..c1c96e7 100755
---- a/scripts/sign-file
-+++ b/scripts/sign-file
-@@ -4,7 +4,7 @@
- #
- # Format:
- #
--#	./scripts/sign-file [-v] [-a algo] <key> <x509> <module> [<dest>]
-+#	./scripts/sign-file [-v] [-f] [-a algo] <key> <x509> <module> [<dest>]
- #
- #
- use strict;
-@@ -16,16 +16,19 @@ sub usage()
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index b34b5cd..3696fd7 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -145,6 +145,12 @@ config EXTRA_FIRMWARE_DIR
+ 	  this option you can point it elsewhere, such as /lib/firmware/ or
+ 	  some other directory containing the firmware files.
+ 
++config FIRMWARE_SIG
++	bool "Firmware signature verification"
++	depends on FW_LOADER && MODULE_SIG
++	help
++	  Enable firmware signature check.
++
+ config DEBUG_DRIVER
+ 	bool "Driver Core verbose debug messages"
+ 	depends on DEBUG_KERNEL
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 8945f4e..575bc4c 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -36,6 +36,11 @@ MODULE_AUTHOR("Manuel Estrada Sainz");
+ MODULE_DESCRIPTION("Multi purpose firmware loading support");
+ MODULE_LICENSE("GPL");
+ 
++#ifdef CONFIG_FIRMWARE_SIG
++static bool sig_enforce;
++module_param(sig_enforce, bool, 0644);
++#endif
++
+ /* Builtin firmware support */
+ 
+ #ifdef CONFIG_FW_LOADER
+@@ -287,7 +292,7 @@ static noinline long fw_file_size(struct file *file)
+ 	return st.size;
+ }
+ 
+-static bool fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf)
++static bool fw_read_file_contents(struct file *file, void **bufp, size_t *sizep)
  {
-     print "Format: ./scripts/sign-file [options] <key> <x509> <module> [<dest>]
-     -v       verbose output
-+    -f       create a firmware signature file
-     -a algo  specify hash algorithm
- ";
-     exit;
+ 	long size;
+ 	char *buf;
+@@ -302,11 +307,39 @@ static bool fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf
+ 		vfree(buf);
+ 		return false;
+ 	}
+-	fw_buf->data = buf;
+-	fw_buf->size = size;
++	*bufp = buf;
++	*sizep = size;
+ 	return true;
  }
  
- my $verbose = 0;
-+my $sign_fw = 0;
- my $hashalgo = "";
- 
- GetOptions(
-     'v|verbose' => \$verbose,
-+    'f|firmware' => \$sign_fw,
-     'a|algo=s' => \$hashalgo) || usage();
- 
- usage() if ($#ARGV != 2 && $#ARGV != 3);
-@@ -33,11 +36,12 @@ usage() if ($#ARGV != 2 && $#ARGV != 3);
- my $private_key = $ARGV[0];
- my $x509 = $ARGV[1];
- my $module = $ARGV[2];
--my $dest = ($#ARGV == 3) ? $ARGV[3] : $ARGV[2] . "~";
-+my $dest = $ARGV[3] ? $ARGV[3] : $ARGV[2] . ".sig";
-+my $mode_name = $sign_fw ? "firmware" : "module";
- 
- die "Can't read private key\n" unless (-r $private_key);
- die "Can't read X.509 certificate\n" unless (-r $x509);
--die "Can't read module\n" unless (-r $module);
-+die "Can't read $mode_name\n" unless (-r $module);
- 
- #
- # Read the kernel configuration
-@@ -416,7 +420,9 @@ die "openssl rsautl died: $?" if ($? >> 8);
- #
- my $unsigned_module = read_file($module);
- 
--my $magic_number = "~Module signature appended~\n";
-+my $magic_number = $sign_fw ? 
-+    "~Linux firmware signature~\n" :
-+    "~Module signature appended~\n";
- 
- my $info = pack("CCCCCxxxN",
- 		$algo, $hash, $id_type,
-@@ -425,7 +431,7 @@ my $info = pack("CCCCCxxxN",
- 		length($signature));
- 
- if ($verbose) {
--    print "Size of unsigned module: ", length($unsigned_module), "\n";
-+    print "Size of unsigned $mode_name: ", length($unsigned_module), "\n";
-     print "Size of signer's name  : ", length($signers_name), "\n";
-     print "Size of key identifier : ", length($key_identifier), "\n";
-     print "Size of signature      : ", length($signature), "\n";
-@@ -437,7 +443,16 @@ if ($verbose) {
- 
- open(FD, ">$dest") || die $dest;
- binmode FD;
--print FD
-+if ($sign_fw) {
-+    print FD
-+    $magic_number,
-+    $info,
-+    $signers_name,
-+    $key_identifier,
-+    $signature
-+    ;
-+} else {
-+    print FD
-     $unsigned_module,
-     $signers_name,
-     $key_identifier,
-@@ -445,8 +460,9 @@ print FD
-     $info,
-     $magic_number
-     ;
++#ifdef CONFIG_FIRMWARE_SIG
++static bool verify_signature(struct firmware_buf *buf, const char *path)
++{
++	const unsigned long markerlen = sizeof(FIRMWARE_SIG_STRING) - 1;
++	struct file *file;
++	void *sig_data;
++	size_t sig_size;
++	bool success;
++
++	file = filp_open(path, O_RDONLY, 0);
++	if (IS_ERR(file))
++		return false;
++
++	success = fw_read_file_contents(file, &sig_data, &sig_size);
++	fput(file);
++	if (success) {
++		if (sig_size > markerlen &&
++		    !memcmp(sig_data, FIRMWARE_SIG_STRING, markerlen))
++			success = !fw_verify_sig(buf->data, buf->size,
++						 sig_data + markerlen,
++						 sig_size - markerlen);
++		pr_debug("verified signature %s: %d\n", path, success);
++		vfree(sig_data);
++	}
++	return success;
 +}
- close FD || die $dest;
- 
--if ($#ARGV != 3) {
-+if (!$sign_fw && $#ARGV != 3) {
-     rename($dest, $module) || die $module;
++#endif /* CONFIG_FIRMWARE_SIG */
++
+ static bool fw_get_filesystem_firmware(struct firmware_buf *buf)
+ {
+ 	int i;
+@@ -320,8 +353,23 @@ static bool fw_get_filesystem_firmware(struct firmware_buf *buf)
+ 		file = filp_open(path, O_RDONLY, 0);
+ 		if (IS_ERR(file))
+ 			continue;
+-		success = fw_read_file_contents(file, buf);
++		success = fw_read_file_contents(file, &buf->data, &buf->size);
+ 		fput(file);
++#ifdef CONFIG_FIRMWARE_SIG
++		if (success) {
++			snprintf(path, PATH_MAX, "%s/%s.sig", fw_path[i],
++				 buf->fw_id);
++			if (!verify_signature(buf, path)) {
++				pr_err("Invalid signature file %s\n", path);
++				if (sig_enforce) {
++					vfree(buf->data);
++					buf->data = NULL;
++					buf->size = 0;
++					success = false;
++				}
++			}
++		}
++#endif /* CONFIG_FIRMWARE_SIG */
+ 		if (success)
+ 			break;
+ 	}
+diff --git a/include/linux/firmware.h b/include/linux/firmware.h
+index e4279fe..2e9e457 100644
+--- a/include/linux/firmware.h
++++ b/include/linux/firmware.h
+@@ -79,4 +79,11 @@ static inline int uncache_firmware(const char *name)
  }
+ #endif
+ 
++#ifdef CONFIG_FIRMWARE_SIG
++#define FIRMWARE_SIG_STRING "~Linux firmware signature~\n"
++/* defined in kernel/module_signing.c */
++int fw_verify_sig(const void *fw_data, size_t fw_size,
++		  const void *sig_data, size_t sig_size);
++#endif
++
+ #endif
+diff --git a/kernel/module_signing.c b/kernel/module_signing.c
+index ea1b1df..7994452 100644
+--- a/kernel/module_signing.c
++++ b/kernel/module_signing.c
+@@ -11,6 +11,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/err.h>
++#include <linux/export.h>
+ #include <crypto/public_key.h>
+ #include <crypto/hash.h>
+ #include <keys/asymmetric-type.h>
+@@ -247,3 +248,65 @@ error_put_key:
+ 	pr_devel("<==%s() = %d\n", __func__, ret);
+ 	return ret;	
+ }
++
++#ifdef CONFIG_FIRMWARE_SIG
++/*
++ * Verify the firmware signature, similar like module signature check
++ * but it's stored in a separate file
++ */
++int fw_verify_sig(const void *fw_data, size_t fw_size,
++		  const void *sig_data, size_t sig_size)
++{
++	struct public_key_signature *pks;
++	struct module_signature ms;
++	struct key *key;
++	size_t sig_len;
++	int ret;
++
++	if (sig_size <= sizeof(ms))
++		return -EBADMSG;
++
++	memcpy(&ms, sig_data, sizeof(ms));
++	sig_data += sizeof(ms);
++	sig_size -= sizeof(ms);
++
++	sig_len = be32_to_cpu(ms.sig_len);
++	if (sig_size < sig_len + (size_t)ms.signer_len + ms.key_id_len)
++		return -EBADMSG;
++
++	/* For the moment, only support RSA and X.509 identifiers */
++	if (ms.algo != PKEY_ALGO_RSA ||
++	    ms.id_type != PKEY_ID_X509)
++		return -ENOPKG;
++
++	if (ms.hash >= PKEY_HASH__LAST ||
++	    !pkey_hash_algo[ms.hash])
++		return -ENOPKG;
++
++	key = request_asymmetric_key(sig_data, ms.signer_len,
++				     sig_data + ms.signer_len, ms.key_id_len);
++	if (IS_ERR(key))
++		return PTR_ERR(key);
++
++	pks = mod_make_digest(ms.hash, fw_data, fw_size);
++	if (IS_ERR(pks)) {
++		ret = PTR_ERR(pks);
++		goto error_put_key;
++	}
++
++	sig_data += ms.signer_len + ms.key_id_len;
++	ret = mod_extract_mpi_array(pks, sig_data, sig_len);
++	if (ret < 0)
++		goto error_free_pks;
++
++	ret = verify_signature(key, pks);
++
++error_free_pks:
++	mpi_free(pks->rsa.s);
++	kfree(pks);
++error_put_key:
++	key_put(key);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(fw_verify_sig);
++#endif /* CONFIG_FIRMWARE_SIG */
 -- 
 1.8.0
 
