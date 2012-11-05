@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab2KEQss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:48:48 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:52751 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611Ab2KEQsq (ORCPT
+	id S1754512Ab2KEQxA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:53:00 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:42498 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab2KEQw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:48:46 -0500
-From: Alban Bedel <alban.bedel@avionic-design.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, Alban Bedel <alban.bedel@avionic-design.de>
-Subject: [PATCH] pwm: lpc32xx - Fix the PWM polarity
-Date: Mon,  5 Nov 2012 17:48:45 +0100
-Message-Id: <1352134125-22405-1-git-send-email-alban.bedel@avionic-design.de>
-X-Mailer: git-send-email 1.7.0.4
-X-Provags-ID: V02:K0:RnZs0P8mj4ZvF0Nj6wnDBPB707oOoeglZ8CDRNcY509
- mjkoHnONHtSmhtp9TOCDMqfdBrrd5OmprSpTrB8UCrPYYOr2aJ
- mYUJTdN0yXQhUnmRwU0oZvRWmm+E1l5Dkt43wXZzoNMutEVnyV
- Fa+8IOAteeNsEYSc9tSKMsbHgFd5Si9jU0gelGiJm9Hnuup//E
- kD+WDko36tDphYbqpGvgiARuDfdcuSorOqGZ0vmoYBySkDnRRk
- wOptjff/+oEJikQRypjHr/VUiDTX1AQUSRr0QhhsmKFbZjtF+M
- BU4yJ+zlCdI9dBOwCPz/TNTCr28uU5KnIt0XWhdwKsL4TRi6CE
- l6neAUBPT0fV7TJQwCMfG9wgyu3xEZk0EDHFWKWtO+OX4Mq+9N
- TnEnPct9VCuixbpaBghhkRFitWerCEJhBm4fza2ja2BTVvsszE
- RfbZz
+	Mon, 5 Nov 2012 11:52:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121105081317.GC28886@opensource.wolfsonmicro.com>
+References: <1349879449-22657-1-git-send-email-mporter@ti.com>
+	<1BAFE6F6C881BF42822005164F1491C33EAB8596@DBDE01.ent.ti.com>
+	<CAD=GYpZ9w=D55G9DOiMqZ4BCGGdGszsgG3fumHUGZ12xx+TKjw@mail.gmail.com>
+	<1BAFE6F6C881BF42822005164F1491C33EAB973D@DBDE01.ent.ti.com>
+	<CAD=GYpYuyfGuEgAWJyE2nkKx4GEsm=eDYAhV966sWVLbEPaqYQ@mail.gmail.com>
+	<20121105081317.GC28886@opensource.wolfsonmicro.com>
+Date: Mon, 5 Nov 2012 11:52:57 -0500
+Message-ID: <CAD=GYpZ2BhXz4=0bG-ST06mbVxbmAZyzBTDz-MKcRBCb_cqKPw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
+From: Joel A Fernandes <agnel.joel@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Porter, Matt" <mporter@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
----
- drivers/pwm/pwm-lpc32xx.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+Hi Mark,
 
-diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
-index adb87f0..a2704b8 100644
---- a/drivers/pwm/pwm-lpc32xx.c
-+++ b/drivers/pwm/pwm-lpc32xx.c
-@@ -51,7 +51,11 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 
- 	c = 256 * duty_ns;
- 	do_div(c, period_ns);
--	duty_cycles = c;
-+	if (c > 255)
-+		c = 255;
-+	if (c < 1)
-+		c = 1;
-+	duty_cycles = 256 - c;
- 
- 	writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
- 		lpc32xx->base + (pwm->hwpwm << 2));
--- 
-1.7.0.4
+On Mon, Nov 5, 2012 at 3:13 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Sat, Nov 03, 2012 at 02:32:59PM -0500, Joel A Fernandes wrote:
+>
+>> beaglebone_defconfig: Add dummy regulator to init tlv320aic3x
+>> https://github.com/joelagnel/linux-kernel/commit/db5672dfe548d82625cf40ed688d05ba7cee5c93
+>
+> This should never be done in production, you should ensure that the
+> appropriate supplies are provided by the board file or device tree.
 
+Sure I just did this for debugging purpose,
+
+Thanks,
+Joel
