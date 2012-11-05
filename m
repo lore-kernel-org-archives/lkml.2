@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932974Ab2KEPeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:34:09 -0500
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:33300 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932873Ab2KEPWg (ORCPT
+	id S932862Ab2KEPWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:22:33 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:54428 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932486Ab2KEPW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:22:36 -0500
+	Mon, 5 Nov 2012 10:22:26 -0500
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v9 08/34] vfs: fix linkat to retry on ESTALE errors
-Date: Mon,  5 Nov 2012 10:21:47 -0500
-Message-Id: <1352128933-28526-9-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v9 03/34] vfs: fix readlinkat to retry on ESTALE
+Date: Mon,  5 Nov 2012 10:21:42 -0500
+Message-Id: <1352128933-28526-4-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
 References: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
@@ -24,73 +24,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c | 46 ++++++++++++++++++++++++++--------------------
- 1 file changed, 26 insertions(+), 20 deletions(-)
+ fs/stat.c | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index af1b473..28d70cd 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3613,6 +3613,7 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	struct path old_path, new_path;
- 	int how = 0;
+diff --git a/fs/stat.c b/fs/stat.c
+index c97a17e..452ee93 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -300,14 +300,21 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 	struct path path;
  	int error;
+ 	int empty = 0;
 +	unsigned int try = 0;
++	unsigned int lookup_flags = LOOKUP_EMPTY;
  
- 	if ((flags & ~(AT_SYMLINK_FOLLOW | AT_EMPTY_PATH)) != 0)
+ 	if (bufsiz <= 0)
  		return -EINVAL;
-@@ -3630,30 +3631,35 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	if (flags & AT_SYMLINK_FOLLOW)
- 		how |= LOOKUP_FOLLOW;
  
--	error = user_path_at(olddfd, oldname, how, &old_path);
--	if (error)
--		return error;
+-	error = user_path_at_empty(dfd, pathname, LOOKUP_EMPTY, &path, &empty);
+-	if (!error) {
+-		struct inode *inode = path.dentry->d_inode;
 +	do {
-+		error = user_path_at(olddfd, oldname, how, &old_path);
++		struct inode *inode;
++
++		error = user_path_at_empty(dfd, pathname, lookup_flags,
++					   &path, &empty);
 +		if (error)
 +			break;
  
--	new_dentry = user_path_create(newdfd, newname, &new_path, false, false);
--	error = PTR_ERR(new_dentry);
--	if (IS_ERR(new_dentry))
--		goto out;
-+		new_dentry = user_path_create(newdfd, newname, &new_path,
-+						false, try);
-+		error = PTR_ERR(new_dentry);
-+		if (IS_ERR(new_dentry))
-+			goto out;
- 
--	error = -EXDEV;
--	if (old_path.mnt != new_path.mnt)
--		goto out_dput;
--	error = may_linkat(&old_path);
--	if (unlikely(error))
--		goto out_dput;
--	error = security_path_link(old_path.dentry, &new_path, new_dentry);
--	if (error)
--		goto out_dput;
--	error = vfs_link(old_path.dentry, new_path.dentry->d_inode, new_dentry);
-+		error = -EXDEV;
-+		if (old_path.mnt != new_path.mnt)
-+			goto out_dput;
-+		error = may_linkat(&old_path);
-+		if (unlikely(error))
-+			goto out_dput;
-+		error = security_path_link(old_path.dentry, &new_path,
-+						new_dentry);
-+		if (error)
-+			goto out_dput;
-+		error = vfs_link(old_path.dentry, new_path.dentry->d_inode,
-+						new_dentry);
- out_dput:
--	done_path_create(&new_path, new_dentry);
-+		done_path_create(&new_path, new_dentry);
- out:
--	path_put(&old_path);
--
-+		path_put(&old_path);
-+		how |= LOOKUP_REVAL;
++		inode = path.dentry->d_inode;
+ 		error = empty ? -ENOENT : -EINVAL;
+ 		if (inode->i_op->readlink) {
+ 			error = security_inode_readlink(path.dentry);
+@@ -318,7 +325,8 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 			}
+ 		}
+ 		path_put(&path);
+-	}
++		lookup_flags |= LOOKUP_REVAL;
 +	} while (retry_estale(error, try++));
  	return error;
  }
