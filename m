@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab2KEOMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:12:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49446 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932276Ab2KEOMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:12:45 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [patch,v2 05/10] sd: use alloc_disk_node
-References: <1351892763-21325-1-git-send-email-jmoyer@redhat.com>
-	<1351892763-21325-6-git-send-email-jmoyer@redhat.com>
-	<50954852.5050209@acm.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 05 Nov 2012 09:12:39 -0500
-In-Reply-To: <50954852.5050209@acm.org> (Bart Van Assche's message of "Sat, 03
-	Nov 2012 17:37:38 +0100")
-Message-ID: <x497gq0cf54.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932494Ab2KEONG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:13:06 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52478 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932456Ab2KEONB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 09:13:01 -0500
+Message-ID: <1352124778.10947.8.camel@hornet>
+Subject: Re: [PATCH] virtio-mmio: Fix irq parsing in command line parameter
+From: Pawel Moll <pawel.moll@arm.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Date: Mon, 05 Nov 2012 14:12:58 +0000
+In-Reply-To: <20121105134413.GC5220@gmail.com>
+References: <1352120454.10947.5.camel@hornet>
+	 <1352120572-16256-1-git-send-email-pawel.moll@arm.com>
+	 <20121105134413.GC5220@gmail.com>
+X-Mailer: Evolution 3.6.0-0ubuntu3
+Mime-Version: 1.0
+X-OriginalArrivalTime: 05 Nov 2012 14:12:58.0635 (UTC) FILETIME=[A87835B0:01CDBB5F]
+X-MC-Unique: 112110514125925501
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bart Van Assche <bvanassche@acm.org> writes:
+On Mon, 2012-11-05 at 13:44 +0000, Lee Jones wrote:
+> On Mon, 05 Nov 2012, Pawel Moll wrote:
+> 
+> > On 64-bit machines resource_size_t is a 64-bit value, while
+> > sscanf() format for this argument was defined as "%u". Fixed
+> > by using an intermediate local value of a known length.
+> > 
+> > Also added cleaned up the resource creation and adde extra
+> > comments to make the parameters parsing easier to follow.
+> > 
+> > Reported-by: Lee Jones <lee.jones@linaro.org>
+> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> > ---
+> >  drivers/virtio/virtio_mmio.c |   26 ++++++++++++++++++--------
+> >  1 file changed, 18 insertions(+), 8 deletions(-)
+> 
+> Resorted to poaching now have we Pawel? ;)
 
-> On 11/02/12 22:45, Jeff Moyer wrote:
->> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
->> ---
->>   drivers/scsi/sd.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
->> index 12f6fdf..8deb915 100644
->> --- a/drivers/scsi/sd.c
->> +++ b/drivers/scsi/sd.c
->> @@ -2714,7 +2714,7 @@ static int sd_probe(struct device *dev)
->>   	if (!sdkp)
->>   		goto out;
->>
->> -	gd = alloc_disk(SD_MINORS);
->> +	gd = alloc_disk_node(SD_MINORS, dev_to_node(dev));
->>   	if (!gd)
->>   		goto out_free;
->
-> shost->numa_node can be another NUMA node than dev_to_node(dev). Have
-> you considered using shost->numa_node here ?
+Sure thing - the poached eggs are my firm favourite :-P ;-)
 
-It can?  How?
+But seriously speaking - it's an old patch (all the comments and
+resources creation, the IRQ stuff is a new thing :-), but never had
+enough motivation to push it out...
 
-Just so I'm clear, you're suggesting I use the scsi_device's host
-pointer to get to the Scsi_Host, and that *will* be filled in that this
-point, right?
+Cheers!
 
-Cheers,
-Jeff
+Paweł
+
+
+
