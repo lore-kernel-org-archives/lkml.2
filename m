@@ -1,121 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932807Ab2KEPNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:13:00 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:63729 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932684Ab2KEPKx (ORCPT
+	id S932747Ab2KEPRb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:17:31 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:15817 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932709Ab2KEPR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:10:53 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 2/8] mfd: Prevent STMPE from abusing mfd_add_devices' irq_base parameter
-Date: Mon,  5 Nov 2012 16:10:30 +0100
-Message-Id: <1352128236-11554-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1352128236-11554-1-git-send-email-lee.jones@linaro.org>
-References: <1352128236-11554-1-git-send-email-lee.jones@linaro.org>
+	Mon, 5 Nov 2012 10:17:29 -0500
+Date: Mon, 5 Nov 2012 15:17:28 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 00/32] [RFC] nohz/cpuset: Start discussions on nohz
+ CPUs
+In-Reply-To: <20121103020845.GF3027@linux.vnet.ibm.com>
+Message-ID: <0000013ad125d4dd-180f5394-cb25-4b59-b6e0-8e9504564cf6-000000@email.amazonses.com>
+References: <20121029202711.062749374@goodmis.org> <0000013ac180f152-79f05c71-4d38-43b0-9b62-8a71c00dfda7-000000@email.amazonses.com> <1351867045.4004.141.camel@gandalf.local.home> <0000013ac1a58555-bea33420-d101-4e86-abc5-11dd6863b7a8-000000@email.amazonses.com>
+ <20121102183544.GZ3027@linux.vnet.ibm.com> <0000013ac2c4f47a-d21f2685-6660-4d02-872d-581d203285a0-000000@email.amazonses.com> <20121102204157.GE3027@linux.vnet.ibm.com> <1351889510.4004.149.camel@gandalf.local.home>
+ <20121103020845.GF3027@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Originally IRQ incrementers were provided in some template resource
-structures for keypad and touchscreen devices. These were passed as
-IORESOURCE_IRQs to MFD core in the usual way. The true device IRQs
-were instead added to the irq_base when mfd_add_devices was invoked.
-This is clearly an abuse of the call, and does not scale when IRQ
-Domains are brought into play. Before we can provide the STMPE with
-its own IRQ Domain we must first fix this. This patche keeps most
-of the driver's structure, keeping the template strategy. However,
-instead of providing the IRQ as an increment to irq_base, we
-dynamically populate the IORESOURCE_IRQ with the correct device IRQ.
+On Fri, 2 Nov 2012, Paul E. McKenney wrote:
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/stmpe.c |   25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+> On Fri, Nov 02, 2012 at 04:51:50PM -0400, Steven Rostedt wrote:
+> > On Fri, 2012-11-02 at 13:41 -0700, Paul E. McKenney wrote:
+> >
+> > > The no-CBs mask would be read-only for some time -- changed only at
+> > > boot.  Longer term, I hope to allow run-time modification, but...
+> >
+> > but what? You're not looking to retire already are you? ;-)
+>
+> Not for a few decades.  ;-)
+>
+> But let's add the no-CBs mask to sysfs when I add the ability to run-time
+> modify that mast.
 
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index c94f521..ad13cb0 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -310,14 +310,10 @@ static struct mfd_cell stmpe_gpio_cell_noirq = {
- static struct resource stmpe_keypad_resources[] = {
- 	{
- 		.name	= "KEYPAD",
--		.start	= 0,
--		.end	= 0,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- 	{
- 		.name	= "KEYPAD_OVER",
--		.start	= 1,
--		.end	= 1,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- };
-@@ -397,14 +393,10 @@ static struct stmpe_variant_info stmpe801_noirq = {
- static struct resource stmpe_ts_resources[] = {
- 	{
- 		.name	= "TOUCH_DET",
--		.start	= 0,
--		.end	= 0,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- 	{
- 		.name	= "FIFO_TH",
--		.start	= 1,
--		.end	= 1,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- };
-@@ -959,10 +951,10 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
- }
- 
- static int __devinit stmpe_add_device(struct stmpe *stmpe,
--				      struct mfd_cell *cell, int irq)
-+				      struct mfd_cell *cell)
- {
- 	return mfd_add_devices(stmpe->dev, stmpe->pdata->id, cell, 1,
--			       NULL, stmpe->irq_base + irq, NULL);
-+			       NULL, stmpe->irq_base, NULL);
- }
- 
- static int __devinit stmpe_devices_init(struct stmpe *stmpe)
-@@ -970,7 +962,7 @@ static int __devinit stmpe_devices_init(struct stmpe *stmpe)
- 	struct stmpe_variant_info *variant = stmpe->variant;
- 	unsigned int platform_blocks = stmpe->pdata->blocks;
- 	int ret = -EINVAL;
--	int i;
-+	int i, j;
- 
- 	for (i = 0; i < variant->num_blocks; i++) {
- 		struct stmpe_variant_block *block = &variant->blocks[i];
-@@ -978,8 +970,17 @@ static int __devinit stmpe_devices_init(struct stmpe *stmpe)
- 		if (!(platform_blocks & block->block))
- 			continue;
- 
-+		for (j = 0; j < block->cell->num_resources; j++) {
-+			struct resource *res =
-+				(struct resource *) &block->cell->resources[j];
-+
-+			/* Dynamically fill in a variant's IRQ. */
-+			if (res->flags & IORESOURCE_IRQ)
-+				res->start = res->end = block->irq + j;
-+		}
-+
- 		platform_blocks &= ~block->block;
--		ret = stmpe_add_device(stmpe, block->cell, block->irq);
-+		ret = stmpe_add_device(stmpe, block->cell);
- 		if (ret)
- 			return ret;
- 	}
--- 
-1.7.9.5
+Well we are creating a user ABi with the boot time option. It would be
+best to get it right out of the door.
 
