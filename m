@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894Ab2KEUgD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 15:36:03 -0500
-Received: from mail-1.atlantis.sk ([80.94.52.57]:54657 "EHLO mail.atlantis.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932121Ab2KEUgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 15:36:01 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: hpa@zytor.com
-Subject: Re: [PATCH v3] Enable A20 using KBC for some MSI laptops to fix S3 resume
-Date: Mon, 5 Nov 2012 21:35:19 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201210261056.44225.zary@gsystems.sk>
-In-Reply-To: <201210261056.44225.zary@gsystems.sk>
-X-KMail-QuotePrefix: > 
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754837Ab2KEUhk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 15:37:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55051 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754009Ab2KEUhj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 15:37:39 -0500
+Date: Mon, 5 Nov 2012 12:37:38 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: fix NULL checking in dma_pool_create()
+Message-Id: <20121105123738.0a0490a7.akpm@linux-foundation.org>
+In-Reply-To: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
+References: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201211052135.20009.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 October 2012 10:56:44 Ondrej Zary wrote:
-> Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable
-> A20 line but resume code assumes that KBC was used.
-> The laptop will not resume from S3 otherwise but powers off after a while
-> and then powers on again stuck with a blank screen.
->
-> Fix it by enabling A20 using KBC. Affected laptop list and DMI data are
-> from bug reports at Ubuntu Launchpad.
->
-> Also add kernel parameter to easily activate this quirk on any system.
->
-> Only compile tested. The original patch was tested with EX600 and PR200.
->
-> Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
+On Mon,  5 Nov 2012 01:46:36 -0500
+Xi Wang <xi.wang@gmail.com> wrote:
 
-The bug was marked as RESOLVED CODE_FIX but I wonder what happened to this 
-patch. Was it applied? Or is someone working on a better way to fix this 
-problem?
+> First, `dev' is dereferenced in dev_to_node(dev), suggesting that it
+> must be non-null.  Later `dev' is checked against NULL, suggesting
+> the opposite.  This patch adds a NULL check before its use.
+> 
+> ...
+>
+> @@ -159,7 +160,9 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+>  		return NULL;
+>  	}
+>  
+> -	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, dev_to_node(dev));
+> +	node = dev ? dev_to_node(dev) : -1;
+> +
+> +	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, node);
+>  	if (!retval)
+>  		return retval;
 
--- 
-Ondrej Zary
+Well, the dma_pool_create() kerneldoc does not describe dev==NULL to be
+acceptable usage and given the lack of oops reports, we can assume that
+no code is calling this function with dev==NULL.
+
+So I think we can just remove the code which handles dev==NULL?
