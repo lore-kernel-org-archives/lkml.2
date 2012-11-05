@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab2KEQ33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:29:29 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:37699 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab2KEQ32 (ORCPT
+	id S1754482Ab2KEQdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:33:21 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:34443 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019Ab2KEQdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:29:28 -0500
-Message-ID: <1352132992.9466.27.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] wireless: iwlwifi - add dma_mapping_error() checks to
- avoid warnings
-From: Johannes Berg <johannes@sipsolutions.net>
-To: shuah.khan@hp.com
-Cc: wey-yi.w.guy@intel.com, linville@tuxdriver.com, ilw@linux.intel.com,
-        emmanuel.grumbach@intel.com, donald.h.fry@intel.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Date: Mon, 05 Nov 2012 17:29:52 +0100
-In-Reply-To: <1352132785.2606.14.camel@lorien2>
-References: <1351993233.4369.2.camel@lorien2>
-	 (sfid-20121104_024119_271188_5372C13E) <1352020617.10072.0.camel@jlt4.sipsolutions.net>
-	 <1352132785.2606.14.camel@lorien2>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.1-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Nov 2012 11:33:20 -0500
+Date: Mon, 5 Nov 2012 17:33:15 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, linus.walleij@stericsson.com
+Subject: Re: [PATCH 1/8] mfd: ab8500-core: Remove unused ab8500-gpio IRQ
+ ranges
+Message-ID: <20121105163315.GE5220@gmail.com>
+References: <1352128236-11554-1-git-send-email-lee.jones@linaro.org>
+ <1352128236-11554-2-git-send-email-lee.jones@linaro.org>
+ <201211051616.24257.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201211051616.24257.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-05 at 09:26 -0700, Shuah Khan wrote:
+On Mon, 05 Nov 2012, Arnd Bergmann wrote:
 
-> > Thanks for the report. Since I think doing BUG_ON() in such a scenario
-> > is a really bad idea, I've applied a different patch with your
-> > Reported-by.
+> On Monday 05 November 2012, Lee Jones wrote:
+> > The IRQ ranges provided in ab8500-core to be passed on to the
+> > ab8500-gpio driver are not only redundant, but they are also
+> > causing a warning in the boot log. These IRQ ranges, like any
+> > other MFD related IRQ resource are passed though MFD core for
+> > automatic conversion to virtual IRQs; however, MFD core does
+> > not support IRQ mapping of IRQ ranges. Let's just remove them.
+> > 
+> > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > 
-> Yeah. I wasn't sure about BUS() either. Did you notice the other cases
-> of BUG_ON() in this path in iwl_rx_allocate()? I would think those need
-> fixing as well.
-> 
->               rxb->page_dma =
->                         dma_map_page(trans->dev, page, 0,
->                                      PAGE_SIZE <<
-> trans_pcie->rx_page_order,
->                                      DMA_FROM_DEVICE);
->                 /* dma address must be no more than 36 bits */
->                 BUG_ON(rxb->page_dma & ~DMA_BIT_MASK(36));
->                 /* and also 256 byte aligned! */
->                 BUG_ON(rxb->page_dma & DMA_BIT_MASK(8));
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Well, yes, we could convert them, but we can leave them as they are
-because these are assertions that the DMA mapping API guarantees. If
-this breaks, it's a bug in the DMA mapping code.
+Whoops, I missed Linus' Tested-by on this patch too, so:
 
-In contrast, if it fails to map, it's not a bug in the code, it's just
-running out of memory or IO space or whatever.
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
 
-> Could you please send me commitID for the patch you did. I am interested
-> in seeing the failure handling in your patch?
+I also forgot to to mention that this should really be going
+for the -rcs rather than -next.
 
-It's here:
-http://git.kernel.org/?p=linux/kernel/git/iwlwifi/iwlwifi-fixes.git;a=commit;h=7c34158231b2eda8dcbd297be2bb1559e69cb433
+Kind regards,
+Lee
 
-johannes
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
