@@ -1,142 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab2KEToj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 14:44:39 -0500
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:51595 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab2KEToi (ORCPT
+	id S1754647Ab2KETpD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 14:45:03 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:33425 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753994Ab2KETpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 14:44:38 -0500
-X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Nov 2012 14:44:38 EST
-Date: Mon, 5 Nov 2012 11:34:53 -0800
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: linux-kernel@vger.kernel.org, djbw@fb.com, dwmw2@infradead.org,
-        hskinnemoen@gmail.com, vinod.koul@intel.com, vipin.kumar@st.com,
-        t.figa@samsung.com, kyungmin.park@samsung.com
-Subject: Re: [PATCH 00/20] DMA: DMA unmap fixes
-Message-ID: <20121105193453.GB16230@ovro.caltech.edu>
-References: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
+	Mon, 5 Nov 2012 14:45:01 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
+        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Kees Cook <keescook@chromium.org>, Peter Jones <pjones@redhat.com>
+References: <20121026023916.GA16762@srcf.ucam.org>
+	<20121026170609.GB24687@redhat.com>
+	<1351276649.18115.217.camel@falcor>
+	<20121101131003.GA14573@redhat.com>
+	<20121101135356.GA15659@redhat.com> <1351780159.15708.17.camel@falcor>
+	<20121101144304.GA15821@redhat.com>
+	<20121101145225.GB10269@srcf.ucam.org>
+	<20121102132318.GA3300@redhat.com> <87boffd727.fsf@xmission.com>
+	<20121105180353.GC28720@redhat.com>
+Date: Mon, 05 Nov 2012 11:44:48 -0800
+In-Reply-To: <20121105180353.GC28720@redhat.com> (Vivek Goyal's message of
+	"Mon, 5 Nov 2012 13:03:53 -0500")
+Message-ID: <87mwyv96mn.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (ovro.ovro.caltech.edu); Mon, 05 Nov 2012 11:34:55 -0800 (PST)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/QV22LEvr+8gXGWSOo8BSU//IT11vksSw=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: Kdump with signed images
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 11:00:11AM +0100, Bartlomiej Zolnierkiewicz wrote:
-> Hi,
-> 
-> Currently DMA subsystem does DMA mapping in the core code and DMA
-> unmapping is done by device drivers.  This is counterintuitive,
-> causes code duplication and subtle errors (some drivers like PL330
-> one don't implement DMA unmapping code).  The following patchset
-> modifies DMA subsystem to do DMA unmapping in the core code.
-> It results in simpler code, less code duplication (more than 400
-> LOC is gone) and fixes the issue with missing DMA unmapping code
-> in some drivers.  Additionally many cases when DMA wasn't unmapped
-> on a failure are also fixed.
-> 
-> 
-> patches #1-3 add missing DMA unmap on failure to async_tx core
-> code (async_memcpy()), ioat and fsmc_nand drivers
-> 
-> patch #4 fixes DMA flags used by carma-fpga driver
-> 
-> patches #5-7 fix core code and dmatest driver to DMA unmap for
-> MEMCPY operations 
-> 
-> patch #8 adds missing DMA unmap on failure to ioat3 driver
-> 
-> patch #9 fixes build for async_memset.c
-> 
-> patch #10 adds missing DMA unmap on failure to async tx core
-> code (async_memset())
-> 
-> patches #11-18 fix async_tx core code and dmatest driver to do
-> DMA unmap for MEMSET, XOR, XOR_VAL, PQ and PQ_VAL operations
-> 
-> patches #19-20 remove no longer needed DMA unmap code from
-> device drivers and DMA unmap flags from code code
-> 
-> 
-> This patchset was tested on PL330 DMA controller using MEMCPY
-> operations.  It would be great if somebody could test it on
-> more advanced controller capable of MEMSET, XOR, XOR_VAL,
-> PQ and PQ_VAL operations (especially since the conversion of
-> XOR and PQ operations was not obvious).
-> 
-> 
-> Bartlomiej Zolnierkiewicz (20):
->   async_tx: add missing DMA unmap to async_memcpy()
->   ioat: add missing DMA unmap to ioat_dma_self_test()
->   mtd: fsmc_nand: add missing DMA unmap to dma_xfer()
->   carma-fpga: pass correct flags to ->device_prep_dma_memcpy()
->   dmatest: do DMA unmap for MEMCPY operations
->   DMA: do DMA unmap in core for MEMCPY operations
->   async_tx: do DMA unmap in core for MEMCPY operations
->   ioat3: add missing DMA unmap to ioat_xor_val_self_test()
->   async_tx: fix build for async_memset
->   async_tx: add missing DMA unmap to async_memset()
->   async_tx: do DMA unmap in core for MEMSET operations
->   dmatest: do DMA unmap for XOR operations
->   async_tx: do DMA unmap in core for XOR operations
->   async_tx: do DMA unmap in core for XOR_VAL operations
->   dmatest: do DMA unmap for PQ operations
->   async_tx: do DMA unmap in async_raid6_recov.c for PQ operations
->   async_tx: do DMA unmap in core for PQ operations
->   async_tx: do DMA unmap in core for PQ_VAL operations
->   DMA: remove DMA unmap from drivers
->   DMA: remove DMA unmap flags
-> 
->  arch/arm/include/asm/hardware/iop3xx-adma.h |  30 ----
->  arch/arm/mach-iop13xx/include/mach/adma.h   |  26 ---
->  crypto/async_tx/async_memcpy.c              |  27 ++-
->  crypto/async_tx/async_memset.c              |  23 ++-
->  crypto/async_tx/async_pq.c                  | 129 +++++++++----
->  crypto/async_tx/async_raid6_recov.c         |  42 ++++-
->  crypto/async_tx/async_tx.c                  |  25 ++-
->  crypto/async_tx/async_xor.c                 |  98 +++++++---
->  drivers/ata/pata_arasan_cf.c                |   3 +-
->  drivers/dma/amba-pl08x.c                    |  31 ----
->  drivers/dma/at_hdmac.c                      |  25 ---
->  drivers/dma/dmaengine.c                     |  59 +++++-
->  drivers/dma/dmatest.c                       |  14 +-
->  drivers/dma/dw_dmac.c                       |  20 ---
->  drivers/dma/ep93xx_dma.c                    |  32 +---
->  drivers/dma/fsldma.c                        |  16 --
->  drivers/dma/ioat/dma.c                      |  28 +--
->  drivers/dma/ioat/dma.h                      |  12 --
->  drivers/dma/ioat/dma_v2.c                   |   1 -
->  drivers/dma/ioat/dma_v3.c                   | 179 +++++-------------
->  drivers/dma/iop-adma.c                      |  70 +-------
->  drivers/dma/mv_xor.c                        |  45 +----
->  drivers/dma/ppc4xx/adma.c                   | 270 ----------------------------
->  drivers/dma/timb_dma.c                      |  36 ----
->  drivers/dma/txx9dmac.c                      |  24 ---
->  drivers/media/platform/m2m-deinterlace.c    |   3 +-
->  drivers/media/platform/timblogiw.c          |   2 +-
->  drivers/misc/carma/carma-fpga.c             |   3 +-
->  drivers/mtd/nand/atmel_nand.c               |   3 +-
->  drivers/mtd/nand/fsmc_nand.c                |  20 ++-
->  drivers/net/ethernet/micrel/ks8842.c        |   6 +-
->  drivers/spi/spi-dw-mid.c                    |   4 +-
->  include/linux/async_tx.h                    |   4 +
->  include/linux/dmaengine.h                   |  34 ++--
->  34 files changed, 446 insertions(+), 898 deletions(-)
-> 
-> -- 
-> 1.8.0
-> 
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-Hello Bartlomiej Zolnierkiewicz,
+> On Fri, Nov 02, 2012 at 02:32:48PM -0700, Eric W. Biederman wrote:
+>> 
+>> It needs to be checked but /sbin/kexec should not use any functions that
+>> trigger nss switch.  No user or password or host name lookup should be
+>> happening.
+>
+> I also think that we don't call routines which trigger nss switch but
+> be probably can't rely on that as somebody might introduce it in
+> future. So we need more robust mechanism to prevent it than just code
+> inspection.
 
-The carma-fpga and fsldma parts look good to me. For those parts,
+The fact that we shouldn't use those routines is enough to let us
+walk down a path where they are not used.  Either with a static glibc
+linked told to use no nss modules (--enable-static-nss ?), or with
+another more restricted libc.
 
-Acked-by: Ira W. Snyder <iws@ovro.caltech.edu>
+>> This is one part in hardening /sbin/kexec to deal with hostile root
+>> users.  We need to check crazy things like do the files we open on /proc
+>> actually point to /proc after we have opened them.
+>
+> Can you please explain it more. How can one fiddle with /proc. Also
+> what's the solution then.
 
-Thanks,
-Ira
+The solution is to just fstat the files and verify the filesystem from
+which they came after the files have been opened.
+
+The issue is that an evil root user may have mounted something else on /proc.
+
+>> I believe glibc has some code which triggers for suid root applications
+>> that we should ensure gets triggered that avoid trusting things like
+>> LD_LIBRARY_PATH and company.
+>
+> I guess linking statically with uClibc or klibc (as hpa said), might turn
+> out to be better option to avoid all the issues w.r.t shared objects
+> and all the tricky environment variables.
+
+Linking with a more restricted libc will solve most if not all shared
+object issues.
+
+We still need to audit our environment variable issue.  How we interpret
+them and how our restricted libc automatically interprets them.
+
+Eric
