@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab2KELNz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 06:13:55 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52787 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751157Ab2KELNx (ORCPT
+	id S1752082Ab2KELTw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 06:19:52 -0500
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:41174
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751493Ab2KELTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 06:13:53 -0500
-Date: Mon, 5 Nov 2012 12:13:49 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Message-ID: <20121105111349.GF1385@opensource.wolfsonmicro.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <1351928793-14375-3-git-send-email-mika.westerberg@linux.intel.com>
- <20121105105455.GD1385@opensource.wolfsonmicro.com>
- <20121105110322.GD24532@intel.com>
+	Mon, 5 Nov 2012 06:19:50 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1de0h1202h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839he5bhf0ah107ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14afh1504h1537h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <timur@freescale.com>, <scottwood@freescale.com>
+CC: Varun Sethi <Varun.Sethi@freescale.com>
+Subject: [PATCH 1/4 v2] iommu/fsl: Store iommu domain information pointer in archdata.
+Date: Mon, 5 Nov 2012 16:49:19 +0530
+Message-ID: <1352114361-25192-2-git-send-email-Varun.Sethi@freescale.com>
+X-Mailer: git-send-email 1.6.5.6
+In-Reply-To: <1352114361-25192-1-git-send-email-Varun.Sethi@freescale.com>
+References: <1352114361-25192-1-git-send-email-Varun.Sethi@freescale.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CGDBiGfvSTbxKZlW"
-Content-Disposition: inline
-In-Reply-To: <20121105110322.GD24532@intel.com>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add a new field in the device (powerpc) archdata structure for storing iommu domain
+information pointer. This pointer is stored when the device is attached to a particular
+domain.
 
---CGDBiGfvSTbxKZlW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+---
+ arch/powerpc/include/asm/device.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-On Mon, Nov 05, 2012 at 01:03:22PM +0200, Mika Westerberg wrote:
-> On Mon, Nov 05, 2012 at 11:54:55AM +0100, Mark Brown wrote:
-> > On Sat, Nov 03, 2012 at 09:46:32AM +0200, Mika Westerberg wrote:
+diff --git a/arch/powerpc/include/asm/device.h b/arch/powerpc/include/asm/device.h
+index 77e97dd..6dc79fe 100644
+--- a/arch/powerpc/include/asm/device.h
++++ b/arch/powerpc/include/asm/device.h
+@@ -28,6 +28,10 @@ struct dev_archdata {
+ 		void		*iommu_table_base;
+ 	} dma_data;
+ 
++	/* IOMMU domain information pointer. This would be set
++	 * when this device is attached to an iommu_domain.
++	 */
++	void			*iommu_domain;
+ #ifdef CONFIG_SWIOTLB
+ 	dma_addr_t		max_direct_dma_addr;
+ #endif
+-- 
+1.7.4.1
 
-> > > +	strlcpy(spi->modalias, acpi_device_hid(adev), sizeof(spi->modalias));
-> > > +	if (info.gsi >= 0)
-> > > +		spi->irq = acpi_register_gsi(&adev->dev, info.gsi,
-> > > +					     info.triggering, info.polarity);
-> > > +	request_module(spi->modalias);
 
-> > request_module()?  Why?
-
-> The DT code does the same. I have no idea why it is there, really :-)
-
-> I can remove it in the next version if you think it is not needed.
-
-Well, if you can't identify what it does...
-
---CGDBiGfvSTbxKZlW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQl59TAAoJELSic+t+oim9KJUQAI72B4SNWPOUKXNQuRFg3jaS
-e1h+nXga9WzvxCkEY9LEqrmk2AmY4xrLlmk+NfL1UwwvabK5C+tQjrs/eICy6t10
-H/biQViVZITzlA8PWgiEHIpseQi/4PKqxlAIqFH9RqBjEDUUhVvDwcbVXP+a9JHX
-80qpEg7dTS4EHjhfjdPNMt9fK2bCcRNXuL0BZl5ywhzgWU+qbFyywoVpsDTubava
-Z01hmsxAJcPCgb9JSnbKuiEEkcWkpE7Br35ev2VmwNo8cswBqYOjzjvTdKMe/Wq1
-AzGJYKacvqwJZPY5jOZozihWgRezwNqT4pFtXvc2l7TzmjlCpIVRBH9Z3E7ospi5
-rNu8CInZBQBVBjJvinazaJ6G/i/iP6iFmiGjyVrW8LS8fuwXuDhySW2HhooOoTr4
-lu3L4ZgivMzSO/AaXNsh5qjO/RGY0PIfh5+7oRd360+T/f5ckcT6uHrMsDa77Jlg
-fae5WQIlMlnuIjxM84vArnGLhIj9Ba3cAnchoDxtFPsrys9/tWnXQNGVf8z82dUG
-UZYu2PD8+E/mMGpwYvDCgkbyELg3VCacXfJQqO1e+JS5xFTvlSfIpIZ0dFxhnHv2
-iCKdzDnBOo57CAXsmg2IkH/pgsDq5q8GAQzkDw8EMrZf+R2u0O3q8o/PxiIafKNT
-dCETI2OLLYey+7dwbl55
-=7QEe
------END PGP SIGNATURE-----
-
---CGDBiGfvSTbxKZlW--
