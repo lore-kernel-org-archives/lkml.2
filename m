@@ -1,109 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab2KEK1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:27:13 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:55456 "EHLO ogre.sisk.pl"
+	id S1754009Ab2KEK1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:27:42 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:24655 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752788Ab2KEK1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:27:11 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Date: Mon, 05 Nov 2012 11:31:19 +0100
-Message-ID: <4052192.ry8JrGTr6H@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1535917.BaYBBNgGy0@vostro.rjw.lan>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <20121103201310.GQ16648@intel.com> <1535917.BaYBBNgGy0@vostro.rjw.lan>
+	id S1753080Ab2KEK1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 05:27:41 -0500
+X-IronPort-AV: E=Sophos;i="4.80,714,1344211200"; 
+   d="scan'208";a="43417971"
+Message-ID: <1352111140.25014.97.camel@hastur.hellion.org.uk>
+Subject: Re: [Xen-devel] [PATCH] xen/hvm: If we fail to fetch an HVM
+ parameter print out which flag it is.
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 5 Nov 2012 11:25:40 +0100
+In-Reply-To: <20121102163720.GA27213@konrad-lan.dumpdata.com>
+References: <1350673381-20342-1-git-send-email-konrad.wilk@oracle.com>
+	 <1350984138.2237.22.camel@zakaz.uk.xensource.com>
+	 <20121102163720.GA27213@konrad-lan.dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, November 03, 2012 09:59:28 PM Rafael J. Wysocki wrote:
-> On Saturday, November 03, 2012 10:13:10 PM Mika Westerberg wrote:
-> > On Sat, Nov 03, 2012 at 01:42:02PM -0600, Bjorn Helgaas wrote:
-> > > On Sat, Nov 3, 2012 at 1:46 AM, Mika Westerberg
-> > > <mika.westerberg@linux.intel.com> wrote:
-> > > > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
-> > > > configure the SPI slave devices behind the SPI controller. This patch adds
-> > > > support for this to the SPI core.
-[...]
-> > And if the ACPI core parses the _CRS, how does it pass all the resources to
-> > the drivers?
+On Fri, 2012-11-02 at 16:37 +0000, Konrad Rzeszutek Wilk wrote:
+> Like this?
+
+Yup. Although I'm not sure if it really needs to be inlined. I guess
+it's not an especially performance sensitve path though.
+
 > 
-> Pretty much the same way the $subject patch does.
+> From 66705b0ff8808d86c12fcb3815d849a848b5409b Mon Sep 17 00:00:00 2001
+> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Date: Fri, 19 Oct 2012 15:01:46 -0400
+> Subject: [PATCH] xen/hvm: If we fail to fetch an HVM parameter print out
+>  which flag it is.
 > 
-> Instead of parsing the entire subtree below an SPI controller and trying
-> acpi_spi_add_device() for each device node in there, it could call
-> acpi_spi_add_device() whenever it finds a device of type
-> ACPI_RESOURCE_TYPE_SERIAL_BUS/ACPI_RESOURCE_SERIAL_TYPE_SPI.
-> The only problem is how to pass "master" to it.
+> Makes it easier to troubleshoot in the field.
 > 
-> So Bjorn, do you have any idea how we could pass the "master" pointer from the
-> ACPI core to acpi_spi_add_device() in a sensible way?
+> [v1: Use macro per Ian's suggestion]
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+
+> ---
+>  include/xen/hvm.h | 34 ++++++++++++++++++++++++++++++++--
+>  1 file changed, 32 insertions(+), 2 deletions(-)
 > 
-> An alternative might be to store the information obtained from _CRS in
-> struct acpi_device objects created by the ACPI core while parsing the
-> namespace.  We do that already for things like _PRW, so we might as well do it
-> for _CRS.  Then, the SPI core could just walk the subtree of the device hierarchy
-> below the SPI controller's acpi_device to extract that information.
-> Maybe that's the way to go?
+> diff --git a/include/xen/hvm.h b/include/xen/hvm.h
+> index b193fa2..13e43e4 100644
+> --- a/include/xen/hvm.h
+> +++ b/include/xen/hvm.h
+> @@ -5,6 +5,36 @@
+>  #include <xen/interface/hvm/params.h>
+>  #include <asm/xen/hypercall.h>
+>  
+> +static const char *param_name(int op)
+> +{
+> +#define PARAM(x) [HVM_PARAM_##x] = #x
+> +	static const char *const names[] = {
+> +		PARAM(CALLBACK_IRQ),
+> +		PARAM(STORE_PFN),
+> +		PARAM(STORE_EVTCHN),
+> +		PARAM(PAE_ENABLED),
+> +		PARAM(IOREQ_PFN),
+> +		PARAM(BUFIOREQ_PFN),
+> +		PARAM(TIMER_MODE),
+> +		PARAM(HPET_ENABLED),
+> +		PARAM(IDENT_PT),
+> +		PARAM(DM_DOMAIN),
+> +		PARAM(ACPI_S_STATE),
+> +		PARAM(VM86_TSS),
+> +		PARAM(VPT_ALIGN),
+> +		PARAM(CONSOLE_PFN),
+> +		PARAM(CONSOLE_EVTCHN),
+> +	};
+> +#undef PARAM
+> +
+> +	if (op >= ARRAY_SIZE(names))
+> +		return "unknown";
+> +
+> +	if (!names[op])
+> +		return "reserved";
+> +
+> +	return names[op];
+> +}
+>  static inline int hvm_get_parameter(int idx, uint64_t *value)
+>  {
+>  	struct xen_hvm_param xhv;
+> @@ -14,8 +44,8 @@ static inline int hvm_get_parameter(int idx, uint64_t *value)
+>  	xhv.index = idx;
+>  	r = HYPERVISOR_hvm_op(HVMOP_get_param, &xhv);
+>  	if (r < 0) {
+> -		printk(KERN_ERR "Cannot get hvm parameter %d: %d!\n",
+> -			idx, r);
+> +		printk(KERN_ERR "Cannot get hvm parameter %s (%d): %d!\n",
+> +			param_name(idx), idx, r);
+>  		return r;
+>  	}
+>  	*value = xhv.value;
 
-The general idea is to move the _CRS parsing routine from acpi_platform.c
-to scan.c and make it attach resource objects to struct acpi_device.
 
-I'm thinking about adding a list head to struct acpi_device pointing to a
-list of entries like:
-
-struct resource_list_entry {
-	struct list_head node;
-	struct resource *resources;
-	unsigned int count;
-};
-
-where "resources" is an array of resources (e.g. interrupts) in the given
-entry and count is the size of that array.
-
-That list would contain common resources like ACPI_RESOURCE_TYPE_FIXED_MEMORY32,
-ACPI_RESOURCE_TYPE_IRQ, ACPI_RESOURCE_TYPE_ADDRESS32, ACPI_RESOURCE_TYPE_EXTENDED_IRQ.
-I think adding it would allow us to make acpi_create_platform_device(),
-acpi_spi_add_resources() and acpi_i2c_add_resources() more straightforward (and
-remove some code duplication between the last two routines).
-
-In addition to that, I'd add an entry containing serial bus information, if
-applicable, for the given struct acpi_device, something like:
-
-union acpi_resource_serial_bus {
-	struct acpi_resource_common_serialbus;
-	struct acpi_resource_spi_serialbus;
-	struct acpi_resource_i2c_serialbus;
-	struct acpi_resource_uart_serialbus;
-};
-
-struct acpi_device {
-	...
-	union acpi_resource_serial_bus *serial;
-	...
-};
-
-Then, things like acpi_spi_add_resources() and acpi_i2c_add_resources() would
-be able to use struct acpi_device objects directly without running any AML.
-
-That could be done on top of the current series and I'm going to prepare a patch
-for that in the next few days if I find some time between the LCE sessions.
-
-Thanks,
-Rafael
-
-
---- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
