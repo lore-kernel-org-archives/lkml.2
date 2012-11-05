@@ -1,51 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764Ab2KEOvL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:51:11 -0500
-Received: from mga09.intel.com ([134.134.136.24]:40231 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932724Ab2KEOu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:50:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,715,1344236400"; 
-   d="scan'208";a="237393759"
-Date: Mon, 5 Nov 2012 16:53:15 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rafael.j.wysocki@intel.com, grant.likely@secretlab.ca,
-        ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Message-ID: <20121105145315.GI24532@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <CACRpkdaZqka7g2ECAyD_bKhnoULhCP6cTJwMyEsTuVxiUiHy+A@mail.gmail.com>
- <20121105150326.3bbf69df@endymion.delvare>
- <1925265.4Cx64DgKbB@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1925265.4Cx64DgKbB@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932773Ab2KEOva (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:51:30 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35439 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932528Ab2KEOv1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 09:51:27 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, sjenning@linux.vnet.ibm.com,
+        dan.magenheimer@oracle.com, ngupta@vflare.org, minchan@kernel.org,
+        rcj@linux.vnet.ibm.com, linux-mm@kvack.org, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org
+Cc: akpm@linux-foundation.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 07/11] zcache: Make the debug code use pr_debug
+Date: Mon,  5 Nov 2012 09:37:30 -0500
+Message-Id: <1352126254-28933-8-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1352126254-28933-1-git-send-email-konrad.wilk@oracle.com>
+References: <1352126254-28933-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 03:19:58PM +0100, Rafael J. Wysocki wrote:
-> 
-> In the ACPI namespace we have device nodes and serial interfaces below them.
-> In the above case we see that a single device node supports two different
-> interfaces and in that case we probably should create two different
-> struct i2c_adapter objects for the same ACPI device node.
-> 
-> Mika, what do you think?
+as if you are debugging this driver you would be using 'debug'
+on the command line anyhow - and this would dump the debug
+data on the proper loglevel.
 
-I agree.
+While at it also remove the unconditional #define ZCACHE_DEBUG.
 
-Only problem I see is that then we have two I2C adapter devices with the
-same ACPI ID (and hence the same i2c_client->name). I wonder what the I2C
-core thinks about that.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/staging/ramster/zcache-main.c |   69 ++++++++++++++++-----------------
+ 1 files changed, 33 insertions(+), 36 deletions(-)
+
+diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
+index 1f354f2..470ce5c 100644
+--- a/drivers/staging/ramster/zcache-main.c
++++ b/drivers/staging/ramster/zcache-main.c
+@@ -347,56 +347,53 @@ static int zcache_debugfs_init(void)
+ #undef	zdfs64
+ #endif
+ 
+-#define ZCACHE_DEBUG
+-#ifdef ZCACHE_DEBUG
+ /* developers can call this in case of ooms, e.g. to find memory leaks */
+ void zcache_dump(void)
+ {
+-	pr_info("zcache: obj_count=%u\n", zcache_obj_count);
+-	pr_info("zcache: obj_count_max=%u\n", zcache_obj_count_max);
+-	pr_info("zcache: objnode_count=%u\n", zcache_objnode_count);
+-	pr_info("zcache: objnode_count_max=%u\n", zcache_objnode_count_max);
+-	pr_info("zcache: flush_total=%u\n", zcache_flush_total);
+-	pr_info("zcache: flush_found=%u\n", zcache_flush_found);
+-	pr_info("zcache: flobj_total=%u\n", zcache_flobj_total);
+-	pr_info("zcache: flobj_found=%u\n", zcache_flobj_found);
+-	pr_info("zcache: failed_eph_puts=%u\n", zcache_failed_eph_puts);
+-	pr_info("zcache: failed_pers_puts=%u\n", zcache_failed_pers_puts);
+-	pr_info("zcache: failed_get_free_pages=%u\n",
++	pr_debug("zcache: obj_count=%u\n", zcache_obj_count);
++	pr_debug("zcache: obj_count_max=%u\n", zcache_obj_count_max);
++	pr_debug("zcache: objnode_count=%u\n", zcache_objnode_count);
++	pr_debug("zcache: objnode_count_max=%u\n", zcache_objnode_count_max);
++	pr_debug("zcache: flush_total=%u\n", zcache_flush_total);
++	pr_debug("zcache: flush_found=%u\n", zcache_flush_found);
++	pr_debug("zcache: flobj_total=%u\n", zcache_flobj_total);
++	pr_debug("zcache: flobj_found=%u\n", zcache_flobj_found);
++	pr_debug("zcache: failed_eph_puts=%u\n", zcache_failed_eph_puts);
++	pr_debug("zcache: failed_pers_puts=%u\n", zcache_failed_pers_puts);
++	pr_debug("zcache: failed_get_free_pages=%u\n",
+ 				zcache_failed_getfreepages);
+-	pr_info("zcache: failed_alloc=%u\n", zcache_failed_alloc);
+-	pr_info("zcache: put_to_flush=%u\n", zcache_put_to_flush);
+-	pr_info("zcache: compress_poor=%u\n", zcache_compress_poor);
+-	pr_info("zcache: mean_compress_poor=%u\n",
++	pr_debug("zcache: failed_alloc=%u\n", zcache_failed_alloc);
++	pr_debug("zcache: put_to_flush=%u\n", zcache_put_to_flush);
++	pr_debug("zcache: compress_poor=%u\n", zcache_compress_poor);
++	pr_debug("zcache: mean_compress_poor=%u\n",
+ 				zcache_mean_compress_poor);
+-	pr_info("zcache: eph_ate_tail=%u\n", zcache_eph_ate_tail);
+-	pr_info("zcache: eph_ate_tail_failed=%u\n",
++	pr_debug("zcache: eph_ate_tail=%u\n", zcache_eph_ate_tail);
++	pr_debug("zcache: eph_ate_tail_failed=%u\n",
+ 				zcache_eph_ate_tail_failed);
+-	pr_info("zcache: pers_ate_eph=%u\n", zcache_pers_ate_eph);
+-	pr_info("zcache: pers_ate_eph_failed=%u\n",
++	pr_debug("zcache: pers_ate_eph=%u\n", zcache_pers_ate_eph);
++	pr_debug("zcache: pers_ate_eph_failed=%u\n",
+ 				zcache_pers_ate_eph_failed);
+-	pr_info("zcache: evicted_eph_zpages=%u\n", zcache_evicted_eph_zpages);
+-	pr_info("zcache: evicted_eph_pageframes=%u\n",
++	pr_debug("zcache: evicted_eph_zpages=%u\n", zcache_evicted_eph_zpages);
++	pr_debug("zcache: evicted_eph_pageframes=%u\n",
+ 				zcache_evicted_eph_pageframes);
+-	pr_info("zcache: eph_pageframes=%u\n", zcache_eph_pageframes);
+-	pr_info("zcache: eph_pageframes_max=%u\n", zcache_eph_pageframes_max);
+-	pr_info("zcache: pers_pageframes=%u\n", zcache_pers_pageframes);
+-	pr_info("zcache: pers_pageframes_max=%u\n",
++	pr_debug("zcache: eph_pageframes=%u\n", zcache_eph_pageframes);
++	pr_debug("zcache: eph_pageframes_max=%u\n", zcache_eph_pageframes_max);
++	pr_debug("zcache: pers_pageframes=%u\n", zcache_pers_pageframes);
++	pr_debug("zcache: pers_pageframes_max=%u\n",
+ 				zcache_pers_pageframes_max);
+-	pr_info("zcache: eph_zpages=%u\n", zcache_eph_zpages);
+-	pr_info("zcache: eph_zpages_max=%u\n", zcache_eph_zpages_max);
+-	pr_info("zcache: pers_zpages=%u\n", zcache_pers_zpages);
+-	pr_info("zcache: pers_zpages_max=%u\n", zcache_pers_zpages_max);
+-	pr_info("zcache: eph_zbytes=%llu\n",
++	pr_debug("zcache: eph_zpages=%u\n", zcache_eph_zpages);
++	pr_debug("zcache: eph_zpages_max=%u\n", zcache_eph_zpages_max);
++	pr_debug("zcache: pers_zpages=%u\n", zcache_pers_zpages);
++	pr_debug("zcache: pers_zpages_max=%u\n", zcache_pers_zpages_max);
++	pr_debug("zcache: eph_zbytes=%llu\n",
+ 				(unsigned long long)zcache_eph_zbytes);
+-	pr_info("zcache: eph_zbytes_max=%llu\n",
++	pr_debug("zcache: eph_zbytes_max=%llu\n",
+ 				(unsigned long long)zcache_eph_zbytes_max);
+-	pr_info("zcache: pers_zbytes=%llu\n",
++	pr_debug("zcache: pers_zbytes=%llu\n",
+ 				(unsigned long long)zcache_pers_zbytes);
+-	pr_info("zcache: pers_zbytes_max=%llu\n",
++	pr_debug("zcache: pers_zbytes_max=%llu\n",
+ 			(unsigned long long)zcache_pers_zbytes_max);
+ }
+-#endif
+ 
+ /*
+  * zcache core code starts here
+-- 
+1.7.7.6
+
