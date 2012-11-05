@@ -1,255 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab2KEHzt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 02:55:49 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:46817 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560Ab2KEHzr (ORCPT
+	id S1753189Ab2KEIEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 03:04:36 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37735 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753067Ab2KEIEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 02:55:47 -0500
+	Mon, 5 Nov 2012 03:04:35 -0500
+Date: Mon, 5 Nov 2012 09:04:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: Re: [PATCH] extcon: arizona: unlock mutex on error path in
+ arizona_micdet()
+Message-ID: <20121105080432.GB28886@opensource.wolfsonmicro.com>
+References: <1352060386-13610-1-git-send-email-khoroshilov@ispras.ru>
 MIME-Version: 1.0
-In-Reply-To: <20121105075147.GD2034@kroah.com>
-References: <20121029213802.697479610@linuxfoundation.org>
-	<20121029213806.646766364@linuxfoundation.org>
-	<CAMbhsRTUWyNc5djoadOgWz_e=rPmqHw+xQUrccTN70J0E3hKiw@mail.gmail.com>
-	<20121105075147.GD2034@kroah.com>
-Date: Sun, 4 Nov 2012 23:55:47 -0800
-Message-ID: <CAMbhsRScCjZJRAYiHkuS1AoLATsONGJVOHV0siMMFsqRDTAEQg@mail.gmail.com>
-Subject: Re: [ 35/54] ARM: SAMSUNG: Add naming of s3c64xx-spi devices
-From: Colin Cross <ccross@google.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Heiko Stuebner <heiko@sntech.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rJwd6BRFiFCcLxzm"
+Content-Disposition: inline
+In-Reply-To: <1352060386-13610-1-git-send-email-khoroshilov@ispras.ru>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 4, 2012 at 11:51 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Sat, Nov 03, 2012 at 11:17:57PM -0700, Colin Cross wrote:
->> On Mon, Oct 29, 2012 at 2:40 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > 3.4-stable review patch.  If anyone has any objections, please let me know.
->> >
->> > ------------------
->> >
->> > From: Heiko Stuebner <heiko@sntech.de>
->> >
->> > commit 308b3afb97dc342e9c4f958d8b4c459ae0e22bd7 upstream.
->> >
->> > Commit a5238e360b71 (spi: s3c64xx: move controller information into driver
->> > data) introduced separate device names for the different subtypes of the
->> > spi controller but forgot to set these in the relevant machines.
->> >
->> > To fix this introduce a s3c64xx_spi_setname function and populate all
->> > Samsung arches with the correct names. The function resides in a new
->> > header, as the s3c64xx-spi.h contains driver platform data and should
->> > therefore at some later point move out of the Samsung include dir.
->> >
->> > Tested on a s3c2416-based machine.
->> >
->> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
->> > Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
->> > [s.nawrocki@samsung.com: tested on mach-exynos]
->> > Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
->> > Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
->> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> >
->> > ---
->> >  arch/arm/mach-exynos/common.c                 |    5 ++++
->> >  arch/arm/mach-s3c24xx/s3c2416.c               |    2 +
->> >  arch/arm/mach-s3c24xx/s3c2443.c               |    4 +++
->> >  arch/arm/mach-s5p64x0/common.c                |    3 ++
->> >  arch/arm/mach-s5pc100/common.c                |    3 ++
->> >  arch/arm/mach-s5pv210/common.c                |    3 ++
->> >  arch/arm/plat-samsung/include/plat/spi-core.h |   30 ++++++++++++++++++++++++++
->> >  7 files changed, 50 insertions(+)
->> >
->> > --- a/arch/arm/mach-exynos/common.c
->> > +++ b/arch/arm/mach-exynos/common.c
->> > @@ -44,6 +44,7 @@
->> >  #include <plat/fimc-core.h>
->> >  #include <plat/iic-core.h>
->> >  #include <plat/tv-core.h>
->> > +#include <plat/spi-core.h>
->> >  #include <plat/regs-serial.h>
->> >
->> >  #include "common.h"
->> > @@ -338,6 +339,8 @@ static void __init exynos4_map_io(void)
->> >
->> >         s5p_fb_setname(0, "exynos4-fb");
->> >         s5p_hdmi_setname("exynos4-hdmi");
->> > +
->> > +       s3c64xx_spi_setname("exynos4210-spi");
->> >  }
->> >
->> >  static void __init exynos5_map_io(void)
->> > @@ -358,6 +361,8 @@ static void __init exynos5_map_io(void)
->> >         s3c_i2c0_setname("s3c2440-i2c");
->> >         s3c_i2c1_setname("s3c2440-i2c");
->> >         s3c_i2c2_setname("s3c2440-i2c");
->> > +
->> > +       s3c64xx_spi_setname("exynos4210-spi");
->> >  }
->> >
->> >  static void __init exynos4_init_clocks(int xtal)
->> > --- a/arch/arm/mach-s3c24xx/s3c2416.c
->> > +++ b/arch/arm/mach-s3c24xx/s3c2416.c
->> > @@ -61,6 +61,7 @@
->> >  #include <plat/nand-core.h>
->> >  #include <plat/adc-core.h>
->> >  #include <plat/rtc-core.h>
->> > +#include <plat/spi-core.h>
->> >
->> >  static struct map_desc s3c2416_iodesc[] __initdata = {
->> >         IODESC_ENT(WATCHDOG),
->> > @@ -131,6 +132,7 @@ void __init s3c2416_map_io(void)
->> >         /* initialize device information early */
->> >         s3c2416_default_sdhci0();
->> >         s3c2416_default_sdhci1();
->> > +       s3c64xx_spi_setname("s3c2443-spi");
->> >
->> >         iotable_init(s3c2416_iodesc, ARRAY_SIZE(s3c2416_iodesc));
->> >  }
->> > --- a/arch/arm/mach-s3c24xx/s3c2443.c
->> > +++ b/arch/arm/mach-s3c24xx/s3c2443.c
->> > @@ -43,6 +43,7 @@
->> >  #include <plat/nand-core.h>
->> >  #include <plat/adc-core.h>
->> >  #include <plat/rtc-core.h>
->> > +#include <plat/spi-core.h>
->> >
->> >  static struct map_desc s3c2443_iodesc[] __initdata = {
->> >         IODESC_ENT(WATCHDOG),
->> > @@ -100,6 +101,9 @@ void __init s3c2443_map_io(void)
->> >         s3c24xx_gpiocfg_default.set_pull = s3c2443_gpio_setpull;
->> >         s3c24xx_gpiocfg_default.get_pull = s3c2443_gpio_getpull;
->> >
->> > +       /* initialize device information early */
->> > +       s3c64xx_spi_setname("s3c2443-spi");
->> > +
->> >         iotable_init(s3c2443_iodesc, ARRAY_SIZE(s3c2443_iodesc));
->> >  }
->> >
->> > --- a/arch/arm/mach-s5p64x0/common.c
->> > +++ b/arch/arm/mach-s5p64x0/common.c
->> > @@ -44,6 +44,7 @@
->> >  #include <plat/sdhci.h>
->> >  #include <plat/adc-core.h>
->> >  #include <plat/fb-core.h>
->> > +#include <plat/spi-core.h>
->> >  #include <plat/gpio-cfg.h>
->> >  #include <plat/regs-irqtype.h>
->> >  #include <plat/regs-serial.h>
->> > @@ -179,6 +180,7 @@ void __init s5p6440_map_io(void)
->> >         /* initialize any device information early */
->> >         s3c_adc_setname("s3c64xx-adc");
->> >         s3c_fb_setname("s5p64x0-fb");
->> > +       s3c64xx_spi_setname("s5p64x0-spi");
->> >
->> >         s5p64x0_default_sdhci0();
->> >         s5p64x0_default_sdhci1();
->> > @@ -193,6 +195,7 @@ void __init s5p6450_map_io(void)
->> >         /* initialize any device information early */
->> >         s3c_adc_setname("s3c64xx-adc");
->> >         s3c_fb_setname("s5p64x0-fb");
->> > +       s3c64xx_spi_setname("s5p64x0-spi");
->> >
->> >         s5p64x0_default_sdhci0();
->> >         s5p64x0_default_sdhci1();
->> > --- a/arch/arm/mach-s5pc100/common.c
->> > +++ b/arch/arm/mach-s5pc100/common.c
->> > @@ -45,6 +45,7 @@
->> >  #include <plat/fb-core.h>
->> >  #include <plat/iic-core.h>
->> >  #include <plat/onenand-core.h>
->> > +#include <plat/spi-core.h>
->> >  #include <plat/regs-serial.h>
->> >  #include <plat/watchdog-reset.h>
->> >
->> > @@ -165,6 +166,8 @@ void __init s5pc100_map_io(void)
->> >         s3c_onenand_setname("s5pc100-onenand");
->> >         s3c_fb_setname("s5pc100-fb");
->> >         s3c_cfcon_setname("s5pc100-pata");
->> > +
->> > +       s3c64xx_spi_setname("s5pc100-spi");
->> >  }
->> >
->> >  void __init s5pc100_init_clocks(int xtal)
->> > --- a/arch/arm/mach-s5pv210/common.c
->> > +++ b/arch/arm/mach-s5pv210/common.c
->> > @@ -43,6 +43,7 @@
->> >  #include <plat/iic-core.h>
->> >  #include <plat/keypad-core.h>
->> >  #include <plat/tv-core.h>
->> > +#include <plat/spi-core.h>
->> >  #include <plat/regs-serial.h>
->> >
->> >  #include "common.h"
->> > @@ -196,6 +197,8 @@ void __init s5pv210_map_io(void)
->> >
->> >         /* setup TV devices */
->> >         s5p_hdmi_setname("s5pv210-hdmi");
->> > +
->> > +       s3c64xx_spi_setname("s5pv210-spi");
->> >  }
->> >
->> >  void __init s5pv210_init_clocks(int xtal)
->> > --- /dev/null
->> > +++ b/arch/arm/plat-samsung/include/plat/spi-core.h
->> > @@ -0,0 +1,30 @@
->> > +/*
->> > + * Copyright (C) 2012 Heiko Stuebner <heiko@sntech.de>
->> > + *
->> > + * This program is free software; you can redistribute it and/or modify
->> > + * it under the terms of the GNU General Public License version 2 as
->> > + * published by the Free Software Foundation.
->> > + */
->> > +
->> > +#ifndef __PLAT_S3C_SPI_CORE_H
->> > +#define __PLAT_S3C_SPI_CORE_H
->> > +
->> > +/* These functions are only for use with the core support code, such as
->> > + * the cpu specific initialisation code
->> > + */
->> > +
->> > +/* re-define device name depending on support. */
->> > +static inline void s3c64xx_spi_setname(char *name)
->> > +{
->> > +#ifdef CONFIG_S3C64XX_DEV_SPI0
->> > +       s3c64xx_device_spi0.name = name;
->> > +#endif
->> > +#ifdef CONFIG_S3C64XX_DEV_SPI1
->> > +       s3c64xx_device_spi1.name = name;
->> > +#endif
->> > +#ifdef CONFIG_S3C64XX_DEV_SPI2
->> > +       s3c64xx_device_spi2.name = name;
->> > +#endif
->> > +}
->> > +
->> > +#endif /* __PLAT_S3C_SPI_CORE_H */
->> >
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->>
->> This patch breaks Exynos5 spi on 3.4.17.  The patch with the bug that
->> this patch was supposed to address went in to 3.6 and not 3.4, so this
->> patch causes a driver name mismatch when applied to 3.4.
->
-> Ah, thanks for letting me know.  I'll revert this for the next stable
-> release.  It didn't get into any other older kernel (like 3.0 or 3.2),
-> and also needs to be reverted there, did it?
->
-> thanks,
->
-> greg k-h
 
-I don't think so, it wouldn't have applied cleanly to anything earlier than 3.3.
+--rJwd6BRFiFCcLxzm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Sun, Nov 04, 2012 at 01:19:46PM -0700, Alexey Khoroshilov wrote:
+> If regmap_read() failed, arizona_micdet() returns IRQ_NONE
+> leaving &info->lock mutex locked as opposed to all other return paths.
+>=20
+> Found by Linux Driver Verification project (linuxtesting.org).
+
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+--rJwd6BRFiFCcLxzm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQl3LvAAoJELSic+t+oim9bmAP/igBqCspT6uW1ocfi/7S3sJe
+VSf0Kkj9EfKRZK8T2AXZZuFwuuCuLFY/tdifTxVaDUI8Lwsp/ow398kibDxi8wW7
+08DmsPo8StOqxgzsU/8U4guRLhp7umtZYQDIDsjGHtcoDtwm/9Lk4E89JDX+wHeK
+KeBVcEFcR1/grGQC3gl32wyFJlVcJXuG8ik/2dlFGyUyGw54PoGNkmjggzcrBstc
+bufE+mmbJrjWc58mM3372nyHfvMfMF9bDX75s3POmS42gNnbBolA26szt1l2BxIq
+p0lVcCS36Z6fto/K702lNy79dmaOW73+hsw1TrsOPyhy0MmTLfHD8CfxmL9LikvB
+EqT5PSa0tfWzR8WZBgXDNbMXPXY++sKkixJxmSFIvRvXirA7SkvLtZ6MTgrjSuLO
+9gFdsQf1Gh9Je5ZIv/DTKVMgwzzNj1AtIr2A9/hT1b+g/2YQL9cNnZmWq63QOdNy
+/IftO62kB5bMGkG2+pQm9CPXkR6Rakso6+MyR6e996Rt3u+f7v+nZAB5DxNS7w1n
+KfbSkkmt6kPuXoUBWVp5Tt54tynNDyPaS1YG8H/NEBpb4Fv1MQgW5aousmHj4Ty9
+vr+KczBis6F5KJx7Hyh0PSRXyXwsMG0bDXDQka4uXyqszqgBj9fr9/33cKxVmgUw
+yR3/+pi4l2mhiVJ08gAs
+=QTTY
+-----END PGP SIGNATURE-----
+
+--rJwd6BRFiFCcLxzm--
