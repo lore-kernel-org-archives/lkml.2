@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933392Ab2KEWLB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 17:11:01 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64734 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933111Ab2KEWKz (ORCPT
+	id S933399Ab2KEWLe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 17:11:34 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43287 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933360Ab2KEWLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 17:10:55 -0500
+	Mon, 5 Nov 2012 17:11:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <1888439.VY5iAKy5E9@vostro.rjw.lan>
-References: <1351128963-10347-1-git-send-email-ying.huang@intel.com>
- <CAErSpo6Q9DGwBJNCY5g3gGVPMCngv6pfLXB6TfiFu3gyLiNp7Q@mail.gmail.com> <1888439.VY5iAKy5E9@vostro.rjw.lan>
+In-Reply-To: <1352000325.9881.0.camel@yhuang-mobile.sh.intel.com>
+References: <1351061654-8339-1-git-send-email-ying.huang@intel.com>
+ <CAErSpo7hiFQOC+OPZretkyp5EcL84zEWCAiQgEE5Ewq--gUziQ@mail.gmail.com>
+ <1351919165.13106.2.camel@yhuang-mobile.sh.intel.com> <CAErSpo4k+SjqdBt3w3POkg=toCnZufH4gnwJpV8BW8DH5abkqw@mail.gmail.com>
+ <1352000325.9881.0.camel@yhuang-mobile.sh.intel.com>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 5 Nov 2012 15:10:34 -0700
-Message-ID: <CAErSpo4Rfk2VBGdqprcVEBWUvi_OZ2E6+vzGznY9XetUoGCkxA@mail.gmail.com>
-Subject: Re: [BUGFIX] PCI/PM: Fix proc config reg access for D3cold and bridge suspending
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        stable@vger.kernel.org
+Date: Mon, 5 Nov 2012 15:11:10 -0700
+Message-ID: <CAErSpo4AMsGeuKqhFeqf=8VnJOgvEuQmL3a8j4MtfwhnHtU2DA@mail.gmail.com>
+Subject: Re: [BUGFIX 1/2] PCI/PM: Fix deadlock when unbind device if its
+ parent in D3cold
+To: Huang Ying <ying.huang@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 2, 2012 at 2:25 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, November 02, 2012 10:38:43 AM Bjorn Helgaas wrote:
->> On Wed, Oct 24, 2012 at 7:36 PM, Huang Ying <ying.huang@intel.com> wrote:
->> > In
+On Sat, Nov 3, 2012 at 9:38 PM, Huang Ying <ying.huang@intel.com> wrote:
+> On Sat, 2012-11-03 at 11:22 -0600, Bjorn Helgaas wrote:
+>> On Fri, Nov 2, 2012 at 11:06 PM, Huang Ying <ying.huang@intel.com> wrote:
+>> > On Fri, 2012-11-02 at 10:50 -0600, Bjorn Helgaas wrote:
+>> >> On Wed, Oct 24, 2012 at 12:54 AM, Huang Ying <ying.huang@intel.com> wrote:
+>> >> > If a PCI device and its parents are put into D3cold, unbinding the
+>> >> > device will trigger deadlock as follow:
+>> >> >
+>> >> > - driver_unbind
+>> >> >   - device_release_driver
+>> >> >     - device_lock(dev)                          <--- previous lock here
+>> >> >     - __device_release_driver
+>> >> >       - pm_runtime_get_sync
+>> >> >         ...
+>> >> >           - rpm_resume(dev)
+>> >> >             - rpm_resume(dev->parent)
+>> >> >               ...
+>> >> >                 - pci_pm_runtime_resume
+>> >> >                   ...
+>> >> >                   - pci_set_power_state
+>> >> >                     - __pci_start_power_transition
+>> >> >                       - pci_wakeup_bus(dev->parent->subordinate)
+>> >> >                         - pci_walk_bus
+>> >> >                           - device_lock(dev)    <--- dead lock here
+>> >> >
+>> >> >
+>> >> > If we do not do device_lock in pci_walk_bus, we can avoid dead lock.
+>> >> > Device_lock in pci_walk_bus is introduced in commit:
+>> >> > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
+>> >> > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
+>> >> > said device_lock is added to pci_walk_bus because:
+>> >> >
+>> >> >   Some error handling functions call pci_walk_bus. For example, PCIe
+>> >> >   aer. Here we lock the device, so the driver wouldn't detach from the
+>> >> >   device, as the cb might call driver's callback function.
+>> >> >
+>> >> > So I fixed the dead lock as follow:
+>> >> >
+>> >> > - remove device_lock from pci_walk_bus
+>> >> > - add device_lock into callback if callback will call driver's callback
+>> >> >
+>> >> > I checked pci_walk_bus users one by one, and found only PCIe aer needs
+>> >> > device lock.
+>> >>
+>> >> Is there a problem report or bugzilla for this issue?
 >> >
->> >   https://bugzilla.kernel.org/show_bug.cgi?id=48981
+>> > No.  I found this issue when I developed kexec fixing.
 >> >
->> > Peter reported that /proc/bus/pci/??/??.? does not works for 3.6.
->> > This is This is because the device configuration space registers will
->> > be not accessible if the corresponding parent bridge is suspended or
->> > the device is put into D3cold state.
+>> > Best Regards,
+>> > Huang Ying
 >> >
->> > This is the same as /sys/bus/pci/devices/0000:??:??.?/config access
->> > issue.  So the function used to solve sysfs issue is used to solve
->> > this issue.
->> >
->> > Cc: stable@vger.kernel.org
->> > Reported-by: Peter <lekensteyn@gmail.com>
+>> >> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+>> >> > Cc: Zhang Yanmin <yanmin.zhang@intel.com>
+>> >>
+>> >> Should this go to stable as well?  The D3cold support appeared in
+>> >> v3.6, so my guess is that this fix could go to v3.6.x.
 >>
->> Is this bug the same as the one originally reported by Forrest Loomis
->> (original reporter of bug 48981)?  And
->> https://bugzilla.kernel.org/show_bug.cgi?id=49031, reported by Micael
->> Dias (Rafael marked 49031 as a duplicate of 48981)?
->>
->> If so, I'll mention Forrest and Micael and bug 49031 here as well.
+>> What about the stable tree?
 >
-> No, it's not.  That one turned out to be a duplicate of bko#48981.
+> You are right.  This fix should go to v3.6.x stable tree.
 
-I applied this to my for-linus branch as v3.7 material.  Thanks!
+I applied these two patches to my for-linus branch as v3.7 material.  Thanks!
