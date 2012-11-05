@@ -1,98 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab2KEWwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 17:52:51 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64529 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab2KEWrd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 17:47:33 -0500
-From: Michel Lespinasse <walken@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
-        William Irwin <wli@holomorphy.com>
-Cc: linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
-        linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org
-Subject: [PATCH 01/16] mm: add anon_vma_lock to validate_mm()
-Date: Mon,  5 Nov 2012 14:46:58 -0800
-Message-Id: <1352155633-8648-2-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1352155633-8648-1-git-send-email-walken@google.com>
-References: <1352155633-8648-1-git-send-email-walken@google.com>
+	id S933402Ab2KEWxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 17:53:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6375 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751101Ab2KEWxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 17:53:44 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <15094.1352155791@warthog.procyon.org.uk>
+References: <15094.1352155791@warthog.procyon.org.uk>
+Cc: dhowells@redhat.com, mingo@kernel.org, tglx@linutronix.de,
+        acme@ghostprotocols.net, bp@alien8.de, namhyung@gmail.com,
+        torvalds@linux-foundation.org, paulus@samba.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: tools, perf: Fix up for x86 UAPI disintegration
+Date: Mon, 05 Nov 2012 22:53:27 +0000
+Message-ID: <25722.1352156007@warthog.procyon.org.uk>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Iterate vma->anon_vma_chain without anon_vma_lock may cause NULL ptr deref in
-anon_vma_interval_tree_verify(), because the node in the chain might have been
-removed.
+David Howells <dhowells@redhat.com> wrote:
 
-[ 1523.657950] BUG: unable to handle kernel paging request at fffffffffffffff0
-[ 1523.660022] IP: [<ffffffff8122c29c>] anon_vma_interval_tree_verify+0xc/0xa0
-[ 1523.660022] PGD 4e28067 PUD 4e29067 PMD 0
-[ 1523.675725] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1523.750066] CPU 0
-[ 1523.750066] Pid: 9050, comm: trinity-child64 Tainted: G        W    3.7.0-rc2-next-20121025-sasha-00001-g673f98e-dirty #77
-[ 1523.750066] RIP: 0010:[<ffffffff8122c29c>]  [<ffffffff8122c29c>] anon_vma_interval_tree_verify+0xc/0xa0
-[ 1523.750066] RSP: 0018:ffff880045f81d48  EFLAGS: 00010296
-[ 1523.750066] RAX: 0000000000000000 RBX: fffffffffffffff0 RCX: 0000000000000000
-[ 1523.750066] RDX: 0000000000000000 RSI: 0000000000000001 RDI: fffffffffffffff0
-[ 1523.750066] RBP: ffff880045f81d58 R08: 0000000000000000 R09: 0000000000000f14
-[ 1523.750066] R10: 0000000000000f12 R11: 0000000000000000 R12: ffff8800096c8d70
-[ 1523.750066] R13: ffff8800096c8d00 R14: 0000000000000000 R15: ffff8800095b45e0
-[ 1523.750066] FS:  00007f7a923f3700(0000) GS:ffff880013600000(0000) knlGS:0000000000000000
-[ 1523.750066] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1523.750066] CR2: fffffffffffffff0 CR3: 000000000969d000 CR4: 00000000000406f0
-[ 1523.750066] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1523.750066] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1523.750066] Process trinity-child64 (pid: 9050, threadinfo ffff880045f80000, task ffff880048eb0000)
-[ 1523.750066] Stack:
-[ 1523.750066]  ffff88000d7533f0 fffffffffffffff0 ffff880045f81da8 ffffffff812361d8
-[ 1523.750066]  ffff880045f81d98 ffff880048ee9000 ffff8800095b4580 ffff8800095b4580
-[ 1523.750066]  ffff88001d1cdb00 ffff8800095b45f0 ffff880022a4d630 ffff8800095b45e0
-[ 1523.750066] Call Trace:
-[ 1523.750066]  [<ffffffff812361d8>] validate_mm+0x58/0x1e0
-[ 1523.750066]  [<ffffffff81236aa5>] vma_adjust+0x635/0x6b0
-[ 1523.750066]  [<ffffffff81236c81>] __split_vma.isra.22+0x161/0x220
-[ 1523.750066]  [<ffffffff81237934>] split_vma+0x24/0x30
-[ 1523.750066]  [<ffffffff8122ce6a>] sys_madvise+0x5da/0x7b0
-[ 1523.750066]  [<ffffffff811cd14c>] ? rcu_eqs_exit+0x9c/0xb0
-[ 1523.750066]  [<ffffffff811802cd>] ? trace_hardirqs_on+0xd/0x10
-[ 1523.750066]  [<ffffffff83aee198>] tracesys+0xe1/0xe6
-[ 1523.750066] Code: 4c 09 ff 48 39 ce 77 9e f3 c3 0f 1f 44 00 00 31 c0 c3 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 e5 53
-48 89 fb 48 83 ec 08 <48> 8b 17 48 8b 8a 90 00 00 00 48 39 4f 40 74 34 80 3d f7 1f 5c
-[ 1523.750066] RIP  [<ffffffff8122c29c>] anon_vma_interval_tree_verify+0xc/0xa0
-[ 1523.750066]  RSP <ffff880045f81d48>
-[ 1523.750066] CR2: fffffffffffffff0
-[ 1523.750066] ---[ end trace e35e5fa49072faf9 ]---
+> I've posted a revised version of my perf patches to my UAPI disintegration GIT
+> tree.
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Figured-out-by: Bob Liu <lliubbo@gmail.com>
-Signed-off-by: Michel Lespinasse <walken@google.com>
+Hmmm...  It seems to break some things according to Fengguang's kbuild test
+robot.
 
----
- mm/mmap.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 2d942353d681..9a796c41e7d9 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -334,8 +334,10 @@ void validate_mm(struct mm_struct *mm)
- 	struct vm_area_struct *vma = mm->mmap;
- 	while (vma) {
- 		struct anon_vma_chain *avc;
-+		vma_lock_anon_vma(vma);
- 		list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
- 			anon_vma_interval_tree_verify(avc);
-+		vma_unlock_anon_vma(vma);
- 		vma = vma->vm_next;
- 		i++;
- 	}
--- 
-1.7.7.3
+David
