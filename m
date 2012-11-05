@@ -1,169 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab2KEBJL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 20:09:11 -0500
-Received: from ozlabs.org ([203.10.76.45]:38076 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750954Ab2KEBJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 20:09:09 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jason Wang <jasowang@redhat.com>, mst@redhat.com, davem@davemloft.net,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        krkumar2@in.ibm.com
-Cc: kvm@vger.kernel.org, Jason Wang <jasowang@redhat.com>
-Subject: Re: [rfc net-next v6 2/3] virtio_net: multiqueue support
-In-Reply-To: <1351591403-23065-3-git-send-email-jasowang@redhat.com>
-References: <1351591403-23065-1-git-send-email-jasowang@redhat.com> <1351591403-23065-3-git-send-email-jasowang@redhat.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 05 Nov 2012 11:38:39 +1030
-Message-ID: <87y5igyhyg.fsf@rustcorp.com.au>
+	id S1752614Ab2KEBJX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 20:09:23 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:29203 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752488Ab2KEBJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 20:09:17 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6886"; a="4128628"
+Date: Sun, 4 Nov 2012 19:08:59 -0600
+From: Richard Kuo <rkuo@codeaurora.org>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, arnd@arndb.de,
+        kyungmin.park@samsung.com, m.szyprowski@samsung.com,
+        linas@codeaurora.org, linux-hexagon@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Subject: Re: [PATCH RFT RESEND linux-next] hexagon: dma-mapping: support
+ debug_dma_mapping_error
+Message-ID: <20121105010859.GA20521@codeaurora.org>
+References: <1351206731.6851.10.camel@lorien2>
+ <1351266197.4013.3.camel@lorien2>
+ <1351874901.2721.18.camel@lorien2>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351874901.2721.18.camel@lorien2>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jason Wang <jasowang@redhat.com> writes:
-> +struct virtnet_info {
-> +	u16 num_queue_pairs;		/* # of RX/TX vq pairs */
-> +	u16 total_queue_pairs;
-> +
-> +	struct send_queue *sq;
-> +	struct receive_queue *rq;
-> +	struct virtqueue *cvq;
-> +
-> +	struct virtio_device *vdev;
-> +	struct net_device *dev;
-> +	unsigned int status;
+On Fri, Nov 02, 2012 at 10:48:21AM -0600, Shuah Khan wrote:
+> On Fri, 2012-10-26 at 09:43 -0600, Shuah Khan wrote:
+> > Add support for debug_dma_mapping_error() call to avoid warning from
+> > debug_dma_unmap() interface when it checks for mapping error checked
+> > status. Without this patch, device driver failed to check map error
+> > warning is generated.
+> > 
+> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> > ---
+> >  arch/hexagon/include/asm/dma-mapping.h |    1 +
+> >  1 file changed, 1 insertion(+)
+> 
+> Would you like se this patch go through arch tree or linux-next? Please
+> let me know your preference.
+> 
+> -- Shuah
+> > 
+> > diff --git a/arch/hexagon/include/asm/dma-mapping.h b/arch/hexagon/include/asm/dma-mapping.h
+> > index 85e9935..1957c4c 100644
+> > --- a/arch/hexagon/include/asm/dma-mapping.h
+> > +++ b/arch/hexagon/include/asm/dma-mapping.h
+> > @@ -65,6 +65,7 @@ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+> >  {
+> >  	struct dma_map_ops *dma_ops = get_dma_ops(dev);
+> >  
+> > +	debug_dma_mapping_error(dev, dma_addr);
+> >  	if (dma_ops->mapping_error)
+> >  		return dma_ops->mapping_error(dev, dma_addr);
+> >  
+> 
+> 
 
-status seems unused?
+This looks fine; I'm OK with this going through linux-next.  Thanks!
 
-> +static const struct ethtool_ops virtnet_ethtool_ops;
-
-Strange hoist, but I can't tell from the patch if this is necessary.
-Assume it is.
-
-> +static inline int vq2txq(struct virtqueue *vq)
-> +{
-> +	int index = virtqueue_get_queue_index(vq);
-> +	return index == 1 ? 0 : (index - 3) / 2;
-> +}
-> +
-> +static inline int txq2vq(int txq)
-> +{
-> +	return txq ? 2 * txq + 3 : 1;
-> +}
-> +
-> +static inline int vq2rxq(struct virtqueue *vq)
-> +{
-> +	int index = virtqueue_get_queue_index(vq);
-> +	return index ? (index - 2) / 2 : 0;
-> +}
-> +
-> +static inline int rxq2vq(int rxq)
-> +{
-> +	return rxq ? 2 * rxq + 2 : 0;
-> +}
-> +
->  static inline struct skb_vnet_hdr *skb_vnet_hdr(struct sk_buff *skb)
-
-I know skb_vnet_hdr() does it, but I generally dislike inline in C
-files; gcc is generally smart enough these days, and inline suppresses
-unused function warnings.
-
-I guess these mappings have to work even when we're switching from mq to
-single queue mode; otherwise we could simplify them using a 'bool mq'
-flag.
-
-> +static int virtnet_set_queues(struct virtnet_info *vi)
-> +{
-> +	struct scatterlist sg;
-> +	struct virtio_net_ctrl_steering s;
-> +	struct net_device *dev = vi->dev;
-> +
-> +	if (vi->num_queue_pairs == 1) {
-> +		s.current_steering_rule = VIRTIO_NET_CTRL_STEERING_SINGLE;
-> +		s.current_steering_param = 1;
-> +	} else {
-> +		s.current_steering_rule =
-> +			VIRTIO_NET_CTRL_STEERING_RX_FOLLOWS_TX;
-> +		s.current_steering_param = vi->num_queue_pairs;
-> +	}
-
-(BTW, VIRTIO_NET_CTRL_STEERING_RX_FOLLOWS_TX etc not defined anywhere?)
-
-Hmm, it's not clear that anything other than RX_FOLLOWS_TX will ever
-make sense, so this is really just turning mq on and off.
-
-Unfortunately, we can't turn feature bits on and off after startup, so
-if we want this level of control (and I think we do), there does need to
-be a mechanism.
-
-Michael?  I'd prefer this to be further simplfied, to just
-disable/enable.  We can extend it later, but for now the second
-parameter is redundant, ie.:
-
-        struct virtio_net_ctrl_steering {
-                u8 mode; /* 0 == off, 1 == on */
-        } __attribute__((packed));
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
 
 
-> @@ -924,11 +1032,10 @@ static void virtnet_get_ringparam(struct net_device *dev,
->  {
->  	struct virtnet_info *vi = netdev_priv(dev);
->  
-> -	ring->rx_max_pending = virtqueue_get_vring_size(vi->rvq);
-> -	ring->tx_max_pending = virtqueue_get_vring_size(vi->svq);
-> +	ring->rx_max_pending = virtqueue_get_vring_size(vi->rq[0].vq);
-> +	ring->tx_max_pending = virtqueue_get_vring_size(vi->sq[0].vq);
->  	ring->rx_pending = ring->rx_max_pending;
->  	ring->tx_pending = ring->tx_max_pending;
-> -
->  }
+-- 
 
-This assumes all vqs are the same size.  I think this should probably
-check: for mq mode, use the first vq, otherewise use the 0th.
-
-For bonus points, check this assertion at probe time.
-
-> +	/*
-> +	 * We expect 1 RX virtqueue followed by 1 TX virtqueue, followd by
-> +	 * possible control virtqueue, followed by 1 reserved vq, followed
-> +	 * by RX/TX queue pairs used in multiqueue mode.
-> +	 */
-> +	if (vi->total_queue_pairs == 1)
-> +		total_vqs = 2 + virtio_has_feature(vi->vdev,
-> +						   VIRTIO_NET_F_CTRL_VQ);
-> +	else
-> +		total_vqs = 2 * vi->total_queue_pairs + 2;
-
-What's the allergy to odd numbers?  Why the reserved queue?
-
-> +	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
-> +		vi->has_cvq = true;
-> +
-> +	/* Use single tx/rx queue pair as default */
-> +	vi->num_queue_pairs = 1;
-> +	vi->total_queue_pairs = num_queue_pairs;
-> +
-> +	/* Allocate/initialize the rx/tx queues, and invoke find_vqs */
-> +	err = virtnet_setup_vqs(vi);
->  	if (err)
->  		goto free_stats;
->  
-> +	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ) &&
-> +	    virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VLAN))
-> +		dev->features |= NETIF_F_HW_VLAN_FILTER;
-
-We should be using has_cvq here...
-
-> -#ifdef CONFIG_PM
-> -static int virtnet_freeze(struct virtio_device *vdev)
-> +static void virtnet_stop(struct virtnet_info *vi)
-
-I think you still want this under CONFIG_PM, right?  Doesn't seem used
-elsewhere.
-
-Cheers,
-Rusty.
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
