@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab2KEP2w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:28:52 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:34402 "EHLO
+	id S933129Ab2KEP3Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:29:16 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:48884 "EHLO
 	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933040Ab2KEPXF (ORCPT
+	with ESMTP id S932908Ab2KEPXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:23:05 -0500
+	Mon, 5 Nov 2012 10:23:03 -0500
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v9 24/34] vfs: make lgetxattr retry once on ESTALE
-Date: Mon,  5 Nov 2012 10:22:03 -0500
-Message-Id: <1352128933-28526-25-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v9 23/34] vfs: make getxattr retry once on an ESTALE error
+Date: Mon,  5 Nov 2012 10:22:02 -0500
+Message-Id: <1352128933-28526-24-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
 References: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
@@ -28,17 +28,17 @@ Signed-off-by: Jeff Layton <jlayton@redhat.com>
  1 file changed, 10 insertions(+), 5 deletions(-)
 
 diff --git a/fs/xattr.c b/fs/xattr.c
-index 42284fc..3a5e3ff 100644
+index 5a9ddba..42284fc 100644
 --- a/fs/xattr.c
 +++ b/fs/xattr.c
-@@ -505,12 +505,17 @@ SYSCALL_DEFINE4(lgetxattr, const char __user *, pathname,
+@@ -486,12 +486,17 @@ SYSCALL_DEFINE4(getxattr, const char __user *, pathname,
  {
  	struct path path;
  	ssize_t error;
 +	unsigned int try = 0;
-+	unsigned int lookup_flags = 0;
++	unsigned int lookup_flags = LOOKUP_FOLLOW;
  
--	error = user_lpath(pathname, &path);
+-	error = user_path(pathname, &path);
 -	if (error)
 -		return error;
 -	error = getxattr(path.dentry, name, value, size);
