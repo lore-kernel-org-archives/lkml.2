@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639Ab2KEOyL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:54:11 -0500
-Received: from exprod7og123.obsmtp.com ([64.18.2.24]:47079 "EHLO
-	exprod7og123.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932503Ab2KEOyJ (ORCPT
+	id S932656Ab2KEO4I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:56:08 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38513 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab2KEO4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:54:09 -0500
-Message-ID: <5097D30A.1030607@genband.com>
-Date: Mon, 05 Nov 2012 08:54:02 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Michal Zatloukal <myxal.mxl@gmail.com>
-CC: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Subject: Re: Fwd: Nice processes prevent frequency increases - possible scheduler
- regression (known good in 2.6.35)
-References: <CAKKZj2Do+ViFbdmeA9y4qZ4Dd_CrW_wmVWc0_CB4BAAwO6SfJg@mail.gmail.com> <CAKKZj2Av0TN9MbYk=-2ZB_jxDnUCWfrN5tJNZ7azgSHyOrMzvg@mail.gmail.com> <1351942405.16850.23.camel@maggy.simpson.net> <1351943332.16850.25.camel@maggy.simpson.net> <CAKKZj2D-jCkAbEKPX75OFYWrdSYxwh6fFBFy9UBDxy_XHHX3Gg@mail.gmail.com>
-In-Reply-To: <CAKKZj2D-jCkAbEKPX75OFYWrdSYxwh6fFBFy9UBDxy_XHHX3Gg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Nov 2012 14:54:03.0646 (UTC) FILETIME=[65BB09E0:01CDBB65]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19340.007
-X-TM-AS-Result: No--8.465400-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+	Mon, 5 Nov 2012 09:56:06 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, sjenning@linux.vnet.ibm.com,
+        dan.magenheimer@oracle.com, ngupta@vflare.org, minchan@kernel.org,
+        rcj@linux.vnet.ibm.com, linux-mm@kvack.org, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org
+Cc: akpm@linux-foundation.org
+Subject: [RFC PATCH] zcache2 cleanups (s/int/bool + debugfs movement). 
+Date: Mon,  5 Nov 2012 09:37:23 -0500
+Message-Id: <1352126254-28933-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2012 09:40 AM, Michal Zatloukal wrote:
-> On Sat, Nov 3, 2012 at 12:48 PM, Mike Galbraith<efault@gmx.de>  wrote:
->> On Sat, 2012-11-03 at 04:33 -0700, Mike Galbraith wrote:
->>> On Fri, 2012-11-02 at 21:09 +0100, Michal Zatloukal wrote:
+Looking at the zcache2 code there were a couple of things that I thought
+would make sense to move out of the code. For one thing it makes it easier
+to read, and for anoter - it can be cleanly compiled out. It also allows
+to have a clean seperation of counters that we _need_ vs the optional ones.
+Which means that in the future we could get rid of the optional ones.
 
->>> Your nice 19 tasks receiving 'too much' CPU when there are other
->>> runnable tasks around sounds like you have SCHED_AUTOGROUP enabled.
->>
->> (forgot to mention: if that's the case, you can add noautogroup to your
->> kernel command line to turn it off if distro turned it on in .config)
->>
->
-> Thanks, Ubuntu's kernel is indeed configured with that option enabled,
-> and passing "noautogroup" at grub restores the previous behaviour. I'm
-> back to happy days again :) BTW, isn't this the "magic 200-line patch"
-> I was reading about ~2 years ago?
+This patchset is based on the patchset that Dan sent out
+(https://lkml.org/lkml/2012/10/31/790). I've stuck
+them (and addressed some review comments) and put them in my branch:
 
-Yes.
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/mm.git devel/zcache.v3
 
-Chris
+I am going to repost the module loading some time later this week - Bob Liu had
+some comments that I want to address.
+
+So back to this patchset - it fixes some outstanding compile warnings, cleans
+up some of the code, and rips out the debug counters out of zcache-main.c
+and sticks them in a debug.c file.
+
+I was hoping it would end up with less code, but sadly it ended up with
+a bit more due to the empty non-debug functions.
+
+ drivers/staging/ramster/Kconfig       |    8 +
+ drivers/staging/ramster/Makefile      |    1 +
+ drivers/staging/ramster/debug.c       |   66 ++++++
+ drivers/staging/ramster/debug.h       |  225 +++++++++++++++++++
+ drivers/staging/ramster/zcache-main.c |  384 ++++++++-------------------------
+ 5 files changed, 389 insertions(+), 295 deletions(-)
+
+Konrad Rzeszutek Wilk (11):
+      zcache2: s/int/bool/ on the various options.
+      zcache: Module license is defined twice.
+      zcache: Provide accessory functions for counter increase
+      zcache: Provide accessory functions for counter decrease.
+      zcache: The last of the atomic reads has now an accessory function.
+      zcache: Fix compile warnings due to usage of debugfs_create_size_t
+      zcache: Make the debug code use pr_debug
+      zcache: Move debugfs code out of zcache-main.c file.
+      zcache: Use an array to initialize/use debugfs attributes.
+      zcache: Move the last of the debugfs counters out
+      zcache: Coalesce all debug under CONFIG_ZCACHE2_DEBUG
+
