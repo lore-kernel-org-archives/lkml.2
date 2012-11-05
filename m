@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab2KFAOm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 19:14:42 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:54969 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab2KFAOk (ORCPT
+	id S932272Ab2KFAOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 19:14:52 -0500
+Received: from outmail015.snc4.facebook.com ([66.220.144.149]:35341 "EHLO
+	intmgw001.snc6.facebook.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753490Ab2KFAOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 19:14:40 -0500
+	Mon, 5 Nov 2012 19:14:50 -0500
+X-Greylist: delayed 1201 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Nov 2012 19:14:49 EST
+Date: Mon, 5 Nov 2012 15:54:43 -0800
+From: Arun Sharma <asharma@fb.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Paul Turner <pjt@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, John Stultz <john.stultz@linaro.org>,
+        Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, sanjay@google.com,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [RFC v2] Support volatile range for anon vma
+Message-ID: <20121105235443.GA27718@dev3310.snc6.facebook.com>
+References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
+ <20121031143524.0509665d.akpm@linux-foundation.org>
+ <CAPM31RKm89s6PaAnfySUD-f+eGdoZP6=9DHy58tx_4Zi8Z9WPQ@mail.gmail.com>
+ <CAHGf_=om34CQoPqgmVE5v8oVxntaJQ-bvFeEPMnfe_R+uvxqrQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1352129116.16194.10.camel@joe-AO722>
-References: <1352115282-8081-1-git-send-email-yamanetoshi@gmail.com>
-	<20121105131108.GC27238@kroah.com>
-	<1352128271.16194.8.camel@joe-AO722>
-	<20121105152231.GA4807@kroah.com>
-	<1352129116.16194.10.camel@joe-AO722>
-Date: Tue, 6 Nov 2012 09:14:39 +0900
-Message-ID: <CAOTypNTcAbteTS-ZEqBHLCc0Wa898jd8aLYdCHCxfxnendGcTg@mail.gmail.com>
-Subject: Re: [PATCH] staging/media: Use dev_ printks in go7007/s2250-loader.c
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, elezegarcia@gmail.com,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHGf_=om34CQoPqgmVE5v8oVxntaJQ-bvFeEPMnfe_R+uvxqrQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 12:25 AM, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2012-11-05 at 16:22 +0100, Greg Kroah-Hartman wrote:
->> On Mon, Nov 05, 2012 at 07:11:11AM -0800, Joe Perches wrote:
->> > On Mon, 2012-11-05 at 14:11 +0100, Greg Kroah-Hartman wrote:
->> > > On Mon, Nov 05, 2012 at 08:34:42PM +0900, YAMANE Toshiaki wrote:
->> > > > fixed below checkpatch warnings.
->> > > > - WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
->> > > > - WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
->> > > >
->> > > > Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
->> > > > ---
->> > > >  drivers/staging/media/go7007/s2250-loader.c |   35 ++++++++++++++-------------
->> > > >  1 file changed, 18 insertions(+), 17 deletions(-)
->> > >
->> > > Please note that I don't touch the drivers/staging/media/* files, so
->> > > copying me on these patches doesn't do anything :)
->> >
->> > Maybe:
->> >
->> >  MAINTAINERS |    1 +
->> >  1 files changed, 1 insertions(+), 0 deletions(-)
->> >
->> > diff --git a/MAINTAINERS b/MAINTAINERS
->> > index b062349..542a541 100644
->> > --- a/MAINTAINERS
->> > +++ b/MAINTAINERS
->> > @@ -6906,6 +6906,7 @@ T:    git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
->> >  L: devel@driverdev.osuosl.org
->> >  S: Supported
->> >  F: drivers/staging/
->> > +X: drivers/staging/media/
->>
->> Sure, that would be good, care to resend it with a signed-off-by: so I
->> can apply it?
->
-> It was just a nudge.
->
-> You're the nominal staging maintainer, if you choose not to
-> work on a specific directory under staging, I think you can
-> mark it in MAINTAINERS just as easily yourself.
+On Wed, Oct 31, 2012 at 06:56:05PM -0400, KOSAKI Motohiro wrote:
+> glibc malloc discard freed memory by using MADV_DONTNEED
+> as tcmalloc. and it is often a source of large performance decrease.
+> because of MADV_DONTNEED discard memory immediately and
+> right after malloc() call fall into page fault and pagesize memset() path.
+> then, using DONTNEED increased zero fill and cache miss rate.
 
-Thanks for all.
+The memcg based solution that I posted a few months ago is working well
+for us. We see significantly less cpu in zero'ing pages.
 
-I wait Mauro-san will pick the patches.
-And I will send the patches to the correct destination from the next time.
+Not everyone was comfortable with the security implications of recycling
+pages between processes in a memcg, although it was disabled by default
+and had to be explicitly opted-in.
 
+Also, memory allocators have a second motivation in using madvise: to
+create virtually contiguous regions of memory from a fragmented address 
+space, without increasing the RSS.
 
--- 
-
-Regards,
-
-YAMANE Toshiaki
+ -Arun
