@@ -1,47 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab2KELBG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 06:01:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:36108 "EHLO mga02.intel.com"
+	id S1753076Ab2KELHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 06:07:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19831 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752886Ab2KELBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 06:01:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,714,1344236400"; 
-   d="scan'208";a="237306355"
-Date: Mon, 5 Nov 2012 13:03:22 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Message-ID: <20121105110322.GD24532@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <1351928793-14375-3-git-send-email-mika.westerberg@linux.intel.com>
- <20121105105455.GD1385@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121105105455.GD1385@opensource.wolfsonmicro.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751721Ab2KELHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 06:07:53 -0500
+Subject: Re: [RFC v4+ hot_track 03/19] vfs: add I/O frequency update
+ function
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+In-Reply-To: <1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+	 <1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 05 Nov 2012 11:07:05 +0000
+Message-ID: <1352113625.2705.10.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 11:54:55AM +0100, Mark Brown wrote:
-> On Sat, Nov 03, 2012 at 09:46:32AM +0200, Mika Westerberg wrote:
-> 
-> > +	strlcpy(spi->modalias, acpi_device_hid(adev), sizeof(spi->modalias));
-> > +	if (info.gsi >= 0)
-> > +		spi->irq = acpi_register_gsi(&adev->dev, info.gsi,
-> > +					     info.triggering, info.polarity);
-> > +	request_module(spi->modalias);
-> 
-> request_module()?  Why?
+Hi,
 
-The DT code does the same. I have no idea why it is there, really :-)
+On Mon, 2012-10-29 at 12:30 +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+>   Add some util helpers to update access frequencies
+> for one file or its range.
+> 
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> ---
+>  fs/hot_tracking.c            |  179 ++++++++++++++++++++++++++++++++++++++++++
+>  fs/hot_tracking.h            |    7 ++
+>  include/linux/hot_tracking.h |    2 +
+>  3 files changed, 188 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+> index 68591f0..0a7d9a3 100644
+> --- a/fs/hot_tracking.c
+> +++ b/fs/hot_tracking.c
+> @@ -172,6 +172,137 @@ static void hot_inode_tree_exit(struct hot_info *root)
+>  	}
+>  }
+>  
+> +struct hot_inode_item
+> +*hot_inode_item_find(struct hot_info *root, u64 ino)
+> +{
+> +	struct hot_inode_item *he;
+> +	int ret;
+> +
+> +again:
+> +	spin_lock(&root->lock);
+> +	he = radix_tree_lookup(&root->hot_inode_tree, ino);
+> +	if (he) {
+> +		kref_get(&he->hot_inode.refs);
+> +		spin_unlock(&root->lock);
+> +		return he;
+> +	}
+> +	spin_unlock(&root->lock);
+> +
+> +	he = kmem_cache_zalloc(hot_inode_item_cachep,
+> +				GFP_KERNEL | GFP_NOFS);
+This doesn't look quite right... which of these two did you mean? I
+assume probably just GFP_NOFS
 
-I can remove it in the next version if you think it is not needed.
+> +	if (!he)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	hot_inode_item_init(he, ino, &root->hot_inode_tree);
+> +
+> +	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
+> +	if (ret) {
+> +		kmem_cache_free(hot_inode_item_cachep, he);
+> +		return ERR_PTR(ret);
+> +	}
+> +
+> +	spin_lock(&root->lock);
+> +	ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
+> +	if (ret == -EEXIST) {
+> +		kmem_cache_free(hot_inode_item_cachep, he);
+> +		spin_unlock(&root->lock);
+> +		radix_tree_preload_end();
+> +		goto again;
+> +	}
+> +	spin_unlock(&root->lock);
+> +	radix_tree_preload_end();
+> +
+> +	kref_get(&he->hot_inode.refs);
+> +	return he;
+> +}
+> +EXPORT_SYMBOL_GPL(hot_inode_item_find);
+> +
+> +static struct hot_range_item
+> +*hot_range_item_find(struct hot_inode_item *he,
+> +			u32 start)
+> +{
+> +	struct hot_range_item *hr;
+> +	int ret;
+> +
+> +again:
+> +	spin_lock(&he->lock);
+> +	hr = radix_tree_lookup(&he->hot_range_tree, start);
+> +	if (hr) {
+> +		kref_get(&hr->hot_range.refs);
+> +		spin_unlock(&he->lock);
+> +		return hr;
+> +	}
+> +	spin_unlock(&he->lock);
+> +
+> +	hr = kmem_cache_zalloc(hot_range_item_cachep,
+> +				GFP_KERNEL | GFP_NOFS);
+Likewise, here too.
+
+Steve.
+
+
+
