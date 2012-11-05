@@ -1,115 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab2KEKbe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:31:34 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37645 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041Ab2KEKbc (ORCPT
+	id S932121Ab2KEKbr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:31:47 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47160 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752886Ab2KEKbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:31:32 -0500
-Date: Mon, 5 Nov 2012 11:31:26 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: David Miller <davem@davemloft.net>
-Cc: pebolle@tiscali.nl, linux-kernel@vger.kernel.org, isdn@linux-pingi.de,
-        netdev@vger.kernel.org
-Subject: [PATCH 8/9] isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
-Message-ID: <20121105103126.GB5220@gmail.com>
-References: <20121103224832.GA24262@gmail.com>
- <1352024091.1434.17.camel@x61.thuisdomein>
- <20121104105332.GC27124@gmail.com>
- <20121104.123013.700345271120279281.davem@davemloft.net>
+	Mon, 5 Nov 2012 05:31:33 -0500
+Date: Mon, 5 Nov 2012 11:31:30 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: sameo@linux.intel.com, lrg@ti.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mfd: add TI TPS80031 mfd core driver
+Message-ID: <20121105103130.GB1385@opensource.wolfsonmicro.com>
+References: <1352108658-14289-1-git-send-email-ldewangan@nvidia.com>
+ <1352108658-14289-2-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mYCpIKhGyMATD0i+"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121104.123013.700345271120279281.davem@davemloft.net>
+In-Reply-To: <1352108658-14289-2-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Beware of Bigfoot!
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Does something like look like a better solution?
 
-Author: Lee Jones <lee.jones@linaro.org>
-Date:   Sat Nov 3 22:06:02 2012 +0100
+--mYCpIKhGyMATD0i+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-    isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
-    
-    It doesn't make much sense to enable ISDN services if you don't
-    intend to connect to a network. Therefore insisting that ISDN
-    depends on NETDEVICES seems logical. We can then remove any
-    guards mentioning NETDEVICES inside all subordinate drivers.
-    
-    This also has the nice side-effect of fixing the warning below
-    when ISDN_I4L && !CONFIG_NETDEVICES at compile time.
-    
-    This patch fixes:
-    drivers/isdn/i4l/isdn_common.c: In function ‘isdn_ioctl’:
-    drivers/isdn/i4l/isdn_common.c:1278:8: warning: unused variable ‘s’ [-Wunused-variable]
-    
-    Cc: Karsten Keil <isdn@linux-pingi.de>
-    Cc: netdev@vger.kernel.org
-    Signed-off-by: Lee Jones <lee.jones@linaro.org>
+On Mon, Nov 05, 2012 at 03:14:17PM +0530, Laxman Dewangan wrote:
 
-diff --git a/drivers/isdn/Kconfig b/drivers/isdn/Kconfig
-index a233ed5..86cd75a 100644
---- a/drivers/isdn/Kconfig
-+++ b/drivers/isdn/Kconfig
-@@ -4,7 +4,7 @@
- 
- menuconfig ISDN
- 	bool "ISDN support"
--	depends on NET
-+	depends on NET && NETDEVICES
- 	depends on !S390 && !UML
- 	---help---
- 	  ISDN ("Integrated Services Digital Network", called RNIS in France)
-diff --git a/drivers/isdn/i4l/Kconfig b/drivers/isdn/i4l/Kconfig
-index 2302fbe..9c6650e 100644
---- a/drivers/isdn/i4l/Kconfig
-+++ b/drivers/isdn/i4l/Kconfig
-@@ -6,7 +6,7 @@ if ISDN_I4L
- 
- config ISDN_PPP
- 	bool "Support synchronous PPP"
--	depends on INET && NETDEVICES
-+	depends on INET
- 	select SLHC
- 	help
- 	  Over digital connections such as ISDN, there is no need to
-diff --git a/drivers/isdn/i4l/isdn_common.c b/drivers/isdn/i4l/isdn_common.c
-index 8c610fa..e2a945e 100644
---- a/drivers/isdn/i4l/isdn_common.c
-+++ b/drivers/isdn/i4l/isdn_common.c
-@@ -1312,7 +1312,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
- 			} else
- 				return -EINVAL;
- 			break;
--#ifdef CONFIG_NETDEVICES
- 		case IIOCNETGPN:
- 			/* Get peer phone number of a connected
- 			 * isdn network interface */
-@@ -1322,7 +1321,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
- 				return isdn_net_getpeer(&phone, argp);
- 			} else
- 				return -EINVAL;
--#endif
- 		default:
- 			return -EINVAL;
- 		}
-@@ -1352,7 +1350,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
- 		case IIOCNETLCR:
- 			printk(KERN_INFO "INFO: ISDN_ABC_LCR_SUPPORT not enabled\n");
- 			return -ENODEV;
--#ifdef CONFIG_NETDEVICES
- 		case IIOCNETAIF:
- 			/* Add a network-interface */
- 			if (arg) {
-@@ -1491,7 +1488,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
- 				return -EFAULT;
- 			return isdn_net_force_hangup(name);
- 			break;
--#endif                          /* CONFIG_NETDEVICES */
- 		case IIOCSETVER:
- 			dev->net_verbose = arg;
- 			printk(KERN_INFO "isdn: Verbose-Level is %d\n", dev->net_verbose);
+Looks pretty good, a few smaller issues though.
+
+> +static bool is_volatile_reg_id0(struct device *dev, unsigned int reg)
+> +{
+> +	return false;
+> +}
+
+This is the default for all registers, you should not need to provide
+a function like this.
+
+> +	dev_info(&client->dev, "Jtag version 0x%02x and Eprom version 0x%02x\n",
+> +					jtag_ver, ep_ver);
+
+EPROM is an acronym.  For TI devices I think normally the ES revision
+is referred to as just that, otherwise JTAG is an acronym too.
+
+> +	if (client->irq) {
+> +		ret = tps80031_irq_init(tps80031, client->irq, pdata->irq_base);
+> +		if (ret) {
+> +			dev_err(&client->dev, "IRQ init failed: %d\n", ret);
+> +			goto fail_client_reg;
+> +		}
+> +	}
+
+Since for current kernel versions we're using irqdomains we can set up
+all the interrupts without an irq.  It can make life easier to just
+always set up the interrupt controller so drivers don't need to worry
+about it.
+
+> +	ret = mfd_add_devices(tps80031->dev, -1,
+> +			tps80031_cell, ARRAY_SIZE(tps80031_cell),
+> +			NULL, tps80031->irq_base,
+> +			regmap_irq_get_domain(tps80031->irq_data));
+
+If you're supplying a domain you shouldn't need to provide an irq_base,
+the domain fulfuls the same role better.
+
+> +static int __devexit tps80031_remove(struct i2c_client *client)
+> +{
+> +	struct tps80031 *tps80031 = i2c_get_clientdata(client);
+> +	int i;
+> +
+> +	mfd_remove_devices(tps80031->dev);
+> +
+> +	if (client->irq)
+> +		free_irq(client->irq, tps80031);
+
+regmap_irq_exit()
+
+> +#ifdef CONFIG_PM_SLEEP
+> +static int tps80031_suspend(struct device *dev)
+> +{
+> +	struct i2c_client *client = to_i2c_client(dev);
+> +
+> +	if (client->irq)
+> +		disable_irq(client->irq);
+
+The interrupt core should take care of this for you if it's important,
+and note that people often use things like RTC alarms to wake the
+system.
+
+--mYCpIKhGyMATD0i+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQl5U0AAoJELSic+t+oim9sHQP/jnGOWtYHr7E7+IfkeV2MRAZ
+krsKOPWDfAawRbN84tRjzXUNXlVffXmS3pYy48nxTV8PXQZ9p1UOvIRzVNFAwGGf
+6B43IaO5GFEo/qng9k/2oQ8Q2864mjVKwdbYhx+7ttdLc5Mv0oLYSn6Nx71t+C0J
+NCoObAXyKvpQ3yDevNc8Xms6rc/ZV3S138glTbCR7ixvE1jCaJPuB3xZiPrFyN6/
+jeaMo3b/m60nsWBqoMfFnz+vXrF0NUd6WwLbRno8eDoRpzg+aSbgUFX1bF+9GRGQ
+ribAiCVkHr39A21c7h8M5UzSbPsC12KoknJQeSMPMObljsnz3z49wesS5yOJZ8YB
+MdR3SLwq1TpulFboPYBoG9JTHnAzfQQRS86DkekhVsAjZ9Vgbb/RFbe+MPL8I77R
+VCxjGuz+BnXDy1wNzx3sDXcl3viVCWTn3yQHFI6ttrzvika1FYkbGaRNp6c4Zb6b
+l5gOB1LUGKoOnNjkGNoj/IqGG08WS6Qq8ux/z6RWNl2fwj1XNXffLHrRsSoE/yje
+F64K/lO6CedZfOT6DE9I2K5nzxeE8Z4Z0dU56mJGj+I+ejKXu7gLSe1a8yMZZw2g
+zz+XmAR7D9w0X/riq5hv69KIzr7Kpc7n9sdlTTofKq+msv4Y+1FzQcaL1K51bFrs
+RpAzsMAE2vxjModgLnrY
+=jgt4
+-----END PGP SIGNATURE-----
+
+--mYCpIKhGyMATD0i+--
