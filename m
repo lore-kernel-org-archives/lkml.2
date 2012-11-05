@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933001Ab2KEUmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 15:42:11 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:53037 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932222Ab2KEUmG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 15:42:06 -0500
+	id S1754849Ab2KEUnJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 15:43:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11574 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753893Ab2KEUnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 15:43:07 -0500
+Date: Mon, 5 Nov 2012 15:42:49 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
+        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Kees Cook <keescook@chromium.org>, Peter Jones <pjones@redhat.com>
+Subject: Re: Kdump with signed images
+Message-ID: <20121105204249.GG28720@redhat.com>
+References: <1351276649.18115.217.camel@falcor>
+ <20121101131003.GA14573@redhat.com>
+ <20121101135356.GA15659@redhat.com>
+ <1351780159.15708.17.camel@falcor>
+ <20121101144304.GA15821@redhat.com>
+ <20121101145225.GB10269@srcf.ucam.org>
+ <20121102132318.GA3300@redhat.com>
+ <87boffd727.fsf@xmission.com>
+ <20121105180353.GC28720@redhat.com>
+ <87mwyv96mn.fsf@xmission.com>
 MIME-Version: 1.0
-In-Reply-To: <20121105150326.3bbf69df@endymion.delvare>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
-	<20121105120219.GF24532@intel.com>
-	<20121105132350.59c6e4d9@endymion.delvare>
-	<1983976.4JKTfcThF7@vostro.rjw.lan>
-	<20121105131519.GG24532@intel.com>
-	<CACRpkdaZqka7g2ECAyD_bKhnoULhCP6cTJwMyEsTuVxiUiHy+A@mail.gmail.com>
-	<20121105150326.3bbf69df@endymion.delvare>
-Date: Mon, 5 Nov 2012 21:42:04 +0100
-Message-ID: <CACRpkda26Ms3kipp4gF9TtOZY_qw8Y0DjYeAg-MB7iOre6j7aA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rafael.j.wysocki@intel.com, grant.likely@secretlab.ca,
-        ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mwyv96mn.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 3:03 PM, Jean Delvare <khali@linux-fr.org> wrote:
-(...)
->> If the addresses are consecutive like ours it makes sense
->> to just instantiate one device and have the driver know that it will
->> also be able to access address +1, +2 ... +n. So is it possible
->> to group the consecutive related addresses after each other
->> here at the acpi-spi level and just create a single device?
->
-> We were actually discussing I2C here, although I admit not in the right
-> thread, and maybe some of this applies to SPI as well.
+On Mon, Nov 05, 2012 at 11:44:48AM -0800, Eric W. Biederman wrote:
+> Vivek Goyal <vgoyal@redhat.com> writes:
+> 
+> > On Fri, Nov 02, 2012 at 02:32:48PM -0700, Eric W. Biederman wrote:
+> >> 
+> >> It needs to be checked but /sbin/kexec should not use any functions that
+> >> trigger nss switch.  No user or password or host name lookup should be
+> >> happening.
+> >
+> > I also think that we don't call routines which trigger nss switch but
+> > be probably can't rely on that as somebody might introduce it in
+> > future. So we need more robust mechanism to prevent it than just code
+> > inspection.
+> 
+> The fact that we shouldn't use those routines is enough to let us
+> walk down a path where they are not used.  Either with a static glibc
+> linked told to use no nss modules (--enable-static-nss ?), or with
+> another more restricted libc.
 
-This is my typo. The AB8500 example is indeed I2C.
+Is there anything wrong with using uClibc? Trying to link again
+customized glibc (with --enable-static-nss) sounds just extra work for
+build environments. Are there know restricted libc or we need to create
+one with passing more compile time options to libc.
 
-> So if multiple slave addresses must be
-> supported, please do not limit this support to consecutive addresses.
+Instead of doing more work in an attempt to create restricted libc,
+it might be easier to just link against any already available
+restricted library.
 
-I buy that ... in Nomadik we even have an instance of a single device
-with two discrete *physical* interfaces connected to it, on both of
-them it responds to the same address, but with totally different
-register layouts ... hardware engineers rule! :-)
-
-> There really is no reason to limit us that way anyway, as i2c-core
-> supports attaching any additional slave address to en existing
-> i2c_client using i2c_new_dummy().
-
-Yes, this is how we do it in AB8500. We just take advantage of
-the fact that the addresses are consecutive.
-
-> Note for DDR3 DIMM SPD chips we currently have two different drivers
-> handling the two slave addresses (eeprom/at24 and jc42.) I don't know
-> if this is something that could be instantiated from ACPI. So it seems
-> we really have two different cases when a single chip replies to
-> multiple slave addresses: either they refer to the same function and we
-> want a single driver for all of them, or they are for unrelated
-> functions and we want separate drivers (and thus separate i2c_clients.)
-> Not sure how we can always handle that properly on the ACPI side.
-
-If they can be accessed concurrently and do not share
-any locks or code they should be separate I think?
-When they have strong dependencies we immediately sort of
-fall into the MFD class where you need a mediator I think.
-
->> If the addresses are not consecutive I guess you need to have
->> one device driver bind to several devices and return -EPROBE_DEFER
->> until the driver has been probed for all of them or something like
->> that, this is what multi-block GPIO drivers sometimes do.
->
-> Consecutive or not makes no difference really, as long as the driver
-> can deduce the additional addresses from the main address or register
-> contents accessible from the main address. This has always been the
-> case so far.
-
-You're right.
-
-Yours,
-Linus Walleij
+Thanks
+Vivek
