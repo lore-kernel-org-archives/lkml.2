@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab2KEMwL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:52:11 -0500
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:33462 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab2KEMwI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:52:08 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnisAPG1l1BV5h1yPGdsb2JhbABEhS6FI7diAgKBCBkBAQEBHxkNJ4IeAQEEAScTHCMQCAMtGRQNGAoaExuHXQMJCrA0DYlUFIsFcjCBDYFEglBhA5QmgVSFe4U5iAGBYxeBIQ
-X-IronPort-AV: E=Sophos;i="4.80,715,1344204000"; 
-   d="scan'208";a="223738725"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 5 Nov 2012 13:57:31 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 11/11] HID: hid-multitouch: get rid of usbhid
- depedency for general path
-Message-ID: <20121105125731.GA814@polaris.bitmath.org>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
- <1351241067-9521-12-git-send-email-benjamin.tissoires@gmail.com>
- <20121029225748.GA15632@polaris.bitmath.org>
- <CAN+gG=GNucfg4-wCBZQtz0yJDjpTD_56Js3d68nm8VFi1UhZAA@mail.gmail.com>
+	id S1753681Ab2KEMzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:55:15 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:55760 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751439Ab2KEMzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 07:55:13 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jean Delvare <khali@linux-fr.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, rafael.j.wysocki@intel.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, ben-linux@fluff.org, w.sang@pengutronix.de,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+Date: Mon, 05 Nov 2012 13:59:23 +0100
+Message-ID: <1983976.4JKTfcThF7@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20121105132350.59c6e4d9@endymion.delvare>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <20121105120219.GF24532@intel.com> <20121105132350.59c6e4d9@endymion.delvare>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+gG=GNucfg4-wCBZQtz0yJDjpTD_56Js3d68nm8VFi1UhZAA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
-
-> >> This patch factorizes the hid set_feature command by using
-> >> hid_device->hid_output_raw_report instead of direclty relying on
-> >> usbhid. This makes the driver usb independant.
-> >>
-> >> However I still can't remove the 2 usb related headers because the
-> >> function mt_resume has a specific patch for usb devices.
-> >>
-> >> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> >> ---
-> >>  drivers/hid/hid-multitouch.c | 63 ++++++++++++++++++++++++++------------------
-> >>  1 file changed, 37 insertions(+), 26 deletions(-)
-> >
-> > In my drawer, I have a patchset that aims to remove all usbhid
-> > dependence, from all the drivers. Perhaps the attached patch is
-> > something to consider here?
+On Monday, November 05, 2012 01:23:50 PM Jean Delvare wrote:
+> On Mon, 5 Nov 2012 14:02:19 +0200, Mika Westerberg wrote:
+> > On Mon, Nov 05, 2012 at 11:56:39AM +0100, Mark Brown wrote:
+> > > I've got practical systems where there are multiple buses physically
+> > > connected, though in practice almost always only one is actually used at
+> > > runtime when it's I2C and SPI there are some systems (usually with other
+> > > buses) where you might want to use more than one bus.  Not sure those
+> > > buses will fit in here though.
+> > 
+> > Yeah, I just went through DSDT table of one of our machines and found a
+> > device that actually has two I2CSerialBus connectors (and those are to the
+> > same controller). What I'm not sure is that is it used to select between
+> > two different addresses or doest the device really have two physical I2C
+> > connections.
 > 
-> yep, removing usbhid dependencies is a good thing.
-> See my review below :)
+> Neither would make sense from a hardware perspective.
 
-I have a tentative patch taking your comments into account, and it is
-likely that we want to go that way. However, as to not hold up your
-patchset, perhaps we could do without it for now.
+Well, interesting. :-)
 
-Regarding the hardwired usbhid dependency, I think the solution is to
-move that code to usbhid itself.
+I wonder what we're supposed to do with things like that?
+It looks like our patch [3/3] will use the last one found, but is that
+correct?  Should it use the first one instead, perhaps?
+
+That little conundrum aside, the observations above seem to indicate
+that we'd need a list of "serial" resources per struct acpi_device too.
 
 Thanks,
-Henrik
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
