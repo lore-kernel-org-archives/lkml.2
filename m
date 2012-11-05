@@ -1,280 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab2KEO4S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:56:18 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:38639 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932251Ab2KEO4Q convert rfc822-to-8bit (ORCPT
+	id S932673Ab2KEO52 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:57:28 -0500
+Received: from juliette.telenet-ops.be ([195.130.137.74]:42043 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932490Ab2KEO51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:56:16 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, sjenning@linux.vnet.ibm.com,
-        dan.magenheimer@oracle.com, ngupta@vflare.org, minchan@kernel.org,
-        rcj@linux.vnet.ibm.com, linux-mm@kvack.org, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org
-Cc: akpm@linux-foundation.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 06/11] zcache: Fix compile warnings due to usage of debugfs_create_size_t
-Date: Mon,  5 Nov 2012 09:37:29 -0500
-Message-Id: <1352126254-28933-7-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1352126254-28933-1-git-send-email-konrad.wilk@oracle.com>
-References: <1352126254-28933-1-git-send-email-konrad.wilk@oracle.com>
+	Mon, 5 Nov 2012 09:57:27 -0500
+Message-ID: <5097D3D2.9020407@acm.org>
+Date: Mon, 05 Nov 2012 15:57:22 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: Re: [patch,v2 05/10] sd: use alloc_disk_node
+References: <1351892763-21325-1-git-send-email-jmoyer@redhat.com> <1351892763-21325-6-git-send-email-jmoyer@redhat.com> <50954852.5050209@acm.org> <x497gq0cf54.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x497gq0cf54.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we compile we get tons of:
-include/linux/debugfs.h:80:16: note: expected ‘size_t *’ but argument is
-of type ‘long int *’
-drivers/staging/ramster/zcache-main.c:279:2: warning: passing argument 4
-of ‘debugfs_create_size_t’ from incompatible pointer type [enabled by d
-efault]
+On 11/05/12 15:12, Jeff Moyer wrote:
+> Bart Van Assche <bvanassche@acm.org> writes:
+>
+>> On 11/02/12 22:45, Jeff Moyer wrote:
+>>> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+>>> ---
+>>>    drivers/scsi/sd.c |    2 +-
+>>>    1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+>>> index 12f6fdf..8deb915 100644
+>>> --- a/drivers/scsi/sd.c
+>>> +++ b/drivers/scsi/sd.c
+>>> @@ -2714,7 +2714,7 @@ static int sd_probe(struct device *dev)
+>>>    	if (!sdkp)
+>>>    		goto out;
+>>>
+>>> -	gd = alloc_disk(SD_MINORS);
+>>> +	gd = alloc_disk_node(SD_MINORS, dev_to_node(dev));
+>>>    	if (!gd)
+>>>    		goto out_free;
+>>
+>> shost->numa_node can be another NUMA node than dev_to_node(dev). Have
+>> you considered using shost->numa_node here ?
+>
+> It can?  How?
 
-which is b/c we end up using 'unsigned' or 'unsigned long' instead
-of 'ssize_t'. So lets fix this up and use the proper type.
+E.g. if the LLD allows the user to specify the value of numa_node and 
+passes that value to scsi_host_alloc_node() (see also 
+http://lkml.org/lkml/2012/10/23/477 for further information).
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/staging/ramster/zcache-main.c |  135 +++++++++++++++++----------------
- 1 files changed, 68 insertions(+), 67 deletions(-)
+> Just so I'm clear, you're suggesting I use the scsi_device's host
+> pointer to get to the Scsi_Host, and that *will* be filled in that this
+> point, right?
 
-diff --git a/drivers/staging/ramster/zcache-main.c b/drivers/staging/ramster/zcache-main.c
-index 3402acc..1f354f2 100644
---- a/drivers/staging/ramster/zcache-main.c
-+++ b/drivers/staging/ramster/zcache-main.c
-@@ -132,23 +132,23 @@ static struct kmem_cache *zcache_obj_cache;
- static DEFINE_PER_CPU(struct zcache_preload, zcache_preloads) = { 0, };
- 
- /* we try to keep these statistics SMP-consistent */
--static long zcache_obj_count;
-+static ssize_t zcache_obj_count;
- static atomic_t zcache_obj_atomic = ATOMIC_INIT(0);
--static long zcache_obj_count_max;
-+static ssize_t zcache_obj_count_max;
- static inline void inc_zcache_obj_count(void)
- {
- 	zcache_obj_count = atomic_inc_return(&zcache_obj_atomic);
- 	if (zcache_obj_count > zcache_obj_count_max)
- 		zcache_obj_count_max = zcache_obj_count;
- }
--static long zcache_objnode_count;
-+static ssize_t zcache_objnode_count;
- static inline void dec_zcache_obj_count(void)
- {
- 	zcache_obj_count = atomic_dec_return(&zcache_obj_atomic);
- 	BUG_ON(zcache_obj_count < 0);
- };
- static atomic_t zcache_objnode_atomic = ATOMIC_INIT(0);
--static long zcache_objnode_count_max;
-+static ssize_t zcache_objnode_count_max;
- static inline void inc_zcache_objnode_count(void)
- {
- 	zcache_objnode_count = atomic_inc_return(&zcache_objnode_atomic);
-@@ -182,64 +182,65 @@ static inline void inc_zcache_pers_zbytes(unsigned clen)
- 	if (zcache_pers_zbytes > zcache_pers_zbytes_max)
- 		zcache_pers_zbytes_max = zcache_pers_zbytes;
- }
--static long zcache_eph_pageframes;
-+static ssize_t zcache_eph_pageframes;
- static inline void dec_zcache_pers_zbytes(unsigned zsize)
- {
- 	zcache_pers_zbytes = atomic_long_sub_return(zsize, &zcache_pers_zbytes_atomic);
- }
- static atomic_t zcache_eph_pageframes_atomic = ATOMIC_INIT(0);
--static long zcache_eph_pageframes_max;
-+static ssize_t zcache_eph_pageframes_max;
- static inline void inc_zcache_eph_pageframes(void)
- {
- 	zcache_eph_pageframes = atomic_inc_return(&zcache_eph_pageframes_atomic);
- 	if (zcache_eph_pageframes > zcache_eph_pageframes_max)
- 		zcache_eph_pageframes_max = zcache_eph_pageframes;
- };
--static long zcache_pers_pageframes;
-+static ssize_t zcache_pers_pageframes;
- static inline void dec_zcache_eph_pageframes(void)
- {
- 	zcache_eph_pageframes = atomic_dec_return(&zcache_eph_pageframes_atomic);
- };
- static atomic_t zcache_pers_pageframes_atomic = ATOMIC_INIT(0);
--static long zcache_pers_pageframes_max;
-+static ssize_t zcache_pers_pageframes_max;
- static inline void inc_zcache_pers_pageframes(void)
- {
- 	zcache_pers_pageframes = atomic_inc_return(&zcache_pers_pageframes_atomic);
- 	if (zcache_pers_pageframes > zcache_pers_pageframes_max)
- 		zcache_pers_pageframes_max = zcache_pers_pageframes;
- }
--static long zcache_pageframes_alloced;
-+static ssize_t zcache_pageframes_alloced;
- static inline void dec_zcache_pers_pageframes(void)
- {
- 	zcache_pers_pageframes = atomic_dec_return(&zcache_pers_pageframes_atomic);
- }
- static atomic_t zcache_pageframes_alloced_atomic = ATOMIC_INIT(0);
-+static ssize_t zcache_pageframes_freed;
-+static atomic_t zcache_pageframes_freed_atomic = ATOMIC_INIT(0);
-+static ssize_t zcache_eph_zpages;
- static inline void inc_zcache_pageframes_alloced(void)
- {
- 	zcache_pageframes_alloced = atomic_inc_return(&zcache_pageframes_alloced_atomic);
- };
--static long zcache_pageframes_freed;
--static atomic_t zcache_pageframes_freed_atomic = ATOMIC_INIT(0);
- static inline void inc_zcache_pageframes_freed(void)
- {
- 	zcache_pageframes_freed = atomic_inc_return(&zcache_pageframes_freed_atomic);
- }
--static long zcache_eph_zpages;
-+static ssize_t zcache_eph_zpages;
- static atomic_t zcache_eph_zpages_atomic = ATOMIC_INIT(0);
--static long zcache_eph_zpages_max;
-+static ssize_t zcache_eph_zpages_max;
- static inline void inc_zcache_eph_zpages(void)
- {
- 	zcache_eph_zpages = atomic_inc_return(&zcache_eph_zpages_atomic);
- 	if (zcache_eph_zpages > zcache_eph_zpages_max)
- 		zcache_eph_zpages_max = zcache_eph_zpages;
- }
--static long zcache_pers_zpages;
-+static ssize_t zcache_pers_zpages;
- static inline void dec_zcache_eph_zpages(unsigned zpages)
- {
- 	zcache_eph_zpages = atomic_sub_return(zpages, &zcache_eph_zpages_atomic);
- }
- static atomic_t zcache_pers_zpages_atomic = ATOMIC_INIT(0);
--static long zcache_pers_zpages_max;
-+static ssize_t zcache_pers_zpages_max;
- static inline void inc_zcache_pers_zpages(void)
- {
- 	zcache_pers_zpages = atomic_inc_return(&zcache_pers_zpages_atomic);
-@@ -259,29 +260,29 @@ static inline unsigned long curr_pageframes_count(void)
- 		atomic_read(&zcache_pers_pageframes_atomic);
- };
- /* but for the rest of these, counting races are ok */
--static unsigned long zcache_flush_total;
--static unsigned long zcache_flush_found;
--static unsigned long zcache_flobj_total;
--static unsigned long zcache_flobj_found;
--static unsigned long zcache_failed_eph_puts;
--static unsigned long zcache_failed_pers_puts;
--static unsigned long zcache_failed_getfreepages;
--static unsigned long zcache_failed_alloc;
--static unsigned long zcache_put_to_flush;
--static unsigned long zcache_compress_poor;
--static unsigned long zcache_mean_compress_poor;
--static unsigned long zcache_eph_ate_tail;
--static unsigned long zcache_eph_ate_tail_failed;
--static unsigned long zcache_pers_ate_eph;
--static unsigned long zcache_pers_ate_eph_failed;
--static unsigned long zcache_evicted_eph_zpages;
--static unsigned long zcache_evicted_eph_pageframes;
--static unsigned long zcache_last_active_file_pageframes;
--static unsigned long zcache_last_inactive_file_pageframes;
--static unsigned long zcache_last_active_anon_pageframes;
--static unsigned long zcache_last_inactive_anon_pageframes;
--static unsigned long zcache_eph_nonactive_puts_ignored;
--static unsigned long zcache_pers_nonactive_puts_ignored;
-+static ssize_t zcache_flush_total;
-+static ssize_t zcache_flush_found;
-+static ssize_t zcache_flobj_total;
-+static ssize_t zcache_flobj_found;
-+static ssize_t zcache_failed_eph_puts;
-+static ssize_t zcache_failed_pers_puts;
-+static ssize_t zcache_failed_getfreepages;
-+static ssize_t zcache_failed_alloc;
-+static ssize_t zcache_put_to_flush;
-+static ssize_t zcache_compress_poor;
-+static ssize_t zcache_mean_compress_poor;
-+static ssize_t zcache_eph_ate_tail;
-+static ssize_t zcache_eph_ate_tail_failed;
-+static ssize_t zcache_pers_ate_eph;
-+static ssize_t zcache_pers_ate_eph_failed;
-+static ssize_t zcache_evicted_eph_zpages;
-+static ssize_t zcache_evicted_eph_pageframes;
-+static ssize_t zcache_last_active_file_pageframes;
-+static ssize_t zcache_last_inactive_file_pageframes;
-+static ssize_t zcache_last_active_anon_pageframes;
-+static ssize_t zcache_last_inactive_anon_pageframes;
-+static ssize_t zcache_eph_nonactive_puts_ignored;
-+static ssize_t zcache_pers_nonactive_puts_ignored;
- 
- #ifdef CONFIG_DEBUG_FS
- #include <linux/debugfs.h>
-@@ -351,41 +352,41 @@ static int zcache_debugfs_init(void)
- /* developers can call this in case of ooms, e.g. to find memory leaks */
- void zcache_dump(void)
- {
--	pr_info("zcache: obj_count=%lu\n", zcache_obj_count);
--	pr_info("zcache: obj_count_max=%lu\n", zcache_obj_count_max);
--	pr_info("zcache: objnode_count=%lu\n", zcache_objnode_count);
--	pr_info("zcache: objnode_count_max=%lu\n", zcache_objnode_count_max);
--	pr_info("zcache: flush_total=%lu\n", zcache_flush_total);
--	pr_info("zcache: flush_found=%lu\n", zcache_flush_found);
--	pr_info("zcache: flobj_total=%lu\n", zcache_flobj_total);
--	pr_info("zcache: flobj_found=%lu\n", zcache_flobj_found);
--	pr_info("zcache: failed_eph_puts=%lu\n", zcache_failed_eph_puts);
--	pr_info("zcache: failed_pers_puts=%lu\n", zcache_failed_pers_puts);
--	pr_info("zcache: failed_get_free_pages=%lu\n",
-+	pr_info("zcache: obj_count=%u\n", zcache_obj_count);
-+	pr_info("zcache: obj_count_max=%u\n", zcache_obj_count_max);
-+	pr_info("zcache: objnode_count=%u\n", zcache_objnode_count);
-+	pr_info("zcache: objnode_count_max=%u\n", zcache_objnode_count_max);
-+	pr_info("zcache: flush_total=%u\n", zcache_flush_total);
-+	pr_info("zcache: flush_found=%u\n", zcache_flush_found);
-+	pr_info("zcache: flobj_total=%u\n", zcache_flobj_total);
-+	pr_info("zcache: flobj_found=%u\n", zcache_flobj_found);
-+	pr_info("zcache: failed_eph_puts=%u\n", zcache_failed_eph_puts);
-+	pr_info("zcache: failed_pers_puts=%u\n", zcache_failed_pers_puts);
-+	pr_info("zcache: failed_get_free_pages=%u\n",
- 				zcache_failed_getfreepages);
--	pr_info("zcache: failed_alloc=%lu\n", zcache_failed_alloc);
--	pr_info("zcache: put_to_flush=%lu\n", zcache_put_to_flush);
--	pr_info("zcache: compress_poor=%lu\n", zcache_compress_poor);
--	pr_info("zcache: mean_compress_poor=%lu\n",
-+	pr_info("zcache: failed_alloc=%u\n", zcache_failed_alloc);
-+	pr_info("zcache: put_to_flush=%u\n", zcache_put_to_flush);
-+	pr_info("zcache: compress_poor=%u\n", zcache_compress_poor);
-+	pr_info("zcache: mean_compress_poor=%u\n",
- 				zcache_mean_compress_poor);
--	pr_info("zcache: eph_ate_tail=%lu\n", zcache_eph_ate_tail);
--	pr_info("zcache: eph_ate_tail_failed=%lu\n",
-+	pr_info("zcache: eph_ate_tail=%u\n", zcache_eph_ate_tail);
-+	pr_info("zcache: eph_ate_tail_failed=%u\n",
- 				zcache_eph_ate_tail_failed);
--	pr_info("zcache: pers_ate_eph=%lu\n", zcache_pers_ate_eph);
--	pr_info("zcache: pers_ate_eph_failed=%lu\n",
-+	pr_info("zcache: pers_ate_eph=%u\n", zcache_pers_ate_eph);
-+	pr_info("zcache: pers_ate_eph_failed=%u\n",
- 				zcache_pers_ate_eph_failed);
--	pr_info("zcache: evicted_eph_zpages=%lu\n", zcache_evicted_eph_zpages);
--	pr_info("zcache: evicted_eph_pageframes=%lu\n",
-+	pr_info("zcache: evicted_eph_zpages=%u\n", zcache_evicted_eph_zpages);
-+	pr_info("zcache: evicted_eph_pageframes=%u\n",
- 				zcache_evicted_eph_pageframes);
--	pr_info("zcache: eph_pageframes=%lu\n", zcache_eph_pageframes);
--	pr_info("zcache: eph_pageframes_max=%lu\n", zcache_eph_pageframes_max);
--	pr_info("zcache: pers_pageframes=%lu\n", zcache_pers_pageframes);
--	pr_info("zcache: pers_pageframes_max=%lu\n",
-+	pr_info("zcache: eph_pageframes=%u\n", zcache_eph_pageframes);
-+	pr_info("zcache: eph_pageframes_max=%u\n", zcache_eph_pageframes_max);
-+	pr_info("zcache: pers_pageframes=%u\n", zcache_pers_pageframes);
-+	pr_info("zcache: pers_pageframes_max=%u\n",
- 				zcache_pers_pageframes_max);
--	pr_info("zcache: eph_zpages=%lu\n", zcache_eph_zpages);
--	pr_info("zcache: eph_zpages_max=%lu\n", zcache_eph_zpages_max);
--	pr_info("zcache: pers_zpages=%lu\n", zcache_pers_zpages);
--	pr_info("zcache: pers_zpages_max=%lu\n", zcache_pers_zpages_max);
-+	pr_info("zcache: eph_zpages=%u\n", zcache_eph_zpages);
-+	pr_info("zcache: eph_zpages_max=%u\n", zcache_eph_zpages_max);
-+	pr_info("zcache: pers_zpages=%u\n", zcache_pers_zpages);
-+	pr_info("zcache: pers_zpages_max=%u\n", zcache_pers_zpages_max);
- 	pr_info("zcache: eph_zbytes=%llu\n",
- 				(unsigned long long)zcache_eph_zbytes);
- 	pr_info("zcache: eph_zbytes_max=%llu\n",
--- 
-1.7.7.6
+As far as I can see the sdev->host pointer is set in scsi_alloc_sdev() 
+and that happens before sd_probe() is invoked.
+
+Bart.
 
