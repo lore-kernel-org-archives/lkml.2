@@ -1,93 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab2KEEDU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 23:03:20 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:39788 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab2KEEDT (ORCPT
+	id S1751991Ab2KEEOx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 23:14:53 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:38722 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab2KEEOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 23:03:19 -0500
-Date: Mon, 5 Nov 2012 15:03:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: linux-next: manual merge of the signal tree with the cortex tree
-Message-Id: <20121105150307.05dc233ef299ab73df5dbf89@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_Nov_2012_15_03_07_+1100_4k0_DeIE0Zk2J_R/"
+	Sun, 4 Nov 2012 23:14:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <CANN689HXoCMTP4ZRMUNOGAdOBmizKyo6jMqbqAFx8wwPXp+AzQ@mail.gmail.com>
+References: <508086DA.3010600@oracle.com>
+	<5089A05E.7040000@gmail.com>
+	<CA+1xoqf2v_jEapwU68BzXyi4abSRmi_=AiaJVHM3dBbHtsBnqQ@mail.gmail.com>
+	<CAA_GA1d-rw_vkDF98fcf9E0=h86dsp+83-0_RE5b482juxaGVw@mail.gmail.com>
+	<CANN689HXoCMTP4ZRMUNOGAdOBmizKyo6jMqbqAFx8wwPXp+AzQ@mail.gmail.com>
+Date: Mon, 5 Nov 2012 12:14:50 +0800
+Message-ID: <CAA_GA1eYHi4zWZwKp5KGi4gP7V8bfnSF=aLKMiN-Wi5JyLaCdw@mail.gmail.com>
+Subject: Re: mm: NULL ptr deref in anon_vma_interval_tree_verify
+From: Bob Liu <lliubbo@gmail.com>
+To: Michel Lespinasse <walken@google.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, hughd@google.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: multipart/mixed; boundary=0016e6dd8b70011bd204cdb7ba25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_Nov_2012_15_03_07_+1100_4k0_DeIE0Zk2J_R/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+--0016e6dd8b70011bd204cdb7ba25
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-Hi Al,
+On Mon, Nov 5, 2012 at 11:31 AM, Michel Lespinasse <walken@google.com> wrot=
+e:
+> On Sun, Nov 4, 2012 at 6:20 PM, Bob Liu <lliubbo@gmail.com> wrote:
+>> The loop for each entry of vma->anon_vma_chain in validate_mm() is not
+>> protected by anon_vma lock.
+>> I think that may be the cause.
+>>
+>> Michel, What's your opinion=EF=BC=9F
+>
+> Good catch, I think that's it. Somehow it had not occured to me to
 
-Today's linux-next merge of the signal tree got a conflict in
-arch/arm/kernel/process.c between commit 77a3018e38b9 ("Cortex-M3: Add
-support for exception handling") from the cortex tree and commit
-9e6479930021 ("arm: switch to generic fork/vfork/clone") from the signal
-tree.
+Hmm, I attached a simple fix patch.
+Sasha,
+Could you have a test to see whether it can fix your issue?
 
-I fixed it up (I think - see below) and can carry the fix as necessary
-(no action is required).
+Thanks,
+-Bob
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+--0016e6dd8b70011bd204cdb7ba25
+Content-Type: application/octet-stream; 
+	name="0001-mm-add-anon_vma_lock-to-validate_mm.patch"
+Content-Disposition: attachment; 
+	filename="0001-mm-add-anon_vma_lock-to-validate_mm.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h952n1cl0
 
-diff --cc arch/arm/kernel/process.c
-index 585b9ab,4ab80bb..0000000
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@@ -384,14 -383,11 +384,15 @@@ copy_thread(unsigned long clone_flags,=20
- =20
-  	memset(&thread->cpu_context, 0, sizeof(struct cpu_context_save));
- =20
-- 	if (likely(regs)) {
-- 		*childregs =3D *regs;
-+ 	if (likely(!(p->flags & PF_KTHREAD))) {
-+ 		*childregs =3D *current_pt_regs();
-  		childregs->ARM_r0 =3D 0;
-- 		childregs->ARM_sp =3D stack_start;
-+ 		if (stack_start)
-+ 			childregs->ARM_sp =3D stack_start;
- +#if defined CONFIG_CPU_V7M
- +		/* Return to Thread mode with Process stack */
- +		childregs->ARM_EXC_RET =3D 0xfffffffdUL;
- +#endif
-  	} else {
-  		memset(childregs, 0, sizeof(struct pt_regs));
-  		thread->cpu_context.r4 =3D stk_sz;
-
---Signature=_Mon__5_Nov_2012_15_03_07_+1100_4k0_DeIE0Zk2J_R/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQlzp7AAoJEECxmPOUX5FEks8P/1/0l8k8SgkjS/k/kSGYUuOn
-aJWoD1fYBYq4PiY8wnkjq2UYwi1OaDDWTkPj/vqerc8gwGJKGBJB6d+Qy8vGoict
-zz9zC2Lx8k2LeSgDs7dIjYW+xP7pl12lkLp6GeotMPuLrs9mIQiHFw2AdKOG2BIb
-40zxQ8fKHqIWY6pY5Tv2Q5N8Gy7KjrUXQ4Wki+Vd0C70uiOLuerBzrJebLIif+XG
-EDGnV4RGTOY+yD9AXR0E2J52jwGxfy0QbxbZ3PpB6eC5cS7f07M5wYydrTs21YAA
-scgo1QB5eStt3dhrHj3kBDO3/VUQTTC0iZlzUkrf8g2ksaI29rogtti7LwIlZjPj
-XWzNcR9PspTLXW6XUHdGjg3wHzw8V7xIlliXYVQwGB4bsIpeDnT4THVmA8UL4aP6
-M2RRKnnB+56H+uG4EXKLR0V4hSDnGn/pWtREG6azYlTH2jgIB9o35a38itWFp6G0
-VNEUjiCOTB1xvEoSRQevmcmBYlxJOpnL2tiCze7gpP60toJx9jA/SIK2gqDsDmMU
-7grt5Q12AD9RKVI9stUUGEWEgqbI9Dwh3bzDJrak+G/XFf53a3VH4LfngKAzfLUD
-tk+sD0v8iCmMOvqZDm+FHWU0a+N+YWwxTedU54g+AqyzzW4jw/KIdo/8TrjG7D40
-Ri3IM9GRR/hq6oLVUIGx
-=KZwb
------END PGP SIGNATURE-----
-
---Signature=_Mon__5_Nov_2012_15_03_07_+1100_4k0_DeIE0Zk2J_R/--
+RnJvbSA4OWZmMTdiMzhiZWE5ODg5YzJkYjI0NGJhNzc0Y2JjYjg2Zjk4MTcwIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBCb2IgTGl1IDxsbGl1YmJvQGdtYWlsLmNvbT4KRGF0ZTogTW9u
+LCA1IE5vdiAyMDEyIDExOjQ4OjAwICswODAwClN1YmplY3Q6IFtQQVRDSF0gbW06IGFkZCBhbm9u
+X3ZtYV9sb2NrIHRvIHZhbGlkYXRlX21tKCkKCkl0ZXJhdGUgdm1hLT5hbm9uX3ZtYV9jaGFpbiB3
+aXRob3V0IGFub25fdm1hX2xvY2sgbWF5IGNhdXNlIE5VTEwgcHRyIGRlcmVmIGluCmFub25fdm1h
+X2ludGVydmFsX3RyZWVfdmVyaWZ5KCksIGJlY2F1c2UgdGhlIG5vZGUgaW4gdGhlIGNoYWluIG1p
+Z2h0IGhhdmUgYmVlbgpyZW1vdmVkLgoKWyAxNTIzLjY1Nzk1MF0gQlVHOiB1bmFibGUgdG8gaGFu
+ZGxlIGtlcm5lbCBwYWdpbmcgcmVxdWVzdCBhdCBmZmZmZmZmZmZmZmZmZmYwClsgMTUyMy42NjAw
+MjJdIElQOiBbPGZmZmZmZmZmODEyMmMyOWM+XSBhbm9uX3ZtYV9pbnRlcnZhbF90cmVlX3Zlcmlm
+eSsweGMvMHhhMApbIDE1MjMuNjYwMDIyXSBQR0QgNGUyODA2NyBQVUQgNGUyOTA2NyBQTUQgMApb
+IDE1MjMuNjc1NzI1XSBPb3BzOiAwMDAwIFsjMV0gUFJFRU1QVCBTTVAgREVCVUdfUEFHRUFMTE9D
+ClsgMTUyMy43NTAwNjZdIENQVSAwClsgMTUyMy43NTAwNjZdIFBpZDogOTA1MCwgY29tbTogdHJp
+bml0eS1jaGlsZDY0IFRhaW50ZWQ6IEcgICAgICAgIFcgICAgMy43LjAtcmMyLW5leHQtMjAxMjEw
+MjUtc2FzaGEtMDAwMDEtZzY3M2Y5OGUtZGlydHkgIzc3ClsgMTUyMy43NTAwNjZdIFJJUDogMDAx
+MDpbPGZmZmZmZmZmODEyMmMyOWM+XSAgWzxmZmZmZmZmZjgxMjJjMjljPl0gYW5vbl92bWFfaW50
+ZXJ2YWxfdHJlZV92ZXJpZnkrMHhjLzB4YTAKWyAxNTIzLjc1MDA2Nl0gUlNQOiAwMDE4OmZmZmY4
+ODAwNDVmODFkNDggIEVGTEFHUzogMDAwMTAyOTYKWyAxNTIzLjc1MDA2Nl0gUkFYOiAwMDAwMDAw
+MDAwMDAwMDAwIFJCWDogZmZmZmZmZmZmZmZmZmZmMCBSQ1g6IDAwMDAwMDAwMDAwMDAwMDAKWyAx
+NTIzLjc1MDA2Nl0gUkRYOiAwMDAwMDAwMDAwMDAwMDAwIFJTSTogMDAwMDAwMDAwMDAwMDAwMSBS
+REk6IGZmZmZmZmZmZmZmZmZmZjAKWyAxNTIzLjc1MDA2Nl0gUkJQOiBmZmZmODgwMDQ1ZjgxZDU4
+IFIwODogMDAwMDAwMDAwMDAwMDAwMCBSMDk6IDAwMDAwMDAwMDAwMDBmMTQKWyAxNTIzLjc1MDA2
+Nl0gUjEwOiAwMDAwMDAwMDAwMDAwZjEyIFIxMTogMDAwMDAwMDAwMDAwMDAwMCBSMTI6IGZmZmY4
+ODAwMDk2YzhkNzAKWyAxNTIzLjc1MDA2Nl0gUjEzOiBmZmZmODgwMDA5NmM4ZDAwIFIxNDogMDAw
+MDAwMDAwMDAwMDAwMCBSMTU6IGZmZmY4ODAwMDk1YjQ1ZTAKWyAxNTIzLjc1MDA2Nl0gRlM6ICAw
+MDAwN2Y3YTkyM2YzNzAwKDAwMDApIEdTOmZmZmY4ODAwMTM2MDAwMDAoMDAwMCkga25sR1M6MDAw
+MDAwMDAwMDAwMDAwMApbIDE1MjMuNzUwMDY2XSBDUzogIDAwMTAgRFM6IDAwMDAgRVM6IDAwMDAg
+Q1IwOiAwMDAwMDAwMDgwMDUwMDMzClsgMTUyMy43NTAwNjZdIENSMjogZmZmZmZmZmZmZmZmZmZm
+MCBDUjM6IDAwMDAwMDAwMDk2OWQwMDAgQ1I0OiAwMDAwMDAwMDAwMDQwNmYwClsgMTUyMy43NTAw
+NjZdIERSMDogMDAwMDAwMDAwMDAwMDAwMCBEUjE6IDAwMDAwMDAwMDAwMDAwMDAgRFIyOiAwMDAw
+MDAwMDAwMDAwMDAwClsgMTUyMy43NTAwNjZdIERSMzogMDAwMDAwMDAwMDAwMDAwMCBEUjY6IDAw
+MDAwMDAwZmZmZjBmZjAgRFI3OiAwMDAwMDAwMDAwMDAwNDAwClsgMTUyMy43NTAwNjZdIFByb2Nl
+c3MgdHJpbml0eS1jaGlsZDY0IChwaWQ6IDkwNTAsIHRocmVhZGluZm8gZmZmZjg4MDA0NWY4MDAw
+MCwgdGFzayBmZmZmODgwMDQ4ZWIwMDAwKQpbIDE1MjMuNzUwMDY2XSBTdGFjazoKWyAxNTIzLjc1
+MDA2Nl0gIGZmZmY4ODAwMGQ3NTMzZjAgZmZmZmZmZmZmZmZmZmZmMCBmZmZmODgwMDQ1ZjgxZGE4
+IGZmZmZmZmZmODEyMzYxZDgKWyAxNTIzLjc1MDA2Nl0gIGZmZmY4ODAwNDVmODFkOTggZmZmZjg4
+MDA0OGVlOTAwMCBmZmZmODgwMDA5NWI0NTgwIGZmZmY4ODAwMDk1YjQ1ODAKWyAxNTIzLjc1MDA2
+Nl0gIGZmZmY4ODAwMWQxY2RiMDAgZmZmZjg4MDAwOTViNDVmMCBmZmZmODgwMDIyYTRkNjMwIGZm
+ZmY4ODAwMDk1YjQ1ZTAKWyAxNTIzLjc1MDA2Nl0gQ2FsbCBUcmFjZToKWyAxNTIzLjc1MDA2Nl0g
+IFs8ZmZmZmZmZmY4MTIzNjFkOD5dIHZhbGlkYXRlX21tKzB4NTgvMHgxZTAKWyAxNTIzLjc1MDA2
+Nl0gIFs8ZmZmZmZmZmY4MTIzNmFhNT5dIHZtYV9hZGp1c3QrMHg2MzUvMHg2YjAKWyAxNTIzLjc1
+MDA2Nl0gIFs8ZmZmZmZmZmY4MTIzNmM4MT5dIF9fc3BsaXRfdm1hLmlzcmEuMjIrMHgxNjEvMHgy
+MjAKWyAxNTIzLjc1MDA2Nl0gIFs8ZmZmZmZmZmY4MTIzNzkzND5dIHNwbGl0X3ZtYSsweDI0LzB4
+MzAKWyAxNTIzLjc1MDA2Nl0gIFs8ZmZmZmZmZmY4MTIyY2U2YT5dIHN5c19tYWR2aXNlKzB4NWRh
+LzB4N2IwClsgMTUyMy43NTAwNjZdICBbPGZmZmZmZmZmODExY2QxNGM+XSA/IHJjdV9lcXNfZXhp
+dCsweDljLzB4YjAKWyAxNTIzLjc1MDA2Nl0gIFs8ZmZmZmZmZmY4MTE4MDJjZD5dID8gdHJhY2Vf
+aGFyZGlycXNfb24rMHhkLzB4MTAKWyAxNTIzLjc1MDA2Nl0gIFs8ZmZmZmZmZmY4M2FlZTE5OD5d
+IHRyYWNlc3lzKzB4ZTEvMHhlNgpbIDE1MjMuNzUwMDY2XSBDb2RlOiA0YyAwOSBmZiA0OCAzOSBj
+ZSA3NyA5ZSBmMyBjMyAwZiAxZiA0NCAwMCAwMCAzMSBjMCBjMyA2NiA2NiA2NiA2NiAyZSAwZiAx
+ZiA4NCAwMCAwMCAwMCAwMCAwMCA1NSA0OCA4OSBlNSA1Mwo0OCA4OSBmYiA0OCA4MyBlYyAwOCA8
+NDg+IDhiIDE3IDQ4IDhiIDhhIDkwIDAwIDAwIDAwIDQ4IDM5IDRmIDQwIDc0IDM0IDgwIDNkIGY3
+IDFmIDVjClsgMTUyMy43NTAwNjZdIFJJUCAgWzxmZmZmZmZmZjgxMjJjMjljPl0gYW5vbl92bWFf
+aW50ZXJ2YWxfdHJlZV92ZXJpZnkrMHhjLzB4YTAKWyAxNTIzLjc1MDA2Nl0gIFJTUCA8ZmZmZjg4
+MDA0NWY4MWQ0OD4KWyAxNTIzLjc1MDA2Nl0gQ1IyOiBmZmZmZmZmZmZmZmZmZmYwClsgMTUyMy43
+NTAwNjZdIC0tLVsgZW5kIHRyYWNlIGUzNWU1ZmE0OTA3MmZhZjkgXS0tLQoKUmVwb3J0ZWQtYnk6
+IFNhc2hhIExldmluIDxzYXNoYS5sZXZpbkBvcmFjbGUuY29tPgpTaWduZWQtb2ZmLWJ5OiBCb2Ig
+TGl1IDxsbGl1YmJvQGdtYWlsLmNvbT4KLS0tCiBtbS9tbWFwLmMgfCAgICAyICsrCiAxIGZpbGUg
+Y2hhbmdlZCwgMiBpbnNlcnRpb25zKCspCgpkaWZmIC0tZ2l0IGEvbW0vbW1hcC5jIGIvbW0vbW1h
+cC5jCmluZGV4IDJkOTQyMzUuLmNmMTg1MDIgMTAwNjQ0Ci0tLSBhL21tL21tYXAuYworKysgYi9t
+bS9tbWFwLmMKQEAgLTMzNCw4ICszMzQsMTAgQEAgdm9pZCB2YWxpZGF0ZV9tbShzdHJ1Y3QgbW1f
+c3RydWN0ICptbSkKIAlzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSA9IG1tLT5tbWFwOwogCXdo
+aWxlICh2bWEpIHsKIAkJc3RydWN0IGFub25fdm1hX2NoYWluICphdmM7CisJCWFub25fdm1hX2xv
+Y2sodm1hLT5hbm9uX3ZtYSk7CiAJCWxpc3RfZm9yX2VhY2hfZW50cnkoYXZjLCAmdm1hLT5hbm9u
+X3ZtYV9jaGFpbiwgc2FtZV92bWEpCiAJCQlhbm9uX3ZtYV9pbnRlcnZhbF90cmVlX3ZlcmlmeShh
+dmMpOworCQlhbm9uX3ZtYV91bmxvY2sodm1hLT5hbm9uX3ZtYSk7CiAJCXZtYSA9IHZtYS0+dm1f
+bmV4dDsKIAkJaSsrOwogCX0KLS0gCjEuNy45LjUKCg==
+--0016e6dd8b70011bd204cdb7ba25--
