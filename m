@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab2KEP3Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:29:16 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:48884 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908Ab2KEPXD (ORCPT
+	id S933033Ab2KEP3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:29:39 -0500
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:57223 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933013Ab2KEPXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:23:03 -0500
+	Mon, 5 Nov 2012 10:23:00 -0500
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v9 23/34] vfs: make getxattr retry once on an ESTALE error
-Date: Mon,  5 Nov 2012 10:22:02 -0500
-Message-Id: <1352128933-28526-24-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v9 21/34] vfs: allow setxattr to retry once on ESTALE errors
+Date: Mon,  5 Nov 2012 10:22:00 -0500
+Message-Id: <1352128933-28526-22-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
 References: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
@@ -24,30 +24,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/xattr.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ fs/xattr.c | 23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
 
 diff --git a/fs/xattr.c b/fs/xattr.c
-index 5a9ddba..42284fc 100644
+index f3a2ffa..5b6e48d 100644
 --- a/fs/xattr.c
 +++ b/fs/xattr.c
-@@ -486,12 +486,17 @@ SYSCALL_DEFINE4(getxattr, const char __user *, pathname,
+@@ -370,16 +370,21 @@ SYSCALL_DEFINE5(setxattr, const char __user *, pathname,
  {
  	struct path path;
- 	ssize_t error;
+ 	int error;
 +	unsigned int try = 0;
 +	unsigned int lookup_flags = LOOKUP_FOLLOW;
  
 -	error = user_path(pathname, &path);
 -	if (error)
 -		return error;
--	error = getxattr(path.dentry, name, value, size);
+-	error = mnt_want_write(path.mnt);
+-	if (!error) {
+-		error = setxattr(path.dentry, name, value, size, flags);
+-		mnt_drop_write(path.mnt);
+-	}
 -	path_put(&path);
 +	do {
 +		error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
 +		if (error)
 +			break;
-+		error = getxattr(path.dentry, name, value, size);
++		error = mnt_want_write(path.mnt);
++		if (!error) {
++			error = setxattr(path.dentry, name, value, size, flags);
++			mnt_drop_write(path.mnt);
++		}
 +		path_put(&path);
 +		lookup_flags |= LOOKUP_REVAL;
 +	} while (retry_estale(error, try++));
