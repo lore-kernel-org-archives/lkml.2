@@ -1,55 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab2KEOBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:01:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42281 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab2KEOBL (ORCPT
+	id S1753767Ab2KEODw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:03:52 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:15655 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab2KEODu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:01:11 -0500
-Message-ID: <5097C6A1.9000405@canonical.com>
-Date: Mon, 05 Nov 2012 15:01:05 +0100
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Thomas Hellstrom <thellstrom@vmware.com>
-CC: airlied@gmail.com, airlied@redhat.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 4/4] drm/ttm: Optimize reservation slightly
-References: <1352122278-12896-1-git-send-email-thellstrom@vmware.com> <1352122278-12896-5-git-send-email-thellstrom@vmware.com>
-In-Reply-To: <1352122278-12896-5-git-send-email-thellstrom@vmware.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 5 Nov 2012 09:03:50 -0500
+Date: Mon, 5 Nov 2012 15:03:26 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, rafael.j.wysocki@intel.com, grant.likely@secretlab.ca,
+        ben-linux@fluff.org, w.sang@pengutronix.de,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+Message-ID: <20121105150326.3bbf69df@endymion.delvare>
+In-Reply-To: <CACRpkdaZqka7g2ECAyD_bKhnoULhCP6cTJwMyEsTuVxiUiHy+A@mail.gmail.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+	<20121105120219.GF24532@intel.com>
+	<20121105132350.59c6e4d9@endymion.delvare>
+	<1983976.4JKTfcThF7@vostro.rjw.lan>
+	<20121105131519.GG24532@intel.com>
+	<CACRpkdaZqka7g2ECAyD_bKhnoULhCP6cTJwMyEsTuVxiUiHy+A@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+Hi Linus,
 
-Op 05-11-12 14:31, Thomas Hellstrom schreef:
-> Reservation locking currently always takes place under the LRU spinlock.
-> Hence, strictly there is no need for an atomic_cmpxchg call; we can use
-> atomic_read followed by atomic_write since nobody else will ever reserve
-> without the lru spinlock held.
-> At least on Intel this should remove a locked bus cycle on successful
-> reserve.
->
-> Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
->
-Is that really a good thing to submit when I am busy killing lru lock around reserve? :-)
+On Mon, 5 Nov 2012 14:20:52 +0100, Linus Walleij wrote:
+> On Mon, Nov 5, 2012 at 2:15 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> > On Mon, Nov 05, 2012 at 01:59:23PM +0100, Rafael J. Wysocki wrote:
+> >> On Monday, November 05, 2012 01:23:50 PM Jean Delvare wrote:
+> >> > On Mon, 5 Nov 2012 14:02:19 +0200, Mika Westerberg wrote:
+> >> > > On Mon, Nov 05, 2012 at 11:56:39AM +0100, Mark Brown wrote:
+> (...)
+> >> > > Yeah, I just went through DSDT table of one of our machines and found a
+> >> > > device that actually has two I2CSerialBus connectors (and those are to the
+> >> > > same controller). What I'm not sure is that is it used to select between
+> >> > > two different addresses or doest the device really have two physical I2C
+> >> > > connections.
+> >> >
+> >> > Neither would make sense from a hardware perspective.
+> >>
+> >> Well, interesting. :-)
+> >
+> > It looks like some PMICs for example have two I2C control interfaces, like
+> > TI's TWL6030 if I'm not mistaken. If both are put behind the same I2C
+> > controller with different address, you have the situation like above.
 
--	while (unlikely(atomic_cmpxchg(&bo->reserved, 0, 1) != 0)) {
-+	while (unlikely(atomic_xchg(&bo->reserved, 1) != 0)) {
+Ah, OK, if this is a degenerated case of a more complex initial design
+then yes it makes some sense. I had never met chips like that and did
+not know such chips existed.
 
-Works without lru lock too!
+That being said, from a software perspective, there is no difference
+between one or two I2C pin pairs being soldered. All we care about is
+which master they are ultimately connected to, and to which slave
+address(es) the chip replies.
 
-In fact mutexes are done in a similar way[1], except with some more magic, and unlocked state is 1, not 0.
-However I do think that to get that right (saves a irq disable in unlock path, and less wakeups in contended
-case), I should really just post the mutex extension patches for reservations and ride the flames. It's
-getting too close to real mutexes so I really want it to be a mutex in that case. So lets convert it.. Soon! :-)
+> This is quite common. So for example the AB8500 (drivers/mfd/ab8500-core.c)
+> has this. The reason is usually that the device has more than 256 registers
+> to the address space simply is not big enough.
 
-~Maarten
+This is completely different from the case being discussed above. Even
+the most complex addressing scheme can be implemented using a single
+hardware I2C interface. You can use 16-bit register addresses (if you
+can live without SMBus compatibility, AT24C32 and larger EEPROMs do
+that), or implement internal banks (using one of the registers as the
+bank selector, hardware monitoring chips do that), or you can use
+multiple slave addresses (AT24C04 to C16 EEPROMs do that.)
 
-[1] See linux/include/asm-generic/mutex-xchg.h and linux/include/asm-generic/mutex-dec.h for how
-archs generally implement mutex fastpaths.
+> What we do is refer to the subaddresses as "banks" and they happen
+> to always be at the next consecutive address so n+1.
+> 
+> So the same device appear behind several addresses just to support
+> a lot of registers.
+> 
+> So you're not actually modelling the devices on the other end but the
+> multiple addresses of a single device.
+> 
+> If the addresses are consecutive like ours it makes sense
+> to just instantiate one device and have the driver know that it will
+> also be able to access address +1, +2 ... +n. So is it possible
+> to group the consecutive related addresses after each other
+> here at the acpi-spi level and just create a single device?
 
+We were actually discussing I2C here, although I admit not in the right
+thread, and maybe some of this applies to SPI as well.
+
+There are I2C devices replying to multiple non-consecutive slave
+addresses. Most notably Winbond hardware monitoring chips replying to
+one address in 0x2c-0x2f and 2 addresses in 0x48-0x4f. And of course
+there are the DDR3 DIMM SPD chips which have an EEPROM at 0x50-0x57 and
+a thermal sensor at 0x18-0x1f. So if multiple slave addresses must be
+supported, please do not limit this support to consecutive addresses.
+There really is no reason to limit us that way anyway, as i2c-core
+supports attaching any additional slave address to en existing
+i2c_client using i2c_new_dummy().
+
+Note for DDR3 DIMM SPD chips we currently have two different drivers
+handling the two slave addresses (eeprom/at24 and jc42.) I don't know
+if this is something that could be instantiated from ACPI. So it seems
+we really have two different cases when a single chip replies to
+multiple slave addresses: either they refer to the same function and we
+want a single driver for all of them, or they are for unrelated
+functions and we want separate drivers (and thus separate i2c_clients.)
+Not sure how we can always handle that properly on the ACPI side.
+
+> If the addresses are not consecutive I guess you need to have
+> one device driver bind to several devices and return -EPROBE_DEFER
+> until the driver has been probed for all of them or something like
+> that, this is what multi-block GPIO drivers sometimes do.
+
+Consecutive or not makes no difference really, as long as the driver
+can deduce the additional addresses from the main address or register
+contents accessible from the main address. This has always been the
+case so far.
+
+-- 
+Jean Delvare
