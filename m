@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab2KENmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:42:23 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46011 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932302Ab2KENmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:42:22 -0500
-Message-ID: <1352122936.14769.4.camel@phoenix>
-Subject: [PATCH] pinctrl: u300: Staticize non-exported symbols
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 05 Nov 2012 21:42:16 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S932427Ab2KENmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:42:35 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:53263 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932302Ab2KENmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 08:42:32 -0500
+Message-ID: <5097C23B.3040808@parallels.com>
+Date: Mon, 5 Nov 2012 14:42:19 +0100
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <lizefan@huawei.com>, <mhocko@suse.cz>, <rjw@sisk.pl>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <fweisbec@gmail.com>
+Subject: Re: [PATCH 1/9] cgroup: add cgroup_subsys->post_create()
+References: <1351931915-1701-1-git-send-email-tj@kernel.org> <1351931915-1701-2-git-send-email-tj@kernel.org>
+In-Reply-To: <1351931915-1701-2-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Originating-IP: [88.2.49.79]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Staticize u300_pin_config_get() and u300_pin_config_set() functions.
+On 11/03/2012 09:38 AM, Tejun Heo wrote:
+> Currently, there's no way for a controller to find out whether a new
+> cgroup finished all ->create() allocatinos successfully and is
+> considered "live" by cgroup.
+> 
+> This becomes a problem later when we add generic descendants walking
+> to cgroup which can be used by controllers as controllers don't have a
+> synchronization point where it can synchronize against new cgroups
+> appearing in such walks.
+> 
+> This patch adds ->post_create().  It's called after all ->create()
+> succeeded and the cgroup is linked into the generic cgroup hierarchy.
+> This plays the counterpart of ->pre_destroy().
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Glauber Costa <glommer@parallels.com>
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/pinctrl/pinctrl-u300.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+Tejun, If we do it this way, we end up with two callbacks that are
+called after create: post_clone and post_create. I myself prefer the
+approach I took, that convert post_clone into post_create, and would
+prefer if you would pick that up.
 
-diff --git a/drivers/pinctrl/pinctrl-u300.c b/drivers/pinctrl/pinctrl-u300.c
-index 2e9825e..d756cce 100644
---- a/drivers/pinctrl/pinctrl-u300.c
-+++ b/drivers/pinctrl/pinctrl-u300.c
-@@ -1052,9 +1052,8 @@ static struct pinctrl_gpio_range *u300_match_gpio_range(unsigned pin)
- 	return NULL;
- }
- 
--int u300_pin_config_get(struct pinctrl_dev *pctldev,
--			unsigned pin,
--			unsigned long *config)
-+static int u300_pin_config_get(struct pinctrl_dev *pctldev, unsigned pin,
-+			       unsigned long *config)
- {
- 	struct pinctrl_gpio_range *range = u300_match_gpio_range(pin);
- 
-@@ -1067,9 +1066,8 @@ int u300_pin_config_get(struct pinctrl_dev *pctldev,
- 				    config);
- }
- 
--int u300_pin_config_set(struct pinctrl_dev *pctldev,
--			unsigned pin,
--			unsigned long config)
-+static int u300_pin_config_set(struct pinctrl_dev *pctldev, unsigned pin,
-+			       unsigned long config)
- {
- 	struct pinctrl_gpio_range *range = u300_match_gpio_range(pin);
- 	int ret;
--- 
-1.7.9.5
+For me, post_clone is totally a glitch that should not exist. Merging
+this with post_create gives the following semantics:
 
-
+* A while after cgroup creation, you will get a callback. In that
+callback, you do whatever initialization you may need that you could not
+in create. Why is reacting to a flag being set any different?
 
