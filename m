@@ -1,75 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab2KEKab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:30:31 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:59556 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab2KEKa1 (ORCPT
+	id S932083Ab2KEKbe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:31:34 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37645 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab2KEKbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:30:27 -0500
-Date: Mon, 5 Nov 2012 11:30:31 +0100
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Corentin Chary <corentincj@iksaif.net>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Matt Fleming <matt@console-pimps.org>,
-        Matthew Garrett <mjg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        Alessandro Crismani <alessandro.crismani@gmail.com>,
-        Mikhail Bakhterev <mike.bakhterev@gmail.com>,
-        Patrick H <kernel@feystorm.net>, Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] samsung-laptop: Disable if CONFIG_EFI=y
-Message-ID: <20121105103031.GA25659@kroah.com>
-References: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
- <CAHR064isMXk8qkqhBJ==9sRRP7xC_j_K5rqXApza-LNkosp5mg@mail.gmail.com>
- <20121104193741.7b4ca37b@pyramind.ukuu.org.uk>
- <CAHR064jwe=diZ9B-D+-SroCW1ZevkRDMosB7uDuc2VXZkFxmdA@mail.gmail.com>
+	Mon, 5 Nov 2012 05:31:32 -0500
+Date: Mon, 5 Nov 2012 11:31:26 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: David Miller <davem@davemloft.net>
+Cc: pebolle@tiscali.nl, linux-kernel@vger.kernel.org, isdn@linux-pingi.de,
+        netdev@vger.kernel.org
+Subject: [PATCH 8/9] isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
+Message-ID: <20121105103126.GB5220@gmail.com>
+References: <20121103224832.GA24262@gmail.com>
+ <1352024091.1434.17.camel@x61.thuisdomein>
+ <20121104105332.GC27124@gmail.com>
+ <20121104.123013.700345271120279281.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAHR064jwe=diZ9B-D+-SroCW1ZevkRDMosB7uDuc2VXZkFxmdA@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121104.123013.700345271120279281.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 09:12:01AM +0000, Corentin Chary wrote:
-> On Sun, Nov 4, 2012 at 7:37 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> >> Acked-by: Corentin Chary <corentin.chary@gmail.com>
-> >
-> > This is totally bogus and prevents users build a kernel which can work in
-> > either mode. As such its a regression.
-> 
-> Arg.. Sorry for that, I didn't realized that CONFIG_EFI=y was not
-> something rare these days.
-> 
-> > Do the detection check at runtime. If it was booted via EFI then don't
-> > grovel in places you shouldn't. Indeed its possible EFI should reserve
-> > those memory regions ?
-> 
-> I wonder how the windows driver works in this case.. Maybe they use
-> something completly different, and the SABI interface is still there
-> because nobody removed/disabled it ? In this case it's probably not a
-> good idea to use it on these machines since the implementation is
-> likely to be completly broken.
+Does something like look like a better solution?
 
-Odds are, the windows driver just isn't even loaded on the newer
-machines, as ACPI works just fine for this.  But, we don't have the
-option of shipping custom systems for different laptops like Samsung
-does, so we have to probe for this somehow.
+Author: Lee Jones <lee.jones@linaro.org>
+Date:   Sat Nov 3 22:06:02 2012 +0100
 
-Initally we were looking at the DMI strings for specific laptop models,
-but that got annoying as we had to keep adding new models.  So we now
-just check the memory locations for all Samsung laptops, which was
-working fine.
+    isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
+    
+    It doesn't make much sense to enable ISDN services if you don't
+    intend to connect to a network. Therefore insisting that ISDN
+    depends on NETDEVICES seems logical. We can then remove any
+    guards mentioning NETDEVICES inside all subordinate drivers.
+    
+    This also has the nice side-effect of fixing the warning below
+    when ISDN_I4L && !CONFIG_NETDEVICES at compile time.
+    
+    This patch fixes:
+    drivers/isdn/i4l/isdn_common.c: In function ‘isdn_ioctl’:
+    drivers/isdn/i4l/isdn_common.c:1278:8: warning: unused variable ‘s’ [-Wunused-variable]
+    
+    Cc: Karsten Keil <isdn@linux-pingi.de>
+    Cc: netdev@vger.kernel.org
+    Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-What is the problem if we try to access this memory on UEFI machines?
-What is the error that is caused?
-
-Is there any "this_is_a_uefi_system()" type call drivers can make to
-just opt-out if that call is true?
-
-thanks,
-
-greg k-h
+diff --git a/drivers/isdn/Kconfig b/drivers/isdn/Kconfig
+index a233ed5..86cd75a 100644
+--- a/drivers/isdn/Kconfig
++++ b/drivers/isdn/Kconfig
+@@ -4,7 +4,7 @@
+ 
+ menuconfig ISDN
+ 	bool "ISDN support"
+-	depends on NET
++	depends on NET && NETDEVICES
+ 	depends on !S390 && !UML
+ 	---help---
+ 	  ISDN ("Integrated Services Digital Network", called RNIS in France)
+diff --git a/drivers/isdn/i4l/Kconfig b/drivers/isdn/i4l/Kconfig
+index 2302fbe..9c6650e 100644
+--- a/drivers/isdn/i4l/Kconfig
++++ b/drivers/isdn/i4l/Kconfig
+@@ -6,7 +6,7 @@ if ISDN_I4L
+ 
+ config ISDN_PPP
+ 	bool "Support synchronous PPP"
+-	depends on INET && NETDEVICES
++	depends on INET
+ 	select SLHC
+ 	help
+ 	  Over digital connections such as ISDN, there is no need to
+diff --git a/drivers/isdn/i4l/isdn_common.c b/drivers/isdn/i4l/isdn_common.c
+index 8c610fa..e2a945e 100644
+--- a/drivers/isdn/i4l/isdn_common.c
++++ b/drivers/isdn/i4l/isdn_common.c
+@@ -1312,7 +1312,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
+ 			} else
+ 				return -EINVAL;
+ 			break;
+-#ifdef CONFIG_NETDEVICES
+ 		case IIOCNETGPN:
+ 			/* Get peer phone number of a connected
+ 			 * isdn network interface */
+@@ -1322,7 +1321,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
+ 				return isdn_net_getpeer(&phone, argp);
+ 			} else
+ 				return -EINVAL;
+-#endif
+ 		default:
+ 			return -EINVAL;
+ 		}
+@@ -1352,7 +1350,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
+ 		case IIOCNETLCR:
+ 			printk(KERN_INFO "INFO: ISDN_ABC_LCR_SUPPORT not enabled\n");
+ 			return -ENODEV;
+-#ifdef CONFIG_NETDEVICES
+ 		case IIOCNETAIF:
+ 			/* Add a network-interface */
+ 			if (arg) {
+@@ -1491,7 +1488,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
+ 				return -EFAULT;
+ 			return isdn_net_force_hangup(name);
+ 			break;
+-#endif                          /* CONFIG_NETDEVICES */
+ 		case IIOCSETVER:
+ 			dev->net_verbose = arg;
+ 			printk(KERN_INFO "isdn: Verbose-Level is %d\n", dev->net_verbose);
