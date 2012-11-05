@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab2KEIpB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 03:45:01 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60694 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753291Ab2KEIo7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 03:44:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121105082828.GJ29378@dastard>
-References: <CAEH94LjTedn0n00ZtqFxBL=kDA3u8G39q+x79-vPoMYvEKW1gw@mail.gmail.com>
-	<CAEH94LgUcAL6RquMZKTrDg87_0J2sEqTsDXUbnhrQ37KuMJ4sg@mail.gmail.com>
-	<1351891622.23963.4.camel@oc2046235844.ibm.com>
-	<CAEH94LiuKGPi+k=pA9P-FFsosnwG7PRBK5DjjaGf20S+pyrzpA@mail.gmail.com>
-	<20121105082828.GJ29378@dastard>
-Date: Mon, 5 Nov 2012 16:44:57 +0800
-Message-ID: <CAEH94LhbiHdsTCzsH6K8g3WH02_5-dnUPRZBCJW9vtpgAuuGtg@mail.gmail.com>
-Subject: Re: VFS hot tracking: How to calculate data temperature?
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: cmm@us.ibm.com, linux-fsdevel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        Ben Chociej <bchociej@gmail.com>,
-        James Northrup <northrup.james@gmail.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753446Ab2KEIqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 03:46:19 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:37613 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab2KEIqR convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Mon, 5 Nov 2012 03:46:17 -0500
+Message-Id: <50978AE402000078000A64A3@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 05 Nov 2012 08:46:12 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Rusty Russell" <rusty@rustcorp.com.au>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] utilize _Static_assert() for BUILD_BUG_ON() when
+ the compiler supports it
+References: <5093EB1C02000078000A61D7@nat28.tlf.novell.com>
+ <87pq3syeow.fsf@rustcorp.com.au>
+In-Reply-To: <87pq3syeow.fsf@rustcorp.com.au>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 4:28 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Mon, Nov 05, 2012 at 10:35:50AM +0800, Zhi Yong Wu wrote:
->> On Sat, Nov 3, 2012 at 5:27 AM, Mingming.cao <cmm@us.ibm.com> wrote:
->> > On Fri, 2012-11-02 at 14:38 +0800, Zhi Yong Wu wrote:
->> >> Here also has another question.
->> >>
->> >> How to save the file temperature among the umount to be able to
->> >> preserve the file tempreture after reboot?
->> >>
->> >> This above is the requirement from DB product.
->> >> I thought that we can save file temperature in its inode struct, that
->> >> is, add one new field in struct inode, then this info will be written
->> >> to disk with inode.
->> >>
->> >> Any comments or ideas are appreciated, thanks.
->> >>
->> >>
->> >
->> > Maybe could save the last file temperature with extended attributes.
->> It seems that only ext4 has the concept of extended attributes.
->
-> All major filesystems have xattr support. They are used extensively
-> by the security and integrity subsystems, for example.
-got it, thanks.
->
-> Saving the information might be something that is useful to certian
-> applications, but lets have the people that need that functionality
-> spell out their requirements before discussing how or what to
-> implement.  Indeed, discussion shoul dreally focus on getting the
-> core, in-memory infrastructure sorted out first before trying to
-> expand the functionality further...
-ah, but the latest patchset need some love from experienced FS guys:).......
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+>>> On 05.11.12 at 03:19, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Jan Beulich <JBeulich@suse.com> writes:
+>> @@ -54,6 +61,15 @@ struct pt_regs;
+>>   */
+>>  #ifndef __OPTIMIZE__
+>>  #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+>> +#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
+>> +#define __build_bug_on_failed(n) __build_bug_on_##n##_failed
+>> +#define _BUILD_BUG_ON(n, condition)				\
+>> +	do {							\
+>> +		extern void __compiletime_error(#condition)	\
+>> +		__build_bug_on_failed(n)(void);			\
+>> +		if (condition) __build_bug_on_failed(n)();	\
+>> +	} while(0)
+>> +#define BUILD_BUG_ON(condition...) _BUILD_BUG_ON(__COUNTER__, ##condition)
+>>  #else
+>>  extern int __build_bug_on_failed;
+>>  #define BUILD_BUG_ON(condition)					\
+> 
+> Why does this depend on gcc version?  Looks like residue from an attempt
+> to use _Static_assert here?
 
+That was the original hope, yes, but didn't work because of
+certain uses BUILD_BUG_ON() in inline functions. Hence the
+next best solution was to use __compiletime_error(), which
+still gives a better diagnostic than what we have so far, but is
+- see include/linux/compiler-gcc4.h - available only with gcc 4.3
+and newer (simply using the construct even when expanding to
+nothing - in include/linux/compile.h - wouldn't have the intended
+effect of producing a compiler diagnostic at all, it would get
+deferred to link time in _all_ cases, even if the compiler can tell
+it's a constant).
 
+Jan
 
--- 
-Regards,
-
-Zhi Yong Wu
