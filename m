@@ -1,208 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab2KEN45 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:56:57 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:54275 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932464Ab2KEN4F (ORCPT
+	id S1754383Ab2KEN5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:57:42 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46896 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932529Ab2KENxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:56:05 -0500
-From: Thomas Hellstrom <thellstrom@vmware.com>
-To: airlied@gmail.com, airlied@redhat.com
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>
-Subject: [PATCH 3/4] drm/ttm, drm/vmwgfx: Use RCU locking for object lookups v2
-Date: Mon,  5 Nov 2012 14:55:43 +0100
-Message-Id: <1352123744-13269-4-git-send-email-thellstrom@vmware.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1352123744-13269-1-git-send-email-thellstrom@vmware.com>
-References: <1352123744-13269-1-git-send-email-thellstrom@vmware.com>
+	Mon, 5 Nov 2012 08:53:20 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v2 07/16] perf: add generic memory sampling interface
+Date: Mon,  5 Nov 2012 14:50:54 +0100
+Message-Id: <1352123463-7346-8-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1352123463-7346-1-git-send-email-eranian@google.com>
+References: <1352123463-7346-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mostly used lookup+get put+potential_destroy path of TTM objects
-is converted to use RCU locks. This will substantially decrease the amount
-of locked bus cycles during normal operation.
-Since we use kfree_rcu to free the objects, no rcu synchronization is needed
-at module unload time.
+This patch adds PERF_SAMPLE_COST and PERF_SAMPLE_DSRC.
+The first collects a cost associated with the sampled
+event. In case of memory access, the cost would be
+the latency of the load, otherwise it defaults to
+the sampling period.
 
-v2: Don't touch include/linux/kref.h
+PERF_SAMPLE_DSRC collects the data source, i.e., where
+did the data associated with the sampled instruction
+come from. Information is stored in a perf_mem_dsrc
+structure. It contains opcode, mem level, tlb, snoop,
+lock information, subject to availability in hardware.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- drivers/gpu/drm/ttm/ttm_object.c         |   30 +++++++++++-------------------
- drivers/gpu/drm/vmwgfx/vmwgfx_resource.c |    8 ++++----
- include/drm/ttm/ttm_object.h             |    4 ++++
- 3 files changed, 19 insertions(+), 23 deletions(-)
+ include/linux/perf_event.h      |    2 ++
+ include/uapi/linux/perf_event.h |   69 +++++++++++++++++++++++++++++++++++++--
+ kernel/events/core.c            |    6 ++++
+ 3 files changed, 75 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_object.c b/drivers/gpu/drm/ttm/ttm_object.c
-index c785787..9d7f674 100644
---- a/drivers/gpu/drm/ttm/ttm_object.c
-+++ b/drivers/gpu/drm/ttm/ttm_object.c
-@@ -80,7 +80,7 @@ struct ttm_object_file {
-  */
- 
- struct ttm_object_device {
--	rwlock_t object_lock;
-+	spinlock_t object_lock;
- 	struct drm_open_hash object_hash;
- 	atomic_t object_count;
- 	struct ttm_mem_global *mem_glob;
-@@ -157,12 +157,12 @@ int ttm_base_object_init(struct ttm_object_file *tfile,
- 	base->refcount_release = refcount_release;
- 	base->ref_obj_release = ref_obj_release;
- 	base->object_type = object_type;
--	write_lock(&tdev->object_lock);
-+	spin_lock(&tdev->object_lock);
- 	kref_init(&base->refcount);
- 	ret = drm_ht_just_insert_please(&tdev->object_hash,
- 					&base->hash,
- 					(unsigned long)base, 31, 0, 0);
--	write_unlock(&tdev->object_lock);
-+	spin_unlock(&tdev->object_lock);
- 	if (unlikely(ret != 0))
- 		goto out_err0;
- 
-@@ -186,30 +186,22 @@ static void ttm_release_base(struct kref *kref)
- 	    container_of(kref, struct ttm_base_object, refcount);
- 	struct ttm_object_device *tdev = base->tfile->tdev;
- 
-+	spin_lock(&tdev->object_lock);
- 	(void)drm_ht_remove_item(&tdev->object_hash, &base->hash);
--	write_unlock(&tdev->object_lock);
-+	spin_unlock(&tdev->object_lock);
- 	if (base->refcount_release) {
- 		ttm_object_file_unref(&base->tfile);
- 		base->refcount_release(&base);
- 	}
--	write_lock(&tdev->object_lock);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index bb2429d..8fe4610 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -579,6 +579,7 @@ struct perf_sample_data {
+ 		u32	reserved;
+ 	}				cpu_entry;
+ 	u64				period;
++	union  perf_mem_dsrc		dsrc;
+ 	struct perf_callchain_entry	*callchain;
+ 	struct perf_raw_record		*raw;
+ 	struct perf_branch_stack	*br_stack;
+@@ -599,6 +600,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->regs_user.regs = NULL;
+ 	data->stack_user_size = 0;
+ 	data->weight = 0;
++	data->dsrc.val = 0;
  }
  
- void ttm_base_object_unref(struct ttm_base_object **p_base)
- {
- 	struct ttm_base_object *base = *p_base;
--	struct ttm_object_device *tdev = base->tfile->tdev;
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index c52caab..b2a78bb 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -133,9 +133,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_REGS_USER			= 1U << 12,
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
+ 	PERF_SAMPLE_WEIGHT			= 1U << 14,
++	PERF_SAMPLE_DSRC			= 1U << 15,
  
- 	*p_base = NULL;
- 
--	/*
--	 * Need to take the lock here to avoid racing with
--	 * users trying to look up the object.
--	 */
+-	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
 -
--	write_lock(&tdev->object_lock);
- 	kref_put(&base->refcount, ttm_release_base);
--	write_unlock(&tdev->object_lock);
++	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
+ };
+ 
+ /*
+@@ -591,6 +591,8 @@ enum perf_event_type {
+ 	 * 	{ u64			size;
+ 	 * 	  char			data[size];
+ 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
++	 *
++	 *	{ u64			dsrc;  } && PERF_SAMPLE_DSRC
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+@@ -616,4 +618,67 @@ enum perf_callchain_context {
+ #define PERF_FLAG_FD_OUTPUT		(1U << 1)
+ #define PERF_FLAG_PID_CGROUP		(1U << 2) /* pid=cgroup id, per-cpu mode only */
+ 
++union perf_mem_dsrc {
++	__u64 val;
++	struct {
++		__u64   mem_op:5,	/* type of opcode */
++			mem_lvl:14,	/* memory hierarchy level */
++			mem_snoop:5,	/* snoop mode */
++			mem_lock:2,	/* lock instr */
++			mem_dtlb:7,	/* tlb access */
++			mem_rsvd:31;
++	};
++};
++
++/* type of opcode (load/store/prefetch,code) */
++#define PERF_MEM_OP_NA		0x01 /* not available */
++#define PERF_MEM_OP_LOAD	0x02 /* load instruction */
++#define PERF_MEM_OP_STORE	0x04 /* store instruction */
++#define PERF_MEM_OP_PFETCH	0x08 /* prefetch */
++#define PERF_MEM_OP_EXEC	0x10 /* code (execution) */
++#define PERF_MEM_OP_SHIFT	0
++
++/* memory hierarchy (memory level, hit or miss) */
++#define PERF_MEM_LVL_NA		0x01  /* not available */
++#define PERF_MEM_LVL_HIT	0x02  /* hit level */
++#define PERF_MEM_LVL_MISS	0x04  /* miss level  */
++#define PERF_MEM_LVL_L1		0x08  /* L1 */
++#define PERF_MEM_LVL_LFB	0x10  /* Line Fill Buffer */
++#define PERF_MEM_LVL_L2		0x20  /* L2 hit */
++#define PERF_MEM_LVL_L3		0x40  /* L3 hit */
++#define PERF_MEM_LVL_LOC_RAM	0x80  /* Local DRAM */
++#define PERF_MEM_LVL_REM_RAM1	0x100 /* Remote DRAM (1 hop) */
++#define PERF_MEM_LVL_REM_RAM2	0x200 /* Remote DRAM (2 hops) */
++#define PERF_MEM_LVL_REM_CCE1	0x400 /* Remote Cache (1 hop) */
++#define PERF_MEM_LVL_REM_CCE2	0x800 /* Remote Cache (2 hops) */
++#define PERF_MEM_LVL_IO		0x1000 /* I/O memory */
++#define PERF_MEM_LVL_UNC	0x2000 /* Uncached memory */
++#define PERF_MEM_LVL_SHIFT	5
++
++/* snoop mode */
++#define PERF_MEM_SNOOP_NA	0x01 /* not available */
++#define PERF_MEM_SNOOP_NONE	0x02 /* no snoop */
++#define PERF_MEM_SNOOP_HIT	0x04 /* snoop hit */
++#define PERF_MEM_SNOOP_MISS	0x08 /* snoop miss */
++#define PERF_MEM_SNOOP_HITM	0x10 /* snoop hit modified */
++#define PERF_MEM_SNOOP_SHIFT	19
++
++/* locked instruction */
++#define PERF_MEM_LOCK_NA	0x01 /* not available */
++#define PERF_MEM_LOCK_LOCKED	0x02 /* locked transaction */
++#define PERF_MEM_LOCK_SHIFT	24
++
++/* TLB access */
++#define PERF_MEM_TLB_NA		0x01 /* not available */
++#define PERF_MEM_TLB_HIT	0x02 /* hit level */
++#define PERF_MEM_TLB_MISS	0x04 /* miss level */
++#define PERF_MEM_TLB_L1		0x08 /* L1 */
++#define PERF_MEM_TLB_L2		0x10 /* L2 */
++#define PERF_MEM_TLB_WK		0x20 /* Hardware Walker*/
++#define PERF_MEM_TLB_OS		0x40 /* OS fault handler */
++#define PERF_MEM_TLB_SHIFT	26
++
++#define PERF_MEM_S(a, s) \
++	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
++
+ #endif /* _UAPI_LINUX_PERF_EVENT_H */
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index d633581..94b2c70 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -958,6 +958,9 @@ static void perf_event__header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_READ)
+ 		size += event->read_size;
+ 
++	if (sample_type & PERF_SAMPLE_DSRC)
++		size += sizeof(data->dsrc.val);
++
+ 	event->header_size = size;
  }
- EXPORT_SYMBOL(ttm_base_object_unref);
  
-@@ -221,14 +213,14 @@ struct ttm_base_object *ttm_base_object_lookup(struct ttm_object_file *tfile,
- 	struct drm_hash_item *hash;
- 	int ret;
- 
--	read_lock(&tdev->object_lock);
-+	rcu_read_lock();
- 	ret = drm_ht_find_item(&tdev->object_hash, key, &hash);
- 
- 	if (likely(ret == 0)) {
- 		base = drm_hash_entry(hash, struct ttm_base_object, hash);
--		kref_get(&base->refcount);
-+		ret = kref_get_unless_zero(&base->refcount);
- 	}
--	read_unlock(&tdev->object_lock);
-+	rcu_read_unlock();
- 
- 	if (unlikely(ret != 0))
- 		return NULL;
-@@ -426,7 +418,7 @@ struct ttm_object_device *ttm_object_device_init(struct ttm_mem_global
- 		return NULL;
- 
- 	tdev->mem_glob = mem_glob;
--	rwlock_init(&tdev->object_lock);
-+	spin_lock_init(&tdev->object_lock);
- 	atomic_set(&tdev->object_count, 0);
- 	ret = drm_ht_create(&tdev->object_hash, hash_order);
- 
-@@ -444,9 +436,9 @@ void ttm_object_device_release(struct ttm_object_device **p_tdev)
- 
- 	*p_tdev = NULL;
- 
--	write_lock(&tdev->object_lock);
-+	spin_lock(&tdev->object_lock);
- 	drm_ht_remove(&tdev->object_hash);
--	write_unlock(&tdev->object_lock);
-+	spin_unlock(&tdev->object_lock);
- 
- 	kfree(tdev);
- }
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-index da3c6b5..ae675c6 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_resource.c
-@@ -351,7 +351,7 @@ static void vmw_user_context_free(struct vmw_resource *res)
- 	    container_of(res, struct vmw_user_context, res);
- 	struct vmw_private *dev_priv = res->dev_priv;
- 
--	kfree(ctx);
-+	ttm_base_object_kfree(ctx, base);
- 	ttm_mem_global_free(vmw_mem_glob(dev_priv),
- 			    vmw_user_context_size);
- }
-@@ -1147,7 +1147,7 @@ static void vmw_user_surface_free(struct vmw_resource *res)
- 	kfree(srf->offsets);
- 	kfree(srf->sizes);
- 	kfree(srf->snooper.image);
--	kfree(user_srf);
-+	ttm_base_object_kfree(user_srf, base);
- 	ttm_mem_global_free(vmw_mem_glob(dev_priv), size);
+@@ -4175,6 +4178,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 		perf_output_sample_ustack(handle,
+ 					  data->stack_user_size,
+ 					  data->regs_user.regs);
++
++	if (sample_type & PERF_SAMPLE_DSRC)
++		perf_output_put(handle, data->dsrc.val);
  }
  
-@@ -1575,7 +1575,7 @@ static void vmw_user_dmabuf_destroy(struct ttm_buffer_object *bo)
- {
- 	struct vmw_user_dma_buffer *vmw_user_bo = vmw_user_dma_buffer(bo);
- 
--	kfree(vmw_user_bo);
-+	ttm_base_object_kfree(vmw_user_bo, base);
- }
- 
- static void vmw_user_dmabuf_release(struct ttm_base_object **p_base)
-@@ -1763,7 +1763,7 @@ static void vmw_user_stream_free(struct vmw_resource *res)
- 	    container_of(res, struct vmw_user_stream, stream.res);
- 	struct vmw_private *dev_priv = res->dev_priv;
- 
--	kfree(stream);
-+	ttm_base_object_kfree(stream, base);
- 	ttm_mem_global_free(vmw_mem_glob(dev_priv),
- 			    vmw_user_stream_size);
- }
-diff --git a/include/drm/ttm/ttm_object.h b/include/drm/ttm/ttm_object.h
-index b01c563..fc0cf06 100644
---- a/include/drm/ttm/ttm_object.h
-+++ b/include/drm/ttm/ttm_object.h
-@@ -40,6 +40,7 @@
- #include <linux/list.h>
- #include <drm/drm_hashtab.h>
- #include <linux/kref.h>
-+#include <linux/rcupdate.h>
- #include <ttm/ttm_memory.h>
- 
- /**
-@@ -120,6 +121,7 @@ struct ttm_object_device;
-  */
- 
- struct ttm_base_object {
-+	struct rcu_head rhead;
- 	struct drm_hash_item hash;
- 	enum ttm_object_type object_type;
- 	bool shareable;
-@@ -268,4 +270,6 @@ extern struct ttm_object_device *ttm_object_device_init
- 
- extern void ttm_object_device_release(struct ttm_object_device **p_tdev);
- 
-+#define ttm_base_object_kfree(__object, __base)\
-+	kfree_rcu(__object, __base.rhead)
- #endif
+ void perf_prepare_sample(struct perf_event_header *header,
 -- 
-1.7.4.4
+1.7.9.5
 
