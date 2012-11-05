@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab2KEQJ1 (ORCPT <rfc822;w@1wt.eu>);
+	id S1754072Ab2KEQKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:10:20 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:19195 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935Ab2KEQJ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Nov 2012 11:09:27 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:23876 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751952Ab2KEQJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:09:23 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
         kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 04/13] scripts/gdb: Add get_target_endianness helper
-Date: Mon,  5 Nov 2012 17:08:57 +0100
-Message-Id: <d5266c90a6e8c78d6d7331d91b806c06e5446138.1352131730.git.jan.kiszka@siemens.com>
+Subject: [PATCH 08/13] scripts/gdb: Add helper and convenience function to look up tasks
+Date: Mon,  5 Nov 2012 17:09:01 +0100
+Message-Id: <a78c1fdf2c3703e4a974d0f1edc8ea5eeb5cef7e.1352131731.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1352131729.git.jan.kiszka@siemens.com>
 References: <cover.1352131729.git.jan.kiszka@siemens.com>
@@ -22,40 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parse the target endianness from the output of "show endian" and cache
-the result to return it via the new helper get_target_endiannes. We will
-need it for reading integers from buffers that contain target memory.
+Add the helper task_by_pid that can look up a task by its PID. Also
+export it as a convenience function.
 
 Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
 ---
- scripts/gdb/utils.py |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+ scripts/gdb/task.py        |   29 +++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |    1 +
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/scripts/gdb/utils.py b/scripts/gdb/utils.py
-index 74682c3..a4e6df2 100644
---- a/scripts/gdb/utils.py
-+++ b/scripts/gdb/utils.py
-@@ -53,3 +53,20 @@ class ContainerOf(gdb.Function):
- 				    elementname.string())
- 
- ContainerOf()
+diff --git a/scripts/gdb/task.py b/scripts/gdb/task.py
+index 1e4f61e..41d85cc 100644
+--- a/scripts/gdb/task.py
++++ b/scripts/gdb/task.py
+@@ -38,3 +38,32 @@ def for_each_task(func, arg = None):
+ 					 get_task_ptr_type(), "thread_group")
+ 			if t == g:
+ 				break
++
++def get_task_by_pid(pid):
++	def match_pid(t, arg):
++		if int(t['pid']) == arg['pid']:
++			arg['task'] = t
++
++	arg = { 'pid': pid, 'task': None }
++	for_each_task(match_pid, arg)
++
++	return arg['task']
 +
 +
-+BIG_ENDIAN = 0
-+LITTLE_ENDIAN = 1
-+target_endianness = None
++class LxTaskByPidFunc(gdb.Function):
++	__doc__ = "Find Linux task by PID and return the task_struct variable.\n" \
++		  "\n" \
++		  "$lx_task_by_pid(PID): Given PID, iterate over all tasks of the target and\n" \
++		  "return that task_struct variable which PID matches.\n"
 +
-+def get_target_endianness():
-+	global target_endianness
-+	if target_endianness == None:
-+		endian = gdb.execute("show endian", False, True)
-+		if endian.find("little endian") >= 0:
-+			target_endianness = LITTLE_ENDIAN
-+		elif endian.find("big endian") >= 0:
-+			target_endianness = BIG_ENDIAN
++	def __init__(self):
++		super(LxTaskByPidFunc, self).__init__("lx_task_by_pid")
++
++	def invoke(self, pid):
++		task = get_task_by_pid(pid)
++		if task:
++			return task.dereference()
 +		else:
-+			raise gdb.GdgError("unknown endianness '%s'" % endian)
-+	return target_endianness
++			raise gdb.GdbError("No task of PID " + str(pid))
++
++LxTaskByPidFunc()
+diff --git a/scripts/gdb/vmlinux-gdb.py b/scripts/gdb/vmlinux-gdb.py
+index 8b0422e..deaf652 100644
+--- a/scripts/gdb/vmlinux-gdb.py
++++ b/scripts/gdb/vmlinux-gdb.py
+@@ -22,3 +22,4 @@ else:
+ 	import utils
+ 	import symbols
+ 	import dmesg
++	import task
 -- 
 1.7.3.4
 
