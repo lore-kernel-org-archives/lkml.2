@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933132Ab2KEVIs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 16:08:48 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:39952 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754667Ab2KEVIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 16:08:47 -0500
-Message-ID: <50982AC3.8030000@ti.com>
-Date: Mon, 5 Nov 2012 16:08:19 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S932997Ab2KEVMD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 16:12:03 -0500
+Received: from host-176-100-244-43.masterbit.su ([176.100.244.43]:60784 "EHLO
+	tservice.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754661Ab2KEVMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 16:12:01 -0500
+Date: Tue, 6 Nov 2012 01:11:59 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: connector and netlink_broadcast (semop failed for cookie ...)
+Message-ID: <20121105211159.GA4894@ioremap.net>
+References: <509816A8.70005@ahsoftware.de>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
-        <b32955@freescale.com>, <shubhrajyoti@ti.com>, <wim@iguana.be>,
-        <hs@denx.de>, <nsekhar@ti.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
-        <rob@landley.net>, <gregkh@linuxfoundation.org>,
-        <swarren@wwwdotorg.org>, <hdoyu@nvidia.com>,
-        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [RFC PATCH 1/2] memory: davinci - add aemif controller platform
- driver
-References: <1351873278-27325-1-git-send-email-m-karicheri2@ti.com> <1351873278-27325-2-git-send-email-m-karicheri2@ti.com> <50967307.5030500@gmail.com>
-In-Reply-To: <50967307.5030500@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <509816A8.70005@ahsoftware.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2012 08:52 AM, Rob Herring wrote:
-> OMAP GPMC
-Could you send me a link please?
+Hi
 
-Murali
+On Mon, Nov 05, 2012 at 08:42:32PM +0100, Alexander Holler (holler@ahsoftware.de) wrote:
+> Could it be the case that cn_netlink_send() has to ignore the same
+> return codes as done in kobject_uevent_env()? Or maybe the users of
+> cn_netlink_send() have to ignore them?
+
+We just do not know what to do with that error.
+Pretty much it means nothing can be done about it.
+There is no recovery path, no collection and resend, since it may lead to dos.
+
+Its like knowing that udp packet get lost, but you do not have enough
+buffer space to save it and block. Actually there is no buffer at all.
+Kind of missed interrupt.
+
+-- 
+	Evgeniy Polyakov
