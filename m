@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab2KEQ0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:26:46 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:55824 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754448Ab2KEQ0m (ORCPT
+	id S1754448Ab2KEQ33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:29:29 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:37699 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab2KEQ32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:26:42 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] drivers/misc/kgdbts.c: remove eprintk
-Date: Mon, 5 Nov 2012 16:26:29 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: walter harms <wharms@bfs.de>, kernel-janitors@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
-References: <1351940317-14812-1-git-send-email-Julia.Lawall@lip6.fr> <201211042051.58473.arnd@arndb.de> <alpine.DEB.2.02.1211042202240.1960@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1211042202240.1960@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 5 Nov 2012 11:29:28 -0500
+Message-ID: <1352132992.9466.27.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] wireless: iwlwifi - add dma_mapping_error() checks to
+ avoid warnings
+From: Johannes Berg <johannes@sipsolutions.net>
+To: shuah.khan@hp.com
+Cc: wey-yi.w.guy@intel.com, linville@tuxdriver.com, ilw@linux.intel.com,
+        emmanuel.grumbach@intel.com, donald.h.fry@intel.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Date: Mon, 05 Nov 2012 17:29:52 +0100
+In-Reply-To: <1352132785.2606.14.camel@lorien2>
+References: <1351993233.4369.2.camel@lorien2>
+	 (sfid-20121104_024119_271188_5372C13E) <1352020617.10072.0.camel@jlt4.sipsolutions.net>
+	 <1352132785.2606.14.camel@lorien2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.1-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211051626.29317.arnd@arndb.de>
-X-Provags-ID: V02:K0:pbdcz8ac8cKrhcE5K65LJ7SrR7BOZRjorFkHIneyAJA
- pg8en6Ih5TFwym5CYhAV+oeuCPQcYEPwRMo4vlF4kPm77GNwfO
- Y5KwtoaFyojtQOxUhKET8M4huV5rpEnOD5et+NiPtUXUJnxoSl
- OcEwrdCPjhU7TPDh7UheELKYxxmY8FpL3ZylsPgF5wSGNNOLkC
- AFucgmXQd/iHtn5mT5S2dm1gxHjuZiSnI76yoM1BJXSa7WyM6K
- St/xPxCNSw2axLj52ImWNhLEeNTb3MopcLjFw9Th3OsO2iTCWt
- /QPXivySgAKrFFdH0VAY01gudvCcPkv63b6xrIaL+9wC4tKe0h
- 0++3LpWGrHIilooDdwtw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 04 November 2012, Julia Lawall wrote:
-> >
-> > I don't see yet where that KERN_WARNING gets added. Looking at
-> > warn_slowpath_common, there are two or three lines that get printed at
-> > KERN_WARNING level, followed by the format that got passed into WARN(),
-> > which may or may not include a printk level, but I don't see one getting
-> > added.
+On Mon, 2012-11-05 at 09:26 -0700, Shuah Khan wrote:
+
+> > Thanks for the report. Since I think doing BUG_ON() in such a scenario
+> > is a really bad idea, I've applied a different patch with your
+> > Reported-by.
 > 
-> OK, I agree.  There are lots of KERN_WARNINGs, but not on the string that 
-> was passed in.  Still, maybe it is not so good to pass a KERN_XXX for some 
-> other XXX to WARN.
+> Yeah. I wasn't sure about BUS() either. Did you notice the other cases
+> of BUG_ON() in this path in iwl_rx_allocate()? I would think those need
+> fixing as well.
+> 
+>               rxb->page_dma =
+>                         dma_map_page(trans->dev, page, 0,
+>                                      PAGE_SIZE <<
+> trans_pcie->rx_page_order,
+>                                      DMA_FROM_DEVICE);
+>                 /* dma address must be no more than 36 bits */
+>                 BUG_ON(rxb->page_dma & ~DMA_BIT_MASK(36));
+>                 /* and also 256 byte aligned! */
+>                 BUG_ON(rxb->page_dma & DMA_BIT_MASK(8));
 
-Given that most users don't pass anything here, and that those that do pass
-something are somewhat inconsistent, could we make the messages always get
-printed at KERN_WARNING level from WARN(), and kill off the instances
-that already pass a level?
+Well, yes, we could convert them, but we can leave them as they are
+because these are assertions that the DMA mapping API guarantees. If
+this breaks, it's a bug in the DMA mapping code.
 
-	Arnd
+In contrast, if it fails to map, it's not a bug in the code, it's just
+running out of memory or IO space or whatever.
+
+> Could you please send me commitID for the patch you did. I am interested
+> in seeing the failure handling in your patch?
+
+It's here:
+http://git.kernel.org/?p=linux/kernel/git/iwlwifi/iwlwifi-fixes.git;a=commit;h=7c34158231b2eda8dcbd297be2bb1559e69cb433
+
+johannes
+
