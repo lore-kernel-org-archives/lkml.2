@@ -1,84 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab2KEQKN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:10:13 -0500
-Received: from goliath.siemens.de ([192.35.17.28]:19198 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab2KEQJ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:09:27 -0500
+	id S1753605Ab2KEQLb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:11:31 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:23910 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752901Ab2KEQJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 11:09:26 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 07/13] scripts/gdb: Add task iteration helper
-Date: Mon,  5 Nov 2012 17:09:00 +0100
-Message-Id: <5ebdf754b979036fe22c5d13352ffb6521830eaa.1352131731.git.jan.kiszka@siemens.com>
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
+        linux-ia64@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, sparclinux@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 00/13] Add gdb python scripts as kernel debugging helpers
+Date: Mon,  5 Nov 2012 17:08:53 +0100
+Message-Id: <cover.1352131729.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <cover.1352131729.git.jan.kiszka@siemens.com>
-References: <cover.1352131729.git.jan.kiszka@siemens.com>
-In-Reply-To: <cover.1352131729.git.jan.kiszka@siemens.com>
-References: <cover.1352131729.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The internal helper for_each_task iterates over all tasks of the target,
-calling the provided function on each. For performance reasons, we cache
-a reference to the gdb type object of a task.
+Version 2 of this series is a rebase over 3.7-rc4 to resolve some minor
+collision in the top-level makefile. Moreover, this implements automatic
+symbol loading for kernel modules using silent breakpoints. See patch 3
+for details.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
----
- scripts/gdb/task.py |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 40 insertions(+), 0 deletions(-)
+Unless someone complains over this series or suggests a better workflow,
+I'm planning to send a pull to Linus during the next merge window.
+
+
+Here is the original intro for reference:
+
+This adds the infrastructure and first tools that make kernel debugging
+through gdb more comfortable. Since 7.0, gdb supports python scripting.
+And this opens the doors to automate steps like the tedious loading of
+module symbols at the right address, resolving per-cpu variables or even
+retrieving the current kernel log without resuming an stopped target.
+
+Many of the helpers naturally depend on the layout of structures or
+internal mechanics of the kernel. So the best place to maintain such
+things, keeping them consistent with the corresponding kernel is, well,
+the kernel itself.
+
+While these scripts have been originally developed for debugging via
+QEMU/KVM, I've now also added the required bits for KGDB. Works fine,
+but as QEMU/KVM tends to outperform KGDB it remains the recommendation
+- when available.
+
+There are two architecture dependencies so far, one regarding per-cpu,
+the other regarding thread_info calculation. None of them I was able to
+test on a target, so I'm counting on review/testing by the corresponding
+communities.
+
+This series should be considered the foundation of much more kernel
+state exploration helper, e.g. around tasks, timers, locks, sockets -
+I guess people will have even more ideas.
+
+Hope it's useful!
+
+PS: Also available via git://git.kiszka.org/linux.git queues/gdb-scripts
+
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Fenghua Yu <fenghua.yu@intel.com>
+CC: Kay Sievers <kay@vrfy.org>
+CC: linux-ia64@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org
+CC: Michal Marek <mmarek@suse.cz>
+CC: sparclinux@vger.kernel.org
+CC: Tony Luck <tony.luck@intel.com>
+
+Jan Kiszka (13):
+  scripts/gdb: Add infrastructure
+  scripts/gdb: Add container_of helper and convenience function
+  scripts/gdb: Add lx-symbols command
+  scripts/gdb: Add get_target_endianness helper
+  scripts/gdb: Add read_u16/32/64 helpers
+  scripts/gdb: Add lx-dmesg command
+  scripts/gdb: Add task iteration helper
+  scripts/gdb: Add helper and convenience function to look up tasks
+  scripts/gdb: Add is_target_arch helper
+  scripts/gdb: Add internal helper and convenience function to retrieve
+    thread_info
+  scripts/gdb: Add get_gdbserver_type helper
+  scripts/gdb: Add internal helper and convenience function for per-cpu
+    lookup
+  scripts/gdb: Add lx_current convenience function
+
+ Makefile                   |    5 +-
+ scripts/Makefile           |    3 +-
+ scripts/gdb/Makefile       |    9 +++
+ scripts/gdb/dmesg.py       |   63 +++++++++++++++++++++
+ scripts/gdb/percpu.py      |   76 +++++++++++++++++++++++++
+ scripts/gdb/symbols.py     |  133 +++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/task.py        |  108 +++++++++++++++++++++++++++++++++++
+ scripts/gdb/utils.py       |  134 ++++++++++++++++++++++++++++++++++++++++++++
+ scripts/gdb/vmlinux-gdb.py |   26 +++++++++
+ 9 files changed, 555 insertions(+), 2 deletions(-)
+ create mode 100644 scripts/gdb/Makefile
+ create mode 100644 scripts/gdb/dmesg.py
+ create mode 100644 scripts/gdb/percpu.py
+ create mode 100644 scripts/gdb/symbols.py
  create mode 100644 scripts/gdb/task.py
+ create mode 100644 scripts/gdb/utils.py
+ create mode 100644 scripts/gdb/vmlinux-gdb.py
 
-diff --git a/scripts/gdb/task.py b/scripts/gdb/task.py
-new file mode 100644
-index 0000000..1e4f61e
---- /dev/null
-+++ b/scripts/gdb/task.py
-@@ -0,0 +1,40 @@
-+#
-+# gdb helper commands and functions for Linux kernel debugging
-+#
-+#  task & thread tools
-+#
-+# Copyright (c) 2011, 2012 Siemens AG
-+#
-+# Authors:
-+#  Jan Kiszka <jan.kiszka@siemens.com>
-+#
-+# This work is licensed under the terms of the GNU GPL version 2.
-+#
-+
-+import gdb
-+
-+from utils import *
-+
-+task_ptr_type = None
-+
-+def get_task_ptr_type():
-+	global task_ptr_type
-+	if task_ptr_type == None:
-+		task_ptr_type = get_type("struct task_struct").pointer()
-+	return task_ptr_type
-+
-+def for_each_task(func, arg = None):
-+	init_task = gdb.parse_and_eval("init_task")
-+	g = init_task.address
-+	while True:
-+		g =  container_of(g['tasks']['next'], get_task_ptr_type(),
-+				  "tasks")
-+		if g == init_task.address:
-+			break;
-+		t = g
-+		while True:
-+			func(t, arg)
-+			t = container_of(t['thread_group']['next'],
-+					 get_task_ptr_type(), "thread_group")
-+			if t == g:
-+				break
 -- 
 1.7.3.4
 
