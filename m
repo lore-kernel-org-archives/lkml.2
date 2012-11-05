@@ -1,199 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab2KEMSu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:18:50 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:57568 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753342Ab2KEMSs (ORCPT
+	id S1753490Ab2KEMUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:20:31 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63581 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab2KEMU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:18:48 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH 2/5] fat: restructure export operations
-References: <1351389176-2520-1-git-send-email-linkinjeon@gmail.com>
-Date: Mon, 05 Nov 2012 21:18:44 +0900
-In-Reply-To: <1351389176-2520-1-git-send-email-linkinjeon@gmail.com> (Namjae
-	Jeon's message of "Sun, 28 Oct 2012 10:52:56 +0900")
-Message-ID: <874nl4mee3.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Mon, 5 Nov 2012 07:20:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1352117259.2705.24.camel@menhir>
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+	<1351485061-12297-10-git-send-email-zwu.kernel@gmail.com>
+	<1352114465.2705.13.camel@menhir>
+	<CAEH94LjXrK6OfSU=aQa+waMMY+0kCjL3MU2faKeRxm9UggaKQA@mail.gmail.com>
+	<1352117259.2705.24.camel@menhir>
+Date: Mon, 5 Nov 2012 20:20:27 +0800
+Message-ID: <CAEH94LgeOssJ++tLZzo6ZAUmjFUc1BWjLuszmAeSz2YbxmU3SA@mail.gmail.com>
+Subject: Re: [RFC v4+ hot_track 09/19] vfs: add one work queue
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Mon, Nov 5, 2012 at 8:07 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
+> Hi,
+>
+> On Mon, 2012-11-05 at 19:55 +0800, Zhi Yong Wu wrote:
+>> On Mon, Nov 5, 2012 at 7:21 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
+>> > Hi,
+>> >
+>> > On Mon, 2012-10-29 at 12:30 +0800, zwu.kernel@gmail.com wrote:
+>> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> >>
+>> >>   Add a per-superblock workqueue and a delayed_work
+>> >> to run periodic work to update map info on each superblock.
+>> >>
+>> >> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> >> ---
+>> >>  fs/hot_tracking.c            |   85 ++++++++++++++++++++++++++++++++++++++++++
+>> >>  fs/hot_tracking.h            |    3 +
+>> >>  include/linux/hot_tracking.h |    3 +
+>> >>  3 files changed, 91 insertions(+), 0 deletions(-)
+>> >>
+>> >> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+>> >> index fff0038..0ef9cad 100644
+>> >> --- a/fs/hot_tracking.c
+>> >> +++ b/fs/hot_tracking.c
+>> >> @@ -15,9 +15,12 @@
+>> >>  #include <linux/module.h>
+>> >>  #include <linux/spinlock.h>
+>> >>  #include <linux/hardirq.h>
+>> >> +#include <linux/kthread.h>
+>> >> +#include <linux/freezer.h>
+>> >>  #include <linux/fs.h>
+>> >>  #include <linux/blkdev.h>
+>> >>  #include <linux/types.h>
+>> >> +#include <linux/list_sort.h>
+>> >>  #include <linux/limits.h>
+>> >>  #include "hot_tracking.h"
+>> >>
+>> >> @@ -557,6 +560,67 @@ static void hot_map_array_exit(struct hot_info *root)
+>> >>       }
+>> >>  }
+>> >>
+>> >> +/* Temperature compare function*/
+>> >> +static int hot_temp_cmp(void *priv, struct list_head *a,
+>> >> +                             struct list_head *b)
+>> >> +{
+>> >> +     struct hot_comm_item *ap =
+>> >> +                     container_of(a, struct hot_comm_item, n_list);
+>> >> +     struct hot_comm_item *bp =
+>> >> +                     container_of(b, struct hot_comm_item, n_list);
+>> >> +
+>> >> +     int diff = ap->hot_freq_data.last_temp
+>> >> +                             - bp->hot_freq_data.last_temp;
+>> >> +     if (diff > 0)
+>> >> +             return -1;
+>> >> +     if (diff < 0)
+>> >> +             return 1;
+>> >> +     return 0;
+>> >> +}
+>> >> +
+>> >> +/*
+>> >> + * Every sync period we update temperatures for
+>> >> + * each hot inode item and hot range item for aging
+>> >> + * purposes.
+>> >> + */
+>> >> +static void hot_update_worker(struct work_struct *work)
+>> >> +{
+>> >> +     struct hot_info *root = container_of(to_delayed_work(work),
+>> >> +                                     struct hot_info, update_work);
+>> >> +     struct hot_inode_item *hi_nodes[8];
+>> >> +     u64 ino = 0;
+>> >> +     int i, n;
+>> >> +
+>> >> +     while (1) {
+>> >> +             n = radix_tree_gang_lookup(&root->hot_inode_tree,
+>> >> +                                (void **)hi_nodes, ino,
+>> >> +                                ARRAY_SIZE(hi_nodes));
+>> >> +             if (!n)
+>> >> +                     break;
+>> >> +
+>> >> +             ino = hi_nodes[n - 1]->i_ino + 1;
+>> >> +             for (i = 0; i < n; i++) {
+>> >> +                     kref_get(&hi_nodes[i]->hot_inode.refs);
+>> >> +                     hot_map_array_update(
+>> >> +                             &hi_nodes[i]->hot_inode.hot_freq_data, root);
+>> >> +                     hot_range_update(hi_nodes[i], root);
+>> >> +                     hot_inode_item_put(hi_nodes[i]);
+>> >> +             }
+>> >> +     }
+>> >> +
+>> >> +     /* Sort temperature map info */
+>> >> +     for (i = 0; i < HEAT_MAP_SIZE; i++) {
+>> >> +             list_sort(NULL, &root->heat_inode_map[i].node_list,
+>> >> +                     hot_temp_cmp);
+>> >> +             list_sort(NULL, &root->heat_range_map[i].node_list,
+>> >> +                     hot_temp_cmp);
+>> >> +     }
+>> >> +
+>> >
+>> > If this list can potentially have one (or more) entries per inode, then
+>> Only one hot_inode_item per inode, while maybe multiple
+>> hot_range_items per inode.
+>> > filesystems with a lot of inodes (millions) may potentially exceed the
+>> > max size of list which list_sort() can handle. If that happens it still
+>> > works, but you'll get a warning message and it won't be as efficient.
+>> I haven't do so large scale test. If we want to find that issue, we
+>> need to do large scale performance test, before that, i want to make
+>> sure the code change is correct at first.
+>> To be honest, for that issue you pointed to, i also have such
+>> concern.But list_sort() performance looks good from the test result of
+>> the following URL:
+>> https://lkml.org/lkml/2010/1/20/485
+>>
+> Yes, I think it is good. Also, even when it says that it's performance
+> is poor (via the warning message) it is still much better than the
+> alternative (of not sorting) in the GFS2 case. So currently our
+> workaround is to ignore the warning. Due to what we using it for
+> (sorting the data blocks for ordered writeback) we only see it very
+> occasionally when there has been lots of data write activity with little
+> journal activity on a node with lots of RAM.
+OK.
+>
+>> >
+>> > It is something that we've run into with list_sort() and GFS2, but it
+>> > only happens very rarely,
+>> Beside list_sort(), do you have any other way to share? For this
+>> concern, how does GFS2 resolve it?
+>>
+> That is an ongoing investigation :-)
+>
+> I've pondered various options... increase temp variable space in
+> list_sort(), not using list_sort() and insertion sorting the blocks
+> instead, flushing the ordered write data early if the list gets too
+> long, figuring out how to remove blocks written back by the VM from the
+> list before the sort, and various other possible solutions. So far I'm
+> not sure which will be the best to choose, and since your situation is a
+> bit different it might not make sense to use the same solution.
+>
+> I just thought it was worth mentioning though since it was something
+> that we'd run across,
+thanks for your experience share. anyway, thanks.
 
-> +#define FILEID_FAT_WITHOUT_PARENT (offsetof(struct fat_fid, parent_i_pos_hi)/4)
-> +#define FILEID_FAT_WITH_PARENT (sizeof(struct fat_fid)/4)
-
-This is strange.
-
-FILEID_FAT_WITH_PARENT and FILEID_FAT_WITHOUT_PARENT should be fh_type,
-not length.
-
->  int
-> -fat_encode_fh(struct inode *inode, __u32 *fh, int *lenp, struct inode *parent)
-> +fat_encode_fh_nostale(struct inode *inode, __u32 *fh, int *lenp,
-> +					struct inode *parent)
->  {
->  	int len = *lenp;
->  	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
-> @@ -97,24 +111,26 @@ fat_encode_fh(struct inode *inode, __u32 *fh, int *lenp, struct inode *parent)
->  	loff_t i_pos;
->  	int type = FILEID_INO32_GEN;
-
-Please don't re-use FILEID_INO32_GEN(_PARENT) for different FH
-format. Instead of those, we should use FILEID_FAT_(WITH|WITHOUT)_PARENT
-here.
-
-> -	if (parent && (len < 5)) {
-> -		*lenp = 5;
-> +	if (parent && (len < FILEID_FAT_WITH_PARENT)) {
-> +		*lenp = FILEID_FAT_WITH_PARENT;
->  		return 255;
-> -	} else if (len < 3) {
-> -		*lenp = 3;
-> +	} else if (len < FILEID_FAT_WITHOUT_PARENT) {
-> +		*lenp = FILEID_FAT_WITHOUT_PARENT;
->  		return 255;
->  	}
->  
->  	i_pos = fat_i_pos_read(sbi, inode);
-> -	*lenp = 3;
-> -	fid->ino = inode->i_ino;
-> -	fid->gen = inode->i_generation;
-> -	fid->i_pos = i_pos;
-> +	*lenp = FILEID_FAT_WITHOUT_PARENT;
-> +	fid->i_gen = inode->i_generation;
-> +	fid->i_pos_low = i_pos & 0xFFFFFFFF;
-> +	fid->i_pos_hi = (i_pos >> 32) & 0xFF;
-
-0xff is 0xffff actually?
-
->  	if (parent) {
-> -		fid->parent_ino = parent->i_ino;
-> -		fid->parent_gen = parent->i_generation;
-> +		i_pos = fat_i_pos_read(sbi, parent);
-> +		fid->parent_i_pos_hi = (i_pos >> 32) & 0xFF;
-> +		fid->parent_i_pos_low = i_pos & 0xFFFFFFFF;
-> +		fid->parent_i_gen = parent->i_generation;
->  		type = FILEID_INO32_GEN_PARENT;
-> -		*lenp = 5;
-> +		*lenp = FILEID_FAT_WITH_PARENT;
->  	}
->  
->  	return type;
-> @@ -128,14 +144,36 @@ struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fh,
->  				int fh_len, int fh_type)
->  {
->  	struct inode *inode = NULL;
-> -	struct fat_fid *fid = (struct fat_fid *)fh;
-> -	if (fh_len < 3)
-> +	if (fh_len < 2)
->  		return NULL;
->  
->  	switch (fh_type) {
->  	case FILEID_INO32_GEN:
->  	case FILEID_INO32_GEN_PARENT:
-> -		inode = fat_nfs_get_inode(sb, fid->ino, fid->gen, fid->i_pos);
-> +		inode = fat_nfs_get_inode(sb, fh->i32.ino, fh->i32.gen, 0);
-> +		break;
-> +	}
-
-We can use generic_fh_to_dentry() here, instead, opencode. Right?
-
-Rename fat_nfs_get_inode() to __fat_nfs_get_inode(). And add
-
-fat_nfs_get_inode(struct super_block *sb, u64 ino, u32 gen)
-{
-	return __fat_nfs_get_inode(sb, fh->i32.ino, fh->i32.gen, 0);
-}
-
-> +	switch (fh_type) {
-> +	case FILEID_INO32_GEN:
-> +		if (fh_len < FILEID_FAT_WITHOUT_PARENT)
-> +			return NULL;
-> +	case FILEID_INO32_GEN_PARENT:
-> +		if ((fh_len < FILEID_FAT_WITH_PARENT) &&
-> +			(fh_type == FILEID_INO32_GEN_PARENT))
-> +			return NULL;
-
-Why do we have to care unused fields here?
-
-> +		i_pos = fid->i_pos_hi;
-> +		i_pos = (i_pos << 32) | (fid->i_pos_low);
-> +		inode = fat_nfs_get_inode(sb, 0, fid->i_gen, i_pos);
+By the way, it will be appreciated if you can comment on other patches.
+>
+> Steve.
+>
+>
 
 
->  		break;
->  	}
-> @@ -147,18 +185,39 @@ struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fh,
->   * Find the parent for a file specified by NFS handle.
->   * This requires that the handle contain the i_ino of the parent.
->   */
-> -struct dentry *fat_fh_to_parent(struct super_block *sb, struct fid *fh,
-> +struct dentry *fat_fh_to_parent(struct super_block *sb, struct fid *fid,
-> +				int fh_len, int fh_type)
-> +{
-> +	struct inode *inode = NULL;
-> +
-> +	if (fh_len < 2)
-> +		return NULL;
-> +
-> +	switch (fh_type) {
-> +	case FILEID_INO32_GEN:
-> +	case FILEID_INO32_GEN_PARENT:
-> +		inode = fat_nfs_get_inode(sb, fid->i32.ino, fid->i32.gen, 0);
-> +		break;
-> +	}
-
-Don't opencode generic_fh_to_parent() here too. And this is wrong.
-
-> +struct dentry *fat_fh_to_parent_nostale(struct super_block *sb, struct fid *fh,
->  				int fh_len, int fh_type)
->  {
->  	struct inode *inode = NULL;
->  	struct fat_fid *fid = (struct fat_fid *)fh;
-> -	if (fh_len < 5)
-> +	loff_t i_pos;
-> +
-> +	if (fh_len < FILEID_FAT_WITH_PARENT)
->  		return NULL;
->  
->  	switch (fh_type) {
->  	case FILEID_INO32_GEN_PARENT:
-> -		inode = fat_nfs_get_inode(sb, fid->parent_ino, fid->parent_gen,
-> -						fid->i_pos);
-> +		i_pos = fid->parent_i_pos_hi;
-> +		i_pos = (i_pos << 32) | (fid->parent_i_pos_low);
-> +		inode = fat_nfs_get_inode(sb, 0, fid->parent_i_gen, i_pos);
->  		break;
->  	}
->  
-> @@ -303,3 +362,15 @@ out:
->  
->  	return d_obtain_alias(parent_inode);
->  }
-> +
-> +const struct export_operations fat_export_ops = {
-> +	.fh_to_dentry   = fat_fh_to_dentry,
-> +	.fh_to_parent   = fat_fh_to_parent,
-> +	.get_parent     = fat_get_parent,
-> +};
-
-Need empty line here.
-
-> +const struct export_operations fat_export_ops_nostale = {
-> +	.encode_fh      = fat_encode_fh_nostale,
-> +	.fh_to_dentry   = fat_fh_to_dentry_nostale,
-> +	.fh_to_parent   = fat_fh_to_parent_nostale,
-> +	.get_parent     = fat_get_parent,
-> +};
 
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Regards,
+
+Zhi Yong Wu
