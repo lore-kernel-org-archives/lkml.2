@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab2KEXRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 18:17:31 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:51959 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932909Ab2KEXF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 18:05:28 -0500
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 082/104] drivers/video/geode: remove depends on CONFIG_EXPERIMENTAL
-Date: Mon,  5 Nov 2012 15:04:39 -0800
-Message-Id: <1352156701-4038-83-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1352156701-4038-1-git-send-email-keescook@chromium.org>
-References: <1352156701-4038-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1755071Ab2KEXRv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 18:17:51 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37049 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140Ab2KEXRs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 18:17:48 -0500
+Date: Mon, 5 Nov 2012 23:14:10 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] ARM: plat-versatile: move FPGA irq driver to
+	drivers/irqchip
+Message-ID: <20121105231410.GK28327@n2100.arm.linux.org.uk>
+References: <1351805329-19576-1-git-send-email-linus.walleij@linaro.org> <20121102121556.GV21164@n2100.arm.linux.org.uk> <50983422.9090301@gmail.com> <201211052242.26894.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201211052242.26894.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-while now and is almost always enabled by default. As agreed during the
-Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
+On Mon, Nov 05, 2012 at 10:42:26PM +0000, Arnd Bergmann wrote:
+> On Monday 05 November 2012, Rob Herring wrote:
+> > But this should work:
+> > 
+> > if (!handle_arch_irq)
+> >         handle_arch_irq = fpga_handle_irq;
+> > 
+> > As long as the primary controller is always initialized first, this will
+> > work. This is guaranteed by DT of_irq_init, and you will probably have
+> > other problems if that wasn't the case for non-DT.
+> 
+> How about adding a top-level function in arch/arm that does the assignment
+> and hides the handle_arch_irq variable:
+> 
+> void set_handle_irq(void (*handle_irq)(struct pt_regs *))
+> {
+> 	if (WARN_ON(handle_arch_irq))
+> 		return;
+> 
+> 	handle_arch_irq = handle_irq;
+> }
+> EXPORT_SYMBOL_GPL(set_handle_irq);
+> 
+> Hmm, maybe putting the top-level handler into a loadable module is a bit
+> far-fetched, but one can hope ;-)
 
-CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- drivers/video/geode/Kconfig |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/video/geode/Kconfig b/drivers/video/geode/Kconfig
-index c5d8ba4..21e351a 100644
---- a/drivers/video/geode/Kconfig
-+++ b/drivers/video/geode/Kconfig
-@@ -2,14 +2,14 @@
- # Geode family framebuffer configuration
- #
- config FB_GEODE
--	bool "AMD Geode family framebuffer support (EXPERIMENTAL)"
--	depends on FB && PCI && EXPERIMENTAL && X86
-+	bool "AMD Geode family framebuffer support"
-+	depends on FB && PCI && X86
- 	---help---
- 	  Say 'Y' here to allow you to select framebuffer drivers for
- 	  the AMD Geode family of processors.
- 
- config FB_GEODE_LX
--	tristate "AMD Geode LX framebuffer support (EXPERIMENTAL)"
-+	tristate "AMD Geode LX framebuffer support"
- 	depends on FB && FB_GEODE
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
-@@ -24,8 +24,8 @@ config FB_GEODE_LX
- 	  If unsure, say N.
- 
- config FB_GEODE_GX
--	tristate "AMD Geode GX framebuffer support (EXPERIMENTAL)"
--	depends on FB && FB_GEODE && EXPERIMENTAL
-+	tristate "AMD Geode GX framebuffer support"
-+	depends on FB && FB_GEODE
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
-@@ -39,8 +39,8 @@ config FB_GEODE_GX
- 	  If unsure, say N.
- 
- config FB_GEODE_GX1
--	tristate "AMD Geode GX1 framebuffer support (EXPERIMENTAL)"
--	depends on FB && FB_GEODE && EXPERIMENTAL
-+	tristate "AMD Geode GX1 framebuffer support"
-+	depends on FB && FB_GEODE
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
--- 
-1.7.9.5
-
+Definitely no point in exporting this (never export a symbol unless you
+really want to use it from a module) - if you don't already have something
+in handle_arch_irq, you're not going to get anywhere near the module
+loader.
