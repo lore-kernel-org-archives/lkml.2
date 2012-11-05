@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964784Ab2KEWzn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 17:55:43 -0500
-Received: from mga09.intel.com ([134.134.136.24]:47935 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751943Ab2KEWzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 17:55:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,718,1344236400"; 
-   d="scan'208";a="215540336"
-Date: Mon, 5 Nov 2012 23:55:24 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: "Patil, Rachna" <rachna@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-iio@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: Re: [PATCH RESEND 0/8] TI Touchscreen driver updates and Support for
- TSC/ADC MFD driver
-Message-ID: <20121105225524.GE7965@sortiz-mobl>
-References: <1350372345-27108-1-git-send-email-rachna@ti.com>
+	id S933409Ab2KEW5H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 17:57:07 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:37370 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751749Ab2KEW5F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 17:57:05 -0500
+X-Authenticated: #2269360
+X-Provags-ID: V01U2FsdGVkX1+S2t8cADOSRrz4EZ4oWLGmA6pbDetR6f/kblXM/y
+	fuqIXpas2cx7+9
+From: Heinz Wiesinger <HMWiesinger@gmx.at>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        John Stultz <john.stultz@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Janne Boman <janne.m.boman@gmail.com>, rtc-linux@googlegroups.com
+Subject: Re: [regression] Re: [ 049/149] rtc: Disable the alarm in the hardware (v2)
+Date: Mon, 05 Nov 2012 23:55:32 +0100
+Message-ID: <1672482.cmtUloFutg@callisto>
+User-Agent: KMail/4.9.2 (Linux/3.2.32; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121105101331.GA24688@kroah.com>
+References: <20120330195823.GA31857@kroah.com> <20121105091118.GA12721@elie.Belkin> <20121105101331.GA24688@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350372345-27108-1-git-send-email-rachna@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rachna,
+On Monday 05 November 2012 11:13:31 Greg KH wrote:
+> On Mon, Nov 05, 2012 at 01:11:18AM -0800, Jonathan Nieder wrote:
+> > Hi,
+> > 
+> > In March, Greg KH wrote:
+> > > 3.2-stable review patch.  If anyone has any objections, please let me
+> > > know.
+> > 
+> > Sorry, I'm a little late.  This seems to be causing spurious wakeups
+> > after shutdown on some systems just like v1 did. :/
+> > 
+> > Janne Boman reports[1], using an HP EliteBook 8530w:
+> > | I'm unable to shutdown my system via normal means. The system
+> > | completes the shutdown process, all hardware lights are off, but then
+> > | somehow it restarts.
+> > 
+> > Based on a quick web search, Heinz Wiesinger, using the same model,
+> > 
+> > ran into the same problem and bisected it to this patch:
+> >   https://bugzilla.kernel.org/show_bug.cgi?id=44261
+> > 
+> > Janne confirmed the same by testing kernels closely based on 3.2.13
+> > and 3.2.14 --- 3.2.13 shut down fine, while on 3.2.14 "shutdown -h
+> > now" behaved roughly speaking like "reboot".  A kernel close to 3.6.4
+> > was also affected.
+> 
+> So is 3.6.6 still and issue?  How about 3.7-rc4?  3.4.18?  Figuring out
+> if this is still an issue in Linus's tree would be the best thing to do
+> first.
 
-On Tue, Oct 16, 2012 at 12:55:37PM +0530, Patil, Rachna wrote:
-> This patch set is a cumulative set of [1] and [2] sent earlier.
-> I have merged the patch set so that the MFD patches apply without
-> any issues.
-> 
-> Also Note that there are no code changes in either of the patch set,
-> only rebased on top of linux-next to make sure that all the patches
-> apply without any conflicts.
-> 
-> This patch set has been tested on AM335x EVM.
-> 
-> [1] "[PATCH 0/4] input: TSC: ti_tscadc: TI Touchscreen driver updates"
-> (http://www.spinics.net/lists/linux-input/msg22107.html)
-> 
-> [2] "[PATCH v5 0/4] Support for TSC/ADC MFD driver"
-> (http://www.spinics.net/lists/linux-input/msg22832.html)
-> 
-> Patil, Rachna (8):
->   input: TSC: ti_tscadc: Correct register usage
->   input: TSC: ti_tscadc: Add Step configuration as platform data
->   input: TSC: ti_tscadc: set FIFO0 threshold Interrupt
->   input: TSC: ti_tscadc: Remove definition of End Of Interrupt register
->   input: TSC: ti_tscadc: Rename the existing touchscreen driver
->   MFD: ti_tscadc: Add support for TI's TSC/ADC MFDevice
->   input: TSC: ti_tsc: Convert TSC into a MFDevice
->   IIO : ADC: tiadc: Add support of TI's ADC driver
-All patches applied now, thanks a lot.
+I checked 3.7-rc4 and the issue is still there. Should I still test the other 
+versions as well? I can do so but it might take a bit.
 
-Cheers,
-Samuel.
+If you need anything else, I'll be happy to help wherever I can.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Grs,
+Heinz
