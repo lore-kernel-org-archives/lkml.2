@@ -1,77 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab2KESWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 13:22:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52576 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751531Ab2KESWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 13:22:52 -0500
-Date: Mon, 5 Nov 2012 13:22:24 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Chris Friesen <chris.friesen@genband.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121105182224.GE28720@redhat.com>
-References: <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com>
- <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com>
- <20121101202701.GB20817@xo-6d-61-c0.localdomain>
- <5092E361.7080901@genband.com>
- <20121102154833.GG3300@redhat.com>
- <alpine.LNX.2.00.1211040008280.24253@pobox.suse.cz>
- <87390ok0zy.fsf@xmission.com>
- <alpine.LNX.2.00.1211051535060.24253@pobox.suse.cz>
- <alpine.LNX.2.00.1211051628380.24253@pobox.suse.cz>
- <5097DD2E.9040909@genband.com>
+	id S1754694Ab2KESXY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 13:23:24 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62119 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754656Ab2KESXX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 13:23:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5097DD2E.9040909@genband.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121105175730.21472.99155.stgit@promb-2n-dhcp175.eng.vmware.com>
+References: <20121105175730.21472.99155.stgit@promb-2n-dhcp175.eng.vmware.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 5 Nov 2012 13:23:02 -0500
+Message-ID: <CA+1xoqcMo1RrJKAaS+k5cVuRonRF+go7tJKUkARP_xcuZAwoGw@mail.gmail.com>
+Subject: Re: [PATCH 0/6] VSOCK for Linux upstreaming
+To: George Zhang <georgezhang@vmware.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com,
+        vm-crosstalk@vmware.com, davem@davemloft.net,
+        gregkh@linuxfoundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 09:37:18AM -0600, Chris Friesen wrote:
-> On 11/05/2012 09:31 AM, Jiri Kosina wrote:
-> 
-> >I had a naive idea of just putting in-kernel verification of a complete
-> >ELF binary passed to kernel by userspace, and if the signature matches,
-> >jumping to it.
-> >Would work for elf-x86_64 nicely I guess, but we'd lose a lot of other
-> >functionality currently being provided by kexec-tools.
-> >
-> >Bah. This is a real pandora's box.
-> 
-> Would it be so bad to statically link kexec?
+Hi George,
 
-statically linking and signing /sbin/kexec is sounding most reasonable so
-far, to me. Even if we do that, there are few more issues queries though.
+On Mon, Nov 5, 2012 at 1:00 PM, George Zhang <georgezhang@vmware.com> wrote:
+> For additional information about the use of VMCI and in particular
+> VMCI Sockets, please refer to the VMCI Socket Programming Guide
+> available at https://www.vmware.com/support/developer/vmci-sdk/.
 
-- Do we still need a new system call?
-
-- Who does the kernel signature verification. Is it /sbin/kexec or kernel
-  should do that.
-
-- If kernel is supposed to do kernel signature verification, how the
-  signed bzImage is passed to kernel with existing system call.
-  Are certificates passed in separate segments. How does kernel
-  differentiate between segmets etc.
-
-- Does signed /sbin/kexec means that it can load any other segments
-  like elf header, boot_params and no signature verifiation is needed.
+Is there documentation about the protocol itself? I couldn't find it
+on the link above.
 
 
-If we move all the kernel signatuer verification part into /sbin/kexec,
-then we should possibly be able to use existing system call. But I don't
-know what kind of crypto support we shall have to build into kexec-tools
-statically and how much help we can get from static libraries and how
-much work it is.
-
-Thanks
-Vivek
+Thanks,
+Sasha
