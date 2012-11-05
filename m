@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab2KEPWn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:22:43 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:34402 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932886Ab2KEPWi (ORCPT
+	id S932980Ab2KEPWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:22:54 -0500
+Received: from mail-ye0-f174.google.com ([209.85.213.174]:61085 "EHLO
+	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932942Ab2KEPWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:22:38 -0500
+	Mon, 5 Nov 2012 10:22:47 -0500
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v9 09/34] vfs: add a reval argument to user_path_parent
-Date: Mon,  5 Nov 2012 10:21:48 -0500
-Message-Id: <1352128933-28526-10-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v9 14/34] vfs: have faccessat retry once on an ESTALE error
+Date: Mon,  5 Nov 2012 10:21:53 -0500
+Message-Id: <1352128933-28526-15-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
 References: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
@@ -22,74 +22,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...so we can tell it when to set LOOKUP_REVAL.
-
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ fs/open.c | 64 +++++++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 34 insertions(+), 30 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 28d70cd..1569ccd 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2184,15 +2184,20 @@ int user_path_at(int dfd, const char __user *name, unsigned flags,
-  *     path-walking is complete.
-  */
- static struct filename *
--user_path_parent(int dfd, const char __user *path, struct nameidata *nd)
-+user_path_parent(int dfd, const char __user *path, struct nameidata *nd,
-+		 unsigned int reval)
- {
- 	struct filename *s = getname(path);
- 	int error;
-+	unsigned int flags = LOOKUP_PARENT;
+diff --git a/fs/open.c b/fs/open.c
+index 2a32d5c..9cd0a50 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -310,6 +310,8 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	struct path path;
+ 	struct inode *inode;
+ 	int res;
++	unsigned int lookup_flags = LOOKUP_FOLLOW;
++	unsigned int try = 0;
+ 
+ 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
+ 		return -EINVAL;
+@@ -333,42 +335,44 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 
+ 	old_cred = override_creds(override_cred);
+ 
+-	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
+-	if (res)
+-		goto out;
++	do {
++		res = user_path_at(dfd, filename, lookup_flags, &path);
++		if (res)
++			break;
+ 
+-	inode = path.dentry->d_inode;
++		inode = path.dentry->d_inode;
 +
-+	if (reval)
-+		flags |= LOOKUP_REVAL;
++		if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
++			/*
++			 * MAY_EXEC on regular files is denied if the fs is
++			 * mounted with the "noexec" flag.
++			 */
++			res = -EACCES;
++			if (path.mnt->mnt_flags & MNT_NOEXEC)
++				goto out_path_release;
++		}
  
- 	if (IS_ERR(s))
- 		return s;
+-	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
++		res = inode_permission(inode, mode | MAY_ACCESS);
++		/* SuS v2 requires we report a read only fs too */
++		if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
++			goto out_path_release;
+ 		/*
+-		 * MAY_EXEC on regular files is denied if the fs is mounted
+-		 * with the "noexec" flag.
++		 * This is a rare case where using __mnt_is_readonly()
++		 * is OK without a mnt_want/drop_write() pair.  Since
++		 * no actual write to the fs is performed here, we do
++		 * not need to telegraph to that to anyone.
++		 *
++		 * By doing this, we accept that this access is
++		 * inherently racy and know that the fs may change
++		 * state before we even see this result.
+ 		 */
+-		res = -EACCES;
+-		if (path.mnt->mnt_flags & MNT_NOEXEC)
+-			goto out_path_release;
+-	}
+-
+-	res = inode_permission(inode, mode | MAY_ACCESS);
+-	/* SuS v2 requires we report a read only fs too */
+-	if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
+-		goto out_path_release;
+-	/*
+-	 * This is a rare case where using __mnt_is_readonly()
+-	 * is OK without a mnt_want/drop_write() pair.  Since
+-	 * no actual write to the fs is performed here, we do
+-	 * not need to telegraph to that to anyone.
+-	 *
+-	 * By doing this, we accept that this access is
+-	 * inherently racy and know that the fs may change
+-	 * state before we even see this result.
+-	 */
+-	if (__mnt_is_readonly(path.mnt))
+-		res = -EROFS;
++		if (__mnt_is_readonly(path.mnt))
++			res = -EROFS;
  
--	error = filename_lookup(dfd, s, LOOKUP_PARENT, nd);
-+	error = filename_lookup(dfd, s, flags, nd);
- 	if (error) {
- 		putname(s);
- 		return ERR_PTR(error);
-@@ -3340,7 +3345,7 @@ static long do_rmdir(int dfd, const char __user *pathname)
- 	struct dentry *dentry;
- 	struct nameidata nd;
- 
--	name = user_path_parent(dfd, pathname, &nd);
-+	name = user_path_parent(dfd, pathname, &nd, 0);
- 	if (IS_ERR(name))
- 		return PTR_ERR(name);
- 
-@@ -3436,7 +3441,7 @@ static long do_unlinkat(int dfd, const char __user *pathname)
- 	struct nameidata nd;
- 	struct inode *inode = NULL;
- 
--	name = user_path_parent(dfd, pathname, &nd);
-+	name = user_path_parent(dfd, pathname, &nd, 0);
- 	if (IS_ERR(name))
- 		return PTR_ERR(name);
- 
-@@ -3831,13 +3836,13 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 	struct filename *to;
- 	int error;
- 
--	from = user_path_parent(olddfd, oldname, &oldnd);
-+	from = user_path_parent(olddfd, oldname, &oldnd, 0);
- 	if (IS_ERR(from)) {
- 		error = PTR_ERR(from);
- 		goto exit;
- 	}
- 
--	to = user_path_parent(newdfd, newname, &newnd);
-+	to = user_path_parent(newdfd, newname, &newnd, 0);
- 	if (IS_ERR(to)) {
- 		error = PTR_ERR(to);
- 		goto exit1;
+ out_path_release:
+-	path_put(&path);
+-out:
++		path_put(&path);
++		lookup_flags |= LOOKUP_REVAL;
++	} while (retry_estale(res, try++));
+ 	revert_creds(old_cred);
+ 	put_cred(override_cred);
+ 	return res;
 -- 
 1.7.11.7
 
