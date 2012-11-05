@@ -1,54 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab2KEU0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 15:26:31 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:43350 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab2KEU03 (ORCPT
+	id S932196Ab2KEU2Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 15:28:16 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22255 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627Ab2KEU2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 15:26:29 -0500
-Date: Mon, 5 Nov 2012 20:25:57 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121105202557.GA16076@srcf.ucam.org>
-References: <20121103134630.GA28166@srcf.ucam.org>
- <1351983400.2417.21.camel@dabdike.int.hansenpartnership.com>
- <20121104042802.GA11295@srcf.ucam.org>
- <1352020487.2427.5.camel@dabdike.int.hansenpartnership.com>
- <20121104135251.GA17894@srcf.ucam.org>
- <87d2zsmv8r.fsf@xmission.com>
- <509766DB.9090906@zytor.com>
- <87625kh5r2.fsf@xmission.com>
- <20121105123858.GB4374@srcf.ucam.org>
- <87sj8nc137.fsf@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87sj8nc137.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 5 Nov 2012 15:28:15 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 39/42] x86, mm: kill numa_free_all_bootmem()
+Date: Mon,  5 Nov 2012 12:27:40 -0800
+Message-Id: <1352147263-20383-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <CAE9FiQWUiNqv-fd_4Y79eq+-w6wU34nEwn76+QJ7TWw7uCLaaQ@mail.gmail.com>
+References: <CAE9FiQWUiNqv-fd_4Y79eq+-w6wU34nEwn76+QJ7TWw7uCLaaQ@mail.gmail.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 11:16:12AM -0800, Eric W. Biederman wrote:
-> Matthew Garrett <mjg59@srcf.ucam.org> writes:
-> > No, in the general case the system will do that once it fails to find a 
-> > bootable OS on the drive.
-> 
-> In the general case there will be a bootable OS on the drive.
+Now NO_BOOTMEM version free_all_bootmem_node() does not really
+do free_bootmem at all, and it only call register_page_bootmem_info_node
+instead.
 
-That's in no way a given.
+That is confusing, try to kill that free_all_bootmem_node().
 
+Before that, this patch will remove numa_free_all_bootmem().
+
+That function could be replaced with register_page_bootmem_info() and
+free_all_bootmem();
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/include/asm/numa_64.h |    2 --
+ arch/x86/mm/init_64.c          |   15 +++++++++++----
+ arch/x86/mm/numa_64.c          |   13 -------------
+ 3 files changed, 11 insertions(+), 19 deletions(-)
+
+diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
+index 0c05f7a..fe4d2d4 100644
+--- a/arch/x86/include/asm/numa_64.h
++++ b/arch/x86/include/asm/numa_64.h
+@@ -1,6 +1,4 @@
+ #ifndef _ASM_X86_NUMA_64_H
+ #define _ASM_X86_NUMA_64_H
+ 
+-extern unsigned long numa_free_all_bootmem(void);
+-
+ #endif /* _ASM_X86_NUMA_64_H */
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 1d53def..4178530 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -629,6 +629,16 @@ EXPORT_SYMBOL_GPL(arch_add_memory);
+ 
+ static struct kcore_list kcore_vsyscall;
+ 
++static void __init register_page_bootmem_info(void)
++{
++#ifdef CONFIG_NUMA
++	int i;
++
++	for_each_online_node(i)
++		register_page_bootmem_info_node(NODE_DATA(i));
++#endif
++}
++
+ void __init mem_init(void)
+ {
+ 	long codesize, reservedpages, datasize, initsize;
+@@ -641,11 +651,8 @@ void __init mem_init(void)
+ 	reservedpages = 0;
+ 
+ 	/* this will put all low memory onto the freelists */
+-#ifdef CONFIG_NUMA
+-	totalram_pages = numa_free_all_bootmem();
+-#else
++	register_page_bootmem_info();
+ 	totalram_pages = free_all_bootmem();
+-#endif
+ 
+ 	absent_pages = absent_pages_in_range(0, max_pfn);
+ 	reservedpages = max_pfn - totalram_pages - absent_pages;
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 92e2711..9405ffc 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -10,16 +10,3 @@ void __init initmem_init(void)
+ {
+ 	x86_numa_init();
+ }
+-
+-unsigned long __init numa_free_all_bootmem(void)
+-{
+-	unsigned long pages = 0;
+-	int i;
+-
+-	for_each_online_node(i)
+-		pages += free_all_bootmem_node(NODE_DATA(i));
+-
+-	pages += free_low_memory_core_early(MAX_NUMNODES);
+-
+-	return pages;
+-}
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.7
+
