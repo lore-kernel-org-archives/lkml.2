@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab2KEWLe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 17:11:34 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:43287 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933360Ab2KEWLb (ORCPT
+	id S1754889Ab2KEWPL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 17:15:11 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61805 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab2KEWPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 17:11:31 -0500
+	Mon, 5 Nov 2012 17:15:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <1352000325.9881.0.camel@yhuang-mobile.sh.intel.com>
-References: <1351061654-8339-1-git-send-email-ying.huang@intel.com>
- <CAErSpo7hiFQOC+OPZretkyp5EcL84zEWCAiQgEE5Ewq--gUziQ@mail.gmail.com>
- <1351919165.13106.2.camel@yhuang-mobile.sh.intel.com> <CAErSpo4k+SjqdBt3w3POkg=toCnZufH4gnwJpV8BW8DH5abkqw@mail.gmail.com>
- <1352000325.9881.0.camel@yhuang-mobile.sh.intel.com>
+In-Reply-To: <3515628.KRd0S4T47k@vostro.rjw.lan>
+References: <1351228071-15161-1-git-send-email-ying.huang@intel.com> <3515628.KRd0S4T47k@vostro.rjw.lan>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 5 Nov 2012 15:11:10 -0700
-Message-ID: <CAErSpo4AMsGeuKqhFeqf=8VnJOgvEuQmL3a8j4MtfwhnHtU2DA@mail.gmail.com>
-Subject: Re: [BUGFIX 1/2] PCI/PM: Fix deadlock when unbind device if its
- parent in D3cold
-To: Huang Ying <ying.huang@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Zhang Yanmin <yanmin.zhang@intel.com>
+Date: Mon, 5 Nov 2012 15:14:46 -0700
+Message-ID: <CAErSpo4z+P+NxA_LOb5rKyO34yOx=_vu+=qAWMvnpDjJsAYL-g@mail.gmail.com>
+Subject: Re: PCI/PM: Add comments for PME poll support for PCIe
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 3, 2012 at 9:38 PM, Huang Ying <ying.huang@intel.com> wrote:
-> On Sat, 2012-11-03 at 11:22 -0600, Bjorn Helgaas wrote:
->> On Fri, Nov 2, 2012 at 11:06 PM, Huang Ying <ying.huang@intel.com> wrote:
->> > On Fri, 2012-11-02 at 10:50 -0600, Bjorn Helgaas wrote:
->> >> On Wed, Oct 24, 2012 at 12:54 AM, Huang Ying <ying.huang@intel.com> wrote:
->> >> > If a PCI device and its parents are put into D3cold, unbinding the
->> >> > device will trigger deadlock as follow:
->> >> >
->> >> > - driver_unbind
->> >> >   - device_release_driver
->> >> >     - device_lock(dev)                          <--- previous lock here
->> >> >     - __device_release_driver
->> >> >       - pm_runtime_get_sync
->> >> >         ...
->> >> >           - rpm_resume(dev)
->> >> >             - rpm_resume(dev->parent)
->> >> >               ...
->> >> >                 - pci_pm_runtime_resume
->> >> >                   ...
->> >> >                   - pci_set_power_state
->> >> >                     - __pci_start_power_transition
->> >> >                       - pci_wakeup_bus(dev->parent->subordinate)
->> >> >                         - pci_walk_bus
->> >> >                           - device_lock(dev)    <--- dead lock here
->> >> >
->> >> >
->> >> > If we do not do device_lock in pci_walk_bus, we can avoid dead lock.
->> >> > Device_lock in pci_walk_bus is introduced in commit:
->> >> > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
->> >> > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
->> >> > said device_lock is added to pci_walk_bus because:
->> >> >
->> >> >   Some error handling functions call pci_walk_bus. For example, PCIe
->> >> >   aer. Here we lock the device, so the driver wouldn't detach from the
->> >> >   device, as the cb might call driver's callback function.
->> >> >
->> >> > So I fixed the dead lock as follow:
->> >> >
->> >> > - remove device_lock from pci_walk_bus
->> >> > - add device_lock into callback if callback will call driver's callback
->> >> >
->> >> > I checked pci_walk_bus users one by one, and found only PCIe aer needs
->> >> > device lock.
->> >>
->> >> Is there a problem report or bugzilla for this issue?
->> >
->> > No.  I found this issue when I developed kexec fixing.
->> >
->> > Best Regards,
->> > Huang Ying
->> >
->> >> > Signed-off-by: Huang Ying <ying.huang@intel.com>
->> >> > Cc: Zhang Yanmin <yanmin.zhang@intel.com>
->> >>
->> >> Should this go to stable as well?  The D3cold support appeared in
->> >> v3.6, so my guess is that this fix could go to v3.6.x.
+On Fri, Oct 26, 2012 at 5:18 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, October 26, 2012 01:07:51 PM Huang Ying wrote:
+>> There are comments on why PME poll support is necessary for PCI
+>> devices, but not for PCIe devices.  That may lead to misunderstanding
+>> that PME poll is only necessary for PCI devices.  So add comments
+>> related to PCIe PME poll to make it more clear.
 >>
->> What about the stable tree?
+>> The content of comments comes from the changelog of commit:
+>>
+>> 379021d5c0899fcf9410cae4ca7a59a5a94ca769
+>>
+>> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> Signed-off-by: Huang Ying <ying.huang@intel.com>
 >
-> You are right.  This fix should go to v3.6.x stable tree.
+> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I applied these two patches to my for-linus branch as v3.7 material.  Thanks!
+I applied this to my pci/misc branch as v3.8 material.  Thanks!
+
+>> ---
+>>  drivers/pci/pci.c |   28 +++++++++++++++++++---------
+>>  1 file changed, 19 insertions(+), 9 deletions(-)
+>>
+>> --- a/drivers/pci/pci.c
+>> +++ b/drivers/pci/pci.c
+>> @@ -1578,15 +1578,25 @@ void pci_pme_active(struct pci_dev *dev,
+>>
+>>       pci_write_config_word(dev, dev->pm_cap + PCI_PM_CTRL, pmcsr);
+>>
+>> -     /* PCI (as opposed to PCIe) PME requires that the device have
+>> -        its PME# line hooked up correctly. Not all hardware vendors
+>> -        do this, so the PME never gets delivered and the device
+>> -        remains asleep. The easiest way around this is to
+>> -        periodically walk the list of suspended devices and check
+>> -        whether any have their PME flag set. The assumption is that
+>> -        we'll wake up often enough anyway that this won't be a huge
+>> -        hit, and the power savings from the devices will still be a
+>> -        win. */
+>> +     /*
+>> +      * PCI (as opposed to PCIe) PME requires that the device have
+>> +      * its PME# line hooked up correctly. Not all hardware vendors
+>> +      * do this, so the PME never gets delivered and the device
+>> +      * remains asleep. The easiest way around this is to
+>> +      * periodically walk the list of suspended devices and check
+>> +      * whether any have their PME flag set. The assumption is that
+>> +      * we'll wake up often enough anyway that this won't be a huge
+>> +      * hit, and the power savings from the devices will still be a
+>> +      * win.
+>> +      *
+>> +      * Although PCIe uses in-band PME message instead of PME# line
+>> +      * to report PME, PME does not work for some PCIe devices in
+>> +      * reality.  For example, there are devices that set their PME
+>> +      * status bits, but don't really bother to send a PME message;
+>> +      * there are PCI Express Root Ports that don't bother to
+>> +      * trigger interrupts when they receive PME messages from the
+>> +      * devices below.  So PME poll is used for PCIe devices too.
+>> +      */
+>>
+>>       if (dev->pme_poll) {
+>>               struct pci_pme_device *pme_dev;
+>>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
