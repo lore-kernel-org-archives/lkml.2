@@ -1,134 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881Ab2KEL07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 06:26:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6461 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611Ab2KEL04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 06:26:56 -0500
-Subject: Re: [RFC v4+ hot_track 09/19] vfs: add one work queue
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-In-Reply-To: <1351485061-12297-10-git-send-email-zwu.kernel@gmail.com>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	 <1351485061-12297-10-git-send-email-zwu.kernel@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 05 Nov 2012 11:21:05 +0000
-Message-ID: <1352114465.2705.13.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753038Ab2KELbf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 06:31:35 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64106 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751636Ab2KELbd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 06:31:33 -0500
+Date: Mon, 5 Nov 2012 11:31:03 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: "jgq516@gmail.com" <jgq516@gmail.com>
+Cc: "robert.richter@amd.com" <robert.richter@amd.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/1] ARM: oprofile: add A5/A7/A15 entries in op_perf_name
+Message-ID: <20121105113102.GF3351@mudshark.cambridge.arm.com>
+References: <1351853016-4476-1-git-send-email-jgq516@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351853016-4476-1-git-send-email-jgq516@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, 2012-10-29 at 12:30 +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Fri, Nov 02, 2012 at 10:43:36AM +0000, jgq516@gmail.com wrote:
+> From: Xiao Jiang <jgq516@gmail.com>
 > 
->   Add a per-superblock workqueue and a delayed_work
-> to run periodic work to update map info on each superblock.
+> Add related name for A5/A7/A15 which are consistent with the OProfile
+> user ABI.
 > 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> Signed-off-by: Xiao Jiang <jgq516@gmail.com>
 > ---
->  fs/hot_tracking.c            |   85 ++++++++++++++++++++++++++++++++++++++++++
->  fs/hot_tracking.h            |    3 +
->  include/linux/hot_tracking.h |    3 +
->  3 files changed, 91 insertions(+), 0 deletions(-)
+>  arch/arm/oprofile/common.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 > 
-> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-> index fff0038..0ef9cad 100644
-> --- a/fs/hot_tracking.c
-> +++ b/fs/hot_tracking.c
-> @@ -15,9 +15,12 @@
->  #include <linux/module.h>
->  #include <linux/spinlock.h>
->  #include <linux/hardirq.h>
-> +#include <linux/kthread.h>
-> +#include <linux/freezer.h>
->  #include <linux/fs.h>
->  #include <linux/blkdev.h>
->  #include <linux/types.h>
-> +#include <linux/list_sort.h>
->  #include <linux/limits.h>
->  #include "hot_tracking.h"
+> diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+> index 99c63d4b..ec10db1 100644
+> --- a/arch/arm/oprofile/common.c
+> +++ b/arch/arm/oprofile/common.c
+> @@ -37,8 +37,11 @@ static struct op_perf_name {
+>  	{ "xscale1",		"arm/xscale2"	},
+>  	{ "v6",			"arm/armv6"	},
+>  	{ "v6mpcore",		"arm/mpcore"	},
+> +	{ "ARMv7 Cortex-A5",	"arm/armv7-ca5"	},
+> +	{ "ARMv7 Cortex-A7",	"arm/armv7-ca7"	},
+>  	{ "ARMv7 Cortex-A8",	"arm/armv7"	},
+>  	{ "ARMv7 Cortex-A9",	"arm/armv7-ca9"	},
+> +	{ "ARMv7 Cortex-A15",	"arm/armv7-ca15" },
+>  };
 >  
-> @@ -557,6 +560,67 @@ static void hot_map_array_exit(struct hot_info *root)
->  	}
->  }
->  
-> +/* Temperature compare function*/
-> +static int hot_temp_cmp(void *priv, struct list_head *a,
-> +				struct list_head *b)
-> +{
-> +	struct hot_comm_item *ap =
-> +			container_of(a, struct hot_comm_item, n_list);
-> +	struct hot_comm_item *bp =
-> +			container_of(b, struct hot_comm_item, n_list);
-> +
-> +	int diff = ap->hot_freq_data.last_temp
-> +				- bp->hot_freq_data.last_temp;
-> +	if (diff > 0)
-> +		return -1;
-> +	if (diff < 0)
-> +		return 1;
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Every sync period we update temperatures for
-> + * each hot inode item and hot range item for aging
-> + * purposes.
-> + */
-> +static void hot_update_worker(struct work_struct *work)
-> +{
-> +	struct hot_info *root = container_of(to_delayed_work(work),
-> +					struct hot_info, update_work);
-> +	struct hot_inode_item *hi_nodes[8];
-> +	u64 ino = 0;
-> +	int i, n;
-> +
-> +	while (1) {
-> +		n = radix_tree_gang_lookup(&root->hot_inode_tree,
-> +				   (void **)hi_nodes, ino,
-> +				   ARRAY_SIZE(hi_nodes));
-> +		if (!n)
-> +			break;
-> +
-> +		ino = hi_nodes[n - 1]->i_ino + 1;
-> +		for (i = 0; i < n; i++) {
-> +			kref_get(&hi_nodes[i]->hot_inode.refs);
-> +			hot_map_array_update(
-> +				&hi_nodes[i]->hot_inode.hot_freq_data, root);
-> +			hot_range_update(hi_nodes[i], root);
-> +			hot_inode_item_put(hi_nodes[i]);
-> +		}
-> +	}
-> +
-> +	/* Sort temperature map info */
-> +	for (i = 0; i < HEAT_MAP_SIZE; i++) {
-> +		list_sort(NULL, &root->heat_inode_map[i].node_list,
-> +			hot_temp_cmp);
-> +		list_sort(NULL, &root->heat_range_map[i].node_list,
-> +			hot_temp_cmp);
-> +	}
-> +
+>  char *op_name_from_perf_id(void)
 
-If this list can potentially have one (or more) entries per inode, then
-filesystems with a lot of inodes (millions) may potentially exceed the
-max size of list which list_sort() can handle. If that happens it still
-works, but you'll get a warning message and it won't be as efficient.
+I'd rather not go down this route now that we have the operf tool as part of
+oprofile, which can use the perf syscall directly and doesn't need this
+string translation.
 
-It is something that we've run into with list_sort() and GFS2, but it
-only happens very rarely,
-
-Steve.
-
-
-
+Will
