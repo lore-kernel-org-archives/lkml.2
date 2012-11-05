@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab2KEOJb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:09:31 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:37215 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751088Ab2KEOJa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:09:30 -0500
-Message-ID: <5097C896.80805@vmware.com>
-Date: Mon, 05 Nov 2012 15:09:26 +0100
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S932429Ab2KEOJu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:09:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52090 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932276Ab2KEOJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 09:09:48 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: Re: [patch,v2 04/10] scsi: allocate scsi_cmnd-s from the device's local numa node
+References: <1351892763-21325-1-git-send-email-jmoyer@redhat.com>
+	<1351892763-21325-5-git-send-email-jmoyer@redhat.com>
+	<50954818.8050908@acm.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 05 Nov 2012 09:09:43 -0500
+In-Reply-To: <50954818.8050908@acm.org> (Bart Van Assche's message of "Sat, 03
+	Nov 2012 17:36:40 +0100")
+Message-ID: <x49bofccfa0.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: airlied@gmail.com, airlied@redhat.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 4/4] drm/ttm: Optimize reservation slightly
-References: <1352122278-12896-1-git-send-email-thellstrom@vmware.com> <1352122278-12896-5-git-send-email-thellstrom@vmware.com> <5097C6A1.9000405@canonical.com>
-In-Reply-To: <5097C6A1.9000405@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2012 03:01 PM, Maarten Lankhorst wrote:
-> Hey,
->
-> Op 05-11-12 14:31, Thomas Hellstrom schreef:
->> Reservation locking currently always takes place under the LRU spinlock.
->> Hence, strictly there is no need for an atomic_cmpxchg call; we can use
->> atomic_read followed by atomic_write since nobody else will ever reserve
->> without the lru spinlock held.
->> At least on Intel this should remove a locked bus cycle on successful
->> reserve.
+Bart Van Assche <bvanassche@acm.org> writes:
+
+> On 11/02/12 22:45, Jeff Moyer wrote:
+>> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+>> index 2936b44..4db6973 100644
+>> --- a/drivers/scsi/scsi.c
+>> +++ b/drivers/scsi/scsi.c
+>> @@ -173,16 +173,20 @@ static DEFINE_MUTEX(host_cmd_pool_mutex);
+>>    * NULL on failure
+>>    */
+>>   static struct scsi_cmnd *
+>> -scsi_pool_alloc_command(struct scsi_host_cmd_pool *pool, gfp_t gfp_mask)
+>> +scsi_pool_alloc_command(struct scsi_host_cmd_pool *pool, gfp_t gfp_mask,
+>> +			int node)
+>>   {
+>>   	struct scsi_cmnd *cmd;
 >>
->> Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+>> -	cmd = kmem_cache_zalloc(pool->cmd_slab, gfp_mask | pool->gfp_mask);
+>> +	cmd = kmem_cache_alloc_node(pool->cmd_slab,
+>> +				    gfp_mask | pool->gfp_mask | __GFP_ZERO,
+>> +				    node);
+>>   	if (!cmd)
+>>   		return NULL;
 >>
-> Is that really a good thing to submit when I am busy killing lru lock around reserve? :-)
+>> -	cmd->sense_buffer = kmem_cache_alloc(pool->sense_slab,
+>> -					     gfp_mask | pool->gfp_mask);
+>> +	cmd->sense_buffer = kmem_cache_alloc_node(pool->sense_slab,
+>> +					gfp_mask | pool->gfp_mask | __GFP_ZERO,
+>> +					node);
 >
+> It's not clear to me why __GFP_ZERO is added to the allocation flags ?
 
-If your patch series makes it into the same kernel, let's kill this 
-patch. Otherwise it may live
-at least for a kernel release. It's not a big thing to rebase against, 
-and I won't complain if your
-patch adds another atomic read-modify-write op here. :)
+Hmm, seems I thought this was another case of kmem_cache_zalloc.  I'll
+fix it up.
 
-/Thomas
-
+Cheers,
+Jeff
