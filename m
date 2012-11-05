@@ -1,160 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964786Ab2KETKu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 14:10:50 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59272 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552Ab2KETKr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 14:10:47 -0500
+	id S1754777Ab2KETLh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 14:11:37 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51533 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753207Ab2KETLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 14:11:35 -0500
+Message-ID: <50980F57.1090507@ti.com>
+Date: Mon, 5 Nov 2012 14:11:19 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <AC5129F0-FF30-46ED-AD57-3FA6CA919F99@antoniou-consulting.com>
-References: <50924DA3.1060901@ti.com> <F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com>
- <20121101110418.GF410@arwen.pp.htv.fi> <3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com>
- <20121101124025.GA12489@arwen.pp.htv.fi> <A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com>
- <20121101131609.GC12489@arwen.pp.htv.fi> <E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com>
- <20121101135148.382aec00@pyramind.ukuu.org.uk> <9F25E89E-9194-4725-8A8C-053DCBADA1DB@antoniou-consulting.com>
- <20121101220518.GE14982@arwen.pp.htv.fi> <CA+Bv8XbAvEXe=zDaA8W2+ROD2duYMRcJu4-bms31OH=V_ScKow@mail.gmail.com>
- <20121102112104.4657fb7b@pyramind.ukuu.org.uk> <0EC43413-1DD7-4E2A-879B-0B5B926FFDFE@antoniou-consulting.com>
- <CACxGe6uuK6ew5uxh0BjtYAtPZCTLeUpHc4emXRAnMUtNmEzmGg@mail.gmail.com> <AC5129F0-FF30-46ED-AD57-3FA6CA919F99@antoniou-consulting.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 5 Nov 2012 19:10:27 +0000
-X-Google-Sender-Auth: yzMyzymsFUZcnCO_UA-Y1yTZvtQ
-Message-ID: <CACxGe6v9cyybV4+5tQJ-DG8qdyEHfsLa7t+-3CTL+97Q9msrFw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Russ Dill <Russ.Dill@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <robherring2@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sekhar Nori <nsekhar@ti.com>
+CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
+        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 07/11] ARM: davinci - restructure header files for
+ common clock migration
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-8-git-send-email-m-karicheri2@ti.com> <50967641.4090503@ti.com>
+In-Reply-To: <50967641.4090503@ti.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 3:37 PM, Pantelis Antoniou
-<panto@antoniou-consulting.com> wrote:
-> Hi Grant,
+On 11/04/2012 09:05 AM, Sekhar Nori wrote:
 >
-> On Nov 5, 2012, at 1:37 AM, Grant Likely wrote:
->
->> On Fri, Nov 2, 2012 at 12:32 PM, Pantelis Antoniou
->> <panto@antoniou-consulting.com> wrote:
->>> The i2c2 alias cannot be resolved at compile time; there has to be
->>>
->>> a) A DT object format where unresolved aliases (symbols) are tracked
->>> b) A runtime DT linker that will resolve the alias, and will insert the
->>>   i2c2-devices child nodes as children in the i2c2 node.
->>> c) A method to trigger platform device creation for the child nodes just
->>>   inserted.
->>>
->>> DT core changes aren't bound to be easily accepted, so without having a clear
->>> signal from the DT maintainers that they would consider such a method people
->>> are just hesitant to go down this road.
+> On 10/25/2012 9:41 PM, Murali Karicheri wrote:
+>> pll.h is added to migrate some of the PLL controller defines for sleep.S.
+>> psc.h is modified to keep only PSC modules definitions needed by sleep.S
+>> after migrating to common clock. The definitions under
+>> ifdef CONFIG_COMMON_CLK will be removed in a subsequent patch.
+>> davinci_watchdog_reset prototype is moved to time.h as clock.h is
+>> being obsoleted. sleep.S and pm.c is modified to include the new header
+>> file replacements.
 >>
->> I do agree and will accept such a method.
->>
->> g.
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>> ---
+>>   arch/arm/mach-davinci/devices.c           |    2 ++
+>>   arch/arm/mach-davinci/include/mach/pll.h  |   46 +++++++++++++++++++++++++++++
+>>   arch/arm/mach-davinci/include/mach/psc.h  |    4 +++
+>>   arch/arm/mach-davinci/include/mach/time.h |    4 ++-
+>>   arch/arm/mach-davinci/pm.c                |    4 +++
+>>   arch/arm/mach-davinci/sleep.S             |    4 +++
+>>   6 files changed, 63 insertions(+), 1 deletion(-)
+>>   create mode 100644 arch/arm/mach-davinci/include/mach/pll.h
+> With this patch a _third_ copy of PLL definitions is created in kernel
+> sources. The existing PLL definitions in clock.h inside mach-davinci
+> should be moved to mach/pll.h and the pll.h you introduced inside
+> drivers/clk in 5/11 should be removed (this patch should appear before
+> 5/11).
 >
-> Understood.
+> The biggest disadvantage of this approach is inclusion of mach/ includes
+> in drivers/clk. But duplicating code is definitely not the fix for this.
+> Anyway, mach/ includes are not uncommon in drivers/clk (they are all
+> probably suffering from the same issue).
+Sekhar,
+
+I have replied to patch 5/11 that also refers to this. The main reason 
+we are not able to do this cleanly is the code in sleep.c and pm.c. That 
+is something related to Power management. Could you take a look and see 
+if you can do some clean up on this code? I believe It is more than just 
+moving the header files.
+
+Murali
 >
-> I'll think about the issues and come up with a design for the format, but
-> let's talk about this in the open for a while.
-
-Agreed. I'm planning to post my first draft/RFC tonight.
-
-> I don't want to modify the DTB format, in order to avoid impacting any other
-> DT users.
-
-Ditto. It should be a direct extension.
-
-> So would something like this work for you?
-[...]
-> The dt-resolution node, can be appended to the dt fragment contents and
-> can be generated by the compiler.
+> $ grep -rl "include <mach/" drivers/clk/*
+> drivers/clk/clk-u300.c
+> drivers/clk/mmp/clk-pxa168.c
+> drivers/clk/mmp/clk-mmp2.c
+> drivers/clk/mmp/clk-pxa910.c
+> drivers/clk/mxs/clk-imx23.c
+> drivers/clk/mxs/clk-imx28.c
+> drivers/clk/spear/spear6xx_clock.c
+> drivers/clk/spear/spear3xx_clock.c
+> drivers/clk/spear/spear1340_clock.c
+> drivers/clk/spear/spear1310_clock.c
+> drivers/clk/ux500/clk-prcc.c
+> drivers/clk/versatile/clk-integrator.c
+> drivers/clk/versatile/clk-realview.c
 >
-> Upon injection of the DT fragment the in-kernel loader can perform
-> symbol resolution and replace the phandles with the in-kernel values.
+> pll.h can probably be moved to include/linux/clk/ to avoid this. Would
+> like to hear from Mike on this before going ahead.
 >
-> I know there's an aliases node, but I don't know if it's wise to modify it.
+> Anyway, instead of just commenting, I though I will be more useful and
+> went ahead and made some of the changes I have been talking about. I
+> fixed the multiple PLL definitions issue, the build infrastructure issue
+> and the commit ordering too.
 >
-> What do you think?
+> I pushed the patches I fixed to devel-common-clk branch of my git tree.
+> It is build tested using davinci_all_defconfig but its not runtime tested.
+>
+> Can you start from here and provide me incremental changes on top of
+> this? That way we can collaborate to finish this faster.
+Thanks for offering some help. Yes I can provide you incremental patch. 
+But then could you also help me to squash/rebase and send patches to the 
+list for review?
+> Thanks,
+> Sekhar
+>
 
-If I'm reading your intent correctly, your primary worry is the
-problem of matching up phandles from the base dt with (potentially
-different) phandle values in the overlay. This solution solves it by
-encoding all of the phandle locations as offsets from the start of the
-file into the dt-resolution node. Correct? My concern with this
-approach is that it is fragile. Any changes to the fragment file, such
-as to add extra properties or nodes, or even to repack the tree will
-break all the offsets; probably silently.
-
-It would be less fragile if each property containing phandles had some
-kind of .<prop>-phandle-offsets companion property that listed the
-phandles that need to be fixed up as an offset to the beginning of
-only that properties' data. Better, in that modifying the tree won't
-break the links, but I still worry that it is fragile and possibly too
-complex.
-
-However, the problem is based on the assumption that phandles are
-effectively random and could change ever time the tree is recompiled.
-Well, what if they weren't? What if dtc generated phandles using a
-hash of the node full name so that the value changed rarely? Also,
-what if the format was oriented around detecting if the phandles don't
-match instead of fixing things up? The solution becomes a lot simpler
-if the parser only has to verify that the referenced phandles already
-exist at the right path in the tree.
-
-Something like this:
-
-/include/ "base-file.dts"  /* include might not be the right syntax here */
-&i2c0 {         /* i2c0 resolved by label */
-        touchpad@10 {
-                compatible = "acme,touchpad";
-                reg = <0x10>;
-                interrupt-parent = <&intc>;
-                interrupts = <100>;
-        };
-};
-
-And the generated overlay dtb may look like this:
-
-/ {
-        .readonly;
-        interrupt-controller@0x10005000 {
-                .readonly;
-                phandle = <0x1234>;
-        };
-
-        peripheral-bus {
-                .readonly;
-                i2c@20001000 {
-                        touchpad@10 {
-                                compatible = "acme,touchpad";
-                                reg = <0x10>;
-                                interrupt-parent = <0x1234>;
-                                interrupts = <100>;
-                        };
-                };
-        };
-};
-
-Which is obviously missing a bunch of information for the rest of the
-system, but contains enough data to ensure that the path to the touchpad
-node is valid and that the phandle has not changed.
-
-This handles many of the use cases, but it assumes that an overlay is
-board specific. If it ever is required to support multiple base boards
-with a single overlay file then there is a problem. The .dtb overlays
-generated in this manor cannot handle different phandles or nodes that
-are in a different place. On the other hand, the overlay source files
-should have no problem being compiled for multiple targets, so maybe
-it isn't an issue. Plus if dtc is installed on the target, then the
-live tree from /proc can be used as the reference when compiling the
-overlay.
-
-g.
