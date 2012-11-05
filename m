@@ -1,113 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab2KEKZZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:25:25 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:49373 "EHLO comal.ext.ti.com"
+	id S1753932Ab2KEK1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:27:13 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:55456 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752036Ab2KEKZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:25:24 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <linux_omap@vger.kernel.org>
-CC: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: OMAP4: ID: Improve features detection and check
-Date: Mon, 5 Nov 2012 12:16:57 +0200
-Message-ID: <1352110617-3571-1-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752788Ab2KEK1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 05:27:11 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, rafael.j.wysocki@intel.com,
+        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+Date: Mon, 05 Nov 2012 11:31:19 +0100
+Message-ID: <4052192.ry8JrGTr6H@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1535917.BaYBBNgGy0@vostro.rjw.lan>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <20121103201310.GQ16648@intel.com> <1535917.BaYBBNgGy0@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaces several flags bearing the same meaning. There is no need
-to set flags due to different omap types here, it can be checked
-in appropriate places as well.
+On Saturday, November 03, 2012 09:59:28 PM Rafael J. Wysocki wrote:
+> On Saturday, November 03, 2012 10:13:10 PM Mika Westerberg wrote:
+> > On Sat, Nov 03, 2012 at 01:42:02PM -0600, Bjorn Helgaas wrote:
+> > > On Sat, Nov 3, 2012 at 1:46 AM, Mika Westerberg
+> > > <mika.westerberg@linux.intel.com> wrote:
+> > > > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
+> > > > configure the SPI slave devices behind the SPI controller. This patch adds
+> > > > support for this to the SPI core.
+[...]
+> > And if the ACPI core parses the _CRS, how does it pass all the resources to
+> > the drivers?
+> 
+> Pretty much the same way the $subject patch does.
+> 
+> Instead of parsing the entire subtree below an SPI controller and trying
+> acpi_spi_add_device() for each device node in there, it could call
+> acpi_spi_add_device() whenever it finds a device of type
+> ACPI_RESOURCE_TYPE_SERIAL_BUS/ACPI_RESOURCE_SERIAL_TYPE_SPI.
+> The only problem is how to pass "master" to it.
+> 
+> So Bjorn, do you have any idea how we could pass the "master" pointer from the
+> ACPI core to acpi_spi_add_device() in a sensible way?
+> 
+> An alternative might be to store the information obtained from _CRS in
+> struct acpi_device objects created by the ACPI core while parsing the
+> namespace.  We do that already for things like _PRW, so we might as well do it
+> for _CRS.  Then, the SPI core could just walk the subtree of the device hierarchy
+> below the SPI controller's acpi_device to extract that information.
+> Maybe that's the way to go?
 
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-omap@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Acked-by: Nishanth Menon <nm@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
- arch/arm/mach-omap2/id.c  |   25 +++++++------------------
- arch/arm/mach-omap2/soc.h |    8 ++------
- 2 files changed, 9 insertions(+), 24 deletions(-)
+The general idea is to move the _CRS parsing routine from acpi_platform.c
+to scan.c and make it attach resource objects to struct acpi_device.
 
-diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
-index cf2362c..3c47a19 100644
---- a/arch/arm/mach-omap2/id.c
-+++ b/arch/arm/mach-omap2/id.c
-@@ -28,6 +28,9 @@
- #include "soc.h"
- #include "control.h"
- 
-+#define OMAP4_SILICON_TYPE_STANDARD		0x01
-+#define OMAP4_SILICON_TYPE_PERFORMANCE		0x02
-+
- static unsigned int omap_revision;
- static const char *cpu_rev;
- u32 omap_features;
-@@ -273,25 +276,11 @@ void __init omap4xxx_check_features(void)
- {
- 	u32 si_type;
- 
--	if (cpu_is_omap443x())
--		omap_features |= OMAP4_HAS_MPU_1GHZ;
--
-+	si_type =
-+	(read_tap_reg(OMAP4_CTRL_MODULE_CORE_STD_FUSE_PROD_ID_1) >> 16) & 0x03;
- 
--	if (cpu_is_omap446x()) {
--		si_type =
--			read_tap_reg(OMAP4_CTRL_MODULE_CORE_STD_FUSE_PROD_ID_1);
--		switch ((si_type & (3 << 16)) >> 16) {
--		case 2:
--			/* High performance device */
--			omap_features |= OMAP4_HAS_MPU_1_5GHZ;
--			break;
--		case 1:
--		default:
--			/* Standard device */
--			omap_features |= OMAP4_HAS_MPU_1_2GHZ;
--			break;
--		}
--	}
-+	if (si_type == OMAP4_SILICON_TYPE_PERFORMANCE)
-+		omap_features = OMAP4_HAS_PERF_SILICON;
- }
- 
- void __init ti81xx_check_features(void)
-diff --git a/arch/arm/mach-omap2/soc.h b/arch/arm/mach-omap2/soc.h
-index 0700964..f31d907 100644
---- a/arch/arm/mach-omap2/soc.h
-+++ b/arch/arm/mach-omap2/soc.h
-@@ -435,9 +435,7 @@ extern u32 omap_features;
- #define OMAP3_HAS_IO_WAKEUP		BIT(6)
- #define OMAP3_HAS_SDRC			BIT(7)
- #define OMAP3_HAS_IO_CHAIN_CTRL		BIT(8)
--#define OMAP4_HAS_MPU_1GHZ		BIT(9)
--#define OMAP4_HAS_MPU_1_2GHZ		BIT(10)
--#define OMAP4_HAS_MPU_1_5GHZ		BIT(11)
-+#define OMAP4_HAS_PERF_SILICON		BIT(9)
- 
- 
- #define OMAP3_HAS_FEATURE(feat,flag)			\
-@@ -465,9 +463,7 @@ static inline unsigned int omap4_has_ ##feat(void)	\
- 	return omap_features & OMAP4_HAS_ ##flag;	\
- }							\
- 
--OMAP4_HAS_FEATURE(mpu_1ghz, MPU_1GHZ)
--OMAP4_HAS_FEATURE(mpu_1_2ghz, MPU_1_2GHZ)
--OMAP4_HAS_FEATURE(mpu_1_5ghz, MPU_1_5GHZ)
-+OMAP4_HAS_FEATURE(perf_silicon, PERF_SILICON)
- 
- #endif	/* __ASSEMBLY__ */
- 
--- 
-1.7.9.5
+I'm thinking about adding a list head to struct acpi_device pointing to a
+list of entries like:
 
+struct resource_list_entry {
+	struct list_head node;
+	struct resource *resources;
+	unsigned int count;
+};
+
+where "resources" is an array of resources (e.g. interrupts) in the given
+entry and count is the size of that array.
+
+That list would contain common resources like ACPI_RESOURCE_TYPE_FIXED_MEMORY32,
+ACPI_RESOURCE_TYPE_IRQ, ACPI_RESOURCE_TYPE_ADDRESS32, ACPI_RESOURCE_TYPE_EXTENDED_IRQ.
+I think adding it would allow us to make acpi_create_platform_device(),
+acpi_spi_add_resources() and acpi_i2c_add_resources() more straightforward (and
+remove some code duplication between the last two routines).
+
+In addition to that, I'd add an entry containing serial bus information, if
+applicable, for the given struct acpi_device, something like:
+
+union acpi_resource_serial_bus {
+	struct acpi_resource_common_serialbus;
+	struct acpi_resource_spi_serialbus;
+	struct acpi_resource_i2c_serialbus;
+	struct acpi_resource_uart_serialbus;
+};
+
+struct acpi_device {
+	...
+	union acpi_resource_serial_bus *serial;
+	...
+};
+
+Then, things like acpi_spi_add_resources() and acpi_i2c_add_resources() would
+be able to use struct acpi_device objects directly without running any AML.
+
+That could be done on top of the current series and I'm going to prepare a patch
+for that in the next few days if I find some time between the LCE sessions.
+
+Thanks,
+Rafael
+
+
+--- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
