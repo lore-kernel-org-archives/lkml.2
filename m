@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab2KECfy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 21:35:54 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50601 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab2KECfx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 21:35:53 -0500
+	id S1752445Ab2KECjb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 21:39:31 -0500
+Received: from mga01.intel.com ([192.55.52.88]:38324 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406Ab2KECja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 21:39:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,712,1344236400"; 
+   d="scan'208";a="242512314"
+Message-ID: <509726D0.4010606@zytor.com>
+Date: Mon, 05 Nov 2012 03:39:12 +0100
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1351891622.23963.4.camel@oc2046235844.ibm.com>
-References: <CAEH94LjTedn0n00ZtqFxBL=kDA3u8G39q+x79-vPoMYvEKW1gw@mail.gmail.com>
-	<CAEH94LgUcAL6RquMZKTrDg87_0J2sEqTsDXUbnhrQ37KuMJ4sg@mail.gmail.com>
-	<1351891622.23963.4.camel@oc2046235844.ibm.com>
-Date: Mon, 5 Nov 2012 10:35:50 +0800
-Message-ID: <CAEH94LiuKGPi+k=pA9P-FFsosnwG7PRBK5DjjaGf20S+pyrzpA@mail.gmail.com>
-Subject: Re: VFS hot tracking: How to calculate data temperature?
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: cmm@us.ibm.com
-Cc: linux-fsdevel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        Dave Chinner <david@fromorbit.com>, Ben Chociej <bchociej@gmail.com>,
-        James Northrup <northrup.james@gmail.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Zhang, Jun" <jun.zhang@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Fleming, Matt" <matt.fleming@intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] crash dump: don't delete non-E820_RAM during init
+References: <88DC34334CA3444C85D647DBFA962C270FD7EAD3@SHSMSX102.ccr.corp.intel.com> <50909120.3040101@zytor.com> <88DC34334CA3444C85D647DBFA962C270FD7EB0B@SHSMSX102.ccr.corp.intel.com> <5090AB3C.5050405@zytor.com> <88DC34334CA3444C85D647DBFA962C270FD7EB3A@SHSMSX102.ccr.corp.intel.com> <5090B966.4040605@zytor.com> <88DC34334CA3444C85D647DBFA962C270FD7EF68@SHSMSX102.ccr.corp.intel.com> <c6a025f9-0ac5-45d7-bda9-7f9bc8eaf9ab@email.android.com> <88DC34334CA3444C85D647DBFA962C270FD7F039@SHSMSX102.ccr.corp.intel.com> <5093F6DA.7040709@zytor.com> <88DC34334CA3444C85D647DBFA962C270FD7F4B6@SHSMSX102.ccr.corp.intel.com>
+In-Reply-To: <88DC34334CA3444C85D647DBFA962C270FD7F4B6@SHSMSX102.ccr.corp.intel.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 3, 2012 at 5:27 AM, Mingming.cao <cmm@us.ibm.com> wrote:
-> On Fri, 2012-11-02 at 14:38 +0800, Zhi Yong Wu wrote:
->> Here also has another question.
->>
->> How to save the file temperature among the umount to be able to
->> preserve the file tempreture after reboot?
->>
->> This above is the requirement from DB product.
->> I thought that we can save file temperature in its inode struct, that
->> is, add one new field in struct inode, then this info will be written
->> to disk with inode.
->>
->> Any comments or ideas are appreciated, thanks.
->>
->>
->
-> Maybe could save the last file temperature with extended attributes.
-It seems that only ext4 has the concept of extended attributes.
+On 11/05/2012 02:37 AM, Zhang, Jun wrote:
+> Hello, Gortmaker
+> I will modify my subject. Thanks!
+> 
+> Hello, Anvin
+> from our three options, I think third option is better. But in 3) option, there are two choose, 3.1) is like memmap=REMOVERAM, 3.2) is memmap=CRASHKDUMP.
+> In 3.1) we maybe need ifdef/endif within the { } of the function (like exactmap).
+> In 3.2) we can remove the ifdef/endif. 
+> Which one is the better? Maybe you have a better solution, please share it. 
+> Thanks!
+> 
+> Next is our three option.
+> 1)  my patch.
+> 2)  modify kexec, only pass two parameters -- memmap=544K@64K 
+>     memmap=64964K@32768K, in kernel setup_memory_map, we can remove RAM 
+>     range.
+> 3)  add extra optional, 3.1) like memmap=REMOVERAM
+>                    3.2) like memmap=CRASHKDUMP
+> 
 
-> Just save the per-inode temperature only for now.
->
-> Mingming
->> On Fri, Nov 2, 2012 at 12:04 PM, Zhi Yong Wu <zwu.kernel@gmail.com> wrote:
->> > HI, guys
->> >
->> >    VFS hot tracking currently show result as below, and it is very
->> > strange and not nice.
->> >
->> > inode #279, reads 0, writes 1, avg read time 18446744073709551615,
->> > avg write time 5251566408153596, temp 109
->> >
->> > Do anyone know if there is one simpler but effective way to calculate
->> > data temperature?
->> >
->> > --
->> > Regards,
->> >
->> > Zhi Yong Wu
->>
->>
->>
->
->
->
+Again, 2 would be better because it is a localized change to kexec.  If
+that works I don't see why there is any reason to change anything else.
+
+	-hpa
 
 
-
--- 
-Regards,
-
-Zhi Yong Wu
