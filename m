@@ -1,134 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab2KEKLK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:11:10 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:53701 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795Ab2KEKLD (ORCPT
+	id S1754054Ab2KEKLi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:11:38 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45747 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753540Ab2KEKK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:11:03 -0500
-Date: Mon, 5 Nov 2012 11:10:31 +0100
+	Mon, 5 Nov 2012 05:10:59 -0500
+Date: Mon, 5 Nov 2012 11:09:41 +0100
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.6.6
-Message-ID: <20121105101031.GB24501@kroah.com>
-References: <20121105101021.GA24501@kroah.com>
+Subject: Re: Linux 3.4.18
+Message-ID: <20121105100941.GB24472@kroah.com>
+References: <20121105100929.GA24472@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121105101021.GA24501@kroah.com>
+In-Reply-To: <20121105100929.GA24472@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
 diff --git a/Makefile b/Makefile
-index 6e4a00d..471b83c 100644
+index 3f9f076..95de447 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -1,6 +1,6 @@
  VERSION = 3
- PATCHLEVEL = 6
--SUBLEVEL = 5
-+SUBLEVEL = 6
+ PATCHLEVEL = 4
+-SUBLEVEL = 17
++SUBLEVEL = 18
  EXTRAVERSION =
- NAME = Terrified Chipmunk
+ NAME = Saber-toothed Squirrel
  
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index f3b44a6..54f35d1c0 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -285,6 +285,13 @@ static void blkg_destroy_all(struct request_queue *q)
- 		blkg_destroy(blkg);
- 		spin_unlock(&blkcg->lock);
- 	}
-+
-+	/*
-+	 * root blkg is destroyed.  Just clear the pointer since
-+	 * root_rl does not take reference on root blkg.
-+	 */
-+	q->root_blkg = NULL;
-+	q->root_rl.blkg = NULL;
+diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+index c2b77e5..5ccd6e8 100644
+--- a/arch/arm/mach-exynos/common.c
++++ b/arch/arm/mach-exynos/common.c
+@@ -44,7 +44,6 @@
+ #include <plat/fimc-core.h>
+ #include <plat/iic-core.h>
+ #include <plat/tv-core.h>
+-#include <plat/spi-core.h>
+ #include <plat/regs-serial.h>
+ 
+ #include "common.h"
+@@ -339,8 +338,6 @@ static void __init exynos4_map_io(void)
+ 
+ 	s5p_fb_setname(0, "exynos4-fb");
+ 	s5p_hdmi_setname("exynos4-hdmi");
+-
+-	s3c64xx_spi_setname("exynos4210-spi");
  }
  
- static void blkg_rcu_free(struct rcu_head *rcu_head)
+ static void __init exynos5_map_io(void)
+@@ -361,8 +358,6 @@ static void __init exynos5_map_io(void)
+ 	s3c_i2c0_setname("s3c2440-i2c");
+ 	s3c_i2c1_setname("s3c2440-i2c");
+ 	s3c_i2c2_setname("s3c2440-i2c");
+-
+-	s3c64xx_spi_setname("exynos4210-spi");
+ }
+ 
+ static void __init exynos4_init_clocks(int xtal)
+diff --git a/arch/arm/mach-s3c24xx/s3c2416.c b/arch/arm/mach-s3c24xx/s3c2416.c
+index f74818d..7743fad 100644
+--- a/arch/arm/mach-s3c24xx/s3c2416.c
++++ b/arch/arm/mach-s3c24xx/s3c2416.c
+@@ -61,7 +61,6 @@
+ #include <plat/nand-core.h>
+ #include <plat/adc-core.h>
+ #include <plat/rtc-core.h>
+-#include <plat/spi-core.h>
+ 
+ static struct map_desc s3c2416_iodesc[] __initdata = {
+ 	IODESC_ENT(WATCHDOG),
+@@ -132,7 +131,6 @@ void __init s3c2416_map_io(void)
+ 	/* initialize device information early */
+ 	s3c2416_default_sdhci0();
+ 	s3c2416_default_sdhci1();
+-	s3c64xx_spi_setname("s3c2443-spi");
+ 
+ 	iotable_init(s3c2416_iodesc, ARRAY_SIZE(s3c2416_iodesc));
+ }
+diff --git a/arch/arm/mach-s3c24xx/s3c2443.c b/arch/arm/mach-s3c24xx/s3c2443.c
+index 165b6a6..ab648ad 100644
+--- a/arch/arm/mach-s3c24xx/s3c2443.c
++++ b/arch/arm/mach-s3c24xx/s3c2443.c
+@@ -43,7 +43,6 @@
+ #include <plat/nand-core.h>
+ #include <plat/adc-core.h>
+ #include <plat/rtc-core.h>
+-#include <plat/spi-core.h>
+ 
+ static struct map_desc s3c2443_iodesc[] __initdata = {
+ 	IODESC_ENT(WATCHDOG),
+@@ -101,9 +100,6 @@ void __init s3c2443_map_io(void)
+ 	s3c24xx_gpiocfg_default.set_pull = s3c2443_gpio_setpull;
+ 	s3c24xx_gpiocfg_default.get_pull = s3c2443_gpio_getpull;
+ 
+-	/* initialize device information early */
+-	s3c64xx_spi_setname("s3c2443-spi");
+-
+ 	iotable_init(s3c2443_iodesc, ARRAY_SIZE(s3c2443_iodesc));
+ }
+ 
+diff --git a/arch/arm/mach-s5p64x0/common.c b/arch/arm/mach-s5p64x0/common.c
+index 111e404..6e6a0a9 100644
+--- a/arch/arm/mach-s5p64x0/common.c
++++ b/arch/arm/mach-s5p64x0/common.c
+@@ -44,7 +44,6 @@
+ #include <plat/sdhci.h>
+ #include <plat/adc-core.h>
+ #include <plat/fb-core.h>
+-#include <plat/spi-core.h>
+ #include <plat/gpio-cfg.h>
+ #include <plat/regs-irqtype.h>
+ #include <plat/regs-serial.h>
+@@ -180,7 +179,6 @@ void __init s5p6440_map_io(void)
+ 	/* initialize any device information early */
+ 	s3c_adc_setname("s3c64xx-adc");
+ 	s3c_fb_setname("s5p64x0-fb");
+-	s3c64xx_spi_setname("s5p64x0-spi");
+ 
+ 	s5p64x0_default_sdhci0();
+ 	s5p64x0_default_sdhci1();
+@@ -195,7 +193,6 @@ void __init s5p6450_map_io(void)
+ 	/* initialize any device information early */
+ 	s3c_adc_setname("s3c64xx-adc");
+ 	s3c_fb_setname("s5p64x0-fb");
+-	s3c64xx_spi_setname("s5p64x0-spi");
+ 
+ 	s5p64x0_default_sdhci0();
+ 	s5p64x0_default_sdhci1();
+diff --git a/arch/arm/mach-s5pc100/common.c b/arch/arm/mach-s5pc100/common.c
+index cc6e561..6219086 100644
+--- a/arch/arm/mach-s5pc100/common.c
++++ b/arch/arm/mach-s5pc100/common.c
+@@ -45,7 +45,6 @@
+ #include <plat/fb-core.h>
+ #include <plat/iic-core.h>
+ #include <plat/onenand-core.h>
+-#include <plat/spi-core.h>
+ #include <plat/regs-serial.h>
+ #include <plat/watchdog-reset.h>
+ 
+@@ -166,8 +165,6 @@ void __init s5pc100_map_io(void)
+ 	s3c_onenand_setname("s5pc100-onenand");
+ 	s3c_fb_setname("s5pc100-fb");
+ 	s3c_cfcon_setname("s5pc100-pata");
+-
+-	s3c64xx_spi_setname("s5pc100-spi");
+ }
+ 
+ void __init s5pc100_init_clocks(int xtal)
+diff --git a/arch/arm/mach-s5pv210/common.c b/arch/arm/mach-s5pv210/common.c
+index a0c50ef..4c9e902 100644
+--- a/arch/arm/mach-s5pv210/common.c
++++ b/arch/arm/mach-s5pv210/common.c
+@@ -43,7 +43,6 @@
+ #include <plat/iic-core.h>
+ #include <plat/keypad-core.h>
+ #include <plat/tv-core.h>
+-#include <plat/spi-core.h>
+ #include <plat/regs-serial.h>
+ 
+ #include "common.h"
+@@ -197,8 +196,6 @@ void __init s5pv210_map_io(void)
+ 
+ 	/* setup TV devices */
+ 	s5p_hdmi_setname("s5pv210-hdmi");
+-
+-	s3c64xx_spi_setname("s5pv210-spi");
+ }
+ 
+ void __init s5pv210_init_clocks(int xtal)
+diff --git a/arch/arm/plat-samsung/include/plat/spi-core.h b/arch/arm/plat-samsung/include/plat/spi-core.h
+deleted file mode 100644
+index 0b9428a..0000000
+--- a/arch/arm/plat-samsung/include/plat/spi-core.h
++++ /dev/null
+@@ -1,30 +0,0 @@
+-/*
+- * Copyright (C) 2012 Heiko Stuebner <heiko@sntech.de>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-#ifndef __PLAT_S3C_SPI_CORE_H
+-#define __PLAT_S3C_SPI_CORE_H
+-
+-/* These functions are only for use with the core support code, such as
+- * the cpu specific initialisation code
+- */
+-
+-/* re-define device name depending on support. */
+-static inline void s3c64xx_spi_setname(char *name)
+-{
+-#ifdef CONFIG_S3C64XX_DEV_SPI0
+-	s3c64xx_device_spi0.name = name;
+-#endif
+-#ifdef CONFIG_S3C64XX_DEV_SPI1
+-	s3c64xx_device_spi1.name = name;
+-#endif
+-#ifdef CONFIG_S3C64XX_DEV_SPI2
+-	s3c64xx_device_spi2.name = name;
+-#endif
+-}
+-
+-#endif /* __PLAT_S3C_SPI_CORE_H */
 diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index a7d6347..fe0de7e 100644
+index b0b00d7..c82f06e 100644
 --- a/drivers/block/floppy.c
 +++ b/drivers/block/floppy.c
-@@ -4138,6 +4138,10 @@ static int __init do_floppy_init(void)
+@@ -4161,6 +4161,7 @@ static int __init floppy_init(void)
  
- 	raw_cmd = NULL;
- 
-+	floppy_wq = alloc_ordered_workqueue("floppy", 0);
-+	if (!floppy_wq)
-+		return -ENOMEM;
-+
- 	for (dr = 0; dr < N_DRIVE; dr++) {
- 		disks[dr] = alloc_disk(1);
- 		if (!disks[dr]) {
-@@ -4145,16 +4149,11 @@ static int __init do_floppy_init(void)
- 			goto out_put_disk;
- 		}
- 
--		floppy_wq = alloc_ordered_workqueue("floppy", 0);
--		if (!floppy_wq) {
--			err = -ENOMEM;
--			goto out_put_disk;
--		}
--
  		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
  		if (!disks[dr]->queue) {
 +			put_disk(disks[dr]);
  			err = -ENOMEM;
--			goto out_destroy_workq;
-+			goto out_put_disk;
+ 			goto out_put_disk;
  		}
- 
- 		blk_queue_max_hw_sectors(disks[dr]->queue, 64);
-@@ -4294,7 +4293,7 @@ static int __init do_floppy_init(void)
- 
- 		err = platform_device_register(&floppy_device[drive]);
- 		if (err)
--			goto out_release_dma;
-+			goto out_remove_drives;
- 
- 		err = device_create_file(&floppy_device[drive].dev,
- 					 &dev_attr_cmos);
-@@ -4312,14 +4311,21 @@ static int __init do_floppy_init(void)
- 
- out_unreg_platform_dev:
- 	platform_device_unregister(&floppy_device[drive]);
-+out_remove_drives:
-+	while (drive--) {
-+		if ((allowed_drive_mask & (1 << drive)) &&
-+		    fdc_state[FDC(drive)].version != FDC_NONE) {
-+			del_gendisk(disks[drive]);
-+			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
-+			platform_device_unregister(&floppy_device[drive]);
-+		}
-+	}
- out_release_dma:
- 	if (atomic_read(&usage_count))
- 		floppy_release_irq_and_dma();
- out_unreg_region:
- 	blk_unregister_region(MKDEV(FLOPPY_MAJOR, 0), 256);
- 	platform_driver_unregister(&floppy_driver);
--out_destroy_workq:
--	destroy_workqueue(floppy_wq);
- out_unreg_blkdev:
- 	unregister_blkdev(FLOPPY_MAJOR, "fd");
- out_put_disk:
-@@ -4335,6 +4341,7 @@ out_put_disk:
- 		}
- 		put_disk(disks[dr]);
- 	}
-+	destroy_workqueue(floppy_wq);
- 	return err;
- }
- 
 diff --git a/drivers/gpio/gpio-timberdale.c b/drivers/gpio/gpio-timberdale.c
 index 031c6ad..1a3e2b9 100644
 --- a/drivers/gpio/gpio-timberdale.c
@@ -152,7 +250,7 @@ index 031c6ad..1a3e2b9 100644
  	spin_unlock_irqrestore(&tgpio->lock, flags);
  }
 diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index de0213c..f03ae68 100644
+index 5a75510..112c16e 100644
 --- a/drivers/gpio/gpiolib.c
 +++ b/drivers/gpio/gpiolib.c
 @@ -623,9 +623,11 @@ static ssize_t export_store(struct class *class,
@@ -182,10 +280,10 @@ index de0213c..f03ae68 100644
  	chip = desc->chip;
  	if (chip == NULL)
 diff --git a/drivers/gpu/drm/nouveau/nouveau_drv.c b/drivers/gpu/drm/nouveau/nouveau_drv.c
-index 9a36f5f..a06eb3d 100644
+index 4f2030b..05091c2 100644
 --- a/drivers/gpu/drm/nouveau/nouveau_drv.c
 +++ b/drivers/gpu/drm/nouveau/nouveau_drv.c
-@@ -188,11 +188,13 @@ nouveau_pci_suspend(struct pci_dev *pdev, pm_message_t pm_state)
+@@ -186,11 +186,13 @@ nouveau_pci_suspend(struct pci_dev *pdev, pm_message_t pm_state)
  	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
  		return 0;
  
@@ -203,7 +301,7 @@ index 9a36f5f..a06eb3d 100644
  
  	NV_INFO(dev, "Unpinning framebuffer(s)...\n");
  	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
-@@ -359,10 +361,12 @@ nouveau_pci_resume(struct pci_dev *pdev)
+@@ -363,10 +365,12 @@ nouveau_pci_resume(struct pci_dev *pdev)
  			NV_ERROR(dev, "Could not pin/map cursor.\n");
  	}
  
@@ -219,7 +317,7 @@ index 9a36f5f..a06eb3d 100644
  
  	/* Force CLUT to get re-loaded during modeset */
  	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
-@@ -484,9 +488,7 @@ static int __init nouveau_init(void)
+@@ -468,9 +472,7 @@ static int __init nouveau_init(void)
  #ifdef CONFIG_VGA_CONSOLE
  		if (vgacon_text_force())
  			nouveau_modeset = 0;
@@ -230,10 +328,10 @@ index 9a36f5f..a06eb3d 100644
  
  	if (!nouveau_modeset)
 diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c b/drivers/gpu/drm/nouveau/nouveau_state.c
-index c610144..f5e9584 100644
+index c2a8511..b096cf2 100644
 --- a/drivers/gpu/drm/nouveau/nouveau_state.c
 +++ b/drivers/gpu/drm/nouveau/nouveau_state.c
-@@ -50,6 +50,7 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
+@@ -47,6 +47,7 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
  {
  	struct drm_nouveau_private *dev_priv = dev->dev_private;
  	struct nouveau_engine *engine = &dev_priv->engine;
@@ -241,7 +339,7 @@ index c610144..f5e9584 100644
  
  	switch (dev_priv->chipset & 0xf0) {
  	case 0x00:
-@@ -428,7 +429,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
+@@ -526,7 +527,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
  	}
  
  	/* headless mode */
@@ -252,7 +350,7 @@ index c610144..f5e9584 100644
  		engine->display.late_takedown = nouveau_stub_takedown;
  		engine->display.create = nouveau_stub_init;
 diff --git a/drivers/gpu/drm/nouveau/nv04_dac.c b/drivers/gpu/drm/nouveau/nv04_dac.c
-index 38f1947..09ac275 100644
+index 8300266..f180dcf 100644
 --- a/drivers/gpu/drm/nouveau/nv04_dac.c
 +++ b/drivers/gpu/drm/nouveau/nv04_dac.c
 @@ -210,7 +210,7 @@ out:
@@ -292,7 +390,7 @@ index 38f1947..09ac275 100644
  
  	nv04_dac_update_dacclk(encoder, mode == DRM_MODE_DPMS_ON);
 diff --git a/drivers/gpu/drm/nouveau/nv04_dfp.c b/drivers/gpu/drm/nouveau/nv04_dfp.c
-index c267562..89640f2 100644
+index 2258746..473f30a 100644
 --- a/drivers/gpu/drm/nouveau/nv04_dfp.c
 +++ b/drivers/gpu/drm/nouveau/nv04_dfp.c
 @@ -476,7 +476,7 @@ static void nv04_dfp_commit(struct drm_encoder *encoder)
@@ -393,10 +491,10 @@ index e5c699b..3899989 100644
  		.driver_data = MS_NOGET },
  	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_COMFORT_MOUSE_4500),
 diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 611b5f7..05bb49e 100644
+index 23904d2..df44509 100644
 --- a/drivers/md/raid1.c
 +++ b/drivers/md/raid1.c
-@@ -2699,7 +2699,7 @@ static struct r1conf *setup_conf(struct mddev *mddev)
+@@ -2564,7 +2564,7 @@ static struct r1conf *setup_conf(struct mddev *mddev)
  		    || disk_idx < 0)
  			continue;
  		if (test_bit(Replacement, &rdev->flags))
@@ -405,214 +503,24 @@ index 611b5f7..05bb49e 100644
  		else
  			disk = conf->mirrors + disk_idx;
  
-diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
-index 41b74ba..515c250 100644
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -557,6 +557,7 @@ static bool qlt_check_fcport_exist(struct scsi_qla_host *vha,
- 	int pmap_len;
- 	fc_port_t *fcport;
- 	int global_resets;
-+	unsigned long flags;
+diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
+index e4d6dc2..d6ffd43 100644
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -5430,6 +5430,8 @@ static void b43_ssb_remove(struct ssb_device *sdev)
+ 	cancel_work_sync(&wldev->restart_work);
  
- retry:
- 	global_resets = atomic_read(&ha->tgt.qla_tgt->tgt_global_resets_count);
-@@ -625,10 +626,10 @@ retry:
- 	    sess->s_id.b.area, sess->loop_id, fcport->d_id.b.domain,
- 	    fcport->d_id.b.al_pa, fcport->d_id.b.area, fcport->loop_id);
- 
--	sess->s_id = fcport->d_id;
--	sess->loop_id = fcport->loop_id;
--	sess->conf_compl_supported = !!(fcport->flags &
--	    FCF_CONF_COMP_SUPPORTED);
-+	spin_lock_irqsave(&ha->hardware_lock, flags);
-+	ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
-+				(fcport->flags & FCF_CONF_COMP_SUPPORTED));
-+	spin_unlock_irqrestore(&ha->hardware_lock, flags);
- 
- 	res = true;
- 
-@@ -740,10 +741,9 @@ static struct qla_tgt_sess *qlt_create_sess(
- 				qlt_undelete_sess(sess);
- 
- 			kref_get(&sess->se_sess->sess_kref);
--			sess->s_id = fcport->d_id;
--			sess->loop_id = fcport->loop_id;
--			sess->conf_compl_supported = !!(fcport->flags &
--			    FCF_CONF_COMP_SUPPORTED);
-+			ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
-+						(fcport->flags & FCF_CONF_COMP_SUPPORTED));
-+
- 			if (sess->local && !local)
- 				sess->local = 0;
- 			spin_unlock_irqrestore(&ha->hardware_lock, flags);
-@@ -796,8 +796,7 @@ static struct qla_tgt_sess *qlt_create_sess(
- 	 */
- 	kref_get(&sess->se_sess->sess_kref);
- 
--	sess->conf_compl_supported = !!(fcport->flags &
--	    FCF_CONF_COMP_SUPPORTED);
-+	sess->conf_compl_supported = (fcport->flags & FCF_CONF_COMP_SUPPORTED);
- 	BUILD_BUG_ON(sizeof(sess->port_name) != sizeof(fcport->port_name));
- 	memcpy(sess->port_name, fcport->port_name, sizeof(sess->port_name));
- 
-@@ -869,10 +868,8 @@ void qlt_fc_port_added(struct scsi_qla_host *vha, fc_port_t *fcport)
- 			ql_dbg(ql_dbg_tgt_mgt, vha, 0xf007,
- 			    "Reappeared sess %p\n", sess);
- 		}
--		sess->s_id = fcport->d_id;
--		sess->loop_id = fcport->loop_id;
--		sess->conf_compl_supported = !!(fcport->flags &
--		    FCF_CONF_COMP_SUPPORTED);
-+		ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
-+					(fcport->flags & FCF_CONF_COMP_SUPPORTED));
- 	}
- 
- 	if (sess && sess->local) {
-diff --git a/drivers/scsi/qla2xxx/qla_target.h b/drivers/scsi/qla2xxx/qla_target.h
-index 170af15..bad7495 100644
---- a/drivers/scsi/qla2xxx/qla_target.h
-+++ b/drivers/scsi/qla2xxx/qla_target.h
-@@ -648,6 +648,7 @@ struct qla_tgt_func_tmpl {
- 
- 	int (*check_initiator_node_acl)(struct scsi_qla_host *, unsigned char *,
- 					void *, uint8_t *, uint16_t);
-+	void (*update_sess)(struct qla_tgt_sess *, port_id_t, uint16_t, bool);
- 	struct qla_tgt_sess *(*find_sess_by_loop_id)(struct scsi_qla_host *,
- 						const uint16_t);
- 	struct qla_tgt_sess *(*find_sess_by_s_id)(struct scsi_qla_host *,
-diff --git a/drivers/scsi/qla2xxx/tcm_qla2xxx.c b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
-index 4752f65..7fa0672 100644
---- a/drivers/scsi/qla2xxx/tcm_qla2xxx.c
-+++ b/drivers/scsi/qla2xxx/tcm_qla2xxx.c
-@@ -1468,6 +1468,78 @@ static int tcm_qla2xxx_check_initiator_node_acl(
- 	return 0;
- }
- 
-+static void tcm_qla2xxx_update_sess(struct qla_tgt_sess *sess, port_id_t s_id,
-+				    uint16_t loop_id, bool conf_compl_supported)
-+{
-+	struct qla_tgt *tgt = sess->tgt;
-+	struct qla_hw_data *ha = tgt->ha;
-+	struct tcm_qla2xxx_lport *lport = ha->tgt.target_lport_ptr;
-+	struct se_node_acl *se_nacl = sess->se_sess->se_node_acl;
-+	struct tcm_qla2xxx_nacl *nacl = container_of(se_nacl,
-+			struct tcm_qla2xxx_nacl, se_node_acl);
-+	u32 key;
-+
-+
-+	if (sess->loop_id != loop_id || sess->s_id.b24 != s_id.b24)
-+		pr_info("Updating session %p from port %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x loop_id %d -> %d s_id %x:%x:%x -> %x:%x:%x\n",
-+			sess,
-+			sess->port_name[0], sess->port_name[1],
-+			sess->port_name[2], sess->port_name[3],
-+			sess->port_name[4], sess->port_name[5],
-+			sess->port_name[6], sess->port_name[7],
-+			sess->loop_id, loop_id,
-+			sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa,
-+			s_id.b.domain, s_id.b.area, s_id.b.al_pa);
-+
-+	if (sess->loop_id != loop_id) {
-+		/*
-+		 * Because we can shuffle loop IDs around and we
-+		 * update different sessions non-atomically, we might
-+		 * have overwritten this session's old loop ID
-+		 * already, and we might end up overwriting some other
-+		 * session that will be updated later.  So we have to
-+		 * be extra careful and we can't warn about those things...
-+		 */
-+		if (lport->lport_loopid_map[sess->loop_id].se_nacl == se_nacl)
-+			lport->lport_loopid_map[sess->loop_id].se_nacl = NULL;
-+
-+		lport->lport_loopid_map[loop_id].se_nacl = se_nacl;
-+
-+		sess->loop_id = loop_id;
-+	}
-+
-+	if (sess->s_id.b24 != s_id.b24) {
-+		key = (((u32) sess->s_id.b.domain << 16) |
-+		       ((u32) sess->s_id.b.area   <<  8) |
-+		       ((u32) sess->s_id.b.al_pa));
-+
-+		if (btree_lookup32(&lport->lport_fcport_map, key))
-+			WARN(btree_remove32(&lport->lport_fcport_map, key) != se_nacl,
-+			     "Found wrong se_nacl when updating s_id %x:%x:%x\n",
-+			     sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa);
-+		else
-+			WARN(1, "No lport_fcport_map entry for s_id %x:%x:%x\n",
-+			     sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa);
-+
-+		key = (((u32) s_id.b.domain << 16) |
-+		       ((u32) s_id.b.area   <<  8) |
-+		       ((u32) s_id.b.al_pa));
-+
-+		if (btree_lookup32(&lport->lport_fcport_map, key)) {
-+			WARN(1, "Already have lport_fcport_map entry for s_id %x:%x:%x\n",
-+			     s_id.b.domain, s_id.b.area, s_id.b.al_pa);
-+			btree_update32(&lport->lport_fcport_map, key, se_nacl);
-+		} else {
-+			btree_insert32(&lport->lport_fcport_map, key, se_nacl, GFP_ATOMIC);
-+		}
-+
-+		sess->s_id = s_id;
-+		nacl->nport_id = key;
-+	}
-+
-+	sess->conf_compl_supported = conf_compl_supported;
-+}
-+
- /*
-  * Calls into tcm_qla2xxx used by qla2xxx LLD I/O path.
-  */
-@@ -1478,6 +1550,7 @@ static struct qla_tgt_func_tmpl tcm_qla2xxx_template = {
- 	.free_cmd		= tcm_qla2xxx_free_cmd,
- 	.free_mcmd		= tcm_qla2xxx_free_mcmd,
- 	.free_session		= tcm_qla2xxx_free_session,
-+	.update_sess		= tcm_qla2xxx_update_sess,
- 	.check_initiator_node_acl = tcm_qla2xxx_check_initiator_node_acl,
- 	.find_sess_by_s_id	= tcm_qla2xxx_find_sess_by_s_id,
- 	.find_sess_by_loop_id	= tcm_qla2xxx_find_sess_by_loop_id,
-diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
-index a9dd946..323e192 100644
---- a/drivers/target/target_core_sbc.c
-+++ b/drivers/target/target_core_sbc.c
-@@ -128,6 +128,12 @@ static int sbc_emulate_verify(struct se_cmd *cmd)
- 	return 0;
- }
- 
-+static int sbc_emulate_noop(struct se_cmd *cmd)
-+{
-+	target_complete_cmd(cmd, GOOD);
-+	return 0;
-+}
-+
- static inline u32 sbc_get_size(struct se_cmd *cmd, u32 sectors)
- {
- 	return cmd->se_dev->se_sub_dev->se_dev_attrib.block_size * sectors;
-@@ -524,6 +530,18 @@ int sbc_parse_cdb(struct se_cmd *cmd, struct spc_ops *ops)
- 		size = 0;
- 		cmd->execute_cmd = sbc_emulate_verify;
- 		break;
-+	case REZERO_UNIT:
-+	case SEEK_6:
-+	case SEEK_10:
-+		/*
-+		 * There are still clients out there which use these old SCSI-2
-+		 * commands. This mainly happens when running VMs with legacy
-+		 * guest systems, connected via SCSI command pass-through to
-+		 * iSCSI targets. Make them happy and return status GOOD.
-+		 */
-+		size = 0;
-+		cmd->execute_cmd = sbc_emulate_noop;
-+		break;
- 	default:
- 		ret = spc_parse_cdb(cmd, &size);
- 		if (ret)
+ 	B43_WARN_ON(!wl);
++	if (!wldev->fw.ucode.data)
++		return;			/* NULL if firmware never loaded */
+ 	if (wl->current_dev == wldev) {
+ 		/* Restore the queues count before unregistering, because firmware detect
+ 		 * might have modified it. Restoring is important, so the networking
 diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 269f544..7502660 100644
+index d594460..69f3f7d 100644
 --- a/drivers/target/target_core_transport.c
 +++ b/drivers/target/target_core_transport.c
-@@ -1553,7 +1553,6 @@ static void target_complete_tmr_failure(struct work_struct *work)
+@@ -1748,7 +1748,6 @@ static void target_complete_tmr_failure(struct work_struct *work)
  
  	se_cmd->se_tmr_req->response = TMR_LUN_DOES_NOT_EXIST;
  	se_cmd->se_tfo->queue_tm_rsp(se_cmd);
@@ -620,472 +528,11 @@ index 269f544..7502660 100644
  }
  
  /**
-diff --git a/drivers/usb/serial/io_edgeport.c b/drivers/usb/serial/io_edgeport.c
-index dca27a5..6c22679 100644
---- a/drivers/usb/serial/io_edgeport.c
-+++ b/drivers/usb/serial/io_edgeport.c
-@@ -3152,7 +3152,6 @@ static void edge_disconnect(struct usb_serial *serial)
- static void edge_release(struct usb_serial *serial)
- {
- 	struct edgeport_serial *edge_serial = usb_get_serial_data(serial);
--	int i;
- 
- 	dbg("%s", __func__);
- 
-diff --git a/drivers/usb/serial/iuu_phoenix.c b/drivers/usb/serial/iuu_phoenix.c
-index cdf0f99..8d3692b 100644
---- a/drivers/usb/serial/iuu_phoenix.c
-+++ b/drivers/usb/serial/iuu_phoenix.c
-@@ -105,7 +105,7 @@ static int iuu_port_probe(struct usb_serial_port *port)
- 	}
- 
- 	priv->dbgbuf = kzalloc(256, GFP_KERNEL);
--	if (!priv->writebuf) {
-+	if (!priv->dbgbuf) {
- 		kfree(priv->writebuf);
- 		kfree(priv->buf);
- 		kfree(priv);
-@@ -120,6 +120,7 @@ static int iuu_port_probe(struct usb_serial_port *port)
- 
- 	ret = iuu_create_sysfs_attrs(port);
- 	if (ret) {
-+		kfree(priv->dbgbuf);
- 		kfree(priv->writebuf);
- 		kfree(priv->buf);
- 		kfree(priv);
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index 52e5ca7..5311819 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -2405,52 +2405,43 @@ static int mos7840_calc_num_ports(struct usb_serial *serial)
- 	return mos7840_num_ports;
- }
- 
--/****************************************************************************
-- * mos7840_startup
-- ****************************************************************************/
--
--static int mos7840_startup(struct usb_serial *serial)
-+static int mos7840_port_probe(struct usb_serial_port *port)
- {
-+	struct usb_serial *serial = port->serial;
- 	struct moschip_port *mos7840_port;
--	struct usb_device *dev;
--	int i, status;
-+	int status;
-+	int pnum;
- 	__u16 Data;
- 
--	if (!serial) {
--		dbg("%s", "Invalid Handler");
--		return -1;
--	}
--
--	dev = serial->dev;
--
- 	/* we set up the pointers to the endpoints in the mos7840_open *
- 	 * function, as the structures aren't created yet.             */
- 
--	/* set up port private structures */
--	for (i = 0; i < serial->num_ports; ++i) {
--		dbg ("mos7840_startup: configuring port %d............", i);
-+	pnum = port->number - serial->minor;
-+
-+	/* FIXME: remove do-while(0) loop used to keep stable patch minimal.
-+	 */
-+	do {
-+		dbg("mos7840_startup: configuring port %d............", pnum);
- 		mos7840_port = kzalloc(sizeof(struct moschip_port), GFP_KERNEL);
- 		if (mos7840_port == NULL) {
--			dev_err(&dev->dev, "%s - Out of memory\n", __func__);
--			status = -ENOMEM;
--			i--; /* don't follow NULL pointer cleaning up */
--			goto error;
-+			dev_err(&port->dev, "%s - Out of memory\n", __func__);
-+			return -ENOMEM;
- 		}
- 
- 		/* Initialize all port interrupt end point to port 0 int
- 		 * endpoint. Our device has only one interrupt end point
- 		 * common to all port */
- 
--		mos7840_port->port = serial->port[i];
--		mos7840_set_port_private(serial->port[i], mos7840_port);
-+		mos7840_port->port = port;
-+		mos7840_set_port_private(port, mos7840_port);
- 		spin_lock_init(&mos7840_port->pool_lock);
- 
- 		/* minor is not initialised until later by
- 		 * usb-serial.c:get_free_serial() and cannot therefore be used
- 		 * to index device instances */
--		mos7840_port->port_num = i + 1;
--		dbg ("serial->port[i]->number = %d", serial->port[i]->number);
--		dbg ("serial->port[i]->serial->minor = %d", serial->port[i]->serial->minor);
-+		mos7840_port->port_num = pnum + 1;
-+		dbg("port->number = %d", port->number);
-+		dbg("port->serial->minor = %d", port->serial->minor);
- 		dbg ("mos7840_port->port_num = %d", mos7840_port->port_num);
- 		dbg ("serial->minor = %d", serial->minor);
- 
-@@ -2480,10 +2471,10 @@ static int mos7840_startup(struct usb_serial *serial)
- 			mos7840_port->DcrRegOffset = 0x1c;
- 		}
- 		mos7840_dump_serial_port(mos7840_port);
--		mos7840_set_port_private(serial->port[i], mos7840_port);
-+		mos7840_set_port_private(port, mos7840_port);
- 
- 		/* enable rx_disable bit in control register */
--		status = mos7840_get_reg_sync(serial->port[i],
-+		status = mos7840_get_reg_sync(port,
- 				 mos7840_port->ControlRegOffset, &Data);
- 		if (status < 0) {
- 			dbg("Reading ControlReg failed status-0x%x", status);
-@@ -2491,12 +2482,13 @@ static int mos7840_startup(struct usb_serial *serial)
- 		} else
- 			dbg("ControlReg Reading success val is %x, status%d",
- 			    Data, status);
-+
- 		Data |= 0x08;	/* setting driver done bit */
- 		Data |= 0x04;	/* sp1_bit to have cts change reflect in
- 				   modem status reg */
- 
- 		/* Data |= 0x20; //rx_disable bit */
--		status = mos7840_set_reg_sync(serial->port[i],
-+		status = mos7840_set_reg_sync(port,
- 					 mos7840_port->ControlRegOffset, Data);
- 		if (status < 0) {
- 			dbg("Writing ControlReg failed(rx_disable) status-0x%x", status);
-@@ -2508,7 +2500,7 @@ static int mos7840_startup(struct usb_serial *serial)
- 		/* Write default values in DCR (i.e 0x01 in DCR0, 0x05 in DCR2
- 		   and 0x24 in DCR3 */
- 		Data = 0x01;
--		status = mos7840_set_reg_sync(serial->port[i],
-+		status = mos7840_set_reg_sync(port,
- 			 (__u16) (mos7840_port->DcrRegOffset + 0), Data);
- 		if (status < 0) {
- 			dbg("Writing DCR0 failed status-0x%x", status);
-@@ -2517,7 +2509,7 @@ static int mos7840_startup(struct usb_serial *serial)
- 			dbg("DCR0 Writing success status%d", status);
- 
- 		Data = 0x05;
--		status = mos7840_set_reg_sync(serial->port[i],
-+		status = mos7840_set_reg_sync(port,
- 			 (__u16) (mos7840_port->DcrRegOffset + 1), Data);
- 		if (status < 0) {
- 			dbg("Writing DCR1 failed status-0x%x", status);
-@@ -2526,7 +2518,7 @@ static int mos7840_startup(struct usb_serial *serial)
- 			dbg("DCR1 Writing success status%d", status);
- 
- 		Data = 0x24;
--		status = mos7840_set_reg_sync(serial->port[i],
-+		status = mos7840_set_reg_sync(port,
- 			 (__u16) (mos7840_port->DcrRegOffset + 2), Data);
- 		if (status < 0) {
- 			dbg("Writing DCR2 failed status-0x%x", status);
-@@ -2536,7 +2528,7 @@ static int mos7840_startup(struct usb_serial *serial)
- 
- 		/* write values in clkstart0x0 and clkmulti 0x20 */
- 		Data = 0x0;
--		status = mos7840_set_reg_sync(serial->port[i],
-+		status = mos7840_set_reg_sync(port,
- 					 CLK_START_VALUE_REGISTER, Data);
- 		if (status < 0) {
- 			dbg("Writing CLK_START_VALUE_REGISTER failed status-0x%x", status);
-@@ -2545,7 +2537,7 @@ static int mos7840_startup(struct usb_serial *serial)
- 			dbg("CLK_START_VALUE_REGISTER Writing success status%d", status);
- 
- 		Data = 0x20;
--		status = mos7840_set_reg_sync(serial->port[i],
-+		status = mos7840_set_reg_sync(port,
- 					CLK_MULTI_REGISTER, Data);
- 		if (status < 0) {
- 			dbg("Writing CLK_MULTI_REGISTER failed status-0x%x",
-@@ -2557,7 +2549,7 @@ static int mos7840_startup(struct usb_serial *serial)
- 
- 		/* write value 0x0 to scratchpad register */
- 		Data = 0x00;
--		status = mos7840_set_uart_reg(serial->port[i],
-+		status = mos7840_set_uart_reg(port,
- 						SCRATCH_PAD_REGISTER, Data);
- 		if (status < 0) {
- 			dbg("Writing SCRATCH_PAD_REGISTER failed status-0x%x",
-@@ -2572,7 +2564,7 @@ static int mos7840_startup(struct usb_serial *serial)
- 		    && (serial->num_ports == 2)) {
- 
- 			Data = 0xff;
--			status = mos7840_set_reg_sync(serial->port[i],
-+			status = mos7840_set_reg_sync(port,
- 				      (__u16) (ZLP_REG1 +
- 				      ((__u16)mos7840_port->port_num)), Data);
- 			dbg("ZLIP offset %x",
-@@ -2580,14 +2572,14 @@ static int mos7840_startup(struct usb_serial *serial)
- 					((__u16) mos7840_port->port_num)));
- 			if (status < 0) {
- 				dbg("Writing ZLP_REG%d failed status-0x%x",
--				    i + 2, status);
-+				    pnum + 2, status);
- 				break;
- 			} else
- 				dbg("ZLP_REG%d Writing success status%d",
--				    i + 2, status);
-+				    pnum + 2, status);
- 		} else {
- 			Data = 0xff;
--			status = mos7840_set_reg_sync(serial->port[i],
-+			status = mos7840_set_reg_sync(port,
- 			      (__u16) (ZLP_REG1 +
- 			      ((__u16)mos7840_port->port_num) - 0x1), Data);
- 			dbg("ZLIP offset %x",
-@@ -2595,11 +2587,11 @@ static int mos7840_startup(struct usb_serial *serial)
- 				     ((__u16) mos7840_port->port_num) - 0x1));
- 			if (status < 0) {
- 				dbg("Writing ZLP_REG%d failed status-0x%x",
--				    i + 1, status);
-+				    pnum + 1, status);
- 				break;
- 			} else
- 				dbg("ZLP_REG%d Writing success status%d",
--				    i + 1, status);
-+				    pnum + 1, status);
- 
- 		}
- 		mos7840_port->control_urb = usb_alloc_urb(0, GFP_KERNEL);
-@@ -2636,105 +2628,58 @@ static int mos7840_startup(struct usb_serial *serial)
- 			mos7840_port->led_flag = false;
- 
- 			/* Turn off LED */
--			mos7840_set_led_sync(serial->port[i],
-+			mos7840_set_led_sync(port,
- 						MODEM_CONTROL_REGISTER, 0x0300);
- 		}
--	}
--	dbg ("mos7840_startup: all ports configured...........");
-+	} while (0);
- 
--	/* Zero Length flag enable */
--	Data = 0x0f;
--	status = mos7840_set_reg_sync(serial->port[0], ZLP_REG5, Data);
--	if (status < 0) {
--		dbg("Writing ZLP_REG5 failed status-0x%x", status);
--		goto error;
--	} else
--		dbg("ZLP_REG5 Writing success status%d", status);
--
--	/* setting configuration feature to one */
--	usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
--			(__u8) 0x03, 0x00, 0x01, 0x00, NULL, 0x00, MOS_WDR_TIMEOUT);
-+	if (pnum == serial->num_ports - 1) {
-+		dbg("mos7840_startup: all ports configured...........");
-+
-+		/* Zero Length flag enable */
-+		Data = 0x0f;
-+		status = mos7840_set_reg_sync(serial->port[0], ZLP_REG5, Data);
-+		if (status < 0) {
-+			dbg("Writing ZLP_REG5 failed status-0x%x", status);
-+			goto error;
-+		} else
-+			dbg("ZLP_REG5 Writing success status%d", status);
-+
-+		/* setting configuration feature to one */
-+		usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
-+				0x03, 0x00, 0x01, 0x00, NULL, 0x00,
-+				MOS_WDR_TIMEOUT);
-+	}
- 	return 0;
- error:
--	for (/* nothing */; i >= 0; i--) {
--		mos7840_port = mos7840_get_port_private(serial->port[i]);
-+	kfree(mos7840_port->dr);
-+	kfree(mos7840_port->ctrl_buf);
-+	usb_free_urb(mos7840_port->control_urb);
-+	kfree(mos7840_port);
- 
--		kfree(mos7840_port->dr);
--		kfree(mos7840_port->ctrl_buf);
--		usb_free_urb(mos7840_port->control_urb);
--		kfree(mos7840_port);
--	}
- 	return status;
- }
- 
--/****************************************************************************
-- * mos7840_disconnect
-- *	This function is called whenever the device is removed from the usb bus.
-- ****************************************************************************/
--
--static void mos7840_disconnect(struct usb_serial *serial)
-+static int mos7840_port_remove(struct usb_serial_port *port)
- {
--	int i;
--	unsigned long flags;
- 	struct moschip_port *mos7840_port;
- 
--	if (!serial) {
--		dbg("%s", "Invalid Handler");
--		return;
--	}
--
--	/* check for the ports to be closed,close the ports and disconnect */
-+	mos7840_port = mos7840_get_port_private(port);
- 
--	/* free private structure allocated for serial port  *
--	 * stop reads and writes on all ports                */
-+	if (mos7840_port->has_led) {
-+		/* Turn off LED */
-+		mos7840_set_led_sync(port, MODEM_CONTROL_REGISTER, 0x0300);
- 
--	for (i = 0; i < serial->num_ports; ++i) {
--		mos7840_port = mos7840_get_port_private(serial->port[i]);
--		dbg ("mos7840_port %d = %p", i, mos7840_port);
--		if (mos7840_port) {
--			usb_kill_urb(mos7840_port->control_urb);
--		}
-+		del_timer_sync(&mos7840_port->led_timer1);
-+		del_timer_sync(&mos7840_port->led_timer2);
- 	}
--}
-+	usb_kill_urb(mos7840_port->control_urb);
-+	usb_free_urb(mos7840_port->control_urb);
-+	kfree(mos7840_port->ctrl_buf);
-+	kfree(mos7840_port->dr);
-+	kfree(mos7840_port);
- 
--/****************************************************************************
-- * mos7840_release
-- *	This function is called when the usb_serial structure is freed.
-- ****************************************************************************/
--
--static void mos7840_release(struct usb_serial *serial)
--{
--	int i;
--	struct moschip_port *mos7840_port;
--
--	if (!serial) {
--		dbg("%s", "Invalid Handler");
--		return;
--	}
--
--	/* check for the ports to be closed,close the ports and disconnect */
--
--	/* free private structure allocated for serial port  *
--	 * stop reads and writes on all ports                */
--
--	for (i = 0; i < serial->num_ports; ++i) {
--		mos7840_port = mos7840_get_port_private(serial->port[i]);
--		dbg("mos7840_port %d = %p", i, mos7840_port);
--		if (mos7840_port) {
--			if (mos7840_port->has_led) {
--				/* Turn off LED */
--				mos7840_set_led_sync(mos7840_port->port,
--						MODEM_CONTROL_REGISTER, 0x0300);
--
--				del_timer_sync(&mos7840_port->led_timer1);
--				del_timer_sync(&mos7840_port->led_timer2);
--			}
--			usb_free_urb(mos7840_port->control_urb);
--			kfree(mos7840_port->ctrl_buf);
--			kfree(mos7840_port->dr);
--			kfree(mos7840_port);
--		}
--	}
-+	return 0;
- }
- 
- static struct usb_serial_driver moschip7840_4port_device = {
-@@ -2762,9 +2707,8 @@ static struct usb_serial_driver moschip7840_4port_device = {
- 	.tiocmget = mos7840_tiocmget,
- 	.tiocmset = mos7840_tiocmset,
- 	.get_icount = mos7840_get_icount,
--	.attach = mos7840_startup,
--	.disconnect = mos7840_disconnect,
--	.release = mos7840_release,
-+	.port_probe = mos7840_port_probe,
-+	.port_remove = mos7840_port_remove,
- 	.read_bulk_callback = mos7840_bulk_in_callback,
- 	.read_int_callback = mos7840_interrupt_callback,
- };
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index 452e71a..1ced2d8 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -205,7 +205,7 @@ static int readpage_nounlock(struct file *filp, struct page *page)
- 	dout("readpage inode %p file %p page %p index %lu\n",
- 	     inode, filp, page, page->index);
- 	err = ceph_osdc_readpages(osdc, ceph_vino(inode), &ci->i_layout,
--				  page->index << PAGE_CACHE_SHIFT, &len,
-+				  (u64) page_offset(page), &len,
- 				  ci->i_truncate_seq, ci->i_truncate_size,
- 				  &page, 1, 0);
- 	if (err == -ENOENT)
-@@ -286,7 +286,7 @@ static int start_read(struct inode *inode, struct list_head *page_list, int max)
- 	int nr_pages = 0;
- 	int ret;
- 
--	off = page->index << PAGE_CACHE_SHIFT;
-+	off = (u64) page_offset(page);
- 
- 	/* count pages */
- 	next_index = page->index;
-@@ -426,7 +426,7 @@ static int writepage_nounlock(struct page *page, struct writeback_control *wbc)
- 	struct ceph_inode_info *ci;
- 	struct ceph_fs_client *fsc;
- 	struct ceph_osd_client *osdc;
--	loff_t page_off = page->index << PAGE_CACHE_SHIFT;
-+	loff_t page_off = page_offset(page);
- 	int len = PAGE_CACHE_SIZE;
- 	loff_t i_size;
- 	int err = 0;
-@@ -817,8 +817,7 @@ get_more_pages:
- 			/* ok */
- 			if (locked_pages == 0) {
- 				/* prepare async write request */
--				offset = (unsigned long long)page->index
--					<< PAGE_CACHE_SHIFT;
-+				offset = (u64) page_offset(page);
- 				len = wsize;
- 				req = ceph_osdc_new_request(&fsc->client->osdc,
- 					    &ci->i_layout,
-@@ -1180,7 +1179,7 @@ static int ceph_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	struct inode *inode = vma->vm_file->f_dentry->d_inode;
- 	struct page *page = vmf->page;
- 	struct ceph_mds_client *mdsc = ceph_inode_to_client(inode)->mdsc;
--	loff_t off = page->index << PAGE_CACHE_SHIFT;
-+	loff_t off = page_offset(page);
- 	loff_t size, len;
- 	int ret;
- 
-diff --git a/fs/ceph/export.c b/fs/ceph/export.c
-index 02ce909..9349bb3 100644
---- a/fs/ceph/export.c
-+++ b/fs/ceph/export.c
-@@ -90,6 +90,8 @@ static int ceph_encode_fh(struct inode *inode, u32 *rawfh, int *max_len,
- 		*max_len = handle_length;
- 		type = 255;
- 	}
-+	if (dentry)
-+		dput(dentry);
- 	return type;
- }
- 
-diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
-index a5a7354..1bcf712 100644
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -2625,7 +2625,8 @@ static void check_new_map(struct ceph_mds_client *mdsc,
- 		     ceph_mdsmap_is_laggy(newmap, i) ? " (laggy)" : "",
- 		     session_state_name(s->s_state));
- 
--		if (memcmp(ceph_mdsmap_get_addr(oldmap, i),
-+		if (i >= newmap->m_max_mds ||
-+		    memcmp(ceph_mdsmap_get_addr(oldmap, i),
- 			   ceph_mdsmap_get_addr(newmap, i),
- 			   sizeof(struct ceph_entity_addr))) {
- 			if (s->s_state == CEPH_MDS_SESSION_OPENING) {
 diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 8ce0076..cc2d77c 100644
+index 0ee374d..556cc82 100644
 --- a/fs/ext4/ialloc.c
 +++ b/fs/ext4/ialloc.c
-@@ -716,6 +716,10 @@ repeat_in_this_group:
+@@ -697,6 +697,10 @@ repeat_in_this_group:
  				   "inode=%lu", ino + 1);
  			continue;
  		}
@@ -1096,7 +543,7 @@ index 8ce0076..cc2d77c 100644
  		ext4_lock_group(sb, group);
  		ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
  		ext4_unlock_group(sb, group);
-@@ -729,6 +733,11 @@ repeat_in_this_group:
+@@ -710,6 +714,11 @@ repeat_in_this_group:
  	goto out;
  
  got:
@@ -1106,9 +553,9 @@ index 8ce0076..cc2d77c 100644
 +		goto fail;
 +
  	/* We may have to initialize the block bitmap if it isn't already */
- 	if (ext4_has_group_desc_csum(sb) &&
+ 	if (EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_GDT_CSUM) &&
  	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
-@@ -762,11 +771,6 @@ got:
+@@ -742,11 +751,6 @@ got:
  			goto fail;
  	}
  
@@ -1120,9 +567,9 @@ index 8ce0076..cc2d77c 100644
  	BUFFER_TRACE(group_desc_bh, "get_write_access");
  	err = ext4_journal_get_write_access(handle, group_desc_bh);
  	if (err)
-@@ -814,11 +818,6 @@ got:
+@@ -789,11 +793,6 @@ got:
+ 		ext4_unlock_group(sb, group);
  	}
- 	ext4_unlock_group(sb, group);
  
 -	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
 -	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
@@ -1132,181 +579,3 @@ index 8ce0076..cc2d77c 100644
  	BUFFER_TRACE(group_desc_bh, "call ext4_handle_dirty_metadata");
  	err = ext4_handle_dirty_metadata(handle, NULL, group_desc_bh);
  	if (err)
-diff --git a/include/linux/ceph/osd_client.h b/include/linux/ceph/osd_client.h
-index cedfb1a..d9b880e 100644
---- a/include/linux/ceph/osd_client.h
-+++ b/include/linux/ceph/osd_client.h
-@@ -207,7 +207,7 @@ extern void ceph_osdc_handle_reply(struct ceph_osd_client *osdc,
- extern void ceph_osdc_handle_map(struct ceph_osd_client *osdc,
- 				 struct ceph_msg *msg);
- 
--extern void ceph_calc_raw_layout(struct ceph_osd_client *osdc,
-+extern int ceph_calc_raw_layout(struct ceph_osd_client *osdc,
- 			struct ceph_file_layout *layout,
- 			u64 snapid,
- 			u64 off, u64 *plen, u64 *bno,
-diff --git a/include/linux/ceph/osdmap.h b/include/linux/ceph/osdmap.h
-index 311ef8d..e88a620 100644
---- a/include/linux/ceph/osdmap.h
-+++ b/include/linux/ceph/osdmap.h
-@@ -109,9 +109,9 @@ extern struct ceph_osdmap *osdmap_apply_incremental(void **p, void *end,
- extern void ceph_osdmap_destroy(struct ceph_osdmap *map);
- 
- /* calculate mapping of a file extent to an object */
--extern void ceph_calc_file_object_mapping(struct ceph_file_layout *layout,
--					  u64 off, u64 *plen,
--					  u64 *bno, u64 *oxoff, u64 *oxlen);
-+extern int ceph_calc_file_object_mapping(struct ceph_file_layout *layout,
-+					 u64 off, u64 *plen,
-+					 u64 *bno, u64 *oxoff, u64 *oxlen);
- 
- /* calculate mapping of object to a placement group */
- extern int ceph_calc_object_layout(struct ceph_object_layout *ol,
-diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index 159aa8b..3ef1759 100644
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -2300,10 +2300,11 @@ restart:
- 			mutex_unlock(&con->mutex);
- 			return;
- 		} else {
--			con->ops->put(con);
- 			dout("con_work %p FAILED to back off %lu\n", con,
- 			     con->delay);
-+			set_bit(CON_FLAG_BACKOFF, &con->flags);
- 		}
-+		goto done;
- 	}
- 
- 	if (con->state == CON_STATE_STANDBY) {
-@@ -2749,7 +2750,8 @@ static int ceph_con_in_msg_alloc(struct ceph_connection *con, int *skip)
- 		msg = con->ops->alloc_msg(con, hdr, skip);
- 		mutex_lock(&con->mutex);
- 		if (con->state != CON_STATE_OPEN) {
--			ceph_msg_put(msg);
-+			if (msg)
-+				ceph_msg_put(msg);
- 			return -EAGAIN;
- 		}
- 		con->in_msg = msg;
-diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
-index 42119c0..f7b56e2 100644
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -52,7 +52,7 @@ static int op_has_extent(int op)
- 		op == CEPH_OSD_OP_WRITE);
- }
- 
--void ceph_calc_raw_layout(struct ceph_osd_client *osdc,
-+int ceph_calc_raw_layout(struct ceph_osd_client *osdc,
- 			struct ceph_file_layout *layout,
- 			u64 snapid,
- 			u64 off, u64 *plen, u64 *bno,
-@@ -62,12 +62,15 @@ void ceph_calc_raw_layout(struct ceph_osd_client *osdc,
- 	struct ceph_osd_request_head *reqhead = req->r_request->front.iov_base;
- 	u64 orig_len = *plen;
- 	u64 objoff, objlen;    /* extent in object */
-+	int r;
- 
- 	reqhead->snapid = cpu_to_le64(snapid);
- 
- 	/* object extent? */
--	ceph_calc_file_object_mapping(layout, off, plen, bno,
--				      &objoff, &objlen);
-+	r = ceph_calc_file_object_mapping(layout, off, plen, bno,
-+					  &objoff, &objlen);
-+	if (r < 0)
-+		return r;
- 	if (*plen < orig_len)
- 		dout(" skipping last %llu, final file extent %llu~%llu\n",
- 		     orig_len - *plen, off, *plen);
-@@ -83,7 +86,7 @@ void ceph_calc_raw_layout(struct ceph_osd_client *osdc,
- 
- 	dout("calc_layout bno=%llx %llu~%llu (%d pages)\n",
- 	     *bno, objoff, objlen, req->r_num_pages);
--
-+	return 0;
- }
- EXPORT_SYMBOL(ceph_calc_raw_layout);
- 
-@@ -112,20 +115,25 @@ EXPORT_SYMBOL(ceph_calc_raw_layout);
-  *
-  * fill osd op in request message.
-  */
--static void calc_layout(struct ceph_osd_client *osdc,
--			struct ceph_vino vino,
--			struct ceph_file_layout *layout,
--			u64 off, u64 *plen,
--			struct ceph_osd_request *req,
--			struct ceph_osd_req_op *op)
-+static int calc_layout(struct ceph_osd_client *osdc,
-+		       struct ceph_vino vino,
-+		       struct ceph_file_layout *layout,
-+		       u64 off, u64 *plen,
-+		       struct ceph_osd_request *req,
-+		       struct ceph_osd_req_op *op)
- {
- 	u64 bno;
-+	int r;
- 
--	ceph_calc_raw_layout(osdc, layout, vino.snap, off,
--			     plen, &bno, req, op);
-+	r = ceph_calc_raw_layout(osdc, layout, vino.snap, off,
-+				 plen, &bno, req, op);
-+	if (r < 0)
-+		return r;
- 
- 	snprintf(req->r_oid, sizeof(req->r_oid), "%llx.%08llx", vino.ino, bno);
- 	req->r_oid_len = strlen(req->r_oid);
-+
-+	return r;
- }
- 
- /*
-diff --git a/net/ceph/osdmap.c b/net/ceph/osdmap.c
-index 3124b71..5433fb0 100644
---- a/net/ceph/osdmap.c
-+++ b/net/ceph/osdmap.c
-@@ -984,7 +984,7 @@ bad:
-  * for now, we write only a single su, until we can
-  * pass a stride back to the caller.
-  */
--void ceph_calc_file_object_mapping(struct ceph_file_layout *layout,
-+int ceph_calc_file_object_mapping(struct ceph_file_layout *layout,
- 				   u64 off, u64 *plen,
- 				   u64 *ono,
- 				   u64 *oxoff, u64 *oxlen)
-@@ -998,11 +998,17 @@ void ceph_calc_file_object_mapping(struct ceph_file_layout *layout,
- 
- 	dout("mapping %llu~%llu  osize %u fl_su %u\n", off, *plen,
- 	     osize, su);
-+	if (su == 0 || sc == 0)
-+		goto invalid;
- 	su_per_object = osize / su;
-+	if (su_per_object == 0)
-+		goto invalid;
- 	dout("osize %u / su %u = su_per_object %u\n", osize, su,
- 	     su_per_object);
- 
--	BUG_ON((su & ~PAGE_MASK) != 0);
-+	if ((su & ~PAGE_MASK) != 0)
-+		goto invalid;
-+
- 	/* bl = *off / su; */
- 	t = off;
- 	do_div(t, su);
-@@ -1030,6 +1036,14 @@ void ceph_calc_file_object_mapping(struct ceph_file_layout *layout,
- 	*plen = *oxlen;
- 
- 	dout(" obj extent %llu~%llu\n", *oxoff, *oxlen);
-+	return 0;
-+
-+invalid:
-+	dout(" invalid layout\n");
-+	*ono = 0;
-+	*oxoff = 0;
-+	*oxlen = 0;
-+	return -EINVAL;
- }
- EXPORT_SYMBOL(ceph_calc_file_object_mapping);
- 
