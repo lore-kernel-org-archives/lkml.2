@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932981Ab2KEVcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 16:32:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44671 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2KEVcM (ORCPT
+	id S933161Ab2KEVgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 16:36:09 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48447 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932184Ab2KEVgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 16:32:12 -0500
-Message-ID: <50983069.5080404@canonical.com>
-Date: Mon, 05 Nov 2012 15:32:25 -0600
-From: Chris J Arges <chris.j.arges@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 5 Nov 2012 16:36:07 -0500
+Date: Mon, 5 Nov 2012 13:36:04 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+cc: Haggai Eran <haggaie@mellanox.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm: fix build warning for uninitialized value
+In-Reply-To: <alpine.DEB.2.00.1210312234180.31758@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1211051334490.5296@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1210312234180.31758@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] hid: usbhid: add quirk for SB arena headset v2
-References: <1352145945-8035-1-git-send-email-chris.j.arges@canonical.com> <alpine.LNX.2.00.1211052117210.24253@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1211052117210.24253@pobox.suse.cz>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-1000382528-1352151365=:5296"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2012 02:18 PM, Jiri Kosina wrote:
-> On Mon, 5 Nov 2012, Chris J Arges wrote:
-> 
->> When an SB Arena USB headset is plugged in, it registers the volume
->> keys on the headset as a keyboard and continually sends events causing
->> issues with normal keyboard input. This quirk disables the volume keys.
-> 
-> I don't know how the device looks like, but wouldn't it make more sense to 
-> actually remap the bogus keys it's sending to produce KEY_VOLUMEUP and 
-> KEY_VOLUMEDOWN?
-> 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Yes, if I can track this hardware down or get data I'll fix it like
-this. This happened to be a do-no harm fix for the following bug:
-https://bugs.launchpad.net/ubuntu/+source/xorg-server/+bug/1007575
+--531381512-1000382528-1352151365=:5296
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-Thanks for the feedback.
---chris j arges
+do_wp_page() sets mmun_called if mmun_start and mmun_end were initialized 
+and, if so, may call mmu_notifier_invalidate_range_end() with these 
+values.  This doesn't prevent gcc from emitting a build warning though:
+
+mm/memory.c: In function ‘do_wp_page’:
+mm/memory.c:2530: warning: ‘mmun_start’ may be used uninitialized in this function
+mm/memory.c:2531: warning: ‘mmun_end’ may be used uninitialized in this function
+
+It's much easier to initialize the variables to impossible values and do a 
+simple comparison to determine if they were initialized to remove the bool 
+entirely.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/memory.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/mm/memory.c b/mm/memory.c
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2527,9 +2527,8 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	int ret = 0;
+ 	int page_mkwrite = 0;
+ 	struct page *dirty_page = NULL;
+-	unsigned long mmun_start;	/* For mmu_notifiers */
+-	unsigned long mmun_end;		/* For mmu_notifiers */
+-	bool mmun_called = false;	/* For mmu_notifiers */
++	unsigned long mmun_start = 0;	/* For mmu_notifiers */
++	unsigned long mmun_end = 0;	/* For mmu_notifiers */
+ 
+ 	old_page = vm_normal_page(vma, address, orig_pte);
+ 	if (!old_page) {
+@@ -2708,8 +2707,7 @@ gotten:
+ 		goto oom_free_new;
+ 
+ 	mmun_start  = address & PAGE_MASK;
+-	mmun_end    = (address & PAGE_MASK) + PAGE_SIZE;
+-	mmun_called = true;
++	mmun_end    = mmun_start + PAGE_SIZE;
+ 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+ 
+ 	/*
+@@ -2778,7 +2776,7 @@ gotten:
+ 		page_cache_release(new_page);
+ unlock:
+ 	pte_unmap_unlock(page_table, ptl);
+-	if (mmun_called)
++	if (mmun_end > mmun_start)
+ 		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
+ 	if (old_page) {
+ 		/*
+--531381512-1000382528-1352151365=:5296--
