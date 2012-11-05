@@ -1,71 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933003Ab2KEPgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:36:44 -0500
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:33250 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754392Ab2KEPWX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:22:23 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
-        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v9 01/34] vfs: add a retry_estale helper function to handle retries on ESTALE
-Date: Mon,  5 Nov 2012 10:21:40 -0500
-Message-Id: <1352128933-28526-2-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
-References: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
+	id S933237Ab2KEPh3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:37:29 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:35079 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932830Ab2KEPhW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 10:37:22 -0500
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <CACxGe6uuK6ew5uxh0BjtYAtPZCTLeUpHc4emXRAnMUtNmEzmGg@mail.gmail.com>
+Date: Mon, 5 Nov 2012 16:37:14 +0100
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Russ Dill <Russ.Dill@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <robherring2@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AC5129F0-FF30-46ED-AD57-3FA6CA919F99@antoniou-consulting.com>
+References: <50924DA3.1060901@ti.com> <F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com> <20121101110418.GF410@arwen.pp.htv.fi> <3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com> <20121101124025.GA12489@arwen.pp.htv.fi> <A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com> <20121101131609.GC12489@arwen.pp.htv.fi> <E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com> <20121101135148.382aec00@pyramind.ukuu.org.uk> <9F25E89E-9194-4725-8A8C-053DCBADA1DB@antoniou-consulting.com> <20121101220518.GE14982@arwen.pp.htv.fi> <CA+Bv8XbAvEXe=zDaA8W2+ROD2duYMRcJu4-bms31OH=V_ScKow@mail.gmail.com> <20121102112104.4657fb7b@pyramind.ukuu.org.uk> <0EC43413-1DD7-4E2A-879B-0B5B926FFDFE@antoniou-consulting.com> <CACxGe6uuK6ew5uxh0BjtYAtPZCTLeUpHc4emXRAnMUtNmEzmGg@mail.gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function is expected to be called from path-based syscalls to help
-them decide whether to try the lookup and call again in the event that
-they got an -ESTALE return back on an earier try.
+Hi Grant,
 
-Currently, we only retry the call once on an ESTALE error, but in the
-event that we decide that that's not enough in the future, we should be
-able to change the logic in this helper without too much effort.
+On Nov 5, 2012, at 1:37 AM, Grant Likely wrote:
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- include/linux/fs.h | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+> On Fri, Nov 2, 2012 at 12:32 PM, Pantelis Antoniou
+> <panto@antoniou-consulting.com> wrote:
+>> The i2c2 alias cannot be resolved at compile time; there has to be
+>> 
+>> a) A DT object format where unresolved aliases (symbols) are tracked
+>> b) A runtime DT linker that will resolve the alias, and will insert the
+>>   i2c2-devices child nodes as children in the i2c2 node.
+>> c) A method to trigger platform device creation for the child nodes just
+>>   inserted.
+>> 
+>> DT core changes aren't bound to be easily accepted, so without having a clear
+>> signal from the DT maintainers that they would consider such a method people
+>> are just hesitant to go down this road.
+> 
+> I do agree and will accept such a method.
+> 
+> g.
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b33cfc9..3e42289 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2023,6 +2023,26 @@ extern int finish_open(struct file *file, struct dentry *dentry,
- 			int *opened);
- extern int finish_no_open(struct file *file, struct dentry *dentry);
- 
-+/**
-+ * retry_estale - determine whether the caller should retry an operation
-+ * @error: the error that would currently be returned
-+ * @try: number of tries already performed
-+ *
-+ * Check to see if the error code was -ESTALE, and then determine whether
-+ * to retry the call based on the number of tries so far. Currently, we only
-+ * retry the call once.
-+ *
-+ * Returns true if the caller should try the operation again.
-+ */
-+static inline bool
-+retry_estale(const long error, const unsigned int try)
-+{
-+	if (likely(error != -ESTALE))
-+		return false;
-+
-+	return !try;
-+}
-+
- /* fs/ioctl.c */
- 
- extern int ioctl_preallocate(struct file *filp, void __user *argp);
--- 
-1.7.11.7
+Understood.
+
+I'll think about the issues and come up with a design for the format, but
+let's talk about this in the open for a while.
+
+I don't want to modify the DTB format, in order to avoid impacting any other
+DT users.
+
+So would something like this work for you?
+
+-----8<--------8<--------
+
+/* booting DT (all symbols are resolved) */
+/* this is a valid DTB today */
+
+/ {
+
+	i2c2: i2c@4819c000 { 
+		compatible = "ti,omap4-i2c";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		ti,hwmods = "i2c3"; /* TODO: Fix hwmod */
+		reg = <0x4819c000 0x1000>;
+		interrupt-parent = <&intc>;
+		interrupts = <30>;
+		status = "on-demand";
+	}; 
+	
+	/* .... others nodes .... */
+
+	/* the symbols node can be generated by the DTC */
+	symbols {
+		compatible = "dt,symbols";
+
+		symbol@0 {
+			name = "i2c2";
+			phandle = <&i2c2>;
+		};
+
+		...
+	};
+};
+
+-----8<--------8<--------
+
+/* fragment DT (not all symbols are resolved) */
+
+/ {
+	i2c2-append {
+		compatible = "dt,append";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		append-at = <&i2c2>;	/* offset F00, either -1 (end of list) */
+					/* or next offset in the list of i2c2 refs. */
+
+		/* Ambient light sensor */ 
+		tsl2550@39 {
+			compatible = "tsl,tsl2550";
+			reg = <0x39>;
+		};
+	};
+};
+
+-----8<--------8<--------
+
+The <&i2c2> value can't be resolved at compile time.
+
+We can use a simple linked list method for keeping track of the
+locations in the fragment which we need to resolve, terminating with -1.
+
+The compiler can add the following nodes to mark the entries requiring
+resolution.
+
+For example i2c2...
+
+dt-resolution {
+	i2c2 = <0xf00>; /* first offset in the dtb fragment requiring */
+			/* resolution of i2c2 */
+	....
+};
+
+The dt-resolution node, can be appended to the dt fragment contents and
+can be generated by the compiler.
+
+Upon injection of the DT fragment the in-kernel loader can perform
+symbol resolution and replace the phandles with the in-kernel values.
+
+I know there's an aliases node, but I don't know if it's wise to modify it.
+
+What do you think?
+
+Regards
+
+-- Pantelis
+
 
