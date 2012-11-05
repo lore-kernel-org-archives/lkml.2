@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933638Ab2KEXc1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 18:32:27 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:44982 "EHLO smtp.outflux.net"
+	id S1755128Ab2KEXcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 18:32:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54031 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754578Ab2KEXFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 18:05:14 -0500
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH 001/104] checkpatch: warn about using CONFIG_EXPERIMENTAL
-Date: Mon,  5 Nov 2012 15:03:18 -0800
-Message-Id: <1352156701-4038-2-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1352156701-4038-1-git-send-email-keescook@chromium.org>
-References: <1352156701-4038-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S933542Ab2KEXc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 18:32:29 -0500
+Message-ID: <50984D0A.3000608@redhat.com>
+Date: Mon, 05 Nov 2012 18:34:34 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
+        William Irwin <wli@holomorphy.com>, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [PATCH 10/16] mm: use vm_unmapped_area() on mips architecture
+References: <1352155633-8648-1-git-send-email-walken@google.com> <1352155633-8648-11-git-send-email-walken@google.com>
+In-Reply-To: <1352155633-8648-11-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This config item has not carried much meaning for a while now and is
-almost always enabled by default. As agreed during the Linux kernel
-summit, it is being removed.  This will discourage future addition of
-CONFIG_EXPERIMENTAL while it is being phased out.
+On 11/05/2012 05:47 PM, Michel Lespinasse wrote:
+> Update the mips arch_get_unmapped_area[_topdown] functions to make
+> use of vm_unmapped_area() instead of implementing a brute force search.
+>
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-Cc: Andy Whitcroft <apw@canonical.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- scripts/checkpatch.pl |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 21a9f5d..f8b33ed 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1757,6 +1757,13 @@ sub process {
- 			#print "is_start<$is_start> is_end<$is_end> length<$length>\n";
- 		}
- 
-+# Discourage the addition of CONFIG_EXPERIMENTAL in Kconfig.
-+		if ($realfile =~ /Kconfig/ &&
-+		    $line =~ /.\s*depends on\s+.*\bEXPERIMENTAL\b/) {
-+			WARN("CONFIG_EXPERIMENTAL",
-+			     "Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives, see:\nhttps://lkml.org/lkml/2012/10/23/580\n");
-+		}
-+
- 		if (($realfile =~ /Makefile.*/ || $realfile =~ /Kbuild.*/) &&
- 		    ($line =~ /\+(EXTRA_[A-Z]+FLAGS).*/)) {
- 			my $flag = $1;
--- 
-1.7.9.5
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
