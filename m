@@ -1,44 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab2KEXvU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 18:51:20 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47556 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177Ab2KEXvT (ORCPT
+	id S1754764Ab2KEXx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 18:53:29 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:63104 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752320Ab2KEXx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 18:51:19 -0500
-Message-ID: <509850F4.2060205@gmail.com>
-Date: Mon, 05 Nov 2012 15:51:16 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Mon, 5 Nov 2012 18:53:28 -0500
 MIME-Version: 1.0
-To: Jamie Iles <jamie.iles@oracle.com>
-CC: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] scripts/sortextable: support objects with more than 64K
- sections.
-References: <1352106404-11038-1-git-send-email-jamie.iles@oracle.com>
-In-Reply-To: <1352106404-11038-1-git-send-email-jamie.iles@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Matteo Croce <technoboy85@gmail.com>
+Date: Tue, 6 Nov 2012 00:52:46 +0100
+Message-ID: <CAFnufp3SdnBoFiC5j2bjrA=MW-WfsmFVhfggJvoHa-5ZEgg7aA@mail.gmail.com>
+Subject: Kernel Source updater script
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2012 01:06 AM, Jamie Iles wrote:
-> Building with a large config and -ffunction-sections results in a large
-> number of sections and sortextable needs to be able to handle that.
-> Implement support for > 64K sections as modpost does.
->
-> Cc: David Daney <david.daney@cavium.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Signed-off-by: Jamie Iles <jamie.iles@oracle.com>
-> ---
->   scripts/sortextable.c |   24 ++++++++++++++++++++++++
->   scripts/sortextable.h |   26 +++++++++++++++++++++++---
->   2 files changed, 47 insertions(+), 3 deletions(-)
->
+Hi all,
 
-I don't plan on extensively testing this, but I have no objections.
+I know that this is useless to people using git, but it was so fun to write
+and I use it to update regularly my pc kernel source from time to time
+while saving servers (and home) bandwidth
 
-David Daney
+cheers!
+
+#!/bin/sh
+
+ver=$(awk '/^VERSION/{print$3}' Makefile)
+patch=$(awk '/^PATCHLEVEL/{print$3}' Makefile)
+sub=$(awk '/^SUBLEVEL/{print$3}' Makefile)
+
+echo "Current kernel: $ver.$patch.$sub"
+
+[ -d .pc ] && quilt pop -a
+
+up_sub() {
+	next=$((sub + 1))
+	while wget -q --spider
+http://www.kernel.org/pub/linux/kernel/v$ver.0/incr/patch-$ver.$patch.$sub-$next.xz;
+do
+		url="$url http://www.kernel.org/pub/linux/kernel/v$ver.0/incr/patch-$ver.$patch.$sub-$next.xz"
+		sub=$next
+		next=$((next + 1))
+	done
+
+	echo "Upgrading to version: $ver.$patch.$sub"
+
+	wget -qO- $url |xz -d |patch -p1 |sed -u 's/$/
+                  /' |tr '[\n]' '[\r]'
+	echo
+}
+
+up_patch(){
+	if [ $sub -gt 0 ]; then
+		url=
+		next=$((sub - 1))
+		while [ $sub -gt 0 ] ; do
+			if [ $next -ne 0 ]; then
+				url="$url http://www.kernel.org/pub/linux/kernel/v$ver.0/incr/patch-$ver.$patch.$next-$sub.xz"
+			else
+				url="$url http://www.kernel.org/pub/linux/kernel/v$ver.0/patch-$ver.$patch.$sub.xz"
+			fi
+			sub=$next
+			next=$((next - 1))
+		done
+
+		echo "Downgrading to version: $ver.$patch.$sub"
+
+		wget -qO- $url |xz -d |patch -p1 -R |sed -u 's/$/
+                      /' |tr '[\n]' '[\r]'
+		echo
+	fi
+
+	url=
+	patch=$((patch + 1))
+	while wget -q --spider
+http://www.kernel.org/pub/linux/kernel/v$ver.0/patch-$ver.$patch.xz;
+do
+		url="$url http://www.kernel.org/pub/linux/kernel/v$ver.0/patch-$ver.$patch.xz"
+		patch=$((patch + 1))
+	done
+	patch=$((patch - 1))
+
+	sub=1
+	while wget -q --spider
+http://www.kernel.org/pub/linux/kernel/v$ver.0/patch-$ver.$patch.$sub.xz;
+do
+		sub=$((sub + 1))
+	done
+	sub=$((sub - 1))
+	url="$url http://www.kernel.org/pub/linux/kernel/v$ver.0/patch-$ver.$patch.$sub.xz"
+
+	echo "Upgrading to version: $ver.$patch.$sub"
+
+	wget -qO- $url |xz -d |patch -p1 |sed -u 's/$/
+                  /' |tr '[\n]' '[\r]'
+	echo
+}
+
+case $1 in
+patch)
+	up_patch
+	;;
+
+sub)
+	up_sub
+	;;
+
+*)
+	echo "usage: $0 [patch|sub]"
+esac
+
+[ -d .pc ] && while quilt push; do
+	quilt refresh
+done
