@@ -1,81 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab2KEOoB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:44:01 -0500
-Received: from mx2.fusionio.com ([66.114.96.31]:58675 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327Ab2KEOn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:43:59 -0500
-X-ASG-Debug-ID: 1352126638-0421b554dd14ff0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <5097D090.1000208@fusionio.com>
-Date: Mon, 5 Nov 2012 15:43:28 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S932555Ab2KEOtE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:49:04 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:56488 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751606Ab2KEOtC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 09:49:02 -0500
+Date: Mon, 5 Nov 2012 14:49:00 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Shan Wei <shanwei88@gmail.com>
+cc: paulmck@linux.vnet.ibm.com, dipankar@in.ibm.com,
+        Kernel-Maillist <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 6/9] rcu: use __this_cpu_read helper instead of
+ per_cpu_ptr(p, raw_smp_processor_id())
+In-Reply-To: <509645A5.5070901@gmail.com>
+Message-ID: <0000013ad10bc571-9f707c9b-14e3-4382-a472-2a1aaa3fb384-000000@email.amazonses.com>
+References: <5093EE6B.3070906@gmail.com> <20121102181026.GY3027@linux.vnet.ibm.com> <0000013ac2c6e1f0-c10ec42d-70bb-4e24-99d6-8e70653eca83-000000@email.amazonses.com> <20121103091909.GI3027@linux.vnet.ibm.com> <509645A5.5070901@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Philipp Reisner <philipp.reisner@linbit.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "drbd-dev@lists.linbit.com" <drbd-dev@lists.linbit.com>
-Subject: Re: [GIT PULL] 4 fixes for drbd
-References: <3728568.yDZLErye6B@fat-tyre> <20121101100658.GM27975@kernel.dk> <1433815.PN8uhmSntl@fat-tyre>
-X-ASG-Orig-Subj: Re: [GIT PULL] 4 fixes for drbd
-In-Reply-To: <1433815.PN8uhmSntl@fat-tyre>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1352126638
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.113356
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-11-05 15:35, Philipp Reisner wrote:
->>
->> Can you rebase this against for-3.8/drivers? Thanks.
-> 
-> Hi Jens,
-> 
-> One of these changes fixes a regression that was introduced in the last
-> merge window. Please consider to pull this single commit.
-> (I will rebase the other 3 commit on for-3.8/drivers)
-> 
-> 
-> The following changes since commit a13c29ddf73d3be4fbb2b1bbced64014986cd87a:
->   Jens Axboe (1):
->         Merge branch 'for-jens' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/linux-block into for-3.7/drivers
-> 
-> are available in the git repository at:
-> 
->   git://git.drbd.org/linux-drbd.git for-jens
-> 
-> Lars Ellenberg (1):
->       drbd: fix regression: potential NULL pointer dereference
-> 
->  drivers/block/drbd/drbd_int.h  |    5 +++++
->  drivers/block/drbd/drbd_main.c |    8 ++++++--
->  2 files changed, 11 insertions(+), 2 deletions(-)
+On Sun, 4 Nov 2012, Shan Wei wrote:
 
-Sure, of course I'll take a regression fix. But the fix does not apply
-to current tree:
+>  __this_cpu_read<-----------------2
+> 0000000000000000 <init_module>:
+>    0:   55                      push   %rbp
+>    1:   31 c0                   xor    %eax,%eax
+>    3:   48 89 e5                mov    %rsp,%rbp
+>    6:   48 83 ec 10             sub    $0x10,%rsp
+>    a:   c9                      leaveq
+>    b:   c3                      retq
 
-axboe@nelson:/src/linux-block $ patch -p1 --dry-run < ~/1.txt 
-patching file drivers/block/drbd/drbd_int.h
-Hunk #1 FAILED at 2545.
-1 out of 1 hunk FAILED -- saving rejects to file drivers/block/drbd/drbd_int.h.rej
-patching file drivers/block/drbd/drbd_main.c
-Hunk #1 FAILED at 4232.
-1 out of 1 hunk FAILED -- saving rejects to file drivers/block/drbd/drbd_main
-
-Regression fixes for the current tree should be based on the current
-tree, looks like you used an outdated for-3.7/drivers branch and this
-fix depends on other fixes.
-
--- 
-Jens Axboe
+?? There should be an operation using gs: here. This does not look
+like code that includes a __this_cpu_read().
 
