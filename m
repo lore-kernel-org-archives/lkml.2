@@ -1,135 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab2KEVau (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 16:30:50 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34002 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754767Ab2KEVas (ORCPT
+	id S932981Ab2KEVcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 16:32:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44671 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab2KEVcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 16:30:48 -0500
+	Mon, 5 Nov 2012 16:32:12 -0500
+Message-ID: <50983069.5080404@canonical.com>
+Date: Mon, 05 Nov 2012 15:32:25 -0600
+From: Chris J Arges <chris.j.arges@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1351958865-24394-3-git-send-email-jiang.liu@huawei.com>
-References: <1351958865-24394-1-git-send-email-jiang.liu@huawei.com> <1351958865-24394-3-git-send-email-jiang.liu@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 5 Nov 2012 14:30:25 -0700
-Message-ID: <CAErSpo49kJm3x2K_FT6vLpUUD2pk9Hf62uXqzHt2Vod2PriY8Q@mail.gmail.com>
-Subject: Re: [ACPIHP PATCH part1 2/4] ACPIHP: introduce acpihp_slot driver to
- enumerate hotplug slots
-To: Jiang Liu <liuj97@gmail.com>
-Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Huang Ying <ying.huang@intel.com>, Bob Moore <robert.moore@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-mm@kvack.org,
-        Gaohuai Han <hangaohuai@huawei.com>
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] hid: usbhid: add quirk for SB arena headset v2
+References: <1352145945-8035-1-git-send-email-chris.j.arges@canonical.com> <alpine.LNX.2.00.1211052117210.24253@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1211052117210.24253@pobox.suse.cz>
+X-Enigmail-Version: 1.4.5
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 3, 2012 at 10:07 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> An ACPI hotplug slot is an abstraction of receptacles, where a group of
-> system devices could be connected to. This patch implements the skeleton
-> of the ACPI system device hotplug slot enumerator. On loading, it scans
-> the whole ACPI namespace for hotplug slots and creates a device node for
-> each hotplug slot found. Every hotplug slot is associated with a device
-> class named acpihp_slot_class. Later hotplug drivers will register onto
-> acpihp_slot_class to manage all hotplug slots.
->
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
-> ---
->  drivers/acpi/Kconfig          |   19 ++
->  drivers/acpi/hotplug/Makefile |    3 +
->  drivers/acpi/hotplug/slot.c   |  417 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 439 insertions(+)
->  create mode 100644 drivers/acpi/hotplug/slot.c
->
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index 9577b23..af0aaf6 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -334,6 +334,25 @@ menuconfig ACPI_HOTPLUG
->           If your hardware platform does not support system device dynamic
->           reconfiguration at runtime, you need not to enable this option.
->
-> +config ACPI_HOTPLUG_SLOT
-> +       tristate "System Device Hotplug Slot Enumerator"
+On 11/05/2012 02:18 PM, Jiri Kosina wrote:
+> On Mon, 5 Nov 2012, Chris J Arges wrote:
+> 
+>> When an SB Arena USB headset is plugged in, it registers the volume
+>> keys on the headset as a keyboard and continually sends events causing
+>> issues with normal keyboard input. This quirk disables the volume keys.
+> 
+> I don't know how the device looks like, but wouldn't it make more sense to 
+> actually remap the bogus keys it's sending to produce KEY_VOLUMEUP and 
+> KEY_VOLUMEDOWN?
+> 
 
-I don't really believe in hotplug drivers being modules.  I think the
-core should support hotplug directly, and the decision to configure or
-not should be made at build-time.
+Yes, if I can track this hardware down or get data I'll fix it like
+this. This happened to be a do-no harm fix for the following bug:
+https://bugs.launchpad.net/ubuntu/+source/xorg-server/+bug/1007575
 
-> +       depends on ACPI_HOTPLUG
-> +       default m
-> +       help
-> +         ACPI system device hotplug slot is an abstraction of ACPI based
-> +         system device dynamic reconfiguration control points. On load,
-> +         this driver enumerates system device hotplug slots by wakling the
-> +         ACPI namespace and provides platform specific methods to control
-> +         those hotplug slots.
-> +
-> +         By default, this driver detects system device hotplug slots by
-> +         checking avaliability of ACPI _EJ0 method. You may pass a module
-> +         parameter "fake_slot=0xf" to enable faking hotplug slots on
-> +         platforms without hardware dynamic reconfiguration capabilities.
-> +
-> +         To compile this driver as a module, choose M here:
-> +         the module will be called acpihp_slot.
-> +
-
-> +static int __init acpihp_slot_generate_name(struct acpihp_slot *slot)
-> +{
-> +       int found = 0;
-> +       u32 child_types = 0;
-> +       unsigned long long uid;
-> +       struct acpihp_slot_id *slot_id;
-> +
-> +       /*
-> +        * Figure out slot type by checking types of ACPI devices which could
-> +        * be attached to the slot.
-> +        */
-> +       slot->type = acpihp_slot_get_type_self(slot);
-> +       if (slot->type == ACPIHP_SLOT_TYPE_UNKNOWN) {
-> +               acpi_walk_namespace(ACPI_TYPE_DEVICE, slot->handle,
-> +                               ACPI_UINT32_MAX, acpihp_slot_get_dev_type,
-> +                               NULL, NULL, (void **)&child_types);
-> +               acpi_walk_namespace(ACPI_TYPE_PROCESSOR, slot->handle,
-> +                               ACPI_UINT32_MAX, acpihp_slot_get_dev_type,
-> +                               NULL, NULL, (void **)&child_types);
-> +               slot->type = acpihp_slot_get_type_child(child_types);
-> +       }
-
-If things can be hot-added below slot->handle, is there an ACPI
-requirement that there be *anything* in the existing namespace below
-slot->handle?  I'm not sure you can tell sort of things might be
-added.
-
-> +static int __init acpihp_slot_scan_slots(void)
-> +{
-> +       acpi_status status;
-> +
-> +       status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> +                                    ACPI_UINT32_MAX, acpihp_slot_scan,
-> +                                    NULL, NULL, NULL);
-> +       if (!ACPI_SUCCESS(status))
-> +               goto out_err;
-> +
-> +       status = acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
-> +                                    ACPI_UINT32_MAX, acpihp_slot_scan,
-> +                                    NULL, NULL, NULL);
-
-Here's one reason I don't like this as a module: we have to walk the
-namespace again (twice, even).  What happens when you hot-add a node
-that itself *contains* another hot-pluggable receptacle?  Do you walk
-the namespace again, calling acpiphp_slot_scan() as needed?
+Thanks for the feedback.
+--chris j arges
