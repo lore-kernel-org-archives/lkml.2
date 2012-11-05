@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab2KENBA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:01:00 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:55028 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab2KENA7 convert rfc822-to-8bit (ORCPT
+	id S1754138Ab2KENCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:02:36 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63928 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752445Ab2KENCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:00:59 -0500
-Message-ID: <1352120454.10947.5.camel@hornet>
-Subject: Re: [PATCH 6/9] virtio_mmio: Cast &resources[1].start to
- =?UTF-8?Q?=E2=80=98unsigned?= int =?UTF-8?Q?*=E2=80=99?= to rid compiler
- warning
-From: Pawel Moll <pawel.moll@arm.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Date: Mon, 05 Nov 2012 13:00:54 +0000
-In-Reply-To: <20121105082116.GB2699@gmail.com>
-References: <1351980150-24145-1-git-send-email-lee.jones@linaro.org>
-	 <1351980150-24145-7-git-send-email-lee.jones@linaro.org>
-	 <87k3u0ydry.fsf@rustcorp.com.au> <20121105082116.GB2699@gmail.com>
-X-Mailer: Evolution 3.6.0-0ubuntu3
-Mime-Version: 1.0
-X-OriginalArrivalTime: 05 Nov 2012 13:00:54.0761 (UTC) FILETIME=[973D6590:01CDBB55]
-X-MC-Unique: 112110513005602701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Nov 2012 08:02:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <0ea1ba71afb3f4551ac27a6dfa41bd97b63cef48.1351721190.git.josh.cartwright@ni.com>
+References: <cover.1351721190.git.josh.cartwright@ni.com>
+	<0ea1ba71afb3f4551ac27a6dfa41bd97b63cef48.1351721190.git.josh.cartwright@ni.com>
+Date: Mon, 5 Nov 2012 14:02:32 +0100
+Message-ID: <CAHTX3d+3CMo1bfJgWexkkgmOFyj9dp-2H4nzKygXOc94LoW0+w@mail.gmail.com>
+Subject: Re: [PATCH 8/8] clocksource: xilinx_ttc: add OF_CLK support
+From: Michal Simek <monstr@monstr.eu>
+To: Josh Cartwright <josh.cartwright@ni.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@ti.com>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Linn <John.Linn@xilinx.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-05 at 08:21 +0000, Lee Jones wrote:
-> > >  	processed = sscanf(str, "@%lli:%u%n:%d%n",
-> > > -			&base, &resources[1].start, &consumed,
-> > > +			&base, (unsigned int *)&resources[1].start, &consumed,
-> > >  			&vm_cmdline_id, &consumed);
-> > 
-> > This suppresses a valid warning, leaving our code no less wrong than
-> > before.  But now it's silently wrong!
-> > 
-> > Do you want to try again?
-> 
-> For sure I'll try again.
-> 
-> How does `s/%u/%p/` suit?
+2012/10/31 Josh Cartwright <josh.cartwright@ni.com>:
+> Add support for retrieving TTC configuration from device tree.  This
+> includes the ability to pull information about the driving clocks from
+> the of_clk bindings.
+>
+> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+> ---
+>  arch/arm/boot/dts/zynq-7000.dtsi |  53 ++++++++
+>  arch/arm/boot/dts/zynq-zc702.dts |  10 ++
+>  drivers/clocksource/xilinx_ttc.c | 273 ++++++++++++++++++++++-----------------
+>  3 files changed, 218 insertions(+), 118 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+> index 5fb763f..9a2442c 100644
+> --- a/arch/arm/boot/dts/zynq-7000.dtsi
+> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
+> @@ -109,5 +109,58 @@
+>                                 };
+>                         };
+>                 };
+> +
+> +               ttc0: ttc0@f8001000 {
+> +                       #address-cells = <1>;
+> +                       #size-cells = <0>;
+> +                       compatible = "xlnx,ttc";
+> +                       reg = <0xF8001000 0x1000>;
+> +                       clocks = <&cpu_clk 3>;
+> +                       clock-names = "cpu_1x";
+> +                       clock-ranges;
+> +
+> +                       ttc0_0: ttc0.0 {
+> +                               status = "disabled";
+> +                               reg = <0>;
+> +                               interrupts = <0 10 4>;
+> +                       };
+> +                       ttc0_1: ttc0.1 {
+> +                               status = "disabled";
+> +                               reg = <1>;
+> +                               interrupts = <0 11 4>;
+> +                       };
+> +                       ttc0_2: ttc0.2 {
+> +                               status = "disabled";
+> +                               reg = <2>;
+> +                               interrupts = <0 12 4>;
+> +                       };
+> +               };
+> +
+> +               ttc1: ttc0@f8002000 {
 
-sscanf doesn't do "%p"... The only reasonable way of fixing this is a
-intermediate local variable - will post a patch in a second.
+Also this is ttc1: ttc1.
+These type of faults can be simple removed by proper dts node generation.
 
-Thanks for spotting this!
+Thanks,
+Michal
 
-Paweł
-
-
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
