@@ -1,52 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab2KEMCm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:02:42 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39246 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab2KEMCk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:02:40 -0500
-Date: Mon, 5 Nov 2012 12:07:36 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Matthew Garrett <mjg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        Alessandro Crismani <alessandro.crismani@gmail.com>,
-        Mikhail Bakhterev <mike.bakhterev@gmail.com>,
-        Patrick H <kernel@feystorm.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] samsung-laptop: Disable if CONFIG_EFI=y
-Message-ID: <20121105120736.33af173b@pyramind.ukuu.org.uk>
-In-Reply-To: <1352116219.14888.262.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
-	<CAHR064isMXk8qkqhBJ==9sRRP7xC_j_K5rqXApza-LNkosp5mg@mail.gmail.com>
-	<20121104193741.7b4ca37b@pyramind.ukuu.org.uk>
-	<CAHR064jwe=diZ9B-D+-SroCW1ZevkRDMosB7uDuc2VXZkFxmdA@mail.gmail.com>
-	<20121105103031.GA25659@kroah.com>
-	<1352116219.14888.262.camel@mfleming-mobl1.ger.corp.intel.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	id S1752001Ab2KEMIY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:08:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750841Ab2KEMIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 07:08:23 -0500
+Subject: Re: [RFC v4+ hot_track 09/19] vfs: add one work queue
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+In-Reply-To: <CAEH94LjXrK6OfSU=aQa+waMMY+0kCjL3MU2faKeRxm9UggaKQA@mail.gmail.com>
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+	 <1351485061-12297-10-git-send-email-zwu.kernel@gmail.com>
+	 <1352114465.2705.13.camel@menhir>
+	 <CAEH94LjXrK6OfSU=aQa+waMMY+0kCjL3MU2faKeRxm9UggaKQA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 05 Nov 2012 12:07:39 +0000
+Message-ID: <1352117259.2705.24.camel@menhir>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There is the 'efi_enabled' variable, but it doesn't strictly mean
-> "this_is_a_uefi_system()", it actually means "Do we have EFI runtime
-> services?". The whole thing is a bit of a mess and I'm planning on
-> cleaning it up this week.
+Hi,
 
+On Mon, 2012-11-05 at 19:55 +0800, Zhi Yong Wu wrote:
+> On Mon, Nov 5, 2012 at 7:21 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
+> > Hi,
+> >
+> > On Mon, 2012-10-29 at 12:30 +0800, zwu.kernel@gmail.com wrote:
+> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> >>
+> >>   Add a per-superblock workqueue and a delayed_work
+> >> to run periodic work to update map info on each superblock.
+> >>
+> >> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> >> ---
+> >>  fs/hot_tracking.c            |   85 ++++++++++++++++++++++++++++++++++++++++++
+> >>  fs/hot_tracking.h            |    3 +
+> >>  include/linux/hot_tracking.h |    3 +
+> >>  3 files changed, 91 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+> >> index fff0038..0ef9cad 100644
+> >> --- a/fs/hot_tracking.c
+> >> +++ b/fs/hot_tracking.c
+> >> @@ -15,9 +15,12 @@
+> >>  #include <linux/module.h>
+> >>  #include <linux/spinlock.h>
+> >>  #include <linux/hardirq.h>
+> >> +#include <linux/kthread.h>
+> >> +#include <linux/freezer.h>
+> >>  #include <linux/fs.h>
+> >>  #include <linux/blkdev.h>
+> >>  #include <linux/types.h>
+> >> +#include <linux/list_sort.h>
+> >>  #include <linux/limits.h>
+> >>  #include "hot_tracking.h"
+> >>
+> >> @@ -557,6 +560,67 @@ static void hot_map_array_exit(struct hot_info *root)
+> >>       }
+> >>  }
+> >>
+> >> +/* Temperature compare function*/
+> >> +static int hot_temp_cmp(void *priv, struct list_head *a,
+> >> +                             struct list_head *b)
+> >> +{
+> >> +     struct hot_comm_item *ap =
+> >> +                     container_of(a, struct hot_comm_item, n_list);
+> >> +     struct hot_comm_item *bp =
+> >> +                     container_of(b, struct hot_comm_item, n_list);
+> >> +
+> >> +     int diff = ap->hot_freq_data.last_temp
+> >> +                             - bp->hot_freq_data.last_temp;
+> >> +     if (diff > 0)
+> >> +             return -1;
+> >> +     if (diff < 0)
+> >> +             return 1;
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +/*
+> >> + * Every sync period we update temperatures for
+> >> + * each hot inode item and hot range item for aging
+> >> + * purposes.
+> >> + */
+> >> +static void hot_update_worker(struct work_struct *work)
+> >> +{
+> >> +     struct hot_info *root = container_of(to_delayed_work(work),
+> >> +                                     struct hot_info, update_work);
+> >> +     struct hot_inode_item *hi_nodes[8];
+> >> +     u64 ino = 0;
+> >> +     int i, n;
+> >> +
+> >> +     while (1) {
+> >> +             n = radix_tree_gang_lookup(&root->hot_inode_tree,
+> >> +                                (void **)hi_nodes, ino,
+> >> +                                ARRAY_SIZE(hi_nodes));
+> >> +             if (!n)
+> >> +                     break;
+> >> +
+> >> +             ino = hi_nodes[n - 1]->i_ino + 1;
+> >> +             for (i = 0; i < n; i++) {
+> >> +                     kref_get(&hi_nodes[i]->hot_inode.refs);
+> >> +                     hot_map_array_update(
+> >> +                             &hi_nodes[i]->hot_inode.hot_freq_data, root);
+> >> +                     hot_range_update(hi_nodes[i], root);
+> >> +                     hot_inode_item_put(hi_nodes[i]);
+> >> +             }
+> >> +     }
+> >> +
+> >> +     /* Sort temperature map info */
+> >> +     for (i = 0; i < HEAT_MAP_SIZE; i++) {
+> >> +             list_sort(NULL, &root->heat_inode_map[i].node_list,
+> >> +                     hot_temp_cmp);
+> >> +             list_sort(NULL, &root->heat_range_map[i].node_list,
+> >> +                     hot_temp_cmp);
+> >> +     }
+> >> +
+> >
+> > If this list can potentially have one (or more) entries per inode, then
+> Only one hot_inode_item per inode, while maybe multiple
+> hot_range_items per inode.
+> > filesystems with a lot of inodes (millions) may potentially exceed the
+> > max size of list which list_sort() can handle. If that happens it still
+> > works, but you'll get a warning message and it won't be as efficient.
+> I haven't do so large scale test. If we want to find that issue, we
+> need to do large scale performance test, before that, i want to make
+> sure the code change is correct at first.
+> To be honest, for that issue you pointed to, i also have such
+> concern.But list_sort() performance looks good from the test result of
+> the following URL:
+> https://lkml.org/lkml/2010/1/20/485
+> 
+Yes, I think it is good. Also, even when it says that it's performance
+is poor (via the warning message) it is still much better than the
+alternative (of not sorting) in the GFS2 case. So currently our
+workaround is to ignore the warning. Due to what we using it for
+(sorting the data blocks for ordered writeback) we only see it very
+occasionally when there has been lots of data write activity with little
+journal activity on a node with lots of RAM.
 
-As far as I can understand it we should be reserving those areas on a
-UEFI booted machine and just marking them as busy so that they are not
-available to any drivers to go peering into.
+> >
+> > It is something that we've run into with list_sort() and GFS2, but it
+> > only happens very rarely,
+> Beside list_sort(), do you have any other way to share? For this
+> concern, how does GFS2 resolve it?
+> 
+That is an ongoing investigation :-)
 
-Alan
+I've pondered various options... increase temp variable space in
+list_sort(), not using list_sort() and insertion sorting the blocks
+instead, flushing the ordered write data early if the list gets too
+long, figuring out how to remove blocks written back by the VM from the
+list before the sort, and various other possible solutions. So far I'm
+not sure which will be the best to choose, and since your situation is a
+bit different it might not make sense to use the same solution.
+
+I just thought it was worth mentioning though since it was something
+that we'd run across,
+
+Steve.
+
 
