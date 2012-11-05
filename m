@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab2KDNCk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 08:02:40 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42448 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827Ab2KDNAN (ORCPT
+	id S1754127Ab2KDNC7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 08:02:59 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:49060 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572Ab2KDNAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 08:00:13 -0500
+	Sun, 4 Nov 2012 08:00:05 -0500
 From: Luming Yu <luming.yu@gmail.com>
 To: arnd@arndb.de, linux-kernel@vger.kernel.org
 Cc: Luming Yu <luming.yu@gmail.com>, Luming Yu <luming.yu@intel.com>
-Subject: [PATCH 04/13] HW-latency: Differentiate three modes to use CPU carry out testing
-Date: Sun,  4 Nov 2012 20:59:35 -0500
-Message-Id: <1352080784-30839-5-git-send-email-luming.yu@gmail.com>
+Subject: [PATCH 02/13] HW-latency: Fix a lockdep warnning
+Date: Sun,  4 Nov 2012 20:59:33 -0500
+Message-Id: <1352080784-30839-3-git-send-email-luming.yu@gmail.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1352080784-30839-1-git-send-email-luming.yu@gmail.com>
 References: <1352080784-30839-1-git-send-email-luming.yu@gmail.com>
@@ -20,115 +20,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-0: all online cpus
-1: any one of online cpus
-2: all online cpus sequentially run test
+[  150.733088] in_atomic(): 1, irqs_disabled(): 1, pid: 19, name: migration/2
+[  150.735456] INFO: lockdep is turned off.
+[  150.738903] irq event stamp: 28
+[  150.741255] hardirqs last  enabled at (27): [<ffffffff816e6a80>] _raw_spin_unlock_irq+0x30/0x50
+[  150.744884] hardirqs last disabled at (28): [<ffffffff816e616f>] _raw_spin_lock_irq+0x1f/0x90
+[  150.748505] softirqs last  enabled at (24): [<ffffffff810724a7>] __do_softirq+0x167/0x3d0
+[  150.752121] softirqs last disabled at (19): [<ffffffff816f143c>] call_softirq+0x1c/0x30
+[  150.755709] Pid: 19, comm: migration/2 Tainted: G        W    3.7.0-rc2+ #2
+[  150.759361] Call Trace:
+[  150.762952]  [<ffffffff810d53e0>] ? print_irqtrace_events+0xd0/0xe0
+[  150.766610]  [<ffffffff810a3b4c>] __might_sleep+0x18c/0x250
+[  150.769140]  [<ffffffff816e2ab0>] mutex_lock_nested+0x40/0x390
+[  150.772765]  [<ffffffff810d853d>] ? trace_hardirqs_on+0xd/0x10
+[  150.776392]  [<ffffffff816e6a80>] ? _raw_spin_unlock_irq+0x30/0x50
+[  150.778899]  [<ffffffff81021829>] ? read_tsc+0x9/0x20
+[  150.782546]  [<ffffffffa05877e3>] get_freq_sample+0x33/0xd0 [hw_latency_test]
+[  150.786249]  [<ffffffff810fac9b>] stop_machine_cpu_stop+0xab/0x110
+[  150.789964]  [<ffffffff810fadd6>] cpu_stopper_thread+0xd6/0x1b0
+[  150.792528]  [<ffffffff810fabf0>] ? cpu_stop_queue_work+0x80/0x80
+[  150.795044]  [<ffffffff8115798e>] ? perf_event_alloc+0x5e/0x4a0
+[  150.797572]  [<ffffffff816e4672>] ? __schedule+0x442/0xa00
+[  150.800079]  [<ffffffff810fad00>] ? stop_machine_cpu_stop+0x110/0x110
+[  150.802512]  [<ffffffff810938fd>] kthread+0xed/0x100
+[  150.805825]  [<ffffffff81093810>] ? flush_kthread_worker+0x190/0x190
+[  150.808051]  [<ffffffff816f00ec>] ret_from_fork+0x7c/0xb0
+[  150.810161]  [<ffffffff81093810>] ? flush_kthread_worker+0x190/0x190
 
 Signed-off-by: Luming Yu <luming.yu@intel.com>
 ---
- drivers/misc/hw_latency_test.c | 37 ++++++++++++++++++++++++++++++++-----
- 1 file changed, 32 insertions(+), 5 deletions(-)
+ drivers/misc/hw_latency_test.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/misc/hw_latency_test.c b/drivers/misc/hw_latency_test.c
-index 8a8c6ba..4303644 100644
+index 2aa3a74..e970642 100644
 --- a/drivers/misc/hw_latency_test.c
 +++ b/drivers/misc/hw_latency_test.c
-@@ -47,6 +47,7 @@ static unsigned long buf_size = 262144UL;
- static struct task_struct *kthread;
- 
- struct sample {
-+	unsigned int cpu;
- 	u64	seqnum;
- 	u64	duration;
- 	struct timespec	timestamp;
-@@ -70,6 +71,7 @@ static struct data {
- static ktime_t	now;
- struct sample_function {
- 	const char *name;
-+	u8	type; /* 0=all parallel, 1=anyone, 2=all sequential*/
- 	struct list_head list;
- 	int (*get_sample)(void *unused);
- };
-@@ -186,14 +188,11 @@ static int get_freq_sample(void *unused)
- 	u32	sample = 0;
+@@ -149,7 +149,7 @@ static int get_random_bytes_sample(void *unused)
+ 	u64	sample = 0;
  	int	ret = 1;
- 	unsigned int cpu_tsc_freq;
--	static DEFINE_MUTEX(freq_pit_mutex);
+ 
+-	buffer = kzalloc(1024, GFP_KERNEL);
++	buffer = kzalloc(1024, GFP_ATOMIC);
  
  	start = ktime_get();
  	do {
- 		t1 = ktime_get();
--		mutex_lock(&freq_pit_mutex);
- 		cpu_tsc_freq = x86_platform.calibrate_tsc();
--		mutex_unlock(&freq_pit_mutex);
- 		t2 = ktime_get();
- 		total = ktime_to_us(ktime_sub(t2, start));
- 		diff = abs(cpu_tsc_freq - tsc_khz);
-@@ -249,23 +248,30 @@ out:
- 
- struct sample_function tsc_sample = {
- 	.name		= "tsc",
-+	.type		= 0,
- 	.get_sample 	= get_tsc_sample,
- };
- 
- struct sample_function tsc_freq_sample = {
- 	.name		= "freq",
-+	.type		= 2,
- 	.get_sample 	= get_freq_sample,
- };
- 
- struct sample_function random_bytes_sample = {
- 	.name		= "random_bytes",
-+	.type		= 0,
- 	.get_sample 	= get_random_bytes_sample,
- };
- 
-+static DECLARE_BITMAP(testing_cpu_map, NR_CPUS);
-+
- static int kthread_fn(void *unused)
- {
- 	int err = 0;
- 	u64 interval = 0;
-+	int cpu;
-+	struct cpumask *testing_cpu_mask = to_cpumask(testing_cpu_map);
- 	int (*get_sample)(void *unused);
- 	
- 	mutex_lock(&sample_function_mutex);
-@@ -274,10 +280,31 @@ static int kthread_fn(void *unused)
- 	else
- 		goto out;
- 
-+	cpumask_or(testing_cpu_mask, testing_cpu_mask, cpu_online_mask);
- 	while (!kthread_should_stop()) {
- 		mutex_lock(&data.lock);
--	
--		err = stop_machine(get_sample, unused, cpu_online_mask);
-+
-+		switch (current_sample_func->type) {
-+		case 0:
-+			err = stop_machine(get_sample, unused, testing_cpu_mask);
-+			break;
-+		case 1:
-+			err = stop_machine(get_sample, unused, NULL);
-+			break;
-+		case 2:
-+			for_each_cpu(cpu, cpu_online_mask) {
-+				cpumask_clear(testing_cpu_mask);
-+				cpumask_set_cpu(cpu, testing_cpu_mask);
-+				err = stop_machine(get_sample, unused, NULL);
-+				if (err)
-+					break;
-+			}
-+			break;
-+		default:
-+			mutex_unlock(&data.lock);
-+			goto err_out;
-+		}
-+
- 		if (err) {
- 			mutex_unlock(&data.lock);
- 			goto err_out;
 -- 
 1.7.12.1
 
