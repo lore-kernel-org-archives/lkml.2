@@ -1,110 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab2KEOYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:24:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55165 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753217Ab2KEOYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:24:53 -0500
-Date: Mon, 5 Nov 2012 14:24:49 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Zdenek Kabelac <zkabelac@redhat.com>, Valdis.Kletnieks@vt.edu,
-        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Revert "mm: vmscan: scale number of pages reclaimed by
- reclaim/compaction based on failures"
-Message-ID: <20121105142449.GI8218@suse.de>
-References: <50770905.5070904@suse.cz>
- <119175.1349979570@turing-police.cc.vt.edu>
- <5077434D.7080008@suse.cz>
- <50780F26.7070007@suse.cz>
- <20121012135726.GY29125@suse.de>
- <507BDD45.1070705@suse.cz>
- <20121015110937.GE29125@suse.de>
- <5093A3F4.8090108@redhat.com>
- <5093A631.5020209@suse.cz>
- <509422C3.1000803@suse.cz>
+	id S932464Ab2KEO1L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:27:11 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:35170 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932314Ab2KEO1J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 09:27:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <509422C3.1000803@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121022133003.GF4477@opensource.wolfsonmicro.com>
+References: <1350909125-20189-1-git-send-email-ulf.hansson@stericsson.com>
+	<20121022133003.GF4477@opensource.wolfsonmicro.com>
+Date: Mon, 5 Nov 2012 15:27:08 +0100
+Message-ID: <CAPDyKFqgFvY67QR8LA_KTEQwDi3o2wH=MY-D89k023-2S=ioFw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ASoC: Ux500: Fixup use of clocks
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Ulf Hansson <ulf.hansson@stericsson.com>, Liam Girdwood <lrg@ti.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Ola Lilja <ola.o.lilja@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Slaby reported the following:
+On 22 October 2012 15:30, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Oct 22, 2012 at 02:32:04PM +0200, Ulf Hansson wrote:
+>> From: Ulf Hansson <ulf.hansson@linaro.org>
+>>
+>> Make sure clocks are being prepared and unprepared as well
+>> as enabled and disabled.
+>
+> Applied, thanks.
 
-	(It's an effective revert of "mm: vmscan: scale number of pages
-	reclaimed by reclaim/compaction based on failures".) Given kswapd
-	had hours of runtime in ps/top output yesterday in the morning
-	and after the revert it's now 2 minutes in sum for the last 24h,
-	I would say, it's gone.
+I can not find this patch on any "next-tree" yet. Same goes for:
+"[PATCH 2/2] ASoC: Ux500: Control apb clock".
 
-The intention of the patch in question was to compensate for the loss
-of lumpy reclaim. Part of the reason lumpy reclaim worked is because
-it aggressively reclaimed pages and this patch was meant to be a sane
-compromise.
+Maybe I should be more patient, but thought it make sense to send a
+ping on this. :-)
 
-When compaction fails, it gets deferred and both compaction and
-reclaim/compaction is deferred avoid excessive reclaim. However, since
-commit c6543459 (mm: remove __GFP_NO_KSWAPD), kswapd is woken up each time
-and continues reclaiming which was not taken into account when the patch
-was developed.
-
-Attempts to address the problem ended up just changing the shape of the
-problem instead of fixing it. The release window gets closer and while a
-THP allocation failing is not a major problem, kswapd chewing up a lot of
-CPU is. This patch reverts "mm: vmscan: scale number of pages reclaimed
-by reclaim/compaction based on failures" and will be revisited in the future.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/vmscan.c |   25 -------------------------
- 1 file changed, 25 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 2624edc..e081ee8 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1760,28 +1760,6 @@ static bool in_reclaim_compaction(struct scan_control *sc)
- 	return false;
- }
- 
--#ifdef CONFIG_COMPACTION
--/*
-- * If compaction is deferred for sc->order then scale the number of pages
-- * reclaimed based on the number of consecutive allocation failures
-- */
--static unsigned long scale_for_compaction(unsigned long pages_for_compaction,
--			struct lruvec *lruvec, struct scan_control *sc)
--{
--	struct zone *zone = lruvec_zone(lruvec);
--
--	if (zone->compact_order_failed <= sc->order)
--		pages_for_compaction <<= zone->compact_defer_shift;
--	return pages_for_compaction;
--}
--#else
--static unsigned long scale_for_compaction(unsigned long pages_for_compaction,
--			struct lruvec *lruvec, struct scan_control *sc)
--{
--	return pages_for_compaction;
--}
--#endif
--
- /*
-  * Reclaim/compaction is used for high-order allocation requests. It reclaims
-  * order-0 pages before compacting the zone. should_continue_reclaim() returns
-@@ -1829,9 +1807,6 @@ static inline bool should_continue_reclaim(struct lruvec *lruvec,
- 	 * inactive lists are large enough, continue reclaiming
- 	 */
- 	pages_for_compaction = (2UL << sc->order);
--
--	pages_for_compaction = scale_for_compaction(pages_for_compaction,
--						    lruvec, sc);
- 	inactive_lru_pages = get_lru_size(lruvec, LRU_INACTIVE_FILE);
- 	if (nr_swap_pages > 0)
- 		inactive_lru_pages += get_lru_size(lruvec, LRU_INACTIVE_ANON);
+Kind regards
+Ulf Hansson
