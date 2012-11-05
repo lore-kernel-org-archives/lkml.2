@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab2KECjb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Nov 2012 21:39:31 -0500
-Received: from mga01.intel.com ([192.55.52.88]:38324 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab2KECja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Nov 2012 21:39:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,712,1344236400"; 
-   d="scan'208";a="242512314"
-Message-ID: <509726D0.4010606@zytor.com>
-Date: Mon, 05 Nov 2012 03:39:12 +0100
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1752686Ab2KECsE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Nov 2012 21:48:04 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:47301 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab2KECsC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Nov 2012 21:48:02 -0500
 MIME-Version: 1.0
-To: "Zhang, Jun" <jun.zhang@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Fleming, Matt" <matt.fleming@intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] crash dump: don't delete non-E820_RAM during init
-References: <88DC34334CA3444C85D647DBFA962C270FD7EAD3@SHSMSX102.ccr.corp.intel.com> <50909120.3040101@zytor.com> <88DC34334CA3444C85D647DBFA962C270FD7EB0B@SHSMSX102.ccr.corp.intel.com> <5090AB3C.5050405@zytor.com> <88DC34334CA3444C85D647DBFA962C270FD7EB3A@SHSMSX102.ccr.corp.intel.com> <5090B966.4040605@zytor.com> <88DC34334CA3444C85D647DBFA962C270FD7EF68@SHSMSX102.ccr.corp.intel.com> <c6a025f9-0ac5-45d7-bda9-7f9bc8eaf9ab@email.android.com> <88DC34334CA3444C85D647DBFA962C270FD7F039@SHSMSX102.ccr.corp.intel.com> <5093F6DA.7040709@zytor.com> <88DC34334CA3444C85D647DBFA962C270FD7F4B6@SHSMSX102.ccr.corp.intel.com>
-In-Reply-To: <88DC34334CA3444C85D647DBFA962C270FD7F4B6@SHSMSX102.ccr.corp.intel.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.02.1211041708190.1960@localhost6.localdomain6>
+References: <1351974625-10282-1-git-send-email-Julia.Lawall@lip6.fr>
+ <CA+1xoqd-UQXg0nuE1t5ayYY1Ow81er2mHUFUow=mfcwzkCPW5A@mail.gmail.com>
+ <alpine.DEB.2.02.1211041656580.1960@localhost6.localdomain6>
+ <CA+1xoqfa6CMcsjuOQ_QRRK7kGwkFPCVvrS44rk3Xf1S2HFPTow@mail.gmail.com> <alpine.DEB.2.02.1211041708190.1960@localhost6.localdomain6>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Sun, 4 Nov 2012 21:47:41 -0500
+Message-ID: <CA+1xoqd6TZDsFqtcZuX9A7SOcRfvoZuv5A4wY5bkyGwPJjSF-g@mail.gmail.com>
+Subject: Re: [PATCH 0/8] drop if around WARN_ON
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2012 02:37 AM, Zhang, Jun wrote:
-> Hello, Gortmaker
-> I will modify my subject. Thanks!
-> 
-> Hello, Anvin
-> from our three options, I think third option is better. But in 3) option, there are two choose, 3.1) is like memmap=REMOVERAM, 3.2) is memmap=CRASHKDUMP.
-> In 3.1) we maybe need ifdef/endif within the { } of the function (like exactmap).
-> In 3.2) we can remove the ifdef/endif. 
-> Which one is the better? Maybe you have a better solution, please share it. 
-> Thanks!
-> 
-> Next is our three option.
-> 1)  my patch.
-> 2)  modify kexec, only pass two parameters -- memmap=544K@64K 
->     memmap=64964K@32768K, in kernel setup_memory_map, we can remove RAM 
->     range.
-> 3)  add extra optional, 3.1) like memmap=REMOVERAM
->                    3.2) like memmap=CRASHKDUMP
-> 
+On Sun, Nov 4, 2012 at 11:16 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
+> I didn't change any cases where the if test contains a function call.  The
+> current definitions of WARN_ON seem to always evaluate the condition
+> expression, but I was worried that that might not always be the case.  And
+> calling a function (the ones I remember were some kinds of print functions)
+> seems like something one might not want buried in the argument of a
+> debugging macro.
 
-Again, 2 would be better because it is a localized change to kexec.  If
-that works I don't see why there is any reason to change anything else.
+Makes sense.
 
-	-hpa
+> WARN_ON_SMP is just WARN_ON if CONFIG_SMP is true, but it is just 0
+> otherwise.  So in that case it seems important to check that one is not
+> throwing away something important.
+
+Yup, we just need to make sure that the expression being evaluated doesn't
+have side-effects.
+
+> I remember working on the BUG_ON case several years ago, and other people
+> worked on it too, but I guess some are still there...  The current
+> definitions of BUG_ON seem to keep the condition, but there are quite a few
+> specialized definitions, so someone at some point might make a version that
+> does not have that property.
+
+It makes sense to keep an eye for such things when converting code. I
+also don't think we'll get to see a version of BUG_ON which doesn't
+evaluate the expression since the kernel already has more than enough
+BUG_ONs that assume the expression will be evaluated:
+
+BUG_ON(HYPERVISOR_callback_op(CALLBACKOP_register, &event));
+BUG_ON(gpiochip_add(&gemini_gpio_chip));
+BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, CLOCK_TICK_RATE));
+BUG_ON(gpio_request(ZOOM2_HEADSET_MUX_GPIO, "hs_mux") < 0);
+
+And so on, so we're probably safe converting to BUG_ON even if the
+condition is a function, as long as it doesn't create a long and
+complicated BUG_ON() ofcourse.
 
 
+Thanks,
+Sasha
