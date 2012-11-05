@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab2KELUN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 06:20:13 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:28381
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752502Ab2KELUK (ORCPT
+	id S1753455Ab2KELU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 06:20:26 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38256 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab2KELUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 06:20:10 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizd799hzz1de0h1202h1d1ah1d2ahzzz2dh87h2a8h668h839he5bhf0ah107ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14afh1504h1537h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <timur@freescale.com>, <scottwood@freescale.com>
-CC: Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 0/4] iommu/fsl: Freescale PAMU driver and IOMMU API implementation.
-Date: Mon, 5 Nov 2012 16:49:18 +0530
-Message-ID: <1352114361-25192-1-git-send-email-Varun.Sethi@freescale.com>
-X-Mailer: git-send-email 1.6.5.6
+	Mon, 5 Nov 2012 06:20:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
+In-Reply-To: <3ec3531d21c247ac3dcc76d91ff6be13ebfc733b.1351721190.git.josh.cartwright@ni.com>
+References: <cover.1351721190.git.josh.cartwright@ni.com>
+	<3ec3531d21c247ac3dcc76d91ff6be13ebfc733b.1351721190.git.josh.cartwright@ni.com>
+Date: Mon, 5 Nov 2012 12:20:16 +0100
+X-Google-Sender-Auth: yyzjb7I3wILPUPAry94evq9dgDo
+Message-ID: <CAHTX3d+H7QOUgk8HxekEHd-=XV4k=pTbMcC_cAxkhj1z0s+TWg@mail.gmail.com>
+Subject: Re: [PATCH 1/8] ARM: zynq: move arm-specific sys_timer out of ttc
+From: Michal Simek <michal.simek@xilinx.com>
+To: Josh Cartwright <josh.cartwright@ni.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@ti.com>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Linn <John.Linn@xilinx.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset provides the Freescale PAMU (Peripheral Access Management Unit) driver
-and the corresponding IOMMU API implementation. PAMU is the IOMMU present on Freescale
-QorIQ platforms. PAMU can authorize memory access, remap the memory address, and remap 
-the I/O transaction type.
+2012/10/31 Josh Cartwright <josh.cartwright@ni.com>:
+> Move the sys_timer definition out of ttc driver and make it part of the
+> common zynq code.  This is preparation for renaming and COMMON_CLK
+> support.
+>
+> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+> ---
+>  arch/arm/mach-zynq/common.c | 13 +++++++++++++
+>  arch/arm/mach-zynq/common.h |  4 +---
+>  arch/arm/mach-zynq/timer.c  | 10 +---------
+>  3 files changed, 15 insertions(+), 12 deletions(-)
+>
 
-This set consists of the following patches:
-1. Addition of new field in the device (powerpc) archdata structure for storing iommu domain information
-   pointer. This pointer is stored when the device is attached to a particular iommu domain.
-2. Add PAMU bypass enable register to the ccsr_guts structure.
-3. Addition of domain attributes required by the PAMU driver IOMMU API.
-4. PAMU driver and IOMMU API implementation.
+Tested-by: Michal Simek <michal.simek@xilinx.com>
 
-This patch set is based on the next branch of the iommu git tree maintained by Joerg.
+Looks good to me. I have added it to my testing branch
+and will provide path to mainline through xilinx arm-next branch
 
-
-
-Varun Sethi (4):
-  store iommu domain pointer in device archdata structure.
-  Add PAMU bypass enable register to ccsr_guts structure.
-  Add attributes for fsl PAMU driver.
-  FSL PAMU driver.
-
- arch/powerpc/include/asm/device.h   |    4 +
- arch/powerpc/include/asm/fsl_guts.h |    4 +-
- drivers/iommu/Kconfig               |    8 +
- drivers/iommu/Makefile              |    1 +
- drivers/iommu/fsl_pamu.c            | 1116 +++++++++++++++++++++++++++++++++++
- drivers/iommu/fsl_pamu.h            |  400 +++++++++++++
- drivers/iommu/fsl_pamu_domain.c     | 1010 +++++++++++++++++++++++++++++++
- drivers/iommu/fsl_pamu_domain.h     |  102 ++++
- include/linux/iommu.h               |   36 ++
- 9 files changed, 2680 insertions(+), 1 deletions(-)
- create mode 100644 drivers/iommu/fsl_pamu.c
- create mode 100644 drivers/iommu/fsl_pamu.h
- create mode 100644 drivers/iommu/fsl_pamu_domain.c
- create mode 100644 drivers/iommu/fsl_pamu_domain.h
-
--- 
-1.7.4.1
-
-
+Thanks,
+Michal
