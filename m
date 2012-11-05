@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568Ab2KEL6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 06:58:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45798 "EHLO mx1.redhat.com"
+	id S1751679Ab2KEMAC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:00:02 -0500
+Received: from mga03.intel.com ([143.182.124.21]:49936 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750954Ab2KEL62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 06:58:28 -0500
-Subject: Re: VFS hot tracking: How to calculate data temperature?
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, cmm@us.ibm.com,
-        linux-fsdevel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        Ben Chociej <bchociej@gmail.com>,
-        James Northrup <northrup.james@gmail.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAEH94Lj6ZJ=8WWAaEMxJqFt8AvbQJiia0cptC=-DZca74fcFaw@mail.gmail.com>
-References: <CAEH94LjTedn0n00ZtqFxBL=kDA3u8G39q+x79-vPoMYvEKW1gw@mail.gmail.com>
-	 <CAEH94LgUcAL6RquMZKTrDg87_0J2sEqTsDXUbnhrQ37KuMJ4sg@mail.gmail.com>
-	 <1351891622.23963.4.camel@oc2046235844.ibm.com>
-	 <CAEH94LiuKGPi+k=pA9P-FFsosnwG7PRBK5DjjaGf20S+pyrzpA@mail.gmail.com>
-	 <20121105082828.GJ29378@dastard>
-	 <CAEH94LhbiHdsTCzsH6K8g3WH02_5-dnUPRZBCJW9vtpgAuuGtg@mail.gmail.com>
-	 <1352111588.2705.7.camel@menhir>
-	 <CAEH94Lj6ZJ=8WWAaEMxJqFt8AvbQJiia0cptC=-DZca74fcFaw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Mon, 05 Nov 2012 11:57:52 +0000
-Message-ID: <1352116672.2705.16.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1750985Ab2KEMAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 07:00:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,714,1344236400"; 
+   d="scan'208";a="213554457"
+Date: Mon, 5 Nov 2012 14:02:19 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+Message-ID: <20121105120219.GF24532@intel.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+ <20121103201310.GQ16648@intel.com>
+ <1535917.BaYBBNgGy0@vostro.rjw.lan>
+ <4052192.ry8JrGTr6H@vostro.rjw.lan>
+ <20121105105602.GC24532@intel.com>
+ <20121105105639.GE1385@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121105105639.GE1385@opensource.wolfsonmicro.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, 2012-11-05 at 19:46 +0800, Zhi Yong Wu wrote:
-> On Mon, Nov 5, 2012 at 6:33 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
-> > Hi,
-> >
-> > On Mon, 2012-11-05 at 16:44 +0800, Zhi Yong Wu wrote:
-> >> On Mon, Nov 5, 2012 at 4:28 PM, Dave Chinner <david@fromorbit.com> wrote:
-> >> > On Mon, Nov 05, 2012 at 10:35:50AM +0800, Zhi Yong Wu wrote:
-> >> >> On Sat, Nov 3, 2012 at 5:27 AM, Mingming.cao <cmm@us.ibm.com> wrote:
-> >> >> > On Fri, 2012-11-02 at 14:38 +0800, Zhi Yong Wu wrote:
-> >> >> >> Here also has another question.
-> >> >> >>
-> >> >> >> How to save the file temperature among the umount to be able to
-> >> >> >> preserve the file tempreture after reboot?
-> >> >> >>
-> >> >> >> This above is the requirement from DB product.
-> >> >> >> I thought that we can save file temperature in its inode struct, that
-> >> >> >> is, add one new field in struct inode, then this info will be written
-> >> >> >> to disk with inode.
-> >> >> >>
-> >> >> >> Any comments or ideas are appreciated, thanks.
-> >> >> >>
-> >> >> >>
-> >> >> >
-> >> >> > Maybe could save the last file temperature with extended attributes.
-> >> >> It seems that only ext4 has the concept of extended attributes.
-> >> >
-> >> > All major filesystems have xattr support. They are used extensively
-> >> > by the security and integrity subsystems, for example.
-> >> got it, thanks.
-> >> >
-> >> > Saving the information might be something that is useful to certian
-> >> > applications, but lets have the people that need that functionality
-> >> > spell out their requirements before discussing how or what to
-> >> > implement.  Indeed, discussion shoul dreally focus on getting the
-> >> > core, in-memory infrastructure sorted out first before trying to
-> >> > expand the functionality further...
-> >> ah, but the latest patchset need some love from experienced FS guys:).......
-> >
-> > There is one other possible issue with saving the data into the
-> > filesystem, which is that it may disturb what you are trying to measure.
-> > Some filesystems (GFS2 is one) store data for small inodes in the same
-> > block as the inode itself. So that means the accesses to the saved hot
-> > tracking info may potentially affect the data access times too. Also
-> > there is a very limited amount of space to expand the number of fields
-> > in the inode, so xattr may be the only solution, depending on how much
-> > data needs to be stored in each case.
-> Very good analysis, two possible issues are very meanful, thanks.
-> >
-> > In the GFS2 case (I don't think it is unique in this) xattrs are stored
-> > out of line and having to access them in every open means an extra block
-> > read per inode, which again has performance implications.
-> >
-> > So that is not an insurmountable problem, but something to take into
-> > account in selecting a solution,
-> In summary, you look like preferring to xattr as its solution.
+On Mon, Nov 05, 2012 at 11:56:39AM +0100, Mark Brown wrote:
+> On Mon, Nov 05, 2012 at 12:56:02PM +0200, Mika Westerberg wrote:
 > 
+> > > struct acpi_device {
+> > > 	...
+> > > 	union acpi_resource_serial_bus *serial;
+> > > 	...
+> > > };
+> 
+> > It is also possible to have several serial bus connectors on a single
+> > device (although we've seen only one connector per device but it should not
+> > be limited to that).
+> 
+> I've got practical systems where there are multiple buses physically
+> connected, though in practice almost always only one is actually used at
+> runtime when it's I2C and SPI there are some systems (usually with other
+> buses) where you might want to use more than one bus.  Not sure those
+> buses will fit in here though.
 
-Well, that depends on exactly how large the data to be stored is, and
-other factors. It will add overhead to the storage/retrieval but at
-least it is fairly generic (wrt on-disk format) so likely to be easier
-to retrofit to existing filesystems.
-
-I suspect this may be one of those cases where there is no obvious right
-answer and it is a case of selecting the least worst option, if that
-makes sense?
-
-Steve.
-
-
+Yeah, I just went through DSDT table of one of our machines and found a
+device that actually has two I2CSerialBus connectors (and those are to the
+same controller). What I'm not sure is that is it used to select between
+two different addresses or doest the device really have two physical I2C
+connections.
