@@ -1,133 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab2KEJFA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 04:05:00 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:51245 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab2KEJE5 (ORCPT
+	id S1753580Ab2KEJGv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 04:06:51 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:37255 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060Ab2KEJGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 04:04:57 -0500
-Date: Mon, 5 Nov 2012 10:04:51 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Shiraz Hashim <shiraz.hashim@st.com>
-Cc: linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH V5] PWM: Add SPEAr PWM chip driver support
-Message-ID: <20121105090451.GA5847@avionic-0098.mockup.avionic-design.de>
-References: <1351138153-584-1-git-send-email-shiraz.hashim@st.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
-Content-Disposition: inline
-In-Reply-To: <1351138153-584-1-git-send-email-shiraz.hashim@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:bT58XhfXIBSAFTIzMOkMLLqWol35Hemu5Zt6piQVcAw
- hxmKkcLem829Mmu5gN6SFKYLKIqVJ4HlPfMLeCOMLJZLgrZGkh
- tQbrr9A30CSA7iYiIPuh0bE8yJfu4J8l8lLlXTv5ukek5eLDXL
- GvdtNIHxi6+ZP3+ZJsfq+O0wSw2K1MhzEPtrmn0Jeyal4ZkZDY
- thw6913Ry+weehpocUstmU+abCXP6SCMW+8ihq2AJm1SzWjDNd
- aYVSeD4ZfCZBWJg9s0N8mcpgGdxcta9WNrEAfgeuI8rjXiqZMO
- 04HcxLTSgBEh4NL8pkSnfVyXICVhWwddTRbDZUXWZjmwl9OmQq
- qY624PbgmmhgzWm22PBrD4SU6NTt6Y19AlH4gsJMSX+BDS2pS+
- pKp1ozxvOD751XHAmnk6xeGLIg6XGrmLTw=
+	Mon, 5 Nov 2012 04:06:49 -0500
+From: Jamie Iles <jamie.iles@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jamie Iles <jamie.iles@oracle.com>, David Daney <david.daney@cavium.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH] scripts/sortextable: support objects with more than 64K sections.
+Date: Mon,  5 Nov 2012 09:06:44 +0000
+Message-Id: <1352106404-11038-1-git-send-email-jamie.iles@oracle.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Building with a large config and -ffunction-sections results in a large
+number of sections and sortextable needs to be able to handle that.
+Implement support for > 64K sections as modpost does.
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Cc: David Daney <david.daney@cavium.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Jamie Iles <jamie.iles@oracle.com>
+---
+ scripts/sortextable.c |   24 ++++++++++++++++++++++++
+ scripts/sortextable.h |   26 +++++++++++++++++++++++---
+ 2 files changed, 47 insertions(+), 3 deletions(-)
 
-On Thu, Oct 25, 2012 at 09:39:13AM +0530, Shiraz Hashim wrote:
-> Add support for PWM chips present on SPEAr platforms. These PWM
-> chips support 4 channel output with programmable duty cycle and
-> frequency.
->=20
-> More details on these PWM chips can be obtained from relevant
-> chapter of reference manual, present at following[1] location.
->=20
-> 1. http://www.st.com/internet/mcu/product/251211.jsp
->=20
-> Cc: Thierry Reding <thierry.reding@avionic-design.de>
-> Signed-off-by: Shiraz Hashim <shiraz.hashim@st.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Reviewed-by: Vipin Kumar <vipin.kumar@st.com>
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> Changes:-
-> V4 --> V5:
->    * replace tab by space in structure element declaration
->    * restructure probe to register pwm_chip at end when clk is prepared, =
-and
->      all initializations done.
->    * move clk_enable/disable in probe under if block which checks "1340"
->      compatibility=20
->    * Replace (ret < 0) if condition by (!ret) at places where ret should =
-be 0
->      on success
->=20
-> V3 --> V4:
->    * simplify remove
->    * maintain alphabetical order in Makefile
->    * donot check for device node in probe
->    * move few assignment lines in probe
->=20
-> V2 --> V3:
->    * remove "disabled" line from pwm dt binding documentation
->    * remove un-necessary check on pwm chip (for NULL) in remove.
->=20
-> V1 --> V2:
->    * make proper reference to pwm and pwm chip
->    * take care to capitalize PWM at appropriate places
->    * fix compatible string to the SoC where pwm chip was introduced
->    * Rename the documentation file to the name of driver
->    * Fix cosmetic changes like names, function name alignment, paragraph
->      formating, comments placement and formating, etc.
->    * Group and associate the bit field definitions to their registers
->    * Fix kerneldoc for structure definition
->    * Use chip to name pwm device and pwm for the channel instance
->    * Remove init section qualifiers
->    * Remove ifdefs around device tree from code and add dependency on CON=
-FIG_OF
->    * prepare/unprepare clock once in probe/remove and just enable/disable
->      at rest of the places.
->    * Use _relaxed for readl/writel.
->    * Fix pwm disable part in remove
->=20
->  .../devicetree/bindings/pwm/spear-pwm.txt          |   18 ++
->  drivers/pwm/Kconfig                                |   11 +
->  drivers/pwm/Makefile                               |    1 +
->  drivers/pwm/pwm-spear.c                            |  276 ++++++++++++++=
-++++++
->  4 files changed, 306 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pwm/spear-pwm.txt
->  create mode 100644 drivers/pwm/pwm-spear.c
+diff --git a/scripts/sortextable.c b/scripts/sortextable.c
+index f19ddc4..1bd0c60 100644
+--- a/scripts/sortextable.c
++++ b/scripts/sortextable.c
+@@ -156,6 +156,30 @@ static void (*w2)(uint16_t, uint16_t *);
+ 
+ typedef void (*table_sort_t)(char *, int);
+ 
++/*
++ * Move reserved section indices SHN_LORESERVE..SHN_HIRESERVE out of
++ * the way to -256..-1, to avoid conflicting with real section
++ * indices.
++ */
++#define SPECIAL(i) ((i) - (SHN_HIRESERVE + 1))
++
++static inline int is_shndx_special(unsigned int i)
++{
++	return i != SHN_XINDEX && i >= SHN_LORESERVE && i <= SHN_HIRESERVE;
++}
++
++/* Accessor for sym->st_shndx, hides ugliness of "64k sections" */
++static inline unsigned int get_secindex(unsigned int shndx,
++					unsigned int sym_offs,
++					const Elf32_Word *symtab_shndx_start)
++{
++	if (is_shndx_special(shndx))
++		return SPECIAL(shndx);
++	if (shndx != SHN_XINDEX)
++		return shndx;
++	return r(&symtab_shndx_start[sym_offs]);
++}
++
+ /* 32 bit and 64 bit are very similar */
+ #include "sortextable.h"
+ #define SORTEXTABLE_64
+diff --git a/scripts/sortextable.h b/scripts/sortextable.h
+index e4fd45b..8206594 100644
+--- a/scripts/sortextable.h
++++ b/scripts/sortextable.h
+@@ -98,6 +98,8 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 	Elf_Shdr *symtab_sec = NULL;
+ 	Elf_Shdr *extab_sec = NULL;
+ 	Elf_Sym *sym;
++	const Elf_Sym *symtab;
++	Elf32_Word *symtab_shndx_start = NULL;
+ 	Elf_Sym *sort_needed_sym;
+ 	Elf_Shdr *sort_needed_sec;
+ 	Elf_Rel *relocs = NULL;
+@@ -109,11 +111,22 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 	int extab_index = 0;
+ 	int i;
+ 	int idx;
++	unsigned int num_sections;
++	unsigned int secindex_strings;
+ 
+ 	shdr = (Elf_Shdr *)((char *)ehdr + _r(&ehdr->e_shoff));
+-	shstrtab_sec = shdr + r2(&ehdr->e_shstrndx);
++
++	num_sections = r2(&ehdr->e_shnum);
++	if (num_sections == SHN_UNDEF)
++		num_sections = _r(&shdr[0].sh_size);
++
++	secindex_strings = r2(&ehdr->e_shstrndx);
++	if (secindex_strings == SHN_XINDEX)
++		secindex_strings = r(&shdr[0].sh_link);
++
++	shstrtab_sec = shdr + secindex_strings;
+ 	secstrtab = (const char *)ehdr + _r(&shstrtab_sec->sh_offset);
+-	for (i = 0; i < r2(&ehdr->e_shnum); i++) {
++	for (i = 0; i < num_sections; i++) {
+ 		idx = r(&shdr[i].sh_name);
+ 		if (strcmp(secstrtab + idx, "__ex_table") == 0) {
+ 			extab_sec = shdr + i;
+@@ -129,6 +142,9 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 			symtab_sec = shdr + i;
+ 		if (strcmp(secstrtab + idx, ".strtab") == 0)
+ 			strtab_sec = shdr + i;
++		if (r(&shdr[i].sh_type) == SHT_SYMTAB_SHNDX)
++			symtab_shndx_start = (Elf32_Word *)(
++				(const char *)ehdr + _r(&shdr[i].sh_offset));
+ 	}
+ 	if (strtab_sec == NULL) {
+ 		fprintf(stderr,	"no .strtab in  file: %s\n", fname);
+@@ -138,6 +154,8 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 		fprintf(stderr,	"no .symtab in  file: %s\n", fname);
+ 		fail_file();
+ 	}
++	symtab = (const Elf_Sym *)((const char *)ehdr +
++				   _r(&symtab_sec->sh_offset));
+ 	if (extab_sec == NULL) {
+ 		fprintf(stderr,	"no __ex_table in  file: %s\n", fname);
+ 		fail_file();
+@@ -176,7 +194,9 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 			fname);
+ 		fail_file();
+ 	}
+-	sort_needed_sec = &shdr[r2(&sort_needed_sym->st_shndx)];
++	sort_needed_sec = &shdr[get_secindex(r2(&sym->st_shndx),
++					     sort_needed_sym - symtab,
++					     symtab_shndx_start)];
+ 	sort_done_location = (void *)ehdr +
+ 		_r(&sort_needed_sec->sh_offset) +
+ 		_r(&sort_needed_sym->st_value) -
+-- 
+1.7.10.4
 
-Applied, thanks.
-
-Thierry
-
---pf9I7BMVVzbSWLtt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQl4EzAAoJEN0jrNd/PrOhIYcP/27FN5I9HyxkcMllZJNSRRlA
-O9HEM8tMir/tpXCa2SGUwa3yq+rP0wBWDXareIBnL7ZVakD0U7d8hvIlJfC14aDM
-IZySUu98eB5ueTuFunIo96SwKYO+jCLpxMFS+njWyxf/VlcKhYZHBRaCr236DcC+
-prreG70/7VdTrEGxrfmMYl+3/1yIdRuZVMK7e+oJbZc7CY7cbnuRsk4RUVzWDGc+
-qJcuHDY5vzBUkLuRvRSBkeJJaOaYDyeAllgPUXXCNzbbCI5UK19ryWl7Lsf8biY3
-Sbz+1IWLa2ADG9rv5gvh6qt+bPQyTkSmqgLmv5mi5ePF3otC2fdix1RXdE28AhIS
-LX3QHPlCE0zUZ9qleKRPHrfO20+3xzH53lGKCDI6I8USV+Bn/AB9KAIuuM13H/ZG
-l2ne2pmKgV03yAwG4zO44spf+bRBw8RJXfk+lKQ8mqc8VwOnd+RRzwaDmjWYFt2A
-QaGMT4VxMiGf4ODyqbyJBD4UOPsSjGckIl9fbQ8vUH4DY8dDgZbebTJ7yRQwK8Jm
-nm4ts0sr/hFydXIEkX1acY+CGZaYn9DPXyiqqTZYK+00IddmtcYY3mglWh4f132x
-6SQwlcwLS6l9ECTMGyIvK/M6WCcM/00x3DKIDtsa+Ma0m+wkjuAI0a6DPFZzuzrM
-rfwMfbwefG3bNl2gRwV+
-=UFz4
------END PGP SIGNATURE-----
-
---pf9I7BMVVzbSWLtt--
