@@ -1,112 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab2KEQLb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:11:31 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:23910 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752901Ab2KEQJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:09:26 -0500
+	id S1752853Ab2KEQJZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:09:25 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:19150 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab2KEQJX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 11:09:23 -0500
 From: Jan Kiszka <jan.kiszka@siemens.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Fenghua Yu <fenghua.yu@intel.com>, Kay Sievers <kay@vrfy.org>,
-        linux-ia64@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, sparclinux@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>
-Subject: [PATCH 00/13] Add gdb python scripts as kernel debugging helpers
-Date: Mon,  5 Nov 2012 17:08:53 +0100
-Message-Id: <cover.1352131729.git.jan.kiszka@siemens.com>
+        kgdb-bugreport@lists.sourceforge.net, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 13/13] scripts/gdb: Add lx_current convenience function
+Date: Mon,  5 Nov 2012 17:09:06 +0100
+Message-Id: <dacf8206d5826c5d702dd03aebcf57406912efb1.1352131732.git.jan.kiszka@siemens.com>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <cover.1352131729.git.jan.kiszka@siemens.com>
+References: <cover.1352131729.git.jan.kiszka@siemens.com>
+In-Reply-To: <cover.1352131729.git.jan.kiszka@siemens.com>
+References: <cover.1352131729.git.jan.kiszka@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Version 2 of this series is a rebase over 3.7-rc4 to resolve some minor
-collision in the top-level makefile. Moreover, this implements automatic
-symbol loading for kernel modules using silent breakpoints. See patch 3
-for details.
+This is a shorthand for *$lx_per_cpu("current_task"), i.e. a convenience
+function to retrieve the currently running task of the active context.
 
-Unless someone complains over this series or suggests a better workflow,
-I'm planning to send a pull to Linus during the next merge window.
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ scripts/gdb/percpu.py |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-
-Here is the original intro for reference:
-
-This adds the infrastructure and first tools that make kernel debugging
-through gdb more comfortable. Since 7.0, gdb supports python scripting.
-And this opens the doors to automate steps like the tedious loading of
-module symbols at the right address, resolving per-cpu variables or even
-retrieving the current kernel log without resuming an stopped target.
-
-Many of the helpers naturally depend on the layout of structures or
-internal mechanics of the kernel. So the best place to maintain such
-things, keeping them consistent with the corresponding kernel is, well,
-the kernel itself.
-
-While these scripts have been originally developed for debugging via
-QEMU/KVM, I've now also added the required bits for KGDB. Works fine,
-but as QEMU/KVM tends to outperform KGDB it remains the recommendation
-- when available.
-
-There are two architecture dependencies so far, one regarding per-cpu,
-the other regarding thread_info calculation. None of them I was able to
-test on a target, so I'm counting on review/testing by the corresponding
-communities.
-
-This series should be considered the foundation of much more kernel
-state exploration helper, e.g. around tasks, timers, locks, sockets -
-I guess people will have even more ideas.
-
-Hope it's useful!
-
-PS: Also available via git://git.kiszka.org/linux.git queues/gdb-scripts
-
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Fenghua Yu <fenghua.yu@intel.com>
-CC: Kay Sievers <kay@vrfy.org>
-CC: linux-ia64@vger.kernel.org
-CC: linux-kbuild@vger.kernel.org
-CC: Michal Marek <mmarek@suse.cz>
-CC: sparclinux@vger.kernel.org
-CC: Tony Luck <tony.luck@intel.com>
-
-Jan Kiszka (13):
-  scripts/gdb: Add infrastructure
-  scripts/gdb: Add container_of helper and convenience function
-  scripts/gdb: Add lx-symbols command
-  scripts/gdb: Add get_target_endianness helper
-  scripts/gdb: Add read_u16/32/64 helpers
-  scripts/gdb: Add lx-dmesg command
-  scripts/gdb: Add task iteration helper
-  scripts/gdb: Add helper and convenience function to look up tasks
-  scripts/gdb: Add is_target_arch helper
-  scripts/gdb: Add internal helper and convenience function to retrieve
-    thread_info
-  scripts/gdb: Add get_gdbserver_type helper
-  scripts/gdb: Add internal helper and convenience function for per-cpu
-    lookup
-  scripts/gdb: Add lx_current convenience function
-
- Makefile                   |    5 +-
- scripts/Makefile           |    3 +-
- scripts/gdb/Makefile       |    9 +++
- scripts/gdb/dmesg.py       |   63 +++++++++++++++++++++
- scripts/gdb/percpu.py      |   76 +++++++++++++++++++++++++
- scripts/gdb/symbols.py     |  133 +++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/task.py        |  108 +++++++++++++++++++++++++++++++++++
- scripts/gdb/utils.py       |  134 ++++++++++++++++++++++++++++++++++++++++++++
- scripts/gdb/vmlinux-gdb.py |   26 +++++++++
- 9 files changed, 555 insertions(+), 2 deletions(-)
- create mode 100644 scripts/gdb/Makefile
- create mode 100644 scripts/gdb/dmesg.py
- create mode 100644 scripts/gdb/percpu.py
- create mode 100644 scripts/gdb/symbols.py
- create mode 100644 scripts/gdb/task.py
- create mode 100644 scripts/gdb/utils.py
- create mode 100644 scripts/gdb/vmlinux-gdb.py
-
+diff --git a/scripts/gdb/percpu.py b/scripts/gdb/percpu.py
+index 6e24400..ecf72b6 100644
+--- a/scripts/gdb/percpu.py
++++ b/scripts/gdb/percpu.py
+@@ -59,3 +59,18 @@ class PerCpu(gdb.Function):
+ 		return per_cpu(var_name.string(), cpu)
+ 
+ PerCpu()
++
++
++class LxCurrentFunc(gdb.Function):
++	__doc__ = "Return current task.\n" \
++		  "\n" \
++		  "$lx_current([CPU]): Return the per-cpu task variable for the given CPU\n" \
++		  "number. If CPU is omitted, the CPU of the current context is used."
++
++	def __init__(self):
++		super(LxCurrentFunc, self).__init__("lx_current")
++
++	def invoke(self, cpu = -1):
++		return per_cpu("current_task", cpu).dereference()
++
++LxCurrentFunc()
 -- 
 1.7.3.4
 
