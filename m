@@ -1,99 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab2KEKBD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:01:03 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:46621 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831Ab2KEKBA (ORCPT
+	id S1753958Ab2KEKBQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:01:16 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:26058 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227Ab2KEKBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:01:00 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-e9-50978e5bf221
+	Mon, 5 Nov 2012 05:01:13 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-8b-50978e5f2f3e
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: djbw@fb.com, dwmw2@infradead.org, hskinnemoen@gmail.com,
         iws@ovro.caltech.edu, vinod.koul@intel.com, vipin.kumar@st.com,
         t.figa@samsung.com, kyungmin.park@samsung.com,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [PATCH 02/20] ioat: add missing DMA unmap to ioat_dma_self_test()
-Date: Mon, 05 Nov 2012 11:00:13 +0100
-Message-id: <1352109631-3385-3-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH 03/20] mtd: fsmc_nand: add missing DMA unmap to dma_xfer()
+Date: Mon, 05 Nov 2012 11:00:14 +0100
+Message-id: <1352109631-3385-4-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIJMWRmVeSWpSXmKPExsVy+t9jAd3ovukBBlv7FCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGhes3mQoaBSu2XFzP3sA4la+LkZNDQsBEYsHGSewQtpjEhXvr
-	2boYuTiEBBYxSnTumMsCkhASWM0kcfVHFIjNJmAlMbF9FSOILSKgILG59xkrSAOzwDNGiRm3
-	u5lBEsICXhIPp+5n6mLk4GARUJW4PNsIJMwr4C7xpQ2iV0JAXuLp/T42EJtTwEOisWEKK8Qu
-	d4nLnceZJzDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kR7PFn0jsYVzVYHGIU4GBU
-	4uH9JDE9QIg1say4MvcQowQHs5IILwcDUIg3JbGyKrUoP76oNCe1+BCjNAeLkjhvs0dKgJBA
-	emJJanZqakFqEUyWiYNTqoHRIP/K+0sRGxUZvntMXZ/YOeXkPkkWizhX+396fq6P7xq5L5y6
-	7tqbw0t3zW7fd6npOuOhxzv17a8Geq458W6n4+EotQmz+ndNYWv3X/4tZfms3gQ/FaMMe84A
-	0fLSs0p8YWtcn5z71OFm3bzw5bQuV9m2BRenW99dcyz4bpGheEqcC+f2PzdFlFiKMxINtZiL
-	ihMBFuAy8/QBAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIJMWRmVeSWpSXmKPExsVy+t9jAd34vukBBn/OGlhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M5x97WQpOCVZ8+3afvYFxPV8XIyeHhICJxKWLc1ggbDGJC/fW
+	s3UxcnEICSxilGg6soEZwlnNJHHn2VZmkCo2ASuJie2rGEFsEQEFic29z1hBipgFnjFKzLjd
+	DVYkLOAl8fLdIaAidg4WAVWJb2DlvALuEksnT2CFWCYv8fR+HxuIzSngIdHYMAUsLgRUc7nz
+	OPMERt4FjAyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYI9/kxqB+PKBotDjAIcjEo8vDPF
+	pgcIsSaWFVfmHmKU4GBWEuHlYAAK8aYkVlalFuXHF5XmpBYfYpTmYFES5232SAkQEkhPLEnN
+	Tk0tSC2CyTJxcEo1MBavj/NdJi7xf/GvvzbWRja7RaaIrZBepPq5MiSCe/X2TN9U+1mr7bm3
+	G0XpF/8JDeRPerYr1jbG0oNfI1G605hD4nabJut8gcV3n3iu5145Tfyn9Y28gEOdLLcU51Wd
+	n9Ba0GRo9vveWs/u/vPaKvKh2zZf+nE8pzfxplrsjOfym10jfz2QUGIpzkg01GIuKk4EAANZ
+	JKj0AQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make ioat_dma_self_test() do DMA unmapping itself and fix handling
+Make dma_xfer() do DMA unmapping itself and fix handling
 of failure cases.
 
-Cc: Dan Williams <djbw@fb.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Vipin Kumar <vipin.kumar@st.com>
 Cc: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/dma/ioat/dma.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/mtd/nand/fsmc_nand.c | 22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/dma/ioat/dma.c b/drivers/dma/ioat/dma.c
-index 73b2b65..464138a 100644
---- a/drivers/dma/ioat/dma.c
-+++ b/drivers/dma/ioat/dma.c
-@@ -833,14 +833,14 @@ int __devinit ioat_dma_self_test(struct ioatdma_device *device)
+diff --git a/drivers/mtd/nand/fsmc_nand.c b/drivers/mtd/nand/fsmc_nand.c
+index 38d2624..679ede8 100644
+--- a/drivers/mtd/nand/fsmc_nand.c
++++ b/drivers/mtd/nand/fsmc_nand.c
+@@ -569,23 +569,22 @@ static int dma_xfer(struct fsmc_nand_data *host, void *buffer, int len,
+ 	dma_dev = chan->device;
+ 	dma_addr = dma_map_single(dma_dev->dev, buffer, len, direction);
  
- 	dma_src = dma_map_single(dev, src, IOAT_TEST_SIZE, DMA_TO_DEVICE);
- 	dma_dest = dma_map_single(dev, dest, IOAT_TEST_SIZE, DMA_FROM_DEVICE);
--	flags = DMA_COMPL_SRC_UNMAP_SINGLE | DMA_COMPL_DEST_UNMAP_SINGLE |
-+	flags = DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP |
- 		DMA_PREP_INTERRUPT;
- 	tx = device->common.device_prep_dma_memcpy(dma_chan, dma_dest, dma_src,
- 						   IOAT_TEST_SIZE, flags);
++	flags |= DMA_COMPL_SKIP_SRC_UNMAP | DMA_COMPL_SKIP_DEST_UNMAP;
++
+ 	if (direction == DMA_TO_DEVICE) {
+ 		dma_src = dma_addr;
+ 		dma_dst = host->data_pa;
+-		flags |= DMA_COMPL_SRC_UNMAP_SINGLE | DMA_COMPL_SKIP_DEST_UNMAP;
+ 	} else {
+ 		dma_src = host->data_pa;
+ 		dma_dst = dma_addr;
+-		flags |= DMA_COMPL_DEST_UNMAP_SINGLE | DMA_COMPL_SKIP_SRC_UNMAP;
+ 	}
+ 
+ 	tx = dma_dev->device_prep_dma_memcpy(chan, dma_dst, dma_src,
+ 			len, flags);
+-
  	if (!tx) {
- 		dev_err(dev, "Self-test prep failed, disabling\n");
- 		err = -ENODEV;
--		goto free_resources;
+ 		dev_err(host->dev, "device_prep_dma_memcpy error\n");
+-		dma_unmap_single(dma_dev->dev, dma_addr, len, direction);
+-		return -EIO;
++		ret = -EIO;
 +		goto unmap_dma;
  	}
  
- 	async_tx_ack(tx);
-@@ -851,7 +851,7 @@ int __devinit ioat_dma_self_test(struct ioatdma_device *device)
- 	if (cookie < 0) {
- 		dev_err(dev, "Self-test setup failed, disabling\n");
- 		err = -ENODEV;
--		goto free_resources;
+ 	tx->callback = dma_complete;
+@@ -595,7 +594,7 @@ static int dma_xfer(struct fsmc_nand_data *host, void *buffer, int len,
+ 	ret = dma_submit_error(cookie);
+ 	if (ret) {
+ 		dev_err(host->dev, "dma_submit_error %d\n", cookie);
+-		return ret;
 +		goto unmap_dma;
  	}
- 	dma->device_issue_pending(dma_chan);
  
-@@ -862,7 +862,7 @@ int __devinit ioat_dma_self_test(struct ioatdma_device *device)
- 					!= DMA_SUCCESS) {
- 		dev_err(dev, "Self-test copy timed out, disabling\n");
- 		err = -ENODEV;
--		goto free_resources;
+ 	dma_async_issue_pending(chan);
+@@ -606,10 +605,17 @@ static int dma_xfer(struct fsmc_nand_data *host, void *buffer, int len,
+ 	if (ret <= 0) {
+ 		chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
+ 		dev_err(host->dev, "wait_for_completion_timeout\n");
+-		return ret ? ret : -ETIMEDOUT;
++		if (!ret)
++			ret = -ETIMEDOUT;
 +		goto unmap_dma;
  	}
- 	if (memcmp(src, dest, IOAT_TEST_SIZE)) {
- 		dev_err(dev, "Self-test copy failed compare, disabling\n");
-@@ -870,6 +870,9 @@ int __devinit ioat_dma_self_test(struct ioatdma_device *device)
- 		goto free_resources;
- 	}
  
+-	return 0;
++	ret = 0;
++
 +unmap_dma:
-+	dma_unmap_single(dev, dma_src, IOAT_TEST_SIZE, DMA_TO_DEVICE);
-+	dma_unmap_single(dev, dma_dest, IOAT_TEST_SIZE, DMA_FROM_DEVICE);
- free_resources:
- 	dma->device_free_chan_resources(dma_chan);
- out:
++	dma_unmap_single(dma_dev->dev, dma_addr, len, direction);
++
++	return ret;
+ }
+ 
+ /*
 -- 
 1.8.0
 
