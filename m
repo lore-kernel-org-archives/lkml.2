@@ -1,73 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262Ab2KETQY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 14:16:24 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:51259 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753207Ab2KETQX (ORCPT
+	id S933294Ab2KETR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 14:17:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44201 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753207Ab2KETR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 14:16:23 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-References: <20121103002244.GC18691@srcf.ucam.org>
-	<1351944236.2417.7.camel@dabdike.int.hansenpartnership.com>
-	<20121103134630.GA28166@srcf.ucam.org>
-	<1351983400.2417.21.camel@dabdike.int.hansenpartnership.com>
-	<20121104042802.GA11295@srcf.ucam.org>
-	<1352020487.2427.5.camel@dabdike.int.hansenpartnership.com>
-	<20121104135251.GA17894@srcf.ucam.org> <87d2zsmv8r.fsf@xmission.com>
-	<509766DB.9090906@zytor.com> <87625kh5r2.fsf@xmission.com>
-	<20121105123858.GB4374@srcf.ucam.org>
-Date: Mon, 05 Nov 2012 11:16:12 -0800
-In-Reply-To: <20121105123858.GB4374@srcf.ucam.org> (Matthew Garrett's message
-	of "Mon, 5 Nov 2012 12:38:58 +0000")
-Message-ID: <87sj8nc137.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 5 Nov 2012 14:17:27 -0500
+Date: Mon, 5 Nov 2012 13:17:14 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Glauber Costa <glommer@parallels.com>, rjw@sisk.pl,
+        linux-pm@vger.kernel.org, fweisbec@gmail.com,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mhocko@suse.cz, cgroups@vger.kernel.org
+Subject: Re: [RFC] cgroup: deprecate clone_children
+Message-ID: <20121105191714.GA24560@sergelap>
+References: <1351931915-1701-1-git-send-email-tj@kernel.org>
+ <1351931915-1701-2-git-send-email-tj@kernel.org>
+ <5097C23B.3040808@parallels.com>
+ <20121105180213.GB19354@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/uyY5b2aIqCOApJe+vBAGT0hleH2DWVuk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Matthew Garrett <mjg59@srcf.ucam.org>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121105180213.GB19354@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett <mjg59@srcf.ucam.org> writes:
+Quoting Tejun Heo (tj@kernel.org):
+> clone_children makes cgroup invoke ->post_clone() callback if it
+> exists and sets CGRP_CLONE_CHILDREN.  ->post_clone(), while being
+> named generically, is only supposed to copy configuration from its
+> parent.
+> 
+> This is an entirely convenience feature which is only used by cpuset
+> to alter its configuration propagation.  As the mount option and
+> cgroupfs knobs are cgroup-wide and different controllers differ in
+> their configuration propagations, it's awkward to use for multiple
+> controllers especially if they're co-mounted.  At this point, we can't
+> use this flag for any other controller anyway as it would implicitly
+> change the behavior.
+> 
+> As this is unnecessary feature with very limited use and awkward in
 
-> On Sun, Nov 04, 2012 at 11:24:17PM -0800, Eric W. Biederman wrote:
->> "H. Peter Anvin" <hpa@zytor.com> writes:
->> >
->> > That is a hugely different thing from needing a console.
->> 
->> Not at all.
->> 
->> In the general case user intereaction is required to tell the system to
->> boot off of your choosen boot media instead of the local hard drive.
->
-> No, in the general case the system will do that once it fails to find a 
-> bootable OS on the drive.
+clone_children is currently required by lxc.  Of course lxc could
+manually set the .cpus and .mems in the newly created child, but if
+those interfaces or others like it ever change (i.e. any new ones which
+must be set before a task can join a cgroup) we'll get into yet more of
+a rats nets of code to support different kernel versions.
 
-In the general case there will be a bootable OS on the drive.
+(Just as an idea, if there was a way to generically tell from the list
+of files in my cgroups dir which files need to be initialized before a
+task can join, I think that would suffice.  Maybe a cgroups.needssetup
+file which right now contains 'cpuset.mems\ncpuset.cpus'. Then if we
+find a file we don't recognize in there we can throw an intelligent
+error, or guess at duplicating the parent value.)
 
-Eric
+> co-mounted use cases, let's try to deprecate it.  Whine on the mount
+> option and accesses to cgroupfs knobs.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Glauber Costa <glommer@parallels.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> ---
+> Glauber, I think this is more befitting change for .post_clone().  If
 
+What do you mean by that?  That he is working on a patch-set which will
+remove post_clone and this belongs there, or that there is a proposed
+alternative?
+
+> people aren't depending on this, I'd much prefer to just remove it.
+> 
+> Thanks.
+> 
+>  kernel/cgroup.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1162,6 +1162,8 @@ static int parse_cgroupfs_options(char *
+>  			continue;
+>  		}
+>  		if (!strcmp(token, "clone_children")) {
+> +			pr_warning("cgroup: mount option clone_children is deprecated (pid=%d comm=%s)\n",
+> +				   task_tgid_nr(current), current->comm);
+>  			opts->clone_children = true;
+>  			continue;
+>  		}
+> @@ -3837,6 +3839,9 @@ fail:
+>  static u64 cgroup_clone_children_read(struct cgroup *cgrp,
+>  				    struct cftype *cft)
+>  {
+> +	printk_ratelimited(KERN_WARNING "cgroup: clone_children is deprecated (pid=%d comm=%s)\n",
+> +			   task_tgid_nr(current), current->comm);
+> +
+>  	return clone_children(cgrp);
+>  }
+>  
+> @@ -3844,6 +3849,9 @@ static int cgroup_clone_children_write(s
+>  				     struct cftype *cft,
+>  				     u64 val)
+>  {
+> +	printk_ratelimited(KERN_WARNING "cgroup: clone_children is deprecated (pid=%d comm=%s)\n",
+> +			   task_tgid_nr(current), current->comm);
+> +
+>  	if (val)
+>  		set_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
+>  	else
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
