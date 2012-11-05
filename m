@@ -1,56 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab2KEMJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:09:52 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:56811 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752521Ab2KEMJt (ORCPT
+	id S1752389Ab2KEMKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:10:20 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:47565 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab2KEMKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:09:49 -0500
-Message-ID: <1352117386.14888.276.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH] samsung-laptop: Disable if CONFIG_EFI=y
-From: Matt Fleming <matt@console-pimps.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Matthew Garrett <mjg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        Alessandro Crismani <alessandro.crismani@gmail.com>,
-        Mikhail Bakhterev <mike.bakhterev@gmail.com>,
-        Patrick H <kernel@feystorm.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        stable@vger.kernel.org
-Date: Mon, 05 Nov 2012 12:09:46 +0000
-In-Reply-To: <20121105120736.33af173b@pyramind.ukuu.org.uk>
-References: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
-	 <CAHR064isMXk8qkqhBJ==9sRRP7xC_j_K5rqXApza-LNkosp5mg@mail.gmail.com>
-	 <20121104193741.7b4ca37b@pyramind.ukuu.org.uk>
-	 <CAHR064jwe=diZ9B-D+-SroCW1ZevkRDMosB7uDuc2VXZkFxmdA@mail.gmail.com>
-	 <20121105103031.GA25659@kroah.com>
-	 <1352116219.14888.262.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20121105120736.33af173b@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Mon, 5 Nov 2012 07:10:17 -0500
+Message-ID: <5097ACA0.7080408@linux.vnet.ibm.com>
+Date: Mon, 05 Nov 2012 20:10:08 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH 2/5] KVM: MMU: simplify mmu_set_spte
+References: <5097AC70.1080904@linux.vnet.ibm.com>
+In-Reply-To: <5097AC70.1080904@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12110512-7014-0000-0000-000002251E51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-05 at 12:07 +0000, Alan Cox wrote:
-> > There is the 'efi_enabled' variable, but it doesn't strictly mean
-> > "this_is_a_uefi_system()", it actually means "Do we have EFI runtime
-> > services?". The whole thing is a bit of a mess and I'm planning on
-> > cleaning it up this week.
-> 
-> 
-> As far as I can understand it we should be reserving those areas on a
-> UEFI booted machine and just marking them as busy so that they are not
-> available to any drivers to go peering into.
+In order to detecting spte remapping, we can simply check whether the
+spte has already been pointing to the pfn even if the spte is not the
+last spte for middle spte is pointing to the kernel pfn which can not
+be mapped to userspace
 
-Yes, that would be the best way to resolve this going forward.
+Also, update slot and stat.lpages iff the spte is not remapped
 
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c |   40 +++++++++++++---------------------------
+ 1 files changed, 13 insertions(+), 27 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 692ebb1..4ea731e 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2420,8 +2420,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 			 pfn_t pfn, bool speculative,
+ 			 bool host_writable)
+ {
+-	int was_rmapped = 0;
+-	int rmap_count;
++	bool was_rmapped = false;
+
+ 	pgprintk("%s: spte %llx access %x write_fault %d"
+ 		 " user_fault %d gfn %llx\n",
+@@ -2429,25 +2428,13 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		 write_fault, user_fault, gfn);
+
+ 	if (is_rmap_spte(*sptep)) {
+-		/*
+-		 * If we overwrite a PTE page pointer with a 2MB PMD, unlink
+-		 * the parent of the now unreachable PTE.
+-		 */
+-		if (level > PT_PAGE_TABLE_LEVEL &&
+-		    !is_large_pte(*sptep)) {
+-			struct kvm_mmu_page *child;
+-			u64 pte = *sptep;
++		if (pfn != spte_to_pfn(*sptep)) {
++			struct kvm_mmu_page *sp = page_header(__pa(sptep));
+
+-			child = page_header(pte & PT64_BASE_ADDR_MASK);
+-			drop_parent_pte(child, sptep);
+-			kvm_flush_remote_tlbs(vcpu->kvm);
+-		} else if (pfn != spte_to_pfn(*sptep)) {
+-			pgprintk("hfn old %llx new %llx\n",
+-				 spte_to_pfn(*sptep), pfn);
+-			drop_spte(vcpu->kvm, sptep);
+-			kvm_flush_remote_tlbs(vcpu->kvm);
++			if (mmu_page_zap_pte(vcpu->kvm, sp, sptep))
++				kvm_flush_remote_tlbs(vcpu->kvm);
+ 		} else
+-			was_rmapped = 1;
++			was_rmapped = true;
+ 	}
+
+ 	if (set_spte(vcpu, sptep, pte_access, user_fault, write_fault,
+@@ -2466,16 +2453,15 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		 is_large_pte(*sptep)? "2MB" : "4kB",
+ 		 *sptep & PT_PRESENT_MASK ?"RW":"R", gfn,
+ 		 *sptep, sptep);
+-	if (!was_rmapped && is_large_pte(*sptep))
+-		++vcpu->kvm->stat.lpages;
+
+-	if (is_shadow_present_pte(*sptep)) {
++	if (is_shadow_present_pte(*sptep) && !was_rmapped) {
++		if (is_large_pte(*sptep))
++			++vcpu->kvm->stat.lpages;
++
+ 		page_header_update_slot(vcpu->kvm, sptep, gfn);
+-		if (!was_rmapped) {
+-			rmap_count = rmap_add(vcpu, sptep, gfn);
+-			if (rmap_count > RMAP_RECYCLE_THRESHOLD)
+-				rmap_recycle(vcpu, sptep, gfn);
+-		}
++
++		if (rmap_add(vcpu, sptep, gfn) > RMAP_RECYCLE_THRESHOLD)
++			rmap_recycle(vcpu, sptep, gfn);
+ 	}
+
+ 	kvm_release_pfn_clean(pfn);
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.7.7.6
 
