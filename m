@@ -1,60 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab2KEVEf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 16:04:35 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:39390 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752788Ab2KEVEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 16:04:34 -0500
-Date: Mon, 5 Nov 2012 13:04:21 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH] pstore/ram: no timekeeping calls when unavailable
-Message-ID: <20121105210421.GA14819@www.outflux.net>
+	id S933186Ab2KEVFv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 16:05:51 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:61201 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932245Ab2KEVFt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 16:05:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <1351958865-24394-2-git-send-email-jiang.liu@huawei.com>
+References: <1351958865-24394-1-git-send-email-jiang.liu@huawei.com> <1351958865-24394-2-git-send-email-jiang.liu@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 5 Nov 2012 14:05:24 -0700
+Message-ID: <CAErSpo6RQk+sdeOF7c+G2qp5iYgrnQcx+rD0f8eVNRPLRoLpdg@mail.gmail.com>
+Subject: Re: [ACPIHP PATCH part1 1/4] ACPIHP: introduce a framework for ACPI
+ based system device hotplug
+To: Jiang Liu <liuj97@gmail.com>
+Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Huang Ying <ying.huang@intel.com>, Bob Moore <robert.moore@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-mm@kvack.org,
+        Gaohuai Han <hangaohuai@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We must not call timekeeping functions unless they are available. If we dump
-before they have resumed, avoid a WARN_ON by setting the timestamp to 0.
+On Sat, Nov 3, 2012 at 10:07 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> Modern high-end servers may support advanced RAS features, such as
+> system device dynamic reconfiguration. On x86 and IA64 platforms,
+> system device means processor(CPU), memory device, PCI host bridge
+> and even computer node.
+>
+> The ACPI specifications have provided standard interfaces between
+> firmware and OS to support device dynamic reconfiguraiton at runtime.
+> This patch series introduces a new framework for system device
+> dynamic reconfiguration based on ACPI specification, which will
+> replace current existing system device hotplug logic embedded in
+> ACPI processor/memory/container device drivers.
+>
+> The new ACPI based hotplug framework is modelled after the PCI hotplug
+> architecture and target to achieve following goals:
+> 1) Optimize device configuration order to achieve best performance for
+>    hot-added system devices. For best perforamnce, system device should
+>    be configured in order of memory -> CPU -> IOAPIC/IOMMU -> PCI HB.
+> 2) Resolve dependencies among hotplug slots. You need first to remove
+>    the memory device before removing a physical processor if a
+>    hotpluggable memory device is connected to a hotpluggable physical
+>    processor.
 
-Reported-by: Doug Anderson <dianders@chromium.org>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- fs/pstore/ram.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+Doesn't the namespace already have a way to communicate these dependencies?
 
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 1a4f6da..6d014e0 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -171,7 +171,13 @@ static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
- 	struct timeval timestamp;
- 	size_t len;
- 
--	do_gettimeofday(&timestamp);
-+	/* Handle dumping before timekeeping has resumed. */
-+	if (unlikely(timekeeping_suspended)) {
-+		timestamp.tv_sec = 0;
-+		timestamp.tv_usec = 0;
-+	} else
-+		do_gettimeofday(&timestamp);
-+
- 	hdr = kasprintf(GFP_ATOMIC, RAMOOPS_KERNMSG_HDR "%lu.%lu\n",
- 		(long)timestamp.tv_sec, (long)timestamp.tv_usec);
- 	WARN_ON_ONCE(!hdr);
--- 
-1.7.9.5
+> 3) Provide interface to cancel ongoing hotplug operations. It may take
+>    a very long time to remove a memory device, so provide interface to
+>    cancel the inprogress hotplug operations.
+> 4) Support new advanced RAS features, such as socket/memory migration.
+> 5) Provide better user interfaces to access the hotplug functionalities.
+> 6) Provide a mechanism to detect hotplug slots by checking existence
+>    of ACPI _EJ0 method or by other hardware platform specific methods.
 
+I don't know what "hotplug slot" means for ACPI.  ACPI allows hotplug
+of arbitrary devices in the namespace, whether they have EJ0 or not.
 
--- 
-Kees Cook
-Chrome OS Security
+> 7) Unify the way to enumerate ACPI based hotplug slots. All hotplug
+>    slots will be enumerated by the enumeration driver (acpihp_slot),
+>    instead of by individual ACPI device drivers.
+
+Why do we need to enumerate these "slots" specifically?
+
+I think this patch adds things in /sys.  It might help if you
+described what they are.
+
+> 8) Unify the way to handle ACPI hotplug events. All ACPI hotplug events
+>    for system devices will be handled by a generic ACPI hotplug driver
+>    (acpihp_drv) instead of by individual ACPI device drivers.
+> 9) Provide better error handling and error recovery.
+> 10) Trigger hotplug events/operations by software. This feature is useful
+>    for hardware fault management and/or power saving.
+>
+> The new framework is composed up of three major components:
+> 1) A system device hotplug slot enumerator driver, which enumerates
+>    hotplug slots in the system and provides platform specific methods
+>    to control those slots.
+> 2) A system device hotplug driver, which is a platform independent
+>    driver to manage all hotplug slots created by the slot enumerator.
+>    The hotplug driver implements a state machine for hotplug slots and
+>    provides user interfaces to manage hotplug slots.
+> 3) Several ACPI device drivers to configure/unconfigure system devices
+>    at runtime.
+>
+> To get rid of inter dependengcy between the slot enumerator and hotplug
+> driver, common code shared by them will be built into the kernel. The
+> shared code provides some helper routines and a device class named
+> acpihp_slot_class with following default sysfs properties:
+>         capabilities: RAS capabilities of the hotplug slot
+>         state: current state of the hotplug slot state machine
+>         status: current health status of the hotplug slot
+>         object: ACPI object corresponding to the hotplug slot
+>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
+
+...
+> +static char *acpihp_dev_mem_ids[] = {
+> +       "PNP0C80",
+> +       NULL
+> +};
+> +
+> +static char *acpihp_dev_pcihb_ids[] = {
+> +       "PNP0A03",
+> +       NULL
+> +};
+
+Why should this driver need to know about these PNP IDs?  We ought to
+be able to support hotplug of any device in the namespace, no matter
+what its ID.
