@@ -1,94 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524Ab2KEXcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 18:32:20 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:50185 "EHLO smtp.outflux.net"
+	id S964809Ab2KEXeF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 18:34:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14253 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932349Ab2KEXFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 18:05:19 -0500
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 011/104] drivers/net/ppp: remove depends on CONFIG_EXPERIMENTAL
-Date: Mon,  5 Nov 2012 15:03:28 -0800
-Message-Id: <1352156701-4038-12-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1352156701-4038-1-git-send-email-keescook@chromium.org>
-References: <1352156701-4038-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1752081Ab2KEXeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 18:34:01 -0500
+Message-ID: <50984D6E.60205@redhat.com>
+Date: Mon, 05 Nov 2012 18:36:14 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
+        William Irwin <wli@holomorphy.com>, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [PATCH 13/16] mm: use vm_unmapped_area() on sparc64 architecture
+References: <1352155633-8648-1-git-send-email-walken@google.com> <1352155633-8648-14-git-send-email-walken@google.com>
+In-Reply-To: <1352155633-8648-14-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-while now and is almost always enabled by default. As agreed during the
-Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
+On 11/05/2012 05:47 PM, Michel Lespinasse wrote:
+> Update the sparc64 arch_get_unmapped_area[_topdown] functions to make
+> use of vm_unmapped_area() instead of implementing a brute force search.
+>
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- drivers/net/ppp/Kconfig |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/net/ppp/Kconfig b/drivers/net/ppp/Kconfig
-index 872df3e..278dea0 100644
---- a/drivers/net/ppp/Kconfig
-+++ b/drivers/net/ppp/Kconfig
-@@ -82,8 +82,8 @@ config PPP_FILTER
- 	  If unsure, say N.
- 
- config PPP_MPPE
--	tristate "PPP MPPE compression (encryption) (EXPERIMENTAL)"
--	depends on PPP && EXPERIMENTAL
-+	tristate "PPP MPPE compression (encryption)"
-+	depends on PPP
- 	select CRYPTO
- 	select CRYPTO_SHA1
- 	select CRYPTO_ARC4
-@@ -96,8 +96,8 @@ config PPP_MPPE
- 	  configuring PPTP clients and servers to utilize this method.
- 
- config PPP_MULTILINK
--	bool "PPP multilink support (EXPERIMENTAL)"
--	depends on PPP && EXPERIMENTAL
-+	bool "PPP multilink support"
-+	depends on PPP
- 	---help---
- 	  PPP multilink is a protocol (defined in RFC 1990) which allows you
- 	  to combine several (logical or physical) lines into one logical PPP
-@@ -118,8 +118,8 @@ config PPPOATM
- 	  changes its encapsulation unilaterally.
- 
- config PPPOE
--	tristate "PPP over Ethernet (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && PPP
-+	tristate "PPP over Ethernet"
-+	depends on PPP
- 	---help---
- 	  Support for PPP over Ethernet.
- 
-@@ -130,8 +130,8 @@ config PPPOE
- 	  the heading "Kernel mode PPPoE").
- 
- config PPTP
--	tristate "PPP over IPv4 (PPTP) (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && PPP && NET_IPGRE_DEMUX
-+	tristate "PPP over IPv4 (PPTP)"
-+	depends on PPP && NET_IPGRE_DEMUX
- 	---help---
- 	  Support for PPP over IPv4.(Point-to-Point Tunneling Protocol)
- 
-@@ -141,8 +141,8 @@ config PPTP
- 	  utilize this module.
- 
- config PPPOL2TP
--	tristate "PPP over L2TP (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && L2TP && PPP
-+	tristate "PPP over L2TP"
-+	depends on L2TP && PPP
- 	---help---
- 	  Support for PPP-over-L2TP socket family. L2TP is a protocol
- 	  used by ISPs and enterprises to tunnel PPP traffic over UDP
--- 
-1.7.9.5
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
