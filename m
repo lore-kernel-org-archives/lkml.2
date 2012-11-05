@@ -1,149 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab2KEV2I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 16:28:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44655 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2KEV2G (ORCPT
+	id S1754873Ab2KEVau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 16:30:50 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34002 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754767Ab2KEVas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 16:28:06 -0500
-Message-ID: <50982F6F.2050600@canonical.com>
-Date: Mon, 05 Nov 2012 15:28:15 -0600
-From: Chris J Arges <chris.j.arges@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Mon, 5 Nov 2012 16:30:48 -0500
 MIME-Version: 1.0
-To: Chris J Arges <chris.j.arges@canonical.com>
-CC: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] bonding: extend bond_arp_send_all to bridge devices
-References: <1352146448-8921-1-git-send-email-chris.j.arges@canonical.com>
-In-Reply-To: <1352146448-8921-1-git-send-email-chris.j.arges@canonical.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: multipart/mixed;
- boundary="------------030106090905040109020108"
+In-Reply-To: <1351958865-24394-3-git-send-email-jiang.liu@huawei.com>
+References: <1351958865-24394-1-git-send-email-jiang.liu@huawei.com> <1351958865-24394-3-git-send-email-jiang.liu@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 5 Nov 2012 14:30:25 -0700
+Message-ID: <CAErSpo49kJm3x2K_FT6vLpUUD2pk9Hf62uXqzHt2Vod2PriY8Q@mail.gmail.com>
+Subject: Re: [ACPIHP PATCH part1 2/4] ACPIHP: introduce acpihp_slot driver to
+ enumerate hotplug slots
+To: Jiang Liu <liuj97@gmail.com>
+Cc: "Rafael J . Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Huang Ying <ying.huang@intel.com>, Bob Moore <robert.moore@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-mm@kvack.org,
+        Gaohuai Han <hangaohuai@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030106090905040109020108
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-
-On 11/05/2012 02:14 PM, Chris J Arges wrote:
-> ARP monitoring does not work when we have a network in the
-> following configuration:
-> 
-> eth0----+ +----bond0.100----br0-100---{+virtual machines
->           | |
->           +----bond0----+----br0---(fixed IP)->--{LAN arp_ip_target}
->           | |
-> eth1----+ +----bond0.200----br0-200---{+virtual machines
-> 
-> This patch extends bond_arp_send_all to also check if a device
-> is also in a bridge.
-> 
-> This is related to the following issues:
-> http://launchpad.net/bugs/736226
-> http://bugzilla.kernel.org/show_bug.cgi?id=31822
-> 
-> Thanks to help from Andy Gospodarek.
-> 
-> Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+On Sat, Nov 3, 2012 at 10:07 AM, Jiang Liu <liuj97@gmail.com> wrote:
+> An ACPI hotplug slot is an abstraction of receptacles, where a group of
+> system devices could be connected to. This patch implements the skeleton
+> of the ACPI system device hotplug slot enumerator. On loading, it scans
+> the whole ACPI namespace for hotplug slots and creates a device node for
+> each hotplug slot found. Every hotplug slot is associated with a device
+> class named acpihp_slot_class. Later hotplug drivers will register onto
+> acpihp_slot_class to manage all hotplug slots.
+>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
 > ---
->  drivers/net/bonding/bond_main.c |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-> index 6c284d1..f11a2e1 100644
-> --- a/drivers/net/bonding/bond_main.c
-> +++ b/drivers/net/bonding/bond_main.c
-> @@ -2670,6 +2670,19 @@ static void bond_arp_send_all(struct bonding *bond, struct slave *slave)
->  			continue;
->  		}
->  
-> +		/*
-> +		 * Check if the target is part of a bridge.
-> +		 */
-> +		if (rt->dst.dev->priv_flags & IFF_EBRIDGE) {
-> +			printk("bondbridge: %s->priv_flags has IFF_EBRIDGE\n", rt->dst.dev->name);
+>  drivers/acpi/Kconfig          |   19 ++
+>  drivers/acpi/hotplug/Makefile |    3 +
+>  drivers/acpi/hotplug/slot.c   |  417 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 439 insertions(+)
+>  create mode 100644 drivers/acpi/hotplug/slot.c
+>
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index 9577b23..af0aaf6 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -334,6 +334,25 @@ menuconfig ACPI_HOTPLUG
+>           If your hardware platform does not support system device dynamic
+>           reconfiguration at runtime, you need not to enable this option.
+>
+> +config ACPI_HOTPLUG_SLOT
+> +       tristate "System Device Hotplug Slot Enumerator"
+
+I don't really believe in hotplug drivers being modules.  I think the
+core should support hotplug directly, and the decision to configure or
+not should be made at build-time.
+
+> +       depends on ACPI_HOTPLUG
+> +       default m
+> +       help
+> +         ACPI system device hotplug slot is an abstraction of ACPI based
+> +         system device dynamic reconfiguration control points. On load,
+> +         this driver enumerates system device hotplug slots by wakling the
+> +         ACPI namespace and provides platform specific methods to control
+> +         those hotplug slots.
 > +
-> +			/* Send ARP request */
-> +			bond_arp_send(slave->dev, ARPOP_REQUEST, targets[i], bond->master_ip, 0);
-> +			printk("bondbridge: bond_arp_send %d\n", 0);
+> +         By default, this driver detects system device hotplug slots by
+> +         checking avaliability of ACPI _EJ0 method. You may pass a module
+> +         parameter "fake_slot=0xf" to enable faking hotplug slots on
+> +         platforms without hardware dynamic reconfiguration capabilities.
 > +
-> +			continue;
-> +		}
+> +         To compile this driver as a module, choose M here:
+> +         the module will be called acpihp_slot.
 > +
->  		if (net_ratelimit()) {
->  			pr_warning("%s: no path to arp_ip_target %pI4 via rt.dev %s\n",
->  				   bond->dev->name, &targets[i],
-> 
 
+> +static int __init acpihp_slot_generate_name(struct acpihp_slot *slot)
+> +{
+> +       int found = 0;
+> +       u32 child_types = 0;
+> +       unsigned long long uid;
+> +       struct acpihp_slot_id *slot_id;
+> +
+> +       /*
+> +        * Figure out slot type by checking types of ACPI devices which could
+> +        * be attached to the slot.
+> +        */
+> +       slot->type = acpihp_slot_get_type_self(slot);
+> +       if (slot->type == ACPIHP_SLOT_TYPE_UNKNOWN) {
+> +               acpi_walk_namespace(ACPI_TYPE_DEVICE, slot->handle,
+> +                               ACPI_UINT32_MAX, acpihp_slot_get_dev_type,
+> +                               NULL, NULL, (void **)&child_types);
+> +               acpi_walk_namespace(ACPI_TYPE_PROCESSOR, slot->handle,
+> +                               ACPI_UINT32_MAX, acpihp_slot_get_dev_type,
+> +                               NULL, NULL, (void **)&child_types);
+> +               slot->type = acpihp_slot_get_type_child(child_types);
+> +       }
 
+If things can be hot-added below slot->handle, is there an ACPI
+requirement that there be *anything* in the existing namespace below
+slot->handle?  I'm not sure you can tell sort of things might be
+added.
 
---------------030106090905040109020108
-Content-Type: text/x-patch;
- name="0001-bonding-extend-bond_arp_send_all-to-bridge-devices.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-bonding-extend-bond_arp_send_all-to-bridge-devices.patc";
- filename*1="h"
+> +static int __init acpihp_slot_scan_slots(void)
+> +{
+> +       acpi_status status;
+> +
+> +       status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> +                                    ACPI_UINT32_MAX, acpihp_slot_scan,
+> +                                    NULL, NULL, NULL);
+> +       if (!ACPI_SUCCESS(status))
+> +               goto out_err;
+> +
+> +       status = acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
+> +                                    ACPI_UINT32_MAX, acpihp_slot_scan,
+> +                                    NULL, NULL, NULL);
 
->From 859cbc745670491f716663f6309df7674b38bb33 Mon Sep 17 00:00:00 2001
-From: Chris J Arges <chris.j.arges@canonical.com>
-Date: Thu, 6 Sep 2012 14:17:40 -0500
-Subject: [PATCH v2] bonding: extend bond_arp_send_all to bridge devices
-
-ARP monitoring does not work when we have a network in the
-following configuration:
-
-eth0----+ +----bond0.100----br0-100---{+virtual machines
-          | |
-          +----bond0----+----br0---(fixed IP)->--{LAN arp_ip_target}
-          | |
-eth1----+ +----bond0.200----br0-200---{+virtual machines
-
-This patch extends bond_arp_send_all to also check if a device
-is also in a bridge.
-
-This is related to the following issues:
-http://launchpad.net/bugs/736226
-http://bugzilla.kernel.org/show_bug.cgi?id=31822
-
-Thanks to help from Andy Gospodarek.
-
-Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
----
- drivers/net/bonding/bond_main.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index b2530b0..cb791f6 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -2708,6 +2708,18 @@ static void bond_arp_send_all(struct bonding *bond, struct slave *slave)
- 			continue;
- 		}
- 
-+		/*
-+		 * Check if the target is part of a bridge.
-+		 */
-+		if (rt->dst.dev->priv_flags & IFF_EBRIDGE) {
-+			/* Confirm addr is part of the bridge */
-+			addr = bond_confirm_addr(rt->dst.dev, targets[i], 0);
-+
-+			/* Send ARP request */
-+			bond_arp_send(slave->dev, ARPOP_REQUEST, targets[i], addr, 0);
-+			continue;
-+		}
-+
- 		if (net_ratelimit()) {
- 			pr_warning("%s: no path to arp_ip_target %pI4 via rt.dev %s\n",
- 				   bond->dev->name, &targets[i],
--- 
-1.7.9.5
-
-
-
---------------030106090905040109020108--
+Here's one reason I don't like this as a module: we have to walk the
+namespace again (twice, even).  What happens when you hot-add a node
+that itself *contains* another hot-pluggable receptacle?  Do you walk
+the namespace again, calling acpiphp_slot_scan() as needed?
