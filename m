@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940Ab2KEWrl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 17:47:41 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35034 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab2KEWrg (ORCPT
+	id S964813Ab2KEWrw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 17:47:52 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54866 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964782Ab2KEWrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 17:47:36 -0500
+	Mon, 5 Nov 2012 17:47:49 -0500
 From: Michel Lespinasse <walken@google.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
         Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
@@ -18,9 +18,9 @@ To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
 Cc: linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
         linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
         sparclinux@vger.kernel.org
-Subject: [PATCH 03/16] mm: check rb_subtree_gap correctness
-Date: Mon,  5 Nov 2012 14:47:00 -0800
-Message-Id: <1352155633-8648-4-git-send-email-walken@google.com>
+Subject: [PATCH 10/16] mm: use vm_unmapped_area() on mips architecture
+Date: Mon,  5 Nov 2012 14:47:07 -0800
+Message-Id: <1352155633-8648-11-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1352155633-8648-1-git-send-email-walken@google.com>
 References: <1352155633-8648-1-git-send-email-walken@google.com>
@@ -28,88 +28,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_DEBUG_VM_RB is enabled, check that rb_subtree_gap is
-correctly set for every vma and that mm->highest_vm_end is also correct.
-
-Also add an explicit 'bug' variable to track if browse_rb() detected any
-invalid condition.
+Update the mips arch_get_unmapped_area[_topdown] functions to make
+use of vm_unmapped_area() instead of implementing a brute force search.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 
 ---
- mm/mmap.c |   24 ++++++++++++++++--------
- 1 files changed, 16 insertions(+), 8 deletions(-)
+ arch/mips/mm/mmap.c |   99 +++++++++------------------------------------------
+ 1 files changed, 17 insertions(+), 82 deletions(-)
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 2de8bcfe859d..769a09cc71af 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -365,7 +365,7 @@ static void vma_rb_erase(struct vm_area_struct *vma, struct rb_root *root)
- #ifdef CONFIG_DEBUG_VM_RB
- static int browse_rb(struct rb_root *root)
- {
--	int i = 0, j;
-+	int i = 0, j, bug = 0;
- 	struct rb_node *nd, *pn = NULL;
- 	unsigned long prev = 0, pend = 0;
+diff --git a/arch/mips/mm/mmap.c b/arch/mips/mm/mmap.c
+index 302d779d5b0d..e4b54b233e17 100644
+--- a/arch/mips/mm/mmap.c
++++ b/arch/mips/mm/mmap.c
+@@ -71,6 +71,7 @@ static unsigned long arch_get_unmapped_area_common(struct file *filp,
+ 	struct vm_area_struct *vma;
+ 	unsigned long addr = addr0;
+ 	int do_color_align;
++	struct vm_unmapped_area_info info;
  
-@@ -373,29 +373,33 @@ static int browse_rb(struct rb_root *root)
- 		struct vm_area_struct *vma;
- 		vma = rb_entry(nd, struct vm_area_struct, vm_rb);
- 		if (vma->vm_start < prev)
--			printk("vm_start %lx prev %lx\n", vma->vm_start, prev), i = -1;
-+			printk("vm_start %lx prev %lx\n", vma->vm_start, prev), bug = 1;
- 		if (vma->vm_start < pend)
--			printk("vm_start %lx pend %lx\n", vma->vm_start, pend);
-+			printk("vm_start %lx pend %lx\n", vma->vm_start, pend), bug = 1;
- 		if (vma->vm_start > vma->vm_end)
--			printk("vm_end %lx < vm_start %lx\n", vma->vm_end, vma->vm_start);
-+			printk("vm_end %lx < vm_start %lx\n", vma->vm_end, vma->vm_start), bug = 1;
-+		if (vma->rb_subtree_gap != vma_compute_subtree_gap(vma))
-+			printk("free gap %lx, correct %lx\n",
-+			       vma->rb_subtree_gap,
-+			       vma_compute_subtree_gap(vma)), bug = 1;
- 		i++;
- 		pn = nd;
- 		prev = vma->vm_start;
- 		pend = vma->vm_end;
+ 	if (unlikely(len > TASK_SIZE))
+ 		return -ENOMEM;
+@@ -107,97 +108,31 @@ static unsigned long arch_get_unmapped_area_common(struct file *filp,
+ 			return addr;
  	}
- 	j = 0;
--	for (nd = pn; nd; nd = rb_prev(nd)) {
-+	for (nd = pn; nd; nd = rb_prev(nd))
- 		j++;
--	}
- 	if (i != j)
--		printk("backwards %d, forwards %d\n", j, i), i = 0;
--	return i;
-+		printk("backwards %d, forwards %d\n", j, i), bug = 1;
-+	return bug ? -1 : i;
+ 
+-	if (dir == UP) {
+-		addr = mm->mmap_base;
+-		if (do_color_align)
+-			addr = COLOUR_ALIGN(addr, pgoff);
+-		else
+-			addr = PAGE_ALIGN(addr);
++	info.length = len;
++	info.align_mask = do_color_align ? (PAGE_MASK & shm_align_mask) : 0;
++	info.align_offset = pgoff << PAGE_SHIFT;
+ 
+-		for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
+-			/* At this point:  (!vma || addr < vma->vm_end). */
+-			if (TASK_SIZE - len < addr)
+-				return -ENOMEM;
+-			if (!vma || addr + len <= vma->vm_start)
+-				return addr;
+-			addr = vma->vm_end;
+-			if (do_color_align)
+-				addr = COLOUR_ALIGN(addr, pgoff);
+-		 }
+-	 } else {
+-		/* check if free_area_cache is useful for us */
+-		if (len <= mm->cached_hole_size) {
+-			mm->cached_hole_size = 0;
+-			mm->free_area_cache = mm->mmap_base;
+-		}
++	if (dir == DOWN) {
++		info.flags = VM_UNMAPPED_AREA_TOPDOWN;
++		info.low_limit = PAGE_SIZE;
++		info.high_limit = mm->mmap_base;
++		addr = vm_unmapped_area(&info);
++
++		if (!(addr & ~PAGE_MASK))
++			return addr;
+ 
+-		/*
+-		 * either no address requested, or the mapping can't fit into
+-		 * the requested address hole
+-		 */
+-		addr = mm->free_area_cache;
+-		if (do_color_align) {
+-			unsigned long base =
+-				COLOUR_ALIGN_DOWN(addr - len, pgoff);
+-			addr = base + len;
+-		}
+-
+-		/* make sure it can fit in the remaining address space */
+-		if (likely(addr > len)) {
+-			vma = find_vma(mm, addr - len);
+-			if (!vma || addr <= vma->vm_start) {
+-				/* cache the address as a hint for next time */
+-				return mm->free_area_cache = addr - len;
+-			}
+-		}
+-
+-		if (unlikely(mm->mmap_base < len))
+-			goto bottomup;
+-
+-		addr = mm->mmap_base - len;
+-		if (do_color_align)
+-			addr = COLOUR_ALIGN_DOWN(addr, pgoff);
+-
+-		do {
+-			/*
+-			 * Lookup failure means no vma is above this address,
+-			 * else if new region fits below vma->vm_start,
+-			 * return with success:
+-			 */
+-			vma = find_vma(mm, addr);
+-			if (likely(!vma || addr + len <= vma->vm_start)) {
+-				/* cache the address as a hint for next time */
+-				return mm->free_area_cache = addr;
+-			}
+-
+-			/* remember the largest hole we saw so far */
+-			if (addr + mm->cached_hole_size < vma->vm_start)
+-				mm->cached_hole_size = vma->vm_start - addr;
+-
+-			/* try just below the current vma->vm_start */
+-			addr = vma->vm_start - len;
+-			if (do_color_align)
+-				addr = COLOUR_ALIGN_DOWN(addr, pgoff);
+-		} while (likely(len < vma->vm_start));
+-
+-bottomup:
+ 		/*
+ 		 * A failed mmap() very likely causes application failure,
+ 		 * so fall back to the bottom-up function here. This scenario
+ 		 * can happen with large stack limits and large mmap()
+ 		 * allocations.
+ 		 */
+-		mm->cached_hole_size = ~0UL;
+-		mm->free_area_cache = TASK_UNMAPPED_BASE;
+-		addr = arch_get_unmapped_area(filp, addr0, len, pgoff, flags);
+-		/*
+-		 * Restore the topdown base:
+-		 */
+-		mm->free_area_cache = mm->mmap_base;
+-		mm->cached_hole_size = ~0UL;
+-
+-		return addr;
+ 	}
++
++	info.flags = 0;
++	info.low_limit = mm->mmap_base;
++	info.high_limit = TASK_SIZE;
++	return vm_unmapped_area(&info);
  }
  
- void validate_mm(struct mm_struct *mm)
- {
- 	int bug = 0;
- 	int i = 0;
-+	unsigned long highest_address = 0;
- 	struct vm_area_struct *vma = mm->mmap;
- 	while (vma) {
- 		struct anon_vma_chain *avc;
-@@ -403,11 +407,15 @@ void validate_mm(struct mm_struct *mm)
- 		list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
- 			anon_vma_interval_tree_verify(avc);
- 		anon_vma_unlock(vma->anon_vma);
-+		highest_address = vma->vm_end;
- 		vma = vma->vm_next;
- 		i++;
- 	}
- 	if (i != mm->map_count)
- 		printk("map_count %d vm_next %d\n", mm->map_count, i), bug = 1;
-+	if (highest_address != mm->highest_vm_end)
-+		printk("mm->highest_vm_end %lx, found %lx\n",
-+		       mm->highest_vm_end, highest_address), bug = 1;
- 	i = browse_rb(&mm->mm_rb);
- 	if (i != mm->map_count)
- 		printk("map_count %d rb %d\n", mm->map_count, i), bug = 1;
+ unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr0,
 -- 
 1.7.7.3
