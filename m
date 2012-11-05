@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab2KENsm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:48:42 -0500
-Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:49598 "EHLO
+	id S932455Ab2KENsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:48:46 -0500
+Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:49611 "EHLO
 	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932208Ab2KENsk (ORCPT
+	by vger.kernel.org with ESMTP id S932414Ab2KENsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:48:40 -0500
+	Mon, 5 Nov 2012 08:48:42 -0500
 From: Lars Poeschel <larsi@wh2.tu-dresden.de>
 To: linus.walleij@linaro.org
 Cc: poeschel@lemonage.de, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
         jic23@cam.ac.uk, khali@linux-fr.org, ben-linux@fluff.org,
         w.sang@pengutronix.de, grant.likely@secretlab.ca,
         linux-iio@vger.kernel.org
-Subject: [PATCH v3 2/5] mfd: add viperboard driver
-Date: Mon,  5 Nov 2012 15:48:23 +0100
-Message-Id: <1352126906-4560-2-git-send-email-larsi@wh2.tu-dresden.de>
+Subject: [PATCH v3 3/5] gpio: add viperboard gpio driver
+Date: Mon,  5 Nov 2012 15:48:24 +0100
+Message-Id: <1352126906-4560-3-git-send-email-larsi@wh2.tu-dresden.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1352126906-4560-1-git-send-email-larsi@wh2.tu-dresden.de>
 References: <1352126906-4560-1-git-send-email-larsi@wh2.tu-dresden.de>
@@ -25,68 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars Poeschel <poeschel@lemonage.de>
 
-Add mfd driver for Nano River Technologies viperboard.
+This adds the mfd cell to use the gpio a and gpio b part
+of the Nano River Technologies viperboard.
 
 Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
 ---
- drivers/mfd/Kconfig            |   14 +++++
- drivers/mfd/Makefile           |    1 +
- drivers/mfd/viperboard.c       |  130 ++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/viperboard.h |  105 ++++++++++++++++++++++++++++++++
- 4 files changed, 250 insertions(+)
- create mode 100644 drivers/mfd/viperboard.c
- create mode 100644 include/linux/mfd/viperboard.h
+ drivers/gpio/Kconfig           |   13 +
+ drivers/gpio/Makefile          |    1 +
+ drivers/gpio/gpio-viperboard.c |  517 ++++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/viperboard.c       |    3 +
+ include/linux/mfd/viperboard.h |    2 +
+ 5 files changed, 536 insertions(+)
+ create mode 100644 drivers/gpio/gpio-viperboard.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index acab3ef..0c2e6bb 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -1044,6 +1044,20 @@ config MFD_PALMAS
- 	  If you say yes here you get support for the Palmas
- 	  series of PMIC chips from Texas Instruments.
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index d055cee..c3bbd08 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -649,4 +649,17 @@ config GPIO_MSIC
+ 	  Enable support for GPIO on intel MSIC controllers found in
+ 	  intel MID devices
  
-+config MFD_VIPERBOARD
-+        tristate "Support for Nano River Technologies Viperboard"
-+	select MFD_CORE
-+	depends on USB
-+	default n
-+	help
-+	  Say yes here if you want support for Nano River Technologies
-+	  Viperboard.
-+	  There are mfd cell drivers available for i2c master, adc and
-+	  both gpios found on the board. The spi part does not yet
-+	  have a driver.
-+	  You need to select the mfd cell drivers separately.
-+	  The drivers do not support all features the board exposes.
++comment "USB GPIO expanders:"
 +
- endmenu
++config GPIO_VIPERBOARD
++	tristate "Viperboard GPIO a & b support"
++	depends on MFD_VIPERBOARD && USB
++	help
++	  Say yes here to access the GPIO signals of Nano River
++	  Technologies Viperboard. There are two GPIO chips on the
++	  board: gpioa and gpiob.
++          See viperboard API specification and Nano
++          River Tech's viperboard.h for detailed meaning
++          of the module parameters.
++
  endif
- 
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index d8ccb63..eb85ab2 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -134,6 +134,7 @@ obj-$(CONFIG_MFD_TPS65090)	+= tps65090.o
- obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
- obj-$(CONFIG_MFD_INTEL_MSIC)	+= intel_msic.o
- obj-$(CONFIG_MFD_PALMAS)	+= palmas.o
-+obj-$(CONFIG_MFD_VIPERBOARD)    += viperboard.o
- obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
- obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
- obj-$(CONFIG_MFD_SYSCON)	+= syscon.o
-diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 9aeed67..16a1385 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -71,6 +71,7 @@ obj-$(CONFIG_GPIO_TPS65912)	+= gpio-tps65912.o
+ obj-$(CONFIG_GPIO_TWL4030)	+= gpio-twl4030.o
+ obj-$(CONFIG_GPIO_TWL6040)	+= gpio-twl6040.o
+ obj-$(CONFIG_GPIO_UCB1400)	+= gpio-ucb1400.o
++obj-$(CONFIG_GPIO_VIPERBOARD)	+= gpio-viperboard.o
+ obj-$(CONFIG_GPIO_VR41XX)	+= gpio-vr41xx.o
+ obj-$(CONFIG_GPIO_VT8500)	+= gpio-vt8500.o
+ obj-$(CONFIG_GPIO_VX855)	+= gpio-vx855.o
+diff --git a/drivers/gpio/gpio-viperboard.c b/drivers/gpio/gpio-viperboard.c
 new file mode 100644
-index 0000000..34bc372
+index 0000000..1377299
 --- /dev/null
-+++ b/drivers/mfd/viperboard.c
-@@ -0,0 +1,130 @@
++++ b/drivers/gpio/gpio-viperboard.c
+@@ -0,0 +1,517 @@
 +/*
-+ *  Nano River Technologies viperboard driver
-+ *
-+ *  This is the core driver for the viperboard. There are cell drivers
-+ *  available for I2C, ADC and both GPIOs. SPI is not yet supported.
-+ *  The drivers do not support all features the board exposes. See user
-+ *  manual of the viperboard.
++ *  Nano River Technologies viperboard GPIO lib driver
 + *
 + *  (C) 2012 by Lemonage GmbH
 + *  Author: Lars Poeschel <poeschel@lemonage.de>
@@ -94,7 +87,7 @@ index 0000000..34bc372
 + *
 + *  This program is free software; you can redistribute  it and/or modify it
 + *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
 + *  option) any later version.
 + *
 + */
@@ -105,222 +98,530 @@ index 0000000..34bc372
 +#include <linux/slab.h>
 +#include <linux/types.h>
 +#include <linux/mutex.h>
-+
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/viperboard.h>
++#include <linux/platform_device.h>
 +
 +#include <linux/usb.h>
++#include <linux/gpio.h>
 +
++#include <linux/mfd/viperboard.h>
 +
-+static const struct usb_device_id vprbrd_table[] = {
-+	{ USB_DEVICE(0x2058, 0x1005) },   /* Nano River Technologies */
-+	{ }                               /* Terminating entry */
-+};
++#define VPRBRD_GPIOA_CLK_1MHZ		0
++#define VPRBRD_GPIOA_CLK_100KHZ		1
++#define VPRBRD_GPIOA_CLK_10KHZ		2
++#define VPRBRD_GPIOA_CLK_1KHZ		3
++#define VPRBRD_GPIOA_CLK_100HZ		4
++#define VPRBRD_GPIOA_CLK_10HZ		5
 +
-+MODULE_DEVICE_TABLE(usb, vprbrd_table);
++#define VPRBRD_GPIOA_FREQ_DEFAULT	1000
 +
-+static struct mfd_cell vprbrd_devs[] = {
-+};
++#define VPRBRD_GPIOA_CMD_CONT		0x00
++#define VPRBRD_GPIOA_CMD_PULSE		0x01
++#define VPRBRD_GPIOA_CMD_PWM		0x02
++#define VPRBRD_GPIOA_CMD_SETOUT		0x03
++#define VPRBRD_GPIOA_CMD_SETIN		0x04
++#define VPRBRD_GPIOA_CMD_SETINT		0x05
++#define VPRBRD_GPIOA_CMD_GETIN		0x06
 +
-+static int vprbrd_probe(struct usb_interface *interface,
-+			      const struct usb_device_id *id)
-+{
++#define VPRBRD_GPIOB_CMD_SETDIR		0x00
++#define VPRBRD_GPIOB_CMD_SETVAL		0x01
++
++struct vprbrd_gpioa_msg {
++	u8 cmd;
++	u8 clk;
++	u8 offset;
++	u8 t1;
++	u8 t2;
++	u8 invert;
++	u8 pwmlevel;
++	u8 outval;
++	u8 risefall;
++	u8 answer;
++	u8 __fill;
++} __packed;
++
++struct vprbrd_gpiob_msg {
++	u8 cmd;
++	u16 val;
++	u16 mask;
++} __packed;
++
++struct vprbrd_gpio {
++	struct gpio_chip gpioa; /* gpio a related things */
++	u32 gpioa_out;
++	u32 gpioa_val;
++	struct gpio_chip gpiob; /* gpio b related things */
++	u32 gpiob_out;
++	u32 gpiob_val;
 +	struct vprbrd *vb;
++};
 +
-+	u16 version = 0;
-+	int pipe, ret;
-+	unsigned char buf[1];
++/* gpioa sampling clock module parameter */
++static unsigned char gpioa_clk;
++static unsigned int gpioa_freq = VPRBRD_GPIOA_FREQ_DEFAULT;
++module_param(gpioa_freq, uint, 0);
++MODULE_PARM_DESC(gpioa_freq,
++	"gpio-a sampling freq in Hz (default is 1000Hz) valid values: 10, 100, 1000, 10000, 100000, 1000000");
 +
-+	/* allocate memory for our device state and initialize it */
-+	vb = kzalloc(sizeof(*vb), GFP_KERNEL);
-+	if (vb == NULL) {
-+		dev_err(&interface->dev, "Out of memory\n");
-+		return -ENOMEM;
-+	}
++/* ----- begin of gipo a chip -------------------------------------------- */
 +
-+	mutex_init(&vb->lock);
++static int vprbrd_gpioa_get(struct gpio_chip *chip,
++		unsigned offset)
++{
++	int ret, answer, error = 0;
++	struct vprbrd_gpio *gpio =
++			container_of(chip, struct vprbrd_gpio, gpioa);
++	struct vprbrd *vb = gpio->vb;
++	struct vprbrd_gpioa_msg *gamsg = (struct vprbrd_gpioa_msg *)vb->buf;
 +
-+	vb->usb_dev = usb_get_dev(interface_to_usbdev(interface));
++	/* if io is set to output, just return the saved value */
++	if (gpio->gpioa_out & (1 << offset))
++		return gpio->gpioa_val & (1 << offset);
 +
-+	/* save our data pointer in this interface device */
-+	usb_set_intfdata(interface, vb);
-+	dev_set_drvdata(&vb->pdev.dev, vb);
++	mutex_lock(&vb->lock);
 +
-+	/* get version information, major first, minor then */
-+	pipe = usb_rcvctrlpipe(vb->usb_dev, 0);
-+	ret = usb_control_msg(vb->usb_dev, pipe, VPRBRD_USB_REQUEST_MAJOR,
-+		VPRBRD_USB_TYPE_IN, 0x0000, 0x0000, buf, 1,
++	gamsg->cmd = VPRBRD_GPIOA_CMD_GETIN;
++	gamsg->clk = 0x00;
++	gamsg->offset = offset;
++	gamsg->t1 = 0x00;
++	gamsg->t2 = 0x00;
++	gamsg->invert = 0x00;
++	gamsg->pwmlevel = 0x00;
++	gamsg->outval = 0x00;
++	gamsg->risefall = 0x00;
++	gamsg->answer = 0x00;
++	gamsg->__fill = 0x00;
++
++	ret = usb_control_msg(vb->usb_dev, usb_sndctrlpipe(vb->usb_dev, 0),
++		VPRBRD_USB_REQUEST_GPIOA, VPRBRD_USB_TYPE_OUT, 0x0000,
++		0x0000, gamsg, sizeof(struct vprbrd_gpioa_msg),
 +		VPRBRD_USB_TIMEOUT_MS);
-+	if (ret == 1)
-+		version = buf[0];
++	if (ret != sizeof(struct vprbrd_gpioa_msg))
++		error = -EREMOTEIO;
 +
-+	ret = usb_control_msg(vb->usb_dev, pipe, VPRBRD_USB_REQUEST_MINOR,
-+		VPRBRD_USB_TYPE_IN, 0x0000, 0x0000, buf, 1,
++	ret = usb_control_msg(vb->usb_dev, usb_rcvctrlpipe(vb->usb_dev, 0),
++		VPRBRD_USB_REQUEST_GPIOA, VPRBRD_USB_TYPE_IN, 0x0000,
++		0x0000, gamsg, sizeof(struct vprbrd_gpioa_msg),
 +		VPRBRD_USB_TIMEOUT_MS);
-+	if (ret == 1) {
-+		version <<= 8;
-+		version = version | buf[0];
-+	}
++	answer = gamsg->answer & 0x01;
 +
-+	dev_info(&interface->dev,
-+		 "version %x.%02x found at bus %03d address %03d\n",
-+		 version >> 8, version & 0xff,
-+		 vb->usb_dev->bus->busnum, vb->usb_dev->devnum);
++	mutex_unlock(&vb->lock);
 +
-+	ret = mfd_add_devices(&interface->dev, -1, vprbrd_devs,
-+				ARRAY_SIZE(vprbrd_devs), NULL, 0, NULL);
-+	if (ret != 0) {
-+		dev_err(&interface->dev, "Failed to add mfd devices to core.");
-+		goto error;
++	if (ret != sizeof(struct vprbrd_gpioa_msg))
++		error = -EREMOTEIO;
++
++	if (error)
++		return error;
++
++	return answer;
++}
++
++static void vprbrd_gpioa_set(struct gpio_chip *chip,
++		unsigned offset, int value)
++{
++	int ret;
++	struct vprbrd_gpio *gpio =
++			container_of(chip, struct vprbrd_gpio, gpioa);
++	struct vprbrd *vb = gpio->vb;
++	struct vprbrd_gpioa_msg *gamsg = (struct vprbrd_gpioa_msg *)vb->buf;
++
++	if (gpio->gpioa_out & (1 << offset)) {
++		if (value)
++			gpio->gpioa_val |= (1 << offset);
++		else
++			gpio->gpioa_val &= ~(1 << offset);
++
++		mutex_lock(&vb->lock);
++
++		gamsg->cmd = VPRBRD_GPIOA_CMD_SETOUT;
++		gamsg->clk = 0x00;
++		gamsg->offset = offset;
++		gamsg->t1 = 0x00;
++		gamsg->t2 = 0x00;
++		gamsg->invert = 0x00;
++		gamsg->pwmlevel = 0x00;
++		gamsg->outval = value;
++		gamsg->risefall = 0x00;
++		gamsg->answer = 0x00;
++		gamsg->__fill = 0x00;
++
++		ret = usb_control_msg(vb->usb_dev,
++			usb_sndctrlpipe(vb->usb_dev, 0),
++			VPRBRD_USB_REQUEST_GPIOA, VPRBRD_USB_TYPE_OUT,
++			0x0000,	0x0000, gamsg,
++			sizeof(struct vprbrd_gpioa_msg), VPRBRD_USB_TIMEOUT_MS);
++
++		mutex_unlock(&vb->lock);
++
++		if (ret != sizeof(struct vprbrd_gpioa_msg))
++			dev_err(chip->dev, "usb error setting pin value\n");
 +	}
++}
++
++static int vprbrd_gpioa_direction_input(struct gpio_chip *chip,
++			unsigned offset)
++{
++	int ret;
++	struct vprbrd_gpio *gpio =
++			container_of(chip, struct vprbrd_gpio, gpioa);
++	struct vprbrd *vb = gpio->vb;
++	struct vprbrd_gpioa_msg *gamsg = (struct vprbrd_gpioa_msg *)vb->buf;
++
++	gpio->gpioa_out &= ~(1 << offset);
++
++	mutex_lock(&vb->lock);
++
++	gamsg->cmd = VPRBRD_GPIOA_CMD_SETIN;
++	gamsg->clk = gpioa_clk;
++	gamsg->offset = offset;
++	gamsg->t1 = 0x00;
++	gamsg->t2 = 0x00;
++	gamsg->invert = 0x00;
++	gamsg->pwmlevel = 0x00;
++	gamsg->outval = 0x00;
++	gamsg->risefall = 0x00;
++	gamsg->answer = 0x00;
++	gamsg->__fill = 0x00;
++
++	ret = usb_control_msg(vb->usb_dev, usb_sndctrlpipe(vb->usb_dev, 0),
++		VPRBRD_USB_REQUEST_GPIOA, VPRBRD_USB_TYPE_OUT, 0x0000,
++		0x0000, gamsg, sizeof(struct vprbrd_gpioa_msg),
++		VPRBRD_USB_TIMEOUT_MS);
++
++	mutex_unlock(&vb->lock);
++
++	if (ret != sizeof(struct vprbrd_gpioa_msg))
++		return -EREMOTEIO;
 +
 +	return 0;
++}
 +
-+error:
-+	if (vb) {
-+		usb_put_dev(vb->usb_dev);
-+		kfree(vb);
++static int vprbrd_gpioa_direction_output(struct gpio_chip *chip,
++			unsigned offset, int value)
++{
++	int ret;
++	struct vprbrd_gpio *gpio =
++			container_of(chip, struct vprbrd_gpio, gpioa);
++	struct vprbrd *vb = gpio->vb;
++	struct vprbrd_gpioa_msg *gamsg = (struct vprbrd_gpioa_msg *)vb->buf;
++
++	gpio->gpioa_out |= (1 << offset);
++	if (value)
++		gpio->gpioa_val |= (1 << offset);
++	else
++		gpio->gpioa_val &= ~(1 << offset);
++
++	mutex_lock(&vb->lock);
++
++	gamsg->cmd = VPRBRD_GPIOA_CMD_SETOUT;
++	gamsg->clk = 0x00;
++	gamsg->offset = offset;
++	gamsg->t1 = 0x00;
++	gamsg->t2 = 0x00;
++	gamsg->invert = 0x00;
++	gamsg->pwmlevel = 0x00;
++	gamsg->outval = value;
++	gamsg->risefall = 0x00;
++	gamsg->answer = 0x00;
++	gamsg->__fill = 0x00;
++
++	ret = usb_control_msg(vb->usb_dev, usb_sndctrlpipe(vb->usb_dev, 0),
++		VPRBRD_USB_REQUEST_GPIOA, VPRBRD_USB_TYPE_OUT, 0x0000,
++		0x0000, gamsg, sizeof(struct vprbrd_gpioa_msg),
++		VPRBRD_USB_TIMEOUT_MS);
++
++	mutex_unlock(&vb->lock);
++
++	if (ret != sizeof(struct vprbrd_gpioa_msg))
++		return -EREMOTEIO;
++
++	return 0;
++}
++
++/* ----- end of gpio a chip ---------------------------------------------- */
++
++/* ----- begin of gipo b chip -------------------------------------------- */
++
++static int vprbrd_gpiob_setdir(struct vprbrd *vb, unsigned offset,
++	unsigned dir)
++{
++	struct vprbrd_gpiob_msg *gbmsg = (struct vprbrd_gpiob_msg *)vb->buf;
++	int ret;
++
++	gbmsg->cmd = VPRBRD_GPIOB_CMD_SETDIR;
++	gbmsg->val = cpu_to_be16(dir << offset);
++	gbmsg->mask = cpu_to_be16(0x0001 << offset);
++
++	ret = usb_control_msg(vb->usb_dev, usb_sndctrlpipe(vb->usb_dev, 0),
++		VPRBRD_USB_REQUEST_GPIOB, VPRBRD_USB_TYPE_OUT, 0x0000,
++		0x0000, gbmsg, sizeof(struct vprbrd_gpiob_msg),
++		VPRBRD_USB_TIMEOUT_MS);
++
++	if (ret != sizeof(struct vprbrd_gpiob_msg))
++		return -EREMOTEIO;
++
++	return 0;
++}
++
++static int vprbrd_gpiob_get(struct gpio_chip *chip,
++		unsigned offset)
++{
++	int ret;
++	u16 val;
++	struct vprbrd_gpio *gpio =
++			container_of(chip, struct vprbrd_gpio, gpiob);
++	struct vprbrd *vb = gpio->vb;
++	struct vprbrd_gpiob_msg *gbmsg = (struct vprbrd_gpiob_msg *)vb->buf;
++
++	/* if io is set to output, just return the saved value */
++	if (gpio->gpiob_out & (1 << offset))
++		return gpio->gpiob_val & (1 << offset);
++
++	mutex_lock(&vb->lock);
++
++	ret = usb_control_msg(vb->usb_dev, usb_rcvctrlpipe(vb->usb_dev, 0),
++		VPRBRD_USB_REQUEST_GPIOB, VPRBRD_USB_TYPE_IN, 0x0000,
++		0x0000, gbmsg,	sizeof(struct vprbrd_gpiob_msg),
++		VPRBRD_USB_TIMEOUT_MS);
++	val = gbmsg->val;
++
++	mutex_unlock(&vb->lock);
++
++	if (ret != sizeof(struct vprbrd_gpiob_msg))
++		return ret;
++
++	/* cache the read values */
++	gpio->gpiob_val = be16_to_cpu(val);
++
++	return (gpio->gpiob_val >> offset) & 0x1;
++}
++
++static void vprbrd_gpiob_set(struct gpio_chip *chip,
++		unsigned offset, int value)
++{
++	int ret;
++	struct vprbrd_gpio *gpio =
++			container_of(chip, struct vprbrd_gpio, gpiob);
++	struct vprbrd *vb = gpio->vb;
++	struct vprbrd_gpiob_msg *gbmsg = (struct vprbrd_gpiob_msg *)vb->buf;
++
++	if (gpio->gpiob_out & (1 << offset)) {
++		if (value)
++			gpio->gpiob_val |= (1 << offset);
++		else
++			gpio->gpiob_val &= ~(1 << offset);
++
++		mutex_lock(&vb->lock);
++
++		gbmsg->cmd = VPRBRD_GPIOB_CMD_SETVAL;
++		gbmsg->val = cpu_to_be16(value << offset);
++		gbmsg->mask = cpu_to_be16(0x0001 << offset);
++
++		ret = usb_control_msg(vb->usb_dev,
++			usb_sndctrlpipe(vb->usb_dev, 0),
++			VPRBRD_USB_REQUEST_GPIOB, VPRBRD_USB_TYPE_OUT,
++			0x0000,	0x0000, gbmsg,
++			sizeof(struct vprbrd_gpiob_msg), VPRBRD_USB_TIMEOUT_MS);
++
++		mutex_unlock(&vb->lock);
++
++		if (ret != sizeof(struct vprbrd_gpiob_msg))
++			dev_err(chip->dev, "usb error setting pin value\n");
 +	}
++}
++
++static int vprbrd_gpiob_direction_input(struct gpio_chip *chip,
++			unsigned offset)
++{
++	int ret;
++	struct vprbrd_gpio *gpio =
++			container_of(chip, struct vprbrd_gpio, gpiob);
++	struct vprbrd *vb = gpio->vb;
++
++	gpio->gpiob_out &= ~(1 << offset);
++
++	mutex_lock(&vb->lock);
++
++	ret = vprbrd_gpiob_setdir(vb, offset, 0);
++
++	mutex_unlock(&vb->lock);
++
++	if (ret)
++		dev_err(chip->dev, "usb error setting pin to input\n");
 +
 +	return ret;
 +}
 +
-+static void vprbrd_disconnect(struct usb_interface *interface)
++static int vprbrd_gpiob_direction_output(struct gpio_chip *chip,
++			unsigned offset, int value)
 +{
-+	struct vprbrd *vb = usb_get_intfdata(interface);
++	int ret;
++	struct vprbrd_gpio *gpio =
++			container_of(chip, struct vprbrd_gpio, gpiob);
++	struct vprbrd *vb = gpio->vb;
 +
-+	mfd_remove_devices(&interface->dev);
-+	usb_set_intfdata(interface, NULL);
-+	usb_put_dev(vb->usb_dev);
-+	kfree(vb);
++	gpio->gpiob_out |= (1 << offset);
++	if (value)
++		gpio->gpiob_val |= (1 << offset);
++	else
++		gpio->gpiob_val &= ~(1 << offset);
 +
-+	dev_dbg(&interface->dev, "disconnected\n");
++	mutex_lock(&vb->lock);
++
++	ret = vprbrd_gpiob_setdir(vb, offset, 1);
++	if (ret)
++		dev_err(chip->dev, "usb error setting pin to output\n");
++
++	mutex_unlock(&vb->lock);
++
++	vprbrd_gpiob_set(chip, offset, value);
++
++	return ret;
 +}
 +
-+static struct usb_driver vprbrd_driver = {
-+	.name		= "viperboard",
-+	.probe		= vprbrd_probe,
-+	.disconnect	= vprbrd_disconnect,
-+	.id_table	= vprbrd_table,
++/* ----- end of gpio b chip ---------------------------------------------- */
++
++static int __devinit vprbrd_gpio_probe(struct platform_device *pdev)
++{
++	struct vprbrd *vb = dev_get_drvdata(pdev->dev.parent);
++	struct vprbrd_gpio *vb_gpio;
++	int ret;
++
++	vb_gpio = devm_kzalloc(&pdev->dev, sizeof(*vb_gpio), GFP_KERNEL);
++	if (vb_gpio == NULL)
++		return -ENOMEM;
++
++	vb_gpio->vb = vb;
++	/* registering gpio a */
++	vb_gpio->gpioa.label = "viperboard gpio a";
++	vb_gpio->gpioa.dev = &pdev->dev;
++	vb_gpio->gpioa.owner = THIS_MODULE;
++	vb_gpio->gpioa.base = -1;
++	vb_gpio->gpioa.ngpio = 16;
++	vb_gpio->gpioa.can_sleep = 1;
++	vb_gpio->gpioa.set = vprbrd_gpioa_set;
++	vb_gpio->gpioa.get = vprbrd_gpioa_get;
++	vb_gpio->gpioa.direction_input = vprbrd_gpioa_direction_input;
++	vb_gpio->gpioa.direction_output = vprbrd_gpioa_direction_output;
++	ret = gpiochip_add(&vb_gpio->gpioa);
++	if (ret < 0) {
++		dev_err(vb_gpio->gpioa.dev, "could not add gpio a");
++		goto err_gpioa;
++	}
++
++	/* registering gpio b */
++	vb_gpio->gpiob.label = "viperboard gpio b";
++	vb_gpio->gpiob.dev = &pdev->dev;
++	vb_gpio->gpiob.owner = THIS_MODULE;
++	vb_gpio->gpiob.base = -1;
++	vb_gpio->gpiob.ngpio = 16;
++	vb_gpio->gpiob.can_sleep = 1;
++	vb_gpio->gpiob.set = vprbrd_gpiob_set;
++	vb_gpio->gpiob.get = vprbrd_gpiob_get;
++	vb_gpio->gpiob.direction_input = vprbrd_gpiob_direction_input;
++	vb_gpio->gpiob.direction_output = vprbrd_gpiob_direction_output;
++	ret = gpiochip_add(&vb_gpio->gpiob);
++	if (ret < 0) {
++		dev_err(vb_gpio->gpiob.dev, "could not add gpio b");
++		goto err_gpiob;
++	}
++
++	platform_set_drvdata(pdev, vb_gpio);
++
++	return ret;
++
++err_gpiob:
++	ret = gpiochip_remove(&vb_gpio->gpioa);
++
++err_gpioa:
++	return ret;
++}
++
++static int __devexit vprbrd_gpio_remove(struct platform_device *pdev)
++{
++	struct vprbrd_gpio *vb_gpio = platform_get_drvdata(pdev);
++	int ret;
++
++	ret = gpiochip_remove(&vb_gpio->gpiob);
++	if (ret == 0)
++		ret = gpiochip_remove(&vb_gpio->gpioa);
++
++	return ret;
++}
++
++static struct platform_driver vprbrd_gpio_driver = {
++	.driver.name	= "viperboard-gpio",
++	.driver.owner	= THIS_MODULE,
++	.probe		= vprbrd_gpio_probe,
++	.remove		= __devexit_p(vprbrd_gpio_remove),
 +};
 +
-+module_usb_driver(vprbrd_driver);
++static int __init vprbrd_gpio_init(void)
++{
++	switch (gpioa_freq) {
++	case 1000000:
++		gpioa_clk = VPRBRD_GPIOA_CLK_1MHZ;
++		break;
++	case 100000:
++		gpioa_clk = VPRBRD_GPIOA_CLK_100KHZ;
++		break;
++	case 10000:
++		gpioa_clk = VPRBRD_GPIOA_CLK_10KHZ;
++		break;
++	case 1000:
++		gpioa_clk = VPRBRD_GPIOA_CLK_1KHZ;
++		break;
++	case 100:
++		gpioa_clk = VPRBRD_GPIOA_CLK_100HZ;
++		break;
++	case 10:
++		gpioa_clk = VPRBRD_GPIOA_CLK_10HZ;
++		break;
++	default:
++		pr_warn("invalid gpioa_freq (%d)\n", gpioa_freq);
++		gpioa_clk = VPRBRD_GPIOA_CLK_1KHZ;
++	}
 +
-+MODULE_DESCRIPTION("Nano River Technologies viperboard mfd core driver");
++	return platform_driver_register(&vprbrd_gpio_driver);
++}
++subsys_initcall(vprbrd_gpio_init);
++
++static void __exit vprbrd_gpio_exit(void)
++{
++	platform_driver_unregister(&vprbrd_gpio_driver);
++}
++module_exit(vprbrd_gpio_exit);
++
 +MODULE_AUTHOR("Lars Poeschel <poeschel@lemonage.de>");
++MODULE_DESCRIPTION("GPIO driver for Nano River Techs Viperboard");
 +MODULE_LICENSE("GPL");
-+
++MODULE_ALIAS("platform:viperboard-gpio");
+diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
+index 34bc372..4b2ffbf 100644
+--- a/drivers/mfd/viperboard.c
++++ b/drivers/mfd/viperboard.c
+@@ -38,6 +38,9 @@ static const struct usb_device_id vprbrd_table[] = {
+ MODULE_DEVICE_TABLE(usb, vprbrd_table);
+ 
+ static struct mfd_cell vprbrd_devs[] = {
++	{
++		.name = "viperboard-gpio",
++	},
+ };
+ 
+ static int vprbrd_probe(struct usb_interface *interface,
 diff --git a/include/linux/mfd/viperboard.h b/include/linux/mfd/viperboard.h
-new file mode 100644
-index 0000000..0d13424
---- /dev/null
+index 0d13424..42d339f 100644
+--- a/include/linux/mfd/viperboard.h
 +++ b/include/linux/mfd/viperboard.h
-@@ -0,0 +1,105 @@
-+/*
-+ *  include/linux/mfd/viperboard.h
-+ *
-+ *  Nano River Technologies viperboard definitions
-+ *
-+ *  (C) 2012 by Lemonage GmbH
-+ *  Author: Lars Poeschel <poeschel@lemonage.de>
-+ *  All rights reserved.
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#ifndef __MFD_VIPERBOARD_H__
-+#define __MFD_VIPERBOARD_H__
-+
-+#include <linux/types.h>
-+#include <linux/usb.h>
-+
-+#define VPRBRD_EP_OUT               0x02
-+#define VPRBRD_EP_IN                0x86
-+
-+#define VPRBRD_I2C_MSG_LEN          512 /* max length of a msg on USB level */
-+
-+#define VPRBRD_I2C_FREQ_6MHZ        1                        /*   6 MBit/s */
-+#define VPRBRD_I2C_FREQ_3MHZ        2                        /*   3 MBit/s */
-+#define VPRBRD_I2C_FREQ_1MHZ        3                        /*   1 MBit/s */
-+#define VPRBRD_I2C_FREQ_FAST        4                        /* 400 kbit/s */
-+#define VPRBRD_I2C_FREQ_400KHZ      VPRBRD_I2C_FREQ_FAST
-+#define VPRBRD_I2C_FREQ_200KHZ      5                        /* 200 kbit/s */
-+#define VPRBRD_I2C_FREQ_STD         6                        /* 100 kbit/s */
-+#define VPRBRD_I2C_FREQ_100KHZ      VPRBRD_I2C_FREQ_STD
-+#define VPRBRD_I2C_FREQ_10KHZ       7                        /*  10 kbit/s */
-+
-+#define VPRBRD_I2C_CMD_WRITE        0x00
-+#define VPRBRD_I2C_CMD_READ         0x01
-+#define VPRBRD_I2C_CMD_ADDR         0x02
-+
-+#define VPRBRD_USB_TYPE_OUT	    0x40
-+#define VPRBRD_USB_TYPE_IN	    0xc0
-+#define VPRBRD_USB_TIMEOUT_MS       100
-+#define VPRBRD_USB_REQUEST_MAJOR    0xea
-+#define VPRBRD_USB_REQUEST_MINOR    0xeb
-+
-+struct vprbrd_i2c_write_hdr {
-+	u8 cmd;
-+	u16 addr;
-+	u8 len1;
-+	u8 len2;
-+	u8 last;
-+	u8 chan;
-+	u16 spi;
-+} __packed;
-+
-+struct vprbrd_i2c_read_hdr {
-+	u8 cmd;
-+	u16 addr;
-+	u8 len0;
-+	u8 len1;
-+	u8 len2;
-+	u8 len3;
-+	u8 len4;
-+	u8 len5;
-+	u16 tf1;                        /* transfer 1 length */
-+	u16 tf2;                        /* transfer 2 length */
-+} __packed;
-+
-+struct vprbrd_i2c_status {
-+	u8 unknown[11];
-+	u8 status;
-+} __packed;
-+
-+struct vprbrd_i2c_write_msg {
-+	struct vprbrd_i2c_write_hdr header;
-+	u8 data[VPRBRD_I2C_MSG_LEN
-+		- sizeof(struct vprbrd_i2c_write_hdr)];
-+} __packed;
-+
-+struct vprbrd_i2c_read_msg {
-+	struct vprbrd_i2c_read_hdr header;
-+	u8 data[VPRBRD_I2C_MSG_LEN
-+		- sizeof(struct vprbrd_i2c_read_hdr)];
-+} __packed;
-+
-+struct vprbrd_i2c_addr_msg {
-+	u8 cmd;
-+	u8 addr;
-+	u8 unknown1;
-+	u16 len;
-+	u8 unknown2;
-+	u8 unknown3;
-+} __packed;
-+
-+/* Structure to hold all device specific stuff */
-+struct vprbrd {
-+	struct usb_device *usb_dev; /* the usb device for this device */
-+	struct mutex lock;
-+	u8 buf[sizeof(struct vprbrd_i2c_write_msg)];
-+	struct platform_device pdev;
-+};
-+
-+#endif /* __MFD_VIPERBOARD_H__ */
+@@ -44,6 +44,8 @@
+ #define VPRBRD_USB_TIMEOUT_MS       100
+ #define VPRBRD_USB_REQUEST_MAJOR    0xea
+ #define VPRBRD_USB_REQUEST_MINOR    0xeb
++#define VPRBRD_USB_REQUEST_GPIOA    0xed
++#define VPRBRD_USB_REQUEST_GPIOB    0xdd
+ 
+ struct vprbrd_i2c_write_hdr {
+ 	u8 cmd;
 -- 
 1.7.10.4
 
