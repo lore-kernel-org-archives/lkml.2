@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab2KEUPT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 15:15:19 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37663 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab2KEUPQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 15:15:16 -0500
-Date: Mon, 5 Nov 2012 12:15:12 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>, Kay Sievers <kay@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
- add queue-private command filter, editable via sysfs)
-Message-ID: <20121105201512.GB26735@htj.dyndns.org>
-References: <5093DD5E.6030808@redhat.com>
- <20121102165123.GB3823@mtj.dyndns.org>
- <509407B7.3030904@redhat.com>
- <20121102175350.GB27843@mtj.dyndns.org>
- <50951A0E.9010103@redhat.com>
- <20121103145052.0da49071@pyramind.ukuu.org.uk>
- <20121105181809.GE19354@mtj.dyndns.org>
- <20121105201208.2ea500cc@pyramind.ukuu.org.uk>
- <20121105200955.GA26735@htj.dyndns.org>
- <20121105201754.7d82deff@pyramind.ukuu.org.uk>
+	id S932091Ab2KEUSW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 15:18:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43639 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753065Ab2KEUSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 15:18:20 -0500
+Date: Mon, 5 Nov 2012 21:18:16 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Chris J Arges <chris.j.arges@canonical.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] hid: usbhid: add quirk for SB arena headset v2
+In-Reply-To: <1352145945-8035-1-git-send-email-chris.j.arges@canonical.com>
+Message-ID: <alpine.LNX.2.00.1211052117210.24253@pobox.suse.cz>
+References: <1352145945-8035-1-git-send-email-chris.j.arges@canonical.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121105201754.7d82deff@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 08:17:54PM +0000, Alan Cox wrote:
-> IMHO that's the best option for now - if it fixes the specific case of
-> concern right now. It's a trivial interface, it's trivial security (need
-> to check CAP_SYS_RAWIO to flip) and it means that the job can be done
-> properly when there is consensus without a whole extra legacy API stuck
-> behind.
+On Mon, 5 Nov 2012, Chris J Arges wrote:
 
-Oh yeah, fully agreed.  We could just set the sysfs file only
-writeable by root (basically just setting perm to 0644).  Would the
-CAP_SYS_RAWIO distinction matter?
+> When an SB Arena USB headset is plugged in, it registers the volume
+> keys on the headset as a keyboard and continually sends events causing
+> issues with normal keyboard input. This quirk disables the volume keys.
 
-Thanks.
+I don't know how the device looks like, but wouldn't it make more sense to 
+actually remap the bogus keys it's sending to produce KEY_VOLUMEUP and 
+KEY_VOLUMEDOWN?
 
 -- 
-tejun
+Jiri Kosina
+SUSE Labs
