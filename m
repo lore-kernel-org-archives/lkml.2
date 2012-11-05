@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab2KEXR2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 18:17:28 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:50888 "EHLO smtp.outflux.net"
+	id S932956Ab2KEXSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 18:18:54 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:50641 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932964Ab2KEXF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 18:05:28 -0500
+	id S1755133Ab2KEXF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 18:05:27 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 035/104] arch/powerpc/platforms/cell: remove depends on CONFIG_EXPERIMENTAL
-Date: Mon,  5 Nov 2012 15:03:52 -0800
-Message-Id: <1352156701-4038-36-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Steve French <sfrench@samba.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 093/104] fs/cifs: remove depends on CONFIG_EXPERIMENTAL
+Date: Mon,  5 Nov 2012 15:04:50 -0800
+Message-Id: <1352156701-4038-94-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352156701-4038-1-git-send-email-keescook@chromium.org>
 References: <1352156701-4038-1-git-send-email-keescook@chromium.org>
@@ -26,27 +25,36 @@ The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-CC: Arnd Bergmann <arnd@arndb.de>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
+CC: Steve French <sfrench@samba.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/powerpc/platforms/cell/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/Kconfig |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/platforms/cell/Kconfig b/arch/powerpc/platforms/cell/Kconfig
-index 2e7ff0c..53aaefe 100644
---- a/arch/powerpc/platforms/cell/Kconfig
-+++ b/arch/powerpc/platforms/cell/Kconfig
-@@ -124,7 +124,7 @@ config CBE_CPUFREQ
+diff --git a/fs/cifs/Kconfig b/fs/cifs/Kconfig
+index 2075ddf..8a354d1 100644
+--- a/fs/cifs/Kconfig
++++ b/fs/cifs/Kconfig
+@@ -147,14 +147,14 @@ config CIFS_DFS_UPCALL
+ 	    points. If unsure, say N.
  
- config CBE_CPUFREQ_PMI_ENABLE
- 	bool "CBE frequency scaling using PMI interface"
--	depends on CBE_CPUFREQ && EXPERIMENTAL
-+	depends on CBE_CPUFREQ
- 	default n
- 	help
- 	  Select this, if you want to use the PMI interface
+ config CIFS_NFSD_EXPORT
+-	  bool "Allow nfsd to export CIFS file system (EXPERIMENTAL)"
+-	  depends on CIFS && EXPERIMENTAL && BROKEN
++	  bool "Allow nfsd to export CIFS file system"
++	  depends on CIFS && BROKEN
+ 	  help
+ 	   Allows NFS server to export a CIFS mounted share (nfsd over cifs)
+ 
+ config CIFS_SMB2
+-	bool "SMB2 network file system support (EXPERIMENTAL)"
+-	depends on CIFS && EXPERIMENTAL && INET
++	bool "SMB2 network file system support"
++	depends on CIFS && INET
+ 	select NLS
+ 	select KEYS
+ 	select FSCACHE
 -- 
 1.7.9.5
 
