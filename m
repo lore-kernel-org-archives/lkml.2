@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab2KEMoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:44:00 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:55736 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751898Ab2KEMn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:43:59 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 1/3] gpio / ACPI: add ACPI support
-Date: Mon, 05 Nov 2012 13:46:55 +0100
-Message-ID: <6279158.LZAthHxtvS@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <5097AD9D.7060808@linux.intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <CACRpkdYGbNCzV7QOURcEzhrNWv=kbWq+r3i66GtC75Aytso5rw@mail.gmail.com> <5097AD9D.7060808@linux.intel.com>
+	id S1752970Ab2KEMwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:52:11 -0500
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:33462 "EHLO
+	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab2KEMwI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 07:52:08 -0500
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnisAPG1l1BV5h1yPGdsb2JhbABEhS6FI7diAgKBCBkBAQEBHxkNJ4IeAQEEAScTHCMQCAMtGRQNGAoaExuHXQMJCrA0DYlUFIsFcjCBDYFEglBhA5QmgVSFe4U5iAGBYxeBIQ
+X-IronPort-AV: E=Sophos;i="4.80,715,1344204000"; 
+   d="scan'208";a="223738725"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 5 Nov 2012 13:57:31 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 11/11] HID: hid-multitouch: get rid of usbhid
+ depedency for general path
+Message-ID: <20121105125731.GA814@polaris.bitmath.org>
+References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1351241067-9521-12-git-send-email-benjamin.tissoires@gmail.com>
+ <20121029225748.GA15632@polaris.bitmath.org>
+ <CAN+gG=GNucfg4-wCBZQtz0yJDjpTD_56Js3d68nm8VFi1UhZAA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=GNucfg4-wCBZQtz0yJDjpTD_56Js3d68nm8VFi1UhZAA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 05, 2012 02:14:21 PM Mathias Nyman wrote:
-> On 11/05/2012 01:53 PM, Linus Walleij wrote:
-> > On Sat, Nov 3, 2012 at 8:46 AM, Mika Westerberg
-> > <mika.westerberg@linux.intel.com>  wrote:
-> >
-> >> +/**
-> >> + * acpi_get_gpio() - Translate ACPI GPIO pin to GPIO number usable with GPIO API
-> >> + * @path:      ACPI GPIO controller full path name, (e.g. "\\_SB.GPO1")
-> >> + * @pin:       ACPI GPIO pin number (0-based, controller-relative)
-> >> + *
-> >> + * Returns GPIO number to use with Linux generic GPIO API, or errno error value
-> >> + */
-> >
-> > So by just looking at that we can see that this is yet another
-> > instance of papering
-> > over the fact that the Linux GPIO numbers are global to the kernel and not
-> > per-chip, as would be preferred.
-> 
-> Yes, it is. ACPI5 GPIO resources are numbered per-chip. This is just a 
-> way for device drivers to find the corresponding Linux GPIO.
-> 
-> per-chip based numbering sounds saner, but this deals with what we 
-> currently have.
+Hi Benjamin,
 
-And we need something to hook up drivers to right now.
+> >> This patch factorizes the hid set_feature command by using
+> >> hid_device->hid_output_raw_report instead of direclty relying on
+> >> usbhid. This makes the driver usb independant.
+> >>
+> >> However I still can't remove the 2 usb related headers because the
+> >> function mt_resume has a specific patch for usb devices.
+> >>
+> >> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> >> ---
+> >>  drivers/hid/hid-multitouch.c | 63 ++++++++++++++++++++++++++------------------
+> >>  1 file changed, 37 insertions(+), 26 deletions(-)
+> >
+> > In my drawer, I have a patchset that aims to remove all usbhid
+> > dependence, from all the drivers. Perhaps the attached patch is
+> > something to consider here?
+> 
+> yep, removing usbhid dependencies is a good thing.
+> See my review below :)
+
+I have a tentative patch taking your comments into account, and it is
+likely that we want to go that way. However, as to not hold up your
+patchset, perhaps we could do without it for now.
+
+Regarding the hardwired usbhid dependency, I think the solution is to
+move that code to usbhid itself.
 
 Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Henrik
