@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab2KELUz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 06:20:55 -0500
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:3883 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752642Ab2KELUL (ORCPT
+	id S1752658Ab2KELW6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 06:22:58 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:55800 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636Ab2KELW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 06:20:11 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzd799hzz1de0h1202h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839he5bhf0ah107ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14afh1504h1537h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <timur@freescale.com>, <scottwood@freescale.com>
-CC: Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 3/4 v4] iommu/fsl: Add iommu domain attributes required by fsl PAMU driver.
-Date: Mon, 5 Nov 2012 16:49:20 +0530
-Message-ID: <1352114361-25192-3-git-send-email-Varun.Sethi@freescale.com>
-X-Mailer: git-send-email 1.6.5.6
-In-Reply-To: <1352114361-25192-2-git-send-email-Varun.Sethi@freescale.com>
-References: <1352114361-25192-1-git-send-email-Varun.Sethi@freescale.com>
- <1352114361-25192-2-git-send-email-Varun.Sethi@freescale.com>
+	Mon, 5 Nov 2012 06:22:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
+In-Reply-To: <c0347788fbad559a249a25128a23f40c85d9cbda.1351721190.git.josh.cartwright@ni.com>
+References: <cover.1351721190.git.josh.cartwright@ni.com>
+	<c0347788fbad559a249a25128a23f40c85d9cbda.1351721190.git.josh.cartwright@ni.com>
+Date: Mon, 5 Nov 2012 12:22:55 +0100
+X-Google-Sender-Auth: q57wHwVN0C5ByRJSNDLSkUmhAzg
+Message-ID: <CAHTX3d++0fGSw7GQHcc-S1X1Qh-rfekpr-E8Jkg2_vFqdCFFTg@mail.gmail.com>
+Subject: Re: [PATCH 2/8] ARM: zynq: move ttc timer code to drivers/clocksource
+From: Michal Simek <michal.simek@xilinx.com>
+To: Josh Cartwright <josh.cartwright@ni.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@ti.com>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Linn <John.Linn@xilinx.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added the following domain attributes required by FSL PAMU driver:
-1. Subwindows field added to the iommu domain geometry attribute.
-2. Added new iommu stash attribute, which allows setting of the
-   LIODN specific stash id parameter through IOMMU API.
-3. Added an attribute for enabling/disabling DMA to a particular
-   memory window.
+2012/10/29 Josh Cartwright <josh.cartwright@ni.com>:
+> Suggested cleanup by Arnd Bergmann.  Move the ttc timer.c code to
+> drivers/clocksource, and out of the mach-zynq directory.
+>
+> The common.h (which only held the timer declaration) was renamed to
+> xilinx_ttc.h and moved into include/linux.
+>
+> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/arm/mach-zynq/Makefile                                    | 2 +-
+>  arch/arm/mach-zynq/common.c                                    | 2 +-
+>  drivers/clocksource/Makefile                                   | 1 +
+>  arch/arm/mach-zynq/timer.c => drivers/clocksource/xilinx_ttc.c | 1 -
+>  arch/arm/mach-zynq/common.h => include/linux/xilinx_ttc.h      | 4 ++--
+>  5 files changed, 5 insertions(+), 5 deletions(-)
+>  rename arch/arm/mach-zynq/timer.c => drivers/clocksource/xilinx_ttc.c (99%)
+>  rename arch/arm/mach-zynq/common.h => include/linux/xilinx_ttc.h (91%)
 
+Not going to apply this patch till there is clean way how to move all
+drivers there.
+Especially I don't like to add xilinx_ttc.h to include/linux folder.
 
-Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
----
-changes in v4:
-- Updated comment explaining subwindows(as mentioned by Scott).
-change in v3:
--renamed the stash attribute targets
- include/linux/iommu.h |   36 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 36 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index f3b99e1..e72f5e5 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -44,6 +44,34 @@ struct iommu_domain_geometry {
- 	dma_addr_t aperture_start; /* First address that can be mapped    */
- 	dma_addr_t aperture_end;   /* Last address that can be mapped     */
- 	bool force_aperture;       /* DMA only allowed in mappable range? */
-+
-+	/**
-+	 * There could be a single contiguous window tha maps the entire
-+	 * geometry or it could be split in to multiple subwindows.
-+	 * Subwindows allow for supporting physically discontiguous mappings.
-+	 * This attribute indicates number of DMA subwindows supported by
-+	 * the geometry. If there is a single window that maps the entire
-+	 * geometry, attribute must be set to "1". A value of "0" implies
-+	 * that there are 256 subwindows each of size 4K. Value other than
-+	 * "0" or "1" indicates the actual number of subwindows.
-+	 */
-+	u32 subwindows;
-+};
-+
-+/* cache stash targets */
-+#define IOMMU_ATTR_CACHE_L1 1
-+#define IOMMU_ATTR_CACHE_L2 2
-+#define IOMMU_ATTR_CACHE_L3 3
-+
-+/* This attribute corresponds to IOMMUs capable of generating
-+ * a stash transaction. A stash transaction is typically a
-+ * hardware initiated prefetch of data from memory to cache.
-+ * This attribute allows configuring stashig specific parameters
-+ * in the IOMMU hardware.
-+ */
-+struct iommu_stash_attribute {
-+	u32 	cpu;	/* cpu number */
-+	u32 	cache;	/* cache to stash to: L1,L2,L3 */
- };
- 
- struct iommu_domain {
-@@ -60,6 +88,14 @@ struct iommu_domain {
- enum iommu_attr {
- 	DOMAIN_ATTR_MAX,
- 	DOMAIN_ATTR_GEOMETRY,
-+	/* Set the IOMMU hardware stashing
-+	 * parameters.
-+	 */
-+	DOMAIN_ATTR_STASH,
-+	/* Explicity enable/disable DMA for a
-+         * particular memory window.
-+         */
-+	DOMAIN_ATTR_ENABLE,
- };
- 
- #ifdef CONFIG_IOMMU_API
--- 
-1.7.4.1
-
-
+Thanks,
+Michal
