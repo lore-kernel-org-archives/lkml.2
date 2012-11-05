@@ -1,269 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab2KEKBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:01:30 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:46779 "EHLO
+	id S932135Ab2KEKBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:01:37 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:46835 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932089Ab2KEKB0 (ORCPT
+	with ESMTP id S932112Ab2KEKBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:01:26 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-39-50978e75842c
+	Mon, 5 Nov 2012 05:01:34 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-06-50978e7da596
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: djbw@fb.com, dwmw2@infradead.org, hskinnemoen@gmail.com,
         iws@ovro.caltech.edu, vinod.koul@intel.com, vipin.kumar@st.com,
         t.figa@samsung.com, kyungmin.park@samsung.com,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [PATCH 08/20] ioat3: add missing DMA unmap to ioat_xor_val_self_test()
-Date: Mon, 05 Nov 2012 11:00:19 +0100
-Message-id: <1352109631-3385-9-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH 10/20] async_tx: add missing DMA unmap to async_memset()
+Date: Mon, 05 Nov 2012 11:00:21 +0100
+Message-id: <1352109631-3385-11-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJMWRmVeSWpSXmKPExsVy+t9jAd3SvukBBrMfyFpc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MdbPnshS8t6l4cGU3ewPjEYMuRk4OCQETiZ0rzzBC2GISF+6t
-	Z+ti5OIQEljEKHF80UpGCGc1k8Ss01PYQKrYBKwkJravAusQEVCQ2Nz7jBWkiFngGaPEjNvd
-	zCAJYQF/ibfbZrOC2CwCqhJ3pk8Fa+AVcJf4d3gFK8Q6eYmn9/vAhnIKeEg0NkwBiwsB1Vzu
-	PM48gZF3ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYxgrz+T2sG4ssHiEKMAB6MSD+9M
-	sekBQqyJZcWVuYcYJTiYlUR4ORiAQrwpiZVVqUX58UWlOanFhxilOViUxHmbPVIChATSE0tS
-	s1NTC1KLYLJMHJxSDYwmvOZ8vNOuVrVErc2J3OIiWNpttqVv7+do5eunDs+Rdv7mILV9z+HI
-	CKdAo8WeWyzvnHXdcCwyK99Q/fQMnXkWl+TWving+3Xrpoj3UQ7LCi1Vo/Qn2fbnO/cXzeaZ
-	f0SPOTDXaPrpC0UcTKxZ3t6HE1/vunT4cvu2+saauobwPSeWqEzVnqfEUpyRaKjFXFScCACw
-	Vkk49gEAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEJMWRmVeSWpSXmKPExsVy+t9jAd3avukBBvt7ZC0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGpYenmQsOs1X0PrvM0sC4gbWLkZNDQsBE4t7Z3ewQtpjEhXvr
+	2boYuTiEBBYxSlx9OosdwlnNJNF07iwjSBWbgJXExPZVYLaIgILE5t5nrCBFzALPGCVm3O5m
+	7mLk4BAW8JA49z0BpIZFQFXi6q81YPW8QOGuuT1MENvkJZ7e72MDsTmB4o0NU8AuEhJwl7jc
+	eZx5AiPvAkaGVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBPn8mvYNxVYPFIUYBDkYlHt5P
+	EtMDhFgTy4orcw8xSnAwK4nwcjAAhXhTEiurUovy44tKc1KLDzFKc7AoifM2e6QECAmkJ5ak
+	ZqemFqQWwWSZODilGhhV3pmwb2XrS3C7pPounM9vlsaUTc1rZOIeSHxisBJef3XvOY3M+2mW
+	7XfD9n9+8qlS7oN8bcHHOcuePHPS97hiVa5x3rBf7vKsuzdczILY5XpUX/5kkd//f/ndiqfN
+	IXk7bmc4vNb651378ZLRk6WLzMP8hKweXM2IXzJjWnBf852tdZ6fug4qsRRnJBpqMRcVJwIA
+	e+pnAfUBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make ioat_xor_val_self_test() do DMA unmapping itself and fix handling
-of failure cases.
+Do DMA unmap on ->device_prep_dma_memset failure.
 
 Cc: Dan Williams <djbw@fb.com>
 Cc: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/dma/ioat/dma_v3.c | 76 ++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 59 insertions(+), 17 deletions(-)
+ crypto/async_tx/async_memset.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index f7f1dc6..6456f7d 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -863,6 +863,7 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 	unsigned long tmo;
- 	struct device *dev = &device->pdev->dev;
- 	struct dma_device *dma = &device->common;
-+	u8 op = 0;
+diff --git a/crypto/async_tx/async_memset.c b/crypto/async_tx/async_memset.c
+index 05a4d1e..a6a667b 100644
+--- a/crypto/async_tx/async_memset.c
++++ b/crypto/async_tx/async_memset.c
+@@ -61,6 +61,9 @@ async_memset(struct page *dest, int val, unsigned int offset, size_t len,
  
- 	dev_dbg(dev, "%s\n", __func__);
- 
-@@ -908,18 +909,22 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
+ 		tx = device->device_prep_dma_memset(chan, dma_dest, val, len,
+ 						    dma_prep_flags);
++		if (!tx)
++			dma_unmap_page(device->dev, dma_dest, len,
++				       DMA_FROM_DEVICE);
  	}
  
- 	/* test xor */
-+	op = IOAT_OP_XOR;
-+
- 	dest_dma = dma_map_page(dev, dest, 0, PAGE_SIZE, DMA_FROM_DEVICE);
- 	for (i = 0; i < IOAT_NUM_SRC_TEST; i++)
- 		dma_srcs[i] = dma_map_page(dev, xor_srcs[i], 0, PAGE_SIZE,
- 					   DMA_TO_DEVICE);
- 	tx = dma->device_prep_dma_xor(dma_chan, dest_dma, dma_srcs,
- 				      IOAT_NUM_SRC_TEST, PAGE_SIZE,
--				      DMA_PREP_INTERRUPT);
-+				      DMA_PREP_INTERRUPT |
-+				      DMA_COMPL_SKIP_SRC_UNMAP |
-+				      DMA_COMPL_SKIP_DEST_UNMAP);
- 
- 	if (!tx) {
- 		dev_err(dev, "Self-test xor prep failed\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 
- 	async_tx_ack(tx);
-@@ -930,7 +935,7 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 	if (cookie < 0) {
- 		dev_err(dev, "Self-test xor setup failed\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 	dma->device_issue_pending(dma_chan);
- 
-@@ -939,9 +944,13 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
- 		dev_err(dev, "Self-test xor timed out\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 
-+	dma_unmap_page(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
-+	for (i = 0; i < IOAT_NUM_SRC_TEST; i++)
-+		dma_unmap_page(dev, dma_srcs[i], PAGE_SIZE, DMA_TO_DEVICE);
-+
- 	dma_sync_single_for_cpu(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
- 	for (i = 0; i < (PAGE_SIZE / sizeof(u32)); i++) {
- 		u32 *ptr = page_address(dest);
-@@ -957,6 +966,8 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 	if (!dma_has_cap(DMA_XOR_VAL, dma_chan->device->cap_mask))
- 		goto free_resources;
- 
-+	op = IOAT_OP_XOR_VAL;
-+
- 	/* validate the sources with the destintation page */
- 	for (i = 0; i < IOAT_NUM_SRC_TEST; i++)
- 		xor_val_srcs[i] = xor_srcs[i];
-@@ -969,11 +980,13 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 					   DMA_TO_DEVICE);
- 	tx = dma->device_prep_dma_xor_val(dma_chan, dma_srcs,
- 					  IOAT_NUM_SRC_TEST + 1, PAGE_SIZE,
--					  &xor_val_result, DMA_PREP_INTERRUPT);
-+					  &xor_val_result, DMA_PREP_INTERRUPT |
-+					  DMA_COMPL_SKIP_SRC_UNMAP |
-+					  DMA_COMPL_SKIP_DEST_UNMAP);
- 	if (!tx) {
- 		dev_err(dev, "Self-test zero prep failed\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 
- 	async_tx_ack(tx);
-@@ -984,7 +997,7 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 	if (cookie < 0) {
- 		dev_err(dev, "Self-test zero setup failed\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 	dma->device_issue_pending(dma_chan);
- 
-@@ -993,9 +1006,12 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
- 		dev_err(dev, "Self-test validate timed out\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 
-+	for (i = 0; i < IOAT_NUM_SRC_TEST + 1; i++)
-+		dma_unmap_page(dev, dma_srcs[i], PAGE_SIZE, DMA_TO_DEVICE);
-+
- 	if (xor_val_result != 0) {
- 		dev_err(dev, "Self-test validate failed compare\n");
- 		err = -ENODEV;
-@@ -1007,14 +1023,18 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 		goto free_resources;
- 
- 	/* test memset */
-+	op = IOAT_OP_FILL;
-+
- 	dma_addr = dma_map_page(dev, dest, 0,
- 			PAGE_SIZE, DMA_FROM_DEVICE);
- 	tx = dma->device_prep_dma_memset(dma_chan, dma_addr, 0, PAGE_SIZE,
--					 DMA_PREP_INTERRUPT);
-+					 DMA_PREP_INTERRUPT |
-+					 DMA_COMPL_SKIP_SRC_UNMAP |
-+					 DMA_COMPL_SKIP_DEST_UNMAP);
- 	if (!tx) {
- 		dev_err(dev, "Self-test memset prep failed\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 
- 	async_tx_ack(tx);
-@@ -1025,7 +1045,7 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 	if (cookie < 0) {
- 		dev_err(dev, "Self-test memset setup failed\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 	dma->device_issue_pending(dma_chan);
- 
-@@ -1034,9 +1054,11 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
- 		dev_err(dev, "Self-test memset timed out\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 
-+	dma_unmap_page(dev, dma_addr, PAGE_SIZE, DMA_FROM_DEVICE);
-+
- 	for (i = 0; i < PAGE_SIZE/sizeof(u32); i++) {
- 		u32 *ptr = page_address(dest);
- 		if (ptr[i]) {
-@@ -1047,17 +1069,21 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 	}
- 
- 	/* test for non-zero parity sum */
-+	op = IOAT_OP_XOR_VAL;
-+
- 	xor_val_result = 0;
- 	for (i = 0; i < IOAT_NUM_SRC_TEST + 1; i++)
- 		dma_srcs[i] = dma_map_page(dev, xor_val_srcs[i], 0, PAGE_SIZE,
- 					   DMA_TO_DEVICE);
- 	tx = dma->device_prep_dma_xor_val(dma_chan, dma_srcs,
- 					  IOAT_NUM_SRC_TEST + 1, PAGE_SIZE,
--					  &xor_val_result, DMA_PREP_INTERRUPT);
-+					  &xor_val_result, DMA_PREP_INTERRUPT |
-+					  DMA_COMPL_SKIP_SRC_UNMAP |
-+					  DMA_COMPL_SKIP_DEST_UNMAP);
- 	if (!tx) {
- 		dev_err(dev, "Self-test 2nd zero prep failed\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 
- 	async_tx_ack(tx);
-@@ -1068,7 +1094,7 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 	if (cookie < 0) {
- 		dev_err(dev, "Self-test  2nd zero setup failed\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 	dma->device_issue_pending(dma_chan);
- 
-@@ -1077,15 +1103,31 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_SUCCESS) {
- 		dev_err(dev, "Self-test 2nd validate timed out\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 
- 	if (xor_val_result != SUM_CHECK_P_RESULT) {
- 		dev_err(dev, "Self-test validate failed compare\n");
- 		err = -ENODEV;
--		goto free_resources;
-+		goto dma_unmap;
- 	}
- 
-+	for (i = 0; i < IOAT_NUM_SRC_TEST + 1; i++)
-+		dma_unmap_page(dev, dma_srcs[i], PAGE_SIZE, DMA_TO_DEVICE);
-+
-+	goto free_resources;
-+dma_unmap:
-+	if (op == IOAT_OP_XOR) {
-+		dma_unmap_page(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
-+		for (i = 0; i < IOAT_NUM_SRC_TEST; i++)
-+			dma_unmap_page(dev, dma_srcs[i], PAGE_SIZE,
-+				       DMA_TO_DEVICE);
-+	} else if (op == IOAT_OP_XOR_VAL) {
-+		for (i = 0; i < IOAT_NUM_SRC_TEST + 1; i++)
-+			dma_unmap_page(dev, dma_srcs[i], PAGE_SIZE,
-+				       DMA_TO_DEVICE);
-+	} else if (op == IOAT_OP_FILL)
-+		dma_unmap_page(dev, dma_addr, PAGE_SIZE, DMA_FROM_DEVICE);
- free_resources:
- 	dma->device_free_chan_resources(dma_chan);
- out:
+ 	if (tx) {
 -- 
 1.8.0
 
