@@ -1,60 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab2KEUDv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 15:03:51 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34536 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab2KEUDu (ORCPT
+	id S1754736Ab2KEUFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 15:05:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54806 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab2KEUFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 15:03:50 -0500
-Date: Mon, 5 Nov 2012 21:03:48 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>, david@lang.hm,
-        Nico Williams <nico@cryptonector.com>,
-        General Discussion of SQLite Database 
-	<sqlite-users@sqlite.org>,
-        ????????? Yang Su Li <suli@cs.wisc.edu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
-Subject: Re: [sqlite] light weight write barriers
-Message-ID: <20121105200348.GB15821@xo-6d-61-c0.localdomain>
-References: <CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
- <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
- <CAK3OfOh4MEq5PwW5xk07d4fDZi64tF-vgCKYOuA3oq=9PLwyUQ@mail.gmail.com>
- <alpine.DEB.2.02.1210241748180.8519@asgard.lang.hm>
- <CAK3OfOjtH9qVghb6+33HSb8+dPZVexLC9Z5XO1KKvjoTYiYp4A@mail.gmail.com>
- <20121025060231.GC9860@thunk.org>
- <alpine.DEB.2.02.1210242331060.31862@asgard.lang.hm>
- <20121025140327.GB13562@thunk.org>
- <alpine.DEB.2.02.1210251048280.8519@asgard.lang.hm>
- <20121025182948.GB16257@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121025182948.GB16257@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 Nov 2012 15:05:08 -0500
+Date: Mon, 5 Nov 2012 12:05:06 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Matthieu CASTET <matthieu.castet@parrot.com>
+Cc: linux-kernel@vger.kernel.org, cl@linux.com
+Subject: Re: [PATCH] dmapool : make DMAPOOL_DEBUG detect corruption of free
+ marker
+Message-Id: <20121105120506.88d46c88.akpm@linux-foundation.org>
+In-Reply-To: <1352122805-30099-1-git-send-email-matthieu.castet@parrot.com>
+References: <1352122805-30099-1-git-send-email-matthieu.castet@parrot.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2012-10-25 14:29:48, Theodore Ts'o wrote:
-> On Thu, Oct 25, 2012 at 11:03:13AM -0700, david@lang.hm wrote:
-> > I agree, this is why I'm trying to figure out the recommended way to
-> > do this without needing to do full commits.
-> > 
-> > Since in most cases it's acceptable to loose the last few chunks
-> > written, if we had some way of specifying ordering, without having
-> > to specify "write this NOW", the solution would be pretty obvious.
+On Mon,  5 Nov 2012 14:40:05 +0100
+Matthieu CASTET <matthieu.castet@parrot.com> wrote:
+
+> This can help to catch case where hardware is writting after dma free.
 > 
-> Well, using data journalling with ext3/4 may do what you want.  If you
-> don't do any fsync, the changes will get written every 5 seconds when
-> the automatic journal sync happens (and sub-4k writes will also get
+> ...
+>
+> --- a/mm/dmapool.c
+> +++ b/mm/dmapool.c
+> @@ -346,6 +346,29 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
+>  	retval = offset + page->vaddr;
+>  	*handle = offset + page->dma;
+>  #ifdef	DMAPOOL_DEBUG
+> +	{
+> +		int i;
+> +		u8 *data = retval;
+> +		/* page->offset is stored in first 4 bytes */
+> +		for (i = sizeof(int); i < pool->size; i++) {
+> +			if (data[i] != POOL_POISON_FREED) {
+> +				if (pool->dev)
+> +					dev_err(pool->dev,
+> +							"dma_pool_alloc %s, %p (corruped)\n",
+> +							pool->name, retval);
+> +				else
+> +					printk(KERN_ERR
+> +							"dma_pool_alloc %s, %p (corruped)\n",
+> +							pool->name, retval);
+> +
+> +				/* we dump the first 4 bytes even if there are not
+> +				   POOL_POISON_FREED */
+> +				print_hex_dump(KERN_ERR, "", DUMP_PREFIX_OFFSET, 16, 1,
+> +						data, pool->size, 1);
+> +				break;
+> +			}
+> +		}
+> +	}
+>  	memset(retval, POOL_POISON_ALLOCATED, pool->size);
+>  #endif
 
-Hmm. But that would need setting journalling mode per-file, no?
+Seems reasonable.  I fidded wth a few things.
 
-Like, make it journal data for all the databases, but keep normal mode
-for rest of system...
+- The code is quite painful to look at in an 80-col display, and
+  there's no real reason it has to be that way.
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+- The comment layout is strange, it misses capitalisation and needed
+  a grammatical fix
+
+- Use sizeof(page->offset), not sizeof(int).  Just in case someone
+  changes the type of dma_page.offset.
+
+- Use pr_err(), as suggested by checkpatch.  Please use checkpatch.
+
+--- a/mm/dmapool.c~dmapool-make-dmapool_debug-detect-corruption-of-free-marker-fix
++++ a/mm/dmapool.c
+@@ -350,23 +350,24 @@ void *dma_pool_alloc(struct dma_pool *po
+ 		int i;
+ 		u8 *data = retval;
+ 		/* page->offset is stored in first 4 bytes */
+-		for (i = sizeof(int); i < pool->size; i++) {
+-			if (data[i] != POOL_POISON_FREED) {
+-				if (pool->dev)
+-					dev_err(pool->dev,
+-							"dma_pool_alloc %s, %p (corruped)\n",
+-							pool->name, retval);
+-				else
+-					printk(KERN_ERR
+-							"dma_pool_alloc %s, %p (corruped)\n",
+-							pool->name, retval);
+-
+-				/* we dump the first 4 bytes even if there are not
+-				   POOL_POISON_FREED */
+-				print_hex_dump(KERN_ERR, "", DUMP_PREFIX_OFFSET, 16, 1,
+-						data, pool->size, 1);
+-				break;
+-			}
++		for (i = sizeof(page->offset); i < pool->size; i++) {
++			if (data[i] == POOL_POISON_FREED)
++				continue;
++			if (pool->dev)
++				dev_err(pool->dev,
++					"dma_pool_alloc %s, %p (corruped)\n",
++					pool->name, retval);
++			else
++				pr_err("dma_pool_alloc %s, %p (corruped)\n",
++					pool->name, retval);
++
++			/*
++			 * Dump the first 4 bytes even if they are not
++			 * POOL_POISON_FREED
++			*/
++			print_hex_dump(KERN_ERR, "", DUMP_PREFIX_OFFSET, 16, 1,
++					data, pool->size, 1);
++			break;
+ 		}
+ 	}
+ 	memset(retval, POOL_POISON_ALLOCATED, pool->size);
+_
+
