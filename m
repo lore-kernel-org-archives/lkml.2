@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab2KEN3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:29:19 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33293 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752337Ab2KEN3Q (ORCPT
+	id S1753783Ab2KENaM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:30:12 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:64315 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab2KENaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:29:16 -0500
-Date: Mon, 5 Nov 2012 13:29:07 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Will Drewry <wad@chromium.org>,
-        Geremy Condra <gcondra@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH 1/4] arch/arm: add syscall_get_arch
-Message-ID: <20121105132907.GL3351@mudshark.cambridge.arm.com>
-References: <1351815300-28627-1-git-send-email-keescook@chromium.org>
- <1351815300-28627-2-git-send-email-keescook@chromium.org>
+	Mon, 5 Nov 2012 08:30:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351815300-28627-2-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121105131108.GC27238@kroah.com>
+References: <1352115282-8081-1-git-send-email-yamanetoshi@gmail.com>
+	<20121105131108.GC27238@kroah.com>
+Date: Mon, 5 Nov 2012 22:30:09 +0900
+Message-ID: <CAOTypNS+js4e3-=ZbV3tzC-zGg3LQTc=3oiqiytTcF12Y4t4hg@mail.gmail.com>
+Subject: Re: [PATCH] staging/media: Use dev_ printks in go7007/s2250-loader.c
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 12:14:57AM +0000, Kees Cook wrote:
-> From: Will Drewry <wad@chromium.org>
-> 
-> Provide an ARM implementation of syscall_get_arch. This is a pre-requisite
-> for CONFIG_HAVE_ARCH_SECCOMP_FILTER.
-> 
-> Signed-off-by: Will Drewry <wad@chromium.org>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  arch/arm/include/asm/syscall.h |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
-> index 9fdded6..803f433 100644
-> --- a/arch/arm/include/asm/syscall.h
-> +++ b/arch/arm/include/asm/syscall.h
-> @@ -7,6 +7,8 @@
->  #ifndef _ASM_ARM_SYSCALL_H
->  #define _ASM_ARM_SYSCALL_H
->  
-> +#include <linux/audit.h> /* for AUDIT_ARCH_* */
-> +#include <linux/elf.h> /* for ELF_EM */
->  #include <linux/err.h>
->  #include <linux/sched.h>
->  
-> @@ -95,4 +97,15 @@ static inline void syscall_set_arguments(struct task_struct *task,
->  	memcpy(&regs->ARM_r0 + i, args, n * sizeof(args[0]));
->  }
->  
-> +static inline int syscall_get_arch(struct task_struct *task,
-> +				   struct pt_regs *regs)
-> +{
-> +	/* ARM tasks don't change audit architectures on the fly. */
-> +#ifdef __ARMEB__
-> +	return AUDIT_ARCH_ARMEB;
-> +#else
-> +	return AUDIT_ARCH_ARM;
-> +#endif
-> +}
+On Mon, Nov 5, 2012 at 10:11 PM, Greg Kroah-Hartman <greg@kroah.com> wrote:
+> On Mon, Nov 05, 2012 at 08:34:42PM +0900, YAMANE Toshiaki wrote:
+>> fixed below checkpatch warnings.
+>> - WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+>> - WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+>>
+>> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+>> ---
+>>  drivers/staging/media/go7007/s2250-loader.c |   35 ++++++++++++++-------------
+>>  1 file changed, 18 insertions(+), 17 deletions(-)
+>
+> Please note that I don't touch the drivers/staging/media/* files, so
+> copying me on these patches doesn't do anything :)
 
-I think you can just use AUDIT_ARCH_ARM unconditionally here as the syscall
-ABI is not related to the endianness of the CPU. I believe AUDIT_ARCH_ARMEB
-was added accidentally because somebody incorrectly thought the -EB suffix
-signified EABI.
+Thanks for your follow-up.
 
-If it wasn't in a user-header I'd be all for deleting the old definition...
+I tried to check in get_maintainer.pl...
+Do I need to be re-sent to the address "Mauro Carvalho Chehab
+<mchehab@infradead.org>"?
 
-Will
+
+-- 
+
+Regards,
+
+YAMANE Toshiaki
