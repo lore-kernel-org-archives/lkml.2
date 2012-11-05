@@ -1,108 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab2KEUer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 15:34:47 -0500
-Received: from smtp.getmail.no ([84.208.15.66]:56494 "EHLO smtp.getmail.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753889Ab2KEUeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 15:34:46 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-To: Martin <marogge@onlinehome.de>
-Subject: Re: sched: SCHED_DEADLINE v6
-References: <k2boS-2q4-11@gated-at.bofh.it> <k2dK1-5rL-11@gated-at.bofh.it>
- <k2ewr-6bR-15@gated-at.bofh.it> <5098204D.3080002@onlinehome.de>
-Date: Mon, 05 Nov 2012 21:34:44 +0100
-Cc: linux-kernel@vger.kernel.org
-From: Ove Karlsen <ove.karlsen@paradoxuncreated.com>
-Message-id: <op.wnbh36ga1c32bs@localhost.localdomain>
-In-reply-to: <5098204D.3080002@onlinehome.de>
-User-Agent: Opera Mail/12.02 (Linux)
+	id S932245Ab2KEUe5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 15:34:57 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:33143 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889Ab2KEUey (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 15:34:54 -0500
+Date: Mon, 5 Nov 2012 12:34:44 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Sasha Levin <sasha.levin@oracle.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Dave Jones <davej@redhat.com>, linux-fbdev@vger.kernel.org,
+        florianSchandinat@gmx.de
+Subject: Re: tty, vt: lockdep warnings
+In-Reply-To: <20121105201507.79fe47d7@pyramind.ukuu.org.uk>
+Message-ID: <alpine.LNX.2.00.1211051231070.21645@eggly.anvils>
+References: <50899507.1040900@oracle.com> <20121026143754.50277bd8@pyramind.ukuu.org.uk> <CA+1xoqdEesjh1EZvR_r7Hn0GUc7741EDWn59qagngcxg4=9bjQ@mail.gmail.com> <20121105175937.26f31d2a@pyramind.ukuu.org.uk> <5097FEA9.2090603@oracle.com>
+ <alpine.LNX.2.00.1211051106590.1709@eggly.anvils> <20121105201507.79fe47d7@pyramind.ukuu.org.uk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 05 Nov 2012 21:23:41 +0100, Martin <marogge@onlinehome.de> wrote:
+On Mon, 5 Nov 2012, Alan Cox wrote:
+> > The fbdev potential for deadlock may be years old, but the warning
+> > (and consequent disabling of lockdep from that point on - making it
+> > useless to everybody else in need of it) is new, and comes from the
+> > commit below in linux-next.
+> > 
+> > I revert it in my own testing: if there is no quick fix to the
+> > fbdev issue on the way, Daniel, please revert it from your tree.
+> 
+> If you revert it you swap it for a different deadlock - and one that
+> happens more often I would expect. Not very useful.
 
-> On 11/04/2012 09:00 PM, Uwaysi Bin Kareem wrote:
->> Nobody knows? This is really obscure for an EDF patch. Making things a
->> bit more accessible should be a priority. I think a lot of enthusiasts
->> would like to have smooth control over stuff, without windows-jitter. If
->> you can do a robot arm, jitter-free with this, then I am very  
->> interested.
->>
->> uwaysi@Millennium:~/Kildekode/sched_deadline-schedtool-dl$ ./schedtool  
->> -E
->> -t 500:1000 3718
->> ERROR: could not set PID 3718 to E: SCHED_DEADLINE - Function not
->> implemented
->> uwaysi@Millennium:~/Kildekode/sched_deadline-schedtool-dl$
->>
->> On Sun, 04 Nov 2012 20:02:25 +0100, Uwaysi Bin Kareem
->> <uwaysi.bin.kareem@paradoxuncreated.com> wrote:
->>
->>> How does the modified schedtool work? There is no updated  
->>> documentation.
->>>
->>> http://gitorious.org/sched_deadline/schedtool-dl/commits/latest/2.6.36-dl-V3
->>>
->>>
->>> If anyone could give an example of a 1000uS period / 500uS time, with
->>> schedtool, or any other relevant information.
->>> Most examples online use parameters that are no longer supported.
->>>
->>> Peace Be With You.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel"  
->> in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> Hi,
->
-> I assume the reason nobody answers is that the cpu scheduler is an  
-> emotional subject.
->
-> However, if you really want a smooth desktop and a deadline scheduler  
-> (albeit it might not be as configurable as you seem to want it to be),  
-> try BFS or the whole CK patch.
->
-> http://ck-hack.blogspot.com/
->
-> I have implemented it on a laptop this weekend, and I was surprised by  
-> the change in user experience yet again. Mostly during 3D game play.  
-> Generally the difference is felt more strongly on low end machines and  
-> taxing workloads.
->
-> Since you are talking about robot arms: note that BFS is not a real time  
-> solution, but is designed around the physiological conditions of the  
-> human perception system (where, I believe, 6 ms is equivalent to real  
-> time). Maybe a similar deadline approach is useful for robot arms, no  
-> idea.
->
-> cu Martin
->
+But a deadlock we have lived with for years.  Without reverting,
+we're prevented from discovering all the new deadlocks we're adding.
 
-If you ever saw a robot-arm jitter, you`d think of it as faulty. And that  
-is how people should think of their PC aswell.
+> 
+> I'm hoping the framebuffer maintainer will bother to respond to this
+> because that's the only way it can be sorted out.
 
-Just the interrupts, preemption (points), daemons, hopefully cleverly  
-arranged, to reduce jitter, is what I want.
-I did already try BFS. PS: 90hz timer, is very good with BFS also, but the  
-jitter-extremes are higher. Meaning large jitters last longer, while small  
-jitters, seems smaller. For overall computing CFS actually has less jitter.
+That would be ideal - thanks.
 
-What would be really interesting would be to try a scheduler that tries to  
-bound latencies, and have accurate timing.
-
-There seems to be generally 3 different profiles people tuned for: Server,  
-Mobile, Desktop.
-Server guiless stationary, Mobile for minimal power desktop, Desktop, for  
-workstation/home low-jitter high-performance.
-
-Maybe these profiles even can be combined a bit, having several hz  
-counters, and several scheduling policies.
-
-Peace Be With You.
+Hugh
