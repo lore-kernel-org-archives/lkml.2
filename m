@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441Ab2KEW77 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 17:59:59 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64156 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab2KEW75 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 17:59:57 -0500
+	id S1754946Ab2KEXBG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 18:01:06 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:59504 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751184Ab2KEXBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 18:01:04 -0500
+Date: Mon, 5 Nov 2012 18:00:51 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Richard Hipp <drh@sqlite.org>
+Cc: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+        Pavel Machek <pavel@ucw.cz>, david@lang.hm,
+        Nico Williams <nico@cryptonector.com>,
+        ????????? Yang Su Li <suli@cs.wisc.edu>, linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
+Subject: Re: [sqlite] light weight write barriers
+Message-ID: <20121105230051.GA31623@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Richard Hipp <drh@sqlite.org>,
+	General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+	Pavel Machek <pavel@ucw.cz>, david@lang.hm,
+	Nico Williams <nico@cryptonector.com>,
+	????????? Yang Su Li <suli@cs.wisc.edu>,
+	linux-fsdevel@vger.kernel.org,
+	linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
+References: <alpine.DEB.2.02.1210241748180.8519@asgard.lang.hm>
+ <CAK3OfOjtH9qVghb6+33HSb8+dPZVexLC9Z5XO1KKvjoTYiYp4A@mail.gmail.com>
+ <20121025060231.GC9860@thunk.org>
+ <alpine.DEB.2.02.1210242331060.31862@asgard.lang.hm>
+ <20121025140327.GB13562@thunk.org>
+ <alpine.DEB.2.02.1210251048280.8519@asgard.lang.hm>
+ <20121025182948.GB16257@thunk.org>
+ <20121105200348.GB15821@xo-6d-61-c0.localdomain>
+ <20121105220440.GB25378@thunk.org>
+ <CALwJ=Mx-uEFLXK2wywekk=0dwrwVFb68wocnH9bjXJmHRsJx3w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6uR5VhHsCS1vmayURkGBKmhagaeWBBaCnyfsfOjZ2Dutg@mail.gmail.com>
-References: <50924DA3.1060901@ti.com>
-	<F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com>
-	<20121101110418.GF410@arwen.pp.htv.fi>
-	<3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com>
-	<20121101124025.GA12489@arwen.pp.htv.fi>
-	<A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com>
-	<20121101131609.GC12489@arwen.pp.htv.fi>
-	<E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com>
-	<20121101135148.382aec00@pyramind.ukuu.org.uk>
-	<9F25E89E-9194-4725-8A8C-053DCBADA1DB@antoniou-consulting.com>
-	<20121101220518.GE14982@arwen.pp.htv.fi>
-	<CA+Bv8XbAvEXe=zDaA8W2+ROD2duYMRcJu4-bms31OH=V_ScKow@mail.gmail.com>
-	<20121102112104.4657fb7b@pyramind.ukuu.org.uk>
-	<0EC43413-1DD7-4E2A-879B-0B5B926FFDFE@antoniou-consulting.com>
-	<CACxGe6uuK6ew5uxh0BjtYAtPZCTLeUpHc4emXRAnMUtNmEzmGg@mail.gmail.com>
-	<AC5129F0-FF30-46ED-AD57-3FA6CA919F99@antoniou-consulting.com>
-	<CACxGe6v9cyybV4+5tQJ-DG8qdyEHfsLa7t+-3CTL+97Q9msrFw@mail.gmail.com>
-	<18667A4E-5513-4D74-922F-30D091609F16@antoniou-consulting.com>
-	<CACxGe6uR5VhHsCS1vmayURkGBKmhagaeWBBaCnyfsfOjZ2Dutg@mail.gmail.com>
-Date: Mon, 5 Nov 2012 16:59:56 -0600
-Message-ID: <CAD=GYpYc9L5yKqgar5jB2jG8+GiX7Lb0zevP9Pxaq0HdaVXQ5Q@mail.gmail.com>
-Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
-From: Joel A Fernandes <agnel.joel@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Russ Dill <Russ.Dill@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <robherring2@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALwJ=Mx-uEFLXK2wywekk=0dwrwVFb68wocnH9bjXJmHRsJx3w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Mon, Nov 05, 2012 at 05:37:02PM -0500, Richard Hipp wrote:
+> 
+> Per the docs:  "Only the superuser or a process possessing the
+> CAP_SYS_RESOURCE capability can set or clear this attribute."  That
+> prevents most applications that run SQLite from being able to take
+> advantage of this, since most such applications lack elevated privileges.
 
-On Mon, Nov 5, 2012 at 2:14 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Mon, Nov 5, 2012 at 7:54 PM, Pantelis Antoniou
-> <panto@antoniou-consulting.com> wrote:
->>> This handles many of the use cases, but it assumes that an overlay is
->>> board specific. If it ever is required to support multiple base boards
->>> with a single overlay file then there is a problem. The .dtb overlays
->>> generated in this manor cannot handle different phandles or nodes that
->>> are in a different place. On the other hand, the overlay source files
->>> should have no problem being compiled for multiple targets, so maybe
->>> it isn't an issue. Plus if dtc is installed on the target, then the
->>> live tree from /proc can be used as the reference when compiling the
->>> overlay.
->>
->> My worry is that this format is dependent on linking against the board
->> DTS file. One of the ideas thrown around here was that it might make
->> sense to store the DTB fragment in the EEPROM of the device.
->
-> Right, that wouldn't work well if the base DT changed, or if a
-> BeagleBone2 is released that has the same header configuration, but
-> different backing devices. It would be nice to have a solution for
-> that.
->
->> In that case you have a OS independent hardware description, which can
->> be even used even by the bootloader to access devices it knows not about
->> at compile time.
->>
->> Other than that, I have no other objections.
->
-> I'm open to suggestions if anyone has any. I have not objections to a
-> fixup approach, but I'm not comfortable with anything that is fragile
-> to modifications to the fragment.
+If this feature would prove useful to sqllite, that's something we
+could address.  I could image making this available to processes that
+belong to a specific group that would be specified in the superblock
+or as a mount option.  (We already have something like that which
+allows a specific uid or gid to use the reserved space in the
+superblock.)
 
-I am fairly new to the DT world so please bear with me, but how about
-a method that resolves symbols the same way that the linux dynamic
-linker does when shared libraries are loaded?
-
-A separate table (similar to .PLT/GOT sections  in the ELF object
-format) could be created when the fragment is loaded, and the phandle
-references could be fixed to point to the table offsets during compile
-time. This table would be a second level indirection and the kernel
-would populate this table with the in-kernel values of the phandles
-that the dt fragment refers to.
-
-This might involve changes to the DT core, but as such, this method
-wouldn't suffer from the fragility problem of either base or fragment
-DT trees being modified.
-
-The table itself could be added to the tree by the compiler, and the
-phandles could point to it (fixed). such phandles could be marked for
-special handling to facilitate the 1-level indirection.
-
-What do you think about this?
-
-Regards,
-Joel
+							- Ted
