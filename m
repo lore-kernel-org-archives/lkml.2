@@ -1,355 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab2KESBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 13:01:07 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:54282 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932410Ab2KESBD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 13:01:03 -0500
-Subject: [PATCH 2/6] VSOCK: vsock address implementaion.
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        georgezhang@vmware.com, virtualization@lists.linux-foundation.org
-From: George Zhang <georgezhang@vmware.com>
-Cc: pv-drivers@vmware.com, vm-crosstalk@vmware.com, davem@davemloft.net,
-        gregkh@linuxfoundation.org
-Date: Mon, 05 Nov 2012 10:01:03 -0800
-Message-ID: <20121105180056.21472.37035.stgit@promb-2n-dhcp175.eng.vmware.com>
-In-Reply-To: <20121105175730.21472.99155.stgit@promb-2n-dhcp175.eng.vmware.com>
-References: <20121105175730.21472.99155.stgit@promb-2n-dhcp175.eng.vmware.com>
-User-Agent: StGit/0.15
+	id S1754622Ab2KESEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 13:04:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51439 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754264Ab2KESEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 13:04:30 -0500
+Date: Mon, 5 Nov 2012 13:03:53 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
+        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Kees Cook <keescook@chromium.org>, Peter Jones <pjones@redhat.com>
+Subject: Re: Kdump with signed images
+Message-ID: <20121105180353.GC28720@redhat.com>
+References: <20121026023916.GA16762@srcf.ucam.org>
+ <20121026170609.GB24687@redhat.com>
+ <1351276649.18115.217.camel@falcor>
+ <20121101131003.GA14573@redhat.com>
+ <20121101135356.GA15659@redhat.com>
+ <1351780159.15708.17.camel@falcor>
+ <20121101144304.GA15821@redhat.com>
+ <20121101145225.GB10269@srcf.ucam.org>
+ <20121102132318.GA3300@redhat.com>
+ <87boffd727.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87boffd727.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VSOCK linux address code implementation.
+On Fri, Nov 02, 2012 at 02:32:48PM -0700, Eric W. Biederman wrote:
+> Vivek Goyal <vgoyal@redhat.com> writes:
+> 
+> > On Thu, Nov 01, 2012 at 02:52:25PM +0000, Matthew Garrett wrote:
+> >> On Thu, Nov 01, 2012 at 10:43:04AM -0400, Vivek Goyal wrote:
+> >> 
+> >> > So I think this does satisfy the requirement matthew specified. Isn't it?
+> >> > Matthew, what do you think?
+> >> 
+> >> Sure, if you can ensure that. You'll need to figure out how to get the 
+> >> build system to sign the userspace binaries and you'll need to ensure 
+> >> that they're statically linked and don't dlopen anything (including the 
+> >> nsswitch modules), but otherwise that should work.
+> >> 
+> >
+> > [ CC peter jones ]
+> >
+> > Ok, so even if we build kexec-tools statically with glibc, we have the
+> > issue of name service switch modules. glibc will still do dlopen on
+> > these modules. So what are options now.
+> >
+> > - Sign glibc and associated shared libraries. Do not allow unsigned
+> >   shared library to dynamically link with signed executable.
+> >
+> > - Peter mentioned that work with uClibc for kexec-tools.
+> >
+> > I personally think that however hard it is but first option sounds like
+> > a long term solution. We might have more user space processes which
+> > we might have to trust a generic solution will help with that. For example,
+> > we might have to sign and trust qemu at some point of time.
+> >
+> > Are there other ways of handing glibc issue?
+> 
+> It needs to be checked but /sbin/kexec should not use any functions that
+> trigger nss switch.  No user or password or host name lookup should be
+> happening.
 
+I also think that we don't call routines which trigger nss switch but
+be probably can't rely on that as somebody might introduce it in
+future. So we need more robust mechanism to prevent it than just code
+inspection.
 
-Signed-off-by: George Zhang <georgezhang@vmware.com>
----
- net/vmw_vsock/vsock_addr.c |  264 ++++++++++++++++++++++++++++++++++++++++++++
- net/vmw_vsock/vsock_addr.h |   40 +++++++
- 2 files changed, 304 insertions(+), 0 deletions(-)
- create mode 100644 net/vmw_vsock/vsock_addr.c
- create mode 100644 net/vmw_vsock/vsock_addr.h
+> 
+> This is one part in hardening /sbin/kexec to deal with hostile root
+> users.  We need to check crazy things like do the files we open on /proc
+> actually point to /proc after we have opened them.
 
-diff --git a/net/vmw_vsock/vsock_addr.c b/net/vmw_vsock/vsock_addr.c
-new file mode 100644
-index 0000000..c93a174
---- /dev/null
-+++ b/net/vmw_vsock/vsock_addr.c
-@@ -0,0 +1,264 @@
-+/*
-+ * VMware vSockets Driver
-+ *
-+ * Copyright (C) 2007-2012 VMware, Inc. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation version 2 and no later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+/*
-+ * vsockAddr.c --
-+ *
-+ * VSockets address implementation.
-+ */
-+
-+/*
-+ * These includes come before vsockCommon.h to ensure that VMware's ASSERT
-+ * macro is used instead of Linux's irda.h definition.
-+ */
-+#include <linux/types.h>
-+#include <linux/socket.h>
-+#include <linux/stddef.h>	/* for NULL */
-+#include <net/sock.h>
-+
-+#include "vsock_common.h"
-+
-+/*
-+ *
-+ * vsock_addr_init --
-+ *
-+ * Initialize the given address with the given context id and port. This will
-+ * clear the address, set the correct family, and add the given values.
-+ *
-+ * Results: None.
-+ *
-+ * Side effects: None.
-+ */
-+
-+void vsock_addr_init(struct sockaddr_vm *addr, u32 cid, u32 port)
-+{
-+	memset(addr, 0, sizeof *addr);
-+
-+	addr->svm_family = AF_VSOCK;
-+	addr->svm_cid = cid;
-+	addr->svm_port = port;
-+
-+	BUG_ON(vsock_addr_validate(addr) != 0);
-+}
-+
-+/*
-+ *
-+ * vsock_addr_validate --
-+ *
-+ * Try to validate the given address.  The address must not be null and must
-+ * have the correct address family.  Any reserved fields must be zero.
-+ *
-+ * Results: 0 on success, EFAULT if the address is null, EAFNOSUPPORT if the
-+ * address is of the wrong family, and EINVAL if the reserved fields are not
-+ * zero.
-+ *
-+ * Side effects: None.
-+ */
-+
-+int vsock_addr_validate(const struct sockaddr_vm *addr)
-+{
-+	if (!addr)
-+		return -EFAULT;
-+
-+	if (addr->svm_family != AF_VSOCK)
-+		return -EAFNOSUPPORT;
-+
-+	if (addr->svm_zero[0] != 0)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+/*
-+ *
-+ * vsock_addr_bound --
-+ *
-+ * Determines whether the provided address is bound.
-+ *
-+ * Results: TRUE if the address structure is bound, FALSE otherwise.
-+ *
-+ * Side effects: None.
-+ */
-+
-+bool vsock_addr_bound(const struct sockaddr_vm *addr)
-+{
-+	BUG_ON(!addr);
-+
-+	return addr->svm_port != VMADDR_PORT_ANY;
-+}
-+
-+/*
-+ *
-+ * vsock_addr_unbind --
-+ *
-+ * Unbind the given addresss.
-+ *
-+ * Results: None.
-+ *
-+ * Side effects: None.
-+ */
-+
-+void vsock_addr_unbind(struct sockaddr_vm *addr)
-+{
-+	vsock_addr_init(addr, VMADDR_CID_ANY, VMADDR_PORT_ANY);
-+}
-+
-+/*
-+ *
-+ * vsock_addr_equals_addr --
-+ *
-+ * Determine if the given addresses are equal.
-+ *
-+ * Results: TRUE if the addresses are equal, FALSE otherwise.
-+ *
-+ * Side effects: None.
-+ */
-+
-+bool vsock_addr_equals_addr(const struct sockaddr_vm *addr,
-+			    const struct sockaddr_vm *other)
-+{
-+	BUG_ON(vsock_addr_validate(addr) != 0);
-+	BUG_ON(vsock_addr_validate(other) != 0);
-+
-+	return addr->svm_cid == other->svm_cid &&
-+		addr->svm_port == other->svm_port;
-+}
-+
-+/*
-+ *
-+ * vsock_addr_equals_addr_any --
-+ *
-+ * Determine if the given addresses are equal. Will accept either an exact
-+ * match or one where the rids match and that either the cids match or are set
-+ * to VMADDR_CID_ANY.
-+ *
-+ * Results: TRUE if the addresses are equal, FALSE otherwise.
-+ *
-+ * Side effects: None.
-+ */
-+
-+bool vsock_addr_equals_addr_any(const struct sockaddr_vm *addr,
-+				const struct sockaddr_vm *other)
-+{
-+	BUG_ON(vsock_addr_validate(addr) != 0);
-+	BUG_ON(vsock_addr_validate(other) != 0);
-+
-+	return (addr->svm_cid == VMADDR_CID_ANY ||
-+		other->svm_cid == VMADDR_CID_ANY ||
-+		addr->svm_cid == other->svm_cid) &&
-+	       addr->svm_port == other->svm_port;
-+}
-+
-+/*
-+ *
-+ * vsock_addr_equals_handle_port --
-+ *
-+ * Determines if the given address matches the given handle and port.
-+ *
-+ * Results: TRUE if the address matches the handle and port, FALSE otherwise.
-+ *
-+ * Side effects: None.
-+ */
-+
-+bool vsock_addr_equals_handle_port(const struct sockaddr_vm *addr,
-+				   struct vmci_handle handle, u32 port)
-+{
-+	BUG_ON(vsock_addr_validate(addr) != 0);
-+
-+	return addr->svm_cid == VMCI_HANDLE_TO_CONTEXT_ID(handle) &&
-+		addr->svm_port == port;
-+}
-+
-+/*
-+ *
-+ * vsock_addr_cast --
-+ *
-+ * Try to cast the given generic address to a VM address.  The given length
-+ * must match that of a VM address and the address must be valid. The
-+ * "out_addr" parameter contains the address if successful.
-+ *
-+ * Results: 0 on success, EFAULT if the length is too small.  See
-+ * vsock_addr_validate() for other possible return codes.
-+ *
-+ * Side effects: None.
-+ */
-+
-+int vsock_addr_cast(const struct sockaddr *addr,
-+		    size_t len, struct sockaddr_vm **out_addr)
-+{
-+	BUG_ON(!out_addr);
-+
-+	if (len < sizeof **out_addr)
-+		return -EFAULT;
-+
-+	*out_addr = (struct sockaddr_vm *)addr;
-+	return vsock_addr_validate(*out_addr);
-+}
-+
-+/*
-+ *
-+ * vsock_addr_socket_context_stream --
-+ *
-+ * Determines whether the provided context id represents a context that
-+ * contains a stream socket endpoints.
-+ *
-+ * Results: TRUE if the context does have socket endpoints, FALSE otherwise.
-+ *
-+ * Side effects: None.
-+ */
-+
-+bool vsock_addr_socket_context_stream(u32 cid)
-+{
-+	static const vmci_id non_socket_contexts[] = {
-+		VMCI_HYPERVISOR_CONTEXT_ID,
-+		VMCI_WELL_KNOWN_CONTEXT_ID,
-+	};
-+	int i;
-+
-+	BUILD_BUG_ON(sizeof cid != sizeof *non_socket_contexts);
-+
-+	for (i = 0; i < ARRAY_SIZE(non_socket_contexts); i++) {
-+		if (cid == non_socket_contexts[i])
-+			return false;
-+
-+	}
-+
-+	return true;
-+}
-+
-+/*
-+ *
-+ * vsock_addr_socket_context_dgram --
-+ *
-+ * Determines whether the provided <context id, resource id> represent a
-+ * protected datagram endpoint.
-+ *
-+ * Results: TRUE if the context does have socket endpoints, FALSE otherwise.
-+ *
-+ * Side effects: None.
-+ */
-+
-+bool vsock_addr_socket_context_dgram(u32 cid, u32 rid)
-+{
-+	if (cid == VMCI_HYPERVISOR_CONTEXT_ID) {
-+		/*
-+		 * Registrations of PBRPC Servers do not modify VMX/Hypervisor
-+		 * state and are allowed.
-+		 */
-+		return rid == VMCI_UNITY_PBRPC_REGISTER;
-+	}
-+
-+	return true;
-+}
-diff --git a/net/vmw_vsock/vsock_addr.h b/net/vmw_vsock/vsock_addr.h
-new file mode 100644
-index 0000000..18f023d
---- /dev/null
-+++ b/net/vmw_vsock/vsock_addr.h
-@@ -0,0 +1,40 @@
-+/*
-+ * VMware vSockets Driver
-+ *
-+ * Copyright (C) 2007-2012 VMware, Inc. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation version 2 and no later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ */
-+
-+/*
-+ * vsockAddr.h --
-+ *
-+ * VSockets address constants, types and functions.
-+ */
-+
-+#ifndef _VSOCK_ADDR_H_
-+#define _VSOCK_ADDR_H_
-+
-+void vsock_addr_init(struct sockaddr_vm *addr, u32 cid, u32 port);
-+int vsock_addr_validate(const struct sockaddr_vm *addr);
-+bool vsock_addr_bound(const struct sockaddr_vm *addr);
-+void vsock_addr_unbind(struct sockaddr_vm *addr);
-+bool vsock_addr_equals_addr(const struct sockaddr_vm *addr,
-+			    const struct sockaddr_vm *other);
-+bool vsock_addr_equals_addr_any(const struct sockaddr_vm *addr,
-+				const struct sockaddr_vm *other);
-+bool vsock_addr_equals_handle_port(const struct sockaddr_vm *addr,
-+				   struct vmci_handle handle, u32 port);
-+int vsock_addr_cast(const struct sockaddr *addr, size_t len,
-+		    struct sockaddr_vm **out_addr);
-+bool vsock_addr_socket_context_stream(u32 cid);
-+bool vsock_addr_socket_context_dgram(u32 cid, u32 rid);
-+
-+#endif
+Can you please explain it more. How can one fiddle with /proc. Also
+what's the solution then.
 
+> 
+> I believe glibc has some code which triggers for suid root applications
+> that we should ensure gets triggered that avoid trusting things like
+> LD_LIBRARY_PATH and company.
+
+I guess linking statically with uClibc or klibc (as hpa said), might turn
+out to be better option to avoid all the issues w.r.t shared objects
+and all the tricky environment variables.
+
+Thanks
+Vivek
