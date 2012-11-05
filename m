@@ -1,581 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab2KEKLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:11:38 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:45747 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540Ab2KEKK7 (ORCPT
+	id S1753989Ab2KEKLh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:11:37 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60326 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab2KEKLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:10:59 -0500
-Date: Mon, 5 Nov 2012 11:09:41 +0100
+	Mon, 5 Nov 2012 05:11:01 -0500
+Date: Mon, 5 Nov 2012 11:10:21 +0100
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.18
-Message-ID: <20121105100941.GB24472@kroah.com>
-References: <20121105100929.GA24472@kroah.com>
+Subject: Linux 3.6.6
+Message-ID: <20121105101021.GA24501@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1yeeQ81UyVL57Vl7"
 Content-Disposition: inline
-In-Reply-To: <20121105100929.GA24472@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index 3f9f076..95de447 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 17
-+SUBLEVEL = 18
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index c2b77e5..5ccd6e8 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -44,7 +44,6 @@
- #include <plat/fimc-core.h>
- #include <plat/iic-core.h>
- #include <plat/tv-core.h>
--#include <plat/spi-core.h>
- #include <plat/regs-serial.h>
- 
- #include "common.h"
-@@ -339,8 +338,6 @@ static void __init exynos4_map_io(void)
- 
- 	s5p_fb_setname(0, "exynos4-fb");
- 	s5p_hdmi_setname("exynos4-hdmi");
--
--	s3c64xx_spi_setname("exynos4210-spi");
- }
- 
- static void __init exynos5_map_io(void)
-@@ -361,8 +358,6 @@ static void __init exynos5_map_io(void)
- 	s3c_i2c0_setname("s3c2440-i2c");
- 	s3c_i2c1_setname("s3c2440-i2c");
- 	s3c_i2c2_setname("s3c2440-i2c");
--
--	s3c64xx_spi_setname("exynos4210-spi");
- }
- 
- static void __init exynos4_init_clocks(int xtal)
-diff --git a/arch/arm/mach-s3c24xx/s3c2416.c b/arch/arm/mach-s3c24xx/s3c2416.c
-index f74818d..7743fad 100644
---- a/arch/arm/mach-s3c24xx/s3c2416.c
-+++ b/arch/arm/mach-s3c24xx/s3c2416.c
-@@ -61,7 +61,6 @@
- #include <plat/nand-core.h>
- #include <plat/adc-core.h>
- #include <plat/rtc-core.h>
--#include <plat/spi-core.h>
- 
- static struct map_desc s3c2416_iodesc[] __initdata = {
- 	IODESC_ENT(WATCHDOG),
-@@ -132,7 +131,6 @@ void __init s3c2416_map_io(void)
- 	/* initialize device information early */
- 	s3c2416_default_sdhci0();
- 	s3c2416_default_sdhci1();
--	s3c64xx_spi_setname("s3c2443-spi");
- 
- 	iotable_init(s3c2416_iodesc, ARRAY_SIZE(s3c2416_iodesc));
- }
-diff --git a/arch/arm/mach-s3c24xx/s3c2443.c b/arch/arm/mach-s3c24xx/s3c2443.c
-index 165b6a6..ab648ad 100644
---- a/arch/arm/mach-s3c24xx/s3c2443.c
-+++ b/arch/arm/mach-s3c24xx/s3c2443.c
-@@ -43,7 +43,6 @@
- #include <plat/nand-core.h>
- #include <plat/adc-core.h>
- #include <plat/rtc-core.h>
--#include <plat/spi-core.h>
- 
- static struct map_desc s3c2443_iodesc[] __initdata = {
- 	IODESC_ENT(WATCHDOG),
-@@ -101,9 +100,6 @@ void __init s3c2443_map_io(void)
- 	s3c24xx_gpiocfg_default.set_pull = s3c2443_gpio_setpull;
- 	s3c24xx_gpiocfg_default.get_pull = s3c2443_gpio_getpull;
- 
--	/* initialize device information early */
--	s3c64xx_spi_setname("s3c2443-spi");
--
- 	iotable_init(s3c2443_iodesc, ARRAY_SIZE(s3c2443_iodesc));
- }
- 
-diff --git a/arch/arm/mach-s5p64x0/common.c b/arch/arm/mach-s5p64x0/common.c
-index 111e404..6e6a0a9 100644
---- a/arch/arm/mach-s5p64x0/common.c
-+++ b/arch/arm/mach-s5p64x0/common.c
-@@ -44,7 +44,6 @@
- #include <plat/sdhci.h>
- #include <plat/adc-core.h>
- #include <plat/fb-core.h>
--#include <plat/spi-core.h>
- #include <plat/gpio-cfg.h>
- #include <plat/regs-irqtype.h>
- #include <plat/regs-serial.h>
-@@ -180,7 +179,6 @@ void __init s5p6440_map_io(void)
- 	/* initialize any device information early */
- 	s3c_adc_setname("s3c64xx-adc");
- 	s3c_fb_setname("s5p64x0-fb");
--	s3c64xx_spi_setname("s5p64x0-spi");
- 
- 	s5p64x0_default_sdhci0();
- 	s5p64x0_default_sdhci1();
-@@ -195,7 +193,6 @@ void __init s5p6450_map_io(void)
- 	/* initialize any device information early */
- 	s3c_adc_setname("s3c64xx-adc");
- 	s3c_fb_setname("s5p64x0-fb");
--	s3c64xx_spi_setname("s5p64x0-spi");
- 
- 	s5p64x0_default_sdhci0();
- 	s5p64x0_default_sdhci1();
-diff --git a/arch/arm/mach-s5pc100/common.c b/arch/arm/mach-s5pc100/common.c
-index cc6e561..6219086 100644
---- a/arch/arm/mach-s5pc100/common.c
-+++ b/arch/arm/mach-s5pc100/common.c
-@@ -45,7 +45,6 @@
- #include <plat/fb-core.h>
- #include <plat/iic-core.h>
- #include <plat/onenand-core.h>
--#include <plat/spi-core.h>
- #include <plat/regs-serial.h>
- #include <plat/watchdog-reset.h>
- 
-@@ -166,8 +165,6 @@ void __init s5pc100_map_io(void)
- 	s3c_onenand_setname("s5pc100-onenand");
- 	s3c_fb_setname("s5pc100-fb");
- 	s3c_cfcon_setname("s5pc100-pata");
--
--	s3c64xx_spi_setname("s5pc100-spi");
- }
- 
- void __init s5pc100_init_clocks(int xtal)
-diff --git a/arch/arm/mach-s5pv210/common.c b/arch/arm/mach-s5pv210/common.c
-index a0c50ef..4c9e902 100644
---- a/arch/arm/mach-s5pv210/common.c
-+++ b/arch/arm/mach-s5pv210/common.c
-@@ -43,7 +43,6 @@
- #include <plat/iic-core.h>
- #include <plat/keypad-core.h>
- #include <plat/tv-core.h>
--#include <plat/spi-core.h>
- #include <plat/regs-serial.h>
- 
- #include "common.h"
-@@ -197,8 +196,6 @@ void __init s5pv210_map_io(void)
- 
- 	/* setup TV devices */
- 	s5p_hdmi_setname("s5pv210-hdmi");
--
--	s3c64xx_spi_setname("s5pv210-spi");
- }
- 
- void __init s5pv210_init_clocks(int xtal)
-diff --git a/arch/arm/plat-samsung/include/plat/spi-core.h b/arch/arm/plat-samsung/include/plat/spi-core.h
-deleted file mode 100644
-index 0b9428a..0000000
---- a/arch/arm/plat-samsung/include/plat/spi-core.h
-+++ /dev/null
-@@ -1,30 +0,0 @@
--/*
-- * Copyright (C) 2012 Heiko Stuebner <heiko@sntech.de>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#ifndef __PLAT_S3C_SPI_CORE_H
--#define __PLAT_S3C_SPI_CORE_H
--
--/* These functions are only for use with the core support code, such as
-- * the cpu specific initialisation code
-- */
--
--/* re-define device name depending on support. */
--static inline void s3c64xx_spi_setname(char *name)
--{
--#ifdef CONFIG_S3C64XX_DEV_SPI0
--	s3c64xx_device_spi0.name = name;
--#endif
--#ifdef CONFIG_S3C64XX_DEV_SPI1
--	s3c64xx_device_spi1.name = name;
--#endif
--#ifdef CONFIG_S3C64XX_DEV_SPI2
--	s3c64xx_device_spi2.name = name;
--#endif
--}
--
--#endif /* __PLAT_S3C_SPI_CORE_H */
-diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index b0b00d7..c82f06e 100644
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -4161,6 +4161,7 @@ static int __init floppy_init(void)
- 
- 		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
- 		if (!disks[dr]->queue) {
-+			put_disk(disks[dr]);
- 			err = -ENOMEM;
- 			goto out_put_disk;
- 		}
-diff --git a/drivers/gpio/gpio-timberdale.c b/drivers/gpio/gpio-timberdale.c
-index 031c6ad..1a3e2b9 100644
---- a/drivers/gpio/gpio-timberdale.c
-+++ b/drivers/gpio/gpio-timberdale.c
-@@ -116,7 +116,7 @@ static void timbgpio_irq_disable(struct irq_data *d)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&tgpio->lock, flags);
--	tgpio->last_ier &= ~(1 << offset);
-+	tgpio->last_ier &= ~(1UL << offset);
- 	iowrite32(tgpio->last_ier, tgpio->membase + TGPIO_IER);
- 	spin_unlock_irqrestore(&tgpio->lock, flags);
- }
-@@ -128,7 +128,7 @@ static void timbgpio_irq_enable(struct irq_data *d)
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&tgpio->lock, flags);
--	tgpio->last_ier |= 1 << offset;
-+	tgpio->last_ier |= 1UL << offset;
- 	iowrite32(tgpio->last_ier, tgpio->membase + TGPIO_IER);
- 	spin_unlock_irqrestore(&tgpio->lock, flags);
- }
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 5a75510..112c16e 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -623,9 +623,11 @@ static ssize_t export_store(struct class *class,
- 	 */
- 
- 	status = gpio_request(gpio, "sysfs");
--	if (status < 0)
-+	if (status < 0) {
-+		if (status == -EPROBE_DEFER)
-+			status = -ENODEV;
- 		goto done;
--
-+	}
- 	status = gpio_export(gpio, true);
- 	if (status < 0)
- 		gpio_free(gpio);
-@@ -1191,8 +1193,10 @@ int gpio_request(unsigned gpio, const char *label)
- 
- 	spin_lock_irqsave(&gpio_lock, flags);
- 
--	if (!gpio_is_valid(gpio))
-+	if (!gpio_is_valid(gpio)) {
-+		status = -EINVAL;
- 		goto done;
-+	}
- 	desc = &gpio_desc[gpio];
- 	chip = desc->chip;
- 	if (chip == NULL)
-diff --git a/drivers/gpu/drm/nouveau/nouveau_drv.c b/drivers/gpu/drm/nouveau/nouveau_drv.c
-index 4f2030b..05091c2 100644
---- a/drivers/gpu/drm/nouveau/nouveau_drv.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drv.c
-@@ -186,11 +186,13 @@ nouveau_pci_suspend(struct pci_dev *pdev, pm_message_t pm_state)
- 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
- 		return 0;
- 
--	NV_INFO(dev, "Disabling display...\n");
--	nouveau_display_fini(dev);
-+	if (dev->mode_config.num_crtc) {
-+		NV_INFO(dev, "Disabling display...\n");
-+		nouveau_display_fini(dev);
- 
--	NV_INFO(dev, "Disabling fbcon...\n");
--	nouveau_fbcon_set_suspend(dev, 1);
-+		NV_INFO(dev, "Disabling fbcon...\n");
-+		nouveau_fbcon_set_suspend(dev, 1);
-+	}
- 
- 	NV_INFO(dev, "Unpinning framebuffer(s)...\n");
- 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
-@@ -363,10 +365,12 @@ nouveau_pci_resume(struct pci_dev *pdev)
- 			NV_ERROR(dev, "Could not pin/map cursor.\n");
- 	}
- 
--	nouveau_fbcon_set_suspend(dev, 0);
--	nouveau_fbcon_zfill_all(dev);
-+	if (dev->mode_config.num_crtc) {
-+		nouveau_fbcon_set_suspend(dev, 0);
-+		nouveau_fbcon_zfill_all(dev);
- 
--	nouveau_display_init(dev);
-+		nouveau_display_init(dev);
-+	}
- 
- 	/* Force CLUT to get re-loaded during modeset */
- 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
-@@ -468,9 +472,7 @@ static int __init nouveau_init(void)
- #ifdef CONFIG_VGA_CONSOLE
- 		if (vgacon_text_force())
- 			nouveau_modeset = 0;
--		else
- #endif
--			nouveau_modeset = 1;
- 	}
- 
- 	if (!nouveau_modeset)
-diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c b/drivers/gpu/drm/nouveau/nouveau_state.c
-index c2a8511..b096cf2 100644
---- a/drivers/gpu/drm/nouveau/nouveau_state.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_state.c
-@@ -47,6 +47,7 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
- {
- 	struct drm_nouveau_private *dev_priv = dev->dev_private;
- 	struct nouveau_engine *engine = &dev_priv->engine;
-+	u32 pclass = dev->pdev->class >> 8;
- 
- 	switch (dev_priv->chipset & 0xf0) {
- 	case 0x00:
-@@ -526,7 +527,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
- 	}
- 
- 	/* headless mode */
--	if (nouveau_modeset == 2) {
-+	if (nouveau_modeset == 2 ||
-+	    (nouveau_modeset < 0 && pclass != PCI_CLASS_DISPLAY_VGA)) {
- 		engine->display.early_init = nouveau_stub_init;
- 		engine->display.late_takedown = nouveau_stub_takedown;
- 		engine->display.create = nouveau_stub_init;
-diff --git a/drivers/gpu/drm/nouveau/nv04_dac.c b/drivers/gpu/drm/nouveau/nv04_dac.c
-index 8300266..f180dcf 100644
---- a/drivers/gpu/drm/nouveau/nv04_dac.c
-+++ b/drivers/gpu/drm/nouveau/nv04_dac.c
-@@ -210,7 +210,7 @@ out:
- 	NVWriteVgaCrtc(dev, 0, NV_CIO_CR_MODE_INDEX, saved_cr_mode);
- 
- 	if (blue == 0x18) {
--		NV_INFO(dev, "Load detected on head A\n");
-+		NV_DEBUG(dev, "Load detected on head A\n");
- 		return connector_status_connected;
- 	}
- 
-@@ -323,7 +323,7 @@ nv17_dac_detect(struct drm_encoder *encoder, struct drm_connector *connector)
- 
- 	if (nv17_dac_sample_load(encoder) &
- 	    NV_PRAMDAC_TEST_CONTROL_SENSEB_ALLHI) {
--		NV_INFO(dev, "Load detected on output %c\n",
-+		NV_DEBUG(dev, "Load detected on output %c\n",
- 			'@' + ffs(dcb->or));
- 		return connector_status_connected;
- 	} else {
-@@ -398,7 +398,7 @@ static void nv04_dac_commit(struct drm_encoder *encoder)
- 
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
- 
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base),
- 		nv_crtc->index, '@' + ffs(nv_encoder->dcb->or));
- }
-@@ -447,7 +447,7 @@ static void nv04_dac_dpms(struct drm_encoder *encoder, int mode)
- 		return;
- 	nv_encoder->last_dpms = mode;
- 
--	NV_INFO(dev, "Setting dpms mode %d on vga encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on vga encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	nv04_dac_update_dacclk(encoder, mode == DRM_MODE_DPMS_ON);
-diff --git a/drivers/gpu/drm/nouveau/nv04_dfp.c b/drivers/gpu/drm/nouveau/nv04_dfp.c
-index 2258746..473f30a 100644
---- a/drivers/gpu/drm/nouveau/nv04_dfp.c
-+++ b/drivers/gpu/drm/nouveau/nv04_dfp.c
-@@ -476,7 +476,7 @@ static void nv04_dfp_commit(struct drm_encoder *encoder)
- 
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
- 
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base),
- 		nv_crtc->index, '@' + ffs(nv_encoder->dcb->or));
- }
-@@ -519,7 +519,7 @@ static void nv04_lvds_dpms(struct drm_encoder *encoder, int mode)
- 		return;
- 	nv_encoder->last_dpms = mode;
- 
--	NV_INFO(dev, "Setting dpms mode %d on lvds encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on lvds encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	if (was_powersaving && is_powersaving_dpms(mode))
-@@ -564,7 +564,7 @@ static void nv04_tmds_dpms(struct drm_encoder *encoder, int mode)
- 		return;
- 	nv_encoder->last_dpms = mode;
- 
--	NV_INFO(dev, "Setting dpms mode %d on tmds encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on tmds encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	nv04_dfp_update_backlight(encoder, mode);
-diff --git a/drivers/gpu/drm/nouveau/nv04_tv.c b/drivers/gpu/drm/nouveau/nv04_tv.c
-index 3eb605d..4de1fbe 100644
---- a/drivers/gpu/drm/nouveau/nv04_tv.c
-+++ b/drivers/gpu/drm/nouveau/nv04_tv.c
-@@ -69,7 +69,7 @@ static void nv04_tv_dpms(struct drm_encoder *encoder, int mode)
- 	struct nv04_mode_state *state = &dev_priv->mode_reg;
- 	uint8_t crtc1A;
- 
--	NV_INFO(dev, "Setting dpms mode %d on TV encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on TV encoder (output %d)\n",
- 		mode, nv_encoder->dcb->index);
- 
- 	state->pllsel &= ~(PLLSEL_TV_CRTC1_MASK | PLLSEL_TV_CRTC2_MASK);
-@@ -162,7 +162,7 @@ static void nv04_tv_commit(struct drm_encoder *encoder)
- 
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
- 
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		      drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base), nv_crtc->index,
- 		      '@' + ffs(nv_encoder->dcb->or));
- }
-diff --git a/drivers/hid/hid-microsoft.c b/drivers/hid/hid-microsoft.c
-index e5c699b..3899989 100644
---- a/drivers/hid/hid-microsoft.c
-+++ b/drivers/hid/hid-microsoft.c
-@@ -29,22 +29,30 @@
- #define MS_RDESC		0x08
- #define MS_NOGET		0x10
- #define MS_DUPLICATE_USAGES	0x20
-+#define MS_RDESC_3K		0x40
- 
--/*
-- * Microsoft Wireless Desktop Receiver (Model 1028) has
-- * 'Usage Min/Max' where it ought to have 'Physical Min/Max'
-- */
- static __u8 *ms_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
- 	unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
- 
-+	/*
-+	 * Microsoft Wireless Desktop Receiver (Model 1028) has
-+	 * 'Usage Min/Max' where it ought to have 'Physical Min/Max'
-+	 */
- 	if ((quirks & MS_RDESC) && *rsize == 571 && rdesc[557] == 0x19 &&
- 			rdesc[559] == 0x29) {
- 		hid_info(hdev, "fixing up Microsoft Wireless Receiver Model 1028 report descriptor\n");
- 		rdesc[557] = 0x35;
- 		rdesc[559] = 0x45;
- 	}
-+	/* the same as above (s/usage/physical/) */
-+	if ((quirks & MS_RDESC_3K) && *rsize == 106 &&
-+			!memcmp((char []){ 0x19, 0x00, 0x29, 0xff },
-+				&rdesc[94], 4)) {
-+		rdesc[94] = 0x35;
-+		rdesc[96] = 0x45;
-+	}
- 	return rdesc;
- }
- 
-@@ -193,7 +201,7 @@ static const struct hid_device_id ms_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_USB),
- 		.driver_data = MS_PRESENTER },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_DIGITAL_MEDIA_3K),
--		.driver_data = MS_ERGONOMY },
-+		.driver_data = MS_ERGONOMY | MS_RDESC_3K },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_WIRELESS_OPTICAL_DESKTOP_3_0),
- 		.driver_data = MS_NOGET },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_COMFORT_MOUSE_4500),
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 23904d2..df44509 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -2564,7 +2564,7 @@ static struct r1conf *setup_conf(struct mddev *mddev)
- 		    || disk_idx < 0)
- 			continue;
- 		if (test_bit(Replacement, &rdev->flags))
--			disk = conf->mirrors + conf->raid_disks + disk_idx;
-+			disk = conf->mirrors + mddev->raid_disks + disk_idx;
- 		else
- 			disk = conf->mirrors + disk_idx;
- 
-diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
-index e4d6dc2..d6ffd43 100644
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -5430,6 +5430,8 @@ static void b43_ssb_remove(struct ssb_device *sdev)
- 	cancel_work_sync(&wldev->restart_work);
- 
- 	B43_WARN_ON(!wl);
-+	if (!wldev->fw.ucode.data)
-+		return;			/* NULL if firmware never loaded */
- 	if (wl->current_dev == wldev) {
- 		/* Restore the queues count before unregistering, because firmware detect
- 		 * might have modified it. Restoring is important, so the networking
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index d594460..69f3f7d 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -1748,7 +1748,6 @@ static void target_complete_tmr_failure(struct work_struct *work)
- 
- 	se_cmd->se_tmr_req->response = TMR_LUN_DOES_NOT_EXIST;
- 	se_cmd->se_tfo->queue_tm_rsp(se_cmd);
--	transport_generic_free_cmd(se_cmd, 0);
- }
- 
- /**
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 0ee374d..556cc82 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -697,6 +697,10 @@ repeat_in_this_group:
- 				   "inode=%lu", ino + 1);
- 			continue;
- 		}
-+		BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
-+		err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
-+		if (err)
-+			goto fail;
- 		ext4_lock_group(sb, group);
- 		ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
- 		ext4_unlock_group(sb, group);
-@@ -710,6 +714,11 @@ repeat_in_this_group:
- 	goto out;
- 
- got:
-+	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
-+	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
-+	if (err)
-+		goto fail;
-+
- 	/* We may have to initialize the block bitmap if it isn't already */
- 	if (EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_GDT_CSUM) &&
- 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
-@@ -742,11 +751,6 @@ got:
- 			goto fail;
- 	}
- 
--	BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
--	err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
--	if (err)
--		goto fail;
--
- 	BUFFER_TRACE(group_desc_bh, "get_write_access");
- 	err = ext4_journal_get_write_access(handle, group_desc_bh);
- 	if (err)
-@@ -789,11 +793,6 @@ got:
- 		ext4_unlock_group(sb, group);
- 	}
- 
--	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
--	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
--	if (err)
--		goto fail;
--
- 	BUFFER_TRACE(group_desc_bh, "call ext4_handle_dirty_metadata");
- 	err = ext4_handle_dirty_metadata(handle, NULL, group_desc_bh);
- 	if (err)
+--1yeeQ81UyVL57Vl7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.6.6 kernel.
+
+All users of the 3.6 kernel series must upgrade.
+
+The updated 3.6.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.6.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                |    2=20
+ block/blk-cgroup.c                      |    7 +
+ drivers/block/floppy.c                  |   27 ++--
+ drivers/gpio/gpio-timberdale.c          |    4=20
+ drivers/gpio/gpiolib.c                  |   10 +
+ drivers/gpu/drm/nouveau/nouveau_drv.c   |   20 +--
+ drivers/gpu/drm/nouveau/nouveau_state.c |    4=20
+ drivers/gpu/drm/nouveau/nv04_dac.c      |    8 -
+ drivers/gpu/drm/nouveau/nv04_dfp.c      |    6=20
+ drivers/gpu/drm/nouveau/nv04_tv.c       |    4=20
+ drivers/hid/hid-microsoft.c             |   18 ++
+ drivers/md/raid1.c                      |    2=20
+ drivers/scsi/qla2xxx/qla_target.c       |   25 +---
+ drivers/scsi/qla2xxx/qla_target.h       |    1=20
+ drivers/scsi/qla2xxx/tcm_qla2xxx.c      |   73 +++++++++++
+ drivers/target/target_core_sbc.c        |   18 ++
+ drivers/target/target_core_transport.c  |    1=20
+ drivers/usb/serial/io_edgeport.c        |    1=20
+ drivers/usb/serial/iuu_phoenix.c        |    3=20
+ drivers/usb/serial/mos7840.c            |  198 +++++++++++----------------=
+-----
+ fs/ceph/addr.c                          |   11 -
+ fs/ceph/export.c                        |    2=20
+ fs/ceph/mds_client.c                    |    3=20
+ fs/ext4/ialloc.c                        |   19 +--
+ include/linux/ceph/osd_client.h         |    2=20
+ include/linux/ceph/osdmap.h             |    6=20
+ net/ceph/messenger.c                    |    6=20
+ net/ceph/osd_client.c                   |   32 +++--
+ net/ceph/osdmap.c                       |   18 ++
+ 29 files changed, 309 insertions(+), 222 deletions(-)
+
+Alex Elder (2):
+      rbd: reset BACKOFF if unable to re-queue
+      ceph: avoid 32-bit page index overflow
+
+Ben Skeggs (3):
+      drm/nouveau: silence modesetting spam on pre-gf8 chipsets
+      drm/nouveau: fix suspend/resume when in headless mode
+      drm/nouveau: headless mode by default if pci class !=3D vga display
+
+Bernhard Kohl (1):
+      target: reintroduce some obsolete SCSI-2 commands
+
+Dan Carpenter (1):
+      gpio-timberdale: fix a potential wrapping issue
+
+David Zafman (1):
+      ceph: fix dentry reference leak in encode_fh()
+
+Eric Sandeen (1):
+      ext4: fix unjournaled inode bitmap modification
+
+Greg Kroah-Hartman (1):
+      Linux 3.6.6
+
+Herton Ronaldo Krzesinski (3):
+      floppy: don't call alloc_ordered_workqueue inside the alloc_disk loop
+      floppy: do put_disk on current dr if blk_init_queue fails
+      floppy: properly handle failure on add_disk loop
+
+Jiri Slaby (1):
+      HID: microsoft: fix invalid rdesc for 3k kbd
+
+Johan Hovold (2):
+      USB: mos7840: fix port-data memory leak
+      USB: iuu_phoenix: fix backported patches
+
+Jun'ichi Nomura (1):
+      blkcg: Fix use-after-free of q->root_blkg and q->root_rl.blkg
+
+Mathias Nyman (1):
+      gpiolib: Don't return -EPROBE_DEFER to sysfs, or for invalid gpios
+
+NeilBrown (1):
+      md/raid1: Fix assembling of arrays containing Replacements.
+
+Nicholas Bellinger (1):
+      target: Fix double-free of se_cmd in target_complete_tmr_failure
+
+Paul Bolle (1):
+      USB: io_edgeport: remove unused variable
+
+Roland Dreier (1):
+      qla2xxx: Update target lookup session tables when a target session ch=
+anges
+
+Sage Weil (2):
+      libceph: avoid NULL kref_put when osd reset races with alloc_msg
+      libceph: check for invalid mapping
+
+Yan, Zheng (1):
+      ceph: Fix oops when handling mdsmap that decreases max_mds
+
+
+--1yeeQ81UyVL57Vl7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQl5CNAAoJEDjbvchgkmk+CysP/1jRCSDIbmWUA7SHV32FiGUv
+ODTalVPTxuOKhORi5vdOCwxlD0ya21Rup1eTfvjyxCrEUJ9gCW9P8sNQlaol7S0U
+hGB34FAhm4k3625QLDtiqyventOKYh8dEt04f1EtbSFjVwM06TLL54Uj6IsYwXuD
+5YlOGrPdJHsUR6uBv05+7izLiG6drd2f1Bny+Tf1GXOsU0pXy5i18bAmNqf9lJ2S
+iAxM8n9YZx7KbxyipRH7+eqqzEcOzKMgaEXoELuRHv5Kd5KXLzliWkWzx2gy2wyB
+bwphWOrAFDQ4RuRk9Pd5krPeN+BH66SSsbDifA889K1v1N8CXcWBgVbP9DDe9pUc
+hkX9mlAYmaXVnopqFS2E+hRLDpGhjidB0YmZRSztXn1bOwLIoGQSXQKsAsCh6mkW
+XGuG3vYu2EY+eMIfzUeo6FCYsBS0xXXa1zAwkGiHOG5XCGogBdGt45CgFnE6L50Y
+yLuzwlJdXZpCKo8TqO8j/+BuQhONH+UASQcg2CKq1y2YdbHWXvbtvSDlQWel8ri2
+0TnM7Rw+Kt95OoGUeS+U3v8sLpcalWvcW+qUor/E2+zB6C2EzzRXV0GxgbW0PAgF
+OFxGMLJmZd3sD1ZeubciCoMDK+eGCxwZD2RJ4DWOJpgkM+lse4ZpWmnItkMMaekX
+MTOfNpjN2eGSDJhA41DW
+=vXGP
+-----END PGP SIGNATURE-----
+
+--1yeeQ81UyVL57Vl7--
