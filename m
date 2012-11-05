@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab2KENcV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:32:21 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46516 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab2KENcR (ORCPT
+	id S932403Ab2KENch (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:32:37 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:46297 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932300Ab2KENcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:32:17 -0500
-Subject: [Q][Process Step Wise]
-From: anish kumar <anish198519851985@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Nov 2012 22:32:05 +0900
-Message-ID: <1352122325.4968.18.camel@anish-Inspiron-N5050>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 5 Nov 2012 08:32:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAN+gG=H1L6vwvxxAR6t2-Lz4aW0tbvLvDKvY-8f-M-qqm35mMw@mail.gmail.com>
+References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1351241067-9521-12-git-send-email-benjamin.tissoires@gmail.com>
+	<20121029225748.GA15632@polaris.bitmath.org>
+	<CAN+gG=GNucfg4-wCBZQtz0yJDjpTD_56Js3d68nm8VFi1UhZAA@mail.gmail.com>
+	<20121105125731.GA814@polaris.bitmath.org>
+	<CAN+gG=H1L6vwvxxAR6t2-Lz4aW0tbvLvDKvY-8f-M-qqm35mMw@mail.gmail.com>
+Date: Mon, 5 Nov 2012 14:32:34 +0100
+Message-ID: <CAN+gG=H5OVWXY4Dzy04Zj8gqTSWOAsGyV2P3sXS_aztWFYZdbQ@mail.gmail.com>
+Subject: Re: [PATCH v2 11/11] HID: hid-multitouch: get rid of usbhid depedency
+ for general path
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Henrik,
 
-I have below question and I would really appreciate a _CORRECT_ answer.
+grrr.... damn new gmail interface, I clicked on the wrong button.
 
-What are the sequence of steps that happen in CPU, cache, TLB, VM, HDD
-leading to execution of “x = 7” which isn’t present in cache or sysmem
-nor translation in TLB. Also specify if any interrupts, exceptions or
-faults are generated.
+sorry for the noise.
 
-I have given a rough idea here. Not very clear about specific interrupts
-at each step.I request to please correct me and provide a precise
-answer.
+On Mon, Nov 5, 2012 at 2:28 PM, Benjamin Tissoires
+<benjamin.tissoires@gmail.com> wrote:
+> Hi Henrik,
+>
+> On Mon, Nov 5, 2012 at 1:57 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> Hi Benjamin,
+>>
+>>> >> This patch factorizes the hid set_feature command by using
+>>> >> hid_device->hid_output_raw_report instead of direclty relying on
+>>> >> usbhid. This makes the driver usb independant.
+>>> >>
+>>> >> However I still can't remove the 2 usb related headers because the
+>>> >> function mt_resume has a specific patch for usb devices.
+>>> >>
+>>> >> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+>>> >> ---
+>>> >>  drivers/hid/hid-multitouch.c | 63 ++++++++++++++++++++++++++------------------
+>>> >>  1 file changed, 37 insertions(+), 26 deletions(-)
+>>> >
+>>> > In my drawer, I have a patchset that aims to remove all usbhid
+>>> > dependence, from all the drivers. Perhaps the attached patch is
+>>> > something to consider here?
+>>>
+>>> yep, removing usbhid dependencies is a good thing.
+>>> See my review below :)
+>>
+>> I have a tentative patch taking your comments into account, and it is
+>> likely that we want to go that way. However, as to not hold up your
+>> patchset, perhaps we could do without it for now.
 
-1) CPU first fetches the instruction x = 7 from the Instruction cache
-(when it reads this address in the PC/IR)
-2) After decoding and executing the instruction, it sees that, it needs
-to access the memory location of variable x (which will be a virtual
-address)
-3) Hence it issues a request to the TLB to return the physical
-address/tag. 
-Assuming the cache is Virtually indexed, it will parallely calculate the
-index for this virtual address.
-4) Since it's a TLB miss, it accesses the Page table which resides
-mostly in Memory.Page table can also reside in Hardware as well in that
-case it will page traversal.
-//Not sure what the interrupt here is?
-5) But since, the translation is not found, meaning the page for this
-address is not in RAM, it issues a DMA request to transfer the page from
-Secondary storage to the RAM. It knows the address of the page on
-Secondary storage through the vm_area struct for this process, which
-maintains the location of all the pages. 
-// This is done in page fault handler. Page fault is raised when this
-even occurs.
-6) Once DMA is complete, the processor is interrupted with this event.
-It then updates the page table with this entry and also the TLB.
-//This would be an I/O interrupt to the processor
-7) Once it gets the tag, it checks if that tag matches in the cache. 
-8) It won't, since cache does not have this entry. 
-9) Hence it fetches this block (cache block) from memory and places into
-the cache and restarts the execution. 
-10) In the MEM phase of the execution pipeline, it writes the value 7 to
-this location in the cache.
+so, Yes, this is not my blocking patch that prevents me from sending
+the new patchset. I intend to let you clean this up with your new
+patch.
+The v3 is on it's way!
 
-As I understand the exact steps which happens in the processor is
-specific to the arch but what I want is the standard way in which linux
-deals with different archs.
+>>
+>> Regarding the hardwired usbhid dependency, I think the solution is to
+>> move that code to usbhid itself.
 
-As always thanks to Linux and the community.
+yes, maybe, but at the beginning, we didn't want to patch it that way
+because it was only specific to one hid-multitouch device (though
+armless for the other multitouch devices).
+So maybe you will have to add a quirk in usbhid or sth like that.
 
+Cheers,
+Benjamin
+
+>>
+>> Thanks,
+>> Henrik
