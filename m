@@ -1,106 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab2KEUaR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 15:30:17 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52514 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753889Ab2KEUaP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 15:30:15 -0500
-From: Lekensteyn <lekensteyn@gmail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Norbert Preining <preining@logic.at>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: [bisected] drm i915 hangs on heavy io load
-Date: Mon, 05 Nov 2012 21:29:53 +0100
-Message-ID: <2841410.AEaCaTYTzS@al>
-User-Agent: KMail/4.9.2 (Linux/3.6.0-rc2-git-87-g0327d6b+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <CAPM=9txgXLHQPCP4egU57P0=pACmKZnAzwgj6fNxR5-4nwOF6A@mail.gmail.com>
-References: <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <20121104004431.GG6196@gamma.logic.tuwien.ac.at> <CAPM=9txgXLHQPCP4egU57P0=pACmKZnAzwgj6fNxR5-4nwOF6A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1754820Ab2KEUer (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 15:34:47 -0500
+Received: from smtp.getmail.no ([84.208.15.66]:56494 "EHLO smtp.getmail.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753889Ab2KEUeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 15:34:46 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+To: Martin <marogge@onlinehome.de>
+Subject: Re: sched: SCHED_DEADLINE v6
+References: <k2boS-2q4-11@gated-at.bofh.it> <k2dK1-5rL-11@gated-at.bofh.it>
+ <k2ewr-6bR-15@gated-at.bofh.it> <5098204D.3080002@onlinehome.de>
+Date: Mon, 05 Nov 2012 21:34:44 +0100
+Cc: linux-kernel@vger.kernel.org
+From: Ove Karlsen <ove.karlsen@paradoxuncreated.com>
+Message-id: <op.wnbh36ga1c32bs@localhost.localdomain>
+In-reply-to: <5098204D.3080002@onlinehome.de>
+User-Agent: Opera Mail/12.02 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 04 November 2012 16:08:47 Dave Airlie wrote:
-> On Sun, Nov 4, 2012 at 10:44 AM, Norbert Preining <preining@logic.at> wrote:
+On Mon, 05 Nov 2012 21:23:41 +0100, Martin <marogge@onlinehome.de> wrote:
 
-> > On Di, 30 Okt 2012, Dave Airlie wrote:
-> >> I would suggest starting a bisect on drivers/gpu/drm/i915 from 3.6
-> >> final to 3.7-rc1 or maybe -rc2.
-> > 
-> > Sorry for my ignorance ... I did on master branch
-> > 
-> >         $ git checkout v3.7-rc1
-> >         ...
-> >         $ git bisect start drivers/gpu/drm/i915
-> >         $ git bisect bad
-> >         $ git bisect good v3.6
-> >         Bisecting: 121 revisions left to test after this (roughly 7 steps)
-> >         [25c5b2665fe4cc5a93edd29b62e7c05c15dddd26] drm/i915: implement new
-> >         set_mode code flow $
-> > 
-> > after that I am back somewhere around
-> > 
-> >         3.6.0-rc2
-> > 
-> > ???
-> > 
-> > Am I doing something wrong? I thought I am bisecting between 3.6 and
-> > 3.7.-rc2? How can I go back to 3.6.0-rc2?
-> 
-> Yeah thats fine, bisecting works by going to where commits were
-> originally committed, so drm-intel-next was 3.6.0-rc2 at some point
-> was only merged into Linus later.
+> On 11/04/2012 09:00 PM, Uwaysi Bin Kareem wrote:
+>> Nobody knows? This is really obscure for an EDF patch. Making things a
+>> bit more accessible should be a priority. I think a lot of enthusiasts
+>> would like to have smooth control over stuff, without windows-jitter. If
+>> you can do a robot arm, jitter-free with this, then I am very  
+>> interested.
+>>
+>> uwaysi@Millennium:~/Kildekode/sched_deadline-schedtool-dl$ ./schedtool  
+>> -E
+>> -t 500:1000 3718
+>> ERROR: could not set PID 3718 to E: SCHED_DEADLINE - Function not
+>> implemented
+>> uwaysi@Millennium:~/Kildekode/sched_deadline-schedtool-dl$
+>>
+>> On Sun, 04 Nov 2012 20:02:25 +0100, Uwaysi Bin Kareem
+>> <uwaysi.bin.kareem@paradoxuncreated.com> wrote:
+>>
+>>> How does the modified schedtool work? There is no updated  
+>>> documentation.
+>>>
+>>> http://gitorious.org/sched_deadline/schedtool-dl/commits/latest/2.6.36-dl-V3
+>>>
+>>>
+>>> If anyone could give an example of a 1000uS period / 500uS time, with
+>>> schedtool, or any other relevant information.
+>>> Most examples online use parameters that are no longer supported.
+>>>
+>>> Peace Be With You.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"  
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> Hi,
+>
+> I assume the reason nobody answers is that the cpu scheduler is an  
+> emotional subject.
+>
+> However, if you really want a smooth desktop and a deadline scheduler  
+> (albeit it might not be as configurable as you seem to want it to be),  
+> try BFS or the whole CK patch.
+>
+> http://ck-hack.blogspot.com/
+>
+> I have implemented it on a laptop this weekend, and I was surprised by  
+> the change in user experience yet again. Mostly during 3D game play.  
+> Generally the difference is felt more strongly on low end machines and  
+> taxing workloads.
+>
+> Since you are talking about robot arms: note that BFS is not a real time  
+> solution, but is designed around the physiological conditions of the  
+> human perception system (where, I believe, 6 ms is equivalent to real  
+> time). Maybe a similar deadline approach is useful for robot arms, no  
+> idea.
+>
+> cu Martin
+>
 
-As I mentioned on https://bugs.freedesktop.org/show_bug.cgi?id=55984, I also 
-hit this bug. The first time was on branch drm-intel-next-2012-09-20 on Daniel 
-Vetters drm-intel git.
+If you ever saw a robot-arm jitter, you`d think of it as faulty. And that  
+is how people should think of their PC aswell.
 
-I guess it has something to do with low memory. To reproduce the bug on my 
-laptop with 8GB RAM and a i5-460M, I did:
+Just the interrupts, preemption (points), daemons, hopefully cleverly  
+arranged, to reduce jitter, is what I want.
+I did already try BFS. PS: 90hz timer, is very good with BFS also, but the  
+jitter-extremes are higher. Meaning large jitters last longer, while small  
+jitters, seems smaller. For overall computing CFS actually has less jitter.
 
-1. Boot (I use KDE)
-3. Start glxspheres (from http://virtualgl.org/, but glxgears might work too, 
-not tested)
-2. Copy a 1.2 GiB Linux source tree to /dev/shm and /tmp (both tmpfs), 5 
-times. This uses 6GiB of RAM. I used this bash script:
-#!/bin/bash
-for i in /tmp/hang-l1 /tmp/hang-l2 /tmp/hang-l3 \
-/dev/shm/hang-l1 /dev/shm/hang-l2; do
-        cp -ra ~/Linux-src/linux "$i" &
-done; wait
-3. When the copy is almost done, watch the machine become sluggish and 
-eventually print the "[drm:i915_hangcheck_hung] *ERROR* Hangcheck timer 
-elapsed... GPU hung" message to the kernel log. Until the machine is rebooted, 
-all OpenGL applications will fail to load.
+What would be really interesting would be to try a scheduler that tries to  
+bound latencies, and have accurate timing.
 
-On kernels where it was working fine, there is no lag when the copy is almost 
-finished.
+There seems to be generally 3 different profiles people tuned for: Server,  
+Mobile, Desktop.
+Server guiless stationary, Mobile for minimal power desktop, Desktop, for  
+workstation/home low-jitter high-performance.
 
-504c7267a1e84b157cbd7e9c1b805e1bc0c2c846 is the first bad commit
-commit 504c7267a1e84b157cbd7e9c1b805e1bc0c2c846
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu Aug 23 13:12:52 2012 +0100
+Maybe these profiles even can be combined a bit, having several hz  
+counters, and several scheduling policies.
 
-    drm/i915: Use cpu relocations if the object is in the GTT but not mappable
-    
-    This prevents the case of unbinding the object in order to process the
-    relocations through the GTT and then rebinding it only to then proceed
-    to use cpu relocations as the object is now in the CPU write domain. By
-    choosing to use cpu relocations up front, we can therefore avoid the
-    rebind penalty.
-    
-    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-
-:040000 040000 090ed3d52b4f3210b988877f747b6ff86e123385 
-1d48be89ded4777a543b693db833de64877059c4 M      drivers
-
-Regards,
-Peter
+Peace Be With You.
