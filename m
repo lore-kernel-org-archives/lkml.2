@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab2KEM4F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:56:05 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:34534 "EHLO
+	id S1754125Ab2KENBA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:01:00 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:55028 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab2KEM4D convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751439Ab2KENA7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:56:03 -0500
-Message-ID: <1352120159.10947.3.camel@hornet>
-Subject: Re: [PATCH 1/2] leds: Add generic support for memory mapped LEDs
+	Mon, 5 Nov 2012 08:00:59 -0500
+Message-ID: <1352120454.10947.5.camel@hornet>
+Subject: Re: [PATCH 6/9] virtio_mmio: Cast &resources[1].start to
+ =?UTF-8?Q?=E2=80=98unsigned?= int =?UTF-8?Q?*=E2=80=99?= to rid compiler
+ warning
 From: Pawel Moll <pawel.moll@arm.com>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
-Date: Mon, 05 Nov 2012 12:55:59 +0000
-In-Reply-To: <1352108387.3212.12.camel@linaro1.home>
-References: <1351792722-15250-1-git-send-email-pawel.moll@arm.com>
-	 <1352108387.3212.12.camel@linaro1.home>
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Date: Mon, 05 Nov 2012 13:00:54 +0000
+In-Reply-To: <20121105082116.GB2699@gmail.com>
+References: <1351980150-24145-1-git-send-email-lee.jones@linaro.org>
+	 <1351980150-24145-7-git-send-email-lee.jones@linaro.org>
+	 <87k3u0ydry.fsf@rustcorp.com.au> <20121105082116.GB2699@gmail.com>
 X-Mailer: Evolution 3.6.0-0ubuntu3
 Mime-Version: 1.0
-X-OriginalArrivalTime: 05 Nov 2012 12:56:00.0232 (UTC) FILETIME=[E7AFD680:01CDBB54]
-X-MC-Unique: 112110512560107801
+X-OriginalArrivalTime: 05 Nov 2012 13:00:54.0761 (UTC) FILETIME=[973D6590:01CDBB55]
+X-MC-Unique: 112110513005602701
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-05 at 09:39 +0000, Jon Medhurst (Tixy) wrote:
-> > +static void mmio_led_brightness_set(struct led_classdev *cdev,
-> > +		enum led_brightness brightness)
-> > +{
-> > +	struct mmio_led *led = container_of(cdev, struct mmio_led, cdev);
-> > +	unsigned long uninitialized_var(flags);
+On Mon, 2012-11-05 at 08:21 +0000, Lee Jones wrote:
+> > >  	processed = sscanf(str, "@%lli:%u%n:%d%n",
+> > > -			&base, &resources[1].start, &consumed,
+> > > +			&base, (unsigned int *)&resources[1].start, &consumed,
+> > >  			&vm_cmdline_id, &consumed);
+> > 
+> > This suppresses a valid warning, leaving our code no less wrong than
+> > before.  But now it's silently wrong!
+> > 
+> > Do you want to try again?
 > 
-> uninitialized_var seems to be a bit contentious, Linus Torvalds had a
-> recent complaint about it which prompted Ingo to post a patch proposing
-> to removing it: https://patchwork.kernel.org/patch/1655621/ So perhaps
-> best to avoid using it ;-).
+> For sure I'll try again.
 > 
-> In this case, you could possibly keep gcc quite with something like:
-> 
->         spinlock_t *lock = led->lock;
-> 
-> and then use the local variable 'lock' everywhere instead of led->lock.
-> Or just keep it simple an initialise flags to 0 instead.
+> How does `s/%u/%p/` suit?
 
-Yeah, = 0 will do...
+sscanf doesn't do "%p"... The only reasonable way of fixing this is a
+intermediate local variable - will post a patch in a second.
 
-> > +	if (!pdata)
-> > +		return -EINVAL;
-> > +
-> > +	if (pdata->reg_size != 8 && pdata->reg_size != 16 &&
-> > +			pdata->reg_size != 32)
-> > +		return -EFAULT;
-> 
-> Is EFAULT appropriate here? Why not EINVAL?
-
-Hm. To distinguish it from !pdata case I guess (and a 13 bit wide
-transaction sounds like a fault to me ;-), but I can be persuaded
-otherwise without much effort...
-
-Thanks!
+Thanks for spotting this!
 
 Paweł
 
