@@ -1,184 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab2KEMUb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:20:31 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63581 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab2KEMU3 (ORCPT
+	id S1753906Ab2KEMUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:20:47 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:34097 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874Ab2KEMUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:20:29 -0500
+	Mon, 5 Nov 2012 07:20:44 -0500
 MIME-Version: 1.0
-In-Reply-To: <1352117259.2705.24.camel@menhir>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	<1351485061-12297-10-git-send-email-zwu.kernel@gmail.com>
-	<1352114465.2705.13.camel@menhir>
-	<CAEH94LjXrK6OfSU=aQa+waMMY+0kCjL3MU2faKeRxm9UggaKQA@mail.gmail.com>
-	<1352117259.2705.24.camel@menhir>
-Date: Mon, 5 Nov 2012 20:20:27 +0800
-Message-ID: <CAEH94LgeOssJ++tLZzo6ZAUmjFUc1BWjLuszmAeSz2YbxmU3SA@mail.gmail.com>
-Subject: Re: [RFC v4+ hot_track 09/19] vfs: add one work queue
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAONaPpEfbkkE_zd4m8AHo4zfg9-UL_ojS2aQLQquyKDQRYyc6Q@mail.gmail.com>
+References: <1352080784-30839-1-git-send-email-luming.yu@gmail.com>
+	<1352080784-30839-2-git-send-email-luming.yu@gmail.com>
+	<CAONaPpEfbkkE_zd4m8AHo4zfg9-UL_ojS2aQLQquyKDQRYyc6Q@mail.gmail.com>
+Date: Mon, 5 Nov 2012 07:20:43 -0500
+Message-ID: <CAJRGBZx7OW6Nok8kTAtmHSk2SRwo9N+aiHeduSLtFsBJKyjZ2A@mail.gmail.com>
+Subject: Re: [PATCH 01/13] HW-latency: hardware latency test 0.10
+From: Luming Yu <luming.yu@gmail.com>
+To: John Kacur <jkacur@redhat.com>
+Cc: Jon Masters <jonathan@jonmasters.org>, Jon Masters <jcm@redhat.com>,
+        arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Luming Yu <luming.yu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 8:07 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
-> Hi,
->
-> On Mon, 2012-11-05 at 19:55 +0800, Zhi Yong Wu wrote:
->> On Mon, Nov 5, 2012 at 7:21 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
->> > Hi,
->> >
->> > On Mon, 2012-10-29 at 12:30 +0800, zwu.kernel@gmail.com wrote:
->> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> >>
->> >>   Add a per-superblock workqueue and a delayed_work
->> >> to run periodic work to update map info on each superblock.
->> >>
->> >> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> >> ---
->> >>  fs/hot_tracking.c            |   85 ++++++++++++++++++++++++++++++++++++++++++
->> >>  fs/hot_tracking.h            |    3 +
->> >>  include/linux/hot_tracking.h |    3 +
->> >>  3 files changed, 91 insertions(+), 0 deletions(-)
->> >>
->> >> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
->> >> index fff0038..0ef9cad 100644
->> >> --- a/fs/hot_tracking.c
->> >> +++ b/fs/hot_tracking.c
->> >> @@ -15,9 +15,12 @@
->> >>  #include <linux/module.h>
->> >>  #include <linux/spinlock.h>
->> >>  #include <linux/hardirq.h>
->> >> +#include <linux/kthread.h>
->> >> +#include <linux/freezer.h>
->> >>  #include <linux/fs.h>
->> >>  #include <linux/blkdev.h>
->> >>  #include <linux/types.h>
->> >> +#include <linux/list_sort.h>
->> >>  #include <linux/limits.h>
->> >>  #include "hot_tracking.h"
->> >>
->> >> @@ -557,6 +560,67 @@ static void hot_map_array_exit(struct hot_info *root)
->> >>       }
->> >>  }
->> >>
->> >> +/* Temperature compare function*/
->> >> +static int hot_temp_cmp(void *priv, struct list_head *a,
->> >> +                             struct list_head *b)
->> >> +{
->> >> +     struct hot_comm_item *ap =
->> >> +                     container_of(a, struct hot_comm_item, n_list);
->> >> +     struct hot_comm_item *bp =
->> >> +                     container_of(b, struct hot_comm_item, n_list);
->> >> +
->> >> +     int diff = ap->hot_freq_data.last_temp
->> >> +                             - bp->hot_freq_data.last_temp;
->> >> +     if (diff > 0)
->> >> +             return -1;
->> >> +     if (diff < 0)
->> >> +             return 1;
->> >> +     return 0;
->> >> +}
->> >> +
->> >> +/*
->> >> + * Every sync period we update temperatures for
->> >> + * each hot inode item and hot range item for aging
->> >> + * purposes.
->> >> + */
->> >> +static void hot_update_worker(struct work_struct *work)
->> >> +{
->> >> +     struct hot_info *root = container_of(to_delayed_work(work),
->> >> +                                     struct hot_info, update_work);
->> >> +     struct hot_inode_item *hi_nodes[8];
->> >> +     u64 ino = 0;
->> >> +     int i, n;
->> >> +
->> >> +     while (1) {
->> >> +             n = radix_tree_gang_lookup(&root->hot_inode_tree,
->> >> +                                (void **)hi_nodes, ino,
->> >> +                                ARRAY_SIZE(hi_nodes));
->> >> +             if (!n)
->> >> +                     break;
->> >> +
->> >> +             ino = hi_nodes[n - 1]->i_ino + 1;
->> >> +             for (i = 0; i < n; i++) {
->> >> +                     kref_get(&hi_nodes[i]->hot_inode.refs);
->> >> +                     hot_map_array_update(
->> >> +                             &hi_nodes[i]->hot_inode.hot_freq_data, root);
->> >> +                     hot_range_update(hi_nodes[i], root);
->> >> +                     hot_inode_item_put(hi_nodes[i]);
->> >> +             }
->> >> +     }
->> >> +
->> >> +     /* Sort temperature map info */
->> >> +     for (i = 0; i < HEAT_MAP_SIZE; i++) {
->> >> +             list_sort(NULL, &root->heat_inode_map[i].node_list,
->> >> +                     hot_temp_cmp);
->> >> +             list_sort(NULL, &root->heat_range_map[i].node_list,
->> >> +                     hot_temp_cmp);
->> >> +     }
->> >> +
->> >
->> > If this list can potentially have one (or more) entries per inode, then
->> Only one hot_inode_item per inode, while maybe multiple
->> hot_range_items per inode.
->> > filesystems with a lot of inodes (millions) may potentially exceed the
->> > max size of list which list_sort() can handle. If that happens it still
->> > works, but you'll get a warning message and it won't be as efficient.
->> I haven't do so large scale test. If we want to find that issue, we
->> need to do large scale performance test, before that, i want to make
->> sure the code change is correct at first.
->> To be honest, for that issue you pointed to, i also have such
->> concern.But list_sort() performance looks good from the test result of
->> the following URL:
->> https://lkml.org/lkml/2010/1/20/485
+On Sun, Nov 4, 2012 at 4:23 PM, John Kacur <jkacur@redhat.com> wrote:
+> On Mon, Nov 5, 2012 at 2:59 AM, Luming Yu <luming.yu@gmail.com> wrote:
 >>
-> Yes, I think it is good. Also, even when it says that it's performance
-> is poor (via the warning message) it is still much better than the
-> alternative (of not sorting) in the GFS2 case. So currently our
-> workaround is to ignore the warning. Due to what we using it for
-> (sorting the data blocks for ordered writeback) we only see it very
-> occasionally when there has been lots of data write activity with little
-> journal activity on a node with lots of RAM.
-OK.
->
->> >
->> > It is something that we've run into with list_sort() and GFS2, but it
->> > only happens very rarely,
->> Beside list_sort(), do you have any other way to share? For this
->> concern, how does GFS2 resolve it?
+>> This patch is the first step to test some basic hardware functions like
+>> TSC to help people understand if there is any hardware latency as well
+>> as throughput problem exposed on bare metal or left behind by BIOS or
+>> interfered by SMI. Currently the patch tests TSC, CPU Frequency and
+>> RDRAND which is a new CPU instruction to get random number introduced in
+>> new CPU like Intel Ivy Bridge in stop_machine context,which is choosen to
+>> make sure testers fully control their system under test to rule out some
+>> level of unwanted noise.
 >>
-> That is an ongoing investigation :-)
+>> Signed-off-by: Luming Yu <luming.yu@intel.com>
+>> ---
+>>  drivers/misc/Kconfig           |   7 +
+>>  drivers/misc/Makefile          |   1 +
+>>  drivers/misc/hw_latency_test.c | 833 +++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 841 insertions(+)
+>>  create mode 100644 drivers/misc/hw_latency_test.c
+>>
+>> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+>> index b151b7c..5ed440b 100644
+>> --- a/drivers/misc/Kconfig
+>> +++ b/drivers/misc/Kconfig
+>> @@ -114,6 +114,13 @@ config IBM_ASM
+>>           for information on the specific driver level and support statement
+>>           for your IBM server.
+>>
+>> +config HW_LATENCY_TEST
+>> +       tristate "Testing module to detect hardware lattency and throughput"
+>> +       depends on DEBUG_FS
+>> +       depends on RING_BUFFER
+>> +       depends on X86
+>> +       default m
+>> +
+>>  config PHANTOM
+>>         tristate "Sensable PHANToM (PCI)"
+>>         depends on PCI
+>> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+>> index 2129377..c195cce 100644
+>> --- a/drivers/misc/Makefile
+>> +++ b/drivers/misc/Makefile
+>> @@ -49,3 +49,4 @@ obj-y                         += carma/
+>>  obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
+>>  obj-$(CONFIG_ALTERA_STAPL)     +=altera-stapl/
+>>  obj-$(CONFIG_INTEL_MEI)                += mei/
+>> +obj-$(CONFIG_HW_LATENCY_TEST)  += hw_latency_test.o
+>> diff --git a/drivers/misc/hw_latency_test.c b/drivers/misc/hw_latency_test.c
+>> new file mode 100644
+>> index 0000000..2aa3a74
+>> --- /dev/null
+>> +++ b/drivers/misc/hw_latency_test.c
+>> @@ -0,0 +1,833 @@
+>> +#include <linux/module.h>
+>> +#include <linux/init.h>
+>> +#include <linux/ring_buffer.h>
+>> +#include <linux/stop_machine.h>
+>> +#include <linux/time.h>
+>> +#include <linux/hrtimer.h>
+>> +#include <linux/kthread.h>
+>> +#include <linux/debugfs.h>
+>> +#include <linux/seq_file.h>
+>> +#include <linux/uaccess.h>
+>> +#include <linux/version.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/random.h>
+>> +#include <asm/tlbflush.h>
+>> +
+>> +#define BUF_SIZE_DEFAULT       262144UL
+>> +#define BUF_FLAGS      (RB_FL_OVERWRITE)
+>> +#define        U64STR_SIZE     22
+>> +#define DEBUGFS_BUF_SIZE       1024
+>> +#define DEBUGFS_NAME_SIZE      32
+>> +
+>> +#define        VERSION         "0.1.0"
+>> +#define BANNER         "hardware latency test"
+>> +#define DRVNAME                "hw_latency_test"
+>> +
+>> +#define DEFAULT_SAMPLE_WINDOW  1000000
+>> +#define        DEFAULT_SAMPLE_WIDTH    500000
+>> +#define        DEFAULT_LAT_THRESHOLD   10
+>> +
+>> +MODULE_LICENSE("GPL");
+>> +MODULE_AUTHOR("Luming Yu <luming.yu@gmail.com>");
+>> +MODULE_DESCRIPTION("A simple hardware latency test");
+>> +MODULE_VERSION(VERSION);
 >
-> I've pondered various options... increase temp variable space in
-> list_sort(), not using list_sort() and insertion sorting the blocks
-> instead, flushing the ordered write data early if the list gets too
-> long, figuring out how to remove blocks written back by the VM from the
-> list before the sort, and various other possible solutions. So far I'm
-> not sure which will be the best to choose, and since your situation is a
-> bit different it might not make sense to use the same solution.
 >
-> I just thought it was worth mentioning though since it was something
-> that we'd run across,
-thanks for your experience share. anyway, thanks.
-
-By the way, it will be appreciated if you can comment on other patches.
+> -------->o SNIP
 >
-> Steve.
+> Ok, hopefully this is just an unintentional oversight - but I don't
+> see where you are acknowledging that the original author of most of
+> this code is Jon Masters. It's fine for you to work on it, but you
+> have to somewhere acknowledge where it comes from.
+
+Thanks very much for pointing it out.
+
+I did ACK Jon Masters in the first push of this feature in July of this year.
+
+Yes, I will add Jon Master to be the first author of the work in right
+place, I will
+claim secondary place for myself . :-)
+
 >
+> Thanks
 >
-
-
-
--- 
-Regards,
-
-Zhi Yong Wu
+> John
