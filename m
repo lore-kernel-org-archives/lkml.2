@@ -1,144 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964779Ab2KEPbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:31:37 -0500
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:51474 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932925Ab2KEPWp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:22:45 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
-        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v9 13/34] vfs: have do_sys_truncate retry once on an ESTALE error
-Date: Mon,  5 Nov 2012 10:21:52 -0500
-Message-Id: <1352128933-28526-14-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
-References: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
+	id S933218Ab2KEPbv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:31:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59627 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932925Ab2KEPbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 10:31:48 -0500
+Date: Mon, 5 Nov 2012 16:31:40 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Chris Friesen <chris.friesen@genband.com>,
+        Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+In-Reply-To: <alpine.LNX.2.00.1211051535060.24253@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1211051628380.24253@pobox.suse.cz>
+References: <50919EED.3020601@genband.com> <36538307.gzWq1oO7Kg@linux-lqwf.site> <1351760905.2391.19.camel@dabdike.int.hansenpartnership.com> <alpine.LNX.2.00.1211011017230.6606@pobox.suse.cz> <1351762703.2391.31.camel@dabdike.int.hansenpartnership.com>
+ <alpine.LNX.2.00.1211011044290.6606@pobox.suse.cz> <1351763954.2391.37.camel@dabdike.int.hansenpartnership.com> <CACLa4puzLR2om6SHw3wVnfZ1nezVsKOp8+705AdHZ4_=JamYfw@mail.gmail.com> <20121101202701.GB20817@xo-6d-61-c0.localdomain> <5092E361.7080901@genband.com>
+ <20121102154833.GG3300@redhat.com> <alpine.LNX.2.00.1211040008280.24253@pobox.suse.cz> <87390ok0zy.fsf@xmission.com> <alpine.LNX.2.00.1211051535060.24253@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/open.c | 86 +++++++++++++++++++++++++++++++++------------------------------
- 1 file changed, 45 insertions(+), 41 deletions(-)
+On Mon, 5 Nov 2012, Jiri Kosina wrote:
 
-diff --git a/fs/open.c b/fs/open.c
-index 94d5649..2a32d5c 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -66,62 +66,66 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
- 	struct path path;
- 	struct inode *inode;
- 	int error;
-+	unsigned int lookup_flags = LOOKUP_FOLLOW;
-+	unsigned int try = 0;
- 
--	error = -EINVAL;
- 	if (length < 0)	/* sorry, but loff_t says... */
--		goto out;
-+		return -EINVAL;
- 
--	error = user_path(pathname, &path);
--	if (error)
--		goto out;
--	inode = path.dentry->d_inode;
-+	do {
-+		error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
-+		if (error)
-+			break;
-+		inode = path.dentry->d_inode;
- 
--	/* For directories it's -EISDIR, for other non-regulars - -EINVAL */
--	error = -EISDIR;
--	if (S_ISDIR(inode->i_mode))
--		goto dput_and_out;
-+		/* For dirs, -EISDIR. For other non-regulars, -EINVAL */
-+		error = -EISDIR;
-+		if (S_ISDIR(inode->i_mode))
-+			goto dput_and_out;
- 
--	error = -EINVAL;
--	if (!S_ISREG(inode->i_mode))
--		goto dput_and_out;
-+		error = -EINVAL;
-+		if (!S_ISREG(inode->i_mode))
-+			goto dput_and_out;
- 
--	error = mnt_want_write(path.mnt);
--	if (error)
--		goto dput_and_out;
-+		error = mnt_want_write(path.mnt);
-+		if (error)
-+			goto dput_and_out;
- 
--	error = inode_permission(inode, MAY_WRITE);
--	if (error)
--		goto mnt_drop_write_and_out;
-+		error = inode_permission(inode, MAY_WRITE);
-+		if (error)
-+			goto mnt_drop_write_and_out;
- 
--	error = -EPERM;
--	if (IS_APPEND(inode))
--		goto mnt_drop_write_and_out;
-+		error = -EPERM;
-+		if (IS_APPEND(inode))
-+			goto mnt_drop_write_and_out;
- 
--	error = get_write_access(inode);
--	if (error)
--		goto mnt_drop_write_and_out;
-+		error = get_write_access(inode);
-+		if (error)
-+			goto mnt_drop_write_and_out;
- 
--	/*
--	 * Make sure that there are no leases.  get_write_access() protects
--	 * against the truncate racing with a lease-granting setlease().
--	 */
--	error = break_lease(inode, O_WRONLY);
--	if (error)
--		goto put_write_and_out;
-+		/*
-+		 * Make sure that there are no leases. get_write_access()
-+		 * protects against the truncate racing with a lease-granting
-+		 * setlease().
-+		 */
-+		error = break_lease(inode, O_WRONLY);
-+		if (error)
-+			goto put_write_and_out;
- 
--	error = locks_verify_truncate(inode, NULL, length);
--	if (!error)
--		error = security_path_truncate(&path);
--	if (!error)
--		error = do_truncate(path.dentry, length, 0, NULL);
-+		error = locks_verify_truncate(inode, NULL, length);
-+		if (!error)
-+			error = security_path_truncate(&path);
-+		if (!error)
-+			error = do_truncate(path.dentry, length, 0, NULL);
- 
- put_write_and_out:
--	put_write_access(inode);
-+		put_write_access(inode);
- mnt_drop_write_and_out:
--	mnt_drop_write(path.mnt);
-+		mnt_drop_write(path.mnt);
- dput_and_out:
--	path_put(&path);
--out:
-+		path_put(&path);
-+		lookup_flags |= LOOKUP_REVAL;
-+	} while (retry_estale(error, try++));
- 	return error;
- }
- 
+> Do I understand you correctly that by the 'glue' stuff you actually mean 
+> the division of the kexec image into segments?
+> 
+> Of course, when we are dividing the image into segments and then passing 
+> those individually (even more so if some transformations are performed on 
+> those segments, which I don't know whether that's the case or not), then 
+> we can't do any signature verification of the image any more.
+> 
+> But I still don't fully understand what is so magical about taking the 
+> kernel image as is, and passing the whole lot to the running kernel as-is, 
+> allowing for signature verification.
+> 
+> Yes, it couldn't be sys_kexec_load(), as that would be ABI breakage, so 
+> it'd mean sys_kexec_raw_load(), or whatever ... but I fail to see why that 
+> would be problem in principle.
+> 
+> If you can point me to the code where all the magic that prevents this 
+> easy handling is happening, I'd appreciate it.
+
+OK, so after wandering through kexec-tools sources for a while, I am 
+starting to get your point. I wasn't actually aware of the fact that it 
+supports such a wide variety of binary formats etc. (multiboot, nbi, etc).
+
+I had a naive idea of just putting in-kernel verification of a complete 
+ELF binary passed to kernel by userspace, and if the signature matches, 
+jumping to it.
+Would work for elf-x86_64 nicely I guess, but we'd lose a lot of other 
+functionality currently being provided by kexec-tools.
+
+Bah. This is a real pandora's box.
+
 -- 
-1.7.11.7
-
+Jiri Kosina
+SUSE Labs
