@@ -1,89 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab2KEJx2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 04:53:28 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:50833 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625Ab2KEJx0 (ORCPT
+	id S1753772Ab2KEJ7g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 04:59:36 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50074 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753536Ab2KEJ7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 04:53:26 -0500
-Date: Mon, 5 Nov 2012 10:53:15 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
-Subject: SPARC and OF_GPIO
-Message-ID: <20121105095315.GG5847@avionic-0098.mockup.avionic-design.de>
+	Mon, 5 Nov 2012 04:59:34 -0500
+Message-ID: <50978DFE.1000005@linux.vnet.ibm.com>
+Date: Mon, 05 Nov 2012 17:59:26 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IuhbYIxU28t+Kd57"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:1pC+tkKd35wdMfUzq8S8IA3RcXMu7ci8J8Rge3hsMg8
- Oa0R1UDcPLWUgjuflIeT9GfstV/YTQ8Ayxu//p8lN+Iv1fEaIj
- MhV6piWJ2LP9G1HrbxfVSS3uxDoAEArcWUYgMpu8An1GuBwCVK
- dgKN7wo6ODDfiDY3Q+hRctH0GNpsAtZw4By2AtNDKXtcRQLd26
- Z9xaqJGnvGJ4/02qQ+gLDXoW4m0tQgKjSm8h+TArXr7OcmFFlo
- zoUGkD2B6y+Q0Q2ilBfQmQOOCwCbzjjM3L0J0Y/DO7YtCIq9Uu
- tYo4Rbh8TBlQeshwdMpDKWLgOJGiSGH+qxFgfx3IhgVWTPRGXz
- I0fib+7dqZdob7ltuULiGpWhQhhyLtFY+/BAOmoBJhI5pTqgNY
- sv4ViI1aUdQlKIPrwYTA9iBiQwRjdCOP8FZomtOohfe1z+K5SH
- 33l3y
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH] KVM: MMU: lazily drop large spte
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12110509-2674-0000-0000-0000069D9360
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Do not drop large spte until it can be insteaded by small pages so that
+the guest can happliy read memory through it
 
---IuhbYIxU28t+Kd57
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The idea is from Avi:
+| As I mentioned before, write-protecting a large spte is a good idea,
+| since it moves some work from protect-time to fault-time, so it reduces
+| jitter.  This removes the need for the return value.
 
-[resending with David's correct email address]
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c |   34 +++++++++-------------------------
+ 1 files changed, 9 insertions(+), 25 deletions(-)
 
-Hi David,
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index b875a9e..1d8869c 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1105,7 +1105,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
 
-There have been a number of reports that Linux kernel builds fail on
-SPARC because it doesn't support OF_GPIO, which provides the of_node
-field of the struct gpio_chip.
+ /*
+  * Write-protect on the specified @sptep, @pt_protect indicates whether
+- * spte writ-protection is caused by protecting shadow page table.
++ * spte write-protection is caused by protecting shadow page table.
+  * @flush indicates whether tlb need be flushed.
+  *
+  * Note: write protection is difference between drity logging and spte
+@@ -1114,31 +1114,23 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
+  *   its dirty bitmap is properly set.
+  * - for spte protection, the spte can be writable only after unsync-ing
+  *   shadow page.
+- *
+- * Return true if the spte is dropped.
+  */
+-static bool
++static void
+ spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
+ {
+ 	u64 spte = *sptep;
 
-One of the drivers I wrote (gpio-adnp) accesses this unconditionally but
-only depends on OF and not OF_GPIO, so it fails to build on SPARC. A
-similar problem happens with the gpio-fan driver, which defines the OF
-match table only if OF_GPIO is selected, but uses it even if only OF but
-not OF_GPIO is selected.
+ 	if (!is_writable_pte(spte) &&
+ 	      !(pt_protect && spte_is_locklessly_modifiable(spte)))
+-		return false;
++		return;
 
-While it is clearly the drivers which are at fault here it still raises
-the question as to why SPARC still conflicts with OF_GPIO. Over two
-years ago, commit 5ab5fc7 made most of the OF symbols available to all
-platforms except SPARC. The commit message explicitly states that this
-should probably be re-evaluated.
+ 	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
 
-Are you aware of any reasons why this conflict would still be necessary?
-This is not only the case for OF_GPIO but likely also for OF_SPI,
-OF_I2C, OF_IRQ and OF_ADDRESS. Shouldn't those all work even on SPARC
-nowadays?
+-	if (__drop_large_spte(kvm, sptep)) {
+-		*flush |= true;
+-		return true;
+-	}
+-
+ 	if (pt_protect)
+ 		spte &= ~SPTE_MMU_WRITEABLE;
+ 	spte = spte & ~PT_WRITABLE_MASK;
 
-Thierry
+ 	*flush |= mmu_spte_update(sptep, spte);
+-	return false;
+ }
 
---IuhbYIxU28t+Kd57
-Content-Type: application/pgp-signature
+ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+@@ -1150,11 +1142,8 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+ 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
+ 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
+-		if (spte_write_protect(kvm, sptep, &flush, pt_protect)) {
+-			sptep = rmap_get_first(*rmapp, &iter);
+-			continue;
+-		}
 
-iQIcBAEBAgAGBQJQl4yLAAoJEN0jrNd/PrOhXygP/jGMHlQziQqKLTiAjztsBcJ+
-35EAeHeU30ygMpJ9sVBuKbTkj3qPtkSyEYJ/W8QQxQAxvf9qJYcXEIZr5K9QtXnX
-03ZpN7qFdeJJWyduC1SbT1X+xKuMnpbbGHMYCHyeR9SZG4SVRxneyTkkzP+8He5t
-hfVqA0p1YbvplfYoDPHNdXYNWjZsiFQVKmoAcEz+SmuLCfm5A82mnhGhl+V0gANT
-ALKJQeIPL0UwoUEsjQPKE2KWhRj1I2FRXdz2MUk4UJi+bzFgSvu1YNupMyG5RPO9
-qrKM4FR88/iIm661QbQCHr92N2ifm03Yij/2U7rg8Ep9689NmmH46xk8u/OtIrXw
-Y4dsp4HV0Pjt5fgNyHO5dAEq/rnXayezKSamyBXCdlgK04ALHqfm5iLUn31w/ftF
-26A8b2NLiMNl4JcEZuwmQ6y/d0VNAhoTykRcfBiaPbO7yPbN3ddgyk+z88/mB+h9
-i11nHnNKSYdL2Wx3GyuXcjzpu2aoUvFjo8jpH0GBQvG4VMWguNUctJ7RCU4C8Bp7
-eKc5zHv2pzGwIJgQaN7dCNfSUtSAgIf1WJGdgTx22YIGWrKpoNKtw46pDvhaaAZB
-GkFncassQ9rh359byZJEe8GXYu7Tkdyrh4dNJCbEcpcDn5fJJLeHQBmIG47RTDPq
-kVtlIh6ds+YTlRw/Zm28
-=Dxcz
------END PGP SIGNATURE-----
++		spte_write_protect(kvm, sptep, &flush, pt_protect);
+ 		sptep = rmap_get_next(&iter);
+ 	}
 
---IuhbYIxU28t+Kd57--
+@@ -2381,14 +2370,6 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 	if ((pte_access & ACC_WRITE_MASK)
+ 	    || (!vcpu->arch.mmu.direct_map && write_fault
+ 		&& !is_write_protection(vcpu) && !user_fault)) {
+-
+-		if (level > PT_PAGE_TABLE_LEVEL &&
+-		    has_wrprotected_page(vcpu->kvm, gfn, level)) {
+-			ret = 1;
+-			drop_spte(vcpu->kvm, sptep);
+-			goto done;
+-		}
+-
+ 		spte |= PT_WRITABLE_MASK | SPTE_MMU_WRITEABLE;
+
+ 		if (!vcpu->arch.mmu.direct_map
+@@ -2413,7 +2394,9 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		if (!can_unsync && is_writable_pte(*sptep))
+ 			goto set_pte;
+
+-		if (mmu_need_write_protect(vcpu, gfn, can_unsync)) {
++		if ((level > PT_PAGE_TABLE_LEVEL &&
++		   has_wrprotected_page(vcpu->kvm, gfn, level)) ||
++		      mmu_need_write_protect(vcpu, gfn, can_unsync)) {
+ 			pgprintk("%s: found shadow page for %llx, marking ro\n",
+ 				 __func__, gfn);
+ 			ret = 1;
+@@ -2428,7 +2411,6 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ set_pte:
+ 	if (mmu_spte_update(sptep, spte))
+ 		kvm_flush_remote_tlbs(vcpu->kvm);
+-done:
+ 	return ret;
+ }
+
+@@ -2635,6 +2617,8 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 			break;
+ 		}
+
++		drop_large_spte(vcpu, iterator.sptep);
++
+ 		if (!is_shadow_present_pte(*iterator.sptep)) {
+ 			u64 base_addr = iterator.addr;
+
+-- 
+1.7.7.6
+
