@@ -1,17 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964793Ab2KEXFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 18:05:40 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:35809 "EHLO smtp.outflux.net"
+	id S932945Ab2KEXJv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 18:09:51 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:33304 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932376Ab2KEXFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 18:05:19 -0500
+	id S933192Ab2KEXFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 18:05:39 -0500
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 008/104] drivers/net/ethernet/sun: remove depends on CONFIG_EXPERIMENTAL
-Date: Mon,  5 Nov 2012 15:03:25 -0800
-Message-Id: <1352156701-4038-9-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Beulich <JBeulich@novell.com>, Mel Gorman <mel@csn.ul.ie>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: [PATCH 103/104] mm: remove depends on CONFIG_EXPERIMENTAL
+Date: Mon,  5 Nov 2012 15:05:00 -0800
+Message-Id: <1352156701-4038-104-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352156701-4038-1-git-send-email-keescook@chromium.org>
 References: <1352156701-4038-1-git-send-email-keescook@chromium.org>
@@ -24,27 +28,27 @@ The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
 while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
-Cc: "David S. Miller" <davem@davemloft.net>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Jan Beulich <JBeulich@novell.com>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/net/ethernet/sun/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/Kconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/sun/Kconfig b/drivers/net/ethernet/sun/Kconfig
-index 57bfd85..ae3a355 100644
---- a/drivers/net/ethernet/sun/Kconfig
-+++ b/drivers/net/ethernet/sun/Kconfig
-@@ -32,8 +32,8 @@ config HAPPYMEAL
- 	  will be called sunhme.
+diff --git a/mm/Kconfig b/mm/Kconfig
+index a3f8ddd..679945e 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -1,6 +1,5 @@
+ config SELECT_MEMORY_MODEL
+ 	def_bool y
+-	depends on EXPERIMENTAL || ARCH_SELECT_MEMORY_MODEL
  
- config SUNBMAC
--	tristate "Sun BigMAC 10/100baseT support (EXPERIMENTAL)"
--	depends on SBUS && EXPERIMENTAL
-+	tristate "Sun BigMAC 10/100baseT support"
-+	depends on SBUS
- 	select CRC32
- 	---help---
- 	  This driver supports the "be" interface available as an Sbus option.
+ choice
+ 	prompt "Memory model"
 -- 
 1.7.9.5
 
