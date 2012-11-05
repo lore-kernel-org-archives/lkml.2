@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab2KEQzB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:55:01 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56365 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464Ab2KEQy7 (ORCPT
+	id S932804Ab2KEQzH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:55:07 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61342 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932728Ab2KEQzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:54:59 -0500
+	Mon, 5 Nov 2012 11:55:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <1792336.CIafglX82A@vostro.rjw.lan>
+In-Reply-To: <4052192.ry8JrGTr6H@vostro.rjw.lan>
 References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <1351928793-14375-3-git-send-email-mika.westerberg@linux.intel.com>
- <CAErSpo5q64uEse3aYYZkuQrD+9AJ9HFP_VVB1TabYfO-_BvY3g@mail.gmail.com> <1792336.CIafglX82A@vostro.rjw.lan>
+ <20121103201310.GQ16648@intel.com> <1535917.BaYBBNgGy0@vostro.rjw.lan> <4052192.ry8JrGTr6H@vostro.rjw.lan>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 5 Nov 2012 09:54:37 -0700
-Message-ID: <CAErSpo4Rnu9ioyXWfaNEkUZh402hnFAuwJ9dk5wxT5TNOkc97A@mail.gmail.com>
+Date: Mon, 5 Nov 2012 09:54:42 -0700
+Message-ID: <CAErSpo6gfL+QFoWK+8ahYAj+vnp4OCn4B=-vALGbU_LnsyT8oQ@mail.gmail.com>
 Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
@@ -29,102 +28,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 3, 2012 at 2:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Saturday, November 03, 2012 01:42:02 PM Bjorn Helgaas wrote:
->> On Sat, Nov 3, 2012 at 1:46 AM, Mika Westerberg
->> <mika.westerberg@linux.intel.com> wrote:
->> > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
->> > configure the SPI slave devices behind the SPI controller. This patch adds
->> > support for this to the SPI core.
->> >
->> > In addition we bind ACPI nodes to SPI devices. This makes it possible for
->> > the slave drivers to get the ACPI handle for further configuration.
->> >
->> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> > Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> > ---
->> >  drivers/spi/spi.c |  231 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
-
->> > +static acpi_status acpi_spi_add_resources(struct acpi_resource *res, void *data)
->> > +{
->> > +       struct acpi_spi_device_info *info = data;
->> > +       struct acpi_resource_spi_serialbus *sb;
->> > +       struct spi_device *spi = info->spi;
->> > +
->> > +       switch (res->type) {
->> > +       case ACPI_RESOURCE_TYPE_SERIAL_BUS:
->> > +               sb = &res->data.spi_serial_bus;
->> > +               if (sb->type == ACPI_RESOURCE_SERIAL_TYPE_SPI) {
->> > +                       spi->chip_select = sb->device_selection;
->> > +                       spi->max_speed_hz = sb->connection_speed;
->> > +
->> > +                       /* Mode (clock phase/polarity/etc. */
->> > +                       if (sb->clock_phase == ACPI_SPI_SECOND_PHASE)
->> > +                               spi->mode |= SPI_CPHA;
->> > +                       if (sb->clock_polarity == ACPI_SPI_START_HIGH)
->> > +                               spi->mode |= SPI_CPOL;
->> > +                       if (sb->device_polarity == ACPI_SPI_ACTIVE_HIGH)
->> > +                               spi->mode |= SPI_CS_HIGH;
->> > +
->> > +                       /*
->> > +                        * The info is valid once we have found the
->> > +                        * SPISerialBus resource.
->> > +                        */
->> > +                       info->valid = true;
->> > +               }
->> > +               break;
->> > +
->> > +       case ACPI_RESOURCE_TYPE_IRQ:
->> > +               info->gsi = res->data.irq.interrupts[0];
->> > +               info->triggering = res->data.irq.triggering;
->> > +               info->polarity = res->data.irq.polarity;
->> > +               break;
->> > +
->> > +       case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
->> > +               info->gsi = res->data.extended_irq.interrupts[0];
->> > +               info->triggering = res->data.extended_irq.triggering;
->> > +               info->polarity = res->data.extended_irq.polarity;
+On Mon, Nov 5, 2012 at 3:31 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Saturday, November 03, 2012 09:59:28 PM Rafael J. Wysocki wrote:
+>> On Saturday, November 03, 2012 10:13:10 PM Mika Westerberg wrote:
+>> > On Sat, Nov 03, 2012 at 01:42:02PM -0600, Bjorn Helgaas wrote:
+>> > > On Sat, Nov 3, 2012 at 1:46 AM, Mika Westerberg
+>> > > <mika.westerberg@linux.intel.com> wrote:
+>> > > > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
+>> > > > configure the SPI slave devices behind the SPI controller. This patch adds
+>> > > > support for this to the SPI core.
+> [...]
+>> > And if the ACPI core parses the _CRS, how does it pass all the resources to
+>> > the drivers?
 >>
->> A driver doesn't seem like the right place for _CRS parsing code.
->
-> This is not a driver, however. :-)
-
-OK.  Can you describe what this is?  I assume the picture involves an
-SPI master device and one or more SPI slave devices, and the ACPI
-namespace tells us something about them, and somehow this code is
-related to those devices because it's looking at _CRS for them.
-
-A _CRS method is associated with a Device in the namespace.  What is
-that device in this case?  What is its PNP ID?  What driver claims
-devices with that ID?
-
->> > +static void acpi_register_spi_devices(struct spi_master *master)
->> > +{
->> > +       acpi_status status;
->> > +       acpi_handle handle;
->> > +
->> > +       handle = master->dev.acpi_handle;
->> > +       if (!handle)
->> > +               return;
->> > +
->> > +       status = acpi_spi_enumerate(handle, acpi_spi_add_device, master);
+>> Pretty much the same way the $subject patch does.
 >>
->> How does this work with hot-plug?  acpi_spi_enumerate() walks a
->> portion of the namespace.  How do we deal with changes to that part of
->> the namespace?  For example, what happens if this part of the
->> namespace gets pruned because an enclosing device is removed?  Is
->> there a way to discover new SPI devices if they get added?
+>> Instead of parsing the entire subtree below an SPI controller and trying
+>> acpi_spi_add_device() for each device node in there, it could call
+>> acpi_spi_add_device() whenever it finds a device of type
+>> ACPI_RESOURCE_TYPE_SERIAL_BUS/ACPI_RESOURCE_SERIAL_TYPE_SPI.
+>> The only problem is how to pass "master" to it.
+>>
+>> So Bjorn, do you have any idea how we could pass the "master" pointer from the
+>> ACPI core to acpi_spi_add_device() in a sensible way?
+>>
+>> An alternative might be to store the information obtained from _CRS in
+>> struct acpi_device objects created by the ACPI core while parsing the
+>> namespace.  We do that already for things like _PRW, so we might as well do it
+>> for _CRS.  Then, the SPI core could just walk the subtree of the device hierarchy
+>> below the SPI controller's acpi_device to extract that information.
+>> Maybe that's the way to go?
 >
-> Yes, there should be a way to do that eventually.  No, we don't have any
-> removable SPI devices described by ACPI yet, as far as I know.  So even if
-> we added code for that now, we wouldn't be able to test it anyway with any
-> real hardware until such devices become available.  I have no idea when that's
-> going to happen, though.
+> The general idea is to move the _CRS parsing routine from acpi_platform.c
+> to scan.c and make it attach resource objects to struct acpi_device.
+>
+> I'm thinking about adding a list head to struct acpi_device pointing to a
+> list of entries like:
+>
+> struct resource_list_entry {
+>         struct list_head node;
+>         struct resource *resources;
+>         unsigned int count;
+> };
+>
+> where "resources" is an array of resources (e.g. interrupts) in the given
+> entry and count is the size of that array.
+>
+> That list would contain common resources like ACPI_RESOURCE_TYPE_FIXED_MEMORY32,
+> ACPI_RESOURCE_TYPE_IRQ, ACPI_RESOURCE_TYPE_ADDRESS32, ACPI_RESOURCE_TYPE_EXTENDED_IRQ.
 
-I'm not asking about hotplug of devices on an SPI bus.  I'm asking
-about hotplug of SPI masters.  For example, let's say you hot-add a
-whole node that contains an SPI master.  I assume there's some ACPI
-Device node that describes the SPI master, and a hot-add would add a
-subtree to the namespace that contains a new SPI master Device.
+This is exactly what PNPACPI already does.  For every Device node in
+the namespace, pnpacpi/rsparser.c parses _CRS and builds a list of
+struct resources that correspond to it.  If you put this functionality
+in acpi/scan.c, should we get rid of PNPACPI?
 
 Bjorn
