@@ -1,52 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052Ab2KEGC6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 01:02:58 -0500
-Received: from shadow.lunarbreeze.com ([216.97.239.120]:41691 "EHLO
-	shadow.lunarbreeze.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab2KEGC5 (ORCPT
+	id S1752559Ab2KEGGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 01:06:01 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35887 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab2KEGF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 01:02:57 -0500
-X-Greylist: delayed 1615 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Nov 2012 01:02:57 EST
-Message-ID: <278dd4935298bb692f9fdac649c8eaad.squirrel@www.simantinee.com>
-Date: Sun, 4 Nov 2012 21:35:59 -0800
-Subject: kernels from 3.3.x series onwards fail to boot on ARM-based ZEUS
- (XScale PXA270) Single Board Computer
-From: sanjeevn@simantinee.com
-To: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - shadow.lunarbreeze.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - simantinee.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 5 Nov 2012 01:05:59 -0500
+From: Daniel J Blueman <daniel@numascale-asia.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Daniel J Blueman <daniel@numascale-asia.com>
+Subject: [PATCH 1/3, v5] AMD64 EDAC: Add muli-domain support
+Date: Mon,  5 Nov 2012 14:05:24 +0800
+Message-Id: <1352095526-6522-1-git-send-email-daniel@numascale-asia.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Fix the handling of memory controller detection to index the array
+of detected Northbridges, allowing memory controllers over multiple
+PCI domains in federated systems eg using Numascale's NumaConnect/
+NumaChip.
 
-Although the ARM-based Zeus (XScale PXA270) Single board computer works
-well for 3.2.x series kernels, it fails to boot from series 3.3.x. It
-attempts to boot but stops at:
+v4: Generate linear Northbridge ID by indexing detected Northbridges
+v5: Reorder functions to prevent extra function declaration; merge 4th
+    patch; simplify Fam15h code; add detail to warning
 
-"Uncompressing Linux... done, booting the kernel".
+Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+---
+ arch/x86/include/asm/amd_nb.h |   13 +++++++++++
+ drivers/edac/amd64_edac.c     |   49 ++++++++++++++++++++++-------------------
+ drivers/edac/amd64_edac.h     |    6 -----
+ 3 files changed, 39 insertions(+), 29 deletions(-)
 
-This problem is also exhibited in kernel series 3.4.x, 3.5.x, 3.6.x.
-The kernels are configured with zeus_defconfig and built with
-arm-iwmmxt-linux-gnueabi toolchain.
-
-Please CC answers/comments posted.
-
-
-Thanks & Regards,
-Sanjeev N.
+diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+index b3341e9..9f5532a 100644
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -81,6 +81,19 @@ static inline struct amd_northbridge *node_to_amd_nb(int node)
+ 	return (node < amd_northbridges.num) ? &amd_northbridges.nb[node] : NULL;
+ }
+ 
++static inline u16 amd_get_node_id(struct pci_dev *pdev)
++{
++	int i;
++
++	for (i = 0; i != amd_nb_num(); i++)
++		if (pci_domain_nr(node_to_amd_nb(i)->misc->bus) == pci_domain_nr(pdev->bus) &&
++		    PCI_SLOT(node_to_amd_nb(i)->misc->devfn) == PCI_SLOT(pdev->devfn))
++			return i;
++
++	WARN(1, "Unable to find AMD Northbridge identifier for %s\n", pci_name(pdev));
++	return 0;
++}
++
+ #else
+ 
+ #define amd_nb_num(x)		0
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index cc8e7c7..852f1cd 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -982,6 +982,24 @@ static u64 get_error_address(struct mce *m)
+ 	return addr;
+ }
+ 
++static struct pci_dev *pci_get_related_function(unsigned int vendor,
++						unsigned int device,
++						struct pci_dev *related)
++{
++	struct pci_dev *dev = NULL;
++
++	dev = pci_get_device(vendor, device, dev);
++	while (dev) {
++		if (pci_domain_nr(dev->bus) == pci_domain_nr(related->bus) &&
++		    (dev->bus->number == related->bus->number) &&
++		    (PCI_SLOT(dev->devfn) == PCI_SLOT(related->devfn)))
++			break;
++		dev = pci_get_device(vendor, device, dev);
++	}
++
++	return dev;
++}
++
+ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
+ {
+ 	struct cpuinfo_x86 *c = &boot_cpu_data;
+@@ -1001,11 +1019,13 @@ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
+ 
+ 	/* Factor in CC6 save area by reading dst node's limit reg */
+ 	if (c->x86 == 0x15) {
+-		struct pci_dev *f1 = NULL;
+-		u8 nid = dram_dst_node(pvt, range);
++		struct pci_dev *misc, *f1 = NULL;
++		struct amd64_family_type *fam_type;
++		u16 nid = dram_dst_node(pvt, range);
+ 		u32 llim;
+ 
+-		f1 = pci_get_domain_bus_and_slot(0, 0, PCI_DEVFN(0x18 + nid, 1));
++		misc = node_to_amd_nb(nid)->misc;
++		f1 = pci_get_related_function(misc->vendor, PCI_DEVICE_ID_AMD_15H_NB_F1, misc);
+ 		if (WARN_ON(!f1))
+ 			return;
+ 
+@@ -1712,23 +1732,6 @@ static struct amd64_family_type amd64_family_types[] = {
+ 	},
+ };
+ 
+-static struct pci_dev *pci_get_related_function(unsigned int vendor,
+-						unsigned int device,
+-						struct pci_dev *related)
+-{
+-	struct pci_dev *dev = NULL;
+-
+-	dev = pci_get_device(vendor, device, dev);
+-	while (dev) {
+-		if ((dev->bus->number == related->bus->number) &&
+-		    (PCI_SLOT(dev->devfn) == PCI_SLOT(related->devfn)))
+-			break;
+-		dev = pci_get_device(vendor, device, dev);
+-	}
+-
+-	return dev;
+-}
+-
+ /*
+  * These are tables of eigenvectors (one per line) which can be used for the
+  * construction of the syndrome tables. The modified syndrome search algorithm
+@@ -2546,7 +2549,7 @@ static int amd64_init_one_instance(struct pci_dev *F2)
+ 	struct mem_ctl_info *mci = NULL;
+ 	struct edac_mc_layer layers[2];
+ 	int err = 0, ret;
+-	u8 nid = get_node_id(F2);
++	u8 nid = amd_get_node_id(F2);
+ 
+ 	ret = -ENOMEM;
+ 	pvt = kzalloc(sizeof(struct amd64_pvt), GFP_KERNEL);
+@@ -2637,7 +2640,7 @@ err_ret:
+ static int __devinit amd64_probe_one_instance(struct pci_dev *pdev,
+ 					     const struct pci_device_id *mc_type)
+ {
+-	u8 nid = get_node_id(pdev);
++	u8 nid = amd_get_node_id(pdev);
+ 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
+ 	struct ecc_settings *s;
+ 	int ret = 0;
+@@ -2687,7 +2690,7 @@ static void __devexit amd64_remove_one_instance(struct pci_dev *pdev)
+ {
+ 	struct mem_ctl_info *mci;
+ 	struct amd64_pvt *pvt;
+-	u8 nid = get_node_id(pdev);
++	u8 nid = amd_get_node_id(pdev);
+ 	struct pci_dev *F3 = node_to_amd_nb(nid)->misc;
+ 	struct ecc_settings *s = ecc_stngs[nid];
+ 
+diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
+index 8d48047..90cae61 100644
+--- a/drivers/edac/amd64_edac.h
++++ b/drivers/edac/amd64_edac.h
+@@ -290,12 +290,6 @@
+ /* MSRs */
+ #define MSR_MCGCTL_NBE			BIT(4)
+ 
+-/* AMD sets the first MC device at device ID 0x18. */
+-static inline u8 get_node_id(struct pci_dev *pdev)
+-{
+-	return PCI_SLOT(pdev->devfn) - 0x18;
+-}
+-
+ enum amd_families {
+ 	K8_CPUS = 0,
+ 	F10_CPUS,
+-- 
+1.7.10.4
 
