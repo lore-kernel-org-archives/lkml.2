@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab2KEOJu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:09:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52090 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932276Ab2KEOJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:09:48 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [patch,v2 04/10] scsi: allocate scsi_cmnd-s from the device's local numa node
-References: <1351892763-21325-1-git-send-email-jmoyer@redhat.com>
-	<1351892763-21325-5-git-send-email-jmoyer@redhat.com>
-	<50954818.8050908@acm.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 05 Nov 2012 09:09:43 -0500
-In-Reply-To: <50954818.8050908@acm.org> (Bart Van Assche's message of "Sat, 03
-	Nov 2012 17:36:40 +0100")
-Message-ID: <x49bofccfa0.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754286Ab2KEOMa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:12:30 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37013 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932276Ab2KEOM2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 09:12:28 -0500
+Date: Mon, 5 Nov 2012 08:59:29 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Andrew Morton <akpm@linux-foundation.org>,
+        kubakici@wp.pl, stern@rowland.harvard.edu,
+        Greg KH <gregkh@linuxfoundation.org>, Mark Salter <msalter@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Subject: Re: [PATCH] dma-debug: fix to not have dependency on get_dma_ops()
+ interface
+Message-ID: <20121105135929.GF11802@phenom.dumpdata.com>
+References: <1351983607.2773.9.camel@lorien2>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351983607.2773.9.camel@lorien2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bart Van Assche <bvanassche@acm.org> writes:
+On Sat, Nov 03, 2012 at 05:00:07PM -0600, Shuah Khan wrote:
+> dma-debug depends on get_dma_ops() interface. Several architectures
+> do not define dma_ops and get_dma_ops(). When dma debug interfaces are
+> used on an architecture (e.g: c6x) that doesn't define get_dmap_ops(),
+> compilation fails. Changing dma-debug to call dma_mapping_error() instead
+> of defining its own that calls get_dma_ops(), such that the internal use of
+> dma_mapping_error() doesn't interfere with the debug_dma_mapping_error()
+> interface's mapping error checks. Moving dma_mapping_error() checks in
+> check_unmap() under the dma debug entry not found is sufficient to fix the
+> problem.
 
-> On 11/02/12 22:45, Jeff Moyer wrote:
->> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
->> index 2936b44..4db6973 100644
->> --- a/drivers/scsi/scsi.c
->> +++ b/drivers/scsi/scsi.c
->> @@ -173,16 +173,20 @@ static DEFINE_MUTEX(host_cmd_pool_mutex);
->>    * NULL on failure
->>    */
->>   static struct scsi_cmnd *
->> -scsi_pool_alloc_command(struct scsi_host_cmd_pool *pool, gfp_t gfp_mask)
->> +scsi_pool_alloc_command(struct scsi_host_cmd_pool *pool, gfp_t gfp_mask,
->> +			int node)
->>   {
->>   	struct scsi_cmnd *cmd;
->>
->> -	cmd = kmem_cache_zalloc(pool->cmd_slab, gfp_mask | pool->gfp_mask);
->> +	cmd = kmem_cache_alloc_node(pool->cmd_slab,
->> +				    gfp_mask | pool->gfp_mask | __GFP_ZERO,
->> +				    node);
->>   	if (!cmd)
->>   		return NULL;
->>
->> -	cmd->sense_buffer = kmem_cache_alloc(pool->sense_slab,
->> -					     gfp_mask | pool->gfp_mask);
->> +	cmd->sense_buffer = kmem_cache_alloc_node(pool->sense_slab,
->> +					gfp_mask | pool->gfp_mask | __GFP_ZERO,
->> +					node);
->
-> It's not clear to me why __GFP_ZERO is added to the allocation flags ?
+OK.
 
-Hmm, seems I thought this was another case of kmem_cache_zalloc.  I'll
-fix it up.
+It looks ok to me.
 
-Cheers,
-Jeff
+> -   debug_dma_mapping_error() - need internal mapping error routine to
+> -   avoid debug checks */
+> -#ifndef DMA_ERROR_CODE
+> -#define DMA_ERROR_CODE 0
+> -#endif
+> -static inline int has_mapping_error(struct device *dev, dma_addr_t dma_addr)
+> -{
+> -	const struct dma_map_ops *ops = get_dma_ops(dev);
+> -	if (ops->mapping_error)
+> -		return ops->mapping_error(dev, dma_addr);
+> -
+> -	return (dma_addr == DMA_ERROR_CODE);
+> -}
+> -
+>  static void check_unmap(struct dma_debug_entry *ref)
+>  {
+>  	struct dma_debug_entry *entry;
+>  	struct hash_bucket *bucket;
+>  	unsigned long flags;
+>  
+> -	if (unlikely(has_mapping_error(ref->dev, ref->dev_addr))) {
+> -		err_printk(ref->dev, NULL, "DMA-API: device driver tries "
+> -			   "to free an invalid DMA memory address\n");
+> -		return;
+> -	}
+> -
+>  	bucket = get_hash_bucket(ref, &flags);
+>  	entry = bucket_find_exact(bucket, ref);
+>  
+>  	if (!entry) {
+> +		if (dma_mapping_error(ref->dev, ref->dev_addr)) {
+> +			err_printk(ref->dev, NULL,
+> +				   "DMA-API: device driver tries "
+> +				   "to free an invalid DMA memory address\n");
+> +			return;
+> +		}
+>  		err_printk(ref->dev, NULL, "DMA-API: device driver tries "
+>  			   "to free DMA memory it has not allocated "
+>  			   "[device address=0x%016llx] [size=%llu bytes]\n",
+> @@ -1055,7 +1040,7 @@ void debug_dma_map_page(struct device *dev, struct page *page, size_t offset,
+>  	if (unlikely(global_disable))
+>  		return;
+>  
+> -	if (unlikely(has_mapping_error(dev, dma_addr)))
+> +	if (dma_mapping_error(dev, dma_addr))
+>  		return;
+>  
+>  	entry = dma_entry_alloc();
+> -- 
+> 1.7.9.5
+> 
+> 
