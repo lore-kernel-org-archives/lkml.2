@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab2KEO52 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:57:28 -0500
-Received: from juliette.telenet-ops.be ([195.130.137.74]:42043 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490Ab2KEO51 (ORCPT
+	id S932707Ab2KEPEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:04:48 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:62962 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab2KEPEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:57:27 -0500
-Message-ID: <5097D3D2.9020407@acm.org>
-Date: Mon, 05 Nov 2012 15:57:22 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121025 Thunderbird/16.0.2
+	Mon, 5 Nov 2012 10:04:47 -0500
+Message-ID: <5097D58A.7030901@gmail.com>
+Date: Mon, 05 Nov 2012 08:04:42 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [patch,v2 05/10] sd: use alloc_disk_node
-References: <1351892763-21325-1-git-send-email-jmoyer@redhat.com> <1351892763-21325-6-git-send-email-jmoyer@redhat.com> <50954852.5050209@acm.org> <x497gq0cf54.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x497gq0cf54.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Hannes Frederic Sowa <hannes@mailcolloid.de>
+CC: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, ananth@in.ibm.com, fweisbec@gmail.com,
+        suzuki@in.ibm.com, tglx@linutronix.de
+Subject: Re: [tip:perf/core] perf tools: Remove the node from rblist in strlist__remove
+References: <20120829055840.7802.1459.stgit@suzukikp.in.ibm.com> <tip-4592281403e74dc4401d5803ec9948d43bbee7ae@git.kernel.org> <CAMEyesC9H+k-Ypd6F6wLGTWXJzjQ3Va8jQ0ANJzk6gf3FUMOtw@mail.gmail.com>
+In-Reply-To: <CAMEyesC9H+k-Ypd6F6wLGTWXJzjQ3Va8jQ0ANJzk6gf3FUMOtw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/12 15:12, Jeff Moyer wrote:
-> Bart Van Assche <bvanassche@acm.org> writes:
+On 11/3/12 2:07 PM, Hannes Frederic Sowa wrote:
+> On Fri, Sep 7, 2012 at 8:04 AM, tip-bot for Suzuki K. Poulose
+> <suzuki@in.ibm.com> wrote:
+>> Reported-by: Ananth N. Mavinakayanahalli <ananth@in.ibm.com>
+>> Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+>> Acked-by: David Ahern <dsahern@gmail.com>
+>> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+>> Cc: David Ahern <dsahern@gmail.com>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Jiri Olsa <jolsa@redhat.com>
+>> Cc: Namhyung Kim <namhyung@kernel.org>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Link: http://lkml.kernel.org/r/20120829055840.7802.1459.stgit@suzukikp.in.ibm.com
+>> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 >
->> On 11/02/12 22:45, Jeff Moyer wrote:
->>> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
->>> ---
->>>    drivers/scsi/sd.c |    2 +-
->>>    1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
->>> index 12f6fdf..8deb915 100644
->>> --- a/drivers/scsi/sd.c
->>> +++ b/drivers/scsi/sd.c
->>> @@ -2714,7 +2714,7 @@ static int sd_probe(struct device *dev)
->>>    	if (!sdkp)
->>>    		goto out;
->>>
->>> -	gd = alloc_disk(SD_MINORS);
->>> +	gd = alloc_disk_node(SD_MINORS, dev_to_node(dev));
->>>    	if (!gd)
->>>    		goto out_free;
->>
->> shost->numa_node can be another NUMA node than dev_to_node(dev). Have
->> you considered using shost->numa_node here ?
+> Shouldn't this patch go to the -stable queues, too?
 >
-> It can?  How?
 
-E.g. if the LLD allows the user to specify the value of numa_node and 
-passes that value to scsi_host_alloc_node() (see also 
-http://lkml.org/lkml/2012/10/23/477 for further information).
+yes for 3.5
 
-> Just so I'm clear, you're suggesting I use the scsi_device's host
-> pointer to get to the Scsi_Host, and that *will* be filled in that this
-> point, right?
-
-As far as I can see the sdev->host pointer is set in scsi_alloc_sdev() 
-and that happens before sd_probe() is invoked.
-
-Bart.
-
+David
