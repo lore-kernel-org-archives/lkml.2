@@ -1,144 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab2KEJ7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 04:59:36 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50074 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536Ab2KEJ7e (ORCPT
+	id S1752996Ab2KEKAy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:00:54 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:26028 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175Ab2KEKAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 04:59:34 -0500
-Message-ID: <50978DFE.1000005@linux.vnet.ibm.com>
-Date: Mon, 05 Nov 2012 17:59:26 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH] KVM: MMU: lazily drop large spte
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12110509-2674-0000-0000-0000069D9360
+	Mon, 5 Nov 2012 05:00:53 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-58-50978e536f43
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: djbw@fb.com, dwmw2@infradead.org, hskinnemoen@gmail.com,
+        iws@ovro.caltech.edu, vinod.koul@intel.com, vipin.kumar@st.com,
+        t.figa@samsung.com, kyungmin.park@samsung.com,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: [PATCH 00/20] DMA: DMA unmap fixes
+Date: Mon, 05 Nov 2012 11:00:11 +0100
+Message-id: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t9jAd3gvukBBnMvKVlc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MjzeesRasVanYO/UmYwPjT8kuRk4OCQETiRWHJ7NB2GISF+6t
+	B7K5OIQEFjFKrP47kwnCWc0k8X3OSlaQKjYBK4mJ7asYQWwRAQWJzb3PWEGKmAWeMUrMuN3N
+	DJIQFtCWuH59BQuIzSKgKvHr91KwOK+Au8SnSc2sEOvkJZ7e72ObwMi9gJFhFaNoakFyQXFS
+	eq6hXnFibnFpXrpecn7uJkawF59J7WBc2WBxiFGAg1GJh3em2PQAIdbEsuLK3EOMEhzMSiK8
+	HAxAId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rzNHikBQgLpiSWp2ampBalFMFkmDk6pBkaPTomY
+	OzFNmvuE/R88KqvKbfiw/t7dTfc0HsxxDnrQK1sgG9ufOdN4vv/Uh1ON6r7tmdZ3n5mn9fXX
+	h8Z5z1p2HanQZitoe2pv49y8RSHMyI89YGXmjWQtkXkSsbefbAudxthdw+ww470bt3Jq5pN2
+	O9sarp5gYZbjXrxJC95x/BFNNLvOr8RSnJFoqMVcVJwIAM3AXeneAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not drop large spte until it can be insteaded by small pages so that
-the guest can happliy read memory through it
+Hi,
 
-The idea is from Avi:
-| As I mentioned before, write-protecting a large spte is a good idea,
-| since it moves some work from protect-time to fault-time, so it reduces
-| jitter.  This removes the need for the return value.
+Currently DMA subsystem does DMA mapping in the core code and DMA
+unmapping is done by device drivers.  This is counterintuitive,
+causes code duplication and subtle errors (some drivers like PL330
+one don't implement DMA unmapping code).  The following patchset
+modifies DMA subsystem to do DMA unmapping in the core code.
+It results in simpler code, less code duplication (more than 400
+LOC is gone) and fixes the issue with missing DMA unmapping code
+in some drivers.  Additionally many cases when DMA wasn't unmapped
+on a failure are also fixed.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/mmu.c |   34 +++++++++-------------------------
- 1 files changed, 9 insertions(+), 25 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index b875a9e..1d8869c 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1105,7 +1105,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
+patches #1-3 add missing DMA unmap on failure to async_tx core
+code (async_memcpy()), ioat and fsmc_nand drivers
 
- /*
-  * Write-protect on the specified @sptep, @pt_protect indicates whether
-- * spte writ-protection is caused by protecting shadow page table.
-+ * spte write-protection is caused by protecting shadow page table.
-  * @flush indicates whether tlb need be flushed.
-  *
-  * Note: write protection is difference between drity logging and spte
-@@ -1114,31 +1114,23 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
-  *   its dirty bitmap is properly set.
-  * - for spte protection, the spte can be writable only after unsync-ing
-  *   shadow page.
-- *
-- * Return true if the spte is dropped.
-  */
--static bool
-+static void
- spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
- {
- 	u64 spte = *sptep;
+patch #4 fixes DMA flags used by carma-fpga driver
 
- 	if (!is_writable_pte(spte) &&
- 	      !(pt_protect && spte_is_locklessly_modifiable(spte)))
--		return false;
-+		return;
+patches #5-7 fix core code and dmatest driver to DMA unmap for
+MEMCPY operations 
 
- 	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+patch #8 adds missing DMA unmap on failure to ioat3 driver
 
--	if (__drop_large_spte(kvm, sptep)) {
--		*flush |= true;
--		return true;
--	}
--
- 	if (pt_protect)
- 		spte &= ~SPTE_MMU_WRITEABLE;
- 	spte = spte & ~PT_WRITABLE_MASK;
+patch #9 fixes build for async_memset.c
 
- 	*flush |= mmu_spte_update(sptep, spte);
--	return false;
- }
+patch #10 adds missing DMA unmap on failure to async tx core
+code (async_memset())
 
- static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
-@@ -1150,11 +1142,8 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+patches #11-18 fix async_tx core code and dmatest driver to do
+DMA unmap for MEMSET, XOR, XOR_VAL, PQ and PQ_VAL operations
 
- 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
- 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
--		if (spte_write_protect(kvm, sptep, &flush, pt_protect)) {
--			sptep = rmap_get_first(*rmapp, &iter);
--			continue;
--		}
+patches #19-20 remove no longer needed DMA unmap code from
+device drivers and DMA unmap flags from code code
 
-+		spte_write_protect(kvm, sptep, &flush, pt_protect);
- 		sptep = rmap_get_next(&iter);
- 	}
 
-@@ -2381,14 +2370,6 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 	if ((pte_access & ACC_WRITE_MASK)
- 	    || (!vcpu->arch.mmu.direct_map && write_fault
- 		&& !is_write_protection(vcpu) && !user_fault)) {
--
--		if (level > PT_PAGE_TABLE_LEVEL &&
--		    has_wrprotected_page(vcpu->kvm, gfn, level)) {
--			ret = 1;
--			drop_spte(vcpu->kvm, sptep);
--			goto done;
--		}
--
- 		spte |= PT_WRITABLE_MASK | SPTE_MMU_WRITEABLE;
+This patchset was tested on PL330 DMA controller using MEMCPY
+operations.  It would be great if somebody could test it on
+more advanced controller capable of MEMSET, XOR, XOR_VAL,
+PQ and PQ_VAL operations (especially since the conversion of
+XOR and PQ operations was not obvious).
 
- 		if (!vcpu->arch.mmu.direct_map
-@@ -2413,7 +2394,9 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		if (!can_unsync && is_writable_pte(*sptep))
- 			goto set_pte;
 
--		if (mmu_need_write_protect(vcpu, gfn, can_unsync)) {
-+		if ((level > PT_PAGE_TABLE_LEVEL &&
-+		   has_wrprotected_page(vcpu->kvm, gfn, level)) ||
-+		      mmu_need_write_protect(vcpu, gfn, can_unsync)) {
- 			pgprintk("%s: found shadow page for %llx, marking ro\n",
- 				 __func__, gfn);
- 			ret = 1;
-@@ -2428,7 +2411,6 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- set_pte:
- 	if (mmu_spte_update(sptep, spte))
- 		kvm_flush_remote_tlbs(vcpu->kvm);
--done:
- 	return ret;
- }
+Bartlomiej Zolnierkiewicz (20):
+  async_tx: add missing DMA unmap to async_memcpy()
+  ioat: add missing DMA unmap to ioat_dma_self_test()
+  mtd: fsmc_nand: add missing DMA unmap to dma_xfer()
+  carma-fpga: pass correct flags to ->device_prep_dma_memcpy()
+  dmatest: do DMA unmap for MEMCPY operations
+  DMA: do DMA unmap in core for MEMCPY operations
+  async_tx: do DMA unmap in core for MEMCPY operations
+  ioat3: add missing DMA unmap to ioat_xor_val_self_test()
+  async_tx: fix build for async_memset
+  async_tx: add missing DMA unmap to async_memset()
+  async_tx: do DMA unmap in core for MEMSET operations
+  dmatest: do DMA unmap for XOR operations
+  async_tx: do DMA unmap in core for XOR operations
+  async_tx: do DMA unmap in core for XOR_VAL operations
+  dmatest: do DMA unmap for PQ operations
+  async_tx: do DMA unmap in async_raid6_recov.c for PQ operations
+  async_tx: do DMA unmap in core for PQ operations
+  async_tx: do DMA unmap in core for PQ_VAL operations
+  DMA: remove DMA unmap from drivers
+  DMA: remove DMA unmap flags
 
-@@ -2635,6 +2617,8 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
- 			break;
- 		}
-
-+		drop_large_spte(vcpu, iterator.sptep);
-+
- 		if (!is_shadow_present_pte(*iterator.sptep)) {
- 			u64 base_addr = iterator.addr;
+ arch/arm/include/asm/hardware/iop3xx-adma.h |  30 ----
+ arch/arm/mach-iop13xx/include/mach/adma.h   |  26 ---
+ crypto/async_tx/async_memcpy.c              |  27 ++-
+ crypto/async_tx/async_memset.c              |  23 ++-
+ crypto/async_tx/async_pq.c                  | 129 +++++++++----
+ crypto/async_tx/async_raid6_recov.c         |  42 ++++-
+ crypto/async_tx/async_tx.c                  |  25 ++-
+ crypto/async_tx/async_xor.c                 |  98 +++++++---
+ drivers/ata/pata_arasan_cf.c                |   3 +-
+ drivers/dma/amba-pl08x.c                    |  31 ----
+ drivers/dma/at_hdmac.c                      |  25 ---
+ drivers/dma/dmaengine.c                     |  59 +++++-
+ drivers/dma/dmatest.c                       |  14 +-
+ drivers/dma/dw_dmac.c                       |  20 ---
+ drivers/dma/ep93xx_dma.c                    |  32 +---
+ drivers/dma/fsldma.c                        |  16 --
+ drivers/dma/ioat/dma.c                      |  28 +--
+ drivers/dma/ioat/dma.h                      |  12 --
+ drivers/dma/ioat/dma_v2.c                   |   1 -
+ drivers/dma/ioat/dma_v3.c                   | 179 +++++-------------
+ drivers/dma/iop-adma.c                      |  70 +-------
+ drivers/dma/mv_xor.c                        |  45 +----
+ drivers/dma/ppc4xx/adma.c                   | 270 ----------------------------
+ drivers/dma/timb_dma.c                      |  36 ----
+ drivers/dma/txx9dmac.c                      |  24 ---
+ drivers/media/platform/m2m-deinterlace.c    |   3 +-
+ drivers/media/platform/timblogiw.c          |   2 +-
+ drivers/misc/carma/carma-fpga.c             |   3 +-
+ drivers/mtd/nand/atmel_nand.c               |   3 +-
+ drivers/mtd/nand/fsmc_nand.c                |  20 ++-
+ drivers/net/ethernet/micrel/ks8842.c        |   6 +-
+ drivers/spi/spi-dw-mid.c                    |   4 +-
+ include/linux/async_tx.h                    |   4 +
+ include/linux/dmaengine.h                   |  34 ++--
+ 34 files changed, 446 insertions(+), 898 deletions(-)
 
 -- 
-1.7.7.6
+1.8.0
 
