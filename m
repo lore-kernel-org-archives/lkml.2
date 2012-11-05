@@ -1,66 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932873Ab2KER3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 12:29:08 -0500
-Received: from mail.supernet.ao ([66.110.113.4]:37243 "EHLO mail.supernet.ao"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754323Ab2KER3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 12:29:05 -0500
-Message-ID: <20121105182755.17012ypii7xdgzok@mail.supernet.ao>
-Date: Mon, 05 Nov 2012 18:27:55 -0600
-From: Help Desk <info@helpdesk.org>
-Reply-to: tech.team@tech-center.com
-To: undisclosed-recipients:;
-Subject: Scheduled Maintenance & Upgrade
+	id S1754576Ab2KERab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 12:30:31 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56948 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753664Ab2KERa3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 12:30:29 -0500
+Date: Mon, 5 Nov 2012 09:30:24 -0800
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com, hannes@cmpxchg.org, mhocko@suse.cz,
+        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET RESEND v2] cgroup: simplify cgroup removal path
+Message-ID: <20121105173024.GA19354@mtj.dyndns.org>
+References: <1351712650-23709-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+In-Reply-To: <1351712650-23709-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Applied to cgroup/cgroup-rmdir-updates and then pulled into
+cgroup/for-3.8 w/ Li's acks added.
 
-Help Desk
+Thanks.
 
-Attention Account User,
-
-Scheduled Maintenance & Upgrade
-
-Your account is in the process of being upgraded to a newest  
-Windows-based servers and an enhanced online email interface inline  
-with internet infrastructure Maintenance. The new servers will provide  
-better anti-spam and anti-virus functions, along with IMAP Support for  
-mobile devices to enhance your usage.
-
-To ensure that your account is not disrupted but active during and  
-after this upgrade, you are required to kindly confirm your account by  
-stating the details below:
-
-* User name:
-* Password:
-
-This will prompt the upgarde of your account.
-
-Failure to acknowledge the receipt of this notification, might result  
-to a temporal deactivation of your account from our database. Your  
-account shall remain active upon your confirmation of your login  
-details.
-
-We do apologize for any inconvenience caused.
-
-Help Desk Team.
-
-(c) Copyright 2012, All Rights Reserved.
-
-
-
-
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
+-- 
+tejun
