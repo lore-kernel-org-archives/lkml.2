@@ -1,61 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab2KEUSc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 15:18:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49426 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753394Ab2KEUS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 15:18:29 -0500
-Date: Mon, 5 Nov 2012 15:18:25 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH] coredump: run the coredump helper using the same
- namespace as the dead process
-Message-ID: <20121105201825.GM14789@redhat.com>
-References: <20121105163810.GJ14789@redhat.com>
- <87r4o7alod.fsf@xmission.com>
+	id S932162Ab2KEUZQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 15:25:16 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58209 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab2KEUZO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 15:25:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4o7alod.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <a58d5329-a1db-418b-9caa-06b7a79051ec@email.android.com>
+References: <1349827115-16600-1-git-send-email-yinghai@kernel.org>
+	<alpine.DEB.2.02.1210101609170.2689@kaball.uk.xensource.com>
+	<CAE9FiQW952+jHBHxhKu2PX_fpwb8fXVQp2xX0i=HdzgKWuGFCA@mail.gmail.com>
+	<20121030134442.GB27463@phenom.dumpdata.com>
+	<CAE9FiQVXzOQG2XmA5Y_DX1JCGg_-LdM9tG3Chq7-7rNvUseRhg@mail.gmail.com>
+	<CAE9FiQW+B8_vBT4A10ab4iOAQD9b-Ef84dsSX7p3nVQSN2w0=Q@mail.gmail.com>
+	<a58d5329-a1db-418b-9caa-06b7a79051ec@email.android.com>
+Date: Mon, 5 Nov 2012 12:25:12 -0800
+X-Google-Sender-Auth: bHQyiHRAq_tYDtwCrakUMdRDC0s
+Message-ID: <CAE9FiQWUiNqv-fd_4Y79eq+-w6wU34nEwn76+QJ7TWw7uCLaaQ@mail.gmail.com>
+Subject: Re: [PATCH -v3 0/7] x86: Use BRK to pre mapping page table to make
+ xen happy
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jacob Shin <jacob.shin@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 11:34:26AM -0800, Eric W. Biederman wrote:
-> I would argue that you very much need to define what it means to have a
-> per container core dump at the same time as you argue this.
-> 
-> Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> Running in a namespace different than whoever set the core dump
-> pattern/helper makes core dump helpers much more attackable.  With this
-> patch and a little creativity I expect I can get root to write to
-> whatever file I would like.  Since I also control the content of what is
-> going into that file.... This design seems emintely exploitable.
+On Sat, Nov 3, 2012 at 2:37 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> I am travelling at the moment... I hope to be able to look at it Sunday.
+>>
+>>can you put for-x86-mm-test to tip for more testing?
+>>
+>>or you want to rebase the whole patchset?
 
-Understood. Indeed this is bad design. Having it tied to the mount
-namespace of the process setting the pattern/helper, therefore any
-process crashing under the same mount namespace would use the same
-pattern/helper? 
+All,
 
-> Furthermore not all namespaces are pointed at by nsproxy, so even
-> for it's original design this patch is buggy.
+please check branch that is rebased on top of 3.7-rc4.
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-x86-mm
 
-is it userns? I just assumed it wasn't there yet because it's being
-worked on.
+Stefano, Konrad,
+please check them with xen parts, and give your acked-by or
+Reviewed-by accordingly.
 
-> I do think supporting a per container coredump setting makes a lot of
-> sense but I do not think this patch is the way to do it.
+Thanks
 
-I understand, thanks for the time reviewing it.
+Yinghai
 
+
+>From 1b66ccf15ff4bd0200567e8d70446a8763f96ee7 Mon Sep 17 00:00:00 2001
+From: Yinghai Lu <yinghai@kernel.org>
+Date: Mon, 5 Nov 2012 11:54:12 -0800
+Subject: [PATCH v6 00/42] x86, mm: map ram from top-down with BRK and memblock.
+
+rebase patchset together tip/x86/mm2 on top of linus v3.7-rc4
+
+so this one include patchset : x86, mm: init_memory_mapping cleanup
+in tip/x86/mm2
+---
+Current kernel init memory mapping between [0, TOML) and [4G, TOMH)
+Some AMD systems have mem hole between 4G and TOMH, around 1T.
+According to HPA, we should only mapping ram range.
+1. Seperate calculate_table_space_size and find_early_page_table out with
+   init_memory_mapping.
+2. For all ranges, will allocate page table one time
+3. init mapping for ram range one by one.
+---
+
+pre mapping page table patcheset includes:
+1. use brk to mapping first PMD_SIZE range under end of ram.
+2. top down to initialize page table range by range.
+3. get rid of calculate_page_table, and find_early_page_table.
+4. remove early_ioremap in page table accessing.
+5. remove workaround in xen to mark page RO.
+
+v2: changes, update xen interface about pagetable_reserve, so not
+   use pgt_buf_* in xen code directly.
+v3: use range top-down to initialize page table, so will not use
+   calculating/find early table anymore.
+   also reorder the patches sequence.
+v4: add mapping_mark_page_ro to fix xen, also move pgt_buf_* to init.c
+    and merge alloc_low_page(), and for 32bit need to add alloc_low_pages
+    to fix 32bit kmap setting.
+v5: remove mark_page_ro workaround  and add another 5 cleanup patches.
+v6: rebase on v3.7-rc4 and add 4 cleanup patches.
+
+could be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-x86-mm
+
+1b66ccf: mm: Kill NO_BOOTMEM version free_all_bootmem_node()
+0332736: sparc, mm: Remove calling of free_all_bootmem_node()
+0f88d27: x86, mm: kill numa_64.h
+10c4c68: x86, mm: kill numa_free_all_bootmem()
+0187d6e: x86, mm: Let "memmap=" take more entries one time
+2c20fd0: x86, mm: Use clamp_t() in init_range_memory_mapping
+770db30: x86, mm: Move after_bootmem to mm_internel.h
+d9bd282: x86, mm: Unifying after_bootmem for 32bit and 64bit
+003d654: x86, mm: use limit_pfn for end pfn
+29f27b8: x86, mm: use pfn instead of pos in split_mem_range
+8edaab8: x86, mm: use PFN_DOWN in split_mem_range()
+e652c73: x86, mm: use round_up/down in split_mem_range()
+5fd1391: x86, mm: Add check before clear pte above max_low_pfn on 32bit
+f4fd136: x86, mm: Move function declaration into mm_internal.h
+ea421df: x86, mm: change low/hignmem_pfn_init to static on 32bit
+867525b: x86, mm: Move init_gbpages() out of setup.c
+97fb23a: x86, mm: Move back pgt_buf_* to mm/init.c
+ba55b2f: x86, mm: only call early_ioremap_page_table_range_init() once
+bb6d2d9: x86, mm: Add pointer about Xen mmu requirement for alloc_low_pages
+6bc7e9f: x86, mm: Add alloc_low_pages(num)
+d90df25: x86, mm, Xen: Remove mapping_pagetable_reserve()
+f6699d2: x86, mm: Move min_pfn_mapped back to mm/init.c
+675697b: x86, mm: Merge alloc_low_page between 64bit and 32bit
+a14a382: x86, mm: Remove parameter in alloc_low_page for 64bit
+a0d7a52: x86, mm: Remove early_memremap workaround for page table
+accessing on 64bit
+384a79d: x86, mm: setup page table in top-down
+16252f2: x86, mm: Break down init_all_memory_mapping
+255a0bf: x86, mm: Don't clear page table if range is ram
+4bc70c5: x86, mm: Use big page size for small memory range
+dc62aa8: x86, mm: Align start address to correct big page size
+18f374c: x86: Only direct map addresses that are marked as E820_RAM
+150387c: x86: Fixup code testing if a pfn is direct mapped
+45cb049: x86: if kernel .text .data .bss are not marked as E820_RAM,
+complain and fix
+8d0b8bd: x86, mm: Set memblock initial limit to 1M
+6c712cf: x86, mm: Separate out calculate_table_space_size()
+33b0520: x86, mm: Find early page table buffer together
+a95ff4b: x86, mm: Change find_early_table_space() paramters
+ea564f8: x86, mm: Revert back good_end setting for 64bit
+912c686: x86, mm: Move init_memory_mapping calling out of setup.c
+47cfa63: x86, mm: Move down find_early_table_space()
+060ed6c: x86, mm: Split out split_mem_range from init_memory_mapping
+2ad38b5: x86, mm: Add global page_size_mask and probe one time only
+
+ arch/sparc/mm/init_64.c              |   24 +-
+ arch/x86/include/asm/init.h          |   21 +--
+ arch/x86/include/asm/numa.h          |    2 -
+ arch/x86/include/asm/numa_64.h       |    6 -
+ arch/x86/include/asm/page_types.h    |    2 +
+ arch/x86/include/asm/pgtable.h       |    2 +
+ arch/x86/include/asm/pgtable_types.h |    1 -
+ arch/x86/include/asm/x86_init.h      |   12 -
+ arch/x86/kernel/acpi/boot.c          |    1 -
+ arch/x86/kernel/cpu/amd.c            |    9 +-
+ arch/x86/kernel/cpu/intel.c          |    1 -
+ arch/x86/kernel/e820.c               |   16 ++-
+ arch/x86/kernel/setup.c              |   70 ++----
+ arch/x86/kernel/x86_init.c           |    4 -
+ arch/x86/mm/init.c                   |  445 ++++++++++++++++++++++------------
+ arch/x86/mm/init_32.c                |  106 +++++---
+ arch/x86/mm/init_64.c                |  140 ++++-------
+ arch/x86/mm/mm_internal.h            |   19 ++
+ arch/x86/mm/numa_64.c                |   13 -
+ arch/x86/platform/efi/efi.c          |    7 +-
+ arch/x86/xen/mmu.c                   |   28 ---
+ include/linux/mm.h                   |    1 -
+ mm/nobootmem.c                       |   14 -
+ 23 files changed, 480 insertions(+), 464 deletions(-)
+ delete mode 100644 arch/x86/include/asm/numa_64.h
+ create mode 100644 arch/x86/mm/mm_internal.h
 
 -- 
-Aristeu
-
+1.7.7
