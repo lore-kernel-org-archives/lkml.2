@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab2KEOfM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:35:12 -0500
-Received: from zimbra.linbit.com ([212.69.161.123]:44072 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932477Ab2KEOfK (ORCPT
+	id S932517Ab2KEOfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:35:48 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:40566 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932369Ab2KEOfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:35:10 -0500
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Subject: Re: [GIT PULL] 4 fixes for drbd
-Date: Mon, 05 Nov 2012 15:35:07 +0100
-Message-ID: <1433815.PN8uhmSntl@fat-tyre>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-32-generic; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <20121101100658.GM27975@kernel.dk>
-References: <3728568.yDZLErye6B@fat-tyre> <20121101100658.GM27975@kernel.dk>
+	Mon, 5 Nov 2012 09:35:47 -0500
+Date: Mon, 5 Nov 2012 15:35:41 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Subject: Re: [PATCH] virtio-mmio: Fix irq parsing in command line parameter
+Message-ID: <20121105143541.GD5220@gmail.com>
+References: <1352120454.10947.5.camel@hornet>
+ <1352120572-16256-1-git-send-email-pawel.moll@arm.com>
+ <20121105134413.GC5220@gmail.com>
+ <1352124778.10947.8.camel@hornet>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1352124778.10947.8.camel@hornet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 05 Nov 2012, Pawel Moll wrote:
+
+> On Mon, 2012-11-05 at 13:44 +0000, Lee Jones wrote:
+> > On Mon, 05 Nov 2012, Pawel Moll wrote:
+> > 
+> > > On 64-bit machines resource_size_t is a 64-bit value, while
+> > > sscanf() format for this argument was defined as "%u". Fixed
+> > > by using an intermediate local value of a known length.
+> > > 
+> > > Also added cleaned up the resource creation and adde extra
+> > > comments to make the parameters parsing easier to follow.
+> > > 
+> > > Reported-by: Lee Jones <lee.jones@linaro.org>
+> > > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> > > ---
+> > >  drivers/virtio/virtio_mmio.c |   26 ++++++++++++++++++--------
+> > >  1 file changed, 18 insertions(+), 8 deletions(-)
+> > 
+> > Resorted to poaching now have we Pawel? ;)
 > 
-> Can you rebase this against for-3.8/drivers? Thanks.
+> Sure thing - the poached eggs are my firm favourite :-P ;-)
+> 
+> But seriously speaking - it's an old patch (all the comments and
+> resources creation, the IRQ stuff is a new thing :-), but never had
+> enough motivation to push it out...
 
-Hi Jens,
+I believe you, many would not. ;)
 
-One of these changes fixes a regression that was introduced in the last
-merge window. Please consider to pull this single commit.
-(I will rebase the other 3 commit on for-3.8/drivers)
-
-
-The following changes since commit a13c29ddf73d3be4fbb2b1bbced64014986cd87a:
-  Jens Axboe (1):
-        Merge branch 'for-jens' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/linux-block into for-3.7/drivers
-
-are available in the git repository at:
-
-  git://git.drbd.org/linux-drbd.git for-jens
-
-Lars Ellenberg (1):
-      drbd: fix regression: potential NULL pointer dereference
-
- drivers/block/drbd/drbd_int.h  |    5 +++++
- drivers/block/drbd/drbd_main.c |    8 ++++++--
- 2 files changed, 11 insertions(+), 2 deletions(-)
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
