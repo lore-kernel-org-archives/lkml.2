@@ -1,166 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab2KETEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 14:04:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5644 "EHLO mx1.redhat.com"
+	id S933161Ab2KETEW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 14:04:22 -0500
+Received: from mga14.intel.com ([143.182.124.37]:36726 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753506Ab2KETEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 14:04:09 -0500
-Date: Mon, 5 Nov 2012 20:04:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Josh Stone <jistone@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: uprobes && pre-filtering
-Message-ID: <20121105190446.GA6188@redhat.com>
+	id S1753506Ab2KETES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 14:04:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,716,1344236400"; 
+   d="scan'208";a="164742576"
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+Subject: [PATCH v3 1/8] x86: Improve __phys_addr performance by making use of
+	carry flags and inlining
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Alexander Duyck <alexander.h.duyck@intel.com>
+Date: Mon, 05 Nov 2012 11:04:06 -0800
+Message-ID: <20121105190332.10205.22300.stgit@gitlad.jf.intel.com>
+In-Reply-To: <20121105185657.10205.27419.stgit@gitlad.jf.intel.com>
+References: <20121105185657.10205.27419.stgit@gitlad.jf.intel.com>
+User-Agent: StGIT/0.14.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+This patch is meant to improve overall system performance when making use of
+the __phys_addr call.  To do this I have implemented several changes.
 
-There is a known (and by design) problem with uprobes. They act
-systemwide, there is no pre-filtering. Just some random thoughts
-to provoke the discussion.
+First if CONFIG_DEBUG_VIRTUAL is not defined __phys_addr is made an inline,
+similar to how this is currently handled in 32 bit.  However in order to do
+this it is required to export phys_base so that it is available if __phys_addr
+is used in kernel modules.
 
-- I think that the current uprobe_consumer->filter(task) should die.
+The second change was to streamline the code by making use of the carry flag
+on an add operation instead of performing a compare on a 64 bit value.  The
+advantage to this is that it allows us to significantly reduce the overall
+size of the call.  On my Xeon E5 system the entire __phys_addr inline call
+consumes a little less than 32 bytes and 5 instructions.  I also applied
+similar logic to the debug version of the function.  My testing shows that the
+debug version of the function with this patch applied is slightly faster than
+the non-debug version without the patch.
 
-  It buys nothing. It is called right before ->handler() and this is
-  pointless, ->handler() can call it itself.
+When building the kernel with the first two changes applied I saw build
+warnings about __START_KERNEL_map and PAGE_OFFSET constants not fitting in
+their type.  In order to resolve the build warning I changed their type from
+UL to ULL.
 
-  And more importantly, I do not think this hook (with the same
-  semantics) can/should be used by both register and handler_chain().
+Finally I also applied the same logic changes to __virt_addr_valid since it
+used the same general code flow as __phys_addr and could achieve similar gains
+though these changes.
 
-- We should change register_ and and mmap to filter out the tasks
-  which we do not want to trace. To simplify, lets forget about
-  multiple consumers first.
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+---
 
-  Everything is simple, install_breakpoint() callers should simply
-  call consumer->filter(args) and do nothing if it returns false.
+v3:  Added changes to __virt_addr_valid to keep it in sync with __phys_addr
 
-  The main problem is, what should be passed as "args". I think it is
-  pointless to use task_struct as an argument. And not because there
-  is no simple way to find all tasks which use this particular mm in
-  register_for_each_vma(), even if it was possible I think this makes
-  no sense.
+ arch/x86/include/asm/page_64_types.h |   17 +++++++++++++-
+ arch/x86/kernel/x8664_ksyms_64.c     |    3 +++
+ arch/x86/mm/physaddr.c               |   40 +++++++++++++++++++++-------------
+ 3 files changed, 43 insertions(+), 17 deletions(-)
 
-  If 2 tasks/threads share the same mm they will share int3 as well,
-  so I think we need
-
-  	enum filter_mode {
-  		UPROBE_FILTER_REGISTER,
-  		UPROBE_FILTER_MMAP,
-  		/* more */
-  	};
-
-  	consumer->filter(enum filter_mode mode, struct mm_struct *mm);
-
-  Sure, this does not allow to, say, probe the tasks with the given uid.
-  But once again, currently we do not have for_each_mm_user(task, mm)
-  and even if we implement it
-
-  	a) ->filter(mm) can use it itself)
-
-  	b) I do not think register_for_each_vma() should call it.
-
-  	   Suppose that a consumer wants to track the task with the
-  	   given pid PID. In this case ->filter() can simply check
-  	   find_task_by_vpid(PID)->mm = mm. This is fast and simple.
-
-  	   Or you want to probe all instances of /bin/ls. In this case
-  	   filter() can check mm->exe_file->f_path == saved_path, this
-  	   is very cheap.
-
-  	   But if we add for_each_mm_user() into register_for_each_vma()
-  	   it will be called even if the filtering is simple.
-
-  So. If filter(UPROBE_FILTER_REGISTER) needs to check task_uid(task) == UID
-  it has to do for_each_process() until we have (if ever) for_each_mm_user().
-
-  Or it should always return true and remove the unnecessary breakpoints
-  later, or use another API (see below).
-
-  Also. Who needs the "nontrivial" filtering? I do not see any potential
-  in-kernel user. And the tools like systemtap can take another approach
-  (perhaps).
-
-- Perhaps we should extend the API. We can add
-
-	uprobe_apply(consumer, task, bool add_remove);
-
-  which adds/removes breakpoints to task->mm.
-
-  This way consumer can probe every task it wants to trace after
-  uprobe_register().
-
-  Its ->filter(UPROBE_FILTER_REGISTER) should simply return false. Or,
-  better, we can split uprobe_register() into 2 functions,
-  __uprobe_register() and uprobe_apply_all() which actually does
-  register_for_each_vma().
-
-  ***** QUESTION *****: perhaps this is all systemtap needs? ignoring
-  UPROBE_FILTER_MMAP.
-
-- Multiple consumers. uprobe_register/uprobe_unregister should be
-  modified so that register_for_each_vma() is called every time when
-  the new consumer comes or consumer goes away.
-
-  uprobe_apply(add_remove => false) should obviously consult other
-  consumers too.
-
-- Perhaps we should teach handle_swbp() to remove the unwanted breakpoints.
-
-  If every ->handler() returns, say, UPROBE_GO_AWAY handle_swbp() should
-  remove this breakpoint. Of course, a consumer must be sure that if it
-  returns UPROBE_GO_AWAY this task can't share ->mm with another task it
-  wants to trace.
-
-  Or consumer->handler() can do uprobe_apply(add_remove => false) itself,
-  but this needs more discussion.
-
-  The point is that if the filtering at UPROBE_FILTER_REGISTER time is
-  not possible, ->filter(UPROBE_FILTER_REGISTER) can return true. A
-  "wrong" int3 doesn't hurt until the task actually hits the breakpoint,
-  and I think that a single bp-hit is fine performance-wise.
-
-- fork(). The child inherits all breakpoints from parent, and uprobes
-  can't control this. What can we do?
-
-	* We can add another uprobe hook which does something like
-
-	  	for_each_uprobe_in_each_vma(child_mm) {
-	  		if (filter(UPROBE_FILTER_FORK))
-	  			install_breakoint();
-	  		else
-	  			remove_breakpoint();
-	  	}
-
-
-	  But is is not clear where can we add this hook. dup_mmap()
-	  looks appealing, but at this time the child is still under
-	  construction, consumer->filter() can't look at task_struct.
-
-	  And of course, it is not nice to slow down fork().
-
-	* If we only care about the unwanted breakpoints, perhaps it
-	  would be better to rely on UPROBE_GO_AWAY above?
-
-	* Finally, do we care at all? Again, who can ever need to
-	  re-install breakpoints after fork?
-
-	  systemtap (iiuc) doesn't need this. And even if it does
-	  or will need, I guess it can hook fork itself and use
-	  uprobe_apply() ?
-
-Please comment.
-
-Oleg.
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 320f7bb..1ca93d3 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -30,14 +30,14 @@
+  * hypervisor to fit.  Choosing 16 slots here is arbitrary, but it's
+  * what Xen requires.
+  */
+-#define __PAGE_OFFSET           _AC(0xffff880000000000, UL)
++#define __PAGE_OFFSET           _AC(0xffff880000000000, ULL)
+ 
+ #define __PHYSICAL_START	((CONFIG_PHYSICAL_START +	 	\
+ 				  (CONFIG_PHYSICAL_ALIGN - 1)) &	\
+ 				 ~(CONFIG_PHYSICAL_ALIGN - 1))
+ 
+ #define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
+-#define __START_KERNEL_map	_AC(0xffffffff80000000, UL)
++#define __START_KERNEL_map	_AC(0xffffffff80000000, ULL)
+ 
+ /* See Documentation/x86/x86_64/mm.txt for a description of the memory map. */
+ #define __PHYSICAL_MASK_SHIFT	46
+@@ -58,7 +58,20 @@ void copy_page(void *to, void *from);
+ extern unsigned long max_pfn;
+ extern unsigned long phys_base;
+ 
++static inline unsigned long __phys_addr_nodebug(unsigned long x)
++{
++	unsigned long y = x - __START_KERNEL_map;
++
++	/* use the carry flag to determine if x was < __START_KERNEL_map */
++	x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
++
++	return x;
++}
++#ifdef CONFIG_DEBUG_VIRTUAL
+ extern unsigned long __phys_addr(unsigned long);
++#else
++#define __phys_addr(x)		__phys_addr_nodebug(x)
++#endif
+ #define __phys_reloc_hide(x)	(x)
+ 
+ #define vmemmap ((struct page *)VMEMMAP_START)
+diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
+index 1330dd1..b014d94 100644
+--- a/arch/x86/kernel/x8664_ksyms_64.c
++++ b/arch/x86/kernel/x8664_ksyms_64.c
+@@ -59,6 +59,9 @@ EXPORT_SYMBOL(memcpy);
+ EXPORT_SYMBOL(__memcpy);
+ EXPORT_SYMBOL(memmove);
+ 
++#ifndef CONFIG_DEBUG_VIRTUAL
++EXPORT_SYMBOL(phys_base);
++#endif
+ EXPORT_SYMBOL(empty_zero_page);
+ #ifndef CONFIG_PARAVIRT
+ EXPORT_SYMBOL(native_load_gs_index);
+diff --git a/arch/x86/mm/physaddr.c b/arch/x86/mm/physaddr.c
+index d2e2735..fd40d75 100644
+--- a/arch/x86/mm/physaddr.c
++++ b/arch/x86/mm/physaddr.c
+@@ -8,33 +8,43 @@
+ 
+ #ifdef CONFIG_X86_64
+ 
++#ifdef CONFIG_DEBUG_VIRTUAL
+ unsigned long __phys_addr(unsigned long x)
+ {
+-	if (x >= __START_KERNEL_map) {
+-		x -= __START_KERNEL_map;
+-		VIRTUAL_BUG_ON(x >= KERNEL_IMAGE_SIZE);
+-		x += phys_base;
++	unsigned long y = x - __START_KERNEL_map;
++
++	/* use the carry flag to determine if x was < __START_KERNEL_map */
++	if (unlikely(x > y)) {
++		x = y + phys_base;
++
++		VIRTUAL_BUG_ON(y >= KERNEL_IMAGE_SIZE);
+ 	} else {
+-		VIRTUAL_BUG_ON(x < PAGE_OFFSET);
+-		x -= PAGE_OFFSET;
+-		VIRTUAL_BUG_ON(!phys_addr_valid(x));
++		x = y + (__START_KERNEL_map - PAGE_OFFSET);
++
++		/* carry flag will be set if starting x was >= PAGE_OFFSET */
++		VIRTUAL_BUG_ON((x > y) || !phys_addr_valid(x));
+ 	}
++
+ 	return x;
+ }
+ EXPORT_SYMBOL(__phys_addr);
++#endif
+ 
+ bool __virt_addr_valid(unsigned long x)
+ {
+-	if (x >= __START_KERNEL_map) {
+-		x -= __START_KERNEL_map;
+-		if (x >= KERNEL_IMAGE_SIZE)
++	unsigned long y = x - __START_KERNEL_map;
++
++	/* use the carry flag to determine if x was < __START_KERNEL_map */
++	if (unlikely(x > y)) {
++		x = y + phys_base;
++
++		if (y >= KERNEL_IMAGE_SIZE)
+ 			return false;
+-		x += phys_base;
+ 	} else {
+-		if (x < PAGE_OFFSET)
+-			return false;
+-		x -= PAGE_OFFSET;
+-		if (!phys_addr_valid(x))
++		x = y + (__START_KERNEL_map - PAGE_OFFSET);
++
++		/* carry flag will be set if starting x was >= PAGE_OFFSET */
++		if ((x > y) || !phys_addr_valid(x))
+ 			return false;
+ 	}
+ 
 
