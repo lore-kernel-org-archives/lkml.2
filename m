@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab2KEQZu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:25:50 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45077 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab2KEQZt (ORCPT
+	id S1754436Ab2KEQ0b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:26:31 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:18181 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651Ab2KEQ03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:25:49 -0500
-Date: Mon, 5 Nov 2012 17:25:55 +0100
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH] MAINTAINERS: i2c: 7 years, this is it
-Message-ID: <20121105162554.GA11830@kroah.com>
-References: <20121105170554.1972f3c2@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121105170554.1972f3c2@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 Nov 2012 11:26:29 -0500
+Message-ID: <1352132785.2606.14.camel@lorien2>
+Subject: Re: [PATCH] wireless: iwlwifi - add dma_mapping_error() checks to
+ avoid warnings
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: johannes.berg@intel.com, wey-yi.w.guy@intel.com, linville@tuxdriver.com,
+        ilw@linux.intel.com, emmanuel.grumbach@intel.com,
+        donald.h.fry@intel.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Mon, 05 Nov 2012 09:26:25 -0700
+In-Reply-To: <1352020617.10072.0.camel@jlt4.sipsolutions.net>
+References: <1351993233.4369.2.camel@lorien2>
+	 (sfid-20121104_024119_271188_5372C13E) <1352020617.10072.0.camel@jlt4.sipsolutions.net>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 05:05:54PM +0100, Jean Delvare wrote:
-> I have been maintaining the i2c subsystem for 7 years now, it's about
-> time to let someone else take over. Just before I leave, I would like
-> to thank several individuals who made this possible at all:
+On Sun, 2012-11-04 at 10:16 +0100, Johannes Berg wrote:
+> On Sat, 2012-11-03 at 19:40 -0600, Shuah Khan wrote:
+> > Add missing dma_mapping_error() checks to validate dma addresses returned by
+> > dma_map_page() calls to avoid the following warning:
+> > 
+> > [   28.475686] WARNING: at lib/dma-debug.c:933 check_unmap+0x459/0x8a0()
+> > [   28.475688] Hardware name: HP EliteBook 6930p
+> > [   28.475690] iwlwifi 0000:03:00.0: DMA-API: device driver failed to check map error[device address=0x00000000ffffa000] [size=8192 bytes] [mapped as page]
+> > [   28.475691] Modules linked in: arc4 bnep rfcomm iwldvm mac80211 snd_hda_codec_analog radeon snd_hda_intel snd_hda_codec coretemp kvm_intel snd_hwdep snd_pcm iwlwifi kvm btusb bluetooth snd_seq_midi snd_rawmidi ttm cfg80211 snd_seq_midi_event drm_kms_helper pata_pcmcia drm snd_seq binfmt_misc pcmcia snd_timer snd_seq_device tpm_infineon snd dm_multipath yenta_socket joydev pcmcia_rsrc pcmcia_core hp_wmi psmouse hp_accel microcode soundcore i2c_algo_bit sparse_keymap wmi ppdev lpc_ich lis3lv02d snd_page_alloc video tpm_tis serio_raw parport_pc input_polldev mac_hid lp parport firewire_ohci firewire_core crc_itu_t sdhci_pci sdhci e1000e
 > 
-> * Greg Kroah-Hartman, for his faith in my potential subsystem
->   maintainer skills. Greg, I hope I met your expectations.
+> Thanks for the report. Since I think doing BUG_ON() in such a scenario
+> is a really bad idea, I've applied a different patch with your
+> Reported-by.
 
-You've more than met them, you've done a wonderful job.  Thanks so much
-for the work you have done over the past 7 years, it's been very much
-appreciated.
+Yeah. I wasn't sure about BUS() either. Did you notice the other cases
+of BUG_ON() in this path in iwl_rx_allocate()? I would think those need
+fixing as well.
 
-greg k-h
+              rxb->page_dma =
+                        dma_map_page(trans->dev, page, 0,
+                                     PAGE_SIZE <<
+trans_pcie->rx_page_order,
+                                     DMA_FROM_DEVICE);
+                /* dma address must be no more than 36 bits */
+                BUG_ON(rxb->page_dma & ~DMA_BIT_MASK(36));
+                /* and also 256 byte aligned! */
+                BUG_ON(rxb->page_dma & DMA_BIT_MASK(8));
+
+Could you please send me commitID for the patch you did. I am interested
+in seeing the failure handling in your patch?
+
+-- Shuah
+
+
