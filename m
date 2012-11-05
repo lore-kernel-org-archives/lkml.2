@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531Ab2KEQqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 11:46:37 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:47611 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab2KEQqf (ORCPT
+	id S932709Ab2KEQq5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 11:46:57 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37866 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752918Ab2KEQq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 11:46:35 -0500
-Date: Mon, 05 Nov 2012 11:46:33 -0500 (EST)
-Message-Id: <20121105.114633.1342071685669147321.davem@davemloft.net>
-To: lee.jones@linaro.org
-Cc: pebolle@tiscali.nl, linux-kernel@vger.kernel.org, isdn@linux-pingi.de,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 8/9] isdn: Remove unused variable causing a compile
- build warning
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121105084419.GC2699@gmail.com>
-References: <20121104105332.GC27124@gmail.com>
-	<20121104.123013.700345271120279281.davem@davemloft.net>
-	<20121105084419.GC2699@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
+	Mon, 5 Nov 2012 11:46:56 -0500
+Date: Mon, 5 Nov 2012 16:46:19 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Shuah Khan <shuah.khan@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH linux-next] ARM64: dma-mapping: support
+ debug_dma_mapping_error
+Message-ID: <20121105164618.GF17864@arm.com>
+References: <1351205220.6851.3.camel@lorien2>
+ <CAHkRjk6jDKsFMa1_Wapwr7y5n8Ut8xfNBKWniSfHN_01z7qWFQ@mail.gmail.com>
+ <1351264983.2712.14.camel@lorien2>
+ <1351871933.2721.10.camel@lorien2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351871933.2721.10.camel@lorien2>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA5GkfvO009679
 
-From: Lee Jones <lee.jones@linaro.org>
-Date: Mon, 5 Nov 2012 09:44:19 +0100
+On Fri, Nov 02, 2012 at 03:58:53PM +0000, Shuah Khan wrote:
+> On Fri, 2012-10-26 at 09:23 -0600, Shuah Khan wrote:
+> > Add support for debug_dma_mapping_error() call to avoid warning from
+> > debug_dma_unmap() interface when it checks for mapping error checked
+> > status. Without this patch, device driver failed to check map error
+> > warning is generated. 
+> > 
+> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> 
+> Do you want this patch going through linux-next or the ARM64 tree? Let
+> me know your preference.
 
-> On Sun, 04 Nov 2012, David Miller wrote:
-> 
->> From: Lee Jones <lee.jones@linaro.org>
->> Date: Sun, 4 Nov 2012 11:53:32 +0100
->> 
->> > On Sun, 04 Nov 2012, Paul Bolle wrote:
->> > 
->> >> On Sat, 2012-11-03 at 23:48 +0100, Lee Jones wrote:
->> >> > On Sat, 03 Nov 2012, Paul Bolle wrote:
->> >> > > On Sat, 2012-11-03 at 23:02 +0100, Lee Jones wrote:
->> >> > > > This patch fixes:
->> >> > > > drivers/isdn/i4l/isdn_common.c: In function ¡isdn_ioctl¢:
->> >> > > > drivers/isdn/i4l/isdn_common.c:1278:8: warning: unused variable ¡s¢ [-Wunused-variable]
->> >> > > 
->> >> > > Did you have CONFIG_NETDEVICES not set in this build?
->> >> > 
->> >> > Ah yes, I see it. The function went down further than I thought
->> >> > it did. So the real fix is to ensure 's' is defined inside of
->> >> > some ifdef CONFIG_NETDEVICES guards. 
->> >> 
->> >> What puzzles me is that we only find these "#ifdef CONFIG_NETDEVICES"
->> >> guards in this file and not in isdn_net.c, were all the ioctl commands
->> >> guarded that way seem to be calling into. On first glance that doesn't
->> >> make much sense.
->> >> 
->> >> (Actually the idea of having ISDN without NETDEVICES is a bit puzzling
->> >> too. But there are too many parts of the isdn subsystem that I'm
->> >> unfamiliar with to say whether that can make sense.)
->> > 
->> > I'm in the same position as you Paul. I just noticed the warning so
->> > fixed it following the current way of doing things. Any, more
->> > substantial changes requiring greater knowledge of the subsystem
->> > would have to be done by someone else.
->> 
->> I think the most appropriate thing to do is make CONFIG_ISDN depend
->> upon CONFIG_NETDEVICES in the Kconfig file.
-> 
-> ... and then remove the CONFIG_NETDEVICES guards in isdn_common.c?
-> 
-> If that's suitable more suitable I can do that instead?
-> 
-> Just need a yay or nay and I'll make it happen.
+I think it can go together with your other patches since I can't tell
+when you'll push the debug_dma_mapping_error() implementation.
 
-"yay"
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Catalin
