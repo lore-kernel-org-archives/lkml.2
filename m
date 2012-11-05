@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932555Ab2KEOtE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 09:49:04 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:56488 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751606Ab2KEOtC (ORCPT
+	id S932614Ab2KEOtW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 09:49:22 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:56603 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab2KEOtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 09:49:02 -0500
-Date: Mon, 5 Nov 2012 14:49:00 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Shan Wei <shanwei88@gmail.com>
-cc: paulmck@linux.vnet.ibm.com, dipankar@in.ibm.com,
-        Kernel-Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 6/9] rcu: use __this_cpu_read helper instead of
- per_cpu_ptr(p, raw_smp_processor_id())
-In-Reply-To: <509645A5.5070901@gmail.com>
-Message-ID: <0000013ad10bc571-9f707c9b-14e3-4382-a472-2a1aaa3fb384-000000@email.amazonses.com>
-References: <5093EE6B.3070906@gmail.com> <20121102181026.GY3027@linux.vnet.ibm.com> <0000013ac2c6e1f0-c10ec42d-70bb-4e24-99d6-8e70653eca83-000000@email.amazonses.com> <20121103091909.GI3027@linux.vnet.ibm.com> <509645A5.5070901@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 5 Nov 2012 09:49:18 -0500
+Message-ID: <5097D1E8.2000403@gmail.com>
+Date: Mon, 05 Nov 2012 08:49:12 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+To: Michal Simek <michal.simek@xilinx.com>
+CC: Josh Cartwright <josh.cartwright@ni.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@ti.com>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Linn <John.Linn@xilinx.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 2/8] ARM: zynq: move ttc timer code to drivers/clocksource
+References: <cover.1351721190.git.josh.cartwright@ni.com> <c0347788fbad559a249a25128a23f40c85d9cbda.1351721190.git.josh.cartwright@ni.com> <CAHTX3d++0fGSw7GQHcc-S1X1Qh-rfekpr-E8Jkg2_vFqdCFFTg@mail.gmail.com>
+In-Reply-To: <CAHTX3d++0fGSw7GQHcc-S1X1Qh-rfekpr-E8Jkg2_vFqdCFFTg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 4 Nov 2012, Shan Wei wrote:
 
->  __this_cpu_read<-----------------2
-> 0000000000000000 <init_module>:
->    0:   55                      push   %rbp
->    1:   31 c0                   xor    %eax,%eax
->    3:   48 89 e5                mov    %rsp,%rbp
->    6:   48 83 ec 10             sub    $0x10,%rsp
->    a:   c9                      leaveq
->    b:   c3                      retq
 
-?? There should be an operation using gs: here. This does not look
-like code that includes a __this_cpu_read().
+On 11/05/2012 05:22 AM, Michal Simek wrote:
+> 2012/10/29 Josh Cartwright <josh.cartwright@ni.com>:
+>> Suggested cleanup by Arnd Bergmann.  Move the ttc timer.c code to
+>> drivers/clocksource, and out of the mach-zynq directory.
+>>
+>> The common.h (which only held the timer declaration) was renamed to
+>> xilinx_ttc.h and moved into include/linux.
+>>
+>> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> ---
+>>  arch/arm/mach-zynq/Makefile                                    | 2 +-
+>>  arch/arm/mach-zynq/common.c                                    | 2 +-
+>>  drivers/clocksource/Makefile                                   | 1 +
+>>  arch/arm/mach-zynq/timer.c => drivers/clocksource/xilinx_ttc.c | 1 -
+>>  arch/arm/mach-zynq/common.h => include/linux/xilinx_ttc.h      | 4 ++--
+>>  5 files changed, 5 insertions(+), 5 deletions(-)
+>>  rename arch/arm/mach-zynq/timer.c => drivers/clocksource/xilinx_ttc.c (99%)
+>>  rename arch/arm/mach-zynq/common.h => include/linux/xilinx_ttc.h (91%)
+> 
+> Not going to apply this patch till there is clean way how to move all
+> drivers there.
+> Especially I don't like to add xilinx_ttc.h to include/linux folder.
+> 
 
+A cleaner way is how we are doing irqchips [1]. This needs a single
+function (or one each for clksrc and clkevt) that has a DT match list of
+all known timers and calls their init function. It should be a bit
+simpler than irqchips init function because you don't need to worry
+about hierarchy init ordering. That doesn't solve non-DT though and if
+there are any extra functions like we have with irqchips, you still need
+the header in include/linux.
+
+Rob
+
+[1] http://www.spinics.net/lists/arm-kernel/msg203687.html
