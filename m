@@ -1,195 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab2KETyg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 14:54:36 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:33612 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750970Ab2KETyd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 14:54:33 -0500
-Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <CACxGe6v9cyybV4+5tQJ-DG8qdyEHfsLa7t+-3CTL+97Q9msrFw@mail.gmail.com>
-Date: Mon, 5 Nov 2012 20:54:26 +0100
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Russ Dill <Russ.Dill@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <robherring2@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <18667A4E-5513-4D74-922F-30D091609F16@antoniou-consulting.com>
-References: <50924DA3.1060901@ti.com> <F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com> <20121101110418.GF410@arwen.pp.htv.fi> <3AF5A6FC-61D9-40CA-85B3-81C2C788CB76@antoniou-consulting.com> <20121101124025.GA12489@arwen.pp.htv.fi> <A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com> <20121101131609.GC12489@arwen.pp.htv.fi> <E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com> <20121101135148.382aec00@pyramind.ukuu.org.uk> <9F25E89E-9194-4725-8A8C-053DCBADA1DB@antoniou-consulting.com> <20121101220518.GE14982@arwen.pp.htv.fi> <CA+Bv8XbAvEXe=zDaA8W2+ROD2duYMRcJu4-bms31OH=V_ScKow@mail.gmail.com> <20121102112104.4657fb7b@pyramind.ukuu.org.uk> <0EC43413-1DD7-4E2A-879B-0B5B926FFDFE@antoniou-consulting.com> <CACxGe6uuK6ew5uxh0BjtYAtPZCTLeUpHc4emXRAnMUtNmEzmGg@mail.gmail.com> <AC5129F0-FF30-46ED-AD57-3FA6CA919F99@antoniou-consulting.com> <CACxGe6v9cyybV4+5tQJ-DG8qdyEHfsLa7t+-3CTL+97Q9msrFw@mail.gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-X-Mailer: Apple Mail (2.1085)
+	id S1750889Ab2KETxw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 14:53:52 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:35664 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab2KETxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 14:53:45 -0500
+From: Xi Wang <xi.wang@gmail.com>
+To: Xiangliang Yu <yuxiangl@marvell.com>
+Cc: Xi Wang <xi.wang@gmail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] [SCSI] mvsas: fix shift in mvs_94xx_free_reg_set()
+Date: Mon,  5 Nov 2012 14:53:02 -0500
+Message-Id: <1352145183-29355-3-git-send-email-xi.wang@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1352145183-29355-1-git-send-email-xi.wang@gmail.com>
+References: <1352145183-29355-1-git-send-email-xi.wang@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Invoking bit(n) with n >= 64 is undefined behavior, since bit(n) does
+a 64-bit shift.  This patch adds a check on the shifting amount.
 
-On Nov 5, 2012, at 8:10 PM, Grant Likely wrote:
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+---
+ drivers/scsi/mvsas/mv_94xx.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-> On Mon, Nov 5, 2012 at 3:37 PM, Pantelis Antoniou
-> <panto@antoniou-consulting.com> wrote:
->> Hi Grant,
->> 
->> On Nov 5, 2012, at 1:37 AM, Grant Likely wrote:
->> 
->>> On Fri, Nov 2, 2012 at 12:32 PM, Pantelis Antoniou
->>> <panto@antoniou-consulting.com> wrote:
->>>> The i2c2 alias cannot be resolved at compile time; there has to be
->>>> 
->>>> a) A DT object format where unresolved aliases (symbols) are tracked
->>>> b) A runtime DT linker that will resolve the alias, and will insert the
->>>>  i2c2-devices child nodes as children in the i2c2 node.
->>>> c) A method to trigger platform device creation for the child nodes just
->>>>  inserted.
->>>> 
->>>> DT core changes aren't bound to be easily accepted, so without having a clear
->>>> signal from the DT maintainers that they would consider such a method people
->>>> are just hesitant to go down this road.
->>> 
->>> I do agree and will accept such a method.
->>> 
->>> g.
->> 
->> Understood.
->> 
->> I'll think about the issues and come up with a design for the format, but
->> let's talk about this in the open for a while.
-> 
-> Agreed. I'm planning to post my first draft/RFC tonight.
-> 
->> I don't want to modify the DTB format, in order to avoid impacting any other
->> DT users.
-> 
-> Ditto. It should be a direct extension.
-> 
-
-Avoiding mobs of angry users with broken bootloader/kernel combos is a good
-thing...
-
->> So would something like this work for you?
-> [...]
->> The dt-resolution node, can be appended to the dt fragment contents and
->> can be generated by the compiler.
->> 
->> Upon injection of the DT fragment the in-kernel loader can perform
->> symbol resolution and replace the phandles with the in-kernel values.
->> 
->> I know there's an aliases node, but I don't know if it's wise to modify it.
->> 
->> What do you think?
-> 
-> If I'm reading your intent correctly, your primary worry is the
-> problem of matching up phandles from the base dt with (potentially
-> different) phandle values in the overlay. This solution solves it by
-> encoding all of the phandle locations as offsets from the start of the
-> file into the dt-resolution node. Correct? My concern with this
-> approach is that it is fragile. Any changes to the fragment file, such
-> as to add extra properties or nodes, or even to repack the tree will
-> break all the offsets; probably silently.
-> 
-
-Yes, this will not survive modification of the fragment file.
-For the use case I'm targeting the DT fragment is going to be quite
-minimal, a few tens of nodes at the most. Modification of a single
-fragment file is not expected.
-
-Modifications to the base tree, those would work just fine. The base
-tree by definition will not have external references.
-
-> It would be less fragile if each property containing phandles had some
-> kind of .<prop>-phandle-offsets companion property that listed the
-> phandles that need to be fixed up as an offset to the beginning of
-> only that properties' data. Better, in that modifying the tree won't
-> break the links, but I still worry that it is fragile and possibly too
-> complex.
-
-I believe this is considerably more complex, without fixing the 
-fragility problem.
-
-> 
-> However, the problem is based on the assumption that phandles are
-> effectively random and could change ever time the tree is recompiled.
-> Well, what if they weren't? What if dtc generated phandles using a
-> hash of the node full name so that the value changed rarely? Also,
-> what if the format was oriented around detecting if the phandles don't
-> match instead of fixing things up? The solution becomes a lot simpler
-> if the parser only has to verify that the referenced phandles already
-> exist at the right path in the tree.
-> 
-> Something like this:
-> 
-> /include/ "base-file.dts"  /* include might not be the right syntax here */
-> &i2c0 {         /* i2c0 resolved by label */
->        touchpad@10 {
->                compatible = "acme,touchpad";
->                reg = <0x10>;
->                interrupt-parent = <&intc>;
->                interrupts = <100>;
->        };
-> };
-> 
-> And the generated overlay dtb may look like this:
-> 
-> / {
->        .readonly;
->        interrupt-controller@0x10005000 {
->                .readonly;
->                phandle = <0x1234>;
->        };
-> 
->        peripheral-bus {
->                .readonly;
->                i2c@20001000 {
->                        touchpad@10 {
->                                compatible = "acme,touchpad";
->                                reg = <0x10>;
->                                interrupt-parent = <0x1234>;
->                                interrupts = <100>;
->                        };
->                };
->        };
-> };
-> 
-> Which is obviously missing a bunch of information for the rest of the
-> system, but contains enough data to ensure that the path to the touchpad
-> node is valid and that the phandle has not changed.
-
-I see what you mean. It will work, provided you 'link' (I don't know what
-the proper terminology is) against the correct board dts file.
-> 
-> This handles many of the use cases, but it assumes that an overlay is
-> board specific. If it ever is required to support multiple base boards
-> with a single overlay file then there is a problem. The .dtb overlays
-> generated in this manor cannot handle different phandles or nodes that
-> are in a different place. On the other hand, the overlay source files
-> should have no problem being compiled for multiple targets, so maybe
-> it isn't an issue. Plus if dtc is installed on the target, then the
-> live tree from /proc can be used as the reference when compiling the
-> overlay.
-
-My worry is that this format is dependent on linking against the board
-DTS file. One of the ideas thrown around here was that it might make
-sense to store the DTB fragment in the EEPROM of the device. 
-
-In that case you have a OS independent hardware description, which can 
-be even used even by the bootloader to access devices it knows not about
-at compile time.
-
-Other than that, I have no other objections.
-
-> 
-> g.
-
-Regards
-
--- Pantelis
-
+diff --git a/drivers/scsi/mvsas/mv_94xx.c b/drivers/scsi/mvsas/mv_94xx.c
+index 7e423e5..e1f35d4 100644
+--- a/drivers/scsi/mvsas/mv_94xx.c
++++ b/drivers/scsi/mvsas/mv_94xx.c
+@@ -715,11 +715,13 @@ static void mvs_94xx_free_reg_set(struct mvs_info *mvi, u8 *tfs)
+ 	if (*tfs == MVS_ID_NOT_MAPPED)
+ 		return;
+ 
+-	mvi->sata_reg_set &= ~bit(reg_set);
+-	if (reg_set < 32)
++	if (reg_set < 32) {
++		mvi->sata_reg_set &= ~bit(reg_set);
+ 		w_reg_set_enable(reg_set, (u32)mvi->sata_reg_set);
+-	else
++	} else if (reg_set < 64) {
++		mvi->sata_reg_set &= ~bit(reg_set);
+ 		w_reg_set_enable(reg_set, (u32)(mvi->sata_reg_set >> 32));
++	}
+ 
+ 	*tfs = MVS_ID_NOT_MAPPED;
+ 
+-- 
+1.7.10.4
 
