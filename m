@@ -1,135 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab2KEMUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:20:47 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:34097 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab2KEMUo (ORCPT
+	id S1753479Ab2KEMWf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:22:35 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:57576 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab2KEMWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:20:44 -0500
+	Mon, 5 Nov 2012 07:22:34 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH 4/5] fat: (exportfs) move code to rebuild directory-inode to separate function
+References: <1351389207-2592-1-git-send-email-linkinjeon@gmail.com>
+Date: Mon, 05 Nov 2012 21:22:31 +0900
+In-Reply-To: <1351389207-2592-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Sun, 28 Oct 2012 10:53:27 +0900")
+Message-ID: <87zk2wkznc.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAONaPpEfbkkE_zd4m8AHo4zfg9-UL_ojS2aQLQquyKDQRYyc6Q@mail.gmail.com>
-References: <1352080784-30839-1-git-send-email-luming.yu@gmail.com>
-	<1352080784-30839-2-git-send-email-luming.yu@gmail.com>
-	<CAONaPpEfbkkE_zd4m8AHo4zfg9-UL_ojS2aQLQquyKDQRYyc6Q@mail.gmail.com>
-Date: Mon, 5 Nov 2012 07:20:43 -0500
-Message-ID: <CAJRGBZx7OW6Nok8kTAtmHSk2SRwo9N+aiHeduSLtFsBJKyjZ2A@mail.gmail.com>
-Subject: Re: [PATCH 01/13] HW-latency: hardware latency test 0.10
-From: Luming Yu <luming.yu@gmail.com>
-To: John Kacur <jkacur@redhat.com>
-Cc: Jon Masters <jonathan@jonmasters.org>, Jon Masters <jcm@redhat.com>,
-        arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Luming Yu <luming.yu@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 4, 2012 at 4:23 PM, John Kacur <jkacur@redhat.com> wrote:
-> On Mon, Nov 5, 2012 at 2:59 AM, Luming Yu <luming.yu@gmail.com> wrote:
->>
->> This patch is the first step to test some basic hardware functions like
->> TSC to help people understand if there is any hardware latency as well
->> as throughput problem exposed on bare metal or left behind by BIOS or
->> interfered by SMI. Currently the patch tests TSC, CPU Frequency and
->> RDRAND which is a new CPU instruction to get random number introduced in
->> new CPU like Intel Ivy Bridge in stop_machine context,which is choosen to
->> make sure testers fully control their system under test to rule out some
->> level of unwanted noise.
->>
->> Signed-off-by: Luming Yu <luming.yu@intel.com>
->> ---
->>  drivers/misc/Kconfig           |   7 +
->>  drivers/misc/Makefile          |   1 +
->>  drivers/misc/hw_latency_test.c | 833 +++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 841 insertions(+)
->>  create mode 100644 drivers/misc/hw_latency_test.c
->>
->> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
->> index b151b7c..5ed440b 100644
->> --- a/drivers/misc/Kconfig
->> +++ b/drivers/misc/Kconfig
->> @@ -114,6 +114,13 @@ config IBM_ASM
->>           for information on the specific driver level and support statement
->>           for your IBM server.
->>
->> +config HW_LATENCY_TEST
->> +       tristate "Testing module to detect hardware lattency and throughput"
->> +       depends on DEBUG_FS
->> +       depends on RING_BUFFER
->> +       depends on X86
->> +       default m
->> +
->>  config PHANTOM
->>         tristate "Sensable PHANToM (PCI)"
->>         depends on PCI
->> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
->> index 2129377..c195cce 100644
->> --- a/drivers/misc/Makefile
->> +++ b/drivers/misc/Makefile
->> @@ -49,3 +49,4 @@ obj-y                         += carma/
->>  obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
->>  obj-$(CONFIG_ALTERA_STAPL)     +=altera-stapl/
->>  obj-$(CONFIG_INTEL_MEI)                += mei/
->> +obj-$(CONFIG_HW_LATENCY_TEST)  += hw_latency_test.o
->> diff --git a/drivers/misc/hw_latency_test.c b/drivers/misc/hw_latency_test.c
->> new file mode 100644
->> index 0000000..2aa3a74
->> --- /dev/null
->> +++ b/drivers/misc/hw_latency_test.c
->> @@ -0,0 +1,833 @@
->> +#include <linux/module.h>
->> +#include <linux/init.h>
->> +#include <linux/ring_buffer.h>
->> +#include <linux/stop_machine.h>
->> +#include <linux/time.h>
->> +#include <linux/hrtimer.h>
->> +#include <linux/kthread.h>
->> +#include <linux/debugfs.h>
->> +#include <linux/seq_file.h>
->> +#include <linux/uaccess.h>
->> +#include <linux/version.h>
->> +#include <linux/delay.h>
->> +#include <linux/slab.h>
->> +#include <linux/random.h>
->> +#include <asm/tlbflush.h>
->> +
->> +#define BUF_SIZE_DEFAULT       262144UL
->> +#define BUF_FLAGS      (RB_FL_OVERWRITE)
->> +#define        U64STR_SIZE     22
->> +#define DEBUGFS_BUF_SIZE       1024
->> +#define DEBUGFS_NAME_SIZE      32
->> +
->> +#define        VERSION         "0.1.0"
->> +#define BANNER         "hardware latency test"
->> +#define DRVNAME                "hw_latency_test"
->> +
->> +#define DEFAULT_SAMPLE_WINDOW  1000000
->> +#define        DEFAULT_SAMPLE_WIDTH    500000
->> +#define        DEFAULT_LAT_THRESHOLD   10
->> +
->> +MODULE_LICENSE("GPL");
->> +MODULE_AUTHOR("Luming Yu <luming.yu@gmail.com>");
->> +MODULE_DESCRIPTION("A simple hardware latency test");
->> +MODULE_VERSION(VERSION);
->
->
-> -------->o SNIP
->
-> Ok, hopefully this is just an unintentional oversight - but I don't
-> see where you are acknowledging that the original author of most of
-> this code is Jon Masters. It's fine for you to work on it, but you
-> have to somewhere acknowledge where it comes from.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Thanks very much for pointing it out.
+>  /*
+> + * Rebuild the parent for a directory that is not connected
+> + * to the filesystem root
+> + */
+> +static
+> +struct inode *fat_rebuild_parent(struct super_block *sb, int parent_logstart)
+> +{
+> +	int search_clus, clus_to_match;
+> +	struct msdos_dir_entry *de;
+> +	struct inode *parent;
+> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+> +	sector_t blknr = fat_clus_to_blknr(sbi, parent_logstart);
+> +	struct buffer_head *parent_bh = sb_bread(sb, blknr);
+> +
+> +	if (!parent_bh) {
+> +		fat_msg(sb, KERN_ERR,
+> +			"NFS:unable to read cluster of parent directory");
+> +		return NULL;
+> +	}
+> +	de = (struct msdos_dir_entry *) parent_bh->b_data;
+> +	clus_to_match = fat_get_start(sbi, &de[0]);
+> +	search_clus = fat_get_start(sbi, &de[1]);
+> +	if (!search_clus)
+> +		search_clus = sbi->root_cluster;
+> +	brelse(parent_bh);
+> +	do {
+> +		parent =  fat_traverse_cluster(sb,
+> +					search_clus, clus_to_match);
+> +		if (IS_ERR(parent) || parent)
+> +			break;
+> +		search_clus = fat_read_next_clus(sb, search_clus);
 
-I did ACK Jon Masters in the first push of this feature in July of this year.
-
-Yes, I will add Jon Master to be the first author of the work in right
-place, I will
-claim secondary place for myself . :-)
-
->
-> Thanks
->
-> John
+fat_read_next_clus() only supports FAT32? Looks strange.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
