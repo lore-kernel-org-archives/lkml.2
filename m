@@ -1,201 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932961Ab2KEU3G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 15:29:06 -0500
-Received: from [204.155.152.216] ([204.155.152.216]:44776 "EHLO shutemov.name"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753889Ab2KEU3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 15:29:05 -0500
-X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Nov 2012 15:29:04 EST
-Date: Mon, 5 Nov 2012 22:24:25 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v3 1/8] x86: Improve __phys_addr performance by making
- use of carry flags and inlining
-Message-ID: <20121105202425.GA25671@shutemov.name>
-References: <20121105185657.10205.27419.stgit@gitlad.jf.intel.com>
- <20121105190332.10205.22300.stgit@gitlad.jf.intel.com>
+	id S933016Ab2KEU3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 15:29:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57898 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932121Ab2KEU3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 15:29:18 -0500
+Date: Mon, 5 Nov 2012 17:01:47 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, jolsa@redhat.com, namhyung.kim@lge.com
+Subject: Re: [PATCH v2 03/16] perf, core: Add a concept of a weightened sample
+Message-ID: <20121105200147.GB7962@infradead.org>
+References: <1352123463-7346-1-git-send-email-eranian@google.com>
+ <1352123463-7346-4-git-send-email-eranian@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121105190332.10205.22300.stgit@gitlad.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352123463-7346-4-git-send-email-eranian@google.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 11:04:06AM -0800, Alexander Duyck wrote:
-> This patch is meant to improve overall system performance when making use of
-> the __phys_addr call.  To do this I have implemented several changes.
-> 
-> First if CONFIG_DEBUG_VIRTUAL is not defined __phys_addr is made an inline,
-> similar to how this is currently handled in 32 bit.  However in order to do
-> this it is required to export phys_base so that it is available if __phys_addr
-> is used in kernel modules.
-> 
-> The second change was to streamline the code by making use of the carry flag
-> on an add operation instead of performing a compare on a 64 bit value.  The
-> advantage to this is that it allows us to significantly reduce the overall
-> size of the call.  On my Xeon E5 system the entire __phys_addr inline call
-> consumes a little less than 32 bytes and 5 instructions.  I also applied
-> similar logic to the debug version of the function.  My testing shows that the
-> debug version of the function with this patch applied is slightly faster than
-> the non-debug version without the patch.
-> 
-> When building the kernel with the first two changes applied I saw build
-> warnings about __START_KERNEL_map and PAGE_OFFSET constants not fitting in
-> their type.  In order to resolve the build warning I changed their type from
-> UL to ULL.
+Em Mon, Nov 05, 2012 at 02:50:50PM +0100, Stephane Eranian escreveu:
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+>  #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
+> @@ -559,6 +562,7 @@ enum perf_event_type {
+>  	 *	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
+>  	 *	{ u32			cpu, res; } && PERF_SAMPLE_CPU
+>  	 *	{ u64			period;   } && PERF_SAMPLE_PERIOD
+> +	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+>  	 *
+>  	 *	{ struct read_format	values;	  } && PERF_SAMPLE_READ
 
-What kind of warning messages did you see?
-It's strange: sizeof(unsinged long) == sizeof(unsinged long long) on
-x86_64
+This comes after PERF_SAMPLE_STACK_USER so that perf_evsel__parse_sample
+can get it right, isn't it? Or is just the comment wrong?
 
-> 
-> Finally I also applied the same logic changes to __virt_addr_valid since it
-> used the same general code flow as __phys_addr and could achieve similar gains
-> though these changes.
-> 
-> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> ---
-> 
-> v3:  Added changes to __virt_addr_valid to keep it in sync with __phys_addr
-> 
->  arch/x86/include/asm/page_64_types.h |   17 +++++++++++++-
->  arch/x86/kernel/x8664_ksyms_64.c     |    3 +++
->  arch/x86/mm/physaddr.c               |   40 +++++++++++++++++++++-------------
->  3 files changed, 43 insertions(+), 17 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
-> index 320f7bb..1ca93d3 100644
-> --- a/arch/x86/include/asm/page_64_types.h
-> +++ b/arch/x86/include/asm/page_64_types.h
-> @@ -30,14 +30,14 @@
->   * hypervisor to fit.  Choosing 16 slots here is arbitrary, but it's
->   * what Xen requires.
->   */
-> -#define __PAGE_OFFSET           _AC(0xffff880000000000, UL)
-> +#define __PAGE_OFFSET           _AC(0xffff880000000000, ULL)
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index dbccf83..d633581 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -952,6 +952,9 @@ static void perf_event__header_size(struct perf_event *event)
+>  	if (sample_type & PERF_SAMPLE_PERIOD)
+>  		size += sizeof(data->period);
 >  
->  #define __PHYSICAL_START	((CONFIG_PHYSICAL_START +	 	\
->  				  (CONFIG_PHYSICAL_ALIGN - 1)) &	\
->  				 ~(CONFIG_PHYSICAL_ALIGN - 1))
->  
->  #define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
-> -#define __START_KERNEL_map	_AC(0xffffffff80000000, UL)
-> +#define __START_KERNEL_map	_AC(0xffffffff80000000, ULL)
->  
->  /* See Documentation/x86/x86_64/mm.txt for a description of the memory map. */
->  #define __PHYSICAL_MASK_SHIFT	46
-> @@ -58,7 +58,20 @@ void copy_page(void *to, void *from);
->  extern unsigned long max_pfn;
->  extern unsigned long phys_base;
->  
-> +static inline unsigned long __phys_addr_nodebug(unsigned long x)
-> +{
-> +	unsigned long y = x - __START_KERNEL_map;
+> +	if (sample_type & PERF_SAMPLE_WEIGHT)
+> +		size += sizeof(data->weight);
 
-With change above you assign ULL const to unsigned long variable. hm?
+Here it doesn't matter, we're just computing the sample size, but would
+be nice to add this just after the (sample_type &
+PERF_SAMPLE_STACK_USER) branch.
 
 > +
-> +	/* use the carry flag to determine if x was < __START_KERNEL_map */
-> +	x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
-> +
-> +	return x;
-> +}
-> +#ifdef CONFIG_DEBUG_VIRTUAL
->  extern unsigned long __phys_addr(unsigned long);
-> +#else
-> +#define __phys_addr(x)		__phys_addr_nodebug(x)
-> +#endif
->  #define __phys_reloc_hide(x)	(x)
+>  	if (sample_type & PERF_SAMPLE_READ)
+>  		size += event->read_size;
 >  
->  #define vmemmap ((struct page *)VMEMMAP_START)
-> diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
-> index 1330dd1..b014d94 100644
-> --- a/arch/x86/kernel/x8664_ksyms_64.c
-> +++ b/arch/x86/kernel/x8664_ksyms_64.c
-> @@ -59,6 +59,9 @@ EXPORT_SYMBOL(memcpy);
->  EXPORT_SYMBOL(__memcpy);
->  EXPORT_SYMBOL(memmove);
+> @@ -4080,6 +4083,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+>  	if (sample_type & PERF_SAMPLE_PERIOD)
+>  		perf_output_put(handle, data->period);
 >  
-> +#ifndef CONFIG_DEBUG_VIRTUAL
-> +EXPORT_SYMBOL(phys_base);
-> +#endif
->  EXPORT_SYMBOL(empty_zero_page);
->  #ifndef CONFIG_PARAVIRT
->  EXPORT_SYMBOL(native_load_gs_index);
-> diff --git a/arch/x86/mm/physaddr.c b/arch/x86/mm/physaddr.c
-> index d2e2735..fd40d75 100644
-> --- a/arch/x86/mm/physaddr.c
-> +++ b/arch/x86/mm/physaddr.c
-> @@ -8,33 +8,43 @@
->  
->  #ifdef CONFIG_X86_64
->  
-> +#ifdef CONFIG_DEBUG_VIRTUAL
->  unsigned long __phys_addr(unsigned long x)
->  {
-> -	if (x >= __START_KERNEL_map) {
-> -		x -= __START_KERNEL_map;
-> -		VIRTUAL_BUG_ON(x >= KERNEL_IMAGE_SIZE);
-> -		x += phys_base;
-> +	unsigned long y = x - __START_KERNEL_map;
+> +	if (sample_type & PERF_SAMPLE_WEIGHT)
+> +		perf_output_put(handle, data->weight);
 > +
-> +	/* use the carry flag to determine if x was < __START_KERNEL_map */
-> +	if (unlikely(x > y)) {
-> +		x = y + phys_base;
-> +
-> +		VIRTUAL_BUG_ON(y >= KERNEL_IMAGE_SIZE);
->  	} else {
-> -		VIRTUAL_BUG_ON(x < PAGE_OFFSET);
-> -		x -= PAGE_OFFSET;
-> -		VIRTUAL_BUG_ON(!phys_addr_valid(x));
-> +		x = y + (__START_KERNEL_map - PAGE_OFFSET);
-> +
-> +		/* carry flag will be set if starting x was >= PAGE_OFFSET */
-> +		VIRTUAL_BUG_ON((x > y) || !phys_addr_valid(x));
->  	}
-> +
->  	return x;
->  }
->  EXPORT_SYMBOL(__phys_addr);
-> +#endif
->  
->  bool __virt_addr_valid(unsigned long x)
->  {
-> -	if (x >= __START_KERNEL_map) {
-> -		x -= __START_KERNEL_map;
-> -		if (x >= KERNEL_IMAGE_SIZE)
-> +	unsigned long y = x - __START_KERNEL_map;
-> +
-> +	/* use the carry flag to determine if x was < __START_KERNEL_map */
-> +	if (unlikely(x > y)) {
-> +		x = y + phys_base;
-> +
-> +		if (y >= KERNEL_IMAGE_SIZE)
->  			return false;
-> -		x += phys_base;
->  	} else {
-> -		if (x < PAGE_OFFSET)
-> -			return false;
-> -		x -= PAGE_OFFSET;
-> -		if (!phys_addr_valid(x))
-> +		x = y + (__START_KERNEL_map - PAGE_OFFSET);
-> +
-> +		/* carry flag will be set if starting x was >= PAGE_OFFSET */
-> +		if ((x > y) || !phys_addr_valid(x))
->  			return false;
->  	}
->  
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
--- 
- Kirill A. Shutemov
+Yeap, it should go after PERF_SAMPLE_STACK_USER
+
+>  	if (sample_type & PERF_SAMPLE_READ)
+>  		perf_output_read(handle, event);
+>  
+> -- 
+> 1.7.9.5
