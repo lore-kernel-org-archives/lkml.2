@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933001Ab2KESjw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 13:39:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40537 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754640Ab2KESju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 13:39:50 -0500
-Date: Mon, 5 Nov 2012 19:39:47 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET RESEND v2] cgroup: simplify cgroup removal path
-Message-ID: <20121105183947.GA14087@dhcp22.suse.cz>
-References: <1351712650-23709-1-git-send-email-tj@kernel.org>
- <20121105173024.GA19354@mtj.dyndns.org>
+	id S1754722Ab2KESkO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 13:40:14 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:46222 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754685Ab2KESkM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 13:40:12 -0500
+Date: Mon, 5 Nov 2012 10:37:07 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: anish kumar <anish198519851985@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] power: battery: pointer math issue in gab_probe()
+Message-ID: <20121105183707.GA25111@lizard>
+References: <20120929071346.GE10993@elgon.mountain>
+ <1348978125.7492.2.camel@anish-Inspiron-N5050>
+ <1352118861.4968.0.camel@anish-Inspiron-N5050>
+ <20121105130945.GC11515@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121105173024.GA19354@mtj.dyndns.org>
+In-Reply-To: <20121105130945.GC11515@mwanda>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 05-11-12 09:30:24, Tejun Heo wrote:
-> Applied to cgroup/cgroup-rmdir-updates and then pulled into
-> cgroup/for-3.8 w/ Li's acks added.
+On Mon, Nov 05, 2012 at 04:09:45PM +0300, Dan Carpenter wrote:
+> On Mon, Nov 05, 2012 at 09:34:21PM +0900, anish kumar wrote:
+> > Hello Dan,
+> > 
+> > Is this patch of yours picked up by anyone?
+> 
+> David this should go through you?
 
-OK, I have merged it into -mm git tree.
+I'll merge it soon. Sorry for the delay, quite busy lately. :-/
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
+Thanks!
+Anton.
