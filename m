@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933429Ab2KEWwE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 17:52:04 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40367 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005Ab2KEWri (ORCPT
+	id S1754988Ab2KEWwM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 17:52:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55886 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab2KEWwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 17:47:38 -0500
-From: Michel Lespinasse <walken@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
-        William Irwin <wli@holomorphy.com>
-Cc: linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
-        linux-mips@linux-mips.org, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org, Rik van Riel <riel@surriel.com>
-Subject: [PATCH 04/16] mm: rearrange vm_area_struct for fewer cache misses
-Date: Mon,  5 Nov 2012 14:47:01 -0800
-Message-Id: <1352155633-8648-5-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1352155633-8648-1-git-send-email-walken@google.com>
-References: <1352155633-8648-1-git-send-email-walken@google.com>
+	Mon, 5 Nov 2012 17:52:09 -0500
+Date: Mon, 5 Nov 2012 14:52:07 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC PATCH] tasklet: ignore disabled tasklet in tasklet_action
+Message-Id: <20121105145207.6d2fae92.akpm@linux-foundation.org>
+In-Reply-To: <1351824534-2861-1-git-send-email-xtfeng@gmail.com>
+References: <1351824534-2861-1-git-send-email-xtfeng@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@surriel.com>
+On Fri,  2 Nov 2012 10:48:54 +0800
+Xiaotian Feng <xtfeng@gmail.com> wrote:
 
-The kernel walks the VMA rbtree in various places, including
-the page fault path.  However, the vm_rb node spanned two
-cache lines, on 64 bit systems with 64 byte cache lines (most
-x86 systems).
+> We met a ksoftirqd 100% issue, the perf top shows kernel is busy
+> with tasklet_action(), but no actual action is shown. From dumped
+> kernel, there's only one disabled tasklet on the tasklet_vec.
+> 
+> tasklet_action might be handled after tasklet is disabled, this will
+> make disabled tasklet stayed on tasklet_vec. tasklet_action will not
+> handle disabled tasklet, but place it on the tail of tasklet_vec,
+> still raise softirq for this tasklet. Things will become worse if
+> device driver uses tasklet_disable on its device remove/close code.
+> The disabled tasklet will stay on the vec, frequently __raise_softirq_off()
+> and make ksoftirqd wakeup even if no tasklets need to be handled.
+> 
+> This patch introduced a new TASKLET_STATE_HI bit to indicate HI_SOFTIRQ,
+> in tasklet_action(), simply ignore the disabled tasklet and don't raise
+> the softirq nr. In my previous patch, I remove tasklet_hi_enable() since
+> it is the same as tasklet_enable(). So only tasklet_enable() needs to be
+> modified, if tasklet state is changed from disable to enable, use
+> __tasklet_schedule() to put it on the right vec.
 
-Rearrange vm_area_struct a little, so all the information we
-need to do a VMA tree walk is in the first cache line.
+gee, I haven't looked at the tasklet code in 100 years.  I think I'll
+send this in Thomas's direction ;)
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
+The race description seems real and the patch looks sane to me.  Are
+you sure we can get away with never clearing TASKLET_STATE_HI?  For
+example, what would happen if code does a tasklet_hi_schedule(t) and
+later does a tasklet_schedule(t)?
 
----
- include/linux/mm_types.h |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 94fa52b28ee8..528da4abf8ee 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -224,7 +224,8 @@ struct vm_region {
-  * library, the executable area etc).
-  */
- struct vm_area_struct {
--	struct mm_struct * vm_mm;	/* The address space we belong to. */
-+	/* The first cache line has the info for VMA tree walking. */
-+
- 	unsigned long vm_start;		/* Our start address within vm_mm. */
- 	unsigned long vm_end;		/* The first byte after our end address
- 					   within vm_mm. */
-@@ -232,9 +233,6 @@ struct vm_area_struct {
- 	/* linked list of VM areas per task, sorted by address */
- 	struct vm_area_struct *vm_next, *vm_prev;
- 
--	pgprot_t vm_page_prot;		/* Access permissions of this VMA. */
--	unsigned long vm_flags;		/* Flags, see mm.h. */
--
- 	struct rb_node vm_rb;
- 
- 	/*
-@@ -245,6 +243,12 @@ struct vm_area_struct {
- 	 */
- 	unsigned long rb_subtree_gap;
- 
-+	/* Second cache line starts here. */
-+
-+	struct mm_struct * vm_mm;	/* The address space we belong to. */
-+	pgprot_t vm_page_prot;		/* Access permissions of this VMA. */
-+	unsigned long vm_flags;		/* Flags, see mm.h. */
-+
- 	/*
- 	 * For areas with an address space and backing store,
- 	 * linkage into the address_space->i_mmap interval tree, or
--- 
-1.7.7.3
