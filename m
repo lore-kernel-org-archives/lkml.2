@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab2KEIqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 03:46:19 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:37613 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630Ab2KEIqR convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Mon, 5 Nov 2012 03:46:17 -0500
-Message-Id: <50978AE402000078000A64A3@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 05 Nov 2012 08:46:12 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Rusty Russell" <rusty@rustcorp.com.au>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] utilize _Static_assert() for BUILD_BUG_ON() when
- the compiler supports it
-References: <5093EB1C02000078000A61D7@nat28.tlf.novell.com>
- <87pq3syeow.fsf@rustcorp.com.au>
-In-Reply-To: <87pq3syeow.fsf@rustcorp.com.au>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753453Ab2KEIsa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 03:48:30 -0500
+Received: from mga03.intel.com ([143.182.124.21]:43668 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab2KEIs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 03:48:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,713,1344236400"; 
+   d="scan'208";a="213506637"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH, resend] of: re-use kernel's kbasename()
+Date: Mon,  5 Nov 2012 10:48:17 +0200
+Message-Id: <1352105297-880-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 05.11.12 at 03:19, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Jan Beulich <JBeulich@suse.com> writes:
->> @@ -54,6 +61,15 @@ struct pt_regs;
->>   */
->>  #ifndef __OPTIMIZE__
->>  #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
->> +#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
->> +#define __build_bug_on_failed(n) __build_bug_on_##n##_failed
->> +#define _BUILD_BUG_ON(n, condition)				\
->> +	do {							\
->> +		extern void __compiletime_error(#condition)	\
->> +		__build_bug_on_failed(n)(void);			\
->> +		if (condition) __build_bug_on_failed(n)();	\
->> +	} while(0)
->> +#define BUILD_BUG_ON(condition...) _BUILD_BUG_ON(__COUNTER__, ##condition)
->>  #else
->>  extern int __build_bug_on_failed;
->>  #define BUILD_BUG_ON(condition)					\
-> 
-> Why does this depend on gcc version?  Looks like residue from an attempt
-> to use _Static_assert here?
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+---
+ drivers/of/fdt.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-That was the original hope, yes, but didn't work because of
-certain uses BUILD_BUG_ON() in inline functions. Hence the
-next best solution was to use __compiletime_error(), which
-still gives a better diagnostic than what we have so far, but is
-- see include/linux/compiler-gcc4.h - available only with gcc 4.3
-and newer (simply using the construct even when expanding to
-nothing - in include/linux/compile.h - wouldn't have the intended
-effect of producing a compiler diagnostic at all, it would get
-deferred to link time in _all_ cases, even if the compiler can tell
-it's a constant).
-
-Jan
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 91a375f..0ca0f9e 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -486,14 +486,8 @@ int __init of_scan_flat_dt(int (*it)(unsigned long node,
+ 		depth++;
+ 		pathp = (char *)p;
+ 		p = ALIGN(p + strlen(pathp) + 1, 4);
+-		if ((*pathp) == '/') {
+-			char *lp, *np;
+-			for (lp = NULL, np = pathp; *np; np++)
+-				if ((*np) == '/')
+-					lp = np+1;
+-			if (lp != NULL)
+-				pathp = lp;
+-		}
++		if (*pathp == '/')
++			pathp = kbasename(pathp);
+ 		rc = it(p, pathp, depth, data);
+ 		if (rc != 0)
+ 			break;
+-- 
+1.7.10.4
 
