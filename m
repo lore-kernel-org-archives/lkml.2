@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab2KEIF0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 03:05:26 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:47629 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752209Ab2KEIFY (ORCPT
+	id S1752344Ab2KEINW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 03:13:22 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37336 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751166Ab2KEINV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 03:05:24 -0500
+	Mon, 5 Nov 2012 03:13:21 -0500
+Date: Mon, 5 Nov 2012 09:13:18 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Joel A Fernandes <agnel.joel@gmail.com>
+Cc: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "Porter, Matt" <mporter@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
+Message-ID: <20121105081317.GC28886@opensource.wolfsonmicro.com>
+References: <1349879449-22657-1-git-send-email-mporter@ti.com>
+ <1BAFE6F6C881BF42822005164F1491C33EAB8596@DBDE01.ent.ti.com>
+ <CAD=GYpZ9w=D55G9DOiMqZ4BCGGdGszsgG3fumHUGZ12xx+TKjw@mail.gmail.com>
+ <1BAFE6F6C881BF42822005164F1491C33EAB973D@DBDE01.ent.ti.com>
+ <CAD=GYpYuyfGuEgAWJyE2nkKx4GEsm=eDYAhV966sWVLbEPaqYQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5096EE29.8090304@suse.cz>
-References: <1350646126-28537-1-git-send-email-jslaby@suse.cz>
-	<CAMuHMdWzNxhs1+14qwr0=G+_uGVWm9QKb4wBDBy-6rx5+pxv7w@mail.gmail.com>
-	<5096EE29.8090304@suse.cz>
-Date: Mon, 5 Nov 2012 09:05:22 +0100
-X-Google-Sender-Auth: km7xDS_H8qrqLQ9ROd2XrVV80NU
-Message-ID: <CAMuHMdVH0Q6yjezDEqEF5483Dj6EdV-a4izq8=doWgzsz6YDQg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] HID: microsoft, fix invalid rdesc for 3k kbd
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jiri Slaby <jirislaby@gmail.com>, jkosina@suse.cz,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jousvV0MzM2p6OtC"
+Content-Disposition: inline
+In-Reply-To: <CAD=GYpYuyfGuEgAWJyE2nkKx4GEsm=eDYAhV966sWVLbEPaqYQ@mail.gmail.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
 
-On Sun, Nov 4, 2012 at 11:37 PM, Jiri Slaby <jslaby@suse.cz> wrote:
-> On 11/04/2012 10:06 PM, Geert Uytterhoeven wrote:
->> On Fri, Oct 19, 2012 at 1:28 PM, Jiri Slaby <jslaby@suse.cz> wrote:
->>> +       if ((quirks & MS_RDESC_3K) && *rsize == 106 &&
->>> +                       !memcmp((char []){ 0x19, 0x00, 0x29, 0xff },
->>> +                               &rdesc[94], 4)) {
->>
->> Which version of gcc are you using?
->
-> 4.7.1. But that indeed fails too if memcmp is a macro. This is of course
-> not the case for x86, so that I didn't hit that. I will post a patch to
-> change this to standard array accesses. (This looked prettier though.)
+--jousvV0MzM2p6OtC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On x86/32 it's also a macro, but a different one, which doesn't process the
-parameters:
+On Sat, Nov 03, 2012 at 02:32:59PM -0500, Joel A Fernandes wrote:
 
-arch/m68k/include/asm/string.h:#define memcmp(d, s, n) __builtin_memcmp(d, s, n)
-arch/x86/include/asm/string_32.h:#define memcmp __builtin_memcmp
+> beaglebone_defconfig: Add dummy regulator to init tlv320aic3x
+> https://github.com/joelagnel/linux-kernel/commit/db5672dfe548d82625cf40ed688d05ba7cee5c93
 
-Gr{oetje,eeting}s,
+This should never be done in production, you should ensure that the
+appropriate supplies are provided by the board file or device tree.
 
-                        Geert
+--jousvV0MzM2p6OtC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+iQIcBAEBAgAGBQJQl3UWAAoJELSic+t+oim9rQ4QAJaDz1fahgALubBbZZwIOWZA
+a0acT49+VwL6sWjiS9sKReDRAzEpsF/Odn+V8wpZqoCTUtR3cKdCU4dUaU4gr0YN
+Wv0200azme+UbibIcK61kMmtZytQ2fulu1ul1MSpntQ6eA5sika762pMbgagZozb
+VO4bYHA1uDHytlElVubHmsIunoAuTPRyreSynGmn6XjoKOiWQP4qWIkIXUtKEGXj
+WAlWLvemu+K6XOJdPCU2Y30Y0RZ4BMkjc+wtf8Xj+RUKNn6U3lV2n3wYlKzEFESQ
+8AwCNTrNpyvpoI5jqYNiOSngBTENfwszpivneqxTBJ6SiDoQmhIPxHOKO2RziYvq
+XO7f7edXbebSlXy5Y4SSTJRt8qgR/Y2UkqxrYc+3p3zUouxYYbrHsIY0Ag8b6ohY
+MZH9Wo6wN7uKSHCka14gwppUQlL/eN7RY0Ly2rAfedxXqMhGl0wPbGZWHGHKG1g3
+88qFoYulNvEP1OUHWAPVLxWu4ykut/YXG8jExrpxUyuxK5mvRJTgzDmiCzGfMVnB
+BadoMvZek7XEXPn346lNuydh8isdCtaV3PEjJGIgha3MZuuyLwC6NPCChzjT28W4
+qs2rX0pQJjN0i57ClD9otipSdYF71f7oYW5wAnn3BKj+YOLmql5ynaWkHNt7SnLq
+9/7In8V4jcLcAl2EC6Pb
+=ouct
+-----END PGP SIGNATURE-----
+
+--jousvV0MzM2p6OtC--
