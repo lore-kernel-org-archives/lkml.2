@@ -1,80 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab2KET0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 14:26:43 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:59598 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab2KET0l (ORCPT
+	id S932105Ab2KETej (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 14:34:39 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:45476 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab2KETeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 14:26:41 -0500
-Date: Mon, 5 Nov 2012 11:26:36 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Glauber Costa <glommer@parallels.com>, rjw@sisk.pl,
-        linux-pm@vger.kernel.org, fweisbec@gmail.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mhocko@suse.cz, cgroups@vger.kernel.org
-Subject: Re: [RFC] cgroup: deprecate clone_children
-Message-ID: <20121105192636.GG19354@mtj.dyndns.org>
-References: <1351931915-1701-1-git-send-email-tj@kernel.org>
- <1351931915-1701-2-git-send-email-tj@kernel.org>
- <5097C23B.3040808@parallels.com>
- <20121105180213.GB19354@mtj.dyndns.org>
- <20121105191714.GA24560@sergelap>
+	Mon, 5 Nov 2012 14:34:37 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Containers <containers@lists.linux-foundation.org>
+References: <20121105163810.GJ14789@redhat.com>
+Date: Mon, 05 Nov 2012 11:34:26 -0800
+In-Reply-To: <20121105163810.GJ14789@redhat.com> (Aristeu Rozanski's message
+	of "Mon, 5 Nov 2012 11:38:11 -0500")
+Message-ID: <87r4o7alod.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121105191714.GA24560@sergelap>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+LwJinhNBXkXrMBbtuRpZaNsv9Gcne9fA=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1853]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Aristeu Rozanski <aris@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] coredump: run the coredump helper using the same namespace as the dead process
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Serge.
+Aristeu Rozanski <aris@redhat.com> writes:
 
-On Mon, Nov 05, 2012 at 01:17:14PM -0600, Serge Hallyn wrote:
-> > As this is unnecessary feature with very limited use and awkward in
-> 
-> clone_children is currently required by lxc.  Of course lxc could
-> manually set the .cpus and .mems in the newly created child, but if
-> those interfaces or others like it ever change (i.e. any new ones which
-> must be set before a task can join a cgroup) we'll get into yet more of
-> a rats nets of code to support different kernel versions.
+> /proc/sys/kernel/core_pattern can be used to specify a userspace helper
+> to handle core files and it currently runs in the root namespace.
+> This patch allows the helper to run in the same namespace in a step
+> towards letting containers setting their own helpers.
 
-If lxc is using it, this will have to stay then.  I'll try to make it
-a cpuset specific thing.
+I would argue that you very much need to define what it means to have a
+per container core dump at the same time as you argue this.
 
-> (Just as an idea, if there was a way to generically tell from the list
-> of files in my cgroups dir which files need to be initialized before a
-> task can join, I think that would suffice.  Maybe a cgroups.needssetup
-> file which right now contains 'cpuset.mems\ncpuset.cpus'. Then if we
-> find a file we don't recognize in there we can throw an intelligent
-> error, or guess at duplicating the parent value.)
+Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Hmmm... I think the root problem is that different controllers don't
-agree on the way they inherit configurations from parents.  cgroup
-really is a trainwreck.  :(
+Running in a namespace different than whoever set the core dump
+pattern/helper makes core dump helpers much more attackable.  With this
+patch and a little creativity I expect I can get root to write to
+whatever file I would like.  Since I also control the content of what is
+going into that file.... This design seems emintely exploitable.
 
-I don't know whether "needssetup" is the right way to deal with it.
-I'll think more about it.
+Furthermore not all namespaces are pointed at by nsproxy, so even
+for it's original design this patch is buggy.
 
-> > co-mounted use cases, let's try to deprecate it.  Whine on the mount
-> > option and accesses to cgroupfs knobs.
-> > 
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Cc: Glauber Costa <glommer@parallels.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > ---
-> > Glauber, I think this is more befitting change for .post_clone().  If
-> 
-> What do you mean by that?  That he is working on a patch-set which will
-> remove post_clone and this belongs there, or that there is a proposed
-> alternative?
 
-The former.  There was a patchset from Glauber updating ->post_clone()
-(which didn't change the behavior).
+I do think supporting a per container coredump setting makes a lot of
+sense but I do not think this patch is the way to do it.
 
-Thanks.
+Eric
 
--- 
-tejun
+
+> Cc: "Serge E. Hallyn" <serge@hallyn.com>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+>
+> diff --git a/fs/coredump.c b/fs/coredump.c
+> index ce47379..fa14ea1 100644
+> --- a/fs/coredump.c
+> +++ b/fs/coredump.c
+> @@ -455,6 +455,19 @@ static int umh_pipe_setup(struct subprocess_info *info, struct cred *new)
+>  	/* and disallow core files too */
+>  	current->signal->rlim[RLIMIT_CORE] = (struct rlimit){1, 1};
+>  
+> +	/*
+> +	 * We want to run the helper within the same namespace. Since we
+> +	 * already forked, current here is using init_nsproxy and the usage
+> +	 * was already accounted. switch_task_namespace() will revert that
+> +	 * but we need to bump the dead process' nsproxy before calling the
+> +	 * the helper. Once it exits, the dead process' nsproxy usage will be
+> +	 * decremented as part of normal process exit.
+> +	 */
+> +	if (current->nsproxy != cp->nsproxy) {
+> +		get_nsproxy(cp->nsproxy);
+> +		switch_task_namespaces(current, cp->nsproxy);
+> +	}
+> +
+>  	return err;
+>  }
+>  
+> @@ -482,6 +495,8 @@ void do_coredump(siginfo_t *siginfo, struct pt_regs *regs)
+>  		 * by any locks.
+>  		 */
+>  		.mm_flags = mm->flags,
+> +		/* we run the helper in the same namespace */
+> +		.nsproxy = current->nsproxy,
+>  	};
+>  
+>  	audit_core_dumps(siginfo->si_signo);
+> diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
+> index cfcc6bf..45113e6 100644
+> --- a/include/linux/binfmts.h
+> +++ b/include/linux/binfmts.h
+> @@ -63,6 +63,7 @@ struct coredump_params {
+>  	struct file *file;
+>  	unsigned long limit;
+>  	unsigned long mm_flags;
+> +	struct nsproxy *nsproxy;
+>  };
+>  
+>  /*
