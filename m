@@ -1,76 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706Ab2KEV0y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 16:26:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55314 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2KEV0x (ORCPT
+	id S1754867Ab2KEV2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 16:28:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44655 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab2KEV2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 16:26:53 -0500
-Date: Mon, 5 Nov 2012 13:26:51 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: fix NULL checking in dma_pool_create()
-Message-Id: <20121105132651.f52549b6.akpm@linux-foundation.org>
-In-Reply-To: <50982698.7050605@gmail.com>
-References: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
-	<20121105123738.0a0490a7.akpm@linux-foundation.org>
-	<50982698.7050605@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Nov 2012 16:28:06 -0500
+Message-ID: <50982F6F.2050600@canonical.com>
+Date: Mon, 05 Nov 2012 15:28:15 -0600
+From: Chris J Arges <chris.j.arges@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Chris J Arges <chris.j.arges@canonical.com>
+CC: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] bonding: extend bond_arp_send_all to bridge devices
+References: <1352146448-8921-1-git-send-email-chris.j.arges@canonical.com>
+In-Reply-To: <1352146448-8921-1-git-send-email-chris.j.arges@canonical.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: multipart/mixed;
+ boundary="------------030106090905040109020108"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 05 Nov 2012 15:50:32 -0500
-Xi Wang <xi.wang@gmail.com> wrote:
+This is a multi-part message in MIME format.
+--------------030106090905040109020108
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-> On 11/5/12 3:37 PM, Andrew Morton wrote:
-> > 
-> > Well, the dma_pool_create() kerneldoc does not describe dev==NULL to be
-> > acceptable usage and given the lack of oops reports, we can assume that
-> > no code is calling this function with dev==NULL.
-> > 
-> > So I think we can just remove the code which handles dev==NULL?
+On 11/05/2012 02:14 PM, Chris J Arges wrote:
+> ARP monitoring does not work when we have a network in the
+> following configuration:
 > 
-> Actually, a quick grep gives the following...
+> eth0----+ +----bond0.100----br0-100---{+virtual machines
+>           | |
+>           +----bond0----+----br0---(fixed IP)->--{LAN arp_ip_target}
+>           | |
+> eth1----+ +----bond0.200----br0-200---{+virtual machines
 > 
-> arch/arm/mach-s3c64xx/dma.c:731:	dma_pool = dma_pool_create("DMA-LLI", NULL, sizeof(struct pl080s_lli), 16, 0);
-> drivers/usb/gadget/amd5536udc.c:3136:	dev->data_requests = dma_pool_create("data_requests", NULL,
-> drivers/usb/gadget/amd5536udc.c:3148:	dev->stp_requests = dma_pool_create("setup requests", NULL,
-> drivers/net/wan/ixp4xx_hss.c:973:		if (!(dma_pool = dma_pool_create(DRV_NAME, NULL,
-> drivers/net/ethernet/xscale/ixp4xx_eth.c:1106:		if (!(dma_pool = dma_pool_create(DRV_NAME, NULL,
+> This patch extends bond_arp_send_all to also check if a device
+> is also in a bridge.
+> 
+> This is related to the following issues:
+> http://launchpad.net/bugs/736226
+> http://bugzilla.kernel.org/show_bug.cgi?id=31822
+> 
+> Thanks to help from Andy Gospodarek.
+> 
+> Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+> ---
+>  drivers/net/bonding/bond_main.c |   13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+> index 6c284d1..f11a2e1 100644
+> --- a/drivers/net/bonding/bond_main.c
+> +++ b/drivers/net/bonding/bond_main.c
+> @@ -2670,6 +2670,19 @@ static void bond_arp_send_all(struct bonding *bond, struct slave *slave)
+>  			continue;
+>  		}
+>  
+> +		/*
+> +		 * Check if the target is part of a bridge.
+> +		 */
+> +		if (rt->dst.dev->priv_flags & IFF_EBRIDGE) {
+> +			printk("bondbridge: %s->priv_flags has IFF_EBRIDGE\n", rt->dst.dev->name);
+> +
+> +			/* Send ARP request */
+> +			bond_arp_send(slave->dev, ARPOP_REQUEST, targets[i], bond->master_ip, 0);
+> +			printk("bondbridge: bond_arp_send %d\n", 0);
+> +
+> +			continue;
+> +		}
+> +
+>  		if (net_ratelimit()) {
+>  			pr_warning("%s: no path to arp_ip_target %pI4 via rt.dev %s\n",
+>  				   bond->dev->name, &targets[i],
 > 
 
-OK, so it seems that those drivers have never been tested on a
-CONFIG_NUMA kernel.  whee.
-
-So we have a large amount of code here which ostensibly supports
-dev==NULL but which has not been well tested.  Take a look at
-dma_alloc_coherent(), dma_free_coherent() - are they safe?  Unobvious.
-
-dmam_pool_destroy() will clearly cause an oops:
-
-devres_destroy()
-->devres_remove()
-  ->spin_lock_irqsave(&dev->devres_lock, flags);
 
 
-So what to do?
+--------------030106090905040109020108
+Content-Type: text/x-patch;
+ name="0001-bonding-extend-bond_arp_send_all-to-bridge-devices.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-bonding-extend-bond_arp_send_all-to-bridge-devices.patc";
+ filename*1="h"
 
-I'm thinking we should disallow dev==NULL.  We have a lot of code in
-mm/dmapool.c which _attempts_ to support this case, but is largely
-untested and obviously isn't working.  I don't think it's a good idea
-to try to fix up and then support this case on behalf of a handful of
-scruffy drivers.  It would be better to fix the drivers, then simplify
-the core code.  drivers/usb/gadget/amd5536udc.c can probably use
-dev->gadget.dev and drivers/net/wan/ixp4xx_hss.c can probably use
-port->netdev->dev, etc.
+>From 859cbc745670491f716663f6309df7674b38bb33 Mon Sep 17 00:00:00 2001
+From: Chris J Arges <chris.j.arges@canonical.com>
+Date: Thu, 6 Sep 2012 14:17:40 -0500
+Subject: [PATCH v2] bonding: extend bond_arp_send_all to bridge devices
 
-So how about we add a WARN_ON_ONCE(dev == NULL), notify the driver maintainers
-and later we can remove all that mm/dmapool.c code which is trying to
-handle dev==NULL?
+ARP monitoring does not work when we have a network in the
+following configuration:
 
+eth0----+ +----bond0.100----br0-100---{+virtual machines
+          | |
+          +----bond0----+----br0---(fixed IP)->--{LAN arp_ip_target}
+          | |
+eth1----+ +----bond0.200----br0-200---{+virtual machines
+
+This patch extends bond_arp_send_all to also check if a device
+is also in a bridge.
+
+This is related to the following issues:
+http://launchpad.net/bugs/736226
+http://bugzilla.kernel.org/show_bug.cgi?id=31822
+
+Thanks to help from Andy Gospodarek.
+
+Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+---
+ drivers/net/bonding/bond_main.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index b2530b0..cb791f6 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -2708,6 +2708,18 @@ static void bond_arp_send_all(struct bonding *bond, struct slave *slave)
+ 			continue;
+ 		}
+ 
++		/*
++		 * Check if the target is part of a bridge.
++		 */
++		if (rt->dst.dev->priv_flags & IFF_EBRIDGE) {
++			/* Confirm addr is part of the bridge */
++			addr = bond_confirm_addr(rt->dst.dev, targets[i], 0);
++
++			/* Send ARP request */
++			bond_arp_send(slave->dev, ARPOP_REQUEST, targets[i], addr, 0);
++			continue;
++		}
++
+ 		if (net_ratelimit()) {
+ 			pr_warning("%s: no path to arp_ip_target %pI4 via rt.dev %s\n",
+ 				   bond->dev->name, &targets[i],
+-- 
+1.7.9.5
+
+
+
+--------------030106090905040109020108--
