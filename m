@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab2KETgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 14:36:48 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36653 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118Ab2KETgr (ORCPT
+	id S1752677Ab2KETkp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 14:40:45 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54410 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab2KETkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 14:36:47 -0500
-Date: Mon, 5 Nov 2012 20:36:42 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH] MAINTAINERS: i2c: 7 years, this is it
-Message-ID: <20121105193642.GA3272@pengutronix.de>
-References: <20121105170554.1972f3c2@endymion.delvare>
+	Mon, 5 Nov 2012 14:40:43 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8t9RHnE3ZwKMSgU+"
-Content-Disposition: inline
-In-Reply-To: <20121105170554.1972f3c2@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <5097E1AC.5080806@gmail.com>
+References: <1351783082-11411-1-git-send-email-panto@antoniou-consulting.com>
+ <20121031175219.GH12739@atomide.com> <C9715CB7-D3E2-4CA7-8A93-2B10E8B70640@antoniou-consulting.com>
+ <20121031180935.GL12739@atomide.com> <50918223.6080003@ti.com>
+ <8AD2F7AF-8315-442B-A394-1A38DAB29F52@antoniou-consulting.com>
+ <20121031212639.GQ12739@atomide.com> <8B058B00-6C21-4410-A24B-75651D49F6EC@antoniou-consulting.com>
+ <20121031221402.GA29490@arwen.pp.htv.fi> <E4EE0D1F-C7AC-4620-86F2-D9C7C56E279F@antoniou-consulting.com>
+ <50924DA3.1060901@ti.com> <F49CA12D-4DAC-4293-AD4D-FC7EDCEA6993@antoniou-consulting.com>
+ <50925C49.7060004@ti.com> <CBDE21C5-1980-4BDC-9153-7653A07D0024@dominion.thruhere.net>
+ <50938108.5040507@ti.com> <40797D3D-D62C-4E15-B0DF-75636C1637EE@antoniou-consulting.com>
+ <CACxGe6s8qrP0itLgCyv1mBnekc-7K1n_q-kTKUR=MOJ57W_a1w@mail.gmail.com>
+ <C9F4DFD1-4BF4-423C-B749-74E37D51192A@antoniou-consulting.com>
+ <CACxGe6ubcRqDEGyRbNmwvAMGg5ujAKvPRWe9Vmd9tiHeB7=qNw@mail.gmail.com> <5097E1AC.5080806@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 5 Nov 2012 19:40:22 +0000
+X-Google-Sender-Auth: TKNqFOaTzco6BSkHee91Twzlhtk
+Message-ID: <CACxGe6v4XO64B-Xdgo+WkO+H-Snm5Um-rL9GOvGMY1AWo14Grg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+To: Rob Herring <robherring2@gmail.com>
+Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>, Felipe Balbi <balbi@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org,
+        Alan Tull <atull@altera.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 5, 2012 at 3:56 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On 11/05/2012 08:34 AM, Grant Likely wrote:
+>> Good. I'm about 80% though putting together a project plan of what is
+>> required to implement this. I'll post it for RFC shortly. I would
+>> appreciate feedback and help on flushing out the design.
+>
+> The FPGA folks are also interested in dynamic DT configuration. There's
+> been some discussion and postings on the DT list in the last few months
+> you may have missed. It's maybe not completely the same use case, but
+> there is some overlap here.
 
---8t9RHnE3ZwKMSgU+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It should be very similar. I'll see if I can dig up those conversations.
 
-Jean,
-
-> * Wolfram Sang, for joining the crew when it became clear that there
->   was more review work than Ben and myself could deal with.
-
-Thank you for guiding me when I entered the kernel space and again when
-you entrusted me to do maintainer work in i2c.
-
-> I hope I did not forget anyone, please forgive me if I did.
->=20
-> Another big thank is due to Wolfram again, who quickly proposed to
-> take over as the main i2c subsystem maintainer. This will allow for a
-> smooth and fast transition.
->=20
-> Note that I will keep maintaining all I2C/SMBus controller drivers for
-> PC systems as well as a few others. I am hereby updating MAINTAINERS
-> accordingly. I'll also keep maintaining user-space i2c-tools.
->=20
-> Signed-off-by: Jean Delvare <khali@linux-fr.org>
-
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---8t9RHnE3ZwKMSgU+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlCYFUkACgkQD27XaX1/VRsVGgCgnLxfifea5wuVyX4XXUGcF7ew
-YaMAnR2EZSP9vHRXrXBIHLJ6fM145huz
-=QqHr
------END PGP SIGNATURE-----
-
---8t9RHnE3ZwKMSgU+--
+g.
