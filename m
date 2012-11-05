@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab2KELcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 06:32:22 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:59298 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab2KELcT (ORCPT
+	id S1753394Ab2KELeA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 06:34:00 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53310 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752502Ab2KELd6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 06:32:19 -0500
+	Mon, 5 Nov 2012 06:33:58 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+CC: "tony@atomide.com" <tony@atomide.com>,
+        "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "Mohammed, Afzal" <afzal@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Subject: RE: [PATCH v3] ARM: dts: AM33xx: Add SPI node
+Thread-Topic: [PATCH v3] ARM: dts: AM33xx: Add SPI node
+Thread-Index: AQHNt1fW0VZJSSgau0azXlsYY4DL65fUpJiAgAZ+ONA=
+Date: Mon, 5 Nov 2012 11:32:40 +0000
+Deferred-Delivery: Mon, 5 Nov 2012 11:31:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E9DAB5F@DBDE01.ent.ti.com>
+References: <1351680669-20718-1-git-send-email-avinashphilip@ti.com>
+ <50927DF5.4080008@ti.com>
+In-Reply-To: <50927DF5.4080008@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1dc81a3260da0a911dbcabd737547b7bff16a99c.1351721190.git.josh.cartwright@ni.com>
-References: <cover.1351721190.git.josh.cartwright@ni.com>
-	<1dc81a3260da0a911dbcabd737547b7bff16a99c.1351721190.git.josh.cartwright@ni.com>
-Date: Mon, 5 Nov 2012 12:32:17 +0100
-X-Google-Sender-Auth: M5KJSN3G-wPnCLAAq32QB13s7ig
-Message-ID: <CAHTX3dJKT=zZ5wYV-iB=XVba0ah7O18C9s8fo1M9WPs1NfeK-g@mail.gmail.com>
-Subject: Re: [PATCH 4/8] ARM: zynq: dts: split up device tree
-From: Michal Simek <michal.simek@xilinx.com>
-To: Josh Cartwright <josh.cartwright@ni.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@ti.com>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Linn <John.Linn@xilinx.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/31 Josh Cartwright <josh.cartwright@ni.com>:
-> The purpose of the created zynq-7000.dtsi file is to describe the
-> hardware common to all Zynq 7000-based boards.  Also, get rid of the
-> zynq-ep107 device tree, since it is not hardware anyone can purchase.
->
-> Add a zc702 dts file based on the zynq-7000.dtsi.  Add it to the
-> dts/Makefile so it is built with the 'dtbs' target.
->
-> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
-> ---
->  arch/arm/boot/dts/Makefile                         |  1 +
->  .../boot/dts/{zynq-ep107.dts => zynq-7000.dtsi}    | 19 +++-----------
->  arch/arm/boot/dts/zynq-zc702.dts                   | 30 ++++++++++++++++++++++
->  arch/arm/mach-zynq/common.c                        |  3 ++-
->  4 files changed, 36 insertions(+), 17 deletions(-)
->  rename arch/arm/boot/dts/{zynq-ep107.dts => zynq-7000.dtsi} (79%)
->  create mode 100644 arch/arm/boot/dts/zynq-zc702.dts
+On Thu, Nov 01, 2012 at 19:19:41, Cousson, Benoit wrote:
+> Hi Avinash,
+> 
+> On 10/31/2012 11:51 AM, Philip, Avinash wrote:
+> > Add McSPI data node to AM33XX device tree file. The McSPI module (and so
+> > as the driver) is reused from OMAP4.
+> > 
+> > Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+> > Tested-by: Matt Porter <mporter@ti.com>
+> 
+> I've just realized the interrupt-parent was still there, so I removed both.
+> 
+> Please find below the updated version.
 
-Not going to apply this. We need to finish our discussion in
-"[PATCH v4 1/5] zynq: use GIC device tree bindings" before.
+I tested it and thanks for the fix.
 
-Definitely I like idea to use "xlnx,zynq-7000" generic model name.
-
-Thanks,
-Michal
+Thanks
+Avinash
