@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab2KEN2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:28:48 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:49546 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754128Ab2KEN2q (ORCPT
+	id S932379Ab2KEN24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:28:56 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:51939 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932357Ab2KEN2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:28:46 -0500
+	Mon, 5 Nov 2012 08:28:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <4684026.MA6h34pt1X@vostro.rjw.lan>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
-	<6279158.LZAthHxtvS@vostro.rjw.lan>
-	<CACRpkdb6-YsyiSYoJb+Jea_9NPGe+8Nqy1hkCk=Mjki26S3-Zw@mail.gmail.com>
-	<4684026.MA6h34pt1X@vostro.rjw.lan>
-Date: Mon, 5 Nov 2012 14:28:45 +0100
-Message-ID: <CACRpkdbRWPYHBwLVTm-TDRVyp9Kmoaxw0uZg0schn7i0koDKJw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] gpio / ACPI: add ACPI support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, linux-acpi@vger.kernel.org
+In-Reply-To: <20121105125731.GA814@polaris.bitmath.org>
+References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1351241067-9521-12-git-send-email-benjamin.tissoires@gmail.com>
+	<20121029225748.GA15632@polaris.bitmath.org>
+	<CAN+gG=GNucfg4-wCBZQtz0yJDjpTD_56Js3d68nm8VFi1UhZAA@mail.gmail.com>
+	<20121105125731.GA814@polaris.bitmath.org>
+Date: Mon, 5 Nov 2012 14:28:52 +0100
+Message-ID: <CAN+gG=H1L6vwvxxAR6t2-Lz4aW0tbvLvDKvY-8f-M-qqm35mMw@mail.gmail.com>
+Subject: Re: [PATCH v2 11/11] HID: hid-multitouch: get rid of usbhid depedency
+ for general path
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 2:19 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, November 05, 2012 02:11:03 PM Linus Walleij wrote:
->> Do you think they will change their mind and give me green light if
->> I tell them I just need to do it right now? ;-)
+Hi Henrik,
+
+On Mon, Nov 5, 2012 at 1:57 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Benjamin,
 >
-> Well, it's just a matter of fairness to me, actually.
+>> >> This patch factorizes the hid set_feature command by using
+>> >> hid_device->hid_output_raw_report instead of direclty relying on
+>> >> usbhid. This makes the driver usb independant.
+>> >>
+>> >> However I still can't remove the 2 usb related headers because the
+>> >> function mt_resume has a specific patch for usb devices.
+>> >>
+>> >> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+>> >> ---
+>> >>  drivers/hid/hid-multitouch.c | 63 ++++++++++++++++++++++++++------------------
+>> >>  1 file changed, 37 insertions(+), 26 deletions(-)
+>> >
+>> > In my drawer, I have a patchset that aims to remove all usbhid
+>> > dependence, from all the drivers. Perhaps the attached patch is
+>> > something to consider here?
+>>
+>> yep, removing usbhid dependencies is a good thing.
+>> See my review below :)
 >
-> If you allowed somebody to do something in the past, it's simply unfair
-> to forbid someone else to do a similar thing later, isn't it?
-
-So if some subsystem has previously merged clk_get() for
-the silicon clock pertaining to a driver the maintainer should
-be fair to the pinctrl people and merge pinctrl_get() as well.
-Well, they don't. But it wasn't any of your subsystems so
-I don't blame you.
-
-I have been stand-in-maintaining the GPIO subsystem
-for the last two merge windows and I am worrying about the
-long term viability of the subsystem if we keep doing this
-without facing the real problem of the global GPIO
-numberspace.
-
-But since Grant merged the gpiolib-of.c thing and is still the
-main maintainer I can atleast chicken out by referring to him
-this time ... hit me back if he doesn't respond and I will
-have to refactor the world or something.
-
-Yours,
-Linus Walleij
+> I have a tentative patch taking your comments into account, and it is
+> likely that we want to go that way. However, as to not hold up your
+> patchset, perhaps we could do without it for now.
+>
+> Regarding the hardwired usbhid dependency, I think the solution is to
+> move that code to usbhid itself.
+>
+> Thanks,
+> Henrik
