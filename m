@@ -1,115 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011Ab2KEI0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 03:26:51 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41552 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab2KEI0u convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Mon, 5 Nov 2012 03:26:50 -0500
-Message-Id: <5097865302000078000A6487@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 05 Nov 2012 08:26:43 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Namit Gupta" <namit2010@gmail.com>
-Cc: "George Spelvin" <linux@horizon.com>,
-        "Andrei Emeltchenko" <andrei.emeltchenko@intel.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Andy Shevchenko" <andriy.shevchenko@linux.intel.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Lib:The patch include fix for "-" during string to
- long conversion
-References: <CAKMXDJXssksA0dtyfe5dTt0RerZzTWOORWCZCZdJF7WAp56=Ng@mail.gmail.com>
-In-Reply-To: <CAKMXDJXssksA0dtyfe5dTt0RerZzTWOORWCZCZdJF7WAp56=Ng@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753090Ab2KEI2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 03:28:33 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:41321 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752443Ab2KEI2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 03:28:32 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuUYAMN3l1B5LLsn/2dsb2JhbABEhS64DoR3AoEKgQmCHgEBBTocIxAIAxguFCUDIROICbk4FIttggiENAOVepBFgwM
+Date: Mon, 5 Nov 2012 19:28:28 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: cmm@us.ibm.com, linux-fsdevel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        Ben Chociej <bchociej@gmail.com>,
+        James Northrup <northrup.james@gmail.com>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>
+Subject: Re: VFS hot tracking: How to calculate data temperature?
+Message-ID: <20121105082828.GJ29378@dastard>
+References: <CAEH94LjTedn0n00ZtqFxBL=kDA3u8G39q+x79-vPoMYvEKW1gw@mail.gmail.com>
+ <CAEH94LgUcAL6RquMZKTrDg87_0J2sEqTsDXUbnhrQ37KuMJ4sg@mail.gmail.com>
+ <1351891622.23963.4.camel@oc2046235844.ibm.com>
+ <CAEH94LiuKGPi+k=pA9P-FFsosnwG7PRBK5DjjaGf20S+pyrzpA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAEH94LiuKGPi+k=pA9P-FFsosnwG7PRBK5DjjaGf20S+pyrzpA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 04.11.12 at 14:26, Namit Gupta <namit2010@gmail.com> wrote:
-> API simple_strtol() and simple_strtoul() are giving incorrect result for
-> string "-".
-> These API's consider "-" as a '-' (negative integer) and return incorrect
-> string pointer.
-> The API returns pointer next to '-' character. However it should return
-> starting pointer of the string.
+On Mon, Nov 05, 2012 at 10:35:50AM +0800, Zhi Yong Wu wrote:
+> On Sat, Nov 3, 2012 at 5:27 AM, Mingming.cao <cmm@us.ibm.com> wrote:
+> > On Fri, 2012-11-02 at 14:38 +0800, Zhi Yong Wu wrote:
+> >> Here also has another question.
+> >>
+> >> How to save the file temperature among the umount to be able to
+> >> preserve the file tempreture after reboot?
+> >>
+> >> This above is the requirement from DB product.
+> >> I thought that we can save file temperature in its inode struct, that
+> >> is, add one new field in struct inode, then this info will be written
+> >> to disk with inode.
+> >>
+> >> Any comments or ideas are appreciated, thanks.
+> >>
+> >>
+> >
+> > Maybe could save the last file temperature with extended attributes.
+> It seems that only ext4 has the concept of extended attributes.
 
-Where is that behavior specified? If we take the C standard as
-reference, it is not being made explicit whether, for "base" other
-than zero, the sequence of letters and digits has to be non-empty.
+All major filesystems have xattr support. They are used extensively
+by the security and integrity subsystems, for example.
 
-If we take this as implied, then your patch should not only handle
-"-" alone, but also cases where "-" is followed by other than a
-letter or digit, or an out of range one.
+Saving the information might be something that is useful to certian
+applications, but lets have the people that need that functionality
+spell out their requirements before discussing how or what to
+implement.  Indeed, discussion shoul dreally focus on getting the
+core, in-memory infrastructure sorted out first before trying to
+expand the functionality further...
 
-Jan
+Cheers,
 
-> Below I have included possible solution for that issue.
-> Please review.
-> 
-> 
-> From eea8b5fd7e5bb7b206a41f5eec934152a77a9431 Mon Sep 17 00:00:00 2001
-> From: Namit Gupta <namit2010@gmail.com>
-> Date: Sun, 4 Nov 2012 23:36:23 +0530
-> Subject: [PATCH 1/1] Lib:The patch include fix for "-" during string to
-> long conversion
-> 
-> API simple_strtol and simple_strtoll give wrong result for string "-",
-> The API consider "-" as a -ve number which and give incorrect result
-> for "-" string.
-> 
-> Signed-off-by: Namit Gupta <namit2010@gmail.com>
-> ---
->  lib/vsprintf.c |   20 ++++++++++++++++----
->  1 files changed, 16 insertions(+), 4 deletions(-)
-> 
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> index 39c99fe..cde449d 100644
-> --- a/lib/vsprintf.c
-> +++ b/lib/vsprintf.c
-> @@ -76,8 +76,14 @@ EXPORT_SYMBOL(simple_strtoul);
->   */
->  long simple_strtol(const char *cp, char **endp, unsigned int base)
->  {
-> -    if (*cp == '-')
-> -        return -simple_strtoul(cp + 1, endp, base);
-> +    if (*cp == '-') {
-> +        if (*(cp+1))
-> +            return -simple_strtoul(cp + 1, endp, base);
-> +        else if (*endp) { /* The string contains only "-"*/
-> +            *endp = (char *)cp;
-> +            return 0;
-> +        }
-> +    }
-> 
->      return simple_strtoul(cp, endp, base);
->  }
-> @@ -91,8 +97,14 @@ EXPORT_SYMBOL(simple_strtol);
->   */
->  long long simple_strtoll(const char *cp, char **endp, unsigned int base)
->  {
-> -    if (*cp == '-')
-> -        return -simple_strtoull(cp + 1, endp, base);
-> +    if (*cp == '-') {
-> +        if (*(cp+1))
-> +            return -simple_strtoull(cp + 1, endp, base);
-> +        else if (*endp) { /* The string contains only "-"*/
-> +            *endp = (char *)cp;
-> +            return 0;
-> +        }
-> +    }
-> 
->      return simple_strtoull(cp, endp, base);
->  }
-> -- 
-> 1.7.1
-> 
-> 
-> Regards,
-> Namit
-
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
