@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab2KEK6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:58:24 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:41476 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932092Ab2KEK6W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:58:22 -0500
-Date: Mon, 5 Nov 2012 10:58:17 +0000
-From: Dave Martin <dave.martin@linaro.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Subject: Re: [PATCH RESEND] xen/arm: use the __HVC macro
-Message-ID: <20121105105817.GC2005@linaro.org>
-References: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1210241624400.2689@kaball.uk.xensource.com>
+	id S932145Ab2KELBG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 06:01:06 -0500
+Received: from mga02.intel.com ([134.134.136.20]:36108 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752886Ab2KELBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 06:01:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,714,1344236400"; 
+   d="scan'208";a="237306355"
+Date: Mon, 5 Nov 2012 13:03:22 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
+        grant.likely@secretlab.ca, linus.walleij@linaro.org,
+        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+Message-ID: <20121105110322.GD24532@intel.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1351928793-14375-3-git-send-email-mika.westerberg@linux.intel.com>
+ <20121105105455.GD1385@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1210241624400.2689@kaball.uk.xensource.com>
+In-Reply-To: <20121105105455.GD1385@opensource.wolfsonmicro.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 04:26:08PM +0100, Stefano Stabellini wrote:
-> Use the new __HVC macro in hypercall.S.
+On Mon, Nov 05, 2012 at 11:54:55AM +0100, Mark Brown wrote:
+> On Sat, Nov 03, 2012 at 09:46:32AM +0200, Mika Westerberg wrote:
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-This is correct usage of the __HVC() macro, so
-
-Acked-by: Dave Martin <dave.martin@linaro.org>
-
-> ---
->  arch/arm/xen/hypercall.S |   14 +++++---------
->  1 files changed, 5 insertions(+), 9 deletions(-)
+> > +	strlcpy(spi->modalias, acpi_device_hid(adev), sizeof(spi->modalias));
+> > +	if (info.gsi >= 0)
+> > +		spi->irq = acpi_register_gsi(&adev->dev, info.gsi,
+> > +					     info.triggering, info.polarity);
+> > +	request_module(spi->modalias);
 > 
-> diff --git a/arch/arm/xen/hypercall.S b/arch/arm/xen/hypercall.S
-> index 074f5ed..71f7239 100644
-> --- a/arch/arm/xen/hypercall.S
-> +++ b/arch/arm/xen/hypercall.S
-> @@ -48,20 +48,16 @@
->  
->  #include <linux/linkage.h>
->  #include <asm/assembler.h>
-> +#include <asm/opcodes-virt.h>
->  #include <xen/interface/xen.h>
->  
->  
-> -/* HVC 0xEA1 */
-> -#ifdef CONFIG_THUMB2_KERNEL
-> -#define xen_hvc .word 0xf7e08ea1
-> -#else
-> -#define xen_hvc .word 0xe140ea71
-> -#endif
-> +#define XEN_IMM 0xEA1
->  
->  #define HYPERCALL_SIMPLE(hypercall)		\
->  ENTRY(HYPERVISOR_##hypercall)			\
->  	mov r12, #__HYPERVISOR_##hypercall;	\
-> -	xen_hvc;							\
-> +	__HVC(XEN_IMM);						\
->  	mov pc, lr;							\
->  ENDPROC(HYPERVISOR_##hypercall)
->  
-> @@ -76,7 +72,7 @@ ENTRY(HYPERVISOR_##hypercall)			\
->  	stmdb sp!, {r4}						\
->  	ldr r4, [sp, #4]					\
->  	mov r12, #__HYPERVISOR_##hypercall;	\
-> -	xen_hvc								\
-> +	__HVC(XEN_IMM);						\
->  	ldm sp!, {r4}						\
->  	mov pc, lr							\
->  ENDPROC(HYPERVISOR_##hypercall)
-> @@ -100,7 +96,7 @@ ENTRY(privcmd_call)
->  	mov r2, r3
->  	ldr r3, [sp, #8]
->  	ldr r4, [sp, #4]
-> -	xen_hvc
-> +	__HVC(XEN_IMM)
->  	ldm sp!, {r4}
->  	mov pc, lr
->  ENDPROC(privcmd_call);
-> -- 
-> 1.7.2.5
+> request_module()?  Why?
+
+The DT code does the same. I have no idea why it is there, really :-)
+
+I can remove it in the next version if you think it is not needed.
