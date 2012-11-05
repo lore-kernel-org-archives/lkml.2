@@ -1,352 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab2KEKMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:12:10 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:46334 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab2KEKKw (ORCPT
+	id S1753741Ab2KEKNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:13:34 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:36444 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab2KEKNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:10:52 -0500
-Date: Mon, 5 Nov 2012 11:08:51 +0100
+	Mon, 5 Nov 2012 05:13:32 -0500
+Date: Mon, 5 Nov 2012 11:13:31 +0100
 From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.0.51
-Message-ID: <20121105100851.GB24443@kroah.com>
-References: <20121105100838.GA24443@kroah.com>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, John Stultz <john.stultz@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Janne Boman <janne.m.boman@gmail.com>,
+        Heinz Wiesinger <HMWiesinger@gmx.at>, rtc-linux@googlegroups.com
+Subject: Re: [regression] Re: [ 049/149] rtc: Disable the alarm in the
+ hardware (v2)
+Message-ID: <20121105101331.GA24688@kroah.com>
+References: <20120330195823.GA31857@kroah.com>
+ <20120330194844.399828645@linuxfoundation.org>
+ <20121105091118.GA12721@elie.Belkin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121105100838.GA24443@kroah.com>
+In-Reply-To: <20121105091118.GA12721@elie.Belkin>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index b1c921c..6ff5af4 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -6,14 +6,6 @@ be removed from this file.
- 
- ---------------------------
- 
--What:	x86 floppy disable_hlt
--When:	2012
--Why:	ancient workaround of dubious utility clutters the
--	code used by everybody else.
--Who:	Len Brown <len.brown@intel.com>
--
-----------------------------
--
- What:	CONFIG_APM_CPU_IDLE, and its ability to call APM BIOS in idle
- When:	2012
- Why:	This optional sub-feature of APM is of dubious reliability,
-diff --git a/Makefile b/Makefile
-index 0210b63..9ec465b 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 50
-+SUBLEVEL = 51
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
-index c2ff2a1..f0d89d9 100644
---- a/arch/x86/include/asm/system.h
-+++ b/arch/x86/include/asm/system.h
-@@ -93,10 +93,6 @@ do {									\
- 			"memory");					\
- } while (0)
- 
--/*
-- * disable hlt during certain critical i/o operations
-- */
--#define HAVE_DISABLE_HLT
- #else
- 
- /* frame pointer must be last for get_wchan */
-@@ -392,9 +388,6 @@ static inline void clflush(volatile void *__p)
- 
- #define nop() asm volatile ("nop")
- 
--void disable_hlt(void);
--void enable_hlt(void);
--
- void cpu_idle_wait(void);
- 
- extern unsigned long arch_align_stack(unsigned long sp);
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index e1ba8cb..4272502 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -341,34 +341,10 @@ void (*pm_idle)(void);
- EXPORT_SYMBOL(pm_idle);
- #endif
- 
--#ifdef CONFIG_X86_32
--/*
-- * This halt magic was a workaround for ancient floppy DMA
-- * wreckage. It should be safe to remove.
-- */
--static int hlt_counter;
--void disable_hlt(void)
--{
--	hlt_counter++;
--}
--EXPORT_SYMBOL(disable_hlt);
--
--void enable_hlt(void)
--{
--	hlt_counter--;
--}
--EXPORT_SYMBOL(enable_hlt);
--
--static inline int hlt_use_halt(void)
--{
--	return (!hlt_counter && boot_cpu_data.hlt_works_ok);
--}
--#else
- static inline int hlt_use_halt(void)
- {
- 	return 1;
- }
--#endif
- 
- /*
-  * We use this if we don't have any better
-diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index 9955a53..215ddc8 100644
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -1032,37 +1032,6 @@ static int fd_wait_for_completion(unsigned long delay, timeout_fn function)
- 	return 0;
- }
- 
--static DEFINE_SPINLOCK(floppy_hlt_lock);
--static int hlt_disabled;
--static void floppy_disable_hlt(void)
--{
--	unsigned long flags;
--
--	WARN_ONCE(1, "floppy_disable_hlt() scheduled for removal in 2012");
--	spin_lock_irqsave(&floppy_hlt_lock, flags);
--	if (!hlt_disabled) {
--		hlt_disabled = 1;
--#ifdef HAVE_DISABLE_HLT
--		disable_hlt();
--#endif
--	}
--	spin_unlock_irqrestore(&floppy_hlt_lock, flags);
--}
--
--static void floppy_enable_hlt(void)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&floppy_hlt_lock, flags);
--	if (hlt_disabled) {
--		hlt_disabled = 0;
--#ifdef HAVE_DISABLE_HLT
--		enable_hlt();
--#endif
--	}
--	spin_unlock_irqrestore(&floppy_hlt_lock, flags);
--}
--
- static void setup_DMA(void)
- {
- 	unsigned long f;
-@@ -1107,7 +1076,6 @@ static void setup_DMA(void)
- 	fd_enable_dma();
- 	release_dma_lock(f);
- #endif
--	floppy_disable_hlt();
- }
- 
- static void show_floppy(void);
-@@ -1709,7 +1677,6 @@ irqreturn_t floppy_interrupt(int irq, void *dev_id)
- 	fd_disable_dma();
- 	release_dma_lock(f);
- 
--	floppy_enable_hlt();
- 	do_floppy = NULL;
- 	if (fdc >= N_FDC || FDCS->address == -1) {
- 		/* we don't even know which FDC is the culprit */
-@@ -1858,8 +1825,6 @@ static void floppy_shutdown(unsigned long data)
- 		show_floppy();
- 	cancel_activity();
- 
--	floppy_enable_hlt();
--
- 	flags = claim_dma_lock();
- 	fd_disable_dma();
- 	release_dma_lock(flags);
-@@ -4198,6 +4163,7 @@ static int __init floppy_init(void)
- 
- 		disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
- 		if (!disks[dr]->queue) {
-+			put_disk(disks[dr]);
- 			err = -ENOMEM;
- 			goto out_put_disk;
- 		}
-@@ -4504,7 +4470,6 @@ static void floppy_release_irq_and_dma(void)
- #if N_FDC > 1
- 	set_dor(1, ~8, 0);
- #endif
--	floppy_enable_hlt();
- 
- 	if (floppy_track_buffer && max_buffer_sectors) {
- 		tmpsize = max_buffer_sectors * 1024;
-diff --git a/drivers/gpu/drm/nouveau/nv04_dac.c b/drivers/gpu/drm/nouveau/nv04_dac.c
-index e000455..2d6bfd0 100644
---- a/drivers/gpu/drm/nouveau/nv04_dac.c
-+++ b/drivers/gpu/drm/nouveau/nv04_dac.c
-@@ -209,7 +209,7 @@ out:
- 	NVWriteVgaCrtc(dev, 0, NV_CIO_CR_MODE_INDEX, saved_cr_mode);
- 
- 	if (blue == 0x18) {
--		NV_INFO(dev, "Load detected on head A\n");
-+		NV_DEBUG(dev, "Load detected on head A\n");
- 		return connector_status_connected;
- 	}
- 
-@@ -323,7 +323,7 @@ nv17_dac_detect(struct drm_encoder *encoder, struct drm_connector *connector)
- 
- 	if (nv17_dac_sample_load(encoder) &
- 	    NV_PRAMDAC_TEST_CONTROL_SENSEB_ALLHI) {
--		NV_INFO(dev, "Load detected on output %c\n",
-+		NV_DEBUG(dev, "Load detected on output %c\n",
- 			'@' + ffs(dcb->or));
- 		return connector_status_connected;
- 	} else {
-@@ -398,7 +398,7 @@ static void nv04_dac_commit(struct drm_encoder *encoder)
- 
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
- 
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base),
- 		nv_crtc->index, '@' + ffs(nv_encoder->dcb->or));
- }
-@@ -447,7 +447,7 @@ static void nv04_dac_dpms(struct drm_encoder *encoder, int mode)
- 		return;
- 	nv_encoder->last_dpms = mode;
- 
--	NV_INFO(dev, "Setting dpms mode %d on vga encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on vga encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	nv04_dac_update_dacclk(encoder, mode == DRM_MODE_DPMS_ON);
-diff --git a/drivers/gpu/drm/nouveau/nv04_dfp.c b/drivers/gpu/drm/nouveau/nv04_dfp.c
-index 12098bf..752440c 100644
---- a/drivers/gpu/drm/nouveau/nv04_dfp.c
-+++ b/drivers/gpu/drm/nouveau/nv04_dfp.c
-@@ -468,7 +468,7 @@ static void nv04_dfp_commit(struct drm_encoder *encoder)
- 
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
- 
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base),
- 		nv_crtc->index, '@' + ffs(nv_encoder->dcb->or));
- }
-@@ -511,7 +511,7 @@ static void nv04_lvds_dpms(struct drm_encoder *encoder, int mode)
- 		return;
- 	nv_encoder->last_dpms = mode;
- 
--	NV_INFO(dev, "Setting dpms mode %d on lvds encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on lvds encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	if (was_powersaving && is_powersaving_dpms(mode))
-@@ -556,7 +556,7 @@ static void nv04_tmds_dpms(struct drm_encoder *encoder, int mode)
- 		return;
- 	nv_encoder->last_dpms = mode;
- 
--	NV_INFO(dev, "Setting dpms mode %d on tmds encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on tmds encoder (output %d)\n",
- 		     mode, nv_encoder->dcb->index);
- 
- 	nv04_dfp_update_backlight(encoder, mode);
-diff --git a/drivers/gpu/drm/nouveau/nv04_tv.c b/drivers/gpu/drm/nouveau/nv04_tv.c
-index 3eb605d..4de1fbe 100644
---- a/drivers/gpu/drm/nouveau/nv04_tv.c
-+++ b/drivers/gpu/drm/nouveau/nv04_tv.c
-@@ -69,7 +69,7 @@ static void nv04_tv_dpms(struct drm_encoder *encoder, int mode)
- 	struct nv04_mode_state *state = &dev_priv->mode_reg;
- 	uint8_t crtc1A;
- 
--	NV_INFO(dev, "Setting dpms mode %d on TV encoder (output %d)\n",
-+	NV_DEBUG(dev, "Setting dpms mode %d on TV encoder (output %d)\n",
- 		mode, nv_encoder->dcb->index);
- 
- 	state->pllsel &= ~(PLLSEL_TV_CRTC1_MASK | PLLSEL_TV_CRTC2_MASK);
-@@ -162,7 +162,7 @@ static void nv04_tv_commit(struct drm_encoder *encoder)
- 
- 	helper->dpms(encoder, DRM_MODE_DPMS_ON);
- 
--	NV_INFO(dev, "Output %s is running on CRTC %d using output %c\n",
-+	NV_DEBUG(dev, "Output %s is running on CRTC %d using output %c\n",
- 		      drm_get_connector_name(&nouveau_encoder_connector_get(nv_encoder)->base), nv_crtc->index,
- 		      '@' + ffs(nv_encoder->dcb->or));
- }
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 23295f65..30e44cb 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -57,6 +57,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/migrate.h>
- #include <linux/hugetlb.h>
-+#include <linux/backing-dev.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -936,11 +937,8 @@ int page_mkclean(struct page *page)
- 
- 	if (page_mapped(page)) {
- 		struct address_space *mapping = page_mapping(page);
--		if (mapping) {
-+		if (mapping)
- 			ret = page_mkclean_file(mapping, page);
--			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
--				ret = 1;
--		}
- 	}
- 
- 	return ret;
-@@ -1121,6 +1119,8 @@ void page_add_file_rmap(struct page *page)
-  */
- void page_remove_rmap(struct page *page)
- {
-+	struct address_space *mapping = page_mapping(page);
-+
- 	/* page still mapped by someone else? */
- 	if (!atomic_add_negative(-1, &page->_mapcount))
- 		return;
-@@ -1131,8 +1131,19 @@ void page_remove_rmap(struct page *page)
- 	 * this if the page is anon, so about to be freed; but perhaps
- 	 * not if it's in swapcache - there might be another pte slot
- 	 * containing the swap entry, but page not yet written to swap.
-+	 *
-+	 * And we can skip it on file pages, so long as the filesystem
-+	 * participates in dirty tracking; but need to catch shm and tmpfs
-+	 * and ramfs pages which have been modified since creation by read
-+	 * fault.
-+	 *
-+	 * Note that mapping must be decided above, before decrementing
-+	 * mapcount (which luckily provides a barrier): once page is unmapped,
-+	 * it could be truncated and page->mapping reset to NULL at any moment.
-+	 * Note also that we are relying on page_mapping(page) to set mapping
-+	 * to &swapper_space when PageSwapCache(page).
- 	 */
--	if ((!PageAnon(page) || PageSwapCache(page)) &&
-+	if (mapping && !mapping_cap_account_dirty(mapping) &&
- 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
- 		set_page_dirty(page);
- 	/*
+On Mon, Nov 05, 2012 at 01:11:18AM -0800, Jonathan Nieder wrote:
+> Hi,
+> 
+> In March, Greg KH wrote:
+> 
+> > 3.2-stable review patch.  If anyone has any objections, please let me know.
+> 
+> Sorry, I'm a little late.  This seems to be causing spurious wakeups
+> after shutdown on some systems just like v1 did. :/
+> 
+> Janne Boman reports[1], using an HP EliteBook 8530w:
+> 
+> | I'm unable to shutdown my system via normal means. The system
+> | completes the shutdown process, all hardware lights are off, but then
+> | somehow it restarts.
+> 
+> Based on a quick web search, Heinz Wiesinger, using the same model,
+> ran into the same problem and bisected it to this patch:
+> 
+>   https://bugzilla.kernel.org/show_bug.cgi?id=44261
+> 
+> Janne confirmed the same by testing kernels closely based on 3.2.13
+> and 3.2.14 --- 3.2.13 shut down fine, while on 3.2.14 "shutdown -h
+> now" behaved roughly speaking like "reboot".  A kernel close to 3.6.4
+> was also affected.
+
+So is 3.6.6 still and issue?  How about 3.7-rc4?  3.4.18?  Figuring out
+if this is still an issue in Linus's tree would be the best thing to do
+first.
+
+thanks,
+
+greg k-h
