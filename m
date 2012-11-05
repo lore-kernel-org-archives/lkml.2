@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab2KEMZP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 07:25:15 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51456 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686Ab2KEMZM (ORCPT
+	id S1754063Ab2KEMZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 07:25:56 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38665 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab2KEMZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 07:25:12 -0500
+	Mon, 5 Nov 2012 07:25:54 -0500
+Message-ID: <5097B04B.4070106@gmail.com>
+Date: Mon, 05 Nov 2012 13:25:47 +0100
+From: Stefan Koch <stefan.koch10@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111120 Icedove/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdbZB4nhFQtLH-GxBSK99RFk7yhSYMhO5keVjyugrqr7JA@mail.gmail.com>
-References: <1351779602-13818-1-git-send-email-ulf.hansson@stericsson.com>
-	<1351779602-13818-3-git-send-email-ulf.hansson@stericsson.com>
-	<CACRpkdbZB4nhFQtLH-GxBSK99RFk7yhSYMhO5keVjyugrqr7JA@mail.gmail.com>
-Date: Mon, 5 Nov 2012 13:25:11 +0100
-Message-ID: <CAPDyKFpjdVMCuBdN-O+xxK=Dko-GTEjF5AYOeEMgWghJfB8EsA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Input: nomadik-ske-keypad - start using the apb_pclk
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Ulf Hansson <ulf.hansson@stericsson.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: IMX257 framebuffer problem
+References: <509430C3.9090401@gmail.com>	<509792FB.1080604@gmail.com> <CAFLxGvx-Q3Ye4obNnVbEbEpG8YwecKxEXU0wg11Q1kDrOA1X9w@mail.gmail.com>
+In-Reply-To: <CAFLxGvx-Q3Ye4obNnVbEbEpG8YwecKxEXU0wg11Q1kDrOA1X9w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 November 2012 19:12, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Nov 1, 2012 at 3:20 PM, Ulf Hansson <ulf.hansson@stericsson.com> wrote:
+I'll try it...
+
+Could be this a problem?:
+"imx-sdma imx35-sdma: firmware not found" appears when booting the 
+kernel without enabled fb.
+
+In FB enabled kernel's the last debugable function is 
+imx_add_platform_device_dmamask()
+
+Both have "dma" in the string...
+
+But for loading a firmware from filesystem, the kernel crashes to early, 
+I think.
+
+If you subscribed to linux-fbdev mailing list, can you check If my 
+message is come in there?
+Because marc.info archives does not show my messages on linux-fbdev, but 
+all from other people after my message.
+I have send the message more times.
+
+Thanks
+
+
+Am 05.11.2012 11:43, schrieb richard -rw- weinberger:
+> On Mon, Nov 5, 2012 at 11:20 AM, Stefan Koch<stefan.koch10@gmail.com>  wrote:
+>>> What could be the problem?
+> Find out what exactly is happening after calling add_imx_fb().
+> Call it a bit later so that you can see everything on the UART.
+> You can hack the call into init/main.c or something else...
 >
->> From: Ulf Hansson <ulf.hansson@linaro.org>
->>
->> Previously this clock was handled internally by the clockdriver,
->> but now this is separate clk. So we need take care of it.
->>
->> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
->
-> So this is a silicon block clock and falls into the category of things
-> we've been discussing...
->
-> If I understand correctly, the only "real" solution is to
-> implement the PM domains and have these enable the clocks.
 
-Agree.
-
-Although, since the pm_domain not yet exist, this as a way forward for
-now - to fix what is broken.
-When the pm_domain is in place and when we decide to fold in the clock
-handling in there, we can move it.
-
->
-> An alternative may be to move this driver over to the AMBA bus,
-> because I think this device actually has primecell registers.
-> Then the bus will take care of the pclk for starters.
-
-You are definitely right, this driver can be converted into using the AMBA bus.
-Although, do you think that should be done _instead_ of going ahead
-with this patch or do you want that to be handled as a next and a
-separate step?
-
-Kind regards
-Ulf Hansson
