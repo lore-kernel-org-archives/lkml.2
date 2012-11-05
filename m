@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab2KESEc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 13:04:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51439 "EHLO mx1.redhat.com"
+	id S1754616Ab2KESGk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 13:06:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:57949 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754264Ab2KESEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 13:04:30 -0500
-Date: Mon, 5 Nov 2012 13:03:53 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Kees Cook <keescook@chromium.org>, Peter Jones <pjones@redhat.com>
-Subject: Re: Kdump with signed images
-Message-ID: <20121105180353.GC28720@redhat.com>
-References: <20121026023916.GA16762@srcf.ucam.org>
- <20121026170609.GB24687@redhat.com>
- <1351276649.18115.217.camel@falcor>
- <20121101131003.GA14573@redhat.com>
- <20121101135356.GA15659@redhat.com>
- <1351780159.15708.17.camel@falcor>
- <20121101144304.GA15821@redhat.com>
- <20121101145225.GB10269@srcf.ucam.org>
- <20121102132318.GA3300@redhat.com>
- <87boffd727.fsf@xmission.com>
+	id S1754264Ab2KESGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 13:06:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,715,1344236400"; 
+   d="scan'208";a="237487837"
+Date: Mon, 5 Nov 2012 20:08:47 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jean Delvare <khali@linux-fr.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, grant.likely@secretlab.ca,
+        ben-linux@fluff.org, w.sang@pengutronix.de,
+        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+Message-ID: <20121105180847.GK24532@intel.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CACRpkdaZqka7g2ECAyD_bKhnoULhCP6cTJwMyEsTuVxiUiHy+A@mail.gmail.com>
+ <20121105150326.3bbf69df@endymion.delvare>
+ <1925265.4Cx64DgKbB@vostro.rjw.lan>
+ <20121105145315.GI24532@intel.com>
+ <20121105161920.44e8e1cb@endymion.delvare>
+ <20121105171248.GJ24532@intel.com>
+ <CAErSpo6h1uUG=Be8TmMeFcRcmTw2GWxChXUWOE0iS7oPNALNCQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87boffd727.fsf@xmission.com>
+In-Reply-To: <CAErSpo6h1uUG=Be8TmMeFcRcmTw2GWxChXUWOE0iS7oPNALNCQ@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 02:32:48PM -0700, Eric W. Biederman wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
+On Mon, Nov 05, 2012 at 10:43:17AM -0700, Bjorn Helgaas wrote:
+> > It should already be unique in case of ACPI. We use ACPI _HID and _UID to
+> > achieve that.
 > 
-> > On Thu, Nov 01, 2012 at 02:52:25PM +0000, Matthew Garrett wrote:
-> >> On Thu, Nov 01, 2012 at 10:43:04AM -0400, Vivek Goyal wrote:
-> >> 
-> >> > So I think this does satisfy the requirement matthew specified. Isn't it?
-> >> > Matthew, what do you think?
-> >> 
-> >> Sure, if you can ensure that. You'll need to figure out how to get the 
-> >> build system to sign the userspace binaries and you'll need to ensure 
-> >> that they're statically linked and don't dlopen anything (including the 
-> >> nsswitch modules), but otherwise that should work.
-> >> 
-> >
-> > [ CC peter jones ]
-> >
-> > Ok, so even if we build kexec-tools statically with glibc, we have the
-> > issue of name service switch modules. glibc will still do dlopen on
-> > these modules. So what are options now.
-> >
-> > - Sign glibc and associated shared libraries. Do not allow unsigned
-> >   shared library to dynamically link with signed executable.
-> >
-> > - Peter mentioned that work with uClibc for kexec-tools.
-> >
-> > I personally think that however hard it is but first option sounds like
-> > a long term solution. We might have more user space processes which
-> > we might have to trust a generic solution will help with that. For example,
-> > we might have to sign and trust qemu at some point of time.
-> >
-> > Are there other ways of handing glibc issue?
+> Using only _HID and _UID to guarantee uniqueness means you're relying
+> on a property of the BIOS, so you're vulnerable to BIOS bugs.
 > 
-> It needs to be checked but /sbin/kexec should not use any functions that
-> trigger nss switch.  No user or password or host name lookup should be
-> happening.
+> If there's an ACPI Device for I2C adapters, why wouldn't you just use
+> its device name as set in acpi_device_register() (basically a _HID +
+> instance number)?
 
-I also think that we don't call routines which trigger nss switch but
-be probably can't rely on that as somebody might introduce it in
-future. So we need more robust mechanism to prevent it than just code
-inspection.
-
-> 
-> This is one part in hardening /sbin/kexec to deal with hostile root
-> users.  We need to check crazy things like do the files we open on /proc
-> actually point to /proc after we have opened them.
-
-Can you please explain it more. How can one fiddle with /proc. Also
-what's the solution then.
-
-> 
-> I believe glibc has some code which triggers for suid root applications
-> that we should ensure gets triggered that avoid trusting things like
-> LD_LIBRARY_PATH and company.
-
-I guess linking statically with uClibc or klibc (as hpa said), might turn
-out to be better option to avoid all the issues w.r.t shared objects
-and all the tricky environment variables.
-
-Thanks
-Vivek
+That's a good point - we could change to use that instead (the platform
+code in linux-pm tree uses _HID + _UID but I guess it is pretty trivial to
+change).
