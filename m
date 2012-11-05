@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab2KEJLt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 04:11:49 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:53997 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753690Ab2KEJLr (ORCPT
+	id S1753808Ab2KEJMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 04:12:08 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48750 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625Ab2KEJMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 04:11:47 -0500
-Message-ID: <1352106704.1434.25.camel@x61.thuisdomein>
-Subject: Re: [PATCH 8/9] isdn: Remove unused variable causing a compile
- build warning
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        isdn@linux-pingi.de, netdev@vger.kernel.org
-Date: Mon, 05 Nov 2012 10:11:44 +0100
-In-Reply-To: <20121105084419.GC2699@gmail.com>
-References: <20121103224832.GA24262@gmail.com>
-	 <1352024091.1434.17.camel@x61.thuisdomein>
-	 <20121104105332.GC27124@gmail.com>
-	 <20121104.123013.700345271120279281.davem@davemloft.net>
-	 <20121105084419.GC2699@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Nov 2012 09:11:45.0694 (UTC) FILETIME=[942843E0:01CDBB35]
-X-RcptDomain: vger.kernel.org
+	Mon, 5 Nov 2012 04:12:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121104193741.7b4ca37b@pyramind.ukuu.org.uk>
+References: <1352050506-29317-1-git-send-email-matt@console-pimps.org>
+	<CAHR064isMXk8qkqhBJ==9sRRP7xC_j_K5rqXApza-LNkosp5mg@mail.gmail.com>
+	<20121104193741.7b4ca37b@pyramind.ukuu.org.uk>
+Date: Mon, 5 Nov 2012 09:12:01 +0000
+X-Google-Sender-Auth: JZplNr2ypZFiMYpKUCOhmkgIssE
+Message-ID: <CAHR064jwe=diZ9B-D+-SroCW1ZevkRDMosB7uDuc2VXZkFxmdA@mail.gmail.com>
+Subject: Re: [PATCH] samsung-laptop: Disable if CONFIG_EFI=y
+From: Corentin Chary <corentincj@iksaif.net>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Matt Fleming <matt@console-pimps.org>, Matthew Garrett <mjg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        Alessandro Crismani <alessandro.crismani@gmail.com>,
+        Mikhail Bakhterev <mike.bakhterev@gmail.com>,
+        Patrick H <kernel@feystorm.net>, Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-11-05 at 09:44 +0100, Lee Jones wrote:
-> On Sun, 04 Nov 2012, David Miller wrote:
-> > I think the most appropriate thing to do is make CONFIG_ISDN depend
-> > upon CONFIG_NETDEVICES in the Kconfig file.
-> 
-> ... and then remove the CONFIG_NETDEVICES guards in isdn_common.c?
+On Sun, Nov 4, 2012 at 7:37 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> Acked-by: Corentin Chary <corentin.chary@gmail.com>
+>
+> This is totally bogus and prevents users build a kernel which can work in
+> either mode. As such its a regression.
 
-If ISDN would depend on NETDEVICES, ISDN_I4L would too, since it depends
-on ISDN. In that case CONFIG_NETDEVICES would always be true when
-compiling isdn_common.c. That would make these guards pointless. (The
-dependency of ISDN_PPP on NETDEVICES would then also be pointless.)
+Arg.. Sorry for that, I didn't realized that CONFIG_EFI=y was not
+something rare these days.
 
+> Do the detection check at runtime. If it was booted via EFI then don't
+> grovel in places you shouldn't. Indeed its possible EFI should reserve
+> those memory regions ?
 
-Paul Bolle
+I wonder how the windows driver works in this case.. Maybe they use
+something completly different, and the SABI interface is still there
+because nobody removed/disabled it ? In this case it's probably not a
+good idea to use it on these machines since the implementation is
+likely to be completly broken.
 
+--
+Corentin Chary
+http://xf.iksaif.net
