@@ -1,155 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab2KELzo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 06:55:44 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64898 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab2KELzm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 06:55:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352114465.2705.13.camel@menhir>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	<1351485061-12297-10-git-send-email-zwu.kernel@gmail.com>
-	<1352114465.2705.13.camel@menhir>
-Date: Mon, 5 Nov 2012 19:55:40 +0800
-Message-ID: <CAEH94LjXrK6OfSU=aQa+waMMY+0kCjL3MU2faKeRxm9UggaKQA@mail.gmail.com>
-Subject: Re: [RFC v4+ hot_track 09/19] vfs: add one work queue
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751568Ab2KEL6a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 06:58:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45798 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750954Ab2KEL62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 06:58:28 -0500
+Subject: Re: VFS hot tracking: How to calculate data temperature?
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>, cmm@us.ibm.com,
+        linux-fsdevel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        Ben Chociej <bchociej@gmail.com>,
+        James Northrup <northrup.james@gmail.com>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAEH94Lj6ZJ=8WWAaEMxJqFt8AvbQJiia0cptC=-DZca74fcFaw@mail.gmail.com>
+References: <CAEH94LjTedn0n00ZtqFxBL=kDA3u8G39q+x79-vPoMYvEKW1gw@mail.gmail.com>
+	 <CAEH94LgUcAL6RquMZKTrDg87_0J2sEqTsDXUbnhrQ37KuMJ4sg@mail.gmail.com>
+	 <1351891622.23963.4.camel@oc2046235844.ibm.com>
+	 <CAEH94LiuKGPi+k=pA9P-FFsosnwG7PRBK5DjjaGf20S+pyrzpA@mail.gmail.com>
+	 <20121105082828.GJ29378@dastard>
+	 <CAEH94LhbiHdsTCzsH6K8g3WH02_5-dnUPRZBCJW9vtpgAuuGtg@mail.gmail.com>
+	 <1352111588.2705.7.camel@menhir>
+	 <CAEH94Lj6ZJ=8WWAaEMxJqFt8AvbQJiia0cptC=-DZca74fcFaw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 05 Nov 2012 11:57:52 +0000
+Message-ID: <1352116672.2705.16.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 7:21 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
-> Hi,
->
-> On Mon, 2012-10-29 at 12:30 +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->>   Add a per-superblock workqueue and a delayed_work
->> to run periodic work to update map info on each superblock.
->>
->> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> ---
->>  fs/hot_tracking.c            |   85 ++++++++++++++++++++++++++++++++++++++++++
->>  fs/hot_tracking.h            |    3 +
->>  include/linux/hot_tracking.h |    3 +
->>  3 files changed, 91 insertions(+), 0 deletions(-)
->>
->> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
->> index fff0038..0ef9cad 100644
->> --- a/fs/hot_tracking.c
->> +++ b/fs/hot_tracking.c
->> @@ -15,9 +15,12 @@
->>  #include <linux/module.h>
->>  #include <linux/spinlock.h>
->>  #include <linux/hardirq.h>
->> +#include <linux/kthread.h>
->> +#include <linux/freezer.h>
->>  #include <linux/fs.h>
->>  #include <linux/blkdev.h>
->>  #include <linux/types.h>
->> +#include <linux/list_sort.h>
->>  #include <linux/limits.h>
->>  #include "hot_tracking.h"
->>
->> @@ -557,6 +560,67 @@ static void hot_map_array_exit(struct hot_info *root)
->>       }
->>  }
->>
->> +/* Temperature compare function*/
->> +static int hot_temp_cmp(void *priv, struct list_head *a,
->> +                             struct list_head *b)
->> +{
->> +     struct hot_comm_item *ap =
->> +                     container_of(a, struct hot_comm_item, n_list);
->> +     struct hot_comm_item *bp =
->> +                     container_of(b, struct hot_comm_item, n_list);
->> +
->> +     int diff = ap->hot_freq_data.last_temp
->> +                             - bp->hot_freq_data.last_temp;
->> +     if (diff > 0)
->> +             return -1;
->> +     if (diff < 0)
->> +             return 1;
->> +     return 0;
->> +}
->> +
->> +/*
->> + * Every sync period we update temperatures for
->> + * each hot inode item and hot range item for aging
->> + * purposes.
->> + */
->> +static void hot_update_worker(struct work_struct *work)
->> +{
->> +     struct hot_info *root = container_of(to_delayed_work(work),
->> +                                     struct hot_info, update_work);
->> +     struct hot_inode_item *hi_nodes[8];
->> +     u64 ino = 0;
->> +     int i, n;
->> +
->> +     while (1) {
->> +             n = radix_tree_gang_lookup(&root->hot_inode_tree,
->> +                                (void **)hi_nodes, ino,
->> +                                ARRAY_SIZE(hi_nodes));
->> +             if (!n)
->> +                     break;
->> +
->> +             ino = hi_nodes[n - 1]->i_ino + 1;
->> +             for (i = 0; i < n; i++) {
->> +                     kref_get(&hi_nodes[i]->hot_inode.refs);
->> +                     hot_map_array_update(
->> +                             &hi_nodes[i]->hot_inode.hot_freq_data, root);
->> +                     hot_range_update(hi_nodes[i], root);
->> +                     hot_inode_item_put(hi_nodes[i]);
->> +             }
->> +     }
->> +
->> +     /* Sort temperature map info */
->> +     for (i = 0; i < HEAT_MAP_SIZE; i++) {
->> +             list_sort(NULL, &root->heat_inode_map[i].node_list,
->> +                     hot_temp_cmp);
->> +             list_sort(NULL, &root->heat_range_map[i].node_list,
->> +                     hot_temp_cmp);
->> +     }
->> +
->
-> If this list can potentially have one (or more) entries per inode, then
-Only one hot_inode_item per inode, while maybe multiple
-hot_range_items per inode.
-> filesystems with a lot of inodes (millions) may potentially exceed the
-> max size of list which list_sort() can handle. If that happens it still
-> works, but you'll get a warning message and it won't be as efficient.
-I haven't do so large scale test. If we want to find that issue, we
-need to do large scale performance test, before that, i want to make
-sure the code change is correct at first.
-To be honest, for that issue you pointed to, i also have such
-concern.But list_sort() performance looks good from the test result of
-the following URL:
-https://lkml.org/lkml/2010/1/20/485
+Hi,
 
->
-> It is something that we've run into with list_sort() and GFS2, but it
-> only happens very rarely,
-Beside list_sort(), do you have any other way to share? For this
-concern, how does GFS2 resolve it?
+On Mon, 2012-11-05 at 19:46 +0800, Zhi Yong Wu wrote:
+> On Mon, Nov 5, 2012 at 6:33 PM, Steven Whitehouse <swhiteho@redhat.com> wrote:
+> > Hi,
+> >
+> > On Mon, 2012-11-05 at 16:44 +0800, Zhi Yong Wu wrote:
+> >> On Mon, Nov 5, 2012 at 4:28 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >> > On Mon, Nov 05, 2012 at 10:35:50AM +0800, Zhi Yong Wu wrote:
+> >> >> On Sat, Nov 3, 2012 at 5:27 AM, Mingming.cao <cmm@us.ibm.com> wrote:
+> >> >> > On Fri, 2012-11-02 at 14:38 +0800, Zhi Yong Wu wrote:
+> >> >> >> Here also has another question.
+> >> >> >>
+> >> >> >> How to save the file temperature among the umount to be able to
+> >> >> >> preserve the file tempreture after reboot?
+> >> >> >>
+> >> >> >> This above is the requirement from DB product.
+> >> >> >> I thought that we can save file temperature in its inode struct, that
+> >> >> >> is, add one new field in struct inode, then this info will be written
+> >> >> >> to disk with inode.
+> >> >> >>
+> >> >> >> Any comments or ideas are appreciated, thanks.
+> >> >> >>
+> >> >> >>
+> >> >> >
+> >> >> > Maybe could save the last file temperature with extended attributes.
+> >> >> It seems that only ext4 has the concept of extended attributes.
+> >> >
+> >> > All major filesystems have xattr support. They are used extensively
+> >> > by the security and integrity subsystems, for example.
+> >> got it, thanks.
+> >> >
+> >> > Saving the information might be something that is useful to certian
+> >> > applications, but lets have the people that need that functionality
+> >> > spell out their requirements before discussing how or what to
+> >> > implement.  Indeed, discussion shoul dreally focus on getting the
+> >> > core, in-memory infrastructure sorted out first before trying to
+> >> > expand the functionality further...
+> >> ah, but the latest patchset need some love from experienced FS guys:).......
+> >
+> > There is one other possible issue with saving the data into the
+> > filesystem, which is that it may disturb what you are trying to measure.
+> > Some filesystems (GFS2 is one) store data for small inodes in the same
+> > block as the inode itself. So that means the accesses to the saved hot
+> > tracking info may potentially affect the data access times too. Also
+> > there is a very limited amount of space to expand the number of fields
+> > in the inode, so xattr may be the only solution, depending on how much
+> > data needs to be stored in each case.
+> Very good analysis, two possible issues are very meanful, thanks.
+> >
+> > In the GFS2 case (I don't think it is unique in this) xattrs are stored
+> > out of line and having to access them in every open means an extra block
+> > read per inode, which again has performance implications.
+> >
+> > So that is not an insurmountable problem, but something to take into
+> > account in selecting a solution,
+> In summary, you look like preferring to xattr as its solution.
+> 
 
->
-> Steve.
->
->
->
+Well, that depends on exactly how large the data to be stored is, and
+other factors. It will add overhead to the storage/retrieval but at
+least it is fairly generic (wrt on-disk format) so likely to be easier
+to retrofit to existing filesystems.
+
+I suspect this may be one of those cases where there is no obvious right
+answer and it is a case of selecting the least worst option, if that
+makes sense?
+
+Steve.
 
 
-
--- 
-Regards,
-
-Zhi Yong Wu
