@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab2KEVYV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 16:24:21 -0500
-Received: from mailserver6.natinst.com ([130.164.80.6]:55835 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2KEVYT (ORCPT
+	id S932706Ab2KEV0y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 16:26:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55314 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab2KEV0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 16:24:19 -0500
-Date: Mon, 5 Nov 2012 15:24:26 -0600
-From: Josh Cartwright <josh.cartwright@ni.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] serial: xilinx_uartps: kill CONFIG_OF conditional
-Message-ID: <20121105212426.GA1972@beefymiracle.amer.corp.natinst.com>
-MIME-Version: 1.0
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 11/05/2012 03:24:17 PM,
-	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 11/05/2012 03:24:17 PM,
-	Serialize complete at 11/05/2012 03:24:17 PM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-11-05_03:2012-11-05,2012-11-05,1970-01-01 signatures=0
+	Mon, 5 Nov 2012 16:26:53 -0500
+Date: Mon, 5 Nov 2012 13:26:51 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: fix NULL checking in dma_pool_create()
+Message-Id: <20121105132651.f52549b6.akpm@linux-foundation.org>
+In-Reply-To: <50982698.7050605@gmail.com>
+References: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
+	<20121105123738.0a0490a7.akpm@linux-foundation.org>
+	<50982698.7050605@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Zynq platform requires the use of CONFIG_OF.  Remove the #ifdef
-conditionals in the uartps driver.  Make dependency explicit in Kconfig.
+On Mon, 05 Nov 2012 15:50:32 -0500
+Xi Wang <xi.wang@gmail.com> wrote:
 
-Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
----
-Michal-
+> On 11/5/12 3:37 PM, Andrew Morton wrote:
+> > 
+> > Well, the dma_pool_create() kerneldoc does not describe dev==NULL to be
+> > acceptable usage and given the lack of oops reports, we can assume that
+> > no code is calling this function with dev==NULL.
+> > 
+> > So I think we can just remove the code which handles dev==NULL?
+> 
+> Actually, a quick grep gives the following...
+> 
+> arch/arm/mach-s3c64xx/dma.c:731:	dma_pool = dma_pool_create("DMA-LLI", NULL, sizeof(struct pl080s_lli), 16, 0);
+> drivers/usb/gadget/amd5536udc.c:3136:	dev->data_requests = dma_pool_create("data_requests", NULL,
+> drivers/usb/gadget/amd5536udc.c:3148:	dev->stp_requests = dma_pool_create("setup requests", NULL,
+> drivers/net/wan/ixp4xx_hss.c:973:		if (!(dma_pool = dma_pool_create(DRV_NAME, NULL,
+> drivers/net/ethernet/xscale/ixp4xx_eth.c:1106:		if (!(dma_pool = dma_pool_create(DRV_NAME, NULL,
+> 
 
-Here's a version of this patch outside of my COMMON_CLK patchset as you
-requested ontop of your arm-next branch.  An explicit dependency was
-added in Kconfig as you had suggested.
+OK, so it seems that those drivers have never been tested on a
+CONFIG_NUMA kernel.  whee.
 
-Thanks,
-   Josh
+So we have a large amount of code here which ostensibly supports
+dev==NULL but which has not been well tested.  Take a look at
+dma_alloc_coherent(), dma_free_coherent() - are they safe?  Unobvious.
 
- drivers/tty/serial/Kconfig         | 1 +
- drivers/tty/serial/xilinx_uartps.c | 9 ---------
- 2 files changed, 1 insertion(+), 9 deletions(-)
+dmam_pool_destroy() will clearly cause an oops:
 
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 2a53be5..8cb29b5 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -1376,6 +1376,7 @@ config SERIAL_MXS_AUART_CONSOLE
- 
- config SERIAL_XILINX_PS_UART
- 	tristate "Xilinx PS UART support"
-+	depends on OF
- 	select SERIAL_CORE
- 	help
- 	  This driver supports the Xilinx PS UART port.
-diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-index b627363..23efe17 100644
---- a/drivers/tty/serial/xilinx_uartps.c
-+++ b/drivers/tty/serial/xilinx_uartps.c
-@@ -946,15 +946,11 @@ static int __devinit xuartps_probe(struct platform_device *pdev)
- 	struct resource *res, *res2;
- 	int clk = 0;
- 
--#ifdef CONFIG_OF
- 	const unsigned int *prop;
- 
- 	prop = of_get_property(pdev->dev.of_node, "clock", NULL);
- 	if (prop)
- 		clk = be32_to_cpup(prop);
--#else
--	clk = *((unsigned int *)(pdev->dev.platform_data));
--#endif
- 	if (!clk) {
- 		dev_err(&pdev->dev, "no clock specified\n");
- 		return -ENODEV;
-@@ -1044,16 +1040,11 @@ static int xuartps_resume(struct platform_device *pdev)
- }
- 
- /* Match table for of_platform binding */
--
--#ifdef CONFIG_OF
- static struct of_device_id xuartps_of_match[] __devinitdata = {
- 	{ .compatible = "xlnx,xuartps", },
- 	{}
- };
- MODULE_DEVICE_TABLE(of, xuartps_of_match);
--#else
--#define xuartps_of_match NULL
--#endif
- 
- static struct platform_driver xuartps_platform_driver = {
- 	.probe   = xuartps_probe,		/* Probe method */
--- 
-1.8.0
+devres_destroy()
+->devres_remove()
+  ->spin_lock_irqsave(&dev->devres_lock, flags);
+
+
+So what to do?
+
+I'm thinking we should disallow dev==NULL.  We have a lot of code in
+mm/dmapool.c which _attempts_ to support this case, but is largely
+untested and obviously isn't working.  I don't think it's a good idea
+to try to fix up and then support this case on behalf of a handful of
+scruffy drivers.  It would be better to fix the drivers, then simplify
+the core code.  drivers/usb/gadget/amd5536udc.c can probably use
+dev->gadget.dev and drivers/net/wan/ixp4xx_hss.c can probably use
+port->netdev->dev, etc.
+
+So how about we add a WARN_ON_ONCE(dev == NULL), notify the driver maintainers
+and later we can remove all that mm/dmapool.c code which is trying to
+handle dev==NULL?
+
