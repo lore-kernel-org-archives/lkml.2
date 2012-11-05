@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933064Ab2KEPck (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:32:40 -0500
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:65208 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932914Ab2KEPWn (ORCPT
+	id S933188Ab2KEPcu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:32:50 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46765 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932914Ab2KEPcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:22:43 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
-        hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v9 12/34] vfs: fix renameat to retry on ESTALE errors
-Date: Mon,  5 Nov 2012 10:21:51 -0500
-Message-Id: <1352128933-28526-13-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
-References: <1352128933-28526-1-git-send-email-jlayton@redhat.com>
+	Mon, 5 Nov 2012 10:32:46 -0500
+Message-ID: <5097DC13.9060809@gmail.com>
+Date: Mon, 05 Nov 2012 23:32:35 +0800
+From: taco <tacoee@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Bart Van Assche <bvanassche@acm.org>
+CC: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: Re: [patch,v2 05/10] sd: use alloc_disk_node
+References: <1351892763-21325-1-git-send-email-jmoyer@redhat.com> <1351892763-21325-6-git-send-email-jmoyer@redhat.com> <50954852.5050209@acm.org> <x497gq0cf54.fsf@segfault.boston.devel.redhat.com> <5097D3D2.9020407@acm.org>
+In-Reply-To: <5097D3D2.9020407@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...as always, rename is the messiest of the bunch. We have to track
-whether to retry or not via a separate flag since the error handling
-is already quite complex.
+On 11/05/2012 10:57 PM, Bart Van Assche wrote:
+> On 11/05/12 15:12, Jeff Moyer wrote:
+>> Bart Van Assche <bvanassche@acm.org> writes:
+>>
+>>> On 11/02/12 22:45, Jeff Moyer wrote:
+>>>> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+>>>> ---
+>>>>    drivers/scsi/sd.c |    2 +-
+>>>>    1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+>>>> index 12f6fdf..8deb915 100644
+>>>> --- a/drivers/scsi/sd.c
+>>>> +++ b/drivers/scsi/sd.c
+>>>> @@ -2714,7 +2714,7 @@ static int sd_probe(struct device *dev)
+>>>>        if (!sdkp)
+>>>>            goto out;
+>>>>
+>>>> -    gd = alloc_disk(SD_MINORS);
+>>>> +    gd = alloc_disk_node(SD_MINORS, dev_to_node(dev));
+>>>>        if (!gd)
+>>>>            goto out_free;
+>>>
+>>> shost->numa_node can be another NUMA node than dev_to_node(dev). Have
+>>> you considered using shost->numa_node here ?
+>>
+>> It can?  How?
+>
+> E.g. if the LLD allows the user to specify the value of numa_node and 
+> passes that value to scsi_host_alloc_node() (see also 
+> http://lkml.org/lkml/2012/10/23/477 for further information).
+>
+>> Just so I'm clear, you're suggesting I use the scsi_device's host
+>> pointer to get to the Scsi_Host, and that *will* be filled in that this
+>> point, right?
+>
+> As far as I can see the sdev->host pointer is set in scsi_alloc_sdev() 
+> and that happens before sd_probe() is invoked.
+>
+yes, struct scsi_device was created before sd, sd is the top layer.
+> Bart.
+>
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/namei.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index fb5a084..39adf1b 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3856,15 +3856,18 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
- 	struct nameidata oldnd, newnd;
- 	struct filename *from;
- 	struct filename *to;
-+	unsigned int try = 0;
-+	bool should_retry = false;
- 	int error;
- 
--	from = user_path_parent(olddfd, oldname, &oldnd, 0);
-+retry:
-+	from = user_path_parent(olddfd, oldname, &oldnd, try);
- 	if (IS_ERR(from)) {
- 		error = PTR_ERR(from);
- 		goto exit;
- 	}
- 
--	to = user_path_parent(newdfd, newname, &newnd, 0);
-+	to = user_path_parent(newdfd, newname, &newnd, try);
- 	if (IS_ERR(to)) {
- 		error = PTR_ERR(to);
- 		goto exit1;
-@@ -3936,11 +3939,17 @@ exit3:
- 	unlock_rename(new_dir, old_dir);
- 	mnt_drop_write(oldnd.path.mnt);
- exit2:
-+	if (retry_estale(error, try++))
-+		should_retry = true;
- 	path_put(&newnd.path);
- 	putname(to);
- exit1:
- 	path_put(&oldnd.path);
- 	putname(from);
-+	if (should_retry) {
-+		should_retry = false;
-+		goto retry;
-+	}
- exit:
- 	return error;
- }
--- 
-1.7.11.7
 
