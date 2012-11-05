@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098Ab2KERTB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 12:19:01 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44884 "EHLO
+	id S933060Ab2KERTA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 12:19:00 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:44882 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932779Ab2KERSc (ORCPT
+	with ESMTP id S932778Ab2KERSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Nov 2012 12:18:32 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 19/32] perf tests: Add attr record branch filter tests
-Date: Mon,  5 Nov 2012 14:18:00 -0300
-Message-Id: <1352135893-7564-20-git-send-email-acme@infradead.org>
+Subject: [PATCH 06/32] perf tests: Add attr tests under builtin test command
+Date: Mon,  5 Nov 2012 14:17:47 -0300
+Message-Id: <1352135893-7564-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1352135893-7564-1-git-send-email-acme@infradead.org>
 References: <1352135893-7564-1-git-send-email-acme@infradead.org>
@@ -30,139 +30,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@redhat.com>
 
-Adding test to validate perf_event_attr data for command:
-  'record -j any'
-  'record -j any_call'
-  'record -j any_ret'
-  'record -j hv'
-  'record -j ind_call'
-  'record -j k'
-  'record -j u'
+The test attr suite is run only if it's run under perf source directory,
+or tests are found in installed path.
+
+Otherwise tests are omitted (notification is displayed) and finished as
+successful.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1351634526-1516-18-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1351634526-1516-25-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../perf/tests/attr/test-record-branch-filter-any  |    8 ++++++++
- .../tests/attr/test-record-branch-filter-any_call  |    8 ++++++++
- .../tests/attr/test-record-branch-filter-any_ret   |    8 ++++++++
- tools/perf/tests/attr/test-record-branch-filter-hv |    8 ++++++++
- .../tests/attr/test-record-branch-filter-ind_call  |    8 ++++++++
- tools/perf/tests/attr/test-record-branch-filter-k  |    8 ++++++++
- tools/perf/tests/attr/test-record-branch-filter-u  |    8 ++++++++
- 7 files changed, 56 insertions(+)
- create mode 100644 tools/perf/tests/attr/test-record-branch-filter-any
- create mode 100644 tools/perf/tests/attr/test-record-branch-filter-any_call
- create mode 100644 tools/perf/tests/attr/test-record-branch-filter-any_ret
- create mode 100644 tools/perf/tests/attr/test-record-branch-filter-hv
- create mode 100644 tools/perf/tests/attr/test-record-branch-filter-ind_call
- create mode 100644 tools/perf/tests/attr/test-record-branch-filter-k
- create mode 100644 tools/perf/tests/attr/test-record-branch-filter-u
+ tools/perf/Makefile             |    9 +++++++++
+ tools/perf/perf.h               |    1 +
+ tools/perf/tests/attr.c         |   35 +++++++++++++++++++++++++++++++++++
+ tools/perf/tests/builtin-test.c |    4 ++++
+ 4 files changed, 49 insertions(+)
 
-diff --git a/tools/perf/tests/attr/test-record-branch-filter-any b/tools/perf/tests/attr/test-record-branch-filter-any
-new file mode 100644
-index 0000000..915c4df
---- /dev/null
-+++ b/tools/perf/tests/attr/test-record-branch-filter-any
-@@ -0,0 +1,8 @@
-+[config]
-+command = record
-+args    = -j any kill >/dev/null 2>&1
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 1da87a3..4ffcd02 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -898,6 +898,11 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+ 		'-DPREFIX="$(prefix_SQ)"' \
+ 		$<
+ 
++$(OUTPUT)tests/attr.o: tests/attr.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
++		'-DBINDIR="$(bindir_SQ)"' \
++		$<
 +
-+[event:base-record]
-+sample_period=4000
-+sample_type=2311
-+branch_sample_type=8
-diff --git a/tools/perf/tests/attr/test-record-branch-filter-any_call b/tools/perf/tests/attr/test-record-branch-filter-any_call
-new file mode 100644
-index 0000000..8708dbd
---- /dev/null
-+++ b/tools/perf/tests/attr/test-record-branch-filter-any_call
-@@ -0,0 +1,8 @@
-+[config]
-+command = record
-+args    = -j any_call kill >/dev/null 2>&1
+ $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
+@@ -1062,6 +1067,10 @@ install: all try-install-man
+ 	$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(sysconfdir_SQ)/bash_completion.d'
+ 	$(INSTALL) bash_completion '$(DESTDIR_SQ)$(sysconfdir_SQ)/bash_completion.d/perf'
++	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests'
++	$(INSTALL) tests/attr.py '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests'
++	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
++	$(INSTALL) tests/attr/* '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
+ 
+ install-python_ext:
+ 	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 0047264..054182e 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -178,6 +178,7 @@ extern bool test_attr__enabled;
+ void test_attr__init(void);
+ void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
+ 		     int fd, int group_fd, unsigned long flags);
++int  test_attr__run(void);
+ 
+ static inline int
+ sys_perf_event_open(struct perf_event_attr *attr,
+diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
+index 55e9a87..aacad82 100644
+--- a/tools/perf/tests/attr.c
++++ b/tools/perf/tests/attr.c
+@@ -26,9 +26,12 @@
+ #include <linux/kernel.h>
+ #include "../perf.h"
+ #include "util.h"
++#include "exec_cmd.h"
+ 
+ #define ENV "PERF_TEST_ATTR"
+ 
++extern int verbose;
 +
-+[event:base-record]
-+sample_period=4000
-+sample_type=2311
-+branch_sample_type=16
-diff --git a/tools/perf/tests/attr/test-record-branch-filter-any_ret b/tools/perf/tests/attr/test-record-branch-filter-any_ret
-new file mode 100644
-index 0000000..0d3607a
---- /dev/null
-+++ b/tools/perf/tests/attr/test-record-branch-filter-any_ret
-@@ -0,0 +1,8 @@
-+[config]
-+command = record
-+args    = -j any_ret kill >/dev/null 2>&1
+ bool test_attr__enabled;
+ 
+ static char *dir;
+@@ -138,3 +141,35 @@ void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
+ 
+ 	errno = errno_saved;
+ }
 +
-+[event:base-record]
-+sample_period=4000
-+sample_type=2311
-+branch_sample_type=32
-diff --git a/tools/perf/tests/attr/test-record-branch-filter-hv b/tools/perf/tests/attr/test-record-branch-filter-hv
-new file mode 100644
-index 0000000..f255267
---- /dev/null
-+++ b/tools/perf/tests/attr/test-record-branch-filter-hv
-@@ -0,0 +1,8 @@
-+[config]
-+command = record
-+args    = -j hv kill >/dev/null 2>&1
++static int run_dir(const char *d, const char *perf)
++{
++	char cmd[3*PATH_MAX];
 +
-+[event:base-record]
-+sample_period=4000
-+sample_type=2311
-+branch_sample_type=8
-diff --git a/tools/perf/tests/attr/test-record-branch-filter-ind_call b/tools/perf/tests/attr/test-record-branch-filter-ind_call
-new file mode 100644
-index 0000000..e862dd1
---- /dev/null
-+++ b/tools/perf/tests/attr/test-record-branch-filter-ind_call
-@@ -0,0 +1,8 @@
-+[config]
-+command = record
-+args    = -j ind_call kill >/dev/null 2>&1
++	snprintf(cmd, 3*PATH_MAX, "python %s/attr.py -d %s/attr/ -p %s %s",
++		 d, d, perf, verbose ? "-v" : "");
 +
-+[event:base-record]
-+sample_period=4000
-+sample_type=2311
-+branch_sample_type=64
-diff --git a/tools/perf/tests/attr/test-record-branch-filter-k b/tools/perf/tests/attr/test-record-branch-filter-k
-new file mode 100644
-index 0000000..182971e
---- /dev/null
-+++ b/tools/perf/tests/attr/test-record-branch-filter-k
-@@ -0,0 +1,8 @@
-+[config]
-+command = record
-+args    = -j k kill >/dev/null 2>&1
++	return system(cmd);
++}
 +
-+[event:base-record]
-+sample_period=4000
-+sample_type=2311
-+branch_sample_type=8
-diff --git a/tools/perf/tests/attr/test-record-branch-filter-u b/tools/perf/tests/attr/test-record-branch-filter-u
-new file mode 100644
-index 0000000..83449ef
---- /dev/null
-+++ b/tools/perf/tests/attr/test-record-branch-filter-u
-@@ -0,0 +1,8 @@
-+[config]
-+command = record
-+args    = -j u kill >/dev/null 2>&1
++int test_attr__run(void)
++{
++	struct stat st;
++	char path_perf[PATH_MAX];
++	char path_dir[PATH_MAX];
 +
-+[event:base-record]
-+sample_period=4000
-+sample_type=2311
-+branch_sample_type=8
++	/* First try developement tree tests. */
++	if (!lstat("./tests", &st))
++		return run_dir("./tests", "./perf");
++
++	/* Then installed path. */
++	snprintf(path_dir,  PATH_MAX, "%s/tests", perf_exec_path());
++	snprintf(path_perf, PATH_MAX, "%s/perf", BINDIR);
++
++	if (!lstat(path_dir, &st) &&
++	    !lstat(path_perf, &st))
++		return run_dir(path_dir, path_perf);
++
++	fprintf(stderr, " (ommitted)");
++	return 0;
++}
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index f6c6424..1aa9e99 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -1455,6 +1455,10 @@ static struct test {
+ 		.func = test__syscall_open_tp_fields,
+ 	},
+ 	{
++		.desc = "struct perf_event_attr setup",
++		.func = test_attr__run,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
 -- 
 1.7.9.2.358.g22243
 
