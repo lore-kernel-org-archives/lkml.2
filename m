@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352Ab2KEPpI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 10:45:08 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34974 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab2KEPpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 10:45:06 -0500
-Message-ID: <1352130296.13561.1.camel@phoenix>
-Subject: [PATCH v2] pinctrl: samsung: Add ifdef CONFIG_OF_GPIO guard for
- gc->of_node
-From: Axel Lin <axel.lin@ingics.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org
-Date: Mon, 05 Nov 2012 23:44:56 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751531Ab2KEPpa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 10:45:30 -0500
+Received: from host-176-100-244-43.masterbit.su ([176.100.244.43]:58344 "EHLO
+	tservice.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751378Ab2KEPp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 10:45:28 -0500
+Date: Mon, 5 Nov 2012 19:45:23 +0400
+From: Evgeniy Polyakov <zbr@ioremap.net>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] w1-gpio: Pinctrl-fy
+Message-ID: <20121105154523.GA12922@ioremap.net>
+References: <1351699058-4576-1-git-send-email-panto@antoniou-consulting.com>
+ <20121030182625.GP11908@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121030182625.GP11908@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes below build error when !CONFIG_OF_GPIO.
+Hi
 
-  CC      drivers/pinctrl/pinctrl-samsung.o
-drivers/pinctrl/pinctrl-samsung.c: In function 'samsung_pinctrl_parse_dt_pins':
-drivers/pinctrl/pinctrl-samsung.c:557:19: warning: unused variable 'prop' [-Wunused-variable]
-drivers/pinctrl/pinctrl-samsung.c: In function 'samsung_gpiolib_register':
-drivers/pinctrl/pinctrl-samsung.c:797:5: error: 'struct gpio_chip' has no member named 'of_node'
-make[2]: *** [drivers/pinctrl/pinctrl-samsung.o] Error 1
-make[1]: *** [drivers/pinctrl] Error 2
-make: *** [drivers] Error 2
+On Tue, Oct 30, 2012 at 11:26:25AM -0700, Tony Lindgren (tony@atomide.com) wrote:
+> * Pantelis Antoniou <panto@antoniou-consulting.com> [121030 11:17]:
+> > Enable pinctrl for w1-gpio.
+> >
+> > Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> 
+> Acked-by: Tony Lindgren <tony@atomide.com>
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-v2:
-Don't remove the prop variable.
-It is used in of_property_for_each_string() when CONFIG_OF_GPIO is enabled.
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 
- drivers/pinctrl/pinctrl-samsung.c |    2 ++
- 1 file changed, 2 insertions(+)
+Please submit patches through the appropriate tree, or you want me to
+push them upstream?
 
-diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
-index fc34cac..f798b4d 100644
---- a/drivers/pinctrl/pinctrl-samsung.c
-+++ b/drivers/pinctrl/pinctrl-samsung.c
-@@ -794,7 +794,9 @@ static int __devinit samsung_gpiolib_register(struct platform_device *pdev,
- 		gc->base = ctrl->base + bank->pin_base;
- 		gc->ngpio = bank->nr_pins;
- 		gc->dev = &pdev->dev;
-+#if defined(CONFIG_OF_GPIO)
- 		gc->of_node = bank->of_node;
-+#endif
- 		gc->label = bank->name;
- 
- 		ret = gpiochip_add(gc);
 -- 
-1.7.9.5
-
-
-
+	Evgeniy Polyakov
