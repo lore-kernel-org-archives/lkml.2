@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab2KEJah (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 04:30:37 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59766 "EHLO bear.ext.ti.com"
+	id S1753874Ab2KEJat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 04:30:49 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:59783 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753058Ab2KEJab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 04:30:31 -0500
+	id S1753369Ab2KEJaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 04:30:46 -0500
 From: "Philip, Avinash" <avinashphilip@ti.com>
 To: <thierry.reding@avionic-design.de>, <paul@pwsan.com>, <tony@atomide.com>,
         <linux@arm.linux.org.uk>, <b-cousson@ti.com>
@@ -14,9 +14,9 @@ CC: <hvaibhav@ti.com>, <anilkumar@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <nsekhar@ti.com>, <gururaja.hebbar@ti.com>,
         "Philip, Avinash" <avinashphilip@ti.com>
-Subject: [PATCH 7/8] ARM: dts: AM33XX: Add PWMSS device tree nodes
-Date: Mon, 5 Nov 2012 14:42:28 +0530
-Message-ID: <1352106749-9437-8-git-send-email-avinashphilip@ti.com>
+Subject: [PATCH 8/8] ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evm
+Date: Mon, 5 Nov 2012 14:42:29 +0530
+Message-ID: <1352106749-9437-9-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1352106749-9437-1-git-send-email-avinashphilip@ti.com>
 References: <1352106749-9437-1-git-send-email-avinashphilip@ti.com>
@@ -26,121 +26,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add PWMSS device tree nodes in relation with ECAP & EHRPWM DT nodes to
-AM33XX SoC family. Also populates device tree nodes for ECAP & EHRPWM by
-adding necessary properties like pwm-cells, base reg & set disabled as
-status.
+PWM output from ecap0 uses as backlight source. Also adds low threshold
+value to have a uniform divisions in brightness-levels scales.
 
 Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
 ---
 Second version
 	- Combined with HWMOD changes & DT bindings.
-	- Handling Parent<-> child relation ship for PWM subsystem
+	- No changes
 
-:100644 100644 bb31bff... cf5e049... M	arch/arm/boot/dts/am33xx.dtsi
- arch/arm/boot/dts/am33xx.dtsi |   90 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 90 insertions(+), 0 deletions(-)
+:100644 100644 185d632... 9857050... M	arch/arm/boot/dts/am335x-evm.dts
+ arch/arm/boot/dts/am335x-evm.dts |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index bb31bff..cf5e049 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -210,5 +210,95 @@
- 			interrupt-parent = <&intc>;
- 			interrupts = <91>;
+diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
+index 185d632..9857050 100644
+--- a/arch/arm/boot/dts/am335x-evm.dts
++++ b/arch/arm/boot/dts/am335x-evm.dts
+@@ -18,6 +18,14 @@
+ 		reg = <0x80000000 0x10000000>; /* 256 MB */
+ 	};
+ 
++	am33xx_pinmux: pinmux@44e10800 {
++		ecap0_pins: backlight_pins {
++			pinctrl-single,pins = <
++				0x164 0x0	/* eCAP0_in_PWM0_out.eCAP0_in_PWM0_out MODE0 */
++			>;
++		};
++	};
++
+ 	ocp {
+ 		uart1: serial@44e09000 {
+ 			status = "okay";
+@@ -31,6 +39,12 @@
+ 				reg = <0x2d>;
+ 			};
  		};
 +
-+		epwmss0: epwmss@48300000 {
-+			compatible = "ti,am33xx-pwmss";
-+			reg = <0x48300000 0x10
-+				0x48300100 0x80
-+				0x48300180 0x80
-+				0x48300200 0x80>;
-+			ti,hwmods = "epwmss0";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			status = "disabled";
-+			ranges;
-+
-+			ecap0: ecap@48300100 {
-+				compatible = "ti,am33xx-ecap";
-+				#pwm-cells = <3>;
-+				reg = <0x48300100 0x80>;
-+				ti,hwmods = "ecap0";
-+				status = "disabled";
-+			};
-+
-+			ehrpwm0: ehrpwm@48300200 {
-+				compatible = "ti,am33xx-ehrpwm";
-+				#pwm-cells = <3>;
-+				reg = <0x48300200 0x80>;
-+				ti,hwmods = "ehrpwm0";
-+				status = "disabled";
-+				tbclkgating;
-+			};
-+		};
-+
-+		epwmss1: epwmss@48302000 {
-+			compatible = "ti,am33xx-pwmss";
-+			reg = <0x48302000 0x10
-+				0x48302100 0x80
-+				0x48302180 0x80
-+				0x48302200 0x80>;
-+			ti,hwmods = "epwmss1";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			status = "disabled";
-+			ranges;
-+
-+			ecap1: ecap@48302100 {
-+				compatible = "ti,am33xx-ecap";
-+				#pwm-cells = <3>;
-+				reg = <0x48302100 0x80>;
-+				ti,hwmods = "ecap1";
-+				status = "disabled";
-+			};
-+
-+			ehrpwm1: ehrpwm@48302200 {
-+				compatible = "ti,am33xx-ehrpwm";
-+				#pwm-cells = <3>;
-+				reg = <0x48302200 0x80>;
-+				ti,hwmods = "ehrpwm1";
-+				status = "disabled";
-+				tbclkgating;
-+			};
-+		};
-+
-+		epwmss2: epwmss@48304000 {
-+			compatible = "ti,am33xx-pwmss";
-+			reg = <0x48304000 0x10
-+				0x48304100 0x80
-+				0x48304180 0x80
-+				0x48304200 0x80>;
-+			ti,hwmods = "epwmss2";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			status = "disabled";
-+			ranges;
-+
-+			ecap2: ecap@48304100 {
-+				compatible = "ti,am33xx-ecap";
-+				#pwm-cells = <3>;
-+				reg = <0x48304100 0x80>;
-+				ti,hwmods = "ecap2";
-+				status = "disabled";
-+			};
-+
-+			ehrpwm2: ehrpwm@48304200 {
-+				compatible = "ti,am33xx-ehrpwm";
-+				#pwm-cells = <3>;
-+				reg = <0x48304200 0x80>;
-+				ti,hwmods = "ehrpwm2";
-+				status = "disabled";
-+				tbclkgating;
-+			};
++		ecap0: ecap@48300100 {
++			status = "okay";
++			pinctrl-names = "default";
++			pinctrl-0 = <&ecap0_pins>;
 +		};
  	};
+ 
+ 	vbat: fixedregulator@0 {
+@@ -40,6 +54,13 @@
+ 		regulator-max-microvolt = <5000000>;
+ 		regulator-boot-on;
+ 	};
++
++	backlight {
++		compatible	= "pwm-backlight";
++		pwms = <&ecap0 0 50000 0>;
++		brightness-levels = <0 51 53 56 62 75 101 152 255>;
++		default-brightness-level = <8>;
++	};
  };
+ 
+ /include/ "tps65910.dtsi"
 -- 
 1.7.0.4
 
