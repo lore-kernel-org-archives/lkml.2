@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab2KEK6L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 05:58:11 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:55959 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753136Ab2KEK6J (ORCPT
+	id S932196Ab2KEK6Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 05:58:24 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:41476 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932092Ab2KEK6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 05:58:09 -0500
-Message-ID: <1352113082.1434.31.camel@x61.thuisdomein>
-Subject: [PATCH] [SCSI] advansys: change buildtime warning into runtime error
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Matthew Wilcox <matthew@wil.cx>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 05 Nov 2012 11:58:02 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Nov 2012 10:58:02.0989 (UTC) FILETIME=[6D5241D0:01CDBB44]
-X-RcptDomain: vger.kernel.org
+	Mon, 5 Nov 2012 05:58:22 -0500
+Date: Mon, 5 Nov 2012 10:58:17 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Subject: Re: [PATCH RESEND] xen/arm: use the __HVC macro
+Message-ID: <20121105105817.GC2005@linaro.org>
+References: <alpine.DEB.2.02.1208161618550.4850@kaball.uk.xensource.com>
+ <alpine.DEB.2.02.1210241624400.2689@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1210241624400.2689@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building advansys.o triggers this warning:
-    drivers/scsi/advansys.c:71:2: warning: #warning this driver is still not properly converted to the DMA API [-Wcpp]
+On Wed, Oct 24, 2012 at 04:26:08PM +0100, Stefano Stabellini wrote:
+> Use the new __HVC macro in hypercall.S.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-This warning can be traced back to a patch called "advansys: add warning
-and convert #includes" which was included in v2.6.10. That patch also
-marked the driver as BROKEN.
+This is correct usage of the __HVC() macro, so
 
-Commit 4661e3eace2c7b8433476b5bf0ee437ab3c7dfd4 ("[SCSI] advansys
-driver: limp along on x86") enabled this driver for x86-32. And commit
-9d511a4b29de6764931343d03e493f2e04df0271 ("[SCSI] advansys: Changes to
-work on parisc") enabled this driver for all architectures. But the
-commit explanation stated:
-    I haven't removed the #warning yet because virt_to_bus/bus_to_virt are
-    only eliminated for narrow boards.  Wide boards need more work.
+Acked-by: Dave Martin <dave.martin@linaro.org>
 
-Five years have passed and, apparently, those wide boards still need
-more work. So let's change the buildtime warning into a runtime error,
-only printed for those wide boards. Perhaps that might push the people
-using those wide boards to convert this driver. And for all others
-there's now one less buildtime warning to ignore.
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Compile tested only. I don't have any AdvanSys SCSI boards (neither
-narrow nor wide).
-
- drivers/scsi/advansys.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/advansys.c b/drivers/scsi/advansys.c
-index 374c4ed..23d347d 100644
---- a/drivers/scsi/advansys.c
-+++ b/drivers/scsi/advansys.c
-@@ -68,7 +68,6 @@
-  *  7. advansys_info is not safe against multiple simultaneous callers
-  *  8. Add module_param to override ISA/VLB ioport array
-  */
--#warning this driver is still not properly converted to the DMA API
- 
- /* Enable driver /proc statistics. */
- #define ADVANSYS_STATS
-@@ -12772,6 +12771,7 @@ advansys_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	    pdev->device == PCI_DEVICE_ID_38C0800_REV1 ||
- 	    pdev->device == PCI_DEVICE_ID_38C1600_REV1) {
- 		board->flags |= ASC_IS_WIDE_BOARD;
-+		pr_err("This driver is still not properly converted to the DMA API");
- 	}
- 
- 	err = advansys_board_found(shost, ioport, ASC_IS_PCI);
--- 
-1.7.11.7
-
+> ---
+>  arch/arm/xen/hypercall.S |   14 +++++---------
+>  1 files changed, 5 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/arm/xen/hypercall.S b/arch/arm/xen/hypercall.S
+> index 074f5ed..71f7239 100644
+> --- a/arch/arm/xen/hypercall.S
+> +++ b/arch/arm/xen/hypercall.S
+> @@ -48,20 +48,16 @@
+>  
+>  #include <linux/linkage.h>
+>  #include <asm/assembler.h>
+> +#include <asm/opcodes-virt.h>
+>  #include <xen/interface/xen.h>
+>  
+>  
+> -/* HVC 0xEA1 */
+> -#ifdef CONFIG_THUMB2_KERNEL
+> -#define xen_hvc .word 0xf7e08ea1
+> -#else
+> -#define xen_hvc .word 0xe140ea71
+> -#endif
+> +#define XEN_IMM 0xEA1
+>  
+>  #define HYPERCALL_SIMPLE(hypercall)		\
+>  ENTRY(HYPERVISOR_##hypercall)			\
+>  	mov r12, #__HYPERVISOR_##hypercall;	\
+> -	xen_hvc;							\
+> +	__HVC(XEN_IMM);						\
+>  	mov pc, lr;							\
+>  ENDPROC(HYPERVISOR_##hypercall)
+>  
+> @@ -76,7 +72,7 @@ ENTRY(HYPERVISOR_##hypercall)			\
+>  	stmdb sp!, {r4}						\
+>  	ldr r4, [sp, #4]					\
+>  	mov r12, #__HYPERVISOR_##hypercall;	\
+> -	xen_hvc								\
+> +	__HVC(XEN_IMM);						\
+>  	ldm sp!, {r4}						\
+>  	mov pc, lr							\
+>  ENDPROC(HYPERVISOR_##hypercall)
+> @@ -100,7 +96,7 @@ ENTRY(privcmd_call)
+>  	mov r2, r3
+>  	ldr r3, [sp, #8]
+>  	ldr r4, [sp, #4]
+> -	xen_hvc
+> +	__HVC(XEN_IMM)
+>  	ldm sp!, {r4}
+>  	mov pc, lr
+>  ENDPROC(privcmd_call);
+> -- 
+> 1.7.2.5
