@@ -1,82 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab2KEHds (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 02:33:48 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62634 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060Ab2KEHdq (ORCPT
+	id S1752829Ab2KEHhf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 02:37:35 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41406 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab2KEHhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 02:33:46 -0500
-Date: Mon, 5 Nov 2012 08:33:40 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] pwm-backlight: Pinctrl-fy
-Message-ID: <20121105073340.GB31066@avionic-0098.mockup.avionic-design.de>
-References: <1351699047-4487-1-git-send-email-panto@antoniou-consulting.com>
+	Mon, 5 Nov 2012 02:37:33 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IrhDeMKUP4DT/M7F"
-Content-Disposition: inline
-In-Reply-To: <1351699047-4487-1-git-send-email-panto@antoniou-consulting.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:n15iPlYymnxMsQbQ9LI5EkHKXG3s6FIaW7Awwua0iZj
- vhIUJ6q2DtKEp3pKQMCYVQFxCmmOSYb372lGUmJ85YLGQ3dSoP
- nu56QLs6zARin94Vp2D8NxZhV2y3yRitwv7hDK0qd68Twcy6Ij
- 7OItkqMBDMs3fqFUwheYJtQi2jJl7tz+y9f9kG14vxJMNExqqb
- llML8mmS4zjv29VQgrTSRrz3C37clF1bPyITkTq+W+Tr9E57G+
- Ehm5IivWL+WlXAXs+Vh8uQx6jZf6pWnOTEBXLkI6nZnOyqVOL8
- DT2lKQovrPsEtqZ1sXqOBdjOT8hdpCJ5AKi0UYpvlEE3LWF6Fi
- VwrC3temhLBp9XG16WnsQBrmy5ulptDCznFeeNcCA2yDk+UBoQ
- AEBV1vo3Q8nAcypT4UBL+ckKHlC3vKEB/CQ6uKZZPrw22roMJ3
- yDbPn
+In-Reply-To: <20121102170247.406319110@linuxfoundation.org>
+References: <20121102170247.406319110@linuxfoundation.org>
+Date: Mon, 5 Nov 2012 15:37:31 +0800
+Message-ID: <CAEH94LhVHXEEk0XzL3z_EyUDpRMeP02MTUGBxzV5=oOxWGDu3g@mail.gmail.com>
+Subject: Re: [ 00/24] 3.6.6-stable review
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>, bernhard.kohl@nsn.com,
+        herton.krzesinski@canonical.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+HI, greg
 
---IrhDeMKUP4DT/M7F
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Some of the patchset haven't passed the check of checkpatch.pl as below:
 
-On Wed, Oct 31, 2012 at 05:57:27PM +0200, Pantelis Antoniou wrote:
-[...]
-> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-[...]
-> @@ -20,6 +20,8 @@
->  #include <linux/pwm.h>
->  #include <linux/pwm_backlight.h>
->  #include <linux/slab.h>
-> +#include <linux/pinctrl/consumer.h>
-> +#include <linux/err.h>
+WARNING: line over 80 characters
+#85: FILE: drivers/block/floppy.c:4319:
++			device_remove_file(&floppy_device[drive].dev, &dev_attr_cmos);
 
-linux/err.h is already included earlier.
+WARNING: line over 80 characters
+#419: FILE: drivers/scsi/qla2xxx/qla_target.c:744:
++			ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
 
-Thierry
+WARNING: line over 80 characters
+#420: FILE: drivers/scsi/qla2xxx/qla_target.c:745:
++						(fcport->flags & FCF_CONF_COMP_SUPPORTED));
 
---IrhDeMKUP4DT/M7F
-Content-Type: application/pgp-signature
+WARNING: line over 80 characters
+#443: FILE: drivers/scsi/qla2xxx/qla_target.c:871:
++		ha->tgt.tgt_ops->update_sess(sess, fcport->d_id, fcport->loop_id,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+WARNING: line over 80 characters
+#444: FILE: drivers/scsi/qla2xxx/qla_target.c:872:
++					(fcport->flags & FCF_CONF_COMP_SUPPORTED));
 
-iQIcBAEBAgAGBQJQl2vUAAoJEN0jrNd/PrOhs9UQAKTLhWmRZv9G4qb1inwhHYVN
-naZBCm/2l0REuzcTsYWVWJcLJwzLsI8GU7I0nH2rlJwUEVwPHqPgL2DcT9+IRZ1d
-yZuIORTwgXai+litSt1aEnWXvRmB/sYL/Sp4YLP6GcxJ6hwtI89cXDu9nI9UajOP
-qX4TM54fNVfSjcMa6B1v6f0Imq6Ign8FMjkIKBfGmFKUK+Ngg3Wa2W0i61Kh6lZ5
-xsUUgbecL25QjuC4GPBVYLquzclAl24B6OG8U028OgrUn846J7xIrcHt/lLFqiR2
-KyYAPYedBGjwyZdGE/F5TS+OLjRBVVLOmW2tenbinL3si3AeUi0bm1v+MIJLmogI
-0YsVg6W6bz1G4mBYxQkeRvxTiPAeHKhsFJU0v5ocjaFFNGxoEQw60ae+c8J6+G4F
-kJVfyti8pu24EqFYM66YJhwUcmPWLBA713OwQxi5QslzrXxnIJmZiuRftCsgfvED
-rhtQ9dwJgBgqEbRojPO52r5Ty+0EFBQtYh1gk0w5t1rq0XpdG5MwfHrlPhTX1P/f
-Hbawe2DOOyPbPBWrJpeugr4qROMOLud1Bkxo3NzrwXr2ELG5m0BDxdrs4UTeQoUT
-fHkFg1avKkXtMPShox7a24/cKVIaHsDdtturFJMETmBEKhIzHPgLiNOr0Ymc+80D
-GkU8WKMcKaPIykRFZdJy
-=4cFD
------END PGP SIGNATURE-----
+WARNING: line over 80 characters
+#488: FILE: drivers/scsi/qla2xxx/tcm_qla2xxx.c:1491:
++			sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa,
 
---IrhDeMKUP4DT/M7F--
+WARNING: line over 80 characters
+#514: FILE: drivers/scsi/qla2xxx/tcm_qla2xxx.c:1517:
++			WARN(btree_remove32(&lport->lport_fcport_map, key) != se_nacl,
+
+WARNING: line over 80 characters
+#516: FILE: drivers/scsi/qla2xxx/tcm_qla2xxx.c:1519:
++			     sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa);
+
+WARNING: line over 80 characters
+#519: FILE: drivers/scsi/qla2xxx/tcm_qla2xxx.c:1522:
++			     sess->s_id.b.domain, sess->s_id.b.area, sess->s_id.b.al_pa);
+
+WARNING: line over 80 characters
+#530: FILE: drivers/scsi/qla2xxx/tcm_qla2xxx.c:1533:
++			btree_insert32(&lport->lport_fcport_map, key, se_nacl, GFP_ATOMIC);
+
+total: 0 errors, 10 warnings, 1094 lines checked
+
+
+On Sat, Nov 3, 2012 at 1:06 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> This is the start of the stable review cycle for the 3.6.6 release.
+> There are 24 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Nov  4 17:02:39 UTC 2012.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.6.6-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
+> -------------
+> Pseudo-Shortlog of commits:
+>
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>     Linux 3.6.6-rc1
+>
+> Ben Skeggs <bskeggs@redhat.com>
+>     drm/nouveau: headless mode by default if pci class != vga display
+>
+> Ben Skeggs <bskeggs@redhat.com>
+>     drm/nouveau: fix suspend/resume when in headless mode
+>
+> Ben Skeggs <bskeggs@redhat.com>
+>     drm/nouveau: silence modesetting spam on pre-gf8 chipsets
+>
+> Jiri Slaby <jslaby@suse.cz>
+>     HID: microsoft: fix invalid rdesc for 3k kbd
+>
+> Nicholas Bellinger <nab@linux-iscsi.org>
+>     target: Fix double-free of se_cmd in target_complete_tmr_failure
+>
+> Bernhard Kohl <bernhard.kohl@nsn.com>
+>     target: reintroduce some obsolete SCSI-2 commands
+>
+> Roland Dreier <roland@purestorage.com>
+>     qla2xxx: Update target lookup session tables when a target session changes
+>
+> Paul Bolle <pebolle@tiscali.nl>
+>     USB: io_edgeport: remove unused variable
+>
+> Johan Hovold <jhovold@gmail.com>
+>     USB: iuu_phoenix: fix backported patches
+>
+> Johan Hovold <jhovold@gmail.com>
+>     USB: mos7840: fix port-data memory leak
+>
+> Alex Elder <elder@inktank.com>
+>     ceph: avoid 32-bit page index overflow
+>
+> Sage Weil <sage@inktank.com>
+>     libceph: check for invalid mapping
+>
+> Yan, Zheng <zheng.z.yan@intel.com>
+>     ceph: Fix oops when handling mdsmap that decreases max_mds
+>
+> David Zafman <david.zafman@inktank.com>
+>     ceph: fix dentry reference leak in encode_fh()
+>
+> Sage Weil <sage@inktank.com>
+>     libceph: avoid NULL kref_put when osd reset races with alloc_msg
+>
+> Alex Elder <elder@inktank.com>
+>     rbd: reset BACKOFF if unable to re-queue
+>
+> Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+>     floppy: properly handle failure on add_disk loop
+>
+> Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+>     floppy: do put_disk on current dr if blk_init_queue fails
+>
+> Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+>     floppy: don't call alloc_ordered_workqueue inside the alloc_disk loop
+>
+> NeilBrown <neilb@suse.de>
+>     md/raid1: Fix assembling of arrays containing Replacements.
+>
+> Mathias Nyman <mathias.nyman@linux.intel.com>
+>     gpiolib: Don't return -EPROBE_DEFER to sysfs, or for invalid gpios
+>
+> Dan Carpenter <dan.carpenter@oracle.com>
+>     gpio-timberdale: fix a potential wrapping issue
+>
+> Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+>     blkcg: Fix use-after-free of q->root_blkg and q->root_rl.blkg
+>
+> Eric Sandeen <sandeen@redhat.com>
+>     ext4: fix unjournaled inode bitmap modification
+>
+>
+> -------------
+>
+> Diffstat:
+>
+>  Makefile                                |   4 +-
+>  block/blk-cgroup.c                      |   7 ++
+>  drivers/block/floppy.c                  |  27 +++--
+>  drivers/gpio/gpio-timberdale.c          |   4 +-
+>  drivers/gpio/gpiolib.c                  |  10 +-
+>  drivers/gpu/drm/nouveau/nouveau_drv.c   |  20 ++--
+>  drivers/gpu/drm/nouveau/nouveau_state.c |   4 +-
+>  drivers/gpu/drm/nouveau/nv04_dac.c      |   8 +-
+>  drivers/gpu/drm/nouveau/nv04_dfp.c      |   6 +-
+>  drivers/gpu/drm/nouveau/nv04_tv.c       |   4 +-
+>  drivers/hid/hid-microsoft.c             |  18 ++-
+>  drivers/md/raid1.c                      |   2 +-
+>  drivers/scsi/qla2xxx/qla_target.c       |  25 ++--
+>  drivers/scsi/qla2xxx/qla_target.h       |   1 +
+>  drivers/scsi/qla2xxx/tcm_qla2xxx.c      |  73 ++++++++++++
+>  drivers/target/target_core_sbc.c        |  18 +++
+>  drivers/target/target_core_transport.c  |   1 -
+>  drivers/usb/serial/io_edgeport.c        |   1 -
+>  drivers/usb/serial/iuu_phoenix.c        |   3 +-
+>  drivers/usb/serial/mos7840.c            | 198 ++++++++++++--------------------
+>  fs/ceph/addr.c                          |  11 +-
+>  fs/ceph/export.c                        |   2 +
+>  fs/ceph/mds_client.c                    |   3 +-
+>  fs/ext4/ialloc.c                        |  19 ++-
+>  include/linux/ceph/osd_client.h         |   2 +-
+>  include/linux/ceph/osdmap.h             |   6 +-
+>  net/ceph/messenger.c                    |   6 +-
+>  net/ceph/osd_client.c                   |  32 ++++--
+>  net/ceph/osdmap.c                       |  18 ++-
+>  29 files changed, 310 insertions(+), 223 deletions(-)
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Regards,
+
+Zhi Yong Wu
