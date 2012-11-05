@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab2KENbg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 08:31:36 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:33571 "EHLO
+	id S932340Ab2KENbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 08:31:44 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:33584 "EHLO
 	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754248Ab2KENbd (ORCPT
+	by vger.kernel.org with ESMTP id S932248Ab2KENbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 08:31:33 -0500
+	Mon, 5 Nov 2012 08:31:41 -0500
 From: Thomas Hellstrom <thellstrom@vmware.com>
 To: airlied@gmail.com, airlied@redhat.com
 Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         Thomas Hellstrom <thellstrom@vmware.com>
-Subject: [PATCH 1/4] drm: Make hashtab rcu-safe
-Date: Mon,  5 Nov 2012 14:31:15 +0100
-Message-Id: <1352122278-12896-2-git-send-email-thellstrom@vmware.com>
+Subject: [PATCH 4/4] drm/ttm: Optimize reservation slightly
+Date: Mon,  5 Nov 2012 14:31:18 +0100
+Message-Id: <1352122278-12896-5-git-send-email-thellstrom@vmware.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1352122278-12896-1-git-send-email-thellstrom@vmware.com>
 References: <1352122278-12896-1-git-send-email-thellstrom@vmware.com>
@@ -21,79 +21,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TTM base objects will be the first consumer.
+Reservation locking currently always takes place under the LRU spinlock.
+Hence, strictly there is no need for an atomic_cmpxchg call; we can use
+atomic_read followed by atomic_write since nobody else will ever reserve
+without the lru spinlock held.
+At least on Intel this should remove a locked bus cycle on successful
+reserve.
 
 Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
 ---
- drivers/gpu/drm/drm_hashtab.c |   18 +++++++-----------
- 1 files changed, 7 insertions(+), 11 deletions(-)
+ drivers/gpu/drm/ttm/ttm_bo.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_hashtab.c b/drivers/gpu/drm/drm_hashtab.c
-index c3745c4..5729e39 100644
---- a/drivers/gpu/drm/drm_hashtab.c
-+++ b/drivers/gpu/drm/drm_hashtab.c
-@@ -67,10 +67,8 @@ void drm_ht_verbose_list(struct drm_open_hash *ht, unsigned long key)
- 	hashed_key = hash_long(key, ht->order);
- 	DRM_DEBUG("Key is 0x%08lx, Hashed key is 0x%08x\n", key, hashed_key);
- 	h_list = &ht->table[hashed_key];
--	hlist_for_each(list, h_list) {
--		entry = hlist_entry(list, struct drm_hash_item, head);
-+	hlist_for_each_entry_rcu(entry, list, h_list, head)
- 		DRM_DEBUG("count %d, key: 0x%08lx\n", count++, entry->key);
--	}
- }
+diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
+index bf6e4b5..46008ea 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -220,7 +220,7 @@ int ttm_bo_reserve_locked(struct ttm_buffer_object *bo,
+ 	struct ttm_bo_global *glob = bo->glob;
+ 	int ret;
  
- static struct hlist_node *drm_ht_find_key(struct drm_open_hash *ht,
-@@ -83,8 +81,7 @@ static struct hlist_node *drm_ht_find_key(struct drm_open_hash *ht,
- 
- 	hashed_key = hash_long(key, ht->order);
- 	h_list = &ht->table[hashed_key];
--	hlist_for_each(list, h_list) {
--		entry = hlist_entry(list, struct drm_hash_item, head);
-+	hlist_for_each_entry_rcu(entry, list, h_list, head) {
- 		if (entry->key == key)
- 			return list;
- 		if (entry->key > key)
-@@ -105,8 +102,7 @@ int drm_ht_insert_item(struct drm_open_hash *ht, struct drm_hash_item *item)
- 	hashed_key = hash_long(key, ht->order);
- 	h_list = &ht->table[hashed_key];
- 	parent = NULL;
--	hlist_for_each(list, h_list) {
--		entry = hlist_entry(list, struct drm_hash_item, head);
-+	hlist_for_each_entry_rcu(entry, list, h_list, head) {
- 		if (entry->key == key)
- 			return -EINVAL;
- 		if (entry->key > key)
-@@ -114,9 +110,9 @@ int drm_ht_insert_item(struct drm_open_hash *ht, struct drm_hash_item *item)
- 		parent = list;
+-	while (unlikely(atomic_cmpxchg(&bo->reserved, 0, 1) != 0)) {
++	while (unlikely(atomic_read(&bo->reserved) != 0)) {
+ 		/**
+ 		 * Deadlock avoidance for multi-bo reserving.
+ 		 */
+@@ -249,6 +249,7 @@ int ttm_bo_reserve_locked(struct ttm_buffer_object *bo,
+ 			return ret;
  	}
- 	if (parent) {
--		hlist_add_after(parent, &item->head);
-+		hlist_add_after_rcu(parent, &item->head);
- 	} else {
--		hlist_add_head(&item->head, h_list);
-+		hlist_add_head_rcu(&item->head, h_list);
- 	}
- 	return 0;
- }
-@@ -171,7 +167,7 @@ int drm_ht_remove_key(struct drm_open_hash *ht, unsigned long key)
  
- 	list = drm_ht_find_key(ht, key);
- 	if (list) {
--		hlist_del_init(list);
-+		hlist_del_init_rcu(list);
- 		return 0;
- 	}
- 	return -EINVAL;
-@@ -179,7 +175,7 @@ int drm_ht_remove_key(struct drm_open_hash *ht, unsigned long key)
- 
- int drm_ht_remove_item(struct drm_open_hash *ht, struct drm_hash_item *item)
- {
--	hlist_del_init(&item->head);
-+	hlist_del_init_rcu(&item->head);
- 	return 0;
- }
- EXPORT_SYMBOL(drm_ht_remove_item);
++	atomic_set(&bo->reserved, 1);
+ 	if (use_sequence) {
+ 		/**
+ 		 * Wake up waiters that may need to recheck for deadlock,
 -- 
 1.7.4.4
 
