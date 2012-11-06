@@ -1,149 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab2KFQ2e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 11:28:34 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55872 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab2KFQ2c (ORCPT
+	id S1751579Ab2KFQbU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 11:31:20 -0500
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:47173 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab2KFQbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 11:28:32 -0500
-Message-ID: <50993AA0.80703@gmail.com>
-Date: Wed, 07 Nov 2012 00:28:16 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 6 Nov 2012 11:31:19 -0500
+From: Nicolas Royer <nicolas@eukrea.com>
+To: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, linux-crypto@vger.kernel.org,
+        herbert@gondor.hengli.com.au, davem@davemloft.net,
+        plagnioj@jcrosoft.com, eric@eukrea.com,
+        Nicolas Royer <nicolas@eukrea.com>
+Subject: [PATCH 1/5] ARM: AT91SAM9G45: fix crypto peripherals irq issue due to sparse irq support.
+Date: Tue,  6 Nov 2012 17:31:03 +0100
+Message-Id: <1352219463-30360-1-git-send-email-nicolas@eukrea.com>
+X-Mailer: git-send-email 1.7.6.5
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "Rafael J . Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Huang Ying <ying.huang@intel.com>, Bob Moore <robert.moore@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-mm@kvack.org,
-        Gaohuai Han <hangaohuai@huawei.com>
-Subject: Re: [ACPIHP PATCH part1 2/4] ACPIHP: introduce acpihp_slot driver
- to enumerate hotplug slots
-References: <1351958865-24394-1-git-send-email-jiang.liu@huawei.com> <1351958865-24394-3-git-send-email-jiang.liu@huawei.com> <CAErSpo49kJm3x2K_FT6vLpUUD2pk9Hf62uXqzHt2Vod2PriY8Q@mail.gmail.com>
-In-Reply-To: <CAErSpo49kJm3x2K_FT6vLpUUD2pk9Hf62uXqzHt2Vod2PriY8Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 05:30 AM, Bjorn Helgaas wrote:
-> On Sat, Nov 3, 2012 at 10:07 AM, Jiang Liu <liuj97@gmail.com> wrote:
->> An ACPI hotplug slot is an abstraction of receptacles, where a group of
->> system devices could be connected to. This patch implements the skeleton
->> of the ACPI system device hotplug slot enumerator. On loading, it scans
->> the whole ACPI namespace for hotplug slots and creates a device node for
->> each hotplug slot found. Every hotplug slot is associated with a device
->> class named acpihp_slot_class. Later hotplug drivers will register onto
->> acpihp_slot_class to manage all hotplug slots.
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
->> ---
->>  drivers/acpi/Kconfig          |   19 ++
->>  drivers/acpi/hotplug/Makefile |    3 +
->>  drivers/acpi/hotplug/slot.c   |  417 +++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 439 insertions(+)
->>  create mode 100644 drivers/acpi/hotplug/slot.c
->>
->> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
->> index 9577b23..af0aaf6 100644
->> --- a/drivers/acpi/Kconfig
->> +++ b/drivers/acpi/Kconfig
->> @@ -334,6 +334,25 @@ menuconfig ACPI_HOTPLUG
->>           If your hardware platform does not support system device dynamic
->>           reconfiguration at runtime, you need not to enable this option.
->>
->> +config ACPI_HOTPLUG_SLOT
->> +       tristate "System Device Hotplug Slot Enumerator"
-> 
-> I don't really believe in hotplug drivers being modules.  I think the
-> core should support hotplug directly, and the decision to configure or
-> not should be made at build-time.
-Good suggestion, I will change it in next version.
+Spare irq support introduced by commit "8fe82a5 ARM: at91: sparse irq support"
+involves to add the NR_IRQS_LEGACY offset to irq number.
 
->> +       depends on ACPI_HOTPLUG
->> +       default m
->> +       help
->> +         ACPI system device hotplug slot is an abstraction of ACPI based
->> +         system device dynamic reconfiguration control points. On load,
->> +         this driver enumerates system device hotplug slots by wakling the
->> +         ACPI namespace and provides platform specific methods to control
->> +         those hotplug slots.
->> +
->> +         By default, this driver detects system device hotplug slots by
->> +         checking avaliability of ACPI _EJ0 method. You may pass a module
->> +         parameter "fake_slot=0xf" to enable faking hotplug slots on
->> +         platforms without hardware dynamic reconfiguration capabilities.
->> +
->> +         To compile this driver as a module, choose M here:
->> +         the module will be called acpihp_slot.
->> +
-> 
->> +static int __init acpihp_slot_generate_name(struct acpihp_slot *slot)
->> +{
->> +       int found = 0;
->> +       u32 child_types = 0;
->> +       unsigned long long uid;
->> +       struct acpihp_slot_id *slot_id;
->> +
->> +       /*
->> +        * Figure out slot type by checking types of ACPI devices which could
->> +        * be attached to the slot.
->> +        */
->> +       slot->type = acpihp_slot_get_type_self(slot);
->> +       if (slot->type == ACPIHP_SLOT_TYPE_UNKNOWN) {
->> +               acpi_walk_namespace(ACPI_TYPE_DEVICE, slot->handle,
->> +                               ACPI_UINT32_MAX, acpihp_slot_get_dev_type,
->> +                               NULL, NULL, (void **)&child_types);
->> +               acpi_walk_namespace(ACPI_TYPE_PROCESSOR, slot->handle,
->> +                               ACPI_UINT32_MAX, acpihp_slot_get_dev_type,
->> +                               NULL, NULL, (void **)&child_types);
->> +               slot->type = acpihp_slot_get_type_child(child_types);
->> +       }
-> 
-> If things can be hot-added below slot->handle, is there an ACPI
-> requirement that there be *anything* in the existing namespace below
-> slot->handle?  I'm not sure you can tell sort of things might be
-> added.
-To be compatible with old Windows, some BIOS will expose such a behavior.
-It put the PCI root bus built in a physical processor directly under /_SB
-instead of the module device for the processor. According to my observation,
-new BIOSes have changed that behavior and build ACPI namespace according to
-physical topology. 
+Signed-off-by: Nicolas Royer <nicolas@eukrea.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Eric Bénard <eric@eukrea.com>
+Tested-by: Eric Bénard <eric@eukrea.com>
+Cc: stable@vger.kernel.org # 3.6
+---
+ arch/arm/mach-at91/at91sam9g45_devices.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
->> +static int __init acpihp_slot_scan_slots(void)
->> +{
->> +       acpi_status status;
->> +
->> +       status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
->> +                                    ACPI_UINT32_MAX, acpihp_slot_scan,
->> +                                    NULL, NULL, NULL);
->> +       if (!ACPI_SUCCESS(status))
->> +               goto out_err;
->> +
->> +       status = acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
->> +                                    ACPI_UINT32_MAX, acpihp_slot_scan,
->> +                                    NULL, NULL, NULL);
-> 
-> Here's one reason I don't like this as a module: we have to walk the
-> namespace again (twice, even).  What happens when you hot-add a node
-> that itself *contains* another hot-pluggable receptacle?  Do you walk
-> the namespace again, calling acpiphp_slot_scan() as needed?
-Loading of dynamic ACPI table is an issue, it should be handled. But we have
-left that on the TODO list for simplicity at first stage. When supporting 
-that in future, we just need to scan the subtree starting from the slot.
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index b159607..fcd233c 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -1841,8 +1841,8 @@ static struct resource sha_resources[] = {
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ 	[1] = {
+-		.start	= AT91SAM9G45_ID_AESTDESSHA,
+-		.end	= AT91SAM9G45_ID_AESTDESSHA,
++		.start	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
++		.end	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
+ 		.flags	= IORESOURCE_IRQ,
+ 	},
+ };
+@@ -1874,8 +1874,8 @@ static struct resource tdes_resources[] = {
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ 	[1] = {
+-		.start	= AT91SAM9G45_ID_AESTDESSHA,
+-		.end	= AT91SAM9G45_ID_AESTDESSHA,
++		.start	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
++		.end	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
+ 		.flags	= IORESOURCE_IRQ,
+ 	},
+ };
+@@ -1910,8 +1910,8 @@ static struct resource aes_resources[] = {
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ 	[1] = {
+-		.start	= AT91SAM9G45_ID_AESTDESSHA,
+-		.end	= AT91SAM9G45_ID_AESTDESSHA,
++		.start	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
++		.end	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
+ 		.flags	= IORESOURCE_IRQ,
+ 	},
+ };
+-- 
+1.7.6.5
 
-Thanks
-Gerry
