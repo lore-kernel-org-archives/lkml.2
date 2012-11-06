@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab2KFTwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 14:52:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61457 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613Ab2KFTwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 14:52:43 -0500
-Message-ID: <50996B1A.7040601@redhat.com>
-Date: Tue, 06 Nov 2012 14:55:06 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S1752864Ab2KFTwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 14:52:54 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:53617 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab2KFTwp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 14:52:45 -0500
+Date: Tue, 6 Nov 2012 11:52:42 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Aaron Lu <aaron.lu@intel.com>, Huang Ying <ying.huang@intel.com>,
+        Len Brown <lenb@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 6/7] ACPI / PM: Move device PM functions related to sleep
+ states
+In-Reply-To: <1456107.KxymqUQLId@vostro.rjw.lan>
+Message-ID: <alpine.DEB.2.00.1211061150190.6467@chino.kir.corp.google.com>
+References: <1766582.8gdQKXoi0K@vostro.rjw.lan> <1456107.KxymqUQLId@vostro.rjw.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/19] mm: numa: Add pte updates, hinting and migration
- stats
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de> <1352193295-26815-17-git-send-email-mgorman@suse.de>
-In-Reply-To: <1352193295-26815-17-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 04:14 AM, Mel Gorman wrote:
-> It is tricky to quantify the basic cost of automatic NUMA placement in a
-> meaningful manner. This patch adds some vmstats that can be used as part
-> of a basic costing model.
->
-> u    = basic unit = sizeof(void *)
-> Ca   = cost of struct page access = sizeof(struct page) / u
-> Cpte = Cost PTE access = Ca
-> Cupdate = Cost PTE update = (2 * Cpte) + (2 * Wlock)
-> 	where Cpte is incurred twice for a read and a write and Wlock
-> 	is a constant representing the cost of taking or releasing a
-> 	lock
-> Cnumahint = Cost of a minor page fault = some high constant e.g. 1000
-> Cpagerw = Cost to read or write a full page = Ca + PAGE_SIZE/u
-> Ci = Cost of page isolation = Ca + Wi
-> 	where Wi is a constant that should reflect the approximate cost
-> 	of the locking operation
-> Cpagecopy = Cpagerw + (Cpagerw * Wnuma) + Ci + (Ci * Wnuma)
-> 	where Wnuma is the approximate NUMA factor. 1 is local. 1.2
-> 	would imply that remote accesses are 20% more expensive
->
-> Balancing cost = Cpte * numa_pte_updates +
-> 		Cnumahint * numa_hint_faults +
-> 		Ci * numa_pages_migrated +
-> 		Cpagecopy * numa_pages_migrated
->
-> Note that numa_pages_migrated is used as a measure of how many pages
-> were isolated even though it would miss pages that failed to migrate. A
-> vmstat counter could have been added for it but the isolation cost is
-> pretty marginal in comparison to the overall cost so it seemed overkill.
->
-> The ideal way to measure automatic placement benefit would be to count
-> the number of remote accesses versus local accesses and do something like
->
-> 	benefit = (remote_accesses_before - remove_access_after) * Wnuma
->
-> but the information is not readily available. As a workload converges, the
-> expection would be that the number of remote numa hints would reduce to 0.
->
-> 	convergence = numa_hint_faults_local / numa_hint_faults
-> 		where this is measured for the last N number of
-> 		numa hints recorded. When the workload is fully
-> 		converged the value is 1.
->
-> This can measure if the placement policy is converging and how fast it is
-> doing it.
->
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+Commit b87b49cd0efd ("ACPI / PM: Move device PM functions related to sleep 
+states") declared acpi_target_system_state() for CONFIG_PM_SLEEP whereas 
+it is only defined for CONFIG_ACPI_SLEEP, resulting in the following link 
+error:
 
-I'm skipping the ACKing of the policy patches, which
-appear to be meant to be placeholders for a "real"
-policy.  However, you have a few more mechanism patches
-left in the series, which would be required regardless
-of what policy gets merged, so ...
+drivers/built-in.o: In function `acpi_pm_device_sleep_wake':
+drivers/acpi/device_pm.c:342: undefined reference to `acpi_target_system_state'
+drivers/built-in.o: In function `acpi_dev_suspend_late':
+drivers/acpi/device_pm.c:501: undefined reference to `acpi_target_system_state'
+drivers/built-in.o: In function `acpi_pm_device_sleep_state':
+drivers/acpi/device_pm.c:221: undefined reference to `acpi_target_system_state'
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Define it only for CONFIG_ACPI_SLEEP and fallback to a dummy definition 
+for other configs.
 
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ include/acpi/acpi_bus.h |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -469,11 +469,9 @@ static inline int acpi_pm_device_run_wake(struct device *dev, bool enable)
+ #endif
+ 
+ #ifdef CONFIG_PM_SLEEP
+-u32 acpi_target_system_state(void);
+ int __acpi_device_sleep_wake(struct acpi_device *, u32, bool);
+ int acpi_pm_device_sleep_wake(struct device *, bool);
+ #else
+-static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
+ static inline int __acpi_device_sleep_wake(struct acpi_device *adev,
+ 					   u32 target_state, bool enable)
+ {
+@@ -485,6 +483,12 @@ static inline int acpi_pm_device_sleep_wake(struct device *dev, bool enable)
+ }
+ #endif
+ 
++#ifdef CONFIG_ACPI_SLEEP
++u32 acpi_target_system_state(void);
++#else
++static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
++#endif
++
+ static inline bool acpi_device_power_manageable(struct acpi_device *adev)
+ {
+ 	return adev->flags.power_manageable;
