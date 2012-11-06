@@ -1,89 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab2KFMsV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 07:48:21 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56217 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab2KFMsT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 07:48:19 -0500
-Date: Tue, 6 Nov 2012 13:48:26 +0100
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Azat Khuzhin <dohardgopro@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: ACPI errors with 3.7-rc3
-Message-ID: <20121106124826.GA21806@kroah.com>
-References: <20121031014527.GA2984@kroah.com>
- <2089727.VKpW8oC7hj@vostro.rjw.lan>
- <20121031173336.GA28991@kroah.com>
- <CAAW1UO9BtAU5jpy=MqgFCwwXn3Gb8HA3m7FMktmQkYGqYrS0Rw@mail.gmail.com>
+	id S1751865Ab2KFMsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 07:48:47 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:57734 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132Ab2KFMsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 07:48:45 -0500
+X-IronPort-AV: E=Sophos;i="4.80,722,1344182400"; 
+   d="scan'208";a="6148164"
+Message-ID: <5098F1C6.1010602@cn.fujitsu.com>
+Date: Tue, 06 Nov 2012 19:17:26 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAW1UO9BtAU5jpy=MqgFCwwXn3Gb8HA3m7FMktmQkYGqYrS0Rw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: tony.luck@intel.com, bp@amd64.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, miaox@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bp@alien8.de
+Subject: Re: [PATCH v3] Do not change worker's running cpu in cmci_rediscover().
+References: <1351479710-9144-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1351479710-9144-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/06 19:17:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/06 19:17:51,
+	Serialize complete at 2012/11/06 19:17:51
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 04:42:24PM +0400, Azat Khuzhin wrote:
-> I'v also have such errors on my macbook pro.
-> 
-> $ dmesg | tail
-> [17056.008564] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
-> (20120711/psparse-536)
-> [17056.011194] ACPI Error: Method parse/execution failed
-> [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
-> (20120711/psparse-536)
-> [17056.013793] ACPI Error: Method parse/execution failed
-> [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
-> (20120711/psparse-536)
-> [17056.016383] ACPI Exception: AE_TIME, Evaluating _BST (20120711/battery-464)
-> [17056.511373] ACPI: EC: input buffer is not empty, aborting transaction
-> [17056.512672] ACPI Exception: AE_TIME, Returned by Handler for
-> [EmbeddedControl] (20120711/evregion-501)
-> [17056.515256] ACPI Error: Method parse/execution failed
-> [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
-> (20120711/psparse-536)
-> [17056.517886] ACPI Error: Method parse/execution failed
-> [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
-> (20120711/psparse-536)
-> [17056.520479] ACPI Error: Method parse/execution failed
-> [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
-> (20120711/psparse-536)
-> [17056.523070] ACPI Exception: AE_TIME, Evaluating _BST (20120711/battery-464)
+Hi Tony, Borislav,
 
-I'm seeing this again right now.  I'm wondering if it's because I'm
-running on battery power at the moment:
+Would you please help to review this patch ?
 
-[41694.309264] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20120913/evregion-501)
-[41694.309282] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88045cc64618), AE_TIME (20120913/psparse-536)
-[41694.309300] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff88045cc64988), AE_TIME (20120913/psparse-536)
-[41694.309310] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff88045cc648c0), AE_TIME (20120913/psparse-536)
-[41694.309324] ACPI Exception: AE_TIME, Evaluating _BST (20120913/battery-464)
-[41694.809093] ACPI: EC: input buffer is not empty, aborting transaction
+Thanks. ;)
 
-ec_storm_threshold is still set to 8 in /sys/module/acpi/parameters/ so that's
-not the issue here.
+On 10/29/2012 11:01 AM, Tang Chen wrote:
+> cmci_rediscover() used set_cpus_allowed_ptr() to change the current process's
+> running cpu, and migrate itself to the dest cpu. But worker processes are not
+> allowed to be migrated. If current is a worker, the worker will be migrated to
+> another cpu, but the corresponding  worker_pool is still on the original cpu.
+>
+> In this case, the following BUG_ON in try_to_wake_up_local() will be triggered:
+> BUG_ON(rq != this_rq());
+>
+> This will cause the kernel panic. The call trace is like the following:
+>
+> [ 6155.451107] ------------[ cut here ]------------
+> [ 6155.452019] kernel BUG at kernel/sched/core.c:1654!
+> ......
+> [ 6155.452019] RIP: 0010:[<ffffffff810add15>]  [<ffffffff810add15>] try_to_wake_up_local+0x115/0x130
+> ......
+> [ 6155.452019] Call Trace:
+> [ 6155.452019]  [<ffffffff8166fc14>] __schedule+0x764/0x880
+> [ 6155.452019]  [<ffffffff81670059>] schedule+0x29/0x70
+> [ 6155.452019]  [<ffffffff8166de65>] schedule_timeout+0x235/0x2d0
+> [ 6155.452019]  [<ffffffff810db57d>] ? mark_held_locks+0x8d/0x140
+> [ 6155.452019]  [<ffffffff810dd463>] ? __lock_release+0x133/0x1a0
+> [ 6155.452019]  [<ffffffff81671c50>] ? _raw_spin_unlock_irq+0x30/0x50
+> [ 6155.452019]  [<ffffffff810db8f5>] ? trace_hardirqs_on_caller+0x105/0x190
+> [ 6155.452019]  [<ffffffff8166fefb>] wait_for_common+0x12b/0x180
+> [ 6155.452019]  [<ffffffff810b0b30>] ? try_to_wake_up+0x2f0/0x2f0
+> [ 6155.452019]  [<ffffffff8167002d>] wait_for_completion+0x1d/0x20
+> [ 6155.452019]  [<ffffffff8110008a>] stop_one_cpu+0x8a/0xc0
+> [ 6155.452019]  [<ffffffff810abd40>] ? __migrate_task+0x1a0/0x1a0
+> [ 6155.452019]  [<ffffffff810a6ab8>] ? complete+0x28/0x60
+> [ 6155.452019]  [<ffffffff810b0fd8>] set_cpus_allowed_ptr+0x128/0x130
+> [ 6155.452019]  [<ffffffff81036785>] cmci_rediscover+0xf5/0x140
+> [ 6155.452019]  [<ffffffff816643c0>] mce_cpu_callback+0x18d/0x19d
+> [ 6155.452019]  [<ffffffff81676187>] notifier_call_chain+0x67/0x150
+> [ 6155.452019]  [<ffffffff810a03de>] __raw_notifier_call_chain+0xe/0x10
+> [ 6155.452019]  [<ffffffff81070470>] __cpu_notify+0x20/0x40
+> [ 6155.452019]  [<ffffffff810704a5>] cpu_notify_nofail+0x15/0x30
+> [ 6155.452019]  [<ffffffff81655182>] _cpu_down+0x262/0x2e0
+> [ 6155.452019]  [<ffffffff81655236>] cpu_down+0x36/0x50
+> [ 6155.452019]  [<ffffffff813d3eaa>] acpi_processor_remove+0x50/0x11e
+> [ 6155.452019]  [<ffffffff813a6978>] acpi_device_remove+0x90/0xb2
+> [ 6155.452019]  [<ffffffff8143cbec>] __device_release_driver+0x7c/0xf0
+> [ 6155.452019]  [<ffffffff8143cd6f>] device_release_driver+0x2f/0x50
+> [ 6155.452019]  [<ffffffff813a7870>] acpi_bus_remove+0x32/0x6d
+> [ 6155.452019]  [<ffffffff813a7932>] acpi_bus_trim+0x87/0xee
+> [ 6155.452019]  [<ffffffff813a7a21>] acpi_bus_hot_remove_device+0x88/0x16b
+> [ 6155.452019]  [<ffffffff813a33ee>] acpi_os_execute_deferred+0x27/0x34
+> [ 6155.452019]  [<ffffffff81090589>] process_one_work+0x219/0x680
+> [ 6155.452019]  [<ffffffff81090528>] ? process_one_work+0x1b8/0x680
+> [ 6155.452019]  [<ffffffff813a33c7>] ? acpi_os_wait_events_complete+0x23/0x23
+> [ 6155.452019]  [<ffffffff810923be>] worker_thread+0x12e/0x320
+> [ 6155.452019]  [<ffffffff81092290>] ? manage_workers+0x110/0x110
+> [ 6155.452019]  [<ffffffff81098396>] kthread+0xc6/0xd0
+> [ 6155.452019]  [<ffffffff8167c4c4>] kernel_thread_helper+0x4/0x10
+> [ 6155.452019]  [<ffffffff81671f30>] ? retint_restore_args+0x13/0x13
+> [ 6155.452019]  [<ffffffff810982d0>] ? __init_kthread_worker+0x70/0x70
+> [ 6155.452019]  [<ffffffff8167c4c0>] ? gs_change+0x13/0x13
+>
+> This patch removes the set_cpus_allowed_ptr() call, and put the cmci rediscover
+> jobs onto all the other cpus using system_wq. This could bring some delay for
+> the jobs.
+>
+> Change log v1 ->  v2:
+> 1) removed patch1, when an online cpu == dying, just continue;
+> 2) rebased on the lastest kernel.
+>
+> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+> Signed-off-by: Miao Xie<miaox@cn.fujitsu.com>
+> ---
+>   arch/x86/kernel/cpu/mcheck/mce_intel.c |   31 ++++++++++++++++++-------------
+>   1 file changed, 18 insertions(+), 13 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+> index 5f88abf..4f9a3cb 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+> @@ -285,34 +285,39 @@ void cmci_clear(void)
+>   	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
+>   }
+>
+> +static long cmci_rediscover_work_func(void *arg)
+> +{
+> +	int banks;
+> +
+> +	/* Recheck banks in case CPUs don't all have the same */
+> +	if (cmci_supported(&banks))
+> +		cmci_discover(banks);
+> +
+> +	return 0;
+> +}
+> +
+>   /*
+>    * After a CPU went down cycle through all the others and rediscover
+>    * Must run in process context.
+>    */
+>   void cmci_rediscover(int dying)
+>   {
+> -	int banks;
+> -	int cpu;
+> -	cpumask_var_t old;
+> +	int cpu, banks;
+>
+>   	if (!cmci_supported(&banks))
+>   		return;
+> -	if (!alloc_cpumask_var(&old, GFP_KERNEL))
+> -		return;
+> -	cpumask_copy(old,&current->cpus_allowed);
+>
+>   	for_each_online_cpu(cpu) {
+>   		if (cpu == dying)
+>   			continue;
+> -		if (set_cpus_allowed_ptr(current, cpumask_of(cpu)))
+> +
+> +		if (cpu == smp_processor_id()) {
+> +			cmci_rediscover_work_func(NULL);
+>   			continue;
+> -		/* Recheck banks in case CPUs don't all have the same */
+> -		if (cmci_supported(&banks))
+> -			cmci_discover(banks);
+> -	}
+> +		}
+>
+> -	set_cpus_allowed_ptr(current, old);
+> -	free_cpumask_var(old);
+> +		work_on_cpu(cpu, cmci_rediscover_work_func, NULL);
+> +	}
+>   }
+>
+>   /*
 
-> And also loadavg is too high ~ 10
-> While there is no process that load CPU up to 100% or like that.
-> I think that this because of processes that is done in kernel space.
-> (basically that one who write such errors)
-> 
-> $ uname -a
-> Linux macbook-pro-sq 3.6.5macbook-pro-custom-v0.1 #4 SMP Sun Nov 4
-> 12:39:03 UTC 2012 x86_64 GNU/Linux
-
-Ah, ok, that means it's not something new in 3.7-rc, so maybe it's just never
-worked properly for this hardware :)
-
-So it's not a regression, just an ACPI issue, any ACPI developer have an idea
-about this?
-
-thanks,
-
-greg k-h
