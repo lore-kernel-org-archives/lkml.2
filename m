@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2KFV4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 16:56:32 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:53359 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753207Ab2KFV4O convert rfc822-to-8bit (ORCPT
+	id S1753541Ab2KFV4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 16:56:49 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:51167 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab2KFVzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 16:56:14 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <87625iwgao.fsf@mid.deneb.enyo.de>
-References: <20121104135251.GA17894@srcf.ucam.org> <87d2zsmv8r.fsf@xmission.com> <509766DB.9090906@zytor.com> <87625kh5r2.fsf@xmission.com> <20121105123858.GB4374@srcf.ucam.org> <87sj8nc137.fsf@xmission.com> <20121105202557.GA16076@srcf.ucam.org> <87hap3zbw7.fsf@xmission.com> <20121106031219.GB24235@srcf.ucam.org> <87fw4nv1vj.fsf@xmission.com> <20121106035352.GA24698@srcf.ucam.org> <87hap3s3yl.fsf@xmission.com> <878vafqi5q.fsf@mid.deneb.enyo.de> <50992946.4060101@genband.com> <87625iwgao.fsf@mid.deneb.enyo.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-Date: Tue, 06 Nov 2012 16:55:25 -0500
-To: Florian Weimer <fw@deneb.enyo.de>,
-        Chris Friesen <chris.friesen@genband.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
-        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Message-ID: <7c6b2e83-e49a-40aa-a990-da7599622f37@email.android.com>
-X-cavan-blacklisted-at: zen.spamhaus.org
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 208.54.37.229
-X-SA-Exim-Mail-From: mjg59@srcf.ucam.org
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 6 Nov 2012 16:55:52 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [PATCH 7/8] ata: highbank: mark ahci_highbank_probe as __devinit
+Date: Tue,  6 Nov 2012 22:55:32 +0100
+Message-Id: <1352238933-4886-8-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1352238933-4886-1-git-send-email-arnd@arndb.de>
+References: <1352238933-4886-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:oQM2Nb2FpM/JP98YNZes+7+tFTmvDAK4Kp4rqTWvbVz
+ 3tzEGZ/3na6oWULIi7eF4uMgzx/KcaA9HfJr6JH7n/ebximoR9
+ pXjvzl2dwITAP17F0gtm3UYJZ45Y0c7lxasAemaghzgaZpK3Pb
+ RBvEHUR7KKCcGPFfXn53b0KiRHWu06Ezfa8h/LwOB6iWkZJCot
+ JbnM8A5BQ91fxpt9gNR2vGI2jRsNzJV598T0onCd1v1r1ptPuw
+ ABJDf1PXLnQwqC1FkuSY6CfMYV35pAWRavv/H53Vg8KRRlPc0r
+ QQUArWWZiR/ZvJi8IuEr2FcY3q8AkGyBkmGH2u2Xa0sdlFC6Xb
+ 8M7KTsmQmzZ7OLZ+bt7muaGrECH0A/wD7BrDJnuorLOGnDVXo1
+ oHVAEjgH06aGQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not sure why you think that Fedora PXE installs will automatically wipe disks - they'll do whatever Kickstart tells them to do. The only thing relevant to secure boot here is that you need a signed bootloader, just like when you book off CD. 
+The ahci_highbank_probe function is incorrectly marked as __init,
+which means it can get discarded at boot time, which might be
+a problem if for some reason the device only becomes operational
+after loading another module.
+
+Using __devinit instead avoids seeing this warning for every build:
+
+WARNING: vmlinux.o(.data+0xf7b0): Section mismatch in reference from the
+variable ahci_highbank_driver to the function .init.text:ahci_highbank_probe()
+The variable ahci_highbank_driver references
+the function __init ahci_highbank_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Jeff Garzik <jgarzik@redhat.com>
+---
+ drivers/ata/sata_highbank.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
+index 0d7c4c2..36a141a 100644
+--- a/drivers/ata/sata_highbank.c
++++ b/drivers/ata/sata_highbank.c
+@@ -260,7 +260,7 @@ static const struct of_device_id ahci_of_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, ahci_of_match);
+ 
+-static int __init ahci_highbank_probe(struct platform_device *pdev)
++static int __devinit ahci_highbank_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct ahci_host_priv *hpriv;
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.10
+
