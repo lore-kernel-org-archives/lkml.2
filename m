@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab2KFW5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:57:44 -0500
-Received: from mga14.intel.com ([143.182.124.37]:32828 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412Ab2KFW5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:57:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,724,1344236400"; 
-   d="scan'208";a="165261427"
-From: "Woodhouse, David" <david.woodhouse@intel.com>
-To: Krzysztof Mazur <krzysiek@podlesie.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chas Williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH v3 5/7] pppoatm: take ATM socket lock in pppoatm_send()
-Thread-Topic: [PATCH v3 5/7] pppoatm: take ATM socket lock in pppoatm_send()
-Thread-Index: AQHNvGz3+/ZM1gSqR0mkUiHOeUa5KJfda2IA
-Date: Tue, 6 Nov 2012 22:57:39 +0000
-Message-ID: <1352242658.7340.19.camel@shinybook.infradead.org>
-References: <1352240222-363-1-git-send-email-krzysiek@podlesie.net>
-	 <1352240222-363-6-git-send-email-krzysiek@podlesie.net>
-In-Reply-To: <1352240222-363-6-git-send-email-krzysiek@podlesie.net>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.252.122.128]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <1DDACE81D6B5FA409A8BD38C858EA4BA@intel.com>
+	id S1752992Ab2KFXE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 18:04:29 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:50815 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab2KFXE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 18:04:28 -0500
+Message-ID: <50999755.4000209@linux.vnet.ibm.com>
+Date: Tue, 06 Nov 2012 15:03:49 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org, mgorman@suse.de, mjg59@srcf.ucam.org,
+        paulmck@linux.vnet.ibm.com, maxime.coquelin@stericsson.com,
+        loic.pallardy@stericsson.com, arjan@linux.intel.com,
+        kmpark@infradead.org, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
+        rjw@sisk.pl, gargankita@gmail.com, amit.kachhap@linaro.org,
+        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org,
+        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/8] mm: Introduce memory regions data-structure to
+ capture region boundaries within node
+References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121106195225.6941.2868.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20121106195225.6941.2868.stgit@srivatsabhat.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110623-3620-0000-0000-00000048DA6F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA6MvkM8017521
 
-On Tue, 2012-11-06 at 23:17 +0100, Krzysztof Mazur wrote:
-> +       if (sock_owned_by_user(sk_atm(vcc)))
-> +               goto nospace;
+On 11/06/2012 11:52 AM, Srivatsa S. Bhat wrote:
+> But of course, memory regions are sub-divisions *within* a node, so it makes
+> sense to keep the data-structures in the node's struct pglist_data. (Thus
+> this placement makes memory regions parallel to zones in that node).
 
-I still think this one can lead to an infinite stall of the PPP channel,
-because we return 0 from pppoatm_send() but never make a later call to
-ppp_output_wakeup() to unblock it.
+I think it's pretty silly to create *ANOTHER* subdivision of memory
+separate from sparsemem.  One that doesn't handle large amounts of
+memory or scale with memory hotplug.  As it stands, you can only support
+256*512MB=128GB of address space, which seems pretty puny.
 
-In the existing cases where we could return 0 (because
-pppoatm_may_send() said no), we were careful to set the BLOCKED flag and
-we *knew* that a packet was in flight so we'd get to wake it up again on
-a subsequent pppoatm_pop().
+This node_regions[]:
 
-None of that works for this new code path that returns zero.
+> @@ -687,6 +698,8 @@ typedef struct pglist_data {
+>  	struct zone node_zones[MAX_NR_ZONES];
+>  	struct zonelist node_zonelists[MAX_ZONELISTS];
+>  	int nr_zones;
+> +	struct node_mem_region node_regions[MAX_NR_REGIONS];
+> +	int nr_node_regions;
+>  #ifdef CONFIG_FLAT_NODE_MEM_MAP	/* means !SPARSEMEM */
+>  	struct page *node_mem_map;
+>  #ifdef CONFIG_MEMCG
 
--- 
-                   Sent with MeeGo's ActiveSync support.
+looks like it's indexed the same way regardless of which node it is in.
+ In other words, if there are two nodes, at least half of it is wasted,
+and 3/4 if there are four nodes.  That seems a bit suboptimal.
 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+Could you remind us of the logic for leaving sparsemem out of the
+equation here?
 
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
