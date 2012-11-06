@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab2KFF5i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 00:57:38 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38678 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629Ab2KFF5h (ORCPT
+	id S1751456Ab2KFGPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 01:15:53 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39340 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750854Ab2KFGPw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 00:57:37 -0500
-Date: Mon, 5 Nov 2012 21:57:33 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Kees Cook <keescook@chromium.org>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Beulich <JBeulich@novell.com>, Mel Gorman <mel@csn.ul.ie>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: Re: [PATCH 103/104] mm: remove depends on CONFIG_EXPERIMENTAL
-In-Reply-To: <CAGXu5jKKwE+esJ9QV25vSfnVoejQxHQA7RgoKrzDa9nYMP6uXQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1211052152250.11829@chino.kir.corp.google.com>
-References: <1352156701-4038-1-git-send-email-keescook@chromium.org> <1352156701-4038-104-git-send-email-keescook@chromium.org> <alpine.DEB.2.00.1211051721030.24937@chino.kir.corp.google.com> <CAGXu5jLq63rpM0wargy-DF6jX_ncDnjMbzjNYAYbx+5uNKmTMA@mail.gmail.com>
- <CAGXu5jKKwE+esJ9QV25vSfnVoejQxHQA7RgoKrzDa9nYMP6uXQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 6 Nov 2012 01:15:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,721,1344236400"; 
+   d="scan'208";a="243011197"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <jbeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Index: AQHNu2iOTi91BiFLfUibRvXA4zlK85fcS22wgAAEj4A=
+Date: Tue, 6 Nov 2012 06:15:19 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233537B147@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
+	<5089676602000078000A4928@nat28.tlf.novell.com>
+	<DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
+	<508A89CB020000780008E6ED@nat28.tlf.novell.com>
+	<DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
+	<DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
+	<20121026201409.GF2708@phenom.dumpdata.com>
+	<DE8DF0795D48FD4CA783C40EC8292335377346@SHSMSX101.ccr.corp.intel.com>
+	<20121102164937.GC27213@konrad-lan.dumpdata.com>
+	<alpine.DEB.2.02.1211051512260.2689@kaball.uk.xensource.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B10C@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233537B10C@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Nov 2012, Kees Cook wrote:
-
-> >>> diff --git a/mm/Kconfig b/mm/Kconfig
-> >>> index a3f8ddd..679945e 100644
-> >>> --- a/mm/Kconfig
-> >>> +++ b/mm/Kconfig
-> >>> @@ -1,6 +1,5 @@
-> >>>  config SELECT_MEMORY_MODEL
-> >>>       def_bool y
-> >>> -     depends on EXPERIMENTAL || ARCH_SELECT_MEMORY_MODEL
-> >>>
-> >>>  choice
-> >>>       prompt "Memory model"
-> >>
-> >> I thought you agreed to only drop EXPERIMENTAL here in
-> >> http://marc.info/?l=linux-kernel&m=135103415901094 and leave
-> >> ARCH_SELECT_MEMORY_MODEL, which you've orphaned with the above, for phase
-> >> two of your effort?
-> >
-> > Ah! Yes, thanks. I'll restore that.
+Liu, Jinsong wrote:
+> Stefano Stabellini wrote:
+>>>> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+>>>> index 0e86370..a2af622 100644
+>>>> --- a/drivers/xen/Makefile
+>>>> +++ b/drivers/xen/Makefile
+>>>> @@ -29,6 +29,7 @@ obj-$(CONFIG_XEN_MCE_LOG)           += mcelog.o
+>>>>  obj-$(CONFIG_XEN_PCIDEV_BACKEND)     += xen-pciback/
+>>>>  obj-$(CONFIG_XEN_PRIVCMD)            += xen-privcmd.o
+>>>>  obj-$(CONFIG_XEN_ACPI_PROCESSOR)     += xen-acpi-processor.o
+>>>> +obj-$(CONFIG_XEN_DOM0)                       += xen_acpi_pad.o
+>>>>  xen-evtchn-y                         := evtchn.o
+>>>>  xen-gntdev-y                         := gntdev.o
+>>>>  xen-gntalloc-y                               := gntalloc.o
+>> 
+>> it should really depend on ACPI and maybe also X86, otherwise it is
+>> going to break the ARM build 
+>> 
+>> 
 > 
-> Wait, no. This is an "OR". ARCH_SELECT_MEMORY_MODEL has no affect on
-> SELECT_MEMORY_MODEL if EXPERIMENTAL is always considered on. My
-> proposal was to deal with ARCH_SELECT_MEMORY_MODEL separately. Did I
-> misunderstand something?
+> Hmm, XEN_DOM0 has already depended on ACPI and X86_LOCAL_APIC (which
+> depends on X86_64). 
 > 
 
-We're rehashing the same discussion as before?  I left the earlier thread 
-with the understanding that this would become
+Ah, you and Konrad are right. I ignore XEN_DOM0 varies under different arch.
+(But seems it not depends on X86 since it's logically an acpi stuff?).
 
-	depends on ARCH_SELECT_MEMORY_MODEL
-
-and then fix ARCH_SELECT_MEMORY_MODEL when people complain for 
-configurations that actually allow you to configure the memory model.  It 
-never should have been short-circuited by EXPERIMENTAL in the first place, 
-but enabling it to be configurable for everybody and orphaning 
-ARCH_SELECT_MEMORY_MODEL doesn't sound appropriate.  I think we should do 
-some due diligence in actually making ARCH_SELECT_MEMORY_MODEL work so 
-people are presented with a config that will work on their machines.
-
-(This is independent of the rest of the series, we can certainly remove 
-EXPERIMENTAL regardless of this decision, I simply think we should be 
-leaving ARCH_SELECT_MEMORY_MODEL to prevent users with 
-CONFIG_EXPERIMENTAL=n from being presented with a new ability to change 
-their memory model that actually doesn't work for them.)
+Thanks,
+Jinsong
