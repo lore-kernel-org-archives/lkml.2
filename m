@@ -1,109 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab2KFQvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 11:51:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52469 "EHLO mx1.redhat.com"
+	id S1752584Ab2KFQvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 11:51:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29655 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751387Ab2KFQvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 11:51:21 -0500
-Message-ID: <1352220633.25250.0.camel@dcbw.foobar.com>
-Subject: Re: [PATCH] add Marvell 88W8688 support to libertas_sdio
-From: Dan Williams <dcbw@redhat.com>
-To: Harro Haan <hrhaan@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Siddarth Gore <gores@marvell.com>
-Date: Tue, 06 Nov 2012 10:50:33 -0600
-In-Reply-To: <1351722266-9304-1-git-send-email-hrhaan@gmail.com>
-References: <1351722266-9304-1-git-send-email-hrhaan@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752375Ab2KFQvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 11:51:42 -0500
+Date: Tue, 6 Nov 2012 13:51:19 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH v2 14/16] perf tools: add new mem command for memory
+ access profiling
+Message-ID: <20121106165119.GC13629@infradead.org>
+References: <1352123463-7346-1-git-send-email-eranian@google.com>
+ <1352123463-7346-15-git-send-email-eranian@google.com>
+ <20121106154446.GA13629@infradead.org>
+ <CABPqkBSh_QGrZrQgmLKavuGLz+jC4fyczLGffo6iWnpzW6BzfA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBSh_QGrZrQgmLKavuGLz+jC4fyczLGffo6iWnpzW6BzfA@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-31 at 23:24 +0100, Harro Haan wrote:
-> This chip is for example used in the GuruPlug.
-> This patch avoids the following error:
-> libertas_sdio: failed to load firmware
-> libertas_sdio: probe of mmc0:0001:1 failed with error -5
-> 
-> The fix is based on code in:
-> drivers/net/wireless/libertas_uap/uap_sdio_mmc.c
-> 
-> This file can for example be found on the following links:
-> http://www.xilka.com/sheeva/2.6/2.6.36/2.6.36.2/source/0002-Driver-for-Marvell-Libertas-8688-SDIO-micro-AP-suppo-2.6.35.patch
-> http://www.downloadsnewit.co.uk/kernel-v3.0.7/
-> 
-> I followed the following wiki to setup a working WiFi client mode
-> connection on the GuruPlug:
-> http://wiki.debian.org/libertas
-> 
-> Signed-off-by: Harro Haan <hrhaan@gmail.com>
+Em Tue, Nov 06, 2012 at 04:49:26PM +0100, Stephane Eranian escreveu:
+> On Tue, Nov 6, 2012 at 4:44 PM, Arnaldo Carvalho de Melo
+> <acme@redhat.com> wrote:
+> > Em Mon, Nov 05, 2012 at 02:51:01PM +0100, Stephane Eranian escreveu:
+> >> +
+> >> +     if (strcmp(mem_operation, MEM_OPERATION_LOAD))
+> >> +             sprintf(event, "cpu/mem-stores/pp");
+> >> +     else
+> >> +             sprintf(event, "cpu/mem-loads/pp");
 
-Acked-by: Dan Williams <dcbw@redhat.com>
+> > Fails for me on a Sandy Bridge notebook:
 
-> ---
->  drivers/net/wireless/libertas/if_sdio.c |   39 ++++++++++++++++++++++++--------
->  1 file changed, 30 insertions(+), 9 deletions(-)
+> That's because you need to update the microcode.
+
+> $ sudo modprobe microcode
+> $ cat /proc/cpuinfo
 > 
-> Index: linux.git/drivers/net/wireless/libertas/if_sdio.c
-> ===================================================================
-> --- linux.git.orig/drivers/net/wireless/libertas/if_sdio.c
-> +++ linux.git/drivers/net/wireless/libertas/if_sdio.c
-> @@ -588,17 +588,38 @@ static int if_sdio_prog_real(struct if_s
->  	size = fw->size;
->  
->  	while (size) {
-> -		ret = if_sdio_wait_status(card, FW_DL_READY_STATUS);
-> -		if (ret)
-> -			goto release;
-> +		timeout = jiffies + HZ;
-> +		while (1) {
-> +			ret = if_sdio_wait_status(card, FW_DL_READY_STATUS);
-> +			if (ret)
-> +				goto release;
->  
-> -		req_size = sdio_readb(card->func, IF_SDIO_RD_BASE, &ret);
-> -		if (ret)
-> -			goto release;
-> +			req_size = sdio_readb(card->func, IF_SDIO_RD_BASE,
-> +					&ret);
-> +			if (ret)
-> +				goto release;
-> +
-> +			req_size |= sdio_readb(card->func, IF_SDIO_RD_BASE + 1,
-> +					&ret) << 8;
-> +			if (ret)
-> +				goto release;
-> +
-> +			/*
-> +			 * For SD8688 wait until the length is not 0, 1 or 2
-> +			 * before downloading the first FW block,
-> +			 * since BOOT code writes the register to indicate the
-> +			 * helper/FW download winner,
-> +			 * the value could be 1 or 2 (Func1 or Func2).
-> +			 */
-> +			if ((size != fw->size) || (req_size > 2))
-> +				break;
-> +			if (time_after(jiffies, timeout)) {
-> +				ret = -ETIMEDOUT;
-> +				goto release;
-> +			}
-> +			mdelay(1);
-> +		}
->  
-> -		req_size |= sdio_readb(card->func, IF_SDIO_RD_BASE + 1, &ret) << 8;
-> -		if (ret)
-> -			goto release;
->  /*
->  		lbs_deb_sdio("firmware wants %d bytes\n", (int)req_size);
->  */
-> 
-> _______________________________________________
-> libertas-dev mailing list
-> libertas-dev@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/libertas-dev
+> Line with microcode needs to say:
+> microcode : 0x28
 
+Here it says:
 
+microcode	: 0x25
+ 
+> update the microcode package or install directly from
+> intel download center.
+
+Thanks for the info, will do. And they will add "microcode hints for
+selected processors should give that info to the user" to my TODO list
+:-)
+
+- Arnaldo
