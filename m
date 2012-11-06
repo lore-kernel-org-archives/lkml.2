@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab2KFPjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 10:39:39 -0500
-Received: from smtp.domeneshop.no ([194.63.252.54]:51470 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab2KFPji (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 10:39:38 -0500
-Message-ID: <50992F56.3080209@paradoxuncreated.com>
-Date: Tue, 06 Nov 2012 16:40:06 +0100
-From: Ove Karlsen <ove.karlsen@paradoxuncreated.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Help low-jitter man.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752060Ab2KFPnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 10:43:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45848 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751154Ab2KFPm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 10:42:59 -0500
+From: Jarod Wilson <jarod@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jarod Wilson <jarod@redhat.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Neil Horman <nhorman@tuxdriver.com>, Matt Mackall <mpm@selenic.com>,
+        linux-crypto@vger.kernel.org
+Subject: [PATCH v3] random: prime last_data value per fips requirements
+Date: Tue,  6 Nov 2012 10:42:42 -0500
+Message-Id: <1352216562-25659-1-git-send-email-jarod@redhat.com>
+In-Reply-To: <1352216153-25359-1-git-send-email-jarod@redhat.com>
+References: <1352216153-25359-1-git-send-email-jarod@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heya, it`s me again. I am getting my low-jitter E5 computer, soon, and I 
-have done all the tweaks I can think of with the kernel.
+The value stored in last_data must be primed for FIPS 140-2 purposes. Upon
+first use, either on system startup or after an RNDCLEARPOOL ioctl, we
+need to take an initial random sample, store it internally in last_data,
+then pass along the value after that to the requester, so that consistency
+checks aren't being run against stale and possibly known data.
 
-I was wondering if anyone had anything to add, any good technical 
-opinion on reducing jitter (for workstation desktop/OpenGL).
+v2: streamline code flow a bit, eliminating extra loop and spinlock in the
+case where we need to prime, and account for the extra primer bits.
 
-I have a kernel with "low latency desktop" enabled. And edited 
-Kconfig.hz to 90.
-idle=poll and tick_skew=1 in boot options.
-Compile a shaved local kernel by doing "make localmodconfig" from a full 
-distro kernel.
-(Also turned of high_res_timers, to get 90hz)
+v3: extract_buf() can't be called with spinlock already held, so bring
+back some extra lock/unlock calls.
 
-CFS granularity 1158500nS. (Current setting is a bit high)
-Reniced X to -20, to prevent X being a bottleneck.
-Remove 60hz limit in doom 3, to avoid timing jitter. 
-http://paradoxuncreated.com/tmp/AutoExec.cfg
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Neil Horman <nhorman@tuxdriver.com>
+CC: Matt Mackall <mpm@selenic.com>
+CC: linux-crypto@vger.kernel.org
+Signed-off-by: Jarod Wilson <jarod@redhat.com>
+---
+ drivers/char/random.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-Some nvidia-specific stuff on my blog aswell : 
-http://paradoxuncreated.com/Blog/wordpress/?p=2268
-
-A lot of people think SLAB has lower jitter than SLUB etc, aswell, and 
-some tuning with regards to what kernel options execute the least code, 
-least background activity can be done. Opinions?
-
-I use SLUB currently, and have turned off mem-compaction.
-And probably all kinds of debugging, counters and tracers.
-
-RCU boost to 99.
-
-I think I have collected most the relevant data for a low-jitter linux 
-config. but in case there is additional information, I would love to 
-hear it.
-
-Also ACPI on or off seems to be varying opions on. Some state ACPI 
-removes SMI`s? I don`t know what is true here, and knowing that some 
-recommend 10000hz timer for "low-jitter" (which is going the completely 
-wrong way) I would like to hear your opinion on this aswell.
-
-Also approaching a transparent OS, with realtime-threads is interesting. 
-Such as running maintask (optionally + depencies) as realtime. 
-Unfortunately it doesn`t seem to work so well with standard FIFO. Do you 
-think deadline could help this? Accurate 0.95ms of 1ms would be 
-interesting to try.
-
-Also if anyone knows a linux-distro with the same philosophy throughout 
-the OS, I would be interested to know about it.
-
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index b86eae9..d0139df 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -437,6 +437,7 @@ struct entropy_store {
+ 	int entropy_count;
+ 	int entropy_total;
+ 	unsigned int initialized:1;
++	bool last_data_init;
+ 	__u8 last_data[EXTRACT_SIZE];
+ };
+ 
+@@ -957,6 +958,10 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+ 	ssize_t ret = 0, i;
+ 	__u8 tmp[EXTRACT_SIZE];
+ 
++	/* if last_data isn't primed, we need EXTRACT_SIZE extra bytes */
++	if (fips_enabled && !r->last_data_init)
++		nbytes += EXTRACT_SIZE;
++
+ 	trace_extract_entropy(r->name, nbytes, r->entropy_count, _RET_IP_);
+ 	xfer_secondary_pool(r, nbytes);
+ 	nbytes = account(r, nbytes, min, reserved);
+@@ -967,6 +972,17 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+ 		if (fips_enabled) {
+ 			unsigned long flags;
+ 
++
++			/* prime last_data value if need be, per fips 140-2 */
++			if (!r->last_data_init) {
++				spin_lock_irqsave(&r->lock, flags);
++				memcpy(r->last_data, tmp, EXTRACT_SIZE);
++				r->last_data_init = true;
++				nbytes -= EXTRACT_SIZE;
++				spin_unlock_irqrestore(&r->lock, flags);
++				extract_buf(r, tmp);
++			}
++
+ 			spin_lock_irqsave(&r->lock, flags);
+ 			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
+ 				panic("Hardware RNG duplicated output!\n");
+@@ -1086,6 +1102,7 @@ static void init_std_data(struct entropy_store *r)
+ 
+ 	r->entropy_count = 0;
+ 	r->entropy_total = 0;
++	r->last_data_init = false;
+ 	mix_pool_bytes(r, &now, sizeof(now), NULL);
+ 	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof(rv)) {
+ 		if (!arch_get_random_long(&rv))
 -- 
-Fred være med deg / Peace Be with You,
-Ove Karlsen
-http://www.paradoxuncreated.com
+1.7.1
+
