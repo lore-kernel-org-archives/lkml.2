@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237Ab2KFJhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:37:07 -0500
-Received: from mga14.intel.com ([143.182.124.37]:63239 "EHLO mga14.intel.com"
+	id S1751365Ab2KFJhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:37:13 -0500
+Received: from antcom.de ([188.40.178.216]:39441 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750988Ab2KFJhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:37:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,721,1344236400"; 
-   d="scan'208";a="214001218"
-Date: Tue, 6 Nov 2012 11:39:04 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 1/3] gpio / ACPI: add ACPI support
-Message-ID: <20121106093904.GM24532@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <4684026.MA6h34pt1X@vostro.rjw.lan>
- <CACRpkdbRWPYHBwLVTm-TDRVyp9Kmoaxw0uZg0schn7i0koDKJw@mail.gmail.com>
- <2396674.M1Yl70Z09T@vostro.rjw.lan>
- <CACRpkda6jNsKwowdJZ6d7kua5uBPH2tZT8Ka9vheEiPjvEJuUg@mail.gmail.com>
+	id S1751060Ab2KFJhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 04:37:06 -0500
+Message-ID: <5098DA10.3080002@antcom.de>
+Date: Tue, 06 Nov 2012 10:36:16 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkda6jNsKwowdJZ6d7kua5uBPH2tZT8Ka9vheEiPjvEJuUg@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Alban Bedel <alban.bedel@avionic-design.de>, linux-kernel@vger.kernel.org,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Subject: Re: [PATCH] pwm: lpc32xx - Fix the PWM polarity
+References: <1352134125-22405-1-git-send-email-alban.bedel@avionic-design.de> <20121105210317.GA9930@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20121105210317.GA9930@avionic-0098.mockup.avionic-design.de>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 03:40:14PM +0100, Linus Walleij wrote:
-> > I forgot to mention that we want to hook up _existing_ drivers to those things,
-> > and they already use the global GPIO numbers, don't they?
+On 05/11/12 22:03, Thierry Reding wrote:
+> Cc'ing Roland and Alexandre. What do you guys think?
 > 
-> Yes they do, usually this is either passed from the platform using platform
-> data or handled by device tree lookups to individual drivers.
+> On Mon, Nov 05, 2012 at 05:48:45PM +0100, Alban Bedel wrote:
+>> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de> --- 
+>> drivers/pwm/pwm-lpc32xx.c |    6 +++++- 1 files changed, 5
+>> insertions(+), 1 deletions(-)
+>> 
+>> diff --git a/drivers/pwm/pwm-lpc32xx.c
+>> b/drivers/pwm/pwm-lpc32xx.c index adb87f0..a2704b8 100644 ---
+>> a/drivers/pwm/pwm-lpc32xx.c +++ b/drivers/pwm/pwm-lpc32xx.c @@
+>> -51,7 +51,11 @@ static int lpc32xx_pwm_config(struct pwm_chip
+>> *chip, struct pwm_device *pwm,
+>> 
+>> c = 256 * duty_ns; do_div(c, period_ns); -	duty_cycles = c; +	if
+>> (c > 255) +		c = 255; +	if (c < 1) +		c = 1; +	duty_cycles = 256
+>> - c;
+>> 
+>> writel(PWM_ENABLE | PWM_RELOADV(period_cycles) |
+>> PWM_DUTY(duty_cycles), lpc32xx->base + (pwm->hwpwm << 2));
 > 
-> So you will have to modify each such existing driver to do ACPI
-> probe akin to the DT codepath and call acpi_get_gpio() on every pin they
-> need going forward. But that is the plan I guess.
+> Shouldn't duty_cycles rather be 255 - c, such that it can still be
+> 0?
+> 
+> Thierry
 
-Yes, that's the plan.
+According to the Manual: [Low]/[High] = [PWM_DUTY] / [256-PWM_DUTY],
+i.e., the PWM polarity inversion looks good.
 
-Do you think it is OK to go with this implementation (acpi_get_gpio()) for
-now? We will try to make sure that the gpio_get() (or whatever it will be
-called that time) supports ACPI as well.
+However, as Thierry pointed out, the valid range 0..255 should be
+maintained differently, maybe:
+
+if (c > 255)
+	c = 255;
+duty_cycles = 255 - c;
+
+?
+
+Thanks,
+
+Roland
