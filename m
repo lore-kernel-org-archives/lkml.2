@@ -1,125 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933289Ab2KFBGv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 20:06:51 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57250 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295Ab2KFBGu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 20:06:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352125231-8388-1-git-send-email-ntl@pobox.com>
-References: <1352125231-8388-1-git-send-email-ntl@pobox.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 5 Nov 2012 17:06:27 -0800
-Message-ID: <CAK5ve-+AYDM7eo1SBkMs-zHwnQL2URXc8zZJPQX9NeHD1DOTNg@mail.gmail.com>
-Subject: Re: [PATCH] ledtrig-cpu: kill useless mutex to fix sleep in atomic context
-To: Nathan Lynch <ntl@pobox.com>
-Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        miles.lane@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933406Ab2KFBHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 20:07:18 -0500
+Received: from mga11.intel.com ([192.55.52.93]:13399 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932295Ab2KFBHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 20:07:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,719,1344236400"; 
+   d="scan'208";a="244556240"
+Message-ID: <1352164047.17919.1.camel@ymzhang.sh.intel.com>
+Subject: Re: [PATCH V2] hrtimer: Printing timer info when hitting BUG_ON()
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: tglx@linutronix.de, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, fei.li@intel.com
+Date: Tue, 06 Nov 2012 09:07:27 +0800
+In-Reply-To: <1351592820.15558.1450.camel@cliu38-desktop-build>
+References: <1351592820.15558.1450.camel@cliu38-desktop-build>
+Organization: Intel.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 6:20 AM, Nathan Lynch <ntl@pobox.com> wrote:
-> Seeing the following every time the CPU enters or leaves idle on a
-> Beagleboard:
->
-> BUG: sleeping function called from invalid context at kernel/mutex.c:269
-> in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/0
-> no locks held by swapper/0/0.
-> [<c001659c>] (unwind_backtrace+0x0/0xf8) from [<c05aaa7c>] (mutex_lock_nested+0x24/0x380)
-> [<c05aaa7c>] (mutex_lock_nested+0x24/0x380) from [<c043bd1c>] (ledtrig_cpu+0x38/0x88)
-> [<c043bd1c>] (ledtrig_cpu+0x38/0x88) from [<c000f4b0>] (cpu_idle+0xf4/0x120)
-> [<c000f4b0>] (cpu_idle+0xf4/0x120) from [<c07e47c8>] (start_kernel+0x2bc/0x30c)
->
-> Miles Lane has reported seeing similar splats during system suspend.
->
-> The mutex in struct led_trigger_cpu appears to have no function: it
-> resides in a per-cpu data structure which never changes after the
-> trigger is registered.  So just remove it.
->
-> Reported-by: Miles Lane <miles.lane@gmail.com>
-> Signed-off-by: Nathan Lynch <ntl@pobox.com>
+On Tue, 2012-10-30 at 18:27 +0800, Chuansheng Liu wrote:
+> We encounted one BUG_ON() issue at function __run_hrtimer(),
+> but the panic info is not enough to find out which hrtimer
+> users use the hrtimer wrongly.
+> (in this BUG_ON case, it is callback running at the same time
+> hrtimer_start() is executed on different context.)
+> 
+> We can print basic timer info before BUG(), it is easy to find
+> out which hrtimer user has fault, the output info is like below:
+> 
+> <3>[   41.118552] timer info: state/3, func/test_timer_cb
+> <3>[   41.118618] timer stats: pid/786(sh), site/hrtimer_start
+> <0>[   41.118670] ------------[ cut here ]------------
+> <2>[   41.118691] kernel BUG at /root/r4_code/hardware/intel/linux-2.6/kernel/hrtimer.c:1260!
+> <0>[   41.118715] invalid opcode: 0000 [#1] PREEMPT SMP
+> 
+> The infos of callback/state are very helpful for debugging this BUG_ON().
+It's a useful patch.
 
-Thanks, I also think we probable don't need this locking for per CPU
-data. But if I'm wrong please correct me.
+Thomas,
 
-I will merge this and send to Linus soon.
+Could you merge it into your testing tree, so other developers could also
+benefit from it?
 
--Bryan
+Thanks all.
+Yanmin
 
+> 
+> Signed-off-by: Li Fei <fei.li@intel.com>
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
 > ---
->  drivers/leds/ledtrig-cpu.c | 21 ---------------------
->  1 file changed, 21 deletions(-)
->
-> diff --git a/drivers/leds/ledtrig-cpu.c b/drivers/leds/ledtrig-cpu.c
-> index b312056..4239b39 100644
-> --- a/drivers/leds/ledtrig-cpu.c
-> +++ b/drivers/leds/ledtrig-cpu.c
-> @@ -33,8 +33,6 @@
->  struct led_trigger_cpu {
->         char name[MAX_NAME_LEN];
->         struct led_trigger *_trig;
-> -       struct mutex lock;
-> -       int lock_is_inited;
->  };
->
->  static DEFINE_PER_CPU(struct led_trigger_cpu, cpu_trig);
-> @@ -50,12 +48,6 @@ void ledtrig_cpu(enum cpu_led_event ledevt)
->  {
->         struct led_trigger_cpu *trig = &__get_cpu_var(cpu_trig);
->
-> -       /* mutex lock should be initialized before calling mutex_call() */
-> -       if (!trig->lock_is_inited)
-> -               return;
-> -
-> -       mutex_lock(&trig->lock);
-> -
->         /* Locate the correct CPU LED */
->         switch (ledevt) {
->         case CPU_LED_IDLE_END:
-> @@ -75,8 +67,6 @@ void ledtrig_cpu(enum cpu_led_event ledevt)
->                 /* Will leave the LED as it is */
->                 break;
->         }
-> -
-> -       mutex_unlock(&trig->lock);
+>  kernel/hrtimer.c |   21 ++++++++++++++++++++-
+>  1 files changed, 20 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+> index 6db7a5e..0618eaf 100644
+> --- a/kernel/hrtimer.c
+> +++ b/kernel/hrtimer.c
+> @@ -1204,6 +1204,22 @@ int hrtimer_get_res(const clockid_t which_clock, struct timespec *tp)
 >  }
->  EXPORT_SYMBOL(ledtrig_cpu);
->
-> @@ -117,14 +107,9 @@ static int __init ledtrig_cpu_init(void)
->         for_each_possible_cpu(cpu) {
->                 struct led_trigger_cpu *trig = &per_cpu(cpu_trig, cpu);
->
-> -               mutex_init(&trig->lock);
-> -
->                 snprintf(trig->name, MAX_NAME_LEN, "cpu%d", cpu);
->
-> -               mutex_lock(&trig->lock);
->                 led_trigger_register_simple(trig->name, &trig->_trig);
-> -               trig->lock_is_inited = 1;
-> -               mutex_unlock(&trig->lock);
->         }
->
->         register_syscore_ops(&ledtrig_cpu_syscore_ops);
-> @@ -142,15 +127,9 @@ static void __exit ledtrig_cpu_exit(void)
->         for_each_possible_cpu(cpu) {
->                 struct led_trigger_cpu *trig = &per_cpu(cpu_trig, cpu);
->
-> -               mutex_lock(&trig->lock);
-> -
->                 led_trigger_unregister_simple(trig->_trig);
->                 trig->_trig = NULL;
->                 memset(trig->name, 0, MAX_NAME_LEN);
-> -               trig->lock_is_inited = 0;
-> -
-> -               mutex_unlock(&trig->lock);
-> -               mutex_destroy(&trig->lock);
->         }
->
->         unregister_syscore_ops(&ledtrig_cpu_syscore_ops);
-> --
-> 1.7.11.7
->
+>  EXPORT_SYMBOL_GPL(hrtimer_get_res);
+>  
+> +/*
+> + * dump_hrtimer_callinfo - print hrtimer information including:
+> + * state, callback function, pid and start_site.
+> +*/
+> +static void dump_hrtimer_callinfo(struct hrtimer *timer)
+> +{
+> +
+> +	pr_err("timer info: state/%lx, func/%pf\n",
+> +		timer->state, timer->function);
+> +
+> +#ifdef CONFIG_TIMER_STATS
+> +	pr_err("timer stats: pid/%d(%s), site/%pf\n",
+> +		timer->start_pid, timer->start_comm, timer->start_site);
+> +#endif
+> +}
+> +
+>  static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
+>  {
+>  	struct hrtimer_clock_base *base = timer->base;
+> @@ -1235,7 +1251,10 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
+>  	 * hrtimer_start_range_ns() or in hrtimer_interrupt()
+>  	 */
+>  	if (restart != HRTIMER_NORESTART) {
+> -		BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
+> +		if (timer->state != HRTIMER_STATE_CALLBACK) {
+> +			dump_hrtimer_callinfo(timer);
+> +			BUG();
+> +		}
+>  		enqueue_hrtimer(timer, base);
+>  	}
+>  
+
+
