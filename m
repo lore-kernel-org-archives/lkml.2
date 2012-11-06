@@ -1,135 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914Ab2KFSa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 13:30:57 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:37901 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab2KFSa4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 13:30:56 -0500
-Message-ID: <5099573D.2090707@ti.com>
-Date: Tue, 6 Nov 2012 13:30:21 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1752081Ab2KFSdU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 13:33:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57824 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751510Ab2KFSdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 13:33:19 -0500
+Message-ID: <5099586B.6050300@redhat.com>
+Date: Tue, 06 Nov 2012 13:35:23 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
-        <b32955@freescale.com>, <shubhrajyoti@ti.com>, <wim@iguana.be>,
-        <hs@denx.de>, <nsekhar@ti.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <rob@landley.net>,
-        <gregkh@linuxfoundation.org>, <hdoyu@nvidia.com>,
-        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [RFC PATCH 1/2] memory: davinci - add aemif controller platform
- driver
-References: <1351873278-27325-1-git-send-email-m-karicheri2@ti.com> <1351873278-27325-2-git-send-email-m-karicheri2@ti.com> <50941960.3060407@wwwdotorg.org>
-In-Reply-To: <50941960.3060407@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Mel Gorman <mgorman@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/19] mm: numa: define _PAGE_NUMA
+References: <1352193295-26815-1-git-send-email-mgorman@suse.de> <1352193295-26815-5-git-send-email-mgorman@suse.de>
+In-Reply-To: <1352193295-26815-5-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2012 03:05 PM, Stephen Warren wrote:
-> On 11/02/2012 10:21 AM, Murali Karicheri wrote:
->> This is a platform driver for asynchronous external memory interface
->> available on TI SoCs. This driver was previously located inside the
->> mach-davinci folder. As this DaVinci IP is re-used across multiple
->> family of devices such as c6x, keystone etc, the driver is moved to drivers.
->> The driver configures async bus parameters associated with a particular
->> chip select. For DaVinci controller driver and driver for other async
->> devices such as NOR flash, ASRAM etc, the bus confuguration is
->> done by this driver at init time. A set of APIs (set/get) provided to
->> update the values based on specific driver usage.
->> +++ b/Documentation/devicetree/bindings/arm/davinci/aemif.txt
-> If the HW/binding is generic, I'd assume the documentation would be
-> place somewhere more like
-> Documentation/devicetree/bindings/memory/davinci-aemif.txt?
-Thanks for your comments.
-
-I think this is a generic driver that should be re-usable across 
-multiple architectures such as arm, c6x and other new SoCs from TI that 
-uses the AEMIF IP. AEMIF IP can be configured on a per chip select 
-basis.  There will be nand controller, NOR flash and other async devices 
-on this bus. So cs bindings for each of this device will be a sub node 
-under thie aemif device. AEMIF driver iterate over the cs sub nodes and 
-configure the bus.
-
-Let me post the complete bindings in the next revision so that this will 
-be more clear and we can discuss it based on that. I will also move the 
-nand documentation to a generic place and refer the bindings inside the 
-aemif documentation. I will address some of the comments below in my 
-next revision of the patch, but some of the comments discussion will 
-have to be deferred to version v2 of the patch.
-
-Murali
->> @@ -0,0 +1,62 @@
->> +* Texas Instruments Davinci AEMIF bus interface
->> +
->> +This file provides information for the davinci-emif chip select
->> +bindings.
-> Shouldn't the binding be for an IP block (the AEMIF bus controller I
-> assume), rather than for a particular chip-select generated by the
-> controller?
-AEMIF has multiple functions such as it functions as a NAND controller, 
-it provides interfaces to async devices. The bus is configured using the 
-CS sub node inside the aemif device node (compatible ti, davinci-emif).
-
->> +This is a sub device node inside the davinci-emif device node
->> +to describe a async bus for a specific chip select. For NAND,
->> +CFI flash device bindings described inside an aemif node,
->> +etc, a cs sub node is defined to associate the bus parameter
->> +bindings used by the device.
-> Oh, this file only documents part of the controller's node? It seems
-> unusual to do that; the documentation for an entire node would usually
-> be in a single file, which seems to be
-> Documentation/devicetree/bindings/arm/davinci/nand.txt right now. Is
-> this "cs" sub-node really something that gets re-used across multiple
-> different memory controller IPs?
+On 11/06/2012 04:14 AM, Mel Gorman wrote:
+> From: Andrea Arcangeli <aarcange@redhat.com>
 >
-> If so, I guess this file should be called something more like
-> davinci-aemif-cs.txt than davinci-aemif.txt. I'd suggest moving
-> arm/davinci/nand.txt into a common location too (and renaming it to
-> davici-nand.txt to better represent the compatible value it documents).
+> The objective of _PAGE_NUMA is to be able to trigger NUMA hinting page
+> faults to identify the per NUMA node working set of the thread at
+> runtime.
 >
->> +Required properties:=
->> +- compatible: "ti,davinci-cs";
->> +- #address-cells = <1>;
->> +- #size-cells = <1>;
->> +- cs - cs used by the device (NAND, CFI flash etc. values in the range: 2-5
->> +
->> +Optional properties:-
->> +- asize - asynchronous data bus width (0 - 8bit, 1 - 16 bit)
->> +  All of the params below in nanoseconds
->> +
->> +- ta - Minimum turn around time
->> +- rhold - read hold width
->> +- rstobe - read strobe width
->> +- rsetup - read setup width
->> +- whold - write hold width
->> +- wstrobe - write strobe width
->> +- wsetup - write setup width
->> +- ss - enable/disable select strobe (0 - disable, 1 - enable)
->> +- ew - enable/disable extended wait cycles (0 - disable, 1 - enable)
-> I assume all of those are pretty custom to this binding, and not
-> something you'd expect to re-use across multiple vendors' bindings? If
-> so, shouldn't they have a "ti," vendor prefix?
+> Arming the NUMA hinting page fault mechanism works similarly to
+> setting up a mprotect(PROT_NONE) virtual range: the present bit is
+> cleared at the same time that _PAGE_NUMA is set, so when the fault
+> triggers we can identify it as a NUMA hinting page fault.
 >
->> +Example for davinci nand chip select
->> +
->> +aemif@60000000 {
->> +
->> +	compatible = "ti,davinci-aemif";
-> You need a reg property here.
+> _PAGE_NUMA on x86 shares the same bit number of _PAGE_PROTNONE (but it
+> could also use a different bitflag, it's up to the architecture to
+> decide).
 >
->> +	#address-cells = <2>;
->> +	#size-cells = <1>;
->> +
->> +	nand_cs:cs2@70000000 {
->> +		compatible = "ti,davinci-cs";
-> You need a reg property here. The unit address "@70000000" in the node
-> name only has one address cell, whereas the parent node sets
-> #address-cells = <2>.
+> It would be confusing to call the "NUMA hinting page faults" as
+> "do_prot_none faults". They're different events and _PAGE_NUMA doesn't
+> alter the semantics of mprotect(PROT_NONE) in any way.
+>
+> Sharing the same bitflag with _PAGE_PROTNONE in fact complicates
+> things: it requires us to ensure the code paths executed by
+> _PAGE_PROTNONE remains mutually exclusive to the code paths executed
+> by _PAGE_NUMA at all times, to avoid _PAGE_NUMA and _PAGE_PROTNONE to
+> step into each other toes.
+>
+> Because we want to be able to set this bitflag in any established pte
+> or pmd (while clearing the present bit at the same time) without
+> losing information, this bitflag must never be set when the pte and
+> pmd are present, so the bitflag picked for _PAGE_NUMA usage, must not
+> be used by the swap entry format.
+>
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
