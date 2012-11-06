@@ -1,500 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab2KFALb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 19:11:31 -0500
-Received: from mga09.intel.com ([134.134.136.24]:38305 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753374Ab2KFAL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 19:11:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,718,1344236400"; 
-   d="scan'208";a="237662048"
-From: Jon Mason <jon.mason@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-pci@vger.kernel.org,
-        Dave Jiang <dave.jiang@intel.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH v5 2/2] net: Add support for NTB virtual ethernet device
-Date: Mon,  5 Nov 2012 17:11:09 -0700
-Message-Id: <1352160669-4330-3-git-send-email-jon.mason@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1352160669-4330-1-git-send-email-jon.mason@intel.com>
-References: <1352160669-4330-1-git-send-email-jon.mason@intel.com>
+	id S1752991Ab2KFAOm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 19:14:42 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:54969 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab2KFAOk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 19:14:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <1352129116.16194.10.camel@joe-AO722>
+References: <1352115282-8081-1-git-send-email-yamanetoshi@gmail.com>
+	<20121105131108.GC27238@kroah.com>
+	<1352128271.16194.8.camel@joe-AO722>
+	<20121105152231.GA4807@kroah.com>
+	<1352129116.16194.10.camel@joe-AO722>
+Date: Tue, 6 Nov 2012 09:14:39 +0900
+Message-ID: <CAOTypNTcAbteTS-ZEqBHLCc0Wa898jd8aLYdCHCxfxnendGcTg@mail.gmail.com>
+Subject: Re: [PATCH] staging/media: Use dev_ printks in go7007/s2250-loader.c
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <greg@kroah.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, elezegarcia@gmail.com,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A virtual ethernet device that uses the NTB transport API to
-send/receive data.
+On Tue, Nov 6, 2012 at 12:25 AM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2012-11-05 at 16:22 +0100, Greg Kroah-Hartman wrote:
+>> On Mon, Nov 05, 2012 at 07:11:11AM -0800, Joe Perches wrote:
+>> > On Mon, 2012-11-05 at 14:11 +0100, Greg Kroah-Hartman wrote:
+>> > > On Mon, Nov 05, 2012 at 08:34:42PM +0900, YAMANE Toshiaki wrote:
+>> > > > fixed below checkpatch warnings.
+>> > > > - WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+>> > > > - WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+>> > > >
+>> > > > Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+>> > > > ---
+>> > > >  drivers/staging/media/go7007/s2250-loader.c |   35 ++++++++++++++-------------
+>> > > >  1 file changed, 18 insertions(+), 17 deletions(-)
+>> > >
+>> > > Please note that I don't touch the drivers/staging/media/* files, so
+>> > > copying me on these patches doesn't do anything :)
+>> >
+>> > Maybe:
+>> >
+>> >  MAINTAINERS |    1 +
+>> >  1 files changed, 1 insertions(+), 0 deletions(-)
+>> >
+>> > diff --git a/MAINTAINERS b/MAINTAINERS
+>> > index b062349..542a541 100644
+>> > --- a/MAINTAINERS
+>> > +++ b/MAINTAINERS
+>> > @@ -6906,6 +6906,7 @@ T:    git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+>> >  L: devel@driverdev.osuosl.org
+>> >  S: Supported
+>> >  F: drivers/staging/
+>> > +X: drivers/staging/media/
+>>
+>> Sure, that would be good, care to resend it with a signed-off-by: so I
+>> can apply it?
+>
+> It was just a nudge.
+>
+> You're the nominal staging maintainer, if you choose not to
+> work on a specific directory under staging, I think you can
+> mark it in MAINTAINERS just as easily yourself.
 
-Signed-off-by: Jon Mason <jon.mason@intel.com>
-Reviewed-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- MAINTAINERS              |    1 +
- drivers/net/Kconfig      |    4 +
- drivers/net/Makefile     |    1 +
- drivers/net/ntb_netdev.c |  415 ++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 421 insertions(+)
- create mode 100644 drivers/net/ntb_netdev.c
+Thanks for all.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index e0fc24a..5c3059f 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5148,6 +5148,7 @@ NTB DRIVER
- M:	Jon Mason <jon.mason@intel.com>
- S:	Supported
- F:	drivers/ntb/
-+F:	drivers/net/ntb_netdev.c
- F:	include/linux/ntb.h
- 
- NTFS FILESYSTEM
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 6a70184..5db9acb 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -189,6 +189,10 @@ config NETPOLL_TRAP
- config NET_POLL_CONTROLLER
- 	def_bool NETPOLL
- 
-+config NTB_NETDEV
-+	tristate "Virtual Ethernet over NTB"
-+	depends on NTB
-+
- config RIONET
- 	tristate "RapidIO Ethernet over messaging driver support"
- 	depends on RAPIDIO
-diff --git a/drivers/net/Makefile b/drivers/net/Makefile
-index 335db78..ef3d090 100644
---- a/drivers/net/Makefile
-+++ b/drivers/net/Makefile
-@@ -71,3 +71,4 @@ obj-$(CONFIG_USB_IPHETH)        += usb/
- obj-$(CONFIG_USB_CDC_PHONET)   += usb/
- 
- obj-$(CONFIG_HYPERV_NET) += hyperv/
-+obj-$(CONFIG_NTB_NETDEV) += ntb_netdev.o
-diff --git a/drivers/net/ntb_netdev.c b/drivers/net/ntb_netdev.c
-new file mode 100644
-index 0000000..c11df8c
---- /dev/null
-+++ b/drivers/net/ntb_netdev.c
-@@ -0,0 +1,415 @@
-+/*
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ *   redistributing this file, you may do so under either license.
-+ *
-+ *   GPL LICENSE SUMMARY
-+ *
-+ *   Copyright(c) 2012 Intel Corporation. All rights reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or modify
-+ *   it under the terms of version 2 of the GNU General Public License as
-+ *   published by the Free Software Foundation.
-+ *
-+ *   BSD LICENSE
-+ *
-+ *   Copyright(c) 2012 Intel Corporation. All rights reserved.
-+ *
-+ *   Redistribution and use in source and binary forms, with or without
-+ *   modification, are permitted provided that the following conditions
-+ *   are met:
-+ *
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above copy
-+ *       notice, this list of conditions and the following disclaimer in
-+ *       the documentation and/or other materials provided with the
-+ *       distribution.
-+ *     * Neither the name of Intel Corporation nor the names of its
-+ *       contributors may be used to endorse or promote products derived
-+ *       from this software without specific prior written permission.
-+ *
-+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ *   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ *   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ *   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ *   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ *   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ *   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ *
-+ * Intel PCIe NTB Network Linux driver
-+ *
-+ * Contact Information:
-+ * Jon Mason <jon.mason@intel.com>
-+ */
-+#include <linux/etherdevice.h>
-+#include <linux/ethtool.h>
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <linux/ntb.h>
-+
-+#define NTB_NETDEV_VER	"0.6"
-+
-+MODULE_DESCRIPTION(KBUILD_MODNAME);
-+MODULE_VERSION(NTB_NETDEV_VER);
-+MODULE_LICENSE("Dual BSD/GPL");
-+MODULE_AUTHOR("Intel Corporation");
-+
-+struct ntb_netdev {
-+	struct list_head list;
-+	struct pci_dev *pdev;
-+	struct net_device *ndev;
-+	struct ntb_transport_qp *qp;
-+};
-+
-+#define	NTB_TX_TIMEOUT_MS	1000
-+#define	NTB_RXQ_SIZE		100
-+
-+static LIST_HEAD(dev_list);
-+
-+static void ntb_netdev_event_handler(void *data, int status)
-+{
-+	struct net_device *ndev = data;
-+	struct ntb_netdev *dev = netdev_priv(ndev);
-+
-+	netdev_dbg(ndev, "Event %x, Link %x\n", status,
-+		   ntb_transport_link_query(dev->qp));
-+
-+	/* Currently, only link status event is supported */
-+	if (status)
-+		netif_carrier_on(ndev);
-+	else
-+		netif_carrier_off(ndev);
-+}
-+
-+static void ntb_netdev_rx_handler(struct ntb_transport_qp *qp, void *qp_data,
-+				  void *data, int len)
-+{
-+	struct net_device *ndev = qp_data;
-+	struct sk_buff *skb;
-+	int rc;
-+
-+	skb = data;
-+	if (!skb)
-+		return;
-+
-+	netdev_dbg(ndev, "%s: %d byte payload received\n", __func__, len);
-+
-+	skb_put(skb, len);
-+	skb->protocol = eth_type_trans(skb, ndev);
-+	skb->ip_summed = CHECKSUM_NONE;
-+
-+	if (netif_rx(skb) == NET_RX_DROP) {
-+		ndev->stats.rx_errors++;
-+		ndev->stats.rx_dropped++;
-+	} else {
-+		ndev->stats.rx_packets++;
-+		ndev->stats.rx_bytes += len;
-+	}
-+
-+	skb = netdev_alloc_skb(ndev, ndev->mtu + ETH_HLEN);
-+	if (!skb) {
-+		ndev->stats.rx_errors++;
-+		ndev->stats.rx_frame_errors++;
-+		return;
-+	}
-+
-+	rc = ntb_transport_rx_enqueue(qp, skb, skb->data, ndev->mtu + ETH_HLEN);
-+	if (rc) {
-+		ndev->stats.rx_errors++;
-+		ndev->stats.rx_fifo_errors++;
-+	}
-+}
-+
-+static void ntb_netdev_tx_handler(struct ntb_transport_qp *qp, void *qp_data,
-+				  void *data, int len)
-+{
-+	struct net_device *ndev = qp_data;
-+	struct sk_buff *skb;
-+
-+	skb = data;
-+	if (!skb || !ndev)
-+		return;
-+
-+	if (len > 0) {
-+		ndev->stats.tx_packets++;
-+		ndev->stats.tx_bytes += skb->len;
-+	} else {
-+		ndev->stats.tx_errors++;
-+		ndev->stats.tx_aborted_errors++;
-+	}
-+
-+	dev_kfree_skb(skb);
-+
-+	if (netif_queue_stopped(ndev))
-+		netif_wake_queue(ndev);
-+}
-+
-+static netdev_tx_t ntb_netdev_start_xmit(struct sk_buff *skb,
-+					 struct net_device *ndev)
-+{
-+	struct ntb_netdev *dev = netdev_priv(ndev);
-+	int rc;
-+
-+	netdev_dbg(ndev, "ntb_transport_tx_enqueue\n");
-+
-+	rc = ntb_transport_tx_enqueue(dev->qp, skb, skb->data, skb->len);
-+	if (rc)
-+		goto err;
-+
-+	return NETDEV_TX_OK;
-+
-+err:
-+	ndev->stats.tx_dropped++;
-+	ndev->stats.tx_errors++;
-+	netif_stop_queue(ndev);
-+	return NETDEV_TX_BUSY;
-+}
-+
-+static int ntb_netdev_open(struct net_device *ndev)
-+{
-+	struct ntb_netdev *dev = netdev_priv(ndev);
-+	struct sk_buff *skb;
-+	int rc, i, len;
-+
-+	/* Add some empty rx bufs */
-+	for (i = 0; i < NTB_RXQ_SIZE; i++) {
-+		skb = netdev_alloc_skb(ndev, ndev->mtu + ETH_HLEN);
-+		if (!skb) {
-+			rc = -ENOMEM;
-+			goto err;
-+		}
-+
-+		rc = ntb_transport_rx_enqueue(dev->qp, skb, skb->data,
-+					      ndev->mtu + ETH_HLEN);
-+		if (rc == -EINVAL)
-+			goto err;
-+	}
-+
-+	netif_carrier_off(ndev);
-+	ntb_transport_link_up(dev->qp);
-+
-+	return 0;
-+
-+err:
-+	while ((skb = ntb_transport_rx_remove(dev->qp, &len)))
-+		dev_kfree_skb(skb);
-+	return rc;
-+}
-+
-+static int ntb_netdev_close(struct net_device *ndev)
-+{
-+	struct ntb_netdev *dev = netdev_priv(ndev);
-+	struct sk_buff *skb;
-+	int len;
-+
-+	ntb_transport_link_down(dev->qp);
-+
-+	while ((skb = ntb_transport_rx_remove(dev->qp, &len)))
-+		dev_kfree_skb(skb);
-+
-+	return 0;
-+}
-+
-+static int ntb_netdev_change_mtu(struct net_device *ndev, int new_mtu)
-+{
-+	struct ntb_netdev *dev = netdev_priv(ndev);
-+	struct sk_buff *skb;
-+	int len, rc;
-+
-+	if (new_mtu > ntb_transport_max_size(dev->qp) - ETH_HLEN)
-+		return -EINVAL;
-+
-+	if (!netif_running(ndev)) {
-+		ndev->mtu = new_mtu;
-+		return 0;
-+	}
-+
-+	/* Bring down the link and dispose of posted rx entries */
-+	ntb_transport_link_down(dev->qp);
-+
-+	if (ndev->mtu < new_mtu) {
-+		int i;
-+
-+		for (i = 0; (skb = ntb_transport_rx_remove(dev->qp, &len)); i++)
-+			dev_kfree_skb(skb);
-+
-+		for (; i; i--) {
-+			skb = netdev_alloc_skb(ndev, new_mtu + ETH_HLEN);
-+			if (!skb) {
-+				rc = -ENOMEM;
-+				goto err;
-+			}
-+
-+			rc = ntb_transport_rx_enqueue(dev->qp, skb, skb->data,
-+						      new_mtu + ETH_HLEN);
-+			if (rc) {
-+				dev_kfree_skb(skb);
-+				goto err;
-+			}
-+		}
-+	}
-+
-+	ndev->mtu = new_mtu;
-+
-+	ntb_transport_link_up(dev->qp);
-+
-+	return 0;
-+
-+err:
-+	ntb_transport_link_down(dev->qp);
-+
-+	while ((skb = ntb_transport_rx_remove(dev->qp, &len)))
-+		dev_kfree_skb(skb);
-+
-+	netdev_err(ndev, "Error changing MTU, device inoperable\n");
-+	return rc;
-+}
-+
-+static void ntb_netdev_tx_timeout(struct net_device *ndev)
-+{
-+	if (netif_running(ndev))
-+		netif_wake_queue(ndev);
-+}
-+
-+static const struct net_device_ops ntb_netdev_ops = {
-+	.ndo_open = ntb_netdev_open,
-+	.ndo_stop = ntb_netdev_close,
-+	.ndo_start_xmit = ntb_netdev_start_xmit,
-+	.ndo_change_mtu = ntb_netdev_change_mtu,
-+	.ndo_tx_timeout = ntb_netdev_tx_timeout,
-+	.ndo_set_mac_address = eth_mac_addr,
-+};
-+
-+static void ntb_get_drvinfo(struct net_device *ndev,
-+			    struct ethtool_drvinfo *info)
-+{
-+	struct ntb_netdev *dev = netdev_priv(ndev);
-+
-+	strlcpy(info->driver, KBUILD_MODNAME, sizeof(info->driver));
-+	strlcpy(info->version, NTB_NETDEV_VER, sizeof(info->version));
-+	strlcpy(info->bus_info, pci_name(dev->pdev), sizeof(info->bus_info));
-+}
-+
-+static int ntb_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
-+{
-+	cmd->supported = SUPPORTED_Backplane;
-+	cmd->advertising = ADVERTISED_Backplane;
-+	cmd->speed = SPEED_UNKNOWN;
-+	ethtool_cmd_speed_set(cmd, SPEED_UNKNOWN);
-+	cmd->duplex = DUPLEX_FULL;
-+	cmd->port = PORT_OTHER;
-+	cmd->phy_address = 0;
-+	cmd->transceiver = XCVR_DUMMY1;
-+	cmd->autoneg = AUTONEG_ENABLE;
-+	cmd->maxtxpkt = 0;
-+	cmd->maxrxpkt = 0;
-+
-+	return 0;
-+}
-+
-+static const struct ethtool_ops ntb_ethtool_ops = {
-+	.get_drvinfo = ntb_get_drvinfo,
-+	.get_link = ethtool_op_get_link,
-+	.get_settings = ntb_get_settings,
-+};
-+
-+static const struct ntb_queue_handlers ntb_netdev_handlers = {
-+	.tx_handler = ntb_netdev_tx_handler,
-+	.rx_handler = ntb_netdev_rx_handler,
-+	.event_handler = ntb_netdev_event_handler,
-+};
-+
-+static int __devinit ntb_netdev_probe(struct pci_dev *pdev)
-+{
-+	struct net_device *ndev;
-+	struct ntb_netdev *dev;
-+	int rc;
-+
-+	ndev = alloc_etherdev(sizeof(struct ntb_netdev));
-+	if (!ndev)
-+		return -ENOMEM;
-+
-+	dev = netdev_priv(ndev);
-+	dev->ndev = ndev;
-+	dev->pdev = pdev;
-+	BUG_ON(!dev->pdev);
-+	ndev->features = NETIF_F_HIGHDMA;
-+
-+	ndev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
-+
-+	ndev->hw_features = ndev->features;
-+	ndev->watchdog_timeo = msecs_to_jiffies(NTB_TX_TIMEOUT_MS);
-+
-+	random_ether_addr(ndev->perm_addr);
-+	memcpy(ndev->dev_addr, ndev->perm_addr, ndev->addr_len);
-+
-+	ndev->netdev_ops = &ntb_netdev_ops;
-+	SET_ETHTOOL_OPS(ndev, &ntb_ethtool_ops);
-+
-+	dev->qp = ntb_transport_create_queue(ndev, pdev, &ntb_netdev_handlers);
-+	if (!dev->qp) {
-+		rc = -EIO;
-+		goto err;
-+	}
-+
-+	ndev->mtu = ntb_transport_max_size(dev->qp) - ETH_HLEN;
-+
-+	rc = register_netdev(ndev);
-+	if (rc)
-+		goto err1;
-+
-+	list_add(&dev->list, &dev_list);
-+	pr_info("%s: %s created\n", KBUILD_MODNAME, ndev->name);
-+	return 0;
-+
-+err1:
-+	ntb_transport_free_queue(dev->qp);
-+err:
-+	free_netdev(ndev);
-+	return rc;
-+}
-+
-+static void __exit ntb_netdev_remove(struct pci_dev *pdev)
-+{
-+	struct net_device *ndev;
-+	struct ntb_netdev *dev;
-+
-+	list_for_each_entry(dev, &dev_list, list) {
-+		if (dev->pdev == pdev)
-+			break;
-+	}
-+	if (dev == NULL)
-+		return;
-+
-+	ndev = dev->ndev;
-+
-+	unregister_netdev(ndev);
-+	ntb_transport_free_queue(dev->qp);
-+	free_netdev(ndev);
-+}
-+
-+static struct ntb_client ntb_netdev_client = {
-+	.driver.name = KBUILD_MODNAME,
-+	.driver.owner = THIS_MODULE,
-+	.probe = ntb_netdev_probe,
-+	.remove = ntb_netdev_remove,
-+};
-+
-+static int __init ntb_netdev_init_module(void)
-+{
-+	return ntb_register_client(&ntb_netdev_client);
-+}
-+
-+module_init(ntb_netdev_init_module);
-+
-+static void __exit ntb_netdev_exit_module(void)
-+{
-+	ntb_unregister_client(&ntb_netdev_client);
-+	pr_info("%s: Driver removed\n", KBUILD_MODNAME);
-+}
-+
-+module_exit(ntb_netdev_exit_module);
+I wait Mauro-san will pick the patches.
+And I will send the patches to the correct destination from the next time.
+
+
 -- 
-1.7.9.5
 
+Regards,
+
+YAMANE Toshiaki
