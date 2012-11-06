@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab2KFFfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 00:35:18 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:38639 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935Ab2KFFfQ (ORCPT
+	id S1752581Ab2KFFgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 00:36:45 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50028 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445Ab2KFFgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 00:35:16 -0500
-Date: Tue, 6 Nov 2012 05:34:46 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121106053446.GA25697@srcf.ucam.org>
-References: <509766DB.9090906@zytor.com>
- <87625kh5r2.fsf@xmission.com>
- <20121105123858.GB4374@srcf.ucam.org>
- <87sj8nc137.fsf@xmission.com>
- <20121105202557.GA16076@srcf.ucam.org>
- <87hap3zbw7.fsf@xmission.com>
- <20121106031219.GB24235@srcf.ucam.org>
- <87fw4nv1vj.fsf@xmission.com>
- <20121106035352.GA24698@srcf.ucam.org>
- <87hap3s3yl.fsf@xmission.com>
+	Tue, 6 Nov 2012 00:36:44 -0500
+Date: Tue, 6 Nov 2012 13:36:28 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH RFC] mm/swap: automatic tuning for swapin readahead
+Message-ID: <20121106053628.GA1539@kernel.org>
+References: <506AACAC.2010609@openvz.org>
+ <alpine.LSU.2.00.1210031337320.1415@eggly.anvils>
+ <506DB816.9090107@openvz.org>
+ <alpine.LSU.2.00.1210081451410.1384@eggly.anvils>
+ <20121016005049.GA1467@kernel.org>
+ <20121022073654.GA7821@kernel.org>
+ <alpine.LNX.2.00.1210222141170.1136@eggly.anvils>
+ <20121023055127.GA24239@kernel.org>
+ <50869E6C.1080907@redhat.com>
+ <20121024011356.GA6400@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87hap3s3yl.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20121024011356.GA6400@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 09:19:46PM -0800, Eric W. Biederman wrote:
-> Matthew Garrett <mjg59@srcf.ucam.org> writes:
+On Wed, Oct 24, 2012 at 09:13:56AM +0800, Shaohua Li wrote:
+> On Tue, Oct 23, 2012 at 09:41:00AM -0400, Rik van Riel wrote:
+> > On 10/23/2012 01:51 AM, Shaohua Li wrote:
+> > 
+> > >I have no strong point against the global state method. But I'd agree making the
+> > >heuristic simple is preferred currently. I'm happy about the patch if the '+1'
+> > >is removed.
+> > 
+> > Without the +1, how will you figure out when to re-enable readahead?
 > 
-> > On Mon, Nov 05, 2012 at 07:36:32PM -0800, Eric W. Biederman wrote:
-> >
-> >> For automated installs you don't have to satisfy me.  Feel free to
-> >> deliver a lousy solution to your users.   Just don't use your arbitrary
-> >> design decisions to justify your kernel patches.
-> >
-> > My kernel patches are justified by genuine user requirements. 
+> Below code in swapin_nr_pages can recover it.
+> +               if (offset == prev_offset + 1 || offset == prev_offset - 1)
+> +                       pages <<= 1;
 > 
-> Hogwash.
+> Not perfect, but should work in some sort. This reminds me to think if
+> pagereadahead flag is really required, hit in swap cache is a more reliable way
+> to count readahead hit, and as Hugh mentioned, swap isn't vma bound.
 
-You keep using that word, which is unfortunate.
+Hugh,
+ping! Any chance you can check this again?
 
-> If windows is not present on a system linux can not be used to boot a
-> compromised version of windows without user knowledge because windows is
-> not present.
-
-Correct.
-
-> If windows is present on a system then to install linux a user must be
-> present and push buttons to get the system to boot off of install media.
-
-Incorrect. UEFI boot priorities can be set without physical user 
-interaction.
-
-> If a user is present a user presence test may be used to prevent a
-> bootloader signed with  Microsoft's key from booting linux without the
-> users consent, and thus prevent Linux from attacking windows users.
-
-Correct, but precludes the kind of automated installs that I know real 
-people do. The keys a machine carries don't vary depending on whether it 
-shipped with Windows or not, so it's not possible to differentiate 
-between the "shipped with Windows" and "shipped without Windows" cases 
-when determining security models.
-
-> Therefore preventing the revokation of a signature with Microsoft's
-> signature from your bootloader does not justify elaborate kernel
-> modifications to prevent the booting a compromised version of windows.
-
-That's a stretch.
-
-Bored now. You're adding nothing new to anyone's understanding of the 
-problem, and I'm just saying the same thing I've been saying for months, 
-so I don't see any purpose in discussing this with you further.
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thanks,
+Shaohua
