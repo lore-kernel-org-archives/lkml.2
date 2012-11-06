@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab2KFVwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 16:52:39 -0500
-Received: from ka.mail.enyo.de ([87.106.162.201]:54478 "EHLO ka.mail.enyo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752210Ab2KFVwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 16:52:37 -0500
-From: Florian Weimer <fw@deneb.enyo.de>
-To: Chris Friesen <chris.friesen@genband.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
-        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-References: <20121104135251.GA17894@srcf.ucam.org>
-	<87d2zsmv8r.fsf@xmission.com> <509766DB.9090906@zytor.com>
-	<87625kh5r2.fsf@xmission.com> <20121105123858.GB4374@srcf.ucam.org>
-	<87sj8nc137.fsf@xmission.com> <20121105202557.GA16076@srcf.ucam.org>
-	<87hap3zbw7.fsf@xmission.com> <20121106031219.GB24235@srcf.ucam.org>
-	<87fw4nv1vj.fsf@xmission.com> <20121106035352.GA24698@srcf.ucam.org>
-	<87hap3s3yl.fsf@xmission.com> <878vafqi5q.fsf@mid.deneb.enyo.de>
-	<50992946.4060101@genband.com>
-Date: Tue, 06 Nov 2012 22:51:59 +0100
-In-Reply-To: <50992946.4060101@genband.com> (Chris Friesen's message of "Tue,
-	06 Nov 2012 09:14:14 -0600")
-Message-ID: <87625iwgao.fsf@mid.deneb.enyo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753286Ab2KFVzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 16:55:46 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:51881 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752834Ab2KFVzm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 16:55:42 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        linux-mtd@lists.infradead.org
+Subject: [PATCH 3/8] mtd: uninitialized variable warning in map.h
+Date: Tue,  6 Nov 2012 22:55:28 +0100
+Message-Id: <1352238933-4886-4-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1352238933-4886-1-git-send-email-arnd@arndb.de>
+References: <1352238933-4886-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:k3Tj2nQ00OgWcrL1pAZ83cxbnvg9l5nhpPDe9NvEwho
+ XLnQBaMKyn1C7ZSS3JrjzZ6JnSazB0GGi4qDtZxI7srhEW7F7R
+ oxjHzU83NK/pwz3d6IZQcbWGHvDQ0TGnL4jSN3KtRwniDEGbXW
+ myfKOleb7vZH0GLONZsjx71MoTXNqIAJoJGbuVR328JeDfaYRm
+ mODqiqn5bVcTZmxLqs2wc3mPWTN2MMwHk1esLL6JEB5mCfKDTY
+ rGXEb2EATXpi3PTGpFH1RaUqZQREQWDHucm2x9Fx0uL4dFQLVO
+ CZRIxXz5k2mMJ6e8Rseta2BwPpFCsJS6yeZAV2+aaGaiaOIomR
+ f7WAoTagJSHOQpiogTuRvViITQry9OeO5p9VzKTL4ro/kfYqd8
+ U4bYkfFrVWZZw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Chris Friesen:
+The map_word_load() function initializes exactly
+as many words in the buffer as required, but gcc
+cannot figure this out and gives a misleading
+warning. Marking the local variable as
+uninitialized_var shuts up that warning.
 
-> On 11/06/2012 01:56 AM, Florian Weimer wrote:
->
->> Personally, I think the only way out of this mess is to teach users
->> how to disable Secure Boot.
->
-> If you're going to go that far, why not just get them to install a
-> RedHat (or SuSE, or Ubuntu, or whoever) key and use that instead?
+Without this patch, building acs5k_defconfig results in:
 
-Behind that key, considerable infrastructure is needed, and the
-challenges are not purely technical.  I don't expect many such keys as
-a result.
+drivers/mtd/chips/cfi_cmdset_0002.c: In function 'cfi_amdstd_panic_write':
+include/linux/mtd/map.h:331:11: warning: 'r.x[0]' may be used uninitialized in this function [-Wuninitialized]
+drivers/mtd/chips/cfi_cmdset_0002.c: In function 'cfi_amdstd_write_words':
+include/linux/mtd/map.h:331:11: warning: 'r.x[0]' may be used uninitialized in this function [-Wuninitialized]
+drivers/mtd/chips/cfi_cmdset_0001.c: In function 'cfi_intelext_write_words':
+include/linux/mtd/map.h:331:11: warning: 'r.x[0]' may be used uninitialized in this function [-Wuninitialized]
 
-> Secure boot does arguably solve a class of problems, so it seems a bit
-> odd to recommend just throwing it out entirely.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: linux-mtd@lists.infradead.org
+---
+ include/linux/mtd/map.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I have never seen a Linux system with a compromised boot path.  Surely
-they exist out there, but they are rare.  It's also relatively simple
-to detect such a compromise on disk, from the outside.  Secure Boot
-doesn't even allow you to safely boot from PXE because Fedora's shim
-will automatically load an initrd which wipes all your disks.  (Safe
-booting from network would be a compelling feature, but it's not in
-the focus of Secure Boot; that's client-only technology at the
-moment.)
+diff --git a/include/linux/mtd/map.h b/include/linux/mtd/map.h
+index 3595a02..e3559ba 100644
+--- a/include/linux/mtd/map.h
++++ b/include/linux/mtd/map.h
+@@ -328,7 +328,7 @@ static inline int map_word_bitsset(struct map_info *map, map_word val1, map_word
+ 
+ static inline map_word map_word_load(struct map_info *map, const void *ptr)
+ {
+-	map_word r;
++	map_word uninitialized_var(r);
+ 
+ 	if (map_bankwidth_is_1(map))
+ 		r.x[0] = *(unsigned char *)ptr;
+-- 
+1.7.10
 
-Some side effects, such as the end of proprietary kernel modules, may
-be desirable.  But others are not, like missing hibernate support (or
-perhaps even X).
