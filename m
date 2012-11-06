@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579Ab2KFQbU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 11:31:20 -0500
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:47173 "EHLO
+	id S1752392Ab2KFQcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 11:32:43 -0500
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:47272 "EHLO
 	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab2KFQbT (ORCPT
+	with ESMTP id S1750977Ab2KFQcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 11:31:19 -0500
+	Tue, 6 Nov 2012 11:32:41 -0500
 From: Nicolas Royer <nicolas@eukrea.com>
 To: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, nicolas.ferre@atmel.com,
-        linux-arm-kernel@lists.infradead.org, linux-crypto@vger.kernel.org,
-        herbert@gondor.hengli.com.au, davem@davemloft.net,
-        plagnioj@jcrosoft.com, eric@eukrea.com,
+Cc: nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
+        linux-crypto@vger.kernel.org, herbert@gondor.hengli.com.au,
+        davem@davemloft.net, plagnioj@jcrosoft.com, eric@eukrea.com,
         Nicolas Royer <nicolas@eukrea.com>
-Subject: [PATCH 1/5] ARM: AT91SAM9G45: fix crypto peripherals irq issue due to sparse irq support.
-Date: Tue,  6 Nov 2012 17:31:03 +0100
-Message-Id: <1352219463-30360-1-git-send-email-nicolas@eukrea.com>
+Subject: [PATCH 2/5] ARM: AT91SAM9G45: same platform data structure for all crypto peripherals
+Date: Tue,  6 Nov 2012 17:32:24 +0100
+Message-Id: <1352219544-30416-1-git-send-email-nicolas@eukrea.com>
 X-Mailer: git-send-email 1.7.6.5
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,55 +24,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Spare irq support introduced by commit "8fe82a5 ARM: at91: sparse irq support"
-involves to add the NR_IRQS_LEGACY offset to irq number.
+Only AES use DMA in AT91SAM9G45 (TDES and SHA use PDC).
+
+However latest Atmel TDES and SHA IP releases use DMA instead of PDC.
+  --> Atmel TDES and SHA drivers need DMA platform data for those IP releases.
+
+Goal of this patch is to use the same platform data structure for all Atmel
+crypto peripherals. This structure contains information about DMA interface.
 
 Signed-off-by: Nicolas Royer <nicolas@eukrea.com>
 Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Acked-by: Eric Bénard <eric@eukrea.com>
 Tested-by: Eric Bénard <eric@eukrea.com>
-Cc: stable@vger.kernel.org # 3.6
 ---
- arch/arm/mach-at91/at91sam9g45_devices.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ arch/arm/mach-at91/at91sam9g45_devices.c   |    8 ++++----
+ include/linux/platform_data/atmel-aes.h    |   22 ----------------------
+ include/linux/platform_data/crypto-atmel.h |   22 ++++++++++++++++++++++
+ 3 files changed, 26 insertions(+), 26 deletions(-)
+ delete mode 100644 include/linux/platform_data/atmel-aes.h
+ create mode 100644 include/linux/platform_data/crypto-atmel.h
 
 diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-index b159607..fcd233c 100644
+index fcd233c..a48dcb4 100644
 --- a/arch/arm/mach-at91/at91sam9g45_devices.c
 +++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-@@ -1841,8 +1841,8 @@ static struct resource sha_resources[] = {
- 		.flags	= IORESOURCE_MEM,
- 	},
- 	[1] = {
--		.start	= AT91SAM9G45_ID_AESTDESSHA,
--		.end	= AT91SAM9G45_ID_AESTDESSHA,
-+		.start	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
-+		.end	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- };
-@@ -1874,8 +1874,8 @@ static struct resource tdes_resources[] = {
- 		.flags	= IORESOURCE_MEM,
- 	},
- 	[1] = {
--		.start	= AT91SAM9G45_ID_AESTDESSHA,
--		.end	= AT91SAM9G45_ID_AESTDESSHA,
-+		.start	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
-+		.end	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- };
-@@ -1910,8 +1910,8 @@ static struct resource aes_resources[] = {
- 		.flags	= IORESOURCE_MEM,
- 	},
- 	[1] = {
--		.start	= AT91SAM9G45_ID_AESTDESSHA,
--		.end	= AT91SAM9G45_ID_AESTDESSHA,
-+		.start	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
-+		.end	= NR_IRQS_LEGACY + AT91SAM9G45_ID_AESTDESSHA,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- };
+@@ -18,7 +18,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/i2c-gpio.h>
+ #include <linux/atmel-mci.h>
+-#include <linux/platform_data/atmel-aes.h>
++#include <linux/platform_data/crypto-atmel.h>
+ 
+ #include <linux/platform_data/at91_adc.h>
+ 
+@@ -1900,7 +1900,7 @@ static void __init at91_add_device_tdes(void) {}
+  * -------------------------------------------------------------------- */
+ 
+ #if defined(CONFIG_CRYPTO_DEV_ATMEL_AES) || defined(CONFIG_CRYPTO_DEV_ATMEL_AES_MODULE)
+-static struct aes_platform_data aes_data;
++static struct crypto_platform_data aes_data;
+ static u64 aes_dmamask = DMA_BIT_MASK(32);
+ 
+ static struct resource aes_resources[] = {
+@@ -1931,9 +1931,9 @@ static struct platform_device at91sam9g45_aes_device = {
+ static void __init at91_add_device_aes(void)
+ {
+ 	struct at_dma_slave	*atslave;
+-	struct aes_dma_data	*alt_atslave;
++	struct crypto_dma_data	*alt_atslave;
+ 
+-	alt_atslave = kzalloc(sizeof(struct aes_dma_data), GFP_KERNEL);
++	alt_atslave = kzalloc(sizeof(struct crypto_dma_data), GFP_KERNEL);
+ 
+ 	/* DMA TX slave channel configuration */
+ 	atslave = &alt_atslave->txdata;
+diff --git a/include/linux/platform_data/atmel-aes.h b/include/linux/platform_data/atmel-aes.h
+deleted file mode 100644
+index ab68082..0000000
+--- a/include/linux/platform_data/atmel-aes.h
++++ /dev/null
+@@ -1,22 +0,0 @@
+-#ifndef __LINUX_ATMEL_AES_H
+-#define __LINUX_ATMEL_AES_H
+-
+-#include <linux/platform_data/dma-atmel.h>
+-
+-/**
+- * struct aes_dma_data - DMA data for AES
+- */
+-struct aes_dma_data {
+-	struct at_dma_slave	txdata;
+-	struct at_dma_slave	rxdata;
+-};
+-
+-/**
+- * struct aes_platform_data - board-specific AES configuration
+- * @dma_slave: DMA slave interface to use in data transfers.
+- */
+-struct aes_platform_data {
+-	struct aes_dma_data	*dma_slave;
+-};
+-
+-#endif /* __LINUX_ATMEL_AES_H */
+diff --git a/include/linux/platform_data/crypto-atmel.h b/include/linux/platform_data/crypto-atmel.h
+new file mode 100644
+index 0000000..b46e0d9
+--- /dev/null
++++ b/include/linux/platform_data/crypto-atmel.h
+@@ -0,0 +1,22 @@
++#ifndef __LINUX_CRYPTO_ATMEL_H
++#define __LINUX_CRYPTO_ATMEL_H
++
++#include <linux/platform_data/dma-atmel.h>
++
++/**
++ * struct crypto_dma_data - DMA data for AES/TDES/SHA
++ */
++struct crypto_dma_data {
++	struct at_dma_slave	txdata;
++	struct at_dma_slave	rxdata;
++};
++
++/**
++ * struct crypto_platform_data - board-specific AES/TDES/SHA configuration
++ * @dma_slave: DMA slave interface to use in data transfers.
++ */
++struct crypto_platform_data {
++	struct crypto_dma_data	*dma_slave;
++};
++
++#endif /* __LINUX_CRYPTO_ATMEL_H */
 -- 
 1.7.6.5
 
