@@ -1,143 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933688Ab2KFCLh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 21:11:37 -0500
-Received: from ozlabs.org ([203.10.76.45]:42108 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933421Ab2KFCKk convert rfc822-to-8bit (ORCPT
+	id S933660Ab2KFCML (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 21:12:11 -0500
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:57299 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933504Ab2KFCMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 21:10:40 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjurbr@gmail.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        dmitry.tarnyagin@stericsson.com
-Subject: Re: [RFC virtio-next 0/4] Introduce CAIF Virtio and reversed Vrings
-In-Reply-To: <CANHm3PgrsTD4uYuXN0AMuZFX794CJmmus4AST=G0+nP1ha3VyQ@mail.gmail.com>
-References: <1351723614-4145-1-git-send-email-sjur@brendeland.net> <87wqy54vo0.fsf@rustcorp.com.au> <CANHm3PgrsTD4uYuXN0AMuZFX794CJmmus4AST=G0+nP1ha3VyQ@mail.gmail.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 06 Nov 2012 12:39:14 +1030
-Message-ID: <871ug75vp1.fsf@rustcorp.com.au>
+	Mon, 5 Nov 2012 21:12:08 -0500
+Date: Tue, 6 Nov 2012 03:12:00 +0100
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Heinz Wiesinger <HMWiesinger@gmx.at>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        John Stultz <john.stultz@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Janne Boman <janne.m.boman@gmail.com>, rtc-linux@googlegroups.com
+Subject: Re: [regression] Re: [ 049/149] rtc: Disable the alarm in the
+ hardware (v2)
+Message-ID: <20121106021200.GC13487@kroah.com>
+References: <20120330195823.GA31857@kroah.com>
+ <20121105091118.GA12721@elie.Belkin>
+ <20121105101331.GA24688@kroah.com>
+ <1672482.cmtUloFutg@callisto>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1672482.cmtUloFutg@callisto>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sjur Brændeland <sjurbr@gmail.com> writes:
-> Hi Rusty,
->
->> So, this adds another host-side virtqueue implementation.
->>
->> Can we combine them together conveniently?  You pulled out more stuff
->> into vring.h which is a start, but it's a bit overloaded.
->> Perhaps we should separate the common fields into struct vring, and use
->> it to build:
->>
->>         struct vring_guest {
->>                 struct vring vr;
->>                 u16 last_used_idx;
->>         };
->>
->>         struct vring_host {
->>                 struct vring vr;
->>                 u16 last_avail_idx;
->>         };
->> I haven't looked closely at vhost to see what it wants, but I would
->> think we could share more code.
->
-> I have played around with the code in vhost.c to explore your idea.
-> The main issue I run into is that vhost.c is accessing user data while my new
-> code does not. So I end up with some quirky code testing if the ring lives in
-> user memory or not.  Another issue is sparse warnings when
-> accessing user memory.
+On Mon, Nov 05, 2012 at 11:55:32PM +0100, Heinz Wiesinger wrote:
+> On Monday 05 November 2012 11:13:31 Greg KH wrote:
+> > On Mon, Nov 05, 2012 at 01:11:18AM -0800, Jonathan Nieder wrote:
+> > > Hi,
+> > > 
+> > > In March, Greg KH wrote:
+> > > > 3.2-stable review patch.  If anyone has any objections, please let me
+> > > > know.
+> > > 
+> > > Sorry, I'm a little late.  This seems to be causing spurious wakeups
+> > > after shutdown on some systems just like v1 did. :/
+> > > 
+> > > Janne Boman reports[1], using an HP EliteBook 8530w:
+> > > | I'm unable to shutdown my system via normal means. The system
+> > > | completes the shutdown process, all hardware lights are off, but then
+> > > | somehow it restarts.
+> > > 
+> > > Based on a quick web search, Heinz Wiesinger, using the same model,
+> > > 
+> > > ran into the same problem and bisected it to this patch:
+> > >   https://bugzilla.kernel.org/show_bug.cgi?id=44261
+> > > 
+> > > Janne confirmed the same by testing kernels closely based on 3.2.13
+> > > and 3.2.14 --- 3.2.13 shut down fine, while on 3.2.14 "shutdown -h
+> > > now" behaved roughly speaking like "reboot".  A kernel close to 3.6.4
+> > > was also affected.
+> > 
+> > So is 3.6.6 still and issue?  How about 3.7-rc4?  3.4.18?  Figuring out
+> > if this is still an issue in Linus's tree would be the best thing to do
+> > first.
+> 
+> I checked 3.7-rc4 and the issue is still there. Should I still test the other 
+> versions as well? I can do so but it might take a bit.
 
-Sparse is a servant, not a master.  If that's the only thing stopping
-us, we can ignore it (or hack around it).
+No, that should be good enough, this needs to be fixed there first.
 
-> With your suggested changes I end up sharing about 100 lines of code.
-> So in sum, I feel this add more complexity than what we gain by sharing.
->
-> Below is an initial draft of the re-usable code. I added "is_uaccess" to struct
-> virtio_ring in order to know if the ring lives in user memory.
->
-> Let me know what you think.
+> If you need anything else, I'll be happy to help wherever I can.
 
-Agreed, that's horrible...
+Working with the developers involved would be great.  Anyone have any
+patches that Heinz could test?
 
-Fortunately, recent GCCs will inline function pointers, so inlining this
-and handing an accessor function gets optimized away.
+thanks,
 
-I would really like this, because I'd love to have a config option to do
-strict checking on the format of these things (similar to my recently
-posted CONFIG_VIRTIO_DEVICE_TORTURE patch).
-
-See below.
-
-> int virtqueue_add_used(struct vring_host *vr, unsigned int head, int len,
-> 		    struct vring_used_elem  **used)
-> {
-> 	/* The virtqueue contains a ring of used buffers.  Get a pointer to the
-> 	 * next entry in that used ring. */
-> 	*used = &vr->vring.used->ring[vr->last_used_idx % vr->vring.num];
-> 	if (vr->is_uaccess) {
-> 		if(unlikely(__put_user(head, &(*used)->id))) {
-> 			pr_debug("Failed to write used id");
-> 			return -EFAULT;
-> 		}
-> 		if (unlikely(__put_user(len, &(*used)->len))) {
-> 			pr_debug("Failed to write used len");
-> 			return -EFAULT;
-> 		}
-> 		smp_wmb();
-> 		if (__put_user(vr->last_used_idx + 1,
-> 			       &vr->vring.used->idx)) {
-> 			pr_debug("Failed to increment used idx");
-> 			return -EFAULT;
-> 		}
-> 	} else {
-> 		(*used)->id = head;
-> 		(*used)->len = len;
-> 		smp_wmb();
-> 		vr->vring.used->idx = vr->last_used_idx + 1;
-> 	}
-> 	vr->last_used_idx++;
-> 	return 0;
-> }
-
-/* Untested! */
-static inline bool in_kernel_put(u32 *dst, u32 v)
-{
-        *dst = v;
-        return true;
-}
-
-static inline bool userspace_put(u32 *dst, u32 v)
-{
-	return __put_user(dst, v) == 0;
-}
-
-static inline struct vring_used_elem *vrh_add_used(struct vring_host *vr,
-                                                   unsigned int head, u32 len,
-                                                   bool (*put)(u32 *dst, u32 v))
-{
-        struct vring_used_elem *used;
-
-	/* The virtqueue contains a ring of used buffers.  Get a pointer to the
-	 * next entry in that used ring. */
-	used = &vr->vring.used->ring[vr->last_used_idx % vr->vring.num];
-        
-	if (!put(&used->id, head) || !put(&used->len = len))
-                return NULL;
-	smp_wmb();
-        if (!put(&vr->vring.used->idx, vr->last_used_idx + 1))
-                return NULL;
-	vr->last_used_idx++;
-	return used;
-}
-
-Cheers,
-Rusty.
+greg k-h
