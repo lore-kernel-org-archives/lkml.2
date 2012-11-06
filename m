@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272Ab2KFAOw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 19:14:52 -0500
-Received: from outmail015.snc4.facebook.com ([66.220.144.149]:35341 "EHLO
-	intmgw001.snc6.facebook.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753490Ab2KFAOu (ORCPT
+	id S932849Ab2KFAXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 19:23:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56308 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932282Ab2KFAXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 19:14:50 -0500
-X-Greylist: delayed 1201 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Nov 2012 19:14:49 EST
-Date: Mon, 5 Nov 2012 15:54:43 -0800
-From: Arun Sharma <asharma@fb.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Paul Turner <pjt@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, John Stultz <john.stultz@linaro.org>,
-        Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, sanjay@google.com,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC v2] Support volatile range for anon vma
-Message-ID: <20121105235443.GA27718@dev3310.snc6.facebook.com>
-References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
- <20121031143524.0509665d.akpm@linux-foundation.org>
- <CAPM31RKm89s6PaAnfySUD-f+eGdoZP6=9DHy58tx_4Zi8Z9WPQ@mail.gmail.com>
- <CAHGf_=om34CQoPqgmVE5v8oVxntaJQ-bvFeEPMnfe_R+uvxqrQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHGf_=om34CQoPqgmVE5v8oVxntaJQ-bvFeEPMnfe_R+uvxqrQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 Nov 2012 19:23:31 -0500
+Date: Mon, 5 Nov 2012 16:23:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v6 18/29] Allocate memory for memcg caches whenever a
+ new memcg appears
+Message-Id: <20121105162330.4aa629f8.akpm@linux-foundation.org>
+In-Reply-To: <1351771665-11076-19-git-send-email-glommer@parallels.com>
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+	<1351771665-11076-19-git-send-email-glommer@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 31, 2012 at 06:56:05PM -0400, KOSAKI Motohiro wrote:
-> glibc malloc discard freed memory by using MADV_DONTNEED
-> as tcmalloc. and it is often a source of large performance decrease.
-> because of MADV_DONTNEED discard memory immediately and
-> right after malloc() call fall into page fault and pagesize memset() path.
-> then, using DONTNEED increased zero fill and cache miss rate.
+On Thu,  1 Nov 2012 16:07:34 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-The memcg based solution that I posted a few months ago is working well
-for us. We see significantly less cpu in zero'ing pages.
+> Every cache that is considered a root cache (basically the "original" caches,
+> tied to the root memcg/no-memcg) will have an array that should be large enough
+> to store a cache pointer per each memcg in the system.
+> 
+> Theoreticaly, this is as high as 1 << sizeof(css_id), which is currently in the
+> 64k pointers range. Most of the time, we won't be using that much.
+> 
+> What goes in this patch, is a simple scheme to dynamically allocate such an
+> array, in order to minimize memory usage for memcg caches. Because we would
+> also like to avoid allocations all the time, at least for now, the array will
+> only grow. It will tend to be big enough to hold the maximum number of
+> kmem-limited memcgs ever achieved.
+> 
+> We'll allocate it to be a minimum of 64 kmem-limited memcgs. When we have more
+> than that, we'll start doubling the size of this array every time the limit is
+> reached.
+> 
+> Because we are only considering kmem limited memcgs, a natural point for this
+> to happen is when we write to the limit. At that point, we already have
+> set_limit_mutex held, so that will become our natural synchronization
+> mechanism.
+> 
+> ...
+>
+> +static struct ida kmem_limited_groups;
 
-Not everyone was comfortable with the security implications of recycling
-pages between processes in a memcg, although it was disabled by default
-and had to be explicitly opted-in.
+Could use DEFINE_IDA() here
 
-Also, memory allocators have a second motivation in using madvise: to
-create virtually contiguous regions of memory from a fragmented address 
-space, without increasing the RSS.
+>
+> ...
+>
+>  static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+>  {
+> +	int ret;
+> +
+>  	memcg->kmemcg_id = -1;
+> -	memcg_propagate_kmem(memcg);
+> +	ret = memcg_propagate_kmem(memcg);
+> +	if (ret)
+> +		return ret;
+> +
+> +	if (mem_cgroup_is_root(memcg))
+> +		ida_init(&kmem_limited_groups);
 
- -Arun
+and zap this?
