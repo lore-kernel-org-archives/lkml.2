@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644Ab2KFJHd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:07:33 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40862 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab2KFJH2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:07:28 -0500
-Date: Tue, 6 Nov 2012 09:12:17 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121106091217.4a5240f0@pyramind.ukuu.org.uk>
-In-Reply-To: <20121106035352.GA24698@srcf.ucam.org>
-References: <20121104135251.GA17894@srcf.ucam.org>
-	<87d2zsmv8r.fsf@xmission.com>
-	<509766DB.9090906@zytor.com>
-	<87625kh5r2.fsf@xmission.com>
-	<20121105123858.GB4374@srcf.ucam.org>
-	<87sj8nc137.fsf@xmission.com>
-	<20121105202557.GA16076@srcf.ucam.org>
-	<87hap3zbw7.fsf@xmission.com>
-	<20121106031219.GB24235@srcf.ucam.org>
-	<87fw4nv1vj.fsf@xmission.com>
-	<20121106035352.GA24698@srcf.ucam.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752429Ab2KFJIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:08:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24109 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785Ab2KFJIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 04:08:12 -0500
+Date: Tue, 6 Nov 2012 10:07:52 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Namjae Jeon <linkinjeon@gmail.com>, eparis@redhat.com
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@parisplace.org>
+Subject: Re: NULL pointer dereference at fat_detach
+Message-ID: <20121106090751.GB1655@redhat.com>
+References: <20121030134449.GA5435@redhat.com>
+ <1351632646.1339.72.camel@x61.thuisdomein>
+ <87y5in8nys.fsf@devron.myhome.or.jp>
+ <1351676454.1339.99.camel@x61.thuisdomein>
+ <87ehkf6jxs.fsf@devron.myhome.or.jp>
+ <CAKYAXd_m-Vi=oEitg2JpK5MfiBYkL3KbRyQG2mV9--vNUTxaEw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKYAXd_m-Vi=oEitg2JpK5MfiBYkL3KbRyQG2mV9--vNUTxaEw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Nov 2012 03:53:52 +0000
-Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-
-> On Mon, Nov 05, 2012 at 07:36:32PM -0800, Eric W. Biederman wrote:
+On Tue, Nov 06, 2012 at 04:37:03PM +0900, Namjae Jeon wrote:
+> 2012/10/31, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> > Paul Bolle <pebolle@tiscali.nl> writes:
+> >
+> >> On Wed, 2012-10-31 at 09:49 +0900, OGAWA Hirofumi wrote:
+> >>> This bug is known as the inotify bug. I recall I talked about this,
+> >>> maybe years ago.
+> >>
+> >> Would that be this thread: https://lkml.org/lkml/2011/6/10/155 ?
+> >
+> > Sure, exactly.
 > 
-> > For automated installs you don't have to satisfy me.  Feel free to
-> > deliver a lousy solution to your users.   Just don't use your arbitrary
-> > design decisions to justify your kernel patches.
+> I found related patch.
+> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=fe9b25d3ee6bdf6f9c9a9ce61d9d3e144bac13ef
 > 
-> My kernel patches are justified by genuine user requirements.
+> Maybe the above patch should be applied to fix this issue in stable kernel.
 
-So are lots of patches tht don't go in because they are too ugly or too
-invasive or two special case for mainstream.
+First is should go to Linus tree. This commit is more than half year old.
+Eric, is there any problem with pull request from your tree?
 
-There are two discussions here
-
-- is it worth Red Hat doing - that's up to Red Hat's business managers
-
-- is it worth merging into the kernel - that's not
-
-The capability bit is small and clean the rest of it is beginning to look
-far too ugly for upstream right now. Not to say it might not end up small
-and clean in the end.
-
-Alan
+Stanislaw
