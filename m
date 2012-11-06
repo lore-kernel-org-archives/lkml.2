@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab2KFWBT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:01:19 -0500
-Received: from mail-gg0-f202.google.com ([209.85.161.202]:64848 "EHLO
-	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753141Ab2KFWBR (ORCPT
+	id S1753273Ab2KFWF6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:05:58 -0500
+Received: from smtp110.biz.mail.ne1.yahoo.com ([98.138.206.47]:21263 "HELO
+	smtp110.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752253Ab2KFWF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:01:17 -0500
-Date: Tue, 6 Nov 2012 15:01:15 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Achim Leubner <achim_leubner@adaptec.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the pci tree
-Message-ID: <20121106220115.GA18812@google.com>
-References: <20121106112729.994c25ccce521ab5aaf1f060@canb.auug.org.au>
+	Tue, 6 Nov 2012 17:05:56 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Kh_RKH4VM1mqmdqkyA9k7cP_0VdHjY_ZvJFw3nwcRfbSbnw
+ F.FdJkq.nUa.k.jsj8imrrV5qIaqwGSosUAZxK3kd98MFSrYS_ahK..7XN8C
+ cU7mh7oiyXAz7tKW.10f3L.Cq7KN2e2ND0fXvW1SGmptkLOnCkTm0yKRgfuI
+ quqtKbPVyAibGG4RJc1vGvYcrpmtTaEm7l1Z4i2.4OW7.6nxNFCS_3rXTel8
+ 4ip1vEBlD5JjZefe9lZE9oud4dJBvpMj7wL05RwmSjNlNaPXxsbWQbXmpOT2
+ jZlDgqmEJ5opNKGFD_JVU6H6Hkuk3wLO7IUiOuE7U7uQSdPozIPDkturD_Lf
+ lzm3JNHG24z3G9Twqa6pJmI2XcMRLWvrw9ntsUOzfmpZOURKixoyPTR5wmbe
+ ibpBRI4o1yDonduI.WAuqF4mnnFIajjyrQ84iwkhvggO7tQRTgFwElykUMkK
+ jNzwh_yJS
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50998834.5030407@schaufler-ca.com>
+Date: Tue, 06 Nov 2012 13:59:16 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121106112729.994c25ccce521ab5aaf1f060@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
+CC: James Morris <james.l.morris@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] smack: SMACK_MAGIC to include/uapi/linux/magic.h
+References: <y> <1352189869-27190-1-git-send-email-jarkko.sakkinen@iki.fi>
+In-Reply-To: <1352189869-27190-1-git-send-email-jarkko.sakkinen@iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 11:27:29AM +1100, Stephen Rothwell wrote:
-> Hi Bjorn,
-> 
-> After merging the pci tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> ...
+On 11/6/2012 12:17 AM, Jarkko Sakkinen wrote:
+> SMACK_MAGIC moved to a proper place for easy user space access
+> (i.e. libsmack).
+>
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
+> ---
+>  include/uapi/linux/magic.h |    1 +
+>  security/smack/smack.h     |    5 -----
+>  2 files changed, 1 insertion(+), 5 deletions(-)
 
-> drivers/scsi/gdth.c: In function 'gdth_init_pci':
-> drivers/scsi/gdth.c:1111:34: error: lvalue required as left operand of assignment
+Will security/smack/smack_lsm.c and security/smack/smackfs.c
+compile after this change?
 
-Here's what I think we should do about the GDT issue.  I'll send this
-via the usual channels.
-
-commit c6156dd31228e608e0a820d2eed7403fd1fd620b
-Author: Bjorn Helgaas <bhelgaas@google.com>
-Date:   Tue Nov 6 14:19:03 2012 -0700
-
-    [SCSI] gdth: Remove buggy ROM handling
-    
-    The ROM address handling in gdth_init_pci() is useless and possibly
-    dangerous.  This patch removes it.
-    
-    "pci_resource_start(pdev, 8)" is not well-defined.  PCI resources 0-5 are
-    standard PCI BARs and 6 is the expansion ROM.  Resource 8 is either an
-    SR-IOV BAR (if CONFIG_PCI_IOV=y, resources 7-12 are SR-IOV BARs) or a
-    bridge window (resources 7-10).
-    
-    The GDT device is neither an SR-IOV device nor a bridge, so in either case
-    resource 8 should be zero since struct pci_dev is allocated with kzalloc().
-    
-    It is illegal for a driver to write an arbitrary address to the ROM BAR
-    because it has no way of knowing whether the ROM will conflict with another
-    device.
-    
-    I think the only effect of the code being removed was to:
-    
-      1) Enable the ROM at 0xFEFF0000 (possibly causing a conflict with
-         another device)
-      2) Delay one millisecond
-      3) Write zero to the ROM BAR, disabling it
-    
-    I doubt the delay is needed, but I left it since it seems innocuous.
-    
-    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-
-diff --git a/drivers/scsi/gdth.c b/drivers/scsi/gdth.c
-index 5d72274..3efe4ef 100644
---- a/drivers/scsi/gdth.c
-+++ b/drivers/scsi/gdth.c
-@@ -1107,14 +1107,8 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
- 	pci_read_config_word(pdev, PCI_COMMAND, &command);
-         command |= 6;
- 	pci_write_config_word(pdev, PCI_COMMAND, command);
--	if (pci_resource_start(pdev, 8) == 1UL)
--	    pci_resource_start(pdev, 8) = 0UL;
--        i = 0xFEFF0001UL;
--	pci_write_config_dword(pdev, PCI_ROM_ADDRESS, i);
--        gdth_delay(1);
--	pci_write_config_dword(pdev, PCI_ROM_ADDRESS,
--			       pci_resource_start(pdev, 8));
--        
-+	gdth_delay(1);
-+
-         dp6m_ptr = ha->brd;
- 
-         /* Ensure that it is safe to access the non HW portions of DPMEM.
+>
+> diff --git a/include/uapi/linux/magic.h b/include/uapi/linux/magic.h
+> index e15192c..12735ad 100644
+> --- a/include/uapi/linux/magic.h
+> +++ b/include/uapi/linux/magic.h
+> @@ -11,6 +11,7 @@
+>  #define DEBUGFS_MAGIC          0x64626720
+>  #define SECURITYFS_MAGIC	0x73636673
+>  #define SELINUX_MAGIC		0xf97cff8c
+> +#define SMACK_MAGIC		0x43415d53	/* "SMAC" */
+>  #define RAMFS_MAGIC		0x858458f6	/* some random number */
+>  #define TMPFS_MAGIC		0x01021994
+>  #define HUGETLBFS_MAGIC 	0x958458f6	/* some random number */
+> diff --git a/security/smack/smack.h b/security/smack/smack.h
+> index 99b3612..8ad3095 100644
+> --- a/security/smack/smack.h
+> +++ b/security/smack/smack.h
+> @@ -149,11 +149,6 @@ struct smack_known {
+>  #define SMACK_CIPSO_SOCKET	1
+>  
+>  /*
+> - * smackfs magic number
+> - */
+> -#define SMACK_MAGIC	0x43415d53 /* "SMAC" */
+> -
+> -/*
+>   * CIPSO defaults.
+>   */
+>  #define SMACK_CIPSO_DOI_DEFAULT		3	/* Historical */
 
