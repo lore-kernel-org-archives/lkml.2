@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab2KFHjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 02:39:47 -0500
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:52461 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754201Ab2KFHjq (ORCPT
+	id S1753857Ab2KFHmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 02:42:10 -0500
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:35183 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753223Ab2KFHmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 02:39:46 -0500
+	Tue, 6 Nov 2012 02:42:09 -0500
 From: Qing Xu <qingx@marvell.com>
-To: qingx@marvell.com, sameo@linux.intel.com, grant.likely@secretlab.ca,
+To: qingx@marvell.com, cbou@mail.ru, dwmw2@infradead.org,
+        sameo@linux.intel.com, grant.likely@secretlab.ca,
         rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
 Subject: [PATCH 4/7] mfd: max8925: support dt for power supply
-Date: Tue,  6 Nov 2012 15:40:18 +0800
-Message-Id: <1352187618-9867-1-git-send-email-qingx@marvell.com>
+Date: Tue,  6 Nov 2012 15:42:44 +0800
+Message-Id: <1352187764-9901-1-git-send-email-qingx@marvell.com>
 X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 06 Nov 2012 07:39:30.0464 (UTC) FILETIME=[DB50F200:01CDBBF1]
+X-OriginalArrivalTime: 06 Nov 2012 07:41:56.0886 (UTC) FILETIME=[32972B60:01CDBBF2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
