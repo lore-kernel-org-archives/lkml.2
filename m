@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab2KFCAD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 21:00:03 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:15419 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754765Ab2KFCAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 21:00:00 -0500
-X-IronPort-AV: E=Sophos;i="4.80,719,1344182400"; 
-   d="scan'208";a="6143337"
-Date: Tue, 6 Nov 2012 09:58:35 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>
-Subject: Re: [PATCH v11] kvm: notify host when the guest is panicked
-Message-ID: <20121106015835.GA11971@localhost.localdomain>
-References: <0a2274eccf1b1dd420f16359f7e1de74fa2f9fbe.1351131144.git.hutao@cn.fujitsu.com>
- <20121031011256.GC12325@amt.cnet>
- <50908354.5070608@cn.fujitsu.com>
- <CA+1xoqdcaeAm05_=rx3h9KHph+j7Ab8vRG_w9yUk7jtn+wHuBg@mail.gmail.com>
-MIME-Version: 1.0
-In-Reply-To: <CA+1xoqdcaeAm05_=rx3h9KHph+j7Ab8vRG_w9yUk7jtn+wHuBg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/06 09:57:39,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/06 09:57:42,
-	Serialize complete at 2012/11/06 09:57:42
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	id S933603Ab2KFCJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 21:09:52 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:44139 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933421Ab2KFCJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 21:09:50 -0500
+Date: Tue, 6 Nov 2012 13:09:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Achim Leubner <achim_leubner@adaptec.com>, devel@driverdev.osuosl.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-next@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: Re: linux-next: build failure after merge of the pci tree
+Message-Id: <20121106130938.081aaaa8450313466084755f@canb.auug.org.au>
+In-Reply-To: <20121106015542.GA13487@kroah.com>
+References: <20121106112729.994c25ccce521ab5aaf1f060@canb.auug.org.au>
+	<20121106015542.GA13487@kroah.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__6_Nov_2012_13_09_38_+1100_QQaBDAMDrVmDBjOj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 10:30:02PM -0400, Sasha Levin wrote:
-> On Tue, Oct 30, 2012 at 9:48 PM, Wen Congyang <wency@cn.fujitsu.com> wrote:
-> > At 10/31/2012 09:12 AM, Marcelo Tosatti Wrote:
-> >> It has been asked earlier why a simple virtio device is not usable
-> >> for this (with no response IIRC).
-> >
-> > 1. We can't use virtio device when the kernel is booting.
-> 
-> So the issue here is the small window between the point the guest
-> becomes "self aware" and to the point virtio drivers are loaded,
-> right?
-> 
-> I agree that if something happens during that interval, a
-> "virtio-notifier" driver won't catch that, but anything beyond that is
-> better done with a virtio driver, so how is the generic infrastructure
-> added in this patch useful to anything beyond detecting panics in that
-> initial interval?
+--Signature=_Tue__6_Nov_2012_13_09_38_+1100_QQaBDAMDrVmDBjOj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Another point is dependency. To make panic notification more reliable,
-we have to reduce its dependency on other parts of kernel as possible as
-we can.
+Hi Greg,
 
-> 
-> > 2. The virtio's driver can be built as a module, and if it is not loaded
-> >    and the kernel is panicked, there is no way to notify the host.
-> 
-> Even if the suggested virtio-notifier driver is built as a module, it
-> would get auto-loaded when the guest is booting, so I'm not sure about
-> this point?
-> 
-> > 3. I/O port is more reliable than virtio device.
-> >    If virtio's driver has some bug, and it cause kernel panicked, we can't
-> >    use it. The I/O port is more reliable because it only depends on notifier
-> >    chain(If we use virtio device, it also depends on notifier chain).
-> 
-> This is like suggesting that we let KVM emulate virtio-blk on it's
-> own, parallel to the virtio implementation, so that even if there's a
-> problem with virtio-blk, KVM can emulate a virtio-blk on it's own.
+On Tue, 6 Nov 2012 02:55:42 +0100 Greg Kroah-Hartman <gregkh@linuxfoundatio=
+n.org> wrote:
+>
+> It is gone in my tree, and it should be deleted in yours, do you not see
+> that?
 
-Not the same. On virtio-blk, if we can make use of virtio, why not? If
-there is a problem of virtio-blk but caused by virtio itself, just fix
-it in virtio.
+Unfortunately, your tree gets merged late in my set of trees ... so I'll
+just keep the disabling patch and the problem will go away eventually.
 
-But in the case of panic notification, more dependency means more
-chances of failure of panic notification. Say, if we use a virtio device
-to do panic notification, then we will fail if: virtio itself has
-problems, virtio for some reason can't be deployed(neither built-in or
-as a module), or guest doesn't support virtio, etc.
+Thanks.
 
-We choose IO because compared to virtio device, it is not that heavy and
-less problematic.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
-> Furthermore, why stop at virtio? What if the KVM code has a bug and it
-> doesn't pass IO properly? Or the x86 code? we still want panic
-> notifications if that happens...
+--Signature=_Tue__6_Nov_2012_13_09_38_+1100_QQaBDAMDrVmDBjOj
+Content-Type: application/pgp-signature
 
-Better ideas are welcome.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--- 
-Thanks,
-Hu Tao
+iQIcBAEBCAAGBQJQmHFiAAoJEECxmPOUX5FEOpQP/2YLCc5sqVseXJqnGY9sKf+z
+0cPSOeH3aCK2t2upEx/70VK95g+sZ5CbVETKb4WlCusDwELrwVFhNWJSIa+FHq9J
+jedBWgBVg0vb8eziVNfcO0T2lDMhHL5zKL165qiSB0W+kOD2QH3LnorDyjHh9Qrs
+ygxUybesizQT9plYZnu/lIgyqMXdPaCJWRMS4TAKbdvizZZlCD1mRJ4RGG5bPd6h
+GxqawHbzl2GDM23EcE8yMMxUktj2TD8yBfv/QhtvyjJFTYEZ0YBm0qSr1jegPAAP
+2jfxIWeazgLjw8QcX8Ru8mmHZf0WlMzeoausIapgJESSMHauU0hNUT5Rm8Mu3cRr
+fFXm4r3CB/HvoecRZjRaT7Hqt05/Qresd0DUxYAQaQQQaAKg2L6dWw/Op3i0r7Nq
+GMxoxqQh2IQcxYnkgXdU6F0gtV75Ef8MGPbjITwVq26XvaiiXNDNFNdwn4Dyz/E3
+CQsg5r+qrw7GIrV+f9vlK1Trk/vk1hPQhCtI62PxHE4YT96ucLfsDXrUwLig4edD
+cYxTbli49aBHjOJg2yXsgbpZ16PxJhtVlsq/oNC2Upupv03Zz2NVc3VTXYjo6kbM
+ZPcQ3FuCFp5wBbjaqnMbwSNsJR35goOMHh301fUIJlCijEAtz66cudLmTsNUVRKN
+kkoZ54ymDfG8WoimzSUz
+=wqBq
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__6_Nov_2012_13_09_38_+1100_QQaBDAMDrVmDBjOj--
