@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab2KFMy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 07:54:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40571 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751234Ab2KFMyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 07:54:23 -0500
-Date: Tue, 6 Nov 2012 07:54:17 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Bruno Wolff III <bruno@wolff.to>, dhowells@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] MODSIGN: Only sign modules if built in-tree
-Message-ID: <20121106125417.GI27352@hansolo.jdub.homelinux.org>
-References: <20121031132749.GH6627@hansolo.jdub.homelinux.org>
- <87390t6bs0.fsf@rustcorp.com.au>
- <20121101112655.GM6627@hansolo.jdub.homelinux.org>
- <20121101145013.GN6627@hansolo.jdub.homelinux.org>
- <87liek4rt5.fsf@rustcorp.com.au>
- <20121102123404.GO6627@hansolo.jdub.homelinux.org>
- <87vcdkyfi4.fsf@rustcorp.com.au>
- <20121105191903.GG27352@hansolo.jdub.homelinux.org>
- <87a9uv5xbp.fsf@rustcorp.com.au>
+	id S1752090Ab2KFMzI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 07:55:08 -0500
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:52069 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751454Ab2KFMzG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 07:55:06 -0500
+From: Loic PALLARDY <loic.pallardy@st.com>
+To: Omar Ramirez Luna <omar.luna@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Arnd Bergmann <arnd@arndb.de>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Linus Walleij <linus.walleij@linaro.org>, Suman Anna <s-anna@ti.com>,
+        Juan Gutierrez <jgutierrez@ti.com>,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        Tejun Heo <tj@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Tue, 6 Nov 2012 13:53:29 +0100
+Subject: Re: [PATCH v2 2/2] mailbox: split internal header from API header
+Thread-Topic: [PATCH v2 2/2] mailbox: split internal header from API header
+Thread-Index: Ac28Hbk/LGQ71AyyQgGnoZyf+wqnXA==
+Message-ID: <50990849.4050003@st.com>
+References: <1352170552-29564-1-git-send-email-omar.luna@linaro.org>
+ <1352170552-29564-3-git-send-email-omar.luna@linaro.org>
+In-Reply-To: <1352170552-29564-3-git-send-email-omar.luna@linaro.org>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412
+ Thunderbird/11.0.1
+acceptlanguage: fr-FR, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9uv5xbp.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 12:04:02PM +1030, Rusty Russell wrote:
-> Josh Boyer <jwboyer@redhat.com> writes:
-> > On Mon, Nov 05, 2012 at 12:31:39PM +1030, Rusty Russell wrote:
-> >> Josh Boyer <jwboyer@redhat.com> writes:
-> >> > diff --git a/Makefile b/Makefile
-> >> > index 14c93b3..7e27d51 100644
-> >> > --- a/Makefile
-> >> > +++ b/Makefile
-> >> > @@ -722,8 +722,14 @@ export mod_strip_cmd
-> >> >  ifeq ($(CONFIG_MODULE_SIG),y)
-> >> >  MODSECKEY = ./signing_key.priv
-> >> >  MODPUBKEY = ./signing_key.x509
-> >> > +ifeq ($(KBUILD_EXTMOD),)
-> >> > +SIGNFAIL = false
-> >> > +else
-> >> > +# External builds might not have a signing key, don't break module_install.
-> >> > +SIGNFAIL = true
-> >> > +endif # KBUILD_EXTMOD
-> >> >  export MODPUBKEY
-> >> > -mod_sign_cmd = perl $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY)
-> >> > +mod_sign_cmd = $(SIGNFAIL) || perl $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY)
-> >> >  else
-> >> >  mod_sign_cmd = true
-> >> >  endif
-> >> 
-> >> Huh?  'true || perl' never runs perl due to short circuiting.
-> >
-> > Ah.  Maybe you were going for "sign all modules if keys are available,
-> > but don't break external if they aren't" semantics.  I was just skipping
-> > it entirely for external modules.
-> 
-> Exactly.  This way you get warnings, not failure.  You probably want
-> that, since you'll (at least) taint your kernel when you load those
-> modules.
-> 
-> I've applied this in my fixes branch, will push to Linus later this
-> week.
 
-Great.  Thanks Rusty!
 
-josh
+On 11/06/2012 03:55 AM, Omar Ramirez Luna wrote:
+> Now internal structures can remain hidden to the user and just API
+> related functions and defines are made available.
+>
+> Signed-off-by: Omar Ramirez Luna<omar.luna@linaro.org>
+> ---
+>   drivers/mailbox/mailbox.c |   34 ++++++++++++++++++++++++++++++++
+>   drivers/mailbox/mailbox.h |   48 +--------------------------------------------
+>   include/linux/mailbox.h   |   22 +++++++++++++++++++
+I agree with the file split but I think mailbox framework API should be 
+more generic.
+omap_ prefix should not be used. mailbox_ prefix will be better.
+Message type must be more opened like for example:
+struct mailbox_msg {
+	int		size;
+	unsigned char	header;
+	unsigned char	*pdata;
+};
+
+Regards,
+Loic
