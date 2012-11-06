@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab2KFNFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 08:05:37 -0500
-Received: from fieldses.org ([174.143.236.118]:39109 "EHLO fieldses.org"
+	id S1752084Ab2KFNGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 08:06:42 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:50217 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237Ab2KFNFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 08:05:35 -0500
-Date: Tue, 6 Nov 2012 08:05:27 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+	id S1751367Ab2KFNGk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 08:06:40 -0500
+From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
+To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "paul@pwsan.com" <paul@pwsan.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>
+CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
- connecting local transports
-Message-ID: <20121106130526.GB6718@fieldses.org>
-References: <20121008105437.18668.99905.stgit@localhost.localdomain>
- <20121009193506.GA19680@fieldses.org>
- <5098E31A.5080801@parallels.com>
- <20121106120642.GA6718@fieldses.org>
- <5098FE5F.7030709@parallels.com>
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 3/8] ARM: OMAP: AM33xx hwmod: Add parent-child
+ relationship for PWM subsystem
+Thread-Topic: [PATCH 3/8] ARM: OMAP: AM33xx hwmod: Add parent-child
+ relationship for PWM subsystem
+Thread-Index: AQHNuzgM2/eEkgdCM0a7va/En/vrrpfcOuSAgACM72A=
+Date: Tue, 6 Nov 2012 13:06:21 +0000
+Message-ID: <79CD15C6BA57404B839C016229A409A83EB64313@DBDE01.ent.ti.com>
+References: <1352106749-9437-1-git-send-email-avinashphilip@ti.com>
+ <1352106749-9437-4-git-send-email-avinashphilip@ti.com>
+ <B5906170F1614E41A8A28DE3B8D121433EC049D9@DBDE01.ent.ti.com>
+In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433EC049D9@DBDE01.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5098FE5F.7030709@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 04:11:11PM +0400, Stanislav Kinsbursky wrote:
-> 06.11.2012 16:06, J. Bruce Fields пишет:
-> >On Tue, Nov 06, 2012 at 02:14:50PM +0400, Stanislav Kinsbursky wrote:
-> >>09.10.2012 23:35, J. Bruce Fields пишет:
-> >>>Cc'ing Eric since I seem to recall he suggested doing it this way?
-> >>>
-> >>>Seems OK to me, but maybe that swap_root should be in common code?  (Or
-> >>>maybe we could use set_fs_root()?)
-> >>>
-> >>
-> >>This patch is not good since, as Eric mentioned, all kernel threads
-> >>share same fs struct.
-> >>We can swap whole fs struct. Or we can unshare fs struct
-> >>(unshare_fs_struct() is exported) and swap root in this case.
-> >>But this approach is to close to set_fs_root() logic, which is not
-> >>exported and seems there are some valid reasons for it.
-> >
-> >What are those reasons?
-> >
+On Tue, Nov 06, 2012 at 15:39:11, Bedia, Vaibhav wrote:
+> On Mon, Nov 05, 2012 at 14:42:24, Philip, Avinash wrote:
+> [...]
 > 
-> I don't know them.
-> Trond told, that Al doesn't like the idea of set_fs_root() exporting.
+> > +
+> > +static struct omap_hwmod_ocp_if am33xx_epwmss0__ecap0 = {
+> > +	.master		= &am33xx_epwmss0_hwmod,
+> > +	.slave		= &am33xx_ecap0_hwmod,
+> > +	.clk		= "l4ls_gclk",
+> > +	.addr		= am33xx_ecap0_addr_space,
+> > +	.user		= OCP_USER_MPU,
+> > +};
 > 
-> >Googling found one previous thread:
-> >
-> >	http://thread.gmane.org/gmane.linux.kernel/1259986/focus=47687
-> >
-> >There Trond requests an ACK from Al or Cristoph for the export, but I
-> >don't see either an ACK or any objection.
-> >
+> Noticed this in another patch which is quite similar so commenting here
+> again. Is the user field required if you are just creating a parent-child
+> relationship here?
 > 
-> Cristoph told me on LSF something line "No ... way", when I asked
-> him about set_fs_root() exporting.
-> But I had no opportunity to ask why.
 
-So, Al or Christoph: NFS calls up to rpcbind from the kernel using
-AF_LOCAL, so it looks up a path when it connects.  We'd like to export
-set_fs_root() so we can temporarily put our task in the right namespace
-around the connect call.  Is that reasonable?
+I think user field is not related to parent-child nodes, it defines the initiator to interact with hwmod
 
-I just want to get a reason on record so we stop going in circles here.
+Copy-pasted from "arch/arm/plat-omap/include/plat/omap_hwmod.h"
 
---b.
+"indicate the initiators that use this interface to interact with the 
+hwmod"
+
+And in this case, its MPU is the initiator to interact with this interface.
+
+
+Thanks,
+Vaibhav
+> Regards,
+> Vaibhav 
+> 
+> 
+
