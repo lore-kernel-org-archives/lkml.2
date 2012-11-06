@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab2KFGip (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 01:38:45 -0500
+	id S1753240Ab2KFGiu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 01:38:50 -0500
 Received: from mga03.intel.com ([143.182.124.21]:48593 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752722Ab2KFGin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 01:38:43 -0500
+	id S1752722Ab2KFGiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 01:38:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,721,1344236400"; 
-   d="scan'208";a="164945379"
+   d="scan'208";a="164945401"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
 Cc: eranian@google.com, ak@linux.intel.com,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH V3 3/7] perf, x86: Introduce x86 special perf event context
-Date: Tue,  6 Nov 2012 14:38:14 +0800
-Message-Id: <1352183898-5601-4-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH V3 4/7] perf, x86: Save/resotre LBR stack during context switch
+Date: Tue,  6 Nov 2012 14:38:15 +0800
+Message-Id: <1352183898-5601-5-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352183898-5601-1-git-send-email-zheng.z.yan@intel.com>
 References: <1352183898-5601-1-git-send-email-zheng.z.yan@intel.com>
@@ -25,135 +25,493 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-The x86 special perf event context is named x86_perf_event_context,
-We can enlarge it later to store PMU special data.
+When the LBR call stack is enabled, it is necessary to save/restore
+the stack on context switch. The solution is saving/restoring the
+stack to/from task's perf event context. If task has no perf event
+context, just flush the stack on context switch.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c | 12 ++++++++++++
- arch/x86/kernel/cpu/perf_event.h |  4 ++++
- include/linux/perf_event.h       |  5 +++++
- kernel/events/core.c             | 28 ++++++++++++++++++----------
- 4 files changed, 39 insertions(+), 10 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c           |  18 +++--
+ arch/x86/kernel/cpu/perf_event.h           |  13 +++-
+ arch/x86/kernel/cpu/perf_event_intel.c     |  13 ++--
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 108 ++++++++++++++++++++++++++---
+ include/linux/perf_event.h                 |   6 +-
+ kernel/events/core.c                       |  64 ++++++++++-------
+ 6 files changed, 168 insertions(+), 54 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index e247423..2069f4b 100644
+index 2069f4b..c6a133f 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1749,6 +1749,17 @@ static int x86_pmu_event_idx(struct perf_event *event)
+@@ -1749,6 +1749,13 @@ static int x86_pmu_event_idx(struct perf_event *event)
  	return idx + 1;
  }
  
-+static void *x86_pmu_event_context_alloc(struct perf_event_context *parent_ctx)
++static void x86_pmu_branch_stack_sched(struct perf_event_context *ctx,
++					bool sched_in)
 +{
-+	struct perf_event_context *ctx;
-+
-+	ctx = kzalloc(sizeof(struct x86_perf_event_context), GFP_KERNEL);
-+	if (!ctx)
-+		return ERR_PTR(-ENOMEM);
-+
-+	return ctx;
++	if (x86_pmu.branch_stack_sched)
++		x86_pmu.branch_stack_sched(ctx, sched_in);
 +}
 +
- static ssize_t get_attr_rdpmc(struct device *cdev,
- 			      struct device_attribute *attr,
- 			      char *buf)
-@@ -1838,6 +1849,7 @@ static struct pmu pmu = {
- 
- 	.event_idx		= x86_pmu_event_idx,
- 	.flush_branch_stack	= x86_pmu_flush_branch_stack,
-+	.event_context_alloc	= x86_pmu_event_context_alloc,
- };
- 
- void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 8d7e19f..cdeb028 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -421,6 +421,10 @@ enum {
- 	PERF_SAMPLE_BRANCH_CALL_STACK = 1U << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
- };
- 
-+struct x86_perf_event_context {
-+	struct perf_event_context ctx;
-+};
-+
- #define x86_add_quirk(func_)						\
- do {									\
- 	static struct x86_pmu_quirk __quirk __initdata = {		\
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index c32fba3..6122b2f 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -264,6 +264,11 @@ struct pmu {
- 	 * flush branch stack on context-switches (needed in cpu-wide mode)
- 	 */
- 	void (*flush_branch_stack)	(void);
-+
-+	/*
-+	 * Allocate PMU special perf event context
-+	 */
-+	void *(*event_context_alloc)	(struct perf_event_context *parent_ctx);
- };
- 
- /**
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 534810d..c886018 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2721,13 +2721,20 @@ static void __perf_event_init_context(struct perf_event_context *ctx)
- }
- 
- static struct perf_event_context *
--alloc_perf_context(struct pmu *pmu, struct task_struct *task)
-+alloc_perf_context(struct pmu *pmu, struct task_struct *task,
-+		   struct perf_event_context *parent_ctx)
+ static void *x86_pmu_event_context_alloc(struct perf_event_context *parent_ctx)
  {
  	struct perf_event_context *ctx;
+@@ -1757,6 +1764,9 @@ static void *x86_pmu_event_context_alloc(struct perf_event_context *parent_ctx)
+ 	if (!ctx)
+ 		return ERR_PTR(-ENOMEM);
  
--	ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
--	if (!ctx)
--		return NULL;
-+	if (pmu->event_context_alloc) {
-+		ctx = pmu->event_context_alloc(parent_ctx);
-+		if (IS_ERR(ctx))
-+			return ctx;
++	if (parent_ctx)
++		intel_pmu_lbr_init_context(ctx, parent_ctx);
++
+ 	return ctx;
+ }
+ 
+@@ -1816,12 +1826,6 @@ static const struct attribute_group *x86_pmu_attr_groups[] = {
+ 	NULL,
+ };
+ 
+-static void x86_pmu_flush_branch_stack(void)
+-{
+-	if (x86_pmu.flush_branch_stack)
+-		x86_pmu.flush_branch_stack();
+-}
+-
+ void perf_check_microcode(void)
+ {
+ 	if (x86_pmu.check_microcode)
+@@ -1848,7 +1852,7 @@ static struct pmu pmu = {
+ 	.commit_txn		= x86_pmu_commit_txn,
+ 
+ 	.event_idx		= x86_pmu_event_idx,
+-	.flush_branch_stack	= x86_pmu_flush_branch_stack,
++	.branch_stack_sched     = x86_pmu_branch_stack_sched,
+ 	.event_context_alloc	= x86_pmu_event_context_alloc,
+ };
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index cdeb028..35dc398 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -371,7 +371,6 @@ struct x86_pmu {
+ 	void		(*cpu_dead)(int cpu);
+ 
+ 	void		(*check_microcode)(void);
+-	void		(*flush_branch_stack)(void);
+ 
+ 	/*
+ 	 * Intel Arch Perfmon v2+
+@@ -401,6 +400,8 @@ struct x86_pmu {
+ 	int		lbr_nr;			   /* hardware stack size */
+ 	u64		lbr_sel_mask;		   /* LBR_SELECT valid bits */
+ 	const int	*lbr_sel_map;		   /* lbr_select mappings */
++	void		(*branch_stack_sched)(struct perf_event_context *ctx,
++					      bool sched_in);
+ 
+ 	/*
+ 	 * Extra registers for events
+@@ -423,6 +424,12 @@ enum {
+ 
+ struct x86_perf_event_context {
+ 	struct perf_event_context ctx;
++
++	u64 lbr_from[MAX_LBR_ENTRIES];
++	u64 lbr_to[MAX_LBR_ENTRIES];
++	u64 lbr_stack_gen;
++	int lbr_callstack_users;
++	bool lbr_stack_saved;
+ };
+ 
+ #define x86_add_quirk(func_)						\
+@@ -650,8 +657,12 @@ void intel_pmu_pebs_disable_all(void);
+ 
+ void intel_ds_init(void);
+ 
++void intel_pmu_lbr_init_context(struct perf_event_context *child_ctx,
++				struct perf_event_context *parent_ctx);
+ void intel_pmu_lbr_reset(void);
+ 
++void intel_pmu_lbr_sched(struct perf_event_context *ctx, bool sched_in);
++
+ void intel_pmu_lbr_enable(struct perf_event *event);
+ 
+ void intel_pmu_lbr_disable(struct perf_event *event);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index f9aac2e..05f7999 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1813,16 +1813,11 @@ static void intel_pmu_cpu_dying(int cpu)
+ 	fini_debug_store_on_cpu(cpu);
+ }
+ 
+-static void intel_pmu_flush_branch_stack(void)
++static void intel_pmu_branch_stack_sched(struct perf_event_context *ctx,
++					 bool sched_in)
+ {
+-	/*
+-	 * Intel LBR does not tag entries with the
+-	 * PID of the current task, then we need to
+-	 * flush it on ctxsw
+-	 * For now, we simply reset it
+-	 */
+ 	if (x86_pmu.lbr_nr)
+-		intel_pmu_lbr_reset();
++		intel_pmu_lbr_sched(ctx, sched_in);
+ }
+ 
+ PMU_FORMAT_ATTR(offcore_rsp, "config1:0-63");
+@@ -1888,7 +1883,7 @@ static __initconst const struct x86_pmu intel_pmu = {
+ 	.cpu_starting		= intel_pmu_cpu_starting,
+ 	.cpu_dying		= intel_pmu_cpu_dying,
+ 	.guest_get_msrs		= intel_guest_get_msrs,
+-	.flush_branch_stack	= intel_pmu_flush_branch_stack,
++	.branch_stack_sched	= intel_pmu_branch_stack_sched,
+ };
+ 
+ static __init void intel_clovertown_quirk(void)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 88367a2..a1fb108 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -173,6 +173,13 @@ void intel_pmu_lbr_reset(void)
+ 		intel_pmu_lbr_reset_32();
+ 	else
+ 		intel_pmu_lbr_reset_64();
++
++	wrmsrl(x86_pmu.lbr_tos, 0);
++}
++
++static inline bool branch_user_callstack(unsigned br_sel)
++{
++	return (br_sel & X86_BR_USER) && (br_sel & X86_BR_CALL_STACK);
+ }
+ 
+ void intel_pmu_lbr_enable(struct perf_event *event)
+@@ -182,17 +189,23 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+ 	if (!x86_pmu.lbr_nr)
+ 		return;
+ 
+-	/*
+-	 * Reset the LBR stack if we changed task context to
+-	 * avoid data leaks.
+-	 */
+-	if (event->ctx->task && cpuc->lbr_context != event->ctx) {
+-		intel_pmu_lbr_reset();
+-		cpuc->lbr_context = event->ctx;
+-	}
+ 	cpuc->br_sel = event->hw.branch_reg.reg;
+-
+ 	cpuc->lbr_users++;
++
++	if (event->ctx->task &&
++	    branch_user_callstack(event->hw.branch_reg.reg)) {
++		struct x86_perf_event_context *task_ctx = (void *)event->ctx;
++		/*
++		 * Reset the LBR stack if the call stack is not
++		 * continuous enabled
++		 */
++		if (task_ctx->lbr_callstack_users == 0 &&
++		    task_ctx->lbr_stack_gen + 1 < event->ctx->sched_gen)
++			intel_pmu_lbr_reset();
++
++		task_ctx->lbr_callstack_users++;
++		task_ctx->lbr_stack_gen = event->ctx->sched_gen;
++	}
+ }
+ 
+ void intel_pmu_lbr_disable(struct perf_event *event)
+@@ -202,6 +215,13 @@ void intel_pmu_lbr_disable(struct perf_event *event)
+ 	if (!x86_pmu.lbr_nr)
+ 		return;
+ 
++	if (event->ctx->task &&
++	    branch_user_callstack(event->hw.branch_reg.reg)) {
++		struct x86_perf_event_context *task_ctx = (void *)event->ctx;
++
++		task_ctx->lbr_callstack_users--;
++	}
++
+ 	cpuc->lbr_users--;
+ 	WARN_ON_ONCE(cpuc->lbr_users < 0);
+ 
+@@ -325,6 +345,76 @@ void intel_pmu_lbr_read(void)
+ 	intel_pmu_lbr_filter(cpuc);
+ }
+ 
++static void __intel_pmu_lbr_restore(struct x86_perf_event_context *task_ctx)
++{
++	int i;
++	unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
++	u64 tos = intel_pmu_lbr_tos();
++
++	for (i = 0; i < x86_pmu.lbr_nr; i++) {
++		lbr_idx = (tos - i) & mask;
++		wrmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
++		wrmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
++	}
++	task_ctx->lbr_stack_saved = false;
++}
++
++static void __intel_pmu_lbr_save(struct x86_perf_event_context *task_ctx)
++{
++	int i;
++	unsigned lbr_idx, mask = x86_pmu.lbr_nr - 1;
++	u64 tos = intel_pmu_lbr_tos();
++
++	for (i = 0; i < x86_pmu.lbr_nr; i++) {
++		lbr_idx = (tos - i) & mask;
++		rdmsrl(x86_pmu.lbr_from + lbr_idx, task_ctx->lbr_from[i]);
++		rdmsrl(x86_pmu.lbr_to + lbr_idx, task_ctx->lbr_to[i]);
++	}
++	task_ctx->lbr_stack_gen = task_ctx->ctx.sched_gen;
++	task_ctx->lbr_stack_saved = true;
++}
++
++void intel_pmu_lbr_init_context(struct perf_event_context *child_ctx,
++				struct perf_event_context *parent_ctx)
++{
++	struct x86_perf_event_context *task_ctx, *parent_task_ctx;
++
++	if (!x86_pmu.lbr_nr)
++		return;
++
++	task_ctx = (struct x86_perf_event_context *)child_ctx;
++	parent_task_ctx = (struct x86_perf_event_context *)parent_ctx;
++
++	if (parent_task_ctx->lbr_callstack_users)
++		__intel_pmu_lbr_save(task_ctx);
++	else
++		task_ctx->lbr_stack_saved = false;
++}
++
++void intel_pmu_lbr_sched(struct perf_event_context *ctx, bool sched_in)
++{
++	struct x86_perf_event_context *task_ctx;
++
++	if (!x86_pmu.lbr_nr)
++		return;
++
++	if (!ctx) {
++		if (sched_in)
++			intel_pmu_lbr_reset();
++		return;
++	}
++
++	task_ctx = (struct x86_perf_event_context *)ctx;
++	if (sched_in) {
++		if (!task_ctx->lbr_stack_saved)
++			intel_pmu_lbr_reset();
++		else
++			__intel_pmu_lbr_restore(task_ctx);
 +	} else {
-+		ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
-+		if (!ctx)
-+			return ERR_PTR(-ENOMEM);
++		__intel_pmu_lbr_save(task_ctx);
++	}
++}
++
+ /*
+  * SW filter is used:
+  * - in case there is no HW filter
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 6122b2f..f130c6c 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -261,9 +261,10 @@ struct pmu {
+ 	int (*event_idx)		(struct perf_event *event); /*optional */
+ 
+ 	/*
+-	 * flush branch stack on context-switches (needed in cpu-wide mode)
++	 * Save/restore LBR stack on context-switches
+ 	 */
+-	void (*flush_branch_stack)	(void);
++	void (*branch_stack_sched)	(struct perf_event_context *ctx,
++					 bool sched_in);
+ 
+ 	/*
+ 	 * Allocate PMU special perf event context
+@@ -501,6 +502,7 @@ struct perf_event_context {
+ 	struct perf_event_context	*parent_ctx;
+ 	u64				parent_gen;
+ 	u64				generation;
++	u64				sched_gen;
+ 	int				pin_count;
+ 	int				nr_cgroups;	 /* cgroup evts */
+ 	int				nr_branch_stack; /* branch_stack evt */
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index c886018..b15c8a2 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -138,7 +138,7 @@ enum event_type_t {
+  */
+ struct static_key_deferred perf_sched_events __read_mostly;
+ static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
+-static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
++static DEFINE_PER_CPU(int, perf_branch_stack_events);
+ 
+ static atomic_t nr_mmap_events __read_mostly;
+ static atomic_t nr_comm_events __read_mostly;
+@@ -190,6 +190,9 @@ static void cpu_ctx_sched_out(struct perf_cpu_context *cpuctx,
+ static void cpu_ctx_sched_in(struct perf_cpu_context *cpuctx,
+ 			     enum event_type_t event_type,
+ 			     struct task_struct *task);
++static void perf_branch_stack_sched(struct task_struct *task1,
++				    struct task_struct *task2,
++				    bool sched_in);
+ 
+ static void update_context_time(struct perf_event_context *ctx);
+ static u64 perf_event_time(struct perf_event *event);
+@@ -1044,8 +1047,11 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+ 			cpuctx->cgrp = NULL;
+ 	}
+ 
+-	if (has_branch_stack(event))
++	if (has_branch_stack(event)) {
++		if (ctx->is_active)
++			__get_cpu_var(perf_branch_stack_events)--;
+ 		ctx->nr_branch_stack--;
 +	}
  
- 	__perf_event_init_context(ctx);
- 	if (task) {
-@@ -2813,10 +2820,11 @@ retry:
- 		++ctx->pin_count;
- 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
- 	} else {
--		ctx = alloc_perf_context(pmu, task);
--		err = -ENOMEM;
--		if (!ctx)
-+		ctx = alloc_perf_context(pmu, task, NULL);
-+		if (IS_ERR(ctx)) {
-+			err = PTR_ERR(ctx);
- 			goto errout;
-+		}
+ 	ctx->nr_events--;
+ 	if (event->attr.inherit_stat)
+@@ -1566,8 +1572,10 @@ static void perf_event_sched_in(struct perf_cpu_context *cpuctx,
+ 				struct task_struct *task)
+ {
+ 	cpu_ctx_sched_in(cpuctx, EVENT_PINNED, task);
+-	if (ctx)
++	if (ctx) {
++		ctx->sched_gen++;
+ 		ctx_sched_in(ctx, cpuctx, EVENT_PINNED, task);
++	}
+ 	cpu_ctx_sched_in(cpuctx, EVENT_FLEXIBLE, task);
+ 	if (ctx)
+ 		ctx_sched_in(ctx, cpuctx, EVENT_FLEXIBLE, task);
+@@ -1870,6 +1878,9 @@ static void ctx_sched_out(struct perf_event_context *ctx,
+ 	if (likely(!ctx->nr_events))
+ 		return;
  
- 		err = 0;
- 		mutex_lock(&task->perf_event_mutex);
-@@ -7132,9 +7140,9 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
- 		 * child.
++	if (!ctx->is_active && is_active)
++		__get_cpu_var(perf_branch_stack_events) -= ctx->nr_branch_stack;
++
+ 	update_context_time(ctx);
+ 	update_cgrp_time_from_cpuctx(cpuctx);
+ 	if (!ctx->nr_active)
+@@ -2059,6 +2070,10 @@ void __perf_event_task_sched_out(struct task_struct *task,
+ {
+ 	int ctxn;
+ 
++	/* check for branch_stack events running on this cpu */
++	if (__get_cpu_var(perf_branch_stack_events))
++		perf_branch_stack_sched(task, next, false);
++
+ 	for_each_task_context_nr(ctxn)
+ 		perf_event_context_sched_out(task, ctxn, next);
+ 
+@@ -2166,6 +2181,9 @@ ctx_sched_in(struct perf_event_context *ctx,
+ 	if (likely(!ctx->nr_events))
+ 		return;
+ 
++	if (ctx->is_active && !is_active)
++		__get_cpu_var(perf_branch_stack_events) += ctx->nr_branch_stack;
++
+ 	now = perf_clock();
+ 	ctx->timestamp = now;
+ 	perf_cgroup_set_timestamp(task, ctx);
+@@ -2239,15 +2257,17 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
+  * layer. It is invoked ONLY when there is at least one system-wide context
+  * with at least one active event using taken branch sampling.
+  */
+-static void perf_branch_stack_sched_in(struct task_struct *prev,
+-				       struct task_struct *task)
++static void perf_branch_stack_sched(struct task_struct *task1,
++				    struct task_struct *task2,
++				    bool sched_in)
+ {
+ 	struct perf_cpu_context *cpuctx;
++	struct perf_event_context *task_ctx;
+ 	struct pmu *pmu;
+ 	unsigned long flags;
+ 
+ 	/* no need to flush branch stack if not changing task */
+-	if (prev == task)
++	if (task1 == task2)
+ 		return;
+ 
+ 	local_irq_save(flags);
+@@ -2256,25 +2276,26 @@ static void perf_branch_stack_sched_in(struct task_struct *prev,
+ 
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++		task_ctx = cpuctx->task_ctx;
+ 
+ 		/*
+ 		 * check if the context has at least one
+ 		 * event using PERF_SAMPLE_BRANCH_STACK
  		 */
+-		if (cpuctx->ctx.nr_branch_stack > 0
+-		    && pmu->flush_branch_stack) {
+-
++		if (pmu->branch_stack_sched &&
++		    (cpuctx->ctx.nr_branch_stack > 0 ||
++		     (task_ctx && task_ctx->nr_branch_stack > 0))) {
+ 			pmu = cpuctx->ctx.pmu;
  
--		child_ctx = alloc_perf_context(event->pmu, child);
--		if (!child_ctx)
--			return -ENOMEM;
-+		child_ctx = alloc_perf_context(event->pmu, child, parent_ctx);
-+		if (IS_ERR(child_ctx))
-+			return PTR_ERR(child_ctx);
+-			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
++			perf_ctx_lock(cpuctx, task_ctx);
  
- 		child->perf_event_ctxp[ctxn] = child_ctx;
+ 			perf_pmu_disable(pmu);
+ 
+-			pmu->flush_branch_stack();
++			pmu->branch_stack_sched(task_ctx, sched_in);
+ 
+ 			perf_pmu_enable(pmu);
+ 
+-			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
++			perf_ctx_unlock(cpuctx, task_ctx);
+ 		}
  	}
+ 
+@@ -2315,9 +2336,9 @@ void __perf_event_task_sched_in(struct task_struct *prev,
+ 	if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
+ 		perf_cgroup_sched_in(prev, task);
+ 
+-	/* check for system-wide branch_stack events */
+-	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
+-		perf_branch_stack_sched_in(prev, task);
++	/* check for branch_stack events running on this cpu */
++	if (__get_cpu_var(perf_branch_stack_events))
++		perf_branch_stack_sched(prev, task, true);
+ }
+ 
+ static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
+@@ -2893,13 +2914,8 @@ static void free_event(struct perf_event *event)
+ 			static_key_slow_dec_deferred(&perf_sched_events);
+ 		}
+ 
+-		if (has_branch_stack(event)) {
++		if (has_branch_stack(event))
+ 			static_key_slow_dec_deferred(&perf_sched_events);
+-			/* is system-wide event */
+-			if (!(event->attach_state & PERF_ATTACH_TASK))
+-				atomic_dec(&per_cpu(perf_branch_stack_events,
+-						    event->cpu));
+-		}
+ 	}
+ 
+ 	if (event->rb) {
+@@ -6250,12 +6266,8 @@ done:
+ 				return ERR_PTR(err);
+ 			}
+ 		}
+-		if (has_branch_stack(event)) {
++		if (has_branch_stack(event))
+ 			static_key_slow_inc(&perf_sched_events.key);
+-			if (!(event->attach_state & PERF_ATTACH_TASK))
+-				atomic_inc(&per_cpu(perf_branch_stack_events,
+-						    event->cpu));
+-		}
+ 	}
+ 
+ 	return event;
 -- 
 1.7.11.7
 
