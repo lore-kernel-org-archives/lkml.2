@@ -1,157 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606Ab2KFKlD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 05:41:03 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60158 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110Ab2KFKk7 (ORCPT
+	id S1751296Ab2KFKwH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 05:52:07 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:38201 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab2KFKwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 05:40:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <s5h4nl39gt9.wl%tiwai@suse.de>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
-	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
-	<20121029174131.GC7580@srcf.ucam.org>
-	<s5hobjia6vj.wl%tiwai@suse.de>
-	<20121031173728.GA18615@srcf.ucam.org>
-	<s5h390utqv3.wl%tiwai@suse.de>
-	<1351743715.21227.95.camel@linux-s257.site>
-	<20121101131849.752df6fd@pyramind.ukuu.org.uk>
-	<s5hip9k9dng.wl%tiwai@suse.de>
-	<s5hhap49den.wl%tiwai@suse.de>
-	<CACVXFVN8qPTgiYKXaeKFJXLXMjLE=+=8Vev2otD3v1VMk+Ez_w@mail.gmail.com>
-	<s5h8vafi56z.wl%tiwai@suse.de>
-	<CACVXFVPDZnXshvartbTt6gaGzcb+03sVq3Qm3apQQ8AVcQWerg@mail.gmail.com>
-	<s5h4nl3i3u6.wl%tiwai@suse.de>
-	<CACVXFVPJ0TWf=ffFhw+UGoGgsRnrD7o+Ws5rdDxS52jSf4SZ4A@mail.gmail.com>
-	<s5h1ug7i1q5.wl%tiwai@suse.de>
-	<CACVXFVOOEf=Ype=2OGjjjgXZWo=5xd8Hhu2CSTaKTtGAybaA=w@mail.gmail.com>
-	<s5h4nl39gt9.wl%tiwai@suse.de>
-Date: Tue, 6 Nov 2012 18:40:57 +0800
-Message-ID: <CACVXFVOzRxp9owV5O9NFLuL5md04Bmu35oCuNvnVsZAzmHxH=A@mail.gmail.com>
-Subject: Re: [PATCH RFC 0/4] Add firmware signature file check
-From: Ming Lei <tom.leiming@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        joeyli <jlee@suse.com>, Jiri Kosina <jkosina@suse.cz>,
-        David Howells <dhowells@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Nov 2012 05:52:04 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
+        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
+        mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org
+Cc: Arvind.Chauhan@arm.com, linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 Resend 4/4] timer: Migrate running timer
+Date: Tue,  6 Nov 2012 16:08:46 +0530
+Message-Id: <d12b25130db5a8b645929eb93d1cf4ddc2d68826.1352196505.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1352196505.git.viresh.kumar@linaro.org>
+References: <cover.1352196505.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1352196505.git.viresh.kumar@linaro.org>
+References: <cover.1352196505.git.viresh.kumar@linaro.org>
+X-OriginalArrivalTime: 06 Nov 2012 10:39:00.0389 (UTC) FILETIME=[EEB11550:01CDBC0A]
+X-MC-Unique: 112110610390431501
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qA6AqE9Y014413
 
-On Tue, Nov 6, 2012 at 6:17 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Tue, 6 Nov 2012 18:04:36 +0800,
-> Ming Lei wrote:
->>
->> On Tue, Nov 6, 2012 at 4:18 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> >
->> > Right, and it's intentionally dropped so.  For the non-default fw
->> > path, it can be added via proc dynamically or via kconfig statically.
->> > If the firmware is generated via udev, then it doesn't make sense to
->> > check a static signature file.
->>
->> kconfig should be better, and proc isn't a good way because it
->> is a bit late. Also the firmware might be loaded dynamically from other
->> where(network, ...). So it is better to fall back on user space if the
->> firmware file isn't found by direct loading even firmware signature
->> is enabled.
->
-> It will even with my patch, when enforce_sig is false.
+Till now, we weren't migrating a running timer because with migration
+del_timer_sync() can't detect that the timer's handler yet has not finished.
 
-It is true if all firmwares are signed on safe boot. If firmware is allowed
-to be loaded from network or other non-fs place in secure distribution,
-your patch will break this loading.
+Now, when can we actually to reach to the code (inside __mod_timer()) where
 
->
->> > A "regression" can't happen in this case because the secure boot is
->> > a completely new stuff :)  For normal boot, sig_enforce is false, so
->> > no behavior change here (well my patch still applies the signature
->> > check for direct fw loading, but it won't regress at least).
->>
->> Got it, so FIRMWARE_SIG and MODULE_SIG should be enabled only
->> for secure boot.
->
-> The kernels with these kconfigs set can run on normal systems.  In
-> non-secure boot mode, however, sig_enable option are off, thus the
-> fallback is still applied.
->
->> The regression might still be triggered if falling back on user space is not
->> supported, see above.
->>
->> >
->> >> Also the default search path in firmware_class.c is from built-in path of
->> >> udev, and distributions may customize their firmware path by udev
->> >> configure option.
->> >
->> > Well, the default paths in kernel can be changed to follow that as
->> > well, no?
->> >
->> >> > Honestly speaking, I have a feeling that we should rather go for
->> >> > getting rid of udev fw loading.  The fw loader code is overly complex
->> >>
->> >> Yes, I have the feeling too, but we need to make sure no regressions
->> >> introduced.
->> >
->> > Right.  And I guess the exceptional firmware case is better found by
->> > checking udev.  But it's a bit off topic from secure boot.
->>
->> Not sure, some distributions may not use udev at all.
->
-> Hmm, I can't imagine a system without udev but still supporting the
-> firmware loading with user-space interaction...
+base->running_timer == timer ? i.e. We are trying to migrate current timer
 
-It is not so difficult, :-)
+I can see only following case:
+- Timer re-armed itself. i.e. Currently we are running interrupt handler of a
+  timer and it rearmed itself from there. At this time user might have called
+  del_timer_sync() or not. If not, then there is no harm in re-arming the timer?
 
-Some embedded systems use mdev in busybox, and some can
-just parse the firmware event and run the below script:
+Now, when somebody tries to delete a timer, obviously he doesn't want to run it
+any more for now. So, why should we ever re-arm a timer, which is scheduled for
+deletion?
 
-                Documentation/firmware_class/hotplug-script
+This patch tries to fix "migration of running timer", assuming above theory is
+correct :)
 
-on firmware ADD event. I remembered that android loading is
-very simple.
+So, now when we get a call to del_timer_sync(), we will mark it scheduled for
+deletion in an additional variable. This would be checked whenever we try to
+modify/arm it again. If it was currently scheduled for deletion, we must not
+modify/arm it.
 
->
->> Some application
->> might need the firmware add/remove event.
->
-> Then this is already broken with the direct fw loading on 3.7, no?
+And so, whenever we reach to the situation where:
+base->running_timer == timer
 
-Maybe, the direct loading hasn't been tested widely, and depends on
-user space.
+We are sure, nobody is waiting in del_timer_sync().
 
->> Some may not store the
->> firmware in fs.
->
-> And these won't satisfy the firmware signing, so we don't need to care
-> too much.
->
->> So now it is difficult to say we can remove firmware loading from user
->> space. Better to just keep it.
->
-> Yeah, I don't mean to drop it now.  But I meant to go for dropping
-> it.  For example, put a deprecated flag and give a warning for udev fw
-> loading path so that user notices something to be fixed.
+We will clear this flag as soon as the timer is deleted, so that it can be
+started again after deleting it successfully.
 
-Maybe we can do it until direct loading has been tested for some time.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ include/linux/timer.h |  2 ++
+ kernel/timer.c        | 42 +++++++++++++++++++++++++-----------------
+ 2 files changed, 27 insertions(+), 17 deletions(-)
 
->
->> > Obviously no distro releases using 3.7-rc since it's still rc.
->> > But what's your point?
->>
->> I mean direct loading hasn't been tested completely, so we don't
->> know which distributions may fallback on user space loading.
->
-> The transition to direct fw loading is seamless, so I don't think
-> you can see which drivers use udev fw loading from the results of
-> distros...  It might reveal some potential issues of direct fw loading
-> (like udev-trigger dependency), though.
-
-The clue can be found from debug message.
-
-
-Thanks,
+diff --git a/include/linux/timer.h b/include/linux/timer.h
+index 8c5a197..6aa720f 100644
+--- a/include/linux/timer.h
++++ b/include/linux/timer.h
+@@ -22,6 +22,7 @@ struct timer_list {
+ 	unsigned long data;
+ 
+ 	int slack;
++	int sched_del;
+ 
+ #ifdef CONFIG_TIMER_STATS
+ 	int start_pid;
+@@ -77,6 +78,7 @@ extern struct tvec_base boot_tvec_bases;
+ 		.data = (_data),				\
+ 		.base = (void *)((unsigned long)&boot_tvec_bases + (_flags)), \
+ 		.slack = -1,					\
++		.sched_del = 0,					\
+ 		__TIMER_LOCKDEP_MAP_INITIALIZER(		\
+ 			__FILE__ ":" __stringify(__LINE__))	\
+ 	}
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 1170ece..14e1f76 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -622,6 +622,7 @@ static void do_init_timer(struct timer_list *timer, unsigned int flags,
+ 	timer->entry.next = NULL;
+ 	timer->base = (void *)((unsigned long)base | flags);
+ 	timer->slack = -1;
++	timer->sched_del = 0;
+ #ifdef CONFIG_TIMER_STATS
+ 	timer->start_site = NULL;
+ 	timer->start_pid = -1;
+@@ -729,6 +730,12 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
+ 
+ 	base = lock_timer_base(timer, &flags);
+ 
++	if (timer->sched_del) {
++		/* Don't schedule it again, as it is getting deleted */
++		ret = -EBUSY;
++		goto out_unlock;
++	}
++
+ 	ret = detach_if_pending(timer, base, false);
+ 	if (!ret && pending_only)
+ 		goto out_unlock;
+@@ -746,21 +753,12 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
+ 	new_base = per_cpu(tvec_bases, cpu);
+ 
+ 	if (base != new_base) {
+-		/*
+-		 * We are trying to schedule the timer on the local CPU.
+-		 * However we can't change timer's base while it is running,
+-		 * otherwise del_timer_sync() can't detect that the timer's
+-		 * handler yet has not finished. This also guarantees that
+-		 * the timer is serialized wrt itself.
+-		 */
+-		if (likely(base->running_timer != timer)) {
+-			/* See the comment in lock_timer_base() */
+-			timer_set_base(timer, NULL);
+-			spin_unlock(&base->lock);
+-			base = new_base;
+-			spin_lock(&base->lock);
+-			timer_set_base(timer, base);
+-		}
++		/* See the comment in lock_timer_base() */
++		timer_set_base(timer, NULL);
++		spin_unlock(&base->lock);
++		base = new_base;
++		spin_lock(&base->lock);
++		timer_set_base(timer, base);
+ 	}
+ 
+ 	timer->expires = expires;
+@@ -1039,9 +1037,11 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
+  */
+ int del_timer_sync(struct timer_list *timer)
+ {
+-#ifdef CONFIG_LOCKDEP
++	struct tvec_base *base;
+ 	unsigned long flags;
+ 
++#ifdef CONFIG_LOCKDEP
++
+ 	/*
+ 	 * If lockdep gives a backtrace here, please reference
+ 	 * the synchronization rules above.
+@@ -1051,6 +1051,12 @@ int del_timer_sync(struct timer_list *timer)
+ 	lock_map_release(&timer->lockdep_map);
+ 	local_irq_restore(flags);
+ #endif
++
++	/* Timer is scheduled for deletion, don't let it re-arm itself */
++	base = lock_timer_base(timer, &flags);
++	timer->sched_del = 1;
++	spin_unlock_irqrestore(&base->lock, flags);
++
+ 	/*
+ 	 * don't use it in hardirq context, because it
+ 	 * could lead to deadlock.
+@@ -1058,8 +1064,10 @@ int del_timer_sync(struct timer_list *timer)
+ 	WARN_ON(in_irq() && !tbase_get_irqsafe(timer->base));
+ 	for (;;) {
+ 		int ret = try_to_del_timer_sync(timer);
+-		if (ret >= 0)
++		if (ret >= 0) {
++			timer->sched_del = 0;
+ 			return ret;
++		}
+ 		cpu_relax();
+ 	}
+ }
 -- 
-Ming Lei
+1.7.12.rc2.18.g61b472e
+
+
