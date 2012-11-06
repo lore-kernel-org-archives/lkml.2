@@ -1,113 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644Ab2KFKXr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 05:23:47 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44770 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab2KFKXp (ORCPT
+	id S1751656Ab2KFKZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 05:25:15 -0500
+Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:47456 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab2KFKZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 05:23:45 -0500
-Message-ID: <5098E52C.7080203@googlemail.com>
-Date: Tue, 06 Nov 2012 10:23:40 +0000
-From: Chris Clayton <chris2553@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121030 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@huawei.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Jianguo Wu <wujianguo@huawei.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: fix a regression with HIGHMEM introduced by changeset
- 7f1290f2f2a4d
-References: <1352165517-9732-1-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <1352165517-9732-1-git-send-email-jiang.liu@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 6 Nov 2012 05:25:13 -0500
+X-Greylist: delayed 556 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Nov 2012 05:25:13 EST
+Date: Tue, 6 Nov 2012 11:15:54 +0100
+From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Zdenek Kabelac <zkabelac@redhat.com>, Valdis.Kletnieks@vt.edu,
+        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Revert "mm: vmscan: scale number of pages reclaimed by
+ reclaim/compaction based on failures"
+Message-ID: <20121106111554.1896c3f3@fem.tu-ilmenau.de>
+In-Reply-To: <20121105142449.GI8218@suse.de>
+References: <50770905.5070904@suse.cz>
+	<119175.1349979570@turing-police.cc.vt.edu>
+	<5077434D.7080008@suse.cz>
+	<50780F26.7070007@suse.cz>
+	<20121012135726.GY29125@suse.de>
+	<507BDD45.1070705@suse.cz>
+	<20121015110937.GE29125@suse.de>
+	<5093A3F4.8090108@redhat.com>
+	<5093A631.5020209@suse.cz>
+	<509422C3.1000803@suse.cz>
+	<20121105142449.GI8218@suse.de>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Mon, 5 Nov 2012 14:24:49 +0000
+schrieb Mel Gorman <mgorman@suse.de>:
 
-
-On 11/06/12 01:31, Jiang Liu wrote:
-> Changeset 7f1290f2f2 tries to fix a issue when calculating
-> zone->present_pages, but it causes a regression to 32bit systems with
-> HIGHMEM. With that changeset, function reset_zone_present_pages()
-> resets all zone->present_pages to zero, and fixup_zone_present_pages()
-> is called to recalculate zone->present_pages when boot allocator frees
-> core memory pages into buddy allocator. Because highmem pages are not
-> freed by bootmem allocator, all highmem zones' present_pages becomes
-> zero.
->
-> Actually there's no need to recalculate present_pages for highmem zone
-> because bootmem allocator never allocates pages from them. So fix the
-> regression by skipping highmem in function reset_zone_present_pages()
-> and fixup_zone_present_pages().
->
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-> Reported-by: Maciej Rutecki <maciej.rutecki@gmail.com>
-> Tested-by: Maciej Rutecki <maciej.rutecki@gmail.com>
-> Cc: Chris Clayton <chris2553@googlemail.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: linux-mm@kvack.org
-> Cc: linux-kernel@vger.kernel.org
->
+> Jiri Slaby reported the following:
+> 
+> 	(It's an effective revert of "mm: vmscan: scale number of
+> pages reclaimed by reclaim/compaction based on failures".) Given
+> kswapd had hours of runtime in ps/top output yesterday in the morning
+> 	and after the revert it's now 2 minutes in sum for the last
+> 24h, I would say, it's gone.
+> 
+> The intention of the patch in question was to compensate for the loss
+> of lumpy reclaim. Part of the reason lumpy reclaim worked is because
+> it aggressively reclaimed pages and this patch was meant to be a sane
+> compromise.
+> 
+> When compaction fails, it gets deferred and both compaction and
+> reclaim/compaction is deferred avoid excessive reclaim. However, since
+> commit c6543459 (mm: remove __GFP_NO_KSWAPD), kswapd is woken up each
+> time and continues reclaiming which was not taken into account when
+> the patch was developed.
+> 
+> Attempts to address the problem ended up just changing the shape of
+> the problem instead of fixing it. The release window gets closer and
+> while a THP allocation failing is not a major problem, kswapd chewing
+> up a lot of CPU is. This patch reverts "mm: vmscan: scale number of
+> pages reclaimed by reclaim/compaction based on failures" and will be
+> revisited in the future.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 > ---
->
-> Hi Maciej,
-> 	Thanks for reporting and bisecting. We have analyzed the regression
-> and worked out a patch for it. Could you please help to verify whether it
-> fix the regression?
-> 	Thanks!
-> 	Gerry
->
-
-Thanks Gerry.
-
-I've applied this patch to 3.7.0-rc4 and can confirm that it fixes the 
-problem I had with my laptop failing to resume after a suspend to disk.
-
-Tested-by: Chris Clayton <chris2553@googlemail.com>
-
-> ---
->   mm/page_alloc.c |    8 +++++---
->   1 files changed, 5 insertions(+), 3 deletions(-)
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 5b74de6..2311f15 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -6108,7 +6108,8 @@ void reset_zone_present_pages(void)
->   	for_each_node_state(nid, N_HIGH_MEMORY) {
->   		for (i = 0; i < MAX_NR_ZONES; i++) {
->   			z = NODE_DATA(nid)->node_zones + i;
-> -			z->present_pages = 0;
-> +			if (!is_highmem(z))
-> +				z->present_pages = 0;
->   		}
->   	}
->   }
-> @@ -6123,10 +6124,11 @@ void fixup_zone_present_pages(int nid, unsigned long start_pfn,
->
->   	for (i = 0; i < MAX_NR_ZONES; i++) {
->   		z = NODE_DATA(nid)->node_zones + i;
-> +		if (is_highmem(z))
-> +			continue;
-> +
->   		zone_start_pfn = z->zone_start_pfn;
->   		zone_end_pfn = zone_start_pfn + z->spanned_pages;
+>  mm/vmscan.c |   25 -------------------------
+>  1 file changed, 25 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 2624edc..e081ee8 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1760,28 +1760,6 @@ static bool in_reclaim_compaction(struct
+> scan_control *sc) return false;
+>  }
+>  
+> -#ifdef CONFIG_COMPACTION
+> -/*
+> - * If compaction is deferred for sc->order then scale the number of
+> pages
+> - * reclaimed based on the number of consecutive allocation failures
+> - */
+> -static unsigned long scale_for_compaction(unsigned long
+> pages_for_compaction,
+> -			struct lruvec *lruvec, struct scan_control
+> *sc) -{
+> -	struct zone *zone = lruvec_zone(lruvec);
 > -
-> -		/* if the two regions intersect */
->   		if (!(zone_start_pfn >= end_pfn	|| zone_end_pfn <= start_pfn))
->   			z->present_pages += min(end_pfn, zone_end_pfn) -
->   					    max(start_pfn, zone_start_pfn);
->
+> -	if (zone->compact_order_failed <= sc->order)
+> -		pages_for_compaction <<= zone->compact_defer_shift;
+> -	return pages_for_compaction;
+> -}
+> -#else
+> -static unsigned long scale_for_compaction(unsigned long
+> pages_for_compaction,
+> -			struct lruvec *lruvec, struct scan_control
+> *sc) -{
+> -	return pages_for_compaction;
+> -}
+> -#endif
+> -
+>  /*
+>   * Reclaim/compaction is used for high-order allocation requests. It
+> reclaims
+>   * order-0 pages before compacting the zone.
+> should_continue_reclaim() returns @@ -1829,9 +1807,6 @@ static inline
+> bool should_continue_reclaim(struct lruvec *lruvec,
+>  	 * inactive lists are large enough, continue reclaiming
+>  	 */
+>  	pages_for_compaction = (2UL << sc->order);
+> -
+> -	pages_for_compaction =
+> scale_for_compaction(pages_for_compaction,
+> -						    lruvec, sc);
+>  	inactive_lru_pages = get_lru_size(lruvec, LRU_INACTIVE_FILE);
+>  	if (nr_swap_pages > 0)
+>  		inactive_lru_pages += get_lru_size(lruvec,
+> LRU_INACTIVE_ANON); --
+
+Even with this patch I see kswapd0 very often on top. Much more than
+with kernel 3.6.
