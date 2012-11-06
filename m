@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab2KFNMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 08:12:16 -0500
+	id S1752473Ab2KFNMu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 08:12:50 -0500
 Received: from mga14.intel.com ([143.182.124.37]:55294 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752283Ab2KFNML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 08:12:11 -0500
+	id S1751343Ab2KFNMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 08:12:03 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,722,1344236400"; 
-   d="scan'208";a="165055874"
+   d="scan'208";a="165055837"
 From: Alex Shi <alex.shi@intel.com>
 To: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
         suresh.b.siddha@intel.com, arjan@linux.intel.com,
@@ -17,9 +17,9 @@ Cc: gregkh@linuxfoundation.org, andre.przywara@amd.com, alex.shi@intel.com,
         rjw@sisk.pl, paul.gortmaker@windriver.com, akpm@linux-foundation.org,
         paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, cl@linux.com,
         pjt@google.com
-Subject: [RFC PATCH 3/3] sched: add power aware scheduling in fork/exec/wake
-Date: Tue,  6 Nov 2012 21:09:59 +0800
-Message-Id: <1352207399-29497-4-git-send-email-alex.shi@intel.com>
+Subject: [RFC PATCH 1/3] sched: add sched_policy and it's sysfs interface
+Date: Tue,  6 Nov 2012 21:09:57 +0800
+Message-Id: <1352207399-29497-2-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1352207399-29497-1-git-send-email-alex.shi@intel.com>
 References: <1352207399-29497-1-git-send-email-alex.shi@intel.com>
@@ -27,324 +27,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add power aware scheduling in fork/exec/wake. It try to
-select cpu from the busiest but has capcaity group. The trade off is
-adding power aware statistics collection for the group seeking. But
-since the collection just happened in power scheduling eligible
-condition. So no munch performance impact.
+This patch add the power aware scheduler knob into sysfs:
 
-hackbench testing results has no clear dropping even with powersaving
-policy.
+$cat /sys/devices/system/cpu/sched_policy/available_sched_policy
+performance powersaving
+
+$cat /sys/devices/system/cpu/sched_policy/current_sched_policy
+powersaving
+
+The using sched policy is 'powersaving'. User can change the policy
+by commend 'echo':
+ echo performance > /sys/devices/system/cpu/current_sched_policy
+
+Power aware scheduling will has different behavior according to
+different policy:
+
+performance: the current scheduling behaviour, try to spread tasks
+		on more CPU sockets or cores.
+powersaving: will shrink tasks into sched group until the group's
+		nr_running is up to group_weight.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c | 233 +++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 159 insertions(+), 74 deletions(-)
+ Documentation/ABI/testing/sysfs-devices-system-cpu | 21 +++++++
+ drivers/base/cpu.c                                 |  2 +
+ include/linux/cpu.h                                |  2 +
+ kernel/sched/fair.c                                | 68 +++++++++++++++++++++-
+ kernel/sched/sched.h                               |  5 ++
+ 5 files changed, 97 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/ABI/testing/sysfs-devices-system-cpu b/Documentation/ABI/testing/sysfs-devices-system-cpu
+index 6943133..1909d3e 100644
+--- a/Documentation/ABI/testing/sysfs-devices-system-cpu
++++ b/Documentation/ABI/testing/sysfs-devices-system-cpu
+@@ -53,6 +53,27 @@ Description:	Dynamic addition and removal of CPU's.  This is not hotplug
+ 		the system.  Information writtento the file to remove CPU's
+ 		is architecture specific.
+ 
++What:		/sys/devices/system/cpu/sched_policy/current_sched_policy
++		/sys/devices/system/cpu/sched_policy/available_sched_policy
++Date:		Oct 2012
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
++Description:	CFS scheduler policy showing and setting interface.
++
++		available_sched_policy shows there are 2 kinds of policy now:
++		performance and powersaving.
++		current_sched_policy shows current scheduler policy. And user
++		can change the policy by writing it.
++
++		Policy decides that CFS scheduler how to distribute tasks onto
++		which CPU unit when tasks number less than LCPU number in system
++
++		performance: try to spread tasks onto more CPU sockets,
++		more CPU cores.
++
++		powersaving:     try to shrink tasks onto same core or same CPU
++		until running task number beyond the LCPU number in the core
++		or socket.
++
+ What:		/sys/devices/system/cpu/cpu#/node
+ Date:		October 2009
+ Contact:	Linux memory management mailing list <linux-mm@kvack.org>
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 6345294..5f6a573 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -330,4 +330,6 @@ void __init cpu_dev_init(void)
+ 		panic("Failed to register CPU subsystem");
+ 
+ 	cpu_dev_register_generic();
++
++	create_sysfs_sched_policy_group(cpu_subsys.dev_root);
+ }
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index ce7a074..b2e9265 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -36,6 +36,8 @@ extern void cpu_remove_dev_attr(struct device_attribute *attr);
+ extern int cpu_add_dev_attr_group(struct attribute_group *attrs);
+ extern void cpu_remove_dev_attr_group(struct attribute_group *attrs);
+ 
++extern int create_sysfs_sched_policy_group(struct device *dev);
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ extern void unregister_cpu(struct cpu *cpu);
+ extern ssize_t arch_cpu_probe(const char *, size_t);
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index acc8b41..902ef5a 100644
+index 2cebc81..dedc576 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -3370,12 +3370,149 @@ static int numa_select_node_cpu(struct task_struct *p, int node)
- #endif /* CONFIG_SCHED_NUMA */
+@@ -6383,7 +6383,6 @@ void unregister_fair_sched_group(struct task_group *tg, int cpu) { }
  
- /*
-- * sched_balance_self: balance the current task (running on cpu) in domains
-+ * sd_lb_stats - Structure to store the statistics of a sched_domain
-+ * during load balancing.
-+ */
-+struct sd_lb_stats {
-+	struct sched_group *busiest; /* Busiest group in this sd */
-+	struct sched_group *this;  /* Local group in this sd */
-+	unsigned long total_load;  /* Total load of all groups in sd */
-+	unsigned long total_pwr;   /*	Total power of all groups in sd */
-+	unsigned long avg_load;	   /* Average load across all groups in sd */
-+
-+	/** Statistics of this group */
-+	unsigned long this_load;
-+	unsigned long this_load_per_task;
-+	unsigned long this_nr_running;
-+	unsigned long this_has_capacity;
-+	unsigned int  this_idle_cpus;
-+
-+	/* Statistics of the busiest group */
-+	unsigned int  busiest_idle_cpus;
-+	unsigned long max_load;
-+	unsigned long busiest_load_per_task;
-+	unsigned long busiest_nr_running;
-+	unsigned long busiest_group_capacity;
-+	unsigned long busiest_has_capacity;
-+	unsigned int  busiest_group_weight;
-+
-+	int group_imb; /* Is there imbalance in this sd */
-+
-+	/* Varibles of power awaring scheduling */
-+	unsigned long	sd_capacity;	/* capacity of this domain */
-+	unsigned long	sd_nr_running;	/* Nr running of this domain */
-+	struct sched_group *group_min; /* Least loaded group in sd */
-+	struct sched_group *group_leader; /* Group which relieves group_min */
-+	unsigned long min_load_per_task; /* load_per_task in group_min */
-+	unsigned long leader_nr_running; /* Nr running of group_leader */
-+	unsigned long min_nr_running; /* Nr running of group_min */
-+#ifdef CONFIG_SCHED_NUMA
-+	struct sched_group *numa_group; /* group which has offnode_tasks */
-+	unsigned long numa_group_weight;
-+	unsigned long numa_group_running;
-+
-+	unsigned long this_offnode_running;
-+	unsigned long this_onnode_running;
-+#endif
-+};
-+
-+/*
-+ * sg_lb_stats - stats of a sched_group required for load_balancing
-+ * and task rq selection
-+ */
-+struct sg_lb_stats {
-+	unsigned long avg_load; /*Avg load across the CPUs of the group */
-+	unsigned long group_load; /* Total load over the CPUs of the group */
-+	unsigned long sum_nr_running; /* Nr tasks running in the group */
-+	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
-+	unsigned long group_capacity;
-+	unsigned long idle_cpus;
-+	unsigned long group_weight;
-+	int group_imb; /* Is there an imbalance in the group ? */
-+	int group_has_capacity; /* Is there extra capacity in the group? */
-+#ifdef CONFIG_SCHED_NUMA
-+	unsigned long numa_offnode_weight;
-+	unsigned long numa_offnode_running;
-+	unsigned long numa_onnode_running;
-+#endif
-+};
-+
-+static inline int
-+fix_small_capacity(struct sched_domain *sd, struct sched_group *group);
-+
-+static void get_sg_power_stats(struct sched_group *group,
-+			struct sched_domain *sd, struct sg_lb_stats *sgs)
-+{
-+	int i;
-+
-+
-+	for_each_cpu(i, sched_group_cpus(group)) {
-+		struct rq *rq = cpu_rq(i);
-+
-+		sgs->sum_nr_running += rq->nr_running;
-+	}
-+
-+	sgs->group_capacity = DIV_ROUND_CLOSEST(group->sgp->power,
-+						SCHED_POWER_SCALE);
-+	if (!sgs->group_capacity)
-+		sgs->group_capacity = fix_small_capacity(sd, group);
-+	sgs->group_weight = group->group_weight;
-+}
-+
-+static void get_sd_power_stats(struct sched_domain *sd,
-+					struct sd_lb_stats *sds)
-+{
-+	struct sched_group *group;
-+	struct sg_lb_stats sgs;
-+	long sd_min_delta = LONG_MAX;
-+
-+	group = sd->groups;
-+	do {
-+		long g_delta;
-+		unsigned long threshold;
-+
-+		memset(&sgs, 0, sizeof(sgs));
-+		get_sg_power_stats(group, sd, &sgs);
-+
-+		if (sched_policy == SCHED_POLICY_POWERSAVING)
-+			threshold = sgs.group_weight;
-+		else
-+			threshold = sgs.group_capacity;
-+		g_delta = threshold - sgs.sum_nr_running;
-+
-+		if (g_delta > 0 && g_delta < sd_min_delta) {
-+			sd_min_delta = g_delta;
-+			sds->group_leader = group;
-+		}
-+
-+		sds->sd_nr_running += sgs.sum_nr_running;
-+		sds->total_pwr += group->sgp->power;
-+	} while  (group = group->next, group != sd->groups);
-+
-+	sds->sd_capacity = DIV_ROUND_CLOSEST(sds->total_pwr,
-+						SCHED_POWER_SCALE);
-+}
-+
-+static inline int get_sd_sched_policy(struct sched_domain *sd,
-+					struct sd_lb_stats *sds)
-+{
-+	int policy = SCHED_POLICY_PERFORMANCE;
-+
-+	if (sched_policy != SCHED_POLICY_PERFORMANCE) {
-+		memset(sds, 0, sizeof(*sds));
-+		get_sd_power_stats(sd, sds);
-+
-+		if (sd->span_weight > sds->sd_nr_running)
-+			policy = SCHED_POLICY_POWERSAVING;
-+	}
-+	return policy;
-+}
-+
-+/*
-+ * select_task_rq_fair: balance the current task (running on cpu) in domains
-  * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
-  * SD_BALANCE_EXEC.
-  *
-- * Balance, ie. select the least loaded group.
-- *
-  * Returns the target CPU number, or the same CPU if no balancing is needed.
-  *
-  * preempt must be disabled.
-@@ -3384,12 +3521,14 @@ static int
- select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+-
+ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task)
  {
- 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
-+	struct sd_lb_stats sds;
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
- 	int new_cpu = cpu;
- 	int want_affine = 0;
- 	int sync = wake_flags & WF_SYNC;
- 	int node = tsk_home_node(p);
-+	int policy = sched_policy;
+ 	struct sched_entity *se = &task->se;
+@@ -6399,6 +6398,73 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
+ 	return rr_interval;
+ }
  
- 	if (p->nr_cpus_allowed == 1)
- 		return prev_cpu;
-@@ -3412,6 +3551,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
- 
- 			new_cpu = cpu = node_cpu;
- 			sd = per_cpu(sd_node, cpu);
-+			policy = get_sd_sched_policy(sd, &sds);
- 			goto pick_idlest;
- 		}
- 
-@@ -3445,8 +3585,12 @@ find_sd:
- 			break;
- 		}
- 
--		if (tmp->flags & sd_flag)
-+		if (tmp->flags & sd_flag) {
- 			sd = tmp;
-+			policy = get_sd_sched_policy(sd, &sds);
-+			if (policy != SCHED_POLICY_PERFORMANCE)
-+				break;
-+		}
- 	}
- 
- 	if (affine_sd) {
-@@ -3460,7 +3604,7 @@ find_sd:
- pick_idlest:
- 	while (sd) {
- 		int load_idx = sd->forkexec_idx;
--		struct sched_group *group;
-+		struct sched_group *group = NULL;
- 		int weight;
- 
- 		if (!(sd->flags & sd_flag)) {
-@@ -3471,7 +3615,12 @@ pick_idlest:
- 		if (sd_flag & SD_BALANCE_WAKE)
- 			load_idx = sd->wake_idx;
- 
--		group = find_idlest_group(sd, p, cpu, load_idx);
-+		if (policy != SCHED_POLICY_PERFORMANCE)
-+			group = sds.group_leader;
++/* The default scheduler policy is 'performance'. */
++int __read_mostly sched_policy = SCHED_POLICY_PERFORMANCE;
 +
-+		if (!group)
-+			group = find_idlest_group(sd, p, cpu, load_idx);
++#ifdef CONFIG_SYSFS
++static ssize_t show_available_sched_policy(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	return sprintf(buf, "performance powersaving\n");
++}
 +
- 		if (!group) {
- 			sd = sd->child;
- 			continue;
-@@ -3491,8 +3640,11 @@ pick_idlest:
- 		for_each_domain(cpu, tmp) {
- 			if (weight <= tmp->span_weight)
- 				break;
--			if (tmp->flags & sd_flag)
-+			if (tmp->flags & sd_flag) {
- 				sd = tmp;
-+				if (policy != SCHED_POLICY_PERFORMANCE)
-+					policy = get_sd_sched_policy(sd, &sds);
-+			}
- 		}
- 		/* while loop will break here if sd == NULL */
- 	}
-@@ -4330,73 +4482,6 @@ static unsigned long task_h_load(struct task_struct *p)
- #endif
++static ssize_t show_current_sched_policy(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
++{
++	if (sched_policy == SCHED_POLICY_PERFORMANCE)
++		return sprintf(buf, "performance\n");
++	else if (sched_policy == SCHED_POLICY_POWERSAVING)
++		return sprintf(buf, "powersaving\n");
++	return 0;
++}
++
++static ssize_t set_sched_policy(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	unsigned int ret = -EINVAL;
++	char    str_policy[16];
++
++	ret = sscanf(buf, "%15s", str_policy);
++	if (ret != 1)
++		return -EINVAL;
++
++	if (!strcmp(str_policy, "performance"))
++		sched_policy = SCHED_POLICY_PERFORMANCE;
++	else if (!strcmp(str_policy, "powersaving"))
++		sched_policy = SCHED_POLICY_POWERSAVING;
++	else
++		return -EINVAL;
++
++	return count;
++}
++
++/*
++ *  * Sysfs setup bits:
++ *   */
++static DEVICE_ATTR(current_sched_policy, 0644, show_current_sched_policy,
++						set_sched_policy);
++
++static DEVICE_ATTR(available_sched_policy, 0444,
++		show_available_sched_policy, NULL);
++
++static struct attribute *sched_policy_default_attrs[] = {
++	&dev_attr_current_sched_policy.attr,
++	&dev_attr_available_sched_policy.attr,
++	NULL
++};
++static struct attribute_group sched_policy_attr_group = {
++	.attrs = sched_policy_default_attrs,
++	.name = "sched_policy",
++};
++
++int __init create_sysfs_sched_policy_group(struct device *dev)
++{
++	return sysfs_create_group(&dev->kobj, &sched_policy_attr_group);
++}
++#endif /* CONFIG_SYSFS */
++
+ /*
+  * All the scheduling class methods:
+  */
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 508e77e..9a6e06c 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -9,6 +9,11 @@
  
- /********** Helpers for find_busiest_group ************************/
--/*
-- * sd_lb_stats - Structure to store the statistics of a sched_domain
-- * 		during load balancing.
-- */
--struct sd_lb_stats {
--	struct sched_group *busiest; /* Busiest group in this sd */
--	struct sched_group *this;  /* Local group in this sd */
--	unsigned long total_load;  /* Total load of all groups in sd */
--	unsigned long total_pwr;   /*	Total power of all groups in sd */
--	unsigned long avg_load;	   /* Average load across all groups in sd */
--
--	/** Statistics of this group */
--	unsigned long this_load;
--	unsigned long this_load_per_task;
--	unsigned long this_nr_running;
--	unsigned long this_has_capacity;
--	unsigned int  this_idle_cpus;
--
--	/* Statistics of the busiest group */
--	unsigned int  busiest_idle_cpus;
--	unsigned long max_load;
--	unsigned long busiest_load_per_task;
--	unsigned long busiest_nr_running;
--	unsigned long busiest_group_capacity;
--	unsigned long busiest_has_capacity;
--	unsigned int  busiest_group_weight;
--
--	int group_imb; /* Is there imbalance in this sd */
--
--	/* Varibles of power awaring scheduling */
--	unsigned long	sd_capacity;	/* capacity of this domain */
--	unsigned long	sd_nr_running;	/* Nr running of this domain */
--	struct sched_group *group_min; /* Least loaded group in sd */
--	struct sched_group *group_leader; /* Group which relieves group_min */
--	unsigned long min_load_per_task; /* load_per_task in group_min */
--	unsigned long leader_nr_running; /* Nr running of group_leader */
--	unsigned long min_nr_running; /* Nr running of group_min */
--
--#ifdef CONFIG_SCHED_NUMA
--	struct sched_group *numa_group; /* group which has offnode_tasks */
--	unsigned long numa_group_weight;
--	unsigned long numa_group_running;
--
--	unsigned long this_offnode_running;
--	unsigned long this_onnode_running;
--#endif
--};
--
--/*
-- * sg_lb_stats - stats of a sched_group required for load_balancing
-- */
--struct sg_lb_stats {
--	unsigned long avg_load; /*Avg load across the CPUs of the group */
--	unsigned long group_load; /* Total load over the CPUs of the group */
--	unsigned long sum_nr_running; /* Nr tasks running in the group */
--	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
--	unsigned long group_capacity;
--	unsigned long idle_cpus;
--	unsigned long group_weight;
--	int group_imb; /* Is there an imbalance in the group ? */
--	int group_has_capacity; /* Is there extra capacity in the group? */
--#ifdef CONFIG_SCHED_NUMA
--	unsigned long numa_offnode_weight;
--	unsigned long numa_offnode_running;
--	unsigned long numa_onnode_running;
--#endif
--};
+ extern __read_mostly int scheduler_running;
  
- /**
-  * init_sd_lb_power_stats - Initialize power savings statistics for
++#define SCHED_POLICY_PERFORMANCE	(0x1)
++#define SCHED_POLICY_POWERSAVING	(0x2)
++
++extern int __read_mostly sched_policy;
++
+ /*
+  * Convert user-nice values [ -20 ... 0 ... 19 ]
+  * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],
 -- 
 1.7.12
 
