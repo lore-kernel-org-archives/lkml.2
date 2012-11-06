@@ -1,113 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943Ab2KFKf7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 05:35:59 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:35083 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751877Ab2KFKf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 05:35:57 -0500
-Message-ID: <1352198139.16194.21.camel@joe-AO722>
-Subject: [RFC PATCH] checkpatch: Add a --strict test for macro argument reuse
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Date: Tue, 06 Nov 2012 02:35:39 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751628Ab2KFKgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 05:36:33 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18718 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab2KFKgc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 05:36:32 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 06 Nov 2012 02:36:26 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>
+CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: core: avoid memory access after freeing it
+Date: Tue, 6 Nov 2012 16:04:09 +0530
+Message-ID: <1352198049-5941-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a test for reuse of macro arguments to highlight
-any possible side-effects from this reuse.
+When regulator_register() failed due to non availability of
+supply then it exits through cleanup path. In this case it
+checks for supply and if it is valid then unregister the supply.
 
-Avoid this check on token name pasting and when the
-argument is used in a typeof or a __builtin.
+The change done by Charles Keepax:
+	regulator: core: Move regulator release to avoid deadlock
 
-Signed-off-by: Joe Perches <joe@perches.com>
+puts the release of supply regualtor after device_unregister().
+The device_unregister() frees the rdev and hence accessing rdev
+member pointer after this calls gives incorrect pointer and cause
+the system to crash.
+
+Adding the locked version of regulator_put() as __regulator_put_locked()
+so that it can be called in locked context also to avoid the deadlock
+to address the above issue.
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
+ drivers/regulator/core.c |   30 ++++++++++++++++++------------
+ 1 files changed, 18 insertions(+), 12 deletions(-)
 
-There are times when using a temporary for macro arguments
-is overkill.  This patch might be overkill too.
-
- scripts/checkpatch.pl |   42 ++++++++++++++++++++++++++++++++++--------
- 1 files changed, 34 insertions(+), 8 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index d4f61a6..58fff6e 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2952,7 +2952,17 @@ sub process {
- 			#print "dstat<$dstat> dcond<$dcond> cnt<$cnt> off<$off>\n";
- 			#print "LINE<$lines[$ln-1]> len<" . length($lines[$ln-1]) . "\n";
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index b4a425a..59280b6 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1382,23 +1382,16 @@ struct regulator *regulator_get_exclusive(struct device *dev, const char *id)
+ EXPORT_SYMBOL_GPL(regulator_get_exclusive);
  
--			$dstat =~ s/^.\s*\#\s*define\s+$Ident(?:\([^\)]*\))?\s*//;
-+			$dstat =~ s/^.\s*\#\s*define\s+$Ident(\([^\)]*\))?\s*//;
-+			my $define_args = $1;
-+			my $define_stmt = $dstat;
-+			my @def_args = ();
-+
-+			if (defined $define_args && $define_args ne "") {
-+				$define_args = substr($define_args, 1, length($define_args) - 2);
-+				$define_args =~ s/\s*//g;
-+				@def_args = split(",", $define_args);
-+			}
-+
- 			$dstat =~ s/$;//g;
- 			$dstat =~ s/\\\n.//g;
- 			$dstat =~ s/^\s*//s;
-@@ -2984,6 +2994,15 @@ sub process {
- 				^\"|\"$
- 			}x;
- 			#print "REST<$rest> dstat<$dstat> ctx<$ctx>\n";
-+
-+			$ctx =~ s/\n*$//;
-+			my $herectx = $here . "\n";
-+			my $stmt_cnt = statement_rawlines($ctx);
-+
-+			for (my $n = 0; $n < $stmt_cnt; $n++) {
-+				$herectx .= raw_line($linenr, $n) . "\n";
-+			}
-+
- 			if ($dstat ne '' &&
- 			    $dstat !~ /^(?:$Ident|-?$Constant),$/ &&			# 10, // foo(),
- 			    $dstat !~ /^(?:$Ident|-?$Constant);$/ &&			# foo();
-@@ -2997,13 +3016,6 @@ sub process {
- 			    $dstat !~ /^do\s*{/ &&					# do {...
- 			    $dstat !~ /^\({/)						# ({...
- 			{
--				$ctx =~ s/\n*$//;
--				my $herectx = $here . "\n";
--				my $cnt = statement_rawlines($ctx);
+ /**
+- * regulator_put - "free" the regulator source
+- * @regulator: regulator source
+- *
+- * Note: drivers must ensure that all regulator_enable calls made on this
+- * regulator source are balanced by regulator_disable calls prior to calling
+- * this function.
++ * Locked version of regulator_put
+  */
+-void regulator_put(struct regulator *regulator)
++static void __regulator_put_locked(struct regulator *regulator)
+ {
+ 	struct regulator_dev *rdev;
+ 
+ 	if (regulator == NULL || IS_ERR(regulator))
+ 		return;
+ 
+-	mutex_lock(&regulator_list_mutex);
+ 	rdev = regulator->rdev;
 -
--				for (my $n = 0; $n < $cnt; $n++) {
--					$herectx .= raw_line($linenr, $n) . "\n";
--				}
+ 	debugfs_remove_recursive(regulator->debugfs);
  
- 				if ($dstat =~ /;/) {
- 					ERROR("MULTISTATEMENT_MACRO_USE_DO_WHILE",
-@@ -3012,6 +3024,20 @@ sub process {
- 					ERROR("COMPLEX_MACRO",
- 					      "Macros with complex values should be enclosed in parenthesis\n" . "$herectx");
- 				}
-+
-+			}
-+
-+			foreach my $arg (@def_args) {
-+			        next if ($arg =~ /\.\.\./);
-+				my $tmp = $define_stmt;
-+				$tmp =~ s/\b(typeof|__typeof__|__builtin\w+|typecheck\s*\(\s*$Type\s*,|\#+)\s*\(*\s*$arg\s*\)*\b//g;
-+				$tmp =~ s/\#\#\s*$arg\b//g;
-+				$tmp =~ s/\b$arg\s*\#\#//g;
-+				my $use_cnt = $tmp =~ s/\b$arg\b//g;
-+				if ($use_cnt > 1) {
-+					CHECK("MACRO_ARG_REUSE",
-+					      "Macro argument reuse '$arg' - possible side-effects?\n" . "$herectx");
-+				}
- 			}
+ 	/* remove any sysfs entries */
+@@ -1412,6 +1405,20 @@ void regulator_put(struct regulator *regulator)
+ 	rdev->exclusive = 0;
  
- # check for line continuations outside of #defines
-
+ 	module_put(rdev->owner);
++}
++
++/**
++ * regulator_put - "free" the regulator source
++ * @regulator: regulator source
++ *
++ * Note: drivers must ensure that all regulator_enable calls made on this
++ * regulator source are balanced by regulator_disable calls prior to calling
++ * this function.
++ */
++void regulator_put(struct regulator *regulator)
++{
++	mutex_lock(&regulator_list_mutex);
++	__regulator_put_locked(regulator);
+ 	mutex_unlock(&regulator_list_mutex);
+ }
+ EXPORT_SYMBOL_GPL(regulator_put);
+@@ -3453,11 +3460,10 @@ scrub:
+ 		gpio_free(rdev->ena_gpio);
+ 	kfree(rdev->constraints);
+ wash:
++	if (rdev->supply)
++		__regulator_put_locked(rdev->supply);
+ 	device_unregister(&rdev->dev);
+-
+ 	mutex_unlock(&regulator_list_mutex);
+-	if (rdev->supply)
+-		regulator_put(rdev->supply);
+ 
+ 	/* device core frees rdev */
+ 	rdev = ERR_PTR(ret);
+-- 
+1.7.1.1
 
