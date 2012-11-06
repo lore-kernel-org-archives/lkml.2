@@ -1,88 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab2KFQYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 11:24:05 -0500
-Received: from mga09.intel.com ([134.134.136.24]:17039 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab2KFQYC convert rfc822-to-8bit (ORCPT
+	id S1752686Ab2KFQ2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 11:28:34 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:55872 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab2KFQ2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 11:24:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,722,1344236400"; 
-   d="scan'208";a="238028653"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <jbeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Index: AQHNvC7tTi91BiFLfUibRvXA4zlK85fc+8/g
-Date: Tue, 6 Nov 2012 16:23:57 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233537B479@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
- <5089676602000078000A4928@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
- <508A89CB020000780008E6ED@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
- <20121026201409.GF2708@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC8292335377346@SHSMSX101.ccr.corp.intel.com>
- <20121102164937.GC27213@konrad-lan.dumpdata.com>
- <alpine.DEB.2.02.1211051512260.2689@kaball.uk.xensource.com>
- <DE8DF0795D48FD4CA783C40EC829233537B10C@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC829233537B147@SHSMSX101.ccr.corp.intel.com>
- <alpine.DEB.2.02.1211061455150.2689@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1211061455150.2689@kaball.uk.xensource.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 Nov 2012 11:28:32 -0500
+Message-ID: <50993AA0.80703@gmail.com>
+Date: Wed, 07 Nov 2012 00:28:16 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "Rafael J . Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Huang Ying <ying.huang@intel.com>, Bob Moore <robert.moore@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-mm@kvack.org,
+        Gaohuai Han <hangaohuai@huawei.com>
+Subject: Re: [ACPIHP PATCH part1 2/4] ACPIHP: introduce acpihp_slot driver
+ to enumerate hotplug slots
+References: <1351958865-24394-1-git-send-email-jiang.liu@huawei.com> <1351958865-24394-3-git-send-email-jiang.liu@huawei.com> <CAErSpo49kJm3x2K_FT6vLpUUD2pk9Hf62uXqzHt2Vod2PriY8Q@mail.gmail.com>
+In-Reply-To: <CAErSpo49kJm3x2K_FT6vLpUUD2pk9Hf62uXqzHt2Vod2PriY8Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefano Stabellini wrote:
-> On Tue, 6 Nov 2012, Liu, Jinsong wrote:
->> Liu, Jinsong wrote:
->>> Stefano Stabellini wrote:
->>>>>> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
->>>>>> index 0e86370..a2af622 100644
->>>>>> --- a/drivers/xen/Makefile
->>>>>> +++ b/drivers/xen/Makefile
->>>>>> @@ -29,6 +29,7 @@ obj-$(CONFIG_XEN_MCE_LOG)           += mcelog.o
->>>>>>  obj-$(CONFIG_XEN_PCIDEV_BACKEND)     += xen-pciback/
->>>>>>  obj-$(CONFIG_XEN_PRIVCMD)            += xen-privcmd.o
->>>>>>  obj-$(CONFIG_XEN_ACPI_PROCESSOR)     += xen-acpi-processor.o
->>>>>> +obj-$(CONFIG_XEN_DOM0)                       += xen_acpi_pad.o
->>>>>>  xen-evtchn-y                         := evtchn.o
->>>>>>  xen-gntdev-y                         := gntdev.o
->>>>>>  xen-gntalloc-y                               := gntalloc.o
->>>> 
->>>> it should really depend on ACPI and maybe also X86, otherwise it
->>>> is going to break the ARM build 
->>>> 
->>>> 
->>> 
->>> Hmm, XEN_DOM0 has already depended on ACPI and X86_LOCAL_APIC
->>> (which depends on X86_64). 
->>> 
->> 
->> Ah, you and Konrad are right. I ignore XEN_DOM0 varies under
->> different arch. (But seems it not depends on X86 since it's
->> logically an acpi stuff?). 
+On 11/06/2012 05:30 AM, Bjorn Helgaas wrote:
+> On Sat, Nov 3, 2012 at 10:07 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>> An ACPI hotplug slot is an abstraction of receptacles, where a group of
+>> system devices could be connected to. This patch implements the skeleton
+>> of the ACPI system device hotplug slot enumerator. On loading, it scans
+>> the whole ACPI namespace for hotplug slots and creates a device node for
+>> each hotplug slot found. Every hotplug slot is associated with a device
+>> class named acpihp_slot_class. Later hotplug drivers will register onto
+>> acpihp_slot_class to manage all hotplug slots.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Signed-off-by: Gaohuai Han <hangaohuai@huawei.com>
+>> ---
+>>  drivers/acpi/Kconfig          |   19 ++
+>>  drivers/acpi/hotplug/Makefile |    3 +
+>>  drivers/acpi/hotplug/slot.c   |  417 +++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 439 insertions(+)
+>>  create mode 100644 drivers/acpi/hotplug/slot.c
+>>
+>> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+>> index 9577b23..af0aaf6 100644
+>> --- a/drivers/acpi/Kconfig
+>> +++ b/drivers/acpi/Kconfig
+>> @@ -334,6 +334,25 @@ menuconfig ACPI_HOTPLUG
+>>           If your hardware platform does not support system device dynamic
+>>           reconfiguration at runtime, you need not to enable this option.
+>>
+>> +config ACPI_HOTPLUG_SLOT
+>> +       tristate "System Device Hotplug Slot Enumerator"
 > 
-> If it is generic ACPI code, than it can depend only on ACPI.
-> If it is ACPI code that contains X86 specific info, than it needs to
-> depend on X86 too.
+> I don't really believe in hotplug drivers being modules.  I think the
+> core should support hotplug directly, and the decision to configure or
+> not should be made at build-time.
+Good suggestion, I will change it in next version.
 
-No x86 specific so let's depend on ACPI.
+>> +       depends on ACPI_HOTPLUG
+>> +       default m
+>> +       help
+>> +         ACPI system device hotplug slot is an abstraction of ACPI based
+>> +         system device dynamic reconfiguration control points. On load,
+>> +         this driver enumerates system device hotplug slots by wakling the
+>> +         ACPI namespace and provides platform specific methods to control
+>> +         those hotplug slots.
+>> +
+>> +         By default, this driver detects system device hotplug slots by
+>> +         checking avaliability of ACPI _EJ0 method. You may pass a module
+>> +         parameter "fake_slot=0xf" to enable faking hotplug slots on
+>> +         platforms without hardware dynamic reconfiguration capabilities.
+>> +
+>> +         To compile this driver as a module, choose M here:
+>> +         the module will be called acpihp_slot.
+>> +
+> 
+>> +static int __init acpihp_slot_generate_name(struct acpihp_slot *slot)
+>> +{
+>> +       int found = 0;
+>> +       u32 child_types = 0;
+>> +       unsigned long long uid;
+>> +       struct acpihp_slot_id *slot_id;
+>> +
+>> +       /*
+>> +        * Figure out slot type by checking types of ACPI devices which could
+>> +        * be attached to the slot.
+>> +        */
+>> +       slot->type = acpihp_slot_get_type_self(slot);
+>> +       if (slot->type == ACPIHP_SLOT_TYPE_UNKNOWN) {
+>> +               acpi_walk_namespace(ACPI_TYPE_DEVICE, slot->handle,
+>> +                               ACPI_UINT32_MAX, acpihp_slot_get_dev_type,
+>> +                               NULL, NULL, (void **)&child_types);
+>> +               acpi_walk_namespace(ACPI_TYPE_PROCESSOR, slot->handle,
+>> +                               ACPI_UINT32_MAX, acpihp_slot_get_dev_type,
+>> +                               NULL, NULL, (void **)&child_types);
+>> +               slot->type = acpihp_slot_get_type_child(child_types);
+>> +       }
+> 
+> If things can be hot-added below slot->handle, is there an ACPI
+> requirement that there be *anything* in the existing namespace below
+> slot->handle?  I'm not sure you can tell sort of things might be
+> added.
+To be compatible with old Windows, some BIOS will expose such a behavior.
+It put the PCI root bus built in a physical processor directly under /_SB
+instead of the module device for the processor. According to my observation,
+new BIOSes have changed that behavior and build ACPI namespace according to
+physical topology. 
 
-Thanks,
-Jinsong
+>> +static int __init acpihp_slot_scan_slots(void)
+>> +{
+>> +       acpi_status status;
+>> +
+>> +       status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+>> +                                    ACPI_UINT32_MAX, acpihp_slot_scan,
+>> +                                    NULL, NULL, NULL);
+>> +       if (!ACPI_SUCCESS(status))
+>> +               goto out_err;
+>> +
+>> +       status = acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
+>> +                                    ACPI_UINT32_MAX, acpihp_slot_scan,
+>> +                                    NULL, NULL, NULL);
+> 
+> Here's one reason I don't like this as a module: we have to walk the
+> namespace again (twice, even).  What happens when you hot-add a node
+> that itself *contains* another hot-pluggable receptacle?  Do you walk
+> the namespace again, calling acpiphp_slot_scan() as needed?
+Loading of dynamic ACPI table is an issue, it should be handled. But we have
+left that on the TODO list for simplicity at first stage. When supporting 
+that in future, we just need to scan the subtree starting from the slot.
+
+Thanks
+Gerry
