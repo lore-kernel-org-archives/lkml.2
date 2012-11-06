@@ -1,103 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214Ab2KFSN7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 13:13:59 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15176 "EHLO
+	id S1752302Ab2KFSO5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 13:14:57 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15971 "EHLO
 	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751060Ab2KFSN4 (ORCPT
+	with ESMTP id S1751390Ab2KFSOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 13:13:56 -0500
+	Tue, 6 Nov 2012 13:14:55 -0500
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 98.234.237.12
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/D9nCyXvBxWg6xfqVBCLSA
-Date: Tue, 6 Nov 2012 10:13:54 -0800
+X-MHO-User: U2FsdGVkX1+Enn8jnmfiJW7NmlGAAOW6
+Date: Tue, 6 Nov 2012 10:14:53 -0800
 From: Tony Lindgren <tony@atomide.com>
 To: Aaro Koskinen <aaro.koskinen@iki.fi>
 Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>
-Subject: Re: [PATCH v2 3/4] watchdog: introduce retu_wdt driver
-Message-ID: <20121106181353.GE6801@atomide.com>
+        linux-input@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v2 4/4] input: misc: introduce retu-pwrbutton
+Message-ID: <20121106181453.GF6801@atomide.com>
 References: <1351706626-32186-1-git-send-email-aaro.koskinen@iki.fi>
- <1351706626-32186-4-git-send-email-aaro.koskinen@iki.fi>
+ <1351706626-32186-5-git-send-email-aaro.koskinen@iki.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1351706626-32186-4-git-send-email-aaro.koskinen@iki.fi>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1351706626-32186-5-git-send-email-aaro.koskinen@iki.fi>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Aaro Koskinen <aaro.koskinen@iki.fi> [121031 11:10]:
-> Introduce Retu watchdog driver.
+* Aaro Koskinen <aaro.koskinen@iki.fi> [121031 11:07]:
+> Add Retu power button driver.
 
-Added Wim Van Sebroeck <wim@iguana.be> to cc so he knows to
-pick up the patches after no more comments. You may need
-to resend.
+Added Dmitry Torokhov <dmitry.torokhov@gmail.com> to cc so he knows
+to pick this after no more comments. You may need to resend.
 
 Regards,
 
 Tony
  
-> Cc: linux-watchdog@vger.kernel.org
+> Cc: linux-input@vger.kernel.org
 > Acked-by: Felipe Balbi <balbi@ti.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
 > Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 > ---
->  drivers/watchdog/Kconfig    |   12 +++
->  drivers/watchdog/Makefile   |    1 +
->  drivers/watchdog/retu_wdt.c |  178 +++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 191 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/watchdog/retu_wdt.c
+>  drivers/input/misc/Kconfig          |   10 +++
+>  drivers/input/misc/Makefile         |    1 +
+>  drivers/input/misc/retu-pwrbutton.c |  118 +++++++++++++++++++++++++++++++++++
+>  3 files changed, 129 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/input/misc/retu-pwrbutton.c
 > 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index ad1bb93..c3a836d 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -352,6 +352,18 @@ config IMX2_WDT
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called imx2_wdt.
+> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+> index 7c0f1ec..e5be189 100644
+> --- a/drivers/input/misc/Kconfig
+> +++ b/drivers/input/misc/Kconfig
+> @@ -367,6 +367,16 @@ config INPUT_CM109
+>  	  To compile this driver as a module, choose M here: the module will be
+>  	  called cm109.
 >  
-> +config RETU_WATCHDOG
-> +	tristate "Retu watchdog"
+> +config INPUT_RETU_PWRBUTTON
+> +	tristate "Retu Power button Driver"
 > +	depends on MFD_RETU
-> +	select WATCHDOG_CORE
 > +	help
-> +	  Retu watchdog driver for Nokia Internet Tablets (700, N800,
-> +	  N810). At least on N800 the watchdog cannot be disabled, so
-> +	  this driver is essential and you should enable it.
+> +	  Say Y here if you want to enable power key reporting via the
+> +	  Retu chips found in Nokia Internet Tablets (770, N800, N810).
 > +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called retu_wdt.
+> +	  To compile this driver as a module, choose M here. The module will
+> +	  be called retu-pwrbutton.
 > +
->  # AVR32 Architecture
->  
->  config AT32AP700X_WDT
-> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> index 572b39b..d2f1c0c 100644
-> --- a/drivers/watchdog/Makefile
-> +++ b/drivers/watchdog/Makefile
-> @@ -52,6 +52,7 @@ obj-$(CONFIG_STMP3XXX_WATCHDOG) += stmp3xxx_wdt.o
->  obj-$(CONFIG_NUC900_WATCHDOG) += nuc900_wdt.o
->  obj-$(CONFIG_TS72XX_WATCHDOG) += ts72xx_wdt.o
->  obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
-> +obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
->  
->  # AVR32 Architecture
->  obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
-> diff --git a/drivers/watchdog/retu_wdt.c b/drivers/watchdog/retu_wdt.c
+>  config INPUT_TWL4030_PWRBUTTON
+>  	tristate "TWL4030 Power button Driver"
+>  	depends on TWL4030_CORE
+> diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+> index 83fe6f5..4fbee0d 100644
+> --- a/drivers/input/misc/Makefile
+> +++ b/drivers/input/misc/Makefile
+> @@ -45,6 +45,7 @@ obj-$(CONFIG_INPUT_PMIC8XXX_PWRKEY)	+= pmic8xxx-pwrkey.o
+>  obj-$(CONFIG_INPUT_POWERMATE)		+= powermate.o
+>  obj-$(CONFIG_INPUT_PWM_BEEPER)		+= pwm-beeper.o
+>  obj-$(CONFIG_INPUT_RB532_BUTTON)	+= rb532_button.o
+> +obj-$(CONFIG_INPUT_RETU_PWRBUTTON)	+= retu-pwrbutton.o
+>  obj-$(CONFIG_INPUT_GPIO_ROTARY_ENCODER)	+= rotary_encoder.o
+>  obj-$(CONFIG_INPUT_SGI_BTNS)		+= sgi_btns.o
+>  obj-$(CONFIG_INPUT_SPARCSPKR)		+= sparcspkr.o
+> diff --git a/drivers/input/misc/retu-pwrbutton.c b/drivers/input/misc/retu-pwrbutton.c
 > new file mode 100644
-> index 0000000..aeb0f39
+> index 0000000..51e94a7
 > --- /dev/null
-> +++ b/drivers/watchdog/retu_wdt.c
-> @@ -0,0 +1,178 @@
+> +++ b/drivers/input/misc/retu-pwrbutton.c
+> @@ -0,0 +1,118 @@
 > +/*
-> + * Retu watchdog driver
+> + * Retu power button driver.
 > + *
-> + * Copyright (C) 2004, 2005 Nokia Corporation
+> + * Copyright (C) 2004-2010 Nokia Corporation
 > + *
-> + * Based on code written by Amit Kucheria and Michael Buesch.
+> + * Original code written by Ari Saastamoinen, Juha Yrjölä and Felipe Balbi.
 > + * Rewritten by Aaro Koskinen.
 > + *
 > + * This file is subject to the terms and conditions of the GNU General
@@ -110,164 +108,104 @@ Tony
 > + * GNU General Public License for more details.
 > + */
 > +
+> +#include <linux/irq.h>
 > +#include <linux/init.h>
 > +#include <linux/slab.h>
 > +#include <linux/errno.h>
-> +#include <linux/device.h>
+> +#include <linux/input.h>
 > +#include <linux/kernel.h>
 > +#include <linux/module.h>
 > +#include <linux/mfd/retu.h>
-> +#include <linux/watchdog.h>
+> +#include <linux/interrupt.h>
 > +#include <linux/platform_device.h>
 > +
-> +/* Watchdog timer values in seconds */
-> +#define RETU_WDT_MAX_TIMER	63
+> +#define RETU_STATUS_PWRONX (1 << 5)
 > +
-> +struct retu_wdt_dev {
+> +struct retu_pwrbutton {
+> +	struct input_dev	*idev;
 > +	struct retu_dev		*rdev;
 > +	struct device		*dev;
-> +	struct delayed_work	ping_work;
+> +	bool			pressed;
+> +	int			irq;
 > +};
 > +
-> +/*
-> + * Since Retu watchdog cannot be disabled in hardware, we must kick it
-> + * with a timer until userspace watchdog software takes over. If
-> + * CONFIG_WATCHDOG_NOWAYOUT is set, we never start the feeding.
-> + */
-> +static void retu_wdt_ping_enable(struct retu_wdt_dev *wdev)
+> +static irqreturn_t retu_pwrbutton_irq(int irq, void *_pwr)
 > +{
-> +	retu_write(wdev->rdev, RETU_REG_WATCHDOG, RETU_WDT_MAX_TIMER);
-> +	schedule_delayed_work(&wdev->ping_work,
-> +			round_jiffies_relative(RETU_WDT_MAX_TIMER * HZ / 2));
+> +	struct retu_pwrbutton *pwr = _pwr;
+> +	bool state;
+> +
+> +	state = !(retu_read(pwr->rdev, RETU_REG_STATUS) & RETU_STATUS_PWRONX);
+> +
+> +	if (pwr->pressed != state) {
+> +		input_report_key(pwr->idev, KEY_POWER, state);
+> +		input_sync(pwr->idev);
+> +		pwr->pressed = state;
+> +	}
+> +
+> +	return IRQ_HANDLED;
 > +}
 > +
-> +static void retu_wdt_ping_disable(struct retu_wdt_dev *wdev)
-> +{
-> +	retu_write(wdev->rdev, RETU_REG_WATCHDOG, RETU_WDT_MAX_TIMER);
-> +	cancel_delayed_work_sync(&wdev->ping_work);
-> +}
-> +
-> +static void retu_wdt_ping_work(struct work_struct *work)
-> +{
-> +	struct retu_wdt_dev *wdev = container_of(to_delayed_work(work),
-> +						struct retu_wdt_dev, ping_work);
-> +	retu_wdt_ping_enable(wdev);
-> +}
-> +
-> +static int retu_wdt_start(struct watchdog_device *wdog)
-> +{
-> +	struct retu_wdt_dev *wdev = watchdog_get_drvdata(wdog);
-> +
-> +	retu_wdt_ping_disable(wdev);
-> +
-> +	return retu_write(wdev->rdev, RETU_REG_WATCHDOG, wdog->timeout);
-> +}
-> +
-> +static int retu_wdt_stop(struct watchdog_device *wdog)
-> +{
-> +	struct retu_wdt_dev *wdev = watchdog_get_drvdata(wdog);
-> +
-> +	retu_wdt_ping_enable(wdev);
-> +
-> +	return 0;
-> +}
-> +
-> +static int retu_wdt_ping(struct watchdog_device *wdog)
-> +{
-> +	struct retu_wdt_dev *wdev = watchdog_get_drvdata(wdog);
-> +
-> +	return retu_write(wdev->rdev, RETU_REG_WATCHDOG, wdog->timeout);
-> +}
-> +
-> +static int retu_wdt_set_timeout(struct watchdog_device *wdog,
-> +				unsigned int timeout)
-> +{
-> +	struct retu_wdt_dev *wdev = watchdog_get_drvdata(wdog);
-> +
-> +	wdog->timeout = timeout;
-> +	return retu_write(wdev->rdev, RETU_REG_WATCHDOG, wdog->timeout);
-> +}
-> +
-> +static const struct watchdog_info retu_wdt_info = {
-> +	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
-> +	.identity = "Retu watchdog",
-> +};
-> +
-> +static const struct watchdog_ops retu_wdt_ops = {
-> +	.owner		= THIS_MODULE,
-> +	.start		= retu_wdt_start,
-> +	.stop		= retu_wdt_stop,
-> +	.ping		= retu_wdt_ping,
-> +	.set_timeout	= retu_wdt_set_timeout,
-> +};
-> +
-> +static int __devinit retu_wdt_probe(struct platform_device *pdev)
+> +static int __devinit retu_pwrbutton_probe(struct platform_device *pdev)
 > +{
 > +	struct retu_dev *rdev = dev_get_drvdata(pdev->dev.parent);
-> +	bool nowayout = WATCHDOG_NOWAYOUT;
-> +	struct watchdog_device *retu_wdt;
-> +	struct retu_wdt_dev *wdev;
+> +	struct retu_pwrbutton *pwr;
 > +	int ret;
 > +
-> +	retu_wdt = devm_kzalloc(&pdev->dev, sizeof(*retu_wdt), GFP_KERNEL);
-> +	if (!retu_wdt)
+> +	pwr = devm_kzalloc(&pdev->dev, sizeof(*pwr), GFP_KERNEL);
+> +	if (!pwr)
 > +		return -ENOMEM;
 > +
-> +	wdev = devm_kzalloc(&pdev->dev, sizeof(*wdev), GFP_KERNEL);
-> +	if (!wdev)
-> +		return -ENOMEM;
+> +	pwr->rdev = rdev;
+> +	pwr->dev  = &pdev->dev;
+> +	pwr->irq  = platform_get_irq(pdev, 0);
+> +	platform_set_drvdata(pdev, pwr);
 > +
-> +	retu_wdt->info		= &retu_wdt_info;
-> +	retu_wdt->ops		= &retu_wdt_ops;
-> +	retu_wdt->timeout	= RETU_WDT_MAX_TIMER;
-> +	retu_wdt->min_timeout	= 0;
-> +	retu_wdt->max_timeout	= RETU_WDT_MAX_TIMER;
-> +
-> +	watchdog_set_drvdata(retu_wdt, wdev);
-> +	watchdog_set_nowayout(retu_wdt, nowayout);
-> +
-> +	wdev->rdev		= rdev;
-> +	wdev->dev		= &pdev->dev;
-> +
-> +	INIT_DELAYED_WORK(&wdev->ping_work, retu_wdt_ping_work);
-> +
-> +	ret = watchdog_register_device(retu_wdt);
+> +	ret = devm_request_threaded_irq(&pdev->dev, pwr->irq, NULL,
+> +					retu_pwrbutton_irq, 0, "retu-pwrbutton",
+> +					pwr);
 > +	if (ret < 0)
 > +		return ret;
 > +
-> +	if (nowayout)
-> +		retu_wdt_ping(retu_wdt);
-> +	else
-> +		retu_wdt_ping_enable(wdev);
+> +	pwr->idev = input_allocate_device();
+> +	if (!pwr->idev)
+> +		return -ENOMEM;
 > +
-> +	platform_set_drvdata(pdev, retu_wdt);
+> +	pwr->idev->evbit[0]			= BIT_MASK(EV_KEY);
+> +	pwr->idev->keybit[BIT_WORD(KEY_POWER)]	= BIT_MASK(KEY_POWER);
+> +	pwr->idev->name				= "retu-pwrbutton";
+> +
+> +	ret = input_register_device(pwr->idev);
+> +	if (ret < 0) {
+> +		input_free_device(pwr->idev);
+> +		return ret;
+> +	}
 > +
 > +	return 0;
 > +}
 > +
-> +static int __devexit retu_wdt_remove(struct platform_device *pdev)
+> +static int __devexit retu_pwrbutton_remove(struct platform_device *pdev)
 > +{
-> +	struct watchdog_device *wdog = platform_get_drvdata(pdev);
-> +	struct retu_wdt_dev *wdev = watchdog_get_drvdata(wdog);
+> +	struct retu_pwrbutton *pwr = platform_get_drvdata(pdev);
 > +
-> +	watchdog_unregister_device(wdog);
-> +	cancel_delayed_work_sync(&wdev->ping_work);
+> +	input_unregister_device(pwr->idev);
+> +	input_free_device(pwr->idev);
 > +
 > +	return 0;
 > +}
 > +
-> +static struct platform_driver retu_wdt_driver = {
-> +	.probe		= retu_wdt_probe,
-> +	.remove		= __devexit_p(retu_wdt_remove),
+> +static struct platform_driver retu_pwrbutton_driver = {
+> +	.probe		= retu_pwrbutton_probe,
+> +	.remove		= __devexit_p(retu_pwrbutton_remove),
 > +	.driver		= {
-> +		.name	= "retu-wdt",
+> +		.name	= "retu-pwrbutton",
 > +	},
 > +};
-> +module_platform_driver(retu_wdt_driver);
+> +module_platform_driver(retu_pwrbutton_driver);
 > +
-> +MODULE_ALIAS("platform:retu-wdt");
-> +MODULE_DESCRIPTION("Retu watchdog");
-> +MODULE_AUTHOR("Amit Kucheria");
+> +MODULE_ALIAS("platform:retu-pwrbutton");
+> +MODULE_DESCRIPTION("Retu Power Button");
+> +MODULE_AUTHOR("Ari Saastamoinen");
+> +MODULE_AUTHOR("Felipe Balbi");
 > +MODULE_AUTHOR("Aaro Koskinen <aaro.koskinen@iki.fi>");
 > +MODULE_LICENSE("GPL");
 > -- 
