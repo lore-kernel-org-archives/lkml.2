@@ -1,135 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab2KFWhY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:37:24 -0500
-Received: from twin.jikos.cz ([89.185.236.188]:49512 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752768Ab2KFWhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:37:22 -0500
-Date: Tue, 6 Nov 2012 23:37:04 +0100
-From: David Sterba <dave@jikos.cz>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Subject: Re: [RFC v4+ hot_track 03/19] vfs: add I/O frequency update function
-Message-ID: <20121106223704.GT3102@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-	viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-	cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
- <1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
+	id S1753440Ab2KFWiE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:38:04 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39394 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752834Ab2KFWiC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 17:38:02 -0500
+Message-ID: <50999145.2070306@wwwdotorg.org>
+Date: Tue, 06 Nov 2012 15:37:57 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices
+ to mach-omap2)
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
+In-Reply-To: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 12:30:45PM +0800, zwu.kernel@gmail.com wrote:
-> --- a/fs/hot_tracking.c
-> +++ b/fs/hot_tracking.c
-> +struct hot_inode_item
-> +*hot_inode_item_find(struct hot_info *root, u64 ino)
-> +{
-> +	struct hot_inode_item *he;
-> +	int ret;
-> +
-> +again:
-> +	spin_lock(&root->lock);
-> +	he = radix_tree_lookup(&root->hot_inode_tree, ino);
-> +	if (he) {
-> +		kref_get(&he->hot_inode.refs);
-> +		spin_unlock(&root->lock);
-> +		return he;
-> +	}
-> +	spin_unlock(&root->lock);
-> +
-> +	he = kmem_cache_zalloc(hot_inode_item_cachep,
-> +				GFP_KERNEL | GFP_NOFS);
-> +	if (!he)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	hot_inode_item_init(he, ino, &root->hot_inode_tree);
-> +
-> +	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
-> +	if (ret) {
-> +		kmem_cache_free(hot_inode_item_cachep, he);
+On 11/05/2012 01:40 PM, Grant Likely wrote:
+> Hey folks,
+> 
+> As promised, here is my early draft to try and capture what device
+> tree overlays need to do and how to get there. Comments and
+> suggestions greatly appreciated.
 
-		radix_tree_preload_end()
+Interesting. This just came up internally at NVIDIA within the last
+couple weeks, and was discussed on the U-Boot mailing list very recently
+too:
 
-> +		return ERR_PTR(ret);
-> +	}
-> +
-> +	spin_lock(&root->lock);
-> +	ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
-> +	if (ret == -EEXIST) {
-> +		kmem_cache_free(hot_inode_item_cachep, he);
-> +		spin_unlock(&root->lock);
-> +		radix_tree_preload_end();
-> +		goto again;
-> +	}
-> +	spin_unlock(&root->lock);
-> +	radix_tree_preload_end();
-> +
-> +	kref_get(&he->hot_inode.refs);
-> +	return he;
-> +}
-> +EXPORT_SYMBOL_GPL(hot_inode_item_find);
-> +
-> +static struct hot_range_item
-> +*hot_range_item_find(struct hot_inode_item *he,
-> +			u32 start)
-> +{
-> +	struct hot_range_item *hr;
-> +	int ret;
-> +
-> +again:
-> +	spin_lock(&he->lock);
-> +	hr = radix_tree_lookup(&he->hot_range_tree, start);
-> +	if (hr) {
-> +		kref_get(&hr->hot_range.refs);
-> +		spin_unlock(&he->lock);
-> +		return hr;
-> +	}
-> +	spin_unlock(&he->lock);
-> +
-> +	hr = kmem_cache_zalloc(hot_range_item_cachep,
-> +				GFP_KERNEL | GFP_NOFS);
-> +	if (!hr)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	hot_range_item_init(hr, start, he);
-> +
-> +	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
-> +	if (ret) {
-> +		kmem_cache_free(hot_range_item_cachep, hr);
+http://lists.denx.de/pipermail/u-boot/2012-October/thread.html#138227
+(it spills into the November archive too)
 
-		radix_tree_preload_end()
+> For these cases it is proposed to implement an overlay feature for the
+> so that the initial device tree data can be modified by userspace at
 
-> +		return ERR_PTR(ret);
-> +	}
-> +
-> +	spin_lock(&he->lock);
-> +	ret = radix_tree_insert(&he->hot_range_tree, start, hr);
-> +	if (ret == -EEXIST) {
-> +		kmem_cache_free(hot_range_item_cachep, hr);
-> +		spin_unlock(&he->lock);
-> +		radix_tree_preload_end();
-> +		goto again;
-> +	}
-> +	spin_unlock(&he->lock);
-> +	radix_tree_preload_end();
-> +
-> +	kref_get(&hr->hot_range.refs);
-> +	return hr;
-> +}
+I don't know if you're maintaining this as a document and taking patches
+to it, but if so:
 
-david
+"for the so" split across those two lines.
+
+> Jane solves this problem by storing an FDT overlay for each cape in the
+> root filesystem. When the kernel detects that a cape is installed it
+> reads the cape's eeprom to identify it and uses request_firmware() to
+> obtain the appropriate overlay. Userspace passes the overlay to the
+> kernel in the normal way. If the cape doesn't have an eeprom, then the
+> kernel will still use firmware_request(), but userspace needs to already
+> know which cape is installed.
+
+As mentioned by Pantelis, multiple versions of a board is also very
+common. We already have the following .dts files in the kernel where
+this applies, for the main board even:
+
+arch/arm/boot/dts/tegra30-cardhu.dtsi
+arch/arm/boot/dts/tegra30-cardhu-a02.dts
+arch/arm/boot/dts/tegra30-cardhu-a04.dts
+
+> Summary points:
+
+>   - SHOULD reliably handle changes between different underlying overlays
+>     (ie. what happens to existing .dtb overly files if the structure of
+>     the dtb it is layered over changes. If not possible, then SHALL
+>     detect when the base tree doesn't match and refuse to apply the
+>     overlay.
+
+Perhaps use (versioned) DT bindings to represent the interface between
+the two .dts files? See the links to the U-Boot mailing list discussions
+below?
+
+> - What is the model for overlays?
+>   - Can an overlay modify existing properties?
+>   - Can an overlay add new properties to existing nodes?
+>   - Can an overlay delete existing nodes/properties?
+
+This proposal is very oriented at an overlay-based approach. I'm not
+totally convinced that a pure overlay approach (as in how dtc does
+overlayed DT nodes) will be flexible enough, but would love to be
+persuaded. Again see below.
+
+> It may be sufficient to solve it by making the phandle values less
+> volatile. Right now dtc generates phandles linearly. Generated phandles
+> could be overridden with explicit phandle properties, but it isn't a
+> fantastic solution. Perhaps generating the phandle from a hash of the
+> node name would be sufficient.
+
+Node names don't have to be unique though right; perhaps hash the
+path-name instead of the node-name? But then, why not just reference by
+path name; similar to <{&/path/to/node}> rather than <&label>?
+
+> This handles many of the use cases, but it assumes that an overlay is
+> board specific. If it ever is required to support multiple base boards
+> with a single overlay file then there is a problem. The .dtb overlays
+> generated in this manor cannot handle different phandles or nodes that
+> are in a different place. On the other hand, the overlay source files
+> should have no problem being compiled for multiple targets.
+
+s/manor/manner/
+
+I do rather suspect this use-case is quite common. NVIDIA certainly has
+a bunch of development boards with pluggable
+PMIC/audio/WiFi/display/..., and I believe there's some ability to
+re-use the pluggable components with a variety of base-boards.
+
+Given people within NVIDIA started talking about this recently, I asked
+them to enumerate all the boards we have that support pluggable
+components, and how common it is that some boards support being plugged
+into different main boards. I don't know when that enumeration will
+complete (or even start) but hopefully I can provide some feedback on
+how common the use-case is for us once it's done.
+
+My earlier thoughts on how to support this included explicit
+inter-board/-component connector objects in the .dts files that allow
+"renaming" of GPIOs, I2C buses, regulators, etc.:
+
+http://lists.denx.de/pipermail/u-boot/2012-October/138476.html
+http://lists.denx.de/pipermail/u-boot/2012-November/138925.html
