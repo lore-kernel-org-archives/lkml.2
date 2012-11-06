@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab2KFQDl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 11:03:41 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:44771 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab2KFQDj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 11:03:39 -0500
-Message-ID: <1352217806.6504.19.camel@MikesLinux.fc.hp.com>
-Subject: Re: [PATCH] mm: memmap_init_zone() performance improvement
-From: Mike Yoknis <mike.yoknis@hp.com>
-Reply-To: mike.yoknis@hp.com
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>, "mingo@redhat.com" <mingo@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "mmarek@suse.cz" <mmarek@suse.cz>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Tue, 06 Nov 2012 09:03:26 -0700
-In-Reply-To: <508FEECE.2070402@linux.vnet.ibm.com>
-References: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
-	 <20121008151656.GM29125@suse.de>
-	 <1349794597.29752.10.camel@MikesLinux.fc.hp.com>
-	 <1350676398.1169.6.camel@MikesLinux.fc.hp.com>
-	 <20121020082858.GA2698@suse.de> <508FEECE.2070402@linux.vnet.ibm.com>
-Organization: Hewlett-Packard
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1752584Ab2KFQFI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 11:05:08 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:33146 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750795Ab2KFQFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 11:05:06 -0500
+Message-ID: <50993511.3020906@ti.com>
+Date: Tue, 6 Nov 2012 11:04:33 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Rob Herring <robherring2@gmail.com>, <dwmw2@infradead.org>,
+        <artem.bityutskiy@linux.intel.com>, <b32955@freescale.com>,
+        <shubhrajyoti@ti.com>, <wim@iguana.be>, <hs@denx.de>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@secretlab.ca>, <rob@landley.net>,
+        <gregkh@linuxfoundation.org>, <swarren@wwwdotorg.org>,
+        <hdoyu@nvidia.com>, <santosh.shilimkar@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [RFC PATCH 1/2] memory: davinci - add aemif controller platform
+ driver
+References: <1351873278-27325-1-git-send-email-m-karicheri2@ti.com> <1351873278-27325-2-git-send-email-m-karicheri2@ti.com> <50967307.5030500@gmail.com> <50982AC3.8030000@ti.com> <5098BFE1.3020906@ti.com>
+In-Reply-To: <5098BFE1.3020906@ti.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-30 at 09:14 -0600, Dave Hansen wrote:
-> On 10/20/2012 01:29 AM, Mel Gorman wrote:
-> > I'm travelling at the moment so apologies that I have not followed up on
-> > this. My problem is still the same with the patch - it changes more
-> > headers than is necessary and it is sparsemem specific. At minimum, try
-> > the suggestion of
-> >
-> > if (!early_pfn_valid(pfn)) {
-> >       pfn = ALIGN(pfn + MAX_ORDER_NR_PAGES, MAX_ORDER_NR_PAGES) - 1;
-> >       continue;
-> > }
-> 
-> Sorry I didn't catch this until v2...
-> 
-> Is that ALIGN() correct?  If pfn=3, then it would expand to:
-> 
-> (3+MAX_ORDER_NR_PAGES+MAX_ORDER_NR_PAGES-1) & ~(MAX_ORDER_NR_PAGES-1)
-> 
-> You would end up skipping the current MAX_ORDER_NR_PAGES area, and then
-> one _extra_ because ALIGN() aligns up, and you're adding
-> MAX_ORDER_NR_PAGES too.  It doesn't matter unless you run in to a
-> !early_valid_pfn() in the middle of a MAX_ORDER area, I guess.
-> 
-> I think this would work, plus be a bit smaller:
-> 
->         pfn = ALIGN(pfn + 1, MAX_ORDER_NR_PAGES) - 1;
-> 
-Dave,
-I see your point about "rounding-up".  But, I favor the way Mel
-suggested it.  It more clearly shows the intent, which is to move up by
-MAX_ORDER_NR_PAGES.  The "pfn+1" may suggest that there is some
-significance to the next pfn, but there is not.
-I find Mel's way easier to understand.
-Mike Y
+On 11/06/2012 02:44 AM, Sekhar Nori wrote:
+> On 11/6/2012 2:38 AM, Murali Karicheri wrote:
+>> On 11/04/2012 08:52 AM, Rob Herring wrote:
+>>> OMAP GPMC
+>> Could you send me a link please?
+> https://www.google.com/search?q=RFC+OMAP+GPMC+DT+bindings
+>
+> The patches series is sent by Daniel Mack. v3 was the last version sent.
+>
+> Thanks,
+> Sekhar
+>
+>
+One of the question I have on this is what is the final location of the 
+GPMC driver? The patch referred here is located inside the mach-omap2. 
+This will not work for us as AEMIF driver is used across multiple 
+architecture. range is also used in AEMIF bindings to refer the CS 
+memory map. So there is no issue here. I will fix the documentation. Or 
+Am I missing something?
 
-
+Murali
