@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546Ab2KFROs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 12:14:48 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:62768 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab2KFROr (ORCPT
+	id S1751556Ab2KFRTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 12:19:43 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:59739 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab2KFRTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 12:14:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352156701-4038-1-git-send-email-keescook@chromium.org>
-References: <1352156701-4038-1-git-send-email-keescook@chromium.org>
-Date: Tue, 6 Nov 2012 18:14:45 +0100
-X-Google-Sender-Auth: u3X6_9pNrZ9PiBL7Ah_7jKPUq9k
-Message-ID: <CAMuHMdW7esRw94DzcQ4=UeXjeY7ETAUmRvXnP4M6YYCz2UbNOg@mail.gmail.com>
-Subject: Re: [PATCH v2 000/104] remove CONFIG_EXPERIMENTAL
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 6 Nov 2012 12:19:42 -0500
+Date: Tue, 6 Nov 2012 18:19:39 +0100
+From: Alban Bedel <alban.bedel@avionic-design.de>
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Cc: Roland Stigge <stigge@antcom.de>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alban Bedel <alban.bedel@avionic-design.de>
+Subject: Re: [PATCH] pwm: lpc32xx - Fix the PWM polarity
+Message-ID: <20121106181939.61c50233@avionic-0020.adnet.avionic-design.de>
+In-Reply-To: <CAAAP30HwBzYFpy942UyiQX2SkzV4naBbhwichp201bvfEm2mxA@mail.gmail.com>
+References: <1352134125-22405-1-git-send-email-alban.bedel@avionic-design.de>
+	<20121105210317.GA9930@avionic-0098.mockup.avionic-design.de>
+	<5098DA10.3080002@antcom.de>
+	<CAAAP30HwBzYFpy942UyiQX2SkzV4naBbhwichp201bvfEm2mxA@mail.gmail.com>
+Organization: Avionic Design
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:JBuRmgRAuvsFi0unbX5jLpn37cAPkZhw3ydLidgwe23
+ f4G/Pl3/FR9aW0kDKHXbtR6Hu0uvvIR5A+Rr3uJq/gnGXtiFWN
+ fSU8YDEpr4omQUuA/yxpZEu/oJA9SrFPCLPRC7qlH4HGpDCHUo
+ guClb4odL7HxquCsySqACjnlDtG69r3S3RGKKs+8D+NjHlouzM
+ pisqOcqdaZkkjcbUDedHg5fM52TWJSkNqeGluDjVb+6A90a/Ii
+ uZl6LX9WoVFMtYLs3fbCCaKBTBUZNXBMmD7XyjtuAuW6kfX+Ns
+ XX0leMeiGjdk0Clk290hM64Shx8dbxIUJnVt3FFcPkSEJaTY6o
+ rBaWock6L0naSb4xIb6MRlxnVXbzJU4UEvkQYW8SGx29uLGhP4
+ oGjY76MUexT1H+CE94NyHHIBpOeRKIIaNk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 12:03 AM, Kees Cook <keescook@chromium.org> wrote:
-> For items that really are experimental, maintainers should use "default
->   n", optionally include "(EXPERIMENTAL)" in the title, and add language to
->   the help text indicating why the item should be considered experimental.
+On Tue, 6 Nov 2012 07:47:22 -0200
+Alexandre Pereira da Silva <aletes.xgr@gmail.com> wrote:
 
-"default n" is the default. Unless you have a very good reason, you should never
-have "default y".
+> Can you test the 0 and 255 values on actual hardware and see the effective
+> values?
 
-Gr{oetje,eeting}s,
+0   ->   0%
+1   ->  99%
+128 ->  50%
+255 ->   1%
 
-                        Geert
+So yes 0 mean 256.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> It may be handled as the RELOADV where 0 really means 256. If so, you can
+> use the same logic I used originally on the frequency division.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+I'll look at this and submit a new patch.
+
+Alban
