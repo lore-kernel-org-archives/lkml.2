@@ -1,220 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab2KFPRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 10:17:38 -0500
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:52158 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751930Ab2KFPRg (ORCPT
+	id S1752627Ab2KFPRV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 10:17:21 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:34932 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752375Ab2KFPRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 10:17:36 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 5/5] gpiolib: separation of pin concerns
-Date: Tue, 6 Nov 2012 16:17:08 +0100
-Message-ID: <1352215028-30381-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Tue, 6 Nov 2012 10:17:18 -0500
+Date: Tue, 6 Nov 2012 10:17:17 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Huang Ying <ying.huang@intel.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
+In-Reply-To: <1352162625.31033.127.camel@yhuang-dev>
+Message-ID: <Pine.LNX.4.44L0.1211061010390.1430-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Tue, 6 Nov 2012, Huang Ying wrote:
 
-The fact that of_gpiochip_add_pin_range() and
-gpiochip_add_pin_range() share too much code is fragile and
-will invariably mean that bugs need to be fixed in two places
-instead of one.
+> On Sun, 2012-11-04 at 20:56 -0500, Alan Stern wrote:
+> > On Mon, 5 Nov 2012, Huang Ying wrote:
+> > 
+> > > In current runtime PM implementation, the active child count of the
+> > > parent device may be decreased if the runtime PM of the child device
+> > > is disabled and forbidden.  For example, to unbind a PCI driver with a
+> > > PCI device, the following code path is possible:
+> > > 
+> > >   pci_device_remove
+> > >     pm_runtime_set_suspended
+> > >       __pm_runtime_set_status
+> > >         atomic_add_unless(&parent->power.child_count, -1, 0)
+> > > 
+> > > That is, the parent device may be suspended, even if the runtime PM of
+> > > child device is forbidden to be suspended.  This violate the rule that
+> > > parent is allowed to be suspended only after all its children are
+> > > suspended, and may cause issue.
+> > 
+> > This doesn't sound like a correct description of the situation.  The 
+> > rule is not violated.  After pm_runtime_set_suspended runs, the child 
+> > _is_ suspended.  Thus there's no reason not to allow the parent to be 
+> > suspended.
+> > 
+> > The problem -- if there really is one -- is that a driver can put a 
+> > device into the suspended state by calling pm_runtime_disable followed 
+> > by pm_runtime_set_suspended, even if the usage count is > 0.
+> > 
+> > I'm not so sure this should count as a problem.  Generally devices 
+> > aren't disabled for runtime PM unless something is wrong.
+> 
+> Devices will be disabled if the PCI driver is unbound from the PCI
+> device.
 
-So separate the concerns of gpiolib.c and gpiolib-of.c and
-have the latter call the former as back-end. This is necessary
-also when going forward with other device descriptions such
-as ACPI.
+Yes.  But without a PCI driver, nothing will call 
+pm_runtime_set_suspended.  And even if something does call 
+pm_runtime_set_suspended, it's still not a problem -- the device can't 
+be used without a driver.
 
-This is done by:
+> So I think the rule could be: even if the device is suspended, the
+> device can be put into suspended state only if its usage count == 0.  In
+> this way, we can solve the issue for PCI driver unbound and that looks
+> more reasonable.
 
-- Adding a return code to gpiochip_add_pin_range() so we can
-  reliably check whether this succeeds.
+You still have not shown that there really is a problem.  Do you have 
+any particular use case in mind?
 
-- Get rid of the custom of_pinctrl_add_gpio_range() from
-  pinctrl. Instead create of_pinctrl_get() to just retrive the
-  pin controller per se from an OF node. This composite
-  function was just begging to be deleted, it was way to
-  purpose-specific.
-
-- Use pinctrl_dev_get_name() to get the name of the retrieved
-  pin controller and use that to call back into the generic
-  gpiochip_add_pin_range().
-
-Now the pin range is only allocated and tied to a pin
-controller from the core implementation in gpiolib.c.
-
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpiolib-of.c       | 23 +++++++++--------------
- drivers/gpio/gpiolib.c          |  8 +++++---
- drivers/pinctrl/devicetree.c    |  4 +---
- include/asm-generic/gpio.h      |  4 ++--
- include/linux/gpio.h            |  2 +-
- include/linux/pinctrl/pinctrl.h |  7 ++-----
- 6 files changed, 20 insertions(+), 28 deletions(-)
-
-diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index 67403e4..a40cd84 100644
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -221,8 +221,8 @@ EXPORT_SYMBOL(of_mm_gpiochip_add);
- static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
- {
- 	struct device_node *np = chip->of_node;
--	struct gpio_pin_range *pin_range;
- 	struct of_phandle_args pinspec;
-+	struct pinctrl_dev *pctldev;
- 	int index = 0, ret;
- 
- 	if (!np)
-@@ -234,22 +234,17 @@ static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
- 		if (ret)
- 			break;
- 
--		pin_range = devm_kzalloc(chip->dev, sizeof(*pin_range),
--				GFP_KERNEL);
--		if (!pin_range) {
--			pr_err("%s: GPIO chip: failed to allocate pin ranges\n",
--					chip->label);
-+		pctldev = of_pinctrl_get(pinspec.np);
-+		if (!pctldev)
- 			break;
--		}
- 
--		pin_range->range.name = chip->label;
--		pin_range->range.base = chip->base;
--		pin_range->range.pin_base = pinspec.args[0];
--		pin_range->range.npins = pinspec.args[1];
--		pin_range->pctldev = of_pinctrl_add_gpio_range(pinspec.np,
--				&pin_range->range);
-+		ret = gpiochip_add_pin_range(chip,
-+					     pinctrl_dev_get_name(pctldev),
-+					     pinspec.args[0],
-+					     pinspec.args[1]);
- 
--		list_add_tail(&pin_range->node, &chip->pin_ranges);
-+		if (ret)
-+			break;
- 
- 	} while (index++);
- }
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index fd7280f..addbabb 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1185,8 +1185,8 @@ EXPORT_SYMBOL_GPL(gpiochip_find);
- 
- #ifdef CONFIG_PINCTRL
- 
--void gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
--		unsigned int pin_base, unsigned int npins)
-+int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
-+			   unsigned int pin_base, unsigned int npins)
- {
- 	struct gpio_pin_range *pin_range;
- 
-@@ -1194,7 +1194,7 @@ void gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
- 	if (!pin_range) {
- 		pr_err("%s: GPIO chip: failed to allocate pin ranges\n",
- 				chip->label);
--		return;
-+		return -ENOMEM;
- 	}
- 
- 	pin_range->range.name = chip->label;
-@@ -1205,6 +1205,8 @@ void gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
- 			&pin_range->range);
- 
- 	list_add_tail(&pin_range->node, &chip->pin_ranges);
-+
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(gpiochip_add_pin_range);
- 
-diff --git a/drivers/pinctrl/devicetree.c b/drivers/pinctrl/devicetree.c
-index 6728ec7..fe2d1af 100644
---- a/drivers/pinctrl/devicetree.c
-+++ b/drivers/pinctrl/devicetree.c
-@@ -106,8 +106,7 @@ static struct pinctrl_dev *find_pinctrl_by_of_node(struct device_node *np)
- 	return NULL;
- }
- 
--struct pinctrl_dev *of_pinctrl_add_gpio_range(struct device_node *np,
--		struct pinctrl_gpio_range *range)
-+struct pinctrl_dev *of_pinctrl_get(struct device_node *np)
- {
- 	struct pinctrl_dev *pctldev;
- 
-@@ -115,7 +114,6 @@ struct pinctrl_dev *of_pinctrl_add_gpio_range(struct device_node *np,
- 	if (!pctldev)
- 		return NULL;
- 
--	pinctrl_add_gpio_range(pctldev, range);
- 	return pctldev;
- }
- 
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index 2e60de4..50d995e 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -63,8 +63,8 @@ struct gpio_pin_range {
- 	struct pinctrl_gpio_range range;
- };
- 
--void gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
--			    unsigned int pin_base, unsigned int npins);
-+int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
-+			   unsigned int pin_base, unsigned int npins);
- void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
- 
- #endif
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index 21d28b9..81bbfe5 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -233,7 +233,7 @@ static inline int irq_to_gpio(unsigned irq)
- 
- #ifdef CONFIG_PINCTRL
- 
--static inline void
-+static inline int
- gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
- 		       unsigned int pin_base, unsigned int npins)
- {
-diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
-index 434e5a9..4a58428 100644
---- a/include/linux/pinctrl/pinctrl.h
-+++ b/include/linux/pinctrl/pinctrl.h
-@@ -141,16 +141,13 @@ extern struct pinctrl_dev *find_pinctrl_and_add_gpio_range(const char *devname,
- 		struct pinctrl_gpio_range *range);
- 
- #ifdef CONFIG_OF
--extern struct pinctrl_dev *of_pinctrl_add_gpio_range(struct device_node *np,
--		struct pinctrl_gpio_range *range);
-+extern struct pinctrl_dev *of_pinctrl_get(struct device_node *np);
- #else
- static inline
--struct pinctrl_dev *of_pinctrl_add_gpio_range(struct device_node *np,
--		struct pinctrl_gpio_range *range)
-+struct pinctrl_dev *of_pinctrl_get(struct device_node *np)
- {
- 	return NULL;
- }
--
- #endif /* CONFIG_OF */
- 
- extern const char *pinctrl_dev_get_name(struct pinctrl_dev *pctldev);
--- 
-1.7.11.3
+Alan Stern
 
