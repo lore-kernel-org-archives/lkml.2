@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989Ab2KFDxo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 22:53:44 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:60805 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab2KFDxm (ORCPT
+	id S1753330Ab2KFDyW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 22:54:22 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:35596 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab2KFDyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 22:53:42 -0500
-Date: Tue, 6 Nov 2012 14:53:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shubhrajyoti D <shubhrajyoti@ti.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the tty tree with the arm tree
-Message-Id: <20121106145332.5fd40abf0d74f8239156f75e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__6_Nov_2012_14_53_32_+1100_Oep47o41yMjZN0XV"
+	Mon, 5 Nov 2012 22:54:20 -0500
+Date: Tue, 6 Nov 2012 03:53:52 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121106035352.GA24698@srcf.ucam.org>
+References: <20121104135251.GA17894@srcf.ucam.org>
+ <87d2zsmv8r.fsf@xmission.com>
+ <509766DB.9090906@zytor.com>
+ <87625kh5r2.fsf@xmission.com>
+ <20121105123858.GB4374@srcf.ucam.org>
+ <87sj8nc137.fsf@xmission.com>
+ <20121105202557.GA16076@srcf.ucam.org>
+ <87hap3zbw7.fsf@xmission.com>
+ <20121106031219.GB24235@srcf.ucam.org>
+ <87fw4nv1vj.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fw4nv1vj.fsf@xmission.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__6_Nov_2012_14_53_32_+1100_Oep47o41yMjZN0XV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 05, 2012 at 07:36:32PM -0800, Eric W. Biederman wrote:
 
-Hi Greg,
+> For automated installs you don't have to satisfy me.  Feel free to
+> deliver a lousy solution to your users.   Just don't use your arbitrary
+> design decisions to justify your kernel patches.
 
-Today's linux-next merge of the tty tree got a conflict in
-drivers/tty/serial/omap-serial.c between commit d864c03bfce2 ("SERIAL:
-omap: remove setting of EFR SCD bit") from the arm tree and commit
-7ba897d77ce2 ("serial: omap: Remove the default setting of special
-character") from the tty tree.
+My kernel patches are justified by genuine user requirements. If you 
+don't feel that there's any requirement for the kernel to satisfy the 
+people who use it, you're free to ignore those patches.
 
-I fixed it up (using the version from the arm tree) and can carry the fix
-as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__6_Nov_2012_14_53_32_+1100_Oep47o41yMjZN0XV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQmIm8AAoJEECxmPOUX5FEISQQAI7s1XvuzobtO/R5Tmj+8+0u
-mQOOd8hBo+Rhue4Un2+R8G0MjBsYpmJxma56jdRS5UhrKPDFvsA2ZuWlSrZo4VoT
-h0bC7GlGy6IUEZgUynhLPDFTkAfZOPwaT1KCV+hqxEYouMD8FK39AOwU3IqZABrK
-MhupOgr4rt0Fx9uxzhGJBdXfqel6veWH8zX8ROPLMLpQhHbiMKokROS6O1oEK/c1
-C4M08v9UhaMHAd2pI1OYHJuxDJ4VvmbXadCUvXSqAGbsIi++l4KG7865hVayrbto
-55X4+2aZKPBX4JQa0OJDcMiSNWUHcg/nTZ1q9ukCap3CvPpyKlYkBNnbXjnY1eZK
-Z4AG7VQDxSopv1s6wZ9i/g5gqhzjblbDVNVZZpsbakNKqgeaCp/V9UaljibUT1zj
-Ti/CBJOLIJm6QSZ/SPxdEgnYkYWrWbSvJ8hIUWHYrYEX/LtsYBbVt1MqP36EuUVq
-KQdlBIDOVqMARucuaj4B5ZFouwwRwYc2UV2XTJTJyD3LhgQTRCHESCQPkcyfQa55
-5R5m4XMAUPttsXOuJt9yibLKOzGbQJDWoeSLeEMcVAkXN058LH7o3PmFgPSlEQ9d
-n4kSsP1vzw4GYAMeyc4ROWD/csrHJNzMC+OkQ+2fL8Ae83wnsmstfSI5W7CBXKl2
-zkHxE7jPxeGmyO6dMFMR
-=JEbs
------END PGP SIGNATURE-----
-
---Signature=_Tue__6_Nov_2012_14_53_32_+1100_Oep47o41yMjZN0XV--
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
