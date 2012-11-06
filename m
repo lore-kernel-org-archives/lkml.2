@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab2KFHZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 02:25:51 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41858 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab2KFHZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 02:25:49 -0500
+	id S1753505Ab2KFH2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 02:28:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47798 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752281Ab2KFH15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 02:27:57 -0500
+Message-ID: <5098BC7F.7090702@redhat.com>
+Date: Tue, 06 Nov 2012 02:30:07 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-In-Reply-To: <CAOh2x==HB5Jn0iy3dbaL=G0jD5UcP=TwQcxhzQXz9-kbQBdA8A@mail.gmail.com>
-References: <1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351615741-24134-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351615741-24134-6-git-send-email-hongbo.zhang@linaro.com>
-	<CAOh2x==HB5Jn0iy3dbaL=G0jD5UcP=TwQcxhzQXz9-kbQBdA8A@mail.gmail.com>
-Date: Tue, 6 Nov 2012 15:25:48 +0800
-Message-ID: <CAJLyvQz8_81b9HFU4ffyJrD8b3W_DbgFVGrbkhO=di2cmSeL7A@mail.gmail.com>
-Subject: Re: [PATCH V3 5/5] Thermal: Add ST-Ericsson DB8500 thermal properties
- and platform data.
-From: Hongbo Zhang <hongbo.zhang@linaro.org>
-To: viresh kumar <viresh.kumar@linaro.org>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, rui.zhang@intel.com, amit.kachhap@linaro.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Miller <davem@davemloft.net>
+CC: walken@google.com, akpm@linux-foundation.org, hughd@google.com,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        ralf@linux-mips.org, lethal@linux-sh.org, cmetcalf@tilera.com,
+        x86@kernel.org, wli@holomorphy.com, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [PATCH 15/16] mm: use vm_unmapped_area() on sparc32 architecture
+References: <1352155633-8648-1-git-send-email-walken@google.com> <1352155633-8648-16-git-send-email-walken@google.com> <20121105.202501.1246122770431623794.davem@davemloft.net>
+In-Reply-To: <20121105.202501.1246122770431623794.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 October 2012 10:18, viresh kumar <viresh.kumar@linaro.org> wrote:
-> On Tue, Oct 30, 2012 at 10:19 PM, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
->> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+On 11/05/2012 08:25 PM, David Miller wrote:
+> From: Michel Lespinasse <walken@google.com>
+> Date: Mon,  5 Nov 2012 14:47:12 -0800
 >
-> Just a minor comment below.
->
->> This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
->> also adds the platform data to support the old fashion.
+>> Update the sparc32 arch_get_unmapped_area function to make use of
+>> vm_unmapped_area() instead of implementing a brute force search.
 >>
->> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+>> Signed-off-by: Michel Lespinasse <walken@google.com>
 >
-> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Hmmm...
 >
->> ---
->>  arch/arm/boot/dts/dbx5x0.dtsi      | 14 +++++++++
->>  arch/arm/boot/dts/snowball.dts     | 31 ++++++++++++++++++
->>  arch/arm/configs/u8500_defconfig   |  4 +++
->>  arch/arm/mach-ux500/board-mop500.c | 64 ++++++++++++++++++++++++++++++++++++++
->>  4 files changed, 113 insertions(+)
+>> -	if (flags & MAP_SHARED)
+>> -		addr = COLOUR_ALIGN(addr);
+>> -	else
+>> -		addr = PAGE_ALIGN(addr);
 >
->> diff --git a/arch/arm/configs/u8500_defconfig b/arch/arm/configs/u8500_defconfig
->> index cc5e7a8..34918c4 100644
->> --- a/arch/arm/configs/u8500_defconfig
->> +++ b/arch/arm/configs/u8500_defconfig
->> @@ -118,3 +118,7 @@ CONFIG_DEBUG_KERNEL=y
->>  CONFIG_DEBUG_INFO=y
->>  # CONFIG_FTRACE is not set
->>  CONFIG_DEBUG_USER=y
->> +CONFIG_THERMAL=y
->> +CONFIG_CPU_THERMAL=y
->> +CONFIG_DB8500_THERMAL=y
->> +CONFIG_DB8500_CPUFREQ_COOLING=y
+> What part of vm_unmapped_area() is going to duplicate this special
+> aligning logic we need on sparc?
 >
-> Have you entered these manually?? Or used make savedefconfig?
-Yes these are added manually, make savedefconfig should be better, but
-it seems the original defconfig file are not well generated by
-savedefconfig, this file will be changed too much if I use make
-savedefconfig. If this is an issue, I will inform the maintainer to
-update this.
-After consideration, for this time, I will use savedefconfig to find
-right places for my configs, discarding the other dis-order ones.
+
+That would be this part:
+
++found:
++	/* We found a suitable gap. Clip it with the original low_limit. */
++	if (gap_start < info->low_limit)
++		gap_start = info->low_limit;
++
++	/* Adjust gap address to the desired alignment */
++	gap_start += (info->align_offset - gap_start) & info->align_mask;
++
++	VM_BUG_ON(gap_start + info->length > info->high_limit);
++	VM_BUG_ON(gap_start + info->length > gap_end);
++	return gap_start;
++}
