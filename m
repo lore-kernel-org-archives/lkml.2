@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab2KFP76 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 10:59:58 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:26909 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab2KFP74 (ORCPT
+	id S1752592Ab2KFQCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 11:02:31 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:45808 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752408Ab2KFQCa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 10:59:56 -0500
-Date: Tue, 6 Nov 2012 10:45:17 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v3 6/8] x86/xen: Use __pa_symbol instead of __pa on C
- visible symbols
-Message-ID: <20121106154517.GE9966@phenom.dumpdata.com>
-References: <20121105185657.10205.27419.stgit@gitlad.jf.intel.com>
- <20121105190558.10205.84483.stgit@gitlad.jf.intel.com>
+	Tue, 6 Nov 2012 11:02:30 -0500
+Message-ID: <5099348E.6080801@ahsoftware.de>
+Date: Tue, 06 Nov 2012 17:02:22 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121105190558.10205.84483.stgit@gitlad.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: AMD A10: MCE Instruction Cache Error
+References: <5093A592.9070605@ahsoftware.de> <5093D069.20901@ahsoftware.de> <20121103044929.GB21829@liondog.tnic> <5094F5C5.1000000@ahsoftware.de> <20121104152133.GA16116@x1.osrc.amd.com> <5096A3A4.8070602@ahsoftware.de> <20121106091057.GC2090@x1.osrc.amd.com> <5098F1F5.5060709@ahsoftware.de> <5098F816.5040206@ahsoftware.de> <50990D46.2050900@ahsoftware.de> <20121106144746.GD9558@x1.osrc.amd.com>
+In-Reply-To: <20121106144746.GD9558@x1.osrc.amd.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 11:06:00AM -0800, Alexander Duyck wrote:
-> This change updates a few of the functions to use __pa_symbol when
-> translating C visible symbols instead of __pa.  By using __pa_symbol we are
-> able to drop a few extra lines of code as don't have to test to see if the
-> virtual pointer is a part of the kernel text or just standard virtual memory.
-> 
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Am 06.11.2012 15:47, schrieb Borislav Petkov:
+> On Tue, Nov 06, 2012 at 02:14:46PM +0100, Alexander Holler wrote:
+>> Am 06.11.2012 12:44, schrieb Alexander Holler:
+>>> Am 06.11.2012 12:18, schrieb Alexander Holler:
+>>>> I will now to tests with leaving fglrx off.
+>>>
+>>> s/to/do/ ;)
+>>>
+>>> That was gone fast. Disabled fglrx, started tests, full halt without any
+>>> visible on the serial (I needed to press the reset button):
+>>
+>> One after another, now I've got this:
+>>
+>> [ 5698.640830] [Hardware Error]: CPU:0
+>> MC2_STATUS[Over|CE|MiscV|-|AddrV|-|-|CECC]: 0xdc2540c000040136
+>> [ 5698.649866] [Hardware Error]:        MC2_ADDR: 0x0000000002299678
+>> [ 5698.655443] [Hardware Error]: Combined Unit Error: Fill ECC error
+>> on data fills.
+>> [ 5698.662849] [Hardware Error]: cache level: L2, tx: DATA, mem-tx: DRD
+>>
+>> I think it's now really an RMA and I can stop doing further tests.
+>
+> Are you sure the temperature conditions of the box are optimal? IOW,
+> there's nothing overheating in there?
 
-Acked-by.
+Yes. At least if the boxed fan is enough, which I have to assume. 
+Environment temperature is around 18° C or even colder.
 
-> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> ---
-> 
->  arch/x86/xen/mmu.c |   21 +++++++++++----------
->  1 files changed, 11 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index 4a05b39..a63e5f9 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1486,7 +1486,8 @@ static int xen_pgd_alloc(struct mm_struct *mm)
->  
->  		if (user_pgd != NULL) {
->  			user_pgd[pgd_index(VSYSCALL_START)] =
-> -				__pgd(__pa(level3_user_vsyscall) | _PAGE_TABLE);
-> +				__pgd(__pa_symbol(level3_user_vsyscall) |
-> +				      _PAGE_TABLE);
->  			ret = 0;
->  		}
->  
-> @@ -1958,10 +1959,10 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  	 * pgd.
->  	 */
->  	if (xen_feature(XENFEAT_writable_page_tables)) {
-> -		native_write_cr3(__pa(init_level4_pgt));
-> +		native_write_cr3(__pa_symbol(init_level4_pgt));
->  	} else {
->  		xen_mc_batch();
-> -		__xen_write_cr3(true, __pa(init_level4_pgt));
-> +		__xen_write_cr3(true, __pa_symbol(init_level4_pgt));
->  		xen_mc_issue(PARAVIRT_LAZY_CPU);
->  	}
->  	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
-> @@ -1984,10 +1985,10 @@ static RESERVE_BRK_ARRAY(pmd_t, swapper_kernel_pmd, PTRS_PER_PMD);
->  
->  static void __init xen_write_cr3_init(unsigned long cr3)
->  {
-> -	unsigned long pfn = PFN_DOWN(__pa(swapper_pg_dir));
-> +	unsigned long pfn = PFN_DOWN(__pa_symbol(swapper_pg_dir));
->  
-> -	BUG_ON(read_cr3() != __pa(initial_page_table));
-> -	BUG_ON(cr3 != __pa(swapper_pg_dir));
-> +	BUG_ON(read_cr3() != __pa_symbol(initial_page_table));
-> +	BUG_ON(cr3 != __pa_symbol(swapper_pg_dir));
->  
->  	/*
->  	 * We are switching to swapper_pg_dir for the first time (from
-> @@ -2011,7 +2012,7 @@ static void __init xen_write_cr3_init(unsigned long cr3)
->  	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, pfn);
->  
->  	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE,
-> -			  PFN_DOWN(__pa(initial_page_table)));
-> +			  PFN_DOWN(__pa_symbol(initial_page_table)));
->  	set_page_prot(initial_page_table, PAGE_KERNEL);
->  	set_page_prot(initial_kernel_pmd, PAGE_KERNEL);
->  
-> @@ -2036,7 +2037,7 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  
->  	copy_page(initial_page_table, pgd);
->  	initial_page_table[KERNEL_PGD_BOUNDARY] =
-> -		__pgd(__pa(initial_kernel_pmd) | _PAGE_PRESENT);
-> +		__pgd(__pa_symbol(initial_kernel_pmd) | _PAGE_PRESENT);
->  
->  	set_page_prot(initial_kernel_pmd, PAGE_KERNEL_RO);
->  	set_page_prot(initial_page_table, PAGE_KERNEL_RO);
-> @@ -2045,8 +2046,8 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
->  	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
->  
->  	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE,
-> -			  PFN_DOWN(__pa(initial_page_table)));
-> -	xen_write_cr3(__pa(initial_page_table));
-> +			  PFN_DOWN(__pa_symbol(initial_page_table)));
-> +	xen_write_cr3(__pa_symbol(initial_page_table));
->  
->  	memblock_reserve(__pa(xen_start_info->pt_base),
->  			 xen_start_info->nr_pt_frames * PAGE_SIZE);
+Regards,
+
+Alexander
+
