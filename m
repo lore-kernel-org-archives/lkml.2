@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab2KFIGx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 03:06:53 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47938 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490Ab2KFIGw (ORCPT
+	id S1754299Ab2KFIIX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 03:08:23 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54389 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907Ab2KFIIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 03:06:52 -0500
-Message-ID: <5098C4F8.9050700@kernel.dk>
-Date: Tue, 06 Nov 2012 09:06:16 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Shaohua Li <shli@kernel.org>, NeilBrown <neilb@suse.de>,
-        linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Problem with DISCARD and RAID5
-References: <20121101173854.62061307@notabene.brown> <20121102014058.GA20526@kernel.org> <20121105214846.GM29378@dastard>
-In-Reply-To: <20121105214846.GM29378@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Nov 2012 03:08:21 -0500
+From: Mojiong Qiu <qiumojiong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mojiong Qiu <qiumojiong@gmail.com>, Mojiong Qiu <mjqiu@tencent.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        stable@kernel.org (at least to 3.0.y)
+Subject: [PATCH] xen/events: xen/events: fix RCU warning
+Date: Tue,  6 Nov 2012 16:08:15 +0800
+Message-Id: <1352189295-7111-1-git-send-email-qiumojiong@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-11-05 22:48, Dave Chinner wrote:
-> On Fri, Nov 02, 2012 at 09:40:58AM +0800, Shaohua Li wrote:
->> On Thu, Nov 01, 2012 at 05:38:54PM +1100, NeilBrown wrote:
->>>
->>> Hi Shaohua,
->>>  I've been doing some testing and discovered a problem with your discard
->>>  support for RAID5.
->>>
->>>  The code in blkdev_issue_discard assumes that the 'granularity' is a power
->>>  of 2, and for example subtracts 1 to get a mask.
->>>
->>>  However RAID5 sets the granularity to be the stripe size which often is not
->>>  a power of two.  When this happens you can easily get into an infinite loop.
->>>
->>>  I suspect that to make this work properly, blkdev_issue_discard will need to
->>>  be changed to allow 'granularity' to be an arbitrary value.
->>>  When it is a power of two, the current masking can be used.
->>>  When it is anything else, it will need to use sector_div().
->>
->> Yep, looks we need use sector_div. And this isn't the only problem. discard
->> request can be merged, and the merge check only checks max_discard_sectors.
->> That means the split requests in blkdev_issue_discard can be merged again. The
->> split nerver works.
->>
->> I'm wondering what's purpose of discard_alignment and discard_granularity. Are
->> there devices with discard_granularity not 1 sector?
-> 
-> Most certainly. Thin provisioned storage often has granularity in the
-> order of megabytes....
+exit_idle() should be called after irq_enter(), otherwise it throws:
 
-Can't really to to much about that...
+[    2.513020] [ INFO: suspicious RCU usage. ]
+[    2.513076] 3.6.5 #1 Not tainted
+[    2.513128] -------------------------------
+[    2.513183] include/linux/rcupdate.h:725 rcu_read_lock() used illegally while idle!
+[    2.513271]
+[    2.513271] other info that might help us debug this:
+[    2.513271]
+[    2.513388]
+[    2.513388] RCU used illegally from idle CPU!
+[    2.513388] rcu_scheduler_active = 1, debug_locks = 1
+[    2.513511] RCU used illegally from extended quiescent state!
+[    2.513572] 1 lock held by swapper/0/0:
+[    2.513626]  #0:  (rcu_read_lock){......}, at: [<ffffffff810e9fe0>] __atomic_notifier_call_chain+0x0/0x140
+[    2.513815]
+[    2.513815] stack backtrace:
+[    2.513897] Pid: 0, comm: swapper/0 Not tainted 3.6.5 #1
+[    2.513954] Call Trace:
+[    2.514005]  <IRQ>  [<ffffffff811259a2>] lockdep_rcu_suspicious+0xe2/0x130
+[    2.514107]  [<ffffffff810ea10c>] __atomic_notifier_call_chain+0x12c/0x140
+[    2.514169]  [<ffffffff810e9fe0>] ? atomic_notifier_chain_unregister+0x90/0x90
+[    2.514258]  [<ffffffff811216cd>] ? trace_hardirqs_off+0xd/0x10
+[    2.514318]  [<ffffffff810ea136>] atomic_notifier_call_chain+0x16/0x20
+[    2.514381]  [<ffffffff810777c3>] exit_idle+0x43/0x50
+[    2.514441]  [<ffffffff81568865>] xen_evtchn_do_upcall+0x25/0x50
+[    2.514503]  [<ffffffff81aa690e>] xen_do_hypervisor_callback+0x1e/0x30
+[    2.514562]  <EOI>  [<ffffffff810013aa>] ? hypercall_page+0x3aa/0x1000
+[    2.514662]  [<ffffffff810013aa>] ? hypercall_page+0x3aa/0x1000
+[    2.514722]  [<ffffffff81061540>] ? xen_safe_halt+0x10/0x20
+[    2.514782]  [<ffffffff81075cfa>] ? default_idle+0xba/0x570
+[    2.514841]  [<ffffffff810778af>] ? cpu_idle+0xdf/0x140
+[    2.514900]  [<ffffffff81a4d881>] ? rest_init+0x135/0x144
+[    2.514960]  [<ffffffff81a4d74c>] ? csum_partial_copy_generic+0x16c/0x16c
+[    2.515022]  [<ffffffff82520c45>] ? start_kernel+0x3db/0x3e8
+[    2.515081]  [<ffffffff8252066a>] ? repair_env_string+0x5a/0x5a
+[    2.515141]  [<ffffffff82520356>] ? x86_64_start_reservations+0x131/0x135
+[    2.515202]  [<ffffffff82524aca>] ? xen_start_kernel+0x465/0x46
 
->> If bio isn't discard
->> aligned, what device will do?
-> 
-> Up to the device.
+Signed-off-by: Mojiong Qiu <mjqiu@tencent.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: xen-devel@lists.xensource.com
+Cc: virtualization@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Cc: stable@kernel.org (at least to 3.0.y)
+---
+ drivers/xen/events.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-We should not send those down, if they are violating the restrictions
-set by the driver.
-
->> Further, why driver handles alignment/granularity
->> if device will ignore misaligned request.
-> 
-> When you send a series of sequential unaligned requests, the device
-> may ignore them all. Hence you end up with nothing being discarded,
-> even though the entire range being discarded is much, much larger
-> than the discard granularity....
-
-That's just tough luck, unfortunately. Shaohua, I'd suggest sending down
-whatever discards you can, IFF they are aligned according to the
-restrictions being set. If that ends up not discarding to devices that
-have large alignment/size constraints, nothing we can do about that.
-
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 912ac81..0be4df3 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1395,10 +1395,10 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
+ {
+ 	struct pt_regs *old_regs = set_irq_regs(regs);
+ 
++	irq_enter();
+ #ifdef CONFIG_X86
+ 	exit_idle();
+ #endif
+-	irq_enter();
+ 
+ 	__xen_evtchn_do_upcall();
+ 
 -- 
-Jens Axboe
+1.6.3.2
 
