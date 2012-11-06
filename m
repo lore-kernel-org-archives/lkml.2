@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab2KFNbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 08:31:37 -0500
-Received: from mga03.intel.com ([143.182.124.21]:64759 "EHLO mga03.intel.com"
+	id S1752234Ab2KFNgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 08:36:13 -0500
+Received: from fieldses.org ([174.143.236.118]:33594 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343Ab2KFNbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 08:31:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,722,1344236400"; 
-   d="scan'208";a="165060709"
-Date: Tue, 6 Nov 2012 05:31:35 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@redhat.com, jolsa@redhat.com, namhyung.kim@lge.com
-Subject: Re: [PATCH v2 08/16] perf/x86: add memory profiling via PEBS Load
- Latency
-Message-ID: <20121106133135.GC25167@tassilo.jf.intel.com>
-References: <1352123463-7346-1-git-send-email-eranian@google.com>
- <1352123463-7346-9-git-send-email-eranian@google.com>
+	id S1751903Ab2KFNgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 08:36:12 -0500
+Date: Tue, 6 Nov 2012 08:36:05 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
+ connecting local transports
+Message-ID: <20121106133605.GD6718@fieldses.org>
+References: <20121008105437.18668.99905.stgit@localhost.localdomain>
+ <20121009193506.GA19680@fieldses.org>
+ <5098E31A.5080801@parallels.com>
+ <20121106120642.GA6718@fieldses.org>
+ <20121106124035.GA20522@infradead.org>
+ <20121106130705.GC6718@fieldses.org>
+ <20121106131018.GA12211@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352123463-7346-9-git-send-email-eranian@google.com>
+In-Reply-To: <20121106131018.GA12211@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
-> +EVENT_ATTR(instructions,		INSTRUCTIONS		);
-> +EVENT_ATTR(cache-references,		CACHE_REFERENCES	);
-> +EVENT_ATTR(cache-misses,		CACHE_MISSES		);
-> +EVENT_ATTR(branch-instructions,		BRANCH_INSTRUCTIONS	);
-> +EVENT_ATTR(branch-misses,		BRANCH_MISSES		);
-> +EVENT_ATTR(bus-cycles,			BUS_CYCLES		);
-> +EVENT_ATTR(stalled-cycles-frontend,	STALLED_CYCLES_FRONTEND	);
-> +EVENT_ATTR(stalled-cycles-backend,	STALLED_CYCLES_BACKEND	);
-> +EVENT_ATTR(ref-cycles,			REF_CPU_CYCLES		);
+On Tue, Nov 06, 2012 at 08:10:18AM -0500, Christoph Hellwig wrote:
+> On Tue, Nov 06, 2012 at 08:07:06AM -0500, J. Bruce Fields wrote:
+> > So you're worried that a bug in the nfs code could modify the root and
+> > then not restore it?
+> 
+> At least the link you pointed to earlier never sets it back.
 
-The merge_events() approach from the Haswell patches should be far cleaner
+This? http://thread.gmane.org/gmane.linux.kernel/1259986/focus=47687
 
--Andi
+	+	get_fs_root(current->fs, &root);
+	+	set_fs_root(current->fs, &transport->root);
+	+
+	 	status = xs_local_finish_connecting(xprt, sock);
+	+
+	+	set_fs_root(current->fs, &root);
+	+	path_put(&root);
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+> Instead
+> of messing with it I'd rather have the sunrpc code use vfs_path_lookup
+> and not care about current->fs->root at all.
+
+The annoyance is that the lookup happens somewhere lower down in the
+networking code (net/unix/af_unix.c:unix_find_other, I think).  So we'd
+need some new (internal) API.  We'd likely be the only user of that new
+API.
+
+--b.
