@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab2KFA2c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 19:28:32 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40830 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2KFA2b (ORCPT
+	id S932877Ab2KFA2l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 19:28:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56330 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932192Ab2KFA2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 19:28:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <1352123068.14769.6.camel@phoenix>
-References: <1352123068.14769.6.camel@phoenix>
-From: Barry Song <21cnbao@gmail.com>
-Date: Tue, 6 Nov 2012 08:28:09 +0800
-Message-ID: <CAGsJ_4wZVAE49fqpZz-+YSZQK0ZDS=ANtDgg3vJhj5vEL95v-A@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: sirf: Staticize non-exported symbol
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Barry Song <baohua.song@csr.com>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 5 Nov 2012 19:28:38 -0500
+Date: Mon, 5 Nov 2012 16:28:37 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>, JoonSoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH v6 19/29] memcg: infrastructure to match an allocation
+ to the right cache
+Message-Id: <20121105162837.5fdac20c.akpm@linux-foundation.org>
+In-Reply-To: <1351771665-11076-20-git-send-email-glommer@parallels.com>
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+	<1351771665-11076-20-git-send-email-glommer@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/5 Axel Lin <axel.lin@ingics.com>:
-> Staticize sirfsoc_gpio_irq_map() function.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+On Thu,  1 Nov 2012 16:07:35 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-Acked-by: Barry Song <Baohua.Song@csr.com>
+> +static __always_inline struct kmem_cache *
+> +memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
 
-> ---
->  drivers/pinctrl/pinctrl-sirf.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/pinctrl/pinctrl-sirf.c b/drivers/pinctrl/pinctrl-sirf.c
-> index 9ecacf3..e3b2c53 100644
-> --- a/drivers/pinctrl/pinctrl-sirf.c
-> +++ b/drivers/pinctrl/pinctrl-sirf.c
-> @@ -1621,8 +1621,8 @@ static void sirfsoc_gpio_set_value(struct gpio_chip *chip, unsigned offset,
->         spin_unlock_irqrestore(&bank->lock, flags);
->  }
->
-> -int sirfsoc_gpio_irq_map(struct irq_domain *d, unsigned int irq,
-> -       irq_hw_number_t hwirq)
-> +static int sirfsoc_gpio_irq_map(struct irq_domain *d, unsigned int irq,
-> +                               irq_hw_number_t hwirq)
->  {
->         struct sirfsoc_gpio_bank *bank = d->host_data;
->
-> --
-> 1.7.9.5
->
--barry
+I still don't understand why this code uses __always_inline so much.
+
+I don't recall seeing the compiler producing out-of-line versions of
+"static inline" functions (and perhaps it has special treatment for
+functions which were defined in a header file?).
+
+And if the compiler *does* decide to uninline the function, perhaps it
+knows best, and the function shouldn't have been declared inline in the
+first place.
+
+
+If it is indeed better to use __always_inline in this code then we have
+a heck of a lot of other "static inline" definitions whcih we need to
+convert!  So, what's going on here?
+
