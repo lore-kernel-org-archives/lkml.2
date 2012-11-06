@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933635Ab2KFCif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 21:38:35 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:49390 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933560Ab2KFCie (ORCPT
+	id S933655Ab2KFCqp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 21:46:45 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:37142 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933504Ab2KFCqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 21:38:34 -0500
-X-Greylist: delayed 1869 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Nov 2012 21:38:34 EST
-Message-ID: <50987004.1000003@fb.com>
-Date: Mon, 5 Nov 2012 18:03:48 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Mon, 5 Nov 2012 21:46:43 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+References: <20121103134630.GA28166@srcf.ucam.org>
+	<1351983400.2417.21.camel@dabdike.int.hansenpartnership.com>
+	<20121104042802.GA11295@srcf.ucam.org>
+	<1352020487.2427.5.camel@dabdike.int.hansenpartnership.com>
+	<20121104135251.GA17894@srcf.ucam.org> <87d2zsmv8r.fsf@xmission.com>
+	<509766DB.9090906@zytor.com> <87625kh5r2.fsf@xmission.com>
+	<20121105123858.GB4374@srcf.ucam.org> <87sj8nc137.fsf@xmission.com>
+	<20121105202557.GA16076@srcf.ucam.org>
+Date: Mon, 05 Nov 2012 18:46:32 -0800
+In-Reply-To: <20121105202557.GA16076@srcf.ucam.org> (Matthew Garrett's message
+	of "Mon, 5 Nov 2012 20:25:57 +0000")
+Message-ID: <87hap3zbw7.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        <sanjay@google.com>, David Rientjes <rientjes@google.com>
-Subject: Re: [RFC v2] Support volatile range for anon vma
-References: <1351560594-18366-1-git-send-email-minchan@kernel.org> <20121031143524.0509665d.akpm@linux-foundation.org> <CAPM31RKm89s6PaAnfySUD-f+eGdoZP6=9DHy58tx_4Zi8Z9WPQ@mail.gmail.com> <CAHGf_=om34CQoPqgmVE5v8oVxntaJQ-bvFeEPMnfe_R+uvxqrQ@mail.gmail.com> <20121105235443.GA27718@dev3310.snc6.facebook.com> <20121106014932.GA4623@barrios>
-In-Reply-To: <20121106014932.GA4623@barrios>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.254]
-X-Proofpoint-Spam-Reason: safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-11-05_06:2012-11-05,2012-11-05,1970-01-01 signatures=0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/zOv+/lF7u1GMGHUqm7E5goG5DAPxXb7w=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Matthew Garrett <mjg59@srcf.ucam.org>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/5/12 5:49 PM, Minchan Kim wrote:
+Matthew Garrett <mjg59@srcf.ucam.org> writes:
 
->> Also, memory allocators have a second motivation in using madvise: to
->> create virtually contiguous regions of memory from a fragmented address
->> space, without increasing the RSS.
+> On Mon, Nov 05, 2012 at 11:16:12AM -0800, Eric W. Biederman wrote:
+>> Matthew Garrett <mjg59@srcf.ucam.org> writes:
+>> > No, in the general case the system will do that once it fails to find a 
+>> > bootable OS on the drive.
+>> 
+>> In the general case there will be a bootable OS on the drive.
 >
-> I don't get it. How do we create contiguos region by madvise?
-> Just out of curiosity.
-> Could you elaborate that use case? :)
+> That's in no way a given.
 
-By using a new anonymous map and faulting pages in.
+You have it backwards.  The conclusion here is that having a case where
+a non-interactive install is possible is not a given.
 
-The fragmented virtual memory is released via MADV_DONTNEED and if the 
-malloc/free activity on the system is dominated by one process, chances 
-are that the newly faulted in page is the one released by the same 
-process :)
+Therefore inflicting the entire rest of the ecosystem with requirements
+that only exist in the union of the requirements for non-interactive
+installs and installs on a machine with an existing machine does not
+make sense.
 
-The net effect is that physical pages within a single address space are 
-rearranged so larger allocations can be satisfied.
+In situations where a non-interactive install is interesting.  Aka
+an empty boot disk it is not interesting to guard against.
 
-  -Arun
+In situations where interaction happens is where windows may already exists
+and so spoofing windows is a design consideration and and a user
+presence test does not break the design.
+
+Eric
