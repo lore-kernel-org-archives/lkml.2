@@ -1,100 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab2KFAAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 19:00:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56187 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab2KFAAV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 19:00:21 -0500
-Date: Mon, 5 Nov 2012 16:00:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: wency@cn.fujitsu.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, liuj97@gmail.com, len.brown@intel.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        laijs@cn.fujitsu.com
-Subject: Re: [PATCH v3 0/3] acpi,memory-hotplug : implement framework for
- hot removing memory
-Message-Id: <20121105160020.33b2f494.akpm@linux-foundation.org>
-In-Reply-To: <1528960.KUfu6MoGpQ@vostro.rjw.lan>
-References: <1351247463-5653-1-git-send-email-wency@cn.fujitsu.com>
-	<1528960.KUfu6MoGpQ@vostro.rjw.lan>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754921Ab2KFACR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 19:02:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751499Ab2KFACQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 19:02:16 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <s5hhap49den.wl%tiwai@suse.de>
+References: <s5hhap49den.wl%tiwai@suse.de> <1348152065-31353-1-git-send-email-mjg@redhat.com> <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz> <20121029174131.GC7580@srcf.ucam.org> <s5hobjia6vj.wl%tiwai@suse.de> <20121031173728.GA18615@srcf.ucam.org> <s5h390utqv3.wl%tiwai@suse.de> <1351743715.21227.95.camel@linux-s257.site> <20121101131849.752df6fd@pyramind.ukuu.org.uk> <s5hip9k9dng.wl%tiwai@suse.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: dhowells@redhat.com, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, joeyli <jlee@suse.com>,
+        Jiri Kosina <jkosina@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH RFC 0/4] Add firmware signature file check
+Date: Tue, 06 Nov 2012 00:01:52 +0000
+Message-ID: <5839.1352160112@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 Nov 2012 13:51:49 +0100
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+Takashi Iwai <tiwai@suse.de> wrote:
 
-> On Friday, October 26, 2012 06:31:00 PM wency@cn.fujitsu.com wrote:
-> > From: Wen Congyang <wency@cn.fujitsu.com>
-> > 
-> > The patch-set implements a framework for hot removing memory.
-> > 
-> > The memory device can be removed by 2 ways:
-> > 1. send eject request by SCI
-> > 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> > 
-> > In the 1st case, acpi_memory_disable_device() will be called.
-> > In the 2nd case, acpi_memory_device_remove() will be called.
-> > acpi_memory_device_remove() will also be called when we unbind the
-> > memory device from the driver acpi_memhotplug or a driver initialization
-> > fails.
-> > 
-> > acpi_memory_disable_device() has already implemented a code which
-> > offlines memory and releases acpi_memory_info struct . But
-> > acpi_memory_device_remove() has not implemented it yet.
-> > 
-> > So the patch prepares the framework for hot removing memory and
-> > adds the framework into acpi_memory_device_remove().
-> > 
-> > The last version of this patchset is here:
-> > https://lkml.org/lkml/2012/10/19/156
-> > 
-> > Changelogs from v2 to v3:
-> >   Patch2: rename lock to list_lock
-> > 
-> > Changelogs from v1 to v2:
-> >   Patch1: use acpi_bus_trim() instead of acpi_bus_remove()
-> >   Patch2: new patch, introduce a lock to protect the list
-> >   Patch3: remove memory too when type is ACPI_BUS_REMOVAL_NORMAL
-> >   Note: I don't send [Patch2-4 v1] in this series because they
-> >   are no logical changes in these 3 patches.
-> > 
-> > Wen Congyang (2):
-> >   acpi,memory-hotplug: call acpi_bus_trim() to remove memory device
-> >   acpi,memory-hotplug: introduce a mutex lock to protect the list in
-> >     acpi_memory_device
-> > 
-> > Yasuaki Ishimatsu (1):
-> >   acpi,memory-hotplug : add memory offline code to
-> >     acpi_memory_device_remove()
-> > 
-> >  drivers/acpi/acpi_memhotplug.c | 51 +++++++++++++++++++++++++++++++++---------
-> >  1 file changed, 41 insertions(+), 10 deletions(-)
-> 
-> All patches in the series applied to the linux-next branch of the linux-pm.git
-> tree as v3.8 material.
-> 
+> this is a patch series to add the support for firmware signature
+> check.  At this time, the kernel checks extra signature file (*.sig)
+> for each firmware, instead of embedded signature.
+> It's just a quick hack using the existing module signing mechanism,
+> thus provided only as a proof of concept for now.
 
-That merge made a big mess of some patches I had queued, so I dropped
-them all:
+There is another way to do this.  If you look at the patches I proposed to
+wrap keys in PE binaries, you'll find that that can handle PKCS#7 format
+messages as that's what's in the sort of signed PE binary we're dealing with.
 
-acpi_memhotplugc-fix-memory-leak-when-memory-device-is-unbound-from-the-module-acpi_memhotplug.patch
-acpi_memhotplugc-free-memory-device-if-acpi_memory_enable_device-failed.patch
-acpi_memhotplugc-remove-memory-info-from-list-before-freeing-it.patch
-acpi_memhotplugc-dont-allow-to-eject-the-memory-device-if-it-is-being-used.patch
-acpi_memhotplugc-bind-the-memory-device-when-the-driver-is-being-loaded.patch
-acpi_memhotplugc-auto-bind-the-memory-device-which-is-hotplugged-before-the-driver-is-loaded.patch
+You could use this to put the firmware inside a signed-data PKCS#7 message.
 
-I merged these all the way back in July, actually.  I sent them to Len
-in August to no effect and they've been sitting there since then.
-
-If they're still relevant and needed then they will need to be redone,
-retested and resent, sorry.
-
+David
