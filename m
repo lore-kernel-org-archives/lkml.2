@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933603Ab2KFCJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 21:09:52 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:44139 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933421Ab2KFCJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 21:09:50 -0500
-Date: Tue, 6 Nov 2012 13:09:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Achim Leubner <achim_leubner@adaptec.com>, devel@driverdev.osuosl.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-next@vger.kernel.org, Joe Perches <joe@perches.com>
-Subject: Re: linux-next: build failure after merge of the pci tree
-Message-Id: <20121106130938.081aaaa8450313466084755f@canb.auug.org.au>
-In-Reply-To: <20121106015542.GA13487@kroah.com>
-References: <20121106112729.994c25ccce521ab5aaf1f060@canb.auug.org.au>
-	<20121106015542.GA13487@kroah.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__6_Nov_2012_13_09_38_+1100_QQaBDAMDrVmDBjOj"
+	id S964799Ab2KFCKp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 21:10:45 -0500
+Received: from ozlabs.org ([203.10.76.45]:41118 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933504Ab2KFCKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 21:10:40 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Bruno Wolff III <bruno@wolff.to>, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] MODSIGN: Only sign modules if built in-tree
+In-Reply-To: <20121105191903.GG27352@hansolo.jdub.homelinux.org>
+References: <20121031132749.GH6627@hansolo.jdub.homelinux.org> <87390t6bs0.fsf@rustcorp.com.au> <20121101112655.GM6627@hansolo.jdub.homelinux.org> <20121101145013.GN6627@hansolo.jdub.homelinux.org> <87liek4rt5.fsf@rustcorp.com.au> <20121102123404.GO6627@hansolo.jdub.homelinux.org> <87vcdkyfi4.fsf@rustcorp.com.au> <20121105191903.GG27352@hansolo.jdub.homelinux.org>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 06 Nov 2012 12:04:02 +1030
+Message-ID: <87a9uv5xbp.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__6_Nov_2012_13_09_38_+1100_QQaBDAMDrVmDBjOj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Greg,
-
-On Tue, 6 Nov 2012 02:55:42 +0100 Greg Kroah-Hartman <gregkh@linuxfoundatio=
-n.org> wrote:
+Josh Boyer <jwboyer@redhat.com> writes:
+> On Mon, Nov 05, 2012 at 12:31:39PM +1030, Rusty Russell wrote:
+>> Josh Boyer <jwboyer@redhat.com> writes:
+>> > diff --git a/Makefile b/Makefile
+>> > index 14c93b3..7e27d51 100644
+>> > --- a/Makefile
+>> > +++ b/Makefile
+>> > @@ -722,8 +722,14 @@ export mod_strip_cmd
+>> >  ifeq ($(CONFIG_MODULE_SIG),y)
+>> >  MODSECKEY = ./signing_key.priv
+>> >  MODPUBKEY = ./signing_key.x509
+>> > +ifeq ($(KBUILD_EXTMOD),)
+>> > +SIGNFAIL = false
+>> > +else
+>> > +# External builds might not have a signing key, don't break module_install.
+>> > +SIGNFAIL = true
+>> > +endif # KBUILD_EXTMOD
+>> >  export MODPUBKEY
+>> > -mod_sign_cmd = perl $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY)
+>> > +mod_sign_cmd = $(SIGNFAIL) || perl $(srctree)/scripts/sign-file $(MODSECKEY) $(MODPUBKEY)
+>> >  else
+>> >  mod_sign_cmd = true
+>> >  endif
+>> 
+>> Huh?  'true || perl' never runs perl due to short circuiting.
 >
-> It is gone in my tree, and it should be deleted in yours, do you not see
-> that?
+> Ah.  Maybe you were going for "sign all modules if keys are available,
+> but don't break external if they aren't" semantics.  I was just skipping
+> it entirely for external modules.
 
-Unfortunately, your tree gets merged late in my set of trees ... so I'll
-just keep the disabling patch and the problem will go away eventually.
+Exactly.  This way you get warnings, not failure.  You probably want
+that, since you'll (at least) taint your kernel when you load those
+modules.
 
-Thanks.
+I've applied this in my fixes branch, will push to Linus later this
+week.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__6_Nov_2012_13_09_38_+1100_QQaBDAMDrVmDBjOj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQmHFiAAoJEECxmPOUX5FEOpQP/2YLCc5sqVseXJqnGY9sKf+z
-0cPSOeH3aCK2t2upEx/70VK95g+sZ5CbVETKb4WlCusDwELrwVFhNWJSIa+FHq9J
-jedBWgBVg0vb8eziVNfcO0T2lDMhHL5zKL165qiSB0W+kOD2QH3LnorDyjHh9Qrs
-ygxUybesizQT9plYZnu/lIgyqMXdPaCJWRMS4TAKbdvizZZlCD1mRJ4RGG5bPd6h
-GxqawHbzl2GDM23EcE8yMMxUktj2TD8yBfv/QhtvyjJFTYEZ0YBm0qSr1jegPAAP
-2jfxIWeazgLjw8QcX8Ru8mmHZf0WlMzeoausIapgJESSMHauU0hNUT5Rm8Mu3cRr
-fFXm4r3CB/HvoecRZjRaT7Hqt05/Qresd0DUxYAQaQQQaAKg2L6dWw/Op3i0r7Nq
-GMxoxqQh2IQcxYnkgXdU6F0gtV75Ef8MGPbjITwVq26XvaiiXNDNFNdwn4Dyz/E3
-CQsg5r+qrw7GIrV+f9vlK1Trk/vk1hPQhCtI62PxHE4YT96ucLfsDXrUwLig4edD
-cYxTbli49aBHjOJg2yXsgbpZ16PxJhtVlsq/oNC2Upupv03Zz2NVc3VTXYjo6kbM
-ZPcQ3FuCFp5wBbjaqnMbwSNsJR35goOMHh301fUIJlCijEAtz66cudLmTsNUVRKN
-kkoZ54ymDfG8WoimzSUz
-=wqBq
------END PGP SIGNATURE-----
-
---Signature=_Tue__6_Nov_2012_13_09_38_+1100_QQaBDAMDrVmDBjOj--
+Thanks,
+Rusty.
