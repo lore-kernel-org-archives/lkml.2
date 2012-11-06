@@ -1,94 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751199Ab2KFJx5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:53:57 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42413 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab2KFJxy (ORCPT
+	id S1751188Ab2KFKDj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 05:03:39 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38733 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab2KFKDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:53:54 -0500
+	Tue, 6 Nov 2012 05:03:36 -0500
+Message-ID: <5098E05D.6020402@ti.com>
+Date: Tue, 6 Nov 2012 15:33:09 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-X-Originating-IP: [88.2.49.79]
-In-Reply-To: <1351958983-31355-2-git-send-email-fweisbec@gmail.com>
-References: <1351958983-31355-1-git-send-email-fweisbec@gmail.com>
-	<1351958983-31355-2-git-send-email-fweisbec@gmail.com>
-Date: Tue, 6 Nov 2012 11:53:53 +0200
-Message-ID: <CAOtvUMckqfMhSwE6DsEzaEUEcDGw0uyYD9x0_XSo-1GM3HDy1g@mail.gmail.com>
-Subject: Re: [PATCH 1/3] context_tracking: New context tracking susbsystem
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
+        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 07/11] ARM: davinci - restructure header files for
+ common clock migration
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-8-git-send-email-m-karicheri2@ti.com> <50967641.4090503@ti.com> <50980F57.1090507@ti.com>
+In-Reply-To: <50980F57.1090507@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 3, 2012 at 6:09 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> Create a new subsystem that probes on kernel boundaries
-> to keep track of the transitions between level contexts
-> with two basic initial contexts: user or kernel.
->
-> This is an abstraction of some RCU code that use such tracking
-> to implement its userspace extended quiescent state.
->
-> We need to pull this up from RCU into this new level of indirection
-> because this tracking is also going to be used to implement an "on
-> demand" generic virtual cputime accounting. A necessary step to
-> shutdown the tick while still accounting the cputime.
-> ...
->
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index 366ec06..3855e06 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -300,15 +300,15 @@ config SECCOMP_FILTER
->
->           See Documentation/prctl/seccomp_filter.txt for details.
->
-> -config HAVE_RCU_USER_QS
-> +config HAVE_CONTEXT_TRACKING
->         bool
->         help
-> -         Provide kernel entry/exit hooks necessary for userspace
-> +         Provide kernel/user boundaries probes necessary for userspace
->           RCU extended quiescent state. Syscalls need to be wrapped inside
+On 11/6/2012 12:41 AM, Murali Karicheri wrote:
+> On 11/04/2012 09:05 AM, Sekhar Nori wrote:
+>>
+>> On 10/25/2012 9:41 PM, Murali Karicheri wrote:
+>>> pll.h is added to migrate some of the PLL controller defines for
+>>> sleep.S.
+>>> psc.h is modified to keep only PSC modules definitions needed by sleep.S
+>>> after migrating to common clock. The definitions under
+>>> ifdef CONFIG_COMMON_CLK will be removed in a subsequent patch.
+>>> davinci_watchdog_reset prototype is moved to time.h as clock.h is
+>>> being obsoleted. sleep.S and pm.c is modified to include the new header
+>>> file replacements.
+>>>
+>>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>>> ---
+>>>   arch/arm/mach-davinci/devices.c           |    2 ++
+>>>   arch/arm/mach-davinci/include/mach/pll.h  |   46
+>>> +++++++++++++++++++++++++++++
+>>>   arch/arm/mach-davinci/include/mach/psc.h  |    4 +++
+>>>   arch/arm/mach-davinci/include/mach/time.h |    4 ++-
+>>>   arch/arm/mach-davinci/pm.c                |    4 +++
+>>>   arch/arm/mach-davinci/sleep.S             |    4 +++
+>>>   6 files changed, 63 insertions(+), 1 deletion(-)
+>>>   create mode 100644 arch/arm/mach-davinci/include/mach/pll.h
+>> With this patch a _third_ copy of PLL definitions is created in kernel
+>> sources. The existing PLL definitions in clock.h inside mach-davinci
+>> should be moved to mach/pll.h and the pll.h you introduced inside
+>> drivers/clk in 5/11 should be removed (this patch should appear before
+>> 5/11).
+>>
+>> The biggest disadvantage of this approach is inclusion of mach/ includes
+>> in drivers/clk. But duplicating code is definitely not the fix for this.
+>> Anyway, mach/ includes are not uncommon in drivers/clk (they are all
+>> probably suffering from the same issue).
+> Sekhar,
+> 
+> I have replied to patch 5/11 that also refers to this. The main reason
+> we are not able to do this cleanly is the code in sleep.c and pm.c. That
+> is something related to Power management. Could you take a look and see
+> if you can do some clean up on this code? I believe It is more than just
+> moving the header files.
 
-A minor nit pick: if whole point of the patch is to turn an RCU
-specific mechanism to a generic one
-that RCU happens to use, then the text needs to reflect that. How about:
+I am not sure what more is required than moving header files? Can you
+elaborate?
 
-"Provide kernel/user boundaries probes necessary for subsystems that
-need it, such as userspace
-RCU extended quiescent state. "
+> 
+> Murali
+>>
+>> $ grep -rl "include <mach/" drivers/clk/*
+>> drivers/clk/clk-u300.c
+>> drivers/clk/mmp/clk-pxa168.c
+>> drivers/clk/mmp/clk-mmp2.c
+>> drivers/clk/mmp/clk-pxa910.c
+>> drivers/clk/mxs/clk-imx23.c
+>> drivers/clk/mxs/clk-imx28.c
+>> drivers/clk/spear/spear6xx_clock.c
+>> drivers/clk/spear/spear3xx_clock.c
+>> drivers/clk/spear/spear1340_clock.c
+>> drivers/clk/spear/spear1310_clock.c
+>> drivers/clk/ux500/clk-prcc.c
+>> drivers/clk/versatile/clk-integrator.c
+>> drivers/clk/versatile/clk-realview.c
+>>
+>> pll.h can probably be moved to include/linux/clk/ to avoid this. Would
+>> like to hear from Mike on this before going ahead.
+>>
+>> Anyway, instead of just commenting, I though I will be more useful and
+>> went ahead and made some of the changes I have been talking about. I
+>> fixed the multiple PLL definitions issue, the build infrastructure issue
+>> and the commit ordering too.
+>>
+>> I pushed the patches I fixed to devel-common-clk branch of my git tree.
+>> It is build tested using davinci_all_defconfig but its not runtime
+>> tested.
+>>
+>> Can you start from here and provide me incremental changes on top of
+>> this? That way we can collaborate to finish this faster.
+> Thanks for offering some help. Yes I can provide you incremental patch.
+> But then could you also help me to squash/rebase and send patches to the
+> list for review?
 
-
-> -         rcu_user_exit()-rcu_user_enter() through the slow path using
-> -         TIF_NOHZ flag. Exceptions handlers must be wrapped as well. Irqs
-> -         are already protected inside rcu_irq_enter/rcu_irq_exit() but
-> -         preemption or signal handling on irq exit still need to be protected.
-> +         user_exit()-user_enter() through the slow path using TIF_NOHZ flag.
-> +         Exceptions handlers must be wrapped as well. Irqs are already
-> +         protected inside rcu_irq_enter/rcu_irq_exit() but preemption or
-> +         signal handling on irq exit still need to be protected.
->
+No, no. I want you to own the submissions. Towards this, if it is easier
+for you to build upon my work in your own tree, by all means, go ahead
+and do it. Just share the branch/tree details so I can take a look and
+contribute as well.
 
 Thanks,
-Gilad
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+Sekhar
