@@ -1,147 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab2KFWcB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:32:01 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:59235 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270Ab2KFWb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:31:59 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Date: Tue, 06 Nov 2012 23:36:08 +0100
-Message-ID: <2584820.Vd5p0uzRAK@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1996776.cC14CHafyR@vostro.rjw.lan>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <CAErSpo44pWUJmRAP6eR9T+2WvO5hJPFOC=Nn-WPXDtCY0v0EDw@mail.gmail.com> <1996776.cC14CHafyR@vostro.rjw.lan>
+	id S1753343Ab2KFWcj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:32:39 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:48956 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab2KFWch convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 17:32:37 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <87fw4mv11b.fsf@mid.deneb.enyo.de>
+References: <20121104135251.GA17894@srcf.ucam.org> <87d2zsmv8r.fsf@xmission.com> <509766DB.9090906@zytor.com> <87625kh5r2.fsf@xmission.com> <20121105123858.GB4374@srcf.ucam.org> <87sj8nc137.fsf@xmission.com> <20121105202557.GA16076@srcf.ucam.org> <87hap3zbw7.fsf@xmission.com> <20121106031219.GB24235@srcf.ucam.org> <87fw4nv1vj.fsf@xmission.com> <20121106035352.GA24698@srcf.ucam.org> <87hap3s3yl.fsf@xmission.com> <878vafqi5q.fsf@mid.deneb.enyo.de> <50992946.4060101@genband.com> <87625iwgao.fsf@mid.deneb.enyo.de> <7c6b2e83-e49a-40aa-a990-da7599622f37@email.android.com> <87fw4mv11b.fsf@mid.deneb.enyo.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+Date: Tue, 06 Nov 2012 17:31:57 -0500
+To: Florian Weimer <fw@deneb.enyo.de>
+CC: Chris Friesen <chris.friesen@genband.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
+        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Message-ID: <77866f56-f1d4-44f0-b3da-1806cf5c4ae1@email.android.com>
+X-cavan-blacklisted-at: zen.spamhaus.org
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 208.54.37.229
+X-SA-Exim-Mail-From: mjg59@srcf.ucam.org
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 06, 2012 11:28:37 PM Rafael J. Wysocki wrote:
-> On Tuesday, November 06, 2012 01:35:56 PM Bjorn Helgaas wrote:
-> > On Tue, Nov 6, 2012 at 6:43 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > On Monday, November 05, 2012 09:54:42 AM Bjorn Helgaas wrote:
-> > >> On Mon, Nov 5, 2012 at 3:31 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > >> > On Saturday, November 03, 2012 09:59:28 PM Rafael J. Wysocki wrote:
-> > >> >> On Saturday, November 03, 2012 10:13:10 PM Mika Westerberg wrote:
-> > >> >> > On Sat, Nov 03, 2012 at 01:42:02PM -0600, Bjorn Helgaas wrote:
-> > >> >> > > On Sat, Nov 3, 2012 at 1:46 AM, Mika Westerberg
-> > >> >> > > <mika.westerberg@linux.intel.com> wrote:
-> > >> >> > > > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
-> > >> >> > > > configure the SPI slave devices behind the SPI controller. This patch adds
-> > >> >> > > > support for this to the SPI core.
-> > >> > [...]
-> > >> >> > And if the ACPI core parses the _CRS, how does it pass all the resources to
-> > >> >> > the drivers?
-> > >> >>
-> > >> >> Pretty much the same way the $subject patch does.
-> > >> >>
-> > >> >> Instead of parsing the entire subtree below an SPI controller and trying
-> > >> >> acpi_spi_add_device() for each device node in there, it could call
-> > >> >> acpi_spi_add_device() whenever it finds a device of type
-> > >> >> ACPI_RESOURCE_TYPE_SERIAL_BUS/ACPI_RESOURCE_SERIAL_TYPE_SPI.
-> > >> >> The only problem is how to pass "master" to it.
-> > >> >>
-> > >> >> So Bjorn, do you have any idea how we could pass the "master" pointer from the
-> > >> >> ACPI core to acpi_spi_add_device() in a sensible way?
-> > >> >>
-> > >> >> An alternative might be to store the information obtained from _CRS in
-> > >> >> struct acpi_device objects created by the ACPI core while parsing the
-> > >> >> namespace.  We do that already for things like _PRW, so we might as well do it
-> > >> >> for _CRS.  Then, the SPI core could just walk the subtree of the device hierarchy
-> > >> >> below the SPI controller's acpi_device to extract that information.
-> > >> >> Maybe that's the way to go?
-> > >> >
-> > >> > The general idea is to move the _CRS parsing routine from acpi_platform.c
-> > >> > to scan.c and make it attach resource objects to struct acpi_device.
-> > >> >
-> > >> > I'm thinking about adding a list head to struct acpi_device pointing to a
-> > >> > list of entries like:
-> > >> >
-> > >> > struct resource_list_entry {
-> > >> >         struct list_head node;
-> > >> >         struct resource *resources;
-> > >> >         unsigned int count;
-> > >> > };
-> > >> >
-> > >> > where "resources" is an array of resources (e.g. interrupts) in the given
-> > >> > entry and count is the size of that array.
-> > >> >
-> > >> > That list would contain common resources like ACPI_RESOURCE_TYPE_FIXED_MEMORY32,
-> > >> > ACPI_RESOURCE_TYPE_IRQ, ACPI_RESOURCE_TYPE_ADDRESS32, ACPI_RESOURCE_TYPE_EXTENDED_IRQ.
-> > >>
-> > >> This is exactly what PNPACPI already does.  For every Device node in
-> > >> the namespace, pnpacpi/rsparser.c parses _CRS and builds a list of
-> > >> struct resources that correspond to it.  If you put this functionality
-> > >> in acpi/scan.c, should we get rid of PNPACPI?
-> > >
-> > > Quite likely.  At least this part of it, if you want the core to parse
-> > > resources.
-> > >
-> > > That said, I actually tried to abstract out resource parsing in a more generic
-> > > fashion on the basis of our new platform device support code, but quite frankly
-> > > I wasn't able to.
-> > >
-> > > The problem is that struct resource is too simple to be useful for representing
-> > > all of the information that can be encoded in ACPI resources.  As a result, some
-> > > information have to be stored directly in things like struct pnp_dev, struct
-> > > platform_device etc. and if we want to represent it generically, the only way
-> > > to do that seems to be using the ACPICA resource types as defined in acrestyp.h.
-> > 
-> > Really?  I didn't have that impression.  It might be that the new GPIO
-> > and SERIAL_BUS stuff makes it too complicated for a struct resource,
-> > but prior to that, I don't think it was.  It's true that there are
-> > many different formats (IO, FIXED_IO, MEMORY24, MEMORY32, etc.), but
-> > only the core needs to be aware of the encoding of all those formats.
-> > As far as a *driver* is concerned, there are only IRQ, DMA, IO, and
-> > MEM resources, and those fit easily in a struct resource.
-> 
-> However, for example expanding ACPI_RESOURCE_TYPE_EXTENDED_IRQ into an
-> array of struct resource objects before anyone actually needs it seems a
-> bit wasteful to me.  Let alone registering GSI for the interrupts while
-> we're parsing those resources.
-> 
-> > I want to expand on what I said before about _CRS being the domain of
-> > the core, not drivers.
-> 
-> Well, I see a difference between _evaluating_ _CRS and _parsing_ its
-> output.  In particular, I don't see a reason to do those two things in
-> one operation.  In fact, I see reasons to do otherwise. :-)
-> 
-> > The core must evaluate _CRS to know where
-> > devices are and avoid conflicts when assigning resources.  The core
-> > must evaluate _PRS and _SRS when making resource assignments.  It
-> > doesn't make sense for drivers to be using _PRS and _SRS; they don't
-> > have a global view of resources, and any assignment they make would
-> > likely cause conflicts with other devices.  I think it makes sense to
-> > consolidate all _CRS, _PRS, and _SRS management in the core rather
-> > than splitting it up.  This is exactly analogous to PCI BAR
-> > management, and we don't intend drivers to read and write BARs
-> > directly.
-> 
-> OK, but then we need to pass the information obtained from _CRS
-> (presumably after some adjustments through _SRS) to drivers, or rather to
-> things like the SPI core, I2C core etc. so that they can create device
-> objects for drivers to bind to and quite frankly I don't see why not to use
-> ACPI resources for that.
-
-Nevertheless, the routines for parsing those resources should belong
-to the ACPI core, mostly to avoid code duplication.
-
-Thanks,
-Rafael
-
-
+It protects against certain classes of compromise. It doesn't prevent rogue software damaging your system - anyone who gets root (and so could reconfigure your boot order) could just rm -rf / anyway. 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Matthew Garrett | mjg59@srcf.ucam.org
