@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292Ab2KFO3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 09:29:05 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48083 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab2KFO3D (ORCPT
+	id S1751903Ab2KFObO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 09:31:14 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:53884 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750795Ab2KFObN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 09:29:03 -0500
+	Tue, 6 Nov 2012 09:31:13 -0500
+Date: Tue, 6 Nov 2012 06:31:09 -0800 (PST)
+From: Andy King <acking@vmware.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: pv-drivers@vmware.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
+        davem@davemloft.net, George Zhang <georgezhang@vmware.com>
+Message-ID: <1891962703.13755196.1352212269838.JavaMail.root@vmware.com>
+In-Reply-To: <20121106101013.09806f81@s6510.linuxnetplumber.net>
+Subject: Re: [Pv-drivers] [PATCH 1/6] VSOCK: vsock protocol implementation.
 MIME-Version: 1.0
-In-Reply-To: <20121106133135.GC25167@tassilo.jf.intel.com>
-References: <1352123463-7346-1-git-send-email-eranian@google.com>
-	<1352123463-7346-9-git-send-email-eranian@google.com>
-	<20121106133135.GC25167@tassilo.jf.intel.com>
-Date: Tue, 6 Nov 2012 15:29:01 +0100
-Message-ID: <CABPqkBSWagWME-OLE=uiT3gqGShDuGuBXL6mz8wt7tKWubS-hg@mail.gmail.com>
-Subject: Re: [PATCH v2 08/16] perf/x86: add memory profiling via PEBS Load Latency
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.160.14]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC22 (Mac)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 2:31 PM, Andi Kleen <ak@linux.intel.com> wrote:
->> +EVENT_ATTR(cpu-cycles,                       CPU_CYCLES              );
->> +EVENT_ATTR(instructions,             INSTRUCTIONS            );
->> +EVENT_ATTR(cache-references,         CACHE_REFERENCES        );
->> +EVENT_ATTR(cache-misses,             CACHE_MISSES            );
->> +EVENT_ATTR(branch-instructions,              BRANCH_INSTRUCTIONS     );
->> +EVENT_ATTR(branch-misses,            BRANCH_MISSES           );
->> +EVENT_ATTR(bus-cycles,                       BUS_CYCLES              );
->> +EVENT_ATTR(stalled-cycles-frontend,  STALLED_CYCLES_FRONTEND );
->> +EVENT_ATTR(stalled-cycles-backend,   STALLED_CYCLES_BACKEND  );
->> +EVENT_ATTR(ref-cycles,                       REF_CPU_CYCLES          );
->
-> The merge_events() approach from the Haswell patches should be far cleaner
->
-And which patch in your HSW series implements this?
+Hi Stephen,
 
-> -Andi
->
-> --
-> ak@linux.intel.com -- Speaking for myself only
+> You did some scrubbing of the macro's to support multiple kernel
+> versions, but there are still some leftovers.
+> This code seems to have a lot of "this added in version xxx"
+> type comments. These are probably not a good idea to include
+> in the mainline kernel code.
+
+Thanks so much for taking a look.  Sorry about that, we'll remove
+all such occurrences and send out a new series of patches in a bit.
+
+Thanks!
+- Andy
