@@ -1,119 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488Ab2KFS3K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 13:29:10 -0500
-Received: from mail.windriver.com ([147.11.1.11]:37414 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060Ab2KFS3J (ORCPT
+	id S1751914Ab2KFSa5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 13:30:57 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37901 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab2KFSa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 13:29:09 -0500
-Message-ID: <509956CF.4010408@windriver.com>
-Date: Tue, 6 Nov 2012 13:28:31 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Tue, 6 Nov 2012 13:30:56 -0500
+Message-ID: <5099573D.2090707@ti.com>
+Date: Tue, 6 Nov 2012 13:30:21 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Richard Zhao <richard.zhao@freescale.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
-        <kernel@pengutronix.de>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v5 3/4] misc: sram: Add optional clock
-References: <1350570453-24546-1-git-send-email-p.zabel@pengutronix.de>  <1350570453-24546-4-git-send-email-p.zabel@pengutronix.de>  <CAP=VYLpwahaxVssP1bXmp+ttM_eArF9B2DX1auiOmterdHHUGw@mail.gmail.com> <1351513257.5872.104.camel@pizza.hi.pengutronix.de>
-In-Reply-To: <1351513257.5872.104.camel@pizza.hi.pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
+        <b32955@freescale.com>, <shubhrajyoti@ti.com>, <wim@iguana.be>,
+        <hs@denx.de>, <nsekhar@ti.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <rob@landley.net>,
+        <gregkh@linuxfoundation.org>, <hdoyu@nvidia.com>,
+        <santosh.shilimkar@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [RFC PATCH 1/2] memory: davinci - add aemif controller platform
+ driver
+References: <1351873278-27325-1-git-send-email-m-karicheri2@ti.com> <1351873278-27325-2-git-send-email-m-karicheri2@ti.com> <50941960.3060407@wwwdotorg.org>
+In-Reply-To: <50941960.3060407@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-10-29 08:20 AM, Philipp Zabel wrote:
-> Am Freitag, den 26.10.2012, 12:17 -0400 schrieb Paul Gortmaker:
->> On Thu, Oct 18, 2012 at 10:27 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
->>> On some platforms the SRAM needs a clock to be enabled explicitly.
->>>
->>> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
->>> ---
->>>  drivers/misc/sram.c |   10 ++++++++++
->>>  1 file changed, 10 insertions(+)
->>>
->>> diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
->>> index 7a363f2..0cc2e75 100644
->>> --- a/drivers/misc/sram.c
->>> +++ b/drivers/misc/sram.c
->>> @@ -21,6 +21,8 @@
->>>  #include <linux/kernel.h>
->>>  #include <linux/module.h>
->>>  #include <linux/init.h>
->>> +#include <linux/clk.h>
->>> +#include <linux/err.h>
->>>  #include <linux/io.h>
->>>  #include <linux/of.h>
->>>  #include <linux/platform_device.h>
->>> @@ -29,6 +31,7 @@
->>>
->>>  struct sram_dev {
->>>         struct gen_pool *pool;
->>> +       struct clk *clk;
->>>  };
->>
->> I see another field gets added to the struct here.  (yet another
->> reason to have it folded into the original)   But you still
->> really don't need to create a sram_dev for this, because...
->>
->>>
->>>  static int __devinit sram_probe(struct platform_device *pdev)
->>> @@ -53,6 +56,10 @@ static int __devinit sram_probe(struct platform_device *pdev)
->>>         if (!sram)
->>>                 return -ENOMEM;
->>>
->>> +       sram->clk = devm_clk_get(&pdev->dev, NULL);
->>> +       if (!IS_ERR(sram->clk))
->>> +               clk_prepare_enable(sram->clk);
->>> +
->>>         sram->pool = gen_pool_create(PAGE_SHIFT, -1);
->>>         if (!sram->pool)
->>>                 return -ENOMEM;
->>> @@ -80,6 +87,9 @@ static int __devexit sram_remove(struct platform_device *pdev)
->>>
->>>         gen_pool_destroy(sram->pool);
->>>
->>> +       if (!IS_ERR(sram->clk))
->>> +               clk_disable_unprepare(sram->clk);
->>> +
->>
->> ...here, this looks confusing with the use of IS_ERR on
->> an entity that was not recently assigned to.
-> 
-> Right.
-> How about I set sram->clk = NULL in sram_probe if devm_clk_get returns
-> an error value?
+On 11/02/2012 03:05 PM, Stephen Warren wrote:
+> On 11/02/2012 10:21 AM, Murali Karicheri wrote:
+>> This is a platform driver for asynchronous external memory interface
+>> available on TI SoCs. This driver was previously located inside the
+>> mach-davinci folder. As this DaVinci IP is re-used across multiple
+>> family of devices such as c6x, keystone etc, the driver is moved to drivers.
+>> The driver configures async bus parameters associated with a particular
+>> chip select. For DaVinci controller driver and driver for other async
+>> devices such as NOR flash, ASRAM etc, the bus confuguration is
+>> done by this driver at init time. A set of APIs (set/get) provided to
+>> update the values based on specific driver usage.
+>> +++ b/Documentation/devicetree/bindings/arm/davinci/aemif.txt
+> If the HW/binding is generic, I'd assume the documentation would be
+> place somewhere more like
+> Documentation/devicetree/bindings/memory/davinci-aemif.txt?
+Thanks for your comments.
 
-Sorry for delayed reply ; was out last week.
-And yes, I like that better than the double call as well.
+I think this is a generic driver that should be re-usable across 
+multiple architectures such as arm, c6x and other new SoCs from TI that 
+uses the AEMIF IP. AEMIF IP can be configured on a per chip select 
+basis.  There will be nand controller, NOR flash and other async devices 
+on this bus. So cs bindings for each of this device will be a sub node 
+under thie aemif device. AEMIF driver iterate over the cs sub nodes and 
+configure the bus.
 
-Thanks,
-Paul.
---
+Let me post the complete bindings in the next revision so that this will 
+be more clear and we can discuss it based on that. I will also move the 
+nand documentation to a generic place and refer the bindings inside the 
+aemif documentation. I will address some of the comments below in my 
+next revision of the patch, but some of the comments discussion will 
+have to be deferred to version v2 of the patch.
 
-> 
->> Instead, just
->> put a "struct clk *clk;" on the stack and do the
->>
->>    clk = devm_clk_get(&pdev->dev, NULL);
->>
->> in both the init and the teardown.  Then the code will be
->> more readable.
-> 
-> Calling devm_clk_get on the same clock twice seems a bit weird.
-> I expect that eventually someone will want to disable clocks during
-> suspend, so I'd prefer to keep the clk pointer around.
-> 
-> regards
-> Philipp
-> 
+Murali
+>> @@ -0,0 +1,62 @@
+>> +* Texas Instruments Davinci AEMIF bus interface
+>> +
+>> +This file provides information for the davinci-emif chip select
+>> +bindings.
+> Shouldn't the binding be for an IP block (the AEMIF bus controller I
+> assume), rather than for a particular chip-select generated by the
+> controller?
+AEMIF has multiple functions such as it functions as a NAND controller, 
+it provides interfaces to async devices. The bus is configured using the 
+CS sub node inside the aemif device node (compatible ti, davinci-emif).
+
+>> +This is a sub device node inside the davinci-emif device node
+>> +to describe a async bus for a specific chip select. For NAND,
+>> +CFI flash device bindings described inside an aemif node,
+>> +etc, a cs sub node is defined to associate the bus parameter
+>> +bindings used by the device.
+> Oh, this file only documents part of the controller's node? It seems
+> unusual to do that; the documentation for an entire node would usually
+> be in a single file, which seems to be
+> Documentation/devicetree/bindings/arm/davinci/nand.txt right now. Is
+> this "cs" sub-node really something that gets re-used across multiple
+> different memory controller IPs?
+>
+> If so, I guess this file should be called something more like
+> davinci-aemif-cs.txt than davinci-aemif.txt. I'd suggest moving
+> arm/davinci/nand.txt into a common location too (and renaming it to
+> davici-nand.txt to better represent the compatible value it documents).
+>
+>> +Required properties:=
+>> +- compatible: "ti,davinci-cs";
+>> +- #address-cells = <1>;
+>> +- #size-cells = <1>;
+>> +- cs - cs used by the device (NAND, CFI flash etc. values in the range: 2-5
+>> +
+>> +Optional properties:-
+>> +- asize - asynchronous data bus width (0 - 8bit, 1 - 16 bit)
+>> +  All of the params below in nanoseconds
+>> +
+>> +- ta - Minimum turn around time
+>> +- rhold - read hold width
+>> +- rstobe - read strobe width
+>> +- rsetup - read setup width
+>> +- whold - write hold width
+>> +- wstrobe - write strobe width
+>> +- wsetup - write setup width
+>> +- ss - enable/disable select strobe (0 - disable, 1 - enable)
+>> +- ew - enable/disable extended wait cycles (0 - disable, 1 - enable)
+> I assume all of those are pretty custom to this binding, and not
+> something you'd expect to re-use across multiple vendors' bindings? If
+> so, shouldn't they have a "ti," vendor prefix?
+>
+>> +Example for davinci nand chip select
+>> +
+>> +aemif@60000000 {
+>> +
+>> +	compatible = "ti,davinci-aemif";
+> You need a reg property here.
+>
+>> +	#address-cells = <2>;
+>> +	#size-cells = <1>;
+>> +
+>> +	nand_cs:cs2@70000000 {
+>> +		compatible = "ti,davinci-cs";
+> You need a reg property here. The unit address "@70000000" in the node
+> name only has one address cell, whereas the parent node sets
+> #address-cells = <2>.
+
