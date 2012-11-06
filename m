@@ -1,145 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab2KFJCX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:02:23 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:8748 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab2KFJCU (ORCPT
+	id S1752472Ab2KFJDG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:03:06 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:47485 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab2KFJC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:02:20 -0500
-X-AuditID: cbfee612-b7f8f6d000003efa-bd-5098d21a7e4b
-Date: Tue, 06 Nov 2012 09:02:18 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [linux-next PATCH 6/7] PM / devfreq: allow sysfs governor node to
- switch governor
-To: Nishanth Menon <nm@ti.com>, linux-pm <linux-pm@vger.kernel.org>
-Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20121106085814604@myungjoo.ham
-Msgkey: 20121106085814604@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20121106085814604@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <31153640.425391352192535931.JavaMail.weblogic@epml11>
-DLP-Filter: Pass
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t8zXV2pSzMCDJacMrG4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZbzZvYymYI1Jxvv0GUwPjFeEuRk4OIQF1iUVLTrKB2BICJhKz
-	Pv5lhrDFJC7cWw8U5wKqWcYo8XLHBtYuRg6wojnrJCHi8xkljn/uAmtgEVCRmNB+nAWkhk1A
-	T2Lm52SQsLBAnMT0GzOYQGwRAU+JP6c2M4L0Mgv8Y5R4u+UDM8QRShJr9r1iAbF5BQQlTs58
-	wgJxhKrExje7GSHiahIHFp6HOk5CYtb0C6wQNq/EjPanUPVyEtO+roGqkZY4P2sDI8wzi78/
-	horzSxy7vYMJ4hdeiSf3g2HG7N78BRoOAhJTzxyEatWSuH7xNtQqPok1C9+ywIzZdWo5M0zv
-	/S1zwX5kFlCUmNL9kB3C1pL48mMfG7q3eAWcJG4cmco4gVF5FpLULCTts5C0I6tZwMiyilE0
-	tSC5oDgpPdVCrzgxt7g0L10vOT93EyMkLQjtYFzWYHGIUYCDUYmHV1BsRoAQa2JZcWXuIUYJ
-	DmYlEd4d24BCvCmJlVWpRfnxRaU5qcWHGH2AETiRWUo0OR+YsvJK4g2NDYwNDS0NzUwtTQ1w
-	CCuJ83JWTA8QEkhPLEnNTk0tSC2CGcfEwSnVwGgoJfv+b2WDcvq1Iv2wb3+SOu2frTeLCE3j
-	sWtn07x/0XZRX6LqVvUsx/2Zu2ptWWpstT4tdvDUuCW1kcf8qLnokkdzpvj/OpDnsWRSOKO2
-	dlVG1++gVbMPlAdHP+KUvup6smDPkos9VvVPc8P3P1Otv7lXStKXZTW/3Oz9ztsS1zUXRuow
-	KrEUZyQaajEXFScCAPKmJxE4AwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFKsWRmVeSWpSXmKPExsVy+t/t6bpSl2YEGGzdaGBxedccNgdGj8+b
-	5AIYozJsMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CG
-	KimUJeaUAoUCEouLlfTtbIryS0tSFTLyi0tslaKNDIz1jExN9IyMDfRMDGKtDA0MjEyBqhIy
-	Mt5s3sZSMEek4nz7DaYGxivCXYycHEIC6hKLlpxk62Lk4JAQMJGYs04SJCwhICZx4d56oDAX
-	UMl8Ronjn7uYQRIsAioSE9qPs4DUswnoScz8nAwSFhaIk5h+YwYTiC0i4Cnx59RmRpBeZoF/
-	jBJvt3xghtilJLFm3ysWEJtXQFDi5MwnLBDLVCU2vtnNCBFXkziw8DwzRFxCYtb0C6wQNq/E
-	jPanUPVyEtO+roGqkZY4P2sDI8zRi78/horzSxy7vYMJ4i9eiSf3g2HG7N78hQ3CFpCYeuYg
-	VKuWxPWLt6FW8UmsWfiWBWbMrlPLmWF672+ZC/Yjs4CixJTuh+wQtpbElx/72NC9xSvgJHHj
-	yFTGCYxys5CkZiFpn4WkHVnNAkaWVYyiqQXJBcVJ6akWesWJucWleel6yfm5mxjBCeqZ0A7G
-	ZQ0WhxgFOBiVeHgFxWYECLEmlhVX5h5ilOBgVhLh3bENKMSbklhZlVqUH19UmpNafIjRBxiB
-	E5mlRJPzgckzryTe0NjA2NDQ0tzA1NDIAoewkjgvZ8X0ACGB9MSS1OzU1ILUIphxTBycUg2M
-	u3/f/fLEYs7FH3odd8ptT+/12b5F+cFK3tn2j/lfy8xh2LxdWIr3xy1+424WS2b/G2G7GJh/
-	zfC+cijc2qdAjiF7r/BOY37DvrMPpFZNvlkW7rX/RZzywyd9CyWvXp698oJn0qdvD+bu9l/z
-	8d/GkDJZ/87gye8Lrbu7zmjKVj99dpHrmFyBhBJLcUaioRZzUXEiAHa2xMt9AwAA
-X-CFilter-Loop: Reflected
+	Tue, 6 Nov 2012 04:02:58 -0500
+Date: Tue, 6 Nov 2012 14:35:25 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, David Smith <dsmith@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Josh Stone <jistone@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: uprobes && pre-filtering
+Message-ID: <20121106090525.GB27055@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121105190446.GA6188@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121105190446.GA6188@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110609-4834-0000-0000-0000002C871F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA692SE9013887
 
-> --- a/drivers/devfreq/devfreq.c
-> +++ b/drivers/devfreq/devfreq.c
-> @@ -629,6 +629,44 @@ static ssize_t show_governor(struct device *dev,
->  	return sprintf(buf, "%s\n", to_devfreq(dev)->governor->name);
->  }
->  
-> +static ssize_t store_governor(struct device *dev, struct device_attribute *attr,
-> +			      const char *buf, size_t count)
-> +{
-> +	struct devfreq *df = to_devfreq(dev);
-> +	int ret = 0;
-> +	struct devfreq_governor *governor;
-> +
-> +	mutex_lock(&devfreq_list_lock);
+> Hello.
+> 
+> There is a known (and by design) problem with uprobes. They act
+> systemwide, there is no pre-filtering. Just some random thoughts
+> to provoke the discussion.
+> 
+> - I think that the current uprobe_consumer->filter(task) should die.
+> 
+>   It buys nothing. It is called right before ->handler() and this is
+>   pointless, ->handler() can call it itself.
+> 
 
-Please remove the trailing \n from buf here.
-When user enters "userspace", buf gets "userspace\n".
+I think it helps to call filter before handler.
 
-With some printks in find_devfreq_governor (printing the buf and governor names):
+When a tracer has specified a filter condition and then we run a handler
+for cases that dont fit the handler looks a little odd.
 
-# echo userspace > /sys/class/devfreq/exynos4210-busfreq.0/governor
-[   65.975000] [userspace
-[   65.975000] ].[userspace]
-[   65.980000] [userspace
-[   65.980000] ].[powersave]
-[   65.985000] [userspace
-[   65.985000] ].[performance]
-[   65.990000] [userspace
-[   65.990000] ].[simple_ondemand]
-[   65.995000] err no = -19
-# 
+Another reason for having the filters in the current way was to have a
+set of standard filters in uprobes code so that all users dont need to
+recreate these filters. 
+
+Also please see below.
+
+>   And more importantly, I do not think this hook (with the same
+>   semantics) can/should be used by both register and handler_chain().
+> 
+> - We should change register_ and and mmap to filter out the tasks
+>   which we do not want to trace. To simplify, lets forget about
+>   multiple consumers first.
+> 
+>   Everything is simple, install_breakpoint() callers should simply
+>   call consumer->filter(args) and do nothing if it returns false.
+> 
+>   The main problem is, what should be passed as "args". I think it is
+>   pointless to use task_struct as an argument. And not because there
+>   is no simple way to find all tasks which use this particular mm in
+>   register_for_each_vma(), even if it was possible I think this makes
+>   no sense.
+> 
+
+Having mm instead of task is fine with me. But this would mostly mean 
+that the prefilter, i.e filter at the time of registration and the
+filter at the time of handling should be different or we remove the
+handling time filtering and expect the handler to do the filtering.
+
+Having a task instead of mm helps in having the same filter run at both
+places.
+
+>   If 2 tasks/threads share the same mm they will share int3 as well,
+>   so I think we need
+> 
+>   	enum filter_mode {
+>   		UPROBE_FILTER_REGISTER,
+>   		UPROBE_FILTER_MMAP,
+>   		/* more */
+>   	};
+> 
+>   	consumer->filter(enum filter_mode mode, struct mm_struct *mm);
+
+what would a tracing session having filter_mode == UPROBE_FILTER_REGISTER mean?
+	Does that mean it can trace only instances in currently mapped vmas? 
+	Would it handle a probe instance in a process that is already running but has not yet mapped a vma?
+
+Also would a tracing session having filter_mode == UPROBE_FILTER_MMAP
+mean that it would only handle probepoints in only vmas that are going
+to be mapped in future?
+
+> 
+>   Sure, this does not allow to, say, probe the tasks with the given uid.
+>   But once again, currently we do not have for_each_mm_user(task, mm)
+>   and even if we implement it
+> 
+>   	a) ->filter(mm) can use it itself)
+> 
+>   	b) I do not think register_for_each_vma() should call it.
+> 
+>   	   Suppose that a consumer wants to track the task with the
+>   	   given pid PID. In this case ->filter() can simply check
+>   	   find_task_by_vpid(PID)->mm = mm. This is fast and simple.
+> 
+>   	   Or you want to probe all instances of /bin/ls. In this case
+>   	   filter() can check mm->exe_file->f_path == saved_path, this
+>   	   is very cheap.
+> 
+>   	   But if we add for_each_mm_user() into register_for_each_vma()
+>   	   it will be called even if the filtering is simple.
+> 
+>   So. If filter(UPROBE_FILTER_REGISTER) needs to check task_uid(task) == UID
+>   it has to do for_each_process() until we have (if ever) for_each_mm_user().
+> 
+>   Or it should always return true and remove the unnecessary breakpoints
+>   later, or use another API (see below).
+> 
+>   Also. Who needs the "nontrivial" filtering? I do not see any potential
+>   in-kernel user. And the tools like systemtap can take another approach
+>   (perhaps).
+> 
+> - Perhaps we should extend the API. We can add
+> 
+> 	uprobe_apply(consumer, task, bool add_remove);
+> 
+>   which adds/removes breakpoints to task->mm.
+> 
+>   This way consumer can probe every task it wants to trace after
+>   uprobe_register().
+> 
+>   Its ->filter(UPROBE_FILTER_REGISTER) should simply return false. Or,
+>   better, we can split uprobe_register() into 2 functions,
+>   __uprobe_register() and uprobe_apply_all() which actually does
+>   register_for_each_vma().
+> 
+>   ***** QUESTION *****: perhaps this is all systemtap needs? ignoring
+>   UPROBE_FILTER_MMAP.
+> 
+> - Multiple consumers. uprobe_register/uprobe_unregister should be
+>   modified so that register_for_each_vma() is called every time when
+>   the new consumer comes or consumer goes away.
+> 
+>   uprobe_apply(add_remove => false) should obviously consult other
+>   consumers too.
 
 
+So in this case, would uprobe_register() just add a consumer to a
+new/existing uprobe. The actual probe insertion is done by the
+uprobe_apply()/uprobe_apply_all().  Also in this case, there is no
+filter element in the uprobe_consumer. Right?
+
+I am just wondering if people could use/misuse this 
+for example: - somebody could keep modifying and reusing the consumers
+but one probe registration,  with subsequent uprobe_apply(). 
+Unlike now we could have lots of uprobes but all with defunct consumers.
+
+> 
+> - Perhaps we should teach handle_swbp() to remove the unwanted breakpoints.
+> 
+>   If every ->handler() returns, say, UPROBE_GO_AWAY handle_swbp() should
+>   remove this breakpoint. Of course, a consumer must be sure that if it
+>   returns UPROBE_GO_AWAY this task can't share ->mm with another task it
+>   wants to trace.
+
+Its a good idea to remove redundant probepoints from the breakpoint hit
+context. However,
+
+- even from the handlers() perspective, if we have to identify that this
+  consumer isnt looking at this mm, we need something like
+  for_each_mm_user(). No? 
+
+- also if we are looking for removing a breakpoint, I would think its
+  better done in common code, i.e uprobe code rather than keeping it in
+  every handler. So I think keeping the filter logic before the handler
+  is good.
+
+> 
+>   Or consumer->handler() can do uprobe_apply(add_remove => false) itself,
+>   but this needs more discussion.
+> 
+>   The point is that if the filtering at UPROBE_FILTER_REGISTER time is
+>   not possible, ->filter(UPROBE_FILTER_REGISTER) can return true. A
+>   "wrong" int3 doesn't hurt until the task actually hits the breakpoint,
+>   and I think that a single bp-hit is fine performance-wise.
+> 
+
+Agree. Also the reason why we inserted this probe in the current mm
+might have changed and we might no more need the probe.
+For example, traced thread in a multithreaded process actually died and
+all other threads may not be interested
+
+> - fork(). The child inherits all breakpoints from parent, and uprobes
+>   can't control this. What can we do?
+> 
+> 	* We can add another uprobe hook which does something like
+> 
+> 	  	for_each_uprobe_in_each_vma(child_mm) {
+> 	  		if (filter(UPROBE_FILTER_FORK))
+> 	  			install_breakoint();
+> 	  		else
+> 	  			remove_breakpoint();
+> 	  	}
+> 
+> 
+> 	  But is is not clear where can we add this hook. dup_mmap()
+> 	  looks appealing, but at this time the child is still under
+> 	  construction, consumer->filter() can't look at task_struct.
+> 
+> 	  And of course, it is not nice to slow down fork().
+> 
+> 	* If we only care about the unwanted breakpoints, perhaps it
+> 	  would be better to rely on UPROBE_GO_AWAY above?
+> 
+> 	* Finally, do we care at all? Again, who can ever need to
+> 	  re-install breakpoints after fork?
+> 
+> 	  systemtap (iiuc) doesn't need this. And even if it does
+> 	  or will need, I guess it can hook fork itself and use
+> 	  uprobe_apply() ?
 
 
+I was thinking if we can implement for_each_mm_user() using additional
+mm->flags. 
 
-Cheers,
-MyungJoo
+Would something like this work?
+- Set a new MMF_REPARENTED flag for a mm, when its thread either gets
+  reparented or is called with CLONE_PARENT.
 
-> +	governor = find_devfreq_governor(buf);
-> +	if (IS_ERR(governor)) {
-> +		ret = PTR_ERR(governor);
-> +		goto out;
-> +	}
-> +	if (df->governor == governor)
-> +		goto out;
-> +
-> +	if (df->governor) {
-> +		ret = df->governor->event_handler(df, DEVFREQ_GOV_STOP, NULL);
-> +		if (ret) {
-> +			dev_warn(dev, "%s: Governor %s not stopped(%d)\n",
-> +				 __func__, df->governor->name, ret);
-> +			goto out;
-> +		}
-> +	}
-> +	df->governor = governor;
-> +	strncpy(df->governor_name, governor->name, DEVFREQ_NAME_LEN);
-> +	ret = df->governor->event_handler(df, DEVFREQ_GOV_START, NULL);
-> +	if (ret)
-> +		dev_warn(dev, "%s: Governor %s not started(%d)\n",
-> +			 __func__, df->governor->name, ret);
-> +out:
-> +	mutex_unlock(&devfreq_list_lock);
-> +
-> +	if (!ret)
-> +		ret = count;
-> +	return ret;
-> +}
-> +
-[]
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+- for_each_mm_users would only be needed during uprobe_register /
+  uprobe_mmap() if and only if there are filters.
+
+- for_each_mm_users would mostly boil down to searching in children,
+  siblings unless MMF_REPARENTED flag is set.
+ 
+- If MMF_REPARENTED flag is set for a mm, and probe needs filtering,
+  then we look at do_each_thread ..for_each_thread. This would mostly
+  not be the common case. So I hope this should be okay. Not sure if we
+  could look at further optimizing like looking at parent's children,
+  init's children to see if any of them refer to mm.
+
+-- 
+Thanks and Regards
+Srikar
+
