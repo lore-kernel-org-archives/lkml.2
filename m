@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab2KFNyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 08:54:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52409 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750989Ab2KFNyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 08:54:12 -0500
-Date: Tue, 6 Nov 2012 08:54:02 -0500
-From: Dave Jones <davej@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tmpfs: fix shmem_getpage_gfp VM_BUG_ON
-Message-ID: <20121106135402.GA3543@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Hugh Dickins <hughd@google.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org
-References: <20121025023738.GA27001@redhat.com>
- <alpine.LNX.2.00.1210242121410.1697@eggly.anvils>
- <20121101191052.GA5884@redhat.com>
- <alpine.LNX.2.00.1211011546090.19377@eggly.anvils>
- <20121101232030.GA25519@redhat.com>
- <alpine.LNX.2.00.1211011627120.19567@eggly.anvils>
- <20121102014336.GA1727@redhat.com>
- <alpine.LNX.2.00.1211021606580.11106@eggly.anvils>
- <alpine.LNX.2.00.1211051729590.963@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1211051729590.963@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752143Ab2KFNzM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 08:55:12 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:47282 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751898Ab2KFNzJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 08:55:09 -0500
+References: <50924DA3.1060901@ti.com> <20121101124025.GA12489@arwen.pp.htv.fi> <A16B0ABF-AB9D-4F48-88BD-96F123FFEF2F@antoniou-consulting.com> <20121101131609.GC12489@arwen.pp.htv.fi> <E911D0B7-0397-4ED0-828E-71F9531E84E0@antoniou-consulting.com> <20121101135148.382aec00@pyramind.ukuu.org.uk> <9F25E89E-9194-4725-8A8C-053DCBADA1DB@antoniou-consulting.com> <20121101220518.GE14982@arwen.pp.htv.fi> <CA+Bv8XbAvEXe=zDaA8W2+ROD2duYMRcJu4-bms31OH=V_ScKow@mail.gmail.com> <20121102112104.4657fb7b@pyramind.ukuu.org.uk> <0EC43413-1DD7-4E2A-879B-0B5B926FFDFE@antoniou-consulting.com> <CACxGe6uuK6ew5uxh0BjtYAtPZCTLeUpHc4emXRAnMUtNmEzmGg@mail.gmail.com> <AC5129F0-FF30-46ED-AD57-3FA6CA919F99@antoniou-consulting.com> <CACxGe6v9cyybV4+5tQJ-DG8qdyEHfsLa7t+-3CTL+97Q9msrFw@mail.gmail.com> <18667A4E-5513-4D74-922F-30D091609F16@antoniou-consulting.com> <CACxGe6uR5VhHsCS1vmayURkGBKmhagaeWBBaCnyfsfOjZ2Dutg@mail.gmail.com> <CAD=GYpYc9L5yKqgar5jB2jG8+GiX7Lb0zevP9Pxaq0HdaVXQ5Q@mail.gmail.com> <CAD=GYpYsc4
+ JrHiZfT9PzQQfas+=+emb=RLzvXV=Ec4JHKKK0AA@mail.gmail.com> <4DA29B25-C056-4360-8768-05585485FE00@antoniou-consulting.com> <CACxGe6sCroK2ztbrZG6u=2Fp7b8kuGDxJ94TNdpLtLNkhyHQcA@mail.gmail.com>
+In-Reply-To: <CACxGe6sCroK2ztbrZG6u=2Fp7b8kuGDxJ94TNdpLtLNkhyHQcA@mail.gmail.com>
+Mime-Version: 1.0 (1.0)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=utf-8
+Message-Id: <F2ABBA86-3E97-4B2E-9FE5-FFAD8DDC9B88@antoniou-consulting.com>
+Cc: Joel A Fernandes <agnel.joel@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Russ Dill <Russ.Dill@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <robherring2@gmail.com>
+X-Mailer: iPhone Mail (10A523)
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH 0/3] capebus moving omap_devices to mach-omap2
+Date: Tue, 6 Nov 2012 14:54:59 +0100
+To: Grant Likely <grant.likely@secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 05:32:41PM -0800, Hugh Dickins wrote:
-
- > -			/* We already confirmed swap, and make no allocation */
- > -			VM_BUG_ON(error);
- > +			/*
- > +			 * We already confirmed swap under page lock, and make
- > +			 * no memory allocation here, so usually no possibility
- > +			 * of error; but free_swap_and_cache() only trylocks a
- > +			 * page, so it is just possible that the entry has been
- > +			 * truncated or holepunched since swap was confirmed.
- > +			 * shmem_undo_range() will have done some of the
- > +			 * unaccounting, now delete_from_swap_cache() will do
- > +			 * the rest (including mem_cgroup_uncharge_swapcache).
- > +			 * Reset swap.val? No, leave it so "failed" goes back to
- > +			 * "repeat": reading a hole and writing should succeed.
- > +			 */
- > +			if (error) {
- > +				VM_BUG_ON(error != -ENOENT);
- > +				delete_from_swap_cache(page);
- > +			}
- >  		}
-
-I ran with this overnight, and still hit the (new!) VM_BUG_ON
-
-Perhaps we should print out what 'error' was too ?  I'll rebuild with that..
-
-------------[ cut here ]------------
-WARNING: at mm/shmem.c:1151 shmem_getpage_gfp+0xa5c/0xa70()
-Hardware name: 2012 Client Platform
-Modules linked in: fuse ipt_ULOG scsi_transport_iscsi binfmt_misc dn_rtmsg nfnetlink nfc caif_socket caif af_802154 phonet af_rxrpc can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 p8022 psnap llc ax25 lockd sunrpc bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables gspca_ov519 gspca_main videodev kvm_intel usb_debug kvm crc32c_intel ghash_clmulni_intel microcode pcspkr i2c_i801 e1000e uinput i915 video i2c_algo_bit drm_kms_helper drm i2c_core
-Pid: 21798, comm: trinity-child4 Not tainted 3.7.0-rc4+ #54
-Call Trace:
- [<ffffffff8107105f>] warn_slowpath_common+0x7f/0xc0
- [<ffffffff810710ba>] warn_slowpath_null+0x1a/0x20
- [<ffffffff8119050c>] shmem_getpage_gfp+0xa5c/0xa70
- [<ffffffff8118fd4e>] ? shmem_getpage_gfp+0x29e/0xa70
- [<ffffffff81190f5f>] shmem_fault+0x4f/0xa0
- [<ffffffff8119f4a1>] __do_fault+0x71/0x5c0
- [<ffffffff810e1b26>] ? __lock_acquire+0x306/0x1ba0
- [<ffffffff810b7059>] ? local_clock+0x89/0xa0
- [<ffffffff811a2877>] handle_pte_fault+0x97/0xae0
- [<ffffffff816d1969>] ? sub_preempt_count+0x79/0xd0
- [<ffffffff8136dbfe>] ? delay_tsc+0xae/0x120
- [<ffffffff8136dae8>] ? __const_udelay+0x28/0x30
- [<ffffffff811a4b49>] handle_mm_fault+0x289/0x350
- [<ffffffff816d121e>] __do_page_fault+0x18e/0x530
- [<ffffffff811f2e70>] ? getname_flags.part.32+0x30/0x150
- [<ffffffff811f2e70>] ? getname_flags.part.32+0x30/0x150
- [<ffffffff811c9c5c>] ? set_track+0x8c/0x1a0
- [<ffffffff816c3dd8>] ? __slab_alloc+0x531/0x59e
- [<ffffffff810e471d>] ? trace_hardirqs_on_caller+0x15d/0x1e0
- [<ffffffff8112d469>] ? rcu_user_exit+0xc9/0xf0
- [<ffffffff816d15eb>] do_page_fault+0x2b/0x50
- [<ffffffff816cdcb8>] page_fault+0x28/0x30
- [<ffffffff81388e2c>] ? strncpy_from_user+0x6c/0x120
- [<ffffffff811f2ec6>] getname_flags.part.32+0x86/0x150
- [<ffffffff811f2fca>] getname+0x3a/0x60
- [<ffffffff811f7aa4>] sys_symlinkat+0x24/0x90
- [<ffffffff816d5f25>] ? tracesys+0x7e/0xe6
- [<ffffffff816d5f88>] tracesys+0xe1/0xe6
----[ end trace 4ba438264ea16e97 ]---
 
 
+Από το iPhone μου
 
-	Dave
+6 Νοε 2012, 12:16, ο/η Grant Likely <grant.likely@secretlab.ca> έγραψε:
+
+> On Tue, Nov 6, 2012 at 8:14 AM, Pantelis Antoniou
+> <panto@antoniou-consulting.com> wrote:
+>> On Nov 6, 2012, at 4:06 AM, Joel A Fernandes wrote:
+>>> Sure, so if we add data type supplementary properties to the tree to
+>>> indicate the data type as "indirect phandle", then kernel could refer
+>>> to the index in the got-like table to fetch the actual phandle address
+>>> (1-level of indirection), instead of directly using the address in the
+>>> data field.
+>> 
+>> I'm fine with this.
+> 
+> But if the data about phandles is already in the tree, then the need
+> for a GOT simply goes away. The phandles can be fixed up directly and
+> it is so much better because it works with existing parsing code after
+> the merge is applied.
+> 
+
+Either way works. It is your call after all. 
+I agree that your method is simpler. 
+> g.
+
+Regards
+
+-- Pantelis
