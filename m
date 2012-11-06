@@ -1,151 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202Ab2KFNME (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 08:12:04 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:58279 "EHLO ogre.sisk.pl"
+	id S1752359Ab2KFNMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 08:12:16 -0500
+Received: from mga14.intel.com ([143.182.124.37]:55294 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005Ab2KFNMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 08:12:02 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Date: Tue, 06 Nov 2012 14:16:12 +0100
-Message-ID: <3455360.Z6cZSC3BtR@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CAErSpo4Rnu9ioyXWfaNEkUZh402hnFAuwJ9dk5wxT5TNOkc97A@mail.gmail.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <1792336.CIafglX82A@vostro.rjw.lan> <CAErSpo4Rnu9ioyXWfaNEkUZh402hnFAuwJ9dk5wxT5TNOkc97A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752283Ab2KFNML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 08:12:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,722,1344236400"; 
+   d="scan'208";a="165055874"
+From: Alex Shi <alex.shi@intel.com>
+To: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
+        suresh.b.siddha@intel.com, arjan@linux.intel.com,
+        vincent.guittot@linaro.org, tglx@linutronix.de
+Cc: gregkh@linuxfoundation.org, andre.przywara@amd.com, alex.shi@intel.com,
+        rjw@sisk.pl, paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, cl@linux.com,
+        pjt@google.com
+Subject: [RFC PATCH 3/3] sched: add power aware scheduling in fork/exec/wake
+Date: Tue,  6 Nov 2012 21:09:59 +0800
+Message-Id: <1352207399-29497-4-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1352207399-29497-1-git-send-email-alex.shi@intel.com>
+References: <1352207399-29497-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 05, 2012 09:54:37 AM Bjorn Helgaas wrote:
-> On Sat, Nov 3, 2012 at 2:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Saturday, November 03, 2012 01:42:02 PM Bjorn Helgaas wrote:
-> >> On Sat, Nov 3, 2012 at 1:46 AM, Mika Westerberg
-> >> <mika.westerberg@linux.intel.com> wrote:
-> >> > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
-> >> > configure the SPI slave devices behind the SPI controller. This patch adds
-> >> > support for this to the SPI core.
-> >> >
-> >> > In addition we bind ACPI nodes to SPI devices. This makes it possible for
-> >> > the slave drivers to get the ACPI handle for further configuration.
-> >> >
-> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> > Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> > ---
-> >> >  drivers/spi/spi.c |  231 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
-> 
-> >> > +static acpi_status acpi_spi_add_resources(struct acpi_resource *res, void *data)
-> >> > +{
-> >> > +       struct acpi_spi_device_info *info = data;
-> >> > +       struct acpi_resource_spi_serialbus *sb;
-> >> > +       struct spi_device *spi = info->spi;
-> >> > +
-> >> > +       switch (res->type) {
-> >> > +       case ACPI_RESOURCE_TYPE_SERIAL_BUS:
-> >> > +               sb = &res->data.spi_serial_bus;
-> >> > +               if (sb->type == ACPI_RESOURCE_SERIAL_TYPE_SPI) {
-> >> > +                       spi->chip_select = sb->device_selection;
-> >> > +                       spi->max_speed_hz = sb->connection_speed;
-> >> > +
-> >> > +                       /* Mode (clock phase/polarity/etc. */
-> >> > +                       if (sb->clock_phase == ACPI_SPI_SECOND_PHASE)
-> >> > +                               spi->mode |= SPI_CPHA;
-> >> > +                       if (sb->clock_polarity == ACPI_SPI_START_HIGH)
-> >> > +                               spi->mode |= SPI_CPOL;
-> >> > +                       if (sb->device_polarity == ACPI_SPI_ACTIVE_HIGH)
-> >> > +                               spi->mode |= SPI_CS_HIGH;
-> >> > +
-> >> > +                       /*
-> >> > +                        * The info is valid once we have found the
-> >> > +                        * SPISerialBus resource.
-> >> > +                        */
-> >> > +                       info->valid = true;
-> >> > +               }
-> >> > +               break;
-> >> > +
-> >> > +       case ACPI_RESOURCE_TYPE_IRQ:
-> >> > +               info->gsi = res->data.irq.interrupts[0];
-> >> > +               info->triggering = res->data.irq.triggering;
-> >> > +               info->polarity = res->data.irq.polarity;
-> >> > +               break;
-> >> > +
-> >> > +       case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
-> >> > +               info->gsi = res->data.extended_irq.interrupts[0];
-> >> > +               info->triggering = res->data.extended_irq.triggering;
-> >> > +               info->polarity = res->data.extended_irq.polarity;
-> >>
-> >> A driver doesn't seem like the right place for _CRS parsing code.
-> >
-> > This is not a driver, however. :-)
-> 
-> OK.  Can you describe what this is?  I assume the picture involves an
-> SPI master device and one or more SPI slave devices, and the ACPI
-> namespace tells us something about them, and somehow this code is
-> related to those devices because it's looking at _CRS for them.
+This patch add power aware scheduling in fork/exec/wake. It try to
+select cpu from the busiest but has capcaity group. The trade off is
+adding power aware statistics collection for the group seeking. But
+since the collection just happened in power scheduling eligible
+condition. So no munch performance impact.
 
-This is part of the SPI core that looks for SPI devices below a controller.
+hackbench testing results has no clear dropping even with powersaving
+policy.
 
-> A _CRS method is associated with a Device in the namespace.  What is
-> that device in this case?
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/fair.c | 233 +++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 159 insertions(+), 74 deletions(-)
 
-An SPI device below a controller.
-
-> What is its PNP ID?
-
-I can't answer that from the top of my head, sorry.
-
-> What driver claims devices with that ID?
-
-The driver that declares support for it in its acpi_match_table[] array.
-
-
-> >> > +static void acpi_register_spi_devices(struct spi_master *master)
-> >> > +{
-> >> > +       acpi_status status;
-> >> > +       acpi_handle handle;
-> >> > +
-> >> > +       handle = master->dev.acpi_handle;
-> >> > +       if (!handle)
-> >> > +               return;
-> >> > +
-> >> > +       status = acpi_spi_enumerate(handle, acpi_spi_add_device, master);
-> >>
-> >> How does this work with hot-plug?  acpi_spi_enumerate() walks a
-> >> portion of the namespace.  How do we deal with changes to that part of
-> >> the namespace?  For example, what happens if this part of the
-> >> namespace gets pruned because an enclosing device is removed?  Is
-> >> there a way to discover new SPI devices if they get added?
-> >
-> > Yes, there should be a way to do that eventually.  No, we don't have any
-> > removable SPI devices described by ACPI yet, as far as I know.  So even if
-> > we added code for that now, we wouldn't be able to test it anyway with any
-> > real hardware until such devices become available.  I have no idea when that's
-> > going to happen, though.
-> 
-> I'm not asking about hotplug of devices on an SPI bus.  I'm asking
-> about hotplug of SPI masters.  For example, let's say you hot-add a
-> whole node that contains an SPI master.  I assume there's some ACPI
-> Device node that describes the SPI master, and a hot-add would add a
-> subtree to the namespace that contains a new SPI master Device.
-
-The master will be a platform device and again, we're going to add support
-for the hotplug of those, but the SPI controllers that we currently can test
-it with are not removable.
-
-Thanks,
-Rafael
-
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index acc8b41..902ef5a 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3370,12 +3370,149 @@ static int numa_select_node_cpu(struct task_struct *p, int node)
+ #endif /* CONFIG_SCHED_NUMA */
+ 
+ /*
+- * sched_balance_self: balance the current task (running on cpu) in domains
++ * sd_lb_stats - Structure to store the statistics of a sched_domain
++ * during load balancing.
++ */
++struct sd_lb_stats {
++	struct sched_group *busiest; /* Busiest group in this sd */
++	struct sched_group *this;  /* Local group in this sd */
++	unsigned long total_load;  /* Total load of all groups in sd */
++	unsigned long total_pwr;   /*	Total power of all groups in sd */
++	unsigned long avg_load;	   /* Average load across all groups in sd */
++
++	/** Statistics of this group */
++	unsigned long this_load;
++	unsigned long this_load_per_task;
++	unsigned long this_nr_running;
++	unsigned long this_has_capacity;
++	unsigned int  this_idle_cpus;
++
++	/* Statistics of the busiest group */
++	unsigned int  busiest_idle_cpus;
++	unsigned long max_load;
++	unsigned long busiest_load_per_task;
++	unsigned long busiest_nr_running;
++	unsigned long busiest_group_capacity;
++	unsigned long busiest_has_capacity;
++	unsigned int  busiest_group_weight;
++
++	int group_imb; /* Is there imbalance in this sd */
++
++	/* Varibles of power awaring scheduling */
++	unsigned long	sd_capacity;	/* capacity of this domain */
++	unsigned long	sd_nr_running;	/* Nr running of this domain */
++	struct sched_group *group_min; /* Least loaded group in sd */
++	struct sched_group *group_leader; /* Group which relieves group_min */
++	unsigned long min_load_per_task; /* load_per_task in group_min */
++	unsigned long leader_nr_running; /* Nr running of group_leader */
++	unsigned long min_nr_running; /* Nr running of group_min */
++#ifdef CONFIG_SCHED_NUMA
++	struct sched_group *numa_group; /* group which has offnode_tasks */
++	unsigned long numa_group_weight;
++	unsigned long numa_group_running;
++
++	unsigned long this_offnode_running;
++	unsigned long this_onnode_running;
++#endif
++};
++
++/*
++ * sg_lb_stats - stats of a sched_group required for load_balancing
++ * and task rq selection
++ */
++struct sg_lb_stats {
++	unsigned long avg_load; /*Avg load across the CPUs of the group */
++	unsigned long group_load; /* Total load over the CPUs of the group */
++	unsigned long sum_nr_running; /* Nr tasks running in the group */
++	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
++	unsigned long group_capacity;
++	unsigned long idle_cpus;
++	unsigned long group_weight;
++	int group_imb; /* Is there an imbalance in the group ? */
++	int group_has_capacity; /* Is there extra capacity in the group? */
++#ifdef CONFIG_SCHED_NUMA
++	unsigned long numa_offnode_weight;
++	unsigned long numa_offnode_running;
++	unsigned long numa_onnode_running;
++#endif
++};
++
++static inline int
++fix_small_capacity(struct sched_domain *sd, struct sched_group *group);
++
++static void get_sg_power_stats(struct sched_group *group,
++			struct sched_domain *sd, struct sg_lb_stats *sgs)
++{
++	int i;
++
++
++	for_each_cpu(i, sched_group_cpus(group)) {
++		struct rq *rq = cpu_rq(i);
++
++		sgs->sum_nr_running += rq->nr_running;
++	}
++
++	sgs->group_capacity = DIV_ROUND_CLOSEST(group->sgp->power,
++						SCHED_POWER_SCALE);
++	if (!sgs->group_capacity)
++		sgs->group_capacity = fix_small_capacity(sd, group);
++	sgs->group_weight = group->group_weight;
++}
++
++static void get_sd_power_stats(struct sched_domain *sd,
++					struct sd_lb_stats *sds)
++{
++	struct sched_group *group;
++	struct sg_lb_stats sgs;
++	long sd_min_delta = LONG_MAX;
++
++	group = sd->groups;
++	do {
++		long g_delta;
++		unsigned long threshold;
++
++		memset(&sgs, 0, sizeof(sgs));
++		get_sg_power_stats(group, sd, &sgs);
++
++		if (sched_policy == SCHED_POLICY_POWERSAVING)
++			threshold = sgs.group_weight;
++		else
++			threshold = sgs.group_capacity;
++		g_delta = threshold - sgs.sum_nr_running;
++
++		if (g_delta > 0 && g_delta < sd_min_delta) {
++			sd_min_delta = g_delta;
++			sds->group_leader = group;
++		}
++
++		sds->sd_nr_running += sgs.sum_nr_running;
++		sds->total_pwr += group->sgp->power;
++	} while  (group = group->next, group != sd->groups);
++
++	sds->sd_capacity = DIV_ROUND_CLOSEST(sds->total_pwr,
++						SCHED_POWER_SCALE);
++}
++
++static inline int get_sd_sched_policy(struct sched_domain *sd,
++					struct sd_lb_stats *sds)
++{
++	int policy = SCHED_POLICY_PERFORMANCE;
++
++	if (sched_policy != SCHED_POLICY_PERFORMANCE) {
++		memset(sds, 0, sizeof(*sds));
++		get_sd_power_stats(sd, sds);
++
++		if (sd->span_weight > sds->sd_nr_running)
++			policy = SCHED_POLICY_POWERSAVING;
++	}
++	return policy;
++}
++
++/*
++ * select_task_rq_fair: balance the current task (running on cpu) in domains
+  * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
+  * SD_BALANCE_EXEC.
+  *
+- * Balance, ie. select the least loaded group.
+- *
+  * Returns the target CPU number, or the same CPU if no balancing is needed.
+  *
+  * preempt must be disabled.
+@@ -3384,12 +3521,14 @@ static int
+ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ {
+ 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
++	struct sd_lb_stats sds;
+ 	int cpu = smp_processor_id();
+ 	int prev_cpu = task_cpu(p);
+ 	int new_cpu = cpu;
+ 	int want_affine = 0;
+ 	int sync = wake_flags & WF_SYNC;
+ 	int node = tsk_home_node(p);
++	int policy = sched_policy;
+ 
+ 	if (p->nr_cpus_allowed == 1)
+ 		return prev_cpu;
+@@ -3412,6 +3551,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 
+ 			new_cpu = cpu = node_cpu;
+ 			sd = per_cpu(sd_node, cpu);
++			policy = get_sd_sched_policy(sd, &sds);
+ 			goto pick_idlest;
+ 		}
+ 
+@@ -3445,8 +3585,12 @@ find_sd:
+ 			break;
+ 		}
+ 
+-		if (tmp->flags & sd_flag)
++		if (tmp->flags & sd_flag) {
+ 			sd = tmp;
++			policy = get_sd_sched_policy(sd, &sds);
++			if (policy != SCHED_POLICY_PERFORMANCE)
++				break;
++		}
+ 	}
+ 
+ 	if (affine_sd) {
+@@ -3460,7 +3604,7 @@ find_sd:
+ pick_idlest:
+ 	while (sd) {
+ 		int load_idx = sd->forkexec_idx;
+-		struct sched_group *group;
++		struct sched_group *group = NULL;
+ 		int weight;
+ 
+ 		if (!(sd->flags & sd_flag)) {
+@@ -3471,7 +3615,12 @@ pick_idlest:
+ 		if (sd_flag & SD_BALANCE_WAKE)
+ 			load_idx = sd->wake_idx;
+ 
+-		group = find_idlest_group(sd, p, cpu, load_idx);
++		if (policy != SCHED_POLICY_PERFORMANCE)
++			group = sds.group_leader;
++
++		if (!group)
++			group = find_idlest_group(sd, p, cpu, load_idx);
++
+ 		if (!group) {
+ 			sd = sd->child;
+ 			continue;
+@@ -3491,8 +3640,11 @@ pick_idlest:
+ 		for_each_domain(cpu, tmp) {
+ 			if (weight <= tmp->span_weight)
+ 				break;
+-			if (tmp->flags & sd_flag)
++			if (tmp->flags & sd_flag) {
+ 				sd = tmp;
++				if (policy != SCHED_POLICY_PERFORMANCE)
++					policy = get_sd_sched_policy(sd, &sds);
++			}
+ 		}
+ 		/* while loop will break here if sd == NULL */
+ 	}
+@@ -4330,73 +4482,6 @@ static unsigned long task_h_load(struct task_struct *p)
+ #endif
+ 
+ /********** Helpers for find_busiest_group ************************/
+-/*
+- * sd_lb_stats - Structure to store the statistics of a sched_domain
+- * 		during load balancing.
+- */
+-struct sd_lb_stats {
+-	struct sched_group *busiest; /* Busiest group in this sd */
+-	struct sched_group *this;  /* Local group in this sd */
+-	unsigned long total_load;  /* Total load of all groups in sd */
+-	unsigned long total_pwr;   /*	Total power of all groups in sd */
+-	unsigned long avg_load;	   /* Average load across all groups in sd */
+-
+-	/** Statistics of this group */
+-	unsigned long this_load;
+-	unsigned long this_load_per_task;
+-	unsigned long this_nr_running;
+-	unsigned long this_has_capacity;
+-	unsigned int  this_idle_cpus;
+-
+-	/* Statistics of the busiest group */
+-	unsigned int  busiest_idle_cpus;
+-	unsigned long max_load;
+-	unsigned long busiest_load_per_task;
+-	unsigned long busiest_nr_running;
+-	unsigned long busiest_group_capacity;
+-	unsigned long busiest_has_capacity;
+-	unsigned int  busiest_group_weight;
+-
+-	int group_imb; /* Is there imbalance in this sd */
+-
+-	/* Varibles of power awaring scheduling */
+-	unsigned long	sd_capacity;	/* capacity of this domain */
+-	unsigned long	sd_nr_running;	/* Nr running of this domain */
+-	struct sched_group *group_min; /* Least loaded group in sd */
+-	struct sched_group *group_leader; /* Group which relieves group_min */
+-	unsigned long min_load_per_task; /* load_per_task in group_min */
+-	unsigned long leader_nr_running; /* Nr running of group_leader */
+-	unsigned long min_nr_running; /* Nr running of group_min */
+-
+-#ifdef CONFIG_SCHED_NUMA
+-	struct sched_group *numa_group; /* group which has offnode_tasks */
+-	unsigned long numa_group_weight;
+-	unsigned long numa_group_running;
+-
+-	unsigned long this_offnode_running;
+-	unsigned long this_onnode_running;
+-#endif
+-};
+-
+-/*
+- * sg_lb_stats - stats of a sched_group required for load_balancing
+- */
+-struct sg_lb_stats {
+-	unsigned long avg_load; /*Avg load across the CPUs of the group */
+-	unsigned long group_load; /* Total load over the CPUs of the group */
+-	unsigned long sum_nr_running; /* Nr tasks running in the group */
+-	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
+-	unsigned long group_capacity;
+-	unsigned long idle_cpus;
+-	unsigned long group_weight;
+-	int group_imb; /* Is there an imbalance in the group ? */
+-	int group_has_capacity; /* Is there extra capacity in the group? */
+-#ifdef CONFIG_SCHED_NUMA
+-	unsigned long numa_offnode_weight;
+-	unsigned long numa_offnode_running;
+-	unsigned long numa_onnode_running;
+-#endif
+-};
+ 
+ /**
+  * init_sd_lb_power_stats - Initialize power savings statistics for
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.12
+
