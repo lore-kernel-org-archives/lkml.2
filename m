@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab2KFL50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 06:57:26 -0500
-Received: from mga03.intel.com ([143.182.124.21]:22452 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab2KFL5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 06:57:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,722,1344236400"; 
-   d="scan'208";a="214047988"
-Date: Tue, 6 Nov 2012 19:57:16 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [digsig:dmi 20/35] WARNING:
- security/integrity/built-in.o(.text+0x1d8): Section mismatch in reference
- from the function integrity_inode_free() to the variable
- .init.data:ima_use_tcb
-Message-ID: <20121106115716.GA21889@localhost>
-References: <50913fa5.uJnC6BQdkN/Xw1h0%fengguang.wu@intel.com>
- <CALLzPKZdh9a0nT52GOZEO7dgxtLqU_VwD27Qs_gBe-bSk=J87g@mail.gmail.com>
- <20121106114108.GB19965@localhost>
- <CALLzPKb-9uHdbqUujbcQ2z38Lv5sqBKtmYmjYDdVhgVs4WF6cg@mail.gmail.com>
+	id S1751767Ab2KFMFn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 07:05:43 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46418 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab2KFMFl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 07:05:41 -0500
+Date: Tue, 6 Nov 2012 07:05:23 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Jarod Wilson <jarod@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Matt Mackall <mpm@selenic.com>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] random: prime last_data value per fips requirements
+Message-ID: <20121106120523.GA2805@hmsreliant.think-freely.org>
+References: <1352149210-4790-1-git-send-email-jarod@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALLzPKb-9uHdbqUujbcQ2z38Lv5sqBKtmYmjYDdVhgVs4WF6cg@mail.gmail.com>
+In-Reply-To: <1352149210-4790-1-git-send-email-jarod@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Perhaps we should CC more people..
+On Mon, Nov 05, 2012 at 04:00:10PM -0500, Jarod Wilson wrote:
+> The value stored in last_data must be primed for FIPS 140-2 purposes. Upon
+> first use, either on system startup or after an RNDCLEARPOOL ioctl, we
+> need to take an initial random sample, store it internally in last_data,
+> then pass along the value after that to the requester, so that consistency
+> checks aren't being run against stale and possibly known data.
+> 
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> CC: "David S. Miller" <davem@davemloft.net>
+> CC: Neil Horman <nhorman@tuxdriver.com>
+> CC: Matt Mackall <mpm@selenic.com>
+> CC: linux-crypto@vger.kernel.org
+> Signed-off-by: Jarod Wilson <jarod@redhat.com>
+> ---
+>  drivers/char/random.c |   11 +++++++++++
+>  1 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/char/random.c b/drivers/char/random.c
+> index b86eae9..24d17b8 100644
+> --- a/drivers/char/random.c
+> +++ b/drivers/char/random.c
+> @@ -437,6 +437,7 @@ struct entropy_store {
+>  	int entropy_count;
+>  	int entropy_total;
+>  	unsigned int initialized:1;
+> +	bool last_data_init;
+>  	__u8 last_data[EXTRACT_SIZE];
+>  };
+>  
+> @@ -967,6 +968,15 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+>  		if (fips_enabled) {
+>  			unsigned long flags;
+>  
+> +			/* prime last_data value if need be, per fips 140-2 */
+> +			if (!r->last_data_init) {
+> +				spin_lock_irqsave(&r->lock, flags);
+> +				memcpy(r->last_data, tmp, EXTRACT_SIZE);
+> +				r->last_data_init = true;
+> +				spin_unlock_irqrestore(&r->lock, flags);
+> +				continue;
+Continue?  Is that left over from earlier work?  Or did you have some other
+purpose in mind for it?
 
-On Tue, Nov 06, 2012 at 01:47:18PM +0200, Kasatkin, Dmitry wrote:
-> On Tue, Nov 6, 2012 at 1:41 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> > On Tue, Nov 06, 2012 at 01:16:16PM +0200, Kasatkin, Dmitry wrote:
-> >> Hi,
-> >>
-> >> I do not see that integrity_inode_free() uses ima_use_tcb.
-> >>
-> >> I think it is false positive.
-> >
-> > Interestingly, when trying to reproduce the problem, I got this
-> > slightly different message:
+Also, not that its in a hot path or anything, but it might be nice to
+consolodate this code such that you only lock and unlock r->flags once instead
+of twice here.
 
-Now after make clean, I get both the warnings on ima_use_tcb and
-chosen_lsm.
+Best
+Neil
 
-> > WARNING: security/built-in.o(.text+0x2b68c): Section mismatch in reference from the function integrity_inode_free() to the variable .init.d
-> > ata:chosen_lsm
-> > The function integrity_inode_free() references
-> > the variable __initdata chosen_lsm.
-> > This is often because integrity_inode_free lacks a __initdata
-> > annotation or the annotation of chosen_lsm is wrong.
-> >
-> 
-> Hello,
-> 
-> chosen_lsm has nothing to do with integrity subsystem, though
-> integrity_inode_free() is called from security_inode_free(),
-> which is part of security subsystem files which uses chosen_lsm...
-> 
-> That is very strange.
-> 
-> - Dmitry
+> +			}
+> +
+>  			spin_lock_irqsave(&r->lock, flags);
+>  			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
+>  				panic("Hardware RNG duplicated output!\n");
+> @@ -1086,6 +1096,7 @@ static void init_std_data(struct entropy_store *r)
+>  
+>  	r->entropy_count = 0;
+>  	r->entropy_total = 0;
+> +	r->last_data_init = false;
+>  	mix_pool_bytes(r, &now, sizeof(now), NULL);
+>  	for (i = r->poolinfo->POOLBYTES; i > 0; i -= sizeof(rv)) {
+>  		if (!arch_get_random_long(&rv))
+> -- 
+> 1.7.1
 > 
 > 
-> > Thanks,
-> > Fengguang
-> >
-> >> On Wed, Oct 31, 2012 at 5:11 PM, kbuild test robot
-> >> <fengguang.wu@intel.com> wrote:
-> >> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/kasatkin/linux-digsig.git dmi
-> >> > head:   2309bb884f94d84ecb1a6a176d3e8199de7d6dad
-> >> > commit: 13ba29dcf6f0021a14a04f6f3a4560a399c02b34 [20/35] integrity: create and inititialize a keyring with builtin public key
-> >> > config: make ARCH=xtensa allyesconfig
-> >> >
-> >> > All warnings:
-> >> >
-> >> > WARNING: security/integrity/built-in.o(.text+0x1d8): Section mismatch in reference from the function integrity_inode_free() to the variable .init.data:ima_use_tcb
-> >> > The function integrity_inode_free() references
-> >> > the variable __initdata ima_use_tcb.
-> >> > This is often because integrity_inode_free lacks a __initdata
-> >> > annotation or the annotation of ima_use_tcb is wrong.
-> >> >
-> >> > ---
-> >> > 0-DAY kernel build testing backend         Open Source Technology Center
-> >> > Fengguang Wu, Yuanhan Liu                              Intel Corporation
