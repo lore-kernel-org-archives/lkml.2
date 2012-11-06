@@ -1,397 +1,903 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab2KFKaL (ORCPT <rfc822;w@1wt.eu>);
+	id S1751669Ab2KFKaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 05:30:15 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:41207 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750755Ab2KFKaL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Nov 2012 05:30:11 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:34855 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750755Ab2KFKaH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 05:30:07 -0500
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
-Date: Tue, 6 Nov 2012 11:30:00 +0100
-Cc: Rob Herring <robherring2@gmail.com>, Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-X-Mailer: Apple Mail (2.1085)
+MIME-Version: 1.0
+In-Reply-To: <CAJLyvQxfuviGyKCozwnxfkLE22GMv0ihGNLaA0QXxuwLf9F0TA@mail.gmail.com>
+References: <1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
+	<1351615741-24134-1-git-send-email-hongbo.zhang@linaro.com>
+	<1351615741-24134-5-git-send-email-hongbo.zhang@linaro.com>
+	<744357E9AAD1214791ACBA4B0B90926324F81A@SHSMSX101.ccr.corp.intel.com>
+	<CAJLyvQxfuviGyKCozwnxfkLE22GMv0ihGNLaA0QXxuwLf9F0TA@mail.gmail.com>
+Date: Tue, 6 Nov 2012 18:30:10 +0800
+Message-ID: <CAJLyvQyUZTwcMZp5JWfdnYH+CYsOs4uNhtJeGMZiKSu_654KSA@mail.gmail.com>
+Subject: Re: [PATCH V3 4/5] Thermal: Add ST-Ericsson DB8500 thermal driver.
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: "Zhang, Rui" <rui.zhang@intel.com>
+Cc: "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "amit.kachhap@linaro.org" <amit.kachhap@linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "STEricsson_nomadik_linux@list.st.com" 
+	<STEricsson_nomadik_linux@list.st.com>,
+        "kernel@igloocommunity.org" <kernel@igloocommunity.org>,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On 6 November 2012 18:17, Hongbo Zhang <hongbo.zhang@linaro.org> wrote:
+> On 1 November 2012 09:52, Zhang, Rui <rui.zhang@intel.com> wrote:
+>>
+>>
+>>> -----Original Message-----
+>>> From: hongbo.zhang [mailto:hongbo.zhang@linaro.org]
+>>> Sent: Wednesday, October 31, 2012 12:49 AM
+>>> To: linaro-dev@lists.linaro.org; linux-kernel@vger.kernel.org; linux-
+>>> pm@vger.kernel.org; Zhang, Rui; amit.kachhap@linaro.org
+>>> Cc: patches@linaro.org; linaro-kernel@lists.linaro.org;
+>>> STEricsson_nomadik_linux@list.st.com; kernel@igloocommunity.org;
+>>> hongbo.zhang
+>>> Subject: [PATCH V3 4/5] Thermal: Add ST-Ericsson DB8500 thermal driver.
+>>> Importance: High
+>>>
+>>> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+>>>
+>>> This diver is based on the thermal management framework in
+>>> thermal_sys.c. A thermal zone device is created with the trip points to
+>>> which cooling devices can be bound, the current cooling device is
+>>> cpufreq, e.g. CPU frequency is clipped down to cool the CPU, and other
+>>> cooling devices can be added and bound to the trip points dynamically.
+>>> The platform specific PRCMU interrupts are used to active thermal
+>>> update when trip points are reached.
+>>>
+>>> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+>>> ---
+>>>  .../devicetree/bindings/thermal/db8500-thermal.txt |  40 ++
+>>>  drivers/thermal/Kconfig                            |  20 +
+>>>  drivers/thermal/Makefile                           |   2 +
+>>>  drivers/thermal/db8500_cpufreq_cooling.c           | 108 +++++
+>>>  drivers/thermal/db8500_thermal.c                   | 531
+>>> +++++++++++++++++++++
+>>>  include/linux/platform_data/db8500_thermal.h       |  38 ++
+>>>  6 files changed, 739 insertions(+)
+>>>  create mode 100644 Documentation/devicetree/bindings/thermal/db8500-
+>>> thermal.txt
+>>>  create mode 100644 drivers/thermal/db8500_cpufreq_cooling.c
+>>>  create mode 100644 drivers/thermal/db8500_thermal.c  create mode
+>>> 100644 include/linux/platform_data/db8500_thermal.h
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/thermal/db8500-
+>>> thermal.txt b/Documentation/devicetree/bindings/thermal/db8500-
+>>> thermal.txt
+>>> new file mode 100644
+>>> index 0000000..cab6916
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/thermal/db8500-thermal.txt
+>>> @@ -0,0 +1,40 @@
+>>> +* ST-Ericsson DB8500 Thermal
+>>> +
+>>> +** Thermal node properties:
+>>> +
+>>> +- compatible : "stericsson,db8500-thermal";
+>>> +- reg : address range of the thermal sensor registers;
+>>> +- interrupts : interrupts generated from PRCMU;
+>>> +- interrupt-names : "IRQ_HOTMON_LOW" and "IRQ_HOTMON_HIGH";
+>>> +- num-trips : number of total trip points;
+>>> +- tripN-temp : temperature of trip point N, should be in ascending
+>>> +order;
+>>> +- tripN-type : type of trip point N, should be one of "active"
+>>> +"passive" "hot" "critical";
+>>> +- tripN-cdev-num : number of the cooling devices which can be bound to
+>>> +trip point N;
+>>> +- tripN-cdev-nameM : name of the No. M cooling device of trip point N;
+>>> +
+>>> +Usually the num-trips and tripN-*** are separated in board related dts
+>>> files.
+>>> +
+>>> +Example:
+>>> +thermal@801573c0 {
+>>> +     compatible = "stericsson,db8500-thermal";
+>>> +     reg = <0x801573c0 0x40>;
+>>> +     interrupts = <21 0x4>, <22 0x4>;
+>>> +     interrupt-names = "IRQ_HOTMON_LOW", "IRQ_HOTMON_HIGH";
+>>> +
+>>> +     num-trips = <3>;
+>>> +
+>>> +     trip0-temp = <70000>;
+>>> +     trip0-type = "active";
+>>> +     trip0-cdev-num = <1>;
+>>> +     trip0-cdev-name0 = "thermal-cpufreq-0";
+>>> +
+>>> +     trip1-temp = <75000>;
+>>> +     trip1-type = "active";
+>>> +     trip1-cdev-num = <2>;
+>>> +     trip1-cdev-name0 = "thermal-cpufreq-0";
+>>> +     trip1-cdev-name1 = "thermal-fan";
+>>> +
+>>> +     trip2-temp = <85000>;
+>>> +     trip2-type = "critical";
+>>> +     trip2-cdev-num = <0>;
+>>> +}
+>>> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig index
+>>> e1cb6bd..54c8fd0 100644
+>>> --- a/drivers/thermal/Kconfig
+>>> +++ b/drivers/thermal/Kconfig
+>>> @@ -31,6 +31,26 @@ config CPU_THERMAL
+>>>         and not the ACPI interface.
+>>>         If you want this support, you should say Y here.
+>>>
+>>> +config DB8500_THERMAL
+>>> +     bool "DB8500 thermal management"
+>>> +     depends on THERMAL
+>>> +     default y
+>>> +     help
+>>> +       Adds DB8500 thermal management implementation according to the
+>>> thermal
+>>> +       management framework. A thermal zone with several trip points
+>>> will be
+>>> +       created. Cooling devices can be bound to the trip points to
+>>> cool this
+>>> +       thermal zone if trip points reached.
+>>> +
+>>> +config DB8500_CPUFREQ_COOLING
+>>> +     tristate "DB8500 cpufreq cooling"
+>>> +     depends on CPU_THERMAL
+>>> +     default y
+>>> +     help
+>>> +       Adds DB8500 cpufreq cooling devices, and these cooling devices
+>>> can be
+>>> +       bound to thermal zone trip points. When a trip point reached,
+>>> the
+>>> +       bound cpufreq cooling device turns active to set CPU frequency
+>>> low to
+>>> +       cool down the CPU.
+>>> +
+>>>  config SPEAR_THERMAL
+>>>       bool "SPEAr thermal sensor driver"
+>>>       depends on THERMAL
+>>> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile index
+>>> 885550d..c7a8dab 100644
+>>> --- a/drivers/thermal/Makefile
+>>> +++ b/drivers/thermal/Makefile
+>>> @@ -7,3 +7,5 @@ obj-$(CONFIG_CPU_THERMAL)             += cpu_cooling.o
+>>>  obj-$(CONFIG_SPEAR_THERMAL)          += spear_thermal.o
+>>>  obj-$(CONFIG_RCAR_THERMAL)   += rcar_thermal.o
+>>>  obj-$(CONFIG_EXYNOS_THERMAL)         += exynos_thermal.o
+>>> +obj-$(CONFIG_DB8500_THERMAL)         += db8500_thermal.o
+>>> +obj-$(CONFIG_DB8500_CPUFREQ_COOLING) += db8500_cpufreq_cooling.o
+>>> diff --git a/drivers/thermal/db8500_cpufreq_cooling.c
+>>> b/drivers/thermal/db8500_cpufreq_cooling.c
+>>> new file mode 100644
+>>> index 0000000..4cf8e72
+>>> --- /dev/null
+>>> +++ b/drivers/thermal/db8500_cpufreq_cooling.c
+>>> @@ -0,0 +1,108 @@
+>>> +/*
+>>> + * db8500_cpufreq_cooling.c - DB8500 cpufreq works as cooling device.
+>>> + *
+>>> + * Copyright (C) 2012 ST-Ericsson
+>>> + * Copyright (C) 2012 Linaro Ltd.
+>>> + *
+>>> + * Author: Hongbo Zhang <hongbo.zhang@linaro.com>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or
+>>> modify
+>>> + * it under the terms of the GNU General Public License as published
+>>> by
+>>> + * the Free Software Foundation; either version 2 of the License, or
+>>> + * (at your option) any later version.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +
+>>> +#include <linux/cpu_cooling.h>
+>>> +#include <linux/cpufreq.h>
+>>> +#include <linux/err.h>
+>>> +#include <linux/module.h>
+>>> +#include <linux/platform_device.h>
+>>> +#include <linux/slab.h>
+>>> +
+>>> +static int db8500_cpufreq_cooling_probe(struct platform_device *pdev)
+>>> {
+>>> +     struct thermal_cooling_device *cdev;
+>>> +     struct cpumask mask_val;
+>>> +
+>>> +     /* make sure cpufreq driver has been initialized */
+>>> +     if (!cpufreq_frequency_get_table(0))
+>>> +             return -EPROBE_DEFER;
+>>> +
+>>> +     cpumask_set_cpu(0, &mask_val);
+>>> +     cdev = cpufreq_cooling_register(&mask_val);
+>>> +
+>>> +     if (IS_ERR_OR_NULL(cdev)) {
+>>> +             dev_err(&pdev->dev, "Failed to register cooling device\n");
+>>> +             return PTR_ERR(cdev);
+>>> +     }
+>>> +
+>>> +     platform_set_drvdata(pdev, cdev);
+>>> +
+>>> +     dev_info(&pdev->dev, "Cooling device registered: %s\n", cdev-
+>>> >type);
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +static int db8500_cpufreq_cooling_remove(struct platform_device *pdev)
+>>> +{
+>>> +     struct thermal_cooling_device *cdev = platform_get_drvdata(pdev);
+>>> +
+>>> +     cpufreq_cooling_unregister(cdev);
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +static int db8500_cpufreq_cooling_suspend(struct platform_device *pdev,
+>>> +             pm_message_t state)
+>>> +{
+>>> +     return -ENOSYS;
+>>> +}
+>>> +
+>>> +static int db8500_cpufreq_cooling_resume(struct platform_device *pdev)
+>>> +{
+>>> +     return -ENOSYS;
+>>> +}
+>>> +
+>>> +#ifdef CONFIG_OF
+>>> +static const struct of_device_id db8500_cpufreq_cooling_match[] = {
+>>> +     { .compatible = "stericsson,db8500-cpufreq-cooling" },
+>>> +     {},
+>>> +};
+>>> +#else
+>>> +#define db8500_cpufreq_cooling_match NULL #endif
+>>> +
+>>> +static struct platform_driver db8500_cpufreq_cooling_driver = {
+>>> +     .driver = {
+>>> +             .owner = THIS_MODULE,
+>>> +             .name = "db8500-cpufreq-cooling",
+>>> +             .of_match_table = db8500_cpufreq_cooling_match,
+>>> +     },
+>>> +     .probe = db8500_cpufreq_cooling_probe,
+>>> +     .suspend = db8500_cpufreq_cooling_suspend,
+>>> +     .resume = db8500_cpufreq_cooling_resume,
+>>> +     .remove = db8500_cpufreq_cooling_remove, };
+>>> +
+>>> +static int __init db8500_cpufreq_cooling_init(void) {
+>>> +     return platform_driver_register(&db8500_cpufreq_cooling_driver);
+>>> +}
+>>> +
+>>> +static void __exit db8500_cpufreq_cooling_exit(void) {
+>>> +     platform_driver_unregister(&db8500_cpufreq_cooling_driver);
+>>> +}
+>>> +
+>>> +/* Should be later than db8500_cpufreq_register */
+>>> +late_initcall(db8500_cpufreq_cooling_init);
+>>> +module_exit(db8500_cpufreq_cooling_exit);
+>>> +
+>>> +MODULE_AUTHOR("Hongbo Zhang <hongbo.zhang@stericsson.com>");
+>>> +MODULE_DESCRIPTION("DB8500 cpufreq cooling driver");
+>>> +MODULE_LICENSE("GPL");
+>>> diff --git a/drivers/thermal/db8500_thermal.c
+>>> b/drivers/thermal/db8500_thermal.c
+>>> new file mode 100644
+>>> index 0000000..023f7b4
+>>> --- /dev/null
+>>> +++ b/drivers/thermal/db8500_thermal.c
+>>> @@ -0,0 +1,531 @@
+>>> +/*
+>>> + * db8500_thermal.c - DB8500 Thermal Management Implementation
+>>> + *
+>>> + * Copyright (C) 2012 ST-Ericsson
+>>> + * Copyright (C) 2012 Linaro Ltd.
+>>> + *
+>>> + * Author: Hongbo Zhang <hongbo.zhang@linaro.com>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or
+>>> modify
+>>> + * it under the terms of the GNU General Public License as published
+>>> by
+>>> + * the Free Software Foundation; either version 2 of the License, or
+>>> + * (at your option) any later version.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +
+>>> +#include <linux/cpu_cooling.h>
+>>> +#include <linux/interrupt.h>
+>>> +#include <linux/mfd/dbx500-prcmu.h>
+>>> +#include <linux/module.h>
+>>> +#include <linux/of.h>
+>>> +#include <linux/platform_data/db8500_thermal.h>
+>>> +#include <linux/platform_device.h>
+>>> +#include <linux/slab.h>
+>>> +#include <linux/thermal.h>
+>>> +
+>>> +#define PRCMU_DEFAULT_MEASURE_TIME   0xFFF
+>>> +#define PRCMU_DEFAULT_LOW_TEMP               0
+>>> +
+>>> +struct db8500_thermal_zone {
+>>> +     struct thermal_zone_device *therm_dev;
+>>> +     struct mutex th_lock;
+>>> +     struct work_struct therm_work;
+>>> +     struct db8500_thsens_platform_data *trip_tab;
+>>> +     enum thermal_device_mode mode;
+>>> +     enum thermal_trend trend;
+>>> +     unsigned long cur_temp_pseudo;
+>>> +     unsigned int cur_index;
+>>> +};
+>>> +
+>>> +/* Local function to check if thermal zone matches cooling devices */
+>>> +static int db8500_thermal_match_cdev(struct thermal_cooling_device
+>>> *cdev,
+>>> +             struct db8500_trip_point *trip_points) {
+>>> +     int i;
+>>> +     char *cdev_name;
+>>> +
+>>> +     if (!strlen(cdev->type))
+>>> +             return -EINVAL;
+>>> +
+>>> +     for (i = 0; i < COOLING_DEV_MAX; i++) {
+>>> +             cdev_name = trip_points->cdev_name[i];
+>>> +             if (!strcmp(cdev_name, cdev->type))
+>>> +                     return 0;
+>>> +     }
+>>> +
+>>> +     return -ENODEV;
+>>> +}
+>>> +
+>>> +/* Callback to bind cooling device to thermal zone */ static int
+>>> +db8500_cdev_bind(struct thermal_zone_device *thermal,
+>>> +             struct thermal_cooling_device *cdev)
+>>> +{
+>>> +     struct db8500_thermal_zone *pzone = thermal->devdata;
+>>> +     struct db8500_thsens_platform_data *ptrips = pzone->trip_tab;
+>>> +     unsigned long max_state, upper, lower;
+>>> +     int i, ret = -EINVAL;
+>>> +
+>>> +     for (i = 0; i < ptrips->num_trips; i++) {
+>>> +             if (db8500_thermal_match_cdev(cdev, &ptrips-
+>>> >trip_points[i]))
+>>> +                     continue;
+>>> +
+>>> +             cdev->ops->get_max_state(cdev, &max_state);
+>>
+>> Why not moving this line out of the loop
+>> so that you only need to call it once.
+> Good.
+>
+>>
+>>> +             lower = upper = (i > max_state) ? max_state : i;
+>>> +
+>>
+>> What does this mean?
+>> Say cooling device 0 matches trip point 3, and you want to use cooling state 3 only, for trip point 3?
+>> No matter how many cooling states the cooling device supports?
+> I would like to change lower = upper - 1 > 0 ? upper - 1 : 0;
+> More states for one trip point is meaningless on my platform, because
+> thermal framework polling thread isn't used, a PRCMU firmware high/low
+> interrupts are used to trigger thermal update instead(currently
+> platform limitation), thus thermal update is  called only once when
+> trip point is crossed up/down.
+> More states for one trip points can be used on our SOC serials in
+> future when this limitation is removed.
 
-On Nov 5, 2012, at 9:40 PM, Grant Likely wrote:
+Sorry for update:
+callback this "lower = upper - 1 > 0 ? upper - 1 : 0;"
+current setting works as explained above, this is platform specific.
 
-> Hey folks,
-> 
-> As promised, here is my early draft to try and capture what device
-> tree overlays need to do and how to get there. Comments and
-> suggestions greatly appreciated.
-> 
-> Device Tree Overlay Feature
-> 
-> Purpose
-> =======
-> Sometimes it is not convenient to describe an entire system with a
-> single FDT. For example, processor modules that are plugged into one or
-> more modules (a la the BeagleBone), or systems with an FPGA peripheral
-> that is programmed after the system is booted.
-> 
-> For these cases it is proposed to implement an overlay feature for the
-> so that the initial device tree data can be modified by userspace at
-> runtime by loading additional overlay FDTs that amend the original data.
-> 
-> User Stories
-> ============
-> Note - These are potential use cases, but just because it is listed here
-> doesn't mean it is important. I just want to thoroughly think through the
-> implications before making design decisions.
-> 
-> 
-> Jane is building custom BeagleBone expansion boards called 'capes'. She
-> can boot the system with a stock BeagleBoard device tree, but additional
-> data is needed before a cape can be used. She could replace the FDT file
-> used by U-Boot with one that contains the extra data, but she uses the
-> same Linux system image regardless of the cape, and it is inconvenient
-> to have to select a different device tree at boot time depending on the
-> cape.
-> 
-> Jane solves this problem by storing an FDT overlay for each cape in the
-> root filesystem. When the kernel detects that a cape is installed it
-> reads the cape's eeprom to identify it and uses request_firmware() to
-> obtain the appropriate overlay. Userspace passes the overlay to the
-> kernel in the normal way. If the cape doesn't have an eeprom, then the
-> kernel will still use firmware_request(), but userspace needs to already
-> know which cape is installed.
-
-Jane is a really productive hardware engineer - she manages to fix a
-number of problems with her cape design by spinning different revisions
-of the cape. Using the flexibility that the DT provides, documents and
-defines the hardware changes of the cape revisions in the FDT overlay.
-The loader matches the revision of the cape with the proper FDT overlay
-so that the drivers are relieved of having to do revision management.
-
-> 
-> 
-> Nigel is building a real-time video processing system around a MIPS SoC
-> and a Virtex FPGA. Video data is streamed through the FPGA for post
-> processing operations like motion tracking or compression. The FPGA is
-> configured via the SPI bus, and is also connected to GPIO lines and the
-> memory mapped peripheral bus. Nigel has designed several FPGA
-> configurations for different video processing tasks. The user will
-> choose which configuration to load which can even be reprogrammed at
-> runtime to switch tasks.
-> 
-> Each FPGA has a different interface to the processor, so the kernel
-> needs additional data before it can use each device. Nigel is passing
-> that data to the kernel using an FDT overlay. When Linux loads a new
-> FPGA configuration, it uses request_firmare() to obtain the overlay for
-> that FPGA. When the FPGA gets reprogrammed, the kernel throws away the
-> previous overlay data and uses request_firmware() to get the overlay for
-> the new design.
-> 
-> 
-> Mandy has a Raspberry Pi which she has wired by hand up to sensors and
-> motor controllers in her prototype autonomous robot project. She is doing
-> self-hosted driver development on the Raspberry Pi itself. However, she
-> needs a method to tell the kernel about the attached devices.
-> 
-> By installing dtc on the Pi, Mandy compiles the overlay for her
-> prototype hardware. However, she doesn't have a copy of the Pi's
-> original FDT source, so instead she uses the dtc 'fs' input format to
-> compile the overlay file against the live DT data in /proc.
-> 
-> 
-
-Jane (the cape designer) can use this too. Developing the cape, she really
-appreciates that she doesn't have to reboot every time she makes a change
-in the cape hardware. By removing the FDT overlay, compiling with the dtc
-on the board, and re-inserting the overlay, she can be more productive by
-waiting less.
-
-Johnny, Jane's little son, doesn't know anything about device trees, linux
-kernel trees, or hard-core s/w engineering. He is a bright kid, and due to
-the board having a node.js based educational electronic design kit, he
-can use the web-based simplified development environment, that allows
-him graphically to connect the parts in his kit. He can save the design
-and the IDE creates on the fly the DT overlay for later use. 
-
-> Amit is writing kernel drivers for Jane's BeagleBone capes, but he
-> finds loading new DT files into the root filesystem inconvenient.
-> Instead, he includes the FDT overlay file in the initramfs that is built
-> and linked in at kernel compile time so that the kernel can find and
-> load overlays automatically.
-> 
-> 
-> Joanne has purchased one of Jane's capes and packaged it into a rugged
-> case for data logging. As far as Joanne is concerned, the BeagleBone and
-> cape together are a single unit and she'd prefer a single monolithic FDT
-> instead of using an FDT overlay.
-> Option A: Using dtc, she uses the BeagleBone and cape .dts source files
->          to generate a single .dtb for the entire system which is
->          loaded by U-Boot. -or-
-
-Unlikely. 
-> Option B: Joanne uses a tool to merge the BeagleBone and cape .dtb files
->          (instead of .dts files), -or-
-Possible but low probability.
-
-> Option C: U-Boot loads both the base and overlay FDT files, merges them,
->          and passes the resolved tree to the kernel.
-> 
-
-Could be made to work. Only really required if Joanne wants the 
-cape interface to work for u-boot too. For example if the cape has some
-kind of network interface that u-boot will use to boot from.
-
-> ....
-> 
-> Summary points:
-> - Create an FDT overlay data format and usage model
->  - SHALL reliable resolve or validate of phandles between base and
->    overlay trees
->  - SHOULD reliably handle changes between different underlying overlays
->    (ie. what happens to existing .dtb overly files if the structure of
->    the dtb it is layered over changes. If not possible, then SHALL
->    detect when the base tree doesn't match and refuse to apply the
->    overlay.
-> - dts syntax needs to be extended for overlay .dtb files
-> - DTC tool needs to be modified to support overlay .dtb generation
-> - Overlays SHOULD be able to be applied either by firmware or the kernel
-> - libfdt SHALL be extended to parse and apply overlays
-
-- ftdump should be fixed and work for the overlay syntax too.
-
-> - Linux SHALL be extended to parse and apply overlays from userspace
-> - Linux SHALL be extended to notify drivers of changes to device tree
-> - Linux MAY use request_firmware() to load overlays via sysfs
->  - (mechanism for triggering overlay load TBD)
-> - Linux MAY support removal of overlays (harder, but some use-cases want
->  this)
-> - Linux MAY be extended to remove devices associated with removed overlays
-> 
-> Technical details to resolve:
-> - How does an overlay get attached to the correct base tree nodes?
-> - How are phandles fixed up and/or verified?
-> - What is the model for overlays?
->  - Can an overlay modify existing properties?
->  - Can an overlay add new properties to existing nodes?
->  - Can an overlay delete existing nodes/properties?
-> - Does FDT need a schema? - Schema should be tightly associated with binding
->  documentation. Verifying schema at runtime should be simple. Runtime
->  checking is harder, but could be used as part of phandle fixup.
-> - Similarly, does FDT need data typing? Other than reading the binding
->  there is no mechanism to determine if a single cell is a phandle, an
->  integer (possibly enum), a flags field, or part of a string.
->  - Data typing would require additional per-property data; probably by
->    adding companion properties containing the data typing.  ie. an
->    optional '.reg,format' property could contain the format of the
->    'reg' property.  (The naming scheme for the new property can be
->    debated, it just needs to be something that won't conflict with
->    regular names).
->  - Data type data could be used as part of phandle fixups.
-> - How do bus drivers get notified when FDT data changes?
->  - node addition/removal
->  - property changes on existing nodes
->  - A notifier chain may work here, or maybe a generic "firmware data
->    changed" device driver callback. I could see this being generically
->    useful for other driver data like ACPI
-> 
-
-This is much grander in vision that I had in mind :)
-
-It can handle our use cases, but I'm worried if we're bitting more
-that what we can chew. Perhaps a staged approach? I.e. target the
-low hanging fruit first, get it work, and then work on the hardest
-parts?
-
-> Project plan
-> ============
-> 
-> 1) Create syntax for overlays
-> -----------------------------
-> DTC already uses an overlay model internally which is often used in
-> conjunction with .dtsi files. It should be a natural extension to
-> generate FDT overlay files from the existing syntax (maybe minor
-> modifications)
-> 
-> Doing this will require a method to differentiate between overlay and
-> include directives.  Maybe they aren't really different at all and it
-> will depend on dtc options to determine whether or not to produce an
-> overlay. Suggestions are welcome here.
-> 
-> 2) Create a data format for overlays
-> ------------------------------------
-> The overlay data format could be a direct extension from the existing
-> dtb data format. One option is to construct the overlay tree by creating
-> empty nodes for each node that it either adds children to or references
-> the phandle of in the base tree. Empty nodes could even be tagged as a
-> prereq by adding a '.readonly' property to those nodes. When an overlay
-> parser encounters those nodes, it would know that it needs to already
-> exist in the tree.
-> 
-> There is a problem though with phandles. If the phandle values in the
-> base tree don't match the ones in the overlay, then the overlay won't be
-> able to correctly reference base nodes. At a minimum, the parser must
-> verify that the phandles match before applying the overlay. Ideally,
-> phandles in the overlay should be fixed up at application time, but this
-> isn't easy. It would probably require first adding property data type
-> information to the device tree.
-> 
-> It may be sufficient to solve it by making the phandle values less
-> volatile. Right now dtc generates phandles linearly. Generated phandles
-> could be overridden with explicit phandle properties, but it isn't a
-> fantastic solution. Perhaps generating the phandle from a hash of the
-> node name would be sufficient.
-> 
-
-I doubt the hash method will work reliably. We only have 32 bits to work with,
-nothing like the SHA hashes of git.
-
-> Example: an overlay source file might look something like this:
-> 
-> /include/ "base-file.dts"  /* 'include' may not be the best syntax here */
-> &i2c0 {		/* i2c0 resolved by label */
-> 	touchpad@10 {
-> 		compatible = "acme,touchpad";
-> 		reg = <0x10>;
-> 		interrupt-parent = <&intc>;
-> 		interrupts = <100>;
-> 	};
-> };
-> 
-> And the generated overlay dtb may look like this:
-> 
-> / {
-> 	.readonly;
-> 	interrupt-controller@0x10005000 {
-> 		.readonly;
-> 		phandle = <0x1234>;
-> 	};
-> 	peripheral-bus {
-> 		.readonly;
-> 		i2c@20001000 {
-> 			touchpad@10 {
-> 				compatible = "acme,touchpad";
-> 				reg = <0x10>;
-> 				interrupt-parent = <0x1234>;
-> 				interrupts = <100>;
-> 			};
-> 		};
-> 	};
-> };
-> 
-> Which is obviously missing a bunch of information for the rest of the
-> system, but contains enough data to ensure that the path to the touchpad
-> node is valid and that the phandle has not changed.
-> 
-> This handles many of the use cases, but it assumes that an overlay is
-> board specific. If it ever is required to support multiple base boards
-> with a single overlay file then there is a problem. The .dtb overlays
-> generated in this manor cannot handle different phandles or nodes that
-> are in a different place. On the other hand, the overlay source files
-> should have no problem being compiled for multiple targets.
-
-It will work for our case. The board-file dependency problem is not a big
-concern right now.
-
-> 
-> 3) Modify DTC and libfdt to process overlays
-> --------------------------------------------
-> Direct follow on from above. This will require DTC to be modified to
-> generate the overlay output format and new test cases to verify it
-> works.
-> 
-> In the process libfdt will get modified to add overlay support which
-> will immediately be available to U-Boot and other bootloaders.
-> 
-> 4) Teach Linux to request FDT overlays
-> --------------------------------------
-> Add request_firmware() hook for adding overlays. If the platform
-> supports detecting the attached expansion board, then this may
-> manipulate the filename for a specific file.
-> 
-> The kernel will graft the overlay into the existing live tree
-> 
-
-5) Have a method to attach FDT overlay to a kernel module.
-
-For some drivers it might be better if the kernel module and the 
-DT overlay is packaged in the same file. You be in a part of
-the module binary as a special section that request_firmware can
-pick up automatically. 
-
-> Workitems:
-> Document device tree node lifecycle
-> Add tests to enforce device tree node lifecycle
-> Add interface to firmware_request() an FDT overlay
-> Add support to merge overlay FDT nodes into base tree
-> Add support to track FDT changes per-overlay
-> Add runtime fixups of overlay phandles
-> - Without this overlay phandles must exactly match the base tree
-> Add support to remove an overlay (question: is this important?)
-> 
-
-For hot-plugging, you need it. Whether kernel code can deal with
-large parts of the DT going away... How about we use the dead
-properties method and move/tag the removed modes as such, and not
-really remove them.
-
-> 5) Teach Linux driver model to respond to device tree changes
-> -------------------------------------------------------------
-> There are several parts to this. The most obvious are adding hooks for
-> platform_device, i2c_device and spi_device creation. In all three cases,
-> the users should already be providing enough information to support
-> dynamic addition (and possibly removal) of dt nodes.
-> of_platform_populate() is called for platform devices,
-> of_register_spi_devices() for spi and of_i2c_register_devices(). Right
-> now all three functions register all the child devices and then
-> immediately return. However, if they could set up a notifier for node
-> addition, then it would be easy to trigger additional device creation
-> when new nodes are added.
-> 
-> Other busses would be similar, but i2c, spi and platform are the most
-> common use cases currently.
-> 
-> Workitems:
-> Modify of_platform_populate() to get new node notifications
-> Modify of_register_spi_devices to get new node notifications
-> Modify of_register_i2c_devices to get new node notifications
-> 
-
-w1 is the same. Possibly more.
-
-Another can of worms is the pinctrl nodes. 
-
-> 6) Other work
-> -------------
-> The device node user space interface could use some work. Here are some
-> random work items that are peripherally related to the overlay feature.
-> 
-> Other Workitems:
-> Define FDT schema syntax
-> Add FDT schema support to FDT (basically lint-style testing)
-> Investigate runtime schema validation
-> Make device_nodes first-class kobjects and remove the procfs interface
-> - it can be emulated with a symlink
-> Add symlinks from devices to devicetree nodes in sysfs
-
-That's going to take a while :)
-
-Regards
-
--- Pantelis
-
+>>
+>> Thanks,
+>> rui
+>>> +             ret = thermal_zone_bind_cooling_device(thermal, i, cdev,
+>>> +                     upper, lower);
+>>> +
+>>> +             dev_info(&cdev->device, "%s bind to %d: %d-%s\n",
+>>> +                     cdev->type, i, ret, ret ? "fail" : "succeed");
+>>> +     }
+>>> +
+>>> +     return ret;
+>>> +}
+>>> +
+>>> +/* Callback to unbind cooling device from thermal zone */ static int
+>>> +db8500_cdev_unbind(struct thermal_zone_device *thermal,
+>>> +             struct thermal_cooling_device *cdev)
+>>> +{
+>>> +     struct db8500_thermal_zone *pzone = thermal->devdata;
+>>> +     struct db8500_thsens_platform_data *ptrips = pzone->trip_tab;
+>>> +     int i, ret = -EINVAL;
+>>> +
+>>> +     for (i = 0; i < ptrips->num_trips; i++) {
+>>> +             if (db8500_thermal_match_cdev(cdev, &ptrips-
+>>> >trip_points[i]))
+>>> +                     continue;
+>>> +
+>>> +             ret = thermal_zone_unbind_cooling_device(thermal, i, cdev);
+>>> +
+>>> +             dev_info(&cdev->device, "%s unbind: %s\n",
+>>> +                     cdev->type, ret ? "fail" : "succeed");
+>>> +     }
+>>> +
+>>> +     return ret;
+>>> +}
+>>> +
+>>> +/* Callback to get current temperature */ static int
+>>> +db8500_sys_get_temp(struct thermal_zone_device *thermal,
+>>> +             unsigned long *temp)
+>>> +{
+>>> +     struct db8500_thermal_zone *pzone = thermal->devdata;
+>>> +
+>>> +     /*
+>>> +      * TODO: There is no PRCMU interface to get temperature data
+>>> currently,
+>>> +      * so a pseudo temperature is returned , it works for thermal
+>>> framework
+>>> +      * and this will be fixed when the PRCMU interface is available.
+>>> +      */
+>>> +     *temp = pzone->cur_temp_pseudo;
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +/* Callback to get temperature changing trend */ static int
+>>> +db8500_sys_get_trend(struct thermal_zone_device *thermal,
+>>> +             int trip, enum thermal_trend *trend)
+>>> +{
+>>> +     struct db8500_thermal_zone *pzone = thermal->devdata;
+>>> +
+>>> +     *trend = pzone->trend;
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +/* Callback to get thermal zone mode */ static int
+>>> +db8500_sys_get_mode(struct thermal_zone_device *thermal,
+>>> +             enum thermal_device_mode *mode)
+>>> +{
+>>> +     struct db8500_thermal_zone *pzone = thermal->devdata;
+>>> +
+>>> +     mutex_lock(&pzone->th_lock);
+>>> +     *mode = pzone->mode;
+>>> +     mutex_unlock(&pzone->th_lock);
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +/* Callback to set thermal zone mode */ static int
+>>> +db8500_sys_set_mode(struct thermal_zone_device *thermal,
+>>> +             enum thermal_device_mode mode)
+>>> +{
+>>> +     struct db8500_thermal_zone *pzone = thermal->devdata;
+>>> +
+>>> +     mutex_lock(&pzone->th_lock);
+>>> +
+>>> +     pzone->mode = mode;
+>>> +     if (mode == THERMAL_DEVICE_ENABLED)
+>>> +             schedule_work(&pzone->therm_work);
+>>> +
+>>> +     mutex_unlock(&pzone->th_lock);
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +/* Callback to get trip point type */
+>>> +static int db8500_sys_get_trip_type(struct thermal_zone_device
+>>> *thermal,
+>>> +             int trip, enum thermal_trip_type *type) {
+>>> +     struct db8500_thermal_zone *pzone = thermal->devdata;
+>>> +     struct db8500_thsens_platform_data *ptrips = pzone->trip_tab;
+>>> +
+>>> +     if (trip >= ptrips->num_trips)
+>>> +             return -EINVAL;
+>>> +
+>>> +     *type = ptrips->trip_points[trip].type;
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +/* Callback to get trip point temperature */ static int
+>>> +db8500_sys_get_trip_temp(struct thermal_zone_device *thermal,
+>>> +             int trip, unsigned long *temp)
+>>> +{
+>>> +     struct db8500_thermal_zone *pzone = thermal->devdata;
+>>> +     struct db8500_thsens_platform_data *ptrips = pzone->trip_tab;
+>>> +
+>>> +     if (trip >= ptrips->num_trips)
+>>> +             return -EINVAL;
+>>> +
+>>> +     *temp = ptrips->trip_points[trip].temp;
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +/* Callback to get critical trip point temperature */ static int
+>>> +db8500_sys_get_crit_temp(struct thermal_zone_device *thermal,
+>>> +             unsigned long *temp)
+>>> +{
+>>> +     struct db8500_thermal_zone *pzone = thermal->devdata;
+>>> +     struct db8500_thsens_platform_data *ptrips = pzone->trip_tab;
+>>> +     int i;
+>>> +
+>>> +     for (i = ptrips->num_trips - 1; i > 0; i--) {
+>>> +             if (ptrips->trip_points[i].type == THERMAL_TRIP_CRITICAL) {
+>>> +                     *temp = ptrips->trip_points[i].temp;
+>>> +                     return 0;
+>>> +             }
+>>> +     }
+>>> +
+>>> +     return -EINVAL;
+>>> +}
+>>> +
+>>> +static struct thermal_zone_device_ops thdev_ops = {
+>>> +     .bind = db8500_cdev_bind,
+>>> +     .unbind = db8500_cdev_unbind,
+>>> +     .get_temp = db8500_sys_get_temp,
+>>> +     .get_trend = db8500_sys_get_trend,
+>>> +     .get_mode = db8500_sys_get_mode,
+>>> +     .set_mode = db8500_sys_set_mode,
+>>> +     .get_trip_type = db8500_sys_get_trip_type,
+>>> +     .get_trip_temp = db8500_sys_get_trip_temp,
+>>> +     .get_crit_temp = db8500_sys_get_crit_temp, };
+>>> +
+>>> +static void db8500_thermal_update_config(struct db8500_thermal_zone
+>>> *pzone,
+>>> +             unsigned int idx, enum thermal_trend trend,
+>>> +             unsigned long next_low, unsigned long next_high) {
+>>> +     pzone->cur_index = idx;
+>>> +     pzone->cur_temp_pseudo = (next_low + next_high)/2;
+>>> +     pzone->trend = trend;
+>>> +
+>>> +     prcmu_stop_temp_sense();
+>>> +     prcmu_config_hotmon((u8)(next_low/1000), (u8)(next_high/1000));
+>>> +     prcmu_start_temp_sense(PRCMU_DEFAULT_MEASURE_TIME);
+>>> +}
+>>> +
+>>> +static irqreturn_t prcmu_low_irq_handler(int irq, void *irq_data) {
+>>> +     struct db8500_thermal_zone *pzone = irq_data;
+>>> +     struct db8500_thsens_platform_data *ptrips = pzone->trip_tab;
+>>> +     unsigned int idx = pzone->cur_index;
+>>> +     unsigned long next_low, next_high;
+>>> +
+>>> +     if (unlikely(idx == 0))
+>>> +             /* Meaningless for thermal management, ignoring it */
+>>> +             return IRQ_HANDLED;
+>>> +
+>>> +     if (idx == 1) {
+>>> +             next_high = ptrips->trip_points[0].temp;
+>>> +             next_low = PRCMU_DEFAULT_LOW_TEMP;
+>>> +     } else {
+>>> +             next_high = ptrips->trip_points[idx-1].temp;
+>>> +             next_low = ptrips->trip_points[idx-2].temp;
+>>> +     }
+>>> +     idx -= 1;
+>>> +
+>>> +     db8500_thermal_update_config(pzone, idx, THERMAL_TREND_DROPPING,
+>>> +             next_low, next_high);
+>>> +
+>>> +     dev_dbg(&pzone->therm_dev->device,
+>>> +             "PRCMU set max %ld, min %ld\n", next_high, next_low);
+>>> +
+>>> +     schedule_work(&pzone->therm_work);
+>>> +
+>>> +     return IRQ_HANDLED;
+>>> +}
+>>> +
+>>> +static irqreturn_t prcmu_high_irq_handler(int irq, void *irq_data) {
+>>> +     struct db8500_thermal_zone *pzone = irq_data;
+>>> +     struct db8500_thsens_platform_data *ptrips = pzone->trip_tab;
+>>> +     unsigned int idx = pzone->cur_index;
+>>> +     unsigned long next_low, next_high;
+>>> +
+>>> +     if (idx < ptrips->num_trips - 1) {
+>>> +             next_high = ptrips->trip_points[idx+1].temp;
+>>> +             next_low = ptrips->trip_points[idx].temp;
+>>> +             idx += 1;
+>>> +
+>>> +             db8500_thermal_update_config(pzone, idx,
+>>> THERMAL_TREND_RAISING,
+>>> +                     next_low, next_high);
+>>> +
+>>> +             dev_dbg(&pzone->therm_dev->device,
+>>> +             "PRCMU set max %ld, min %ld\n", next_high, next_low);
+>>> +     } else if (idx == ptrips->num_trips - 1)
+>>> +             pzone->cur_temp_pseudo = ptrips->trip_points[idx].temp + 1;
+>>> +
+>>> +     schedule_work(&pzone->therm_work);
+>>> +
+>>> +     return IRQ_HANDLED;
+>>> +}
+>>> +
+>>> +static void db8500_thermal_work(struct work_struct *work) {
+>>> +     enum thermal_device_mode cur_mode;
+>>> +     struct db8500_thermal_zone *pzone;
+>>> +
+>>> +     pzone = container_of(work, struct db8500_thermal_zone,
+>>> therm_work);
+>>> +
+>>> +     mutex_lock(&pzone->th_lock);
+>>> +     cur_mode = pzone->mode;
+>>> +     mutex_unlock(&pzone->th_lock);
+>>> +
+>>> +     if (cur_mode == THERMAL_DEVICE_DISABLED)
+>>> +             return;
+>>> +
+>>> +     thermal_zone_device_update(pzone->therm_dev);
+>>> +     dev_dbg(&pzone->therm_dev->device, "thermal work finished.\n"); }
+>>> +
+>>> +#ifdef CONFIG_OF
+>>> +static struct db8500_thsens_platform_data*
+>>> +             db8500_thermal_parse_dt(struct platform_device *pdev) {
+>>> +     struct db8500_thsens_platform_data *ptrips;
+>>> +     struct device_node *np = pdev->dev.of_node;
+>>> +     char prop_name[32];
+>>> +     const char *tmp_str;
+>>> +     u32 tmp_data;
+>>> +     int i, j;
+>>> +
+>>> +     ptrips = devm_kzalloc(&pdev->dev, sizeof(*ptrips), GFP_KERNEL);
+>>> +     if (!ptrips)
+>>> +             return NULL;
+>>> +
+>>> +     if (of_property_read_u32(np, "num-trips", &tmp_data))
+>>> +             goto err_parse_dt;
+>>> +
+>>> +     if (tmp_data > THERMAL_MAX_TRIPS)
+>>> +             goto err_parse_dt;
+>>> +
+>>> +     ptrips->num_trips = tmp_data;
+>>> +
+>>> +     for (i = 0; i < ptrips->num_trips; i++) {
+>>> +             sprintf(prop_name, "trip%d-temp", i);
+>>> +             if (of_property_read_u32(np, prop_name, &tmp_data))
+>>> +                     goto err_parse_dt;
+>>> +
+>>> +             ptrips->trip_points[i].temp = tmp_data;
+>>> +
+>>> +             sprintf(prop_name, "trip%d-type", i);
+>>> +             if (of_property_read_string(np, prop_name, &tmp_str))
+>>> +                     goto err_parse_dt;
+>>> +
+>>> +             if (!strcmp(tmp_str, "active"))
+>>> +                     ptrips->trip_points[i].type = THERMAL_TRIP_ACTIVE;
+>>> +             else if (!strcmp(tmp_str, "passive"))
+>>> +                     ptrips->trip_points[i].type = THERMAL_TRIP_PASSIVE;
+>>> +             else if (!strcmp(tmp_str, "hot"))
+>>> +                     ptrips->trip_points[i].type = THERMAL_TRIP_HOT;
+>>> +             else if (!strcmp(tmp_str, "critical"))
+>>> +                     ptrips->trip_points[i].type = THERMAL_TRIP_CRITICAL;
+>>> +             else
+>>> +                     goto err_parse_dt;
+>>> +
+>>> +             sprintf(prop_name, "trip%d-cdev-num", i);
+>>> +             if (of_property_read_u32(np, prop_name, &tmp_data))
+>>> +                     goto err_parse_dt;
+>>> +
+>>> +             if (tmp_data > COOLING_DEV_MAX)
+>>> +                     goto err_parse_dt;
+>>> +
+>>> +             for (j = 0; j < tmp_data; j++) {
+>>> +                     sprintf(prop_name, "trip%d-cdev-name%d", i, j);
+>>> +                     if (of_property_read_string(np, prop_name, &tmp_str))
+>>> +                             goto err_parse_dt;
+>>> +
+>>> +                     if (strlen(tmp_str) > THERMAL_NAME_LENGTH)
+>>> +                             goto err_parse_dt;
+>>> +
+>>> +                     strcpy(ptrips->trip_points[i].cdev_name[j], tmp_str);
+>>> +             }
+>>> +     }
+>>> +     return ptrips;
+>>> +
+>>> +err_parse_dt:
+>>> +     dev_err(&pdev->dev, "Parsing device tree data error.\n");
+>>> +     return NULL;
+>>> +}
+>>> +#else
+>>> +static inline struct db8500_thsens_platform_data*
+>>> +             db8500_thermal_parse_dt(struct platform_device *pdev) {
+>>> +     return NULL;
+>>> +}
+>>> +#endif
+>>> +
+>>> +static int db8500_thermal_probe(struct platform_device *pdev) {
+>>> +     struct db8500_thermal_zone *pzone = NULL;
+>>> +     struct db8500_thsens_platform_data *ptrips = NULL;
+>>> +     struct device_node *np = pdev->dev.of_node;
+>>> +     int low_irq, high_irq, ret = 0;
+>>> +     unsigned long dft_low, dft_high;
+>>> +
+>>> +     if (np)
+>>> +             ptrips = db8500_thermal_parse_dt(pdev);
+>>> +     else
+>>> +             ptrips = dev_get_platdata(&pdev->dev);
+>>> +
+>>> +     if (!ptrips)
+>>> +             return -EINVAL;
+>>> +
+>>> +     pzone = devm_kzalloc(&pdev->dev, sizeof(*pzone), GFP_KERNEL);
+>>> +     if (!pzone)
+>>> +             return -ENOMEM;
+>>> +
+>>> +     mutex_init(&pzone->th_lock);
+>>> +     mutex_lock(&pzone->th_lock);
+>>> +
+>>> +     pzone->mode = THERMAL_DEVICE_DISABLED;
+>>> +     pzone->trip_tab = ptrips;
+>>> +
+>>> +     dft_low = PRCMU_DEFAULT_LOW_TEMP;
+>>> +     dft_high = ptrips->trip_points[0].temp;
+>>> +
+>>> +     db8500_thermal_update_config(pzone, 0, THERMAL_TREND_STABLE,
+>>> +             dft_low, dft_high);
+>>> +
+>>> +     INIT_WORK(&pzone->therm_work, db8500_thermal_work);
+>>> +
+>>> +     low_irq = platform_get_irq_byname(pdev, "IRQ_HOTMON_LOW");
+>>> +     if (low_irq < 0) {
+>>> +             dev_err(&pdev->dev, "Get IRQ_HOTMON_LOW failed.\n");
+>>> +             return low_irq;
+>>> +     }
+>>> +
+>>> +     ret = devm_request_threaded_irq(&pdev->dev, low_irq, NULL,
+>>> +             prcmu_low_irq_handler, IRQF_NO_SUSPEND | IRQF_ONESHOT,
+>>> +             "dbx500_temp_low", pzone);
+>>> +     if (ret < 0) {
+>>> +             dev_err(&pdev->dev, "Failed to allocate temp low irq.\n");
+>>> +             return ret;
+>>> +     }
+>>> +
+>>> +     high_irq = platform_get_irq_byname(pdev, "IRQ_HOTMON_HIGH");
+>>> +     if (high_irq < 0) {
+>>> +             dev_err(&pdev->dev, "Get IRQ_HOTMON_HIGH failed.\n");
+>>> +             return high_irq;
+>>> +     }
+>>> +
+>>> +     ret = devm_request_threaded_irq(&pdev->dev, high_irq, NULL,
+>>> +             prcmu_high_irq_handler, IRQF_NO_SUSPEND | IRQF_ONESHOT,
+>>> +             "dbx500_temp_high", pzone);
+>>> +     if (ret < 0) {
+>>> +             dev_err(&pdev->dev, "Failed to allocate temp high irq.\n");
+>>> +             return ret;
+>>> +     }
+>>> +
+>>> +     pzone->therm_dev =
+>>> thermal_zone_device_register("db8500_thermal_zone",
+>>> +             ptrips->num_trips, 0, pzone, &thdev_ops, 0, 0);
+>>> +
+>>> +     if (IS_ERR_OR_NULL(pzone->therm_dev)) {
+>>> +             dev_err(&pdev->dev, "Register thermal zone device
+>>> failed.\n");
+>>> +             return PTR_ERR(pzone->therm_dev);
+>>> +     }
+>>> +     dev_info(&pdev->dev, "Thermal zone device registered.\n");
+>>> +
+>>> +     platform_set_drvdata(pdev, pzone);
+>>> +     pzone->mode = THERMAL_DEVICE_ENABLED;
+>>> +     mutex_unlock(&pzone->th_lock);
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +static int db8500_thermal_remove(struct platform_device *pdev) {
+>>> +     struct db8500_thermal_zone *pzone = platform_get_drvdata(pdev);
+>>> +
+>>> +     thermal_zone_device_unregister(pzone->therm_dev);
+>>> +     cancel_work_sync(&pzone->therm_work);
+>>> +     mutex_destroy(&pzone->th_lock);
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +static int db8500_thermal_suspend(struct platform_device *pdev,
+>>> +             pm_message_t state)
+>>> +{
+>>> +     struct db8500_thermal_zone *pzone = platform_get_drvdata(pdev);
+>>> +
+>>> +     flush_work_sync(&pzone->therm_work);
+>>> +     prcmu_stop_temp_sense();
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +static int db8500_thermal_resume(struct platform_device *pdev) {
+>>> +     struct db8500_thermal_zone *pzone = platform_get_drvdata(pdev);
+>>> +     struct db8500_thsens_platform_data *ptrips = pzone->trip_tab;
+>>> +     unsigned long dft_low, dft_high;
+>>> +
+>>> +     dft_low = PRCMU_DEFAULT_LOW_TEMP;
+>>> +     dft_high = ptrips->trip_points[0].temp;
+>>> +
+>>> +     db8500_thermal_update_config(pzone, 0, THERMAL_TREND_STABLE,
+>>> +             dft_low, dft_high);
+>>> +
+>>> +     return 0;
+>>> +}
+>>> +
+>>> +#ifdef CONFIG_OF
+>>> +static const struct of_device_id db8500_thermal_match[] = {
+>>> +     { .compatible = "stericsson,db8500-thermal" },
+>>> +     {},
+>>> +};
+>>> +#else
+>>> +#define db8500_thermal_match NULL
+>>> +#endif
+>>> +
+>>> +static struct platform_driver db8500_thermal_driver = {
+>>> +     .driver = {
+>>> +             .owner = THIS_MODULE,
+>>> +             .name = "db8500-thermal",
+>>> +             .of_match_table = db8500_thermal_match,
+>>> +     },
+>>> +     .probe = db8500_thermal_probe,
+>>> +     .suspend = db8500_thermal_suspend,
+>>> +     .resume = db8500_thermal_resume,
+>>> +     .remove = db8500_thermal_remove,
+>>> +};
+>>> +
+>>> +module_platform_driver(db8500_thermal_driver);
+>>> +
+>>> +MODULE_AUTHOR("Hongbo Zhang <hongbo.zhang@stericsson.com>");
+>>> +MODULE_DESCRIPTION("DB8500 thermal driver"); MODULE_LICENSE("GPL");
+>>> diff --git a/include/linux/platform_data/db8500_thermal.h
+>>> b/include/linux/platform_data/db8500_thermal.h
+>>> new file mode 100644
+>>> index 0000000..3bf6090
+>>> --- /dev/null
+>>> +++ b/include/linux/platform_data/db8500_thermal.h
+>>> @@ -0,0 +1,38 @@
+>>> +/*
+>>> + * db8500_thermal.h - DB8500 Thermal Management Implementation
+>>> + *
+>>> + * Copyright (C) 2012 ST-Ericsson
+>>> + * Copyright (C) 2012 Linaro Ltd.
+>>> + *
+>>> + * Author: Hongbo Zhang <hongbo.zhang@linaro.com>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or
+>>> modify
+>>> + * it under the terms of the GNU General Public License as published
+>>> by
+>>> + * the Free Software Foundation; either version 2 of the License, or
+>>> + * (at your option) any later version.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +
+>>> +#ifndef _DB8500_THERMAL_H_
+>>> +#define _DB8500_THERMAL_H_
+>>> +
+>>> +#include <linux/thermal.h>
+>>> +
+>>> +#define COOLING_DEV_MAX 8
+>>> +
+>>> +struct db8500_trip_point {
+>>> +     unsigned long temp;
+>>> +     enum thermal_trip_type type;
+>>> +     char cdev_name[COOLING_DEV_MAX][THERMAL_NAME_LENGTH];
+>>> +};
+>>> +
+>>> +struct db8500_thsens_platform_data {
+>>> +     struct db8500_trip_point trip_points[THERMAL_MAX_TRIPS];
+>>> +     int num_trips;
+>>> +};
+>>> +
+>>> +#endif /* _DB8500_THERMAL_H_ */
+>>> --
+>>> 1.7.11.3
+>>
