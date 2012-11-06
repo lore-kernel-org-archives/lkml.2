@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab2KFE6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 23:58:13 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:49281 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab2KFE6M (ORCPT
+	id S1751340Ab2KFFDZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 00:03:25 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:64193 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717Ab2KFFDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 23:58:12 -0500
-Date: Tue, 6 Nov 2012 15:58:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: linux-next: manual merge of the akpm tree with the cgroup tree
-Message-Id: <20121106155809.46653a71d0e14c93e6d989b6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__6_Nov_2012_15_58_09_+1100_b2TU7PKX8QSCx1I6"
+	Tue, 6 Nov 2012 00:03:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <1352130296.13561.1.camel@phoenix>
+References: <1352130296.13561.1.camel@phoenix>
+Date: Tue, 6 Nov 2012 10:33:22 +0530
+Message-ID: <CAJuYYwTg0V3sn0YW-bJV9T9EZ91dF7wjX9UmeBwtxMZzJMwwjg@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: samsung: Add ifdef CONFIG_OF_GPIO guard for gc->of_node
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__6_Nov_2012_15_58_09_+1100_b2TU7PKX8QSCx1I6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 5 November 2012 21:14, Axel Lin <axel.lin@ingics.com> wrote:
+> This fixes below build error when !CONFIG_OF_GPIO.
+>
+>   CC      drivers/pinctrl/pinctrl-samsung.o
+> drivers/pinctrl/pinctrl-samsung.c: In function 'samsung_pinctrl_parse_dt_pins':
+> drivers/pinctrl/pinctrl-samsung.c:557:19: warning: unused variable 'prop' [-Wunused-variable]
+> drivers/pinctrl/pinctrl-samsung.c: In function 'samsung_gpiolib_register':
+> drivers/pinctrl/pinctrl-samsung.c:797:5: error: 'struct gpio_chip' has no member named 'of_node'
+> make[2]: *** [drivers/pinctrl/pinctrl-samsung.o] Error 1
+> make[1]: *** [drivers/pinctrl] Error 2
+> make: *** [drivers] Error 2
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+> v2:
+> Don't remove the prop variable.
+> It is used in of_property_for_each_string() when CONFIG_OF_GPIO is enabled.
+>
+>  drivers/pinctrl/pinctrl-samsung.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
+> index fc34cac..f798b4d 100644
+> --- a/drivers/pinctrl/pinctrl-samsung.c
+> +++ b/drivers/pinctrl/pinctrl-samsung.c
+> @@ -794,7 +794,9 @@ static int __devinit samsung_gpiolib_register(struct platform_device *pdev,
+>                 gc->base = ctrl->base + bank->pin_base;
+>                 gc->ngpio = bank->nr_pins;
+>                 gc->dev = &pdev->dev;
+> +#if defined(CONFIG_OF_GPIO)
+>                 gc->of_node = bank->of_node;
+> +#endif
+>                 gc->label = bank->name;
+>
+>                 ret = gpiochip_add(gc);
 
-Hi Andrew,
+The samsung pinctrl driver supports only device tree enabled
+platforms. So instead of adding the above #if, would it not be better
+to add 'select OF_GPIO' for Samsung pinctrl driver in
+drivers/pinctrl/Kconfig. ?
 
-Today's linux-next merge of the akpm tree got a conflict in
-mm/memcontrol.c between commit ab5196c202c6 ("memcg: make
-mem_cgroup_reparent_charges non failing") from the cgroup tree and commit
-"memcg: destroy memcg caches" from the akpm tree.
+Thanks,
+Thomas.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc mm/memcontrol.c
-index a38e9fb,b650e09..0000000
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@@ -5946,11 -6034,17 +6008,12 @@@ free_out
-  	return ERR_PTR(error);
-  }
- =20
- -static int mem_cgroup_pre_destroy(struct cgroup *cont)
- +static void mem_cgroup_pre_destroy(struct cgroup *cont)
-  {
-  	struct mem_cgroup *memcg =3D mem_cgroup_from_cont(cont);
- -	int ret;
- =20
- -	css_get(&memcg->css);
- -	ret =3D mem_cgroup_reparent_charges(memcg);
- +	mem_cgroup_reparent_charges(memcg);
-+ 	mem_cgroup_destroy_all_caches(memcg);
- -	css_put(&memcg->css);
- -
- -	return ret;
-  }
- =20
-  static void mem_cgroup_destroy(struct cgroup *cont)
-
---Signature=_Tue__6_Nov_2012_15_58_09_+1100_b2TU7PKX8QSCx1I6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQmJjhAAoJEECxmPOUX5FEz18P/RB5LUubr92Htv9wNZMLDnt9
-3hUyTRZF+TZa1Tr+GoJUAdKVJyVArBfupxNuLrfW/3OIG0DA0KqiRLviC6Nq2fdi
-Sjc+g5HtYFtOTEgYAZdgsvRSr7hH2j6NMRbJMEhj7YbIk1g96ioNfqUy6+2RFjhM
-1pxAUTXYH0OqFsxoACPjxPmR0PheLBXU/TJHMKaWAtezbgnpcYjF5zPw5+9/t/yB
-HmDGMT6JYWvhkzjPsAYrLq+dmGbdrtcJxE+7gYp5jnA4u369BuWJm7RjDUFdMYg0
-Y7e0gTK6ENZiU1RJZPnQwQtx5ABirCJ4aGAGqeo1Zs0Bs95XYu7zdr3BOuwPdjEu
-UlinaSmvVUSZ4Ku3E4wePS4n3Z/PQqJtkl7QfB/lO7fiQiR6YkbA0QS868tzhdCM
-L8fRjxRRDYpWNBPqb4r5X736DCKXQtb3pTVfUh9dFeSdpWk1BIhx0/sMw5qIOa3b
-EyRXX1xr16Q8I0WO7Jm5SREXJbdeJv/K0KBy3/UMjQvEb7coudh/98vGsBIF3kyY
-DauqkjZhQITMqxgcuqrnDPbyF3QlOkfgCBB+vKfet6r/f58nb1NtoBYjksmMjkzN
-b1VQQhIdaG5Wi+U4qpB4LbMXi48T79UmsxIvMOcqfly4RZdFL+ccycum0LQ11WFy
-eIjLbtSTM+uSMJU9Fk2N
-=mOTP
------END PGP SIGNATURE-----
-
---Signature=_Tue__6_Nov_2012_15_58_09_+1100_b2TU7PKX8QSCx1I6--
+> --
+> 1.7.9.5
+>
+>
+>
