@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab2KFJTR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:19:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36258 "EHLO mx2.suse.de"
+	id S1752427Ab2KFJTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:19:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36336 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282Ab2KFJPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:15:03 -0500
+	id S1751560Ab2KFJPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 04:15:13 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 04/19] mm: numa: define _PAGE_NUMA
-Date: Tue,  6 Nov 2012 09:14:40 +0000
-Message-Id: <1352193295-26815-5-git-send-email-mgorman@suse.de>
+Subject: [PATCH 12/19] mm: migrate: Introduce migrate_misplaced_page()
+Date: Tue,  6 Nov 2012 09:14:48 +0000
+Message-Id: <1352193295-26815-13-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1352193295-26815-1-git-send-email-mgorman@suse.de>
 References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
@@ -25,74 +25,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-The objective of _PAGE_NUMA is to be able to trigger NUMA hinting page
-faults to identify the per NUMA node working set of the thread at
-runtime.
+Note: This was originally based on Peter's patch "mm/migrate: Introduce
+	migrate_misplaced_page()" but borrows extremely heavily from Andrea's
+	"autonuma: memory follows CPU algorithm and task/mm_autonuma stats
+	collection". The end result is barely recognisable so signed-offs
+	had to be dropped. If original authors are ok with it, I'll
+	re-add the signed-off-bys.
 
-Arming the NUMA hinting page fault mechanism works similarly to
-setting up a mprotect(PROT_NONE) virtual range: the present bit is
-cleared at the same time that _PAGE_NUMA is set, so when the fault
-triggers we can identify it as a NUMA hinting page fault.
+Add migrate_misplaced_page() which deals with migrating pages from
+faults.
 
-_PAGE_NUMA on x86 shares the same bit number of _PAGE_PROTNONE (but it
-could also use a different bitflag, it's up to the architecture to
-decide).
-
-It would be confusing to call the "NUMA hinting page faults" as
-"do_prot_none faults". They're different events and _PAGE_NUMA doesn't
-alter the semantics of mprotect(PROT_NONE) in any way.
-
-Sharing the same bitflag with _PAGE_PROTNONE in fact complicates
-things: it requires us to ensure the code paths executed by
-_PAGE_PROTNONE remains mutually exclusive to the code paths executed
-by _PAGE_NUMA at all times, to avoid _PAGE_NUMA and _PAGE_PROTNONE to
-step into each other toes.
-
-Because we want to be able to set this bitflag in any established pte
-or pmd (while clearing the present bit at the same time) without
-losing information, this bitflag must never be set when the pte and
-pmd are present, so the bitflag picked for _PAGE_NUMA usage, must not
-be used by the swap entry format.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Based-on-work-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Based-on-work-by: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- arch/x86/include/asm/pgtable_types.h |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ include/linux/migrate.h |    8 ++++
+ mm/migrate.c            |  104 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 110 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index ec8a1fc..3c32db8 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -64,6 +64,26 @@
- #define _PAGE_FILE	(_AT(pteval_t, 1) << _PAGE_BIT_FILE)
- #define _PAGE_PROTNONE	(_AT(pteval_t, 1) << _PAGE_BIT_PROTNONE)
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index 9d1c159..69f60b5 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -13,6 +13,7 @@ enum migrate_reason {
+ 	MR_MEMORY_HOTPLUG,
+ 	MR_SYSCALL,		/* also applies to cpusets */
+ 	MR_MEMPOLICY_MBIND,
++	MR_NUMA_MISPLACED,
+ 	MR_CMA
+ };
  
-+/*
-+ * _PAGE_NUMA indicates that this page will trigger a numa hinting
-+ * minor page fault to gather numa placement statistics (see
-+ * pte_numa()). The bit picked (8) is within the range between
-+ * _PAGE_FILE (6) and _PAGE_PROTNONE (8) bits. Therefore, it doesn't
-+ * require changes to the swp entry format because that bit is always
-+ * zero when the pte is not present.
-+ *
-+ * The bit picked must be always zero when the pmd is present and not
-+ * present, so that we don't lose information when we set it while
-+ * atomically clearing the present bit.
-+ *
-+ * Because we shared the same bit (8) with _PAGE_PROTNONE this can be
-+ * interpreted as _PAGE_NUMA only in places that _PAGE_PROTNONE
-+ * couldn't reach, like handle_mm_fault() (see access_error in
-+ * arch/x86/mm/fault.c, the vma protection must not be PROT_NONE for
-+ * handle_mm_fault() to be invoked).
-+ */
-+#define _PAGE_NUMA	_PAGE_PROTNONE
+@@ -39,6 +40,7 @@ extern int migrate_vmas(struct mm_struct *mm,
+ extern void migrate_page_copy(struct page *newpage, struct page *page);
+ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+ 				  struct page *newpage, struct page *page);
++extern int migrate_misplaced_page(struct page *page, int node);
+ #else
+ 
+ static inline void putback_lru_pages(struct list_head *l) {}
+@@ -72,5 +74,11 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
+ #define migrate_page NULL
+ #define fail_migrate_page NULL
+ 
++static inline
++int migrate_misplaced_page(struct page *page, int node)
++{
++	return -EAGAIN; /* can't migrate now */
++}
+ #endif /* CONFIG_MIGRATION */
 +
- #define _PAGE_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |	\
- 			 _PAGE_ACCESSED | _PAGE_DIRTY)
- #define _KERNPG_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_ACCESSED |	\
+ #endif /* _LINUX_MIGRATE_H */
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 27be9c9..4a92808 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -282,7 +282,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
+ 		struct page *newpage, struct page *page,
+ 		struct buffer_head *head, enum migrate_mode mode)
+ {
+-	int expected_count;
++	int expected_count = 0;
+ 	void **pslot;
+ 
+ 	if (!mapping) {
+@@ -1415,4 +1415,104 @@ int migrate_vmas(struct mm_struct *mm, const nodemask_t *to,
+  	}
+  	return err;
+ }
+-#endif
++
++/*
++ * Returns true if this is a safe migration target node for misplaced NUMA
++ * pages. Currently it only checks the watermarks which crude
++ */
++static bool migrate_balanced_pgdat(struct pglist_data *pgdat,
++				   int nr_migrate_pages)
++{
++	int z;
++	for (z = pgdat->nr_zones - 1; z >= 0; z--) {
++		struct zone *zone = pgdat->node_zones + z;
++
++		if (!populated_zone(zone))
++			continue;
++
++		if (zone->all_unreclaimable)
++			continue;
++
++		/* Avoid waking kswapd by allocating pages_to_migrate pages. */
++		if (!zone_watermark_ok(zone, 0,
++				       high_wmark_pages(zone) +
++				       nr_migrate_pages,
++				       0, 0))
++			continue;
++		return true;
++	}
++	return false;
++}
++
++static struct page *alloc_misplaced_dst_page(struct page *page,
++					   unsigned long data,
++					   int **result)
++{
++	int nid = (int) data;
++	struct page *newpage;
++
++	newpage = alloc_pages_exact_node(nid,
++					 (GFP_HIGHUSER_MOVABLE | GFP_THISNODE |
++					  __GFP_NOMEMALLOC | __GFP_NORETRY |
++					  __GFP_NOWARN) &
++					 ~GFP_IOFS, 0);
++	return newpage;
++}
++
++/*
++ * Attempt to migrate a misplaced page to the specified destination
++ * node. Caller is expected to have an elevated reference count on
++ * the page that will be dropped by this function before returning.
++ */
++int migrate_misplaced_page(struct page *page, int node)
++{
++	int isolated = 0;
++	LIST_HEAD(migratepages);
++
++	/*
++	 * Don't migrate pages that are mapped in multiple processes.
++	 * TODO: Handle false sharing detection instead of this hammer
++	 */
++	if (page_mapcount(page) != 1)
++		goto out;
++
++	/* Avoid migrating to a node that is nearly full */
++	if (migrate_balanced_pgdat(NODE_DATA(node), 1)) {
++		int page_lru;
++
++		if (isolate_lru_page(page)) {
++			put_page(page);
++			goto out;
++		}
++		isolated = 1;
++
++		/*
++		 * Page is isolated which takes a reference count so now the
++		 * callers reference can be safely dropped without the page
++		 * disappearing underneath us during migration
++		 */
++		put_page(page);
++
++		page_lru = page_is_file_cache(page);
++		inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
++		list_add(&page->lru, &migratepages);
++	}
++
++	if (isolated) {
++		int nr_remaining;
++
++		nr_remaining = migrate_pages(&migratepages,
++				alloc_misplaced_dst_page,
++				node, false, MIGRATE_ASYNC,
++				MR_NUMA_MISPLACED);
++		if (nr_remaining) {
++			putback_lru_pages(&migratepages);
++			isolated = 0;
++		}
++	}
++	BUG_ON(!list_empty(&migratepages));
++out:
++	return isolated;
++}
++
++#endif /* CONFIG_NUMA */
 -- 
 1.7.9.2
 
