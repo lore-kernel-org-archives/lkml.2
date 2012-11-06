@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab2KFOoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 09:44:05 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55216 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343Ab2KFOoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 09:44:02 -0500
-Date: Tue, 6 Nov 2012 15:44:05 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tony.luck@intel.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        miaox@cn.fujitsu.com, laijs@cn.fujitsu.com, wency@cn.fujitsu.com,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Do not change worker's running cpu in
- cmci_rediscover().
-Message-ID: <20121106144405.GC9558@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Tang Chen <tangchen@cn.fujitsu.com>, tony.luck@intel.com,
-	tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-	miaox@cn.fujitsu.com, laijs@cn.fujitsu.com, wency@cn.fujitsu.com,
-	x86@kernel.org, linux-edac@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1351479710-9144-1-git-send-email-tangchen@cn.fujitsu.com>
- <5098F1C6.1010602@cn.fujitsu.com>
+	id S1751930Ab2KFOqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 09:46:48 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:65302 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab2KFOqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 09:46:47 -0500
+Date: Tue, 6 Nov 2012 15:46:44 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: KY Srinivasan <kys@microsoft.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
+Message-ID: <20121106144644.GA29017@dhcp22.suse.cz>
+References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
+ <1349654386-18378-1-git-send-email-kys@microsoft.com>
+ <20121008004358.GA12342@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF930A1FB31@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20121008133539.GA15490@kroah.com>
+ <20121009124755.ce1087b4.akpm@linux-foundation.org>
+ <426367E2313C2449837CD2DE46E7EAF930DF7FBB@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20121105134456.f655b85a.akpm@linux-foundation.org>
+ <426367E2313C2449837CD2DE46E7EAF930DFA7B8@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <alpine.DEB.2.00.1211051418560.5296@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5098F1C6.1010602@cn.fujitsu.com>
+In-Reply-To: <alpine.DEB.2.00.1211051418560.5296@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 07:17:26PM +0800, Tang Chen wrote:
-> Hi Tony, Borislav,
+On Mon 05-11-12 14:33:12, David Rientjes wrote:
+> On Mon, 5 Nov 2012, KY Srinivasan wrote:
 > 
-> Would you please help to review this patch ?
+> > The Hyper-V host has a policy engine for managing available physical memory across
+> > competing virtual machines. This policy decision is based on a number of parameters
+> > including the memory pressure reported by the guest. Currently, the pressure calculation is
+> > based on the memory commitment made by the guest. From what I can tell, the ratio of
+> > currently allocated physical memory to the current memory commitment made by the guest
+> > (vm_committed_as) is used as one of the parameters in making the memory balancing decision on
+> > the host. This is what Windows guests report to the host. So, I need some measure of memory
+> > commitments made by the Linux guest. This is the reason I want export vm_committed_as. 
+> > 
+> 
+> I don't think you should export the symbol itself to modules but rather a 
+> helper function that returns s64 that just wraps 
+> percpu_counter_read_positive() which your driver could use instead.
 
-I'm guessing mingo or hpa haven't pulled yet:
+Agreed, we should rather make sure that nobody can manipulate the value
+from modules.
 
-http://marc.info/?l=linux-kernel&m=135163452500984
+> (And why percpu_counter_read_positive() returns a signed type is a 
+> mystery.)
 
-Thanks.
+Strange indeed. The last commit changed it from long to s64 to suport
+values bigger than 2^31 but even the original long doesn't make much
+sense to me.
 
 -- 
-Regards/Gruss,
-Boris.
+Michal Hocko
+SUSE Labs
