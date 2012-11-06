@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab2KFWHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:07:25 -0500
-Received: from ka.mail.enyo.de ([87.106.162.201]:38859 "EHLO ka.mail.enyo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078Ab2KFWHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:07:22 -0500
-From: Florian Weimer <fw@deneb.enyo.de>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Chris Friesen <chris.friesen@genband.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
-        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-References: <20121104135251.GA17894@srcf.ucam.org>
-	<87d2zsmv8r.fsf@xmission.com> <509766DB.9090906@zytor.com>
-	<87625kh5r2.fsf@xmission.com> <20121105123858.GB4374@srcf.ucam.org>
-	<87sj8nc137.fsf@xmission.com> <20121105202557.GA16076@srcf.ucam.org>
-	<87hap3zbw7.fsf@xmission.com> <20121106031219.GB24235@srcf.ucam.org>
-	<87fw4nv1vj.fsf@xmission.com> <20121106035352.GA24698@srcf.ucam.org>
-	<87hap3s3yl.fsf@xmission.com> <878vafqi5q.fsf@mid.deneb.enyo.de>
-	<50992946.4060101@genband.com> <87625iwgao.fsf@mid.deneb.enyo.de>
-	<7c6b2e83-e49a-40aa-a990-da7599622f37@email.android.com>
-Date: Tue, 06 Nov 2012 23:06:56 +0100
-In-Reply-To: <7c6b2e83-e49a-40aa-a990-da7599622f37@email.android.com> (Matthew
-	Garrett's message of "Tue, 06 Nov 2012 16:55:25 -0500")
-Message-ID: <87fw4mv11b.fsf@mid.deneb.enyo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753353Ab2KFWLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:11:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39630 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753141Ab2KFWLk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 17:11:40 -0500
+Date: Tue, 6 Nov 2012 14:11:37 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
+        William Irwin <wli@holomorphy.com>, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [PATCH 00/16] mm: use augmented rbtrees for finding unmapped
+ areas
+Message-Id: <20121106141137.68bbd4ea.akpm@linux-foundation.org>
+In-Reply-To: <1352155633-8648-1-git-send-email-walken@google.com>
+References: <1352155633-8648-1-git-send-email-walken@google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Matthew Garrett:
+On Mon,  5 Nov 2012 14:46:57 -0800
+Michel Lespinasse <walken@google.com> wrote:
 
-> I'm not sure why you think that Fedora PXE installs will
-> automatically wipe disks - they'll do whatever Kickstart tells them
-> to do.
+> Earlier this year, Rik proposed using augmented rbtrees to optimize
+> our search for a suitable unmapped area during mmap(). This prompted
+> my work on improving the augmented rbtree code. Rik doesn't seem to
+> have time to follow up on his idea at this time, so I'm sending this
+> series to revive the idea.
 
-Or what the referenced initrd contains (which is not signed, for
-obvious reasons).  The point is that "the bootloader is signed by
-Fedora" does not translate to "I can run this without worries".
+Well, the key word here is "optimize".  Some quantitative testing
+results would be nice, please!
 
-I'm not sure if anybody has made promises in this direction.  But lack
-of a "do no harm" rule (which would have to prevent certain forms of
-unattended installation for sure) means that we do not get that many
-benefits out of Secure Boot.
+People do occasionally see nasty meltdowns in the get_unmapped_area()
+vicinity.  There was one case 2-3 years ago which was just ghastly, but
+I can't find the email (it's on linux-mm somewhere).  This one might be
+another case:
+http://lkml.indiana.edu/hypermail/linux/kernel/1101.1/00896.html
+
+If you can demonstrate that this patchset fixes some of all of the bad
+search complexity scenarios then that's quite a win?
+
+> These changes are against v3.7-rc4. I have not converted all applicable
+> architectuers yet, but we don't necessarily need to get them all onboard
+> at once - the series is fully bisectable and additional architectures
+> can be added later on. I am confident enough in my tests for patches 1-8;
+> however the second half of the series basically didn't get tested as
+> I don't have access to all the relevant architectures.
+
+Yes, I'll try to get these into -next so that the thousand monkeys at
+least give us some compilation coverage testing.  Hopefully the
+relevant arch maintainers will find time to perform a runtime test.
+
+> Patch 1 is the validate_mm() fix from Bob Liu (+ fixed-the-fix from me :)
+
+I grabbed this one separately, as a post-3.6 fix.
+
+
