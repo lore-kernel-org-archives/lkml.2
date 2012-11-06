@@ -1,103 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab2KFST5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 13:19:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46372 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571Ab2KFST4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 13:19:56 -0500
-Date: Tue, 6 Nov 2012 19:20:00 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Josh Stone <jistone@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: uprobes && pre-filtering
-Message-ID: <20121106182000.GA3522@redhat.com>
-References: <20121105190446.GA6188@redhat.com> <20121106090525.GB27055@linux.vnet.ibm.com> <20121106170243.GA32311@redhat.com> <50994BC1.1000705@redhat.com>
+	id S1752392Ab2KFSZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 13:25:15 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38766 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656Ab2KFSZM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 13:25:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50994BC1.1000705@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1351633534-20817-1-git-send-email-marek.belisko@open-nandra.com>
+References: <1351633534-20817-1-git-send-email-marek.belisko@open-nandra.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 6 Nov 2012 10:24:51 -0800
+Message-ID: <CAK5ve-+fE7T3U9KZ-C5-sZN9PUPq6RybCu+nv9UDb2x0bnarzw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] leds/tca6507: Add support for devicetree.
+To: Marek Belisko <marek.belisko@open-nandra.com>
+Cc: rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06, Josh Stone wrote:
+On Tue, Oct 30, 2012 at 2:45 PM, Marek Belisko
+<marek.belisko@open-nandra.com> wrote:
+> Support added only for leds (not for gpio's).
 >
-> On 11/06/2012 09:02 AM, Oleg Nesterov wrote:
-> >>> - Perhaps we should extend the API. We can add
-> >>>
-> >>> 	uprobe_apply(consumer, task, bool add_remove);
-> >>>
-> >>>   which adds/removes breakpoints to task->mm.
-> >>>
-> >>>   This way consumer can probe every task it wants to trace after
-> >>>   uprobe_register().
-> >>>
-> >>>   Its ->filter(UPROBE_FILTER_REGISTER) should simply return false. Or,
-> >>>   better, we can split uprobe_register() into 2 functions,
-> >>>   __uprobe_register() and uprobe_apply_all() which actually does
-> >>>   register_for_each_vma().
-> >>>
-> >>>   ***** QUESTION *****: perhaps this is all systemtap needs? ignoring
-> >>>   UPROBE_FILTER_MMAP.
-> >>>
-> >> So in this case, would uprobe_register() just add a consumer to a
-> >> new/existing uprobe. The actual probe insertion is done by the
-> >> uprobe_apply()/uprobe_apply_all().
-> >
-> > Yes. Not sure we really need this, but to me this extension looks natural.
-> >
-> > Frank, Josh, do you think it can help systemtap ?
+> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+> ---
+>  drivers/leds/leds-tca6507.c |   73 +++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 70 insertions(+), 3 deletions(-)
 >
-> Yes, I think this sounds closer to systemtap's model of probing.  We
-> already track tasks that come and go to see which are "interesting", so
-> we could easily call apply() at that time.  We actually watch mmaps too,
-> so I think we could apply() for that case as well.
 
-OK, thanks.
+Overall, this looks good to me. Maybe some question as below,
 
-(just in case, mmap is different, but lets ignore this now).
+-Bryan
 
-> We wouldn't even need filtering functions at all in this mode.  But
-> maybe other consumers could still use it, like perf.
-
-Of course, we need ->filter() anyway.
-
-> However, it's not clear to me what value there is in uprobe_register, if
-> you always have to apply it too.  The modes are something like:
+> diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
+> index dabcf7a..496dd98 100644
+> --- a/drivers/leds/leds-tca6507.c
+> +++ b/drivers/leds/leds-tca6507.c
+> @@ -667,6 +667,69 @@ static void tca6507_remove_gpio(struct tca6507_chip *tca)
+>  }
+>  #endif /* CONFIG_GPIOLIB */
 >
-> 1. uprobe_register(); uprobe_apply_all();
-> 2. uprobe_register(); uprobe_apply(); [...]
+> +#ifdef CONFIG_OF
+> +static struct tca6507_platform_data * __devinit tca6507_led_dt_init(struct i2c_client *client)
+> +{
+> +       struct device_node *np = client->dev.of_node, *child;
+> +       struct tca6507_platform_data *pdata;
+> +       struct led_info *tca_leds;
+> +       int count = 0;
+> +
+> +       for_each_child_of_node(np, child)
+> +               count++;
+> +       if (!count)
+> +               return NULL;
+> +
 
-No, no, sorry for confusion.
+I saw many 'return NULL' here, why not return some error code in ERR_PTR?
 
-I meant we could add __uprobe_register() (or whatever) which doesn't actually
-insert the breakpoint. So if the tracer relies on uprobe_apply() it can avoid
-the costly register_for_each_vma/filter and do __uprobe_register + apply.
+> +       if (count > NUM_LEDS)
+> +               return NULL;
+> +
+> +       tca_leds = devm_kzalloc(&client->dev, sizeof(struct led_info) * NUM_LEDS, GFP_KERNEL);
+> +
 
-This is not strictly necessary even if we add uprobe_apply*, and you can
-always use uprobe_register() (or uprobe_register_all as you denoted it
-below).
+useless empty line.
 
-> first applicable task to come around.  So why not instead:
+> +       if (!tca_leds)
+> +               return NULL;
+> +
+> +
+
+useless empty line.
+
+> +       for_each_child_of_node(np, child) {
+> +               struct led_info led;
+> +               u32 reg;
+> +               int ret;
+> +
+> +               led.name = of_get_property(child, "label", NULL) ? : child->name;
+> +               led.default_trigger =
+> +                       of_get_property(child, "linux,default-trigger", NULL);
+> +
+> +               ret = of_property_read_u32(child, "reg", &reg);
+> +
+> +               if (ret != 0)
+> +                       continue;
+> +               tca_leds[reg] = led;
+> +       }
+> +       pdata = devm_kzalloc(&client->dev, sizeof(struct tca6507_platform_data), GFP_KERNEL);
+> +       if (!pdata) {
+> +               kfree(tca_leds);
+
+Do we need to kfree here? I think devm_zalloc() will take care of this
+if the driver failed to register.
+
+> +               return NULL;
+> +       }
+> +
+> +       pdata->leds.leds = tca_leds;
+> +       pdata->leds.num_leds = NUM_LEDS;
+> +
+> +       return pdata;
+> +}
+> +
+> +static const struct of_device_id of_tca6507_leds_match[] = {
+> +       { .compatible = "leds-tca6507", },
+> +       {},
+> +};
+> +
+> +#else
+> +static int __devinit tca6507_led_dt_init(struct i2c_client *client, struct tca6507_platform_data *data)
+> +{
+> +       return -1;
+> +}
+> +
+> +#define of_tca6507_leds_match NULL
+> +#endif
+> +
+>  static int __devinit tca6507_probe(struct i2c_client *client,
+>                                    const struct i2c_device_id *id)
+>  {
+> @@ -683,9 +746,12 @@ static int __devinit tca6507_probe(struct i2c_client *client,
+>                 return -EIO;
 >
-> 1. uprobe_register_all();
-> 2. uprobe_register_task(); [...]
+>         if (!pdata || pdata->leds.num_leds != NUM_LEDS) {
+> -               dev_err(&client->dev, "Need %d entries in platform-data list\n",
+> -                       NUM_LEDS);
+> -               return -ENODEV;
+> +               pdata = tca6507_led_dt_init(client);
+> +               if (!pdata) {
+> +                       dev_err(&client->dev, "Need %d entries in platform-data list\n",
+> +                               NUM_LEDS);
+> +                       return -ENODEV;
+> +               }
+>         }
+>         tca = devm_kzalloc(&client->dev, sizeof(*tca), GFP_KERNEL);
+>         if (!tca)
+> @@ -750,6 +816,7 @@ static struct i2c_driver tca6507_driver = {
+>         .driver   = {
+>                 .name    = "leds-tca6507",
+>                 .owner   = THIS_MODULE,
+> +               .of_match_table = of_tca6507_leds_match,
+>         },
+>         .probe    = tca6507_probe,
+>         .remove   = __devexit_p(tca6507_remove),
+> --
+> 1.7.9.5
 >
-> In this case, the second would have to allow the same consumer to be
-> repeated on different tasks, but it feels more natural to me.
-
-This can work too.
-
-But uprobe_unregister_task() doesn't look very clear. What should it
-do? IOW, you still need uprobe_unregister_all() and this doesn't look
-symmetrical.
-
-Oleg.
-
