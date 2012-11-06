@@ -1,115 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724Ab2KFXPK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 18:15:10 -0500
-Received: from twin.jikos.cz ([89.185.236.188]:50166 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613Ab2KFXPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 18:15:08 -0500
-Date: Wed, 7 Nov 2012 00:14:47 +0100
-From: David Sterba <dave@jikos.cz>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Subject: Re: [RFC v4+ hot_track 10/19] vfs: introduce hot func register
- framework
-Message-ID: <20121106231447.GV3102@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-	viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-	cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
- <1351485061-12297-11-git-send-email-zwu.kernel@gmail.com>
+	id S1753886Ab2KFXPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 18:15:31 -0500
+Received: from mail-ye0-f174.google.com ([209.85.213.174]:61228 "EHLO
+	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753824Ab2KFXP1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 18:15:27 -0500
+Date: Tue, 6 Nov 2012 20:15:19 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-man@vger.kernel.org, linux-perf-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Stephane Eranian <eranian@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFCv2] perf: proposed perf_event_open() manpage
+Message-ID: <20121106231519.GH3430@ghostprotocols.net>
+References: <alpine.DEB.2.02.1211061748120.30004@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351485061-12297-11-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+In-Reply-To: <alpine.DEB.2.02.1211061748120.30004@vincent-weaver-1.um.maine.edu>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 12:30:52PM +0800, zwu.kernel@gmail.com wrote:
-> +static struct hot_func_type *hot_func_get(const char *name)
-> +{
-> +	struct hot_func_type *f, *h = &hot_func_def;
-> +
-> +	spin_lock(&hot_func_list_lock);
-> +	list_for_each_entry(f, &hot_func_list, list) {
-> +		if (!strcmp(f->hot_func_name, name))
-> +			h = f;
+Em Tue, Nov 06, 2012 at 05:53:27PM -0500, Vince Weaver escreveu:
+> .TP
+> .IR "mmap"
+> The
+> .I mmap
+> bit enables recording of extra information to a
+> mmap'd ring-buffer.
+> This is
+> described below in subsection MMAP Layout.
 
-You probably want to break here
+Enables the recording of exec mmap events, its counterpart, for data
+maps is...
 
-> +	}
-> +	spin_unlock(&hot_func_list_lock);
-> +
-> +	return h;
-> +}
-> +
-> +int hot_func_register(struct hot_func_type *h)
-> +{
-> +	struct hot_func_type *f, *t = NULL;
-> +
-> +	/* register, don't allow duplicate names */
-> +	spin_lock(&hot_func_list_lock);
-> +	list_for_each_entry(f, &hot_func_list, list) {
-> +		if (!strcmp(f->hot_func_name, h->hot_func_name))
-> +			t = f;
+> .IR "mmap_data" " (Since Linux 2.6.36)"
+> Include mmap events in the ring_buffer.
 
-if duplicate names are not allowed, then a warning may make sense to
-let us know that something is wrong
+That will include mmap events for data maps.
+ 
+> .TP
+> .IR "sample_id_all" " (Since Linux 2.6.38)"
+> If set, then all sample ID info (TID, TIME, ID, CPU, STREAM_ID)
+> will be provided.
 
-> +	}
-> +
-> +	if (t) {
-> +		spin_unlock(&hot_func_list_lock);
-> +		return -EBUSY;
-> +	}
-> +
-> +	list_add_tail(&h->list, &hot_func_list);
-> +	spin_unlock(&hot_func_list_lock);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(hot_func_register);
-> --- a/include/linux/hot_tracking.h
-> +++ b/include/linux/hot_tracking.h
-> @@ -73,6 +75,25 @@ struct hot_range_item {
->  	u32 len; /* length in bytes */
->  };
->  
-> +typedef u64 (hot_rw_freq_calc_fn) (struct timespec old_atime,
-> +			struct timespec cur_time, u64 old_avg);
-> +typedef u32 (hot_temp_calc_fn) (struct hot_freq_data *freq_data);
-> +typedef bool (hot_is_obsolete_fn) (struct hot_freq_data *freq_data);
+No, it will obey sample_type for non SAMPLE PERF_RECORD_ events,
+so if you want timestamps in all events so that you can detect
+reordering, use it a sample_type with PERF_SAMPLE_TIME and
+sample_id_all.
+ 
+I'll read it again tomorrow, thanks for writing it!
 
-I'm thinking, whether these typedefs are useful, similar ops structures
-do not introduce them, also when you pick a struct member names exactly
-same as the typedefs:
-
-> +struct hot_func_ops {
-> +	hot_rw_freq_calc_fn *hot_rw_freq_calc_fn;
-> +	hot_temp_calc_fn *hot_temp_calc_fn;
-> +	hot_is_obsolete_fn *hot_is_obsolete_fn;
-> +};
-
-My suggestion is to make the types explicit in the structure.
-
-> +/* identifies an hot func type */
-> +struct hot_func_type {
-> +	char hot_func_name[HOT_NAME_MAX];
-
-'name' would be sufficient IMHO
-
-> +	/* fields provided by specific FS */
-> +	struct hot_func_ops ops;
-> +	struct list_head list;
-> +};
-
-david
+- Arnaldo
