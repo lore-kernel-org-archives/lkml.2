@@ -1,180 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab2KFKju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 05:39:50 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:41232 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab2KFKjF (ORCPT
+	id S1751606Ab2KFKlD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 05:41:03 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60158 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110Ab2KFKk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 05:39:05 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
-        mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org
-Cc: Arvind.Chauhan@arm.com, linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 Resend 1/4] sched: Create sched_select_cpu() to give preferred CPU for power saving
-Date: Tue,  6 Nov 2012 16:08:43 +0530
-Message-Id: <351f8e3a6e9d78f584dc10d9e0ecc1505f73f7d9.1352196505.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1352196505.git.viresh.kumar@linaro.org>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1352196505.git.viresh.kumar@linaro.org>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-X-OriginalArrivalTime: 06 Nov 2012 10:38:53.0124 (UTC) FILETIME=[EA5C8840:01CDBC0A]
-X-MC-Unique: 112110610385602601
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 6 Nov 2012 05:40:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <s5h4nl39gt9.wl%tiwai@suse.de>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+	<20121029174131.GC7580@srcf.ucam.org>
+	<s5hobjia6vj.wl%tiwai@suse.de>
+	<20121031173728.GA18615@srcf.ucam.org>
+	<s5h390utqv3.wl%tiwai@suse.de>
+	<1351743715.21227.95.camel@linux-s257.site>
+	<20121101131849.752df6fd@pyramind.ukuu.org.uk>
+	<s5hip9k9dng.wl%tiwai@suse.de>
+	<s5hhap49den.wl%tiwai@suse.de>
+	<CACVXFVN8qPTgiYKXaeKFJXLXMjLE=+=8Vev2otD3v1VMk+Ez_w@mail.gmail.com>
+	<s5h8vafi56z.wl%tiwai@suse.de>
+	<CACVXFVPDZnXshvartbTt6gaGzcb+03sVq3Qm3apQQ8AVcQWerg@mail.gmail.com>
+	<s5h4nl3i3u6.wl%tiwai@suse.de>
+	<CACVXFVPJ0TWf=ffFhw+UGoGgsRnrD7o+Ws5rdDxS52jSf4SZ4A@mail.gmail.com>
+	<s5h1ug7i1q5.wl%tiwai@suse.de>
+	<CACVXFVOOEf=Ype=2OGjjjgXZWo=5xd8Hhu2CSTaKTtGAybaA=w@mail.gmail.com>
+	<s5h4nl39gt9.wl%tiwai@suse.de>
+Date: Tue, 6 Nov 2012 18:40:57 +0800
+Message-ID: <CACVXFVOzRxp9owV5O9NFLuL5md04Bmu35oCuNvnVsZAzmHxH=A@mail.gmail.com>
+Subject: Re: [PATCH RFC 0/4] Add firmware signature file check
+From: Ming Lei <tom.leiming@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        joeyli <jlee@suse.com>, Jiri Kosina <jkosina@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qA6Adqi2014387
 
-In order to save power, it would be useful to schedule work onto non-IDLE cpus
-instead of waking up an IDLE one.
+On Tue, Nov 6, 2012 at 6:17 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Tue, 6 Nov 2012 18:04:36 +0800,
+> Ming Lei wrote:
+>>
+>> On Tue, Nov 6, 2012 at 4:18 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> >
+>> > Right, and it's intentionally dropped so.  For the non-default fw
+>> > path, it can be added via proc dynamically or via kconfig statically.
+>> > If the firmware is generated via udev, then it doesn't make sense to
+>> > check a static signature file.
+>>
+>> kconfig should be better, and proc isn't a good way because it
+>> is a bit late. Also the firmware might be loaded dynamically from other
+>> where(network, ...). So it is better to fall back on user space if the
+>> firmware file isn't found by direct loading even firmware signature
+>> is enabled.
+>
+> It will even with my patch, when enforce_sig is false.
 
-To achieve this, we need scheduler to guide kernel frameworks (like: timers &
-workqueues) on which is the most preferred CPU that must be used for these
-tasks.
+It is true if all firmwares are signed on safe boot. If firmware is allowed
+to be loaded from network or other non-fs place in secure distribution,
+your patch will break this loading.
 
-This routine returns the preferred cpu which is non-idle. It accepts a bitwise
-OR of SD_* flags present in linux/sched.h. If the local CPU isn't idle, it is
-returned back. If it is idle, then we must look for another CPU which have all
-the flags passed as argument as set. Also, as this activity is part of load
-balancing only, SD_LOAD_BALANCE must also be set for selected domain.
+>
+>> > A "regression" can't happen in this case because the secure boot is
+>> > a completely new stuff :)  For normal boot, sig_enforce is false, so
+>> > no behavior change here (well my patch still applies the signature
+>> > check for direct fw loading, but it won't regress at least).
+>>
+>> Got it, so FIRMWARE_SIG and MODULE_SIG should be enabled only
+>> for secure boot.
+>
+> The kernels with these kconfigs set can run on normal systems.  In
+> non-secure boot mode, however, sig_enable option are off, thus the
+> fallback is still applied.
+>
+>> The regression might still be triggered if falling back on user space is not
+>> supported, see above.
+>>
+>> >
+>> >> Also the default search path in firmware_class.c is from built-in path of
+>> >> udev, and distributions may customize their firmware path by udev
+>> >> configure option.
+>> >
+>> > Well, the default paths in kernel can be changed to follow that as
+>> > well, no?
+>> >
+>> >> > Honestly speaking, I have a feeling that we should rather go for
+>> >> > getting rid of udev fw loading.  The fw loader code is overly complex
+>> >>
+>> >> Yes, I have the feeling too, but we need to make sure no regressions
+>> >> introduced.
+>> >
+>> > Right.  And I guess the exceptional firmware case is better found by
+>> > checking udev.  But it's a bit off topic from secure boot.
+>>
+>> Not sure, some distributions may not use udev at all.
+>
+> Hmm, I can't imagine a system without udev but still supporting the
+> firmware loading with user-space interaction...
 
-This patch reuses the code from get_nohz_timer_target() routine, which had
-similar implementation. get_nohz_timer_target() is also modified to use
-sched_select_cpu() now.
+It is not so difficult, :-)
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- include/linux/sched.h | 16 ++++++++++--
- kernel/sched/core.c   | 69 +++++++++++++++++++++++++++++++--------------------
- 2 files changed, 56 insertions(+), 29 deletions(-)
+Some embedded systems use mdev in busybox, and some can
+just parse the firmware event and run the below script:
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0dd42a0..24f546d 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -232,14 +232,26 @@ extern void init_idle_bootup_task(struct task_struct *idle);
- 
- extern int runqueue_is_locked(int cpu);
- 
--#if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
-+#ifdef CONFIG_SMP
-+extern int sched_select_cpu(unsigned int sd_flags);
-+
-+#ifdef CONFIG_NO_HZ
- extern void nohz_balance_enter_idle(int cpu);
- extern void set_cpu_sd_state_idle(void);
--extern int get_nohz_timer_target(void);
-+/*
-+ * In the semi idle case, use the nearest busy cpu for migrating timers
-+ * from an idle cpu.  This is good for power-savings.
-+ *
-+ * We don't do similar optimization for completely idle system, as
-+ * selecting an idle cpu will add more delays to the timers than intended
-+ * (as that cpu's timer base may not be uptodate wrt jiffies etc).
-+ */
-+#define get_nohz_timer_target() sched_select_cpu(0)
- #else
- static inline void nohz_balance_enter_idle(int cpu) { }
- static inline void set_cpu_sd_state_idle(void) { }
- #endif
-+#endif /* CONFIG_SMP */
- 
- /*
-  * Only dump TASK_* tasks. (0 for all tasks)
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 2d8927f..cf1a420 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -542,33 +542,6 @@ void resched_cpu(int cpu)
- 
- #ifdef CONFIG_NO_HZ
- /*
-- * In the semi idle case, use the nearest busy cpu for migrating timers
-- * from an idle cpu.  This is good for power-savings.
-- *
-- * We don't do similar optimization for completely idle system, as
-- * selecting an idle cpu will add more delays to the timers than intended
-- * (as that cpu's timer base may not be uptodate wrt jiffies etc).
-- */
--int get_nohz_timer_target(void)
--{
--	int cpu = smp_processor_id();
--	int i;
--	struct sched_domain *sd;
--
--	rcu_read_lock();
--	for_each_domain(cpu, sd) {
--		for_each_cpu(i, sched_domain_span(sd)) {
--			if (!idle_cpu(i)) {
--				cpu = i;
--				goto unlock;
--			}
--		}
--	}
--unlock:
--	rcu_read_unlock();
--	return cpu;
--}
--/*
-  * When add_timer_on() enqueues a timer into the timer wheel of an
-  * idle CPU then this timer might expire before the next timer event
-  * which is scheduled to wake up that CPU. In case of a completely
-@@ -639,6 +612,48 @@ void sched_avg_update(struct rq *rq)
- 	}
- }
- 
-+/*
-+ * This routine returns the preferred cpu which is non-idle. It accepts a
-+ * bitwise OR of SD_* flags present in linux/sched.h. If the local CPU isn't
-+ * idle, it is returned back. If it is idle, then we must look for another CPU
-+ * which have all the flags passed as argument as set. Also, as this activity is
-+ * part of load balancing only, SD_LOAD_BALANCE must also be set for selected
-+ * domain.
-+ */
-+int sched_select_cpu(unsigned int sd_flags)
-+{
-+	struct sched_domain *sd;
-+	int cpu = smp_processor_id();
-+	int i;
-+
-+	/* If Current cpu isn't idle, don't migrate anything */
-+	if (!idle_cpu(cpu))
-+		return cpu;
-+
-+	/* Add SD_LOAD_BALANCE to flags */
-+	sd_flags |= SD_LOAD_BALANCE;
-+
-+	rcu_read_lock();
-+	for_each_domain(cpu, sd) {
-+		/*
-+		 * If sd doesnt' have both sd_flags and SD_LOAD_BALANCE set,
-+		 * skip sd.
-+		 */
-+		if ((sd->flags & sd_flags) != sd_flags)
-+			continue;
-+
-+		for_each_cpu(i, sched_domain_span(sd)) {
-+			if (!idle_cpu(i)) {
-+				cpu = i;
-+				goto unlock;
-+			}
-+		}
-+	}
-+unlock:
-+	rcu_read_unlock();
-+	return cpu;
-+}
-+
- #else /* !CONFIG_SMP */
- void resched_task(struct task_struct *p)
- {
+                Documentation/firmware_class/hotplug-script
+
+on firmware ADD event. I remembered that android loading is
+very simple.
+
+>
+>> Some application
+>> might need the firmware add/remove event.
+>
+> Then this is already broken with the direct fw loading on 3.7, no?
+
+Maybe, the direct loading hasn't been tested widely, and depends on
+user space.
+
+>> Some may not store the
+>> firmware in fs.
+>
+> And these won't satisfy the firmware signing, so we don't need to care
+> too much.
+>
+>> So now it is difficult to say we can remove firmware loading from user
+>> space. Better to just keep it.
+>
+> Yeah, I don't mean to drop it now.  But I meant to go for dropping
+> it.  For example, put a deprecated flag and give a warning for udev fw
+> loading path so that user notices something to be fixed.
+
+Maybe we can do it until direct loading has been tested for some time.
+
+>
+>> > Obviously no distro releases using 3.7-rc since it's still rc.
+>> > But what's your point?
+>>
+>> I mean direct loading hasn't been tested completely, so we don't
+>> know which distributions may fallback on user space loading.
+>
+> The transition to direct fw loading is seamless, so I don't think
+> you can see which drivers use udev fw loading from the results of
+> distros...  It might reveal some potential issues of direct fw loading
+> (like udev-trigger dependency), though.
+
+The clue can be found from debug message.
+
+
+Thanks,
 -- 
-1.7.12.rc2.18.g61b472e
-
-
+Ming Lei
