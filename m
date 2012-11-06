@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab2KFIz4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 03:55:56 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:50101 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab2KFIzx (ORCPT
+	id S1753261Ab2KFI5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 03:57:42 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48614 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab2KFI5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 03:55:53 -0500
+	Tue, 6 Nov 2012 03:57:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <509886A2.5060509@wwwdotorg.org>
-References: <1352170552-29564-1-git-send-email-omar.luna@linaro.org>
-	<1352170552-29564-2-git-send-email-omar.luna@linaro.org>
-	<509886A2.5060509@wwwdotorg.org>
-Date: Tue, 6 Nov 2012 09:55:52 +0100
-Message-ID: <CACRpkdb0nCaV5L5xCnzje3w=t7+TZpcvCCUDRPi-10t+oF8UGg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] mailbox: OMAP: introduce mailbox framework
+In-Reply-To: <CAJuYYwTg0V3sn0YW-bJV9T9EZ91dF7wjX9UmeBwtxMZzJMwwjg@mail.gmail.com>
+References: <1352130296.13561.1.camel@phoenix>
+	<CAJuYYwTg0V3sn0YW-bJV9T9EZ91dF7wjX9UmeBwtxMZzJMwwjg@mail.gmail.com>
+Date: Tue, 6 Nov 2012 09:57:40 +0100
+Message-ID: <CACRpkdZXm=QdDUZ3Mdt0uZ7Y8i24AgMRzgBLsiWbJTCPH1nFUw@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: samsung: Add ifdef CONFIG_OF_GPIO guard for gc->of_node
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Omar Ramirez Luna <omar.luna@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Loic PALLARDY <loic.pallardy@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        Suman Anna <s-anna@ti.com>, Juan Gutierrez <jgutierrez@ti.com>,
-        Felipe Contreras <felipe.contreras@nokia.com>,
-        Tejun Heo <tj@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Axel Lin <axel.lin@ingics.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 4:40 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+On Tue, Nov 6, 2012 at 6:03 AM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
+> On 5 November 2012 21:14, Axel Lin <axel.lin@ingics.com> wrote:
 
-> Is this a public interface to the driver? If so, shouldn't the header be
-> in include/linux somewhere?
+>> +#if defined(CONFIG_OF_GPIO)
+>>                 gc->of_node = bank->of_node;
+>> +#endif
+>
+> The samsung pinctrl driver supports only device tree enabled
+> platforms. So instead of adding the above #if, would it not be better
+> to add 'select OF_GPIO' for Samsung pinctrl driver in
+> drivers/pinctrl/Kconfig. ?
 
-I think the split out of the public header is done in patch 2/2.
+Or edit the Samsung driver to depend on OF_GPIO, this is probably
+better.
 
 Yours,
 Linus Walleij
