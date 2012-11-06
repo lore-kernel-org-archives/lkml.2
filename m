@@ -1,48 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab2KFWqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:46:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27737 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751981Ab2KFWp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:45:58 -0500
-Message-ID: <509993A5.2000605@redhat.com>
-Date: Tue, 06 Nov 2012 17:48:05 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S1753736Ab2KFWqO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:46:14 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:41064 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599Ab2KFWqJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 17:46:09 -0500
+Date: Tue, 6 Nov 2012 14:45:39 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Subject: Re: [RFC v4+ hot_track 03/19] vfs: add I/O frequency update function
+Message-ID: <20121106224539.GB4255@blackbox.djwong.org>
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+ <1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, x86@kernel.org,
-        William Irwin <wli@holomorphy.com>, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 09/16] mm: use vm_unmapped_area() in hugetlbfs on i386
- architecture
-References: <1352155633-8648-1-git-send-email-walken@google.com> <1352155633-8648-10-git-send-email-walken@google.com> <20121106143826.dc3b960c.akpm@linux-foundation.org>
-In-Reply-To: <20121106143826.dc3b960c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 05:38 PM, Andrew Morton wrote:
-> On Mon,  5 Nov 2012 14:47:06 -0800
-> Michel Lespinasse <walken@google.com> wrote:
->
->> Update the i386 hugetlb_get_unmapped_area function to make use of
->> vm_unmapped_area() instead of implementing a brute force search.
->
-> The x86_64 coloring "fix" wasn't copied into i386?
+On Mon, Oct 29, 2012 at 12:30:45PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+>   Add some util helpers to update access frequencies
+> for one file or its range.
+> 
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> ---
+>  fs/hot_tracking.c            |  179 ++++++++++++++++++++++++++++++++++++++++++
+>  fs/hot_tracking.h            |    7 ++
+>  include/linux/hot_tracking.h |    2 +
+>  3 files changed, 188 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+> index 68591f0..0a7d9a3 100644
+> --- a/fs/hot_tracking.c
+> +++ b/fs/hot_tracking.c
+> @@ -172,6 +172,137 @@ static void hot_inode_tree_exit(struct hot_info *root)
+>  	}
+>  }
+>  
+> +struct hot_inode_item
+> +*hot_inode_item_find(struct hot_info *root, u64 ino)
+> +{
+> +	struct hot_inode_item *he;
+> +	int ret;
+> +
+> +again:
+> +	spin_lock(&root->lock);
+> +	he = radix_tree_lookup(&root->hot_inode_tree, ino);
+> +	if (he) {
+> +		kref_get(&he->hot_inode.refs);
+> +		spin_unlock(&root->lock);
+> +		return he;
+> +	}
+> +	spin_unlock(&root->lock);
+> +
+> +	he = kmem_cache_zalloc(hot_inode_item_cachep,
+> +				GFP_KERNEL | GFP_NOFS);
+> +	if (!he)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	hot_inode_item_init(he, ino, &root->hot_inode_tree);
+> +
+> +	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
+> +	if (ret) {
+> +		kmem_cache_free(hot_inode_item_cachep, he);
+> +		return ERR_PTR(ret);
+> +	}
+> +
+> +	spin_lock(&root->lock);
+> +	ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
+> +	if (ret == -EEXIST) {
+> +		kmem_cache_free(hot_inode_item_cachep, he);
+> +		spin_unlock(&root->lock);
+> +		radix_tree_preload_end();
+> +		goto again;
+> +	}
+> +	spin_unlock(&root->lock);
+> +	radix_tree_preload_end();
+> +
+> +	kref_get(&he->hot_inode.refs);
+> +	return he;
+> +}
+> +EXPORT_SYMBOL_GPL(hot_inode_item_find);
+> +
+> +static struct hot_range_item
+> +*hot_range_item_find(struct hot_inode_item *he,
+> +			u32 start)
+> +{
+> +	struct hot_range_item *hr;
+> +	int ret;
+> +
+> +again:
+> +	spin_lock(&he->lock);
+> +	hr = radix_tree_lookup(&he->hot_range_tree, start);
+> +	if (hr) {
+> +		kref_get(&hr->hot_range.refs);
+> +		spin_unlock(&he->lock);
+> +		return hr;
+> +	}
+> +	spin_unlock(&he->lock);
+> +
+> +	hr = kmem_cache_zalloc(hot_range_item_cachep,
+> +				GFP_KERNEL | GFP_NOFS);
+> +	if (!hr)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	hot_range_item_init(hr, start, he);
+> +
+> +	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
+> +	if (ret) {
+> +		kmem_cache_free(hot_range_item_cachep, hr);
+> +		return ERR_PTR(ret);
+> +	}
+> +
+> +	spin_lock(&he->lock);
+> +	ret = radix_tree_insert(&he->hot_range_tree, start, hr);
+> +	if (ret == -EEXIST) {
+> +		kmem_cache_free(hot_range_item_cachep, hr);
+> +		spin_unlock(&he->lock);
+> +		radix_tree_preload_end();
+> +		goto again;
+> +	}
+> +	spin_unlock(&he->lock);
+> +	radix_tree_preload_end();
+> +
+> +	kref_get(&hr->hot_range.refs);
+> +	return hr;
+> +}
+> +
+> +/*
+> + * This function does the actual work of updating
+> + * the frequency numbers, whatever they turn out to be.
+> + */
+> +static u64 hot_average_update(struct timespec old_atime,
+> +		struct timespec cur_time, u64 old_avg)
+> +{
+> +	struct timespec delta_ts;
+> +	u64 new_avg;
+> +	u64 new_delta;
+> +
+> +	delta_ts = timespec_sub(cur_time, old_atime);
+> +	new_delta = timespec_to_ns(&delta_ts) >> FREQ_POWER;
+> +
+> +	new_avg = (old_avg << FREQ_POWER) - old_avg + new_delta;
+> +	new_avg = new_avg >> FREQ_POWER;
+> +
+> +	return new_avg;
+> +}
+> +
+> +static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
+> +{
+> +	struct timespec cur_time = current_kernel_time();
+> +
+> +	if (write) {
+> +		freq_data->nr_writes += 1;
+> +		freq_data->avg_delta_writes = hot_average_update(
+> +				freq_data->last_write_time,
+> +				cur_time,
+> +				freq_data->avg_delta_writes);
+> +		freq_data->last_write_time = cur_time;
+> +	} else {
+> +		freq_data->nr_reads += 1;
+> +		freq_data->avg_delta_reads = hot_average_update(
+> +				freq_data->last_read_time,
+> +				cur_time,
+> +				freq_data->avg_delta_reads);
 
-Only certain 64 bit AMD CPUs have that issue at all.
+I think you could just pass in a pointer to
+freq_data->avg_delta_{writes,reads} here...
 
-On x86, page coloring is really not much of an issue.
+> +		freq_data->last_read_time = cur_time;
+> +	}
+> +}
+> +
+>  /*
+>   * Initialize kmem cache for hot_inode_item and hot_range_item.
+>   */
+> @@ -199,6 +330,54 @@ err:
+>  EXPORT_SYMBOL_GPL(hot_cache_init);
+>  
+>  /*
+> + * Main function to update access frequency from read/writepage(s) hooks
+> + */
+> +void hot_update_freqs(struct inode *inode, u64 start,
+> +			u64 len, int rw)
+> +{
+> +	struct hot_info *root = inode->i_sb->s_hot_root;
+> +	struct hot_inode_item *he;
+> +	struct hot_range_item *hr;
+> +	u32 cur, end;
+> +
+> +	if (!root || (len == 0))
+> +		return;
+> +
+> +	he = hot_inode_item_find(root, inode->i_ino);
+> +	if (IS_ERR(he)) {
+> +		WARN_ON(1);
+> +		return;
+> +	}
+> +
+> +	spin_lock(&he->hot_inode.lock);
+> +	hot_freq_data_update(&he->hot_inode.hot_freq_data, rw);
+> +	spin_unlock(&he->hot_inode.lock);
+> +
+> +	/*
+> +	 * Align ranges on RANGE_SIZE boundary
+> +	 * to prevent proliferation of range structs
+> +	 */
+> +	end = (start + len + RANGE_SIZE - 1) >> RANGE_BITS;
+> +	for (cur = (start >> RANGE_BITS); cur < end; cur++) {
 
-All the x86-64 patch does is make the x86-64 page
-coloring code behave the same way page coloring
-does on MIPS, SPARC, ARM, PA-RISC and others...
+Hm... start is u64, cur is u32, RANGE_BITS is 20.  Doesn't this overflow if,
+say, I have a sparse file with blocks way out at 2^53 bytes?
+
+Also, RANGE_SIZE means that the hot tracking range granularity is 1MiB?  How
+did you decide on that?  Will we ever want to change that?
+
+> +		hr = hot_range_item_find(he, cur);
+> +		if (IS_ERR(hr)) {
+> +			WARN_ON(1);
+
+WARN(1, "hot_range_item_find returns %d\n", PTR_ERR(hr)); ?
+
+--D
+
+> +			hot_inode_item_put(he);
+> +			return;
+> +		}
+> +
+> +		spin_lock(&hr->hot_range.lock);
+> +		hot_freq_data_update(&hr->hot_range.hot_freq_data, rw);
+> +		spin_unlock(&hr->hot_range.lock);
+> +
+> +		hot_range_item_put(hr);
+> +	}
+> +
+> +	hot_inode_item_put(he);
+> +}
+> +EXPORT_SYMBOL_GPL(hot_update_freqs);
+> +
+> +/*
+>   * Initialize the data structures for hot data tracking.
+>   */
+>  int hot_track_init(struct super_block *sb)
+> diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
+> index e7ba121..cc4666e 100644
+> --- a/fs/hot_tracking.h
+> +++ b/fs/hot_tracking.h
+> @@ -20,6 +20,13 @@
+>  #define FREQ_DATA_TYPE_INODE (1 << 0)
+>  #define FREQ_DATA_TYPE_RANGE (1 << 1)
+>  
+> +/* size of sub-file ranges */
+> +#define RANGE_BITS 20
+> +#define RANGE_SIZE (1 << RANGE_BITS)
+> +
+> +#define FREQ_POWER 4
+> +
+>  void hot_inode_item_put(struct hot_inode_item *he);
+> +struct hot_inode_item *hot_inode_item_find(struct hot_info *root, u64 ino);
+>  
+>  #endif /* __HOT_TRACKING__ */
+> diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
+> index 4233207..e2d6028 100644
+> --- a/include/linux/hot_tracking.h
+> +++ b/include/linux/hot_tracking.h
+> @@ -71,5 +71,7 @@ struct hot_info {
+>  extern void __init hot_cache_init(void);
+>  extern int hot_track_init(struct super_block *sb);
+>  extern void hot_track_exit(struct super_block *sb);
+> +extern void hot_update_freqs(struct inode *inode, u64 start,
+> +				u64 len, int rw);
+>  
+>  #endif  /* _LINUX_HOTTRACK_H */
+> -- 
+> 1.7.6.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
