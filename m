@@ -1,120 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751188Ab2KFKDj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 05:03:39 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:38733 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab2KFKDg (ORCPT
+	id S1751285Ab2KFKEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 05:04:41 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60681 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab2KFKEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 05:03:36 -0500
-Message-ID: <5098E05D.6020402@ti.com>
-Date: Tue, 6 Nov 2012 15:33:09 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 6 Nov 2012 05:04:38 -0500
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
-        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
-        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
-        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
-Subject: Re: [PATCH v3 07/11] ARM: davinci - restructure header files for
- common clock migration
-References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-8-git-send-email-m-karicheri2@ti.com> <50967641.4090503@ti.com> <50980F57.1090507@ti.com>
-In-Reply-To: <50980F57.1090507@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <s5h1ug7i1q5.wl%tiwai@suse.de>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+	<20121029174131.GC7580@srcf.ucam.org>
+	<s5hobjia6vj.wl%tiwai@suse.de>
+	<20121031173728.GA18615@srcf.ucam.org>
+	<s5h390utqv3.wl%tiwai@suse.de>
+	<1351743715.21227.95.camel@linux-s257.site>
+	<20121101131849.752df6fd@pyramind.ukuu.org.uk>
+	<s5hip9k9dng.wl%tiwai@suse.de>
+	<s5hhap49den.wl%tiwai@suse.de>
+	<CACVXFVN8qPTgiYKXaeKFJXLXMjLE=+=8Vev2otD3v1VMk+Ez_w@mail.gmail.com>
+	<s5h8vafi56z.wl%tiwai@suse.de>
+	<CACVXFVPDZnXshvartbTt6gaGzcb+03sVq3Qm3apQQ8AVcQWerg@mail.gmail.com>
+	<s5h4nl3i3u6.wl%tiwai@suse.de>
+	<CACVXFVPJ0TWf=ffFhw+UGoGgsRnrD7o+Ws5rdDxS52jSf4SZ4A@mail.gmail.com>
+	<s5h1ug7i1q5.wl%tiwai@suse.de>
+Date: Tue, 6 Nov 2012 18:04:36 +0800
+Message-ID: <CACVXFVOOEf=Ype=2OGjjjgXZWo=5xd8Hhu2CSTaKTtGAybaA=w@mail.gmail.com>
+Subject: Re: [PATCH RFC 0/4] Add firmware signature file check
+From: Ming Lei <tom.leiming@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        joeyli <jlee@suse.com>, Jiri Kosina <jkosina@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/6/2012 12:41 AM, Murali Karicheri wrote:
-> On 11/04/2012 09:05 AM, Sekhar Nori wrote:
->>
->> On 10/25/2012 9:41 PM, Murali Karicheri wrote:
->>> pll.h is added to migrate some of the PLL controller defines for
->>> sleep.S.
->>> psc.h is modified to keep only PSC modules definitions needed by sleep.S
->>> after migrating to common clock. The definitions under
->>> ifdef CONFIG_COMMON_CLK will be removed in a subsequent patch.
->>> davinci_watchdog_reset prototype is moved to time.h as clock.h is
->>> being obsoleted. sleep.S and pm.c is modified to include the new header
->>> file replacements.
->>>
->>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->>> ---
->>>   arch/arm/mach-davinci/devices.c           |    2 ++
->>>   arch/arm/mach-davinci/include/mach/pll.h  |   46
->>> +++++++++++++++++++++++++++++
->>>   arch/arm/mach-davinci/include/mach/psc.h  |    4 +++
->>>   arch/arm/mach-davinci/include/mach/time.h |    4 ++-
->>>   arch/arm/mach-davinci/pm.c                |    4 +++
->>>   arch/arm/mach-davinci/sleep.S             |    4 +++
->>>   6 files changed, 63 insertions(+), 1 deletion(-)
->>>   create mode 100644 arch/arm/mach-davinci/include/mach/pll.h
->> With this patch a _third_ copy of PLL definitions is created in kernel
->> sources. The existing PLL definitions in clock.h inside mach-davinci
->> should be moved to mach/pll.h and the pll.h you introduced inside
->> drivers/clk in 5/11 should be removed (this patch should appear before
->> 5/11).
->>
->> The biggest disadvantage of this approach is inclusion of mach/ includes
->> in drivers/clk. But duplicating code is definitely not the fix for this.
->> Anyway, mach/ includes are not uncommon in drivers/clk (they are all
->> probably suffering from the same issue).
-> Sekhar,
-> 
-> I have replied to patch 5/11 that also refers to this. The main reason
-> we are not able to do this cleanly is the code in sleep.c and pm.c. That
-> is something related to Power management. Could you take a look and see
-> if you can do some clean up on this code? I believe It is more than just
-> moving the header files.
+On Tue, Nov 6, 2012 at 4:18 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>
+> Right, and it's intentionally dropped so.  For the non-default fw
+> path, it can be added via proc dynamically or via kconfig statically.
+> If the firmware is generated via udev, then it doesn't make sense to
+> check a static signature file.
 
-I am not sure what more is required than moving header files? Can you
-elaborate?
+kconfig should be better, and proc isn't a good way because it
+is a bit late. Also the firmware might be loaded dynamically from other
+where(network, ...). So it is better to fall back on user space if the
+firmware file isn't found by direct loading even firmware signature
+is enabled.
 
-> 
-> Murali
->>
->> $ grep -rl "include <mach/" drivers/clk/*
->> drivers/clk/clk-u300.c
->> drivers/clk/mmp/clk-pxa168.c
->> drivers/clk/mmp/clk-mmp2.c
->> drivers/clk/mmp/clk-pxa910.c
->> drivers/clk/mxs/clk-imx23.c
->> drivers/clk/mxs/clk-imx28.c
->> drivers/clk/spear/spear6xx_clock.c
->> drivers/clk/spear/spear3xx_clock.c
->> drivers/clk/spear/spear1340_clock.c
->> drivers/clk/spear/spear1310_clock.c
->> drivers/clk/ux500/clk-prcc.c
->> drivers/clk/versatile/clk-integrator.c
->> drivers/clk/versatile/clk-realview.c
->>
->> pll.h can probably be moved to include/linux/clk/ to avoid this. Would
->> like to hear from Mike on this before going ahead.
->>
->> Anyway, instead of just commenting, I though I will be more useful and
->> went ahead and made some of the changes I have been talking about. I
->> fixed the multiple PLL definitions issue, the build infrastructure issue
->> and the commit ordering too.
->>
->> I pushed the patches I fixed to devel-common-clk branch of my git tree.
->> It is build tested using davinci_all_defconfig but its not runtime
->> tested.
->>
->> Can you start from here and provide me incremental changes on top of
->> this? That way we can collaborate to finish this faster.
-> Thanks for offering some help. Yes I can provide you incremental patch.
-> But then could you also help me to squash/rebase and send patches to the
-> list for review?
+> A "regression" can't happen in this case because the secure boot is
+> a completely new stuff :)  For normal boot, sig_enforce is false, so
+> no behavior change here (well my patch still applies the signature
+> check for direct fw loading, but it won't regress at least).
 
-No, no. I want you to own the submissions. Towards this, if it is easier
-for you to build upon my work in your own tree, by all means, go ahead
-and do it. Just share the branch/tree details so I can take a look and
-contribute as well.
+Got it, so FIRMWARE_SIG and MODULE_SIG should be enabled only
+for secure boot.
+
+The regression might still be triggered if falling back on user space is not
+supported, see above.
+
+>
+>> Also the default search path in firmware_class.c is from built-in path of
+>> udev, and distributions may customize their firmware path by udev
+>> configure option.
+>
+> Well, the default paths in kernel can be changed to follow that as
+> well, no?
+>
+>> > Honestly speaking, I have a feeling that we should rather go for
+>> > getting rid of udev fw loading.  The fw loader code is overly complex
+>>
+>> Yes, I have the feeling too, but we need to make sure no regressions
+>> introduced.
+>
+> Right.  And I guess the exceptional firmware case is better found by
+> checking udev.  But it's a bit off topic from secure boot.
+
+Not sure, some distributions may not use udev at all. Some application
+might need the firmware add/remove event. Some may not store the
+firmware in fs.
+
+So now it is difficult to say we can remove firmware loading from user
+space. Better to just keep it.
+
+> Obviously no distro releases using 3.7-rc since it's still rc.
+> But what's your point?
+
+I mean direct loading hasn't been tested completely, so we don't
+know which distributions may fallback on user space loading.
 
 Thanks,
-Sekhar
+-- 
+Ming Lei
