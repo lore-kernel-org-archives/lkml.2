@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab2KFWcj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:32:39 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:48956 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab2KFWch convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:32:37 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <87fw4mv11b.fsf@mid.deneb.enyo.de>
-References: <20121104135251.GA17894@srcf.ucam.org> <87d2zsmv8r.fsf@xmission.com> <509766DB.9090906@zytor.com> <87625kh5r2.fsf@xmission.com> <20121105123858.GB4374@srcf.ucam.org> <87sj8nc137.fsf@xmission.com> <20121105202557.GA16076@srcf.ucam.org> <87hap3zbw7.fsf@xmission.com> <20121106031219.GB24235@srcf.ucam.org> <87fw4nv1vj.fsf@xmission.com> <20121106035352.GA24698@srcf.ucam.org> <87hap3s3yl.fsf@xmission.com> <878vafqi5q.fsf@mid.deneb.enyo.de> <50992946.4060101@genband.com> <87625iwgao.fsf@mid.deneb.enyo.de> <7c6b2e83-e49a-40aa-a990-da7599622f37@email.android.com> <87fw4mv11b.fsf@mid.deneb.enyo.de>
+	id S1753226Ab2KFWdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:33:13 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:44946 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751981Ab2KFWdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 17:33:12 -0500
+Date: Tue, 6 Nov 2012 23:32:57 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: S?ren Moch <smoch@web.de>
+Cc: Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        m.szyprowski@samsung.com
+Subject: Re: [PATCH V2 1/4] arm: mvebu: increase atomic coherent pool size
+ for armada 370/XP
+Message-ID: <20121106223257.GB30428@lunn.ch>
+References: <5099810D.9040902@web.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-Date: Tue, 06 Nov 2012 17:31:57 -0500
-To: Florian Weimer <fw@deneb.enyo.de>
-CC: Chris Friesen <chris.friesen@genband.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
-        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Josh Boyer <jwboyer@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Message-ID: <77866f56-f1d4-44f0-b3da-1806cf5c4ae1@email.android.com>
-X-cavan-blacklisted-at: zen.spamhaus.org
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 208.54.37.229
-X-SA-Exim-Mail-From: mjg59@srcf.ucam.org
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5099810D.9040902@web.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It protects against certain classes of compromise. It doesn't prevent rogue software damaging your system - anyone who gets root (and so could reconfigure your boot order) could just rm -rf / anyway. 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+On Tue, Nov 06, 2012 at 10:28:45PM +0100, S?ren Moch wrote:
+> resent as plain text, sorry.
+> 
+> 
+> > For Armada 370/XP we have the same problem that for the commit
+> > cb01b63, so we applied the same solution: "The default 256 KiB
+> > coherent pool may be too small for some of the Kirkwood devices, so
+> > increase it to make sure that devices will be able to allocate their
+> > buffers with GFP_ATOMIC flag"
+> 
+> I see a regression from linux-3.5 to linux-3.6 and think there might
+> be a fundamental problem
+> with this patch. On my Kirkwood system (guruplug server plus) with
+> linux-3.6.2 I see following
+> errors and corresponding malfunction even with further increased
+> (2M, 4M) pool size:
+> 
+> Oct 19 00:41:22 guru kernel: ERROR: 4096 KiB atomic DMA coherent
+> pool is too small!
+> Oct 19 00:41:22 guru kernel: Please increase it with coherent_pool=
+> kernel parameter!
+> 
+> So I had to downgrade to linux-3.5 which is running without problems.
+> 
+> I use SATA and several DVB sticks (em28xx / drxk and dib0700).
+
+I'm guess its the DVB sticks which are causing the problems. We have a
+number of kirkwood devices with two SATA devices which had problems
+until we extended the coherent_pool. The DVB sticks are probably take
+more coherent RAM. There was also an issue found recently:
+
+http://www.spinics.net/lists/arm-kernel/msg203962.html
+
+That conversation has gone quiet, but that could be because the
+participants are at ELCE.
+
+	     Andrew
