@@ -1,77 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab2KFTwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 14:52:54 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:53617 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab2KFTwp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 14:52:45 -0500
-Date: Tue, 6 Nov 2012 11:52:42 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Aaron Lu <aaron.lu@intel.com>, Huang Ying <ying.huang@intel.com>,
-        Len Brown <lenb@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 6/7] ACPI / PM: Move device PM functions related to sleep
- states
-In-Reply-To: <1456107.KxymqUQLId@vostro.rjw.lan>
-Message-ID: <alpine.DEB.2.00.1211061150190.6467@chino.kir.corp.google.com>
-References: <1766582.8gdQKXoi0K@vostro.rjw.lan> <1456107.KxymqUQLId@vostro.rjw.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752930Ab2KFTxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 14:53:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44825 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752750Ab2KFTx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 14:53:29 -0500
+Message-ID: <50996B49.7070407@redhat.com>
+Date: Tue, 06 Nov 2012 14:55:53 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mel Gorman <mgorman@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 18/19] mm: sched: numa: Implement constant, per task Working
+ Set Sampling (WSS) rate
+References: <1352193295-26815-1-git-send-email-mgorman@suse.de> <1352193295-26815-19-git-send-email-mgorman@suse.de>
+In-Reply-To: <1352193295-26815-19-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit b87b49cd0efd ("ACPI / PM: Move device PM functions related to sleep 
-states") declared acpi_target_system_state() for CONFIG_PM_SLEEP whereas 
-it is only defined for CONFIG_ACPI_SLEEP, resulting in the following link 
-error:
+On 11/06/2012 04:14 AM, Mel Gorman wrote:
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>
+> Note: The scan period is much larger than it was in the original patch.
+> 	The reason was because the system CPU usage went through the roof
+> 	with a sample period of 100ms but it was unsuitable to have a
+> 	situation where a large process could stall for excessively long
+> 	updating pte_numa. This may need to be tuned again if a placement
+> 	policy converges too slowly.
+>
+> Previously, to probe the working set of a task, we'd use
+> a very simple and crude method: mark all of its address
+> space PROT_NONE.
+>
+> That method has various (obvious) disadvantages:
+>
+>   - it samples the working set at dissimilar rates,
+>     giving some tasks a sampling quality advantage
+>     over others.
+>
+>   - creates performance problems for tasks with very
+>     large working sets
+>
+>   - over-samples processes with large address spaces but
+>     which only very rarely execute
+>
+> Improve that method by keeping a rotating offset into the
+> address space that marks the current position of the scan,
+> and advance it by a constant rate (in a CPU cycles execution
+> proportional manner). If the offset reaches the last mapped
+> address of the mm then it then it starts over at the first
+> address.
+>
+> The per-task nature of the working set sampling functionality in this tree
+> allows such constant rate, per task, execution-weight proportional sampling
+> of the working set, with an adaptive sampling interval/frequency that
+> goes from once per 2 seconds up to just once per 32 seconds.  The current
+> sampling volume is 256 MB per interval.
+>
+> As tasks mature and converge their working set, so does the
+> sampling rate slow down to just a trickle, 256 MB per 8
+> seconds of CPU time executed.
+>
+> This, beyond being adaptive, also rate-limits rarely
+> executing systems and does not over-sample on overloaded
+> systems.
+>
+> [ In AutoNUMA speak, this patch deals with the effective sampling
+>    rate of the 'hinting page fault'. AutoNUMA's scanning is
+>    currently rate-limited, but it is also fundamentally
+>    single-threaded, executing in the knuma_scand kernel thread,
+>    so the limit in AutoNUMA is global and does not scale up with
+>    the number of CPUs, nor does it scan tasks in an execution
+>    proportional manner.
+>
+>    So the idea of rate-limiting the scanning was first implemented
+>    in the AutoNUMA tree via a global rate limit. This patch goes
+>    beyond that by implementing an execution rate proportional
+>    working set sampling rate that is not implemented via a single
+>    global scanning daemon. ]
+>
+> [ Dan Carpenter pointed out a possible NULL pointer dereference in the
+>    first version of this patch. ]
+>
+> Based-on-idea-by: Andrea Arcangeli <aarcange@redhat.com>
+> Bug-Found-By: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> [ Wrote changelog and fixed bug. ]
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-drivers/built-in.o: In function `acpi_pm_device_sleep_wake':
-drivers/acpi/device_pm.c:342: undefined reference to `acpi_target_system_state'
-drivers/built-in.o: In function `acpi_dev_suspend_late':
-drivers/acpi/device_pm.c:501: undefined reference to `acpi_target_system_state'
-drivers/built-in.o: In function `acpi_pm_device_sleep_state':
-drivers/acpi/device_pm.c:221: undefined reference to `acpi_target_system_state'
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Define it only for CONFIG_ACPI_SLEEP and fallback to a dummy definition 
-for other configs.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- include/acpi/acpi_bus.h |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -469,11 +469,9 @@ static inline int acpi_pm_device_run_wake(struct device *dev, bool enable)
- #endif
- 
- #ifdef CONFIG_PM_SLEEP
--u32 acpi_target_system_state(void);
- int __acpi_device_sleep_wake(struct acpi_device *, u32, bool);
- int acpi_pm_device_sleep_wake(struct device *, bool);
- #else
--static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
- static inline int __acpi_device_sleep_wake(struct acpi_device *adev,
- 					   u32 target_state, bool enable)
- {
-@@ -485,6 +483,12 @@ static inline int acpi_pm_device_sleep_wake(struct device *dev, bool enable)
- }
- #endif
- 
-+#ifdef CONFIG_ACPI_SLEEP
-+u32 acpi_target_system_state(void);
-+#else
-+static inline u32 acpi_target_system_state(void) { return ACPI_STATE_S0; }
-+#endif
-+
- static inline bool acpi_device_power_manageable(struct acpi_device *adev)
- {
- 	return adev->flags.power_manageable;
