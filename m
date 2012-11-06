@@ -1,349 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab2KFM6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 07:58:54 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:58248 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750997Ab2KFM6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 07:58:52 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 2/7] ACPI / PM: Move device power state selection routine to device_pm.c
-Date: Tue, 06 Nov 2012 14:03:02 +0100
-Message-ID: <1761214.vYoRTfZW8j@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <20121106045605.GA18104@aaronlu.sh.intel.com>
-References: <1766582.8gdQKXoi0K@vostro.rjw.lan> <3439310.Qij2blxWr5@vostro.rjw.lan> <20121106045605.GA18104@aaronlu.sh.intel.com>
+	id S1751960Ab2KFNE2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 08:04:28 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:46396 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab2KFNE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 08:04:26 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+X-Google-Sender-Delegation: a3at.mail@gmail.com
+In-Reply-To: <20121106124826.GA21806@kroah.com>
+References: <20121031014527.GA2984@kroah.com>
+	<2089727.VKpW8oC7hj@vostro.rjw.lan>
+	<20121031173336.GA28991@kroah.com>
+	<CAAW1UO9BtAU5jpy=MqgFCwwXn3Gb8HA3m7FMktmQkYGqYrS0Rw@mail.gmail.com>
+	<20121106124826.GA21806@kroah.com>
+Date: Tue, 6 Nov 2012 17:04:26 +0400
+X-Google-Sender-Auth: k9UYDYDip2f427cC62EXtGp5qlc
+Message-ID: <CAAW1UO__wyEbPW=aXo0fy8HE931mhSXhdq6AYdrxfd30rEfTpA@mail.gmail.com>
+Subject: Re: ACPI errors with 3.7-rc3
+From: Azat Khuzhin <dohardgopro@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 06, 2012 12:56:07 PM Aaron Lu wrote:
-> This patch doesn't apply...
-> 
-> I'm trying on Linus' master branch, HEAD is v3.7-rc4, and I've merged
-> your pm-qos branch on top of v3.7-rc4.
+When this messages appears, I was running from AC, not from battery.
 
-Well, it applies for me.
+On Tue, Nov 6, 2012 at 4:48 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Nov 06, 2012 at 04:42:24PM +0400, Azat Khuzhin wrote:
+>> I'v also have such errors on my macbook pro.
+>>
+>> $ dmesg | tail
+>> [17056.008564] ACPI Error: Method parse/execution failed
+>> [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
+>> (20120711/psparse-536)
+>> [17056.011194] ACPI Error: Method parse/execution failed
+>> [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
+>> (20120711/psparse-536)
+>> [17056.013793] ACPI Error: Method parse/execution failed
+>> [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
+>> (20120711/psparse-536)
+>> [17056.016383] ACPI Exception: AE_TIME, Evaluating _BST (20120711/battery-464)
+>> [17056.511373] ACPI: EC: input buffer is not empty, aborting transaction
+>> [17056.512672] ACPI Exception: AE_TIME, Returned by Handler for
+>> [EmbeddedControl] (20120711/evregion-501)
+>> [17056.515256] ACPI Error: Method parse/execution failed
+>> [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
+>> (20120711/psparse-536)
+>> [17056.517886] ACPI Error: Method parse/execution failed
+>> [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
+>> (20120711/psparse-536)
+>> [17056.520479] ACPI Error: Method parse/execution failed
+>> [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
+>> (20120711/psparse-536)
+>> [17056.523070] ACPI Exception: AE_TIME, Evaluating _BST (20120711/battery-464)
+>
+> I'm seeing this again right now.  I'm wondering if it's because I'm
+> running on battery power at the moment:
+>
+> [41694.309264] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20120913/evregion-501)
+> [41694.309282] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88045cc64618), AE_TIME (20120913/psparse-536)
+> [41694.309300] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff88045cc64988), AE_TIME (20120913/psparse-536)
+> [41694.309310] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff88045cc648c0), AE_TIME (20120913/psparse-536)
+> [41694.309324] ACPI Exception: AE_TIME, Evaluating _BST (20120913/battery-464)
+> [41694.809093] ACPI: EC: input buffer is not empty, aborting transaction
+>
+> ec_storm_threshold is still set to 8 in /sys/module/acpi/parameters/ so that's
+> not the issue here.
+>
+>> And also loadavg is too high ~ 10
+>> While there is no process that load CPU up to 100% or like that.
+>> I think that this because of processes that is done in kernel space.
+>> (basically that one who write such errors)
+>>
+>> $ uname -a
+>> Linux macbook-pro-sq 3.6.5macbook-pro-custom-v0.1 #4 SMP Sun Nov 4
+>> 12:39:03 UTC 2012 x86_64 GNU/Linux
+>
+> Ah, ok, that means it's not something new in 3.7-rc, so maybe it's just never
+> worked properly for this hardware :)
+>
+> So it's not a regression, just an ACPI issue, any ACPI developer have an idea
+> about this?
+>
+> thanks,
+>
+> greg k-h
 
-You can use the linux-next branch of my tree instead.  It may contain
-some fixes made after this patch had been sent.
-
-Thanks,
-Rafael
 
 
-> On Mon, Oct 29, 2012 at 10:09:09AM +0100, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > The ACPI function for choosing device power state is now located
-> > in drivers/acpi/sleep.c, but drivers/acpi/device_pm.c is a more
-> > logical place for it, so move it there.
-> > 
-> > However, instead of moving the function entirely, move its core only
-> > under a different name and with a different list of arguments, so
-> > that it is more flexible, and leave a wrapper around it in the
-> > original location.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/acpi/device_pm.c |  107 +++++++++++++++++++++++++++++++++++++++++++++++
-> >  drivers/acpi/sleep.c     |   88 +-------------------------------------
-> >  include/acpi/acpi_bus.h  |   15 ++++++
-> >  3 files changed, 124 insertions(+), 86 deletions(-)
-> > 
-> > Index: linux/drivers/acpi/device_pm.c
-> > ===================================================================
-> > --- linux.orig/drivers/acpi/device_pm.c
-> > +++ linux/drivers/acpi/device_pm.c
-> > @@ -23,7 +23,9 @@
-> >   */
-> >  
-> >  #include <linux/device.h>
-> > +#include <linux/export.h>
-> >  #include <linux/mutex.h>
-> > +#include <linux/pm_qos.h>
-> >  
-> >  #include <acpi/acpi.h>
-> >  #include <acpi/acpi_bus.h>
-> > @@ -89,3 +91,108 @@ acpi_status acpi_remove_pm_notifier(stru
-> >  	mutex_unlock(&acpi_pm_notifier_lock);
-> >  	return status;
-> >  }
-> > +
-> > +/**
-> > + * acpi_device_power_state - Get preferred power state of ACPI device.
-> > + * @dev: Device whose preferred target power state to return.
-> > + * @adev: ACPI device node corresponding to @dev.
-> > + * @target_state: System state to match the resultant device state.
-> > + * @d_max_in: Deepest low-power state to take into consideration.
-> > + * @d_min_p: Location to store the upper limit of the allowed states range.
-> > + * Return value: Preferred power state of the device on success, -ENODEV
-> > + * (if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
-> > + *
-> > + * Find the lowest power (highest number) ACPI device power state that the
-> > + * device can be in while the system is in the state represented by
-> > + * @target_state.  If @d_min_p is set, the highest power (lowest number) device
-> > + * power state that @dev can be in for the given system sleep state is stored
-> > + * at the location pointed to by it.
-> > + *
-> > + * Callers must ensure that @dev and @adev are valid pointers and that @adev
-> > + * actually corresponds to @dev before using this function.
-> > + */
-> > +int acpi_device_power_state(struct device *dev, struct acpi_device *adev,
-> > +			    u32 target_state, int d_max_in, int *d_min_p)
-> > +{
-> > +	char acpi_method[] = "_SxD";
-> > +	unsigned long long d_min, d_max;
-> > +	bool wakeup = false;
-> > +
-> > +	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3)
-> > +		return -EINVAL;
-> > +
-> > +	if (d_max_in > ACPI_STATE_D3_HOT) {
-> > +		enum pm_qos_flags_status stat;
-> > +
-> > +		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
-> > +		if (stat == PM_QOS_FLAGS_ALL)
-> > +			d_max_in = ACPI_STATE_D3_HOT;
-> > +	}
-> > +
-> > +	acpi_method[2] = '0' + target_state;
-> > +	/*
-> > +	 * If the sleep state is S0, the lowest limit from ACPI is D3,
-> > +	 * but if the device has _S0W, we will use the value from _S0W
-> > +	 * as the lowest limit from ACPI.  Finally, we will constrain
-> > +	 * the lowest limit with the specified one.
-> > +	 */
-> > +	d_min = ACPI_STATE_D0;
-> > +	d_max = ACPI_STATE_D3;
-> > +
-> > +	/*
-> > +	 * If present, _SxD methods return the minimum D-state (highest power
-> > +	 * state) we can use for the corresponding S-states.  Otherwise, the
-> > +	 * minimum D-state is D0 (ACPI 3.x).
-> > +	 *
-> > +	 * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
-> > +	 * provided -- that's our fault recovery, we ignore retval.
-> > +	 */
-> > +	if (target_state > ACPI_STATE_S0) {
-> > +		acpi_evaluate_integer(adev->handle, acpi_method, NULL, &d_min);
-> > +		wakeup = device_may_wakeup(dev) && adev->wakeup.flags.valid
-> > +			&& adev->wakeup.sleep_state >= target_state;
-> > +	} else if (dev_pm_qos_flags(dev, PM_QOS_FLAG_REMOTE_WAKEUP) !=
-> > +			PM_QOS_FLAGS_NONE) {
-> > +		wakeup = adev->wakeup.flags.valid;
-> > +	}
-> > +
-> > +	/*
-> > +	 * If _PRW says we can wake up the system from the target sleep state,
-> > +	 * the D-state returned by _SxD is sufficient for that (we assume a
-> > +	 * wakeup-aware driver if wake is set).  Still, if _SxW exists
-> > +	 * (ACPI 3.x), it should return the maximum (lowest power) D-state that
-> > +	 * can wake the system.  _S0W may be valid, too.
-> > +	 */
-> > +	if (wakeup) {
-> > +		acpi_status status;
-> > +
-> > +		acpi_method[3] = 'W';
-> > +		status = acpi_evaluate_integer(adev->handle, acpi_method, NULL,
-> > +						&d_max);
-> > +		if (ACPI_FAILURE(status)) {
-> > +			if (target_state != ACPI_STATE_S0 ||
-> > +			    status != AE_NOT_FOUND)
-> > +				d_max = d_min;
-> > +		} else if (d_max < d_min) {
-> > +			/* Warn the user of the broken DSDT */
-> > +			printk(KERN_WARNING "ACPI: Wrong value from %s\n",
-> > +				acpi_method);
-> > +			/* Sanitize it */
-> > +			d_min = d_max;
-> > +		}
-> > +	}
-> > +
-> > +	if (d_max_in < d_min)
-> > +		return -EINVAL;
-> > +	if (d_min_p)
-> > +		*d_min_p = d_min;
-> > +	/* constrain d_max with specified lowest limit (max number) */
-> > +	if (d_max > d_max_in) {
-> > +		for (d_max = d_max_in; d_max > d_min; d_max--) {
-> > +			if (adev->power.states[d_max].flags.valid)
-> > +				break;
-> > +		}
-> > +	}
-> > +	return d_max;
-> > +}
-> > +EXPORT_SYMBOL_GPL(acpi_device_power_state);
-> > Index: linux/drivers/acpi/sleep.c
-> > ===================================================================
-> > --- linux.orig/drivers/acpi/sleep.c
-> > +++ linux/drivers/acpi/sleep.c
-> > @@ -19,7 +19,6 @@
-> >  #include <linux/acpi.h>
-> >  #include <linux/module.h>
-> >  #include <linux/pm_runtime.h>
-> > -#include <linux/pm_qos.h>
-> >  
-> >  #include <asm/io.h>
-> >  
-> > @@ -706,101 +705,20 @@ int acpi_suspend(u32 acpi_state)
-> >   * Return value: Preferred power state of the device on success, -ENODEV
-> >   * (if there's no 'struct acpi_device' for @dev) or -EINVAL on failure
-> >   *
-> > - * Find the lowest power (highest number) ACPI device power state that the
-> > - * device can be in while the system is in the sleep state represented
-> > - * by %acpi_target_sleep_state.  If @d_min_p is set, the highest power (lowest
-> > - * number) device power state that @dev can be in for the given system sleep
-> > - * state is stored at the location pointed to by it.
-> > - *
-> >   * The caller must ensure that @dev is valid before using this function.
-> >   */
-> >  int acpi_pm_device_sleep_state(struct device *dev, int *d_min_p, int d_max_in)
-> >  {
-> >  	acpi_handle handle = DEVICE_ACPI_HANDLE(dev);
-> >  	struct acpi_device *adev;
-> > -	char acpi_method[] = "_SxD";
-> > -	unsigned long long d_min, d_max;
-> > -	bool wakeup = false;
-> >  
-> > -	if (d_max_in < ACPI_STATE_D0 || d_max_in > ACPI_STATE_D3)
-> > -		return -EINVAL;
-> >  	if (!handle || ACPI_FAILURE(acpi_bus_get_device(handle, &adev))) {
-> > -		printk(KERN_DEBUG "ACPI handle has no context!\n");
-> > +		dev_dbg(dev, "ACPI handle without context in %s!\n", __func__);
-> >  		return -ENODEV;
-> >  	}
-> > -	if (d_max_in > ACPI_STATE_D3_HOT) {
-> > -		enum pm_qos_flags_status stat;
-> > -
-> > -		stat = dev_pm_qos_flags(dev, PM_QOS_FLAG_NO_POWER_OFF);
-> > -		if (stat == PM_QOS_FLAGS_ALL)
-> > -			d_max_in = ACPI_STATE_D3_HOT;
-> > -	}
-> > -
-> > -	acpi_method[2] = '0' + acpi_target_sleep_state;
-> > -	/*
-> > -	 * If the sleep state is S0, the lowest limit from ACPI is D3,
-> > -	 * but if the device has _S0W, we will use the value from _S0W
-> > -	 * as the lowest limit from ACPI.  Finally, we will constrain
-> > -	 * the lowest limit with the specified one.
-> > -	 */
-> > -	d_min = ACPI_STATE_D0;
-> > -	d_max = ACPI_STATE_D3;
-> >  
-> > -	/*
-> > -	 * If present, _SxD methods return the minimum D-state (highest power
-> > -	 * state) we can use for the corresponding S-states.  Otherwise, the
-> > -	 * minimum D-state is D0 (ACPI 3.x).
-> > -	 *
-> > -	 * NOTE: We rely on acpi_evaluate_integer() not clobbering the integer
-> > -	 * provided -- that's our fault recovery, we ignore retval.
-> > -	 */
-> > -	if (acpi_target_sleep_state > ACPI_STATE_S0) {
-> > -		acpi_evaluate_integer(handle, acpi_method, NULL, &d_min);
-> > -		wakeup = device_may_wakeup(dev) && adev->wakeup.flags.valid
-> > -			&& adev->wakeup.sleep_state >= acpi_target_sleep_state;
-> > -	} else if (dev_pm_qos_flags(dev, PM_QOS_FLAG_REMOTE_WAKEUP) !=
-> > -			PM_QOS_FLAGS_NONE) {
-> > -		wakeup = adev->wakeup.flags.valid;
-> > -	}
-> > -
-> > -	/*
-> > -	 * If _PRW says we can wake up the system from the target sleep state,
-> > -	 * the D-state returned by _SxD is sufficient for that (we assume a
-> > -	 * wakeup-aware driver if wake is set).  Still, if _SxW exists
-> > -	 * (ACPI 3.x), it should return the maximum (lowest power) D-state that
-> > -	 * can wake the system.  _S0W may be valid, too.
-> > -	 */
-> > -	if (wakeup) {
-> > -		acpi_status status;
-> > -
-> > -		acpi_method[3] = 'W';
-> > -		status = acpi_evaluate_integer(handle, acpi_method, NULL,
-> > -						&d_max);
-> > -		if (ACPI_FAILURE(status)) {
-> > -			if (acpi_target_sleep_state != ACPI_STATE_S0 ||
-> > -			    status != AE_NOT_FOUND)
-> > -				d_max = d_min;
-> > -		} else if (d_max < d_min) {
-> > -			/* Warn the user of the broken DSDT */
-> > -			printk(KERN_WARNING "ACPI: Wrong value from %s\n",
-> > -				acpi_method);
-> > -			/* Sanitize it */
-> > -			d_min = d_max;
-> > -		}
-> > -	}
-> > -
-> > -	if (d_max_in < d_min)
-> > -		return -EINVAL;
-> > -	if (d_min_p)
-> > -		*d_min_p = d_min;
-> > -	/* constrain d_max with specified lowest limit (max number) */
-> > -	if (d_max > d_max_in) {
-> > -		for (d_max = d_max_in; d_max > d_min; d_max--) {
-> > -			if (adev->power.states[d_max].flags.valid)
-> > -				break;
-> > -		}
-> > -	}
-> > -	return d_max;
-> > +	return acpi_device_power_state(dev, adev, acpi_target_sleep_state,
-> > +				       d_max_in, d_min_p);
-> >  }
-> >  EXPORT_SYMBOL(acpi_pm_device_sleep_state);
-> >  #endif /* CONFIG_PM */
-> > Index: linux/include/acpi/acpi_bus.h
-> > ===================================================================
-> > --- linux.orig/include/acpi/acpi_bus.h
-> > +++ linux/include/acpi/acpi_bus.h
-> > @@ -419,6 +419,8 @@ acpi_status acpi_add_pm_notifier(struct
-> >  				 acpi_notify_handler handler, void *context);
-> >  acpi_status acpi_remove_pm_notifier(struct acpi_device *adev,
-> >  				    acpi_notify_handler handler);
-> > +int acpi_device_power_state(struct device *dev, struct acpi_device *adev,
-> > +			    u32 target_state, int d_max_in, int *d_min_p);
-> >  int acpi_pm_device_sleep_state(struct device *, int *, int);
-> >  #else
-> >  static inline acpi_status acpi_add_pm_notifier(struct acpi_device *adev,
-> > @@ -432,12 +434,23 @@ static inline acpi_status acpi_remove_pm
-> >  {
-> >  	return AE_SUPPORT;
-> >  }
-> > -static inline int acpi_pm_device_sleep_state(struct device *d, int *p, int m)
-> > +static inline int __acpi_device_power_state(int m, int *p)
-> >  {
-> >  	if (p)
-> >  		*p = ACPI_STATE_D0;
-> >  	return (m >= ACPI_STATE_D0 && m <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
-> >  }
-> > +static inline int acpi_device_power_state(struct device *dev,
-> > +					  struct acpi_device *adev,
-> > +					  u32 target_state, int d_max_in,
-> > +					  int *d_min_p)
-> > +{
-> > +	return __acpi_device_power_state(d_max_in, d_min_p);
-> > +}
-> > +static inline int acpi_pm_device_sleep_state(struct device *d, int *p, int m)
-> > +{
-> > +	return __acpi_device_power_state(m, p);
-> > +}
-> >  #endif
-> >  
-> >  #ifdef CONFIG_PM_RUNTIME
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Azat Khuzhin
