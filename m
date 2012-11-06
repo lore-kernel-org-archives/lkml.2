@@ -1,106 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab2KFRlv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 12:41:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8109 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189Ab2KFRls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 12:41:48 -0500
-Message-ID: <50994BC1.1000705@redhat.com>
-Date: Tue, 06 Nov 2012 09:41:21 -0800
-From: Josh Stone <jistone@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, David Smith <dsmith@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: uprobes && pre-filtering
-References: <20121105190446.GA6188@redhat.com> <20121106090525.GB27055@linux.vnet.ibm.com> <20121106170243.GA32311@redhat.com>
-In-Reply-To: <20121106170243.GA32311@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752131Ab2KFRoU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 12:44:20 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:58486 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab2KFRoT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 12:44:19 -0500
+Date: Tue, 06 Nov 2012 12:44:15 -0500 (EST)
+Message-Id: <20121106.124415.1042816028807879843.davem@davemloft.net>
+To: yinghai@kernel.org
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com, jacob.shin@amd.com,
+        akpm@linux-foundation.org, stefano.stabellini@eu.citrix.com,
+        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH 41/42] sparc, mm: Remove calling of
+ free_all_bootmem_node()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1352147263-20383-3-git-send-email-yinghai@kernel.org>
+References: <CAE9FiQWUiNqv-fd_4Y79eq+-w6wU34nEwn76+QJ7TWw7uCLaaQ@mail.gmail.com>
+	<1352147263-20383-1-git-send-email-yinghai@kernel.org>
+	<1352147263-20383-3-git-send-email-yinghai@kernel.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 09:02 AM, Oleg Nesterov wrote:
-> On 11/06, Srikar Dronamraju wrote:
->> Another reason for having the filters in the current way was to have a
->> set of standard filters in uprobes code so that all users dont need to
->> recreate these filters.
+From: Yinghai Lu <yinghai@kernel.org>
+Date: Mon,  5 Nov 2012 12:27:42 -0800
+
+> Now NO_BOOTMEM version free_all_bootmem_node() does not really
+> do free_bootmem at all, and it only call
+> register_page_bootmem_info_node instead.
 > 
-> IOW, you mean that both register_for_each_vma() and handler_chain() should
-> use the same ->filter() method? Personally I do not think they should.
+> That is confusing, try to kill that free_all_bootmem_node().
 > 
-> Because the semantics is different imo. register_for_each_vma() needs
-> to know if we should modify mm and insert the breakpoint. handler_chain()
-> just tries to skip ->handler() (and for no reason, imho).
-
-I agree here - I don't see much use for filter(), and even if you have
-it, the semantics are definitely different than prefilter().  You could
-do all sorts of localized and temporal checks in filter() that make no
-sense for a prefilter(), like check for a particular thread id, filter
-every N hits, or filter only hits under calls to some foo().
-
-[...]
->>> - Perhaps we should extend the API. We can add
->>>
->>> 	uprobe_apply(consumer, task, bool add_remove);
->>>
->>>   which adds/removes breakpoints to task->mm.
->>>
->>>   This way consumer can probe every task it wants to trace after
->>>   uprobe_register().
->>>
->>>   Its ->filter(UPROBE_FILTER_REGISTER) should simply return false. Or,
->>>   better, we can split uprobe_register() into 2 functions,
->>>   __uprobe_register() and uprobe_apply_all() which actually does
->>>   register_for_each_vma().
->>>
->>>   ***** QUESTION *****: perhaps this is all systemtap needs? ignoring
->>>   UPROBE_FILTER_MMAP.
->>>
->>> - Multiple consumers. uprobe_register/uprobe_unregister should be
->>>   modified so that register_for_each_vma() is called every time when
->>>   the new consumer comes or consumer goes away.
->>>
->>>   uprobe_apply(add_remove => false) should obviously consult other
->>>   consumers too.
->>
->>
->> So in this case, would uprobe_register() just add a consumer to a
->> new/existing uprobe. The actual probe insertion is done by the
->> uprobe_apply()/uprobe_apply_all().
+> Before that, this patch will remove calling of free_all_bootmem_node()
 > 
-> Yes. Not sure we really need this, but to me this extension looks natural.
+> We add register_page_bootmem_info() to call register_page_bootmem_info_node
+> directly.
 > 
-> Frank, Josh, do you think it can help systemtap ?
+> Also could use free_all_bootmem() for numa case, and it is just
+> the same as free_low_memory_core_early().
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Yes, I think this sounds closer to systemtap's model of probing.  We
-already track tasks that come and go to see which are "interesting", so
-we could easily call apply() at that time.  We actually watch mmaps too,
-so I think we could apply() for that case as well.
-
-We wouldn't even need filtering functions at all in this mode.  But
-maybe other consumers could still use it, like perf.
-
-However, it's not clear to me what value there is in uprobe_register, if
-you always have to apply it too.  The modes are something like:
-
-1. uprobe_register(); uprobe_apply_all();
-2. uprobe_register(); uprobe_apply(); [...]
-
-And the second could have a bunch of idle registrations waiting for the
-first applicable task to come around.  So why not instead:
-
-1. uprobe_register_all();
-2. uprobe_register_task(); [...]
-
-In this case, the second would have to allow the same consumer to be
-repeated on different tasks, but it feels more natural to me.
-
-Josh
+Acked-by: David S. Miller <davem@davemloft.net>
