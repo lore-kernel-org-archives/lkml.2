@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933360Ab2KFBbu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 20:31:50 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18108 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754822Ab2KFBbt (ORCPT
+	id S933455Ab2KFBc1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 20:32:27 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:18483 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932963Ab2KFBc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 20:31:49 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 05 Nov 2012 17:31:44 -0800
-From: Alex Courbot <acourbot@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: How about a gpio_get(device *, char *) function?
-Date: Tue, 6 Nov 2012 10:33:35 +0900
-Message-ID: <1801189.6J3flQFRCq@percival>
-Organization: NVIDIA
-User-Agent: KMail/4.9.2 (Linux/3.6.4-1-ARCH; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <5097F8CF.5090100@wwwdotorg.org>
-References: <38620644.IyR5R8rjKP@percival> <CACRpkdZc3cEGfSKW-b=G31yuw_E-GOXid3jkxZ0tuKYGYRE5Nw@mail.gmail.com> <5097F8CF.5090100@wwwdotorg.org>
+	Mon, 5 Nov 2012 20:32:26 -0500
+From: Jiang Liu <jiang.liu@huawei.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+CC: Jiang Liu <jiang.liu@huawei.com>, Jianguo Wu <wujianguo@huawei.com>,
+        Chris Clayton <chris2553@googlemail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: fix a regression with HIGHMEM introduced by changeset 7f1290f2f2a4d
+Date: Tue, 6 Nov 2012 09:31:57 +0800
+Message-ID: <1352165517-9732-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 06 November 2012 01:35:11 Stephen Warren wrote:
-> On 11/04/2012 11:04 AM, Linus Walleij wrote:
-> > On Wed, Oct 31, 2012 at 10:04 AM, Alex Courbot <acourbot@nvidia.com> 
-wrote:
-> >> Would anyone be opposed to having a gpio_get() function that works
-> >> similarly to e.g. regulator_get() and clk_get()?
-> > 
-> > I understand the concept and why you want to do this.
-> > 
-> > However I think the global GPIO numberspace defeats the
-> > purpose.
-> > 
-> > gpio_get() should get an abstract handle just like clk_get() or
-> > regulator_get(), not a fixed numeral.
-> 
-> I don't really see why the return type of gpio_get() influences whether
-> it can be implemented or not.
-> 
-> If gpio_get() were implemented today, it could return an integer with
-> the same value as any other GPIO functions use already.
-> 
-> With board files, some "gpio map" table would simply contain the same
-> int GPIO ID value the table as is used anywhere else already. With DT,
-> the same xlate function would translate from DT GPIO-chip-relative
-> IDs/specifiers into the global number space in the same way that we do
-> today via other APIs.
-> 
-> If the GPIO subsystem were reworked as you propose, this API could be
-> reworked in exactly the same way, or if implemented after the rework, it
-> would return whatever handle type was in use at the time.
+Changeset 7f1290f2f2 tries to fix a issue when calculating
+zone->present_pages, but it causes a regression to 32bit systems with
+HIGHMEM. With that changeset, function reset_zone_present_pages()
+resets all zone->present_pages to zero, and fixup_zone_present_pages()
+is called to recalculate zone->present_pages when boot allocator frees
+core memory pages into buddy allocator. Because highmem pages are not
+freed by bootmem allocator, all highmem zones' present_pages becomes
+zero.
 
-How about, in a first time (and because I'd also like to get the power seqs 
-moving on), a typedef from int to gpio_handle_t and a first implementation of 
-the gpio_handle_*() API that would just call the existing integer-based API 
-(apart from gpio_handle_get())? That way things will not break when we switch 
-to a real handle.
+Actually there's no need to recalculate present_pages for highmem zone
+because bootmem allocator never allocates pages from them. So fix the
+regression by skipping highmem in function reset_zone_present_pages()
+and fixup_zone_present_pages().
 
-Alex.
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Reported-by: Maciej Rutecki <maciej.rutecki@gmail.com>
+Tested-by: Maciej Rutecki <maciej.rutecki@gmail.com>
+Cc: Chris Clayton <chris2553@googlemail.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+
+---
+
+Hi Maciej,
+	Thanks for reporting and bisecting. We have analyzed the regression
+and worked out a patch for it. Could you please help to verify whether it
+fix the regression?
+	Thanks!
+	Gerry
+
+---
+ mm/page_alloc.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5b74de6..2311f15 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -6108,7 +6108,8 @@ void reset_zone_present_pages(void)
+ 	for_each_node_state(nid, N_HIGH_MEMORY) {
+ 		for (i = 0; i < MAX_NR_ZONES; i++) {
+ 			z = NODE_DATA(nid)->node_zones + i;
+-			z->present_pages = 0;
++			if (!is_highmem(z))
++				z->present_pages = 0;
+ 		}
+ 	}
+ }
+@@ -6123,10 +6124,11 @@ void fixup_zone_present_pages(int nid, unsigned long start_pfn,
+ 
+ 	for (i = 0; i < MAX_NR_ZONES; i++) {
+ 		z = NODE_DATA(nid)->node_zones + i;
++		if (is_highmem(z))
++			continue;
++
+ 		zone_start_pfn = z->zone_start_pfn;
+ 		zone_end_pfn = zone_start_pfn + z->spanned_pages;
+-
+-		/* if the two regions intersect */
+ 		if (!(zone_start_pfn >= end_pfn	|| zone_end_pfn <= start_pfn))
+ 			z->present_pages += min(end_pfn, zone_end_pfn) -
+ 					    max(start_pfn, zone_start_pfn);
+-- 
+1.7.1
+
 
