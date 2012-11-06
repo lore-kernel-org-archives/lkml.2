@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab2KFQVU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 11:21:20 -0500
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:52539 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751208Ab2KFQVS (ORCPT
+	id S1752642Ab2KFQYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 11:24:05 -0500
+Received: from mga09.intel.com ([134.134.136.24]:17039 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752193Ab2KFQYC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 11:21:18 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] gpiolib: iron out include ladder mistakes
-Date: Tue, 6 Nov 2012 17:21:03 +0100
-Message-ID: <1352218863-2037-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Tue, 6 Nov 2012 11:24:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,722,1344236400"; 
+   d="scan'208";a="238028653"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <jbeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Index: AQHNvC7tTi91BiFLfUibRvXA4zlK85fc+8/g
+Date: Tue, 6 Nov 2012 16:23:57 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233537B479@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
+ <5089676602000078000A4928@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
+ <508A89CB020000780008E6ED@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
+ <20121026201409.GF2708@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC8292335377346@SHSMSX101.ccr.corp.intel.com>
+ <20121102164937.GC27213@konrad-lan.dumpdata.com>
+ <alpine.DEB.2.02.1211051512260.2689@kaball.uk.xensource.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B10C@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B147@SHSMSX101.ccr.corp.intel.com>
+ <alpine.DEB.2.02.1211061455150.2689@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1211061455150.2689@kaball.uk.xensource.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Stefano Stabellini wrote:
+> On Tue, 6 Nov 2012, Liu, Jinsong wrote:
+>> Liu, Jinsong wrote:
+>>> Stefano Stabellini wrote:
+>>>>>> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+>>>>>> index 0e86370..a2af622 100644
+>>>>>> --- a/drivers/xen/Makefile
+>>>>>> +++ b/drivers/xen/Makefile
+>>>>>> @@ -29,6 +29,7 @@ obj-$(CONFIG_XEN_MCE_LOG)           += mcelog.o
+>>>>>>  obj-$(CONFIG_XEN_PCIDEV_BACKEND)     += xen-pciback/
+>>>>>>  obj-$(CONFIG_XEN_PRIVCMD)            += xen-privcmd.o
+>>>>>>  obj-$(CONFIG_XEN_ACPI_PROCESSOR)     += xen-acpi-processor.o
+>>>>>> +obj-$(CONFIG_XEN_DOM0)                       += xen_acpi_pad.o
+>>>>>>  xen-evtchn-y                         := evtchn.o
+>>>>>>  xen-gntdev-y                         := gntdev.o
+>>>>>>  xen-gntalloc-y                               := gntalloc.o
+>>>> 
+>>>> it should really depend on ACPI and maybe also X86, otherwise it
+>>>> is going to break the ARM build 
+>>>> 
+>>>> 
+>>> 
+>>> Hmm, XEN_DOM0 has already depended on ACPI and X86_LOCAL_APIC
+>>> (which depends on X86_64). 
+>>> 
+>> 
+>> Ah, you and Konrad are right. I ignore XEN_DOM0 varies under
+>> different arch. (But seems it not depends on X86 since it's
+>> logically an acpi stuff?). 
+> 
+> If it is generic ACPI code, than it can depend only on ACPI.
+> If it is ACPI code that contains X86 specific info, than it needs to
+> depend on X86 too.
 
-The <*/gpio.h> includes are updated again: now we need to account
-for the problem introduced by commit:
-595679a8038584df7b9398bf34f61db3c038bfea
-"gpiolib: fix up function prototypes etc"
+No x86 specific so let's depend on ACPI.
 
-Actually we need static inlines in include/asm-generic/gpio.h
-as well since we may have GPIOLIB but not PINCTRL.
-
-And we need to keep the static inlines in <linux/gpio.h>
-but here for the !CONFIG_GENERIC_GPIO case, and then we
-may as well throw in a few warnings like the other
-prototypes there, if someone would have the bad taste
-of compiling without GENERIC_GPIO even.
-
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- include/asm-generic/gpio.h | 13 +++++++++++++
- include/linux/gpio.h       |  7 +++----
- 2 files changed, 16 insertions(+), 4 deletions(-)
-
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index 50d995e..b546edb 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -67,6 +67,19 @@ int gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
- 			   unsigned int pin_base, unsigned int npins);
- void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
- 
-+#else
-+
-+static inline int
-+gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
-+		       unsigned int pin_base, unsigned int npins)
-+{
-+}
-+
-+static inline void
-+gpiochip_remove_pin_ranges(struct gpio_chip *chip)
-+{
-+}
-+
- #endif
- 
- /**
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index 81bbfe5..7ba2762 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -231,21 +231,20 @@ static inline int irq_to_gpio(unsigned irq)
- 	return -EINVAL;
- }
- 
--#ifdef CONFIG_PINCTRL
--
- static inline int
- gpiochip_add_pin_range(struct gpio_chip *chip, const char *pinctl_name,
- 		       unsigned int pin_base, unsigned int npins)
- {
-+	WARN_ON(1);
-+	return -EINVAL;
- }
- 
- static inline void
- gpiochip_remove_pin_ranges(struct gpio_chip *chip)
- {
-+	WARN_ON(1);
- }
- 
--#endif /* CONFIG_PINCTRL */
--
- #endif /* ! CONFIG_GENERIC_GPIO */
- 
- #endif /* __LINUX_GPIO_H */
--- 
-1.7.11.3
-
+Thanks,
+Jinsong
