@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab2KFHN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 02:13:28 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:13302 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154Ab2KFHN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 02:13:27 -0500
-X-IronPort-AV: E=Sophos;i="4.80,721,1344182400"; 
-   d="scan'208";a="6146224"
-From: liguang <lig.fnst@cn.fujitsu.com>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, liguang <lig.fnst@cn.fujitsu.com>
-Subject: [PATCH]cputime: make bool type for steal ticks
-Date: Tue, 6 Nov 2012 15:12:16 +0800
-Message-Id: <1352185936-17165-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.2.5
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/06 15:12:30,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/06 15:12:31,
-	Serialize complete at 2012/11/06 15:12:31
+	id S1753162Ab2KFHQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 02:16:48 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51148 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752068Ab2KFHQp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 02:16:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <s5h8vafi56z.wl%tiwai@suse.de>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+	<20121029174131.GC7580@srcf.ucam.org>
+	<s5hobjia6vj.wl%tiwai@suse.de>
+	<20121031173728.GA18615@srcf.ucam.org>
+	<s5h390utqv3.wl%tiwai@suse.de>
+	<1351743715.21227.95.camel@linux-s257.site>
+	<20121101131849.752df6fd@pyramind.ukuu.org.uk>
+	<s5hip9k9dng.wl%tiwai@suse.de>
+	<s5hhap49den.wl%tiwai@suse.de>
+	<CACVXFVN8qPTgiYKXaeKFJXLXMjLE=+=8Vev2otD3v1VMk+Ez_w@mail.gmail.com>
+	<s5h8vafi56z.wl%tiwai@suse.de>
+Date: Tue, 6 Nov 2012 15:16:43 +0800
+Message-ID: <CACVXFVPDZnXshvartbTt6gaGzcb+03sVq3Qm3apQQ8AVcQWerg@mail.gmail.com>
+Subject: Re: [PATCH RFC 0/4] Add firmware signature file check
+From: Ming Lei <tom.leiming@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        joeyli <jlee@suse.com>, Jiri Kosina <jkosina@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
----
- kernel/sched/cputime.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Tue, Nov 6, 2012 at 3:03 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>
+> Yeah, it's just uncovered in the patch.  As a easy solution, apply the
+> patch like below to disallow the udev fw loading when signature check
+> is enforced.
+>
+>
+> thanks,
+>
+> Takashi
+>
+> ---
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 575bc4c..93121c3 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -912,6 +912,13 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
+>                 goto handle_fw;
+>         }
+>
+> +       /* signature check isn't handled via udev fw loading */
+> +       if (sig_enforce) {
+> +               fw_load_abort(fw_priv);
+> +               direct_load = 1;
+> +               goto handle_fw;
+> +       }
+> +
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 81b763b..d2c24c1 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -282,7 +282,7 @@ static __always_inline bool steal_account_process_tick(void)
- 		this_rq()->prev_steal_time += st * TICK_NSEC;
- 
- 		account_steal_time(st);
--		return st;
-+		return !!st;
- 	}
- #endif
- 	return false;
+The above might be wrong if the firmware file doesn't exist in default
+search paths. You should skip loading from user space only if
+verify_signature() returns false. And the udev loading should be
+resorted to if there is no such firmware file in default search paths.
+
+>         /* fall back on userspace loading */
+>         buf->fmt = PAGE_BUF;
+>
+
+
+Thanks,
 -- 
-1.7.1
-
+Ming Lei
