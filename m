@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933472Ab2KFBhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 20:37:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56729 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754765Ab2KFBhJ (ORCPT
+	id S933530Ab2KFBtn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 20:49:43 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:44960 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932947Ab2KFBtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 20:37:09 -0500
-Date: Mon, 5 Nov 2012 17:37:07 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC PATCH] tasklet: ignore disabled tasklet in tasklet_action
-Message-Id: <20121105173707.94602896.akpm@linux-foundation.org>
-In-Reply-To: <CAJn8CcF=2=XBV0T661LnAxHi8+fT8KAVapCFaiDZgS6TyieNOA@mail.gmail.com>
-References: <1351824534-2861-1-git-send-email-xtfeng@gmail.com>
-	<20121105145207.6d2fae92.akpm@linux-foundation.org>
-	<CAJn8CcF=2=XBV0T661LnAxHi8+fT8KAVapCFaiDZgS6TyieNOA@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Nov 2012 20:49:42 -0500
+Date: Tue, 6 Nov 2012 10:49:32 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Arun Sharma <asharma@fb.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, sanjay@google.com,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [RFC v2] Support volatile range for anon vma
+Message-ID: <20121106014932.GA4623@barrios>
+References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
+ <20121031143524.0509665d.akpm@linux-foundation.org>
+ <CAPM31RKm89s6PaAnfySUD-f+eGdoZP6=9DHy58tx_4Zi8Z9WPQ@mail.gmail.com>
+ <CAHGf_=om34CQoPqgmVE5v8oVxntaJQ-bvFeEPMnfe_R+uvxqrQ@mail.gmail.com>
+ <20121105235443.GA27718@dev3310.snc6.facebook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121105235443.GA27718@dev3310.snc6.facebook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Nov 2012 09:22:16 +0800 Xiaotian Feng <xtfeng@gmail.com> wrote:
+Hello,
 
-> On Tue, Nov 6, 2012 at 6:52 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Fri,  2 Nov 2012 10:48:54 +0800
-> > Xiaotian Feng <xtfeng@gmail.com> wrote:
-> >
-> >> We met a ksoftirqd 100% issue, the perf top shows kernel is busy
-> >> with tasklet_action(), but no actual action is shown. From dumped
-> >> kernel, there's only one disabled tasklet on the tasklet_vec.
-> >>
-> >> tasklet_action might be handled after tasklet is disabled, this will
-> >> make disabled tasklet stayed on tasklet_vec. tasklet_action will not
-> >> handle disabled tasklet, but place it on the tail of tasklet_vec,
-> >> still raise softirq for this tasklet. Things will become worse if
-> >> device driver uses tasklet_disable on its device remove/close code.
-> >> The disabled tasklet will stay on the vec, frequently __raise_softirq_off()
-> >> and make ksoftirqd wakeup even if no tasklets need to be handled.
-> >>
-> >> This patch introduced a new TASKLET_STATE_HI bit to indicate HI_SOFTIRQ,
-> >> in tasklet_action(), simply ignore the disabled tasklet and don't raise
-> >> the softirq nr. In my previous patch, I remove tasklet_hi_enable() since
-> >> it is the same as tasklet_enable(). So only tasklet_enable() needs to be
-> >> modified, if tasklet state is changed from disable to enable, use
-> >> __tasklet_schedule() to put it on the right vec.
-> >
-> > gee, I haven't looked at the tasklet code in 100 years.  I think I'll
-> > send this in Thomas's direction ;)
-> >
-> > The race description seems real and the patch looks sane to me.  Are
-> > you sure we can get away with never clearing TASKLET_STATE_HI?  For
-> > example, what would happen if code does a tasklet_hi_schedule(t) and
-> > later does a tasklet_schedule(t)?
+On Mon, Nov 05, 2012 at 03:54:43PM -0800, Arun Sharma wrote:
+> On Wed, Oct 31, 2012 at 06:56:05PM -0400, KOSAKI Motohiro wrote:
+> > glibc malloc discard freed memory by using MADV_DONTNEED
+> > as tcmalloc. and it is often a source of large performance decrease.
+> > because of MADV_DONTNEED discard memory immediately and
+> > right after malloc() call fall into page fault and pagesize memset() path.
+> > then, using DONTNEED increased zero fill and cache miss rate.
 > 
-> hmm, that will be a nightmare...
-> tasklet_schedule(t)/tasklet_hi_schedule(t) doesn't use list_head, they
-> simply
-> make t->next = NULL, then put t on the tail of
-> tasklet_vec/tasklet_hi_vec. If the code does a tasklet_hi_schedule()
-> and then a tasklet_schedule, the tasklet will stay on tasklet_vec and
-> tasklet_hi_vec .... tasklet_hi_action will handle it first and clear
-> the TASKLET_SCHED_SCHED bit, later, in tasklet_action, it will be
-> handled again and hit a BUG_ON ...
-
-Well, actually I meant if the caller reuses the tassklet_struct after
-its softirq has been run.
-
-> But if code does a tasklet_hi_schedule(), then tasklet_kil and later
-> does a tasklet_schedule(), we do need clear the TASKLET_STATE_HI.
-
-That as well ;)
-
-> Also
-> we need to remove the tasklet_hi_enable() as it is the same as
-> tasklet_enable() and there's
-> only one user..
+> The memcg based solution that I posted a few months ago is working well
+> for us. We see significantly less cpu in zero'ing pages.
 > 
-> I'll send you V2 patch soon, thanks.
+> Not everyone was comfortable with the security implications of recycling
+> pages between processes in a memcg, although it was disabled by default
+> and had to be explicitly opted-in.
+> 
+> Also, memory allocators have a second motivation in using madvise: to
+> create virtually contiguous regions of memory from a fragmented address 
+> space, without increasing the RSS.
 
-Sounds good.
+I don't get it. How do we create contiguos region by madvise?
+Just out of curiosity.
+Could you elaborate that use case? :)
+
+> 
+>  -Arun
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind Regards,
+Minchan Kim
