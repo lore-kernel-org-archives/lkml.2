@@ -1,165 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab2KFUBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 15:01:25 -0500
-Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.28]:22655
-	"EHLO na01-by2-obe.mail.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752744Ab2KFUBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 15:01:21 -0500
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -7
-X-BigFish: PS-7(zz9371I542M1432Izz1de0h1202h1d1ah1d2ahzz8275bhz31h2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
-From: KY Srinivasan <kys@microsoft.com>
-To: Tomas Hozza <thozza@redhat.com>
-CC: Olaf Hering <olaf@aepfle.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: RE: [PATCH] tools/hv/hv_kvp_daemon.c: Netlink source address
- validation allows DoS
-Thread-Topic: [PATCH] tools/hv/hv_kvp_daemon.c: Netlink source address
- validation allows DoS
-Thread-Index: AQHNvDJ2n/qQZEYb3k68at4bTNkDfZfc7oFQgABKPYCAAAB/0A==
-Date: Tue, 6 Nov 2012 19:58:40 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF930DFBCEC@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <426367E2313C2449837CD2DE46E7EAF930DFBAFA@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <1002964725.7541965.1352231685241.JavaMail.root@redhat.com>
-In-Reply-To: <1002964725.7541965.1352231685241.JavaMail.root@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [98.110.61.144]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC104.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(13464001)(51704002)(16676001)(46102001)(33656001)(76482001)(4396001)(23676001)(6806001)(5343635001)(54356001)(31966008)(47776002)(49866001)(47446002)(50986001)(54316001)(74502001)(47736001)(44976002)(74662001)(47976001)(50466001)(51856001)(53806001);DIR:OUT;SFP:;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0657D528EC
+	id S1752812Ab2KFUMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 15:12:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38547 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab2KFUMW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 15:12:22 -0500
+Date: Tue, 6 Nov 2012 12:12:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Tony Luck <tony.luck@intel.com>, Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 2/2 v2] mm: print out information of file affected by
+ memory error
+Message-Id: <20121106121220.d14696ac.akpm@linux-foundation.org>
+In-Reply-To: <1352178473-7217-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <20121105140154.fce89f05.akpm@linux-foundation.org>
+	<1352178473-7217-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA6K1UgE016750
 
+On Tue,  6 Nov 2012 00:07:53 -0500
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-
-> -----Original Message-----
-> From: Tomas Hozza [mailto:thozza@redhat.com]
-> Sent: Tuesday, November 06, 2012 2:55 PM
-> To: KY Srinivasan
-> Cc: Olaf Hering; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; apw@canonical.com; jasowang@redhat.com
-> Subject: Re: [PATCH] tools/hv/hv_kvp_daemon.c: Netlink source address
-> validation allows DoS
-> 
-> From 6199072f8131056efce208f04e6985d1f9968d8e Mon Sep 17 00:00:00 2001
-> From: Tomas Hozza <thozza@redhat.com>
-> Date: Mon, 5 Nov 2012 10:08:16 +0100
-> Subject: [PATCH] Netlink source address validation allows DoS
-> 
-> The source code without this patch caused hypervkvpd to exit when it processed
-> a spoofed Netlink packet which has been sent from an untrusted local user.
-> Netlink messages with a non-zero nl_pid source address should just be ignored.
-
-Thomas,
-
-You need a Signed-off-by line. Please refer to the documentation on how to submit a patch.
-
-Regards,
-
-K. Y
-> ---
->  tools/hv/hv_kvp_daemon.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-> index 3ea3af2..7d74497 100755
-> --- a/tools/hv/hv_kvp_daemon.c
-> +++ b/tools/hv/hv_kvp_daemon.c
-> @@ -1478,13 +1478,19 @@ int main(void)
->  		len = recvfrom(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0,
->  				addr_p, &addr_l);
-> 
-> -		if (len < 0 || addr.nl_pid) {
-> +		if (len < 0) {
->  			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
->  					addr.nl_pid, errno, strerror(errno));
->  			close(fd);
->  			return -1;
->  		}
-> 
-> +		if (addr.nl_pid) {
-> +			syslog(LOG_WARNING, "Received packet from untrusted
-> pid:%u",
-> +					addr.nl_pid);
-> +			continue;
-> +		}
-> +
->  		incoming_msg = (struct nlmsghdr *)kvp_recv_buffer;
->  		incoming_cn_msg = (struct cn_msg
-> *)NLMSG_DATA(incoming_msg);
->  		hv_msg = (struct hv_kvp_msg *)incoming_cn_msg->data;
-> --
-> 1.7.11.7
-> 
-> ----- Original Message -----
-> >
-> >
-> > > -----Original Message-----
-> > > From: Tomas Hozza [mailto:thozza@redhat.com]
-> > > Sent: Tuesday, November 06, 2012 10:21 AM
-> > > To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; apw@canonical.com;
-> > > jasowang@redhat.com
-> > > Cc: Olaf Hering; KY Srinivasan
-> > > Subject: [PATCH] tools/hv/hv_kvp_daemon.c: Netlink source address
-> > > validation
-> > > allows DoS
+> On Mon, Nov 05, 2012 at 02:01:54PM -0800, Andrew Morton wrote:
+> > On Fri,  2 Nov 2012 12:33:13 -0400
+> > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> > 
+> > > Printing out the information about which file can be affected by a
+> > > memory error in generic_error_remove_page() is helpful for user to
+> > > estimate the impact of the error.
+> > > 
+> > > Changelog v2:
+> > >   - dereference mapping->host after if (!mapping) check for robustness
+> > > 
+> > > ...
 > > >
-> > > Hi.
-> > >
-> > > After discussion with KY Srinivasan and Olaf Hering I'm sending you
-> > > a patch for the HyperV KVP daemon distributed in linux kernel
-> > > "tools/hv/hv_kvp_daemon.c".
-> > >
-> > > There is an issue in the current daemon source causing hyperv kvp
-> > > daemon
-> > > to exit when it processes a spoofed Netlink packet which has been
-> > > sent
-> > > from an untrusted local user.
-> > >
-> > > This patch is fixing this, so now the Netlink messages with a
-> > > non-zero
-> > > nl_pid source address are just ignored.
-> >
-> > You don't want to send the patch as an attachment.  Please send the
-> > patch
-> > as part of the mail.
-> >
-> > Regards,
-> >
-> > K. Y
-> > >
-> > >
-> > > Regards,
-> > >
-> > > Tomas Hozza
-> > > Associate Software Engineer
-> > > BaseOS - Brno, CZ
-> >
+> > > --- v3.7-rc3.orig/mm/truncate.c
+> > > +++ v3.7-rc3/mm/truncate.c
+> > > @@ -151,14 +151,20 @@ int truncate_inode_page(struct address_space *mapping, struct page *page)
+> > >   */
+> > >  int generic_error_remove_page(struct address_space *mapping, struct page *page)
+> > >  {
+> > > +	struct inode *inode;
+> > > +
+> > >  	if (!mapping)
+> > >  		return -EINVAL;
+> > > +	inode = mapping->host;
+> > >  	/*
+> > >  	 * Only punch for normal data pages for now.
+> > >  	 * Handling other types like directories would need more auditing.
+> > >  	 */
+> > > -	if (!S_ISREG(mapping->host->i_mode))
+> > > +	if (!S_ISREG(inode->i_mode))
+> > >  		return -EIO;
+> > > +	pr_info("MCE %#lx: file info pgoff:%lu, inode:%lu, dev:%s\n",
+> > > +		page_to_pfn(page), page_index(page),
+> > > +		inode->i_ino, inode->i_sb->s_id);
+> > >  	return truncate_inode_page(mapping, page);
+> > >  }
+> > >  EXPORT_SYMBOL(generic_error_remove_page);
+> > 
+> > A couple of things.
+> > 
+> > - I worry that if a hardware error occurs, it might affect a large
+> >   amount of memory all at the same time.  For example, if a 4G memory
+> >   block goes bad, this message will be printed a million times?
 > 
+> If the error on 4G memory block triggered by SRAO MCE and these 1M pages
+> are all pagecache pages, the answer is yes.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Well that's bad.
+
+> But I think that if it's a whole DIMM error, it should be reported by
+> another type of MCE than SRAO, so printing a million times seems to be
+> unlikely to happen.
+
+"should be" and "unlikely" aren't very reassuring things to hear! 
+Emitting a million lines into syslog is pretty poor behaviour and
+should be reliably avoided.
+
+> > - hard-wiring "MCE" in here seems a bit of a layering violation? 
+> >   What right does the generic, core .error_remove_page() implementation
+> >   have to assume that it was called because of an MCE?
+> 
+> OK, we need not assume that. I change "MCE " prefix to more specific
+> one like "Memory error ".
+> 
+> > Many CPU types don't eveh have such a thing?
+> 
+> No. At least currently, only SRAO MCE triggers memory_failure() and
+> it's defined only on some newest highend models of Intel CPUs.
+
+Again, your reply is full of assumptions about one particualar
+implementation on one particular CPU.  But this is generic,
+cross-architecture code!
+
+Now, it's pretty harmless to make these assumptions at this time.  But
+this new code will need to redone if/when other CPU types come along,
+and because there's a printk in there, that rework will cause
+user-visible changes in kernel behaviour.  It would be best if we can
+just avoid the problem on day one.
+
+Maybe move the printk into x86-specific code?  And just one printk
+please - not a million!
+
