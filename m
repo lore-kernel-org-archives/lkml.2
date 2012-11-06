@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab2KFXYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 18:24:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39972 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520Ab2KFXY2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 18:24:28 -0500
-Date: Tue, 6 Nov 2012 15:24:27 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v4 3/6] block/genhd.c: apply
- pm_runtime_set_memalloc_noio on block devices
-Message-Id: <20121106152427.dfde4c52.akpm@linux-foundation.org>
-In-Reply-To: <1351931714-11689-4-git-send-email-ming.lei@canonical.com>
-References: <1351931714-11689-1-git-send-email-ming.lei@canonical.com>
-	<1351931714-11689-4-git-send-email-ming.lei@canonical.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753948Ab2KFXYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 18:24:21 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:40198 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753864Ab2KFXYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 18:24:18 -0500
+Date: Tue, 6 Nov 2012 17:24:15 -0600
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 2/2] procfs: /proc/sched_debug fails on very very large
+	machines.
+Message-ID: <20121106232414.GA7338@gulag1.americas.sgi.com>
+References: <1352235741-26478-1-git-send-email-nzimmer@sgi.com> <1352235741-26478-2-git-send-email-nzimmer@sgi.com> <1352235741-26478-3-git-send-email-nzimmer@sgi.com> <20121106213128.GB1762@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121106213128.GB1762@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  3 Nov 2012 16:35:11 +0800
-Ming Lei <ming.lei@canonical.com> wrote:
-
-> This patch applyes the introduced pm_runtime_set_memalloc_noio on
-> block device so that PM core will teach mm to not allocate memory with
-> GFP_IOFS when calling the runtime_resume and runtime_suspend callback
-> for block devices and its ancestors.
+On Tue, Nov 06, 2012 at 04:31:28PM -0500, Dave Jones wrote:
+> On Tue, Nov 06, 2012 at 03:02:21PM -0600, Nathan Zimmer wrote:
+>  > On systems with 4096 cores attemping to read /proc/sched_debug fails.
+>  > We are trying to push all the data into a single kmalloc buffer.
+>  > The issue is on these very large machines all the data will not fit in 4mb.
+>  > 
+>  > A better solution is to not us the single_open mechanism but to provide
+>  > our own seq_operations and treat each cpu as an individual record.
 > 
-> ...
->
-> @@ -532,6 +533,13 @@ static void register_disk(struct gendisk *disk)
->  			return;
->  		}
->  	}
-> +
-> +	/* avoid probable deadlock caused by allocating memory with
+> Good timing.
+> 
+> This looks like it would solve the problem I just reported here:
+> https://lkml.org/lkml/2012/11/6/390
+> 
+> That happens even on an 8-way, so it's not just niche machines that have
+> this problems.
+> 
+> 	Dave
+> 
 
-Again, please fix the comment style.  Take a look at the rest of this file!
+Glad to help. I hadn't thought of memory tight situation but it does make sense
+that it helps as it can get by with 4k allocation vs grabbing successively
+large chucks.
 
-> +	 * GFP_KERNEL in runtime_resume callback of its all ancestor
-> +	 * deivces
+If you have seen similar issues with your fuzz testing let me know where and
+I'll take a look.
 
-typo
-
-> +	 */
+Nate
 
