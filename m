@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab2KFI70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 03:59:26 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51209 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab2KFI7Z (ORCPT
+	id S1751798Ab2KFJAY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:00:24 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43985 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab2KFJAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 03:59:25 -0500
-Date: Tue, 6 Nov 2012 09:59:31 +0100
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Omar Ramirez Luna <omar.luna@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Loic PALLARDY <loic.pallardy@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        Suman Anna <s-anna@ti.com>, Juan Gutierrez <jgutierrez@ti.com>,
-        Felipe Contreras <felipe.contreras@nokia.com>,
-        Tejun Heo <tj@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] mailbox: OMAP: introduce mailbox framework
-Message-ID: <20121106085931.GA26335@kroah.com>
-References: <1352170552-29564-1-git-send-email-omar.luna@linaro.org>
- <1352170552-29564-2-git-send-email-omar.luna@linaro.org>
- <509886A2.5060509@wwwdotorg.org>
- <CACRpkdb0nCaV5L5xCnzje3w=t7+TZpcvCCUDRPi-10t+oF8UGg@mail.gmail.com>
+	Tue, 6 Nov 2012 04:00:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdb0nCaV5L5xCnzje3w=t7+TZpcvCCUDRPi-10t+oF8UGg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121106083918.GA6090@gmail.com>
+References: <CAEH94LjTedn0n00ZtqFxBL=kDA3u8G39q+x79-vPoMYvEKW1gw@mail.gmail.com>
+	<CAEH94LgUcAL6RquMZKTrDg87_0J2sEqTsDXUbnhrQ37KuMJ4sg@mail.gmail.com>
+	<20121102084109.GA19753@gmail.com>
+	<CAEH94LiYoeJEDxuHtK=z1sA5h7kzZQ1Day+U5o1SZDz-m8RYnA@mail.gmail.com>
+	<20121106083918.GA6090@gmail.com>
+Date: Tue, 6 Nov 2012 17:00:19 +0800
+Message-ID: <CAEH94Li_9VfDKoFDjxZv3cjs3wn2p_dfJmnCyRbynku6EDSeHQ@mail.gmail.com>
+Subject: Re: VFS hot tracking: How to calculate data temperature?
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, Dave Chinner <david@fromorbit.com>,
+        cmm@us.ibm.com, Ben Chociej <bchociej@gmail.com>,
+        James Northrup <northrup.james@gmail.com>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 09:55:52AM +0100, Linus Walleij wrote:
-> On Tue, Nov 6, 2012 at 4:40 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> 
-> > Is this a public interface to the driver? If so, shouldn't the header be
-> > in include/linux somewhere?
-> 
-> I think the split out of the public header is done in patch 2/2.
+On Tue, Nov 6, 2012 at 4:39 PM, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
+> On Mon, Nov 05, 2012 at 10:29:39AM +0800, Zhi Yong Wu wrote:
+>> On Fri, Nov 2, 2012 at 4:41 PM, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
+>> > On Fri, Nov 02, 2012 at 02:38:29PM +0800, Zhi Yong Wu wrote:
+>> >> Here also has another question.
+>> >>
+>> >> How to save the file temperature among the umount to be able to
+>> >> preserve the file tempreture after reboot?
+>> >>
+>> >> This above is the requirement from DB product.
+>> >> I thought that we can save file temperature in its inode struct, that
+>> >> is, add one new field in struct inode, then this info will be written
+>> >> to disk with inode.
+>> >>
+>> >> Any comments or ideas are appreciated, thanks.
+>> >
+>> > Hi Zhiyong,
+>> >
+>> > I think that we might define a callback function.  If a filesystem wants
+>> > to save these data, it can implement a function to save them.  The
+>> > filesystem can decide whether adding it or not by themselves.
+>> Great idea,  temperature saving function is maybe very specific to FS.
+>> But i am wondering if we can find one generic way to save temperature
+>> info at first.
+>
+> I don't think a generic way is better because it cannot support a
+> variety of filesystems.  So maybe you must answer this question firstly:
+> how many filesystems do you want to save this info? such as ext4, xfs,
+> btrfs, etc.  Then we can try to find a generic way.  If only these three
+> filesystems you want to support, maybe saving in xattr is an optional
+> way.
+yes, xattr is one good choice from currect discussion result. Maybe we
+can provide one generic way, and one callback registering
+infrastructure, if FS register its own saving callback, this callback
+function will be used, otherwise the generic way will be applied.
 
-Yes, but the names are still omap_*, which doesn't make much sense here.
+By the way, as what Dave mentioned, the patchset v4+ review has
+highest priority, then the way how to calc data temperature, and the
+lowest priority is the way how to save data temperature info.
 
-greg k-h
+>
+> Regards,
+> Zheng
+
+
+
+-- 
+Regards,
+
+Zhi Yong Wu
