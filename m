@@ -1,36 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab2KFEns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 23:43:48 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:48938 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782Ab2KFEnr (ORCPT
+	id S1753672Ab2KFEr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 23:47:58 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:58597 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753344Ab2KFEr4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 23:43:47 -0500
-Date: Tue, 6 Nov 2012 05:43:46 +0100
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Matteo Croce <technoboy85@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Kernel Source updater script
-Message-ID: <20121106044346.GA23799@kroah.com>
-References: <CAFnufp3SdnBoFiC5j2bjrA=MW-WfsmFVhfggJvoHa-5ZEgg7aA@mail.gmail.com>
+	Mon, 5 Nov 2012 23:47:56 -0500
+From: "Patil, Rachna" <rachna@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Jonathan Cameron <jic23@cam.ac.uk>
+Subject: RE: [PATCH RESEND 0/8] TI Touchscreen driver updates and Support
+ for TSC/ADC MFD driver
+Thread-Topic: [PATCH RESEND 0/8] TI Touchscreen driver updates and Support
+ for TSC/ADC MFD driver
+Thread-Index: AQHNq3HBvcHo13jSVku2BGv0P3D9i5fbnjAAgAC9KSA=
+Date: Tue, 6 Nov 2012 04:47:41 +0000
+Message-ID: <4CE347531D4CA947960AF71FF095B9323E9684AC@DBDE01.ent.ti.com>
+References: <1350372345-27108-1-git-send-email-rachna@ti.com>
+ <20121105225524.GE7965@sortiz-mobl>
+In-Reply-To: <20121105225524.GE7965@sortiz-mobl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFnufp3SdnBoFiC5j2bjrA=MW-WfsmFVhfggJvoHa-5ZEgg7aA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 12:52:46AM +0100, Matteo Croce wrote:
-> Hi all,
+Hi Samuel,
+
+On Tue, Nov 06, 2012 at 04:25:24, Samuel Ortiz wrote:
+> Hi Rachna,
 > 
-> I know that this is useless to people using git, but it was so fun to write
-> and I use it to update regularly my pc kernel source from time to time
-> while saving servers (and home) bandwidth
+> On Tue, Oct 16, 2012 at 12:55:37PM +0530, Patil, Rachna wrote:
+> > This patch set is a cumulative set of [1] and [2] sent earlier.
+> > I have merged the patch set so that the MFD patches apply without any 
+> > issues.
+> > 
+> > Also Note that there are no code changes in either of the patch set, 
+> > only rebased on top of linux-next to make sure that all the patches 
+> > apply without any conflicts.
+> > 
+> > This patch set has been tested on AM335x EVM.
+> > 
+> > [1] "[PATCH 0/4] input: TSC: ti_tscadc: TI Touchscreen driver updates"
+> > (http://www.spinics.net/lists/linux-input/msg22107.html)
+> > 
+> > [2] "[PATCH v5 0/4] Support for TSC/ADC MFD driver"
+> > (http://www.spinics.net/lists/linux-input/msg22832.html)
+> > 
+> > Patil, Rachna (8):
+> >   input: TSC: ti_tscadc: Correct register usage
+> >   input: TSC: ti_tscadc: Add Step configuration as platform data
+> >   input: TSC: ti_tscadc: set FIFO0 threshold Interrupt
+> >   input: TSC: ti_tscadc: Remove definition of End Of Interrupt register
+> >   input: TSC: ti_tscadc: Rename the existing touchscreen driver
+> >   MFD: ti_tscadc: Add support for TI's TSC/ADC MFDevice
+> >   input: TSC: ti_tsc: Convert TSC into a MFDevice
+> >   IIO : ADC: tiadc: Add support of TI's ADC driver
+> All patches applied now, thanks a lot.
 
-Have you looked at the python script called 'ketchup'?  I think it
-already does a lot of what you are doing here.
+Thanks for pulling this in.
 
-greg k-h
+Regards,
+Rachna
+
+> 
+> Cheers,
+> Samuel.
+> 
+> --
+> Intel Open Source Technology Centre
+> http://oss.intel.com/
+> 
+
