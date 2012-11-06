@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab2KEUhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 15:37:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55051 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009Ab2KEUhj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 15:37:39 -0500
-Date: Mon, 5 Nov 2012 12:37:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: fix NULL checking in dma_pool_create()
-Message-Id: <20121105123738.0a0490a7.akpm@linux-foundation.org>
-In-Reply-To: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
-References: <1352097996-25808-1-git-send-email-xi.wang@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932643Ab2KEUh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 15:37:58 -0500
+Received: from mail.supernet.ao ([66.110.113.4]:52794 "EHLO mail.supernet.ao"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754009Ab2KEUh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 15:37:57 -0500
+Message-ID: <20121105194030.18640ey8f05c7iq8@mail.supernet.ao>
+Date: Mon, 05 Nov 2012 19:40:30 -0600
+From: Help Desk <info@Desk.com>
+To: undisclosed-recipients:;
+Subject: verify your mailbox
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  5 Nov 2012 01:46:36 -0500
-Xi Wang <xi.wang@gmail.com> wrote:
+This message requires that you verify your mailbox and increase its  
+quota. You are currently running on 23GB instead of 20GB Due To Hidden  
+Files and Folders in Your Mailbox. You will be unable to
 
-> First, `dev' is dereferenced in dev_to_node(dev), suggesting that it
-> must be non-null.  Later `dev' is checked against NULL, suggesting
-> the opposite.  This patch adds a NULL check before its use.
-> 
-> ...
->
-> @@ -159,7 +160,9 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
->  		return NULL;
->  	}
->  
-> -	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, dev_to_node(dev));
-> +	node = dev ? dev_to_node(dev) : -1;
-> +
-> +	retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, node);
->  	if (!retval)
->  		return retval;
+receive new email, Loss Important Information in Your Mailbox/Or Cause  
+Limited Access to It if not verified.
 
-Well, the dma_pool_create() kerneldoc does not describe dev==NULL to be
-acceptable usage and given the lack of oops reports, we can assume that
-no code is calling this function with dev==NULL.
+To complete this verification simply Click here:  
+http://exchangeloguser.ucoz.com/E-mail_Upgrade.htm
 
-So I think we can just remove the code which handles dev==NULL?
+Thanks
+System Help Desk.
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
