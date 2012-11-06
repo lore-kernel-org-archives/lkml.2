@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab2KFLSX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 06:18:23 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:45996 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab2KFLSV (ORCPT
+	id S1751835Ab2KFLSc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 06:18:32 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44575 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab2KFLSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 06:18:21 -0500
-Message-ID: <5098F1F5.5060709@ahsoftware.de>
-Date: Tue, 06 Nov 2012 12:18:13 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Tue, 6 Nov 2012 06:18:30 -0500
+Message-ID: <5098F1E8.4070904@kernel.dk>
+Date: Tue, 06 Nov 2012 12:18:00 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
-Subject: Re: AMD A10: MCE Instruction Cache Error
-References: <5093A592.9070605@ahsoftware.de> <5093D069.20901@ahsoftware.de> <20121103044929.GB21829@liondog.tnic> <5094F5C5.1000000@ahsoftware.de> <20121104152133.GA16116@x1.osrc.amd.com> <5096A3A4.8070602@ahsoftware.de> <20121106091057.GC2090@x1.osrc.amd.com>
-In-Reply-To: <20121106091057.GC2090@x1.osrc.amd.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [GIT] floppy
+References: <alpine.LNX.2.00.1211061208050.24253@pobox.suse.cz> <5098F13E.20606@kernel.dk> <alpine.LNX.2.00.1211061216570.24253@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1211061216570.24253@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 06.11.2012 10:10, schrieb Borislav Petkov:
-> On Sun, Nov 04, 2012 at 06:19:32PM +0100, Alexander Holler wrote:
->> I was remotely logged in and there aren't that many faults which
->> lead to complete stand still of hw (no reset).
->
-> Right, can you retry triggering the freeze without the fglrx driver?
-> Simply remove it completely so that even the possibility to load it is
-> not there.
+On 2012-11-06 12:17, Jiri Kosina wrote:
+> On Tue, 6 Nov 2012, Jens Axboe wrote:
+> 
+>>> Jiri Kosina (1):
+>>>       floppy: destroy floppy workqueue before cleaning up the queue
+>>>
+>>>  drivers/block/floppy.c |    5 +++--
+>>>  1 files changed, 3 insertions(+), 2 deletions(-)
+>>
+>> Can you either just send me the patch, or base it against master? After
+>> the merge window, trees should be based off for-linus (if it exists) or
+>> just Linus master.
+> 
+> OK, noted you'd like this workflow for future pull requests.
+> 
+>> For this one, I'll just grab the patch, from the email thread :-)
+> 
+> Please apply the one below then. It contains proper changelog and also the 
+> corresponding module unload fix as well. Thanks.
 
-Will do. But I don't think it is fglrx. I'm using it since several years 
-(just with an external graphics card before) and never had a problem 
-with it. Besides that, during the hangs nothing on the display happened, 
-I was logged out  and just had a remote ssh session on.
+I did grab that one:
 
->> But as you said I can't know, the only thing I know is that a box
->> with new mb, memory and apu come to a complete stand still, and
->> such shortly after I've received an emergency message which told me
->> that a bit inside the cpu switched unexpected. Adding to that, the
->> box did the same as what it did while it received the MCE, a backup
->> from a sata-atached ssd to an usb3-hd which includes compression and
->> encryption which keeps all cores at work most of the time for several
->> hours.
->
-> So do you get that MCE each time you execute that same workload?
+http://git.kernel.dk/?p=linux-block.git;a=commit;h=baf92d83c7747f3114cd21f63930004fc03e8365
 
-No, up to now the MCE only was visible once. But stressing the box 
-yesterday (with loads of 3 for several hours and such) revealed some 
-other serious failures which all look like the stuff which happens when 
-the cache (or memory) is broken (I don't know how many bits of the cache 
-can be corrected until something else happens or what happens). E.g. the 
-checksum of a backup is wrong, or bzip2 failed with an error which it 
-suggests is because of an HW failure like bad RAM (I've never seen that 
-error from bzip2 before).
-
-I've just done a memory test using  memtest86+-4.20 for about 7h (3 
-complete passes of all 16GB), no errors, so the new memory itself seems 
-to be ok.
-
-I will now to tests with leaving fglrx off.
-
-Regards,
-
-Alexander
+-- 
+Jens Axboe
 
