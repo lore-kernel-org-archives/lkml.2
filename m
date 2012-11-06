@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab2KFDyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 22:54:22 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:35596 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697Ab2KFDyU (ORCPT
+	id S1753516Ab2KFEQG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 23:16:06 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35792 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753012Ab2KFEQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 22:54:20 -0500
-Date: Tue, 6 Nov 2012 03:53:52 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121106035352.GA24698@srcf.ucam.org>
-References: <20121104135251.GA17894@srcf.ucam.org>
- <87d2zsmv8r.fsf@xmission.com>
- <509766DB.9090906@zytor.com>
- <87625kh5r2.fsf@xmission.com>
- <20121105123858.GB4374@srcf.ucam.org>
- <87sj8nc137.fsf@xmission.com>
- <20121105202557.GA16076@srcf.ucam.org>
- <87hap3zbw7.fsf@xmission.com>
- <20121106031219.GB24235@srcf.ucam.org>
- <87fw4nv1vj.fsf@xmission.com>
+	Mon, 5 Nov 2012 23:16:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fw4nv1vj.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <87sj8okzft.fsf@devron.myhome.or.jp>
+References: <1351389156-2484-1-git-send-email-linkinjeon@gmail.com>
+	<87sj8okzft.fsf@devron.myhome.or.jp>
+Date: Tue, 6 Nov 2012 13:16:00 +0900
+Message-ID: <CAKYAXd_bEmLtXA4HXaBMNJrwLLnyPNHT4o+s2VcisDdEsphuvA@mail.gmail.com>
+Subject: Re: [PATCH 1/5] fat: remove parent_logstart check in fat_get_parent
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 07:36:32PM -0800, Eric W. Biederman wrote:
-
-> For automated installs you don't have to satisfy me.  Feel free to
-> deliver a lousy solution to your users.   Just don't use your arbitrary
-> design decisions to justify your kernel patches.
-
-My kernel patches are justified by genuine user requirements. If you 
-don't feel that there's any requirement for the kernel to satisfy the 
-people who use it, you're free to ignore those patches.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+2012/11/5, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>> +		blknr = fat_clus_to_blknr(sbi, parent_logstart);
+>> +		parent_bh = sb_bread(sb, blknr);
+>> +		if (!parent_bh) {
+>> +			fat_msg(sb, KERN_ERR,
+>> +				"NFS:unable to read cluster of parent directory");
+>> +			goto out;
+>>  		}
+>> +		de = (struct msdos_dir_entry *) parent_bh->b_data;
+>> +		clus_to_match = fat_get_start(sbi, &de[0]);
+>> +		search_clus = fat_get_start(sbi, &de[1]);
+>> +		if (!search_clus)
+>> +			search_clus = sbi->root_cluster;
+>> +		brelse(parent_bh);
+>> +		do {
+>> +			parent_inode =  fat_traverse_cluster(sb,
+>> +					search_clus, clus_to_match);
+>> +			if (IS_ERR(parent_inode) || parent_inode)
+>> +				break;
+>> +			search_clus = fat_read_next_clus(sb,
+>> +							search_clus);
+>> +			if (search_clus < 0)
+>> +				break;
+>> +		} while (search_clus != FAT_ENT_EOF);
+>>  	}
+>>  out:
+>>  	brelse(dotdot_bh);
+>
+> I started to understand what is doing this with cleanup. It is really
+> strange and duplicates many codes with bugs.
+>
+> So, please replace whole FAT nfs patches in -mm to review whole at next
+> patchset. And sorry, but please think whole more carefully.
+Hi OGAWA.
+Okay, I will rework all of patches as your comment.
+Thanks for review.
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
