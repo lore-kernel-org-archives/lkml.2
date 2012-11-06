@@ -1,80 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab2KFVzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 16:55:43 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:56487 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801Ab2KFVzm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 16:55:42 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        linux-mtd@lists.infradead.org
-Subject: [PATCH 1/8] mtd: diskonchip: don't warn about ARM architecture
-Date: Tue,  6 Nov 2012 22:55:26 +0100
-Message-Id: <1352238933-4886-2-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1352238933-4886-1-git-send-email-arnd@arndb.de>
-References: <1352238933-4886-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:+SvEu/tfzYh3xf1Hif7kTafZQ9EIoKAuyYcHkanWrwN
- D29z3GnrN/OQxvSwkvjsU4UIT+4Nzzu3d4Sp01WOZpI6Gj3LtE
- K9cp+hSEVrlC2gDkvkWBgIsVlTm663gXMamwGGuDOEBByAw/Qz
- dMyehPmkvieC+0fueusoUCntqLfcnQMfmBNQHXIGD4mnxl0cFr
- AM5QuUOajztvmBUJjPDPi4mRHAKPzvyrtB147h4bLqEYkSt/w4
- 8WdfTRE2BbiXI0SLIOfFtDmqdLPh5L789XjY3BY8kpOSlt3A3V
- 0WpSX5iywKN4A0m8Mr5VSL12fjGENeL8p1E7z9MEoDHJ/0ats0
- GizXVPnANkVsOa9i9hlUSyqSj/VwEdZWbkazrlEuDZ+ZZZDKVo
- l0CY5EqlqcNew==
+	id S1753225Ab2KFV64 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 16:58:56 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:55498 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752768Ab2KFV6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 16:58:55 -0500
+Date: Tue, 6 Nov 2012 21:58:54 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Christof Meerwald <cmeerw@cmeerw.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Baron <jbaron@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul Holland <pholland@adobe.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, libc-alpha@sourceware.org,
+        linux-api@vger.kernel.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [RFC/PATCH] epoll: replace EPOLL_CTL_DISABLE with
+ EPOLL_CTL_POKE
+Message-ID: <20121106215854.GA6626@dcvr.yhbt.net>
+References: <1351210112-23238-1-git-send-email-palewis@adobe.com>
+ <20121102041312.GA15886@dcvr.yhbt.net>
+ <20121103011031.GA22452@edge.cmeerw.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121103011031.GA22452@edge.cmeerw.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabling the diskonchip drivers on most architectures results
-in a pointless warning "#warning Unknown architecture for
-DiskOnChip. No default probe locations defined". The driver
-can in fact handle the default location already through the
-CONFIG_MTD_DOCPROBE_ADDRESS, which gets set on the platforms
-that need it, and we get a run-time error if this is not
-set correctly.
+Christof Meerwald <cmeerw@cmeerw.org> wrote:
+> On Fri, 2 Nov 2012 04:13:12 +0000, Eric Wong wrote:
+> [...]
+> > EPOLL_CTL_POKE may be used to force an item into the epoll
+> > ready list.  Instead of disabling an item asynchronously
+> > via EPOLL_CTL_DISABLE, this forces the threads calling
+> > epoll_wait() to handle the item in its normal loop.
+> 
+> That was my initial suggestion as well - see
+> https://lkml.org/lkml/2012/6/19/358
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: linux-mtd@lists.infradead.org
----
- drivers/mtd/devices/docprobe.c |    2 --
- drivers/mtd/nand/diskonchip.c  |    2 --
- 2 files changed, 4 deletions(-)
+Thanks, missed that the first time around.  Perhaps TRIGGER is a
+better name than POKE :x
 
-diff --git a/drivers/mtd/devices/docprobe.c b/drivers/mtd/devices/docprobe.c
-index 706b847..88b3fd3 100644
---- a/drivers/mtd/devices/docprobe.c
-+++ b/drivers/mtd/devices/docprobe.c
-@@ -70,8 +70,6 @@ static unsigned long __initdata doc_locations[] = {
- 	0xe0000, 0xe2000, 0xe4000, 0xe6000,
- 	0xe8000, 0xea000, 0xec000, 0xee000,
- #endif /*  CONFIG_MTD_DOCPROBE_HIGH */
--#else
--#warning Unknown architecture for DiskOnChip. No default probe locations defined
- #endif
- 	0xffffffff };
- 
-diff --git a/drivers/mtd/nand/diskonchip.c b/drivers/mtd/nand/diskonchip.c
-index 256eb30..81fa578 100644
---- a/drivers/mtd/nand/diskonchip.c
-+++ b/drivers/mtd/nand/diskonchip.c
-@@ -53,8 +53,6 @@ static unsigned long __initdata doc_locations[] = {
- 	0xe0000, 0xe2000, 0xe4000, 0xe6000,
- 	0xe8000, 0xea000, 0xec000, 0xee000,
- #endif /*  CONFIG_MTD_DOCPROBE_HIGH */
--#else
--#warning Unknown architecture for DiskOnChip. No default probe locations defined
- #endif
- 	0xffffffff };
- 
--- 
-1.7.10
-
+I'm hoping Paton has a chance to look at my implementation and
+comment on it.
