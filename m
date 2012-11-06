@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab2KFOqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 09:46:48 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:65302 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab2KFOqr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 09:46:47 -0500
-Date: Tue, 6 Nov 2012 15:46:44 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: KY Srinivasan <kys@microsoft.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
-Message-ID: <20121106144644.GA29017@dhcp22.suse.cz>
-References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
- <1349654386-18378-1-git-send-email-kys@microsoft.com>
- <20121008004358.GA12342@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF930A1FB31@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20121008133539.GA15490@kroah.com>
- <20121009124755.ce1087b4.akpm@linux-foundation.org>
- <426367E2313C2449837CD2DE46E7EAF930DF7FBB@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20121105134456.f655b85a.akpm@linux-foundation.org>
- <426367E2313C2449837CD2DE46E7EAF930DFA7B8@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <alpine.DEB.2.00.1211051418560.5296@chino.kir.corp.google.com>
+	id S1752060Ab2KFOrp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 09:47:45 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:55272 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108Ab2KFOro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 09:47:44 -0500
+Date: Tue, 6 Nov 2012 15:47:46 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: AMD A10: MCE Instruction Cache Error
+Message-ID: <20121106144746.GD9558@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Alexander Holler <holler@ahsoftware.de>,
+	linux-kernel@vger.kernel.org
+References: <5093A592.9070605@ahsoftware.de>
+ <5093D069.20901@ahsoftware.de>
+ <20121103044929.GB21829@liondog.tnic>
+ <5094F5C5.1000000@ahsoftware.de>
+ <20121104152133.GA16116@x1.osrc.amd.com>
+ <5096A3A4.8070602@ahsoftware.de>
+ <20121106091057.GC2090@x1.osrc.amd.com>
+ <5098F1F5.5060709@ahsoftware.de>
+ <5098F816.5040206@ahsoftware.de>
+ <50990D46.2050900@ahsoftware.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1211051418560.5296@chino.kir.corp.google.com>
+In-Reply-To: <50990D46.2050900@ahsoftware.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 05-11-12 14:33:12, David Rientjes wrote:
-> On Mon, 5 Nov 2012, KY Srinivasan wrote:
+On Tue, Nov 06, 2012 at 02:14:46PM +0100, Alexander Holler wrote:
+> Am 06.11.2012 12:44, schrieb Alexander Holler:
+> >Am 06.11.2012 12:18, schrieb Alexander Holler:
+> >>I will now to tests with leaving fglrx off.
+> >
+> >s/to/do/ ;)
+> >
+> >That was gone fast. Disabled fglrx, started tests, full halt without any
+> >visible on the serial (I needed to press the reset button):
 > 
-> > The Hyper-V host has a policy engine for managing available physical memory across
-> > competing virtual machines. This policy decision is based on a number of parameters
-> > including the memory pressure reported by the guest. Currently, the pressure calculation is
-> > based on the memory commitment made by the guest. From what I can tell, the ratio of
-> > currently allocated physical memory to the current memory commitment made by the guest
-> > (vm_committed_as) is used as one of the parameters in making the memory balancing decision on
-> > the host. This is what Windows guests report to the host. So, I need some measure of memory
-> > commitments made by the Linux guest. This is the reason I want export vm_committed_as. 
-> > 
+> One after another, now I've got this:
 > 
-> I don't think you should export the symbol itself to modules but rather a 
-> helper function that returns s64 that just wraps 
-> percpu_counter_read_positive() which your driver could use instead.
+> [ 5698.640830] [Hardware Error]: CPU:0
+> MC2_STATUS[Over|CE|MiscV|-|AddrV|-|-|CECC]: 0xdc2540c000040136
+> [ 5698.649866] [Hardware Error]:        MC2_ADDR: 0x0000000002299678
+> [ 5698.655443] [Hardware Error]: Combined Unit Error: Fill ECC error
+> on data fills.
+> [ 5698.662849] [Hardware Error]: cache level: L2, tx: DATA, mem-tx: DRD
+> 
+> I think it's now really an RMA and I can stop doing further tests.
 
-Agreed, we should rather make sure that nobody can manipulate the value
-from modules.
+Are you sure the temperature conditions of the box are optimal? IOW,
+there's nothing overheating in there?
 
-> (And why percpu_counter_read_positive() returns a signed type is a 
-> mystery.)
-
-Strange indeed. The last commit changed it from long to s64 to suport
-values bigger than 2^31 but even the original long doesn't make much
-sense to me.
+Thanks.
 
 -- 
-Michal Hocko
-SUSE Labs
+Regards/Gruss,
+Boris.
