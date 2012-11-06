@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab2KFNGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 08:06:42 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:50217 "EHLO comal.ext.ti.com"
+	id S1752140Ab2KFNHM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 08:07:12 -0500
+Received: from fieldses.org ([174.143.236.118]:47897 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367Ab2KFNGk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 08:06:40 -0500
-From: "Hiremath, Vaibhav" <hvaibhav@ti.com>
-To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
-        "Philip, Avinash" <avinashphilip@ti.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "paul@pwsan.com" <paul@pwsan.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>
-CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
+	id S1751410Ab2KFNHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 08:07:10 -0500
+Date: Tue, 6 Nov 2012 08:07:06 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 3/8] ARM: OMAP: AM33xx hwmod: Add parent-child
- relationship for PWM subsystem
-Thread-Topic: [PATCH 3/8] ARM: OMAP: AM33xx hwmod: Add parent-child
- relationship for PWM subsystem
-Thread-Index: AQHNuzgM2/eEkgdCM0a7va/En/vrrpfcOuSAgACM72A=
-Date: Tue, 6 Nov 2012 13:06:21 +0000
-Message-ID: <79CD15C6BA57404B839C016229A409A83EB64313@DBDE01.ent.ti.com>
-References: <1352106749-9437-1-git-send-email-avinashphilip@ti.com>
- <1352106749-9437-4-git-send-email-avinashphilip@ti.com>
- <B5906170F1614E41A8A28DE3B8D121433EC049D9@DBDE01.ent.ti.com>
-In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433EC049D9@DBDE01.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "devel@openvz.org" <devel@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
+ connecting local transports
+Message-ID: <20121106130705.GC6718@fieldses.org>
+References: <20121008105437.18668.99905.stgit@localhost.localdomain>
+ <20121009193506.GA19680@fieldses.org>
+ <5098E31A.5080801@parallels.com>
+ <20121106120642.GA6718@fieldses.org>
+ <20121106124035.GA20522@infradead.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121106124035.GA20522@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 15:39:11, Bedia, Vaibhav wrote:
-> On Mon, Nov 05, 2012 at 14:42:24, Philip, Avinash wrote:
-> [...]
+On Tue, Nov 06, 2012 at 07:40:35AM -0500, Christoph Hellwig wrote:
+> On Tue, Nov 06, 2012 at 07:06:42AM -0500, J. Bruce Fields wrote:
+> > On Tue, Nov 06, 2012 at 02:14:50PM +0400, Stanislav Kinsbursky wrote:
+> > > 09.10.2012 23:35, J. Bruce Fields ??????????:
+> > > >Cc'ing Eric since I seem to recall he suggested doing it this way?
+> > > >
+> > > >Seems OK to me, but maybe that swap_root should be in common code?  (Or
+> > > >maybe we could use set_fs_root()?)
+> > > >
+> > > 
+> > > This patch is not good since, as Eric mentioned, all kernel threads
+> > > share same fs struct.
+> > > We can swap whole fs struct. Or we can unshare fs struct
+> > > (unshare_fs_struct() is exported) and swap root in this case.
+> > > But this approach is to close to set_fs_root() logic, which is not
+> > > exported and seems there are some valid reasons for it.
+> > 
+> > What are those reasons?
+> > 
+> > Googling found one previous thread:
+> > 
+> > 	http://thread.gmane.org/gmane.linux.kernel/1259986/focus=47687
+> > 
+> > There Trond requests an ACK from Al or Cristoph for the export, but I
+> > don't see either an ACK or any objection.
 > 
-> > +
-> > +static struct omap_hwmod_ocp_if am33xx_epwmss0__ecap0 = {
-> > +	.master		= &am33xx_epwmss0_hwmod,
-> > +	.slave		= &am33xx_ecap0_hwmod,
-> > +	.clk		= "l4ls_gclk",
-> > +	.addr		= am33xx_ecap0_addr_space,
-> > +	.user		= OCP_USER_MPU,
-> > +};
+> I really don't think messing with current->fs for workqueue worker
+> threads is a good idea, as the worker threads are shared by different
+> workqueues and thus this can easily cause havoc for entirely unrelated
+> subsystems.
+
+So you're worried that a bug in the nfs code could modify the root and
+then not restore it?
+
+--b.
+
 > 
-> Noticed this in another patch which is quite similar so commenting here
-> again. Is the user field required if you are just creating a parent-child
-> relationship here?
+> To do this properly you'll need to avoid current->fs references in the
+> sunrpc code.
 > 
-
-I think user field is not related to parent-child nodes, it defines the initiator to interact with hwmod
-
-Copy-pasted from "arch/arm/plat-omap/include/plat/omap_hwmod.h"
-
-"indicate the initiators that use this interface to interact with the 
-hwmod"
-
-And in this case, its MPU is the initiator to interact with this interface.
-
-
-Thanks,
-Vaibhav
-> Regards,
-> Vaibhav 
-> 
-> 
-
+> And just in case it wasn't clear: the hack in this iteration is even
+> worse than the original.
