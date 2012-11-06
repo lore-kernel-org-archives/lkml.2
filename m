@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab2KFMGr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 07:06:47 -0500
-Received: from fieldses.org ([174.143.236.118]:56356 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751274Ab2KFMGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 07:06:46 -0500
-Date: Tue, 6 Nov 2012 07:06:42 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
- connecting local transports
-Message-ID: <20121106120642.GA6718@fieldses.org>
-References: <20121008105437.18668.99905.stgit@localhost.localdomain>
- <20121009193506.GA19680@fieldses.org>
- <5098E31A.5080801@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5098E31A.5080801@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752014Ab2KFMHD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 07:07:03 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55484 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751888Ab2KFMHC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 07:07:02 -0500
+Message-ID: <1352203618.2529.22.camel@dabdike>
+Subject: Re: [PATCH 2/3] [SCSI] mvsas: fix shift in mvs_94xx_free_reg_set()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: Xiangliang Yu <yuxiangl@marvell.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 06 Nov 2012 13:06:58 +0100
+In-Reply-To: <1352145183-29355-3-git-send-email-xi.wang@gmail.com>
+References: <1352145183-29355-1-git-send-email-xi.wang@gmail.com>
+	 <1352145183-29355-3-git-send-email-xi.wang@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 02:14:50PM +0400, Stanislav Kinsbursky wrote:
-> 09.10.2012 23:35, J. Bruce Fields пишет:
-> >Cc'ing Eric since I seem to recall he suggested doing it this way?
-> >
-> >Seems OK to me, but maybe that swap_root should be in common code?  (Or
-> >maybe we could use set_fs_root()?)
-> >
-> 
-> This patch is not good since, as Eric mentioned, all kernel threads
-> share same fs struct.
-> We can swap whole fs struct. Or we can unshare fs struct
-> (unshare_fs_struct() is exported) and swap root in this case.
-> But this approach is to close to set_fs_root() logic, which is not
-> exported and seems there are some valid reasons for it.
+On Mon, 2012-11-05 at 14:53 -0500, Xi Wang wrote:
+> Invoking bit(n) with n >= 64 is undefined behavior, since bit(n) does
+> a 64-bit shift.  This patch adds a check on the shifting amount.
 
-What are those reasons?
+Why is this necessary?  As I read the reg set assignment code, it finds
+a free bit in the 64 bit register and uses that ... which can never be
+greater than 64 so there's no need for the check.
 
-Googling found one previous thread:
+The other two look OK (probably redone as a single patch with a stable
+tag), but I'd like the input of the mvs people since it seems with the
+current code, we only use 32 bit regsets and probably hang if we go over
+that.  The bug fix is either to enable the full 64 if it works, or
+possibly cap at 32 ... what works with all released devices?
 
-	http://thread.gmane.org/gmane.linux.kernel/1259986/focus=47687
+James
 
-There Trond requests an ACK from Al or Cristoph for the export, but I
-don't see either an ACK or any objection.
 
---b.
