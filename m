@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab2KFDMt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 22:12:49 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:59398 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab2KFDMr (ORCPT
+	id S1752836Ab2KFDNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 22:13:22 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:55123 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227Ab2KFDNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 22:12:47 -0500
-Date: Tue, 6 Nov 2012 03:12:19 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
-        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121106031219.GB24235@srcf.ucam.org>
-References: <20121104042802.GA11295@srcf.ucam.org>
- <1352020487.2427.5.camel@dabdike.int.hansenpartnership.com>
- <20121104135251.GA17894@srcf.ucam.org>
- <87d2zsmv8r.fsf@xmission.com>
- <509766DB.9090906@zytor.com>
- <87625kh5r2.fsf@xmission.com>
- <20121105123858.GB4374@srcf.ucam.org>
- <87sj8nc137.fsf@xmission.com>
- <20121105202557.GA16076@srcf.ucam.org>
- <87hap3zbw7.fsf@xmission.com>
+	Mon, 5 Nov 2012 22:13:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87hap3zbw7.fsf@xmission.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20121105.202501.1246122770431623794.davem@davemloft.net>
+References: <1352155633-8648-1-git-send-email-walken@google.com>
+	<1352155633-8648-16-git-send-email-walken@google.com>
+	<20121105.202501.1246122770431623794.davem@davemloft.net>
+Date: Mon, 5 Nov 2012 19:13:19 -0800
+Message-ID: <CANN689Gt2mG8xfkVkFtOHDFxkoZZAL-p-8yMSw=qvy5zaGs1ag@mail.gmail.com>
+Subject: Re: [PATCH 15/16] mm: use vm_unmapped_area() on sparc32 architecture
+From: Michel Lespinasse <walken@google.com>
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, riel@redhat.com, hughd@google.com,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        ralf@linux-mips.org, lethal@linux-sh.org, cmetcalf@tilera.com,
+        x86@kernel.org, wli@holomorphy.com, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
+        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 06:46:32PM -0800, Eric W. Biederman wrote:
-> Matthew Garrett <mjg59@srcf.ucam.org> writes:
-> 
-> > On Mon, Nov 05, 2012 at 11:16:12AM -0800, Eric W. Biederman wrote:
-> >> Matthew Garrett <mjg59@srcf.ucam.org> writes:
-> >> > No, in the general case the system will do that once it fails to find a 
-> >> > bootable OS on the drive.
-> >> 
-> >> In the general case there will be a bootable OS on the drive.
-> >
-> > That's in no way a given.
-> 
-> You have it backwards.  The conclusion here is that having a case where
-> a non-interactive install is possible is not a given.
+On Mon, Nov 5, 2012 at 5:25 PM, David Miller <davem@davemloft.net> wrote:
+> From: Michel Lespinasse <walken@google.com>
+> Date: Mon,  5 Nov 2012 14:47:12 -0800
+>
+>> Update the sparc32 arch_get_unmapped_area function to make use of
+>> vm_unmapped_area() instead of implementing a brute force search.
+>>
+>> Signed-off-by: Michel Lespinasse <walken@google.com>
+>
+> Hmmm...
+>
+>> -     if (flags & MAP_SHARED)
+>> -             addr = COLOUR_ALIGN(addr);
+>> -     else
+>> -             addr = PAGE_ALIGN(addr);
+>
+> What part of vm_unmapped_area() is going to duplicate this special
+> aligning logic we need on sparc?
 
-I deal with customers who perform non-interactive installs. The fact 
-that you don't care about that use case is entirely irrelevant to me, 
-because you're not the person that I am obliged to satisfy.
+The idea there is that you can specify the desired alignment mask and
+offset using info.align_mask and info.align_offset.
+
+Now, I just noticed that the old code actually always uses an
+alignment offset of 0 instead of basing it on pgoff. I'm not sure why
+that is, but it looks like this may be an issue ?
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
