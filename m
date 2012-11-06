@@ -1,143 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab2KFWY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:24:29 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:59204 "EHLO ogre.sisk.pl"
+	id S1753282Ab2KFWZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:25:20 -0500
+Received: from twin.jikos.cz ([89.185.236.188]:49312 "EHLO twin.jikos.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752510Ab2KFWY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:24:26 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, broonie@opensource.wolfsonmicro.com,
-        grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        mathias.nyman@linux.intel.com, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Date: Tue, 06 Nov 2012 23:28:37 +0100
-Message-ID: <1996776.cC14CHafyR@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CAErSpo44pWUJmRAP6eR9T+2WvO5hJPFOC=Nn-WPXDtCY0v0EDw@mail.gmail.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <1815967.2MF0PyW36l@vostro.rjw.lan> <CAErSpo44pWUJmRAP6eR9T+2WvO5hJPFOC=Nn-WPXDtCY0v0EDw@mail.gmail.com>
+	id S1751561Ab2KFWZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 17:25:18 -0500
+Date: Tue, 6 Nov 2012 23:24:42 +0100
+From: David Sterba <dave@jikos.cz>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Subject: Re: [RFC v4+ hot_track 02/19] vfs: initialize and free data
+ structures
+Message-ID: <20121106222442.GS3102@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+	viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
+	cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+ <1351485061-12297-3-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351485061-12297-3-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 06, 2012 01:35:56 PM Bjorn Helgaas wrote:
-> On Tue, Nov 6, 2012 at 6:43 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday, November 05, 2012 09:54:42 AM Bjorn Helgaas wrote:
-> >> On Mon, Nov 5, 2012 at 3:31 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Saturday, November 03, 2012 09:59:28 PM Rafael J. Wysocki wrote:
-> >> >> On Saturday, November 03, 2012 10:13:10 PM Mika Westerberg wrote:
-> >> >> > On Sat, Nov 03, 2012 at 01:42:02PM -0600, Bjorn Helgaas wrote:
-> >> >> > > On Sat, Nov 3, 2012 at 1:46 AM, Mika Westerberg
-> >> >> > > <mika.westerberg@linux.intel.com> wrote:
-> >> >> > > > ACPI 5 introduced SPISerialBus resource that allows us to enumerate and
-> >> >> > > > configure the SPI slave devices behind the SPI controller. This patch adds
-> >> >> > > > support for this to the SPI core.
-> >> > [...]
-> >> >> > And if the ACPI core parses the _CRS, how does it pass all the resources to
-> >> >> > the drivers?
-> >> >>
-> >> >> Pretty much the same way the $subject patch does.
-> >> >>
-> >> >> Instead of parsing the entire subtree below an SPI controller and trying
-> >> >> acpi_spi_add_device() for each device node in there, it could call
-> >> >> acpi_spi_add_device() whenever it finds a device of type
-> >> >> ACPI_RESOURCE_TYPE_SERIAL_BUS/ACPI_RESOURCE_SERIAL_TYPE_SPI.
-> >> >> The only problem is how to pass "master" to it.
-> >> >>
-> >> >> So Bjorn, do you have any idea how we could pass the "master" pointer from the
-> >> >> ACPI core to acpi_spi_add_device() in a sensible way?
-> >> >>
-> >> >> An alternative might be to store the information obtained from _CRS in
-> >> >> struct acpi_device objects created by the ACPI core while parsing the
-> >> >> namespace.  We do that already for things like _PRW, so we might as well do it
-> >> >> for _CRS.  Then, the SPI core could just walk the subtree of the device hierarchy
-> >> >> below the SPI controller's acpi_device to extract that information.
-> >> >> Maybe that's the way to go?
-> >> >
-> >> > The general idea is to move the _CRS parsing routine from acpi_platform.c
-> >> > to scan.c and make it attach resource objects to struct acpi_device.
-> >> >
-> >> > I'm thinking about adding a list head to struct acpi_device pointing to a
-> >> > list of entries like:
-> >> >
-> >> > struct resource_list_entry {
-> >> >         struct list_head node;
-> >> >         struct resource *resources;
-> >> >         unsigned int count;
-> >> > };
-> >> >
-> >> > where "resources" is an array of resources (e.g. interrupts) in the given
-> >> > entry and count is the size of that array.
-> >> >
-> >> > That list would contain common resources like ACPI_RESOURCE_TYPE_FIXED_MEMORY32,
-> >> > ACPI_RESOURCE_TYPE_IRQ, ACPI_RESOURCE_TYPE_ADDRESS32, ACPI_RESOURCE_TYPE_EXTENDED_IRQ.
-> >>
-> >> This is exactly what PNPACPI already does.  For every Device node in
-> >> the namespace, pnpacpi/rsparser.c parses _CRS and builds a list of
-> >> struct resources that correspond to it.  If you put this functionality
-> >> in acpi/scan.c, should we get rid of PNPACPI?
-> >
-> > Quite likely.  At least this part of it, if you want the core to parse
-> > resources.
-> >
-> > That said, I actually tried to abstract out resource parsing in a more generic
-> > fashion on the basis of our new platform device support code, but quite frankly
-> > I wasn't able to.
-> >
-> > The problem is that struct resource is too simple to be useful for representing
-> > all of the information that can be encoded in ACPI resources.  As a result, some
-> > information have to be stored directly in things like struct pnp_dev, struct
-> > platform_device etc. and if we want to represent it generically, the only way
-> > to do that seems to be using the ACPICA resource types as defined in acrestyp.h.
-> 
-> Really?  I didn't have that impression.  It might be that the new GPIO
-> and SERIAL_BUS stuff makes it too complicated for a struct resource,
-> but prior to that, I don't think it was.  It's true that there are
-> many different formats (IO, FIXED_IO, MEMORY24, MEMORY32, etc.), but
-> only the core needs to be aware of the encoding of all those formats.
-> As far as a *driver* is concerned, there are only IRQ, DMA, IO, and
-> MEM resources, and those fit easily in a struct resource.
+On Mon, Oct 29, 2012 at 12:30:44PM +0800, zwu.kernel@gmail.com wrote:
+> +/* Frees the entire hot_range_tree. */
+> +static void hot_inode_item_free(struct kref *kref)
+> +{
+> +	struct hot_comm_item *comm_item = container_of(kref,
+> +			struct hot_comm_item, refs);
+> +	struct hot_inode_item *he = container_of(comm_item,
+> +			struct hot_inode_item, hot_inode);
+> +
+> +	hot_range_tree_free(he);
+> +	radix_tree_delete(he->hot_inode_tree, he->i_ino);
 
-However, for example expanding ACPI_RESOURCE_TYPE_EXTENDED_IRQ into an
-array of struct resource objects before anyone actually needs it seems a
-bit wasteful to me.  Let alone registering GSI for the interrupts while
-we're parsing those resources.
+void *radix_tree_delete(struct radix_tree_root *root, unsigned long index)
 
-> I want to expand on what I said before about _CRS being the domain of
-> the core, not drivers.
+and he::i_ino is u64, this will not work when
+sizeof(unsigned long) != sizeof(u64) (iirc this is a known limitation of
+radix tree implementation). This will work on 64bit only, not sure if
+this is intentional.
 
-Well, I see a difference between _evaluating_ _CRS and _parsing_ its
-output.  In particular, I don't see a reason to do those two things in
-one operation.  In fact, I see reasons to do otherwise. :-)
+> +	kmem_cache_free(hot_inode_item_cachep, he);
+> +}
+> +
+> +/* Frees the entire hot_inode_tree. */
+> +static void hot_inode_tree_exit(struct hot_info *root)
+> +{
+> +	struct hot_inode_item *hi_nodes[8];
+> +	u64 ino = 0;
+> +	int i, n;
 
-> The core must evaluate _CRS to know where
-> devices are and avoid conflicts when assigning resources.  The core
-> must evaluate _PRS and _SRS when making resource assignments.  It
-> doesn't make sense for drivers to be using _PRS and _SRS; they don't
-> have a global view of resources, and any assignment they make would
-> likely cause conflicts with other devices.  I think it makes sense to
-> consolidate all _CRS, _PRS, and _SRS management in the core rather
-> than splitting it up.  This is exactly analogous to PCI BAR
-> management, and we don't intend drivers to read and write BARs
-> directly.
+nitpick, put the declarations on separate lines
 
-OK, but then we need to pass the information obtained from _CRS
-(presumably after some adjustments through _SRS) to drivers, or rather to
-things like the SPI core, I2C core etc. so that they can create device
-objects for drivers to bind to and quite frankly I don't see why not to use
-ACPI resources for that.
+> +
+> +	while (1) {
+> +		spin_lock(&root->lock);
+> +		n = radix_tree_gang_lookup(&root->hot_inode_tree,
+> +					   (void **)hi_nodes, ino,
+> +					   ARRAY_SIZE(hi_nodes));
+> +		if (!n) {
+> +			spin_unlock(&root->lock);
+> +			break;
+> +		}
+> +
+> +		ino = hi_nodes[n - 1]->i_ino + 1;
+> +		for (i = 0; i < n; i++)
+> +			hot_inode_item_put(hi_nodes[i]);
+> +		spin_unlock(&root->lock);
+> +	}
+> +}
+> +
+>  /*
+>   * Initialize kmem cache for hot_inode_item and hot_range_item.
+>   */
+> @@ -106,3 +197,36 @@ err:
+>  	kmem_cache_destroy(hot_inode_item_cachep);
+>  }
+>  EXPORT_SYMBOL_GPL(hot_cache_init);
+> +
+> +/*
+> + * Initialize the data structures for hot data tracking.
+> + */
+> +int hot_track_init(struct super_block *sb)
+> +{
+> +	struct hot_info *root;
+> +	int ret = -ENOMEM;
+> +
+> +	root = kzalloc(sizeof(struct hot_info), GFP_NOFS);
+> +	if (!root) {
+> +		printk(KERN_ERR "%s: Failed to malloc memory for "
+> +				"hot_info\n", __func__);
+> +		return ret;
 
-Thanks,
-Rafael
+minor: you can drop the variable ret and just reurn ENOMEM here
 
+> +	}
+> +
+> +	sb->s_hot_root = root;
+> +	hot_inode_tree_init(root);
+> +
+> +	printk(KERN_INFO "VFS: Turning on hot data tracking\n");
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(hot_track_init);
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+david
