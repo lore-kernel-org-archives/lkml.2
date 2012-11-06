@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab2KFUSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 15:18:20 -0500
-Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:60824 "EHLO
+	id S1753199Ab2KFUTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 15:19:43 -0500
+Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:36672 "EHLO
 	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752569Ab2KFUSR (ORCPT
+	with ESMTP id S1752750Ab2KFUST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 15:18:17 -0500
+	Tue, 6 Nov 2012 15:18:19 -0500
 From: Mark Langsdorf <mark.langsdorf@calxeda.com>
 To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         cpufreq@vger.kernel.org, mark.langsdorf@calxeda.com
 Cc: Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 1/6 v3] arm: use devicetree to get smp_twd clock
-Date: Tue,  6 Nov 2012 14:18:03 -0600
-Message-Id: <1352233089-22586-2-git-send-email-mark.langsdorf@calxeda.com>
+Subject: [PATCH 4/6 v3] arm highbank: add support for pl320 IPC
+Date: Tue,  6 Nov 2012 14:18:06 -0600
+Message-Id: <1352233089-22586-5-git-send-email-mark.langsdorf@calxeda.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352233089-22586-1-git-send-email-mark.langsdorf@calxeda.com>
 References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
@@ -24,82 +24,338 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+The pl320 IPC allows for interprocessor communication between the highbank A9
+and the EnergyCore Management Engine. The pl320 implements a straightforward
+mailbox protocol.
+
 Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 ---
-Changes from v2
-	Turned the check for the node pointer into an if-then-else statement.
-	Removed the second, redundant clk_get_rate
-Changes from v1
-        None.
+Changes from v2:
+	None
+Changes from v1:
+        Removed erroneous changes for cpufreq Kconfig
 
- arch/arm/kernel/smp_twd.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ arch/arm/include/asm/pl320-ipc.h                |  20 ++
+ arch/arm/mach-highbank/Kconfig                  |   2 +
+ arch/arm/mach-highbank/Makefile                 |   2 +
+ arch/arm/mach-highbank/include/mach/pl320-ipc.h |  20 ++
+ arch/arm/mach-highbank/pl320-ipc.c              | 232 ++++++++++++++++++++++++
+ 5 files changed, 276 insertions(+)
+ create mode 100644 arch/arm/include/asm/pl320-ipc.h
+ create mode 100644 arch/arm/mach-highbank/include/mach/pl320-ipc.h
+ create mode 100644 arch/arm/mach-highbank/pl320-ipc.c
 
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index b22d700..b1fb6e1 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -237,12 +237,15 @@ static irqreturn_t twd_handler(int irq, void *dev_id)
- 	return IRQ_NONE;
- }
- 
--static struct clk *twd_get_clock(void)
-+static struct clk *twd_get_clock(struct device_node *np)
- {
--	struct clk *clk;
-+	struct clk *clk = NULL;
- 	int err;
- 
--	clk = clk_get_sys("smp_twd", NULL);
-+	if (np)
-+		clk = of_clk_get(np, 0);
-+	else
-+		clk = clk_get_sys("smp_twd", NULL);
- 	if (IS_ERR(clk)) {
- 		pr_err("smp_twd: clock not found: %d\n", (int)PTR_ERR(clk));
- 		return clk;
-@@ -263,6 +266,7 @@ static struct clk *twd_get_clock(void)
- 		return ERR_PTR(err);
- 	}
- 
-+	twd_timer_rate = clk_get_rate(clk);
- 	return clk;
- }
- 
-@@ -273,12 +277,7 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
- {
- 	struct clock_event_device **this_cpu_clk;
- 
--	if (!twd_clk)
--		twd_clk = twd_get_clock();
--
--	if (!IS_ERR_OR_NULL(twd_clk))
--		twd_timer_rate = clk_get_rate(twd_clk);
--	else
-+	if (IS_ERR_OR_NULL(twd_clk))
- 		twd_calibrate_rate();
- 
- 	__raw_writel(0, twd_base + TWD_TIMER_CONTROL);
-@@ -349,6 +348,8 @@ int __init twd_local_timer_register(struct twd_local_timer *tlt)
- 	if (!twd_base)
- 		return -ENOMEM;
- 
-+	twd_clk = twd_get_clock(NULL);
+diff --git a/arch/arm/include/asm/pl320-ipc.h b/arch/arm/include/asm/pl320-ipc.h
+new file mode 100644
+index 0000000..a0e58ee
+--- /dev/null
++++ b/arch/arm/include/asm/pl320-ipc.h
+@@ -0,0 +1,20 @@
++/*
++ * Copyright 2010 Calxeda, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++int ipc_call_fast(u32 *data);
++int ipc_call_slow(u32 *data);
 +
- 	return twd_local_timer_common_register();
- }
- 
-@@ -383,6 +384,8 @@ void __init twd_local_timer_of_register(void)
- 		goto out;
- 	}
- 
-+	twd_clk = twd_get_clock(np);
++extern int pl320_ipc_register_notifier(struct notifier_block *nb);
++extern int pl320_ipc_unregister_notifier(struct notifier_block *nb);
+diff --git a/arch/arm/mach-highbank/Kconfig b/arch/arm/mach-highbank/Kconfig
+index 0e1d0a4..ee83af6 100644
+--- a/arch/arm/mach-highbank/Kconfig
++++ b/arch/arm/mach-highbank/Kconfig
+@@ -13,3 +13,5 @@ config ARCH_HIGHBANK
+ 	select HAVE_SMP
+ 	select SPARSE_IRQ
+ 	select USE_OF
++	select ARCH_HAS_CPUFREQ
++	select ARCH_HAS_OPP
+diff --git a/arch/arm/mach-highbank/Makefile b/arch/arm/mach-highbank/Makefile
+index 3ec8bdd..b894708 100644
+--- a/arch/arm/mach-highbank/Makefile
++++ b/arch/arm/mach-highbank/Makefile
+@@ -7,3 +7,5 @@ obj-$(CONFIG_DEBUG_HIGHBANK_UART)	+= lluart.o
+ obj-$(CONFIG_SMP)			+= platsmp.o
+ obj-$(CONFIG_HOTPLUG_CPU)		+= hotplug.o
+ obj-$(CONFIG_PM_SLEEP)			+= pm.o
 +
- 	err = twd_local_timer_common_register();
- 
- out:
++obj-y					+= pl320-ipc.o
+diff --git a/arch/arm/mach-highbank/include/mach/pl320-ipc.h b/arch/arm/mach-highbank/include/mach/pl320-ipc.h
+new file mode 100644
+index 0000000..a0e58ee
+--- /dev/null
++++ b/arch/arm/mach-highbank/include/mach/pl320-ipc.h
+@@ -0,0 +1,20 @@
++/*
++ * Copyright 2010 Calxeda, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++int ipc_call_fast(u32 *data);
++int ipc_call_slow(u32 *data);
++
++extern int pl320_ipc_register_notifier(struct notifier_block *nb);
++extern int pl320_ipc_unregister_notifier(struct notifier_block *nb);
+diff --git a/arch/arm/mach-highbank/pl320-ipc.c b/arch/arm/mach-highbank/pl320-ipc.c
+new file mode 100644
+index 0000000..0eb92e4
+--- /dev/null
++++ b/arch/arm/mach-highbank/pl320-ipc.c
+@@ -0,0 +1,232 @@
++/*
++ * Copyright 2012 Calxeda, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <linux/types.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/completion.h>
++#include <linux/mutex.h>
++#include <linux/notifier.h>
++#include <linux/spinlock.h>
++#include <linux/device.h>
++#include <linux/amba/bus.h>
++
++#include <asm/pl320-ipc.h>
++
++#define IPCMxSOURCE(m)		((m) * 0x40)
++#define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
++#define IPCMxDCLEAR(m)		(((m) * 0x40) + 0x008)
++#define IPCMxDSTATUS(m)		(((m) * 0x40) + 0x00C)
++#define IPCMxMODE(m)		(((m) * 0x40) + 0x010)
++#define IPCMxMSET(m)		(((m) * 0x40) + 0x014)
++#define IPCMxMCLEAR(m)		(((m) * 0x40) + 0x018)
++#define IPCMxMSTATUS(m)		(((m) * 0x40) + 0x01C)
++#define IPCMxSEND(m)		(((m) * 0x40) + 0x020)
++#define IPCMxDR(m, dr)		(((m) * 0x40) + ((dr) * 4) + 0x024)
++
++#define IPCMMIS(irq)		(((irq) * 8) + 0x800)
++#define IPCMRIS(irq)		(((irq) * 8) + 0x804)
++
++#define MBOX_MASK(n)		(1 << (n))
++#define IPC_FAST_MBOX		0
++#define IPC_SLOW_MBOX		1
++#define IPC_RX_MBOX		2
++
++#define CHAN_MASK(n)		(1 << (n))
++#define A9_SOURCE		1
++#define M3_SOURCE		0
++
++static void __iomem *ipc_base;
++static int ipc_irq;
++static DEFINE_SPINLOCK(ipc_m0_lock);
++static DEFINE_MUTEX(ipc_m1_lock);
++static DECLARE_COMPLETION(ipc_completion);
++static ATOMIC_NOTIFIER_HEAD(ipc_notifier);
++
++static inline void set_destination(int source, int mbox)
++{
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDSET(mbox));
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMSET(mbox));
++}
++
++static inline void clear_destination(int source, int mbox)
++{
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDCLEAR(mbox));
++	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMCLEAR(mbox));
++}
++
++static void __ipc_send(int mbox, u32 *data)
++{
++	int i;
++	for (i = 0; i < 7; i++)
++		__raw_writel(data[i], ipc_base + IPCMxDR(mbox, i));
++	__raw_writel(0x1, ipc_base + IPCMxSEND(mbox));
++}
++
++static u32 __ipc_rcv(int mbox, u32 *data)
++{
++	int i;
++	for (i = 0; i < 7; i++)
++		data[i] = __raw_readl(ipc_base + IPCMxDR(mbox, i));
++	return data[1];
++}
++
++/* non-blocking implementation from the A9 side, interrupt safe in theory */
++int ipc_call_fast(u32 *data)
++{
++	int timeout, ret;
++
++	spin_lock(&ipc_m0_lock);
++
++	__ipc_send(IPC_FAST_MBOX, data);
++
++	for (timeout = 500; timeout > 0; timeout--) {
++		if (__raw_readl(ipc_base + IPCMxSEND(IPC_FAST_MBOX)) == 0x2)
++			break;
++		udelay(100);
++	}
++	if (timeout == 0) {
++		ret = -ETIMEDOUT;
++		goto out;
++	}
++
++	ret = __ipc_rcv(IPC_FAST_MBOX, data);
++out:
++	__raw_writel(0, ipc_base + IPCMxSEND(IPC_FAST_MBOX));
++	spin_unlock(&ipc_m0_lock);
++	return ret;
++}
++EXPORT_SYMBOL(ipc_call_fast);
++
++/* blocking implmentation from the A9 side, not usuable in interrupts! */
++int ipc_call_slow(u32 *data)
++{
++	int ret;
++
++	mutex_lock(&ipc_m1_lock);
++
++	init_completion(&ipc_completion);
++	__ipc_send(IPC_SLOW_MBOX, data);
++	ret = wait_for_completion_timeout(&ipc_completion,
++					  msecs_to_jiffies(1000));
++	if (ret == 0) {
++		ret = -ETIMEDOUT;
++		goto out;
++	}
++
++	ret = __ipc_rcv(IPC_SLOW_MBOX, data);
++out:
++	mutex_unlock(&ipc_m1_lock);
++	return ret;
++}
++EXPORT_SYMBOL(ipc_call_slow);
++
++irqreturn_t ipc_handler(int irq, void *dev)
++{
++	u32 irq_stat;
++	u32 data[7];
++
++	irq_stat = __raw_readl(ipc_base + IPCMMIS(1));
++	if (irq_stat & MBOX_MASK(IPC_SLOW_MBOX)) {
++		__raw_writel(0, ipc_base + IPCMxSEND(IPC_SLOW_MBOX));
++		complete(&ipc_completion);
++	}
++	if (irq_stat & MBOX_MASK(IPC_RX_MBOX)) {
++		__ipc_rcv(IPC_RX_MBOX, data);
++		atomic_notifier_call_chain(&ipc_notifier, data[0], data + 1);
++		__raw_writel(2, ipc_base + IPCMxSEND(IPC_RX_MBOX));
++	}
++
++	return IRQ_HANDLED;
++}
++
++int pl320_ipc_register_notifier(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_register(&ipc_notifier, nb);
++}
++
++int pl320_ipc_unregister_notifier(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_unregister(&ipc_notifier, nb);
++}
++
++static int __devinit pl320_probe(struct amba_device *adev,
++				const struct amba_id *id)
++{
++	int ret;
++
++	ipc_base = ioremap(adev->res.start, resource_size(&adev->res));
++	if (ipc_base == NULL)
++		return -ENOMEM;
++
++	__raw_writel(0, ipc_base + IPCMxSEND(IPC_FAST_MBOX));
++	__raw_writel(0, ipc_base + IPCMxSEND(IPC_SLOW_MBOX));
++
++	ipc_irq = adev->irq[0];
++	ret = request_irq(ipc_irq, ipc_handler, 0, dev_name(&adev->dev), NULL);
++	if (ret < 0)
++		goto err;
++
++	/* Init fast mailbox */
++	__raw_writel(CHAN_MASK(A9_SOURCE),
++			ipc_base + IPCMxSOURCE(IPC_FAST_MBOX));
++	set_destination(M3_SOURCE, IPC_FAST_MBOX);
++
++	/* Init slow mailbox */
++	__raw_writel(CHAN_MASK(A9_SOURCE),
++			ipc_base + IPCMxSOURCE(IPC_SLOW_MBOX));
++	__raw_writel(CHAN_MASK(M3_SOURCE),
++			ipc_base + IPCMxDSET(IPC_SLOW_MBOX));
++	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
++		     ipc_base + IPCMxMSET(IPC_SLOW_MBOX));
++
++	/* Init receive mailbox */
++	__raw_writel(CHAN_MASK(M3_SOURCE),
++			ipc_base + IPCMxSOURCE(IPC_RX_MBOX));
++	__raw_writel(CHAN_MASK(A9_SOURCE),
++			ipc_base + IPCMxDSET(IPC_RX_MBOX));
++	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
++		     ipc_base + IPCMxMSET(IPC_RX_MBOX));
++
++	return 0;
++err:
++	iounmap(ipc_base);
++	return ret;
++}
++
++static struct amba_id pl320_ids[] = {
++	{
++		.id	= 0x00041320,
++		.mask	= 0x000fffff,
++	},
++	{ 0, 0 },
++};
++
++static struct amba_driver pl320_driver = {
++	.drv = {
++		.name	= "pl320",
++	},
++	.id_table	= pl320_ids,
++	.probe		= pl320_probe,
++};
++
++static int __init ipc_init(void)
++{
++	return amba_driver_register(&pl320_driver);
++}
++module_init(ipc_init);
 -- 
 1.7.11.7
 
