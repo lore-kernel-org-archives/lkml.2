@@ -1,123 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab2KFV2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 16:28:36 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36521 "EHLO arroyo.ext.ti.com"
+	id S1752611Ab2KFV3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 16:29:34 -0500
+Received: from mout.web.de ([212.227.17.12]:56158 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412Ab2KFV2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 16:28:35 -0500
-Date: Tue, 6 Nov 2012 15:28:25 -0600
-From: Nishanth Menon <nm@ti.com>
-To: MyungJoo Ham <myungjoo.ham@gmail.com>
-CC: <myungjoo.ham@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>, linux-pm <linux-pm@vger.kernel.org>,
-        Rajagopal Venkat <rajagopal.venkat@linaro.org>,
-        =?utf-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [linux-next PATCH 6/7] PM / devfreq: allow sysfs governor node
- to switch governor
-Message-ID: <20121106212825.GA21925@kahuna>
-References: <31153640.425391352192535931.JavaMail.weblogic@epml11>
- <CAJ0PZbSe7Orhww-amHNRkbvUvJr6x9CtisHw2hoLpcJdyBSKCA@mail.gmail.com>
+	id S1751412Ab2KFV3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 16:29:33 -0500
+Message-ID: <5099810D.9040902@web.de>
+Date: Tue, 06 Nov 2012 22:28:45 +0100
+From: =?ISO-8859-1?Q?S=F6ren_Moch?= <smoch@web.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJ0PZbSe7Orhww-amHNRkbvUvJr6x9CtisHw2hoLpcJdyBSKCA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk
+CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        m.szyprowski@samsung.com
+Subject: Re: [PATCH V2 1/4] arm: mvebu: increase atomic coherent pool size
+ for armada 370/XP
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:AQXqCTJPFOFz8q4dBILryYuAM4x/awKMLibA+wBPc9s
+ yGceqGOIMUnXclYiQbBKoN6ZzfDJEvYhyYona5AXYFQsHsGlSs
+ fhrS+d3YPqIv9txfXG2NJ1HmxGdObyP2FQPfbJdZfS8YClbUeG
+ owP+fpvFphBY4sP2uidLo2fOqjYop59U1R7yROACZjMR0N2O/D
+ qIqpc7icZd0NEPVzuijJA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18:18-20121106, MyungJoo Ham wrote:
-> 2012. 11. 6. 오후 6:02에 "MyungJoo Ham" <myungjoo.ham@samsung.com>님이 작성:
-> >
-> > > --- a/drivers/devfreq/devfreq.c
-> > > +++ b/drivers/devfreq/devfreq.c
-> > > @@ -629,6 +629,44 @@ static ssize_t show_governor(struct device *dev,
-> > >       return sprintf(buf, "%s\n", to_devfreq(dev)->governor->name);
-> > >  }
-> > >
-> > > +static ssize_t store_governor(struct device *dev, struct
-> device_attribute *attr,
-> > > +                           const char *buf, size_t count)
-> > > +{
-> > > +     struct devfreq *df = to_devfreq(dev);
-> > > +     int ret = 0;
-> > > +     struct devfreq_governor *governor;
-> > > +
-> > > +     mutex_lock(&devfreq_list_lock);
-> >
-> > Please remove the trailing \n from buf here.
-> > When user enters "userspace", buf gets "userspace\n".
-> >
-> > With some printks in find_devfreq_governor (printing the buf and governor
-> names):
-> >
-> > # echo userspace > /sys/class/devfreq/exynos4210-busfreq.0/governor
-> > [   65.975000] [userspace
-> > [   65.975000] ].[userspace]
-> > [   65.980000] [userspace
-> > [   65.980000] ].[powersave]
-> > [   65.985000] [userspace
-> > [   65.985000] ].[performance]
-> > [   65.990000] [userspace
-> > [   65.990000] ].[simple_ondemand]
-> > [   65.995000] err no = -19
-> > #
-> >
-> 
-> Anyway this seems quite wierd. I will look more into this one in my target
-> system.
-Thanks for catching this.
-:( I missed the \n (been using echo -n toooo often now grr..)
-What do you think of the following change to the patch?
+resent as plain text, sorry.
 
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index 586b6fd..9a4e898 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -614,11 +614,16 @@ static ssize_t store_governor(struct device *dev, struct device_attribute *attr,
- 			      const char *buf, size_t count)
- {
- 	struct devfreq *df = to_devfreq(dev);
--	int ret = 0;
-+	int ret;
-+	char str_governor[DEVFREQ_NAME_LEN + 1];
- 	struct devfreq_governor *governor;
- 
-+	ret = sscanf(buf, "%" __stringify(DEVFREQ_NAME_LEN) "s", str_governor);
-+	if (ret != 1)
-+	        return -EINVAL;
-+
- 	mutex_lock(&devfreq_list_lock);
--	governor = find_devfreq_governor(buf);
-+	governor = find_devfreq_governor(str_governor);
- 	if (IS_ERR(governor)) {
- 		ret = PTR_ERR(governor);
- 		goto out;
--- 
+
+ > For Armada 370/XP we have the same problem that for the commit
+ > cb01b63, so we applied the same solution: "The default 256 KiB
+ > coherent pool may be too small for some of the Kirkwood devices, so
+ > increase it to make sure that devices will be able to allocate their
+ > buffers with GFP_ATOMIC flag"
+
+I see a regression from linux-3.5 to linux-3.6 and think there might be 
+a fundamental problem
+with this patch. On my Kirkwood system (guruplug server plus) with 
+linux-3.6.2 I see following
+errors and corresponding malfunction even with further increased (2M, 
+4M) pool size:
+
+Oct 19 00:41:22 guru kernel: ERROR: 4096 KiB atomic DMA coherent pool is 
+too small!
+Oct 19 00:41:22 guru kernel: Please increase it with coherent_pool= 
+kernel parameter!
+
+So I had to downgrade to linux-3.5 which is running without problems.
+
+I use SATA and several DVB sticks (em28xx / drxk and dib0700).
+
+I already sent this bug report to m.szyprowski and 
+gregory.clementearlier, but
+Sebastian suggested to send it to the mailing list and the responsible 
+maintainers, too.
+
+Please write to my e-mail directly if you have further questions or 
+patches for me to test.
+
 Regards,
-Nishanth Menon
-
-output:
-/sys/devices/platform/iva.0/devfreq/iva.0 # cat governor 
-simple_ondemand
-/sys/devices/platform/iva.0/devfreq/iva.0 # echo -n "userspace">governor 
-/sys/devices/platform/iva.0/devfreq/iva.0 # echo -n "simple_ondeman">governor 
-sh: write error: No such device
-/sys/devices/platform/iva.0/devfreq/iva.0 # cat governor 
-userspace
-/sys/devices/platform/iva.0/devfreq/iva.0 # echo -n "simple_ondemand">governor 
-/sys/devices/platform/iva.0/devfreq/iva.0 # cat governor 
-simple_ondemand
-/sys/devices/platform/iva.0/devfreq/iva.0 # echo "userspace">governor 
-/sys/devices/platform/iva.0/devfreq/iva.0 # cat governor 
-userspace
-/sys/devices/platform/iva.0/devfreq/iva.0 # echo  "simple_ondemand">governor 
-/sys/devices/platform/iva.0/devfreq/iva.0 # echo "userspace123123213123213123212
-3123123131231">governor 
-sh: write error: No such device
-/sys/devices/platform/iva.0/devfreq/iva.0 # cat governor 
-simple_ondemand
+Soeren
 
