@@ -1,119 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab2KFP6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 10:58:04 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:58009 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab2KFP6B (ORCPT
+	id S1752502Ab2KFP76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 10:59:58 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26909 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab2KFP74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 10:58:01 -0500
+	Tue, 6 Nov 2012 10:59:56 -0500
+Date: Tue, 6 Nov 2012 10:45:17 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v3 6/8] x86/xen: Use __pa_symbol instead of __pa on C
+ visible symbols
+Message-ID: <20121106154517.GE9966@phenom.dumpdata.com>
+References: <20121105185657.10205.27419.stgit@gitlad.jf.intel.com>
+ <20121105190558.10205.84483.stgit@gitlad.jf.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20121106155028.GB13629@infradead.org>
-References: <1352123463-7346-1-git-send-email-eranian@google.com>
-	<1352123463-7346-15-git-send-email-eranian@google.com>
-	<20121106154446.GA13629@infradead.org>
-	<20121106155028.GB13629@infradead.org>
-Date: Tue, 6 Nov 2012 16:57:59 +0100
-Message-ID: <CABPqkBR-MACL4-yqE1AMWAbvQ_bfUSDgoQi-w9OcyN8SJYhx5w@mail.gmail.com>
-Subject: Re: [PATCH v2 14/16] perf tools: add new mem command for memory
- access profiling
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121105190558.10205.84483.stgit@gitlad.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 4:50 PM, Arnaldo Carvalho de Melo
-<acme@ghostprotocols.net> wrote:
-> Em Tue, Nov 06, 2012 at 12:44:46PM -0300, Arnaldo Carvalho de Melo escreveu:
->> [root@sandy ~]# perf record -g -a -e cpu/mem-stores/
->> ^C[ perf record: Woken up 25 times to write data ]
->> [ perf record: Captured and wrote 7.419 MB perf.data (~324160 samples) ]
->>
->> Yay, got some numbers.
->
-> But then the results out of:
->
-> $ perf mem -t load rep --stdio
->
-> Are bogus at least on the callchains:
->
-I think it's because we are not using the period in the hist_entry but
-the cost and there
-is no cost for stores.
+On Mon, Nov 05, 2012 at 11:06:00AM -0800, Alexander Duyck wrote:
+> This change updates a few of the functions to use __pa_symbol when
+> translating C visible symbols instead of __pa.  By using __pa_symbol we are
+> able to drop a few extra lines of code as don't have to test to see if the
+> virtual pointer is a part of the kernel text or just standard virtual memory.
+> 
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-I think you should start with loads and no callchain. I am interested
-in your toughts on how to
-fix the data symbol resolution problem in perf. In V2, I modified the
-kernel to at least
-help perf distinguish MAP__FUNCTION from MAP__VARIABLE. But there is
-still something
-wrong.
+Acked-by.
 
-
-> # ========
-> # captured on: Tue Nov  6 12:46:21 2012
-> # hostname : sandy.ghostprotocols.net
-> # os release : 3.7.0-rc2+
-> # perf version : 3.7.rc4.gfaa41f
-> # arch : x86_64
-> # nrcpus online : 8
-> # nrcpus avail : 8
-> # cpudesc : Intel(R) Core(TM) i7-2920XM CPU @ 2.50GHz
-> # cpuid : GenuineIntel,6,42,7
-> # total memory : 16220228 kB
-> # cmdline : /home/acme/bin/perf record -g -a -e cpu/mem-stores/
-> # event : name = cpu/mem-stores/, type = 4, config = 0x2cd, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_ho
-> # HEADER_CPU_TOPOLOGY info available, use -I to display
-> # HEADER_NUMA_TOPOLOGY info available, use -I to display
-> # pmu mappings: cpu = 4, software = 1, tracepoint = 2, uncore_cbox_0 = 6, uncore_cbox_1 = 7, uncore_cbox_2 = 8, uncore_cbox_3
-> # ========
-> #
-> # Samples: 98  of event 'cpu/mem-stores/'
-> # Total cost : 98
-> # Sort order : cost,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked
-> #
-> # Overhead      Samples     Cost             Memory access                                          Symbol               Share
-> # ........  ...........  .......  ........................  ..............................................  ..................
-> #
->     19.39%           19      N/A                            [k] csd_unlock                                  [kernel.kallsyms]
->             |
->             --- csd_unlock
->                |
->                |--6242.11%-- generic_smp_call_function_single_interrupt
->                |          smp_call_function_single_interrupt
->                |          call_function_single_interrupt
->                |          cpuidle_enter
->                |          cpuidle_enter_state
->                |          cpuidle_idle_call
->                |          cpu_idle
->                |          |
->                |          |--85.08%-- start_secondary
->                |          |
->                |           --14.92%-- rest_init
->                |                     start_kernel
->                |                     x86_64_start_reservations
->                |                     x86_64_start_kernel
->                |
->                |--100.00%-- smp_call_function_single_interrupt
->                |          call_function_single_interrupt
->                |          cpuidle_enter
->                |          cpuidle_enter_state
->                |          cpuidle_idle_call
->                |          cpu_idle
->                |          start_secondary
->                 --97088126703734472704.00%-- [...]
->
->      5.10%            5      N/A                            [k] _raw_spin_lock_irqsave                      [kernel.kallsyms]
->             |
->
->
->
-> Ideas?
->
-> - Arnaldo
+> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> ---
+> 
+>  arch/x86/xen/mmu.c |   21 +++++++++++----------
+>  1 files changed, 11 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> index 4a05b39..a63e5f9 100644
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -1486,7 +1486,8 @@ static int xen_pgd_alloc(struct mm_struct *mm)
+>  
+>  		if (user_pgd != NULL) {
+>  			user_pgd[pgd_index(VSYSCALL_START)] =
+> -				__pgd(__pa(level3_user_vsyscall) | _PAGE_TABLE);
+> +				__pgd(__pa_symbol(level3_user_vsyscall) |
+> +				      _PAGE_TABLE);
+>  			ret = 0;
+>  		}
+>  
+> @@ -1958,10 +1959,10 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+>  	 * pgd.
+>  	 */
+>  	if (xen_feature(XENFEAT_writable_page_tables)) {
+> -		native_write_cr3(__pa(init_level4_pgt));
+> +		native_write_cr3(__pa_symbol(init_level4_pgt));
+>  	} else {
+>  		xen_mc_batch();
+> -		__xen_write_cr3(true, __pa(init_level4_pgt));
+> +		__xen_write_cr3(true, __pa_symbol(init_level4_pgt));
+>  		xen_mc_issue(PARAVIRT_LAZY_CPU);
+>  	}
+>  	/* We can't that easily rip out L3 and L2, as the Xen pagetables are
+> @@ -1984,10 +1985,10 @@ static RESERVE_BRK_ARRAY(pmd_t, swapper_kernel_pmd, PTRS_PER_PMD);
+>  
+>  static void __init xen_write_cr3_init(unsigned long cr3)
+>  {
+> -	unsigned long pfn = PFN_DOWN(__pa(swapper_pg_dir));
+> +	unsigned long pfn = PFN_DOWN(__pa_symbol(swapper_pg_dir));
+>  
+> -	BUG_ON(read_cr3() != __pa(initial_page_table));
+> -	BUG_ON(cr3 != __pa(swapper_pg_dir));
+> +	BUG_ON(read_cr3() != __pa_symbol(initial_page_table));
+> +	BUG_ON(cr3 != __pa_symbol(swapper_pg_dir));
+>  
+>  	/*
+>  	 * We are switching to swapper_pg_dir for the first time (from
+> @@ -2011,7 +2012,7 @@ static void __init xen_write_cr3_init(unsigned long cr3)
+>  	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, pfn);
+>  
+>  	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE,
+> -			  PFN_DOWN(__pa(initial_page_table)));
+> +			  PFN_DOWN(__pa_symbol(initial_page_table)));
+>  	set_page_prot(initial_page_table, PAGE_KERNEL);
+>  	set_page_prot(initial_kernel_pmd, PAGE_KERNEL);
+>  
+> @@ -2036,7 +2037,7 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+>  
+>  	copy_page(initial_page_table, pgd);
+>  	initial_page_table[KERNEL_PGD_BOUNDARY] =
+> -		__pgd(__pa(initial_kernel_pmd) | _PAGE_PRESENT);
+> +		__pgd(__pa_symbol(initial_kernel_pmd) | _PAGE_PRESENT);
+>  
+>  	set_page_prot(initial_kernel_pmd, PAGE_KERNEL_RO);
+>  	set_page_prot(initial_page_table, PAGE_KERNEL_RO);
+> @@ -2045,8 +2046,8 @@ void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
+>  	pin_pagetable_pfn(MMUEXT_UNPIN_TABLE, PFN_DOWN(__pa(pgd)));
+>  
+>  	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE,
+> -			  PFN_DOWN(__pa(initial_page_table)));
+> -	xen_write_cr3(__pa(initial_page_table));
+> +			  PFN_DOWN(__pa_symbol(initial_page_table)));
+> +	xen_write_cr3(__pa_symbol(initial_page_table));
+>  
+>  	memblock_reserve(__pa(xen_start_info->pt_base),
+>  			 xen_start_info->nr_pt_frames * PAGE_SIZE);
