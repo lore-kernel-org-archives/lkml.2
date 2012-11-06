@@ -1,204 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab2KFX1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 18:27:34 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:62763 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2KFX1c (ORCPT
+	id S1753893Ab2KFXad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 18:30:33 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:22155 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab2KFXaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 18:27:32 -0500
+	Tue, 6 Nov 2012 18:30:30 -0500
+Date: Tue, 6 Nov 2012 15:30:11 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Subject: Re: [RFC v4+ hot_track 10/19] vfs: introduce hot func register
+ framework
+Message-ID: <20121106233011.GC4255@blackbox.djwong.org>
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+ <1351485061-12297-11-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAAfyv36WJZro4DsOy=S7X5YLPw93M00JY95kc9EHKRqCSMcBbQ@mail.gmail.com>
-References: <1351633534-20817-1-git-send-email-marek.belisko@open-nandra.com>
- <CAK5ve-+fE7T3U9KZ-C5-sZN9PUPq6RybCu+nv9UDb2x0bnarzw@mail.gmail.com> <CAAfyv36WJZro4DsOy=S7X5YLPw93M00JY95kc9EHKRqCSMcBbQ@mail.gmail.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 6 Nov 2012 15:27:11 -0800
-Message-ID: <CAK5ve-KPw9L+Xv74RpeEg2xnOg3pHnHQn95t-JDQDYXhRJ-neQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] leds/tca6507: Add support for devicetree.
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351485061-12297-11-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 12:32 PM, Belisko Marek <marek.belisko@gmail.com> wrote:
-> Hi,
->
-> On Tue, Nov 6, 2012 at 7:24 PM, Bryan Wu <cooloney@gmail.com> wrote:
->>
->> On Tue, Oct 30, 2012 at 2:45 PM, Marek Belisko
->> <marek.belisko@open-nandra.com> wrote:
->> > Support added only for leds (not for gpio's).
->> >
->> > Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
->> > ---
->> >  drivers/leds/leds-tca6507.c |   73
->> > +++++++++++++++++++++++++++++++++++++++++--
->> >  1 file changed, 70 insertions(+), 3 deletions(-)
->> >
->>
->> Overall, this looks good to me. Maybe some question as below,
->>
->> -Bryan
->>
->> > diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
->> > index dabcf7a..496dd98 100644
->> > --- a/drivers/leds/leds-tca6507.c
->> > +++ b/drivers/leds/leds-tca6507.c
->> > @@ -667,6 +667,69 @@ static void tca6507_remove_gpio(struct tca6507_chip
->> > *tca)
->> >  }
->> >  #endif /* CONFIG_GPIOLIB */
->> >
->> > +#ifdef CONFIG_OF
->> > +static struct tca6507_platform_data * __devinit
->> > tca6507_led_dt_init(struct i2c_client *client)
->> > +{
->> > +       struct device_node *np = client->dev.of_node, *child;
->> > +       struct tca6507_platform_data *pdata;
->> > +       struct led_info *tca_leds;
->> > +       int count = 0;
->> > +
->> > +       for_each_child_of_node(np, child)
->> > +               count++;
->> > +       if (!count)
->> > +               return NULL;
->> > +
->>
->> I saw many 'return NULL' here, why not return some error code in ERR_PTR?
->
-> Well this function is only only used to correctly parse DT and set proper
-> platform data which was previously passed from board file. I think we don't
-> need to return (and check) specific error code just return NULL and use some
-> general advice to user that something is wrong. Same way it's done in
-> leds-gpio in gpio_leds_create_of() function.
+On Mon, Oct 29, 2012 at 12:30:52PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+>   Introduce one framwork to enable that specific FS
+> can register its own hot tracking functions.
+> 
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> ---
+>  fs/hot_tracking.c            |   78 ++++++++++++++++++++++++++++++++++++++----
+>  include/linux/hot_tracking.h |   25 +++++++++++++
+>  2 files changed, 96 insertions(+), 7 deletions(-)
+> 
+> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+> index 0ef9cad..c6c6138 100644
+> --- a/fs/hot_tracking.c
+> +++ b/fs/hot_tracking.c
+> @@ -24,6 +24,9 @@
+>  #include <linux/limits.h>
+>  #include "hot_tracking.h"
+>  
+> +static DEFINE_SPINLOCK(hot_func_list_lock);
+> +static LIST_HEAD(hot_func_list);
+> +
+>  /* kmem_cache pointers for slab caches */
+>  static struct kmem_cache *hot_inode_item_cachep __read_mostly;
+>  static struct kmem_cache *hot_range_item_cachep __read_mostly;
+> @@ -305,20 +308,23 @@ static u64 hot_average_update(struct timespec old_atime,
+>  	return new_avg;
+>  }
+>  
+> -static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
+> +static void hot_freq_data_update(struct hot_info *root,
+> +		struct hot_freq_data *freq_data, bool write)
+>  {
+>  	struct timespec cur_time = current_kernel_time();
+>  
+>  	if (write) {
+>  		freq_data->nr_writes += 1;
+> -		freq_data->avg_delta_writes = hot_average_update(
+> +		freq_data->avg_delta_writes =
+> +			root->hot_func_type->ops.hot_rw_freq_calc_fn(
+>  				freq_data->last_write_time,
+>  				cur_time,
+>  				freq_data->avg_delta_writes);
+>  		freq_data->last_write_time = cur_time;
+>  	} else {
+>  		freq_data->nr_reads += 1;
+> -		freq_data->avg_delta_reads = hot_average_update(
+> +		freq_data->avg_delta_reads =
+> +			root->hot_func_type->ops.hot_rw_freq_calc_fn(
+>  				freq_data->last_read_time,
+>  				cur_time,
+>  				freq_data->avg_delta_reads);
+> @@ -430,7 +436,7 @@ static void hot_map_array_update(struct hot_freq_data *freq_data,
+>  	struct hot_comm_item *comm_item;
+>  	struct hot_inode_item *he;
+>  	struct hot_range_item *hr;
+> -	u32 temp = hot_temp_calc(freq_data);
+> +	u32 temp = root->hot_func_type->ops.hot_temp_calc_fn(freq_data);
+>  	u8 a_temp = temp >> (32 - HEAT_MAP_BITS);
+>  	u8 b_temp = freq_data->last_temp >> (32 - HEAT_MAP_BITS);
+>  
+> @@ -511,7 +517,7 @@ static void hot_range_update(struct hot_inode_item *he,
+>  				&hr_nodes[i]->hot_range.hot_freq_data, root);
+>  
+>  			spin_lock(&hr_nodes[i]->hot_range.lock);
+> -			obsolete = hot_is_obsolete(
+> +			obsolete = root->hot_func_type->ops.hot_is_obsolete_fn(
+>  					&hr_nodes[i]->hot_range.hot_freq_data);
+>  			spin_unlock(&hr_nodes[i]->hot_range.lock);
+>  
+> @@ -668,7 +674,7 @@ void hot_update_freqs(struct inode *inode, u64 start,
+>  	}
+>  
+>  	spin_lock(&he->hot_inode.lock);
+> -	hot_freq_data_update(&he->hot_inode.hot_freq_data, rw);
+> +	hot_freq_data_update(root, &he->hot_inode.hot_freq_data, rw);
+>  	spin_unlock(&he->hot_inode.lock);
+>  
+>  	/*
+> @@ -685,7 +691,7 @@ void hot_update_freqs(struct inode *inode, u64 start,
+>  		}
+>  
+>  		spin_lock(&hr->hot_range.lock);
+> -		hot_freq_data_update(&hr->hot_range.hot_freq_data, rw);
+> +		hot_freq_data_update(root, &hr->hot_range.hot_freq_data, rw);
+>  		spin_unlock(&hr->hot_range.lock);
+>  
+>  		hot_range_item_put(hr);
+> @@ -695,6 +701,61 @@ void hot_update_freqs(struct inode *inode, u64 start,
+>  }
+>  EXPORT_SYMBOL_GPL(hot_update_freqs);
+>  
+> +static struct hot_func_type hot_func_def = {
+> +	.hot_func_name = "hot_type_def",
+> +	.ops = {
+> +		.hot_rw_freq_calc_fn = hot_average_update,
+> +		.hot_temp_calc_fn    = hot_temp_calc,
+> +		.hot_is_obsolete_fn  = hot_is_obsolete,
+> +	},
+> +};
 
-Oh, really. In my kernel tree,  gpio_leds_create_of() function of
-drivers/leds/leds-gpio.c always returns something like this
-ERR_PTR(-ENODEV); I think return some meaningful things is useful than
-NULL.
+If these hot_ops are per-filesystem, why not just embed a struct hot_func_ops
+inside of struct file_system_type?  That eliminates this _get function,
+collision avoidance, etc.  You can fill in NULL function pointers in
+hot_track_init (or just code around them).
 
--Bryan
+--D
 
->>
->>
->> > +       if (count > NUM_LEDS)
->> > +               return NULL;
->> > +
->> > +       tca_leds = devm_kzalloc(&client->dev, sizeof(struct led_info) *
->> > NUM_LEDS, GFP_KERNEL);
->> > +
->>
->> useless empty line.
->>
->> > +       if (!tca_leds)
->> > +               return NULL;
->> > +
->> > +
->>
->> useless empty line.
->>
->> > +       for_each_child_of_node(np, child) {
->> > +               struct led_info led;
->> > +               u32 reg;
->> > +               int ret;
->> > +
->> > +               led.name = of_get_property(child, "label", NULL) ? :
->> > child->name;
->> > +               led.default_trigger =
->> > +                       of_get_property(child, "linux,default-trigger",
->> > NULL);
->> > +
->> > +               ret = of_property_read_u32(child, "reg", &reg);
->> > +
->> > +               if (ret != 0)
->> > +                       continue;
->> > +               tca_leds[reg] = led;
->> > +       }
->> > +       pdata = devm_kzalloc(&client->dev, sizeof(struct
->> > tca6507_platform_data), GFP_KERNEL);
->> > +       if (!pdata) {
->> > +               kfree(tca_leds);
->>
->> Do we need to kfree here? I think devm_zalloc() will take care of this
->> if the driver failed to register.
->
-> You're right. I'll fix comments are send updated version of patch. Are you
-> OK with binding documentation patch?
->>
->>
->> > +               return NULL;
->> > +       }
->> > +
->> > +       pdata->leds.leds = tca_leds;
->> > +       pdata->leds.num_leds = NUM_LEDS;
->> > +
->> > +       return pdata;
->> > +}
->> > +
->> > +static const struct of_device_id of_tca6507_leds_match[] = {
->> > +       { .compatible = "leds-tca6507", },
->> > +       {},
->> > +};
->> > +
->> > +#else
->> > +static int __devinit tca6507_led_dt_init(struct i2c_client *client,
->> > struct tca6507_platform_data *data)
->> > +{
->> > +       return -1;
->> > +}
->> > +
->> > +#define of_tca6507_leds_match NULL
->> > +#endif
->> > +
->> >  static int __devinit tca6507_probe(struct i2c_client *client,
->> >                                    const struct i2c_device_id *id)
->> >  {
->> > @@ -683,9 +746,12 @@ static int __devinit tca6507_probe(struct
->> > i2c_client *client,
->> >                 return -EIO;
->> >
->> >         if (!pdata || pdata->leds.num_leds != NUM_LEDS) {
->> > -               dev_err(&client->dev, "Need %d entries in platform-data
->> > list\n",
->> > -                       NUM_LEDS);
->> > -               return -ENODEV;
->> > +               pdata = tca6507_led_dt_init(client);
->> > +               if (!pdata) {
->> > +                       dev_err(&client->dev, "Need %d entries in
->> > platform-data list\n",
->> > +                               NUM_LEDS);
->> > +                       return -ENODEV;
->> > +               }
->> >         }
->> >         tca = devm_kzalloc(&client->dev, sizeof(*tca), GFP_KERNEL);
->> >         if (!tca)
->> > @@ -750,6 +816,7 @@ static struct i2c_driver tca6507_driver = {
->> >         .driver   = {
->> >                 .name    = "leds-tca6507",
->> >                 .owner   = THIS_MODULE,
->> > +               .of_match_table = of_tca6507_leds_match,
->> >         },
->> >         .probe    = tca6507_probe,
->> >         .remove   = __devexit_p(tca6507_remove),
->> > --
->> > 1.7.9.5
->> >
->
->
-> mbe
->
+> +
+> +static struct hot_func_type *hot_func_get(const char *name)
+> +{
+> +	struct hot_func_type *f, *h = &hot_func_def;
+> +
+> +	spin_lock(&hot_func_list_lock);
+> +	list_for_each_entry(f, &hot_func_list, list) {
+> +		if (!strcmp(f->hot_func_name, name))
+> +			h = f;
+> +	}
+> +	spin_unlock(&hot_func_list_lock);
+> +
+> +	return h;
+> +}
+> +
+> +int hot_func_register(struct hot_func_type *h)
+> +{
+> +	struct hot_func_type *f, *t = NULL;
+> +
+> +	/* register, don't allow duplicate names */
+> +	spin_lock(&hot_func_list_lock);
+> +	list_for_each_entry(f, &hot_func_list, list) {
+> +		if (!strcmp(f->hot_func_name, h->hot_func_name))
+> +			t = f;
+> +	}
+> +
+> +	if (t) {
+> +		spin_unlock(&hot_func_list_lock);
+> +		return -EBUSY;
+> +	}
+> +
+> +	list_add_tail(&h->list, &hot_func_list);
+> +	spin_unlock(&hot_func_list_lock);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(hot_func_register);
+> +
+> +void hot_func_unregister(struct hot_func_type *h)
+> +{
+> +	/* unregister */
+> +	spin_lock(&hot_func_list_lock);
+> +	list_del_init(&h->list);
+> +	spin_unlock(&hot_func_list_lock);
+> +}
+> +EXPORT_SYMBOL_GPL(hot_func_unregister);
+> +
+>  /*
+>   * Initialize the data structures for hot data tracking.
+>   */
+> @@ -714,6 +775,9 @@ int hot_track_init(struct super_block *sb)
+>  	hot_inode_tree_init(root);
+>  	hot_map_array_init(root);
+>  
+> +	/* Get hot func type */
+> +	root->hot_func_type = hot_func_get(sb->s_type->name);
+> +
+>  	root->update_wq = alloc_workqueue(
+>  		"hot_update_wq", WQ_NON_REENTRANT, 0);
+>  	if (!root->update_wq) {
+> diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
+> index 2ee0d02..3941052 100644
+> --- a/include/linux/hot_tracking.h
+> +++ b/include/linux/hot_tracking.h
+> @@ -23,6 +23,8 @@
+>  #define HEAT_MAP_BITS 8
+>  #define HEAT_MAP_SIZE (1 << HEAT_MAP_BITS)
+>  
+> +#define HOT_NAME_MAX 16
+> +
+>  /*
+>   * A frequency data struct holds values that are used to
+>   * determine temperature of files and file ranges. These structs
+> @@ -73,6 +75,25 @@ struct hot_range_item {
+>  	u32 len; /* length in bytes */
+>  };
+>  
+> +typedef u64 (hot_rw_freq_calc_fn) (struct timespec old_atime,
+> +			struct timespec cur_time, u64 old_avg);
+> +typedef u32 (hot_temp_calc_fn) (struct hot_freq_data *freq_data);
+> +typedef bool (hot_is_obsolete_fn) (struct hot_freq_data *freq_data);
+> +
+> +struct hot_func_ops {
+> +	hot_rw_freq_calc_fn *hot_rw_freq_calc_fn;
+> +	hot_temp_calc_fn *hot_temp_calc_fn;
+> +	hot_is_obsolete_fn *hot_is_obsolete_fn;
+> +};
+> +
+> +/* identifies an hot func type */
+> +struct hot_func_type {
+> +	char hot_func_name[HOT_NAME_MAX];
+> +	/* fields provided by specific FS */
+> +	struct hot_func_ops ops;
+> +	struct list_head list;
+> +};
+> +
+>  struct hot_info {
+>  	struct radix_tree_root hot_inode_tree;
+>  	spinlock_t lock; /*protect inode tree */
+> @@ -85,6 +106,7 @@ struct hot_info {
+>  
+>  	struct workqueue_struct *update_wq;
+>  	struct delayed_work update_work;
+> +	struct hot_func_type *hot_func_type;
+>  };
+>  
+>  extern void __init hot_cache_init(void);
+> @@ -93,4 +115,7 @@ extern void hot_track_exit(struct super_block *sb);
+>  extern void hot_update_freqs(struct inode *inode, u64 start,
+>  				u64 len, int rw);
+>  
+> +extern int hot_func_register(struct hot_func_type *h);
+> +extern void hot_func_unregister(struct hot_func_type *h);
+> +
+>  #endif  /* _LINUX_HOTTRACK_H */
+> -- 
+> 1.7.6.5
+> 
 > --
-> as simple and primitive as possible
-> -------------------------------------------------
-> Marek Belisko - OPEN-NANDRA
-> Freelance Developer
->
-> Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-> Tel: +421 915 052 184
-> skype: marekwhite
-> twitter: #opennandra
-> web: http://open-nandra.com
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
