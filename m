@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab2KFDNW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 22:13:22 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:55123 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab2KFDNU (ORCPT
+	id S1752495Ab2KFDgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 22:36:22 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:33527 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175Ab2KFDgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 22:13:20 -0500
+	Mon, 5 Nov 2012 22:36:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121105.202501.1246122770431623794.davem@davemloft.net>
-References: <1352155633-8648-1-git-send-email-walken@google.com>
-	<1352155633-8648-16-git-send-email-walken@google.com>
-	<20121105.202501.1246122770431623794.davem@davemloft.net>
-Date: Mon, 5 Nov 2012 19:13:19 -0800
-Message-ID: <CANN689Gt2mG8xfkVkFtOHDFxkoZZAL-p-8yMSw=qvy5zaGs1ag@mail.gmail.com>
-Subject: Re: [PATCH 15/16] mm: use vm_unmapped_area() on sparc32 architecture
-From: Michel Lespinasse <walken@google.com>
-To: David Miller <davem@davemloft.net>
-Cc: akpm@linux-foundation.org, riel@redhat.com, hughd@google.com,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        ralf@linux-mips.org, lethal@linux-sh.org, cmetcalf@tilera.com,
-        x86@kernel.org, wli@holomorphy.com, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
+In-Reply-To: <1352169260.2625.4.camel@phoenix>
+References: <1352169260.2625.4.camel@phoenix>
+Date: Tue, 6 Nov 2012 09:06:18 +0530
+X-Google-Sender-Auth: 0N3lOuMZR0iI_PAdjqUQRzEEofY
+Message-ID: <CAOh2x==ng3A66P=Vx+-C791LTGCS1fWVpMfUKDorU5G=ZXrjLQ@mail.gmail.com>
+Subject: Re: [PATCH] clk: spear: Add stub functions for spear3[0|1|2]0_clk_init()
+From: viresh kumar <viresh.kumar@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 5:25 PM, David Miller <davem@davemloft.net> wrote:
-> From: Michel Lespinasse <walken@google.com>
-> Date: Mon,  5 Nov 2012 14:47:12 -0800
+On Tue, Nov 6, 2012 at 8:04 AM, Axel Lin <axel.lin@ingics.com> wrote:
+> This fixes compile error if one of SPEAr3xx implementations is not selected.
 >
->> Update the sparc32 arch_get_unmapped_area function to make use of
->> vm_unmapped_area() instead of implementing a brute force search.
->>
->> Signed-off-by: Michel Lespinasse <walken@google.com>
+>   CC      drivers/clk/spear/spear3xx_clock.o
+> drivers/clk/spear/spear3xx_clock.c: In function 'spear3xx_clk_init':
+> drivers/clk/spear/spear3xx_clock.c:599:3: error: implicit declaration of function 'spear300_clk_init' [-Werror=implicit-function-declaration]
+> drivers/clk/spear/spear3xx_clock.c:601:3: error: implicit declaration of function 'spear310_clk_init' [-Werror=implicit-function-declaration]
+> drivers/clk/spear/spear3xx_clock.c:603:3: error: implicit declaration of function 'spear320_clk_init' [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
+> make[3]: *** [drivers/clk/spear/spear3xx_clock.o] Error 1
+> make[2]: *** [drivers/clk/spear] Error 2
+> make[1]: *** [drivers/clk] Error 2
+> make: *** [drivers] Error 2
 >
-> Hmmm...
->
->> -     if (flags & MAP_SHARED)
->> -             addr = COLOUR_ALIGN(addr);
->> -     else
->> -             addr = PAGE_ALIGN(addr);
->
-> What part of vm_unmapped_area() is going to duplicate this special
-> aligning logic we need on sparc?
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-The idea there is that you can specify the desired alignment mask and
-offset using info.align_mask and info.align_offset.
-
-Now, I just noticed that the old code actually always uses an
-alignment offset of 0 instead of basing it on pgoff. I'm not sure why
-that is, but it looks like this may be an issue ?
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Thanks..
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
