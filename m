@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab2KFIbK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 03:31:10 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:35382 "EHLO mail.vyatta.com"
+	id S1752595Ab2KFIcZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 03:32:25 -0500
+Received: from mga14.intel.com ([143.182.124.37]:42524 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932122Ab2KFIbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 03:31:08 -0500
-Date: Tue, 6 Nov 2012 09:30:57 +0100
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Paolo Valente <paolo.valente@unimore.it>
-Cc: jhs@mojatatu.com, davem@davemloft.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rizzo@iet.unipi.it, fchecconi@gmail.com
-Subject: Re: [PATCH] pkt_sched: enable QFQ to support TSO/GSO
-Message-ID: <20121106093057.465c5b6c@s6510.linuxnetplumber.net>
-In-Reply-To: <20121106062924.GA2930@paolo-ThinkPad-W520>
-References: <20121106062924.GA2930@paolo-ThinkPad-W520>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S1751267Ab2KFIcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 03:32:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,721,1344236400"; 
+   d="scan'208";a="213978348"
+Subject: [PATCH 6/7] mx3fb: Fix the usage of wait_for_completion_timeout
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: FlorianSchandinat@gmx.de
+Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
+In-Reply-To: <1352223097.15558.1599.camel@cliu38-desktop-build>
+References: <1352222317.15558.1584.camel@cliu38-desktop-build>
+	 <1352222480.15558.1587.camel@cliu38-desktop-build>
+	 <1352222555.15558.1589.camel@cliu38-desktop-build>
+	 <1352222894.15558.1595.camel@cliu38-desktop-build>
+	 <1352223097.15558.1599.camel@cliu38-desktop-build>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Nov 2012 01:33:14 +0800
+Message-ID: <1352223194.15558.1601.camel@cliu38-desktop-build>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Nov 2012 07:29:24 +0100
-Paolo Valente <paolo.valente@unimore.it> wrote:
 
-> If the max packet size for some class (configured through tc) is
-> violated by the actual size of the packets of that class, then QFQ
-> would not schedule classes correctly, and the data structures
-> implementing the bucket lists may get corrupted. This problem occurs
-> with TSO/GSO even if the max packet size is set to the MTU, and is,
-> e.g., the cause of the failure reported in [1]. Two patches have been
-> proposed to solve this problem in [2], one of them is a preliminary
-> version of this patch.
-> 
-> This patch addresses the above issues by: 1) setting QFQ parameters to
-> proper values for supporting TSO/GSO (in particular, setting the
-> maximum possible packet size to 64KB), 2) automatically increasing the
-> max packet size for a class, lmax, when a packet with a larger size
-> than the current value of lmax arrives.
-> 
-> The drawback of the first point is that the maximum weight for a class
-> is now limited to 4096, which is equal to 1/16 of the maximum weight
-> sum.
-> 
-> Finally, this patch also forcibly caps the timestamps of a class if
-> they are too high to be stored in the bucket list. This capping, taken
-> from QFQ+ [3], handles the unfrequent case described in the comment to
-> the function slot_insert.
-> 
-> [1] http://marc.info/?l=linux-netdev&m=134968777902077&w=2
-> [2] http://marc.info/?l=linux-netdev&m=135096573507936&w=2
-> [3] http://marc.info/?l=linux-netdev&m=134902691421670&w=2
-> 
-> Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
-> Tested-by: Cong Wang <amwang@redhat.com>
-> Acked-by: Stephen Hemminger <shemminger@vyatta.com>
+The return value of wait_for_completion_timeout() is always
+>= 0 with unsigned int type.
+
+So the condition "ret < 0" or "ret >= 0" is pointless.
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ drivers/video/mx3fb.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/video/mx3fb.c b/drivers/video/mx3fb.c
+index ce1d452..88bf368 100644
+--- a/drivers/video/mx3fb.c
++++ b/drivers/video/mx3fb.c
+@@ -1110,12 +1110,11 @@ static int mx3fb_pan_display(struct fb_var_screeninfo *var,
+ 	enable_irq(mx3_fbi->idmac_channel->eof_irq);
+ 
+ 	ret = wait_for_completion_timeout(&mx3_fbi->flip_cmpl, HZ / 10);
+-	if (ret <= 0) {
++	if (ret == 0) {
+ 		mutex_unlock(&mx3_fbi->mutex);
+-		dev_info(fbi->device, "Panning failed due to %s\n", ret < 0 ?
+-			 "user interrupt" : "timeout");
++		dev_info(fbi->device, "Panning failed due to timeout\n");
+ 		disable_irq(mx3_fbi->idmac_channel->eof_irq);
+-		return ret ? : -ETIMEDOUT;
++		return -ETIMEDOUT;
+ 	}
+ 
+ 	mx3_fbi->cur_ipu_buf = !mx3_fbi->cur_ipu_buf;
+-- 
+1.7.0.4
 
 
-Acked-by: Stephen Hemminger <shemminger@vyatta.com>
+
