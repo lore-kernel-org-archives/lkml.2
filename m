@@ -1,31 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab2KFNQq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 08:16:46 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:48333 "EHLO
+	id S1752170Ab2KFNSN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 08:18:13 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:57265 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454Ab2KFNQo (ORCPT
+	with ESMTP id S1751568Ab2KFNSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 08:16:44 -0500
-Date: Tue, 6 Nov 2012 13:16:34 +0000
+	Tue, 6 Nov 2012 08:18:11 -0500
+Date: Tue, 6 Nov 2012 13:17:44 +0000
 From: Matthew Garrett <mjg@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-efi@vger.kernel.org,
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Shea Levy <shea@shealevy.com>, Vivek Goyal <vgoyal@redhat.com>
+        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>, Josh Boyer <jwboyer@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
 Subject: Re: [RFC] Second attempt at kernel secure boot support
-Message-ID: <20121106131634.GA1818@srcf.ucam.org>
-References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
- <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
- <20121029174131.GC7580@srcf.ucam.org>
- <alpine.LNX.2.00.1210311444080.12781@pobox.suse.cz>
- <20121031150201.GA12394@srcf.ucam.org>
- <alpine.LNX.2.00.1211061350100.24253@pobox.suse.cz>
+Message-ID: <20121106131743.GB1818@srcf.ucam.org>
+References: <509766DB.9090906@zytor.com>
+ <87625kh5r2.fsf@xmission.com>
+ <20121105123858.GB4374@srcf.ucam.org>
+ <87sj8nc137.fsf@xmission.com>
+ <20121105202557.GA16076@srcf.ucam.org>
+ <87hap3zbw7.fsf@xmission.com>
+ <20121106031219.GB24235@srcf.ucam.org>
+ <87fw4nv1vj.fsf@xmission.com>
+ <20121106035352.GA24698@srcf.ucam.org>
+ <20121106091217.4a5240f0@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1211061350100.24253@pobox.suse.cz>
+In-Reply-To: <20121106091217.4a5240f0@pyramind.ukuu.org.uk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
@@ -34,52 +42,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 01:51:15PM +0100, Jiri Kosina wrote:
-> On Wed, 31 Oct 2012, Matthew Garrett wrote:
-> > shim generates a public and private key. 
+On Tue, Nov 06, 2012 at 09:12:17AM +0000, Alan Cox wrote:
+> - is it worth Red Hat doing - that's up to Red Hat's business managers
 > 
-> It seems to me that this brings quite a huge delay into the boot process 
-> both for "regular" and resume cases (as shim has no way to know what is 
-> going to happen next). Mostly because obtaining enough entropy is 
-> generally very difficult when we have just shim running, right?
-
-pseudorandom keys should be sufficient here. It's intended to deal with 
-the case of an automated attack rather than a deliberate effort to break 
-into a given user's system.
-
-> > It hands the kernel the private key in a boot parameter and stores the 
-> > public key in a boot variable. On suspend, the kernel signs the suspend 
-> > image with that private key and discards it. On the next boot, shim 
-> > generates a new key pair and hands the new private key to the kernel 
-> > along with the old public key. The kernel verifies the suspend image 
-> > before resuming it. The only way to subvert this would be to be able to 
-> > access kernel memory directly, which means the attacker has already won.
+> - is it worth merging into the kernel - that's not
 > 
-> I like this protocol, but after some off-line discussions, I still have 
-> doubts about it. Namely: how do we make sure that there is noone tampering 
-> with the variable?
+> The capability bit is small and clean the rest of it is beginning to look
+> far too ugly for upstream right now. Not to say it might not end up small
+> and clean in the end.
 
-The variable has the same level of security as MOK, so that would be a 
-more attractive target.
-
-> - consider securely booted win8 (no Linux installed on that machine, so 
->   the variable for storing public key doesn't exist yet), possibly being 
->   taken over by a malicious user
-> - he/she creates this secure variable from within the win8 and stores 
->   his/her own public key into it
-
-You can't create a non-RT variable from the OS.
-
-> - he/she supplies a signed shim (as provided by some Linux distro vendor), 
->   signed kernel (as provided by some Linux distro vendor) and specially 
->   crafted resume image, signed by his/her own private key
-
-shim detects that the key has the RT bit set and deletes it.
-
-> - he/she reboots the machine in a way that shim+distro kernel+hacker's S4 
->   image is used to resume
-
-And so this step can't happen.
+I absolutely agree - the code has to be good enough to be accepted 
+upstream and I've no objection to being told that better implementations 
+must be produced. I do object to being told that there's no point in 
+trying to find an acceptable implementation.
 
 -- 
 Matthew Garrett | mjg59@srcf.ucam.org
