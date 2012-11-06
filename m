@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab2KFQvn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 11:51:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29655 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375Ab2KFQvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 11:51:42 -0500
-Date: Tue, 6 Nov 2012 13:51:19 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH v2 14/16] perf tools: add new mem command for memory
- access profiling
-Message-ID: <20121106165119.GC13629@infradead.org>
-References: <1352123463-7346-1-git-send-email-eranian@google.com>
- <1352123463-7346-15-git-send-email-eranian@google.com>
- <20121106154446.GA13629@infradead.org>
- <CABPqkBSh_QGrZrQgmLKavuGLz+jC4fyczLGffo6iWnpzW6BzfA@mail.gmail.com>
+	id S1752611Ab2KFQxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 11:53:05 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47157 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387Ab2KFQxB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 11:53:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBSh_QGrZrQgmLKavuGLz+jC4fyczLGffo6iWnpzW6BzfA@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20121106134826.32a117100825204d48150f0b@canb.auug.org.au>
+References: <20121106134826.32a117100825204d48150f0b@canb.auug.org.au>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 6 Nov 2012 09:52:40 -0700
+Message-ID: <CAErSpo7=wZUi4mB4N-pAWzRsyineRFh-W2NtZgAPJe5pNWUayA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the pm tree with the pci tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 06, 2012 at 04:49:26PM +0100, Stephane Eranian escreveu:
-> On Tue, Nov 6, 2012 at 4:44 PM, Arnaldo Carvalho de Melo
-> <acme@redhat.com> wrote:
-> > Em Mon, Nov 05, 2012 at 02:51:01PM +0100, Stephane Eranian escreveu:
-> >> +
-> >> +     if (strcmp(mem_operation, MEM_OPERATION_LOAD))
-> >> +             sprintf(event, "cpu/mem-stores/pp");
-> >> +     else
-> >> +             sprintf(event, "cpu/mem-loads/pp");
+On Mon, Nov 5, 2012 at 7:48 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Rafael,
+>
+> Today's linux-next merge of the pm tree got a conflict in
+> arch/x86/pci/acpi.c between commit 3f385fa9edce ("x86/PCI: Ignore _SEG on
+> HP xw9300") from the pci tree and commit 97a7108a3c00 ("ACPI / x86: Add
+> quirk for "CheckPoint P-20-00" to not use bridge _CRS_ info") from the pm
+> tree.
+>
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-> > Fails for me on a Sandy Bridge notebook:
+My opinion was that we should just drop the CheckPoint quirk.  See
+https://bugzilla.kernel.org/show_bug.cgi?id=47981#c36 for my
+rationale.
 
-> That's because you need to update the microcode.
+The changelog of the quirk leaves the wrong impression:
 
-> $ sudo modprobe microcode
-> $ cat /proc/cpuinfo
-> 
-> Line with microcode needs to say:
-> microcode : 0x28
+    This is to fix a regression
+https://bugzilla.kernel.org/show_bug.cgi?id=47981
 
-Here it says:
+    The CheckPoint P-20-00 works ok before new machines (2008 and later) are
+    forced to use the bridge _CRS info by default in 2.6.34. Add this quirk
+    to restore its old way of working: not using bridge _CRS info.
 
-microcode	: 0x25
- 
-> update the microcode package or install directly from
-> intel download center.
+This is NOT a regression, at least not in the usual sense.  The
+CheckPoint BIOS has a serious defect that corrupts part of the DSDT.
+It happened that things "worked" when we ignored the _CRS that was
+corrupted (other things are almost certainly broken, but we don't know
+what they are yet).  And it's not a question of being "forced" to use
+the bridge _CRS.  Every system SHOULD be using _CRS; that's the only
+way we can correctly manage resources of ACPI devices.
 
-Thanks for the info, will do. And they will add "microcode hints for
-selected processors should give that info to the user" to my TODO list
-:-)
+But if you (Rafael) decide we should keep this, I won't object.
 
-- Arnaldo
+The conflict resolution looks fine to me.
+
+> diff --cc arch/x86/pci/acpi.c
+> index 49e5195,7010c19..0000000
+> --- a/arch/x86/pci/acpi.c
+> +++ b/arch/x86/pci/acpi.c
+> @@@ -106,16 -98,16 +106,27 @@@ static const struct dmi_system_id pci_c
+>                         DMI_MATCH(DMI_BIOS_VERSION, "6JET85WW (1.43 )"),
+>                 },
+>         },
+>  +
+>  +      /* https://bugzilla.kernel.org/show_bug.cgi?id=15362 */
+>  +      {
+>  +              .callback = set_ignore_seg,
+>  +              .ident = "HP xw9300",
+>  +              .matches = {
+>  +                      DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+>  +                      DMI_MATCH(DMI_PRODUCT_NAME, "HP xw9300 Workstation"),
+>  +              },
+>  +      },
+> ++
+> +       /* https://bugzilla.kernel.org/show_bug.cgi?id=47981 */
+> +       {
+> +               .callback = set_nouse_crs,
+> +               .ident = "CheckPoint P-20-00",
+> +               .matches = {
+> +                       DMI_MATCH(DMI_SYS_VENDOR, "CheckPoint"),
+> +                       DMI_MATCH(DMI_PRODUCT_NAME, "P-20-00"),
+> +                       DMI_MATCH(DMI_BOARD_NAME, "Bridgeport"),
+> +               },
+> +       },
+>         {}
+>   };
+>
