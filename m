@@ -1,245 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab2KFG3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 01:29:46 -0500
-Received: from smtp25.sms.unimo.it ([155.185.44.25]:35420 "EHLO
-	smtp25.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab2KFG3p (ORCPT
+	id S1751947Ab2KFGfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 01:35:55 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:56937 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab2KFGfx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 01:29:45 -0500
-Date: Tue, 6 Nov 2012 07:29:24 +0100
-From: Paolo Valente <paolo.valente@unimore.it>
-To: jhs@mojatatu.com, davem@davemloft.net, shemminger@vyatta.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, rizzo@iet.unipi.it,
-        fchecconi@gmail.com, paolo.valente@unimore.it
-Subject: [PATCH] pkt_sched: enable QFQ to support TSO/GSO
-Message-ID: <20121106062924.GA2930@paolo-ThinkPad-W520>
+	Tue, 6 Nov 2012 01:35:53 -0500
+From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+To: "Philip, Avinash" <avinashphilip@ti.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "paul@pwsan.com" <paul@pwsan.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>
+CC: Rob Landley <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 1/8] PWMSS: Add PWM Subsystem driver for parent<->child
+ relationship
+Thread-Topic: [PATCH 1/8] PWMSS: Add PWM Subsystem driver for parent<->child
+ relationship
+Thread-Index: AQHNuzjd9hGPTyaRGE+bi0Ctde7B+5fcWU4A
+Date: Tue, 6 Nov 2012 06:35:24 +0000
+Message-ID: <B5906170F1614E41A8A28DE3B8D121433EC0444A@DBDE01.ent.ti.com>
+References: <1352106749-9437-1-git-send-email-avinashphilip@ti.com>
+ <1352106749-9437-2-git-send-email-avinashphilip@ti.com>
+In-Reply-To: <1352106749-9437-2-git-send-email-avinashphilip@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-UNIMORE-X-SA-Score: -2.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the max packet size for some class (configured through tc) is
-violated by the actual size of the packets of that class, then QFQ
-would not schedule classes correctly, and the data structures
-implementing the bucket lists may get corrupted. This problem occurs
-with TSO/GSO even if the max packet size is set to the MTU, and is,
-e.g., the cause of the failure reported in [1]. Two patches have been
-proposed to solve this problem in [2], one of them is a preliminary
-version of this patch.
+On Mon, Nov 05, 2012 at 14:42:22, Philip, Avinash wrote:
+[...]
+> +pwmss0: pwmss@48300000 {
+> +	compatible = "ti,am33xx-pwmss";
+> +	reg = <0x48300000 0x10
+> +		0x48300100 0x80
+> +		0x48300180 0x80
+> +		0x48300200 0x80>;
+Do you really need the 4 address ranges here? You eventually do add in
+child nodes with other address ranges so isn't the first entry sufficient?
+I haven't really looked at the DT details so it is enforced by that let me
+know.
 
-This patch addresses the above issues by: 1) setting QFQ parameters to
-proper values for supporting TSO/GSO (in particular, setting the
-maximum possible packet size to 64KB), 2) automatically increasing the
-max packet size for a class, lmax, when a packet with a larger size
-than the current value of lmax arrives.
+[...]
+> +
+> +#define PWMSS_CLKCONFIG		8
+> +
 
-The drawback of the first point is that the maximum weight for a class
-is now limited to 4096, which is equal to 1/16 of the maximum weight
-sum.
+This #def can use a comment.
 
-Finally, this patch also forcibly caps the timestamps of a class if
-they are too high to be stored in the bucket list. This capping, taken
-from QFQ+ [3], handles the unfrequent case described in the comment to
-the function slot_insert.
+> +void pwmss_submodule_state_change(struct device *dev, int pos, bool enable)
+> +{
+> +	struct pwmss_info *info = dev_get_drvdata(dev);
+> +	u16 val;
+> +
+> +	val = readw(info->mmio_base + PWMSS_CLKCONFIG);
+> +	if (enable)
+> +		val |= 1 << pos;
+> +	else
+> +		val &= ~(1 << pos);
+> +	mutex_lock(&info->pwmss_lock);
+> +	writew(val , info->mmio_base + PWMSS_CLKCONFIG);
+> +	mutex_unlock(&info->pwmss_lock);
+> +}
+> +EXPORT_SYMBOL(pwmss_submodule_state_change);
 
-[1] http://marc.info/?l=linux-netdev&m=134968777902077&w=2
-[2] http://marc.info/?l=linux-netdev&m=135096573507936&w=2
-[3] http://marc.info/?l=linux-netdev&m=134902691421670&w=2
+I see a clk_en_ack field in the clock status register. You should be checking that.
 
-Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
-Tested-by: Cong Wang <amwang@redhat.com>
-Acked-by: Stephen Hemminger <shemminger@vyatta.com>
----
- net/sched/sch_qfq.c |  109 +++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 79 insertions(+), 30 deletions(-)
+[...]
 
-diff --git a/net/sched/sch_qfq.c b/net/sched/sch_qfq.c
-index f0dd83c..9687fa1 100644
---- a/net/sched/sch_qfq.c
-+++ b/net/sched/sch_qfq.c
-@@ -84,18 +84,19 @@
-  * grp->index is the index of the group; and grp->slot_shift
-  * is the shift for the corresponding (scaled) sigma_i.
-  */
--#define QFQ_MAX_INDEX		19
--#define QFQ_MAX_WSHIFT		16
-+#define QFQ_MAX_INDEX		24
-+#define QFQ_MAX_WSHIFT		12
- 
- #define	QFQ_MAX_WEIGHT		(1<<QFQ_MAX_WSHIFT)
--#define QFQ_MAX_WSUM		(2*QFQ_MAX_WEIGHT)
-+#define QFQ_MAX_WSUM		(16*QFQ_MAX_WEIGHT)
- 
- #define FRAC_BITS		30	/* fixed point arithmetic */
- #define ONE_FP			(1UL << FRAC_BITS)
- #define IWSUM			(ONE_FP/QFQ_MAX_WSUM)
- 
--#define QFQ_MTU_SHIFT		11
-+#define QFQ_MTU_SHIFT		16	/* to support TSO/GSO */
- #define QFQ_MIN_SLOT_SHIFT	(FRAC_BITS + QFQ_MTU_SHIFT - QFQ_MAX_INDEX)
-+#define QFQ_MIN_LMAX		256	/* min possible lmax for a class */
- 
- /*
-  * Possible group states.  These values are used as indexes for the bitmaps
-@@ -231,6 +232,32 @@ static void qfq_update_class_params(struct qfq_sched *q, struct qfq_class *cl,
- 	q->wsum += delta_w;
- }
- 
-+static void qfq_update_reactivate_class(struct qfq_sched *q,
-+					struct qfq_class *cl,
-+					u32 inv_w, u32 lmax, int delta_w)
-+{
-+	bool need_reactivation = false;
-+	int i = qfq_calc_index(inv_w, lmax);
-+
-+	if (&q->groups[i] != cl->grp && cl->qdisc->q.qlen > 0) {
-+		/*
-+		 * shift cl->F back, to not charge the
-+		 * class for the not-yet-served head
-+		 * packet
-+		 */
-+		cl->F = cl->S;
-+		/* remove class from its slot in the old group */
-+		qfq_deactivate_class(q, cl);
-+		need_reactivation = true;
-+	}
-+
-+	qfq_update_class_params(q, cl, lmax, inv_w, delta_w);
-+
-+	if (need_reactivation) /* activate in new group */
-+		qfq_activate_class(q, cl, qdisc_peek_len(cl->qdisc));
-+}
-+
-+
- static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 			    struct nlattr **tca, unsigned long *arg)
- {
-@@ -238,7 +265,7 @@ static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 	struct qfq_class *cl = (struct qfq_class *)*arg;
- 	struct nlattr *tb[TCA_QFQ_MAX + 1];
- 	u32 weight, lmax, inv_w;
--	int i, err;
-+	int err;
- 	int delta_w;
- 
- 	if (tca[TCA_OPTIONS] == NULL) {
-@@ -270,16 +297,14 @@ static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 
- 	if (tb[TCA_QFQ_LMAX]) {
- 		lmax = nla_get_u32(tb[TCA_QFQ_LMAX]);
--		if (!lmax || lmax > (1UL << QFQ_MTU_SHIFT)) {
-+		if (lmax < QFQ_MIN_LMAX || lmax > (1UL << QFQ_MTU_SHIFT)) {
- 			pr_notice("qfq: invalid max length %u\n", lmax);
- 			return -EINVAL;
- 		}
- 	} else
--		lmax = 1UL << QFQ_MTU_SHIFT;
-+		lmax = psched_mtu(qdisc_dev(sch));
- 
- 	if (cl != NULL) {
--		bool need_reactivation = false;
--
- 		if (tca[TCA_RATE]) {
- 			err = gen_replace_estimator(&cl->bstats, &cl->rate_est,
- 						    qdisc_root_sleeping_lock(sch),
-@@ -291,24 +316,8 @@ static int qfq_change_class(struct Qdisc *sch, u32 classid, u32 parentid,
- 		if (lmax == cl->lmax && inv_w == cl->inv_w)
- 			return 0; /* nothing to update */
- 
--		i = qfq_calc_index(inv_w, lmax);
- 		sch_tree_lock(sch);
--		if (&q->groups[i] != cl->grp && cl->qdisc->q.qlen > 0) {
--			/*
--			 * shift cl->F back, to not charge the
--			 * class for the not-yet-served head
--			 * packet
--			 */
--			cl->F = cl->S;
--			/* remove class from its slot in the old group */
--			qfq_deactivate_class(q, cl);
--			need_reactivation = true;
--		}
--
--		qfq_update_class_params(q, cl, lmax, inv_w, delta_w);
--
--		if (need_reactivation) /* activate in new group */
--			qfq_activate_class(q, cl, qdisc_peek_len(cl->qdisc));
-+		qfq_update_reactivate_class(q, cl, inv_w, lmax, delta_w);
- 		sch_tree_unlock(sch);
- 
- 		return 0;
-@@ -663,15 +672,48 @@ static void qfq_make_eligible(struct qfq_sched *q, u64 old_V)
- 
- 
- /*
-- * XXX we should make sure that slot becomes less than 32.
-- * This is guaranteed by the input values.
-- * roundedS is always cl->S rounded on grp->slot_shift bits.
-+ * If the weight and lmax (max_pkt_size) of the classes do not change,
-+ * then QFQ guarantees that the slot index is never higher than
-+ * 2 + ((1<<QFQ_MTU_SHIFT)/QFQ_MIN_LMAX) * (QFQ_MAX_WEIGHT/QFQ_MAX_WSUM).
-+ *
-+ * With the current values of the above constants, the index is
-+ * then guaranteed to never be higher than 2 + 256 * (1 / 16) = 18.
-+ *
-+ * When the weight of a class is increased or the lmax of the class is
-+ * decreased, a new class with smaller slot size may happen to be
-+ * activated. The activation of this class should be properly delayed
-+ * to when the service of the class has finished in the ideal system
-+ * tracked by QFQ. If the activation of the class is not delayed to
-+ * this reference time instant, then this class may be unjustly served
-+ * before other classes waiting for service. This may cause
-+ * (unfrequently) the above bound to the slot index to be violated for
-+ * some of these unlucky classes.
-+ *
-+ * Instead of delaying the activation of the new class, which is quite
-+ * complex, the following inaccurate but simple solution is used: if
-+ * the slot index is higher than QFQ_MAX_SLOTS-2, then the timestamps
-+ * of the class are shifted backward so as to let the slot index
-+ * become equal to QFQ_MAX_SLOTS-2. This threshold is used because, if
-+ * the slot index is above it, then the data structure implementing
-+ * the bucket list either gets immediately corrupted or may get
-+ * corrupted on a possible next packet arrival that causes the start
-+ * time of the group to be shifted backward.
-  */
- static void qfq_slot_insert(struct qfq_group *grp, struct qfq_class *cl,
- 			    u64 roundedS)
- {
- 	u64 slot = (roundedS - grp->S) >> grp->slot_shift;
--	unsigned int i = (grp->front + slot) % QFQ_MAX_SLOTS;
-+	unsigned int i; /* slot index in the bucket list */
-+
-+	if (unlikely(slot > QFQ_MAX_SLOTS - 2)) {
-+		u64 deltaS = roundedS - grp->S -
-+			((u64)(QFQ_MAX_SLOTS - 2)<<grp->slot_shift);
-+		cl->S -= deltaS;
-+		cl->F -= deltaS;
-+		slot = QFQ_MAX_SLOTS - 2;
-+	}
-+
-+	i = (grp->front + slot) % QFQ_MAX_SLOTS;
- 
- 	hlist_add_head(&cl->next, &grp->slots[i]);
- 	__set_bit(slot, &grp->full_slots);
-@@ -892,6 +934,13 @@ static int qfq_enqueue(struct sk_buff *skb, struct Qdisc *sch)
- 	}
- 	pr_debug("qfq_enqueue: cl = %x\n", cl->common.classid);
- 
-+	if (unlikely(cl->lmax < qdisc_pkt_len(skb))) {
-+		pr_debug("qfq: increasing maxpkt from %u to %u for class %u",
-+			  cl->lmax, qdisc_pkt_len(skb), cl->common.classid);
-+		qfq_update_reactivate_class(q, cl, cl->inv_w,
-+					    qdisc_pkt_len(skb), 0);
-+	}
-+
- 	err = qdisc_enqueue(skb, cl->qdisc);
- 	if (unlikely(err != NET_XMIT_SUCCESS)) {
- 		pr_debug("qfq_enqueue: enqueue failed %d\n", err);
--- 
-1.7.9.5
+> +
+> +MODULE_DESCRIPTION("pwmss driver");
+> +MODULE_AUTHOR("Texas Instruments");
+> +MODULE_LICENSE("GPL");
+> diff --git a/drivers/pwm/tipwmss.h b/drivers/pwm/tipwmss.h
+> new file mode 100644
+> index 0000000..83fdc29
+> --- /dev/null
+> +++ b/drivers/pwm/tipwmss.h
+> @@ -0,0 +1,8 @@
 
+License text?
+ 
+> +#ifdef CONFIG_PWM_TIPWMSS
+> +extern void pwmss_submodule_state_change(struct device *dev, int pos,
+> +		bool enable);
+> +#else
+> +static inline void pwmss_submodule_state_change(struct device *dev, int pos,
+> +		bool enable)
+> +{}
+> +#endif
+
+Regards,
+Vaibhav
