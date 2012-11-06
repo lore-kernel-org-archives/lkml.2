@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab2KFSdU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 13:33:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57824 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510Ab2KFSdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 13:33:19 -0500
-Message-ID: <5099586B.6050300@redhat.com>
-Date: Tue, 06 Nov 2012 13:35:23 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S1752192Ab2KFSfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 13:35:48 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:33451 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751061Ab2KFSfq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 13:35:46 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+bATrYMFmEUAsc/QAo4I2a
+Date: Tue, 6 Nov 2012 10:35:32 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Russ Dill <Russ.Dill@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
+ omap_devices to mach-omap2)
+Message-ID: <20121106183531.GH6801@atomide.com>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
+ <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com>
+ <CACxGe6vDzmPWsOZ53HTwkYmDEivg9TpnRrvudY2FK95V06O24w@mail.gmail.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/19] mm: numa: define _PAGE_NUMA
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de> <1352193295-26815-5-git-send-email-mgorman@suse.de>
-In-Reply-To: <1352193295-26815-5-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACxGe6vDzmPWsOZ53HTwkYmDEivg9TpnRrvudY2FK95V06O24w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 04:14 AM, Mel Gorman wrote:
-> From: Andrea Arcangeli <aarcange@redhat.com>
->
-> The objective of _PAGE_NUMA is to be able to trigger NUMA hinting page
-> faults to identify the per NUMA node working set of the thread at
-> runtime.
->
-> Arming the NUMA hinting page fault mechanism works similarly to
-> setting up a mprotect(PROT_NONE) virtual range: the present bit is
-> cleared at the same time that _PAGE_NUMA is set, so when the fault
-> triggers we can identify it as a NUMA hinting page fault.
->
-> _PAGE_NUMA on x86 shares the same bit number of _PAGE_PROTNONE (but it
-> could also use a different bitflag, it's up to the architecture to
-> decide).
->
-> It would be confusing to call the "NUMA hinting page faults" as
-> "do_prot_none faults". They're different events and _PAGE_NUMA doesn't
-> alter the semantics of mprotect(PROT_NONE) in any way.
->
-> Sharing the same bitflag with _PAGE_PROTNONE in fact complicates
-> things: it requires us to ensure the code paths executed by
-> _PAGE_PROTNONE remains mutually exclusive to the code paths executed
-> by _PAGE_NUMA at all times, to avoid _PAGE_NUMA and _PAGE_PROTNONE to
-> step into each other toes.
->
-> Because we want to be able to set this bitflag in any established pte
-> or pmd (while clearing the present bit at the same time) without
-> losing information, this bitflag must never be set when the pte and
-> pmd are present, so the bitflag picked for _PAGE_NUMA usage, must not
-> be used by the swap entry format.
->
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+* Grant Likely <grant.likely@secretlab.ca> [121106 03:16]:
+> On Tue, Nov 6, 2012 at 10:30 AM, Pantelis Antoniou
+> <panto@antoniou-consulting.com> wrote:
+> >
+> > Another can of worms is the pinctrl nodes.
+> 
+> Yes... new pinctrl data would need to trigger adding new data to
+> pinctrl. I don't know if the pinctrl api supports that.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+The actual pins stay the same, just their configuration
+changes. AFAIK all that is already supported using the
+pinctrl framework.
 
+For example, considering hotplugging capes on the beaglebone:
+
+1. You need to map all the sensible modes for the pins exposed
+   to the capes in the board specific .dts file. This will
+   add roughly 4 x nr_capbus_pins named modes in the .dts file
+   so not too bad.
+
+2. Claim all the capebus pins during the capbus driver probe
+   and set them to some safe mode.
+
+3. Try to detect the connected cape(s) over i2c.
+
+4. Use pinctr_select_state to set the desired modes for
+   the pins used by the cape(s).
+
+5. Enable capebus regulators and clocks etc.
+
+6. Load the driver modules for whatever omap internal
+   devices the cape supports.
+
+You could also claim the pin for the omap internal
+devices instead of claiming them in the capebus, but then
+things can get messy with binding and unbinding the
+drivers. So just claiming all the pins in the capebus
+probably keeps things simpler.
+
+Regards,
+
+Tony
