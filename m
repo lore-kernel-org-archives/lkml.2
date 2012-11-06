@@ -1,40 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933069Ab2KFBEP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 20:04:15 -0500
-Received: from mga09.intel.com ([134.134.136.24]:32454 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753630Ab2KFBEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 20:04:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,719,1344236400"; 
-   d="scan'208";a="215582483"
-Date: Tue, 6 Nov 2012 08:48:00 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [floppy, blk_peek_request] BUG: scheduling while atomic:
- kworker/u:0/6/0x10000002
-Message-ID: <20121106004800.GA28248@localhost>
-References: <20121105070106.GA17015@localhost>
- <alpine.LNX.2.00.1211051422500.24253@pobox.suse.cz>
- <alpine.LNX.2.00.1211051433180.24253@pobox.suse.cz>
- <20121105152706.GA3200@herton-Z68MA-D2H-B3>
- <alpine.LNX.2.00.1211051632460.24253@pobox.suse.cz>
+	id S933289Ab2KFBGv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 20:06:51 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:57250 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932295Ab2KFBGu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 20:06:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1211051632460.24253@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352125231-8388-1-git-send-email-ntl@pobox.com>
+References: <1352125231-8388-1-git-send-email-ntl@pobox.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 5 Nov 2012 17:06:27 -0800
+Message-ID: <CAK5ve-+AYDM7eo1SBkMs-zHwnQL2URXc8zZJPQX9NeHD1DOTNg@mail.gmail.com>
+Subject: Re: [PATCH] ledtrig-cpu: kill useless mutex to fix sleep in atomic context
+To: Nathan Lynch <ntl@pobox.com>
+Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        miles.lane@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Fengguang, could you please test with the patch below instead? (it should 
-> be functionally equivalent in most of the cases though).
+On Mon, Nov 5, 2012 at 6:20 AM, Nathan Lynch <ntl@pobox.com> wrote:
+> Seeing the following every time the CPU enters or leaves idle on a
+> Beagleboard:
+>
+> BUG: sleeping function called from invalid context at kernel/mutex.c:269
+> in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/0
+> no locks held by swapper/0/0.
+> [<c001659c>] (unwind_backtrace+0x0/0xf8) from [<c05aaa7c>] (mutex_lock_nested+0x24/0x380)
+> [<c05aaa7c>] (mutex_lock_nested+0x24/0x380) from [<c043bd1c>] (ledtrig_cpu+0x38/0x88)
+> [<c043bd1c>] (ledtrig_cpu+0x38/0x88) from [<c000f4b0>] (cpu_idle+0xf4/0x120)
+> [<c000f4b0>] (cpu_idle+0xf4/0x120) from [<c07e47c8>] (start_kernel+0x2bc/0x30c)
+>
+> Miles Lane has reported seeing similar splats during system suspend.
+>
+> The mutex in struct led_trigger_cpu appears to have no function: it
+> resides in a per-cpu data structure which never changes after the
+> trigger is registered.  So just remove it.
+>
+> Reported-by: Miles Lane <miles.lane@gmail.com>
+> Signed-off-by: Nathan Lynch <ntl@pobox.com>
 
-It works, thanks!
+Thanks, I also think we probable don't need this locking for per CPU
+data. But if I'm wrong please correct me.
 
-Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+I will merge this and send to Linus soon.
+
+-Bryan
+
+> ---
+>  drivers/leds/ledtrig-cpu.c | 21 ---------------------
+>  1 file changed, 21 deletions(-)
+>
+> diff --git a/drivers/leds/ledtrig-cpu.c b/drivers/leds/ledtrig-cpu.c
+> index b312056..4239b39 100644
+> --- a/drivers/leds/ledtrig-cpu.c
+> +++ b/drivers/leds/ledtrig-cpu.c
+> @@ -33,8 +33,6 @@
+>  struct led_trigger_cpu {
+>         char name[MAX_NAME_LEN];
+>         struct led_trigger *_trig;
+> -       struct mutex lock;
+> -       int lock_is_inited;
+>  };
+>
+>  static DEFINE_PER_CPU(struct led_trigger_cpu, cpu_trig);
+> @@ -50,12 +48,6 @@ void ledtrig_cpu(enum cpu_led_event ledevt)
+>  {
+>         struct led_trigger_cpu *trig = &__get_cpu_var(cpu_trig);
+>
+> -       /* mutex lock should be initialized before calling mutex_call() */
+> -       if (!trig->lock_is_inited)
+> -               return;
+> -
+> -       mutex_lock(&trig->lock);
+> -
+>         /* Locate the correct CPU LED */
+>         switch (ledevt) {
+>         case CPU_LED_IDLE_END:
+> @@ -75,8 +67,6 @@ void ledtrig_cpu(enum cpu_led_event ledevt)
+>                 /* Will leave the LED as it is */
+>                 break;
+>         }
+> -
+> -       mutex_unlock(&trig->lock);
+>  }
+>  EXPORT_SYMBOL(ledtrig_cpu);
+>
+> @@ -117,14 +107,9 @@ static int __init ledtrig_cpu_init(void)
+>         for_each_possible_cpu(cpu) {
+>                 struct led_trigger_cpu *trig = &per_cpu(cpu_trig, cpu);
+>
+> -               mutex_init(&trig->lock);
+> -
+>                 snprintf(trig->name, MAX_NAME_LEN, "cpu%d", cpu);
+>
+> -               mutex_lock(&trig->lock);
+>                 led_trigger_register_simple(trig->name, &trig->_trig);
+> -               trig->lock_is_inited = 1;
+> -               mutex_unlock(&trig->lock);
+>         }
+>
+>         register_syscore_ops(&ledtrig_cpu_syscore_ops);
+> @@ -142,15 +127,9 @@ static void __exit ledtrig_cpu_exit(void)
+>         for_each_possible_cpu(cpu) {
+>                 struct led_trigger_cpu *trig = &per_cpu(cpu_trig, cpu);
+>
+> -               mutex_lock(&trig->lock);
+> -
+>                 led_trigger_unregister_simple(trig->_trig);
+>                 trig->_trig = NULL;
+>                 memset(trig->name, 0, MAX_NAME_LEN);
+> -               trig->lock_is_inited = 0;
+> -
+> -               mutex_unlock(&trig->lock);
+> -               mutex_destroy(&trig->lock);
+>         }
+>
+>         unregister_syscore_ops(&ledtrig_cpu_syscore_ops);
+> --
+> 1.7.11.7
+>
