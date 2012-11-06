@@ -1,247 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab2KFTnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 14:43:45 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:58838 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab2KFTnE (ORCPT
+	id S1753136Ab2KFToE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 14:44:04 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33209 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab2KFTlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 14:43:04 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH 09/10] mm: Reflect memory region changes in zoneinfo
-To: akpm@linux-foundation.org, mgorman@suse.de, mjg59@srcf.ucam.org,
-        paulmck@linux.vnet.ibm.com, dave@linux.vnet.ibm.com,
-        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
-        arjan@linux.intel.com, kmpark@infradead.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
-Cc: gargankita@gmail.com, amit.kachhap@linaro.org, svaidy@linux.vnet.ibm.com,
-        thomas.abraham@linaro.org, santosh.shilimkar@ti.com,
-        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Wed, 07 Nov 2012 01:11:54 +0530
-Message-ID: <20121106194145.6560.98266.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20121106193650.6560.71366.stgit@srivatsabhat.in.ibm.com>
-References: <20121106193650.6560.71366.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12110619-3864-0000-0000-0000056DCE43
+	Tue, 6 Nov 2012 14:41:08 -0500
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH 2/2] Staging/media: Use dev_ printks in go7007/s2250-board.c
+Date: Wed,  7 Nov 2012 04:41:03 +0900
+Message-Id: <1352230863-9474-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1352230817-9440-1-git-send-email-yamanetoshi@gmail.com>
+References: <1352230817-9440-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ankita Garg <gargankita@gmail.com>
+fixed below checkpatch warning.
+- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
 
-This patch modifies the output of /proc/zoneinfo to take the memory regions
-into into account. Below is the output on a KVM guest booted with 4 regions,
-each of size 512MB.
-
-cat /proc/zoneinfo:
-
-Node 0, Region 0, zone      DMA
-  pages free     3975
-        min      11
-        low      13
-        high     16
-        scanned  0
-        spanned  4080
-        present  3977
-    nr_free_pages 3975
-    nr_inactive_anon 0
-    nr_active_anon 0
-    nr_inactive_file 0
-    nr_active_file 0
-    nr_unevictable 0
-    nr_mlock     0
-    nr_anon_pages 0
-    nr_mapped    0
-    nr_file_pages 0
-    nr_dirty     0
-    nr_writeback 0
-    nr_slab_reclaimable 0
-    nr_slab_unreclaimable 2
-    nr_page_table_pages 0
-    nr_kernel_stack 0
-    nr_unstable  0
-    nr_bounce    0
-    nr_vmscan_write 0
-    nr_vmscan_immediate_reclaim 0
-    nr_writeback_temp 0
-    nr_isolated_anon 0
-    nr_isolated_file 0
-    nr_shmem     0
-    nr_dirtied   0
-    nr_written   0
-    nr_anon_transparent_hugepages 0
-    nr_free_cma  0
-        protection: (0, 471, 471, 471)
-  pagesets
-    cpu: 0
-              count: 0
-              high:  0
-              batch: 1
-  vm stats threshold: 6
-    cpu: 1
-              count: 0
-              high:  0
-              batch: 1
-  vm stats threshold: 6
-    cpu: 2
-              count: 0
-              high:  0
-              batch: 1
-  vm stats threshold: 6
-    cpu: 3
-              count: 0
-              high:  0
-              batch: 1
-  vm stats threshold: 6
-  all_unreclaimable: 0
-  start_pfn:         16
-  inactive_ratio:    1
-Node 0, Region 0, zone    DMA32
-  pages free     107720
-        min      338
-        low      422
-        high     507
-        scanned  0
-        spanned  126992
-        present  120642
-.....
-Node 0, Region 1, zone    DMA32
-  pages free     131072
-        min      367
-        low      458
-        high     550
-        scanned  0
-        spanned  131072
-        present  131072
-.....
-Node 0, Region 2, zone    DMA32
-  pages free     131072
-        min      367
-        low      458
-        high     550
-        scanned  0
-        spanned  131072
-        present  131072
-.....
-Node 0, Region 3, zone    DMA32
-  pages free     121880
-        min      341
-        low      426
-        high     511
-        scanned  0
-        spanned  131054
-        present  121928
-.....
-
-Signed-off-by: Ankita Garg <gargankita@gmail.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
 ---
+ drivers/staging/media/go7007/s2250-board.c |   27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
- mm/vmstat.c |   31 ++++++++++++++++++-------------
- 1 file changed, 18 insertions(+), 13 deletions(-)
-
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 86a92a6..b3be9ba 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -179,9 +179,12 @@ void refresh_zone_stat_thresholds(void)
- 		 */
- 		tolerate_drift = low_wmark_pages(zone) - min_wmark_pages(zone);
- 		max_drift = num_online_cpus() * threshold;
--		if (max_drift > tolerate_drift)
-+		if (max_drift > tolerate_drift) {
- 			zone->percpu_drift_mark = high_wmark_pages(zone) +
- 					max_drift;
-+			printk("zone %s drift mark %lu \n", zone->name,
-+						zone->percpu_drift_mark);
-+		}
+diff --git a/drivers/staging/media/go7007/s2250-board.c b/drivers/staging/media/go7007/s2250-board.c
+index 6f94c17..d1cfefe 100644
+--- a/drivers/staging/media/go7007/s2250-board.c
++++ b/drivers/staging/media/go7007/s2250-board.c
+@@ -173,7 +173,7 @@ static int write_reg(struct i2c_client *client, u8 reg, u8 value)
+ 
+ 	usb = go->hpi_context;
+ 	if (mutex_lock_interruptible(&usb->i2c_lock) != 0) {
+-		printk(KERN_INFO "i2c lock failed\n");
++		dev_info(&client->dev, "i2c lock failed\n");
+ 		kfree(buf);
+ 		return -EINTR;
  	}
- }
+@@ -212,7 +212,7 @@ static int write_reg_fp(struct i2c_client *client, u16 addr, u16 val)
  
-@@ -189,12 +192,11 @@ void set_pgdat_percpu_threshold(pg_data_t *pgdat,
- 				int (*calculate_pressure)(struct zone *))
- {
- 	struct mem_region *region;
--	struct zone *zone;
- 	int cpu;
- 	int threshold;
- 	int i;
+ 	usb = go->hpi_context;
+ 	if (mutex_lock_interruptible(&usb->i2c_lock) != 0) {
+-		printk(KERN_INFO "i2c lock failed\n");
++		dev_info(&client->dev, "i2c lock failed\n");
+ 		kfree(buf);
+ 		return -EINTR;
+ 	}
+@@ -230,13 +230,13 @@ static int write_reg_fp(struct i2c_client *client, u16 addr, u16 val)
+ 		val_read = (buf[2] << 8) + buf[3];
+ 		kfree(buf);
+ 		if (val_read != val) {
+-			printk(KERN_INFO "invalid fp write %x %x\n",
+-			       val_read, val);
++			dev_info(&client->dev, "invalid fp write %x %x\n",
++				 val_read, val);
+ 			return -EFAULT;
+ 		}
+ 		if (subaddr != addr) {
+-			printk(KERN_INFO "invalid fp write addr %x %x\n",
+-			       subaddr, addr);
++			dev_info(&client->dev, "invalid fp write addr %x %x\n",
++				 subaddr, addr);
+ 			return -EFAULT;
+ 		}
+ 	} else {
+@@ -274,7 +274,7 @@ static int read_reg_fp(struct i2c_client *client, u16 addr, u16 *val)
+ 	memset(buf, 0xcd, 6);
+ 	usb = go->hpi_context;
+ 	if (mutex_lock_interruptible(&usb->i2c_lock) != 0) {
+-		printk(KERN_INFO "i2c lock failed\n");
++		dev_info(&client->dev, "i2c lock failed\n");
+ 		kfree(buf);
+ 		return -EINTR;
+ 	}
+@@ -298,7 +298,7 @@ static int write_regs(struct i2c_client *client, u8 *regs)
  
--	for (i = 0; i < pgdat->nr_zones; i++) {
-+	for (i = 0; i < pgdat->nr_node_zone_types; i++) {
- 		for_each_mem_region_in_node(region, pgdat->node_id) {
- 			struct zone *zone = region->region_zones + i;
+ 	for (i = 0; !((regs[i] == 0x00) && (regs[i+1] == 0x00)); i += 2) {
+ 		if (write_reg(client, regs[i], regs[i+1]) < 0) {
+-			printk(KERN_INFO "s2250: failed\n");
++			dev_info(&client->dev, "failed\n");
+ 			return -1;
+ 		}
+ 	}
+@@ -311,7 +311,7 @@ static int write_regs_fp(struct i2c_client *client, u16 *regs)
  
-@@ -818,11 +820,12 @@ const char * const vmstat_text[] = {
+ 	for (i = 0; !((regs[i] == 0x00) && (regs[i+1] == 0x00)); i += 2) {
+ 		if (write_reg_fp(client, regs[i], regs[i+1]) < 0) {
+-			printk(KERN_INFO "s2250: failed fp\n");
++			dev_info(&client->dev, "failed fp\n");
+ 			return -1;
+ 		}
+ 	}
+@@ -605,23 +605,20 @@ static int s2250_probe(struct i2c_client *client,
  
- #ifdef CONFIG_PROC_FS
- static void frag_show_print(struct seq_file *m, pg_data_t *pgdat,
--						struct zone *zone)
-+					struct mem_region *region, struct zone *zone)
- {
- 	int order;
- 
--	seq_printf(m, "Node %d, zone %8s ", pgdat->node_id, zone->name);
-+	seq_printf(m, "Node %d, REG %d, zone %8s ", pgdat->node_id,
-+						region->region, zone->name);
- 	for (order = 0; order < MAX_ORDER; ++order)
- 		seq_printf(m, "%6lu ", zone->free_area[order].nr_free);
- 	seq_putc(m, '\n');
-@@ -838,14 +841,15 @@ static int frag_show(struct seq_file *m, void *arg)
- 	return 0;
- }
- 
--static void pagetypeinfo_showfree_print(struct seq_file *m,
--					pg_data_t *pgdat, struct zone *zone)
-+static void pagetypeinfo_showfree_print(struct seq_file *m, pg_data_t *pgdat,
-+						struct mem_region *region, struct zone *zone)
- {
- 	int order, mtype;
- 
- 	for (mtype = 0; mtype < MIGRATE_TYPES; mtype++) {
--		seq_printf(m, "Node %4d, zone %8s, type %12s ",
-+		seq_printf(m, "Node %4d, Region %d, zone %8s, type %12s ",
- 					pgdat->node_id,
-+					region->region,
- 					zone->name,
- 					migratetype_names[mtype]);
- 		for (order = 0; order < MAX_ORDER; ++order) {
-@@ -880,8 +884,8 @@ static int pagetypeinfo_showfree(struct seq_file *m, void *arg)
- 	return 0;
- }
- 
--static void pagetypeinfo_showblockcount_print(struct seq_file *m,
--					pg_data_t *pgdat, struct zone *zone)
-+static void pagetypeinfo_showblockcount_print(struct seq_file *m, pg_data_t *pgdat,
-+							struct mem_region *region, struct zone *zone)
- {
- 	int mtype;
- 	unsigned long pfn;
-@@ -908,7 +912,7 @@ static void pagetypeinfo_showblockcount_print(struct seq_file *m,
+ 	/* initialize the audio */
+ 	if (write_regs(audio, aud_regs) < 0) {
+-		printk(KERN_ERR
+-		       "s2250: error initializing audio\n");
++		dev_err(&client->dev, "error initializing audio\n");
+ 		i2c_unregister_device(audio);
+ 		kfree(state);
+ 		return 0;
  	}
  
- 	/* Print counts */
--	seq_printf(m, "Node %d, zone %8s ", pgdat->node_id, zone->name);
-+	seq_printf(m, "Node %d, Region %d, zone %8s ", pgdat->node_id, region->region, zone->name);
- 	for (mtype = 0; mtype < MIGRATE_TYPES; mtype++)
- 		seq_printf(m, "%12lu ", count[mtype]);
- 	seq_putc(m, '\n');
-@@ -989,10 +993,11 @@ static const struct file_operations pagetypeinfo_file_ops = {
- };
- 
- static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
--							struct zone *zone)
-+					struct mem_region *region, struct zone *zone)
- {
- 	int i;
--	seq_printf(m, "Node %d, zone %8s", pgdat->node_id, zone->name);
-+	seq_printf(m, "Node %d, Region %d, zone %8s", pgdat->node_id,
-+						region->region, zone->name);
- 	seq_printf(m,
- 		   "\n  pages free     %lu"
- 		   "\n        min      %lu"
+ 	if (write_regs(client, vid_regs) < 0) {
+-		printk(KERN_ERR
+-		       "s2250: error initializing decoder\n");
++		dev_err(&client->dev, "error initializing decoder\n");
+ 		i2c_unregister_device(audio);
+ 		kfree(state);
+ 		return 0;
+ 	}
+ 	if (write_regs_fp(client, vid_regs_fp) < 0) {
+-		printk(KERN_ERR
+-		       "s2250: error initializing decoder\n");
++		dev_err(&client->dev, "error initializing decoder\n");
+ 		i2c_unregister_device(audio);
+ 		kfree(state);
+ 		return 0;
+-- 
+1.7.9.5
 
