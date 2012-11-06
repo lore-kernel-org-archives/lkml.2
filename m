@@ -1,63 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab2KFJEA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:04:00 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54393 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752171Ab2KFJD4 (ORCPT
+	id S1751629Ab2KFJFr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:05:47 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:42979 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab2KFJFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:03:56 -0500
-Date: Tue, 6 Nov 2012 10:03:54 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: omap2-mcspi: Reorder the wait_for_completion for tx
-Message-ID: <20121106090353.GI5044@opensource.wolfsonmicro.com>
-References: <1352192419-22872-1-git-send-email-shubhrajyoti@ti.com>
+	Tue, 6 Nov 2012 04:05:42 -0500
+Date: Tue, 6 Nov 2012 10:05:39 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
+Message-ID: <20121106090539.GB21167@dhcp22.suse.cz>
+References: <1349654347-18337-1-git-send-email-kys@microsoft.com>
+ <1349654386-18378-1-git-send-email-kys@microsoft.com>
+ <20121008004358.GA12342@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF930A1FB31@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20121008133539.GA15490@kroah.com>
+ <20121009124755.ce1087b4.akpm@linux-foundation.org>
+ <426367E2313C2449837CD2DE46E7EAF930DF7FBB@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20121105134456.f655b85a.akpm@linux-foundation.org>
+ <426367E2313C2449837CD2DE46E7EAF930DFA7B8@SN2PRD0310MB382.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Op27XXJsWz80g3oF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352192419-22872-1-git-send-email-shubhrajyoti@ti.com>
-X-Cookie: You will contract a rare disease.
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF930DFA7B8@SN2PRD0310MB382.namprd03.prod.outlook.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon 05-11-12 22:12:25, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Andrew Morton [mailto:akpm@linux-foundation.org]
+> > Sent: Monday, November 05, 2012 4:45 PM
+> > To: KY Srinivasan
+> > Cc: Greg KH; olaf@aepfle.de; linux-kernel@vger.kernel.org; andi@firstfloor.org;
+> > apw@canonical.com; devel@linuxdriverproject.org; linux-mm@kvack.org;
+> > Hiroyuki Kamezawa; Michal Hocko; Johannes Weiner; Ying Han
+> > Subject: Re: [PATCH 1/2] mm: Export vm_committed_as
+> > 
+> > On Sat, 3 Nov 2012 14:09:38 +0000
+> > KY Srinivasan <kys@microsoft.com> wrote:
+> > 
+> > >
+> > >
+> > > > >
+> > > > > Ok, but you're going to have to get the -mm developers to agree that
+> > > > > this is ok before I can accept it.
+> > > >
+> > > > Well I guess it won't kill us.
+> > >
+> > > Andrew,
+> > >
+> > > I presumed this was an Ack from you with regards to exporting the
+> > > symbol. Looks like Greg is waiting to hear from you before he can check
+> > > these patches in. Could you provide an explicit Ack.
+> > >
+> > 
+> > Well, I do have some qualms about exporting vm_committed_as to modules.
+> > 
+> > vm_committed_as is a global thing and only really makes sense in a
+> > non-containerised system.  If the application is running within a
+> > memory cgroup then vm_enough_memory() and the global overcommit policy
+> > are at best irrelevant and misleading.
+> > 
+> > If use of vm_committed_as is indeed a bad thing, then exporting it to
+> > modules might increase the amount of badness in the kernel.
+> > 
+> > 
+> > I don't think these qualms are serious enough to stand in the way of
+> > this patch, but I'd be interested in hearing the memcg developers'
+> > thoughts on the matter?
+> > 
+> > 
+> > Perhaps you could provide a detailed description of why your module
+> > actually needs this?  Precisely what information is it looking for
+> > and why?  If we know that then perhaps a more comfortable alternative
+> > can be found.
+> 
+> The Hyper-V host has a policy engine for managing available physical
+> memory across competing virtual machines. This policy decision
+> is based on a number of parameters including the memory pressure
+> reported by the guest. Currently, the pressure calculation is based
+> on the memory commitment made by the guest. From what I can tell, the
+> ratio of currently allocated physical memory to the current memory
+> commitment made by the guest (vm_committed_as) is used as one of the
+> parameters in making the memory balancing decision on the host. This
+> is what Windows guests report to the host. So, I need some measure of
+> memory commitments made by the Linux guest. This is the reason I want
+> export vm_committed_as.
 
---Op27XXJsWz80g3oF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Tue, Nov 06, 2012 at 02:30:19PM +0530, Shubhrajyoti D wrote:
-> The commit  d7b4394e[Cleanup the omap2_mcspi_txrx_dma function]
-> changed the wait_for_completion order. Move the wait so that the
-> rx doesnot wait for the tx to complete.
-
-Applied, thanks.
-
---Op27XXJsWz80g3oF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQmNJtAAoJELSic+t+oim9eOEQAITlEeyV8StC2jLjvPAp4Pac
-XLKNyp/PerjtPTuFyqkPy1w3q5wFaIpZcRpkx2JqOcHC90vaK/lloe28nr+Zli2G
-LcTyA3c3LRexCzg9OOdCKrkTjqm+Ux8xQdba2cGlwN2ALsedXbEJpOICGgiQbYoc
-a4azKWPEKf7PNaBP6dJK/bPFA7GfXnZDycKhl9KvcE1LIfw0cclKmZ+0Q++dF9P7
-X+2MG75/2mSGXdkLgAfbTBkzXobd6eiD0TOOdvD+EqJweR44zOiyxUCDmVJXdgpz
-EFHda0n/WzJw6KdzCMcuDIiAdI+Quqmm8Py8+25+qDwO/l+saURP9IkgEZ/Iirat
-GRvIfmULDsorK5HhVuSxRUHPsMEyNaxUwWH+wdBjdng26mOUpAz9mTJ6O3bH02Oq
-9JGXT1fHJ4VYLtYfYtVVPOw8wySSBTpAezuyix3JeSkCjhwGq+4yrn4QN7rt666/
-t/GUnkP9/qtWgZrODbhD8AupVHc1smTyR5zHu3NVXXUO9OS3jH4/SivHhFS2cQHw
-z1Wm14m3eal4z7pbtoWmqCEP9nNG2mo4Ksz4zWPKdf1n5bpi2v689k7QE+1LVm9E
-PU45xI8efxFH8DIn/2x6u+RW4V4OxQiTV1vsd29sFi+NNrpu5v4d+FnCGJWlZeBG
-kRtS62SWIlPAdjJnIciq
-=OTHT
------END PGP SIGNATURE-----
-
---Op27XXJsWz80g3oF--
+So IIUC it will be guest who reports the value and the guest runs in the
+ring-0 so it is not in any user process context, right?
+If this is correct then memcg doesn't play any role here.
+-- 
+Michal Hocko
+SUSE Labs
