@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab2KFIK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 03:10:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49013 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753667Ab2KFIK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 03:10:56 -0500
-Date: Tue, 6 Nov 2012 13:40:38 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: Kees Cook <keescook@chromium.org>
-cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-In-Reply-To: <CAGXu5jJNZH4fQ6U197+A0nJeawHk+8yNnQj+mKft65L9o6_z7A@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1211061332470.18031@wniryva.cad.erqung.pbz>
-References: <20121024232032.GA31129@www.outflux.net> <20121025041620.GH2616@ZenIV.linux.org.uk> <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com> <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz> <20121025120952.GI2616@ZenIV.linux.org.uk>
- <20121025123843.GJ2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz> <20121026183601.GR2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz> <CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com>
- <alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz> <CAGXu5jJNZH4fQ6U197+A0nJeawHk+8yNnQj+mKft65L9o6_z7A@mail.gmail.com>
+	id S932224Ab2KFILu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 03:11:50 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54385 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754036Ab2KFILs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 03:11:48 -0500
+Date: Tue, 6 Nov 2012 09:11:45 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-kernel@vger.kernel.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+Message-ID: <20121106081144.GB3283@opensource.wolfsonmicro.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+ <20121103201310.GQ16648@intel.com>
+ <1535917.BaYBBNgGy0@vostro.rjw.lan>
+ <4052192.ry8JrGTr6H@vostro.rjw.lan>
+ <20121105105602.GC24532@intel.com>
+ <20121105105639.GE1385@opensource.wolfsonmicro.com>
+ <20121105120219.GF24532@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i0/AhcQY5QxfSsSZ"
+Content-Disposition: inline
+In-Reply-To: <20121105120219.GF24532@intel.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-  Hello Kees, Al,
+--i0/AhcQY5QxfSsSZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-+-- On Sat, 27 Oct 2012, Kees Cook wrote --+
-| If we change binfmt_script to not make a recursive call, then we still
-| need to keep the interp change somewhere off the stack. I still think
-| my patchset is the least bad.
-|
-| Al, do you have something else in mind?
+On Mon, Nov 05, 2012 at 02:02:19PM +0200, Mika Westerberg wrote:
+> On Mon, Nov 05, 2012 at 11:56:39AM +0100, Mark Brown wrote:
 
-  Guys, are there any updates further?
+> > I've got practical systems where there are multiple buses physically
+> > connected, though in practice almost always only one is actually used at
+> > runtime when it's I2C and SPI there are some systems (usually with other
+> > buses) where you might want to use more than one bus.  Not sure those
+> > buses will fit in here though.
 
-  Al, what's your take on the *rare* extra call to request_module?
+> Yeah, I just went through DSDT table of one of our machines and found a
+> device that actually has two I2CSerialBus connectors (and those are to the
+> same controller). What I'm not sure is that is it used to select between
+> two different addresses or doest the device really have two physical I2C
+> connections.
 
-Thank you.
---
-Prasad J Pandit / Red Hat Security Response Team
-DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
+That one is likely to be one device that responds on two addresses as
+others have mentioned.  You do also get devices which have multiple
+physical interfaces for various reasons, such as having a dedicated bus
+for some functions that need to respond quickly.
+
+--i0/AhcQY5QxfSsSZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQmMY2AAoJELSic+t+oim9kiQQAIFCLPY55x3yX8MoBgURppyl
+Y4+/Nwqxv3ALwVPr00JZ5Zi1UZRoXPXwvuk8GxpESafQ0ub6GIqg7jnqaxBKB2fv
+rLgJ1kQMpzRF2v40/CuA7mmbruLAnXhSP8C9fVtXs4GjKHMkGuZCHb88+P7kxXCz
+jQEZkM9Yxe2ND5/BQwBqw+xkSHwrswrZBwwRO7to7GO6d2ZveoDqnymi4dMeBzWg
+fWCk33qLa4InwJjjUmQeOJdr6T8s8Y8L2dVioXM4Vu0oNiRNBXHy8ES+lVl/ziqn
+eQj89BpL84jwPdPkILlnRprOjLzpTAP3dFbttoyol9+tqFPYZMmZFAP6+uJU6TmZ
+QZwQdvSp+GWePU8O7Nt9e96NYMPmIiG13VBfbLIJRoAWQQIEbB7TrRlfjV2QicXf
+My4QRv2wl15sTePF9NVKjX15VsTGcRCEcUFZSYv4j8XdjKLZnJnQgidVAdojaCH6
+6k2LstDx7HmgF4z1SxR/O9heCdONlsTosUerTpqWhQLqIQeb2x670xl1LWjwjkXC
+fcNRNzOGwy8NwqeS4PqIosP3hwPNn+pR0VZcfTyycEgLLE8D2ZPcW4BFTANJxp3x
+6ek1jCQlsFMSOSVYvRlYdCqOss2Tej7awRlfdVmOJRskX8Av3YqMRZ6za2KovfoT
+uCj7ShlU2Z8rxwqgRWZZ
+=GQa+
+-----END PGP SIGNATURE-----
+
+--i0/AhcQY5QxfSsSZ--
