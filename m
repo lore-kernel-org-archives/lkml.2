@@ -1,317 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab2KFFtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 00:49:17 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16307 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751476Ab2KFFs4 convert rfc822-to-8bit (ORCPT
+	id S1752959Ab2KFF5i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 00:57:38 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:38678 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629Ab2KFF5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 00:48:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,721,1344236400"; 
-   d="scan'208";a="215661461"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <jbeulich@suse.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Index: AQHNu2iOTi91BiFLfUibRvXA4zlK85fcS22w
-Date: Tue, 6 Nov 2012 05:48:52 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233537B10C@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
- <5089676602000078000A4928@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
- <508A89CB020000780008E6ED@nat28.tlf.novell.com>
- <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
- <20121026201409.GF2708@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC8292335377346@SHSMSX101.ccr.corp.intel.com>
- <20121102164937.GC27213@konrad-lan.dumpdata.com>
- <alpine.DEB.2.02.1211051512260.2689@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1211051512260.2689@kaball.uk.xensource.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 Nov 2012 00:57:37 -0500
+Date: Mon, 5 Nov 2012 21:57:33 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Kees Cook <keescook@chromium.org>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Beulich <JBeulich@novell.com>, Mel Gorman <mel@csn.ul.ie>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: Re: [PATCH 103/104] mm: remove depends on CONFIG_EXPERIMENTAL
+In-Reply-To: <CAGXu5jKKwE+esJ9QV25vSfnVoejQxHQA7RgoKrzDa9nYMP6uXQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1211052152250.11829@chino.kir.corp.google.com>
+References: <1352156701-4038-1-git-send-email-keescook@chromium.org> <1352156701-4038-104-git-send-email-keescook@chromium.org> <alpine.DEB.2.00.1211051721030.24937@chino.kir.corp.google.com> <CAGXu5jLq63rpM0wargy-DF6jX_ncDnjMbzjNYAYbx+5uNKmTMA@mail.gmail.com>
+ <CAGXu5jKKwE+esJ9QV25vSfnVoejQxHQA7RgoKrzDa9nYMP6uXQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefano Stabellini wrote:
->>> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
->>> index 0e86370..a2af622 100644
->>> --- a/drivers/xen/Makefile
->>> +++ b/drivers/xen/Makefile
->>> @@ -29,6 +29,7 @@ obj-$(CONFIG_XEN_MCE_LOG)           += mcelog.o
->>>  obj-$(CONFIG_XEN_PCIDEV_BACKEND)     += xen-pciback/
->>>  obj-$(CONFIG_XEN_PRIVCMD)            += xen-privcmd.o
->>>  obj-$(CONFIG_XEN_ACPI_PROCESSOR)     += xen-acpi-processor.o
->>> +obj-$(CONFIG_XEN_DOM0)                       += xen_acpi_pad.o
->>>  xen-evtchn-y                         := evtchn.o
->>>  xen-gntdev-y                         := gntdev.o
->>>  xen-gntalloc-y                               := gntalloc.o
+On Mon, 5 Nov 2012, Kees Cook wrote:
+
+> >>> diff --git a/mm/Kconfig b/mm/Kconfig
+> >>> index a3f8ddd..679945e 100644
+> >>> --- a/mm/Kconfig
+> >>> +++ b/mm/Kconfig
+> >>> @@ -1,6 +1,5 @@
+> >>>  config SELECT_MEMORY_MODEL
+> >>>       def_bool y
+> >>> -     depends on EXPERIMENTAL || ARCH_SELECT_MEMORY_MODEL
+> >>>
+> >>>  choice
+> >>>       prompt "Memory model"
+> >>
+> >> I thought you agreed to only drop EXPERIMENTAL here in
+> >> http://marc.info/?l=linux-kernel&m=135103415901094 and leave
+> >> ARCH_SELECT_MEMORY_MODEL, which you've orphaned with the above, for phase
+> >> two of your effort?
+> >
+> > Ah! Yes, thanks. I'll restore that.
 > 
-> it should really depend on ACPI and maybe also X86, otherwise it is
-> going to break the ARM build
+> Wait, no. This is an "OR". ARCH_SELECT_MEMORY_MODEL has no affect on
+> SELECT_MEMORY_MODEL if EXPERIMENTAL is always considered on. My
+> proposal was to deal with ARCH_SELECT_MEMORY_MODEL separately. Did I
+> misunderstand something?
 > 
-> 
 
-Hmm, XEN_DOM0 has already depended on ACPI and X86_LOCAL_APIC (which depends on X86_64).
+We're rehashing the same discussion as before?  I left the earlier thread 
+with the understanding that this would become
 
-Thanks,
-Jinsong
+	depends on ARCH_SELECT_MEMORY_MODEL
 
->>> diff --git a/drivers/xen/xen_acpi_pad.c b/drivers/xen/xen_acpi_pad.c
->>> new file mode 100644
->>> index 0000000..e8c26a4
->>> --- /dev/null
->>> +++ b/drivers/xen/xen_acpi_pad.c
->>> @@ -0,0 +1,206 @@
->>> +/*
->>> + * xen_acpi_pad.c - Xen pad interface
->>> + *
->>> + * Copyright (c) 2012, Intel Corporation.
->>> + *    Author: Liu, Jinsong <jinsong.liu@intel.com> + *
->>> + * This program is free software; you can redistribute it and/or
->>> modify it + * under the terms and conditions of the GNU General
->>> Public License, + * version 2, as published by the Free Software
->>> Foundation. + * + * This program is distributed in the hope it will
->>> be useful, but WITHOUT + * ANY WARRANTY; without even the implied
->>> warranty of MERCHANTABILITY or + * FITNESS FOR A PARTICULAR
->>> PURPOSE.  See the GNU General Public License for + * more details.
->>> + */ +
->>> +#include <linux/kernel.h>
->>> +#include <linux/types.h>
->>> +#include <acpi/acpi_bus.h>
->>> +#include <acpi/acpi_drivers.h>
->>> +#include <asm/xen/hypercall.h>
->>> +#include <xen/interface/version.h>
->>> +
->>> +#define ACPI_PROCESSOR_AGGREGATOR_CLASS      "acpi_pad"
->>> +#define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor
->>> Aggregator" +#define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
->>> +
->>> +static DEFINE_MUTEX(xen_pad_lock);
->>> +
->>> +static int xen_pad_set_idle_cpus(int num_cpus)
->>> +{
->>> +     struct xen_platform_op op;
->>> +
->>> +     if (num_cpus < 0)
->>> +             return -EINVAL;
->>> +
->>> +     /* set cpu nums expected to be idled */
->>> +     op.cmd = XENPF_core_parking;
->>> +     op.u.core_parking.type = XEN_CORE_PARKING_SET;
->>> +     op.u.core_parking.idle_nums = num_cpus;
->>> +
->>> +     return HYPERVISOR_dom0_op(&op);
->>> +}
->>> +
->>> +/*
->>> + * Cannot get idle cpus by using hypercall once (shared with _SET)
->>> + * because of the characteristic of Xen continue_hypercall_on_cpu
->>> + */ +static int xen_pad_get_idle_cpus(void)
->>> +{
->>> +     int ret;
->>> +     struct xen_platform_op op;
->>> +
->>> +     /* get cpu nums actually be idled */
->>> +     op.cmd = XENPF_core_parking;
->>> +     op.u.core_parking.type = XEN_CORE_PARKING_GET;
->>> +     ret = HYPERVISOR_dom0_op(&op);
->>> +     if (ret < 0)
->>> +             return ret;
->>> +
->>> +     return op.u.core_parking.idle_nums;
->>> +}
->>> +
->>> +/*
->>> + * Query firmware how many CPUs should be idle
->>> + * return -1 on failure
->>> + */
->>> +static int xen_acpi_pad_pur(acpi_handle handle)
->>> +{
->>> +     struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
->>> +     union acpi_object *package;
->>> +     int num = -1;
->>> +
->>> +     if (ACPI_FAILURE(acpi_evaluate_object(handle, "_PUR", NULL,
->>> &buffer))) +             return num; +
->>> +     if (!buffer.length || !buffer.pointer)
->>> +             return num;
->>> +
->>> +     package = buffer.pointer;
->>> +
->>> +     if (package->type == ACPI_TYPE_PACKAGE &&
->>> +             package->package.count == 2 &&
->>> +             package->package.elements[0].integer.value == 1) /*
->>> rev 1 */ + +             num =
->>> package->package.elements[1].integer.value; + +    
->>> kfree(buffer.pointer); +     return num;
->>> +}
->>> +
->>> +/* Notify firmware how many CPUs are idle */
->>> +static void xen_acpi_pad_ost(acpi_handle handle, int stat, +    
->>> uint32_t idle_cpus) +{
->>> +     union acpi_object params[3] = {
->>> +             {.type = ACPI_TYPE_INTEGER,},
->>> +             {.type = ACPI_TYPE_INTEGER,},
->>> +             {.type = ACPI_TYPE_BUFFER,},
->>> +     };
->>> +     struct acpi_object_list arg_list = {3, params}; +
->>> +     params[0].integer.value = ACPI_PROCESSOR_AGGREGATOR_NOTIFY;
->>> +     params[1].integer.value =  stat;
->>> +     params[2].buffer.length = 4;
->>> +     params[2].buffer.pointer = (void *)&idle_cpus;
->>> +     acpi_evaluate_object(handle, "_OST", &arg_list, NULL); +}
->>> +
->>> +static void xen_acpi_pad_handle_notify(acpi_handle handle) +{
->>> +     int num_cpus;
->>> +
->>> +     num_cpus = xen_acpi_pad_pur(handle);
->>> +     if (num_cpus < 0)
->>> +             return;
->>> +
->>> +     mutex_lock(&xen_pad_lock);
->>> +     if (xen_pad_set_idle_cpus(num_cpus)) {
->>> +             mutex_unlock(&xen_pad_lock);
->>> +             return;
->>> +     }
->>> +
->>> +     num_cpus = xen_pad_get_idle_cpus();
->>> +     if (num_cpus < 0) {
->>> +             mutex_unlock(&xen_pad_lock);
->>> +             return;
->>> +     }
->>> +     mutex_unlock(&xen_pad_lock);
->>> +
->>> +     xen_acpi_pad_ost(handle, 0, num_cpus);
->>> +}
->>> +
->>> +static void xen_acpi_pad_notify(acpi_handle handle, u32 event, +  
->>> void *data) +{
->>> +     switch (event) {
->>> +     case ACPI_PROCESSOR_AGGREGATOR_NOTIFY:
->>> +             xen_acpi_pad_handle_notify(handle);
->>> +             break;
->>> +     default:
->>> +             pr_warn("Unsupported event [0x%x]\n", event); +      
->>> break; +     }
->>> +}
->>> +
->>> +static int xen_acpi_pad_add(struct acpi_device *device) +{
->>> +     acpi_status status;
->>> +
->>> +     strcpy(acpi_device_name(device),
->>> ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME); +    
->>> strcpy(acpi_device_class(device), ACPI_PROCESSOR_AGGREGATOR_CLASS);
->>> + +     status = acpi_install_notify_handler(device->handle, +     
->>> ACPI_DEVICE_NOTIFY, xen_acpi_pad_notify, device); +     if
->>> (ACPI_FAILURE(status)) +             return -ENODEV;
->>> +
->>> +     return 0;
->>> +}
->>> +
->>> +static int xen_acpi_pad_remove(struct acpi_device *device, +    
->>> int type) +{
->>> +     mutex_lock(&xen_pad_lock);
->>> +     xen_pad_set_idle_cpus(0);
->>> +     mutex_unlock(&xen_pad_lock);
->>> +
->>> +     acpi_remove_notify_handler(device->handle,
->>> +             ACPI_DEVICE_NOTIFY, xen_acpi_pad_notify); +    
->>> return 0; +}
->>> +
->>> +static const struct acpi_device_id pad_device_ids[] = { +    
->>> {"ACPI000C", 0}, +     {"", 0},
->>> +};
->>> +
->>> +static struct acpi_driver xen_acpi_pad_driver = {
->>> +     .name = "processor_aggregator",
->>> +     .class = ACPI_PROCESSOR_AGGREGATOR_CLASS,
->>> +     .ids = pad_device_ids,
->>> +     .ops = {
->>> +             .add = xen_acpi_pad_add,
->>> +             .remove = xen_acpi_pad_remove,
->>> +     },
->>> +};
->>> +
->>> +static int __init xen_acpi_pad_init(void)
->>> +{
->>> +     int ret = -ENOSYS;
->>> +     unsigned int version = HYPERVISOR_xen_version(XENVER_version,
->>> NULL); 
->> 
->> Heh. so if you run this on baremetal I wonder what will happen.
->> 
->>> +     unsigned int major = version >> 16;
->>> +     unsigned int minor = version & 0xffff;
->>> +
->>> +     /* Only DOM0 is responsible for Xen acpi pad */
->>> +     if (!xen_initial_domain())
->>> +             return -ENODEV;
->>> +
->> 
->> I think the check for version should happen here.
->> 
->>> +     /* Only Xen4.2 or later support Xen acpi pad */
->>> +     if (((major == 4) && (minor >= 2)) || (major > 4))
->>> +             ret = acpi_bus_register_driver(&xen_acpi_pad_driver);
->>> + +     return ret;
->>> +}
->>> +subsys_initcall(xen_acpi_pad_init);
->>> diff --git a/include/xen/interface/platform.h
->>> b/include/xen/interface/platform.h index 4755b5f..a3be54c 100644
->>> --- a/include/xen/interface/platform.h +++
->>> b/include/xen/interface/platform.h @@ -324,6 +324,22 @@ struct
->>>  xenpf_cpu_ol { };
->>>  DEFINE_GUEST_HANDLE_STRUCT(xenpf_cpu_ol);
->>> 
->>> +/*
->>> + * CMD 58 and 59 are reserved for cpu hotadd and memory hotadd,
->>> + * which are already occupied at Xen hypervisor side. + */
->>> +#define XENPF_core_parking   60
->>> +struct xenpf_core_parking {
->>> +     /* IN variables */
->>> +#define XEN_CORE_PARKING_SET 1
->>> +#define XEN_CORE_PARKING_GET 2
->>> +     uint32_t type;
->>> +     /* IN variables:  set cpu nums expected to be idled */
->>> +     /* OUT variables: get cpu nums actually be idled */ +    
->>> uint32_t idle_nums; +};
->>> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_core_parking);
->>> +
->>>  struct xen_platform_op {
->>>       uint32_t cmd;
->>>       uint32_t interface_version; /* XENPF_INTERFACE_VERSION */
->>> @@ -341,6 +357,7 @@ struct xen_platform_op {
->>>               struct xenpf_set_processor_pminfo set_pminfo;
->>>               struct xenpf_pcpuinfo          pcpu_info;
->>>               struct xenpf_cpu_ol            cpu_ol;
->>> +             struct xenpf_core_parking      core_parking;
->>>               uint8_t                        pad[128];       } u;
->>>  };
->>> --
->>> 1.7.1
->> 
->> 
->>> _______________________________________________
->>> Xen-devel mailing list
->>> Xen-devel@lists.xen.org
->>> http://lists.xen.org/xen-devel
->> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe
->> linux-kernel" in the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+and then fix ARCH_SELECT_MEMORY_MODEL when people complain for 
+configurations that actually allow you to configure the memory model.  It 
+never should have been short-circuited by EXPERIMENTAL in the first place, 
+but enabling it to be configurable for everybody and orphaning 
+ARCH_SELECT_MEMORY_MODEL doesn't sound appropriate.  I think we should do 
+some due diligence in actually making ARCH_SELECT_MEMORY_MODEL work so 
+people are presented with a config that will work on their machines.
 
+(This is independent of the rest of the series, we can certainly remove 
+EXPERIMENTAL regardless of this decision, I simply think we should be 
+leaving ARCH_SELECT_MEMORY_MODEL to prevent users with 
+CONFIG_EXPERIMENTAL=n from being presented with a new ability to change 
+their memory model that actually doesn't work for them.)
