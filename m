@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab2KFPRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 10:17:21 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:34932 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752375Ab2KFPRS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 10:17:18 -0500
-Date: Tue, 6 Nov 2012 10:17:17 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Huang Ying <ying.huang@intel.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
-In-Reply-To: <1352162625.31033.127.camel@yhuang-dev>
-Message-ID: <Pine.LNX.4.44L0.1211061010390.1430-100000@iolanthe.rowland.org>
+	id S1752090Ab2KFPUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 10:20:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51593 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776Ab2KFPUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 10:20:07 -0500
+Date: Tue, 6 Nov 2012 16:19:56 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Chris Friesen <chris.friesen@genband.com>
+Cc: Florian Weimer <fw@deneb.enyo.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
+        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+In-Reply-To: <50992946.4060101@genband.com>
+Message-ID: <alpine.LNX.2.00.1211061616310.24253@pobox.suse.cz>
+References: <20121104135251.GA17894@srcf.ucam.org> <87d2zsmv8r.fsf@xmission.com> <509766DB.9090906@zytor.com> <87625kh5r2.fsf@xmission.com> <20121105123858.GB4374@srcf.ucam.org> <87sj8nc137.fsf@xmission.com> <20121105202557.GA16076@srcf.ucam.org>
+ <87hap3zbw7.fsf@xmission.com> <20121106031219.GB24235@srcf.ucam.org> <87fw4nv1vj.fsf@xmission.com> <20121106035352.GA24698@srcf.ucam.org> <87hap3s3yl.fsf@xmission.com> <878vafqi5q.fsf@mid.deneb.enyo.de> <50992946.4060101@genband.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Nov 2012, Huang Ying wrote:
+On Tue, 6 Nov 2012, Chris Friesen wrote:
 
-> On Sun, 2012-11-04 at 20:56 -0500, Alan Stern wrote:
-> > On Mon, 5 Nov 2012, Huang Ying wrote:
-> > 
-> > > In current runtime PM implementation, the active child count of the
-> > > parent device may be decreased if the runtime PM of the child device
-> > > is disabled and forbidden.  For example, to unbind a PCI driver with a
-> > > PCI device, the following code path is possible:
-> > > 
-> > >   pci_device_remove
-> > >     pm_runtime_set_suspended
-> > >       __pm_runtime_set_status
-> > >         atomic_add_unless(&parent->power.child_count, -1, 0)
-> > > 
-> > > That is, the parent device may be suspended, even if the runtime PM of
-> > > child device is forbidden to be suspended.  This violate the rule that
-> > > parent is allowed to be suspended only after all its children are
-> > > suspended, and may cause issue.
-> > 
-> > This doesn't sound like a correct description of the situation.  The 
-> > rule is not violated.  After pm_runtime_set_suspended runs, the child 
-> > _is_ suspended.  Thus there's no reason not to allow the parent to be 
-> > suspended.
-> > 
-> > The problem -- if there really is one -- is that a driver can put a 
-> > device into the suspended state by calling pm_runtime_disable followed 
-> > by pm_runtime_set_suspended, even if the usage count is > 0.
-> > 
-> > I'm not so sure this should count as a problem.  Generally devices 
-> > aren't disabled for runtime PM unless something is wrong.
+> > Personally, I think the only way out of this mess is to teach users
+> > how to disable Secure Boot.
 > 
-> Devices will be disabled if the PCI driver is unbound from the PCI
-> device.
+> If you're going to go that far, why not just get them to install a RedHat (or
+> SuSE, or Ubuntu, or whoever) key and use that instead?
 
-Yes.  But without a PCI driver, nothing will call 
-pm_runtime_set_suspended.  And even if something does call 
-pm_runtime_set_suspended, it's still not a problem -- the device can't 
-be used without a driver.
+You always need to keep in mind the possibility of the key being revoked.
 
-> So I think the rule could be: even if the device is suspended, the
-> device can be put into suspended state only if its usage count == 0.  In
-> this way, we can solve the issue for PCI driver unbound and that looks
-> more reasonable.
+> Secure boot does arguably solve a class of problems, so it seems a bit odd to
+> recommend just throwing it out entirely.
 
-You still have not shown that there really is a problem.  Do you have 
-any particular use case in mind?
+Not really. It doesn't solve the the most usual attack vector used (i.e. 
+exploiting the bug in the kernel ... and that's independent of the OS we 
+are talking about).
 
-Alan Stern
+Just because it contains "secure" in its name, doesn't really make it a 
+proper security solution. It should rather be called "vendor lock-in 
+boot", or something like that.
 
+-- 
+Jiri Kosina
+SUSE Labs
