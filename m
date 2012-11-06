@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab2KFIYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 03:24:20 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53495 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754521Ab2KFIYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 03:24:18 -0500
-From: "Patil, Rachna" <rachna@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, "Patil, Rachna" <rachna@ti.com>
-Subject: [PATCH 1/1] MFD: ti_am335x_tscadc: pass correct error message
-Date: Tue, 6 Nov 2012 13:39:03 +0530
-Message-ID: <1352189343-23305-1-git-send-email-rachna@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S932603Ab2KFIYv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 03:24:51 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:57849 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932499Ab2KFIYu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 03:24:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CANN689HM=h2k33sJcoDYys9LHVadv+NaGz00kG7O-OEH=qadvA@mail.gmail.com>
+References: <508086DA.3010600@oracle.com>
+	<5089A05E.7040000@gmail.com>
+	<CA+1xoqf2v_jEapwU68BzXyi4abSRmi_=AiaJVHM3dBbHtsBnqQ@mail.gmail.com>
+	<CAA_GA1d-rw_vkDF98fcf9E0=h86dsp+83-0_RE5b482juxaGVw@mail.gmail.com>
+	<CANN689HXoCMTP4ZRMUNOGAdOBmizKyo6jMqbqAFx8wwPXp+AzQ@mail.gmail.com>
+	<CAA_GA1eYHi4zWZwKp5KGi4gP7V8bfnSF=aLKMiN-Wi5JyLaCdw@mail.gmail.com>
+	<CANN689HfmX8uBa17t38PYv2Ap5d3LPjShq81tbcgET5ZqzjzeQ@mail.gmail.com>
+	<CANN689HM=h2k33sJcoDYys9LHVadv+NaGz00kG7O-OEH=qadvA@mail.gmail.com>
+Date: Tue, 6 Nov 2012 00:24:49 -0800
+Message-ID: <CANN689F6=mkJmgLFbALRPeYKG4RwTef+_r2TsHOLuobAxXbtPg@mail.gmail.com>
+Subject: Re: mm: NULL ptr deref in anon_vma_interval_tree_verify
+From: Michel Lespinasse <walken@google.com>
+To: Bob Liu <lliubbo@gmail.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, hughd@google.com,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pass on the correct error message from platform_get_irq()
-instead of hard coding it to "EINVAL".
+On Mon, Nov 5, 2012 at 5:41 AM, Michel Lespinasse <walken@google.com> wrote:
+> On Sun, Nov 4, 2012 at 8:44 PM, Michel Lespinasse <walken@google.com> wrote:
+>> On Sun, Nov 4, 2012 at 8:14 PM, Bob Liu <lliubbo@gmail.com> wrote:
+>>> Hmm, I attached a simple fix patch.
+>>
+>> Reviewed-by: Michel Lespinasse <walken@google.com>
+>> (also ran some tests with it, but I could never reproduce the original
+>> issue anyway).
+>
+> Wait a minute, this is actually wrong. You need to call
+> vma_lock_anon_vma() / vma_unlock_anon_vma() to avoid the issue with
+> vma->anon_vma == NULL.
+>
+> I'll fix it and integrate it into my next patch series, which I intend
+> to send later today. (I am adding new code into validate_mm(), so that
+> it's easier to have it in the same patch series to avoid merge
+> conflicts)
 
-Also change label from "err" to "ret" for better
-readability and update the same in error path.
+Hmmm, now I'm getting confused about anon_vma locking again :/
 
-Signed-off-by: Patil, Rachna <rachna@ti.com>
----
- drivers/mfd/ti_am335x_tscadc.c |   25 +++++++++++--------------
- 1 files changed, 11 insertions(+), 14 deletions(-)
+As Hugh privately remarked to me, the same_vma linked list is supposed
+to be protected by exclusive mmap_sem ownership, not by anon_vma lock.
+So now looking at it a bit more, I'm not sure what race we're
+preventing by taking the anon_vma lock in validate_mm() ???
 
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index e947dd8..8ca3bf0 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -65,7 +65,6 @@ static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
- 	struct clk		*clk;
- 	struct mfd_tscadc_board	*pdata = pdev->dev.platform_data;
- 	struct mfd_cell		*cell;
--	int			irq;
- 	int			err, ctrl;
- 	int			clk_value, clock_rate;
- 	int			tsc_wires, adc_channels = 0, total_channels;
-@@ -92,12 +91,6 @@ static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	irq = platform_get_irq(pdev, 0);
--	if (irq < 0) {
--		dev_err(&pdev->dev, "no irq ID is specified.\n");
--		return -EINVAL;
--	}
--
- 	/* Allocate memory for device */
- 	tscadc = devm_kzalloc(&pdev->dev,
- 			sizeof(struct ti_tscadc_dev), GFP_KERNEL);
-@@ -106,22 +99,26 @@ static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 	tscadc->dev = &pdev->dev;
--	tscadc->irq = irq;
-+
-+	err = platform_get_irq(pdev, 0);
-+	if (err < 0) {
-+		dev_err(&pdev->dev, "no irq ID is specified.\n");
-+		goto ret;
-+	} else
-+		tscadc->irq = err;
- 
- 	res = devm_request_mem_region(&pdev->dev,
- 			res->start, resource_size(res), pdev->name);
- 	if (!res) {
- 		dev_err(&pdev->dev, "failed to reserve registers.\n");
--		err = -EBUSY;
--		goto err;
-+		return -EBUSY;
- 	}
- 
- 	tscadc->tscadc_base = devm_ioremap(&pdev->dev,
- 			res->start, resource_size(res));
- 	if (!tscadc->tscadc_base) {
- 		dev_err(&pdev->dev, "failed to map registers.\n");
--		err = -ENOMEM;
--		goto err;
-+		return -ENOMEM;
- 	}
- 
- 	tscadc->regmap_tscadc = devm_regmap_init_mmio(&pdev->dev,
-@@ -129,7 +126,7 @@ static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
- 	if (IS_ERR(tscadc->regmap_tscadc)) {
- 		dev_err(&pdev->dev, "regmap init failed\n");
- 		err = PTR_ERR(tscadc->regmap_tscadc);
--		goto err;
-+		goto ret;
- 	}
- 
- 	pm_runtime_enable(&pdev->dev);
-@@ -201,7 +198,7 @@ static	int __devinit ti_tscadc_probe(struct platform_device *pdev)
- err_disable_clk:
- 	pm_runtime_put_sync(&pdev->dev);
- 	pm_runtime_disable(&pdev->dev);
--err:
-+ret:
- 	return err;
- }
- 
 -- 
-1.7.0.4
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
