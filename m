@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab2KFWXM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:23:12 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60031 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab2KFWXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:23:08 -0500
+	id S1753058Ab2KFWYY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:24:24 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34326 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751609Ab2KFWYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 17:24:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,724,1344236400"; 
+   d="scan'208";a="245013795"
+Date: Tue, 6 Nov 2012 23:24:03 +0100
+From: Samuel Ortiz <samuel.ortiz@intel.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Marc Reilly <marc@cpdesign.com.au>, linux-arm-kernel@lists.infradead.org,
+        "Ying-Chun Liu (PaulLiu)" <paulliu@debian.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 0/7] Add support for Freescale's mc34708 to mc13xxx driver
+Message-ID: <20121106222401.GA17580@sortiz-mobl>
+References: <1342087073-3892-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <11987916.rOoNGcb1ly@dev1>
+ <CAOMZO5AVP1L-6A7cmV-kQEfG1C+vczFKT=sQbFtLJDaGau0kRg@mail.gmail.com>
+ <CAOMZO5BqZpy5Cz0BxbpdOY=sjMjhSOjfQZmJ4j7Xwe6Q7x6Yig@mail.gmail.com>
+ <20121004135130.GC5554@sortiz-mobl>
+ <CAOMZO5CXtOT7pi6hOOwYxxthTfDZYcYe5QFTnGR=L_S82NM_Lg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <50998834.5030407@schaufler-ca.com>
-References: <1352189869-27190-1-git-send-email-jarkko.sakkinen@iki.fi>
-	<50998834.5030407@schaufler-ca.com>
-Date: Tue, 6 Nov 2012 17:23:06 -0500
-Message-ID: <CACLa4ps1ZFfgtj0N999vsBR__fWJYXGbJFOHMakP08EzzvmVUA@mail.gmail.com>
-Subject: Re: [PATCH] smack: SMACK_MAGIC to include/uapi/linux/magic.h
-From: Eric Paris <eparis@parisplace.org>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>,
-        James Morris <james.l.morris@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5CXtOT7pi6hOOwYxxthTfDZYcYe5QFTnGR=L_S82NM_Lg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like smack_lsm.c includes linux/magic.h, but smackfs.c
-doesn't...   Seems like they should have included linux/magic.h in the
-same header they removed the definition from....
+Hi Fabio,
 
-On Tue, Nov 6, 2012 at 4:59 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
-> On 11/6/2012 12:17 AM, Jarkko Sakkinen wrote:
->> SMACK_MAGIC moved to a proper place for easy user space access
->> (i.e. libsmack).
->>
->> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
->> ---
->>  include/uapi/linux/magic.h |    1 +
->>  security/smack/smack.h     |    5 -----
->>  2 files changed, 1 insertion(+), 5 deletions(-)
->
-> Will security/smack/smack_lsm.c and security/smack/smackfs.c
-> compile after this change?
->
->>
->> diff --git a/include/uapi/linux/magic.h b/include/uapi/linux/magic.h
->> index e15192c..12735ad 100644
->> --- a/include/uapi/linux/magic.h
->> +++ b/include/uapi/linux/magic.h
->> @@ -11,6 +11,7 @@
->>  #define DEBUGFS_MAGIC          0x64626720
->>  #define SECURITYFS_MAGIC     0x73636673
->>  #define SELINUX_MAGIC                0xf97cff8c
->> +#define SMACK_MAGIC          0x43415d53      /* "SMAC" */
->>  #define RAMFS_MAGIC          0x858458f6      /* some random number */
->>  #define TMPFS_MAGIC          0x01021994
->>  #define HUGETLBFS_MAGIC      0x958458f6      /* some random number */
->> diff --git a/security/smack/smack.h b/security/smack/smack.h
->> index 99b3612..8ad3095 100644
->> --- a/security/smack/smack.h
->> +++ b/security/smack/smack.h
->> @@ -149,11 +149,6 @@ struct smack_known {
->>  #define SMACK_CIPSO_SOCKET   1
->>
->>  /*
->> - * smackfs magic number
->> - */
->> -#define SMACK_MAGIC  0x43415d53 /* "SMAC" */
->> -
->> -/*
->>   * CIPSO defaults.
->>   */
->>  #define SMACK_CIPSO_DOI_DEFAULT              3       /* Historical */
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Sat, Oct 27, 2012 at 05:19:11PM -0200, Fabio Estevam wrote:
+> Hi Samuel,
+> 
+> On Thu, Oct 4, 2012 at 10:51 AM, Samuel Ortiz <samuel.ortiz@intel.com> wrote:
+> 
+> >> I want to add mc34708 support to mx53qsb and need this series to be applied.
+> > I understand. I'll queue it to my for-next branch as soon as the merge window
+> > is closed.
+> 
+> Could you please queue this series? I still do not see it applied in
+> your 'for-next-merge' branch.
+Patches 6 and 7 were not applied from this serie. I now applied them to my
+for-next branch.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
+---------------------------------------------------------------------
+Intel Corporation SAS (French simplified joint stock company)
+Registered headquarters: "Les Montalets"- 2, rue de Paris, 
+92196 Meudon Cedex, France
+Registration Number:  302 456 199 R.C.S. NANTERRE
+Capital: 4,572,000 Euros
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+
