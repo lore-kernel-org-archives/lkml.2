@@ -1,56 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab2KFJLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:11:00 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:52973 "EHLO mail.skyhub.de"
+	id S1751435Ab2KFJPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:15:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36230 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237Ab2KFJK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:10:57 -0500
-Date: Tue, 6 Nov 2012 10:10:58 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: AMD A10: MCE Instruction Cache Error
-Message-ID: <20121106091057.GC2090@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Alexander Holler <holler@ahsoftware.de>,
-	linux-kernel@vger.kernel.org
-References: <5093A592.9070605@ahsoftware.de>
- <5093D069.20901@ahsoftware.de>
- <20121103044929.GB21829@liondog.tnic>
- <5094F5C5.1000000@ahsoftware.de>
- <20121104152133.GA16116@x1.osrc.amd.com>
- <5096A3A4.8070602@ahsoftware.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5096A3A4.8070602@ahsoftware.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751060Ab2KFJO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 04:14:59 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/19] mm: compaction: Move migration fail/success stats to migrate.c
+Date: Tue,  6 Nov 2012 09:14:37 +0000
+Message-Id: <1352193295-26815-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1352193295-26815-1-git-send-email-mgorman@suse.de>
+References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 04, 2012 at 06:19:32PM +0100, Alexander Holler wrote:
-> I was remotely logged in and there aren't that many faults which
-> lead to complete stand still of hw (no reset).
+The compact_pages_moved and compact_pagemigrate_failed events are
+convenient for determining if compaction is active and to what
+degree migration is succeeding but it's at the wrong level. Other
+users of migration may also want to know if migration is working
+properly and this will be particularly true for any automated
+NUMA migration. This patch moves the counters down to migration
+with the new events called pgmigrate_success and pgmigrate_fail.
+The compact_blocks_moved counter is removed because while it was
+useful for debugging initially, it's worthless now as no meaningful
+conclusions can be drawn from its value.
 
-Right, can you retry triggering the freeze without the fglrx driver?
-Simply remove it completely so that even the possibility to load it is
-not there.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/vm_event_item.h |    4 +++-
+ mm/compaction.c               |    4 ----
+ mm/migrate.c                  |    6 ++++++
+ mm/vmstat.c                   |    7 ++++---
+ 4 files changed, 13 insertions(+), 8 deletions(-)
 
-> But as you said I can't know, the only thing I know is that a box
-> with new mb, memory and apu come to a complete stand still, and
-> such shortly after I've received an emergency message which told me
-> that a bit inside the cpu switched unexpected. Adding to that, the
-> box did the same as what it did while it received the MCE, a backup
-> from a sata-atached ssd to an usb3-hd which includes compression and
-> encryption which keeps all cores at work most of the time for several
-> hours.
-
-So do you get that MCE each time you execute that same workload?
-
-Thanks.
-
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 3d31145..8aa7cb9 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -38,8 +38,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		KSWAPD_LOW_WMARK_HIT_QUICKLY, KSWAPD_HIGH_WMARK_HIT_QUICKLY,
+ 		KSWAPD_SKIP_CONGESTION_WAIT,
+ 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
++#ifdef CONFIG_MIGRATION
++		PGMIGRATE_SUCCESS, PGMIGRATE_FAIL,
++#endif
+ #ifdef CONFIG_COMPACTION
+-		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
+ 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
+ #endif
+ #ifdef CONFIG_HUGETLB_PAGE
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 9eef558..00ad883 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -994,10 +994,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 		update_nr_listpages(cc);
+ 		nr_remaining = cc->nr_migratepages;
+ 
+-		count_vm_event(COMPACTBLOCKS);
+-		count_vm_events(COMPACTPAGES, nr_migrate - nr_remaining);
+-		if (nr_remaining)
+-			count_vm_events(COMPACTPAGEFAILED, nr_remaining);
+ 		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
+ 						nr_remaining);
+ 
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 77ed2d7..04687f6 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -962,6 +962,7 @@ int migrate_pages(struct list_head *from,
+ {
+ 	int retry = 1;
+ 	int nr_failed = 0;
++	int nr_succeeded = 0;
+ 	int pass = 0;
+ 	struct page *page;
+ 	struct page *page2;
+@@ -988,6 +989,7 @@ int migrate_pages(struct list_head *from,
+ 				retry++;
+ 				break;
+ 			case 0:
++				nr_succeeded++;
+ 				break;
+ 			default:
+ 				/* Permanent failure */
+@@ -998,6 +1000,10 @@ int migrate_pages(struct list_head *from,
+ 	}
+ 	rc = 0;
+ out:
++	if (nr_succeeded)
++		count_vm_events(PGMIGRATE_SUCCESS, nr_succeeded);
++	if (nr_failed)
++		count_vm_events(PGMIGRATE_FAIL, nr_failed);
+ 	if (!swapwrite)
+ 		current->flags &= ~PF_SWAPWRITE;
+ 
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index c737057..89a7fd6 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -774,10 +774,11 @@ const char * const vmstat_text[] = {
+ 
+ 	"pgrotated",
+ 
++#ifdef CONFIG_MIGRATION
++	"pgmigrate_success",
++	"pgmigrate_fail",
++#endif
+ #ifdef CONFIG_COMPACTION
+-	"compact_blocks_moved",
+-	"compact_pages_moved",
+-	"compact_pagemigrate_failed",
+ 	"compact_stall",
+ 	"compact_fail",
+ 	"compact_success",
 -- 
-Regards/Gruss,
-Boris.
+1.7.9.2
+
