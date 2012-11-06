@@ -1,73 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab2KFWdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:33:36 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36830 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab2KFWdf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:33:35 -0500
-Date: Tue, 6 Nov 2012 22:33:34 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: sched_debug / traverse allocation failures.
-Message-ID: <20121106223334.GL2616@ZenIV.linux.org.uk>
-References: <20121106204947.GA1762@redhat.com>
+	id S1753380Ab2KFWhY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:37:24 -0500
+Received: from twin.jikos.cz ([89.185.236.188]:49512 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752768Ab2KFWhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 17:37:22 -0500
+Date: Tue, 6 Nov 2012 23:37:04 +0100
+From: David Sterba <dave@jikos.cz>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Subject: Re: [RFC v4+ hot_track 03/19] vfs: add I/O frequency update function
+Message-ID: <20121106223704.GT3102@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+	viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
+	cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+ <1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121106204947.GA1762@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 03:49:47PM -0500, Dave Jones wrote:
+On Mon, Oct 29, 2012 at 12:30:45PM +0800, zwu.kernel@gmail.com wrote:
+> --- a/fs/hot_tracking.c
+> +++ b/fs/hot_tracking.c
+> +struct hot_inode_item
+> +*hot_inode_item_find(struct hot_info *root, u64 ino)
+> +{
+> +	struct hot_inode_item *he;
+> +	int ret;
+> +
+> +again:
+> +	spin_lock(&root->lock);
+> +	he = radix_tree_lookup(&root->hot_inode_tree, ino);
+> +	if (he) {
+> +		kref_get(&he->hot_inode.refs);
+> +		spin_unlock(&root->lock);
+> +		return he;
+> +	}
+> +	spin_unlock(&root->lock);
+> +
+> +	he = kmem_cache_zalloc(hot_inode_item_cachep,
+> +				GFP_KERNEL | GFP_NOFS);
+> +	if (!he)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	hot_inode_item_init(he, ino, &root->hot_inode_tree);
+> +
+> +	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
+> +	if (ret) {
+> +		kmem_cache_free(hot_inode_item_cachep, he);
 
-> I added some instrumentation to traverse, and it appears that the /proc file
-> in question is 'sched_debug'.
-> 
-> Most the time this is quite small, but can grow to large lengths it seems,
-> which when we're under memory fragmentation results in the spew above.
-> 
-> >From my reading of the code, it doesn't actually use the seq_operations,
-> to print out things record-at-a-time, but just dumps everything
-> in its ->open routine.
+		radix_tree_preload_end()
 
-Not ->open(), first ->read(), actually.  I'd suggest turning that
-sucker into a saner iterator, though - it spews a smallish header
-followed by a set of per-CPU entries, so I'd probably start with
-something like
-static void *c_start(struct seq_file *m, loff_t *pos)
-{
-	unsigned long n = *pos;
-        if (n == 0)
-		return (void *)1;	/* header */
-	n--;
-	/* find the first online CPU >= requested position */
-	if (n > 0)
-		n = cpumask_next(n - 1, cpu_online_mask);
-	else
-                n = cpumask_first(cpu_online_mask);
-	*pos = n + 1;
-        if (n < nr_cpu_ids)
-                return (void *)(unsigned long)(n + 2);	/* CPU #n */
-        return NULL;			/* EOF */
-}
+> +		return ERR_PTR(ret);
+> +	}
+> +
+> +	spin_lock(&root->lock);
+> +	ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
+> +	if (ret == -EEXIST) {
+> +		kmem_cache_free(hot_inode_item_cachep, he);
+> +		spin_unlock(&root->lock);
+> +		radix_tree_preload_end();
+> +		goto again;
+> +	}
+> +	spin_unlock(&root->lock);
+> +	radix_tree_preload_end();
+> +
+> +	kref_get(&he->hot_inode.refs);
+> +	return he;
+> +}
+> +EXPORT_SYMBOL_GPL(hot_inode_item_find);
+> +
+> +static struct hot_range_item
+> +*hot_range_item_find(struct hot_inode_item *he,
+> +			u32 start)
+> +{
+> +	struct hot_range_item *hr;
+> +	int ret;
+> +
+> +again:
+> +	spin_lock(&he->lock);
+> +	hr = radix_tree_lookup(&he->hot_range_tree, start);
+> +	if (hr) {
+> +		kref_get(&hr->hot_range.refs);
+> +		spin_unlock(&he->lock);
+> +		return hr;
+> +	}
+> +	spin_unlock(&he->lock);
+> +
+> +	hr = kmem_cache_zalloc(hot_range_item_cachep,
+> +				GFP_KERNEL | GFP_NOFS);
+> +	if (!hr)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	hot_range_item_init(hr, start, he);
+> +
+> +	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
+> +	if (ret) {
+> +		kmem_cache_free(hot_range_item_cachep, hr);
 
-static void *c_next(struct seq_file *m, void *v, loff_t *pos)
-{
-        (*pos)++;
-        return c_start(m, pos);
-}
+		radix_tree_preload_end()
 
-static int c_show(struct seq_file *m, void *v)
-{
-	if (v == (void *)1) {
-		print header
-	} else {
-		unsigned long cpu = (unsigned long)v - 2;
-		print for that cpu
-	}
-}
+> +		return ERR_PTR(ret);
+> +	}
+> +
+> +	spin_lock(&he->lock);
+> +	ret = radix_tree_insert(&he->hot_range_tree, start, hr);
+> +	if (ret == -EEXIST) {
+> +		kmem_cache_free(hot_range_item_cachep, hr);
+> +		spin_unlock(&he->lock);
+> +		radix_tree_preload_end();
+> +		goto again;
+> +	}
+> +	spin_unlock(&he->lock);
+> +	radix_tree_preload_end();
+> +
+> +	kref_get(&hr->hot_range.refs);
+> +	return hr;
+> +}
+
+david
