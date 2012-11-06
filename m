@@ -1,265 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397Ab2KFJWP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:22:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36239 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab2KFJPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:15:01 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 02/19] mm: migrate: Add a tracepoint for migrate_pages
-Date: Tue,  6 Nov 2012 09:14:38 +0000
-Message-Id: <1352193295-26815-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1352193295-26815-1-git-send-email-mgorman@suse.de>
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
+	id S1751641Ab2KFJXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:23:11 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:60182 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab2KFJXG convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Tue, 6 Nov 2012 04:23:06 -0500
+Message-Id: <5098E50402000078000A698C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 06 Nov 2012 09:23:00 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Andrew Morton" <akpm@linux-foundation.org>,
+        "Rusty Russell" <rusty@rustcorp.com.au>
+Cc: "Arjan van de Ven" <arjan@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] utilize _Static_assert() for BUILD_BUG_ON() when
+ the compiler supports it
+References: <5093EB1C02000078000A61D7@nat28.tlf.novell.com>
+ <20121105142944.7b16e6a4.akpm@linux-foundation.org>
+ <877gpz5wi4.fsf@rustcorp.com.au>
+In-Reply-To: <877gpz5wi4.fsf@rustcorp.com.au>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pgmigrate_success and pgmigrate_fail vmstat counters tells the user
-about migration activity but not the type or the reason. This patch adds
-a tracepoint to identify the type of page migration and why the page is
-being migrated.
+>>> On 06.11.12 at 02:51, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Andrew Morton <akpm@linux-foundation.org> writes:
+> 
+>> On Fri, 02 Nov 2012 14:47:40 +0000
+>> "Jan Beulich" <JBeulich@suse.com> wrote:
+>>
+>>> This makes the resulting diagnostics quite a bit more useful.
+>>
+>> So asserts Jan, but to confirm it I would need to download, configure,
+>> build and install a different gcc version, which sounds rather a hassle.
+>>
+>> So, please show us an exmple of these diagnostics in the changelog.
+>>
+>>> --- 3.7-rc3/include/linux/bug.h
+>>> +++ 3.7-rc3-static-assert/include/linux/bug.h
+>>> @@ -27,8 +27,15 @@ struct pt_regs;
+>>>     result (of value 0 and type size_t), so the expression can be used
+>>>     e.g. in a structure initializer (or where-ever else comma expressions
+>>>     aren't permitted). */
+>>> +#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+>>
+>> This sort of logic is normally performed via the
+>> include/linux/compiler*.h system.  And
+>>
+>> 	grep __GNUC include/linux/*.h
+>>
+>> indicates that we've been pretty successful.  Can we do that here too?
+>>
+>> (eg: suppose the Intel compiler supports _Static_assert?)
+> 
+> Yeah, there are a lot of goodies here:
+> 
+> _Static_assert:
+>         We could define __ASSERT_STRUCT_FIELD(e) for this:
+>         #define BUILD_BUG_ON_ZERO(e) \
+>                 sizeof(struct { __ASSERT_STRUCT_FIELD(e); })
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/migrate.h        |   13 ++++++++--
- include/trace/events/migrate.h |   51 ++++++++++++++++++++++++++++++++++++++++
- mm/compaction.c                |    3 ++-
- mm/memory-failure.c            |    3 ++-
- mm/memory_hotplug.c            |    3 ++-
- mm/mempolicy.c                 |    6 +++--
- mm/migrate.c                   |   10 ++++++--
- mm/page_alloc.c                |    3 ++-
- 8 files changed, 82 insertions(+), 10 deletions(-)
- create mode 100644 include/trace/events/migrate.h
+I considered something like this too, but it wouldn't work well: The
+diagnostic issued from a failed _Static_assert() would preferably
+refer to the original source expression, not an already macro
+expanded variant of it. That, however, precludes passing it
+through multiple levels of macro expansion. Which would leave
+passing e and #e to __ASSERT_STRUCT_FIELD(), but that's again
+ugly as it opens the door for someone adding a use where the two
+arguments don't match up.
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index ce7e667..9d1c159 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -7,6 +7,15 @@
- 
- typedef struct page *new_page_t(struct page *, unsigned long private, int **);
- 
-+enum migrate_reason {
-+	MR_COMPACTION,
-+	MR_MEMORY_FAILURE,
-+	MR_MEMORY_HOTPLUG,
-+	MR_SYSCALL,		/* also applies to cpusets */
-+	MR_MEMPOLICY_MBIND,
-+	MR_CMA
-+};
-+
- #ifdef CONFIG_MIGRATION
- 
- extern void putback_lru_pages(struct list_head *l);
-@@ -14,7 +23,7 @@ extern int migrate_page(struct address_space *,
- 			struct page *, struct page *, enum migrate_mode);
- extern int migrate_pages(struct list_head *l, new_page_t x,
- 			unsigned long private, bool offlining,
--			enum migrate_mode mode);
-+			enum migrate_mode mode, int reason);
- extern int migrate_huge_page(struct page *, new_page_t x,
- 			unsigned long private, bool offlining,
- 			enum migrate_mode mode);
-@@ -35,7 +44,7 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- static inline void putback_lru_pages(struct list_head *l) {}
- static inline int migrate_pages(struct list_head *l, new_page_t x,
- 		unsigned long private, bool offlining,
--		enum migrate_mode mode) { return -ENOSYS; }
-+		enum migrate_mode mode, int reason) { return -ENOSYS; }
- static inline int migrate_huge_page(struct page *page, new_page_t x,
- 		unsigned long private, bool offlining,
- 		enum migrate_mode mode) { return -ENOSYS; }
-diff --git a/include/trace/events/migrate.h b/include/trace/events/migrate.h
-new file mode 100644
-index 0000000..ec2a6cc
---- /dev/null
-+++ b/include/trace/events/migrate.h
-@@ -0,0 +1,51 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM migrate
-+
-+#if !defined(_TRACE_MIGRATE_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_MIGRATE_H
-+
-+#define MIGRATE_MODE						\
-+	{MIGRATE_ASYNC,		"MIGRATE_ASYNC"},		\
-+	{MIGRATE_SYNC_LIGHT,	"MIGRATE_SYNC_LIGHT"},		\
-+	{MIGRATE_SYNC,		"MIGRATE_SYNC"}		
-+
-+#define MIGRATE_REASON						\
-+	{MR_COMPACTION,		"compaction"},			\
-+	{MR_MEMORY_FAILURE,	"memory_failure"},		\
-+	{MR_MEMORY_HOTPLUG,	"memory_hotplug"},		\
-+	{MR_SYSCALL,		"syscall_or_cpuset"},		\
-+	{MR_MEMPOLICY_MBIND,	"mempolicy_mbind"},		\
-+	{MR_CMA,		"cma"}
-+
-+TRACE_EVENT(mm_migrate_pages,
-+
-+	TP_PROTO(unsigned long succeeded, unsigned long failed,
-+		 enum migrate_mode mode, int reason),
-+
-+	TP_ARGS(succeeded, failed, mode, reason),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned long,		succeeded)
-+		__field(	unsigned long,		failed)
-+		__field(	enum migrate_mode,	mode)
-+		__field(	int,			reason)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->succeeded	= succeeded;
-+		__entry->failed		= failed;
-+		__entry->mode		= mode;
-+		__entry->reason		= reason;
-+	),
-+
-+	TP_printk("nr_succeeded=%lu nr_failed=%lu mode=%s reason=%s",
-+		__entry->succeeded,
-+		__entry->failed,
-+		__print_symbolic(__entry->mode, MIGRATE_MODE),
-+		__print_symbolic(__entry->reason, MIGRATE_REASON))
-+);
-+
-+#endif /* _TRACE_MIGRATE_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 00ad883..2c077a7 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -990,7 +990,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		nr_migrate = cc->nr_migratepages;
- 		err = migrate_pages(&cc->migratepages, compaction_alloc,
- 				(unsigned long)cc, false,
--				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC);
-+				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC,
-+				MR_COMPACTION);
- 		update_nr_listpages(cc);
- 		nr_remaining = cc->nr_migratepages;
- 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 6c5899b..ddb68a1 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1558,7 +1558,8 @@ int soft_offline_page(struct page *page, int flags)
- 					    page_is_file_cache(page));
- 		list_add(&page->lru, &pagelist);
- 		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
--							false, MIGRATE_SYNC);
-+							false, MIGRATE_SYNC,
-+							MR_MEMORY_FAILURE);
- 		if (ret) {
- 			putback_lru_pages(&pagelist);
- 			pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 56b758a..af60ce7 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -819,7 +819,8 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
- 		 * migrate_pages returns # of failed pages.
- 		 */
- 		ret = migrate_pages(&source, alloc_migrate_target, 0,
--							true, MIGRATE_SYNC);
-+							true, MIGRATE_SYNC,
-+							MR_MEMORY_HOTPLUG);
- 		if (ret)
- 			putback_lru_pages(&source);
- 	}
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index d04a8a5..66e90ec 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -961,7 +961,8 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
- 
- 	if (!list_empty(&pagelist)) {
- 		err = migrate_pages(&pagelist, new_node_page, dest,
--							false, MIGRATE_SYNC);
-+							false, MIGRATE_SYNC,
-+							MR_SYSCALL);
- 		if (err)
- 			putback_lru_pages(&pagelist);
- 	}
-@@ -1202,7 +1203,8 @@ static long do_mbind(unsigned long start, unsigned long len,
- 		if (!list_empty(&pagelist)) {
- 			nr_failed = migrate_pages(&pagelist, new_vma_page,
- 						(unsigned long)vma,
--						false, MIGRATE_SYNC);
-+						false, MIGRATE_SYNC,
-+						MR_MEMPOLICY_MBIND);
- 			if (nr_failed)
- 				putback_lru_pages(&pagelist);
- 		}
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 04687f6..27be9c9 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -38,6 +38,9 @@
- 
- #include <asm/tlbflush.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/migrate.h>
-+
- #include "internal.h"
- 
- /*
-@@ -958,7 +961,7 @@ out:
-  */
- int migrate_pages(struct list_head *from,
- 		new_page_t get_new_page, unsigned long private, bool offlining,
--		enum migrate_mode mode)
-+		enum migrate_mode mode, int reason)
- {
- 	int retry = 1;
- 	int nr_failed = 0;
-@@ -1004,6 +1007,8 @@ out:
- 		count_vm_events(PGMIGRATE_SUCCESS, nr_succeeded);
- 	if (nr_failed)
- 		count_vm_events(PGMIGRATE_FAIL, nr_failed);
-+	trace_mm_migrate_pages(nr_succeeded, nr_failed, mode, reason);
-+
- 	if (!swapwrite)
- 		current->flags &= ~PF_SWAPWRITE;
- 
-@@ -1145,7 +1150,8 @@ set_status:
- 	err = 0;
- 	if (!list_empty(&pagelist)) {
- 		err = migrate_pages(&pagelist, new_page_node,
--				(unsigned long)pm, 0, MIGRATE_SYNC);
-+				(unsigned long)pm, 0, MIGRATE_SYNC,
-+				MR_SYSCALL);
- 		if (err)
- 			putback_lru_pages(&pagelist);
- 	}
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index bb90971..51bef90 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5707,7 +5707,8 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
- 
- 		ret = migrate_pages(&cc->migratepages,
- 				    alloc_migrate_target,
--				    0, false, MIGRATE_SYNC);
-+				    0, false, MIGRATE_SYNC,
-+				    MR_CMA);
- 	}
- 
- 	putback_lru_pages(&cc->migratepages);
--- 
-1.7.9.2
+> __COUNTER__:
+>         Used to make a unique id.  Let's define __UNIQUE_ID(prefix) for
+>         this (using __COUNTER__ or __LINE__). 4.3 and above.
+
+The fallback to __LINE__ is not necessarily correct in all cases,
+namely when deep macro expansions result in two instances used
+on the same source line, or a use in a header matches line number
+wise a second use in another header or the source file.
+
+I considered to option of a fallback (and hence an abstraction in
+compiler*.h) when doing this, but I didn't want to do something
+that would break in perhaps vary obscure ways.
+
+> __compiletime_error():
+>         I blame Arjan for this.  It disappears if not implemented, which
+>         is just lazy.  BUILD_BUG_ON() does this right, and he didn't fix
+>         that at the time :(
+
+Again, the name of the macro made me not use it, as the obvious
+fallback is a link time error. The only thing I would be agreeable to
+is something like __buildtime_error().
+
+> I'd say we have three patches here, really:
+> 
+> 1) Add __ASSERT_STRUCT_FIELD(e) to compiler.h
+> 2) Add __UNIQUE_ID().
+> 3) Use them (I can think of at least one other place for __UNIQUE_ID()).
+> 
+> Jan, do you want the glory?  :) If not, I'll respin.
+
+Depending on the answers to the above (i.e. how much of it
+actually would need re-doing and re-testing), it may take me
+some time to get to this, but beyond that I'm fine with trying
+to improve this to everyone's satisfaction.
+
+Jan
 
