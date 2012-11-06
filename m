@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323Ab2KFBZI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 20:25:08 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:51924 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754256Ab2KFBZG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 20:25:06 -0500
-Date: Mon, 05 Nov 2012 20:25:01 -0500 (EST)
-Message-Id: <20121105.202501.1246122770431623794.davem@davemloft.net>
-To: walken@google.com
-Cc: akpm@linux-foundation.org, riel@redhat.com, hughd@google.com,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        ralf@linux-mips.org, lethal@linux-sh.org, cmetcalf@tilera.com,
-        x86@kernel.org, wli@holomorphy.com, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-sh@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 15/16] mm: use vm_unmapped_area() on sparc32
- architecture
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1352155633-8648-16-git-send-email-walken@google.com>
-References: <1352155633-8648-1-git-send-email-walken@google.com>
-	<1352155633-8648-16-git-send-email-walken@google.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S933417Ab2KFB0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 20:26:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54199 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754256Ab2KFB0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 20:26:44 -0500
+Date: Tue, 6 Nov 2012 02:26:23 +0100
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David =?ISO-8859-1?B?SORyZGVtYW4=?=" <david@hardeman.nu>,
+        "Bruno =?ISO-8859-1?B?UHLpbW9udA==?=" <bonbons@linux-vserver.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+Message-ID: <20121106022623.4e14cee1@gaivota.chehab.kubiwireless.com>
+In-Reply-To: <20121105113409.d3f52085b5f7227b03df0ba4@canb.auug.org.au>
+References: <20121029111403.911c815a3c7d8d9572ff8e89@canb.auug.org.au>
+	<20121105113409.d3f52085b5f7227b03df0ba4@canb.auug.org.au>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michel Lespinasse <walken@google.com>
-Date: Mon,  5 Nov 2012 14:47:12 -0800
+Hi Stephen,
 
-> Update the sparc32 arch_get_unmapped_area function to make use of
-> vm_unmapped_area() instead of implementing a brute force search.
+Em Mon, 5 Nov 2012 11:34:09 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> escreveu:
+
+> Hi Mauro,
 > 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+> On Mon, 29 Oct 2012 11:14:03 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > After merging the v4l-dvb tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> > 
+> > drivers/hid/hid-picolcd_cir.c: In function 'picolcd_init_cir':
+> > drivers/hid/hid-picolcd_cir.c:119:27: error: 'RC_TYPE_ALL' undeclared (first use in this function)
+> > 
+> > Caused by commit c003ab1bedf0 ("[media] rc-core: add separate defines for
+> > protocol bitmaps and numbers").  The new reference was introduced in
+> > commit ae08e324146c ("HID: picoLCD: Add support for CIR") which was
+> > merged by Linus on October 2 into v3.7-rc1 via the hid tree.
+> > 
+> > I have used the v4l-dvb tree from next-20121026 for today.
+> 
+> I still get this today.
 
-Hmmm...
+Not sure what happened, as I think I pushed it on my -next tree. I'm abroad
+this week for LinuxCon Europe. Unfortunately, hotel's network blocks almost all
+TCP ports, except for web ports. I'm seeing if this can be fixed tomorrow.
+If so, I'll be pushing the patches tomorrow night.
 
-> -	if (flags & MAP_SHARED)
-> -		addr = COLOUR_ALIGN(addr);
-> -	else
-> -		addr = PAGE_ALIGN(addr);
-
-What part of vm_unmapped_area() is going to duplicate this special
-aligning logic we need on sparc?
+Cheers,
+Mauro
