@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940Ab2KFMLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 07:11:16 -0500
-Received: from relay.parallels.com ([195.214.232.42]:47531 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308Ab2KFMLP convert rfc822-to-8bit (ORCPT
+	id S1751308Ab2KFM11 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 07:27:27 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:3047
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750772Ab2KFM1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 07:11:15 -0500
-Message-ID: <5098FE5F.7030709@parallels.com>
-Date: Tue, 6 Nov 2012 16:11:11 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Tue, 6 Nov 2012 07:27:25 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI146fI1432Id799hzz1de0h1202h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Tue, 6 Nov 2012 20:52:54 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: yongd <yongd@marvell.com>
+CC: Chris Ball <cjb@laptop.org>, Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, Daniel Drake <dsd@laptop.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Wilson Callan <wilson.callan@savantsystems.com>,
+        Ben Dooks <ben-linux@fluff.org>, Zhangfei Gao <zgao6@marvell.com>,
+        Kevin Liu <kliu5@marvell.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 1/3] mmc: esdhc: enable polling to detect card by
+ itself
+Message-ID: <20121106125253.GC27643@S2100-06.ap.freescale.net>
+References: <1351589403-26398-1-git-send-email-yongd@marvell.com>
+ <1351589403-26398-2-git-send-email-yongd@marvell.com>
+ <20121031152030.GE8100@S2100-06.ap.freescale.net>
+ <5093BE95.6040709@marvell.com>
+ <20121105015421.GA26512@S2100-06.ap.freescale.net>
+ <509733D9.2060807@marvell.com>
+ <20121105124809.GA27260@S2100-06.ap.freescale.net>
+ <5098CF26.3060202@marvell.com>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before connecting
- local transports
-References: <20121008105437.18668.99905.stgit@localhost.localdomain> <20121009193506.GA19680@fieldses.org> <5098E31A.5080801@parallels.com> <20121106120642.GA6718@fieldses.org>
-In-Reply-To: <20121106120642.GA6718@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5098CF26.3060202@marvell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-06.11.2012 16:06, J. Bruce Fields пишет:
-> On Tue, Nov 06, 2012 at 02:14:50PM +0400, Stanislav Kinsbursky wrote:
->> 09.10.2012 23:35, J. Bruce Fields пишет:
->>> Cc'ing Eric since I seem to recall he suggested doing it this way?
->>>
->>> Seems OK to me, but maybe that swap_root should be in common code?  (Or
->>> maybe we could use set_fs_root()?)
->>>
->>
->> This patch is not good since, as Eric mentioned, all kernel threads
->> share same fs struct.
->> We can swap whole fs struct. Or we can unshare fs struct
->> (unshare_fs_struct() is exported) and swap root in this case.
->> But this approach is to close to set_fs_root() logic, which is not
->> exported and seems there are some valid reasons for it.
->
-> What are those reasons?
->
+On Tue, Nov 06, 2012 at 04:49:42PM +0800, yongd wrote:
+> From your info, we can see that on your platform, those pins (including
+> power, clk, DATA) necessary for MMC_SEND_STATUS transaction still keep
+> connected for some time just after the GPIO's level changes due to card
+> removable. And if we remove the card very slowly, such time duration can be
+> such long that the MMC_SEND_STATUS query can still succeed.
+> 
+I was not removing the card as slowly as you think. It's actually
+a normal speed.  That's why I thought your patch breaks the
+card-detection functionality before I found the cause.
 
-I don't know them.
-Trond told, that Al doesn't like the idea of set_fs_root() exporting.
+> So I think we can add a proper delay(maybe 100ms) before the gpio interrupt
+> triggers the MMC_SEND_STATUS query, and maybe this can probably fix this issue:-)
+> 
+I do not think it's a proper fixing.
 
-> Googling found one previous thread:
->
-> 	http://thread.gmane.org/gmane.linux.kernel/1259986/focus=47687
->
-> There Trond requests an ACK from Al or Cristoph for the export, but I
-> don't see either an ACK or any objection.
->
+<snip>
 
-Cristoph told me on LSF something line "No ... way", when I asked him about 
-set_fs_root() exporting.
-But I had no opportunity to ask why.
+> Anyway, I 100% agree with you that for a ESDHC_CD_GPIO card, we shall query gpio
+> state to know such card's presence rather than sending MMC_SEND_STATUS rudely.
+> 
+> But just as I mentioned before, I don't think using SDHCI_QUIRK_BROKEN_CARD_DETECTION
+> as the flag to determine whether and how we can know card's presence before sending
+> command is a proper way.
+> 
+> I haven't gotten any good idea. Do u have any idea on this?
+> 
+I guess what we need is to call mmc_gpio_get_cd() trying to know card's
+presence before sending MMC_SEND_STATUS command.  sdhci-esdhc-imx
+driver will surely need some changes to cope with that.
 
-> --b.
->
+Shawn
 
-
--- 
-Best regards,
-Stanislav Kinsbursky
