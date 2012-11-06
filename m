@@ -1,107 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab2KFN4F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 08:56:05 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54743 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997Ab2KFN4D (ORCPT
+	id S1752275Ab2KFN4S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 08:56:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47718 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972Ab2KFN4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 08:56:03 -0500
+	Tue, 6 Nov 2012 08:56:13 -0500
+Message-ID: <5099170B.3020406@canonical.com>
+Date: Tue, 06 Nov 2012 07:56:27 -0600
+From: Chris J Arges <chris.j.arges@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAN+gG=HLmCszdxgdcmt5AgzNyt08HamCdd2BjzCaTB5k7wYcnQ@mail.gmail.com>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1351241067-9521-4-git-send-email-benjamin.tissoires@gmail.com>
-	<20121029192558.GA15061@polaris.bitmath.org>
-	<CAN+gG=HLmCszdxgdcmt5AgzNyt08HamCdd2BjzCaTB5k7wYcnQ@mail.gmail.com>
-Date: Tue, 6 Nov 2012 14:56:01 +0100
-Message-ID: <CAN+gG=GiAsn-5kefjRj_xgFfbuEXxj_PL7PaPES05wiZs+J-Ug@mail.gmail.com>
-Subject: Re: [PATCH v2 03/11] HID: hid-input: add usage_index argument in
- input_mapping and event.
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 net-next] bonding: extend bond_arp_send_all to bridge
+ devices
+References: <1352154649-21089-1-git-send-email-chris.j.arges@canonical.com> <26061.1352155545@death.nxdomain>
+In-Reply-To: <26061.1352155545@death.nxdomain>
+X-Enigmail-Version: 1.4.5
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 11:09 AM, Benjamin Tissoires
-<benjamin.tissoires@gmail.com> wrote:
-> On Mon, Oct 29, 2012 at 8:25 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
->> Hi Benjamin,
+On 11/05/2012 04:45 PM, Jay Vosburgh wrote:
+> Chris J Arges <chris.j.arges@canonical.com> wrote:
+> 
+>> ARP monitoring does not work when we have a network in the
+>> following configuration:
 >>
->>> Currently, there is no way to know the index of the current field
->>> in the .input_mapping and .event callbacks  when this field is inside
->>> an array of HID fields.
->>> This patch forwards this index to the input_mapping and event
->>> callbacks.
+>> eth0----+ +----bond0.100----br0-100---{+virtual machines
+>>          | |
+>>          +----bond0----+----br0---(fixed IP)->--{LAN arp_ip_target}
+>>          | |
+>> eth1----+ +----bond0.200----br0-200---{+virtual machines
 >>
->> I agree with the idea, but the function argument list is becoming
->> ridiculously long... Could we remove the usage pointer argument, at
->> least?
->
-> yeah, totally agree. Let me just check whether it will not introduce
-> more problems than it solves for my driver.
+>> This patch extends bond_arp_send_all to check if a device
+>> is also in a bridge.
+>>
+>> This is related to the following issues:
+>> http://launchpad.net/bugs/736226
+>> http://bugzilla.kernel.org/show_bug.cgi?id=31822
+>>
+>> Thanks to help from Andy Gospodarek <andy@greyhouse.net>.
+>>
+>> Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+> 
+> 	What has changed that you're up to version 3 now?
 
-Well, after a deeper look, it's a really bad idea. Every drivers that
-implements input_mapping, input_mapped, event use at least once the
-struct usage. So this would require change nearly every hid driver.
+Had (user) issues with git send-email, and wanted to send a clean patch.
+Sorry about that.
+> 
+>> drivers/net/bonding/bond_main.c |   12 ++++++++++++
+>> 1 file changed, 12 insertions(+)
+>>
+>> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+>> index b2530b0..cb791f6 100644
+>> --- a/drivers/net/bonding/bond_main.c
+>> +++ b/drivers/net/bonding/bond_main.c
+>> @@ -2708,6 +2708,18 @@ static void bond_arp_send_all(struct bonding *bond, struct slave *slave)
+>> 			continue;
+>> 		}
+>>
+>> +		/*
+>> +		 * Check if the target is part of a bridge.
+>> +		 */
+> 
+> 		/* Comment should be formatted like this.
+> 		 */
+> 
+>> +		if (rt->dst.dev->priv_flags & IFF_EBRIDGE) {
+>> +			/* Confirm addr is part of the bridge */
+>> +			addr = bond_confirm_addr(rt->dst.dev, targets[i], 0);
+>> +
+>> +			/* Send ARP request */
+> 
+> 	I think this comment is unnecessary.
+> 
+> 	-J
+> 
+>> +			bond_arp_send(slave->dev, ARPOP_REQUEST, targets[i], addr, 0);
+>> +			continue;
+>> +		}
+>> +
 
-To solve that, and to minimize the impact on the other drivers, I'm
-going to add a field in struct usage with the appropriate index.
+Great, sending v4 soon with these changes.
+--chris j arges
 
-Cheers,
-Benjamin
+>> 		if (net_ratelimit()) {
+>> 			pr_warning("%s: no path to arp_ip_target %pI4 via rt.dev %s\n",
+>> 				   bond->dev->name, &targets[i],
+>> -- 
+>> 1.7.9.5
+>>
+> 
+> ---
+> 	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+> 
 
->
->>
->>         int (*event)(struct hid_device *hdev, struct hid_field *field,
->>                         unsigned int usage_index, __s32 value);
->>
->>
->>> @@ -1071,19 +1072,24 @@ static void hid_input_field(struct hid_device *hid, struct hid_field *field,
->>>       for (n = 0; n < count; n++) {
->>>
->>>               if (HID_MAIN_ITEM_VARIABLE & field->flags) {
->>> -                     hid_process_event(hid, field, &field->usage[n], value[n], interrupt);
->>> +                     hid_process_event(hid, field, &field->usage[n], n,
->>> +                             value[n], interrupt);
->>>                       continue;
->>>               }
->>>
->>>               if (field->value[n] >= min && field->value[n] <= max
->>>                       && field->usage[field->value[n] - min].hid
->>>                       && search(value, field->value[n], count))
->>> -                             hid_process_event(hid, field, &field->usage[field->value[n] - min], 0, interrupt);
->>> +                             hid_process_event(hid, field,
->>> +                                     &field->usage[field->value[n] - min], n,
->>> +                                     0, interrupt);
->>
->> Wrong index?
->
-> oops, I'll have to check that.
->
-> Thanks,
-> Benjamin
->
->>
->>>
->>>               if (value[n] >= min && value[n] <= max
->>>                       && field->usage[value[n] - min].hid
->>>                       && search(field->value, value[n], count))
->>> -                             hid_process_event(hid, field, &field->usage[value[n] - min], 1, interrupt);
->>> +                             hid_process_event(hid, field,
->>> +                                     &field->usage[value[n] - min], n,
->>> +                                     1, interrupt);
->>
->> Wrong index?
->>
->>>       }
->>>
->>>       memcpy(field->value, value, count * sizeof(__s32));
->>
->> Thanks,
->> Henrik
