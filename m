@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab2KFHiJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 02:38:09 -0500
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:41279 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753222Ab2KFHiH (ORCPT
+	id S1754051Ab2KFHjP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 02:39:15 -0500
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:44809 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753314Ab2KFHjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 02:38:07 -0500
+	Tue, 6 Nov 2012 02:39:14 -0500
 From: Qing Xu <qingx@marvell.com>
 To: qingx@marvell.com, sameo@linux.intel.com, grant.likely@secretlab.ca,
         rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 2/7] mfd: max8925: fix mfd device register failure
-Date: Tue,  6 Nov 2012 15:38:18 +0800
-Message-Id: <1352187498-9754-1-git-send-email-qingx@marvell.com>
+Subject: [PATCH 3/7] mfd: max8925: fix onkey driver irq base
+Date: Tue,  6 Nov 2012 15:39:30 +0800
+Message-Id: <1352187570-9803-1-git-send-email-qingx@marvell.com>
 X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 06 Nov 2012 07:37:39.0011 (UTC) FILETIME=[98E29130:01CDBBF1]
+X-OriginalArrivalTime: 06 Nov 2012 07:38:42.0261 (UTC) FILETIME=[BE95C050:01CDBBF1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Qing Xu <qingx@marvell.com>
 
-we encounter rtc/power/touch driver registry failure, root cause
-it is resources confilict in insert_resouce, solved by changing
-mfd_add_devices 5th parameter to NULL
+update onkey driver's irq base, it should get from max8925,
+but not save in a private value
 
 Signed-off-by: Qing Xu <qingx@marvell.com>
 ---
- drivers/mfd/max8925-core.c |   22 ++++++++++------------
- 1 files changed, 10 insertions(+), 12 deletions(-)
+ drivers/input/misc/max8925_onkey.c |    3 ---
+ drivers/mfd/max8925-core.c         |    2 +-
+ 2 files changed, 1 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/input/misc/max8925_onkey.c b/drivers/input/misc/max8925_onkey.c
+index 0a12b74..6527789 100644
+--- a/drivers/input/misc/max8925_onkey.c
++++ b/drivers/input/misc/max8925_onkey.c
+@@ -100,9 +100,6 @@ static int __devinit max8925_onkey_probe(struct platform_device *pdev)
+ 	input->dev.parent = &pdev->dev;
+ 	input_set_capability(input, EV_KEY, KEY_POWER);
+ 
+-	irq[0] += chip->irq_base;
+-	irq[1] += chip->irq_base;
+-
+ 	error = request_threaded_irq(irq[0], NULL, max8925_onkey_handler,
+ 				     IRQF_ONESHOT, "onkey-down", info);
+ 	if (error < 0) {
 diff --git a/drivers/mfd/max8925-core.c b/drivers/mfd/max8925-core.c
-index dcc218a..b1eacae 100644
+index b1eacae..37a372d 100644
 --- a/drivers/mfd/max8925-core.c
 +++ b/drivers/mfd/max8925-core.c
-@@ -873,7 +873,7 @@ int __devinit max8925_device_init(struct max8925_chip *chip,
- 
- 	ret = mfd_add_devices(chip->dev, 0, &rtc_devs[0],
- 			      ARRAY_SIZE(rtc_devs),
--			      &rtc_resources[0], chip->irq_base, NULL);
-+			      NULL, chip->irq_base, NULL);
- 	if (ret < 0) {
- 		dev_err(chip->dev, "Failed to add rtc subdev\n");
- 		goto out;
 @@ -881,7 +881,7 @@ int __devinit max8925_device_init(struct max8925_chip *chip,
  
  	ret = mfd_add_devices(chip->dev, 0, &onkey_devs[0],
  			      ARRAY_SIZE(onkey_devs),
--			      &onkey_resources[0], 0, NULL);
-+			      NULL, 0, NULL);
+-			      NULL, 0, NULL);
++			      NULL, chip->irq_base, NULL);
  	if (ret < 0) {
  		dev_err(chip->dev, "Failed to add onkey subdev\n");
  		goto out_dev;
-@@ -900,21 +900,19 @@ int __devinit max8925_device_init(struct max8925_chip *chip,
- 		goto out_dev;
- 	}
- 
--	if (pdata && pdata->power) {
--		ret = mfd_add_devices(chip->dev, 0, &power_devs[0],
--					ARRAY_SIZE(power_devs),
--					&power_supply_resources[0], 0, NULL);
--		if (ret < 0) {
--			dev_err(chip->dev, "Failed to add power supply "
--				"subdev\n");
--			goto out_dev;
--		}
-+	ret = mfd_add_devices(chip->dev, 0, &power_devs[0],
-+				ARRAY_SIZE(power_devs),
-+				NULL, 0, NULL);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "Failed to add power supply "
-+			"subdev, err = %d\n", ret);
-+		goto out_dev;
- 	}
- 
- 	if (pdata && pdata->touch) {
- 		ret = mfd_add_devices(chip->dev, 0, &touch_devs[0],
- 				      ARRAY_SIZE(touch_devs),
--				      &touch_resources[0], 0, NULL);
-+				      NULL, chip->tsc_irq_base, NULL);
- 		if (ret < 0) {
- 			dev_err(chip->dev, "Failed to add touch subdev\n");
- 			goto out_dev;
 -- 
 1.7.0.4
 
