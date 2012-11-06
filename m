@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab2KFXPb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 18:15:31 -0500
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:61228 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab2KFXP1 (ORCPT
+	id S1753797Ab2KFXXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 18:23:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39932 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab2KFXXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 18:15:27 -0500
-Date: Tue, 6 Nov 2012 20:15:19 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-man@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Stephane Eranian <eranian@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFCv2] perf: proposed perf_event_open() manpage
-Message-ID: <20121106231519.GH3430@ghostprotocols.net>
-References: <alpine.DEB.2.02.1211061748120.30004@vincent-weaver-1.um.maine.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1211061748120.30004@vincent-weaver-1.um.maine.edu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 6 Nov 2012 18:23:06 -0500
+Date: Tue, 6 Nov 2012 15:23:03 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH v4 0/6] solve deadlock caused by memory allocation with
+ I/O
+Message-Id: <20121106152303.b1e135ee.akpm@linux-foundation.org>
+In-Reply-To: <1351931714-11689-1-git-send-email-ming.lei@canonical.com>
+References: <1351931714-11689-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 06, 2012 at 05:53:27PM -0500, Vince Weaver escreveu:
-> .TP
-> .IR "mmap"
-> The
-> .I mmap
-> bit enables recording of extra information to a
-> mmap'd ring-buffer.
-> This is
-> described below in subsection MMAP Layout.
+On Sat,  3 Nov 2012 16:35:08 +0800
+Ming Lei <ming.lei@canonical.com> wrote:
 
-Enables the recording of exec mmap events, its counterpart, for data
-maps is...
+> This patchset try to solve one deadlock problem which might be caused
+> by memory allocation with block I/O during runtime PM and block device
+> error handling path. Traditionly, the problem is addressed by passing
+> GFP_NOIO statically to mm, but that is not a effective solution, see
+> detailed description in patch 1's commit log.
 
-> .IR "mmap_data" " (Since Linux 2.6.36)"
-> Include mmap events in the ring_buffer.
+It generally looks OK to me.  I have a few comments and I expect to grab
+v5.
 
-That will include mmap events for data maps.
- 
-> .TP
-> .IR "sample_id_all" " (Since Linux 2.6.38)"
-> If set, then all sample ID info (TID, TIME, ID, CPU, STREAM_ID)
-> will be provided.
-
-No, it will obey sample_type for non SAMPLE PERF_RECORD_ events,
-so if you want timestamps in all events so that you can detect
-reordering, use it a sample_type with PERF_SAMPLE_TIME and
-sample_id_all.
- 
-I'll read it again tomorrow, thanks for writing it!
-
-- Arnaldo
+Rafael, your thoughts?
