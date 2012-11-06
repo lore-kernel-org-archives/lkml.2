@@ -1,88 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab2KFTUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 14:20:12 -0500
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:38973 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab2KFTUJ (ORCPT
+	id S1752651Ab2KFTZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 14:25:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38335 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324Ab2KFTZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 14:20:09 -0500
-From: Marcos Chaparro <marcos@mrkindustries.com.ar>
-To: gustavo@padovan.org, marcel@holtmann.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Marcos Chaparro <marcos@mrkindustries.com.ar>
-Subject: [PATCH] bluetooth: ath3k: Add support for VAIO VPCEH [0489:e027]
-Date: Tue,  6 Nov 2012 16:19:11 -0300
-Message-Id: <1352229551-22842-1-git-send-email-marcos@mrkindustries.com.ar>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 6 Nov 2012 14:25:19 -0500
+Date: Tue, 6 Nov 2012 11:25:17 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v6 28/29] slub: slub-specific propagation changes.
+Message-Id: <20121106112517.d20df74d.akpm@linux-foundation.org>
+In-Reply-To: <1351771665-11076-29-git-send-email-glommer@parallels.com>
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+	<1351771665-11076-29-git-send-email-glommer@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added Atheros AR3011 internal bluetooth device found in Sony VAIO VPCEH to the
-devices list.
-Before this, the bluetooth module was identified as an Foxconn / Hai bluetooth
-device [0489:e027], now it claims to be an AtherosAR3011 Bluetooth
-[0cf3:3005].
+On Thu,  1 Nov 2012 16:07:44 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-T:  Bus=01 Lev=02 Prnt=02 Port=04 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0489 ProdID=e027 Rev= 0.01
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> SLUB allows us to tune a particular cache behavior with sysfs-based
+> tunables.  When creating a new memcg cache copy, we'd like to preserve
+> any tunables the parent cache already had.
+> 
+> This can be done by tapping into the store attribute function provided
+> by the allocator. We of course don't need to mess with read-only
+> fields. Since the attributes can have multiple types and are stored
+> internally by sysfs, the best strategy is to issue a ->show() in the
+> root cache, and then ->store() in the memcg cache.
+> 
+> The drawback of that, is that sysfs can allocate up to a page in
+> buffering for show(), that we are likely not to need, but also can't
+> guarantee. To avoid always allocating a page for that, we can update the
+> caches at store time with the maximum attribute size ever stored to the
+> root cache. We will then get a buffer big enough to hold it. The
+> corolary to this, is that if no stores happened, nothing will be
+> propagated.
+> 
+> It can also happen that a root cache has its tunables updated during
+> normal system operation. In this case, we will propagate the change to
+> all caches that are already active.
+> 
+> ...
+>
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -3955,6 +3956,7 @@ int __kmem_cache_create(struct kmem_cache *s, unsigned long flags)
+>  	if (err)
+>  		return err;
+>  
+> +	memcg_propagate_slab_attrs(s);
+>  	mutex_unlock(&slab_mutex);
+>  	err = sysfs_slab_add(s);
+>  	mutex_lock(&slab_mutex);
+> @@ -5180,6 +5182,7 @@ static ssize_t slab_attr_store(struct kobject *kobj,
+>  	struct slab_attribute *attribute;
+>  	struct kmem_cache *s;
+>  	int err;
+> +	int i __maybe_unused;
+>  
+>  	attribute = to_slab_attr(attr);
+>  	s = to_slab(kobj);
+> @@ -5188,10 +5191,81 @@ static ssize_t slab_attr_store(struct kobject *kobj,
+>  		return -EIO;
+>  
+>  	err = attribute->store(s, buf, len);
+> +#ifdef CONFIG_MEMCG_KMEM
+> +	if (slab_state < FULL)
+> +		return err;
+>  
+> +	if ((err < 0) || !is_root_cache(s))
+> +		return err;
+> +
+> +	mutex_lock(&slab_mutex);
+> +	if (s->max_attr_size < len)
+> +		s->max_attr_size = len;
+> +
+> +	for_each_memcg_cache_index(i) {
+> +		struct kmem_cache *c = cache_from_memcg(s, i);
+> +		if (c)
+> +			/* return value determined by the parent cache only */
+> +			attribute->store(c, buf, len);
+> +	}
+> +	mutex_unlock(&slab_mutex);
+> +#endif
+>  	return err;
+>  }
 
-Signed-off-by: Marcos Chaparro <marcos@mrkindustries.com.ar>
----
- drivers/bluetooth/ath3k.c |    1 +
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 2 insertions(+)
+hm, __maybe_unused is an ugly thing.  We can avoid it by tweaking the
+code a bit:
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index fc2de55..b00000e 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -67,6 +67,7 @@ static struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x13d3, 0x3304) },
- 	{ USB_DEVICE(0x0930, 0x0215) },
- 	{ USB_DEVICE(0x0489, 0xE03D) },
-+	{ USB_DEVICE(0x0489, 0xE027) },
+diff -puN mm/slub.c~slub-slub-specific-propagation-changes-fix mm/slub.c
+--- a/mm/slub.c~slub-slub-specific-propagation-changes-fix
++++ a/mm/slub.c
+@@ -5175,7 +5175,6 @@ static ssize_t slab_attr_store(struct ko
+ 	struct slab_attribute *attribute;
+ 	struct kmem_cache *s;
+ 	int err;
+-	int i __maybe_unused;
  
- 	/* Atheros AR9285 Malbec with sflash firmware */
- 	{ USB_DEVICE(0x03F0, 0x311D) },
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index debda27..ee82f2f 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -124,6 +124,7 @@ static struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
- 	{ USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
- 	{ USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
-+	{ USB_DEVICE(0x0489, 0xe027), .driver_info = BTUSB_IGNORE },
+ 	attribute = to_slab_attr(attr);
+ 	s = to_slab(kobj);
+@@ -5185,23 +5184,24 @@ static ssize_t slab_attr_store(struct ko
  
- 	/* Atheros AR9285 Malbec with sflash firmware */
- 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
--- 
-1.7.10.4
+ 	err = attribute->store(s, buf, len);
+ #ifdef CONFIG_MEMCG_KMEM
+-	if (slab_state < FULL)
+-		return err;
++	if (slab_state >= FULL && err >= 0 && is_root_cache(s)) {
++		int i;
+ 
+-	if ((err < 0) || !is_root_cache(s))
+-		return err;
+-
+-	mutex_lock(&slab_mutex);
+-	if (s->max_attr_size < len)
+-		s->max_attr_size = len;
+-
+-	for_each_memcg_cache_index(i) {
+-		struct kmem_cache *c = cache_from_memcg(s, i);
+-		if (c)
+-			/* return value determined by the parent cache only */
+-			attribute->store(c, buf, len);
++		mutex_lock(&slab_mutex);
++		if (s->max_attr_size < len)
++			s->max_attr_size = len;
++
++		for_each_memcg_cache_index(i) {
++			struct kmem_cache *c = cache_from_memcg(s, i);
++			/*
++			 * This function's return value is determined by the
++			 * parent cache only
++			 */
++			if (c)
++				attribute->store(c, buf, len);
++		}
++		mutex_unlock(&slab_mutex);
+ 	}
+-	mutex_unlock(&slab_mutex);
+ #endif
+ 	return err;
+ }
+
+Also, the comment in there tells the reader *what the code does*, not
+*why it does it*.  Why do we ignore the ->store return value for child
+caches?
+
 
