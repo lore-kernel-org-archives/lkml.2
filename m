@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535Ab2KFI0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 03:26:25 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56076 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754421Ab2KFI0Y (ORCPT
+	id S932654Ab2KFI06 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 03:26:58 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49990 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932149Ab2KFI05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 03:26:24 -0500
-Date: Tue, 6 Nov 2012 09:26:12 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Ulf Hansson <ulf.hansson@stericsson.com>, Liam Girdwood <lrg@ti.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Subject: Re: [PATCH 1/2] ASoC: Ux500: Fixup use of clocks
-Message-ID: <20121106082612.GF3283@opensource.wolfsonmicro.com>
-References: <1350909125-20189-1-git-send-email-ulf.hansson@stericsson.com>
- <20121022133003.GF4477@opensource.wolfsonmicro.com>
- <CAPDyKFqgFvY67QR8LA_KTEQwDi3o2wH=MY-D89k023-2S=ioFw@mail.gmail.com>
+	Tue, 6 Nov 2012 03:26:57 -0500
+Date: Tue, 6 Nov 2012 16:39:18 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        Dave Chinner <david@fromorbit.com>, cmm@us.ibm.com,
+        Ben Chociej <bchociej@gmail.com>,
+        James Northrup <northrup.james@gmail.com>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>
+Subject: Re: VFS hot tracking: How to calculate data temperature?
+Message-ID: <20121106083918.GA6090@gmail.com>
+Mail-Followup-To: Zhi Yong Wu <zwu.kernel@gmail.com>,
+	linux-fsdevel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+	Dave Chinner <david@fromorbit.com>, cmm@us.ibm.com,
+	Ben Chociej <bchociej@gmail.com>,
+	James Northrup <northrup.james@gmail.com>,
+	linux-kernel mlist <linux-kernel@vger.kernel.org>
+References: <CAEH94LjTedn0n00ZtqFxBL=kDA3u8G39q+x79-vPoMYvEKW1gw@mail.gmail.com>
+ <CAEH94LgUcAL6RquMZKTrDg87_0J2sEqTsDXUbnhrQ37KuMJ4sg@mail.gmail.com>
+ <20121102084109.GA19753@gmail.com>
+ <CAEH94LiYoeJEDxuHtK=z1sA5h7kzZQ1Day+U5o1SZDz-m8RYnA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s5/bjXLgkIwAv6Hi"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPDyKFqgFvY67QR8LA_KTEQwDi3o2wH=MY-D89k023-2S=ioFw@mail.gmail.com>
-X-Cookie: Your present plans will be successful.
+In-Reply-To: <CAEH94LiYoeJEDxuHtK=z1sA5h7kzZQ1Day+U5o1SZDz-m8RYnA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 05, 2012 at 10:29:39AM +0800, Zhi Yong Wu wrote:
+> On Fri, Nov 2, 2012 at 4:41 PM, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
+> > On Fri, Nov 02, 2012 at 02:38:29PM +0800, Zhi Yong Wu wrote:
+> >> Here also has another question.
+> >>
+> >> How to save the file temperature among the umount to be able to
+> >> preserve the file tempreture after reboot?
+> >>
+> >> This above is the requirement from DB product.
+> >> I thought that we can save file temperature in its inode struct, that
+> >> is, add one new field in struct inode, then this info will be written
+> >> to disk with inode.
+> >>
+> >> Any comments or ideas are appreciated, thanks.
+> >
+> > Hi Zhiyong,
+> >
+> > I think that we might define a callback function.  If a filesystem wants
+> > to save these data, it can implement a function to save them.  The
+> > filesystem can decide whether adding it or not by themselves.
+> Great idea,  temperature saving function is maybe very specific to FS.
+> But i am wondering if we can find one generic way to save temperature
+> info at first.
 
---s5/bjXLgkIwAv6Hi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I don't think a generic way is better because it cannot support a
+variety of filesystems.  So maybe you must answer this question firstly:
+how many filesystems do you want to save this info? such as ext4, xfs,
+btrfs, etc.  Then we can try to find a generic way.  If only these three
+filesystems you want to support, maybe saving in xattr is an optional
+way.
 
-On Mon, Nov 05, 2012 at 03:27:08PM +0100, Ulf Hansson wrote:
-
-> I can not find this patch on any "next-tree" yet. Same goes for:
-> "[PATCH 2/2] ASoC: Ux500: Control apb clock".
-
-> Maybe I should be more patient, but thought it make sense to send a
-> ping on this. :-)
-
-As I've had to tell you before pings are pointless, don't do this - to
-repeat, if you think something has been missed resend it.
-
---s5/bjXLgkIwAv6Hi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQmMmdAAoJELSic+t+oim9/i0P/0/ByKzheNY0YUBgPUi9XGjT
-bHuSdB4D7Bhmir8rMSzQewzrAAZoGBlLI+fKdnl4IVtIULSjgdCyqcWJIWxKHVfO
-Nm2wlEfl09EGQ3HdViO8ECmCyfu9yjGuG8hDep7yLql3k3JzkWPdE2ZMmnBTvLQX
-7/cQxXe2mxS2sPsn8HkYJzpfph2VvliJSx5vK4OftkWMzL7TiqDeMagcbU1U1YUQ
-l884GK+DpAVkWV3avESfACoPHL3El6i2EENpq4Falj7nvoraBkqeJF5N2Ea4H0ar
-TSFezW8kkHwZuvlplBpqQYsNMuhA1sjqYbx42gGZRey/rRxhNxvQ2B/mk8xGWdkG
-SXFVKxn9eDRodDmjaEYPWGhJSX2Nzlxnqw7sX99ugFBaT9P0X2wSBX8IL0UCx5TN
-E7oyGPbQLZeU3NyBo65lyIVCZSjlLpIpEr8yP6c4tfapBhU6JS1TiIq4FrpTVhxs
-UtYKfgedm2mMvke/vCDxpI8GapCSKF/oTsYlVAShIT4k8C4PdhGbAoRakVG6ggTM
-RwRMKpktqAaIdxVZruFc2cABLSmxoZmVJZY8MXFl4agoB5nm5umJcLPlFww7ON1g
-unNms0pAwuuax3OlZ+1ilhM7OS8Q8oqlFuYi/zlRNDdu63nOxjb+78oguDRLtzJH
-UbIuIiHAhr0gtv8pj4c1
-=AGf8
------END PGP SIGNATURE-----
-
---s5/bjXLgkIwAv6Hi--
+Regards,
+Zheng
