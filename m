@@ -1,116 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab2KFGfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 01:35:55 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:56937 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab2KFGfx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 01:35:53 -0500
-From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-To: "Philip, Avinash" <avinashphilip@ti.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "paul@pwsan.com" <paul@pwsan.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>
-CC: Rob Landley <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 1/8] PWMSS: Add PWM Subsystem driver for parent<->child
- relationship
-Thread-Topic: [PATCH 1/8] PWMSS: Add PWM Subsystem driver for parent<->child
- relationship
-Thread-Index: AQHNuzjd9hGPTyaRGE+bi0Ctde7B+5fcWU4A
-Date: Tue, 6 Nov 2012 06:35:24 +0000
-Message-ID: <B5906170F1614E41A8A28DE3B8D121433EC0444A@DBDE01.ent.ti.com>
-References: <1352106749-9437-1-git-send-email-avinashphilip@ti.com>
- <1352106749-9437-2-git-send-email-avinashphilip@ti.com>
-In-Reply-To: <1352106749-9437-2-git-send-email-avinashphilip@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752080Ab2KFGiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 01:38:24 -0500
+Received: from mga03.intel.com ([143.182.124.21]:62431 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042Ab2KFGiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 01:38:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,721,1344236400"; 
+   d="scan'208";a="164945307"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
+Cc: eranian@google.com, ak@linux.intel.com,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH V3 0/7] perf, x86: Haswell LBR call stack support
+Date: Tue,  6 Nov 2012 14:38:11 +0800
+Message-Id: <1352183898-5601-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 14:42:22, Philip, Avinash wrote:
-[...]
-> +pwmss0: pwmss@48300000 {
-> +	compatible = "ti,am33xx-pwmss";
-> +	reg = <0x48300000 0x10
-> +		0x48300100 0x80
-> +		0x48300180 0x80
-> +		0x48300200 0x80>;
-Do you really need the 4 address ranges here? You eventually do add in
-child nodes with other address ranges so isn't the first entry sufficient?
-I haven't really looked at the DT details so it is enforced by that let me
-know.
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-[...]
-> +
-> +#define PWMSS_CLKCONFIG		8
-> +
+Haswell has a new feature that utilizes the existing Last Branch Record
+facility to record call chains. When the feature is enabled, function
+call will be collected as normal, but as return instructions are executed
+the last captured branch record is popped from the on-chip LBR registers.
+The LBR call stack facility can help perf to get call chains of progam 
+without frame pointer.
 
-This #def can use a comment.
+The LBR call stack feature is automatic enabled when user requests sampling
+user callchain. perf_callchain_user() outputs the hardware recorded call
+stack in case there is no frame pointer in user program. 
 
-> +void pwmss_submodule_state_change(struct device *dev, int pos, bool enable)
-> +{
-> +	struct pwmss_info *info = dev_get_drvdata(dev);
-> +	u16 val;
-> +
-> +	val = readw(info->mmio_base + PWMSS_CLKCONFIG);
-> +	if (enable)
-> +		val |= 1 << pos;
-> +	else
-> +		val &= ~(1 << pos);
-> +	mutex_lock(&info->pwmss_lock);
-> +	writew(val , info->mmio_base + PWMSS_CLKCONFIG);
-> +	mutex_unlock(&info->pwmss_lock);
-> +}
-> +EXPORT_SYMBOL(pwmss_submodule_state_change);
+The LBR call stack has following known limitations
+ 1. Zero length calls are not filtered out by hardware
+ 2. Exception handing such as setjmp/longjmp will have calls/returns not
+    match
+ 3. Pushing different return address onto the stack will have calls/returns
+    not match
 
-I see a clk_en_ack field in the clock status register. You should be checking that.
+The patch series depends on Andi's "perf PMU support for Haswel" patches
 
-[...]
+---
+Changes since v1
+ - not expose PERF_SAMPLE_BRANCH_CALL_STACK to user space
+ - save/restore LBR stack on context switch for all sampling branch modes
+ - reduce lbr_sel_map size
 
-> +
-> +MODULE_DESCRIPTION("pwmss driver");
-> +MODULE_AUTHOR("Texas Instruments");
-> +MODULE_LICENSE("GPL");
-> diff --git a/drivers/pwm/tipwmss.h b/drivers/pwm/tipwmss.h
-> new file mode 100644
-> index 0000000..83fdc29
-> --- /dev/null
-> +++ b/drivers/pwm/tipwmss.h
-> @@ -0,0 +1,8 @@
-
-License text?
- 
-> +#ifdef CONFIG_PWM_TIPWMSS
-> +extern void pwmss_submodule_state_change(struct device *dev, int pos,
-> +		bool enable);
-> +#else
-> +static inline void pwmss_submodule_state_change(struct device *dev, int pos,
-> +		bool enable)
-> +{}
-> +#endif
-
-Regards,
-Vaibhav
+Changes since v2
+ - only enable LBR call stack when user requests sampling user callchain
