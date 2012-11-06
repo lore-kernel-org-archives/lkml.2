@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab2KFGqe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 01:46:34 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:57414 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab2KFGqa convert rfc822-to-8bit (ORCPT
+	id S1753111Ab2KFGqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 01:46:32 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:59128 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752581Ab2KFGqa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Nov 2012 01:46:30 -0500
 From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
@@ -25,14 +25,16 @@ CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 6/8] pwm: pwm-tiehrpwm: Adding TBCLK gating support.
-Thread-Topic: [PATCH 6/8] pwm: pwm-tiehrpwm: Adding TBCLK gating support.
-Thread-Index: AQHNuzkObRJcVQIrV0aW80ulyIj5J5fcXT2w
+Subject: RE: [PATCH 8/8] ARM: dts: AM33XX: Add PWM backlight DT data to
+ am335x-evm
+Thread-Topic: [PATCH 8/8] ARM: dts: AM33XX: Add PWM backlight DT data to
+ am335x-evm
+Thread-Index: AQHNuzkRkxvyfx1KxUOdbJr2TC1wd5fcXbHQ
 Date: Tue, 6 Nov 2012 06:46:13 +0000
-Message-ID: <B5906170F1614E41A8A28DE3B8D121433EC04483@DBDE01.ent.ti.com>
+Message-ID: <B5906170F1614E41A8A28DE3B8D121433EC04488@DBDE01.ent.ti.com>
 References: <1352106749-9437-1-git-send-email-avinashphilip@ti.com>
- <1352106749-9437-7-git-send-email-avinashphilip@ti.com>
-In-Reply-To: <1352106749-9437-7-git-send-email-avinashphilip@ti.com>
+ <1352106749-9437-9-git-send-email-avinashphilip@ti.com>
+In-Reply-To: <1352106749-9437-9-git-send-email-avinashphilip@ti.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -45,24 +47,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 05, 2012 at 14:42:27, Philip, Avinash wrote:
+On Mon, Nov 05, 2012 at 14:42:29, Philip, Avinash wrote:
 [...]
 
-> +	/* Some platforms require explicit tbclk gating */
-> +	if (of_property_read_bool(pdev->dev.of_node, "tbclkgating")) {
-> +		pc->tbclk = clk_get(&pdev->dev, "tbclk");
-> +		if (IS_ERR(pc->tbclk)) {
-> +			dev_err(&pdev->dev, "Could not get EHRPWM TBCLK\n");
-> +			return PTR_ERR(pc->tbclk);
-> +		}
-> +	}
+> +	am33xx_pinmux: pinmux@44e10800 {
+> +		ecap0_pins: backlight_pins {
+> +			pinctrl-single,pins = <
+> +				0x164 0x0	/* eCAP0_in_PWM0_out.eCAP0_in_PWM0_out MODE0 */
+> +			>;
+> +		};
+> +	};
 > +
-> +	/* Enable tbclk & leave */
-> +	if (pc->tbclk)
-> +		clk_enable(pc->tbclk);
-> +
+Ok I see the pinctrl entries here. Shouldn't this be done before
+the change in the driver?
 
-Here also why are you leaving this clock always running?
-
-Regards,
+Regards.
 Vaibhav
