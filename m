@@ -1,150 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab2KFXqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 18:46:16 -0500
-Received: from twin.jikos.cz ([89.185.236.188]:50585 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752773Ab2KFXqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 18:46:13 -0500
-Date: Wed, 7 Nov 2012 00:45:56 +0100
-From: David Sterba <dave@jikos.cz>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Subject: Re: [RFC v4+ hot_track 14/19] vfs: add debugfs support
-Message-ID: <20121106234556.GX3102@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-	viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-	cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
- <1351485061-12297-15-git-send-email-zwu.kernel@gmail.com>
+	id S1753941Ab2KFXs0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 18:48:26 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:62811 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab2KFXsY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 18:48:24 -0500
+Date: Tue, 6 Nov 2012 15:48:20 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Jones <davej@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tmpfs: fix shmem_getpage_gfp VM_BUG_ON
+In-Reply-To: <20121106135402.GA3543@redhat.com>
+Message-ID: <alpine.LNX.2.00.1211061521230.6954@eggly.anvils>
+References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121101191052.GA5884@redhat.com> <alpine.LNX.2.00.1211011546090.19377@eggly.anvils> <20121101232030.GA25519@redhat.com> <alpine.LNX.2.00.1211011627120.19567@eggly.anvils>
+ <20121102014336.GA1727@redhat.com> <alpine.LNX.2.00.1211021606580.11106@eggly.anvils> <alpine.LNX.2.00.1211051729590.963@eggly.anvils> <20121106135402.GA3543@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351485061-12297-15-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 12:30:56PM +0800, zwu.kernel@gmail.com wrote:
-> +static int hot_range_seq_show(struct seq_file *seq, void *v)
-> +{
-> +	struct hot_range_item *hr = v;
-> +	struct hot_inode_item *he = hr->hot_inode;
-> +	struct hot_freq_data *freq_data = &hr->hot_range.hot_freq_data;
-> +
-> +	/* Always lock hot_inode_item first */
-> +	spin_lock(&he->hot_inode.lock);
-> +	spin_lock(&hr->hot_range.lock);
-> +	seq_printf(seq, "inode #%llu, range start " \
+On Tue, 6 Nov 2012, Dave Jones wrote:
+> On Mon, Nov 05, 2012 at 05:32:41PM -0800, Hugh Dickins wrote:
+> 
+>  > -			/* We already confirmed swap, and make no allocation */
+>  > -			VM_BUG_ON(error);
+>  > +			/*
+>  > +			 * We already confirmed swap under page lock, and make
+>  > +			 * no memory allocation here, so usually no possibility
+>  > +			 * of error; but free_swap_and_cache() only trylocks a
+>  > +			 * page, so it is just possible that the entry has been
+>  > +			 * truncated or holepunched since swap was confirmed.
+>  > +			 * shmem_undo_range() will have done some of the
+>  > +			 * unaccounting, now delete_from_swap_cache() will do
+>  > +			 * the rest (including mem_cgroup_uncharge_swapcache).
+>  > +			 * Reset swap.val? No, leave it so "failed" goes back to
+>  > +			 * "repeat": reading a hole and writing should succeed.
+>  > +			 */
+>  > +			if (error) {
+>  > +				VM_BUG_ON(error != -ENOENT);
+>  > +				delete_from_swap_cache(page);
+>  > +			}
+>  >  		}
+> 
+> I ran with this overnight,
 
-the # seems unnecessary to me
+Thanks a lot...
 
-> +			"%llu (range len %u) reads %u, writes %u, "
-> +			"avg read time %llu, avg write time %llu, temp %u\n",
+> and still hit the (new!) VM_BUG_ON
 
-compiler will complain if it sees a %llu format and not the expected
-type of 'unsigned long long'
+... but that's even more surprising than your original report.
 
-> +			he->i_ino,
+> 
+> Perhaps we should print out what 'error' was too ?  I'll rebuild with that..
 
-			(unsigned long long)he->i_ino,
+Thanks; though I thought the error was going to turn out too boring,
+and was preparing a debug patch for you to show the expected and found
+values too.  But then got very puzzled...
+ 
+> 
+> ------------[ cut here ]------------
+> WARNING: at mm/shmem.c:1151 shmem_getpage_gfp+0xa5c/0xa70()
+> Hardware name: 2012 Client Platform
+> Pid: 21798, comm: trinity-child4 Not tainted 3.7.0-rc4+ #54
 
-> +			(u64)hr->start * RANGE_SIZE,
-> +			hr->len,
-> +			freq_data->nr_reads,
-> +			freq_data->nr_writes,
-> +			freq_data->avg_delta_reads / NSEC_PER_MSEC,
-> +			freq_data->avg_delta_writes / NSEC_PER_MSEC,
-> +			freq_data->last_temp >> (32 - HEAT_MAP_BITS));
-> +	spin_unlock(&hr->hot_range.lock);
-> +	spin_unlock(&he->hot_inode.lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static int hot_inode_seq_show(struct seq_file *seq, void *v)
-> +{
-> +	struct hot_inode_item *he = v;
-> +	struct hot_freq_data *freq_data = &he->hot_inode.hot_freq_data;
-> +
-> +	spin_lock(&he->hot_inode.lock);
-> +	seq_printf(seq, "inode #%llu, reads %u, writes %u, " \
-> +		"avg read time %llu, avg write time %llu, temp %u\n",
+That's the very same line number as in your original report, despite
+the long comment which the patch adds.  Are you sure that kernel was
+built with the patch in?
 
-(same here)
+I wouldn't usually question you, but I'm going mad trying to understand
+how the VM_BUG_ON(error != -ENOENT) fires.  At the time I wrote that
+line, and when I was preparing the debug patch, I was thinking that an
+error from shmem_radix_tree_replace could also be -EEXIST, for when a
+different something rather than nothing is found [*].  But that's not
+the case, shmem_radix_tree_replace returns either 0 or -ENOENT.
 
-> +		he->i_ino,
-> +		freq_data->nr_reads,
-> +		freq_data->nr_writes,
-> +		freq_data->avg_delta_reads / NSEC_PER_MSEC,
-> +		freq_data->avg_delta_writes / NSEC_PER_MSEC,
-> +		freq_data->last_temp >> (32 - HEAT_MAP_BITS));
-> +	spin_unlock(&he->hot_inode.lock);
-> +
-> +	return 0;
-> +}
->
-> +static void *hot_spot_range_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-> +{
-> +	struct hot_info *root = seq->private;
-> +	struct hot_range_item *hr_next, *hr = v;
-> +	struct hot_comm_item *comm_item;
-> +	struct list_head *n_list;
-> +	int i =
-> +	 hr->hot_range.hot_freq_data.last_temp >> (32 - HEAT_MAP_BITS);
+So if error != -ENOENT, that means shmem_add_to_page_cache went the
+radix_tree_insert route instead of the shmem_radix_tree_replace route;
+which means that its 'expected' is NULL, so swp_to_radix_entry(swap)
+is NULL; but swp_to_radix_entry() does an "| 2", so however corrupt
+the radix_tree might be, I do not understand the new VM_BUG_ON firing.
 
-now I have noticed that I've seen the ... (32 - HEAT_MAP_BITS)
-expression so many times that it tend to think it deserves a helper
-function
+Please tell me it was the wrong kernel!
+Hugh
 
-> +
-> +	n_list = seq_list_next(&hr->hot_range.n_list,
-> +		&root->heat_range_map[i].node_list, pos);
-> +	hot_range_item_put(hr);
-> +next:
-> +	if (n_list) {
-> +		comm_item = container_of(n_list,
-> +			struct hot_comm_item, n_list);
-> +		hr_next = container_of(comm_item,
-> +			struct hot_range_item, hot_range);
-> +		kref_get(&hr_next->hot_range.refs);
-> +		return hr_next;
-> +	} else if (--i >= 0) {
-> +		n_list = seq_list_next(&root->heat_range_map[i].node_list,
-> +				&root->heat_range_map[i].node_list, pos);
-> +		goto next;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
-> +static void hot_debugfs_exit(struct super_block *sb)
-> +{
-> +	struct dentry *vol_dentry;
-> +
-> +	vol_dentry = debugfs_get_dentry(sb->s_id,
-> +				sb->s_hot_root->debugfs_root, strlen(sb->s_id));
-> +	/* remove all debugfs entries recursively from the volume root */
-> +	if (vol_dentry)
-> +		debugfs_remove_recursive(vol_dentry);
-> +	else
-> +		BUG_ON(1);
+[*] But in thinking it over, I realize that if shmem_radix_tree_replace
+had returned -EEXIST for the "wrong something" case, I would have been
+wrong to BUG on that; because just as truncation could remove an entry,
+something else could immediately after instantiate a new page there.
 
-		BUG()
-
-> +
-> +	if (list_empty(&sb->s_hot_root->debugfs_root->d_subdirs))
-> +		debugfs_remove(sb->s_hot_root->debugfs_root);
-> +}
-> +
-> +/*
-
-david
+So although I believe my VM_BUG_ON(error != -ENOENT) is safe, it's
+not saying what I had intended to say with it, and would have been
+wrong to say that anyway.  It just looks stupid to me now, rather
+like inserting a VM_BUG_ON(false) - but that does become interesting
+when you report that you've hit it.
