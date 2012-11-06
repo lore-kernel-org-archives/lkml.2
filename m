@@ -1,294 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736Ab2KFWqO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:46:14 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:41064 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753599Ab2KFWqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:46:09 -0500
-Date: Tue, 6 Nov 2012 14:45:39 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Subject: Re: [RFC v4+ hot_track 03/19] vfs: add I/O frequency update function
-Message-ID: <20121106224539.GB4255@blackbox.djwong.org>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
- <1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1753502Ab2KFWp0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:45:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3236 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751981Ab2KFWpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 17:45:24 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 2/2 v2] mm: print out information of file affected by memory error
+Date: Tue,  6 Nov 2012 17:45:05 -0500
+Message-Id: <1352241905-4657-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20121106121220.d14696ac.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 12:30:45PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Tue, Nov 06, 2012 at 12:12:20PM -0800, Andrew Morton wrote:
+> On Tue,  6 Nov 2012 00:07:53 -0500
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 > 
->   Add some util helpers to update access frequencies
-> for one file or its range.
+> > On Mon, Nov 05, 2012 at 02:01:54PM -0800, Andrew Morton wrote:
+> > > On Fri,  2 Nov 2012 12:33:13 -0400
+> > > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> > > 
+> > > > Printing out the information about which file can be affected by a
+> > > > memory error in generic_error_remove_page() is helpful for user to
+> > > > estimate the impact of the error.
+> > > > 
+> > > > Changelog v2:
+> > > >   - dereference mapping->host after if (!mapping) check for robustness
+> > > > 
+> > > > ...
+> > > >
+> > > > --- v3.7-rc3.orig/mm/truncate.c
+> > > > +++ v3.7-rc3/mm/truncate.c
+> > > > @@ -151,14 +151,20 @@ int truncate_inode_page(struct address_space *mapping, struct page *page)
+> > > >   */
+> > > >  int generic_error_remove_page(struct address_space *mapping, struct page *page)
+> > > >  {
+> > > > +	struct inode *inode;
+> > > > +
+> > > >  	if (!mapping)
+> > > >  		return -EINVAL;
+> > > > +	inode = mapping->host;
+> > > >  	/*
+> > > >  	 * Only punch for normal data pages for now.
+> > > >  	 * Handling other types like directories would need more auditing.
+> > > >  	 */
+> > > > -	if (!S_ISREG(mapping->host->i_mode))
+> > > > +	if (!S_ISREG(inode->i_mode))
+> > > >  		return -EIO;
+> > > > +	pr_info("MCE %#lx: file info pgoff:%lu, inode:%lu, dev:%s\n",
+> > > > +		page_to_pfn(page), page_index(page),
+> > > > +		inode->i_ino, inode->i_sb->s_id);
+> > > >  	return truncate_inode_page(mapping, page);
+> > > >  }
+> > > >  EXPORT_SYMBOL(generic_error_remove_page);
+> > > 
+> > > A couple of things.
+> > > 
+> > > - I worry that if a hardware error occurs, it might affect a large
+> > >   amount of memory all at the same time.  For example, if a 4G memory
+> > >   block goes bad, this message will be printed a million times?
+> > 
+> > If the error on 4G memory block triggered by SRAO MCE and these 1M pages
+> > are all pagecache pages, the answer is yes.
 > 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> ---
->  fs/hot_tracking.c            |  179 ++++++++++++++++++++++++++++++++++++++++++
->  fs/hot_tracking.h            |    7 ++
->  include/linux/hot_tracking.h |    2 +
->  3 files changed, 188 insertions(+), 0 deletions(-)
+> Well that's bad.
 > 
-> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-> index 68591f0..0a7d9a3 100644
-> --- a/fs/hot_tracking.c
-> +++ b/fs/hot_tracking.c
-> @@ -172,6 +172,137 @@ static void hot_inode_tree_exit(struct hot_info *root)
->  	}
->  }
->  
-> +struct hot_inode_item
-> +*hot_inode_item_find(struct hot_info *root, u64 ino)
-> +{
-> +	struct hot_inode_item *he;
-> +	int ret;
-> +
-> +again:
-> +	spin_lock(&root->lock);
-> +	he = radix_tree_lookup(&root->hot_inode_tree, ino);
-> +	if (he) {
-> +		kref_get(&he->hot_inode.refs);
-> +		spin_unlock(&root->lock);
-> +		return he;
-> +	}
-> +	spin_unlock(&root->lock);
-> +
-> +	he = kmem_cache_zalloc(hot_inode_item_cachep,
-> +				GFP_KERNEL | GFP_NOFS);
-> +	if (!he)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	hot_inode_item_init(he, ino, &root->hot_inode_tree);
-> +
-> +	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
-> +	if (ret) {
-> +		kmem_cache_free(hot_inode_item_cachep, he);
-> +		return ERR_PTR(ret);
-> +	}
-> +
-> +	spin_lock(&root->lock);
-> +	ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
-> +	if (ret == -EEXIST) {
-> +		kmem_cache_free(hot_inode_item_cachep, he);
-> +		spin_unlock(&root->lock);
-> +		radix_tree_preload_end();
-> +		goto again;
-> +	}
-> +	spin_unlock(&root->lock);
-> +	radix_tree_preload_end();
-> +
-> +	kref_get(&he->hot_inode.refs);
-> +	return he;
-> +}
-> +EXPORT_SYMBOL_GPL(hot_inode_item_find);
-> +
-> +static struct hot_range_item
-> +*hot_range_item_find(struct hot_inode_item *he,
-> +			u32 start)
-> +{
-> +	struct hot_range_item *hr;
-> +	int ret;
-> +
-> +again:
-> +	spin_lock(&he->lock);
-> +	hr = radix_tree_lookup(&he->hot_range_tree, start);
-> +	if (hr) {
-> +		kref_get(&hr->hot_range.refs);
-> +		spin_unlock(&he->lock);
-> +		return hr;
-> +	}
-> +	spin_unlock(&he->lock);
-> +
-> +	hr = kmem_cache_zalloc(hot_range_item_cachep,
-> +				GFP_KERNEL | GFP_NOFS);
-> +	if (!hr)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	hot_range_item_init(hr, start, he);
-> +
-> +	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
-> +	if (ret) {
-> +		kmem_cache_free(hot_range_item_cachep, hr);
-> +		return ERR_PTR(ret);
-> +	}
-> +
-> +	spin_lock(&he->lock);
-> +	ret = radix_tree_insert(&he->hot_range_tree, start, hr);
-> +	if (ret == -EEXIST) {
-> +		kmem_cache_free(hot_range_item_cachep, hr);
-> +		spin_unlock(&he->lock);
-> +		radix_tree_preload_end();
-> +		goto again;
-> +	}
-> +	spin_unlock(&he->lock);
-> +	radix_tree_preload_end();
-> +
-> +	kref_get(&hr->hot_range.refs);
-> +	return hr;
-> +}
-> +
-> +/*
-> + * This function does the actual work of updating
-> + * the frequency numbers, whatever they turn out to be.
-> + */
-> +static u64 hot_average_update(struct timespec old_atime,
-> +		struct timespec cur_time, u64 old_avg)
-> +{
-> +	struct timespec delta_ts;
-> +	u64 new_avg;
-> +	u64 new_delta;
-> +
-> +	delta_ts = timespec_sub(cur_time, old_atime);
-> +	new_delta = timespec_to_ns(&delta_ts) >> FREQ_POWER;
-> +
-> +	new_avg = (old_avg << FREQ_POWER) - old_avg + new_delta;
-> +	new_avg = new_avg >> FREQ_POWER;
-> +
-> +	return new_avg;
-> +}
-> +
-> +static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
-> +{
-> +	struct timespec cur_time = current_kernel_time();
-> +
-> +	if (write) {
-> +		freq_data->nr_writes += 1;
-> +		freq_data->avg_delta_writes = hot_average_update(
-> +				freq_data->last_write_time,
-> +				cur_time,
-> +				freq_data->avg_delta_writes);
-> +		freq_data->last_write_time = cur_time;
-> +	} else {
-> +		freq_data->nr_reads += 1;
-> +		freq_data->avg_delta_reads = hot_average_update(
-> +				freq_data->last_read_time,
-> +				cur_time,
-> +				freq_data->avg_delta_reads);
-
-I think you could just pass in a pointer to
-freq_data->avg_delta_{writes,reads} here...
-
-> +		freq_data->last_read_time = cur_time;
-> +	}
-> +}
-> +
->  /*
->   * Initialize kmem cache for hot_inode_item and hot_range_item.
->   */
-> @@ -199,6 +330,54 @@ err:
->  EXPORT_SYMBOL_GPL(hot_cache_init);
->  
->  /*
-> + * Main function to update access frequency from read/writepage(s) hooks
-> + */
-> +void hot_update_freqs(struct inode *inode, u64 start,
-> +			u64 len, int rw)
-> +{
-> +	struct hot_info *root = inode->i_sb->s_hot_root;
-> +	struct hot_inode_item *he;
-> +	struct hot_range_item *hr;
-> +	u32 cur, end;
-> +
-> +	if (!root || (len == 0))
-> +		return;
-> +
-> +	he = hot_inode_item_find(root, inode->i_ino);
-> +	if (IS_ERR(he)) {
-> +		WARN_ON(1);
-> +		return;
-> +	}
-> +
-> +	spin_lock(&he->hot_inode.lock);
-> +	hot_freq_data_update(&he->hot_inode.hot_freq_data, rw);
-> +	spin_unlock(&he->hot_inode.lock);
-> +
-> +	/*
-> +	 * Align ranges on RANGE_SIZE boundary
-> +	 * to prevent proliferation of range structs
-> +	 */
-> +	end = (start + len + RANGE_SIZE - 1) >> RANGE_BITS;
-> +	for (cur = (start >> RANGE_BITS); cur < end; cur++) {
-
-Hm... start is u64, cur is u32, RANGE_BITS is 20.  Doesn't this overflow if,
-say, I have a sparse file with blocks way out at 2^53 bytes?
-
-Also, RANGE_SIZE means that the hot tracking range granularity is 1MiB?  How
-did you decide on that?  Will we ever want to change that?
-
-> +		hr = hot_range_item_find(he, cur);
-> +		if (IS_ERR(hr)) {
-> +			WARN_ON(1);
-
-WARN(1, "hot_range_item_find returns %d\n", PTR_ERR(hr)); ?
-
---D
-
-> +			hot_inode_item_put(he);
-> +			return;
-> +		}
-> +
-> +		spin_lock(&hr->hot_range.lock);
-> +		hot_freq_data_update(&hr->hot_range.hot_freq_data, rw);
-> +		spin_unlock(&hr->hot_range.lock);
-> +
-> +		hot_range_item_put(hr);
-> +	}
-> +
-> +	hot_inode_item_put(he);
-> +}
-> +EXPORT_SYMBOL_GPL(hot_update_freqs);
-> +
-> +/*
->   * Initialize the data structures for hot data tracking.
->   */
->  int hot_track_init(struct super_block *sb)
-> diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
-> index e7ba121..cc4666e 100644
-> --- a/fs/hot_tracking.h
-> +++ b/fs/hot_tracking.h
-> @@ -20,6 +20,13 @@
->  #define FREQ_DATA_TYPE_INODE (1 << 0)
->  #define FREQ_DATA_TYPE_RANGE (1 << 1)
->  
-> +/* size of sub-file ranges */
-> +#define RANGE_BITS 20
-> +#define RANGE_SIZE (1 << RANGE_BITS)
-> +
-> +#define FREQ_POWER 4
-> +
->  void hot_inode_item_put(struct hot_inode_item *he);
-> +struct hot_inode_item *hot_inode_item_find(struct hot_info *root, u64 ino);
->  
->  #endif /* __HOT_TRACKING__ */
-> diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-> index 4233207..e2d6028 100644
-> --- a/include/linux/hot_tracking.h
-> +++ b/include/linux/hot_tracking.h
-> @@ -71,5 +71,7 @@ struct hot_info {
->  extern void __init hot_cache_init(void);
->  extern int hot_track_init(struct super_block *sb);
->  extern void hot_track_exit(struct super_block *sb);
-> +extern void hot_update_freqs(struct inode *inode, u64 start,
-> +				u64 len, int rw);
->  
->  #endif  /* _LINUX_HOTTRACK_H */
-> -- 
-> 1.7.6.5
+> > But I think that if it's a whole DIMM error, it should be reported by
+> > another type of MCE than SRAO, so printing a million times seems to be
+> > unlikely to happen.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> "should be" and "unlikely" aren't very reassuring things to hear! 
+> Emitting a million lines into syslog is pretty poor behaviour and
+> should be reliably avoided.
+
+So capping maximum lines of messages per some duration (a hour or a day)
+is a possible option. BTW, even if we don't apply this patch, the kernel
+can emit million lines of messages in the above-mentioned situation because
+each memory error event emits a message like "MCE 0x3f57f4: dirty LRU page
+recovery: Ignored" on syslog. If it's also bad, we need to do capping
+also over existing printk()s, right?
+
+> > > - hard-wiring "MCE" in here seems a bit of a layering violation? 
+> > >   What right does the generic, core .error_remove_page() implementation
+> > >   have to assume that it was called because of an MCE?
+> > 
+> > OK, we need not assume that. I change "MCE " prefix to more specific
+> > one like "Memory error ".
+> > 
+> > > Many CPU types don't eveh have such a thing?
+> > 
+> > No. At least currently, only SRAO MCE triggers memory_failure() and
+> > it's defined only on some newest highend models of Intel CPUs.
+> 
+> Again, your reply is full of assumptions about one particualar
+> implementation on one particular CPU.  But this is generic,
+> cross-architecture code!
+> 
+> Now, it's pretty harmless to make these assumptions at this time.  But
+> this new code will need to redone if/when other CPU types come along,
+> and because there's a printk in there, that rework will cause
+> user-visible changes in kernel behaviour.  It would be best if we can
+> just avoid the problem on day one.
+> 
+> Maybe move the printk into x86-specific code?  And just one printk
+> please - not a million!
+
+OK, we need some cleanup for this at first.
+
+Thanks,
+Naoya
