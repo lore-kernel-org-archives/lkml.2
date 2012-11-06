@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751197Ab2KFLM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 06:12:59 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56398 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750772Ab2KFLM6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 06:12:58 -0500
-Date: Tue, 6 Nov 2012 11:12:56 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: broonie@opensource.wolfsonmicro.com, lrg@ti.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: core: avoid memory access after freeing it
-Message-ID: <20121106111256.GA2512@opensource.wolfsonmicro.com>
-References: <1352198049-5941-1-git-send-email-ldewangan@nvidia.com>
+	id S1751386Ab2KFLOu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 06:14:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41492 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750997Ab2KFLOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 06:14:48 -0500
+Date: Tue, 6 Nov 2012 12:14:45 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Chris J Arges <chris.j.arges@canonical.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] hid: usbhid: add quirk for SB arena headset v2
+In-Reply-To: <50983069.5080404@canonical.com>
+Message-ID: <alpine.LNX.2.00.1211061214030.24253@pobox.suse.cz>
+References: <1352145945-8035-1-git-send-email-chris.j.arges@canonical.com> <alpine.LNX.2.00.1211052117210.24253@pobox.suse.cz> <50983069.5080404@canonical.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352198049-5941-1-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 04:04:09PM +0530, Laxman Dewangan wrote:
-> When regulator_register() failed due to non availability of
->  	mutex_unlock(&regulator_list_mutex);
-...
->  }
->  EXPORT_SYMBOL_GPL(regulator_put);
-> @@ -3453,11 +3460,10 @@ scrub:
->  		gpio_free(rdev->ena_gpio);
->  	kfree(rdev->constraints);
->  wash:
-> +	if (rdev->supply)
-> +		__regulator_put_locked(rdev->supply);
->  	device_unregister(&rdev->dev);
-> -
->  	mutex_unlock(&regulator_list_mutex);
-> -	if (rdev->supply)
-> -		regulator_put(rdev->supply);
->  
->  	/* device core frees rdev */
->  	rdev = ERR_PTR(ret);
+On Mon, 5 Nov 2012, Chris J Arges wrote:
 
-Here would it not make sense to go slightly further and basically
-revert my original change. This feels sensible as it keeps it at
-only one location where the mutex is unlocked and removes the
-second exit point I added. This would effectively make the code
-look like:
-
-scrub:
-	if (rdev->supply)
-		__regulator_put_locked(rdev->supply);
-	if (rdev->ena_gpio)
-		gpio_free(rdev->ena_gpio);
-	kfree(rdev->constraints);
-	device_unregister(&rdev->dev);
-	/* device core frees rdev */
-	rdev = ERR_PTR(ret);
-	goto out;
-
-Otherwise the change looks great to me.
-
-> -- 
-> 1.7.1.1
+> >> When an SB Arena USB headset is plugged in, it registers the volume
+> >> keys on the headset as a keyboard and continually sends events causing
+> >> issues with normal keyboard input. This quirk disables the volume keys.
+> > 
+> > I don't know how the device looks like, but wouldn't it make more sense to 
+> > actually remap the bogus keys it's sending to produce KEY_VOLUMEUP and 
+> > KEY_VOLUMEDOWN?
+> > 
 > 
+> Yes, if I can track this hardware down or get data I'll fix it like
+> this. This happened to be a do-no harm fix for the following bug:
+> https://bugs.launchpad.net/ubuntu/+source/xorg-server/+bug/1007575
+
+You should be able to obtain it easily either by running evtest on 
+corresponding /dev/input/eventX node, or by looking into debugfs 
+hid/<device>/events file.
+
+-- 
+Jiri Kosina
+SUSE Labs
