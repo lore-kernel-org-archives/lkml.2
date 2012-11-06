@@ -1,235 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab2KFHtG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 02:49:06 -0500
-Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:46431 "EHLO
-	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752816Ab2KFHtE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 02:49:04 -0500
-From: Qing Xu <qingx@marvell.com>
-To: qingx@marvell.com, linux@arm.linux.org.uk, sameo@linux.intel.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        haojian.zhuang@gmail.com, cxie4@marvell.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 7/7] mfd: max8925: add dts
-Date: Tue,  6 Nov 2012 15:49:40 +0800
-Message-Id: <1352188180-10028-1-git-send-email-qingx@marvell.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 06 Nov 2012 07:48:53.0026 (UTC) FILETIME=[2AA11820:01CDBBF3]
+	id S1753981Ab2KFH4l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 02:56:41 -0500
+Received: from ka.mail.enyo.de ([87.106.162.201]:48775 "EHLO ka.mail.enyo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752816Ab2KFH4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 02:56:39 -0500
+From: Florian Weimer <fw@deneb.enyo.de>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Pavel Machek <pavel@ucw.cz>, Chris Friesen <chris.friesen@genband.com>,
+        Eric Paris <eparis@parisplace.org>, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oneukum@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+References: <20121104135251.GA17894@srcf.ucam.org>
+	<87d2zsmv8r.fsf@xmission.com> <509766DB.9090906@zytor.com>
+	<87625kh5r2.fsf@xmission.com> <20121105123858.GB4374@srcf.ucam.org>
+	<87sj8nc137.fsf@xmission.com> <20121105202557.GA16076@srcf.ucam.org>
+	<87hap3zbw7.fsf@xmission.com> <20121106031219.GB24235@srcf.ucam.org>
+	<87fw4nv1vj.fsf@xmission.com> <20121106035352.GA24698@srcf.ucam.org>
+	<87hap3s3yl.fsf@xmission.com>
+Date: Tue, 06 Nov 2012 08:56:01 +0100
+In-Reply-To: <87hap3s3yl.fsf@xmission.com> (Eric W. Biederman's message of
+	"Mon, 05 Nov 2012 21:19:46 -0800")
+Message-ID: <878vafqi5q.fsf@mid.deneb.enyo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Qing Xu <qingx@marvell.com>
+* Eric W. Biederman:
 
-add max8925 dts support into mmp2 brownstone platform
+> If windows is not present on a system linux can not be used to boot a
+> compromised version of windows without user knowledge because windows is
+> not present.
 
-Signed-off-by: Qing Xu <qingx@marvell.com>
----
- arch/arm/boot/dts/mmp2-brownstone.dts |  166 +++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/mmp2.dtsi           |    4 +-
- 2 files changed, 169 insertions(+), 1 deletions(-)
+Interesting idea.  Unfortunately, it is very hard to detect reliably
+that Windows is not present from the bootloader, so it's not possible
+to use this approach to simplify matters.
 
-diff --git a/arch/arm/boot/dts/mmp2-brownstone.dts b/arch/arm/boot/dts/mmp2-brownstone.dts
-index c9b4f27..e22f58c 100644
---- a/arch/arm/boot/dts/mmp2-brownstone.dts
-+++ b/arch/arm/boot/dts/mmp2-brownstone.dts
-@@ -29,6 +29,172 @@
- 			};
- 			twsi1: i2c@d4011000 {
- 				status = "okay";
-+				pmic: max8925@3c {
-+					compatible = "marvell,max8925";
-+					reg = <0x3c>;
-+					interrupts = <1 0>;
-+					interrupt-parent = <&intcmux4>;
-+					interrupt-controller;
-+					#interrupt-cells = <1>;
-+
-+					regulators {
-+						SDV1 {
-+							regulator-min-microvolt = <637500>;
-+							regulator-max-microvolt = <1425000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						SDV2 {
-+							regulator-min-microvolt = <650000>;
-+							regulator-max-microvolt = <2225000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						SDV3 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO1 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO2 {
-+							regulator-min-microvolt = <650000>;
-+							regulator-max-microvolt = <2250000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO3 {
-+							regulator-min-microvolt = <650000>;
-+							regulator-max-microvolt = <2250000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO4 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO5 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO6 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO7 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO8 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO9 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO10 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+						};
-+						LDO11 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO12 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO13 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO14 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO15 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO16 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO17 {
-+							regulator-min-microvolt = <650000>;
-+							regulator-max-microvolt = <2250000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO18 {
-+							regulator-min-microvolt = <650000>;
-+							regulator-max-microvolt = <2250000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO19 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO20 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+					};
-+					backlight {
-+						dual-string = <0>;
-+					};
-+					charger {
-+						batt-detect = <0>;
-+						topoff-threshold = <1>;
-+						fast-charge = <7>;
-+						no-temp-support = <0>;
-+						no-insert-detect = <0>;
-+					};
-+					rtc {
-+
-+					};
-+					onkey {
-+
-+					};
-+					touch {
-+
-+					};
-+				};
- 			};
- 			rtc: rtc@d4010000 {
- 				status = "okay";
-diff --git a/arch/arm/boot/dts/mmp2.dtsi b/arch/arm/boot/dts/mmp2.dtsi
-index 80f74e2..2165a17 100644
---- a/arch/arm/boot/dts/mmp2.dtsi
-+++ b/arch/arm/boot/dts/mmp2.dtsi
-@@ -41,7 +41,7 @@
- 				mrvl,intc-nr-irqs = <64>;
- 			};
- 
--			intcmux4@d4282150 {
-+			intcmux4: intcmux4@d4282150 {
- 				compatible = "mrvl,mmp2-mux-intc";
- 				interrupts = <4>;
- 				interrupt-controller;
-@@ -196,6 +196,8 @@
- 				compatible = "mrvl,mmp-twsi";
- 				reg = <0xd4011000 0x1000>;
- 				interrupts = <7>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
- 				mrvl,i2c-fast-mode;
- 				status = "disabled";
- 			};
--- 
-1.7.0.4
+> If windows is present on a system then to install linux a user must be
+> present and push buttons to get the system to boot off of install media.
 
+That's not necessarily true.
+
+> If a user is present a user presence test may be used to prevent a
+> bootloader signed with  Microsoft's key from booting linux without the
+> users consent, and thus prevent Linux from attacking windows users.
+
+As already explained, I don't think that user presence accomplishes
+anything.  You need informed consent, and it's impossible to cram that
+on a 80x25 screen.  You also need to make sure that you aren't
+unnecessarily alarmist.  We don't want a "Linux may harm your
+computer" warning.
+
+> Therefore preventing the revokation of a signature with Microsoft's
+> signature from your bootloader does not justify elaborate kernel
+> modifications to prevent the booting a compromised version of windows.
+
+I don't like this approach, either.
+
+> Furthermore no matter how hard we try with current techniques there will
+> eventually be kernel bugs that allow attackers to inject code into the
+> kernel.  So attempting to fully close that attack vector is
+> questionable.
+
+I suspect we'd need to revoke old binaries after a grace period.  I
+guess the Microsoft approach is to revoke only what's actually used
+for attacks, but that leads to a lot of unpredictability for our
+users.
+
+It's also annoying if we figure out after release that we have to
+disable additional kernel functionality because it can be used to
+compromise the boot path.  Users will not like that, especially if
+they do not use Windows at all.
+
+Personally, I think the only way out of this mess is to teach users
+how to disable Secure Boot.
