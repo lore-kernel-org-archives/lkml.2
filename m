@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab2KFOrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 09:47:45 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55272 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751108Ab2KFOro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 09:47:44 -0500
-Date: Tue, 6 Nov 2012 15:47:46 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: AMD A10: MCE Instruction Cache Error
-Message-ID: <20121106144746.GD9558@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Alexander Holler <holler@ahsoftware.de>,
-	linux-kernel@vger.kernel.org
-References: <5093A592.9070605@ahsoftware.de>
- <5093D069.20901@ahsoftware.de>
- <20121103044929.GB21829@liondog.tnic>
- <5094F5C5.1000000@ahsoftware.de>
- <20121104152133.GA16116@x1.osrc.amd.com>
- <5096A3A4.8070602@ahsoftware.de>
- <20121106091057.GC2090@x1.osrc.amd.com>
- <5098F1F5.5060709@ahsoftware.de>
- <5098F816.5040206@ahsoftware.de>
- <50990D46.2050900@ahsoftware.de>
+	id S1752333Ab2KFOzs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 09:55:48 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36321 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab2KFOzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 09:55:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50990D46.2050900@ahsoftware.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1211052152250.11829@chino.kir.corp.google.com>
+References: <1352156701-4038-1-git-send-email-keescook@chromium.org>
+	<1352156701-4038-104-git-send-email-keescook@chromium.org>
+	<alpine.DEB.2.00.1211051721030.24937@chino.kir.corp.google.com>
+	<CAGXu5jLq63rpM0wargy-DF6jX_ncDnjMbzjNYAYbx+5uNKmTMA@mail.gmail.com>
+	<CAGXu5jKKwE+esJ9QV25vSfnVoejQxHQA7RgoKrzDa9nYMP6uXQ@mail.gmail.com>
+	<alpine.DEB.2.00.1211052152250.11829@chino.kir.corp.google.com>
+Date: Tue, 6 Nov 2012 06:55:46 -0800
+X-Google-Sender-Auth: nmqXUySRxUt0hGVgCAmDP5Iwd4o
+Message-ID: <CAGXu5j+dZba-wQP-=6LhkS_Zgnfwosjt4iz9z6S4tW4vzN1afw@mail.gmail.com>
+Subject: Re: [PATCH 103/104] mm: remove depends on CONFIG_EXPERIMENTAL
+From: Kees Cook <keescook@chromium.org>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Beulich <JBeulich@novell.com>, Mel Gorman <mel@csn.ul.ie>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 02:14:46PM +0100, Alexander Holler wrote:
-> Am 06.11.2012 12:44, schrieb Alexander Holler:
-> >Am 06.11.2012 12:18, schrieb Alexander Holler:
-> >>I will now to tests with leaving fglrx off.
-> >
-> >s/to/do/ ;)
-> >
-> >That was gone fast. Disabled fglrx, started tests, full halt without any
-> >visible on the serial (I needed to press the reset button):
-> 
-> One after another, now I've got this:
-> 
-> [ 5698.640830] [Hardware Error]: CPU:0
-> MC2_STATUS[Over|CE|MiscV|-|AddrV|-|-|CECC]: 0xdc2540c000040136
-> [ 5698.649866] [Hardware Error]:        MC2_ADDR: 0x0000000002299678
-> [ 5698.655443] [Hardware Error]: Combined Unit Error: Fill ECC error
-> on data fills.
-> [ 5698.662849] [Hardware Error]: cache level: L2, tx: DATA, mem-tx: DRD
-> 
-> I think it's now really an RMA and I can stop doing further tests.
+On Mon, Nov 5, 2012 at 9:57 PM, David Rientjes <rientjes@google.com> wrote:
+> On Mon, 5 Nov 2012, Kees Cook wrote:
+>
+>> >>> diff --git a/mm/Kconfig b/mm/Kconfig
+>> >>> index a3f8ddd..679945e 100644
+>> >>> --- a/mm/Kconfig
+>> >>> +++ b/mm/Kconfig
+>> >>> @@ -1,6 +1,5 @@
+>> >>>  config SELECT_MEMORY_MODEL
+>> >>>       def_bool y
+>> >>> -     depends on EXPERIMENTAL || ARCH_SELECT_MEMORY_MODEL
+>> >>>
+>> >>>  choice
+>> >>>       prompt "Memory model"
+>> >>
+>> >> I thought you agreed to only drop EXPERIMENTAL here in
+>> >> http://marc.info/?l=linux-kernel&m=135103415901094 and leave
+>> >> ARCH_SELECT_MEMORY_MODEL, which you've orphaned with the above, for phase
+>> >> two of your effort?
+>> >
+>> > Ah! Yes, thanks. I'll restore that.
+>>
+>> Wait, no. This is an "OR". ARCH_SELECT_MEMORY_MODEL has no affect on
+>> SELECT_MEMORY_MODEL if EXPERIMENTAL is always considered on. My
+>> proposal was to deal with ARCH_SELECT_MEMORY_MODEL separately. Did I
+>> misunderstand something?
+>>
+>
+> We're rehashing the same discussion as before?  I left the earlier thread
+> with the understanding that this would become
+>
+>         depends on ARCH_SELECT_MEMORY_MODEL
+>
+> and then fix ARCH_SELECT_MEMORY_MODEL when people complain for
+> configurations that actually allow you to configure the memory model.  It
+> never should have been short-circuited by EXPERIMENTAL in the first place,
+> but enabling it to be configurable for everybody and orphaning
+> ARCH_SELECT_MEMORY_MODEL doesn't sound appropriate.  I think we should do
+> some due diligence in actually making ARCH_SELECT_MEMORY_MODEL work so
+> people are presented with a config that will work on their machines.
+>
+> (This is independent of the rest of the series, we can certainly remove
+> EXPERIMENTAL regardless of this decision, I simply think we should be
+> leaving ARCH_SELECT_MEMORY_MODEL to prevent users with
+> CONFIG_EXPERIMENTAL=n from being presented with a new ability to change
+> their memory model that actually doesn't work for them.)
 
-Are you sure the temperature conditions of the box are optimal? IOW,
-there's nothing overheating in there?
+Okay, that's cool. I misunderstood what you'd wanted here. I'll leave
+ARCH_SELECT_MEMORY_MODEL in place.
 
-Thanks.
+Thanks!
+
+-Kees
 
 -- 
-Regards/Gruss,
-Boris.
+Kees Cook
+Chrome OS Security
