@@ -1,100 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933672Ab2KFCsg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 21:48:36 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:54047 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933504Ab2KFCse (ORCPT
+	id S964813Ab2KFC4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 21:56:12 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:55927 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933630Ab2KFC4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 21:48:34 -0500
-Date: Tue, 6 Nov 2012 13:48:26 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, Feng Tang <feng.tang@intel.com>
-Subject: linux-next: manual merge of the pm tree with the pci tree
-Message-Id: <20121106134826.32a117100825204d48150f0b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__6_Nov_2012_13_48_26_+1100_8y=etVPvf2T4=o.r"
+	Mon, 5 Nov 2012 21:56:10 -0500
+From: Omar Ramirez Luna <omar.luna@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        Loic PALLARDY <loic.pallardy@st.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Linus Walleij <linus.walleij@linaro.org>, Suman Anna <s-anna@ti.com>,
+        Juan Gutierrez <jgutierrez@ti.com>,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        Tejun Heo <tj@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: [PATCH v2 0/2] drivers: mailbox: omap-mailbox out of plat code
+Date: Mon,  5 Nov 2012 20:55:50 -0600
+Message-Id: <1352170552-29564-1-git-send-email-omar.luna@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__6_Nov_2012_13_48_26_+1100_8y=etVPvf2T4=o.r
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+As part of plat-omap code cleanup, move omap-mailbox framework to
+a newly drivers/mailbox folder, right now this code is specific to
+OMAP platforms, but with some clean up it could be the base for a
+generic framework; living under drivers/mailbox could give it some
+exposure for interested developers to give feedback and propose changes.
 
-Hi Rafael,
+In the past there was a mailbox-like driver in mach-ux500, I was
+hoping both could live under the same folder, however the platform
+using it, was dropped a couple of kernel releases back and with it the
+other similar mailbox implementation.
 
-Today's linux-next merge of the pm tree got a conflict in
-arch/x86/pci/acpi.c between commit 3f385fa9edce ("x86/PCI: Ignore _SEG on
-HP xw9300") from the pci tree and commit 97a7108a3c00 ("ACPI / x86: Add
-quirk for "CheckPoint P-20-00" to not use bridge _CRS_ info") from the pm
-tree.
+However and as per Loic's comments[1], it looks like there could be
+another potential mailbox candidate to live under drivers/mailbox in the
+works, along with some proposed changes that could make the original
+framework to evolve towards a generic implementation.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+So for now, lets move the mailbox code to drivers/mailbox and split
+internal structures from common API for others to use.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Based on 3.7-rc4.
 
-diff --cc arch/x86/pci/acpi.c
-index 49e5195,7010c19..0000000
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@@ -106,16 -98,16 +106,27 @@@ static const struct dmi_system_id pci_c
-  			DMI_MATCH(DMI_BIOS_VERSION, "6JET85WW (1.43 )"),
-  		},
-  	},
- +
- +	/* https://bugzilla.kernel.org/show_bug.cgi?id=3D15362 */
- +	{
- +		.callback =3D set_ignore_seg,
- +		.ident =3D "HP xw9300",
- +		.matches =3D {
- +			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
- +			DMI_MATCH(DMI_PRODUCT_NAME, "HP xw9300 Workstation"),
- +		},
- +	},
-++
-+ 	/* https://bugzilla.kernel.org/show_bug.cgi?id=3D47981 */
-+ 	{
-+ 		.callback =3D set_nouse_crs,
-+ 		.ident =3D "CheckPoint P-20-00",
-+ 		.matches =3D {
-+ 			DMI_MATCH(DMI_SYS_VENDOR, "CheckPoint"),
-+ 			DMI_MATCH(DMI_PRODUCT_NAME, "P-20-00"),
-+ 			DMI_MATCH(DMI_BOARD_NAME, "Bridgeport"),
-+ 		},
-+ 	},
-  	{}
-  };
- =20
+1. https://lkml.org/lkml/2012/10/31/123
 
---Signature=_Tue__6_Nov_2012_13_48_26_+1100_8y=etVPvf2T4=o.r
-Content-Type: application/pgp-signature
+Omar Ramirez Luna (2):
+  mailbox: OMAP: introduce mailbox framework
+  mailbox: split internal header from API header
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ arch/arm/configs/omap1_defconfig          |    3 +-
+ arch/arm/mach-omap1/Makefile              |    4 -
+ arch/arm/mach-omap1/mailbox.c             |  199 ------------
+ arch/arm/mach-omap2/Makefile              |    3 -
+ arch/arm/mach-omap2/devices.c             |    4 +-
+ arch/arm/mach-omap2/mailbox.c             |  430 --------------------------
+ arch/arm/plat-omap/Kconfig                |   16 -
+ arch/arm/plat-omap/Makefile               |    3 -
+ arch/arm/plat-omap/include/plat/mailbox.h |  105 -------
+ arch/arm/plat-omap/mailbox.c              |  435 --------------------------
+ drivers/Kconfig                           |    2 +
+ drivers/Makefile                          |    1 +
+ drivers/mailbox/Kconfig                   |   37 +++
+ drivers/mailbox/Makefile                  |    4 +
+ drivers/mailbox/mailbox-omap1.c           |  200 ++++++++++++
+ drivers/mailbox/mailbox-omap2.c           |  430 ++++++++++++++++++++++++++
+ drivers/mailbox/mailbox.c                 |  469 +++++++++++++++++++++++++++++
+ drivers/mailbox/mailbox.h                 |   59 ++++
+ include/linux/mailbox.h                   |   22 ++
+ 19 files changed, 1228 insertions(+), 1198 deletions(-)
+ delete mode 100644 arch/arm/mach-omap1/mailbox.c
+ delete mode 100644 arch/arm/mach-omap2/mailbox.c
+ delete mode 100644 arch/arm/plat-omap/include/plat/mailbox.h
+ delete mode 100644 arch/arm/plat-omap/mailbox.c
+ create mode 100644 drivers/mailbox/Kconfig
+ create mode 100644 drivers/mailbox/Makefile
+ create mode 100644 drivers/mailbox/mailbox-omap1.c
+ create mode 100644 drivers/mailbox/mailbox-omap2.c
+ create mode 100644 drivers/mailbox/mailbox.c
+ create mode 100644 drivers/mailbox/mailbox.h
+ create mode 100644 include/linux/mailbox.h
 
-iQIcBAEBCAAGBQJQmHp6AAoJEECxmPOUX5FEUeQP/jVhlmW3uFLwf0rjCxTC94of
-OCN+3Zl6rmK1EjDNc/Q+VFH/PmOgs+VV2GCNA5Aq0ut1S9TcVz7sC+MdLkrxLN7i
-kztUBT/juBDF/bYsxA+WSuVJkAMOzvHGWHIFJ0tTpJoBFML2a4SbYgai/X5A7XXD
-cAJqiGX1YsRCwtbVwaOKUV1/bsNi1KY6gWRTVUcSw3l3HLPDxEn4UBjRKqDmjUae
-5jdwXU+Y4raGcW3lcAOZwQjZjx6dNyORKjQJ2bbIkPGEK64GY5uK/jqSsstzIAXm
-Jpsf0fJl90bZoECsHhev2MNaypvopi118e8Zw95v2czNiY0aUnkbeK25xJenZzZb
-2/Tx4Jht6mcyXCeoww905XgMiqXt/NvpWaZOUA21A7h7Q1apIP443f0ih/5yeejF
-/tmehcVLuUjFkCBHK46ZDiCZRS0A1yrCzjCl2kHaSpDzadhoyOY2OUZ52M89QOqd
-RDY77iAus/KpyCFTyNrttMmOW2CTmzuerWz7O1kBUhbDV2SiRBOJ6/6e9vQ9AW60
-rGGzOXJGQJ2Mn4BnQcwGli2HBDk9ZLJRVNmrIQvHyGngf7ANTB60Pw8FGDSKAtvv
-X0HOLJ8LSjRFgC8PSGhi/MDjAL82C7V8gCnXm2rNwYbs4Lkpf8D5APdTGUGWzwUs
-EBLnf8EgIK1wLf2hCyuJ
-=9LCj
------END PGP SIGNATURE-----
+-- 
+1.7.9.5
 
---Signature=_Tue__6_Nov_2012_13_48_26_+1100_8y=etVPvf2T4=o.r--
