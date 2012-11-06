@@ -1,93 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705Ab2KFKbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 05:31:47 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:33614 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751410Ab2KFKbp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 05:31:45 -0500
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <6AE080B68D46FC4BA2D2769E68D765B708174B7D@039-SN2MPN1-023.039d.mgd.msft.net>
-Date: Tue, 6 Nov 2012 11:31:41 +0100
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@ti.com>,
-        Matt Porter <mporter@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <52AABEEA-1695-4B28-A342-B234268090F0@antoniou-consulting.com>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <6AE080B68D46FC4BA2D2769E68D765B708174B7D@039-SN2MPN1-023.039d.mgd.msft.net>
-To: Tabi Timur-B04825 <B04825@freescale.com>
-X-Mailer: Apple Mail (2.1085)
+	id S1751763Ab2KFKfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 05:35:45 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:46753 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab2KFKfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 05:35:44 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
+        tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
+        mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org
+Cc: Arvind.Chauhan@arm.com, linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 Resend 0/4] Create sched_select_cpu() and use it for workqueues and timers
+Date: Tue,  6 Nov 2012 16:04:58 +0530
+Message-Id: <cover.1352196505.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+X-OriginalArrivalTime: 06 Nov 2012 10:35:23.0953 (UTC) FILETIME=[6DAF9210:01CDBC0A]
+X-MC-Unique: 112110610353460401
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qA6AZqNw014357
 
-Hi Timur,
+Hi All,
 
-On Nov 5, 2012, at 10:40 PM, Tabi Timur-B04825 wrote:
+This is V2 Resend of my sched_select_cpu() work. Resend because didn't got much
+attention on V2. Including more guys now in cc :)
 
-> On Mon, Nov 5, 2012 at 2:40 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> 
->> Jane is building custom BeagleBone expansion boards called 'capes'. She
->> can boot the system with a stock BeagleBoard device tree, but additional
->> data is needed before a cape can be used. She could replace the FDT file
->> used by U-Boot with one that contains the extra data, but she uses the
->> same Linux system image regardless of the cape, and it is inconvenient
->> to have to select a different device tree at boot time depending on the
->> cape.
-> 
-> What's wrong with having the boot loader detect the presence of the
-> Cape and update the device tree accordingly?  We do this all the time
-> in U-Boot.  Doing stuff like reading EEPROMs and testing for the
-> presence of hardware is easier in U-Boot than in Linux.
-> 
-> For configurations that can be determined by the boot loader, I'm not
-> sure overlays are practical.
-> 
+In order to save power, it would be useful to schedule work onto non-IDLE cpus
+instead of waking up an IDLE one.
 
-Each use case is different. For our use-cases boot loader DT modifications
-just won't work. 
+To achieve this, we need scheduler to guide kernel frameworks (like: timers &
+workqueues) on which is the most preferred CPU that must be used for these
+tasks.
 
-What's nice about the stuff we're talking about is that if you don't use
-the new functionality, nothing changes for you. Go on and use DT the old
-way if you'd like.
+This patchset is about implementing this concept.
 
->> Nigel is building a real-time video processing system around a MIPS SoC
->> and a Virtex FPGA. Video data is streamed through the FPGA for post
->> processing operations like motion tracking or compression. The FPGA is
->> configured via the SPI bus, and is also connected to GPIO lines and the
->> memory mapped peripheral bus. Nigel has designed several FPGA
->> configurations for different video processing tasks. The user will
->> choose which configuration to load which can even be reprogrammed at
->> runtime to switch tasks.
-> 
-> Now this, on the other hand, makes more sense.  If the hardware
-> configuration is literally user-configurable, then okay.  However, I'm
-> not sure I see the need to update the device tree.  The device tree is
-> generally for hardware that cannot be discovered/probed by the device
-> driver.  If we're loading a configuration from user space, doesn't the
-> driver already know what the hardware's capabilities are, since it's
-> the one doing the uploading of a new FPGA code?  Why not skip the
-> device tree update and just tell the driver what the new capabilities
-> are?
-> 
-> -- 
-> Timur Tabi
-> Linux kernel developer at Freescale
+- The first patch adds sched_select_cpu() routine which returns the preferred
+  cpu which is non-idle.
+- Second patch removes idle_cpu() calls from timer & hrtimer.
+- Third patch is about adapting this change in workqueue framework.
+- Fourth patch add migration capability in running timer
 
-Regards
+Earlier discussions over v1 can be found here:
+http://www.mail-archive.com/linaro-dev@lists.linaro.org/msg13342.html
 
--- Pantelis
+Earlier discussions over this concept were done at last LPC:
+http://summit.linuxplumbersconf.org/lpc-2012/meeting/90/lpc2012-sched-timer-workqueue/
+
+Module created for testing this behavior is present here:
+http://git.linaro.org/gitweb?p=people/vireshk/module.git;a=summary
+
+Following are the steps followed in test module:
+1. Run single work on each cpu
+2. This work will start a timer after x (tested with 10) jiffies of delay
+3. Timer routine queues a work... (This may be called from idle or non-idle cpu)
+   and starts the same timer again STEP 3 is done for n number of times (i.e.
+   queuing n works, one after other)
+4. All works will call a single routine, which will count following per cpu:
+ - Total works processed by a CPU
+ - Total works processed by a CPU, which are queued from it
+ - Total works processed by a CPU, which aren't queued from it
+
+Setup:
+-----
+- ARM Vexpress TC2 - big.LITTLE CPU
+- Core 0-1: A15, 2-4: A7
+- rootfs: linaro-ubuntu-nano
+
+Results:
+-------
+Without Workqueue Modification, i.e. PATCH 3/3:
+[ 2493.022335] Workqueue Analyser: works processsed by CPU0, Total: 1000, Own: 0, migrated: 0
+[ 2493.047789] Workqueue Analyser: works processsed by CPU1, Total: 1000, Own: 0, migrated: 0
+[ 2493.072918] Workqueue Analyser: works processsed by CPU2, Total: 1000, Own: 0, migrated: 0
+[ 2493.098576] Workqueue Analyser: works processsed by CPU3, Total: 1000, Own: 0, migrated: 0
+[ 2493.123702] Workqueue Analyser: works processsed by CPU4, Total: 1000, Own: 0, migrated: 0
+
+With Workqueue Modification, i.e. PATCH 3/3:
+[ 2493.022335] Workqueue Analyser: works processsed by CPU0, Total: 1002, Own: 999, migrated: 3
+[ 2493.047789] Workqueue Analyser: works processsed by CPU1, Total: 998,  Own: 997, migrated: 1
+[ 2493.072918] Workqueue Analyser: works processsed by CPU2, Total: 1013, Own: 996, migrated: 17
+[ 2493.098576] Workqueue Analyser: works processsed by CPU3, Total: 998,  Own: 993, migrated: 5
+[ 2493.123702] Workqueue Analyser: works processsed by CPU4, Total: 989,  Own: 987, migrated: 2
+
+V2->V2-Resend
+-------------
+- Included timer migration patch in the same thread.
+
+V1->V2
+-----
+- New SD_* macros removed now and earlier ones used
+- sched_select_cpu() rewritten and it includes the check on current cpu's
+  idleness.
+- cpu_idle() calls from timer and hrtimer removed now.
+- Patch 2/3 from V1, removed as it doesn't apply to latest workqueue branch from
+  tejun.
+- CONFIG_MIGRATE_WQ removed and so is wq_select_cpu()
+- sched_select_cpu() called only from __queue_work()
+- got tejun/for-3.7 branch in my tree, before making workqueue changes.
+
+Viresh Kumar (4):
+  sched: Create sched_select_cpu() to give preferred CPU for power
+    saving
+  timer: hrtimer: Don't check idle_cpu() before calling
+    get_nohz_timer_target()
+  workqueue: Schedule work on non-idle cpu instead of current one
+  timer: Migrate running timer
+
+ include/linux/sched.h | 16 ++++++++++--
+ include/linux/timer.h |  2 ++
+ kernel/hrtimer.c      |  2 +-
+ kernel/sched/core.c   | 69 +++++++++++++++++++++++++++++++--------------------
+ kernel/timer.c        | 50 ++++++++++++++++++++++---------------
+ kernel/workqueue.c    |  4 +--
+ 6 files changed, 91 insertions(+), 52 deletions(-)
+
+-- 
+1.7.12.rc2.18.g61b472e
+
 
