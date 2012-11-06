@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441Ab2KFBez (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 20:34:55 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:46606 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932372Ab2KFBey (ORCPT
+	id S933472Ab2KFBhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 20:37:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56729 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754765Ab2KFBhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 20:34:54 -0500
-Date: Mon, 5 Nov 2012 17:34:56 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] tmpfs: change final i_blocks BUG to WARNING
-Message-ID: <alpine.LNX.2.00.1211051732591.963@eggly.anvils>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 5 Nov 2012 20:37:09 -0500
+Date: Mon, 5 Nov 2012 17:37:07 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC PATCH] tasklet: ignore disabled tasklet in tasklet_action
+Message-Id: <20121105173707.94602896.akpm@linux-foundation.org>
+In-Reply-To: <CAJn8CcF=2=XBV0T661LnAxHi8+fT8KAVapCFaiDZgS6TyieNOA@mail.gmail.com>
+References: <1351824534-2861-1-git-send-email-xtfeng@gmail.com>
+	<20121105145207.6d2fae92.akpm@linux-foundation.org>
+	<CAJn8CcF=2=XBV0T661LnAxHi8+fT8KAVapCFaiDZgS6TyieNOA@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under a particular load on one machine, I have hit shmem_evict_inode()'s
-BUG_ON(inode->i_blocks), enough times to narrow it down to a particular
-race between swapout and eviction.
+On Tue, 6 Nov 2012 09:22:16 +0800 Xiaotian Feng <xtfeng@gmail.com> wrote:
 
-It comes from the "if (freed > 0)" asymmetry in shmem_recalc_inode(),
-and the lack of coherent locking between mapping's nrpages and shmem's
-swapped count.  There's a window in shmem_writepage(), between lowering
-nrpages in shmem_delete_from_page_cache() and then raising swapped count,
-when the freed count appears to be +1 when it should be 0, and then the
-asymmetry stops it from being corrected with -1 before hitting the BUG.
+> On Tue, Nov 6, 2012 at 6:52 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Fri,  2 Nov 2012 10:48:54 +0800
+> > Xiaotian Feng <xtfeng@gmail.com> wrote:
+> >
+> >> We met a ksoftirqd 100% issue, the perf top shows kernel is busy
+> >> with tasklet_action(), but no actual action is shown. From dumped
+> >> kernel, there's only one disabled tasklet on the tasklet_vec.
+> >>
+> >> tasklet_action might be handled after tasklet is disabled, this will
+> >> make disabled tasklet stayed on tasklet_vec. tasklet_action will not
+> >> handle disabled tasklet, but place it on the tail of tasklet_vec,
+> >> still raise softirq for this tasklet. Things will become worse if
+> >> device driver uses tasklet_disable on its device remove/close code.
+> >> The disabled tasklet will stay on the vec, frequently __raise_softirq_off()
+> >> and make ksoftirqd wakeup even if no tasklets need to be handled.
+> >>
+> >> This patch introduced a new TASKLET_STATE_HI bit to indicate HI_SOFTIRQ,
+> >> in tasklet_action(), simply ignore the disabled tasklet and don't raise
+> >> the softirq nr. In my previous patch, I remove tasklet_hi_enable() since
+> >> it is the same as tasklet_enable(). So only tasklet_enable() needs to be
+> >> modified, if tasklet state is changed from disable to enable, use
+> >> __tasklet_schedule() to put it on the right vec.
+> >
+> > gee, I haven't looked at the tasklet code in 100 years.  I think I'll
+> > send this in Thomas's direction ;)
+> >
+> > The race description seems real and the patch looks sane to me.  Are
+> > you sure we can get away with never clearing TASKLET_STATE_HI?  For
+> > example, what would happen if code does a tasklet_hi_schedule(t) and
+> > later does a tasklet_schedule(t)?
+> 
+> hmm, that will be a nightmare...
+> tasklet_schedule(t)/tasklet_hi_schedule(t) doesn't use list_head, they
+> simply
+> make t->next = NULL, then put t on the tail of
+> tasklet_vec/tasklet_hi_vec. If the code does a tasklet_hi_schedule()
+> and then a tasklet_schedule, the tasklet will stay on tasklet_vec and
+> tasklet_hi_vec .... tasklet_hi_action will handle it first and clear
+> the TASKLET_SCHED_SCHED bit, later, in tasklet_action, it will be
+> handled again and hit a BUG_ON ...
 
-One answer is coherent locking: using tree_lock throughout, without
-info->lock; reasonable, but the raw_spin_lock in percpu_counter_add()
-on used_blocks makes that messier than expected.  Another answer may be
-a further effort to eliminate the weird shmem_recalc_inode() altogether,
-but previous attempts at that failed.
+Well, actually I meant if the caller reuses the tassklet_struct after
+its softirq has been run.
 
-So far undecided, but for now change the BUG_ON to WARN_ON:
-in usual circumstances it remains a useful consistency check.
+> But if code does a tasklet_hi_schedule(), then tasklet_kil and later
+> does a tasklet_schedule(), we do need clear the TASKLET_STATE_HI.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: stable@vger.kernel.org
----
+That as well ;)
 
- mm/shmem.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Also
+> we need to remove the tasklet_hi_enable() as it is the same as
+> tasklet_enable() and there's
+> only one user..
+> 
+> I'll send you V2 patch soon, thanks.
 
---- 3.7-rc4/mm/shmem.c	2012-10-14 16:16:58.361309122 -0700
-+++ linux/mm/shmem.c	2012-11-01 14:31:04.288185742 -0700
-@@ -643,7 +643,7 @@ static void shmem_evict_inode(struct ino
- 		kfree(info->symlink);
- 
- 	simple_xattrs_free(&info->xattrs);
--	BUG_ON(inode->i_blocks);
-+	WARN_ON(inode->i_blocks);
- 	shmem_free_inode(inode->i_sb);
- 	clear_inode(inode);
- }
+Sounds good.
