@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435Ab2KFJPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:15:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36230 "EHLO mx2.suse.de"
+	id S1752565Ab2KFJPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:15:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36268 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751060Ab2KFJO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:14:59 -0500
+	id S1751372Ab2KFJPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 04:15:04 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -15,9 +15,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 01/19] mm: compaction: Move migration fail/success stats to migrate.c
-Date: Tue,  6 Nov 2012 09:14:37 +0000
-Message-Id: <1352193295-26815-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 05/19] mm: numa: pte_numa() and pmd_numa()
+Date: Tue,  6 Nov 2012 09:14:41 +0000
+Message-Id: <1352193295-26815-6-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1352193295-26815-1-git-send-email-mgorman@suse.de>
 References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
@@ -25,106 +25,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The compact_pages_moved and compact_pagemigrate_failed events are
-convenient for determining if compaction is active and to what
-degree migration is succeeding but it's at the wrong level. Other
-users of migration may also want to know if migration is working
-properly and this will be particularly true for any automated
-NUMA migration. This patch moves the counters down to migration
-with the new events called pgmigrate_success and pgmigrate_fail.
-The compact_blocks_moved counter is removed because while it was
-useful for debugging initially, it's worthless now as no meaningful
-conclusions can be drawn from its value.
+From: Andrea Arcangeli <aarcange@redhat.com>
 
+Implement pte_numa and pmd_numa.
+
+We must atomically set the numa bit and clear the present bit to
+define a pte_numa or pmd_numa.
+
+Once a pte or pmd has been set as pte_numa or pmd_numa, the next time
+a thread touches a virtual address in the corresponding virtual range,
+a NUMA hinting page fault will trigger. The NUMA hinting page fault
+will clear the NUMA bit and set the present bit again to resolve the
+page fault.
+
+The expectation is that a NUMA hinting page fault is used as part
+of a placement policy that decides if a page should remain on the
+current node or migrated to a different node.
+
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/vm_event_item.h |    4 +++-
- mm/compaction.c               |    4 ----
- mm/migrate.c                  |    6 ++++++
- mm/vmstat.c                   |    7 ++++---
- 4 files changed, 13 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/pgtable.h |   65 ++++++++++++++++++++++++++++++++++++++--
+ include/asm-generic/pgtable.h  |   12 ++++++++
+ 2 files changed, 75 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 3d31145..8aa7cb9 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -38,8 +38,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		KSWAPD_LOW_WMARK_HIT_QUICKLY, KSWAPD_HIGH_WMARK_HIT_QUICKLY,
- 		KSWAPD_SKIP_CONGESTION_WAIT,
- 		PAGEOUTRUN, ALLOCSTALL, PGROTATED,
-+#ifdef CONFIG_MIGRATION
-+		PGMIGRATE_SUCCESS, PGMIGRATE_FAIL,
-+#endif
- #ifdef CONFIG_COMPACTION
--		COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
- 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
- #endif
- #ifdef CONFIG_HUGETLB_PAGE
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 9eef558..00ad883 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -994,10 +994,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		update_nr_listpages(cc);
- 		nr_remaining = cc->nr_migratepages;
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index a1f780d..e075d57 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -404,7 +404,8 @@ static inline int pte_same(pte_t a, pte_t b)
  
--		count_vm_event(COMPACTBLOCKS);
--		count_vm_events(COMPACTPAGES, nr_migrate - nr_remaining);
--		if (nr_remaining)
--			count_vm_events(COMPACTPAGEFAILED, nr_remaining);
- 		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
- 						nr_remaining);
- 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 77ed2d7..04687f6 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -962,6 +962,7 @@ int migrate_pages(struct list_head *from,
+ static inline int pte_present(pte_t a)
  {
- 	int retry = 1;
- 	int nr_failed = 0;
-+	int nr_succeeded = 0;
- 	int pass = 0;
- 	struct page *page;
- 	struct page *page2;
-@@ -988,6 +989,7 @@ int migrate_pages(struct list_head *from,
- 				retry++;
- 				break;
- 			case 0:
-+				nr_succeeded++;
- 				break;
- 			default:
- 				/* Permanent failure */
-@@ -998,6 +1000,10 @@ int migrate_pages(struct list_head *from,
- 	}
- 	rc = 0;
- out:
-+	if (nr_succeeded)
-+		count_vm_events(PGMIGRATE_SUCCESS, nr_succeeded);
-+	if (nr_failed)
-+		count_vm_events(PGMIGRATE_FAIL, nr_failed);
- 	if (!swapwrite)
- 		current->flags &= ~PF_SWAPWRITE;
+-	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
++	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
++			       _PAGE_NUMA);
+ }
  
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index c737057..89a7fd6 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -774,10 +774,11 @@ const char * const vmstat_text[] = {
- 
- 	"pgrotated",
- 
-+#ifdef CONFIG_MIGRATION
-+	"pgmigrate_success",
-+	"pgmigrate_fail",
+ static inline int pte_hidden(pte_t pte)
+@@ -420,7 +421,63 @@ static inline int pmd_present(pmd_t pmd)
+ 	 * the _PAGE_PSE flag will remain set at all times while the
+ 	 * _PAGE_PRESENT bit is clear).
+ 	 */
+-	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE);
++	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_PSE |
++				 _PAGE_NUMA);
++}
++
++#ifdef CONFIG_BALANCE_NUMA
++/*
++ * _PAGE_NUMA works identical to _PAGE_PROTNONE (it's actually the
++ * same bit too). It's set only when _PAGE_PRESET is not set and it's
++ * never set if _PAGE_PRESENT is set.
++ *
++ * pte/pmd_present() returns true if pte/pmd_numa returns true. Page
++ * fault triggers on those regions if pte/pmd_numa returns true
++ * (because _PAGE_PRESENT is not set).
++ */
++static inline int pte_numa(pte_t pte)
++{
++	return (pte_flags(pte) &
++		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
++}
++
++static inline int pmd_numa(pmd_t pmd)
++{
++	return (pmd_flags(pmd) &
++		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
++}
 +#endif
- #ifdef CONFIG_COMPACTION
--	"compact_blocks_moved",
--	"compact_pages_moved",
--	"compact_pagemigrate_failed",
- 	"compact_stall",
- 	"compact_fail",
- 	"compact_success",
++
++/*
++ * pte/pmd_mknuma sets the _PAGE_ACCESSED bitflag automatically
++ * because they're called by the NUMA hinting minor page fault. If we
++ * wouldn't set the _PAGE_ACCESSED bitflag here, the TLB miss handler
++ * would be forced to set it later while filling the TLB after we
++ * return to userland. That would trigger a second write to memory
++ * that we optimize away by setting _PAGE_ACCESSED here.
++ */
++static inline pte_t pte_mknonnuma(pte_t pte)
++{
++	pte = pte_clear_flags(pte, _PAGE_NUMA);
++	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
++}
++
++static inline pmd_t pmd_mknonnuma(pmd_t pmd)
++{
++	pmd = pmd_clear_flags(pmd, _PAGE_NUMA);
++	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
++}
++
++static inline pte_t pte_mknuma(pte_t pte)
++{
++	pte = pte_set_flags(pte, _PAGE_NUMA);
++	return pte_clear_flags(pte, _PAGE_PRESENT);
++}
++
++static inline pmd_t pmd_mknuma(pmd_t pmd)
++{
++	pmd = pmd_set_flags(pmd, _PAGE_NUMA);
++	return pmd_clear_flags(pmd, _PAGE_PRESENT);
+ }
+ 
+ static inline int pmd_none(pmd_t pmd)
+@@ -479,6 +536,10 @@ static inline pte_t *pte_offset_kernel(pmd_t *pmd, unsigned long address)
+ 
+ static inline int pmd_bad(pmd_t pmd)
+ {
++#ifdef CONFIG_BALANCE_NUMA
++	if (pmd_numa(pmd))
++		return 0;
++#endif
+ 	return (pmd_flags(pmd) & ~_PAGE_USER) != _KERNPG_TABLE;
+ }
+ 
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index b36ce40..896667e 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -554,6 +554,18 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
+ #endif
+ }
+ 
++#ifndef CONFIG_BALANCE_NUMA
++static inline int pte_numa(pte_t pte)
++{
++	return 0;
++}
++
++static inline int pmd_numa(pmd_t pmd)
++{
++	return 0;
++}
++#endif /* CONFIG_BALANCE_NUMA */
++
+ #endif /* CONFIG_MMU */
+ 
+ #endif /* !__ASSEMBLY__ */
 -- 
 1.7.9.2
 
