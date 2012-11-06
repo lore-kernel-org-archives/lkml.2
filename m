@@ -1,93 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab2KFQxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 11:53:05 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:47157 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab2KFQxB (ORCPT
+	id S1752502Ab2KFQ4E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 11:56:04 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:47645 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab2KFQ4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 11:53:01 -0500
+	Tue, 6 Nov 2012 11:56:02 -0500
+Date: Tue, 6 Nov 2012 11:43:03 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <jbeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Message-ID: <20121106164303.GO9966@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
+ <20121026201409.GF2708@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC8292335377346@SHSMSX101.ccr.corp.intel.com>
+ <20121102164937.GC27213@konrad-lan.dumpdata.com>
+ <alpine.DEB.2.02.1211051512260.2689@kaball.uk.xensource.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B10C@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B147@SHSMSX101.ccr.corp.intel.com>
+ <alpine.DEB.2.02.1211061455150.2689@kaball.uk.xensource.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B479@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20121106134826.32a117100825204d48150f0b@canb.auug.org.au>
-References: <20121106134826.32a117100825204d48150f0b@canb.auug.org.au>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 6 Nov 2012 09:52:40 -0700
-Message-ID: <CAErSpo7=wZUi4mB4N-pAWzRsyineRFh-W2NtZgAPJe5pNWUayA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the pm tree with the pci tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233537B479@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 5, 2012 at 7:48 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Rafael,
->
-> Today's linux-next merge of the pm tree got a conflict in
-> arch/x86/pci/acpi.c between commit 3f385fa9edce ("x86/PCI: Ignore _SEG on
-> HP xw9300") from the pci tree and commit 97a7108a3c00 ("ACPI / x86: Add
-> quirk for "CheckPoint P-20-00" to not use bridge _CRS_ info") from the pm
-> tree.
->
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+On Tue, Nov 06, 2012 at 04:23:57PM +0000, Liu, Jinsong wrote:
+> Stefano Stabellini wrote:
+> > On Tue, 6 Nov 2012, Liu, Jinsong wrote:
+> >> Liu, Jinsong wrote:
+> >>> Stefano Stabellini wrote:
+> >>>>>> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+> >>>>>> index 0e86370..a2af622 100644
+> >>>>>> --- a/drivers/xen/Makefile
+> >>>>>> +++ b/drivers/xen/Makefile
+> >>>>>> @@ -29,6 +29,7 @@ obj-$(CONFIG_XEN_MCE_LOG)           += mcelog.o
+> >>>>>>  obj-$(CONFIG_XEN_PCIDEV_BACKEND)     += xen-pciback/
+> >>>>>>  obj-$(CONFIG_XEN_PRIVCMD)            += xen-privcmd.o
+> >>>>>>  obj-$(CONFIG_XEN_ACPI_PROCESSOR)     += xen-acpi-processor.o
+> >>>>>> +obj-$(CONFIG_XEN_DOM0)                       += xen_acpi_pad.o
+> >>>>>>  xen-evtchn-y                         := evtchn.o
+> >>>>>>  xen-gntdev-y                         := gntdev.o
+> >>>>>>  xen-gntalloc-y                               := gntalloc.o
+> >>>> 
+> >>>> it should really depend on ACPI and maybe also X86, otherwise it
+> >>>> is going to break the ARM build 
+> >>>> 
+> >>>> 
+> >>> 
+> >>> Hmm, XEN_DOM0 has already depended on ACPI and X86_LOCAL_APIC
+> >>> (which depends on X86_64). 
+> >>> 
+> >> 
+> >> Ah, you and Konrad are right. I ignore XEN_DOM0 varies under
+> >> different arch. (But seems it not depends on X86 since it's
+> >> logically an acpi stuff?). 
+> > 
+> > If it is generic ACPI code, than it can depend only on ACPI.
+> > If it is ACPI code that contains X86 specific info, than it needs to
+> > depend on X86 too.
+> 
+> No x86 specific so let's depend on ACPI.
 
-My opinion was that we should just drop the CheckPoint quirk.  See
-https://bugzilla.kernel.org/show_bug.cgi?id=47981#c36 for my
-rationale.
-
-The changelog of the quirk leaves the wrong impression:
-
-    This is to fix a regression
-https://bugzilla.kernel.org/show_bug.cgi?id=47981
-
-    The CheckPoint P-20-00 works ok before new machines (2008 and later) are
-    forced to use the bridge _CRS info by default in 2.6.34. Add this quirk
-    to restore its old way of working: not using bridge _CRS info.
-
-This is NOT a regression, at least not in the usual sense.  The
-CheckPoint BIOS has a serious defect that corrupts part of the DSDT.
-It happened that things "worked" when we ignored the _CRS that was
-corrupted (other things are almost certainly broken, but we don't know
-what they are yet).  And it's not a question of being "forced" to use
-the bridge _CRS.  Every system SHOULD be using _CRS; that's the only
-way we can correctly manage resources of ACPI devices.
-
-But if you (Rafael) decide we should keep this, I won't object.
-
-The conflict resolution looks fine to me.
-
-> diff --cc arch/x86/pci/acpi.c
-> index 49e5195,7010c19..0000000
-> --- a/arch/x86/pci/acpi.c
-> +++ b/arch/x86/pci/acpi.c
-> @@@ -106,16 -98,16 +106,27 @@@ static const struct dmi_system_id pci_c
->                         DMI_MATCH(DMI_BIOS_VERSION, "6JET85WW (1.43 )"),
->                 },
->         },
->  +
->  +      /* https://bugzilla.kernel.org/show_bug.cgi?id=15362 */
->  +      {
->  +              .callback = set_ignore_seg,
->  +              .ident = "HP xw9300",
->  +              .matches = {
->  +                      DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
->  +                      DMI_MATCH(DMI_PRODUCT_NAME, "HP xw9300 Workstation"),
->  +              },
->  +      },
-> ++
-> +       /* https://bugzilla.kernel.org/show_bug.cgi?id=47981 */
-> +       {
-> +               .callback = set_nouse_crs,
-> +               .ident = "CheckPoint P-20-00",
-> +               .matches = {
-> +                       DMI_MATCH(DMI_SYS_VENDOR, "CheckPoint"),
-> +                       DMI_MATCH(DMI_PRODUCT_NAME, "P-20-00"),
-> +                       DMI_MATCH(DMI_BOARD_NAME, "Bridgeport"),
-> +               },
-> +       },
->         {}
->   };
->
+Huh? This feature is x86 specific isn't it? I mean it is in the ACPI spec, but
+only x86 does it right?
