@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972Ab2KFPVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 10:21:12 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:49806 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab2KFPVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 10:21:10 -0500
-Date: Tue, 6 Nov 2012 10:21:01 -0500 (EST)
-From: Tomas Hozza <thozza@redhat.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, apw@canonical.com, jasowang@redhat.com
-Cc: Olaf Hering <olaf@aepfle.de>, KY Srinivasan <kys@microsoft.com>
-Message-ID: <165383498.7447465.1352215261695.JavaMail.root@redhat.com>
-In-Reply-To: <456703059.7446523.1352215033661.JavaMail.root@redhat.com>
-Subject: [PATCH] tools/hv/hv_kvp_daemon.c: Netlink source address validation
- allows DoS
+	id S1752275Ab2KFPWl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 10:22:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52668 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751168Ab2KFPWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 10:22:40 -0500
+Date: Tue, 6 Nov 2012 10:22:03 -0500
+From: Jarod Wilson <jarod@redhat.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Matt Mackall <mpm@selenic.com>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] random: prime last_data value per fips requirements
+Message-ID: <20121106152203.GA24076@redhat.com>
+References: <1352149210-4790-1-git-send-email-jarod@redhat.com>
+ <20121106120523.GA2805@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; 
-	boundary="----=_Part_7447463_91626241.1352215261693"
-X-Originating-IP: [10.34.4.165]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121106120523.GA2805@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_Part_7447463_91626241.1352215261693
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+On Tue, Nov 06, 2012 at 07:05:23AM -0500, Neil Horman wrote:
+> On Mon, Nov 05, 2012 at 04:00:10PM -0500, Jarod Wilson wrote:
+> > The value stored in last_data must be primed for FIPS 140-2 purposes. Upon
+> > first use, either on system startup or after an RNDCLEARPOOL ioctl, we
+> > need to take an initial random sample, store it internally in last_data,
+> > then pass along the value after that to the requester, so that consistency
+> > checks aren't being run against stale and possibly known data.
+> > 
+> > CC: Herbert Xu <herbert@gondor.apana.org.au>
+> > CC: "David S. Miller" <davem@davemloft.net>
+> > CC: Neil Horman <nhorman@tuxdriver.com>
+> > CC: Matt Mackall <mpm@selenic.com>
+> > CC: linux-crypto@vger.kernel.org
+> > Signed-off-by: Jarod Wilson <jarod@redhat.com>
+> > ---
+> >  drivers/char/random.c |   11 +++++++++++
+> >  1 files changed, 11 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/char/random.c b/drivers/char/random.c
+> > index b86eae9..24d17b8 100644
+> > --- a/drivers/char/random.c
+> > +++ b/drivers/char/random.c
+> > @@ -437,6 +437,7 @@ struct entropy_store {
+> >  	int entropy_count;
+> >  	int entropy_total;
+> >  	unsigned int initialized:1;
+> > +	bool last_data_init;
+> >  	__u8 last_data[EXTRACT_SIZE];
+> >  };
+> >  
+> > @@ -967,6 +968,15 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+> >  		if (fips_enabled) {
+> >  			unsigned long flags;
+> >  
+> > +			/* prime last_data value if need be, per fips 140-2 */
+> > +			if (!r->last_data_init) {
+> > +				spin_lock_irqsave(&r->lock, flags);
+> > +				memcpy(r->last_data, tmp, EXTRACT_SIZE);
+> > +				r->last_data_init = true;
+> > +				spin_unlock_irqrestore(&r->lock, flags);
+> > +				continue;
+> Continue?  Is that left over from earlier work?  Or did you have some other
+> purpose in mind for it?
 
-Hi.
+The continue takes you back to the top of the while loop for another
+extract_buf() call, but continue could simply be replaced with another
+extract_buf() call, so we don't have to restart the loop and check
+last_data_init again. Otherwise, we're going to fail the memcmp and panic,
+because tmp and r->last_data will be identical.
 
-After discussion with KY Srinivasan and Olaf Hering I'm sending you
-a patch for the HyperV KVP daemon distributed in linux kernel
-"tools/hv/hv_kvp_daemon.c".
+> Also, not that its in a hot path or anything, but it might be nice to
+> consolodate this code such that you only lock and unlock r->flags once instead
+> of twice here.
 
-There is an issue in the current daemon source causing hyperv kvp daemon
-to exit when it processes a spoofed Netlink packet which has been sent
-from an untrusted local user.
+I thought about that, but figured it would be more trouble and possibly
+more code to execute than it was worth in the normal case. But I can spin
+up a v2 that tries to be a bit cleaner here.
 
-This patch is fixing this, so now the Netlink messages with a non-zero
-nl_pid source address are just ignored.
+-- 
+Jarod Wilson
+jarod@redhat.com
 
-
-Regards,
-
-Tomas Hozza
-Associate Software Engineer
-BaseOS - Brno, CZ
-
-------=_Part_7447463_91626241.1352215261693
-Content-Type: text/x-patch;
- name=0001-Netlink-source-address-validation-allows-DoS.patch
-Content-Disposition: attachment;
- filename=0001-Netlink-source-address-validation-allows-DoS.patch
-Content-Transfer-Encoding: base64
-
-RnJvbSA2MTk5MDcyZjgxMzEwNTZlZmNlMjA4ZjA0ZTY5ODVkMWY5OTY4ZDhlIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBUb21hcyBIb3p6YSA8dGhvenphQHJlZGhhdC5jb20+CkRhdGU6
-IE1vbiwgNSBOb3YgMjAxMiAxMDowODoxNiArMDEwMApTdWJqZWN0OiBbUEFUQ0hdIE5ldGxpbmsg
-c291cmNlIGFkZHJlc3MgdmFsaWRhdGlvbiBhbGxvd3MgRG9TCgpUaGUgc291cmNlIGNvZGUgd2l0
-aG91dCB0aGlzIHBhdGNoIGNhdXNlZCBoeXBlcnZrdnBkIHRvIGV4aXQgd2hlbiBpdCBwcm9jZXNz
-ZWQKYSBzcG9vZmVkIE5ldGxpbmsgcGFja2V0IHdoaWNoIGhhcyBiZWVuIHNlbnQgZnJvbSBhbiB1
-bnRydXN0ZWQgbG9jYWwgdXNlci4KTmV0bGluayBtZXNzYWdlcyB3aXRoIGEgbm9uLXplcm8gbmxf
-cGlkIHNvdXJjZSBhZGRyZXNzIHNob3VsZCBqdXN0IGJlIGlnbm9yZWQuCi0tLQogdG9vbHMvaHYv
-aHZfa3ZwX2RhZW1vbi5jIHwgOCArKysrKysrLQogMSBmaWxlIGNoYW5nZWQsIDcgaW5zZXJ0aW9u
-cygrKSwgMSBkZWxldGlvbigtKQoKZGlmZiAtLWdpdCBhL3Rvb2xzL2h2L2h2X2t2cF9kYWVtb24u
-YyBiL3Rvb2xzL2h2L2h2X2t2cF9kYWVtb24uYwppbmRleCAzZWEzYWYyLi43ZDc0NDk3IDEwMDc1
-NQotLS0gYS90b29scy9odi9odl9rdnBfZGFlbW9uLmMKKysrIGIvdG9vbHMvaHYvaHZfa3ZwX2Rh
-ZW1vbi5jCkBAIC0xNDc4LDEzICsxNDc4LDE5IEBAIGludCBtYWluKHZvaWQpCiAJCWxlbiA9IHJl
-Y3Zmcm9tKGZkLCBrdnBfcmVjdl9idWZmZXIsIHNpemVvZihrdnBfcmVjdl9idWZmZXIpLCAwLAog
-CQkJCWFkZHJfcCwgJmFkZHJfbCk7CiAKLQkJaWYgKGxlbiA8IDAgfHwgYWRkci5ubF9waWQpIHsK
-KwkJaWYgKGxlbiA8IDApIHsKIAkJCXN5c2xvZyhMT0dfRVJSLCAicmVjdmZyb20gZmFpbGVkOyBw
-aWQ6JXUgZXJyb3I6JWQgJXMiLAogCQkJCQlhZGRyLm5sX3BpZCwgZXJybm8sIHN0cmVycm9yKGVy
-cm5vKSk7CiAJCQljbG9zZShmZCk7CiAJCQlyZXR1cm4gLTE7CiAJCX0KIAorCQlpZiAoYWRkci5u
-bF9waWQpIHsKKwkJCXN5c2xvZyhMT0dfV0FSTklORywgIlJlY2VpdmVkIHBhY2tldCBmcm9tIHVu
-dHJ1c3RlZCBwaWQ6JXUiLAorCQkJCQlhZGRyLm5sX3BpZCk7CisJCQljb250aW51ZTsKKwkJfQor
-CiAJCWluY29taW5nX21zZyA9IChzdHJ1Y3Qgbmxtc2doZHIgKilrdnBfcmVjdl9idWZmZXI7CiAJ
-CWluY29taW5nX2NuX21zZyA9IChzdHJ1Y3QgY25fbXNnICopTkxNU0dfREFUQShpbmNvbWluZ19t
-c2cpOwogCQlodl9tc2cgPSAoc3RydWN0IGh2X2t2cF9tc2cgKilpbmNvbWluZ19jbl9tc2ctPmRh
-dGE7Ci0tIAoxLjcuMTEuNwoK
-------=_Part_7447463_91626241.1352215261693--
