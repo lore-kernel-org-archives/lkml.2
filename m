@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab2KFHBT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 02:01:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60238 "EHLO mx2.suse.de"
+	id S1752254Ab2KFHDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 02:03:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60266 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751578Ab2KFHBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 02:01:17 -0500
-Date: Tue, 06 Nov 2012 08:01:16 +0100
-Message-ID: <s5ha9uvi5ab.wl%tiwai@suse.de>
+	id S1751578Ab2KFHDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 02:03:17 -0500
+Date: Tue, 06 Nov 2012 08:03:16 +0100
+Message-ID: <s5h8vafi56z.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: David Howells <dhowells@redhat.com>
+To: Ming Lei <tom.leiming@gmail.com>
 Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         joeyli <jlee@suse.com>, Jiri Kosina <jkosina@suse.cz>,
+        David Howells <dhowells@redhat.com>,
         Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
         linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
 Subject: Re: [PATCH RFC 0/4] Add firmware signature file check
-In-Reply-To: <5839.1352160112@warthog.procyon.org.uk>
-References: <s5hhap49den.wl%tiwai@suse.de>
-	<1348152065-31353-1-git-send-email-mjg@redhat.com>
+In-Reply-To: <CACVXFVN8qPTgiYKXaeKFJXLXMjLE=+=8Vev2otD3v1VMk+Ez_w@mail.gmail.com>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
 	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
 	<20121029174131.GC7580@srcf.ucam.org>
 	<s5hobjia6vj.wl%tiwai@suse.de>
@@ -26,7 +26,8 @@ References: <s5hhap49den.wl%tiwai@suse.de>
 	<1351743715.21227.95.camel@linux-s257.site>
 	<20121101131849.752df6fd@pyramind.ukuu.org.uk>
 	<s5hip9k9dng.wl%tiwai@suse.de>
-	<5839.1352160112@warthog.procyon.org.uk>
+	<s5hhap49den.wl%tiwai@suse.de>
+	<CACVXFVN8qPTgiYKXaeKFJXLXMjLE=+=8Vev2otD3v1VMk+Ez_w@mail.gmail.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -36,33 +37,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Tue, 06 Nov 2012 00:01:52 +0000,
-David Howells wrote:
+At Tue, 6 Nov 2012 10:30:26 +0800,
+Ming Lei wrote:
 > 
-> Takashi Iwai <tiwai@suse.de> wrote:
+> On Tue, Nov 6, 2012 at 1:18 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> >
+> > To be noted, it doesn't support the firmwares via udev but only the
+> > direct loading, and the check for built-in firmware is missing, too.
 > 
-> > this is a patch series to add the support for firmware signature
-> > check.  At this time, the kernel checks extra signature file (*.sig)
-> > for each firmware, instead of embedded signature.
-> > It's just a quick hack using the existing module signing mechanism,
-> > thus provided only as a proof of concept for now.
-> 
-> There is another way to do this.  If you look at the patches I proposed to
-> wrap keys in PE binaries, you'll find that that can handle PKCS#7 format
-> messages as that's what's in the sort of signed PE binary we're dealing with.
-> 
-> You could use this to put the firmware inside a signed-data PKCS#7 message.
+> Generally, both direct loading and udev may request one same firmware
+> image. And after check failed, current firmware load will fallback on udev
+> to complete loading, so looks a check-failed firmware still can be loaded
+> into kernel no matter if there is firmware signature check or not.
 
-Yeah, embedding the signature is more straightforward.  Actually I
-tried the embedded signature (just like module) at first, then a
-couple of concerns arose:
-
-- Legally unclear about "modifying" the firmware data or file,
-
-- The signed firmware is no longer compatible with the older kernel,
-  thus bad for distro packaging.
+Yeah, it's just uncovered in the patch.  As a easy solution, apply the
+patch like below to disallow the udev fw loading when signature check
+is enforced.
 
 
 thanks,
 
 Takashi
+
+---
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 575bc4c..93121c3 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -912,6 +912,13 @@ static int _request_firmware_load(struct firmware_priv *fw_priv, bool uevent,
+ 		goto handle_fw;
+ 	}
+ 
++	/* signature check isn't handled via udev fw loading */
++	if (sig_enforce) {
++		fw_load_abort(fw_priv);
++		direct_load = 1;
++		goto handle_fw;
++	}
++
+ 	/* fall back on userspace loading */
+ 	buf->fmt = PAGE_BUF;
+ 
