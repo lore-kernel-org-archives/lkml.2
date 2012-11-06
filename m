@@ -1,68 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365Ab2KFJhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:37:13 -0500
-Received: from antcom.de ([188.40.178.216]:39441 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751060Ab2KFJhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:37:06 -0500
-Message-ID: <5098DA10.3080002@antcom.de>
-Date: Tue, 06 Nov 2012 10:36:16 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
+	id S1751186Ab2KFJku (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:40:50 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37288 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab2KFJkr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 04:40:47 -0500
+Message-ID: <5098DB0C.7000707@ti.com>
+Date: Tue, 6 Nov 2012 15:10:28 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Alban Bedel <alban.bedel@avionic-design.de>, linux-kernel@vger.kernel.org,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Subject: Re: [PATCH] pwm: lpc32xx - Fix the PWM polarity
-References: <1352134125-22405-1-git-send-email-alban.bedel@avionic-design.de> <20121105210317.GA9930@avionic-0098.mockup.avionic-design.de>
-In-Reply-To: <20121105210317.GA9930@avionic-0098.mockup.avionic-design.de>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
+        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <khilman@ti.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 05/11] clk: davinci - add dm644x clock initialization
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-6-git-send-email-m-karicheri2@ti.com> <50951C81.5050501@ti.com> <50984A6A.8050505@ti.com>
+In-Reply-To: <50984A6A.8050505@ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/12 22:03, Thierry Reding wrote:
-> Cc'ing Roland and Alexandre. What do you guys think?
+On 11/6/2012 4:53 AM, Murali Karicheri wrote:
+> On 11/03/2012 09:30 AM, Sekhar Nori wrote:
+>> On 10/25/2012 9:41 PM, Murali Karicheri wrote:
+>>> This patch adds dm644x clock initialization code that consists of
+>>> clocks data for various clocks and clock register callouts to
+>>> various clock drivers. It uses following clk drivers for this
+>>>
+>>>   1. clk-fixed-rate - for ref clock
+>>>   2. clk-mux - for mux at the input and output of main pll
+>>>   3. davinci specific clk-pll for main pll clock
+>>>   4. davinci specific clk-div for pll divider clock
+>>>   5. clk-fixed-factor for fixed factor clock such as auxclk
+>>>   6. davinci specific clk-psc for psc clocks
+>>>
+>>> This patch also moves all of the PLL and PSC register definitions
+>>> from clock.h and psc.h under davinci to the clk/davinci folder so
+>>> that various soc specific clock initialization code can share these
+>>> definitions.
+>> Except this patch does not move the defines, it creates a copy of them
+>> (which is bad since you quickly lose track of which is the correct
+>> copy). Is this done to avoid including mach/ header files here? It will
+>> actually be better to include the mach/ files here as a temporary
+>> solution and then remove the include mach/ files once all the SoCs have
+>> been converted over.
+>>
+>>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>>> ---
+>>>   drivers/clk/davinci/dm644x-clock.c |  304
+>>> ++++++++++++++++++++++++++++++++++++
+>>>   drivers/clk/davinci/pll.h          |   83 ++++++++++
+>>>   drivers/clk/davinci/psc.h          |  215 +++++++++++++++++++++++++
+>>>   3 files changed, 602 insertions(+)
+>>>   create mode 100644 drivers/clk/davinci/dm644x-clock.c
+>>>   create mode 100644 drivers/clk/davinci/pll.h
+>>>   create mode 100644 drivers/clk/davinci/psc.h
+>>>
+>>> +/* all clocks available in DM644x SoCs */
+>>> +enum dm644x_clk {
+>>> +    clkin, oscin, ref_clk_mux, pll1, pll1_plldiv_clk_mux, auxclk,
+>>> +    clk_pll1_sysclk1, clk_pll1_sysclk2, clk_pll1_sysclk3,
+>>> clk_pll1_sysclk4,
+>>> +    clk_pll1_sysclk5, clk_pll1_sysclkbp, pll2, pll2_plldiv_clk_mux,
+>>> +    clk_pll2_sysclk1, clk_pll2_sysclk2, clk_pll2_sysclkbp, dsp, arm,
+>>> vicp,
+>>> +    vpss_master, vpss_slave, uart0, uart1, uart2, emac, i2c, ide, asp,
+>>> +    mmcsd, spi, gpio, usb, vlynq, aemif, pwm0, pwm1, pwm2, timer0,
+>>> timer1,
+>>> +    timer2, clk_max
+>>> +};
+>>> +
+>>> +static struct davinci_clk *psc_clocks[] = {
+>>> +    &clk_dsp, &clk_arm, &clk_vicp, &clk_vpss_master, &clk_vpss_slave,
+>>> +    &clk_uart0, &clk_uart1, &clk_uart2, &clk_emac, &clk_i2c, &clk_ide,
+>>> +    &clk_asp0, &clk_mmcsd, &clk_spi, &clk_gpio, &clk_usb, &clk_vlynq,
+>>> +    &clk_aemif, &clk_pwm0, &clk_pwm1, &clk_pwm2, &clk_timer0,
+>>> &clk_timer1,
+>>> +    &clk_timer2
+>>> +};
+>> You rely on perfect order between this array and dm644x_clk enum above.
+>> Can you initialize this array using the enum as the index so that it is
+>> clear. Current method is too error prone.
+> Are you expecting something like this?
 > 
-> On Mon, Nov 05, 2012 at 05:48:45PM +0100, Alban Bedel wrote:
->> Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de> --- 
->> drivers/pwm/pwm-lpc32xx.c |    6 +++++- 1 files changed, 5
->> insertions(+), 1 deletions(-)
->> 
->> diff --git a/drivers/pwm/pwm-lpc32xx.c
->> b/drivers/pwm/pwm-lpc32xx.c index adb87f0..a2704b8 100644 ---
->> a/drivers/pwm/pwm-lpc32xx.c +++ b/drivers/pwm/pwm-lpc32xx.c @@
->> -51,7 +51,11 @@ static int lpc32xx_pwm_config(struct pwm_chip
->> *chip, struct pwm_device *pwm,
->> 
->> c = 256 * duty_ns; do_div(c, period_ns); -	duty_cycles = c; +	if
->> (c > 255) +		c = 255; +	if (c < 1) +		c = 1; +	duty_cycles = 256
->> - c;
->> 
->> writel(PWM_ENABLE | PWM_RELOADV(period_cycles) |
->> PWM_DUTY(duty_cycles), lpc32xx->base + (pwm->hwpwm << 2));
-> 
-> Shouldn't duty_cycles rather be 255 - c, such that it can still be
-> 0?
-> 
-> Thierry
+> static struct davinci_clk *psc_clocks[] = {
+>     [dsp - dsp]        = &clk_dsp,
+>     [arm - dsp]        = &clk_arm,
+>     [vicp - dsp]        = &clk_vicp,
+>     [vpss_maste - dsp]    = &clk_vpss_master,
+>     [vpss_slave - dsp]    = &clk_vpss_slave,
+>     [uart0 - dsp]        = &clk_uart0,
+>     [uart1 - dsp]        = &clk_uart1,
 
-According to the Manual: [Low]/[High] = [PWM_DUTY] / [256-PWM_DUTY],
-i.e., the PWM polarity inversion looks good.
-
-However, as Thierry pointed out, the valid range 0..255 should be
-maintained differently, maybe:
-
-if (c > 255)
-	c = 255;
-duty_cycles = 255 - c;
-
-?
+Well, sort of! But the '- dsp' is really ugly. You can either define the
+array for the full list of clocks (like 'clks') or move the psc clocks
+to the beginning of the enum (less preferable to me).
 
 Thanks,
-
-Roland
+Sekhar
