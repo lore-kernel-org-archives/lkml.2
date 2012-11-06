@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab2KFEQG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Nov 2012 23:16:06 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35792 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753012Ab2KFEQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Nov 2012 23:16:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <87sj8okzft.fsf@devron.myhome.or.jp>
-References: <1351389156-2484-1-git-send-email-linkinjeon@gmail.com>
-	<87sj8okzft.fsf@devron.myhome.or.jp>
-Date: Tue, 6 Nov 2012 13:16:00 +0900
-Message-ID: <CAKYAXd_bEmLtXA4HXaBMNJrwLLnyPNHT4o+s2VcisDdEsphuvA@mail.gmail.com>
-Subject: Re: [PATCH 1/5] fat: remove parent_logstart check in fat_get_parent
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753510Ab2KFESq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Nov 2012 23:18:46 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:33055 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753012Ab2KFESp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Nov 2012 23:18:45 -0500
+Message-ID: <1352175520.16194.14.camel@joe-AO722>
+Subject: Re: [PATCH 001/104] checkpatch: warn about using CONFIG_EXPERIMENTAL
+From: Joe Perches <joe@perches.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
+Date: Mon, 05 Nov 2012 20:18:40 -0800
+In-Reply-To: <1352156701-4038-2-git-send-email-keescook@chromium.org>
+References: <1352156701-4038-1-git-send-email-keescook@chromium.org>
+	 <1352156701-4038-2-git-send-email-keescook@chromium.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/5, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> +		blknr = fat_clus_to_blknr(sbi, parent_logstart);
->> +		parent_bh = sb_bread(sb, blknr);
->> +		if (!parent_bh) {
->> +			fat_msg(sb, KERN_ERR,
->> +				"NFS:unable to read cluster of parent directory");
->> +			goto out;
->>  		}
->> +		de = (struct msdos_dir_entry *) parent_bh->b_data;
->> +		clus_to_match = fat_get_start(sbi, &de[0]);
->> +		search_clus = fat_get_start(sbi, &de[1]);
->> +		if (!search_clus)
->> +			search_clus = sbi->root_cluster;
->> +		brelse(parent_bh);
->> +		do {
->> +			parent_inode =  fat_traverse_cluster(sb,
->> +					search_clus, clus_to_match);
->> +			if (IS_ERR(parent_inode) || parent_inode)
->> +				break;
->> +			search_clus = fat_read_next_clus(sb,
->> +							search_clus);
->> +			if (search_clus < 0)
->> +				break;
->> +		} while (search_clus != FAT_ENT_EOF);
->>  	}
->>  out:
->>  	brelse(dotdot_bh);
->
-> I started to understand what is doing this with cleanup. It is really
-> strange and duplicates many codes with bugs.
->
-> So, please replace whole FAT nfs patches in -mm to review whole at next
-> patchset. And sorry, but please think whole more carefully.
-Hi OGAWA.
-Okay, I will rework all of patches as your comment.
-Thanks for review.
->
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+On Mon, 2012-11-05 at 15:03 -0800, Kees Cook wrote:
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, it is being removed.  This will discourage future addition of
+> CONFIG_EXPERIMENTAL while it is being phased out.
+> 
+> Cc: Andy Whitcroft <apw@canonical.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  scripts/checkpatch.pl |    7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 21a9f5d..f8b33ed 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -1757,6 +1757,13 @@ sub process {
+>  			#print "is_start<$is_start> is_end<$is_end> length<$length>\n";
+>  		}
+>  
+> +# Discourage the addition of CONFIG_EXPERIMENTAL in Kconfig.
+> +		if ($realfile =~ /Kconfig/ &&
+> +		    $line =~ /.\s*depends on\s+.*\bEXPERIMENTAL\b/) {
+> +			WARN("CONFIG_EXPERIMENTAL",
+> +			     "Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives, see:\nhttps://lkml.org/lkml/2012/10/23/580\n");
+> +		}
+> +
+>  		if (($realfile =~ /Makefile.*/ || $realfile =~ /Kbuild.*/) &&
+>  		    ($line =~ /\+(EXTRA_[A-Z]+FLAGS).*/)) {
+>  			my $flag = $1;
+
+Couple bits of trivia:
+
+Perhaps this would be better if it didn't just check Kconfig
+files and simply looked for any use of CONFIG_EXPERIMENTAL
+
+	$line =~ /^\+.*\bCONFIG_EXPERIMENTAL\b/
+
+I think the output WARN would be better on single line.
+
+"Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives see https://lkml.org/lkml/2012/10/23/580\n"
+
