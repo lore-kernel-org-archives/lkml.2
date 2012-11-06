@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab2KFWWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:22:00 -0500
-Received: from [93.179.225.50] ([93.179.225.50]:39237 "EHLO shrek.podlesie.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735Ab2KFWUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:20:21 -0500
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Chas Williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
-        David Woodhouse <David.Woodhouse@intel.com>, davem@davemloft.net,
-        Krzysztof Mazur <krzysiek@podlesie.net>
-Subject: [PATCH v3 2/7] atm: add owner of push() callback to atmvcc
-Date: Tue,  6 Nov 2012 23:16:57 +0100
-Message-Id: <1352240222-363-3-git-send-email-krzysiek@podlesie.net>
-X-Mailer: git-send-email 1.8.0.233.g54991f2
-In-Reply-To: <1352240222-363-1-git-send-email-krzysiek@podlesie.net>
-References: <1352240222-363-1-git-send-email-krzysiek@podlesie.net>
+	id S1753207Ab2KFWXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:23:12 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60031 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561Ab2KFWXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 17:23:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <50998834.5030407@schaufler-ca.com>
+References: <1352189869-27190-1-git-send-email-jarkko.sakkinen@iki.fi>
+	<50998834.5030407@schaufler-ca.com>
+Date: Tue, 6 Nov 2012 17:23:06 -0500
+Message-ID: <CACLa4ps1ZFfgtj0N999vsBR__fWJYXGbJFOHMakP08EzzvmVUA@mail.gmail.com>
+Subject: Re: [PATCH] smack: SMACK_MAGIC to include/uapi/linux/magic.h
+From: Eric Paris <eparis@parisplace.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The atm is using atmvcc->push(vcc, NULL) callback to notify protocol
-that vcc will be closed and protocol must detach from it. This callback
-is usually used by protocol to decrement module usage count by module_put(),
-but it leaves small window then module is still used after module_put().
+It looks like smack_lsm.c includes linux/magic.h, but smackfs.c
+doesn't...   Seems like they should have included linux/magic.h in the
+same header they removed the definition from....
 
-Now the owner of push() callback is kept in atmvcc and
-module_put(atmvcc->owner) is called after the protocol is detached from vcc.
-
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
----
- include/linux/atmdev.h | 1 +
- net/atm/common.c       | 2 ++
- 2 files changed, 3 insertions(+)
-
-diff --git a/include/linux/atmdev.h b/include/linux/atmdev.h
-index 06fd4bb..31c16c6 100644
---- a/include/linux/atmdev.h
-+++ b/include/linux/atmdev.h
-@@ -315,6 +315,7 @@ struct atm_vcc {
- 	void		*dev_data;	/* per-device data */
- 	void		*proto_data;	/* per-protocol data */
- 	struct k_atm_aal_stats *stats;	/* pointer to AAL stats group */
-+	struct module *owner;		/* owner of ->push function */
- 	/* SVC part --- may move later ------------------------------------- */
- 	short		itf;		/* interface number */
- 	struct sockaddr_atmsvc local;
-diff --git a/net/atm/common.c b/net/atm/common.c
-index a0e4411..ea952b2 100644
---- a/net/atm/common.c
-+++ b/net/atm/common.c
-@@ -156,6 +156,7 @@ int vcc_create(struct net *net, struct socket *sock, int protocol, int family)
- 	atomic_set(&sk->sk_rmem_alloc, 0);
- 	vcc->push = NULL;
- 	vcc->pop = NULL;
-+	vcc->owner = NULL;
- 	vcc->push_oam = NULL;
- 	vcc->vpi = vcc->vci = 0; /* no VCI/VPI yet */
- 	vcc->atm_options = vcc->aal_options = 0;
-@@ -173,6 +174,7 @@ static void vcc_destroy_socket(struct sock *sk)
- 	if (vcc->dev) {
- 		if (vcc->push)
- 			vcc->push(vcc, NULL); /* atmarpd has no push */
-+		module_put(vcc->owner);
- 		if (vcc->dev->ops->close)
- 			vcc->dev->ops->close(vcc);
- 
--- 
-1.8.0.233.g54991f2
-
+On Tue, Nov 6, 2012 at 4:59 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+> On 11/6/2012 12:17 AM, Jarkko Sakkinen wrote:
+>> SMACK_MAGIC moved to a proper place for easy user space access
+>> (i.e. libsmack).
+>>
+>> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
+>> ---
+>>  include/uapi/linux/magic.h |    1 +
+>>  security/smack/smack.h     |    5 -----
+>>  2 files changed, 1 insertion(+), 5 deletions(-)
+>
+> Will security/smack/smack_lsm.c and security/smack/smackfs.c
+> compile after this change?
+>
+>>
+>> diff --git a/include/uapi/linux/magic.h b/include/uapi/linux/magic.h
+>> index e15192c..12735ad 100644
+>> --- a/include/uapi/linux/magic.h
+>> +++ b/include/uapi/linux/magic.h
+>> @@ -11,6 +11,7 @@
+>>  #define DEBUGFS_MAGIC          0x64626720
+>>  #define SECURITYFS_MAGIC     0x73636673
+>>  #define SELINUX_MAGIC                0xf97cff8c
+>> +#define SMACK_MAGIC          0x43415d53      /* "SMAC" */
+>>  #define RAMFS_MAGIC          0x858458f6      /* some random number */
+>>  #define TMPFS_MAGIC          0x01021994
+>>  #define HUGETLBFS_MAGIC      0x958458f6      /* some random number */
+>> diff --git a/security/smack/smack.h b/security/smack/smack.h
+>> index 99b3612..8ad3095 100644
+>> --- a/security/smack/smack.h
+>> +++ b/security/smack/smack.h
+>> @@ -149,11 +149,6 @@ struct smack_known {
+>>  #define SMACK_CIPSO_SOCKET   1
+>>
+>>  /*
+>> - * smackfs magic number
+>> - */
+>> -#define SMACK_MAGIC  0x43415d53 /* "SMAC" */
+>> -
+>> -/*
+>>   * CIPSO defaults.
+>>   */
+>>  #define SMACK_CIPSO_DOI_DEFAULT              3       /* Historical */
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
