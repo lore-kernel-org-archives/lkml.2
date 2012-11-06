@@ -1,158 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609Ab2KFJRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:17:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36412 "EHLO mx2.suse.de"
+	id S1752131Ab2KFJRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:17:53 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42593 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751704Ab2KFJPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:15:21 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 19/19] mm: sched: numa: Implement slow start for working set sampling
-Date: Tue,  6 Nov 2012 09:14:55 +0000
-Message-Id: <1352193295-26815-20-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1352193295-26815-1-git-send-email-mgorman@suse.de>
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
+	id S1751347Ab2KFJRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 04:17:50 -0500
+From: Shubhrajyoti D <shubhrajyoti@ti.com>
+To: <spi-devel-general@lists.sourceforge.net>
+CC: <broonie@opensource.wolfsonmicro.com>, <grant.likely@secretlab.ca>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+Subject: [PATCH] spi: omap2-mcspi: Reorder the wait_for_completion for tx
+Date: Tue, 6 Nov 2012 14:47:27 +0530
+Message-ID: <1352193447-23335-1-git-send-email-shubhrajyoti@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+The commit  d7b4394e[Cleanup the omap2_mcspi_txrx_dma function]
+changed the wait_for_completion order. Move the wait so that the
+rx doesnot wait for the tx to complete.
 
-Add a 1 second delay before starting to scan the working set of
-a task and starting to balance it amongst nodes.
-
-[ note that before the constant per task WSS sampling rate patch
-  the initial scan would happen much later still, in effect that
-  patch caused this regression. ]
-
-The theory is that short-run tasks benefit very little from NUMA
-placement: they come and go, and they better stick to the node
-they were started on. As tasks mature and rebalance to other CPUs
-and nodes, so does their NUMA placement have to change and so
-does it start to matter more and more.
-
-In practice this change fixes an observable kbuild regression:
-
-   # [ a perf stat --null --repeat 10 test of ten bzImage builds to /dev/shm ]
-
-   !NUMA:
-   45.291088843 seconds time elapsed                                          ( +-  0.40% )
-   45.154231752 seconds time elapsed                                          ( +-  0.36% )
-
-   +NUMA, no slow start:
-   46.172308123 seconds time elapsed                                          ( +-  0.30% )
-   46.343168745 seconds time elapsed                                          ( +-  0.25% )
-
-   +NUMA, 1 sec slow start:
-   45.224189155 seconds time elapsed                                          ( +-  0.25% )
-   45.160866532 seconds time elapsed                                          ( +-  0.17% )
-
-and it also fixes an observable perf bench (hackbench) regression:
-
-   # perf stat --null --repeat 10 perf bench sched messaging
-
-   -NUMA:
-
-   -NUMA:                  0.246225691 seconds time elapsed                   ( +-  1.31% )
-   +NUMA no slow start:    0.252620063 seconds time elapsed                   ( +-  1.13% )
-
-   +NUMA 1sec delay:       0.248076230 seconds time elapsed                   ( +-  1.35% )
-
-The implementation is simple and straightforward, most of the patch
-deals with adding the /proc/sys/kernel/balance_numa_scan_delay_ms tunable
-knob.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-[ Wrote the changelog, ran measurements, tuned the default. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reported-and-tested-by: Sørensen, Stefan <Sorensen@polycom.com>
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 ---
- include/linux/sched.h |    1 +
- kernel/sched/core.c   |    2 +-
- kernel/sched/fair.c   |    5 +++++
- kernel/sysctl.c       |    7 +++++++
- 4 files changed, 14 insertions(+), 1 deletion(-)
+ drivers/spi/spi-omap2-mcspi.c |   39 +++++++++++++++++++--------------------
+ 1 files changed, 19 insertions(+), 20 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index abb1c70..a2b06ea 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2006,6 +2006,7 @@ enum sched_tunable_scaling {
- };
- extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+index bcfd062..251f6d0 100644
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -323,18 +323,13 @@ static void omap2_mcspi_tx_dma(struct spi_device *spi,
+ 	struct omap2_mcspi	*mcspi;
+ 	struct omap2_mcspi_dma  *mcspi_dma;
+ 	unsigned int		count;
+-	u8			* rx;
+ 	const u8		* tx;
+-	void __iomem		*chstat_reg;
+-	struct omap2_mcspi_cs	*cs = spi->controller_state;
  
-+extern unsigned int sysctl_balance_numa_scan_delay;
- extern unsigned int sysctl_balance_numa_scan_period_min;
- extern unsigned int sysctl_balance_numa_scan_period_max;
- extern unsigned int sysctl_balance_numa_scan_size;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 81fa185..047e3c7 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1543,7 +1543,7 @@ static void __sched_fork(struct task_struct *p)
- 	p->node_stamp = 0ULL;
- 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
- 	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
--	p->numa_scan_period = sysctl_balance_numa_scan_period_min;
-+	p->numa_scan_period = sysctl_balance_numa_scan_delay;
- 	p->numa_work.next = &p->numa_work;
- #endif /* CONFIG_BALANCE_NUMA */
+ 	mcspi = spi_master_get_devdata(spi->master);
+ 	mcspi_dma = &mcspi->dma_channels[spi->chip_select];
+ 	count = xfer->len;
+ 
+-	rx = xfer->rx_buf;
+ 	tx = xfer->tx_buf;
+-	chstat_reg = cs->base + OMAP2_MCSPI_CHSTAT0;
+ 
+ 	if (mcspi_dma->dma_tx) {
+ 		struct dma_async_tx_descriptor *tx;
+@@ -359,19 +354,6 @@ static void omap2_mcspi_tx_dma(struct spi_device *spi,
+ 	dma_async_issue_pending(mcspi_dma->dma_tx);
+ 	omap2_mcspi_set_dma_req(spi, 0, 1);
+ 
+-	wait_for_completion(&mcspi_dma->dma_tx_completion);
+-	dma_unmap_single(mcspi->dev, xfer->tx_dma, count,
+-			 DMA_TO_DEVICE);
+-
+-	/* for TX_ONLY mode, be sure all words have shifted out */
+-	if (rx == NULL) {
+-		if (mcspi_wait_for_reg_bit(chstat_reg,
+-					OMAP2_MCSPI_CHSTAT_TXS) < 0)
+-			dev_err(&spi->dev, "TXS timed out\n");
+-		else if (mcspi_wait_for_reg_bit(chstat_reg,
+-					OMAP2_MCSPI_CHSTAT_EOT) < 0)
+-			dev_err(&spi->dev, "EOT timed out\n");
+-	}
  }
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 38b911ef..8c9c28e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -788,6 +788,9 @@ unsigned int sysctl_balance_numa_scan_period_max = 2000*16;
- /* Portion of address space to scan in MB */
- unsigned int sysctl_balance_numa_scan_size = 256;
  
-+/* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
-+unsigned int sysctl_balance_numa_scan_delay = 1000;
+ static unsigned
+@@ -492,6 +474,7 @@ omap2_mcspi_txrx_dma(struct spi_device *spi, struct spi_transfer *xfer)
+ 	struct dma_slave_config	cfg;
+ 	enum dma_slave_buswidth width;
+ 	unsigned es;
++	void __iomem		*chstat_reg;
+ 
+ 	mcspi = spi_master_get_devdata(spi->master);
+ 	mcspi_dma = &mcspi->dma_channels[spi->chip_select];
+@@ -526,8 +509,24 @@ omap2_mcspi_txrx_dma(struct spi_device *spi, struct spi_transfer *xfer)
+ 		omap2_mcspi_tx_dma(spi, xfer, cfg);
+ 
+ 	if (rx != NULL)
+-		return omap2_mcspi_rx_dma(spi, xfer, cfg, es);
+-
++		count = omap2_mcspi_rx_dma(spi, xfer, cfg, es);
 +
- static void task_numa_placement(struct task_struct *p)
- {
- 	int seq = ACCESS_ONCE(p->mm->numa_scan_seq);
-@@ -900,6 +903,8 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
- 	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
++	if (tx != NULL) {
++		chstat_reg = cs->base + OMAP2_MCSPI_CHSTAT0;
++		wait_for_completion(&mcspi_dma->dma_tx_completion);
++		dma_unmap_single(mcspi->dev, xfer->tx_dma, xfer->len,
++				 DMA_TO_DEVICE);
++
++		/* for TX_ONLY mode, be sure all words have shifted out */
++		if (rx == NULL) {
++			if (mcspi_wait_for_reg_bit(chstat_reg,
++						OMAP2_MCSPI_CHSTAT_TXS) < 0)
++				dev_err(&spi->dev, "TXS timed out\n");
++			else if (mcspi_wait_for_reg_bit(chstat_reg,
++						OMAP2_MCSPI_CHSTAT_EOT) < 0)
++				dev_err(&spi->dev, "EOT timed out\n");
++		}
++	}
+ 	return count;
+ }
  
- 	if (now - curr->node_stamp > period) {
-+		if (!curr->node_stamp)
-+			curr->numa_scan_period = sysctl_balance_numa_scan_period_min;
- 		curr->node_stamp = now;
- 
- 		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index d191203..5ee587d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -353,6 +353,13 @@ static struct ctl_table kern_table[] = {
- #endif /* CONFIG_SMP */
- #ifdef CONFIG_BALANCE_NUMA
- 	{
-+		.procname	= "balance_numa_scan_delay_ms",
-+		.data		= &sysctl_balance_numa_scan_delay,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "balance_numa_scan_period_min_ms",
- 		.data		= &sysctl_balance_numa_scan_period_min,
- 		.maxlen		= sizeof(unsigned int),
 -- 
-1.7.9.2
+1.7.5.4
 
