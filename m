@@ -1,83 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab2KFTZe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 14:25:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48124 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab2KFTZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 14:25:33 -0500
-Message-ID: <5099627A.20205@redhat.com>
-Date: Tue, 06 Nov 2012 14:18:18 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S1752674Ab2KFT07 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 14:26:59 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34568 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751556Ab2KFT06 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 14:26:58 -0500
+Date: Tue, 6 Nov 2012 11:26:55 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irq: tsk->comm is an array
+In-Reply-To: <20121106142849.21834.20965.stgit@localhost.localdomain>
+Message-ID: <alpine.DEB.2.00.1211061126420.4817@chino.kir.corp.google.com>
+References: <20121106142849.21834.20965.stgit@localhost.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 13/19] mm: mempolicy: Use _PAGE_NUMA to migrate pages
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de> <1352193295-26815-14-git-send-email-mgorman@suse.de>
-In-Reply-To: <1352193295-26815-14-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 04:14 AM, Mel Gorman wrote:
-> Note: Based on "mm/mpol: Use special PROT_NONE to migrate pages" but
-> 	sufficiently different that the signed-off-bys were dropped
->
-> Combine our previous _PAGE_NUMA, mpol_misplaced and migrate_misplaced_page()
-> pieces into an effective migrate on fault scheme.
->
-> Note that (on x86) we rely on PROT_NONE pages being !present and avoid
-> the TLB flush from try_to_unmap(TTU_MIGRATION). This greatly improves the
-> page-migration performance.
->
-> Based-on-work-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+On Tue, 6 Nov 2012, Alan Cox wrote:
 
+> From: Alan Cox <alan@linux.intel.com>
+> 
+> The array check is useless so remove it.
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
 
->   	page = vm_normal_page(vma, addr, pte);
->   	BUG_ON(!page);
-> +
-> +	get_page(page);
-> +	current_nid = page_to_nid(page);
-> +	target_nid = mpol_misplaced(page, vma, addr);
-> +	if (target_nid == -1)
-> +		goto clear_pmdnuma;
-> +
-> +	pte_unmap_unlock(ptep, ptl);
-> +	migrate_misplaced_page(page, target_nid);
-> +	page = NULL;
-> +
-> +	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
-> +	if (!pte_same(*ptep, pte))
-> +		goto out_unlock;
-> +
-
-I see you tried to avoid the extraneous TLB flush
-from inside migrate_misplaced_page. However,
-try_to_unmap_one calls ptep_clear_flush, which will
-currently still result in a remote TLB flush for
-a _PAGE_NUMA pte, despite the pte not being
-accessible for memory accesses (_PAGE_PRESENT not set).
-
-Furthermore, if migrate_misplaced_page moved the page,
-the !pte_same check will return false, and you will
-get a double fault.
-
-I wonder if migrate_misplaced_page should return a
-struct page* or a pfn, so we can compute what "pte"
-_should_ be, corrected for the new pfn, feed that
-value to pte_same, and then avoid the double fault?
-
-Also, we may want the change for ptep_clear_flush
-that avoids flushing remote TLBs for a pte without
-the _PAGE_PRESENT bit set.
-
+Acked-by: David Rientjes <rientjes@google.com>
