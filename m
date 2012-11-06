@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940Ab2KFKjT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 05:39:19 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:44423 "EHLO
+	id S1751913Ab2KFKju (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 05:39:50 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:41232 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab2KFKjP (ORCPT
+	with ESMTP id S1751397Ab2KFKjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 05:39:15 -0500
+	Tue, 6 Nov 2012 05:39:05 -0500
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
         tj@kernel.org, suresh.b.siddha@intel.com, venki@google.com,
@@ -14,64 +14,166 @@ To: pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
 Cc: Arvind.Chauhan@arm.com, linaro-dev@lists.linaro.org, patches@linaro.org,
         pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
         linux-rt-users@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu instead of current one
-Date: Tue,  6 Nov 2012 16:08:45 +0530
-Message-Id: <ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 Resend 1/4] sched: Create sched_select_cpu() to give preferred CPU for power saving
+Date: Tue,  6 Nov 2012 16:08:43 +0530
+Message-Id: <351f8e3a6e9d78f584dc10d9e0ecc1505f73f7d9.1352196505.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1352196505.git.viresh.kumar@linaro.org>
 References: <cover.1352196505.git.viresh.kumar@linaro.org>
 In-Reply-To: <cover.1352196505.git.viresh.kumar@linaro.org>
 References: <cover.1352196505.git.viresh.kumar@linaro.org>
-X-OriginalArrivalTime: 06 Nov 2012 10:38:57.0842 (UTC) FILETIME=[ED2C7120:01CDBC0A]
-X-MC-Unique: 112110610390404301
+X-OriginalArrivalTime: 06 Nov 2012 10:38:53.0124 (UTC) FILETIME=[EA5C8840:01CDBC0A]
+X-MC-Unique: 112110610385602601
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qA6AdaYd014383
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id qA6Adqi2014387
 
-Workqueues queues work on current cpu, if the caller haven't passed a preferred
-cpu. This may wake up an idle CPU, which is actually not required.
+In order to save power, it would be useful to schedule work onto non-IDLE cpus
+instead of waking up an IDLE one.
 
-This work can be processed by any CPU and so we must select a non-idle CPU here.
-This patch adds in support in workqueue framework to get preferred CPU details
-from the scheduler, instead of using current CPU.
+To achieve this, we need scheduler to guide kernel frameworks (like: timers &
+workqueues) on which is the most preferred CPU that must be used for these
+tasks.
 
-Most of the time when a work is queued, the current cpu isn't idle and so we
-will choose it only. There are cases when a cpu is idle when it queues some
-work. For example, consider following scenario:
-- A cpu has programmed a timer and is IDLE now.
-- CPU gets into interrupt handler due to timer and queues a work. As the CPU is
-  currently IDLE, we can queue this work to some other CPU.
+This routine returns the preferred cpu which is non-idle. It accepts a bitwise
+OR of SD_* flags present in linux/sched.h. If the local CPU isn't idle, it is
+returned back. If it is idle, then we must look for another CPU which have all
+the flags passed as argument as set. Also, as this activity is part of load
+balancing only, SD_LOAD_BALANCE must also be set for selected domain.
+
+This patch reuses the code from get_nohz_timer_target() routine, which had
+similar implementation. get_nohz_timer_target() is also modified to use
+sched_select_cpu() now.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- kernel/workqueue.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/sched.h | 16 ++++++++++--
+ kernel/sched/core.c   | 69 +++++++++++++++++++++++++++++++--------------------
+ 2 files changed, 56 insertions(+), 29 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 042d221..d32efa2 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1238,7 +1238,7 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
- 		struct global_cwq *last_gcwq;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0dd42a0..24f546d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -232,14 +232,26 @@ extern void init_idle_bootup_task(struct task_struct *idle);
  
- 		if (cpu == WORK_CPU_UNBOUND)
--			cpu = raw_smp_processor_id();
-+			cpu = sched_select_cpu(0);
+ extern int runqueue_is_locked(int cpu);
  
- 		/*
- 		 * It's multi cpu.  If @work was previously on a different
-@@ -1383,7 +1383,7 @@ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
- 		if (gcwq)
- 			lcpu = gcwq->cpu;
- 		if (lcpu == WORK_CPU_UNBOUND)
--			lcpu = raw_smp_processor_id();
-+			lcpu = sched_select_cpu(0);
- 	} else {
- 		lcpu = WORK_CPU_UNBOUND;
+-#if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
++#ifdef CONFIG_SMP
++extern int sched_select_cpu(unsigned int sd_flags);
++
++#ifdef CONFIG_NO_HZ
+ extern void nohz_balance_enter_idle(int cpu);
+ extern void set_cpu_sd_state_idle(void);
+-extern int get_nohz_timer_target(void);
++/*
++ * In the semi idle case, use the nearest busy cpu for migrating timers
++ * from an idle cpu.  This is good for power-savings.
++ *
++ * We don't do similar optimization for completely idle system, as
++ * selecting an idle cpu will add more delays to the timers than intended
++ * (as that cpu's timer base may not be uptodate wrt jiffies etc).
++ */
++#define get_nohz_timer_target() sched_select_cpu(0)
+ #else
+ static inline void nohz_balance_enter_idle(int cpu) { }
+ static inline void set_cpu_sd_state_idle(void) { }
+ #endif
++#endif /* CONFIG_SMP */
+ 
+ /*
+  * Only dump TASK_* tasks. (0 for all tasks)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2d8927f..cf1a420 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -542,33 +542,6 @@ void resched_cpu(int cpu)
+ 
+ #ifdef CONFIG_NO_HZ
+ /*
+- * In the semi idle case, use the nearest busy cpu for migrating timers
+- * from an idle cpu.  This is good for power-savings.
+- *
+- * We don't do similar optimization for completely idle system, as
+- * selecting an idle cpu will add more delays to the timers than intended
+- * (as that cpu's timer base may not be uptodate wrt jiffies etc).
+- */
+-int get_nohz_timer_target(void)
+-{
+-	int cpu = smp_processor_id();
+-	int i;
+-	struct sched_domain *sd;
+-
+-	rcu_read_lock();
+-	for_each_domain(cpu, sd) {
+-		for_each_cpu(i, sched_domain_span(sd)) {
+-			if (!idle_cpu(i)) {
+-				cpu = i;
+-				goto unlock;
+-			}
+-		}
+-	}
+-unlock:
+-	rcu_read_unlock();
+-	return cpu;
+-}
+-/*
+  * When add_timer_on() enqueues a timer into the timer wheel of an
+  * idle CPU then this timer might expire before the next timer event
+  * which is scheduled to wake up that CPU. In case of a completely
+@@ -639,6 +612,48 @@ void sched_avg_update(struct rq *rq)
  	}
+ }
+ 
++/*
++ * This routine returns the preferred cpu which is non-idle. It accepts a
++ * bitwise OR of SD_* flags present in linux/sched.h. If the local CPU isn't
++ * idle, it is returned back. If it is idle, then we must look for another CPU
++ * which have all the flags passed as argument as set. Also, as this activity is
++ * part of load balancing only, SD_LOAD_BALANCE must also be set for selected
++ * domain.
++ */
++int sched_select_cpu(unsigned int sd_flags)
++{
++	struct sched_domain *sd;
++	int cpu = smp_processor_id();
++	int i;
++
++	/* If Current cpu isn't idle, don't migrate anything */
++	if (!idle_cpu(cpu))
++		return cpu;
++
++	/* Add SD_LOAD_BALANCE to flags */
++	sd_flags |= SD_LOAD_BALANCE;
++
++	rcu_read_lock();
++	for_each_domain(cpu, sd) {
++		/*
++		 * If sd doesnt' have both sd_flags and SD_LOAD_BALANCE set,
++		 * skip sd.
++		 */
++		if ((sd->flags & sd_flags) != sd_flags)
++			continue;
++
++		for_each_cpu(i, sched_domain_span(sd)) {
++			if (!idle_cpu(i)) {
++				cpu = i;
++				goto unlock;
++			}
++		}
++	}
++unlock:
++	rcu_read_unlock();
++	return cpu;
++}
++
+ #else /* !CONFIG_SMP */
+ void resched_task(struct task_struct *p)
+ {
 -- 
 1.7.12.rc2.18.g61b472e
 
