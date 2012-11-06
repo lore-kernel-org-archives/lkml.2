@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045Ab2KFJPa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 04:15:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36280 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab2KFJPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 04:15:06 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 06/19] mm: numa: teach gup_fast about pmd_numa
-Date: Tue,  6 Nov 2012 09:14:42 +0000
-Message-Id: <1352193295-26815-7-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1352193295-26815-1-git-send-email-mgorman@suse.de>
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
+	id S1752732Ab2KFJQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 04:16:09 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40883 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab2KFJP2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 04:15:28 -0500
+Date: Tue, 6 Nov 2012 09:20:19 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Josh Boyer <jwboyer@gmail.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        joeyli <jlee@suse.com>, Jiri Kosina <jkosina@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: Re: [PATCH RFC 0/4] Add firmware signature file check
+Message-ID: <20121106092019.025fc7b7@pyramind.ukuu.org.uk>
+In-Reply-To: <s5hd2zri5zi.wl%tiwai@suse.de>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	<alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+	<20121029174131.GC7580@srcf.ucam.org>
+	<s5hobjia6vj.wl%tiwai@suse.de>
+	<20121031173728.GA18615@srcf.ucam.org>
+	<s5h390utqv3.wl%tiwai@suse.de>
+	<1351743715.21227.95.camel@linux-s257.site>
+	<20121101131849.752df6fd@pyramind.ukuu.org.uk>
+	<s5hip9k9dng.wl%tiwai@suse.de>
+	<s5hhap49den.wl%tiwai@suse.de>
+	<CA+5PVA52rjx+E6tDcoiy+7tj+ZrYO0yHevdMUpvL-vuRcTkDKA@mail.gmail.com>
+	<s5hd2zri5zi.wl%tiwai@suse.de>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+> But how would distro sign modules that are built externally?
+> It should be the pretty same situation.
 
-When scanning pmds, the pmd may be of numa type (_PAGE_PRESENT not set),
-however the pte might be present. Therefore, gup_pmd_range() must return
-0 in this case to avoid losing a NUMA hinting page fault during gup_fast.
+I would start with the "would" and lawyers and liability and then stop
+worrying about the how. Absent someone actually intending to do it and
+saying so.
 
-Note: gup_fast will skip over non present ptes (like numa types), so
-no explicit check is needed for the pte_numa case. gup_fast will also
-skip over THP when the trans huge pmd is non present. So, the pmd_numa
-case will also be correctly skipped with no additional code changes
-required.
-
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- arch/x86/mm/gup.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
-index dd74e46..02c5ec5 100644
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -163,8 +163,19 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
- 		 * can't because it has irq disabled and
- 		 * wait_split_huge_page() would never return as the
- 		 * tlb flush IPI wouldn't run.
-+		 *
-+		 * The pmd_numa() check is needed because the code
-+		 * doesn't check the _PAGE_PRESENT bit of the pmd if
-+		 * the gup_pte_range() path is taken. NOTE: not all
-+		 * gup_fast users will will access the page contents
-+		 * using the CPU through the NUMA memory channels like
-+		 * KVM does. So we're forced to trigger NUMA hinting
-+		 * page faults unconditionally for all gup_fast users
-+		 * even though NUMA hinting page faults aren't useful
-+		 * to I/O drivers that will access the page with DMA
-+		 * and not with the CPU.
- 		 */
--		if (pmd_none(pmd) || pmd_trans_splitting(pmd))
-+		if (pmd_none(pmd) || pmd_trans_splitting(pmd) || pmd_numa(pmd))
- 			return 0;
- 		if (unlikely(pmd_large(pmd))) {
- 			if (!gup_huge_pmd(pmd, addr, next, write, pages, nr))
--- 
-1.7.9.2
-
+Alan
