@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab2KFUpj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 15:45:39 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:63345 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996Ab2KFUpg (ORCPT
+	id S1753010Ab2KFUsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 15:48:10 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:3753
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752773Ab2KFUsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 15:45:36 -0500
+	Tue, 6 Nov 2012 15:48:09 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432I4015Izz1de0h1202h1d1ah1d2ahzz17326ah8275bh8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
+X-WSS-ID: 0MD333Y-01-4RD-02
+X-M-MSG: 
+Date: Tue, 6 Nov 2012 14:47:57 -0600
+From: Jacob Shin <jacob.shin@amd.com>
+To: <x86@kernel.org>
+CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <herrmann.der.user@googlemail.com>
+Subject: Re: [PATCH 0/4] x86, cacheinfo: Use AMD topology extensions
+Message-ID: <20121106204756.GA12142@jshin-Toonie>
+References: <20121019085519.GC26718@alberich>
 MIME-Version: 1.0
-Date: Tue, 6 Nov 2012 21:45:35 +0100
-Message-ID: <CAF-VNaq0P+UaUgEGGDy2+CHaSXCQa7cHVGimrxOTxWXT20rOog@mail.gmail.com>
-Subject: new sched options
-From: Lars Segerlund <lars.segerlund@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20121019085519.GC26718@alberich>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Hi,
+On Fri, Oct 19, 2012 at 10:55:19AM +0200, Andreas Herrmann wrote:
+> Hi,
+> 
+> Following patches modify cachinfo code to make use of AMD's topology
+> extension CPUID functions. Thus (hopefully) we can avoid CPU specific
+> modifications whenever cache topology changes.
+> 
+> Please apply.
 
- The options schedule for power and schedule for powersave are in my
-opinion quite stupid.
+Acked-by: Jacob Shin <jacob.shin@amd.com>
 
- The real use cases are packing on scheduler domains, symetric
-multithreading, asymetric packing and over commit on threads or cores
-?
 
- So where are the options like sched_mc, sched_smt and asymetric
-packing ? The patch for controlling overcommit on sched mc was very
-usefull.
 
- it's very interesting to use some of these options on the fly, both
-for embedded and for datacenter usage.
+Ping ?
 
- For embedded it's interesting to free up a core for RT or to keep the
-system in it's  thermal range, or to keep the power consumption low,
-but you need parameters for some use cases to play with.
+Any feedback ? If not could we get it into tip ?
 
- For the datacenter it's vital to be able to consolidate and control
-the load and thermal.
+Thank you,
 
- I don't mind the performance or powersave option, but I miss a sysfs
-entry to specify stuff like packing, overcommit and such
+> 
+> 
+> Thanks,
+> 
+> Andreas
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> 
 
- I feel like it's an attempt to simplify something which is both
-really hard and has many nuances, no one size fit's all.
-
- / just my two cents .... Lars Segerlund.
