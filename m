@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab2KFUt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 15:49:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41589 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751196Ab2KFUt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 15:49:56 -0500
-Date: Tue, 6 Nov 2012 15:49:47 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: sched_debug / traverse allocation failures.
-Message-ID: <20121106204947.GA1762@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@ZenIV.linux.org.uk>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>
+	id S1752178Ab2KFUuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 15:50:40 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:60006 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270Ab2KFUui (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 15:50:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com>
+ <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com>
+ <CACxGe6vDzmPWsOZ53HTwkYmDEivg9TpnRrvudY2FK95V06O24w@mail.gmail.com>
+ <A5170602-2AE7-4EC4-BE0F-0DF015A287D7@antoniou-consulting.com> <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 6 Nov 2012 20:50:17 +0000
+X-Google-Sender-Auth: fEiWtcmP-GjpxiyXx57Q6Lk9CAA
+Message-ID: <CACxGe6t-_CLOdkMLbErSu_dYkXRkCpwHA=obRr=nRCUCSOCW5Q@mail.gmail.com>
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving
+ omap_devices to mach-omap2)
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Rob Herring <robherring2@gmail.com>, Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While fuzz-testing, I frequently run into this..
+On Tue, Nov 6, 2012 at 8:45 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> The back of a napkin calculation indicates that on this platform
+> /proc/devicetree costs 76kB and /sys/device-tree costs 60kb. I'm happy
+> to see that using /sys instead of /proc appears to be slightly cheaper
+> which makes it easier to justify the change. The diffstat makes me
+> even happier:
+>
+> arch/arm/plat-omap/Kconfig                |    1 -
+>  arch/powerpc/platforms/pseries/dlpar.c    |   23 -----------
+>  arch/powerpc/platforms/pseries/reconfig.c |   40 ------------------
+>  drivers/of/Kconfig                        |    8 ----
+>  drivers/of/base.c                         |  116
+> ++++++++++++++++++++++++++++------------------------
+>  drivers/of/fdt.c                          |    5 ++-
+>  fs/proc/Makefile                          |    1 -
+>  fs/proc/proc_devtree.c                    |   13 +-----
+>  fs/proc/root.c                            |    4 +-
+>  include/linux/of.h                        |   35 ++++++++++++----
+>  include/linux/proc_fs.h                   |   16 --------
+>  include/linux/string.h                    |   11 +++++
+>  12 files changed, 107 insertions(+), 166 deletions(-)
 
-trinity-child4: page allocation failure: order:4, mode:0x40d0
-Pid: 21842, comm: trinity-child4 Not tainted 3.7.0-rc4+ #54
-Call Trace:
- [<ffffffff81179ce9>] warn_alloc_failed+0xe9/0x150
- [<ffffffff816c24fc>] ? __alloc_pages_direct_compact+0x1f8/0x209
- [<ffffffff8117e6f6>] __alloc_pages_nodemask+0x936/0xb60
- [<ffffffff811c2020>] alloc_pages_current+0xb0/0x120
- [<ffffffff81178ada>] __get_free_pages+0x2a/0x80
- [<ffffffff811ce299>] kmalloc_order_trace+0x39/0x190
- [<ffffffff811ce66d>] __kmalloc+0x27d/0x2b0
- [<ffffffff8120cc8d>] traverse+0x1bd/0x230
- [<ffffffff8120d0c0>] ? seq_lseek+0x120/0x120
- [<ffffffff8120d0c0>] ? seq_lseek+0x120/0x120
- [<ffffffff8120d41b>] seq_read+0x35b/0x3e0
- [<ffffffff816d1969>] ? sub_preempt_count+0x79/0xd0
- [<ffffffff8120d0c0>] ? seq_lseek+0x120/0x120
- [<ffffffff81257890>] proc_reg_read+0x80/0xc0
- [<ffffffff811e72dc>] vfs_read+0xac/0x180
- [<ffffffff811e758a>] sys_pread64+0x9a/0xb0
- [<ffffffff816d5f88>] tracesys+0xe1/0xe6
+Make that 96 insertions. I got an extra patch caught up in that diffstat.
 
-
-I added some instrumentation to traverse, and it appears that the /proc file
-in question is 'sched_debug'.
-
-Most the time this is quite small, but can grow to large lengths it seems,
-which when we're under memory fragmentation results in the spew above.
-
->From my reading of the code, it doesn't actually use the seq_operations,
-to print out things record-at-a-time, but just dumps everything
-in its ->open routine.
-
-thoughts?
-
-	Dave
-
+g.
