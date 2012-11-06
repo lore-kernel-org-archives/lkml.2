@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab2KFVzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 16:55:54 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:57334 "EHLO
+	id S1753448Ab2KFVz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 16:55:59 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:63700 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab2KFVzt (ORCPT
+	with ESMTP id S1753344Ab2KFVzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 16:55:49 -0500
+	Tue, 6 Nov 2012 16:55:53 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Will Newton <will.newton@imgtec.com>, Chris Ball <cjb@laptop.org>
-Subject: [PATCH 5/8] mmc: dw_mmc: fix modular build for exynos back-end
-Date: Tue,  6 Nov 2012 22:55:30 +0100
-Message-Id: <1352238933-4886-6-git-send-email-arnd@arndb.de>
+        Rob Clark <rob@ti.com>, Inki Dae <inki.dae@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>
+Subject: [PATCH 8/8] drm/exynos: don't include plat/gpio-cfg.h
+Date: Tue,  6 Nov 2012 22:55:33 +0100
+Message-Id: <1352238933-4886-9-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1352238933-4886-1-git-send-email-arnd@arndb.de>
 References: <1352238933-4886-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:XKfFLLdcX7toRHbCArPLENZLwa5NSArGJx4Er0TTMec
- L0K4D1FEaAIX1x+G9Y+3ntmP6wYsn1vqgJcgcPIwbJLQPzTfkE
- j7juU2+wO1dOKuPtcVcthOzbNZ7FpOUq+EF+tows2xc2ijuhcQ
- fznTJwoGZ/h9SdSqzleyuM/qIwG7XLXxPP0II5OsjmjlfWEqfB
- QFSiTu37rkFHx3JHN8uvmc5vx286I+pPSWOQVrrTB1eQtquxLh
- d0Og/lkDflGdM2KCOmpqAc8ltmmXr3H2jLwA7o/fNBeqGYzGyt
- rpHPS/r0x+efUpzvD1Ud+uPq4hj5IxxjPmIk5G2oq7xMVvLyhX
- y2WmfZGQPUFvi3ZbhwFlL7DBqSOuOpEZ0Fny9I7aSqO1c0qftk
- Q+xsnTETfD5cQ==
+X-Provags-ID: V02:K0:w5catrIsb9xX4nKcS8hutbtl0r/8R0IZBJ9ypLmotvp
+ /Dz4BAzzveLu1PZyucpGV5q/HvjKfSpLs/ShQL+bB7D+R+3Kfs
+ wKiFjVI6pkO7UzMxOktM96S7LZ8qTq3U5ZyshR8NN02g2fHIb9
+ To1HzVl8m3NRRoCjExPvcqDh8p5Ilzn2oR2MJawtQ/6FZJJpjT
+ 4MIwj84j15AIGfL4OYQPAmNJI40+xbM0abaozK4fbTh/x5X9Am
+ OFGIL+dV7HbHTK5oP7teAGzsJfuIWj1h5rL+CqlKMJGmSRgKu7
+ pph1S12e0dK+6Frnf7HC+Mju2LSaEorIURU4g9avI1v0LsXRwf
+ 4xK9WA0C9dSsGn9aa/jvGzTF8rFxa0vh9+4iaR8nxZvgw9ea4f
+ K8egbCrME0iig==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MODULE_DEVICE_TABLE entry for dw_mci_exynos_match
-was incorrectly copied from the platform back-end, which
-causes this error when building the driver as a loadable
-module:
+Patch  9eb3e9e6f3 "drm/exynos: add support for ARCH_MULTIPLATFORM"
+allowed building the exynos hdmi driver on non-samsung platforms,
+which unfortunately broke compilation in combination with 22c4f42897
+"drm: exynos: hdmi: add support for exynos5 hdmi", which added
+an inclusion of the samsung-specific plat/gpio-cfg.h header file.
 
-drivers/mmc/host/dw_mmc-exynos.c: At top level:
-drivers/mmc/host/dw_mmc-exynos.c:226:34: error: '__mod_of_device_table' aliased to undefined symbol 'dw_mci_pltfm_match'
+Fortunately, that header file is not required any more here, so
+we can simply revert the inclusion in order to build the ARM
+allyesconfig again without getting this error:
 
-This patch fixes the problem by just using the correct
-string.
+drivers/gpu/drm/exynos/exynos_hdmi.c:37:27: fatal error: plat/gpio-cfg.h: No such file or directory
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Will Newton <will.newton@imgtec.com>
-Cc: Chris Ball <cjb@laptop.org>
+Cc: Rob Clark <rob@ti.com>
+Cc: Inki Dae <inki.dae@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Rahul Sharma <rahul.sharma@samsung.com>
 ---
- drivers/mmc/host/dw_mmc-exynos.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/exynos/exynos_hdmi.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
-index 660bbc5..0147ac3a 100644
---- a/drivers/mmc/host/dw_mmc-exynos.c
-+++ b/drivers/mmc/host/dw_mmc-exynos.c
-@@ -223,7 +223,7 @@ static const struct of_device_id dw_mci_exynos_match[] = {
- 			.data = (void *)&exynos5250_drv_data, },
- 	{},
- };
--MODULE_DEVICE_TABLE(of, dw_mci_pltfm_match);
-+MODULE_DEVICE_TABLE(of, dw_mci_exynos_match);
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index 2c115f8..7f0fc4e 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -34,7 +34,6 @@
+ #include <linux/regulator/consumer.h>
+ #include <linux/io.h>
+ #include <linux/of_gpio.h>
+-#include <plat/gpio-cfg.h>
  
- int dw_mci_exynos_probe(struct platform_device *pdev)
- {
+ #include <drm/exynos_drm.h>
+ 
 -- 
 1.7.10
 
