@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab2KFWsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 17:48:16 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:48250 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753241Ab2KFWsP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 17:48:15 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20121106224920.3b9d4a86@pyramind.ukuu.org.uk>
-References: <20121104135251.GA17894@srcf.ucam.org> <87d2zsmv8r.fsf@xmission.com> <509766DB.9090906@zytor.com> <87625kh5r2.fsf@xmission.com> <20121105123858.GB4374@srcf.ucam.org> <87sj8nc137.fsf@xmission.com> <20121105202557.GA16076@srcf.ucam.org> <87hap3zbw7.fsf@xmission.com> <20121106031219.GB24235@srcf.ucam.org> <87fw4nv1vj.fsf@xmission.com> <20121106035352.GA24698@srcf.ucam.org> <87hap3s3yl.fsf@xmission.com> <878vafqi5q.fsf@mid.deneb.enyo.de> <50992946.4060101@genband.com> <87625iwgao.fsf@mid.deneb.enyo.de> <7c6b2e83-e49a-40aa-a990-da7599622f37@email.android.com> <20121106224920.3b9d4a86@pyramind.ukuu.org.uk>
+	id S1753739Ab2KFWvy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 17:51:54 -0500
+Received: from twin.jikos.cz ([89.185.236.188]:49825 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412Ab2KFWvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 17:51:53 -0500
+Date: Tue, 6 Nov 2012 23:51:36 +0100
+From: David Sterba <dave@jikos.cz>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Subject: Re: [RFC v4+ hot_track 05/19] vfs: add hooks to enable hot tracking
+Message-ID: <20121106225136.GU3102@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+	viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
+	cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+ <1351485061-12297-6-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [RFC] Second attempt at kernel secure boot support
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-Date: Tue, 06 Nov 2012 17:47:25 -0500
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Florian Weimer <fw@deneb.enyo.de>,
-        Chris Friesen <chris.friesen@genband.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pavel Machek <pavel@ucw.cz>, Eric Paris <eparis@parisplace.org>,
-        Jiri Kosina <jkosina@suse.cz>, Oliver Neukum <oneukum@suse.de>,
-        Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org
-Message-ID: <a35e035b-de9d-4253-9e7d-ae1f1c2e2f88@email.android.com>
-X-cavan-blacklisted-at: zen.spamhaus.org
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 208.54.37.229
-X-SA-Exim-Mail-From: mjg59@srcf.ucam.org
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351485061-12297-6-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sure, and scripts run as root can wipe your files too. That's really not what this is all about. 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+On Mon, Oct 29, 2012 at 12:30:47PM +0800, zwu.kernel@gmail.com wrote:
+> --- a/mm/readahead.c
+> +++ b/mm/readahead.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/pagemap.h>
+>  #include <linux/syscalls.h>
+>  #include <linux/file.h>
+> +#include <linux/hot_tracking.h>
+>  
+>  /*
+>   * Initialise a struct file's readahead state.  Assumes that the caller has
+> @@ -138,6 +139,11 @@ static int read_pages(struct address_space *mapping, struct file *filp,
+>  out:
+>  	blk_finish_plug(&plug);
+>  
+> +	/* Hot data tracking */
+> +	hot_update_freqs(mapping->host, (u64)(list_entry(pages->prev,\
+> +				struct page, lru)->index) << PAGE_CACHE_SHIFT,
+> +			(u64)nr_pages * PAGE_CACHE_SIZE, 0);
+
+There's a stale \ at the end of the line, and I find this formatting
+hard to read. Does the following look acceptable?
+
+	hot_update_freqs(mapping->host,
+		(u64)(list_entry(pages->prev, struct page, lru)->index)
+			<< PAGE_CACHE_SHIFT,
+		(u64)nr_pages * PAGE_CACHE_SIZE, 0);
+
+> +
+>  	return ret;
+>  }
+>  
