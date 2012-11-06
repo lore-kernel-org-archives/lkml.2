@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275Ab2KFPWl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 10:22:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52668 "EHLO mx1.redhat.com"
+	id S1752084Ab2KFPZI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 10:25:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51928 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751168Ab2KFPWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 10:22:40 -0500
-Date: Tue, 6 Nov 2012 10:22:03 -0500
-From: Jarod Wilson <jarod@redhat.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Matt Mackall <mpm@selenic.com>, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] random: prime last_data value per fips requirements
-Message-ID: <20121106152203.GA24076@redhat.com>
-References: <1352149210-4790-1-git-send-email-jarod@redhat.com>
- <20121106120523.GA2805@hmsreliant.think-freely.org>
+	id S1751326Ab2KFPZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 10:25:06 -0500
+Date: Tue, 6 Nov 2012 16:24:38 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 03/11] HID: hid-input: add usage_index argument in
+ input_mapping and event.
+In-Reply-To: <CAN+gG=GiAsn-5kefjRj_xgFfbuEXxj_PL7PaPES05wiZs+J-Ug@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1211061624220.24253@pobox.suse.cz>
+References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com> <1351241067-9521-4-git-send-email-benjamin.tissoires@gmail.com> <20121029192558.GA15061@polaris.bitmath.org> <CAN+gG=HLmCszdxgdcmt5AgzNyt08HamCdd2BjzCaTB5k7wYcnQ@mail.gmail.com>
+ <CAN+gG=GiAsn-5kefjRj_xgFfbuEXxj_PL7PaPES05wiZs+J-Ug@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121106120523.GA2805@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 07:05:23AM -0500, Neil Horman wrote:
-> On Mon, Nov 05, 2012 at 04:00:10PM -0500, Jarod Wilson wrote:
-> > The value stored in last_data must be primed for FIPS 140-2 purposes. Upon
-> > first use, either on system startup or after an RNDCLEARPOOL ioctl, we
-> > need to take an initial random sample, store it internally in last_data,
-> > then pass along the value after that to the requester, so that consistency
-> > checks aren't being run against stale and possibly known data.
-> > 
-> > CC: Herbert Xu <herbert@gondor.apana.org.au>
-> > CC: "David S. Miller" <davem@davemloft.net>
-> > CC: Neil Horman <nhorman@tuxdriver.com>
-> > CC: Matt Mackall <mpm@selenic.com>
-> > CC: linux-crypto@vger.kernel.org
-> > Signed-off-by: Jarod Wilson <jarod@redhat.com>
-> > ---
-> >  drivers/char/random.c |   11 +++++++++++
-> >  1 files changed, 11 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/char/random.c b/drivers/char/random.c
-> > index b86eae9..24d17b8 100644
-> > --- a/drivers/char/random.c
-> > +++ b/drivers/char/random.c
-> > @@ -437,6 +437,7 @@ struct entropy_store {
-> >  	int entropy_count;
-> >  	int entropy_total;
-> >  	unsigned int initialized:1;
-> > +	bool last_data_init;
-> >  	__u8 last_data[EXTRACT_SIZE];
-> >  };
-> >  
-> > @@ -967,6 +968,15 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
-> >  		if (fips_enabled) {
-> >  			unsigned long flags;
-> >  
-> > +			/* prime last_data value if need be, per fips 140-2 */
-> > +			if (!r->last_data_init) {
-> > +				spin_lock_irqsave(&r->lock, flags);
-> > +				memcpy(r->last_data, tmp, EXTRACT_SIZE);
-> > +				r->last_data_init = true;
-> > +				spin_unlock_irqrestore(&r->lock, flags);
-> > +				continue;
-> Continue?  Is that left over from earlier work?  Or did you have some other
-> purpose in mind for it?
+On Tue, 6 Nov 2012, Benjamin Tissoires wrote:
 
-The continue takes you back to the top of the while loop for another
-extract_buf() call, but continue could simply be replaced with another
-extract_buf() call, so we don't have to restart the loop and check
-last_data_init again. Otherwise, we're going to fail the memcmp and panic,
-because tmp and r->last_data will be identical.
+> >>> Currently, there is no way to know the index of the current field
+> >>> in the .input_mapping and .event callbacks  when this field is inside
+> >>> an array of HID fields.
+> >>> This patch forwards this index to the input_mapping and event
+> >>> callbacks.
+> >>
+> >> I agree with the idea, but the function argument list is becoming
+> >> ridiculously long... Could we remove the usage pointer argument, at
+> >> least?
+> >
+> > yeah, totally agree. Let me just check whether it will not introduce
+> > more problems than it solves for my driver.
+> 
+> Well, after a deeper look, it's a really bad idea. Every drivers that
+> implements input_mapping, input_mapped, event use at least once the
+> struct usage. So this would require change nearly every hid driver.
+> 
+> To solve that, and to minimize the impact on the other drivers, I'm
+> going to add a field in struct usage with the appropriate index.
 
-> Also, not that its in a hot path or anything, but it might be nice to
-> consolodate this code such that you only lock and unlock r->flags once instead
-> of twice here.
+Yes please, I like that solution more as well.
 
-I thought about that, but figured it would be more trouble and possibly
-more code to execute than it was worth in the normal case. But I can spin
-up a v2 that tries to be a bit cleaner here.
+Thanks,
 
 -- 
-Jarod Wilson
-jarod@redhat.com
-
+Jiri Kosina
+SUSE Labs
