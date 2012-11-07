@@ -1,324 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab2KGVVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 16:21:23 -0500
-Received: from gwu.lbox.cz ([62.245.111.132]:38046 "EHLO gwu.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751727Ab2KGVVW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 16:21:22 -0500
-Date: Wed, 7 Nov 2012 22:21:19 +0100
-From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: BUG: enabling psacct breaks fsfreeze
-Message-ID: <20121107212119.GA4258@nik-comp.linuxbox.cz>
-References: <20121023094351.GC27919@pcnci.linuxbox.cz>
- <20121031121517.GD18424@quack.suse.cz>
- <20121031124600.GM20752@pcnci.linuxbox.cz>
- <20121101093723.GC6584@quack.suse.cz>
- <20121101111957.GD6584@quack.suse.cz>
- <20121101142325.GD20752@pcnci.linuxbox.cz>
- <20121101225053.GB31937@quack.suse.cz>
- <20121107185137.GC23654@quack.suse.cz>
+	id S1752970Ab2KGVYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 16:24:21 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38278 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab2KGVYU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 16:24:20 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
-Content-Disposition: inline
-In-Reply-To: <20121107185137.GC23654@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 7981153 records (last update: 20121102)
-X-Spam-Score: N/A (imported whitelist)
+In-Reply-To: <1801189.6J3flQFRCq@percival>
+References: <38620644.IyR5R8rjKP@percival>
+	<CACRpkdZc3cEGfSKW-b=G31yuw_E-GOXid3jkxZ0tuKYGYRE5Nw@mail.gmail.com>
+	<5097F8CF.5090100@wwwdotorg.org>
+	<1801189.6J3flQFRCq@percival>
+Date: Wed, 7 Nov 2012 22:24:19 +0100
+Message-ID: <CACRpkdYqCQc0Er1JR_eVzZPCycvKjd0Pph8Dcay0FbU3Q64D8A@mail.gmail.com>
+Subject: Re: How about a gpio_get(device *, char *) function?
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 6, 2012 at 2:33 AM, Alex Courbot <acourbot@nvidia.com> wrote:
 
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> How about, in a first time (and because I'd also like to get the power seqs
+> moving on), a typedef from int to gpio_handle_t and a first implementation of
+> the gpio_handle_*() API that would just call the existing integer-based API
+> (apart from gpio_handle_get())? That way things will not break when we switch
+> to a real handle.
 
-Hello Jan,
+I'm afraid of typedef:ing gpio_handle_t to int because it sort of
+encourages non-handlers to be used mixed with the old integers.
 
-tried on 3.7-rc4, works great! thanks!
+I would prefer to create, e.g. in <linux/gpio/consumer.h>
+something like:
 
-will You submit as-is, or do You plan any further changes?
-do You plan to backport for stable kernels? I can try it and send for review
-if You want (although we'll have to wait till it's upstream anyways)
+struct gpio;
 
-cheers
+struct gpio *gpio_get(struct device *dev, const char *name);
 
-nik
+int gpio_get_value(struct gpio *g);
 
+Nothing more! I.e. struct gpio is an opaque cookie, nothing to be known
+about it.
 
-On Wed, Nov 07, 2012 at 07:51:37PM +0100, Jan Kara wrote:
-> On Thu 01-11-12 23:50:53, Jan Kara wrote:
-> > On Thu 01-11-12 15:23:25, Nikola Ciprich wrote:
-> > > Nov  1 14:23:25 vmnci22 [ 1075.178123] SysRq : Show Blocked State
-> > > Nov  1 14:23:25 vmnci22 [ 1075.180555]   task                        =
-PC stack   pid father
-> > > Nov  1 14:23:25 vmnci22 [ 1075.180592] fsfreeze      D 00000000000000=
-00     0  4215   4195 0x00000000
-> > > Nov  1 14:23:25 vmnci22 [ 1075.180599]  ffff8800090b9b28 000000000000=
-0046 0000000000000000 ffffffff00000000
-> > > Nov  1 14:23:25 vmnci22 [ 1075.180606]  0000000000013780 ffff8800090b=
-9fd8 ffff88000f716170 ffff88000f715e80
-> > > Nov  1 14:23:25 vmnci22 [ 1075.180612]  ffff88000f715dc0 ffffffff8156=
-6080 ffff88000f716170 000000010002f405
-> > > Nov  1 14:23:25 vmnci22 [ 1075.180619] Call Trace:
-> > > Nov  1 14:23:25 vmnci22 [ 1075.180693]  [<ffffffff810e2dbb>] __generi=
-c_file_aio_write+0xbb/0x420
-> > > Nov  1 14:23:25 vmnci22 [ 1075.180729]  [<ffffffff81079290>] ? autore=
-move_wake_function+0x0/0x40
-> > > Nov  1 14:23:25 vmnci22 [ 1075.180736]  [<ffffffff810e317f>] generic_=
-file_aio_write+0x5f/0xc0
-> >   Thanks. So the system isn't really deadlocked. It's just that fsfreeze
-> > command hangs, isn't it? OK, I understand that it's kind of incovenient
-> > situation because every command will hang like this when the filesystem=
- is
-> > frozen.
-> >=20
-> > Now I only have to come up with a way to improve this... It isn't quite
-> > simple - to properly protect against freezing be have to communicate do=
-wn
-> > into generic_file_aio_write() that we want to bail out if filesystem is
-> > frozen instead of waiting.
->   OK, can you test attached patch?
->=20
-> 								Honza
->=20
-> --=20
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+And then have the drivers using this *ONLY* include <linux/gpio/consumer.h>
+and not <linux/gpio.h>. So drivers have no clue what struct gpio is and
+will only operate on it using functions.
 
-> From 1cc937c5a850b2f9f0c2a83fdf757911602db198 Mon Sep 17 00:00:00 2001
-> From: Jan Kara <jack@suse.cz>
-> Date: Wed, 7 Nov 2012 19:26:45 +0100
-> Subject: [PATCH] fs: Fix hang with BSD accounting on frozen filesystem
->=20
-> When BSD process accounting is enabled and logs information to a filesyst=
-em
-> which gets frozen, system easily becomes unusable because each attempt to
-> account process information blocks. Thus e.g. every task gets blocked in =
-exit.
->=20
-> It seems better to drop accounting information (which can already happen =
-when
-> filesystem is running out of space) instead of locking system up. This is
-> implemented using a special flag FMODE_NO_FREEZE_WAIT in file->f_mode of a
-> file to which accounting information is written.
->=20
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/btrfs/file.c    |    3 ++-
->  fs/cifs/file.c     |    3 ++-
->  fs/fuse/file.c     |    3 ++-
->  fs/ntfs/file.c     |    3 ++-
->  fs/ocfs2/file.c    |    3 ++-
->  fs/open.c          |    2 +-
->  fs/xfs/xfs_file.c  |    3 ++-
->  include/linux/fs.h |   14 ++++++++++++++
->  kernel/acct.c      |    1 +
->  mm/filemap.c       |    3 ++-
->  10 files changed, 30 insertions(+), 8 deletions(-)
->=20
-> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-> index 9ab1bed..6eb2e30 100644
-> --- a/fs/btrfs/file.c
-> +++ b/fs/btrfs/file.c
-> @@ -1411,7 +1411,8 @@ static ssize_t btrfs_file_aio_write(struct kiocb *i=
-ocb,
->  	ssize_t err =3D 0;
->  	size_t count, ocount;
-> =20
-> -	sb_start_write(inode->i_sb);
-> +	if (!sb_start_file_write(file))
-> +		return -EAGAIN;
-> =20
->  	mutex_lock(&inode->i_mutex);
-> =20
-> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-> index edb25b4..1629e47 100644
-> --- a/fs/cifs/file.c
-> +++ b/fs/cifs/file.c
-> @@ -2448,7 +2448,8 @@ cifs_writev(struct kiocb *iocb, const struct iovec =
-*iov,
-> =20
->  	BUG_ON(iocb->ki_pos !=3D pos);
-> =20
-> -	sb_start_write(inode->i_sb);
-> +	if (!sb_start_file_write(file))
-> +		return -EAGAIN;
-> =20
->  	/*
->  	 * We need to hold the sem to be sure nobody modifies lock list
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 78d2837..641df9e 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -947,7 +947,8 @@ static ssize_t fuse_file_aio_write(struct kiocb *iocb=
-, const struct iovec *iov,
->  		return err;
-> =20
->  	count =3D ocount;
-> -	sb_start_write(inode->i_sb);
-> +	if (!sb_start_file_write(file))
-> +		return -EAGAIN;
->  	mutex_lock(&inode->i_mutex);
-> =20
->  	/* We can write back this queue in page reclaim */
-> diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
-> index 1ecf464..028b349 100644
-> --- a/fs/ntfs/file.c
-> +++ b/fs/ntfs/file.c
-> @@ -2118,7 +2118,8 @@ static ssize_t ntfs_file_aio_write(struct kiocb *io=
-cb, const struct iovec *iov,
-> =20
->  	BUG_ON(iocb->ki_pos !=3D pos);
-> =20
-> -	sb_start_write(inode->i_sb);
-> +	if (!sb_start_file_write(file))
-> +		return -EAGAIN;
->  	mutex_lock(&inode->i_mutex);
->  	ret =3D ntfs_file_aio_write_nolock(iocb, iov, nr_segs, &iocb->ki_pos);
->  	mutex_unlock(&inode->i_mutex);
-> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-> index 5a4ee77..93ef34d 100644
-> --- a/fs/ocfs2/file.c
-> +++ b/fs/ocfs2/file.c
-> @@ -2265,7 +2265,8 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *i=
-ocb,
->  	if (iocb->ki_left =3D=3D 0)
->  		return 0;
-> =20
-> -	sb_start_write(inode->i_sb);
-> +	if (!sb_start_file_write(file))
-> +		return -EAGAIN;
-> =20
->  	appending =3D file->f_flags & O_APPEND ? 1 : 0;
->  	direct_io =3D file->f_flags & O_DIRECT ? 1 : 0;
-> diff --git a/fs/open.c b/fs/open.c
-> index 59071f5..42bd875 100644
-> --- a/fs/open.c
-> +++ b/fs/open.c
-> @@ -808,7 +808,7 @@ static inline int build_open_flags(int flags, umode_t=
- mode, struct open_flags *o
->  		op->mode =3D 0;
-> =20
->  	/* Must never be set by userspace */
-> -	flags &=3D ~FMODE_NONOTIFY & ~O_CLOEXEC;
-> +	flags &=3D ~FMODE_NONOTIFY & ~O_CLOEXEC & ~FMODE_NO_FREEZE_WAIT;
-> =20
->  	/*
->  	 * O_SYNC is implemented as __O_SYNC|O_DSYNC.  As many places only
-> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-> index aa473fa..7d8af61 100644
-> --- a/fs/xfs/xfs_file.c
-> +++ b/fs/xfs/xfs_file.c
-> @@ -771,7 +771,8 @@ xfs_file_aio_write(
->  	if (ocount =3D=3D 0)
->  		return 0;
-> =20
-> -	sb_start_write(inode->i_sb);
-> +	if (!sb_start_file_write(file))
-> +		return -EAGAIN;
-> =20
->  	if (XFS_FORCED_SHUTDOWN(ip->i_mount)) {
->  		ret =3D -EIO;
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index b33cfc9..c040a6c 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -123,6 +123,9 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_=
-t offset,
->  /* File was opened by fanotify and shouldn't generate fanotify events */
->  #define FMODE_NONOTIFY		((__force fmode_t)0x1000000)
-> =20
-> +/* Write to file should fail on frozen fs rather than block */
-> +#define FMODE_NO_FREEZE_WAIT	((__force fmode_t)0x2000000)
-> +
->  /*
->   * Flag for rw_copy_check_uvector and compat_rw_copy_check_uvector
->   * that indicates that they should check the contents of the iovec are
-> @@ -1401,6 +1404,17 @@ static inline int sb_start_write_trylock(struct su=
-per_block *sb)
->  	return __sb_start_write(sb, SB_FREEZE_WRITE, false);
->  }
-> =20
-> +/*
-> + * We use trylock semantics if write originates in kernel and normal lock
-> + * semantics otherwise. This is a hack but solves problems with deadlock=
-ing
-> + * of e.g. psacct when filesystem is frozen.
-> + */
-> +static inline int sb_start_file_write(struct file *file)
-> +{
-> +	return __sb_start_write(file->f_mapping->host->i_sb, SB_FREEZE_WRITE,
-> +				!(file->f_mode & FMODE_NO_FREEZE_WAIT));
-> +}
-> +
->  /**
->   * sb_start_pagefault - get write access to a superblock from a page fau=
-lt
->   * @sb: the super we write to
-> diff --git a/kernel/acct.c b/kernel/acct.c
-> index 051e071..0b5f231 100644
-> --- a/kernel/acct.c
-> +++ b/kernel/acct.c
-> @@ -183,6 +183,7 @@ static void acct_file_reopen(struct bsd_acct_struct *=
-acct, struct file *file,
->  		acct->needcheck =3D jiffies + ACCT_TIMEOUT*HZ;
->  		acct->active =3D 1;
->  		list_add(&acct->list, &acct_list);
-> +		file->f_mode |=3D FMODE_NO_FREEZE_WAIT;
->  	}
->  	if (old_acct) {
->  		mnt_unpin(old_acct->f_path.mnt);
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 83efee7..3b2812b 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -2527,7 +2527,8 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, =
-const struct iovec *iov,
-> =20
->  	BUG_ON(iocb->ki_pos !=3D pos);
-> =20
-> -	sb_start_write(inode->i_sb);
-> +	if (!sb_start_file_write(file))
-> +		return -EAGAIN;
->  	mutex_lock(&inode->i_mutex);
->  	ret =3D __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
->  	mutex_unlock(&inode->i_mutex);
-> --=20
-> 1.7.1
->=20
+This follows the pattern set by Thomas Gleixner for e.g. IRQ descriptors,
+and the style was also used in the redesign of the struct clk *.
 
+Of course the cross-referencing implementation can in e.g.
+drivers/gpio/gpiodev.c internally define that like this:
 
---=20
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 00 Ostrava
+#include <linux/gpio.h>
 
-tel.:   +420 591 166 214
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
+/**
+  * @gpio: pointer to global GPIO number
+  */
+struct gpio {
+    int gpio;
+};
 
-www.linuxbox.cz
+struct gpio *gpio_get(struct device *dev, const char *name)
+{
+   /* Lookup in cross-ref table etc */
+}
 
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
+int gpioh_get_value(struct gpio *g)
+{
+   return gpio_get_value(g->gpio);
+}
 
---FCuugMFkClbJLl1L
-Content-Type: application/pgp-signature
+(...)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.14 (GNU/Linux)
+Then we can work from there. I think it adds the proper
+opaqueness factor.
 
-iEYEARECAAYFAlCa0M8ACgkQ3xdJJrLygV61cACeJ2wOOMaEbv/d6NMU4Gvl+iFZ
-JBIAoLYsJuXMGDym174yrwCjrxovqlMJ
-=uKk3
------END PGP SIGNATURE-----
+I don't really like the "gpioh_*" prefix instead of just gpio_* but
+I guess there is not polymorphism to exploit as transition
+path here :-P
 
---FCuugMFkClbJLl1L--
+Yours,
+Linus Walleij
