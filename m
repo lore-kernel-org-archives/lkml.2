@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab2KGJtD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 04:49:03 -0500
-Received: from hermes.synopsys.com ([198.182.44.81]:53870 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754250Ab2KGJst (ORCPT
+	id S1754382Ab2KGJtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 04:49:12 -0500
+Received: from us01smtp2.synopsys.com ([198.182.44.80]:58071 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab2KGJtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 04:48:49 -0500
+	Wed, 7 Nov 2012 04:49:05 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, arnd@arndb.de,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [RFC PATCH v1 22/31] ARC: Page Fault handling (incl uaccess fixup)
-Date: Wed,  7 Nov 2012 10:47:45 +0100
-Message-Id: <1352281674-2186-23-git-send-email-vgupta@synopsys.com>
+Subject: [RFC PATCH v1 31/31] ARC: [plat-arcfpga] defconfig
+Date: Wed,  7 Nov 2012 10:47:54 +0100
+Message-Id: <1352281674-2186-32-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
 References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
@@ -21,288 +21,625 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This includes recent changes to make handler "retry" and/or "killable"
-
-The killable (early exit) logic is loosely based on how SH implements it
-	return if SIGKILL + either of VM_FAULT_OOM or VM_FAULT_RETRY
-which is different from Hexagon implementation which would NOT early
-exit for
-	SIGKILL + VM_FAULT_OOM + !VM_FAULT_RETRY
-
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/mm/extable.c |   26 ++++++
- arch/arc/mm/fault.c   |  228 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 254 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/mm/extable.c
- create mode 100644 arch/arc/mm/fault.c
+ arch/arc/configs/fpga_defconfig |  607 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 607 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/configs/fpga_defconfig
 
-diff --git a/arch/arc/mm/extable.c b/arch/arc/mm/extable.c
+diff --git a/arch/arc/configs/fpga_defconfig b/arch/arc/configs/fpga_defconfig
 new file mode 100644
-index 0000000..f05b677
+index 0000000..cfdca3c
 --- /dev/null
-+++ b/arch/arc/mm/extable.c
-@@ -0,0 +1,26 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Borrowed heavily from MIPS
-+ */
++++ b/arch/arc/configs/fpga_defconfig
+@@ -0,0 +1,607 @@
++#
++# Automatically generated file; DO NOT EDIT.
++# Linux/arc 3.7.0-rc3 Kernel Configuration
++#
++CONFIG_ARC=y
++CONFIG_SCHED_OMIT_FRAME_POINTER=y
++CONFIG_GENERIC_CSUM=y
++CONFIG_RWSEM_GENERIC_SPINLOCK=y
++CONFIG_UID16=y
++CONFIG_ARCH_FLATMEM_ENABLE=y
++CONFIG_MMU=y
++CONFIG_NO_IOPORT=y
++CONFIG_GENERIC_CALIBRATE_DELAY=y
++CONFIG_GENERIC_HWEIGHT=y
++CONFIG_BINFMT_ELF=y
++CONFIG_STACKTRACE_SUPPORT=y
++CONFIG_HAVE_LATENCYTOP_SUPPORT=y
++# CONFIG_NO_DMA is not set
++CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
 +
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
++#
++# General setup
++#
++# CONFIG_EXPERIMENTAL is not set
++CONFIG_BROKEN_ON_SMP=y
++CONFIG_INIT_ENV_ARG_LIMIT=32
++CONFIG_CROSS_COMPILE="arc-elf32-"
++CONFIG_LOCALVERSION=""
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_DEFAULT_HOSTNAME="(none)"
++# CONFIG_SWAP is not set
++# CONFIG_SYSVIPC is not set
++# CONFIG_FHANDLE is not set
++CONFIG_HAVE_GENERIC_HARDIRQS=y
 +
-+int fixup_exception(struct pt_regs *regs)
-+{
-+	const struct exception_table_entry *fixup;
++#
++# IRQ subsystem
++#
++CONFIG_GENERIC_HARDIRQS=y
++CONFIG_GENERIC_IRQ_SHOW=y
++CONFIG_GENERIC_CLOCKEVENTS=y
++CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
 +
-+	fixup = search_exception_tables(instruction_pointer(regs));
-+	if (fixup) {
-+		regs->ret = fixup->fixup;
++#
++# Timers subsystem
++#
++CONFIG_TICK_ONESHOT=y
++# CONFIG_NO_HZ is not set
++CONFIG_HIGH_RES_TIMERS=y
 +
-+		return 1;
-+	}
++#
++# CPU/Task time and stats accounting
++#
++CONFIG_TICK_CPU_ACCOUNTING=y
++# CONFIG_BSD_PROCESS_ACCT is not set
 +
-+	return 0;
-+}
-diff --git a/arch/arc/mm/fault.c b/arch/arc/mm/fault.c
-new file mode 100644
-index 0000000..af55aab
---- /dev/null
-+++ b/arch/arc/mm/fault.c
-@@ -0,0 +1,228 @@
-+/* Page Fault Handling for ARC (TLB Miss / ProtV)
-+ *
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++#
++# RCU Subsystem
++#
++CONFIG_TINY_RCU=y
++# CONFIG_PREEMPT_RCU is not set
++# CONFIG_TREE_RCU_TRACE is not set
++# CONFIG_IKCONFIG is not set
++CONFIG_LOG_BUF_SHIFT=17
++# CONFIG_CHECKPOINT_RESTORE is not set
++CONFIG_NAMESPACES=y
++# CONFIG_UTS_NS is not set
++# CONFIG_PID_NS is not set
++CONFIG_UIDGID_CONVERTED=y
++# CONFIG_UIDGID_STRICT_TYPE_CHECKS is not set
++# CONFIG_SCHED_AUTOGROUP is not set
++# CONFIG_SYSFS_DEPRECATED is not set
++# CONFIG_RELAY is not set
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_INITRAMFS_SOURCE="../arc_initramfs"
++CONFIG_INITRAMFS_ROOT_UID=0
++CONFIG_INITRAMFS_ROOT_GID=0
++CONFIG_RD_GZIP=y
++# CONFIG_RD_BZIP2 is not set
++# CONFIG_RD_LZMA is not set
++# CONFIG_RD_XZ is not set
++# CONFIG_RD_LZO is not set
++CONFIG_INITRAMFS_COMPRESSION_NONE=y
++# CONFIG_INITRAMFS_COMPRESSION_GZIP is not set
++# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
++CONFIG_SYSCTL=y
++CONFIG_EXPERT=y
++# CONFIG_SYSCTL_SYSCALL is not set
++CONFIG_KALLSYMS=y
++# CONFIG_KALLSYMS_ALL is not set
++CONFIG_HOTPLUG=y
++CONFIG_PRINTK=y
++CONFIG_BUG=y
++# CONFIG_BASE_FULL is not set
++# CONFIG_FUTEX is not set
++# CONFIG_EPOLL is not set
++# CONFIG_SIGNALFD is not set
++# CONFIG_TIMERFD is not set
++# CONFIG_EVENTFD is not set
++# CONFIG_SHMEM is not set
++# CONFIG_AIO is not set
++CONFIG_EMBEDDED=y
 +
-+#include <linux/signal.h>
-+#include <linux/interrupt.h>
-+#include <linux/sched.h>
-+#include <linux/errno.h>
-+#include <linux/ptrace.h>
-+#include <linux/version.h>
-+#include <linux/uaccess.h>
-+#include <linux/kdebug.h>
-+#include <asm/pgalloc.h>
++#
++# Kernel Performance Events And Counters
++#
++# CONFIG_VM_EVENT_COUNTERS is not set
++# CONFIG_SLUB_DEBUG is not set
++# CONFIG_COMPAT_BRK is not set
++# CONFIG_SLAB is not set
++CONFIG_SLUB=y
++# CONFIG_SLOB is not set
++# CONFIG_PROFILING is not set
++CONFIG_GENERIC_SMP_IDLE_THREAD=y
++CONFIG_ARCH_WANT_IPC_PARSE_VERSION=y
++CONFIG_GENERIC_KERNEL_THREAD=y
++CONFIG_MODULES_USE_ELF_RELA=y
 +
-+static int handle_vmalloc_fault(struct mm_struct *mm, unsigned long address)
-+{
-+	/*
-+	 * Synchronize this task's top level page-table
-+	 * with the 'reference' page table.
-+	 */
-+	pgd_t *pgd, *pgd_k;
-+	pud_t *pud, *pud_k;
-+	pmd_t *pmd, *pmd_k;
++#
++# GCOV-based kernel profiling
++#
++# CONFIG_HAVE_GENERIC_DMA_COHERENT is not set
++CONFIG_BASE_SMALL=1
++# CONFIG_MODULES is not set
++CONFIG_BLOCK=y
++# CONFIG_LBDAF is not set
++# CONFIG_BLK_DEV_BSG is not set
++# CONFIG_BLK_DEV_BSGLIB is not set
++# CONFIG_BLK_DEV_INTEGRITY is not set
 +
-+	pgd = pgd_offset_fast(mm, address);
-+	pgd_k = pgd_offset_k(address);
++#
++# Partition Types
++#
++# CONFIG_PARTITION_ADVANCED is not set
++CONFIG_MSDOS_PARTITION=y
 +
-+	if (!pgd_present(*pgd_k))
-+		goto bad_area;
++#
++# IO Schedulers
++#
++CONFIG_IOSCHED_NOOP=y
++# CONFIG_IOSCHED_DEADLINE is not set
++# CONFIG_IOSCHED_CFQ is not set
++CONFIG_DEFAULT_NOOP=y
++CONFIG_DEFAULT_IOSCHED="noop"
++CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
++CONFIG_INLINE_READ_UNLOCK=y
++CONFIG_INLINE_READ_UNLOCK_IRQ=y
++CONFIG_INLINE_WRITE_UNLOCK=y
++CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
++# CONFIG_FREEZER is not set
 +
-+	pud = pud_offset(pgd, address);
-+	pud_k = pud_offset(pgd_k, address);
-+	if (!pud_present(*pud_k))
-+		goto bad_area;
++#
++# ARC Architecture Configuration
++#
++CONFIG_ARC_PLAT_FPGA_LEGACY=y
 +
-+	pmd = pmd_offset(pud, address);
-+	pmd_k = pmd_offset(pud_k, address);
-+	if (!pmd_present(*pmd_k))
-+		goto bad_area;
++#
++# ARC CPU Configuration
++#
++# CONFIG_ARC_CPU_750D is not set
++CONFIG_ARC_CPU_770=y
++# CONFIG_CPU_BIG_ENDIAN is not set
++CONFIG_ARC_CACHE=y
++CONFIG_ARC_CACHE_LINE_SHIFT=6
++CONFIG_ARC_HAS_ICACHE=y
++CONFIG_ARC_HAS_DCACHE=y
++CONFIG_ARC_CACHE_PAGES=y
++CONFIG_ARC_HAS_HW_MPY=y
++# CONFIG_ARC_MMU_V1 is not set
++# CONFIG_ARC_MMU_V2 is not set
++CONFIG_ARC_MMU_V3=y
++CONFIG_ARC_PAGE_SIZE_8K=y
++# CONFIG_ARC_PAGE_SIZE_16K is not set
++# CONFIG_ARC_PAGE_SIZE_4K is not set
++# CONFIG_ARC_FPU_SAVE_RESTORE is not set
++CONFIG_ARC_CPU_REL_4_10=y
++CONFIG_ARC_HAS_LLSC=y
++CONFIG_ARC_HAS_SWAPE=y
++CONFIG_ARC_HAS_RTSC=y
 +
-+	set_pmd(pmd, *pmd_k);
++#
++# Platform Board Configuration
++#
++CONFIG_ARC_BOARD_ANGEL4=y
++# CONFIG_ARC_BOARD_ML509 is not set
++CONFIG_ARC_SERIAL_BAUD=115200
++CONFIG_ARC_PLAT_CLK=80000000
++CONFIG_LINUX_LINK_BASE=0x80000000
++CONFIG_ARC_PLAT_SDRAM_SIZE=0x10000000
++# CONFIG_ARC_STACK_NONEXEC is not set
++CONFIG_HZ=100
++# CONFIG_ARC_DBG is not set
++CONFIG_CMDLINE="print-fatal-signals=1"
++# CONFIG_CMDLINE_UBOOT is not set
++CONFIG_PREEMPT_NONE=y
++# CONFIG_PREEMPT_VOLUNTARY is not set
++# CONFIG_PREEMPT is not set
++CONFIG_FLATMEM=y
++CONFIG_FLAT_NODE_MEM_MAP=y
++CONFIG_PAGEFLAGS_EXTENDED=y
++CONFIG_SPLIT_PTLOCK_CPUS=4
++# CONFIG_COMPACTION is not set
++# CONFIG_PHYS_ADDR_T_64BIT is not set
++CONFIG_ZONE_DMA_FLAG=0
++CONFIG_VIRT_TO_BUS=y
++# CONFIG_KSM is not set
++CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
++# CONFIG_CROSS_MEMORY_ATTACH is not set
++CONFIG_NEED_PER_CPU_KM=y
++# CONFIG_CLEANCACHE is not set
++# CONFIG_NET is not set
 +
-+	/* XXX: create the TLB entry here */
-+	return 0;
++#
++# Device Drivers
++#
 +
-+bad_area:
-+	return 1;
-+}
++#
++# Generic Driver Options
++#
++CONFIG_UEVENT_HELPER_PATH=""
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++CONFIG_STANDALONE=y
++# CONFIG_PREVENT_FIRMWARE_BUILD is not set
++CONFIG_FW_LOADER=y
++# CONFIG_FIRMWARE_IN_KERNEL is not set
++CONFIG_EXTRA_FIRMWARE=""
++# CONFIG_DEBUG_DRIVER is not set
++# CONFIG_DEBUG_DEVRES is not set
++# CONFIG_SYS_HYPERVISOR is not set
++# CONFIG_GENERIC_CPU_DEVICES is not set
 +
-+void do_page_fault(struct pt_regs *regs, int write, unsigned long address,
-+		   unsigned long cause_code)
-+{
-+	struct vm_area_struct *vma = NULL;
-+	struct task_struct *tsk = current;
-+	struct mm_struct *mm = tsk->mm;
-+	siginfo_t info;
-+	int fault, ret;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+				(write ? FAULT_FLAG_WRITE : 0);
++#
++# Bus devices
++#
++# CONFIG_OMAP_OCP2SCP is not set
++# CONFIG_MTD is not set
++# CONFIG_PARPORT is not set
++# CONFIG_BLK_DEV is not set
 +
-+	/*
-+	 * We fault-in kernel-space virtual memory on-demand. The
-+	 * 'reference' page table is init_mm.pgd.
-+	 *
-+	 * NOTE! We MUST NOT take any locks for this case. We may
-+	 * be in an interrupt or a critical region, and should
-+	 * only copy the information from the master page table,
-+	 * nothing more.
-+	 */
-+	if (address >= VMALLOC_START && address <= VMALLOC_END) {
-+		ret = handle_vmalloc_fault(mm, address);
-+		if (unlikely(ret))
-+			goto bad_area_nosemaphore;
-+		else
-+			return;
-+	}
++#
++# Misc devices
++#
++# CONFIG_SENSORS_LIS3LV02D is not set
++# CONFIG_ENCLOSURE_SERVICES is not set
++# CONFIG_C2PORT is not set
 +
-+	info.si_code = SEGV_MAPERR;
++#
++# EEPROM support
++#
++# CONFIG_EEPROM_93CX6 is not set
 +
-+	/*
-+	 * If we're in an interrupt or have no user
-+	 * context, we must not take the fault..
-+	 */
-+	if (in_atomic() || !mm)
-+		goto no_context;
++#
++# Texas Instruments shared transport line discipline
++#
 +
-+retry:
-+	down_read(&mm->mmap_sem);
-+	vma = find_vma(mm, address);
-+	if (!vma)
-+		goto bad_area;
-+	if (vma->vm_start <= address)
-+		goto good_area;
-+	if (!(vma->vm_flags & VM_GROWSDOWN))
-+		goto bad_area;
-+	if (expand_stack(vma, address))
-+		goto bad_area;
++#
++# Altera FPGA firmware download module
++#
 +
-+	/*
-+	 * Ok, we have a good vm_area for this memory access, so
-+	 * we can handle it..
-+	 */
-+good_area:
-+	info.si_code = SEGV_ACCERR;
++#
++# SCSI device support
++#
++CONFIG_SCSI_MOD=y
++# CONFIG_RAID_ATTRS is not set
++# CONFIG_SCSI is not set
++# CONFIG_SCSI_DMA is not set
++# CONFIG_SCSI_NETLINK is not set
++# CONFIG_ATA is not set
++# CONFIG_MD is not set
 +
-+	/* Handle protection violation, execute on heap or stack */
++#
++# Input device support
++#
++CONFIG_INPUT=y
++# CONFIG_INPUT_FF_MEMLESS is not set
++# CONFIG_INPUT_POLLDEV is not set
++# CONFIG_INPUT_SPARSEKMAP is not set
++# CONFIG_INPUT_MATRIXKMAP is not set
 +
-+	if (cause_code == ((ECR_V_PROTV << 16) | ECR_C_PROTV_INST_FETCH))
-+		goto bad_area;
++#
++# Userland interfaces
++#
++# CONFIG_INPUT_MOUSEDEV is not set
++# CONFIG_INPUT_JOYDEV is not set
++# CONFIG_INPUT_EVDEV is not set
++# CONFIG_INPUT_EVBUG is not set
 +
-+	if (write) {
-+		if (!(vma->vm_flags & VM_WRITE))
-+			goto bad_area;
-+	} else {
-+		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
-+			goto bad_area;
-+	}
++#
++# Input Device Drivers
++#
++# CONFIG_INPUT_KEYBOARD is not set
++# CONFIG_INPUT_MOUSE is not set
++# CONFIG_INPUT_JOYSTICK is not set
++# CONFIG_INPUT_TABLET is not set
++# CONFIG_INPUT_TOUCHSCREEN is not set
++# CONFIG_INPUT_MISC is not set
 +
-+survive:
-+	/*
-+	 * If for any reason at all we couldn't handle the fault,
-+	 * make sure we exit gracefully rather than endlessly redo
-+	 * the fault.
-+	 */
-+	fault = handle_mm_fault(mm, vma, address, flags);
++#
++# Hardware I/O ports
++#
++# CONFIG_SERIO is not set
++# CONFIG_GAMEPORT is not set
 +
-+	/* If Pagefault was interrupted by SIGKILL, exit page fault "early" */
-+	if (unlikely(fatal_signal_pending(current))) {
-+		if ((fault & VM_FAULT_ERROR) && !(fault & VM_FAULT_RETRY))
-+			up_read(&mm->mmap_sem);
-+		if (user_mode(regs))
-+			return;
-+	}
++#
++# Character devices
++#
++CONFIG_VT=y
++CONFIG_CONSOLE_TRANSLATIONS=y
++CONFIG_VT_CONSOLE=y
++CONFIG_HW_CONSOLE=y
++# CONFIG_VT_HW_CONSOLE_BINDING is not set
++CONFIG_UNIX98_PTYS=y
++# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
++# CONFIG_LEGACY_PTYS is not set
++# CONFIG_SERIAL_NONSTANDARD is not set
++# CONFIG_TRACE_SINK is not set
++# CONFIG_DEVKMEM is not set
 +
-+	if (likely(!(fault & VM_FAULT_ERROR))) {
-+		if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+			/* To avoid updating stats twice for retry case */
-+			if (fault & VM_FAULT_MAJOR)
-+				tsk->maj_flt++;
-+			else
-+				tsk->min_flt++;
++#
++# Serial drivers
++#
++# CONFIG_SERIAL_8250 is not set
 +
-+			if (fault & VM_FAULT_RETRY) {
-+				flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+				flags |= FAULT_FLAG_TRIED;
-+				goto retry;
-+			}
-+		}
++#
++# Non-8250 serial port support
++#
++CONFIG_SERIAL_CORE=y
++CONFIG_SERIAL_CORE_CONSOLE=y
++# CONFIG_SERIAL_SCCNXP is not set
++# CONFIG_SERIAL_TIMBERDALE is not set
++# CONFIG_SERIAL_ALTERA_JTAGUART is not set
++# CONFIG_SERIAL_ALTERA_UART is not set
++# CONFIG_SERIAL_XILINX_PS_UART is not set
++CONFIG_SERIAL_ARC=y
++CONFIG_SERIAL_ARC_CONSOLE=y
++CONFIG_SERIAL_ARC_NR_PORTS=1
++# CONFIG_TTY_PRINTK is not set
++# CONFIG_IPMI_HANDLER is not set
++# CONFIG_HW_RANDOM is not set
++# CONFIG_RTC is not set
++# CONFIG_GEN_RTC is not set
++# CONFIG_R3964 is not set
 +
-+		/* Fault Handled Gracefully */
-+		up_read(&mm->mmap_sem);
-+		return;
-+	}
++#
++# PCMCIA character devices
++#
++# CONFIG_RAW_DRIVER is not set
++# CONFIG_TCG_TPM is not set
++# CONFIG_I2C is not set
++# CONFIG_SPI is not set
++# CONFIG_HSI is not set
 +
-+	/* TBD: switch to pagefault_out_of_memory() */
-+	if (fault & VM_FAULT_OOM)
-+		goto out_of_memory;
-+	else if (fault & VM_FAULT_SIGBUS)
-+		goto do_sigbus;
++#
++# PPS support
++#
 +
-+	/* no man's land */
-+	BUG();
++#
++# PPS generators support
++#
 +
-+	/*
-+	 * Something tried to access memory that isn't in our memory map..
-+	 * Fix it, but check if it's kernel or user first..
-+	 */
-+bad_area:
-+	up_read(&mm->mmap_sem);
++#
++# PTP clock support
++#
 +
-+bad_area_nosemaphore:
-+	/* User mode accesses just cause a SIGSEGV */
-+	if (user_mode(regs)) {
-+		tsk->thread.fault_address = address;
-+		tsk->thread.cause_code = cause_code;
-+		info.si_signo = SIGSEGV;
-+		info.si_errno = 0;
-+		/* info.si_code has been set above */
-+		info.si_addr = (void __user *)address;
-+		force_sig_info(SIGSEGV, &info, tsk);
-+		return;
-+	}
++#
++# Enable Device Drivers -> PPS to see the PTP clock options.
++#
++# CONFIG_W1 is not set
++# CONFIG_POWER_SUPPLY is not set
++# CONFIG_POWER_AVS is not set
++# CONFIG_HWMON is not set
++# CONFIG_THERMAL is not set
++# CONFIG_WATCHDOG is not set
++CONFIG_SSB_POSSIBLE=y
 +
-+no_context:
-+	/* Are we prepared to handle this kernel fault?
-+	 *
-+	 * (The kernel has valid exception-points in the source
-+	 *  when it acesses user-memory. When it fails in one
-+	 *  of those points, we find it in a table and do a jump
-+	 *  to some fixup code that loads an appropriate error
-+	 *  code)
-+	 */
-+	if (fixup_exception(regs))
-+		return;
++#
++# Sonics Silicon Backplane
++#
++# CONFIG_SSB is not set
++CONFIG_BCMA_POSSIBLE=y
 +
-+	die("Oops", regs, address, cause_code);
++#
++# Broadcom specific AMBA
++#
++# CONFIG_BCMA is not set
 +
-+out_of_memory:
-+	if (is_global_init(tsk)) {
-+		yield();
-+		goto survive;
-+	}
-+	up_read(&mm->mmap_sem);
++#
++# Multifunction device drivers
++#
++# CONFIG_MFD_CORE is not set
++# CONFIG_MFD_SM501 is not set
++# CONFIG_HTC_PASIC3 is not set
++# CONFIG_MFD_TMIO is not set
++# CONFIG_ABX500_CORE is not set
++# CONFIG_REGULATOR is not set
++# CONFIG_MEDIA_SUPPORT is not set
 +
-+	if (user_mode(regs))
-+		do_group_exit(SIGKILL);	/* This will never return */
++#
++# Graphics support
++#
++# CONFIG_DRM is not set
++# CONFIG_VGASTATE is not set
++# CONFIG_VIDEO_OUTPUT_CONTROL is not set
++# CONFIG_FB is not set
++# CONFIG_EXYNOS_VIDEO is not set
++# CONFIG_BACKLIGHT_LCD_SUPPORT is not set
 +
-+	goto no_context;
++#
++# Console display driver support
++#
++# CONFIG_VGA_CONSOLE is not set
++CONFIG_DUMMY_CONSOLE=y
++# CONFIG_SOUND is not set
 +
-+do_sigbus:
-+	up_read(&mm->mmap_sem);
++#
++# HID support
++#
++# CONFIG_HID is not set
++# CONFIG_USB_ARCH_HAS_OHCI is not set
++# CONFIG_USB_ARCH_HAS_EHCI is not set
++# CONFIG_USB_ARCH_HAS_XHCI is not set
++# CONFIG_USB_SUPPORT is not set
++# CONFIG_MMC is not set
++# CONFIG_MEMSTICK is not set
++# CONFIG_NEW_LEDS is not set
++# CONFIG_ACCESSIBILITY is not set
++# CONFIG_RTC_CLASS is not set
++# CONFIG_DMADEVICES is not set
++# CONFIG_AUXDISPLAY is not set
++# CONFIG_UIO is not set
 +
-+	if (!user_mode(regs))
-+		goto no_context;
++#
++# Virtio drivers
++#
 +
-+	tsk->thread.fault_address = address;
-+	tsk->thread.cause_code = cause_code;
-+	info.si_signo = SIGBUS;
-+	info.si_errno = 0;
-+	info.si_code = BUS_ADRERR;
-+	info.si_addr = (void __user *)address;
-+	force_sig_info(SIGBUS, &info, tsk);
-+}
++#
++# Microsoft Hyper-V guest support
++#
++# CONFIG_STAGING is not set
++
++#
++# Hardware Spinlock drivers
++#
++# CONFIG_IOMMU_SUPPORT is not set
++
++#
++# Remoteproc drivers (EXPERIMENTAL)
++#
++
++#
++# Rpmsg drivers (EXPERIMENTAL)
++#
++# CONFIG_VIRT_DRIVERS is not set
++# CONFIG_PM_DEVFREQ is not set
++# CONFIG_EXTCON is not set
++# CONFIG_MEMORY is not set
++# CONFIG_IIO is not set
++# CONFIG_PWM is not set
++
++#
++# File systems
++#
++# CONFIG_EXT2_FS is not set
++# CONFIG_EXT3_FS is not set
++# CONFIG_EXT4_FS is not set
++# CONFIG_REISERFS_FS is not set
++# CONFIG_JFS_FS is not set
++# CONFIG_XFS_FS is not set
++# CONFIG_FS_POSIX_ACL is not set
++CONFIG_FILE_LOCKING=y
++# CONFIG_FSNOTIFY is not set
++# CONFIG_DNOTIFY is not set
++# CONFIG_INOTIFY_USER is not set
++# CONFIG_FANOTIFY is not set
++# CONFIG_QUOTA is not set
++# CONFIG_QUOTACTL is not set
++# CONFIG_AUTOFS4_FS is not set
++# CONFIG_FUSE_FS is not set
++
++#
++# Caches
++#
++# CONFIG_FSCACHE is not set
++
++#
++# CD-ROM/DVD Filesystems
++#
++# CONFIG_ISO9660_FS is not set
++# CONFIG_UDF_FS is not set
++
++#
++# DOS/FAT/NT Filesystems
++#
++# CONFIG_MSDOS_FS is not set
++# CONFIG_VFAT_FS is not set
++# CONFIG_NTFS_FS is not set
++
++#
++# Pseudo filesystems
++#
++CONFIG_PROC_FS=y
++# CONFIG_PROC_KCORE is not set
++CONFIG_PROC_SYSCTL=y
++CONFIG_PROC_PAGE_MONITOR=y
++CONFIG_SYSFS=y
++# CONFIG_HUGETLB_PAGE is not set
++# CONFIG_CONFIGFS_FS is not set
++# CONFIG_MISC_FILESYSTEMS is not set
++# CONFIG_NLS is not set
++
++#
++# Kernel hacking
++#
++# CONFIG_PRINTK_TIME is not set
++CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
++CONFIG_ENABLE_WARN_DEPRECATED=y
++CONFIG_ENABLE_MUST_CHECK=y
++CONFIG_FRAME_WARN=1024
++# CONFIG_MAGIC_SYSRQ is not set
++# CONFIG_STRIP_ASM_SYMS is not set
++# CONFIG_READABLE_ASM is not set
++# CONFIG_UNUSED_SYMBOLS is not set
++# CONFIG_DEBUG_FS is not set
++# CONFIG_HEADERS_CHECK is not set
++# CONFIG_DEBUG_SECTION_MISMATCH is not set
++CONFIG_DEBUG_KERNEL=y
++# CONFIG_DEBUG_SHIRQ is not set
++# CONFIG_LOCKUP_DETECTOR is not set
++# CONFIG_PANIC_ON_OOPS is not set
++CONFIG_PANIC_ON_OOPS_VALUE=0
++# CONFIG_DETECT_HUNG_TASK is not set
++CONFIG_SCHED_DEBUG=y
++# CONFIG_SCHEDSTATS is not set
++# CONFIG_TIMER_STATS is not set
++# CONFIG_DEBUG_OBJECTS is not set
++# CONFIG_SLUB_STATS is not set
++# CONFIG_DEBUG_SPINLOCK is not set
++# CONFIG_DEBUG_MUTEXES is not set
++# CONFIG_SPARSE_RCU_POINTER is not set
++# CONFIG_DEBUG_ATOMIC_SLEEP is not set
++# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
++CONFIG_STACKTRACE=y
++# CONFIG_DEBUG_STACK_USAGE is not set
++# CONFIG_DEBUG_KOBJECT is not set
++# CONFIG_DEBUG_INFO is not set
++# CONFIG_DEBUG_VM is not set
++# CONFIG_DEBUG_WRITECOUNT is not set
++# CONFIG_DEBUG_MEMORY_INIT is not set
++# CONFIG_DEBUG_LIST is not set
++# CONFIG_TEST_LIST_SORT is not set
++# CONFIG_DEBUG_SG is not set
++# CONFIG_DEBUG_NOTIFIERS is not set
++# CONFIG_DEBUG_CREDENTIALS is not set
++# CONFIG_BOOT_PRINTK_DELAY is not set
++# CONFIG_RCU_TORTURE_TEST is not set
++# CONFIG_RCU_TRACE is not set
++# CONFIG_BACKTRACE_SELF_TEST is not set
++# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
++# CONFIG_DEBUG_FORCE_WEAK_PER_CPU is not set
++# CONFIG_NOTIFIER_ERROR_INJECTION is not set
++# CONFIG_FAULT_INJECTION is not set
++# CONFIG_LATENCYTOP is not set
++# CONFIG_DEBUG_PAGEALLOC is not set
++# CONFIG_ATOMIC64_SELFTEST is not set
++# CONFIG_SAMPLES is not set
++# CONFIG_TEST_KSTRTOX is not set
++CONFIG_EARLY_PRINTK=y
++# CONFIG_DEBUG_STACKOVERFLOW is not set
++# CONFIG_16KSTACKS is not set
++
++#
++# Security options
++#
++# CONFIG_KEYS is not set
++# CONFIG_SECURITY_DMESG_RESTRICT is not set
++# CONFIG_SECURITY is not set
++# CONFIG_SECURITYFS is not set
++CONFIG_DEFAULT_SECURITY_DAC=y
++CONFIG_DEFAULT_SECURITY=""
++# CONFIG_CRYPTO is not set
++# CONFIG_BINARY_PRINTF is not set
++
++#
++# Library routines
++#
++CONFIG_GENERIC_FIND_FIRST_BIT=y
++CONFIG_GENERIC_IO=y
++# CONFIG_CRC_CCITT is not set
++# CONFIG_CRC16 is not set
++# CONFIG_CRC_T10DIF is not set
++# CONFIG_CRC_ITU_T is not set
++# CONFIG_CRC32 is not set
++# CONFIG_CRC7 is not set
++# CONFIG_LIBCRC32C is not set
++# CONFIG_CRC8 is not set
++CONFIG_ZLIB_INFLATE=y
++# CONFIG_XZ_DEC is not set
++# CONFIG_XZ_DEC_BCJ is not set
++CONFIG_DECOMPRESS_GZIP=y
++CONFIG_HAS_IOMEM=y
++CONFIG_HAS_DMA=y
++CONFIG_GENERIC_ATOMIC64=y
++CONFIG_ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE=y
++# CONFIG_AVERAGE is not set
++# CONFIG_CORDIC is not set
++# CONFIG_DDR is not set
 -- 
 1.7.4.1
 
