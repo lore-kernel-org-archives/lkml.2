@@ -1,87 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab2KGQRe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 11:17:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45574 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751719Ab2KGQRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 11:17:33 -0500
-Date: Wed, 7 Nov 2012 17:17:30 +0100
-From: Jan Kara <jack@suse.cz>
-To: Marcus Sundman <marcus@hibox.fi>
-Cc: linux-kernel@vger.kernel.org, jack@suse.cz
-Subject: Re: Debugging system freezes on filesystem writes
-Message-ID: <20121107161730.GB23654@quack.suse.cz>
-References: <508DB432.2030208@hibox.fi>
- <20121101190119.GA27294@quack.suse.cz>
- <50932DAC.7040702@hibox.fi>
+	id S1752730Ab2KGQVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 11:21:18 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40576 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab2KGQVR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 11:21:17 -0500
+Date: Wed, 7 Nov 2012 11:07:00 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Matthew Fioravante <matthew.fioravante@jhuapl.edu>
+Cc: "key@linux.vnet.ibm.com" <key@linux.vnet.ibm.com>,
+        "mail@srajiv.net" <mail@srajiv.net>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add tpm_xenu.ko: Xen Virtual TPM frontend driver
+Message-ID: <20121107160659.GH18615@phenom.dumpdata.com>
+References: <1352128197-1539-1-git-send-email-matthew.fioravante@jhuapl.edu>
+ <20121106193921.GC28473@phenom.dumpdata.com>
+ <509A6AA6.2000208@jhuapl.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50932DAC.7040702@hibox.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <509A6AA6.2000208@jhuapl.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 02-11-12 04:19:24, Marcus Sundman wrote:
-> On 01.11.2012 21:01, Jan Kara wrote:
-> >On Mon 29-10-12 00:39:46, Marcus Sundman wrote:
-> >   Hello,
+On Wed, Nov 07, 2012 at 09:05:26AM -0500, Matthew Fioravante wrote:
+> On 11/06/2012 02:39 PM, Konrad Rzeszutek Wilk wrote:
+> >On Mon, Nov 05, 2012 at 10:09:57AM -0500, Matthew Fioravante wrote:
+> >>This patch ports the xen vtpm frontend driver for linux
+> >>from the linux-2.6.18-xen.hg tree to linux-stable.
+> >So how does on test it ? Set it up? Use it? Is there some documentation
+> >about it - if so it should be in the patch description.
+> Thats actually a question I had. To use this driver now you have to
+> use my vtpm mini-os domains which are currently being evaluated in
+> the xen-devel mailing list. Once they are accepted I will submit a
+> documentation update to the Xen tree.
+> 
+> Whats the best practice for documentation in this case? All in xen?
+> Some linux/some xen? If the latter, how much goes in linux and
+> where?
+
+As much as possible. I would say stick both of them in Xen and in Linux.
+And you can designate one of them as primary (say the Xen one) and
+say in the Linux:
+
+"For up-to-date information, please refer to XXYYZZ"
+
 > >
-> >>I have a big problem with the system freezing and would appreciate
-> >>any help on debugging this and pinpointing where exactly the problem
-> >>is, so it could be fixed.
+> >I did a very very cursory look at it, see some of the comments.
+> >
 > >>
-> >>So, whenever I write to the disk the system comes to a crawl or
-> >>freezes altogether. This happens even when the writing processes are
-> >>running on nice '19' and ionice 'idle'. (E.g. a 10 second compile
-> >>could freeze the system for several minutes, rendering the computer
-> >>pretty much unusable for anything interesting.)
-> >>
-> >>Here you can see a 20 second gap even in superhigh priority:
-> >># nice -n -20 ionice -c1 iostat -t -m -d -x 1 > http://pastebin.com/j5qnh2VV
-> >>
-> >>I'm currently running 3.5.0-17-lowlatency on the ZenBook UX31E,
-> >>using the NOOP I/O scheduler on the SanDisk SSD U100. The chipset
-> >>seems to be Intel QS67. I've had this same problem on 3.2.0 generic
-> >>and lowlatency kernels.
-> >   These are Ubuntu kernels. Any chance to reproduce the issue with vanilla
-> >kernels - i.e. kernels without any Ubuntu patches?
+> >>+
+> >>+
+> >>+static inline struct transmission *transmission_alloc(void)
+> >>+{
+> >>+     return kzalloc(sizeof(struct transmission), GFP_ATOMIC);
+> >>+}
+> >>+
+> >>+     static unsigned char *
+> >
+> >That is very weird tabbing? Did you run this patch through
+> >scripts/checkpatch.pl ?
+> Wow thats ugly. I ran the check script and it looks like it didn't
+> pick this up. For some reason my editor wants to autoindent like
+> that.
+> Fixed.
+> >
+> >>+
+> >>+static const struct file_operations vtpm_ops = {
+> >>+     .owner = THIS_MODULE,
+> >>+     .llseek = no_llseek,
+> >>+     .open = tpm_open,
+> >>+     .read = tpm_read,
+> >>+     .write = tpm_write,
+> >>+     .release = tpm_release,
+> >>+};
+> >>+
+> >>+static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
+> >>+static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
+> >>+static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
+> >>+static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
+> >>+static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
+> >>+static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated,
+> >>+             NULL);
+> >>+static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps, NULL);
+> >>+static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
+> >>+
+> >>+static struct attribute *vtpm_attrs[] = {
+> >>+     &dev_attr_pubek.attr,
+> >>+     &dev_attr_pcrs.attr,
+> >>+     &dev_attr_enabled.attr,
+> >>+     &dev_attr_active.attr,
+> >>+     &dev_attr_owned.attr,
+> >>+     &dev_attr_temp_deactivated.attr,
+> >>+     &dev_attr_caps.attr,
+> >>+     &dev_attr_cancel.attr,
+> >>+     NULL,
+> >So are these going to show up in SysFS? If so, there should also be
+> >a corresponding file in Documentation/.../sysfs/something.
+> These are similar to the entries made by the other tpm drivers. I
+> don't see any documentation about those either. TPM maintainers, any
+> guidance there?
+> >
+> >>+#include "tpm.h"
+> >>+#include "tpm_vtpm.h"
+> >>+
+> >>+#undef DEBUG
+> >>+
+> >>+#define GRANT_INVALID_REF 0
+> >Interesting. The 0 grant value is actually a valid one. I think you
+> >want (-1ULL).
+> Is it?
+> drivers/block/xen-blkfront.c and
+> drivers/net/xen-netfront.c
 > 
-> I'm afraid it's going to take a week to compile a kernel with this
-> freezing going on, but I suppose I could get another computer to do
-> the compiling. Or should I install some pre-compiled version? If so,
-> which one?
-  You can install anything precompiled. It's just that I want to rule out
-some Ubuntu specific patches...
+> do the exact same thing
 
-> >Also when you speak of
-> >system freezing - can you e.g. type to terminal while the system is frozen?
-> >Or is it just that running commands freezes?
+You are right. Just leave it as that then.
+
+> >>+
+> >>+     init_tpm_xenbus();
+> >>+     return 0;
+> >>+}
+> >>+
+> >>+
+> >>+module_init(tpmif_init);
+> >no module_exit?
+> Will fix
 > 
-> Typing usually doesn't work very well. It works for a word or two
-> and then stops working for a while and if I continue to type then
-> when it resumes only the last few characters appears. Typing in the
-> console is a bit better than in a terminal in X (not counting the
-> several minutes it can take to switch to the console (Ctrl-Alt-F1)).
-  I see. 
+> 
 
-> Also, and this might be important, according to iotop there is
-> almost no disk writing going on during the freeze. (Occasionally
-> there are a few MB/s, but mostly it's 0-200 kB/s.) Well, at least
-> when an iotop running on nice -20 hasn't frozen completely, which it
-> does during the more severe freezes.
-  OK, it seems as if your machine has some problems with memory
-allocations. Can you capture /proc/vmstat before the freeze and after the
-freeze and send them for comparison. Maybe it will show us what is the
-system doing.
 
-  Also you can try doing:
-echo never >/sys/kernel/mm/transparent_hugepage/enabled
-  and see whether it changes anything.
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
