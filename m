@@ -1,110 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab2KGK5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 05:57:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59359 "EHLO mx2.suse.de"
+	id S1754455Ab2KGK6r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 05:58:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43299 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754101Ab2KGK5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 05:57:46 -0500
-Date: Wed, 7 Nov 2012 10:57:42 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 16/19] mm: numa: Add pte updates, hinting and migration
- stats
-Message-ID: <20121107105742.GV8218@suse.de>
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
- <1352193295-26815-17-git-send-email-mgorman@suse.de>
- <50996B1A.7040601@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <50996B1A.7040601@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754101Ab2KGK6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 05:58:46 -0500
+Subject: GFS2: Pull request (fixes)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-k4+KRJKJ5SOmj3F1Edtq"
+Organization: Red Hat UK Ltd
+Date: Wed, 07 Nov 2012 10:58:09 +0000
+Message-ID: <1352285889.2729.12.camel@menhir>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 02:55:06PM -0500, Rik van Riel wrote:
-> On 11/06/2012 04:14 AM, Mel Gorman wrote:
-> >It is tricky to quantify the basic cost of automatic NUMA placement in a
-> >meaningful manner. This patch adds some vmstats that can be used as part
-> >of a basic costing model.
-> >
-> >u    = basic unit = sizeof(void *)
-> >Ca   = cost of struct page access = sizeof(struct page) / u
-> >Cpte = Cost PTE access = Ca
-> >Cupdate = Cost PTE update = (2 * Cpte) + (2 * Wlock)
-> >	where Cpte is incurred twice for a read and a write and Wlock
-> >	is a constant representing the cost of taking or releasing a
-> >	lock
-> >Cnumahint = Cost of a minor page fault = some high constant e.g. 1000
-> >Cpagerw = Cost to read or write a full page = Ca + PAGE_SIZE/u
-> >Ci = Cost of page isolation = Ca + Wi
-> >	where Wi is a constant that should reflect the approximate cost
-> >	of the locking operation
-> >Cpagecopy = Cpagerw + (Cpagerw * Wnuma) + Ci + (Ci * Wnuma)
-> >	where Wnuma is the approximate NUMA factor. 1 is local. 1.2
-> >	would imply that remote accesses are 20% more expensive
-> >
-> >Balancing cost = Cpte * numa_pte_updates +
-> >		Cnumahint * numa_hint_faults +
-> >		Ci * numa_pages_migrated +
-> >		Cpagecopy * numa_pages_migrated
-> >
-> >Note that numa_pages_migrated is used as a measure of how many pages
-> >were isolated even though it would miss pages that failed to migrate. A
-> >vmstat counter could have been added for it but the isolation cost is
-> >pretty marginal in comparison to the overall cost so it seemed overkill.
-> >
-> >The ideal way to measure automatic placement benefit would be to count
-> >the number of remote accesses versus local accesses and do something like
-> >
-> >	benefit = (remote_accesses_before - remove_access_after) * Wnuma
-> >
-> >but the information is not readily available. As a workload converges, the
-> >expection would be that the number of remote numa hints would reduce to 0.
-> >
-> >	convergence = numa_hint_faults_local / numa_hint_faults
-> >		where this is measured for the last N number of
-> >		numa hints recorded. When the workload is fully
-> >		converged the value is 1.
-> >
-> >This can measure if the placement policy is converging and how fast it is
-> >doing it.
-> >
-> >Signed-off-by: Mel Gorman <mgorman@suse.de>
-> 
-> I'm skipping the ACKing of the policy patches, which
-> appear to be meant to be placeholders for a "real"
-> policy. 
 
-I do expect the MORON policy to disappear or at least change so much it
-is not recognisable.
+--=-k4+KRJKJ5SOmj3F1Edtq
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> However, you have a few more mechanism patches
-> left in the series, which would be required regardless
-> of what policy gets merged, so ...
-> 
+Hi,
 
-Initially, I had the slow WSS sampling at the end because superficially
-they could be considered an optimisation and I wanted to avoid sneaking
-optimisations in. On reflection, the slow WSS sampling is pretty fundamental
-and I've moved it earlier in the series like so;
+Please consider pulling the following GFS2 fixes,
 
- mm: mempolicy: Add MPOL_MF_LAZY mm: mempolicy: Use _PAGE_NUMA to migrate pages
- mm: numa: Add fault driven placement and migration
- mm: sched: numa: Implement constant, per task Working Set Sampling (WSS) rate
- mm: sched: numa: Implement slow start for working set sampling
- mm: numa: Add pte updates, hinting and migration stats
- mm: numa: Migrate on reference policy
+Steve.
 
--- 
-Mel Gorman
-SUSE Labs
+---------------------------------------------------------------------------=
+--------
+
+Here are a number of GFS2 bug fixes. There are three from Andy Price
+which fix various issues spotted by automated code analysis. There are two
+from Lukas Czerner fixing my mistaken assumptions as to how FITRIM
+should work. Finally Ben Marzinski has fixed a bug relating to mmap and
+atime and also a bug relating to a locking issue in the transaction code.
+
+
+The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37=
+:
+
+  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-fixes.git ma=
+ster
+
+Andrew Price (3):
+      GFS2: Fix an unchecked error from gfs2_rs_alloc
+      GFS2: Fix possible null pointer deref in gfs2_rs_alloc
+      GFS2: Clean up some unused assignments
+
+Benjamin Marzinski (2):
+      GFS2: Don't call file_accessed() with a shared glock
+      GFS2: Test bufdata with buffer locked and gfs2_log_lock held
+
+Lukas Czerner (2):
+      GFS2: Require user to provide argument for FITRIM
+      GFS2: Fix FITRIM argument handling
+
+ fs/gfs2/file.c  |   14 +++++---------
+ fs/gfs2/lops.c  |   16 ++--------------
+ fs/gfs2/quota.c |    7 +++++--
+ fs/gfs2/rgrp.c  |   33 +++++++++++++++++++++------------
+ fs/gfs2/super.c |    3 ++-
+ fs/gfs2/trans.c |    8 ++++++++
+ 6 files changed, 43 insertions(+), 38 deletions(-)
+
+
+--=-k4+KRJKJ5SOmj3F1Edtq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJQmj68AAoJEMrg3m4a/8jS5EIP/RvYGsyvP2KlOzQTPdBfb7EL
+xVOZW1Sk4eJv7YCtJ+sdtaZQbEBS3d1Sj8MPwDQvlNV3QNjzit0PdmaLG0nX4Ry+
+ODwcQUQESsTmkgFDkM/WqcrPueBbQ7VUmEm4aKnsC+bFuq2yAEt9zQ485kY7sXRo
+yAh2PmX0LdWDI54UzoZIA5Z7hQvjY46TENQRy5YUQtmNteL6oektlRQn6XrbfPww
+OlKOPxtn0bbTLsYhWB5YkYkCxDb4Fmgn1wCP16w1EG0VSU+cLvryipouPciS/CEy
+DlomfUKekSohMiz5c8DqRmFsjfqHL1+3oBkPTPwSpDq03WhjsRvCzU2r1q0rwDPC
+bX9uzEx++EOA4m7zaQDjELj1deA/hVjTxT0n4XqXO4MnW3GLackInScavR8NKNEf
+xddczIoLtOuO5NEqesYylp7TmCzWpipsny3pc1aTGB4bD1KYGTSkTwfDYpnQlexh
+Bsr8xPpISF1JCzVJqwhPcH3riv/Ps8GD6+QqudVHtHbytYL4ORK5Cd3OkJiaHQCR
+T8oyUrv9HFfM+HK/Aue4SKf4S1Pcb6wehM5qBvJvin3iEu98uuMn+dGlBSCWkTry
+3MkWPJ578bD450XtFddm6aSEoKTNCSZkL1pN8De+coRuJM9ewS4Ag1QrDFpZ78FG
+/Z61EeBXooFLoTagkzt4
+=2V8t
+-----END PGP SIGNATURE-----
+
+--=-k4+KRJKJ5SOmj3F1Edtq--
+
