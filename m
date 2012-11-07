@@ -1,71 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab2KGPK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 10:10:29 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:36070 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab2KGPK2 (ORCPT
+	id S1754196Ab2KGPOZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 10:14:25 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:63722 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392Ab2KGPOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 10:10:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121107093246.GD21960@thunk.org>
-References: <20121107001609.9B7A9100047@wpzn3.hot.corp.google.com>
-	<CAGXu5jJ779UvpZwO-fi7-m+i=OfqwgXh1PC4GNwjhfD9GD82wQ@mail.gmail.com>
-	<20121107093246.GD21960@thunk.org>
-Date: Wed, 7 Nov 2012 07:10:27 -0800
-X-Google-Sender-Auth: m1Umpn-FY0W0J8MgZBa_Tkm3qlY
-Message-ID: <CAGXu5jKY9SdZU7BibZf9kLx-MO3tVASPWE2hHZJXSPRkWfivKQ@mail.gmail.com>
-Subject: Re: + binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
- added to -mm tree
-From: Kees Cook <keescook@chromium.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Kees Cook <keescook@chromium.org>,
-        akpm@linux-foundation.org, jeff.liu@oracle.com, aedilger@gmail.com,
-        alan@linux.intel.com, gregkh@linuxfoundation.org, jakub@redhat.com,
-        james.l.morris@oracle.com, john.sobecki@oracle.com,
-        viro@zeniv.linux.org.uk, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Nov 2012 10:14:24 -0500
+From: Alban Bedel <alban.bedel@avionic-design.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Alban Bedel <alban.bedel@avionic-design.de>
+Subject: [PATCH] pwm-backlight: Allow any kind of brightness curve
+Date: Wed,  7 Nov 2012 16:14:08 +0100
+Message-Id: <1352301248-8418-1-git-send-email-alban.bedel@avionic-design.de>
+X-Mailer: git-send-email 1.7.0.4
+X-Provags-ID: V02:K0:mj0rjQFrz4oS4gBABDLYowv71ulI8IClAX8GTniBwAQ
+ 4VPLoPqge9d0OboPb31EMEfDIpPXpw+128PtoSJtVPvd7iJylm
+ u5VLFTkBPt9BfwnOudlY59HvlM/sUo9GasidmoUON+Qaz2c3Mv
+ Wc2LsMy4IrOuq6IcRo4GCbRgUV5oExuUFgT7FUISEMZpvMiF1L
+ BC85sgbqmefhpA9ibFZLl7CLDGy8gXSg+D91lgYfjAf9mbb0rt
+ MLBSbiH61A0hJbG5UU7c56+tTWgp1T1Z0hL0L4cRxy/s0VQmJP
+ 68BjkPglyQdjBRz7zSda3/bUwLxq220aCjsFQ+WJZl2rS08e8h
+ z80l4zZdmkbvJHFKm0cFoWaTbj+ieh+ZFYi7CzWEfjfCwyiixo
+ xYLp5vi8vtHz/DIJUUORONYxjNCk8guX2sx+UgiGqURD9SekQk
+ 0u0cS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 1:32 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Tue, Nov 06, 2012 at 05:11:17PM -0800, Kees Cook wrote:
->> Hrm, I don't like this. get_random_int() specifically says: "Get a
->> random word for internal kernel use only." The intent of AT_RANDOM is
->> for userspace pRNG seeding (though glibc currently uses it directly
->> for stack protector and pointer mangling), which is not "internal
->> kernel use only". :) Though I suppose this is already being used for
->> the randomize_stack_top(), but I think it'd still be better to use
->> higher quality bits.
->
-> Well, in practice, right now, get_random_int() is only being used for
-> different cases of ASLR of one variety or another (either by the
-> kernel in exec or mmap, or in userspace).  So I'm not sure it really
-> is a major issue.
+The brightness curve assume that the first level always have a duty
+cycle of 0% and the last level 100%. However it is desirable to allow
+any kind of curve to handle low-active devices, or devices that need
+to clamp the curve to some range.
 
-Hrm, yes. I see that the network code uses random32, not
-get_random_int(). How are these different? Is one demonstrably better?
+To allow defining any kind of curve the brightness levels are expected
+to be in the range from 0 to 255, where 0 is 0% duty and 255 is 100% duty.
 
-> If we also change get_random_int() to use a more secure cryptographic
-> random generator (i.e., maybe AES instead of MD5), would that be
-> sufficient to address your concerns?  We're not using get_random_int()
-> for anything that's timing sensitive, so that shouldn't be a problem.
+Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+---
+ .../bindings/video/backlight/pwm-backlight.txt     |    8 ++---
+ drivers/video/backlight/pwm_bl.c                   |   28 +++++++++----------
+ include/linux/pwm_backlight.h                      |    2 +
+ 3 files changed, 18 insertions(+), 20 deletions(-)
 
-I wonder if using AES would have a measurable impact on fork speeds?
-
-> Or maybe we should just add an explicit CRNG set of routines (like the
-> similar discussions to make an explicitly named PRNG set of routines),
-> so callers can use whatever random number generator is appropriate for
-> their performance and security needs.
-
-If we do use get_random_int() here, I'd at least like to see its
-comment changed to reflect its actual purpose (since it's not
-"internal use only") as well as its expected unpredictability. (This
-would help document the utility of get_random_bytes() vs
-get_random_int() vs random32().)
-
--Kees
-
+diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+index 1e4fc72..d0ecbd4 100644
+--- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
++++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+@@ -3,11 +3,9 @@ pwm-backlight bindings
+ Required properties:
+   - compatible: "pwm-backlight"
+   - pwms: OF device-tree PWM specification (see PWM binding[0])
+-  - brightness-levels: Array of distinct brightness levels. Typically these
+-      are in the range from 0 to 255, but any range starting at 0 will do.
+-      The actual brightness level (PWM duty cycle) will be interpolated
+-      from these values. 0 means a 0% duty cycle (darkest/off), while the
+-      last value in the array represents a 100% duty cycle (brightest).
++  - brightness-levels: Array of distinct brightness levels in the
++      range from 0 to 255. 0 means a 0% duty cycle, while 255
++      represents a 100% duty cycle.
+   - default-brightness-level: the default brightness level (index into the
+       array defined by the "brightness-levels" property)
+ 
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 995f016..09ce501 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -40,6 +40,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
+ 	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
+ 	int brightness = bl->props.brightness;
+ 	int max = bl->props.max_brightness;
++	int duty_cycle;
+ 
+ 	if (bl->props.power != FB_BLANK_UNBLANK)
+ 		brightness = 0;
+@@ -50,24 +51,21 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
+ 	if (pb->notify)
+ 		brightness = pb->notify(pb->dev, brightness);
+ 
+-	if (brightness == 0) {
+-		pwm_config(pb->pwm, 0, pb->period);
+-		pwm_disable(pb->pwm);
++	if (pb->levels) {
++		duty_cycle = pb->levels[brightness];
++		max = PWM_BL_MAX_LEVEL;
+ 	} else {
+-		int duty_cycle;
++		duty_cycle = brightness;
++	}
+ 
+-		if (pb->levels) {
+-			duty_cycle = pb->levels[brightness];
+-			max = pb->levels[max];
+-		} else {
+-			duty_cycle = brightness;
+-		}
++	duty_cycle = pb->lth_brightness +
++		(duty_cycle * (pb->period - pb->lth_brightness) / max);
+ 
+-		duty_cycle = pb->lth_brightness +
+-		     (duty_cycle * (pb->period - pb->lth_brightness) / max);
+-		pwm_config(pb->pwm, duty_cycle, pb->period);
++	pwm_config(pb->pwm, duty_cycle, pb->period);
++	if (duty_cycle == 0)
++		pwm_disable(pb->pwm);
++	else
+ 		pwm_enable(pb->pwm);
+-	}
+ 
+ 	if (pb->notify_after)
+ 		pb->notify_after(pb->dev, brightness);
+@@ -202,7 +200,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (data->levels) {
+-		max = data->levels[data->max_brightness];
++		max = PWM_BL_MAX_LEVEL;
+ 		pb->levels = data->levels;
+ 	} else
+ 		max = data->max_brightness;
+diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
+index 56f4a86..f5ed046 100644
+--- a/include/linux/pwm_backlight.h
++++ b/include/linux/pwm_backlight.h
+@@ -6,6 +6,8 @@
+ 
+ #include <linux/backlight.h>
+ 
++#define PWM_BL_MAX_LEVEL	255
++
+ struct platform_pwm_backlight_data {
+ 	int pwm_id;
+ 	unsigned int max_brightness;
 -- 
-Kees Cook
-Chrome OS Security
+1.7.0.4
+
