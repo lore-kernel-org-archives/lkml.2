@@ -1,188 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428Ab2KGIFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 03:05:32 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:60917 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab2KGIFa convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Wed, 7 Nov 2012 03:05:30 -0500
-Message-Id: <509A245202000078000A6E8F@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 07 Nov 2012 08:05:21 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <david.daney@cavium.com>, <kosaki.motohiro@jp.fujitsu.com>,
-        "Rusty Russell" <rusty@rustcorp.com.au>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "Arjan van de Ven" <arjan@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] utilize _Static_assert() for BUILD_BUG_ON() when
- the compiler supports it
-References: <5093EB1C02000078000A61D7@nat28.tlf.novell.com>
- <20121105142944.7b16e6a4.akpm@linux-foundation.org>
- <877gpz5wi4.fsf@rustcorp.com.au>
- <5098E50402000078000A698C@nat28.tlf.novell.com>
- <87ehk6443a.fsf@rustcorp.com.au>
-In-Reply-To: <87ehk6443a.fsf@rustcorp.com.au>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1751544Ab2KGIHb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 03:07:31 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:59999 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750761Ab2KGIHa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 03:07:30 -0500
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com>
+Date: Wed, 7 Nov 2012 09:06:53 +0100
+Cc: Rob Herring <robherring2@gmail.com>, Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
+        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <B1277EA3-9284-4856-A7E8-1B1CA9D30327@antoniou-consulting.com>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com> <CACxGe6vDzmPWsOZ53HTwkYmDEivg9TpnRrvudY2FK95V06O24w@mail.gmail.com> <A5170602-2AE7-4EC4-BE0F-0DF015A287D7@antoniou-consulting.com> <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 07.11.12 at 02:03, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> Jan Beulich <JBeulich@suse.com> writes:
->>>>> On 06.11.12 at 02:51, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>> Yeah, there are a lot of goodies here:
+Hi Grant,
+
+On Nov 6, 2012, at 9:45 PM, Grant Likely wrote:
+
+> On Tue, Nov 6, 2012 at 7:34 PM, Pantelis Antoniou
+> <panto@antoniou-consulting.com> wrote:
+>> On Nov 6, 2012, at 12:14 PM, Grant Likely wrote:
+>>> On Tue, Nov 6, 2012 at 10:30 AM, Pantelis Antoniou
+>>> <panto@antoniou-consulting.com> wrote:
+>>>> For hot-plugging, you need it. Whether kernel code can deal with
+>>>> large parts of the DT going away... How about we use the dead
+>>>> properties method and move/tag the removed modes as such, and not
+>>>> really remove them.
 >>> 
->>> _Static_assert:
->>>         We could define __ASSERT_STRUCT_FIELD(e) for this:
->>>         #define BUILD_BUG_ON_ZERO(e) \
->>>                 sizeof(struct { __ASSERT_STRUCT_FIELD(e); })
->>
->> I considered something like this too, but it wouldn't work well: The
->> diagnostic issued from a failed _Static_assert() would preferably
->> refer to the original source expression, not an already macro
->> expanded variant of it. That, however, precludes passing it
->> through multiple levels of macro expansion. Which would leave
->> passing e and #e to __ASSERT_STRUCT_FIELD(), but that's again
->> ugly as it opens the door for someone adding a use where the two
->> arguments don't match up.
+>>> Nodes already use krefs, and I'm thinking about making them kobjects
+>>> so that they appear in sysfs and we'll have some tools to figure out
+>>> when reference counts don't get decremented properly.
+>>> 
+>> 
+>> From the little I've looked in the of code, and the drivers, it's going
+>> to be pretty bad. I don't think all users take references properly, and
+>> we have a big global lock for accessing the DT.
 > 
-> Good point, but this is going to be pretty damn obscure.  In fact, I
-> don't think it'll see more than the use here.
-
-Okay, so I'll go with something like that then.
-
->>> __COUNTER__:
->>>         Used to make a unique id.  Let's define __UNIQUE_ID(prefix) for
->>>         this (using __COUNTER__ or __LINE__). 4.3 and above.
->>
->> The fallback to __LINE__ is not necessarily correct in all cases,
->> namely when deep macro expansions result in two instances used
->> on the same source line, or a use in a header matches line number
->> wise a second use in another header or the source file.
->>
->> I considered to option of a fallback (and hence an abstraction in
->> compiler*.h) when doing this, but I didn't want to do something
->> that would break in perhaps vary obscure ways.
+> I'm a lot more optimistic on this front... I wrote a patch today to
+> make the change and took some measurements:
 > 
-> I was thinking of my own code in moduleparam.h, but elfnote.h does the
-> same trick.  In both cases, it'll simply fail compile if we fallback and
-> __LINE__ isn't unique.
+> On the versatile express qemu model I measured the free memory with
+> /proc/device-tree, with /sys/device-tree, and with both. Here's what I
+> found:
 > 
-> So again, I don't think we're going to see many uses, and no existing
-> use will bite us.
-
-That's exactly the point - we can't know (because there's no
-guarantee there aren't - or won't be by the time it might get
-merged - any two conflicting uses of BUILD_BUG_ON...().
-
->>> __compiletime_error():
->>>         I blame Arjan for this.  It disappears if not implemented, which
->>>         is just lazy.  BUILD_BUG_ON() does this right, and he didn't fix
->>>         that at the time :(
->>
->> Again, the name of the macro made me not use it, as the obvious
->> fallback is a link time error. The only thing I would be agreeable to
->> is something like __buildtime_error().
+> /proc/device-tree only: 114776kB free
+> /sys/device-tree only: 114792kB free
+> both enabled: 114716kB free
 > 
-> Yes, it's awkward to use.  Your own usage here is the only correct way
-> to do it, AFAICT:
+> The back of a napkin calculation indicates that on this platform
+> /proc/devicetree costs 76kB and /sys/device-tree costs 60kb. I'm happy
+> to see that using /sys instead of /proc appears to be slightly cheaper
+> which makes it easier to justify the change. The diffstat makes me
+> even happier:
 > 
->> #define __build_bug_on_failed(n) __build_bug_on_##n##_failed
->> #define _BUILD_BUG_ON(n, condition)				\
->> 	do {							\
->> 		extern void __compiletime_error(#condition)	\
->> 		__build_bug_on_failed(n)(void);			\
->> 		if (condition) __build_bug_on_failed(n)();	\
->> 	} while(0)
-
-Actually, I just noticed that __linktime_error() really is a compile
-time error when gcc supports __attribute__(__error__()), so
-probably using that one instead of __compiletime_error() here
-would be the cleaner approach.
-
-The one thing puzzling me here is that __linktime_error() gets
-defined even if __CHECKER__ isn't defined, while
-__compiletime_error() doesn't - an apparent inconsistency
-between 746a2a838deec3ef86ef6b7c3edd4207b9a351aa
-(Kosaki?) and 1399ff86f2a2bbacbbe68fa00c5f8c752b344723
-(David?), with apparently the latter being too lax, as it only
-introduced a use inside a !__CHECKER__ section.
-
->> #define BUILD_BUG_ON(condition...) _BUILD_BUG_ON(__COUNTER__, ##condition)
+> arch/arm/plat-omap/Kconfig                |    1 -
+> arch/powerpc/platforms/pseries/dlpar.c    |   23 -----------
+> arch/powerpc/platforms/pseries/reconfig.c |   40 ------------------
+> drivers/of/Kconfig                        |    8 ----
+> drivers/of/base.c                         |  116
+> ++++++++++++++++++++++++++++------------------------
+> drivers/of/fdt.c                          |    5 ++-
+> fs/proc/Makefile                          |    1 -
+> fs/proc/proc_devtree.c                    |   13 +-----
+> fs/proc/root.c                            |    4 +-
+> include/linux/of.h                        |   35 ++++++++++++----
+> include/linux/proc_fs.h                   |   16 --------
+> include/linux/string.h                    |   11 +++++
+> 12 files changed, 107 insertions(+), 166 deletions(-)
 > 
-> The ... is overkill here: sure it's general, but we don't allow that
-> currently, nor in the other BUILD_BUG_ON() definitions.
 
-This may be a leftover from previous failed attempts; I don't
-see a reason why it should stay.
+Interesting. Not so bad then.
 
-> So I think this becomes:
+> There are still a few odds and ends that need to be tidied up, but
+> I'll get it out for review shortly. I've not touched the sparc code
+> yet, and I need to take another look over the existing OF_DYNAMIC
+> code. I think that CONFIG_OF_DYNAMIC will probably go away and the add
+> node/property functions will get used by fdt.c and pdt.c for initial
+> construction of the device tree.
+
+CONFIG_OF_DYNAMIC never made sense to me. Glad to see the config option
+gone. I'm not totally up to date with the -next dt stuff, but if we're
+there can we rename all the prom_ functions to something saner?
+
 > 
-> #define _BUILD_BUG_ON(undefname, condition)                                    \
->         do {                                                                   \
->                 extern void __compiletime_error(#condition) undefname(void);   \
->                 if (condition) undefname();                                    \
->         } while(0)
-> #define BUILD_BUG_ON(condition) \
->         _BUILD_BUG_ON(__UNIQUE_ID(__build_bug_fail), (condition))
-
-Yes, subject to the fallback issue.
-
-> Subject: __UNIQUE_ID()
+>> Adding and removing nodes at runtime as part of the normal operation of
+>> the system (and not as something that happens once in a blue moon under
+>> controlled conditions) will uncover lots of bugs.
 > 
-> Jan Beulich points out __COUNTER__ (gcc 4.3 and above), so let's use
-> that to create unique ids.  This is better than __LINE__ which we use
-> today, so provide a wrapper.
+> I'm hoping so! Its time to clean that mess up. :-) Fortunately adding
+> nodes is not where we're going to have problems. The problems will be
+> on node removal. Addition-only at least means we can have something
+> useful before hunting down and squashing all the bugs.
+
+I'll admit that removing nodes is going to be quite rare at least for
+me use cases. I did come across a couple of people that do hot-plugging
+(using something completely different) that could use it for sure.
+
 > 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>> So let's think about locking too
+> 
+> Yes, the locking does need to be sorted out.
+> 
 
-Acked-by: Jan Beulich <jbeulich@suse.com>
+Perhaps come up with a dt-stress test tool/boot time validator?
 
-> diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-> index 412bc6c..8908821 100644
-> --- a/include/linux/compiler-gcc4.h
-> +++ b/include/linux/compiler-gcc4.h
-> @@ -31,6 +31,8 @@
->  
->  #define __linktime_error(message) __attribute__((__error__(message)))
->  
-> +#define __UNIQUE_ID(prefix) __PASTE(prefix, __PASTE(__, __COUNTER__))
-> +
->  #if __GNUC_MINOR__ >= 5
->  /*
->   * Mark a position in code as unreachable.  This can be used to
-> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-> index f430e41..c55ae87 100644
-> --- a/include/linux/compiler.h
-> +++ b/include/linux/compiler.h
-> @@ -42,6 +42,10 @@ extern void __chk_io_ptr(const volatile void __iomem *);
->  # define __rcu
->  #endif
->  
-> +/* Indirect macros required for expanded argument pasting, eg. __LINE__. */
-> +#define ___PASTE(a,b) a##b
-> +#define __PASTE(a,b) ___PASTE(a,b)
-> +
->  #ifdef __KERNEL__
->  
->  #ifdef __GNUC__
-> @@ -164,6 +168,11 @@ void ftrace_likely_update(struct ftrace_branch_data *f, 
-> int val, int expect);
->      (typeof(ptr)) (__ptr + (off)); })
->  #endif
->  
-> +/* Not-quite-unique ID. */
-> +#ifndef __UNIQUE_ID
-> +# define __UNIQUE_ID(prefix) __PASTE(__PASTE(prefix, __), __LINE__)
-> +#endif
-> +
->  #endif /* __KERNEL__ */
->  
->  #endif /* __ASSEMBLY__ */
+> g.
+
+Regards
+
+-- Pantelis
+
+P.S. Lots of teeth grinding in the ELCE about the lack of a DT preprocessor.
+The pinctrl arguments have been mentioned more than once.
 
 
