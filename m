@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab2KGTv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 14:51:29 -0500
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:60991 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab2KGTv1 (ORCPT
+	id S1752498Ab2KGT4N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 14:56:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53167 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab2KGT4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 14:51:27 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak27AM66mlBV5h1yPGdsb2JhbABEhVEBhQC4GgEBexkBAQEBHxkNJ4IeAQEEATocIwULCANGFCUKGhOIBAq8ZBSNPoEugnNhA5V6hXuDT4lr
-X-IronPort-AV: E=Sophos;i="4.80,732,1344204000"; 
-   d="scan'208";a="445297127"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 7 Nov 2012 20:57:08 +0100
-To: Alexandra Chin <Alexandra.Chin@tw.synaptics.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Mahesh Srinivasan <msrinivasan@synaptics.com>,
-        Alex Chang <alex.chang@tw.synaptics.com>,
-        Scott Lin <scott.lin@tw.synaptics.com>,
-        Christopher Heiny <Cheiny@synaptics.com>
-Subject: Re: [PATCH v4] staging: ste_rmi4: Convert to Type-B support
-Message-ID: <20121107195708.GA3754@polaris.bitmath.org>
-References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
- <20121107134934.b37e923588f4a24af146a93b@tw.synaptics.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121107134934.b37e923588f4a24af146a93b@tw.synaptics.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 Nov 2012 14:56:12 -0500
+Date: Wed, 7 Nov 2012 11:56:10 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v11 1/7] mm: adjust
+ address_space_operations.migratepage() return code
+Message-Id: <20121107115610.c0cb650c.akpm@linux-foundation.org>
+In-Reply-To: <74bc30697313206e1225f6fc658bc5952b588dcc.1352256085.git.aquini@redhat.com>
+References: <cover.1352256081.git.aquini@redhat.com>
+	<74bc30697313206e1225f6fc658bc5952b588dcc.1352256085.git.aquini@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandra,
+On Wed,  7 Nov 2012 01:05:48 -0200
+Rafael Aquini <aquini@redhat.com> wrote:
 
-> Convert to MT-B because Synaptics touch devices are capable of tracking
-> identifiable fingers.
-> 
-> Signed-off-by: Alexandra Chin <alexandra.chin@tw.synaptics.com>
-> ---
-> Changes from v4:
->         - Incorporated Henrik's review comments
->           *split function synpatics_rmi4_touchscreen_report
->           *split function synaptics_rmi4_i2c_query_device
+> This patch introduces MIGRATEPAGE_SUCCESS as the default return code
+> for address_space_operations.migratepage() method and documents the
+> expected return code for the same method in failure cases.
 
-Thanks for the changes. The patch looks cleaner, but also much larger,
-containing many changes irrelevant to the commit message (and to what
-has hitherto been reviewed). Please resend a minimum patch, there is
-plenty of room for additional patches after this one. :-)
+I hit a large number of rejects applying this against linux-next.  Due
+to the increasingly irritating sched/numa code in there.
 
-Thanks,
-Henrik
+I attempted to fix it up and also converted some (but not all) of the
+implicit tests of `rc' against zero.
+
+Please check the result very carefully - more changes will be needed.
+
+All those
+
+-	if (rc)
++	if (rc != MIGRATEPAGE_SUCCESS)
+
+changes are a pain.  Perhaps we shouldn't bother.
