@@ -1,167 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab2KGDGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 22:06:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44256 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753144Ab2KGDGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 22:06:41 -0500
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, aquini@redhat.com
-Subject: [PATCH v11 0/7] make balloon pages movable by compaction
-Date: Wed,  7 Nov 2012 01:05:47 -0200
-Message-Id: <cover.1352256081.git.aquini@redhat.com>
+	id S1753640Ab2KGDL2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 22:11:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50778 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144Ab2KGDL0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 22:11:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121106152354.90150a3b.akpm@linux-foundation.org>
+References: <1351931714-11689-1-git-send-email-ming.lei@canonical.com>
+	<1351931714-11689-2-git-send-email-ming.lei@canonical.com>
+	<20121106152354.90150a3b.akpm@linux-foundation.org>
+Date: Wed, 7 Nov 2012 11:11:24 +0800
+Message-ID: <CACVXFVNs2JtEYQ3Y2rA8L89sAaMJ7TO-PxG3h4w+ihcZrBLtpg@mail.gmail.com>
+Subject: Re: [PATCH v4 1/6] mm: teach mm by current context info to not do I/O
+ during memory allocation
+From: Ming Lei <ming.lei@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-mm@kvack.org, Jiri Kosina <jiri.kosina@suse.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory fragmentation introduced by ballooning might reduce significantly
-the number of 2MB contiguous memory blocks that can be used within a guest,
-thus imposing performance penalties associated with the reduced number of
-transparent huge pages that could be used by the guest workload.
+On Wed, Nov 7, 2012 at 7:23 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>
+> It's unclear from the description why we're also clearing __GFP_FS in
+> this situation.
+>
+> If we can avoid doing this then there will be a very small gain: there
+> are some situations in which a filesystem can clean pagecache without
+> performing I/O.
 
-This patch-set follows the main idea discussed at 2012 LSFMMS session:
-"Ballooning for transparent huge pages" -- http://lwn.net/Articles/490114/
-to introduce the required changes to the virtio_balloon driver, as well as
-the changes to the core compaction & migration bits, in order to make those
-subsystems aware of ballooned pages and allow memory balloon pages become
-movable within a guest, thus avoiding the aforementioned fragmentation issue
+Firstly,  the patch follows the policy in the system suspend/resume situation,
+in which the __GFP_FS is cleared, and basically the problem is very similar
+with that in system PM path.
 
-Following are numbers that prove this patch benefits on allowing compaction
-to be more effective at memory ballooned guests.
+Secondly, inside shrink_page_list(), pageout() may be triggered on dirty anon
+page if __GFP_FS is set.
 
-Results for STRESS-HIGHALLOC benchmark, from Mel Gorman's mmtests suite,
-running on a 4gB RAM KVM guest which was ballooning 512mB RAM in 64mB chunks,
-at every minute (inflating/deflating), while test was running:
+IMO, if performing I/O can be completely avoided when __GFP_FS is set, the
+flag can be kept, otherwise it is better to clear it in the situation.
 
-===BEGIN stress-highalloc
+>
+> It doesn't appear that the patch will add overhead to the alloc/free
+> hotpaths, which is good.
 
-STRESS-HIGHALLOC
-                 highalloc-3.7     highalloc-3.7
-                     rc4-clean         rc4-patch
-Pass 1          55.00 ( 0.00%)    62.00 ( 7.00%)
-Pass 2          54.00 ( 0.00%)    62.00 ( 8.00%)
-while Rested    75.00 ( 0.00%)    80.00 ( 5.00%)
+Thanks for previous Minchan's comment.
 
-MMTests Statistics: duration
-                 3.7         3.7
-           rc4-clean   rc4-patch
-User         1207.59     1207.46
-System       1300.55     1299.61
-Elapsed      2273.72     2157.06
+>
+>>
+>> ...
+>>
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -1805,6 +1805,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+>>  #define PF_FROZEN    0x00010000      /* frozen for system suspend */
+>>  #define PF_FSTRANS   0x00020000      /* inside a filesystem transaction */
+>>  #define PF_KSWAPD    0x00040000      /* I am kswapd */
+>> +#define PF_MEMALLOC_NOIO 0x00080000  /* Allocating memory without IO involved */
+>>  #define PF_LESS_THROTTLE 0x00100000  /* Throttle me less: I clean memory */
+>>  #define PF_KTHREAD   0x00200000      /* I am a kernel thread */
+>>  #define PF_RANDOMIZE 0x00400000      /* randomize virtual address space */
+>> @@ -1842,6 +1843,15 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+>>  #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
+>>  #define used_math() tsk_used_math(current)
+>>
+>> +#define memalloc_noio() (current->flags & PF_MEMALLOC_NOIO)
+>> +#define memalloc_noio_save(flag) do { \
+>> +     (flag) = current->flags & PF_MEMALLOC_NOIO; \
+>> +     current->flags |= PF_MEMALLOC_NOIO; \
+>> +} while (0)
+>> +#define memalloc_noio_restore(flag) do { \
+>> +     current->flags = (current->flags & ~PF_MEMALLOC_NOIO) | flag; \
+>> +} while (0)
+>> +
+>
+> Again with the ghastly macros.  Please, do this properly in regular old
+> C, as previously discussed.  It really doesn't matter what daft things
+> local_irq_save() did 20 years ago.  Just do it right!
 
-MMTests Statistics: vmstat
-                                3.7         3.7
-                          rc4-clean   rc4-patch
-Page Ins                    3581516     2374368
-Page Outs                  11148692    10410332
-Swap Ins                         80          47
-Swap Outs                      3641         476
-Direct pages scanned          37978       33826
-Kswapd pages scanned        1828245     1342869
-Kswapd pages reclaimed      1710236     1304099
-Direct pages reclaimed        32207       31005
-Kswapd efficiency               93%         97%
-Kswapd velocity             804.077     622.546
-Direct efficiency               84%         91%
-Direct velocity              16.703      15.682
-Percentage direct scans          2%          2%
-Page writes by reclaim        79252        9704
-Page writes file              75611        9228
-Page writes anon               3641         476
-Page reclaim immediate        16764       11014
-Page rescued immediate            0           0
-Slabs scanned               2171904     2152448
-Direct inode steals             385        2261
-Kswapd inode steals          659137      609670
-Kswapd skipped wait               1          69
-THP fault alloc                 546         631
-THP collapse alloc              361         339
-THP splits                      259         263
-THP fault fallback               98          50
-THP collapse fail                20          17
-Compaction stalls               747         499
-Compaction success              244         145
-Compaction failures             503         354
-Compaction pages moved       370888      474837
-Compaction move failure       77378       65259
+OK, I will take inline function in -v5.
 
-===END stress-highalloc
+>
+> Also, you can probably put the unlikely() inside memalloc_noio() and
+> avoid repeating it at all the callsites.
+>
+> And it might be neater to do:
+>
+> /*
+>  * Nice comment goes here
+>  */
+> static inline gfp_t memalloc_noio_flags(gfp_t flags)
+> {
+>         if (unlikely(current->flags & PF_MEMALLOC_NOIO))
+>                 flags &= ~GFP_IOFS;
+>         return flags;
+> }
 
-Rafael Aquini (7):
-  mm: adjust address_space_operations.migratepage() return code
-  mm: redefine address_space.assoc_mapping
-  mm: introduce a common interface for balloon pages mobility
-  mm: introduce compaction and migration for ballooned pages
-  virtio_balloon: introduce migration primitives to balloon pages
-  mm: introduce putback_movable_pages()
-  mm: add vm event counters for balloon pages compaction
+But without the check in callsites, some local variables will be write
+two times,
+so it is better to not do it.
 
- drivers/virtio/virtio_balloon.c    | 136 +++++++++++++++++--
- fs/buffer.c                        |  12 +-
- fs/gfs2/glock.c                    |   2 +-
- fs/hugetlbfs/inode.c               |   4 +-
- fs/inode.c                         |   2 +-
- fs/nilfs2/page.c                   |   2 +-
- include/linux/balloon_compaction.h | 220 ++++++++++++++++++++++++++++++
- include/linux/fs.h                 |   2 +-
- include/linux/migrate.h            |  19 +++
- include/linux/pagemap.h            |  16 +++
- include/linux/vm_event_item.h      |   8 +-
- mm/Kconfig                         |  15 ++
- mm/Makefile                        |   1 +
- mm/balloon_compaction.c            | 271 +++++++++++++++++++++++++++++++++++++
- mm/compaction.c                    |  27 +++-
- mm/migrate.c                       |  77 +++++++++--
- mm/page_alloc.c                    |   2 +-
- mm/vmstat.c                        |  10 +-
- 18 files changed, 782 insertions(+), 44 deletions(-)
- create mode 100644 include/linux/balloon_compaction.h
- create mode 100644 mm/balloon_compaction.c
+>
+>>   * task->jobctl flags
+>>   */
+>>
+>> ...
+>>
+>> @@ -2304,6 +2304,12 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+>>               .gfp_mask = sc.gfp_mask,
+>>       };
+>>
+>> +     if (unlikely(memalloc_noio())) {
+>> +             gfp_mask &= ~GFP_IOFS;
+>> +             sc.gfp_mask = gfp_mask;
+>> +             shrink.gfp_mask = sc.gfp_mask;
+>> +     }
+>
+> We can avoid writing to shrink.gfp_mask twice.  And maybe sc.gfp_mask
+> as well.  Unclear, I didn't think about it too hard ;)
 
-Change log:
-v11:
- * Address AKPM's last review suggestions;
- * Extend the balloon compaction common API and simplify its usage at driver;
- * Minor nitpicks on code commentary;
-v10:
- * Adjust leak_balloon() wait_event logic to make a clear locking scheme (MST);
- * Drop the RCU protection approach for dereferencing balloon's page->mapping;
- * Minor nitpitcks on code commentaries (MST);
-v9:
- * Adjust rcu_dereference usage to leverage page lock protection  (Paul, Peter);
- * Enhance doc on compaction interface introduced to balloon driver   (Michael);
- * Fix issue with isolated pages breaking leak_balloon() logics       (Michael);
-v8:
- * introduce a common MM interface for balloon driver page compaction (Michael);
- * remove the global state preventing multiple balloon device support (Michael);
- * introduce RCU protection/syncrhonization to balloon page->mapping  (Michael);
-v7:
- * fix a potential page leak case at 'putback_balloon_page'               (Mel);
- * adjust vm-events-counter patch and remove its drop-on-merge message    (Rik);
- * add 'putback_movable_pages' to avoid hacks on 'putback_lru_pages'  (Minchan);
-v6:
- * rename 'is_balloon_page()' to 'movable_balloon_page()'                 (Rik);
-v5:
- * address Andrew Morton's review comments on the patch series;
- * address a couple extra nitpick suggestions on PATCH 01             (Minchan);
-v4:
- * address Rusty Russel's review comments on PATCH 02;
- * re-base virtio_balloon patch on 9c378abc5c0c6fc8e3acf5968924d274503819b3;
-V3:
- * address reviewers nitpick suggestions on PATCH 01             (Mel, Minchan);
-V2:
- * address Mel Gorman's review comments on PATCH 01;
+Yes, we can do it by initializing 'shrink' local variable just after the branch,
+so one writing is enough. Will do it in -v5.
 
--- 
-1.7.11.7
-
+Thanks,
+--
+Ming Lei
