@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab2KGUhd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 15:37:33 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:40937 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074Ab2KGUhb (ORCPT
+	id S1752007Ab2KGUk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 15:40:59 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:46398 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414Ab2KGUk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 15:37:31 -0500
-Date: Wed, 07 Nov 2012 15:37:29 -0500 (EST)
-Message-Id: <20121107.153729.281038826381865443.davem@davemloft.net>
-To: paolo.valente@unimore.it
-Cc: jhs@mojatatu.com, shemminger@vyatta.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rizzo@iet.unipi.it, fchecconi@gmail.com
-Subject: Re: [PATCH] pkt_sched: enable QFQ to support TSO/GSO
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121106062924.GA2930@paolo-ThinkPad-W520>
-References: <20121106062924.GA2930@paolo-ThinkPad-W520>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Nov 2012 15:40:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1352109631-3385-1-git-send-email-b.zolnierkie@samsung.com>
+Date: Wed, 7 Nov 2012 12:40:57 -0800
+X-Google-Sender-Auth: 7dKw-Eofc00JCUNcMgDUB6rLMII
+Message-ID: <CAA9_cmfkDkF7tEmVTfD_vxtMhoTwxfFPnxtOEPT_xwsNgT1=8g@mail.gmail.com>
+Subject: Re: [PATCH 00/20] DMA: DMA unmap fixes
+From: Dan Williams <djbw@fb.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>,
+        Ira Snyder <iws@ovro.caltech.edu>,
+        "Koul, Vinod" <vinod.koul@intel.com>, vipin.kumar@st.com,
+        t.figa@samsung.com,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        Dave Jiang <dave.jiang@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paolo Valente <paolo.valente@unimore.it>
-Date: Tue, 6 Nov 2012 07:29:24 +0100
+On Mon, Nov 5, 2012 at 2:00 AM, Bartlomiej Zolnierkiewicz
+<b.zolnierkie@samsung.com> wrote:
+> Hi,
+>
+> Currently DMA subsystem does DMA mapping in the core code and DMA
+> unmapping is done by device drivers.  This is counterintuitive,
+> causes code duplication and subtle errors (some drivers like PL330
+> one don't implement DMA unmapping code).  The following patchset
+> modifies DMA subsystem to do DMA unmapping in the core code.
+> It results in simpler code, less code duplication (more than 400
+> LOC is gone) and fixes the issue with missing DMA unmapping code
+> in some drivers.  Additionally many cases when DMA wasn't unmapped
+> on a failure are also fixed.
+>
+>
+> patches #1-3 add missing DMA unmap on failure to async_tx core
+> code (async_memcpy()), ioat and fsmc_nand drivers
+>
+> patch #4 fixes DMA flags used by carma-fpga driver
 
-> If the max packet size for some class (configured through tc) is
-> violated by the actual size of the packets of that class, then QFQ
-> would not schedule classes correctly, and the data structures
-> implementing the bucket lists may get corrupted. This problem occurs
-> with TSO/GSO even if the max packet size is set to the MTU, and is,
-> e.g., the cause of the failure reported in [1]. Two patches have been
-> proposed to solve this problem in [2], one of them is a preliminary
-> version of this patch.
-> 
-> This patch addresses the above issues by: 1) setting QFQ parameters to
-> proper values for supporting TSO/GSO (in particular, setting the
-> maximum possible packet size to 64KB), 2) automatically increasing the
-> max packet size for a class, lmax, when a packet with a larger size
-> than the current value of lmax arrives.
-> 
-> The drawback of the first point is that the maximum weight for a class
-> is now limited to 4096, which is equal to 1/16 of the maximum weight
-> sum.
-> 
-> Finally, this patch also forcibly caps the timestamps of a class if
-> they are too high to be stored in the bucket list. This capping, taken
-> from QFQ+ [3], handles the unfrequent case described in the comment to
-> the function slot_insert.
-> 
-> [1] http://marc.info/?l=linux-netdev&m=134968777902077&w=2
-> [2] http://marc.info/?l=linux-netdev&m=135096573507936&w=2
-> [3] http://marc.info/?l=linux-netdev&m=134902691421670&w=2
-> 
-> Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
-> Tested-by: Cong Wang <amwang@redhat.com>
-> Acked-by: Stephen Hemminger <shemminger@vyatta.com>
+Ack patches 1-4
 
-Applied, thanks.
+> patches #5-7 fix core code and dmatest driver to DMA unmap for
+> MEMCPY operations
+
+Yes, this needs to move out of the drivers, but it needs to move past
+the core and into the dmaengine clients directly (md/raid and
+net_dma).  The slave_dma usage model already does this as each client
+takes responsibility for dma mapping.  Doing this in the core has some
+downsides, maybe they're negligible: 1/ all drivers suffer the size
+increase to dma_async_tx_descriptor 2/ pure polling usage models like
+net_dma will now trigger dma channel interrupts to run the callback.
+
+That being said this cleanup does get us a step closer to where
+dmaengine needs to go, and I have not found time to do the "move it to
+the client" patches mentioned above.  So I'm inclined to proceed with
+them.  Does anyone still see positive benefits from net_dma?
+
+> patch #8 adds missing DMA unmap on failure to ioat3 driver
+>
+> patch #9 fixes build for async_memset.c
+>
+> patch #10 adds missing DMA unmap on failure to async tx core
+> code (async_memset())
+
+Ack patches 8-10
+
+>
+> patches #11-18 fix async_tx core code and dmatest driver to do
+> DMA unmap for MEMSET, XOR, XOR_VAL, PQ and PQ_VAL operations
+>
+
+Some comments in the patch.
+
+> patches #19-20 remove no longer needed DMA unmap code from
+> device drivers and DMA unmap flags from code code
+>
+>
+> This patchset was tested on PL330 DMA controller using MEMCPY
+> operations.  It would be great if somebody could test it on
+> more advanced controller capable of MEMSET, XOR, XOR_VAL,
+> PQ and PQ_VAL operations (especially since the conversion of
+> XOR and PQ operations was not obvious).
+
+async_tx has a bug in that it permits overlapping dma mappings or
+operations that cross dma boundaries, but these patches don't make
+this worse.  The interim "fix" I am proposing for this to drop support
+for channel configurations that require an operation chain to switch
+channels.  This will allow the removal the async_tx_ack() machinery
+and hopefully prompt channel switching users to contribute to the md
+changes needed to support this properly.  In the meantime the
+async_tx_ack bits are just adding needless complexity to the drivers
+that don't care about that functionality.
+
+--
+Dan
