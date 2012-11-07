@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616Ab2KGQ4z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 11:56:55 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43067 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab2KGQ4y convert rfc822-to-8bit (ORCPT
+	id S1752479Ab2KGRB3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 12:01:29 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49081 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab2KGRB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 11:56:54 -0500
-Date: Wed, 7 Nov 2012 17:01:32 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: =?ISO-8859-1?B?Qmr4cm4=?= Mork <bjorn@mork.no>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Dave Jones <davej@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, florianSchandinat@gmx.de
-Subject: Re: tty, vt: lockdep warnings
-Message-ID: <20121107170132.1df293d6@pyramind.ukuu.org.uk>
-In-Reply-To: <87625h9yoe.fsf@nemi.mork.no>
-References: <50899507.1040900@oracle.com>
-	<20121026143754.50277bd8@pyramind.ukuu.org.uk>
-	<CA+1xoqdEesjh1EZvR_r7Hn0GUc7741EDWn59qagngcxg4=9bjQ@mail.gmail.com>
-	<20121105175937.26f31d2a@pyramind.ukuu.org.uk>
-	<5097FEA9.2090603@oracle.com>
-	<alpine.LNX.2.00.1211051106590.1709@eggly.anvils>
-	<20121105201507.79fe47d7@pyramind.ukuu.org.uk>
-	<alpine.LNX.2.00.1211051231070.21645@eggly.anvils>
-	<20121106161100.216c6d79@pyramind.ukuu.org.uk>
-	<20121106164214.GA18246@redhat.com>
-	<20121106173845.4a50d661@pyramind.ukuu.org.uk>
-	<509A665C.3030603@gmail.com>
-	<20121107160232.18e83ee9@pyramind.ukuu.org.uk>
-	<87625h9yoe.fsf@nemi.mork.no>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 7 Nov 2012 12:01:27 -0500
+Date: Wed, 7 Nov 2012 09:01:18 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, fweisbec@gmail.com
+Subject: Re: [PATCH 3/9] cgroup: implement generic child / descendant walk
+ macros
+Message-ID: <20121107170118.GD2660@mtj.dyndns.org>
+References: <1351931915-1701-1-git-send-email-tj@kernel.org>
+ <1351931915-1701-4-git-send-email-tj@kernel.org>
+ <20121107165457.GD4131@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121107165457.GD4131@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Nov 2012 17:15:45 +0100
-Bjørn Mork <bjorn@mork.no> wrote:
+Hello, Michal.
 
-> Alan Cox <alan@lxorguk.ukuu.org.uk> writes:
-> 
-> > +
-> > +static int bind_con_driver(const struct consw *csw, int first, int last,
-> > +			   int deflt)
+On Wed, Nov 07, 2012 at 05:54:57PM +0100, Michal Hocko wrote:
+> > +struct cgroup *cgroup_next_descendant_pre(struct cgroup *pos,
+> > +					  struct cgroup *cgroup)
 > > +{
-> > +	int ret;
-> > +	
-> > +	console_unlock();
+> > +	struct cgroup *next;
+> > +
+> > +	WARN_ON_ONCE(!rcu_read_lock_held());
+> > +
+> > +	/* if first iteration, pretend we just visited @cgroup */
+> > +	if (!pos) {
+> > +		if (list_empty(&cgroup->children))
+> > +			return NULL;
+> > +		pos = cgroup;
+> > +	}
 > 
-> console_lock() maybe...
+> Is there any specific reason why the root of the tree is excluded?
+> This is bit impractical because you have to special case the root
+> in the code.
 
-Thanks I'll fix that path in v3
+Yeah, thought about including it but decided against it for two
+reasons.
+
+* To be consistent with cgroup_for_each_children() - it's a bit weird
+  for descendants to include self when children don't.
+
+* Iteration root is likely to require different treatment anyway.
+  e.g. for cgroup_freezer, the root is updated to the specified config
+  while all the descendants inherit config from its immediate parent.
+  They are different.
+
+Thanks.
+
+-- 
+tejun
