@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab2KGOUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 09:20:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49043 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751432Ab2KGOUO (ORCPT
+	id S1752850Ab2KGOVq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 09:21:46 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:57484 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab2KGOVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 09:20:14 -0500
-Date: Wed, 7 Nov 2012 15:20:08 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Qing Xu <qingx@marvell.com>
-Cc: lrg@ti.com, sameo@linux.intel.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v4 5/7] mfd: max8925: support dt for regulator
-Message-ID: <20121107142007.GB20844@opensource.wolfsonmicro.com>
-References: <1352282993-26449-1-git-send-email-qingx@marvell.com>
+	Wed, 7 Nov 2012 09:21:44 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: [RFC PATCH v1 14/31] ARC: syscall support
+Date: Wed, 7 Nov 2012 14:21:39 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-15-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1352281674-2186-15-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
-Content-Disposition: inline
-In-Reply-To: <1352282993-26449-1-git-send-email-qingx@marvell.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211071421.39523.arnd@arndb.de>
+X-Provags-ID: V02:K0:egWd3HIsqSDZArXDWbWEW7e2oEi1rtGpJcXub+e3JBw
+ JeOEcbbnUWWe43wMcC5zMQ+1XAMNGhNpfOg2C6790PEdrHuWxD
+ LEOsHIRFIuAzCpeHWOnHmvwa4SPCu5I/+62a/Hy5m2s51yioiI
+ qIVLQoQfgbzd93zDUwwig9VcBm0emjy/Tj5r2fSmiotsfHN6/L
+ z3MQtgfaw2Lw7Nz77UKWVBK1MSIHdB6KNZb4x8PWAqdzlrBR0h
+ lGcwEljvTVeA11GLsK9G6iyElVWsv9ng5C+X/jGXKoVpas7vbj
+ Y3DOdXpK7nKEiBEo5cTkV9d0uNir6Fl+NtPhH/bsF+MZZckb5r
+ RI6OwSfdC0hBWz89kokY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 07 November 2012, Vineet Gupta wrote:
+> + * Being uClibc based we need some of the deprecated syscalls:
+> + * -Not emulated by uClibc at all
+> + *     unlink, mkdir,... (needed by Busybox, LTP etc)
+> + *     times (needed by LTP pan test harness)
+> + * -Not emulated efficiently
+> + *     select: emulated using pselect (but extra code to chk usec > 1sec)
+> + *
+> + * some (send/recv) correctly emulated using (recfrom/sendto) and
+> + * some arch specific ones (fork/vfork)can easily be emulated using clone but
+> + * thats the price of using common-denominator....
+> + */
+> +#define __ARCH_WANT_SYSCALL_NO_AT
+> +#define __ARCH_WANT_SYSCALL_NO_FLAGS
+> +#define __ARCH_WANT_SYSCALL_OFF_T
+> +#define __ARCH_WANT_SYSCALL_DEPRECATED
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'm pretty sure that this has been solved before, best get in contact with
+the maintainers of the openrisc/c6x/hexagon platforms, that probably all
+use uClibc without needing these.
 
-On Wed, Nov 07, 2012 at 06:09:53PM +0800, Qing Xu wrote:
-> From: Qing Xu <qingx@marvell.com>
->=20
-> Signed-off-by: Qing Xu <qingx@marvell.com>
+You have to remove the legacy calls here.
 
-Applied, thanks.
-
-> +max8925 regulator device register is still handled by mfd_add_devices, n=
-ot by
-> +of_xxx, so, it is not necessary to add compatible name. Also, those reg
-> +offset and id info is stored in mfd_cell(see max8925-core.c), as a result
-> +there is not private properties in dts.
-
-> +node's name should match with the definition in max8925_regulator_matches
-> +(see max8925-regulator.c)
-
-Please submit a followup which removes all the Linux-specific references
-and just enumerates the supported regulators.  Please do also use a
-subject line appropriate for the subsystem - this is for the regulator
-driver so it should be regulator:
-
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQmm4MAAoJELSic+t+oim92OsP/AprjJEzDPZwSjm8VNna7DRH
-PwNHbFMeo5nMIOACZglZTwHNBAtLa/vT5FG19/I4/gtXPGrtRSBwqPKZfnjf79bl
-lcWxRSGqp32SPEEd4nDSW4UKQBer+0K4lUUGIpIZbTJwxZSlLgDoX/ULxdO+vDZb
-g+DdEd/Fik/J5/zLC8r/jnRvB9x45JCNVn3WBizgLIJizUFT4zbML4ICzEEJh8eK
-v3bP+r5y0dhvzIvTMS1QEBeWXtLwagbsf0eCujYNnYHC574mAHCuYxnBqX0S2X2N
-KKGGRui7ztW1aCCzhN8RooSxt7kiIf8rqB3N5WUj4CFz2aPX/jIlEi8krZKeMyM0
-b5dyhRx76H29blFIEYjdS5Du2XQOaE7AsInTb8Q1EomUhpk5jacCyQyyHuCZ3/09
-GFooMBNeMJAgiFIRFtfjtp8miwYpYp8FFktKsZJFlxgi/eRlcd6GJoxnuNNt60Ue
-6GVdTn3NsIQNvXDuDELp+KTZGyG2togU6Ly2YDBDXk3KBciqyk6CkGmVI5GfDxvx
-E2vQ7xilRQrz3RDFiU1mo6vB78KashYNIR926miP9IGAprrh96WV3twBexhyF/LN
-fXe6HUJ6i9TZF79Eo8dzil/yATx0cWWfmCo+D/UekoDLfKXCk6gMRDaeh+H0gA6x
-IR1pSdri7Piery3bmAeM
-=b/xp
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
+	Arnd
