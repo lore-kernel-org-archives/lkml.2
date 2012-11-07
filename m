@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab2KGKnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 05:43:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27489 "EHLO mx1.redhat.com"
+	id S1754256Ab2KGKqL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 05:46:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64383 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754280Ab2KGKmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 05:42:01 -0500
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Andrew Price <anprice@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 3/7] GFS2: Clean up some unused assignments
-Date: Wed,  7 Nov 2012 10:15:55 +0000
-Message-Id: <1352283359-3314-4-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1352283359-3314-1-git-send-email-swhiteho@redhat.com>
-References: <1352283359-3314-1-git-send-email-swhiteho@redhat.com>
+	id S1751300Ab2KGKqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 05:46:10 -0500
+Message-ID: <509A3C7E.9040809@redhat.com>
+Date: Wed, 07 Nov 2012 05:48:30 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/19] mm: numa: Create basic numa page hinting infrastructure
+References: <1352193295-26815-1-git-send-email-mgorman@suse.de> <1352193295-26815-9-git-send-email-mgorman@suse.de> <50995DD2.8000200@redhat.com> <20121107103839.GT8218@suse.de>
+In-Reply-To: <20121107103839.GT8218@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Price <anprice@redhat.com>
+On 11/07/2012 05:38 AM, Mel Gorman wrote:
+> On Tue, Nov 06, 2012 at 01:58:26PM -0500, Rik van Riel wrote:
+>> On 11/06/2012 04:14 AM, Mel Gorman wrote:
+>>> Note: This patch started as "mm/mpol: Create special PROT_NONE
+>>> 	infrastructure" and preserves the basic idea but steals *very*
+>>> 	heavily from "autonuma: numa hinting page faults entry points" for
+>>> 	the actual fault handlers without the migration parts.	The end
+>>> 	result is barely recognisable as either patch so all Signed-off
+>>> 	and Reviewed-bys are dropped. If Peter, Ingo and Andrea are ok with
+>>> 	this version, I will re-add the signed-offs-by to reflect the history.
+>>>
+>>> In order to facilitate a lazy -- fault driven -- migration of pages, create
+>>> a special transient PAGE_NUMA variant, we can then use the 'spurious'
+>>> protection faults to drive our migrations from.
+>>>
+>>> Pages that already had an effective PROT_NONE mapping will not be detected
+>>
+>> The patch itself is good, but the changelog needs a little
+>> fix. While you are defining _PAGE_NUMA to _PAGE_PROTNONE on
+>> x86, this may be different on other architectures.
+>>
+>> Therefore, the changelog should refer to PAGE_NUMA, not
+>> PROT_NONE.
+>>
+>
+> Fair point. I still want to record the point that PROT_NONE will not
+> generate the faults though. How about this?
+>
+>      In order to facilitate a lazy -- fault driven -- migration of pages, create
+>      a special transient PAGE_NUMA variant, we can then use the 'spurious'
+>      protection faults to drive our migrations from.
+>
+>      The meaning of PAGE_NUMA depends on the architecture but on x86 it is
+>      effectively PROT_NONE. In this case, PROT_NONE mappings will not be detected
+>      to generate these 'spurious' faults for the simple reason that we cannot
+>      distinguish them on their protection bits, see pte_numa(). This isn't
+>      a problem since PROT_NONE (and possible PROT_WRITE with dirty tracking)
+>      aren't used or are rare enough for us to not care about their placement.
 
-Cleans up two cases where variables were assigned values but then never
-used again.
-
-Signed-off-by: Andrew Price <anprice@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-
-diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-index 0def050..377a68d 100644
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -677,10 +677,8 @@ static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
- 	size_t writesize = iov_length(iov, nr_segs);
- 	struct dentry *dentry = file->f_dentry;
- 	struct gfs2_inode *ip = GFS2_I(dentry->d_inode);
--	struct gfs2_sbd *sdp;
- 	int ret;
- 
--	sdp = GFS2_SB(file->f_mapping->host);
- 	ret = gfs2_rs_alloc(ip);
- 	if (ret)
- 		return ret;
-diff --git a/fs/gfs2/lops.c b/fs/gfs2/lops.c
-index 8ff95a2..01e444b 100644
---- a/fs/gfs2/lops.c
-+++ b/fs/gfs2/lops.c
-@@ -621,7 +621,6 @@ static void revoke_lo_add(struct gfs2_sbd *sdp, struct gfs2_bufdata *bd)
- 
- static void revoke_lo_before_commit(struct gfs2_sbd *sdp)
- {
--	struct gfs2_log_descriptor *ld;
- 	struct gfs2_meta_header *mh;
- 	unsigned int offset;
- 	struct list_head *head = &sdp->sd_log_le_revoke;
-@@ -634,7 +633,6 @@ static void revoke_lo_before_commit(struct gfs2_sbd *sdp)
- 
- 	length = gfs2_struct2blk(sdp, sdp->sd_log_num_revoke, sizeof(u64));
- 	page = gfs2_get_log_desc(sdp, GFS2_LOG_DESC_REVOKE, length, sdp->sd_log_num_revoke);
--	ld = page_address(page);
- 	offset = sizeof(struct gfs2_log_descriptor);
- 
- 	list_for_each_entry(bd, head, bd_list) {
--- 
-1.7.4
+Actual PROT_NONE mappings will not generate these NUMA faults
+for the reason that the page fault code checks the permission
+on the VMA (and will throw a segmentation fault on actual
+PROT_NONE mappings), before it ever calls handle_mm_fault.
 
