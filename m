@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab2KGP0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 10:26:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43060 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314Ab2KGP0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 10:26:03 -0500
-Date: Wed, 7 Nov 2012 15:25:58 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Zhouping Liu <zliu@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        CAI Qian <caiqian@redhat.com>
-Subject: Re: [RFC PATCH 00/19] Foundation for automatic NUMA balancing
-Message-ID: <20121107152558.GZ8218@suse.de>
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
- <509A2970.9000408@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <509A2970.9000408@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754213Ab2KGP0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 10:26:19 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:50083 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab2KGP0R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 10:26:17 -0500
+From: Alban Bedel <alban.bedel@avionic-design.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Roland Stigge <stigge@antcom.de>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        Alban Bedel <alban.bedel@avionic-design.de>
+Subject: [PATCH] pwm: lpc32xx - Fix the PWM polarity
+Date: Wed,  7 Nov 2012 16:25:55 +0100
+Message-Id: <1352301955-15960-1-git-send-email-alban.bedel@avionic-design.de>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20121106181939.61c50233@avionic-0020.adnet.avionic-design.de>
+References: <20121106181939.61c50233@avionic-0020.adnet.avionic-design.de>
+X-Provags-ID: V02:K0:hLoqvDnsBxBIMZ7TxOmTCq195B2cYP5IIvlZdmOKSQ7
+ NLv84FROms87vPuovw9ygeM7sPQjj1RCDAq2ThleYWomIbLcAa
+ AjDvLpy4LvkKvJEw4zcVSd3f3nFirnnuNIVHOcX0Oy06UAKhfX
+ G+VtV3xD0kdOCMHgoaVi2AY6LlRG38IpDokZOt/1hr/lxOXi9r
+ L4utqFM+2Dn1RtFLjJ6ID1hdALAS6UfG2vns2Hn4w5Sy9x/qcz
+ dQAYMFnhjIEKZvvp3hU3JIB0Dt84pk8vgUXDfjF6Ob0vjUzRMT
+ aKeiWd4yVikGhJHpYhgKKREt2vfdOTgYn+C3ifjkEsXT42Haf8
+ eq9PFcblg4VWrrMeYFMs1Klm+5NS+z7FcFRizcG92YdreTutHy
+ H6GEeKvZtYftp/6hfjov4UXcy6qstozJ8hspFq+4aqVUez0FDw
+ WbGv3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 05:27:12PM +0800, Zhouping Liu wrote:
-> 
-> Hello Mel,
-> 
-> my 2 nodes machine hit a panic fault after applied the patch
-> set(based on kernel-3.7.0-rc4), please review it:
-> 
-> <SNIP>
-
-Early initialisation problem by the looks of things. Try this please
-
----8<---
-mm: numa: Check that preferred_node_policy is initialised
-
-Zhouping Liu reported the following
-
-[ 0.000000] ------------[ cut here ]------------
-[ 0.000000] kernel BUG at mm/mempolicy.c:1785!
-[ 0.000000] invalid opcode: 0000 [#1] SMP
-[ 0.000000] Modules linked in:
-[ 0.000000] CPU 0
-....
-[    0.000000] Call Trace:
-[    0.000000] [<ffffffff81176966>] alloc_pages_current+0xa6/0x170
-[    0.000000] [<ffffffff81137a44>] __get_free_pages+0x14/0x50
-[    0.000000] [<ffffffff819efd9b>] kmem_cache_init+0x53/0x2d2
-[    0.000000] [<ffffffff819caa53>] start_kernel+0x1e0/0x3c7
-
-Problem is that early in boot preferred_nod_policy and SLUB
-initialisation trips up. Check it is initialised.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
 ---
- mm/mempolicy.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/pwm/pwm-lpc32xx.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 11d4b6b..8cfa6dc 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -129,6 +129,10 @@ static struct mempolicy *get_task_policy(struct task_struct *p)
- 		node = numa_node_id();
- 		if (node != -1)
- 			pol = &preferred_node_policy[node];
-+
-+		/* preferred_node_policy is not initialised early in boot */
-+		if (!pol->mode)
-+			pol = NULL;
- 	}
+diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+index adb87f0..0dc278d 100644
+--- a/drivers/pwm/pwm-lpc32xx.c
++++ b/drivers/pwm/pwm-lpc32xx.c
+@@ -51,7 +51,11 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
  
- 	return pol;
+ 	c = 256 * duty_ns;
+ 	do_div(c, period_ns);
+-	duty_cycles = c;
++	if (c == 0)
++		c = 256;
++	if (c > 255)
++		c = 255;
++	duty_cycles = 256 - c;
+ 
+ 	writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
+ 		lpc32xx->base + (pwm->hwpwm << 2));
+-- 
+1.7.0.4
+
