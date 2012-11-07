@@ -1,84 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab2KGRYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 12:24:39 -0500
-Received: from 4.mo2.mail-out.ovh.net ([87.98.172.75]:49901 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752940Ab2KGRYi (ORCPT
+	id S1753752Ab2KGRZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 12:25:29 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49558 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab2KGRZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 12:24:38 -0500
-Date: Wed, 7 Nov 2012 18:12:17 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>
-Cc: Nicolas Royer <nicolas@eukrea.com>, linux-kernel@vger.kernel.org,
-        nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
-        linux-crypto@vger.kernel.org, herbert@gondor.hengli.com.au,
-        davem@davemloft.net
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH 2/5 v2] ARM: AT91SAM9G45: same platform data structure
- for all crypto peripherals
-Message-ID: <20121107171217.GH4576@game.jcrosoft.org>
-References: <20121107152615.GD4576@game.jcrosoft.org>
- <1352305675-21961-1-git-send-email-nicolas@eukrea.com>
- <20121107164523.GG4576@game.jcrosoft.org>
- <20121107175946.01f9dc78@eb-e6520>
+	Wed, 7 Nov 2012 12:25:27 -0500
+Message-ID: <509A9984.3000709@wwwdotorg.org>
+Date: Wed, 07 Nov 2012 10:25:24 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121107175946.01f9dc78@eb-e6520>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 10883511451562519470
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -110
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenfghrlhcuvffnffculddquddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehinhguihgrnhgrrdgvughunecujfgurhepfffhvffukfhfgggtugfgjggfsehtkefttddtredu
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -110
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrgedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenfghrlhcuvffnffculddquddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehinhguihgrnhgrrdgvughunecujfgurhepfffhvffukfhfgggtugfgjggfsehtkefttddtredu
+To: Benoit Cousson <b-cousson@ti.com>
+CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Deepak Saxena <dsaxena@linaro.org>,
+        Scott Wood <scottwood@freescale.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices
+ to mach-omap2)
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com> <CACxGe6vDzmPWsOZ53HTwkYmDEivg9TpnRrvudY2FK95V06O24w@mail.gmail.com> <A5170602-2AE7-4EC4-BE0F-0DF015A287D7@antoniou-consulting.com> <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com> <5ED17D42-07B8-4D4F-B54F-82B4CC60584C@antoniou-consulting.com> <509A3595.7050600@ti.com>
+In-Reply-To: <509A3595.7050600@ti.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17:59 Wed 07 Nov     , Eric Bénard wrote:
-> Hi Jean-Christophe,
+On 11/07/2012 03:19 AM, Benoit Cousson wrote:
+> Hi Panto,
 > 
-> Le Wed, 7 Nov 2012 17:45:23 +0100,
-> Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> a écrit :
-> > > @@ -1900,7 +1900,7 @@ static void __init at91_add_device_tdes(void) {}
-> > >   * -------------------------------------------------------------------- */
-> > >  
-> > >  #if defined(CONFIG_CRYPTO_DEV_ATMEL_AES) || defined(CONFIG_CRYPTO_DEV_ATMEL_AES_MODULE)
-> > > -static struct aes_platform_data aes_data;
-> > > +static struct crypto_platform_data aes_data;
-> > >  static u64 aes_dmamask = DMA_BIT_MASK(32);
-> > >  
-> > >  static struct resource aes_resources[] = {
-> > > @@ -1931,9 +1931,11 @@ static struct platform_device at91sam9g45_aes_device = {
-> > >  static void __init at91_add_device_aes(void)
-> > >  {
-> > >  	struct at_dma_slave	*atslave;
-> > > -	struct aes_dma_data	*alt_atslave;
-> > > +	struct crypto_dma_data	*alt_atslave;
-> > >  
-> > > -	alt_atslave = kzalloc(sizeof(struct aes_dma_data), GFP_KERNEL);
-> > > +	alt_atslave = kzalloc(sizeof(struct crypto_dma_data), GFP_KERNEL);
-> > I still not understand why we need to allocate it
-> > 
-> > just declare it as static
-> > 
-> last time we had some data static and you asked to alloc them (and
-> didn't bother to answer why you required that :
-> http://lkml.indiana.edu/hypermail/linux/kernel/1207.0/02779.html ), now
-> you ask to declare static something which is allocated (and
-> that's already done this way for the mci) : may you please explain why
-> so that we get it the right way for next time ?
+> On 11/07/2012 09:13 AM, Pantelis Antoniou wrote:
+>> Hi Grant
+>>
+>> On Nov 6, 2012, at 9:45 PM, Grant Likely wrote:
+>>
+>>> On Tue, Nov 6, 2012 at 7:34 PM, Pantelis Antoniou
+>>> <panto@antoniou-consulting.com> wrote:
+>>
+>> [ snip ]
+>>>
+>>> g.
+>>
+>> Since we've started talking about longer term goals, and the versioning
+>> provision seems to stand, I hope we address how much the fragment versioning
+>> thing is similar to the way board revisions progress.
+>>
+>> If a versioning syntax is available then one could create a single DT 
+>> file for a bunch of 'almost' similar board and board revisions.
+> 
+> I even think that the version issue is probably much more important for the short term than the overlay aspect. Well at least as important. We start having as well a bunch a panda board version with different HW setup.
+> 
+> Having a single board-XXX.dts that will support all these versions is probably the best approach to avoid choosing that from the bootloader.
+> 
+> We need to figure out a format + mechanism compatible with the current non-versioned format to allow filtering the nodes at runtime to keep only the relevant one.
+> 
+> Something that can find the driver that will provide the proper board version or subsystem version or whatever like that:
+> 
+> 	compatible-version = "ti,panda-version", "panda";
+> 
+> Then at runtime we should create only the node with the correct match between the driver version and the string version.
+> 
+> 
+> /* regular panda audio routing */
+> sound: sound {
+> 	compatible = "ti,abe-twl6040";
+> 	ti,model = "PandaBoard";
+> 	compatible-version = "ti,panda-version", "panda";
+> 
+> 	/* Audio routing */
+> 	ti,audio-routing =
+> 		"Headset Stereophone", "HSOL",
+> 		"Headset Stereophone", "HSOR",
+> 		"Ext Spk", "HFL",
+> 		"Ext Spk", "HFR",
+> 		"Line Out", "AUXL",
+> 		"Line Out", "AUXR",
+> 		"HSMIC", "Headset Mic",
+> 		"Headset Mic", "Headset Mic Bias",
+> 		"AFML", "Line In",
+> 		"AFMR", "Line In";
+> };
+> 
+> 
+> /* Audio routing is different between PandaBoard4430 and PandaBoardES */
+> &sound {
+> 	ti,model = "PandaBoardES";
+> 	compatible-version = "ti,panda-version", "panda-es";
+> 
+> 	/* Audio routing */
+> 	ti,audio-routing =
+> 		"Headset Stereophone", "HSOL",
+> 		"Headset Stereophone", "HSOR",
+> 		"Ext Spk", "HFL",
+> 		"Ext Spk", "HFR",
+> 		"Line Out", "AUXL",
+> 		"Line Out", "AUXR",
+> 		"AFML", "Line In",
+> 		"AFMR", "Line In";
+> };
+> 
+> 
+> Maybe some extra version match table can just be passed during the board machine_init 
+> 
+> 	of_platform_populate(NULL, omap_dt_match_table, NULL, NULL, panda_version_match_table);
 
-in the driver yes we write multi instance and generic code but in the platfrom I do not see why
+Is the only difference here the content of the ti,audio-routing
+property? If so, then I don't think there's any need for infra-structure
+for this; the driver code already reads that property and adjusts its
+behaviour based upon it.
 
-Best Regards,
-J.
+I do see that "Headset Mic" exists only in one of the tables above.
+Perhaps the driver could scan the routing table, and only create the
+ASoC object for the headset if it's mentioned in the routing table?
+
+If there are additional differences, then you can always use the .data
+field in of_device_id to automatically associate some configuration data
+with different compatible values.
+
+Even better might be to extend the binding so that all HW differences
+are represented explicitly as properties; that way you wouldn't even
+need different compatible values.
