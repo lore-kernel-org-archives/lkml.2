@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab2KFX5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 18:57:54 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:32880 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab2KFX5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 18:57:53 -0500
-Date: Tue, 06 Nov 2012 18:57:52 -0500 (EST)
-Message-Id: <20121106.185752.1986400393399264104.davem@davemloft.net>
-To: lee.jones@linaro.org
-Cc: pebolle@tiscali.nl, linux-kernel@vger.kernel.org, isdn@linux-pingi.de,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 8/9] isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121105103126.GB5220@gmail.com>
-References: <20121104105332.GC27124@gmail.com>
-	<20121104.123013.700345271120279281.davem@davemloft.net>
-	<20121105103126.GB5220@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754073Ab2KGAAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 19:00:44 -0500
+Received: from twin.jikos.cz ([89.185.236.188]:50719 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753527Ab2KGAAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 19:00:42 -0500
+Date: Wed, 7 Nov 2012 01:00:25 +0100
+From: David Sterba <dave@jikos.cz>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Subject: Re: [RFC v4+ hot_track 16/19] btrfs: add hot tracking support
+Message-ID: <20121107000025.GY3102@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+	viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
+	cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+ <1351485061-12297-17-git-send-email-zwu.kernel@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351485061-12297-17-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Jones <lee.jones@linaro.org>
-Date: Mon, 5 Nov 2012 11:31:26 +0100
-
-> Does something like look like a better solution?
+On Mon, Oct 29, 2012 at 12:30:58PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 > 
-> Author: Lee Jones <lee.jones@linaro.org>
-> Date:   Sat Nov 3 22:06:02 2012 +0100
+>   Introduce one new mount option '-o hot_track',
+> and add its parsing support.
+>   Its usage looks like:
+>    mount -o hot_track
+>    mount -o nouser,hot_track
+>    mount -o nouser,hot_track,loop
+>    mount -o hot_track,nouser
 > 
->     isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
-
-Yes, it looks good, please resubmit it formally.
+> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Reviewed-by: David Sterba <dsterba@suse.cz>
