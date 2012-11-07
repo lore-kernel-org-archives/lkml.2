@@ -1,141 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab2KGHD5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 02:03:57 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50631 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab2KGHDz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 02:03:55 -0500
+	id S1752009Ab2KGHEa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 02:04:30 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:49409 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751141Ab2KGHE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 02:04:28 -0500
+Message-ID: <509A07E3.5090700@parallels.com>
+Date: Wed, 7 Nov 2012 08:04:03 +0100
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121106223704.GT3102@twin.jikos.cz>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	<1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
-	<20121106223704.GT3102@twin.jikos.cz>
-Date: Wed, 7 Nov 2012 15:03:54 +0800
-Message-ID: <CAEH94LiZ5CCfNq8xhmCU5vz1cZBd3EZ-U+Q+cBAaOUYPFMAKbw@mail.gmail.com>
-Subject: Re: [RFC v4+ hot_track 03/19] vfs: add I/O frequency update function
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>, JoonSoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH v6 19/29] memcg: infrastructure to match an allocation
+ to the right cache
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com> <1351771665-11076-20-git-send-email-glommer@parallels.com> <20121105162837.5fdac20c.akpm@linux-foundation.org>
+In-Reply-To: <20121105162837.5fdac20c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [88.2.50.55]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 6:37 AM, David Sterba <dave@jikos.cz> wrote:
-> On Mon, Oct 29, 2012 at 12:30:45PM +0800, zwu.kernel@gmail.com wrote:
->> --- a/fs/hot_tracking.c
->> +++ b/fs/hot_tracking.c
->> +struct hot_inode_item
->> +*hot_inode_item_find(struct hot_info *root, u64 ino)
->> +{
->> +     struct hot_inode_item *he;
->> +     int ret;
->> +
->> +again:
->> +     spin_lock(&root->lock);
->> +     he = radix_tree_lookup(&root->hot_inode_tree, ino);
->> +     if (he) {
->> +             kref_get(&he->hot_inode.refs);
->> +             spin_unlock(&root->lock);
->> +             return he;
->> +     }
->> +     spin_unlock(&root->lock);
->> +
->> +     he = kmem_cache_zalloc(hot_inode_item_cachep,
->> +                             GFP_KERNEL | GFP_NOFS);
->> +     if (!he)
->> +             return ERR_PTR(-ENOMEM);
->> +
->> +     hot_inode_item_init(he, ino, &root->hot_inode_tree);
->> +
->> +     ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
->> +     if (ret) {
->> +             kmem_cache_free(hot_inode_item_cachep, he);
->
->                 radix_tree_preload_end()
->
->> +             return ERR_PTR(ret);
->> +     }
->> +
->> +     spin_lock(&root->lock);
->> +     ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
->> +     if (ret == -EEXIST) {
->> +             kmem_cache_free(hot_inode_item_cachep, he);
->> +             spin_unlock(&root->lock);
->> +             radix_tree_preload_end();
->> +             goto again;
->> +     }
->> +     spin_unlock(&root->lock);
->> +     radix_tree_preload_end();
->> +
->> +     kref_get(&he->hot_inode.refs);
->> +     return he;
->> +}
->> +EXPORT_SYMBOL_GPL(hot_inode_item_find);
->> +
->> +static struct hot_range_item
->> +*hot_range_item_find(struct hot_inode_item *he,
->> +                     u32 start)
->> +{
->> +     struct hot_range_item *hr;
->> +     int ret;
->> +
->> +again:
->> +     spin_lock(&he->lock);
->> +     hr = radix_tree_lookup(&he->hot_range_tree, start);
->> +     if (hr) {
->> +             kref_get(&hr->hot_range.refs);
->> +             spin_unlock(&he->lock);
->> +             return hr;
->> +     }
->> +     spin_unlock(&he->lock);
->> +
->> +     hr = kmem_cache_zalloc(hot_range_item_cachep,
->> +                             GFP_KERNEL | GFP_NOFS);
->> +     if (!hr)
->> +             return ERR_PTR(-ENOMEM);
->> +
->> +     hot_range_item_init(hr, start, he);
->> +
->> +     ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
->> +     if (ret) {
->> +             kmem_cache_free(hot_range_item_cachep, hr);
->
->                 radix_tree_preload_end()
-I checked some kernel existing cases about the usage of
-radix_tree_preload(), it seems that when radix_tree_preload() fail,
-its error handling doesn't need call radix_tree_preload_end() any
-more.
->
->> +             return ERR_PTR(ret);
->> +     }
->> +
->> +     spin_lock(&he->lock);
->> +     ret = radix_tree_insert(&he->hot_range_tree, start, hr);
->> +     if (ret == -EEXIST) {
->> +             kmem_cache_free(hot_range_item_cachep, hr);
->> +             spin_unlock(&he->lock);
->> +             radix_tree_preload_end();
-ditto.
->> +             goto again;
->> +     }
->> +     spin_unlock(&he->lock);
->> +     radix_tree_preload_end();
->> +
->> +     kref_get(&hr->hot_range.refs);
->> +     return hr;
->> +}
->
-> david
+On 11/06/2012 01:28 AM, Andrew Morton wrote:
+> On Thu,  1 Nov 2012 16:07:35 +0400
+> Glauber Costa <glommer@parallels.com> wrote:
+> 
+>> +static __always_inline struct kmem_cache *
+>> +memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+> 
+> I still don't understand why this code uses __always_inline so much.
+> 
+> I don't recall seeing the compiler producing out-of-line versions of
+> "static inline" functions (and perhaps it has special treatment for
+> functions which were defined in a header file?).
+> 
+> And if the compiler *does* decide to uninline the function, perhaps it
+> knows best, and the function shouldn't have been declared inline in the
+> first place.
+> 
+> 
+> If it is indeed better to use __always_inline in this code then we have
+> a heck of a lot of other "static inline" definitions whcih we need to
+> convert!  So, what's going on here?
+> 
 
+The original motivation is indeed performance related. We want to make
+sure it is inline so it will figure out quickly the "I am not a memcg
+user" case and keep it going. The slub, for instance, is full of
+__always_inline functions to make sure that the fast path contains
+absolutely no function calls. So I was just following this here.
 
+I can remove the marker without a problem and leave it to the compiler
+if you think it is best
 
--- 
-Regards,
-
-Zhi Yong Wu
