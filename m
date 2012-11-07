@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab2KGQh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 11:37:59 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33927 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab2KGQh4 (ORCPT
+	id S1753538Ab2KGQiD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 11:38:03 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:56660 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab2KGQh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 11:37:56 -0500
+	Wed, 7 Nov 2012 11:37:59 -0500
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 01/13] HID: hid-input: export hidinput_calc_abs_res
-Date: Wed,  7 Nov 2012 17:37:24 +0100
-Message-Id: <1352306256-12180-2-git-send-email-benjamin.tissoires@gmail.com>
+Subject: [PATCH v3 04/13] HID: hid-input: add usage_index in struct hid_usage.
+Date: Wed,  7 Nov 2012 17:37:27 +0100
+Message-Id: <1352306256-12180-5-git-send-email-benjamin.tissoires@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
 References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
@@ -23,75 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exporting the function allows us to calculate the resolution in third
-party drivers like hid-multitouch.
-This patch also complete the function with additional valid axes.
+Currently, there is no way to know the index of the current field
+in the .input_mapping and .event callbacks  when this field is inside
+an array of HID fields.
+This patch adds this index to the struct hid_usage so that this
+information is available to input_mapping and event callbacks.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 ---
- drivers/hid/hid-input.c      | 9 ++++++++-
- drivers/hid/hid-multitouch.c | 1 +
- include/linux/hid.h          | 1 +
- 3 files changed, 10 insertions(+), 1 deletion(-)
+ drivers/hid/hid-core.c | 4 ++++
+ include/linux/hid.h    | 1 +
+ 2 files changed, 5 insertions(+)
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 10248cf..f5b1d57 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -208,7 +208,7 @@ static int hidinput_setkeycode(struct input_dev *dev,
-  * Only exponent 1 length units are processed. Centimeters and inches are
-  * converted to millimeters. Degrees are converted to radians.
-  */
--static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
-+__s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 9da3007..8f82c4c 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -92,6 +92,7 @@ EXPORT_SYMBOL_GPL(hid_register_report);
+ static struct hid_field *hid_register_field(struct hid_report *report, unsigned usages, unsigned values)
  {
- 	__s32 unit_exponent = field->unit_exponent;
- 	__s32 logical_extents = field->logical_maximum -
-@@ -229,6 +229,12 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
- 	case ABS_X:
- 	case ABS_Y:
- 	case ABS_Z:
-+	case ABS_MT_POSITION_X:
-+	case ABS_MT_POSITION_Y:
-+	case ABS_MT_TOOL_X:
-+	case ABS_MT_TOOL_Y:
-+	case ABS_MT_TOUCH_MAJOR:
-+	case ABS_MT_TOUCH_MINOR:
- 		if (field->unit == 0x11) {		/* If centimeters */
- 			/* Convert to millimeters */
- 			unit_exponent += 1;
-@@ -283,6 +289,7 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
- 	/* Calculate resolution */
- 	return logical_extents / physical_extents;
- }
-+EXPORT_SYMBOL_GPL(hidinput_calc_abs_res);
+ 	struct hid_field *field;
++	int i;
  
- #ifdef CONFIG_HID_BATTERY_STRENGTH
- static enum power_supply_property hidinput_battery_props[] = {
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 3eb02b9..9f64e36 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -298,6 +298,7 @@ static void set_abs(struct input_dev *input, unsigned int code,
- 	int fmax = field->logical_maximum;
- 	int fuzz = snratio ? (fmax - fmin) / snratio : 0;
- 	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
-+	input_abs_set_res(input, code, hidinput_calc_abs_res(field, code));
+ 	if (report->maxfield == HID_MAX_FIELDS) {
+ 		hid_err(report->device, "too many fields in report\n");
+@@ -110,6 +111,9 @@ static struct hid_field *hid_register_field(struct hid_report *report, unsigned
+ 	field->value = (s32 *)(field->usage + usages);
+ 	field->report = report;
+ 
++	for (i = 0; i < usages; i++)
++		field->usage[i].usage_index = i;
++
+ 	return field;
  }
  
- static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
 diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 7e1f37d..9edb06c 100644
+index a110a3e..6b4f322 100644
 --- a/include/linux/hid.h
 +++ b/include/linux/hid.h
-@@ -743,6 +743,7 @@ int hid_input_report(struct hid_device *, int type, u8 *, int, int);
- int hidinput_find_field(struct hid_device *hid, unsigned int type, unsigned int code, struct hid_field **field);
- struct hid_field *hidinput_get_led_field(struct hid_device *hid);
- unsigned int hidinput_count_leds(struct hid_device *hid);
-+__s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code);
- void hid_output_report(struct hid_report *report, __u8 *data);
- struct hid_device *hid_allocate_device(void);
- struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
+@@ -380,6 +380,7 @@ struct hid_usage {
+ 	unsigned  hid;			/* hid usage code */
+ 	unsigned  collection_index;	/* index into collection array */
+ 	/* hidinput data */
++	unsigned  usage_index;		/* index into usage array */
+ 	__u16     code;			/* input driver code */
+ 	__u8      type;			/* input driver type */
+ 	__s8	  hat_min;		/* hat switch fun */
 -- 
 1.7.11.7
 
