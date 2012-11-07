@@ -1,114 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab2KGXTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 18:19:18 -0500
-Received: from relay.ihostexchange.net ([66.46.182.58]:38385 "EHLO
-	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab2KGXTR (ORCPT
+	id S1753515Ab2KGXX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 18:23:58 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54796 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab2KGXX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 18:19:17 -0500
-X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Nov 2012 18:19:17 EST
-From: Troy Abercrombia <ta@cypress.com>
-To: Kamal Mostafa <kamal@canonical.com>,
-        =?utf-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        customercare <customercare@cypress.com>,
-        "mario_limonciello@dell.com" <mario_limonciello@dell.com>,
-        David Solda <dso@cypress.com>
-Date: Wed, 7 Nov 2012 18:13:56 -0500
-Subject: RE: Why Cypress does not upstream its trackpad driver?
-Thread-Topic: Why Cypress does not upstream its trackpad driver?
-Thread-Index: Ac29Fkb8I855apJ8TmqD9YyV+QXGaQAJhiCg
-Message-ID: <C825ADB6BE8AC2468577BFFCE7DF5B8A1F080FA111@VMBX133.ihostexchange.net>
-References: <CAFub=KTf2dWxM9=saG2JaNJpEioJM8rM3UBG9BkyxRN-+j0psQ@mail.gmail.com>
- <1352313131.2751.152.camel@fourier>
-In-Reply-To: <1352313131.2751.152.camel@fourier>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Wed, 7 Nov 2012 18:23:57 -0500
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Rob Herring <rob.herring@calxeda.com>, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [PATCH] cpuidle: add Calxeda SOC idle support
+Date: Wed,  7 Nov 2012 17:23:42 -0600
+Message-Id: <1352330622-13616-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA7NJN8h023293
 
-Hello Kamal
+From: Rob Herring <rob.herring@calxeda.com>
 
-Unfortunately, We're not able to upstream the driver as it would be denied because it changes the Linux mouse structure framework.
+Add support for core powergating on Calxeda platforms. Initially, this
+supports ECX-1000 (highbank), but support will be added for ECX-2000
+later.
 
-Thanks
-Troy
------Original Message-----
-From: Kamal Mostafa [mailto:kamal@canonical.com]
-Sent: Wednesday, November 07, 2012 10:32 AM
-To: Ozan √áaƒülayan
-Cc: linux-kernel@vger.kernel.org; linux-input@vger.kernel.org; dmitry.torokhov@gmail.com; customercare; mario_limonciello@dell.com
-Subject: Re: Why Cypress does not upstream its trackpad driver?
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Len Brown <len.brown@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+---
 
-On Tue, 2012-11-06 at 17:47 -0500, Ozan √áaƒülayan wrote:
-> Hi,
->
-> This driver [0] was written with a cooperation of Cypress, Dell and
-> Canonical Engineers within the last 3-4 months. It is very nice that
-> Cypress as a vendor cooperated with Canonical (Because Canonical works
-> with Dell for their Project Sputnik and Dell XPS13 is used as the main
-> hardware for that project and Dell XPS13 has this type of trackpad,
-> Bingo!), and I am also glad that Ubuntu users benefits from this
-> driver.
->
-> The driver brings multi-touch scrolling, disable-while-tapping and
-> makes Fn+Fx touchpad disable/enable work for not only Dell XPS13 but
-> for all laptops having this trackpad (My Lenovo Ultrabook U300s for
-> example, I tested the patches on fedora 17's 3.6 kernel and it works
-> quiet nice)
->
-> But what I am not getting that why NOBODY from Cypress/Canonical/Dell
-> isn't bothering to push this driver to upstream?
+It's not really clear where we want ARM cpuidle drivers. We're moving
+everything else out of arch/arm, and my understanding is Len doesn't want
+them in drivers/idle. It seems kind of silly to me to have the framework
+and drivers in 2 places. I've put this in drivers/cpuidle, but it doesn't
+make any difference to me.
 
+Rob
 
-In fact, Canonical is working on preparing the Cypress PS/2 trackpad driver for submitting upstream.
+ drivers/cpuidle/Kconfig           |   10 +++
+ drivers/cpuidle/Makefile          |    2 +
+ drivers/cpuidle/cpuidle-calxeda.c |  161 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 173 insertions(+)
+ create mode 100644 drivers/cpuidle/cpuidle-calxeda.c
 
+diff --git a/drivers/cpuidle/Kconfig b/drivers/cpuidle/Kconfig
+index a76b689..d2d007b 100644
+--- a/drivers/cpuidle/Kconfig
++++ b/drivers/cpuidle/Kconfig
+@@ -21,3 +21,13 @@ config CPU_IDLE_GOV_MENU
+ 
+ config ARCH_NEEDS_CPU_IDLE_COUPLED
+ 	def_bool n
++
++if CPU_IDLE
++
++config CPU_IDLE_CALXEDA
++	bool "CPU Idle Driver for Calxeda processors"
++	depends on ARCH_HIGHBANK
++	help
++	  Select this to enable cpuidle on Calxeda processors.
++
++endif
+diff --git a/drivers/cpuidle/Makefile b/drivers/cpuidle/Makefile
+index 38c8f69..03ee874 100644
+--- a/drivers/cpuidle/Makefile
++++ b/drivers/cpuidle/Makefile
+@@ -4,3 +4,5 @@
+ 
+ obj-y += cpuidle.o driver.o governor.o sysfs.o governors/
+ obj-$(CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED) += coupled.o
++
++obj-$(CONFIG_CPU_IDLE_CALXEDA) += cpuidle-calxeda.o
+diff --git a/drivers/cpuidle/cpuidle-calxeda.c b/drivers/cpuidle/cpuidle-calxeda.c
+new file mode 100644
+index 0000000..e1aab38
+--- /dev/null
++++ b/drivers/cpuidle/cpuidle-calxeda.c
+@@ -0,0 +1,161 @@
++/*
++ * Copyright 2012 Calxeda, Inc.
++ *
++ * Based on arch/arm/plat-mxc/cpuidle.c:
++ * Copyright 2012 Freescale Semiconductor, Inc.
++ * Copyright 2012 Linaro Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/cpuidle.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/time.h>
++#include <linux/delay.h>
++#include <linux/suspend.h>
++#include <asm/cpuidle.h>
++#include <asm/proc-fns.h>
++#include <asm/smp_scu.h>
++#include <asm/suspend.h>
++#include <asm/cacheflush.h>
++#include <asm/cp15.h>
++
++extern void highbank_set_cpu_jump(int cpu, void *jump_addr);
++extern void *scu_base_addr;
++
++static struct cpuidle_device __percpu *calxeda_idle_cpuidle_devices;
++
++static inline unsigned int get_auxcr(void)
++{
++	unsigned int val;
++	asm("mrc p15, 0, %0, c1, c0, 1	@ get AUXCR" : "=r" (val) : : "cc");
++	return val;
++}
++
++static inline void set_auxcr(unsigned int val)
++{
++	asm volatile("mcr p15, 0, %0, c1, c0, 1	@ set AUXCR"
++	  : : "r" (val) : "cc");
++	isb();
++}
++
++static noinline void calxeda_idle_restore(void)
++{
++	set_cr(get_cr() | CR_C);
++	set_auxcr(get_auxcr() | 0x40);
++	scu_power_mode(scu_base_addr, SCU_PM_NORMAL);
++}
++
++static int calxeda_idle_finish(unsigned long val)
++{
++	/* Already flushed cache, but do it again as the outer cache functions
++	 * dirty the cache with spinlocks */
++	flush_cache_all();
++
++	set_auxcr(get_auxcr() & ~0x40);
++	set_cr(get_cr() & ~CR_C);
++
++	scu_power_mode(scu_base_addr, SCU_PM_DORMANT);
++
++	cpu_do_idle();
++
++	/* Restore things if we didn't enter power-gating */
++	calxeda_idle_restore();
++	return 1;
++}
++
++static int calxeda_pwrdown_idle(struct cpuidle_device *dev,
++				struct cpuidle_driver *drv,
++				int index)
++{
++	highbank_set_cpu_jump(smp_processor_id(), cpu_resume);
++	cpu_suspend(0, calxeda_idle_finish);
++	return index;
++}
++
++static void calxeda_idle_cpuidle_devices_uninit(void)
++{
++	int i;
++	struct cpuidle_device *dev;
++
++	for_each_possible_cpu(i) {
++		dev = per_cpu_ptr(calxeda_idle_cpuidle_devices, i);
++		cpuidle_unregister_device(dev);
++	}
++
++	free_percpu(calxeda_idle_cpuidle_devices);
++}
++
++static struct cpuidle_driver calxeda_idle_driver = {
++	.name = "calxeda_idle",
++	.en_core_tk_irqen = 1,
++	.states = {
++		ARM_CPUIDLE_WFI_STATE,
++		{
++			.name = "PG",
++			.desc = "Power Gate",
++			.flags = CPUIDLE_FLAG_TIME_VALID,
++			.exit_latency = 30,
++			.power_usage = 50,
++			.target_residency = 200,
++			.enter = calxeda_pwrdown_idle,
++		},
++	},
++	.state_count = 2,
++};
++
++static int __init calxeda_cpuidle_init(void)
++{
++	int cpu_id;
++	int ret;
++	struct cpuidle_device *dev;
++	struct cpuidle_driver *drv = &calxeda_idle_driver;
++
++	if (!of_machine_is_compatible("calxeda,highbank"))
++		return -ENODEV;
++
++	ret = cpuidle_register_driver(drv);
++	if (ret)
++		return ret;
++
++	calxeda_idle_cpuidle_devices = alloc_percpu(struct cpuidle_device);
++	if (calxeda_idle_cpuidle_devices == NULL) {
++		ret = -ENOMEM;
++		goto unregister_drv;
++	}
++
++	/* initialize state data for each cpuidle_device */
++	for_each_possible_cpu(cpu_id) {
++		dev = per_cpu_ptr(calxeda_idle_cpuidle_devices, cpu_id);
++		dev->cpu = cpu_id;
++		dev->state_count = drv->state_count;
++
++		ret = cpuidle_register_device(dev);
++		if (ret) {
++			pr_err("Failed to register cpu %u, error: %d\n",
++			       cpu_id, ret);
++			goto uninit;
++		}
++	}
++
++	return 0;
++
++uninit:
++	calxeda_idle_cpuidle_devices_uninit();
++unregister_drv:
++	cpuidle_unregister_driver(drv);
++	return ret;
++}
++module_init(calxeda_cpuidle_init);
+-- 
+1.7.10.4
 
-> Is it too hard? I don't think so as the patches are quite non-invasive
-> and small.
-
-
-Your estimate of the work/risk involved not withstanding, I chose to deploy this experimental driver in stages -- first in the oem-specific "Sputnik project" kernel, then (recently) in the main Ubuntu kernel, then finally (soon) upstream -- so as to minimize regressions while shaking out the bugs.  For example, the version to which you linked does include a regression (breaks some ALPS touchpads) which we discovered only after deploying in Ubuntu.
-
-I expect to submit the Cypress driver upstream within two weeks.  Of course, my work on the driver is (and has been) publicly available[1].
-
- -Kamal Mostafa <kamal@canonical.com>
-
-[1] The latest version of this driver is represented by the patch set:
-    http://kernel.ubuntu.com/git?p=ubuntu%2Fubuntu-quantal.git&a=search&h=HEAD&st=commit&s=Cypress+PS%2F2
-
-
->
-> Is the only distribution around is Ubuntu?
-> Is the only laptop sold in the world is Dell XPS13 with an Ubuntu?
->
-> I'm not trying to be impolite but it hurts me to see that a vendor
-> produces an open-source driver for its device but makes use of it only
-> through a specific distribution.
->
-> If Cypress is just beginning developing open-source drivers for their
-> devices, I hope that after this mail they will be much sensitive about
-> the issue and push their drivers even before the release of their
-> devices to make user experience flawless.
->
-> (I googled and searched the archives of LKML and linux-input but
-> couldn't find a discussion or patch series about the driver. If I
-> missed it, ignore the whole stuff above)
->
-> [0]: http://patchwork.ozlabs.org/patch/178903/
->
-
-
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
