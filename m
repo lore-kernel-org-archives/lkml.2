@@ -1,107 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab2KGVj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 16:39:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37716 "EHLO mx1.redhat.com"
+	id S1753472Ab2KGVkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 16:40:13 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:32953 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752188Ab2KGVj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 16:39:56 -0500
-Date: Wed, 7 Nov 2012 19:39:30 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v11 1/7] mm: adjust
- address_space_operations.migratepage() return code
-Message-ID: <20121107213929.GB10444@optiplex.redhat.com>
-References: <cover.1352256081.git.aquini@redhat.com>
- <74bc30697313206e1225f6fc658bc5952b588dcc.1352256085.git.aquini@redhat.com>
- <20121107115610.c0cb650c.akpm@linux-foundation.org>
+	id S1753362Ab2KGVkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 16:40:09 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
+Date: Wed, 07 Nov 2012 22:44:16 +0100
+Message-ID: <5835880.VrlCHNcBeW@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1211071544110.1188-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1211071544110.1188-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121107115610.c0cb650c.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 11:56:10AM -0800, Andrew Morton wrote:
-> On Wed,  7 Nov 2012 01:05:48 -0200
-> Rafael Aquini <aquini@redhat.com> wrote:
+On Wednesday, November 07, 2012 03:47:02 PM Alan Stern wrote:
+> On Wed, 7 Nov 2012, Rafael J. Wysocki wrote:
 > 
-> > This patch introduces MIGRATEPAGE_SUCCESS as the default return code
-> > for address_space_operations.migratepage() method and documents the
-> > expected return code for the same method in failure cases.
+> > On Wednesday, November 07, 2012 12:17:02 PM Alan Stern wrote:
+> > > On Wed, 7 Nov 2012, Rafael J. Wysocki wrote:
+> > > 
+> > > > > The PCI subsystem assumes that 
+> > > > > driverless devices are not in use, so they are disabled for runtime PM 
+> > > > > and marked as suspended.  This is not appropriate for VGA devices, 
+> > > > > which can indeed be used without a driver.
+> > > > > 
+> > > > > I'm not sure what the best solution is.  Maybe we should Ying's 
+> > > > > proposal a step farther:
+> > > > > 
+> > > > > 	Make pm_runtime_set_suspended() fail if runtime PM is 
+> > > > > 	forbidden.
+> > > > >
+> > > > > 	Make pm_runtime_forbid() call pm_runtime_set_active()
+> > > > > 	(and do a runtime resume of the parent) if disable_depth > 0.
+> > > > 
+> > > > I'd prefer this one.
+> > > 
+> > > That wasn't meant to be a choice.  The first item is close to what the 
+> > > original patch did; I was suggesting that we should adopt all three 
+> > > items.
+> > 
+> > OK, I need to think about this a bit more, then.
+> > 
+> > The problem seems to be that our initial assumption, ie. that driverless
+> > devices won't be in use, is not satisfied in the relevant case.  It may
+> > not be satisfied in more cases like this, I suppose, but so far we  don't
+> > really know.
 > 
-> I hit a large number of rejects applying this against linux-next.  Due
-> to the increasingly irritating sched/numa code in there.
-> 
-> I attempted to fix it up and also converted some (but not all) of the
-> implicit tests of `rc' against zero.
-> 
-> Please check the result very carefully - more changes will be needed.
-> 
-> All those
-> 
-> -	if (rc)
-> +	if (rc != MIGRATEPAGE_SUCCESS)
-> 
-> changes are a pain.  Perhaps we shouldn't bother.
+> Right.  The reasoning behind my proposal goes like this: When there's
+> no driver, the subsystem can let userspace directly control the
+> device's power level through the power/control attribute.
 
-Thanks for doing that.
+Well, we might as well just leave the runtime PM of PCI devices enabled, even
+if they have no drivers, but modify the PCI bus type's runtime PM callbacks
+to ignore devices with no drivers.
 
-This hunk at migrate_pages(), however, is not necessary:
+IIRC the reason why we decided to disable runtime PM for PCI device with no
+drivers was that some of them refused to work again after being put by the
+core into D3.  By making the PCI bus type's runtime PM callbacks ignore them
+we'd avoid this problem without modifying the core's behavior.
 
-@@ -1001,7 +1001,7 @@ out:
-        if (!swapwrite)
-               	current->flags &= ~PF_SWAPWRITE;
-
--	if (rc)
-+       if (rc != MIGRATEPAGE_SUCCESS)
-                return rc;
-
-Here, migrate_pages() is not testing rc for the migration success, but it's just trying to
-devise the flow if it has to return -ENOMEM, actually.
-
-I guess, a change to make that snippet more clear could be:
-
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 77ed2d7..6562aee 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -987,7 +987,7 @@ int migrate_pages(struct list_head *from,
-                        case -EAGAIN:
-                                retry++;
-                                break;
--                       case 0:
-+                       case MIGRATEPAGE_SUCCESS:
-                                break;
-                        default:
-                                /* Permanent failure */
-@@ -996,15 +996,12 @@ int migrate_pages(struct list_head *from,
-                        }
-                }
-        }
--       rc = 0;
-+       rc = nr_failed + retry;
- out:
-        if (!swapwrite)
-                current->flags &= ~PF_SWAPWRITE;
- 
--       if (rc)
--               return rc;
--
--       return nr_failed + retry;
-+       return rc;
- }
+Thanks,
+Rafael
 
 
-I can rebase this patch and resubmit if you prefer
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
