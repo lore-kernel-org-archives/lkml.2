@@ -1,138 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab2KGPOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 10:14:25 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:63722 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753392Ab2KGPOY (ORCPT
+	id S1754239Ab2KGPWF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 10:22:05 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:50066 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751546Ab2KGPV7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 10:14:24 -0500
-From: Alban Bedel <alban.bedel@avionic-design.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Subject: [PATCH] pwm-backlight: Allow any kind of brightness curve
-Date: Wed,  7 Nov 2012 16:14:08 +0100
-Message-Id: <1352301248-8418-1-git-send-email-alban.bedel@avionic-design.de>
-X-Mailer: git-send-email 1.7.0.4
-X-Provags-ID: V02:K0:mj0rjQFrz4oS4gBABDLYowv71ulI8IClAX8GTniBwAQ
- 4VPLoPqge9d0OboPb31EMEfDIpPXpw+128PtoSJtVPvd7iJylm
- u5VLFTkBPt9BfwnOudlY59HvlM/sUo9GasidmoUON+Qaz2c3Mv
- Wc2LsMy4IrOuq6IcRo4GCbRgUV5oExuUFgT7FUISEMZpvMiF1L
- BC85sgbqmefhpA9ibFZLl7CLDGy8gXSg+D91lgYfjAf9mbb0rt
- MLBSbiH61A0hJbG5UU7c56+tTWgp1T1Z0hL0L4cRxy/s0VQmJP
- 68BjkPglyQdjBRz7zSda3/bUwLxq220aCjsFQ+WJZl2rS08e8h
- z80l4zZdmkbvJHFKm0cFoWaTbj+ieh+ZFYi7CzWEfjfCwyiixo
- xYLp5vi8vtHz/DIJUUORONYxjNCk8guX2sx+UgiGqURD9SekQk
- 0u0cS
+	Wed, 7 Nov 2012 10:21:59 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "paul@pwsan.com" <paul@pwsan.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>
+CC: Rob Landley <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 1/8] PWMSS: Add PWM Subsystem driver for parent<->child
+ relationship
+Thread-Topic: [PATCH 1/8] PWMSS: Add PWM Subsystem driver for parent<->child
+ relationship
+Thread-Index: AQHNuzgEnM7NwxpHPky2QVfYn5bPOJfb/ykAgABnE5A=
+Date: Wed, 7 Nov 2012 15:20:26 +0000
+Deferred-Delivery: Wed, 7 Nov 2012 15:20:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E9DE3A0@DBDE01.ent.ti.com>
+References: <1352106749-9437-1-git-send-email-avinashphilip@ti.com>
+ <1352106749-9437-2-git-send-email-avinashphilip@ti.com>
+ <B5906170F1614E41A8A28DE3B8D121433EC0444A@DBDE01.ent.ti.com>
+In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433EC0444A@DBDE01.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The brightness curve assume that the first level always have a duty
-cycle of 0% and the last level 100%. However it is desirable to allow
-any kind of curve to handle low-active devices, or devices that need
-to clamp the curve to some range.
+On Tue, Nov 06, 2012 at 12:05:24, Bedia, Vaibhav wrote:
+> On Mon, Nov 05, 2012 at 14:42:22, Philip, Avinash wrote:
+> [...]
+> > +pwmss0: pwmss@48300000 {
+> > +	compatible = "ti,am33xx-pwmss";
+> > +	reg = <0x48300000 0x10
+> > +		0x48300100 0x80
+> > +		0x48300180 0x80
+> > +		0x48300200 0x80>;
+> Do you really need the 4 address ranges here? You eventually do add in
+> child nodes with other address ranges so isn't the first entry sufficient?
+> I haven't really looked at the DT details so it is enforced by that let me
+> know.
 
-To allow defining any kind of curve the brightness levels are expected
-to be in the range from 0 to 255, where 0 is 0% duty and 255 is 100% duty.
+This is required to define child nodes ranges so that childs reg space
+entries are defined in the range.
 
-Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
----
- .../bindings/video/backlight/pwm-backlight.txt     |    8 ++---
- drivers/video/backlight/pwm_bl.c                   |   28 +++++++++----------
- include/linux/pwm_backlight.h                      |    2 +
- 3 files changed, 18 insertions(+), 20 deletions(-)
+> 
+> [...]
+> > +
+> > +#define PWMSS_CLKCONFIG		8
+> > +
+> 
+> This #def can use a comment.
 
-diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-index 1e4fc72..d0ecbd4 100644
---- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-+++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
-@@ -3,11 +3,9 @@ pwm-backlight bindings
- Required properties:
-   - compatible: "pwm-backlight"
-   - pwms: OF device-tree PWM specification (see PWM binding[0])
--  - brightness-levels: Array of distinct brightness levels. Typically these
--      are in the range from 0 to 255, but any range starting at 0 will do.
--      The actual brightness level (PWM duty cycle) will be interpolated
--      from these values. 0 means a 0% duty cycle (darkest/off), while the
--      last value in the array represents a 100% duty cycle (brightest).
-+  - brightness-levels: Array of distinct brightness levels in the
-+      range from 0 to 255. 0 means a 0% duty cycle, while 255
-+      represents a 100% duty cycle.
-   - default-brightness-level: the default brightness level (index into the
-       array defined by the "brightness-levels" property)
- 
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 995f016..09ce501 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -40,6 +40,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- 	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
- 	int brightness = bl->props.brightness;
- 	int max = bl->props.max_brightness;
-+	int duty_cycle;
- 
- 	if (bl->props.power != FB_BLANK_UNBLANK)
- 		brightness = 0;
-@@ -50,24 +51,21 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- 	if (pb->notify)
- 		brightness = pb->notify(pb->dev, brightness);
- 
--	if (brightness == 0) {
--		pwm_config(pb->pwm, 0, pb->period);
--		pwm_disable(pb->pwm);
-+	if (pb->levels) {
-+		duty_cycle = pb->levels[brightness];
-+		max = PWM_BL_MAX_LEVEL;
- 	} else {
--		int duty_cycle;
-+		duty_cycle = brightness;
-+	}
- 
--		if (pb->levels) {
--			duty_cycle = pb->levels[brightness];
--			max = pb->levels[max];
--		} else {
--			duty_cycle = brightness;
--		}
-+	duty_cycle = pb->lth_brightness +
-+		(duty_cycle * (pb->period - pb->lth_brightness) / max);
- 
--		duty_cycle = pb->lth_brightness +
--		     (duty_cycle * (pb->period - pb->lth_brightness) / max);
--		pwm_config(pb->pwm, duty_cycle, pb->period);
-+	pwm_config(pb->pwm, duty_cycle, pb->period);
-+	if (duty_cycle == 0)
-+		pwm_disable(pb->pwm);
-+	else
- 		pwm_enable(pb->pwm);
--	}
- 
- 	if (pb->notify_after)
- 		pb->notify_after(pb->dev, brightness);
-@@ -202,7 +200,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	}
- 
- 	if (data->levels) {
--		max = data->levels[data->max_brightness];
-+		max = PWM_BL_MAX_LEVEL;
- 		pb->levels = data->levels;
- 	} else
- 		max = data->max_brightness;
-diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
-index 56f4a86..f5ed046 100644
---- a/include/linux/pwm_backlight.h
-+++ b/include/linux/pwm_backlight.h
-@@ -6,6 +6,8 @@
- 
- #include <linux/backlight.h>
- 
-+#define PWM_BL_MAX_LEVEL	255
-+
- struct platform_pwm_backlight_data {
- 	int pwm_id;
- 	unsigned int max_brightness;
--- 
-1.7.0.4
+Ok I will add.
+
+> 
+> > +void pwmss_submodule_state_change(struct device *dev, int pos, bool enable)
+> > +{
+> > +	struct pwmss_info *info = dev_get_drvdata(dev);
+> > +	u16 val;
+> > +
+> > +	val = readw(info->mmio_base + PWMSS_CLKCONFIG);
+> > +	if (enable)
+> > +		val |= 1 << pos;
+> > +	else
+> > +		val &= ~(1 << pos);
+> > +	mutex_lock(&info->pwmss_lock);
+> > +	writew(val , info->mmio_base + PWMSS_CLKCONFIG);
+> > +	mutex_unlock(&info->pwmss_lock);
+> > +}
+> > +EXPORT_SYMBOL(pwmss_submodule_state_change);
+> 
+> I see a clk_en_ack field in the clock status register. You should be checking that.
+
+Ok. I will add for check & return status from pwmss_submodule_state_change().
+
+> 
+> [...]
+> 
+> > +
+> > +MODULE_DESCRIPTION("pwmss driver");
+> > +MODULE_AUTHOR("Texas Instruments");
+> > +MODULE_LICENSE("GPL");
+> > diff --git a/drivers/pwm/tipwmss.h b/drivers/pwm/tipwmss.h
+> > new file mode 100644
+> > index 0000000..83fdc29
+> > --- /dev/null
+> > +++ b/drivers/pwm/tipwmss.h
+> > @@ -0,0 +1,8 @@
+> 
+> License text?
+
+Ok I will add.
+
+Thanks
+Avinash
+>  
+> > +#ifdef CONFIG_PWM_TIPWMSS
+> > +extern void pwmss_submodule_state_change(struct device *dev, int pos,
+> > +		bool enable);
+> > +#else
+> > +static inline void pwmss_submodule_state_change(struct device *dev, int pos,
+> > +		bool enable)
+> > +{}
+> > +#endif
+> 
+> Regards,
+> Vaibhav
+> 
 
