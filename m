@@ -1,148 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab2KGWbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 17:31:18 -0500
-Received: from ogre.sisk.pl ([193.178.161.156]:33018 "EHLO ogre.sisk.pl"
+	id S1754013Ab2KGWct (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 17:32:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56718 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751597Ab2KGWbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 17:31:17 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: paulmck@linux.vnet.ibm.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Airlie <airlied@linux.ie>, Michal Hocko <mhocko@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: Linux 3.7-rc3
-Date: Wed, 07 Nov 2012 23:35:27 +0100
-Message-ID: <2223691.vvLeUubcx2@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <20121107222233.GG2541@linux.vnet.ibm.com>
-References: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com> <CA+55aFx+w2hFifGTr_u76D9d_sDKxKJBDd2L4p0GVk-RXCczMA@mail.gmail.com> <20121107222233.GG2541@linux.vnet.ibm.com>
+	id S1751691Ab2KGWcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 17:32:48 -0500
+Date: Wed, 7 Nov 2012 23:32:46 +0100
+From: Jan Kara <jack@suse.cz>
+To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: BUG: enabling psacct breaks fsfreeze
+Message-ID: <20121107223246.GD23654@quack.suse.cz>
+References: <20121023094351.GC27919@pcnci.linuxbox.cz>
+ <20121031121517.GD18424@quack.suse.cz>
+ <20121031124600.GM20752@pcnci.linuxbox.cz>
+ <20121101093723.GC6584@quack.suse.cz>
+ <20121101111957.GD6584@quack.suse.cz>
+ <20121101142325.GD20752@pcnci.linuxbox.cz>
+ <20121101225053.GB31937@quack.suse.cz>
+ <20121107185137.GC23654@quack.suse.cz>
+ <20121107212119.GA4258@nik-comp.linuxbox.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121107212119.GA4258@nik-comp.linuxbox.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 07, 2012 02:22:34 PM Paul E. McKenney wrote:
-> On Fri, Nov 02, 2012 at 04:10:34PM -0700, Linus Torvalds wrote:
-> > On Fri, Nov 2, 2012 at 3:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > >
-> > > Well, not everything is rosy in the suspend land, though.  This is a
-> > > failure to freeze khubd during the second in a row attempt to suspend to
-> > > RAM (your current tree):
-> > 
-> > Ugh. So khubd is blocked in usb_start_wait_urb(), and apparently the
-> > timeout for that block is longer than the freezing timeout.
-> > 
-> > There's a comment about why khubd needs to be freezable, but I wonder
-> > if that whole thing isn't doing something wrong. Causing the suspend
-> > to fail is definitely always the wrong thing.
-> > 
-> > Greg?
-> > 
-> > > [  125.780766] [ INFO: suspicious RCU usage. ]
-> > > [  125.780804] 3.7.0-rc3+ #988 Not tainted
-> > > [  125.780838] -------------------------------
-> > > [  125.780875] /home/rafael/src/linux/kernel/sched/core.c:4497 suspicious rcu_dereference_check() usage!
-> > 
-> > Heh. The RCU usage is from the debug printout from sched_show_task(),
-> > so it's "related", but it's a totally independent issue.
-> > 
-> > It's apparently because we've not done a "rcu_read_lock()" around that
-> > sequence, but I seriously doubt we care. But it's technically a real
-> > bug - even if the fix might be to just not print out the parent pid
-> > (or to just ignore the bug and turn the rcu dereference into an
-> > ACCESS_ONCE() or something.
-> > 
-> > Ingo, Peter, any comments about that sched/core.c:4497 RCU usage?
+On Wed 07-11-12 22:21:19, Nikola Ciprich wrote:
+> Hello Jan,
 > 
-> Rafael, does the following patch fix that problem?
+> tried on 3.7-rc4, works great! thanks!
+> 
+> will You submit as-is, or do You plan any further changes?
+> do You plan to backport for stable kernels? I can try it and send for review
+> if You want (although we'll have to wait till it's upstream anyways)
+  Thanks for testing. I've sent the patch and will see what other guys
+tell.
 
-Well, the box I can reproduce that on is not with me now and it's
-not readily reproducible anyway, so it may take some time to verify
-I'm afraid.
+								Honza
 
-Thanks,
-Rafael
+> On Wed, Nov 07, 2012 at 07:51:37PM +0100, Jan Kara wrote:
+> > On Thu 01-11-12 23:50:53, Jan Kara wrote:
+> > > On Thu 01-11-12 15:23:25, Nikola Ciprich wrote:
+> > > > Nov  1 14:23:25 vmnci22 [ 1075.178123] SysRq : Show Blocked State
+> > > > Nov  1 14:23:25 vmnci22 [ 1075.180555]   task                        PC stack   pid father
+> > > > Nov  1 14:23:25 vmnci22 [ 1075.180592] fsfreeze      D 0000000000000000     0  4215   4195 0x00000000
+> > > > Nov  1 14:23:25 vmnci22 [ 1075.180599]  ffff8800090b9b28 0000000000000046 0000000000000000 ffffffff00000000
+> > > > Nov  1 14:23:25 vmnci22 [ 1075.180606]  0000000000013780 ffff8800090b9fd8 ffff88000f716170 ffff88000f715e80
+> > > > Nov  1 14:23:25 vmnci22 [ 1075.180612]  ffff88000f715dc0 ffffffff81566080 ffff88000f716170 000000010002f405
+> > > > Nov  1 14:23:25 vmnci22 [ 1075.180619] Call Trace:
+> > > > Nov  1 14:23:25 vmnci22 [ 1075.180693]  [<ffffffff810e2dbb>] __generic_file_aio_write+0xbb/0x420
+> > > > Nov  1 14:23:25 vmnci22 [ 1075.180729]  [<ffffffff81079290>] ? autoremove_wake_function+0x0/0x40
+> > > > Nov  1 14:23:25 vmnci22 [ 1075.180736]  [<ffffffff810e317f>] generic_file_aio_write+0x5f/0xc0
+> > >   Thanks. So the system isn't really deadlocked. It's just that fsfreeze
+> > > command hangs, isn't it? OK, I understand that it's kind of incovenient
+> > > situation because every command will hang like this when the filesystem is
+> > > frozen.
+> > > 
+> > > Now I only have to come up with a way to improve this... It isn't quite
+> > > simple - to properly protect against freezing be have to communicate down
+> > > into generic_file_aio_write() that we want to bail out if filesystem is
+> > > frozen instead of waiting.
+> >   OK, can you test attached patch?
+> > 
+> > 								Honza
+> > 
+> > -- 
+> > Jan Kara <jack@suse.cz>
+> > SUSE Labs, CR
+> 
+> > From 1cc937c5a850b2f9f0c2a83fdf757911602db198 Mon Sep 17 00:00:00 2001
+> > From: Jan Kara <jack@suse.cz>
+> > Date: Wed, 7 Nov 2012 19:26:45 +0100
+> > Subject: [PATCH] fs: Fix hang with BSD accounting on frozen filesystem
+> > 
+> > When BSD process accounting is enabled and logs information to a filesystem
+> > which gets frozen, system easily becomes unusable because each attempt to
+> > account process information blocks. Thus e.g. every task gets blocked in exit.
+> > 
+> > It seems better to drop accounting information (which can already happen when
+> > filesystem is running out of space) instead of locking system up. This is
+> > implemented using a special flag FMODE_NO_FREEZE_WAIT in file->f_mode of a
+> > file to which accounting information is written.
+> > 
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> > ---
+> >  fs/btrfs/file.c    |    3 ++-
+> >  fs/cifs/file.c     |    3 ++-
+> >  fs/fuse/file.c     |    3 ++-
+> >  fs/ntfs/file.c     |    3 ++-
+> >  fs/ocfs2/file.c    |    3 ++-
+> >  fs/open.c          |    2 +-
+> >  fs/xfs/xfs_file.c  |    3 ++-
+> >  include/linux/fs.h |   14 ++++++++++++++
+> >  kernel/acct.c      |    1 +
+> >  mm/filemap.c       |    3 ++-
+> >  10 files changed, 30 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+> > index 9ab1bed..6eb2e30 100644
+> > --- a/fs/btrfs/file.c
+> > +++ b/fs/btrfs/file.c
+> > @@ -1411,7 +1411,8 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+> >  	ssize_t err = 0;
+> >  	size_t count, ocount;
+> >  
+> > -	sb_start_write(inode->i_sb);
+> > +	if (!sb_start_file_write(file))
+> > +		return -EAGAIN;
+> >  
+> >  	mutex_lock(&inode->i_mutex);
+> >  
+> > diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> > index edb25b4..1629e47 100644
+> > --- a/fs/cifs/file.c
+> > +++ b/fs/cifs/file.c
+> > @@ -2448,7 +2448,8 @@ cifs_writev(struct kiocb *iocb, const struct iovec *iov,
+> >  
+> >  	BUG_ON(iocb->ki_pos != pos);
+> >  
+> > -	sb_start_write(inode->i_sb);
+> > +	if (!sb_start_file_write(file))
+> > +		return -EAGAIN;
+> >  
+> >  	/*
+> >  	 * We need to hold the sem to be sure nobody modifies lock list
+> > diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> > index 78d2837..641df9e 100644
+> > --- a/fs/fuse/file.c
+> > +++ b/fs/fuse/file.c
+> > @@ -947,7 +947,8 @@ static ssize_t fuse_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+> >  		return err;
+> >  
+> >  	count = ocount;
+> > -	sb_start_write(inode->i_sb);
+> > +	if (!sb_start_file_write(file))
+> > +		return -EAGAIN;
+> >  	mutex_lock(&inode->i_mutex);
+> >  
+> >  	/* We can write back this queue in page reclaim */
+> > diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
+> > index 1ecf464..028b349 100644
+> > --- a/fs/ntfs/file.c
+> > +++ b/fs/ntfs/file.c
+> > @@ -2118,7 +2118,8 @@ static ssize_t ntfs_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+> >  
+> >  	BUG_ON(iocb->ki_pos != pos);
+> >  
+> > -	sb_start_write(inode->i_sb);
+> > +	if (!sb_start_file_write(file))
+> > +		return -EAGAIN;
+> >  	mutex_lock(&inode->i_mutex);
+> >  	ret = ntfs_file_aio_write_nolock(iocb, iov, nr_segs, &iocb->ki_pos);
+> >  	mutex_unlock(&inode->i_mutex);
+> > diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+> > index 5a4ee77..93ef34d 100644
+> > --- a/fs/ocfs2/file.c
+> > +++ b/fs/ocfs2/file.c
+> > @@ -2265,7 +2265,8 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+> >  	if (iocb->ki_left == 0)
+> >  		return 0;
+> >  
+> > -	sb_start_write(inode->i_sb);
+> > +	if (!sb_start_file_write(file))
+> > +		return -EAGAIN;
+> >  
+> >  	appending = file->f_flags & O_APPEND ? 1 : 0;
+> >  	direct_io = file->f_flags & O_DIRECT ? 1 : 0;
+> > diff --git a/fs/open.c b/fs/open.c
+> > index 59071f5..42bd875 100644
+> > --- a/fs/open.c
+> > +++ b/fs/open.c
+> > @@ -808,7 +808,7 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
+> >  		op->mode = 0;
+> >  
+> >  	/* Must never be set by userspace */
+> > -	flags &= ~FMODE_NONOTIFY & ~O_CLOEXEC;
+> > +	flags &= ~FMODE_NONOTIFY & ~O_CLOEXEC & ~FMODE_NO_FREEZE_WAIT;
+> >  
+> >  	/*
+> >  	 * O_SYNC is implemented as __O_SYNC|O_DSYNC.  As many places only
+> > diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> > index aa473fa..7d8af61 100644
+> > --- a/fs/xfs/xfs_file.c
+> > +++ b/fs/xfs/xfs_file.c
+> > @@ -771,7 +771,8 @@ xfs_file_aio_write(
+> >  	if (ocount == 0)
+> >  		return 0;
+> >  
+> > -	sb_start_write(inode->i_sb);
+> > +	if (!sb_start_file_write(file))
+> > +		return -EAGAIN;
+> >  
+> >  	if (XFS_FORCED_SHUTDOWN(ip->i_mount)) {
+> >  		ret = -EIO;
+> > diff --git a/include/linux/fs.h b/include/linux/fs.h
+> > index b33cfc9..c040a6c 100644
+> > --- a/include/linux/fs.h
+> > +++ b/include/linux/fs.h
+> > @@ -123,6 +123,9 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
+> >  /* File was opened by fanotify and shouldn't generate fanotify events */
+> >  #define FMODE_NONOTIFY		((__force fmode_t)0x1000000)
+> >  
+> > +/* Write to file should fail on frozen fs rather than block */
+> > +#define FMODE_NO_FREEZE_WAIT	((__force fmode_t)0x2000000)
+> > +
+> >  /*
+> >   * Flag for rw_copy_check_uvector and compat_rw_copy_check_uvector
+> >   * that indicates that they should check the contents of the iovec are
+> > @@ -1401,6 +1404,17 @@ static inline int sb_start_write_trylock(struct super_block *sb)
+> >  	return __sb_start_write(sb, SB_FREEZE_WRITE, false);
+> >  }
+> >  
+> > +/*
+> > + * We use trylock semantics if write originates in kernel and normal lock
+> > + * semantics otherwise. This is a hack but solves problems with deadlocking
+> > + * of e.g. psacct when filesystem is frozen.
+> > + */
+> > +static inline int sb_start_file_write(struct file *file)
+> > +{
+> > +	return __sb_start_write(file->f_mapping->host->i_sb, SB_FREEZE_WRITE,
+> > +				!(file->f_mode & FMODE_NO_FREEZE_WAIT));
+> > +}
+> > +
+> >  /**
+> >   * sb_start_pagefault - get write access to a superblock from a page fault
+> >   * @sb: the super we write to
+> > diff --git a/kernel/acct.c b/kernel/acct.c
+> > index 051e071..0b5f231 100644
+> > --- a/kernel/acct.c
+> > +++ b/kernel/acct.c
+> > @@ -183,6 +183,7 @@ static void acct_file_reopen(struct bsd_acct_struct *acct, struct file *file,
+> >  		acct->needcheck = jiffies + ACCT_TIMEOUT*HZ;
+> >  		acct->active = 1;
+> >  		list_add(&acct->list, &acct_list);
+> > +		file->f_mode |= FMODE_NO_FREEZE_WAIT;
+> >  	}
+> >  	if (old_acct) {
+> >  		mnt_unpin(old_acct->f_path.mnt);
+> > diff --git a/mm/filemap.c b/mm/filemap.c
+> > index 83efee7..3b2812b 100644
+> > --- a/mm/filemap.c
+> > +++ b/mm/filemap.c
+> > @@ -2527,7 +2527,8 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+> >  
+> >  	BUG_ON(iocb->ki_pos != pos);
+> >  
+> > -	sb_start_write(inode->i_sb);
+> > +	if (!sb_start_file_write(file))
+> > +		return -EAGAIN;
+> >  	mutex_lock(&inode->i_mutex);
+> >  	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+> >  	mutex_unlock(&inode->i_mutex);
+> > -- 
+> > 1.7.1
+> > 
+> 
+> 
+> -- 
+> -------------------------------------
+> Ing. Nikola CIPRICH
+> LinuxBox.cz, s.r.o.
+> 28. rijna 168, 709 00 Ostrava
+> 
+> tel.:   +420 591 166 214
+> fax:    +420 596 621 273
+> mobil:  +420 777 093 799
+> 
+> www.linuxbox.cz
+> 
+> mobil servis: +420 737 238 656
+> email servis: servis@linuxbox.cz
+> -------------------------------------
 
 
-> ------------------------------------------------------------------------
-> 
-> sched: Mark RCU reader in sched_show_task()
-> 
-> When sched_show_task() is invoked from try_to_freeze_tasks(), there is
-> no RCU read-side critical section, resulting in the following splat:
-> 
-> [  125.780730] ===============================
-> [  125.780766] [ INFO: suspicious RCU usage. ]
-> [  125.780804] 3.7.0-rc3+ #988 Not tainted
-> [  125.780838] -------------------------------
-> [  125.780875] /home/rafael/src/linux/kernel/sched/core.c:4497 suspicious rcu_dereference_check() usage!
-> [  125.780946]
-> [  125.780946] other info that might help us debug this:
-> [  125.780946]
-> [  125.781031]
-> [  125.781031] rcu_scheduler_active = 1, debug_locks = 0
-> [  125.781087] 4 locks held by s2ram/4211:
-> [  125.781120]  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811e2acf>] sysfs_write_file+0x3f/0x160
-> [  125.781233]  #1:  (s_active#94){.+.+.+}, at: [<ffffffff811e2b58>] sysfs_write_file+0xc8/0x160
-> [  125.781339]  #2:  (pm_mutex){+.+.+.}, at: [<ffffffff81090a81>] pm_suspend+0x81/0x230
-> [  125.781439]  #3:  (tasklist_lock){.?.?..}, at: [<ffffffff8108feed>] try_to_freeze_tasks+0x2cd/0x3f0
-> [  125.781543]
-> [  125.781543] stack backtrace:
-> [  125.781584] Pid: 4211, comm: s2ram Not tainted 3.7.0-rc3+ #988
-> [  125.781632] Call Trace:
-> [  125.781662]  [<ffffffff810a3c73>] lockdep_rcu_suspicious+0x103/0x140
-> [  125.781719]  [<ffffffff8107cf21>] sched_show_task+0x121/0x180
-> [  125.781770]  [<ffffffff8108ffb4>] try_to_freeze_tasks+0x394/0x3f0
-> [  125.781823]  [<ffffffff810903b5>] freeze_kernel_threads+0x25/0x80
-> [  125.781876]  [<ffffffff81090b65>] pm_suspend+0x165/0x230
-> [  125.781924]  [<ffffffff8108fa29>] state_store+0x99/0x100
-> [  125.781975]  [<ffffffff812f5867>] kobj_attr_store+0x17/0x20
-> [  125.782038]  [<ffffffff811e2b71>] sysfs_write_file+0xe1/0x160
-> [  125.782091]  [<ffffffff811667a6>] vfs_write+0xc6/0x180
-> [  125.782138]  [<ffffffff81166ada>] sys_write+0x5a/0xa0
-> [  125.782185]  [<ffffffff812ff6ae>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [  125.782242]  [<ffffffff81669dd2>] system_call_fastpath+0x16/0x1b
-> 
-> This commit therefore adds the needed RCU read-side critical section.
-> 
-> Reported-by: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 6d4569e..36f2608 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4474,6 +4474,7 @@ static const char stat_nam[] = TASK_STATE_TO_CHAR_STR;
->  void sched_show_task(struct task_struct *p)
->  {
->  	unsigned long free = 0;
-> +	int ppid;
->  	unsigned state;
->  
->  	state = p->state ? __ffs(p->state) + 1 : 0;
-> @@ -4493,8 +4494,11 @@ void sched_show_task(struct task_struct *p)
->  #ifdef CONFIG_DEBUG_STACK_USAGE
->  	free = stack_not_used(p);
->  #endif
-> +	rcu_read_lock();
-> +	ppid = task_pid_nr(rcu_dereference(p->real_parent));
-> +	rcu_read_unlock();
->  	printk(KERN_CONT "%5lu %5d %6d 0x%08lx\n", free,
-> -		task_pid_nr(p), task_pid_nr(rcu_dereference(p->real_parent)),
-> +		task_pid_nr(p), ppid,
->  		(unsigned long)task_thread_info(p)->flags);
->  
->  	show_stack(p, NULL);
-> 
-> 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
