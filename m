@@ -1,131 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2KGQlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 11:41:13 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33927 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539Ab2KGQh6 (ORCPT
+	id S1752501Ab2KGQh5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 11:37:57 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:56660 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab2KGQhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 11:37:58 -0500
+	Wed, 7 Nov 2012 11:37:55 -0500
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 03/13] HID: core: fix unit exponent parsing
-Date: Wed,  7 Nov 2012 17:37:26 +0100
-Message-Id: <1352306256-12180-4-git-send-email-benjamin.tissoires@gmail.com>
+Subject: [PATCH v3 00/13] Win 8 support for digitizers
+Date: Wed,  7 Nov 2012 17:37:23 +0100
+Message-Id: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HID spec details special values for the HID field unit exponent.
-Basically, the range [0x8..0xf] correspond to [-8..-1], so this is
-a standard two's complement on a half-byte.
+Hi Guys,
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
----
- drivers/hid/hid-core.c  | 16 +++++++++++++++-
- drivers/hid/hid-input.c | 13 +++++++++----
- include/linux/hid.h     |  1 +
- 3 files changed, 25 insertions(+), 5 deletions(-)
+here is the third version of this patchset.
+I think I included most of Henrik's comments.
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 3d0da29..9da3007 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -315,6 +315,7 @@ static s32 item_sdata(struct hid_item *item)
- 
- static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
- {
-+	__u32 raw_value;
- 	switch (item->tag) {
- 	case HID_GLOBAL_ITEM_TAG_PUSH:
- 
-@@ -365,7 +366,14 @@ static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
- 		return 0;
- 
- 	case HID_GLOBAL_ITEM_TAG_UNIT_EXPONENT:
--		parser->global.unit_exponent = item_sdata(item);
-+		/* Units exponent negative numbers are given through a
-+		 * two's complement.
-+		 * See "6.2.2.7 Global Items" for more information. */
-+		raw_value = item_udata(item);
-+		if (!(raw_value & 0xfffffff0))
-+			parser->global.unit_exponent = hid_snto32(raw_value, 4);
-+		else
-+			parser->global.unit_exponent = raw_value;
- 		return 0;
- 
- 	case HID_GLOBAL_ITEM_TAG_UNIT:
-@@ -865,6 +873,12 @@ static s32 snto32(__u32 value, unsigned n)
- 	return value & (1 << (n - 1)) ? value | (-1 << n) : value;
- }
- 
-+s32 hid_snto32(__u32 value, unsigned n)
-+{
-+	return snto32(value, n);
-+}
-+EXPORT_SYMBOL_GPL(hid_snto32);
-+
- /*
-  * Convert a signed 32-bit integer to a signed n-bit integer.
-  */
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 67044f3..7015080 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -192,7 +192,6 @@ static int hidinput_setkeycode(struct input_dev *dev,
- 	return -EINVAL;
- }
- 
--
- /**
-  * hidinput_calc_abs_res - calculate an absolute axis resolution
-  * @field: the HID report field to calculate resolution for
-@@ -235,17 +234,23 @@ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
- 	case ABS_MT_TOOL_Y:
- 	case ABS_MT_TOUCH_MAJOR:
- 	case ABS_MT_TOUCH_MINOR:
--		if (field->unit == 0x11) {		/* If centimeters */
-+		if (field->unit & 0xffffff00)		/* Not a length */
-+			return 0;
-+		unit_exponent += hid_snto32(field->unit >> 4, 4) - 1;
-+		switch (field->unit & 0xf) {
-+		case 0x1:				/* If centimeters */
- 			/* Convert to millimeters */
- 			unit_exponent += 1;
--		} else if (field->unit == 0x13) {	/* If inches */
-+			break;
-+		case 0x3:				/* If inches */
- 			/* Convert to millimeters */
- 			prev = physical_extents;
- 			physical_extents *= 254;
- 			if (physical_extents < prev)
- 				return 0;
- 			unit_exponent -= 1;
--		} else {
-+			break;
-+		default:
- 			return 0;
- 		}
- 		break;
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 9edb06c..a110a3e 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -754,6 +754,7 @@ int hid_connect(struct hid_device *hid, unsigned int connect_mask);
- void hid_disconnect(struct hid_device *hid);
- const struct hid_device_id *hid_match_id(struct hid_device *hdev,
- 					 const struct hid_device_id *id);
-+s32 hid_snto32(__u32 value, unsigned n);
- 
- /**
-  * hid_map_usage - map usage input bits
+Happy reviewing :)
+
+Cheers,
+Benjamin
+
+v1 introduction:
+So, this is an update for supporting Win 8 multitouch devices in the kernel.
+As I wanted to reliably forward the resolution, I noticed a bug in the
+processing of the unit_exponent in the hid core layer.
+Thus the fixes for hid-core and hid-input.
+
+v2 changes:
+* added missing initial patch that prevents the series to be applied on top of Jiri's tree
+* update to include latest hid changes
+* taken into account Alan's patch: "hid: put the case in the right switch statement"
+
+v3 changes:
+* splitted "round return value of hidinput_calc_abs_res" in a separate patch
+* export snto32 in hid.h as we need to use it in hid-input.c
+* didn't change all drivers, but add a field in hid_usage instead
+* add quirk MT_QUIRK_IGNORE_DUPLICATES so that any device can rely on it
+* easier understandable support of hovering devices
+* changed scan time definition
+* applied new definition of scan time in hid-multitouch
+* some other few things.
+
+Benjamin Tissoires (13):
+  HID: hid-input: export hidinput_calc_abs_res
+  HID: hid-input: round return value of hidinput_calc_abs_res
+  HID: core: fix unit exponent parsing
+  HID: hid-input: add usage_index in struct hid_usage.
+  HID: hid-multitouch: support arrays for the split of the touches in a
+    report
+  HID: hid-multitouch: get maxcontacts also from logical_max value
+  HID: hid-multitouch: support T and C for win8 devices
+  HID: hid-multitouch: move ALWAYS_VALID quirk check
+  HID: hid-multitouch: add MT_QUIRK_IGNORE_DUPLICATES
+  HID: hid-multitouch: fix Win 8 protocol
+  HID: hid-multitouch: support for hovering devices
+  HID: introduce Scan Time
+  HID: hid-multitouch: forwards ABS_SCAN_TIME
+
+ Documentation/input/event-codes.txt |   9 +++
+ drivers/hid/hid-core.c              |  20 ++++-
+ drivers/hid/hid-input.c             |  28 +++++--
+ drivers/hid/hid-multitouch.c        | 157 ++++++++++++++++++++++++++++++------
+ include/linux/hid.h                 |   4 +
+ include/linux/input.h               |   1 +
+ include/linux/input/mt.h            |   6 ++
+ 7 files changed, 192 insertions(+), 33 deletions(-)
+
 -- 
 1.7.11.7
 
