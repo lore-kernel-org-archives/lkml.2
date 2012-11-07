@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab2KGJdE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 04:33:04 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:59764 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751626Ab2KGJdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 04:33:02 -0500
-Date: Wed, 7 Nov 2012 04:32:46 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Kees Cook <keescook@chromium.org>
-Cc: akpm@linux-foundation.org, jeff.liu@oracle.com, aedilger@gmail.com,
-        alan@linux.intel.com, arnn@arndb.de, drepper@redhat.com,
-        gregkh@linuxfoundation.org, jakub@redhat.com,
-        james.l.morris@oracle.com, john.sobecki@oracle.com,
-        viro@zeniv.linux.org.uk, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: + binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
- added to -mm tree
-Message-ID: <20121107093246.GD21960@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Kees Cook <keescook@chromium.org>, akpm@linux-foundation.org,
-	jeff.liu@oracle.com, aedilger@gmail.com, alan@linux.intel.com,
-	arnn@arndb.de, drepper@redhat.com, gregkh@linuxfoundation.org,
-	jakub@redhat.com, james.l.morris@oracle.com,
-	john.sobecki@oracle.com, viro@zeniv.linux.org.uk,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20121107001609.9B7A9100047@wpzn3.hot.corp.google.com>
- <CAGXu5jJ779UvpZwO-fi7-m+i=OfqwgXh1PC4GNwjhfD9GD82wQ@mail.gmail.com>
+	id S1753653Ab2KGJkT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 04:40:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:51804 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab2KGJkQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 04:40:16 -0500
+Date: Wed, 7 Nov 2012 09:40:06 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>, Adil Mujeeb <mujeeb.adil@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 3/3] checkpatch: Emit an warning when floating point
+ values are used
+Message-ID: <20121107094006.GE3066@dm>
+References: <cover.1351736873.git.joe@perches.com>
+ <359a78054bc0dfaedede95222781b4177d3c33ce.1351736873.git.joe@perches.com>
+ <20121106153625.c48ba1f1.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJ779UvpZwO-fi7-m+i=OfqwgXh1PC4GNwjhfD9GD82wQ@mail.gmail.com>
+In-Reply-To: <20121106153625.c48ba1f1.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 05:11:17PM -0800, Kees Cook wrote:
-> Hrm, I don't like this. get_random_int() specifically says: "Get a
-> random word for internal kernel use only." The intent of AT_RANDOM is
-> for userspace pRNG seeding (though glibc currently uses it directly
-> for stack protector and pointer mangling), which is not "internal
-> kernel use only". :) Though I suppose this is already being used for
-> the randomize_stack_top(), but I think it'd still be better to use
-> higher quality bits.
+On Tue, Nov 06, 2012 at 03:36:25PM -0800, Andrew Morton wrote:
+> On Thu,  1 Nov 2012 00:12:18 -0700
+> Joe Perches <joe@perches.com> wrote:
+> 
+> > Linux kernel doesn't like floating point, say so.
+> > 
+> > ...
+> >
+> > --- a/scripts/checkpatch.pl
+> > +++ b/scripts/checkpatch.pl
+> > @@ -2332,6 +2332,13 @@ sub process {
+> >  			     "do not add new typedefs\n" . $herecurr);
+> >  		}
+> >  
+> > +# check for floating point constants
+> > +
+> > +		if ($line =~ /\b$Float\b/) {
+> > +			WARN("KERNEL_FLOAT",
+> > +			     "Floating point is not supported in linux kernel source\n" . $herecurr);
+> > +		}
+> > +
+> >  # * goes on variable not on type
+> >  		# (char*[ const])
+> >  		while ($line =~ m{(\($NonptrType(\s*(?:$Modifier\b\s*|\*\s*)+)\))}g) {
+> 
+> The earlier review comments were not addressed.
+> 
+> In particular, I don't see a problem with people doing
+> 
+> 	int foo = 1.1 * 2.2;
 
-Well, in practice, right now, get_random_int() is only being used for
-different cases of ASLR of one variety or another (either by the
-kernel in exec or mmap, or in userspace).  So I'm not sure it really
-is a major issue.  
+I thought there was also now a way to enable floats in kernel space and
+some use thereof.
 
-If we also change get_random_int() to use a more secure cryptographic
-random generator (i.e., maybe AES instead of MD5), would that be
-sufficient to address your concerns?  We're not using get_random_int()
-for anything that's timing sensitive, so that shouldn't be a problem.
-
-Or maybe we should just add an explicit CRNG set of routines (like the
-similar discussions to make an explicitly named PRNG set of routines),
-so callers can use whatever random number generator is appropriate for
-their performance and security needs.
-
-						- Ted
+-apw
