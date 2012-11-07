@@ -1,57 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938Ab2KGP3g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 10:29:36 -0500
-Received: from mo4.mail-out.ovh.net ([178.32.228.4]:42863 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab2KGP3f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 10:29:35 -0500
-Date: Wed, 7 Nov 2012 16:27:29 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Royer <nicolas@eukrea.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
-        linux-crypto@vger.kernel.org, herbert@gondor.hengli.com.au,
-        davem@davemloft.net, eric@eukrea.com
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [PATCH 1/5] ARM: AT91SAM9G45: fix crypto peripherals irq issue
- due to sparse irq support.
-Message-ID: <20121107152729.GE4576@game.jcrosoft.org>
-References: <1352219463-30360-1-git-send-email-nicolas@eukrea.com>
+	id S1754225Ab2KGPaZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 10:30:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43424 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753075Ab2KGPaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 10:30:24 -0500
+Date: Wed, 7 Nov 2012 16:30:23 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, fweisbec@gmail.com
+Subject: Re: [PATCH 2/9] cgroup: Use rculist ops for cgroup->children
+Message-ID: <20121107153023.GB4131@dhcp22.suse.cz>
+References: <1351931915-1701-1-git-send-email-tj@kernel.org>
+ <1351931915-1701-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1352219463-30360-1-git-send-email-nicolas@eukrea.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 9105434023217703700
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrfeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtugfgjggfsehtkefttddtredu
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrfeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtugfgjggfsehtkefttddtredu
+In-Reply-To: <1351931915-1701-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17:31 Tue 06 Nov     , Nicolas Royer wrote:
-> Spare irq support introduced by commit "8fe82a5 ARM: at91: sparse irq support"
-> involves to add the NR_IRQS_LEGACY offset to irq number.
+On Sat 03-11-12 01:38:28, Tejun Heo wrote:
+> Use RCU safe list operations for cgroup->children.  This will be used
+> to implement cgroup children / descendant walking which can be used by
+> controllers.
 > 
-> Signed-off-by: Nicolas Royer <nicolas@eukrea.com>
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Acked-by: Eric Bénard <eric@eukrea.com>
-> Tested-by: Eric Bénard <eric@eukrea.com>
-> Cc: stable@vger.kernel.org # 3.6
+> Note that cgroup_create() now puts a new cgroup at the end of the
+> ->children list instead of head.  This isn't strictly necessary but is
+> done so that the iteration order is more conventional.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-ok will see if we can have it for 3.7
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Best Regards,
-J.
+> ---
+>  include/linux/cgroup.h | 1 +
+>  kernel/cgroup.c        | 8 +++-----
+>  2 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index b442122..90c33eb 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -12,6 +12,7 @@
+>  #include <linux/cpumask.h>
+>  #include <linux/nodemask.h>
+>  #include <linux/rcupdate.h>
+> +#include <linux/rculist.h>
+>  #include <linux/cgroupstats.h>
+>  #include <linux/prio_heap.h>
+>  #include <linux/rwsem.h>
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index f05d992..cc5d2a0 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1650,7 +1650,6 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+>  
+>  		free_cg_links(&tmp_cg_links);
+>  
+> -		BUG_ON(!list_empty(&root_cgrp->sibling));
+>  		BUG_ON(!list_empty(&root_cgrp->children));
+>  		BUG_ON(root->number_of_cgroups != 1);
+>  
+> @@ -1699,7 +1698,6 @@ static void cgroup_kill_sb(struct super_block *sb) {
+>  
+>  	BUG_ON(root->number_of_cgroups != 1);
+>  	BUG_ON(!list_empty(&cgrp->children));
+> -	BUG_ON(!list_empty(&cgrp->sibling));
+>  
+>  	mutex_lock(&cgroup_mutex);
+>  	mutex_lock(&cgroup_root_mutex);
+> @@ -4053,7 +4051,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+>  		}
+>  	}
+>  
+> -	list_add(&cgrp->sibling, &cgrp->parent->children);
+> +	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
+>  	root->number_of_cgroups++;
+>  
+>  	err = cgroup_create_dir(cgrp, dentry, mode);
+> @@ -4084,7 +4082,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+>  
+>   err_remove:
+>  
+> -	list_del(&cgrp->sibling);
+> +	list_del_rcu(&cgrp->sibling);
+>  	root->number_of_cgroups--;
+>  
+>   err_destroy:
+> @@ -4210,7 +4208,7 @@ static int cgroup_rmdir(struct inode *unused_dir, struct dentry *dentry)
+>  	raw_spin_unlock(&release_list_lock);
+>  
+>  	/* delete this cgroup from parent->children */
+> -	list_del_init(&cgrp->sibling);
+> +	list_del_rcu(&cgrp->sibling);
+>  
+>  	list_del_init(&cgrp->allcg_node);
+>  
+> -- 
+> 1.7.11.7
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
