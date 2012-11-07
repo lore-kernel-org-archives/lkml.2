@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441Ab2KGJvd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 04:51:33 -0500
-Received: from kiruna.synopsys.com ([198.182.44.80]:58058 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201Ab2KGJsj (ORCPT
+	id S1754454Ab2KGJv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 04:51:56 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:53864 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754091Ab2KGJsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 04:48:39 -0500
+	Wed, 7 Nov 2012 04:48:35 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, arnd@arndb.de,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [RFC PATCH v1 16/31] ARC: Signal handling
-Date: Wed,  7 Nov 2012 10:47:39 +0100
-Message-Id: <1352281674-2186-17-git-send-email-vgupta@synopsys.com>
+Subject: [RFC PATCH v1 14/31] ARC: syscall support
+Date: Wed,  7 Nov 2012 10:47:37 +0100
+Message-Id: <1352281674-2186-15-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
 References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
@@ -23,20 +23,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/include/asm/sigcontext.h |   23 +++
- arch/arc/include/asm/signal.h     |   27 +++
- arch/arc/kernel/signal.c          |  360 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 410 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/sigcontext.h
- create mode 100644 arch/arc/include/asm/signal.h
- create mode 100644 arch/arc/kernel/signal.c
+ arch/arc/include/asm/ptrace.h   |    5 ++
+ arch/arc/include/asm/syscall.h  |   72 +++++++++++++++++++++++
+ arch/arc/include/asm/syscalls.h |   30 ++++++++++
+ arch/arc/include/asm/unistd.h   |   44 ++++++++++++++
+ arch/arc/kernel/entry.S         |   49 ++++++++++++++++
+ arch/arc/kernel/process.c       |  119 +++++++++++++++++++++++++++++++++++++++
+ arch/arc/kernel/sys.c           |   19 ++++++
+ arch/arc/mm/mmap.c              |   21 +++++++
+ 8 files changed, 359 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/include/asm/syscall.h
+ create mode 100644 arch/arc/include/asm/syscalls.h
+ create mode 100644 arch/arc/include/asm/unistd.h
+ create mode 100644 arch/arc/kernel/process.c
+ create mode 100644 arch/arc/kernel/sys.c
+ create mode 100644 arch/arc/mm/mmap.c
 
-diff --git a/arch/arc/include/asm/sigcontext.h b/arch/arc/include/asm/sigcontext.h
+diff --git a/arch/arc/include/asm/ptrace.h b/arch/arc/include/asm/ptrace.h
+index c178357..ee31d8a 100644
+--- a/arch/arc/include/asm/ptrace.h
++++ b/arch/arc/include/asm/ptrace.h
+@@ -115,6 +115,11 @@ struct user_regs_struct {
+ /* return 1 if user mode or 0 if kernel mode */
+ #define user_mode(regs) (regs->status32 & STATUS_U_MASK)
+ 
++
++/* return 1 if in syscall, 0 if Intr or Exception */
++#define in_syscall(regs) (((regs->orig_r8) >= 0 && \
++			   (regs->orig_r8 <= NR_syscalls)) ? 1 : 0)
++
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif /* __ASM_PTRACE_H */
+diff --git a/arch/arc/include/asm/syscall.h b/arch/arc/include/asm/syscall.h
 new file mode 100644
-index 0000000..f21b541
+index 0000000..33ab304
 --- /dev/null
-+++ b/arch/arc/include/asm/sigcontext.h
-@@ -0,0 +1,23 @@
++++ b/arch/arc/include/asm/syscall.h
+@@ -0,0 +1,72 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -45,419 +69,396 @@ index 0000000..f21b541
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef _ASM_ARC_SIGCONTEXT_H
-+#define _ASM_ARC_SIGCONTEXT_H
++#ifndef _ASM_ARC_SYSCALL_H
++#define _ASM_ARC_SYSCALL_H  1
 +
-+#include <asm/ptrace.h>
++#include <linux/err.h>
++#include <linux/sched.h>
++#include <asm/unistd.h>
++#include <asm/ptrace.h>		/* in_syscall() */
 +
-+/*
-+ * Signal context structure - contains all info to do with the state
-+ * before the signal handler was invoked.  Note: only add new entries
-+ * to the end of the structure.
-+ */
-+struct sigcontext {
-+	struct pt_regs regs;
-+};
-+
-+#endif /* _ASM_ARC_SIGCONTEXT_H */
-diff --git a/arch/arc/include/asm/signal.h b/arch/arc/include/asm/signal.h
-new file mode 100644
-index 0000000..fad62f7
---- /dev/null
-+++ b/arch/arc/include/asm/signal.h
-@@ -0,0 +1,27 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
-+ */
-+
-+#ifndef _ASM_ARC_SIGNAL_H
-+#define _ASM_ARC_SIGNAL_H
-+
-+/*
-+ * This is much needed for ARC sigreturn optimization.
-+ * This allows uClibc to piggback the addr of a sigreturn stub in sigaction,
-+ * which allows sigreturn based re-entry into kernel after handling signal.
-+ * W/o this kernel needs to "synthesize" the sigreturn trampoline on user
-+ * mode stack which in turn forces the following:
-+ * -TLB Flush (after making the stack page executable)
-+ * -Cache line Flush (to make I/D Cache lines coherent)
-+ */
-+#define SA_RESTORER	0x04000000
-+
-+#include <asm-generic/signal.h>
-+
-+#endif /* _ASM_ARC_SIGNAL_H */
-diff --git a/arch/arc/kernel/signal.c b/arch/arc/kernel/signal.c
-new file mode 100644
-index 0000000..bc834da
---- /dev/null
-+++ b/arch/arc/kernel/signal.c
-@@ -0,0 +1,360 @@
-+/*
-+ * Signal Handling for ARC
-+ *
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * vineetg: Jan 2010 (Restarting of timer related syscalls)
-+ *
-+ * vineetg: Nov 2009 (Everything needed for TIF_RESTORE_SIGMASK)
-+ *  -do_signal() supports TIF_RESTORE_SIGMASK
-+ *  -do_signal() no loner needs oldset, required by OLD sys_sigsuspend
-+ *  -sys_rt_sigsuspend() now comes from generic code, so discard arch implemen
-+ *  -sys_sigsuspend() no longer needs to fudge ptregs, hence that arg removed
-+ *  -sys_sigsuspend() no longer loops for do_signal(), sets TIF_xxx and leaves
-+ *   the job to do_signal()
-+ *
-+ * vineetg: July 2009
-+ *  -Modified Code to support the uClibc provided userland sigreturn stub
-+ *   to avoid kernel synthesing it on user stack at runtime, costing TLB
-+ *   probes and Cache line flushes.
-+ *
-+ * vineetg: July 2009
-+ *  -In stash_usr_regs( ) and restore_usr_regs( ), save/restore of user regs
-+ *   in done in block copy rather than one word at a time.
-+ *   This saves around 2K of code and improves LMBench lat_sig <catch>
-+ *
-+ * rajeshwarr: Feb 2009
-+ *  - Support for Realtime Signals
-+ *
-+ * vineetg: Aug 11th 2008: Bug #94183
-+ *  -ViXS were still seeing crashes when using insmod to load drivers.
-+ *   It turned out that the code to change Execute permssions for TLB entries
-+ *   of user was not guarded for interrupts (mod_tlb_permission)
-+ *   This was cauing TLB entries to be overwritten on unrelated indexes
-+ *
-+ * Vineetg: July 15th 2008: Bug #94183
-+ *  -Exception happens in Delay slot of a JMP, and before user space resumes,
-+ *   Signal is delivered (Ctrl + C) = >SIGINT.
-+ *   setup_frame( ) sets up PC,SP,BLINK to enable user space signal handler
-+ *   to run, but doesn't clear the Delay slot bit from status32. As a result,
-+ *   on resuming user mode, signal handler branches off to BTA of orig JMP
-+ *  -FIX: clear the DE bit from status32 in setup_frame( )
-+ *
-+ * Rahul Trivedi, Kanika Nema: Codito Technologies 2004
-+ */
-+
-+#include <linux/signal.h>
-+#include <linux/ptrace.h>
-+#include <linux/personality.h>
-+#include <linux/uaccess.h>
-+#include <linux/syscalls.h>
-+#include <linux/tracehook.h>
-+#include <asm/ucontext.h>
-+
-+#define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
-+
-+asmlinkage int sys_sigaltstack(const stack_t __user *uss, stack_t __user *uoss)
++static inline long
++syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
 +{
-+	struct pt_regs *regs = task_pt_regs(current);
-+	return do_sigaltstack(uss, uoss, regs->sp);
-+}
-+
-+struct rt_sigframe {
-+	struct siginfo info;
-+	struct ucontext uc;
-+#define MAGIC_SIGALTSTK		0x07302004
-+	unsigned int sigret_magic;
-+};
-+
-+static int
-+stash_usr_regs(struct rt_sigframe __user *sf, struct pt_regs *regs,
-+	       sigset_t *set)
-+{
-+	int err;
-+	err = __copy_to_user(&(sf->uc.uc_mcontext.regs), regs, sizeof(*regs));
-+	err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(sigset_t));
-+
-+	return err;
-+}
-+
-+static int restore_usr_regs(struct pt_regs *regs, struct rt_sigframe __user *sf)
-+{
-+	sigset_t set;
-+	int err;
-+
-+	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
-+	if (err == 0) {
-+		sigdelsetmask(&set, ~_BLOCKABLE);
-+		set_current_blocked(&set);
-+	}
-+
-+	err |= __copy_from_user(regs, &(sf->uc.uc_mcontext.regs),
-+				sizeof(*regs));
-+
-+	return err;
-+}
-+
-+static inline int is_do_ss_needed(unsigned int magic)
-+{
-+	if (MAGIC_SIGALTSTK == magic)
-+		return 1;
++	if (user_mode(regs) && in_syscall(regs))
++		return regs->orig_r8;
 +	else
-+		return 0;
++		return -1;
 +}
 +
-+SYSCALL_DEFINE0(rt_sigreturn)
++static inline void
++syscall_rollback(struct task_struct *task, struct pt_regs *regs)
 +{
-+	struct rt_sigframe __user *sf;
-+	unsigned int magic;
-+	int err;
-+	struct pt_regs *regs = task_pt_regs(current);
++	/* XXX: I can't fathom how pt_regs->r8 will be clobbered ? */
++	regs->r8 = regs->orig_r8;
++}
 +
-+	/* Always make any pending restarted system calls return -EINTR */
-+	current_thread_info()->restart_block.fn = do_no_restart_syscall;
++static inline long
++syscall_get_error(struct task_struct *task, struct pt_regs *regs)
++{
++	/* 0 if syscall succeeded, otherwise -Errorcode */
++	return IS_ERR_VALUE(regs->r0) ? regs->r0 : 0;
++}
 +
-+	/* Since we stacked the signal on a word boundary,
-+	 * then 'sp' should be word aligned here.  If it's
-+	 * not, then the user is trying to mess with us.
-+	 */
-+	if (regs->sp & 3)
-+		goto badframe;
-+
-+	sf = (struct rt_sigframe __force __user *)(regs->sp);
-+
-+	if (!access_ok(VERIFY_READ, sf, sizeof(*sf)))
-+		goto badframe;
-+
-+	err = restore_usr_regs(regs, sf);
-+	err |= __get_user(magic, &sf->sigret_magic);
-+	if (err)
-+		goto badframe;
-+
-+	if (unlikely(is_do_ss_needed(magic)))
-+		if (do_sigaltstack(&sf->uc.uc_stack, NULL, regs->sp) == -EFAULT)
-+			goto badframe;
-+
++static inline long
++syscall_get_return_value(struct task_struct *task, struct pt_regs *regs)
++{
 +	return regs->r0;
++}
 +
-+badframe:
-+	force_sig(SIGSEGV, current);
++static inline void
++syscall_set_return_value(struct task_struct *task, struct pt_regs *regs,
++			 int error, long val)
++{
++	regs->r0 = (long) error ?: val;
++}
++
++/*
++ * @i:      argument index [0,5]
++ * @n:      number of arguments; n+i must be [1,6].
++ */
++static inline void
++syscall_get_arguments(struct task_struct *task, struct pt_regs *regs,
++		      unsigned int i, unsigned int n, unsigned long *args)
++{
++	unsigned long *inside_ptregs = &(regs->r0);
++	inside_ptregs -= i;
++
++	BUG_ON((i + n) > 6);
++
++	while (n--) {
++		args[i++] = (*inside_ptregs);
++		inside_ptregs--;
++	}
++}
++
++#endif
+diff --git a/arch/arc/include/asm/syscalls.h b/arch/arc/include/asm/syscalls.h
+new file mode 100644
+index 0000000..cf5d2f5
+--- /dev/null
++++ b/arch/arc/include/asm/syscalls.h
+@@ -0,0 +1,30 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _ASM_ARC_SYSCALLS_H
++#define _ASM_ARC_SYSCALLS_H  1
++
++#ifdef __KERNEL__
++
++#include <linux/compiler.h>
++#include <linux/linkage.h>
++#include <linux/types.h>
++
++int sys_execve_wrapper(int, int, int);
++int sys_clone_wrapper(int, int, int, int, int);
++int sys_fork_wrapper(void);
++int sys_vfork_wrapper(void);
++int sys_cacheflush(uint32_t, uint32_t uint32_t);
++int sys_arc_settls(void *);
++int sys_arc_gettls(void);
++
++#include <asm-generic/syscalls.h>
++
++#endif	/* __KERNEL__ */
++
++#endif
+diff --git a/arch/arc/include/asm/unistd.h b/arch/arc/include/asm/unistd.h
+new file mode 100644
+index 0000000..754d588
+--- /dev/null
++++ b/arch/arc/include/asm/unistd.h
+@@ -0,0 +1,44 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/*
++ * Being uClibc based we need some of the deprecated syscalls:
++ * -Not emulated by uClibc at all
++ *	unlink, mkdir,... (needed by Busybox, LTP etc)
++ *	times (needed by LTP pan test harness)
++ * -Not emulated efficiently
++ *	select: emulated using pselect (but extra code to chk usec > 1sec)
++ *
++ * some (send/recv) correctly emulated using (recfrom/sendto) and
++ * some arch specific ones (fork/vfork)can easily be emulated using clone but
++ * thats the price of using common-denominator....
++ */
++#define __ARCH_WANT_SYSCALL_NO_AT
++#define __ARCH_WANT_SYSCALL_NO_FLAGS
++#define __ARCH_WANT_SYSCALL_OFF_T
++#define __ARCH_WANT_SYSCALL_DEPRECATED
++
++#define sys_mmap2 sys_mmap_pgoff
++
++#include <asm-generic/unistd.h>
++
++#define NR_syscalls	__NR_syscalls
++
++/* ARC specific syscall */
++#define __NR_cacheflush		(__NR_arch_specific_syscall + 0)
++#define __NR_arc_settls		(__NR_arch_specific_syscall + 1)
++#define __NR_arc_gettls		(__NR_arch_specific_syscall + 2)
++
++__SYSCALL(__NR_cacheflush, sys_cacheflush)
++__SYSCALL(__NR_arc_settls, sys_arc_settls)
++__SYSCALL(__NR_arc_gettls, sys_arc_gettls)
++
++
++/* Generic syscall (fs/filesystems.c - lost in asm-generic/unistd.h */
++#define __NR_sysfs		(__NR_arch_specific_syscall + 3)
++__SYSCALL(__NR_sysfs, sys_sysfs)
+diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
+index b829052..fe9a17c 100644
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -7,6 +7,10 @@
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+  *
++ * TBD:
++ *  -remove the low level wrappers for execve/fork/vfork
++ *   needed before task_pt_regs was invented. This saves a branch per call
++ *
+  * vineetg: Nov 2010:
+  *  -Vector table jumps (@8 bytes) converted into branches (@4 bytes)
+  *  -To maintain the slot size of 8 bytes/vector, added nop, which is
+@@ -575,3 +579,48 @@ ARC_ENTRY ret_from_fork
+ 	bl  @schedule_tail
+ 	b @ret_from_exception
+ ARC_EXIT ret_from_fork
++
++;################### Special Sys Call Wrappers ##########################
++
++ARC_ENTRY sys_execve_wrapper
++	; copy pointer to pt_regs as a parameter
++	mov  r3, sp
++	bl  @sys_execve
++
++	b ret_from_system_call
++ARC_EXIT sys_execve_wrapper
++
++; TBD: call do_fork directly from here
++ARC_ENTRY sys_fork_wrapper
++	; copy pointer to pt_regs as a parameter
++	mov  r0, sp
++	SAVE_CALLEE_SAVED_USER
++	bl  @sys_fork
++	DISCARD_CALLEE_SAVED_USER
++
++	b ret_from_system_call
++ARC_EXIT sys_fork_wrapper
++
++ARC_ENTRY sys_vfork_wrapper
++	; copy pointer to pt_regs as a parameter
++	mov  r0, sp
++	SAVE_CALLEE_SAVED_USER
++	bl  @sys_vfork
++	DISCARD_CALLEE_SAVED_USER
++
++	b ret_from_system_call
++ARC_EXIT sys_vfork_wrapper
++
++ARC_ENTRY sys_clone_wrapper
++	; clone sys-call takes 2 mandatary args: @flags and @child-stack
++	; and it can take 3 var-args, depending on flags
++	; To keep sys_clone( ) signature constant, we assume all 5 args
++	; and set the helper @prtegs in next free reg
++	; this is cheap since our args are in regs, not on stack
++	mov r5, sp  ; pt_regs
++	SAVE_CALLEE_SAVED_USER
++	bl  @sys_clone
++	DISCARD_CALLEE_SAVED_USER
++
++	b ret_from_system_call
++ARC_EXIT sys_clone_wrapper
+diff --git a/arch/arc/kernel/process.c b/arch/arc/kernel/process.c
+new file mode 100644
+index 0000000..21d1889
+--- /dev/null
++++ b/arch/arc/kernel/process.c
+@@ -0,0 +1,119 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Amit Bhor, Kanika Nema: Codito Technologies 2004
++ */
++
++#include <linux/errno.h>
++#include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/mm.h>
++#include <linux/fs.h>
++#include <linux/unistd.h>
++#include <linux/ptrace.h>
++#include <linux/slab.h>
++#include <linux/syscalls.h>
++#include <linux/elf.h>
++#include <linux/tick.h>
++
++asmlinkage int sys_fork(struct pt_regs *regs)
++{
++	return do_fork(SIGCHLD, regs->sp, regs, 0, NULL, NULL);
++}
++
++asmlinkage int sys_vfork(struct pt_regs *regs)
++{
++	return do_fork(CLONE_VFORK | CLONE_VM | SIGCHLD, regs->sp, regs, 0,
++		       NULL, NULL);
++}
++
++/* Per man, C-lib clone( ) is as follows
++ *
++ * int clone(int (*fn)(void *), void *child_stack,
++ *           int flags, void *arg, ...
++ *           pid_t *ptid, struct user_desc *tls, pid_t *ctid);
++ *
++ * @fn and @arg are of userland thread-hnalder and thus of no use
++ * in sys-call, hence excluded in sys_clone arg list.
++ * The only addition is ptregs, needed by fork core, although now-a-days
++ * task_pt_regs() can be called anywhere to get that.
++ */
++asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
++			 int __user *parent_tidptr, void *tls,
++			 int __user *child_tidptr, struct pt_regs *regs)
++{
++	if (!newsp)
++		newsp = regs->sp;
++
++	return do_fork(clone_flags, newsp, regs, 0, parent_tidptr,
++		       child_tidptr);
++}
++
++int sys_execve(const char __user *filenamei, const char __user *__user *argv,
++	       const char __user *__user *envp, struct pt_regs *regs)
++{
++	long error;
++	struct filename *filename;
++
++	filename = getname(filenamei);
++	error = PTR_ERR(filename);
++	if (IS_ERR(filename))
++		goto out;
++
++	error = do_execve(filename->name, argv, envp, regs);
++	putname(filename);
++out:
++	return error;
++}
++
++int kernel_execve(const char *filename, const char *const argv[],
++		  const char *const envp[])
++{
++	/*
++	 * Although the arguments (order, number) to this function are
++	 * same as sys call, we don't need to setup args in regs again.
++	 * However in case mainline kernel changes the order of args to
++	 * kernel_execve, that assumtion will break.
++	 * So to be safe, let gcc know the args for sys call.
++	 * If they match no extra code will be generated
++	 */
++	register int arg2 asm("r1") = (int)argv;
++	register int arg3 asm("r2") = (int)envp;
++
++	register int filenm_n_ret asm("r0") = (int)filename;
++
++	__asm__ __volatile__(
++		"mov   r8, %1	\n\t"
++		"trap0		\n\t"
++		: "+r"(filenm_n_ret)
++		: "i"(__NR_execve), "r"(arg2), "r"(arg3)
++		: "r8", "memory");
++
++	return filenm_n_ret;
++}
++EXPORT_SYMBOL(kernel_execve);
++
++SYSCALL_DEFINE1(arc_settls, void *, user_tls_data_ptr)
++{
++	task_thread_info(current)->thr_ptr = (unsigned int)user_tls_data_ptr;
 +	return 0;
 +}
 +
 +/*
-+ * Determine which stack to use..
++ * We return the user space TLS data ptr as sys-call return code
++ * Ideally it should be copy to user.
++ * However we can cheat by the fact that some sys-calls do return
++ * absurdly high values
++ * Since the tls dat aptr is not going to be in range of 0xFFFF_xxxx
++ * it won't be considered a sys-call error
++ * and it will be loads better than copy-to-user, which is a definite
++ * D-TLB Miss
 + */
-+static inline void __user *get_sigframe(struct k_sigaction *ka,
-+					struct pt_regs *regs,
-+					unsigned long framesize)
++SYSCALL_DEFINE0(arc_gettls)
 +{
-+	unsigned long sp = regs->sp;
-+	void __user *frame;
-+
-+	/* This is the X/Open sanctioned signal stack switching */
-+	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
-+		sp = current->sas_ss_sp + current->sas_ss_size;
-+
-+	/* No matter what happens, 'sp' must be word
-+	 * aligned otherwise nasty things could happen
-+	 */
-+
-+	/* ATPCS B01 mandates 8-byte alignment */
-+	frame = (void __user *)((sp - framesize) & ~7);
-+
-+	/* Check that we can actually write to the signal frame */
-+	if (!access_ok(VERIFY_WRITE, frame, framesize))
-+		frame = NULL;
-+
-+	return frame;
++	return task_thread_info(current)->thr_ptr;
 +}
+diff --git a/arch/arc/kernel/sys.c b/arch/arc/kernel/sys.c
+new file mode 100644
+index 0000000..4c30345
+--- /dev/null
++++ b/arch/arc/kernel/sys.c
+@@ -0,0 +1,19 @@
 +
-+static int
-+setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
-+	       sigset_t *set, struct pt_regs *regs)
-+{
-+	struct rt_sigframe __user *sf;
-+	unsigned int magic = 0;
-+	stack_t stk;
-+	int err = 0;
++#include <linux/syscalls.h>
++#include <linux/signal.h>
++#include <linux/unistd.h>
 +
-+	sf = get_sigframe(ka, regs, sizeof(struct rt_sigframe));
-+	if (!sf)
-+		return 1;
++#include <asm/syscalls.h>
 +
-+	/*
-+	 * SA_SIGINFO requires 3 args to signal handler:
-+	 *  #1: sig-no (common to any handler)
-+	 *  #2: struct siginfo
-+	 *  #3: struct ucontext (completely populated)
-+	 */
-+	if (unlikely(ka->sa.sa_flags & SA_SIGINFO)) {
-+		err |= copy_siginfo_to_user(&sf->info, info);
-+		err |= __put_user(0, &sf->uc.uc_flags);
-+		err |= __put_user(NULL, &sf->uc.uc_link);
-+		stk.ss_sp = (void __user *)current->sas_ss_sp;
-+		stk.ss_flags = sas_ss_flags(regs->sp);
-+		stk.ss_size = current->sas_ss_size;
-+		err |= __copy_to_user(&sf->uc.uc_stack, &stk, sizeof(stk));
++#define sys_execve	sys_execve_wrapper
++#define sys_clone	sys_clone_wrapper
++#define sys_fork	sys_fork_wrapper
++#define sys_vfork	sys_vfork_wrapper
 +
-+		/* setup args 2 and 3 fo ruse rmode handler */
-+		regs->r1 = (unsigned long)&sf->info;
-+		regs->r2 = (unsigned long)&sf->uc;
++#undef __SYSCALL
++#define __SYSCALL(nr, call) [nr] = (call),
 +
-+		/*
-+		 * small optim to avoid unconditonally calling do_sigaltstack
-+		 * in sigreturn path, now that we only have rt_sigreturn
-+		 */
-+		magic = MAGIC_SIGALTSTK;
-+	}
-+
-+	/*
-+	 * w/o SA_SIGINFO, struct ucontext is partially populated (only
-+	 * uc_mcontext/uc_sigmask) for kernel's normal user state preservation
-+	 * during signal handler execution. This works for SA_SIGINFO as well
-+	 * although the semantics are now overloaded (the same reg state can be
-+	 * inspected by userland: but are they allowed to fiddle with it ?
-+	 */
-+	err |= stash_usr_regs(sf, regs, set);
-+	err |= __put_user(magic, &sf->sigret_magic);
-+	if (err)
-+		return err;
-+
-+	/* #1 arg to the user Signal handler */
-+	regs->r0 = sig;
-+
-+	/* setup PC of user space signal handler */
-+	regs->ret = (unsigned long)ka->sa.sa_handler;
-+
-+	/*
-+	 * handler returns using sigreturn stub provided already by userpsace
-+	 */
-+	BUG_ON(!(ka->sa.sa_flags & SA_RESTORER));
-+	regs->blink = (unsigned long)ka->sa.sa_restorer;
-+
-+	/* User Stack for signal handler will be above the frame just carved */
-+	regs->sp = (unsigned long)sf;
-+
-+	/*
-+	 * Bug 94183, Clear the DE bit, so that when signal handler
-+	 * starts to run, it doesn't use BTA
-+	 */
-+	regs->status32 &= ~STATUS_DE_MASK;
-+	regs->status32 |= STATUS_L_MASK;
-+
-+	return err;
-+}
-+
-+/*
-+ * OK, we're invoking a handler
++void *sys_call_table[NR_syscalls] = {
++	[0 ... NR_syscalls-1] = sys_ni_syscall,
++#include <asm/unistd.h>
++};
+diff --git a/arch/arc/mm/mmap.c b/arch/arc/mm/mmap.c
+new file mode 100644
+index 0000000..e1a9d61
+--- /dev/null
++++ b/arch/arc/mm/mmap.c
+@@ -0,0 +1,21 @@
++/* mmap for ARC
++ *
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
-+static void
-+handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
-+	      struct pt_regs *regs, int in_syscall)
++
++#include <linux/mman.h>
++#include <linux/mm.h>
++#include <linux/syscalls.h>
++
++/* Gets dragged in due to __ARCH_WANT_SYSCALL_OFF_T */
++SYSCALL_DEFINE6(mmap, unsigned long, addr_hint, unsigned long, len,
++		unsigned long, prot, unsigned long, flags, unsigned long, fd,
++		unsigned long, off)
 +{
-+	struct thread_info *thread = current_thread_info();
-+	sigset_t *oldset = sigmask_to_save();
-+	unsigned long usig = sig;
-+	int ret;
-+
-+	/* Syscall restarting based on the ret code and other criteria */
-+	if (in_syscall) {
-+		switch (regs->r0) {
-+		case -ERESTART_RESTARTBLOCK:
-+		case -ERESTARTNOHAND:
-+			/*
-+			 * ERESTARTNOHAND means that the syscall should
-+			 * only be restarted if there was no handler for
-+			 * the signal, and since we only get here if there
-+			 * is a handler, we don't restart
-+			 */
-+			regs->r0 = -EINTR;   /* ERESTART_xxx is internal */
-+			break;
-+
-+		case -ERESTARTSYS:
-+			/*
-+			 * ERESTARTSYS means to restart the syscall if
-+			 * there is no handler or the handler was
-+			 * registered with SA_RESTART
-+			 */
-+			if (!(ka->sa.sa_flags & SA_RESTART)) {
-+				regs->r0 = -EINTR;
-+				break;
-+			}
-+			/* fallthrough */
-+
-+		case -ERESTARTNOINTR:
-+			/*
-+			 * ERESTARTNOINTR means that the syscall should
-+			 * be called again after the signal handler returns.
-+			 * Setup reg state just as it was before doing the trap
-+			 * r0 has been clobbered with sys call ret code thus it
-+			 * needs to be reloaded with orig first arg to syscall
-+			 * in orig_r0. Rest of relevant reg-file:
-+			 * r8 (syscall num) and (r1 - r7) will be reset to
-+			 * their orig user space value when we ret from kernel
-+			 */
-+			regs->r0 = regs->orig_r0;
-+			regs->ret -= 4;
-+			break;
-+		}
-+	}
-+
-+	if (thread->exec_domain && thread->exec_domain->signal_invmap
-+	    && usig < 32)
-+		usig = thread->exec_domain->signal_invmap[usig];
-+
-+	/* Set up the stack frame */
-+	ret = setup_rt_frame(usig, ka, info, oldset, regs);
-+
-+	if (ret)
-+		force_sigsegv(sig, current);
-+	else
-+		signal_delivered(sig, info, ka, regs, 0);
-+}
-+
-+void do_signal(struct pt_regs *regs)
-+{
-+	struct k_sigaction ka;
-+	siginfo_t info;
-+	int signr;
-+	int insyscall;
-+
-+	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
-+
-+	/* Are we from a system call? */
-+	insyscall = in_syscall(regs);
-+
-+	if (signr > 0) {
-+		handle_signal(signr, &ka, &info, regs, insyscall);
-+		return;
-+	}
-+
-+	if (insyscall) {
-+		/* No handler for syscall: restart it */
-+		if (regs->r0 == -ERESTARTNOHAND ||
-+		    regs->r0 == -ERESTARTSYS || regs->r0 == -ERESTARTNOINTR) {
-+			regs->r0 = regs->orig_r0;
-+			regs->ret -= 4;
-+		} else if (regs->r0 == -ERESTART_RESTARTBLOCK) {
-+			regs->r8 = __NR_restart_syscall;
-+			regs->ret -= 4;
-+		}
-+	}
-+
-+	/* If there's no signal to deliver, restore the saved sigmask back */
-+	restore_saved_sigmask();
-+}
-+
-+void do_notify_resume(struct pt_regs *regs)
-+{
-+	/*
-+	 * ASM glue gaurantees that this is only called when returning to
-+	 * user mode
-+	 */
-+	if (test_and_clear_thread_flag(TIF_NOTIFY_RESUME))
-+		tracehook_notify_resume(regs);
++	pr_err("old mmap not supported\n");
++	return -EINVAL;
 +}
 -- 
 1.7.4.1
