@@ -1,112 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab2KGPYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 10:24:11 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:34657 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751432Ab2KGPYJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 10:24:09 -0500
-From: Mathias LEBLANC <Mathias.LEBLANC@st.com>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Sirrix AG <tpmdd@sirrix.com>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean-Luc BLANC <jean-luc.blanc@st.com>
-Date: Wed, 7 Nov 2012 16:23:14 +0100
-Subject: RE: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
-Thread-Topic: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
-Thread-Index: Ac28+T+eJqvfKs9RTEu/i63x3PIUSQAAFerT
-Message-ID: <35286B1AE75A7C47BFF0870081A31B4B387510DB14@SAFEX1MAIL4.st.com>
-References: <1352290509-14834-1-git-send-email-mathias.leblanc@st.com>,<20121107150257.GD14628@ennui.austin.ibm.com>
-In-Reply-To: <20121107150257.GD14628@ennui.austin.ibm.com>
-Accept-Language: en-US
-Content-Language: en-GB
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1754097Ab2KGPZV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 10:25:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43009 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752949Ab2KGPZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 10:25:19 -0500
+Date: Wed, 7 Nov 2012 16:25:16 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, fweisbec@gmail.com,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH 1/9] cgroup: add cgroup_subsys->post_create()
+Message-ID: <20121107152516.GA4131@dhcp22.suse.cz>
+References: <1351931915-1701-1-git-send-email-tj@kernel.org>
+ <1351931915-1701-2-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351931915-1701-2-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA7FOFlD021387
 
-Hi Kent,
+On Sat 03-11-12 01:38:27, Tejun Heo wrote:
+> Currently, there's no way for a controller to find out whether a new
+> cgroup finished all ->create() allocatinos successfully and is
+> considered "live" by cgroup.
+> 
+> This becomes a problem later when we add generic descendants walking
+> to cgroup which can be used by controllers as controllers don't have a
+> synchronization point where it can synchronize against new cgroups
+> appearing in such walks.
+> 
+> This patch adds ->post_create().  It's called after all ->create()
+> succeeded and the cgroup is linked into the generic cgroup hierarchy.
+> This plays the counterpart of ->pre_destroy().
 
-Sorry for sending new driver, it was a mistake.
-Today, I will upload the new version of the Linux driver without the errors that you have mentioned in your previous mail.
+Hmm, I had to look at "cgroup_freezer: implement proper hierarchy
+support" to actually understand what is the callback good for. The above
+sounds as if the callback is needed when a controller wants to use
+the new iterators or when pre_destroy is defined.
 
-About :
-> +/*
-> + * tpm_st33_i2c_ioctl provides 2 handles:
-> + * - TPMIOC_CANCEL: allow to CANCEL a TPM commands execution.
-> + *   See tpm_stm_i2c_cancel description above
-> + * - TPMIOC_TRANSMIT: allow to transmit a TPM commands.
-> + * - TPMIOC_HASH: allow to compute a locality 4 hash
-> + * - TPMIOC_CHANGELOCALITY: allow to change the current locality
+I think it would be helpful if the changelog described that the callback
+is needed when the controller keeps a mutable shared state for the
+hierarchy. For example memory controller doesn't have any such a strict
+requirement so we can safely use your new iterators without pre_destroy.
 
-  Can we get rid of the ioctl path?  cancel and transmit are available
-through read/write already, but I need help understanding what hash and
-change locality would be useful for. If the kernel is running you can
-just use the crypto api for a hash operation, right?
+Anyway, I like this change because the shared state is now really easy
+to implement.
 
-  As for changing locality, what's the idea there? If you can just
-switch localities at any time with an ioctl and no DRTM, why have it?
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Glauber Costa <glommer@parallels.com>
 
-[cut]
-> +static const struct file_operations tpm_st33_i2c_fops = {
-> +     .owner = THIS_MODULE,
-> +     .llseek = no_llseek,
-> +     .read = tpm_read,
-> +     .write = tpm_write,
-> +     .open = tpm_open,
-> +     .release = tpm_release,
-> +};
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-The TPM specification, specifies all four localities used for different levels
-LOCALITY4_HASH by a CPU instruction to start
-LOCALITY3 for BIOS
-LOCALITY2 for MBR
-LOCALITY1 for operation login
-LOCALITY0 for common OS tasks.
+> ---
+>  include/linux/cgroup.h |  1 +
+>  kernel/cgroup.c        | 12 ++++++++++--
+>  2 files changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index fe876a7..b442122 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -438,6 +438,7 @@ int cgroup_taskset_size(struct cgroup_taskset *tset);
+>  
+>  struct cgroup_subsys {
+>  	struct cgroup_subsys_state *(*create)(struct cgroup *cgrp);
+> +	void (*post_create)(struct cgroup *cgrp);
+>  	void (*pre_destroy)(struct cgroup *cgrp);
+>  	void (*destroy)(struct cgroup *cgrp);
+>  	int (*can_attach)(struct cgroup *cgrp, struct cgroup_taskset *tset);
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index e3045ad..f05d992 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -4060,10 +4060,15 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+>  	if (err < 0)
+>  		goto err_remove;
+>  
+> -	/* each css holds a ref to the cgroup's dentry */
+> -	for_each_subsys(root, ss)
+> +	for_each_subsys(root, ss) {
+> +		/* each css holds a ref to the cgroup's dentry */
+>  		dget(dentry);
+>  
+> +		/* creation succeeded, notify subsystems */
+> +		if (ss->post_create)
+> +			ss->post_create(cgrp);
+> +	}
+> +
+>  	/* The cgroup directory was pre-locked for us */
+>  	BUG_ON(!mutex_is_locked(&cgrp->dentry->d_inode->i_mutex));
+>  
+> @@ -4281,6 +4286,9 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+>  
+>  	ss->active = 1;
+>  
+> +	if (ss->post_create)
+> +		ss->post_create(&ss->root->top_cgroup);
+> +
+>  	/* this function shouldn't be used with modular subsystems, since they
+>  	 * need to register a subsys_id, among other things */
+>  	BUG_ON(ss->module);
+> -- 
+> 1.7.11.7
+> 
 
-The use of these localities is agreement with the specifications and must always be down (4, 3, 2, 1, 0) to be sure that the verification steps lower levels will never be altered to ensure "sustainability".
-If once the OS loaded, I am able to use the locality 4, I could potentially alter the values â€‹â€‹of the starting steps below ...
-Access to these localities in the driver * Linux * has been given only for the purpose of validation.
-
-________________________________________
-From: Kent Yoder [key@linux.vnet.ibm.com]
-Sent: 07 November 2012 16:02
-To: Mathias LEBLANC
-Cc: Rajiv Andrade; Marcel Selhorst; Sirrix AG; tpmdd-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org; Jean-Luc BLANC
-Subject: Re: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
-
-On Wed, Nov 07, 2012 at 01:15:09PM +0100, Mathias Leblanc wrote:
->  * STMicroelectronics version 1.2.0, Copyright (C) 2010
->  * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
->  * This is free software, and you are welcome to redistribute it
->  * under certain conditions.
->
-> This is the driver for TPM chip from ST Microelectronics.
->
-> If you have a TPM security chip from STMicroelectronics working with
-> an I2C, in menuconfig or .config choose the tpm driver on
-> device --> tpm and activate the protocol of your choice before compiling
-> the kernel.
-> The driver will be accessible from within Linux.
->
-> Tested on linux x86/x64, beagleboard REV B & XM REV C and CHROMIUM OS
->
-> Signed-off-by: Mathias Leblanc <mathias.leblanc@st.com>
-
-Hi Mathias,
-
-  I didn't see a reply to my mail from Oct 31, and very little has
-changed here.  Did I miss something?
-
-Kent
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Michal Hocko
+SUSE Labs
