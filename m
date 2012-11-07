@@ -1,94 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab2KGTkY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 14:40:24 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55779 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475Ab2KGTkW (ORCPT
+	id S1752449Ab2KGTk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 14:40:56 -0500
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:60476 "EHLO
+	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356Ab2KGTky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 14:40:22 -0500
-Subject: Re: [PATCH] tcp: Avoid infinite loop on recvmsg bug
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Julius Werner <jwerner@chromium.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        James Morris <jmorris@namei.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>, Dave Jones <davej@redhat.com>,
-        Sameer Nanda <snanda@chromium.org>,
-        Mandeep Singh Baines <msb@chromium.org>
-In-Reply-To: <1352316791-16491-1-git-send-email-jwerner@chromium.org>
-References: <CAODwPW9kiG-jo=n0zedv5KT-8-gJcEUrdC3F2mAEjt78tne18g@mail.gmail.com>
-	 <1352316791-16491-1-git-send-email-jwerner@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Nov 2012 11:40:19 -0800
-Message-ID: <1352317219.5552.6.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Nov 2012 14:40:54 -0500
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsW3AAW5mlBV5h1yPGdsb2JhbABEilK4GgEBexkBAQEBHxkNJ4IeAQEEATocEwEPBQsIAw4DAwECLxQlCgwOE4gECrxoFIt5gUWBLoJzYQOVeoV7jTo
+X-IronPort-AV: E=Sophos;i="4.80,732,1344204000"; 
+   d="scan'208";a="225690663"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 7 Nov 2012 20:46:17 +0100
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] input: fix input-mt kernel-doc warning
+Message-ID: <20121107194617.GA3738@polaris.bitmath.org>
+References: <5099B45E.8080105@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5099B45E.8080105@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-07 at 11:33 -0800, Julius Werner wrote:
-> tcp_recvmsg contains a sanity check that WARNs when there is a gap
-> between the socket's copied_seq and the first buffer in the
-> sk_receive_queue. In theory, the TCP stack makes sure that This Should
-> Never Happen (TM)... however, practice shows that there are still a few
-> bug reports from it out there (and one in my inbox).
+Hi Randy,
+
+> From: Randy Dunlap <rdunlap@infradead.org>
 > 
-> Unfortunately, when it does happen for whatever reason, the situation
-> is not handled very well: the kernel logs a warning and breaks out of
-> the loop that walks the receive queue. It proceeds to find nothing else
-> to do on the socket and hits sk_wait_data, which cannot block because
-> the receive queue is not empty. As no data was read, the outer while
-> loop repeats (logging the same warning again) ad infinitum until the
-> system's syslog exhausts all available hard drive capacity.
+> Fix new kernel-doc warning in input-mt.c:
 > 
-> This patch addresses that issue by closing the socket outright and
-> throwing EBADFD to userspace (which seems most appropriate to me at this
-> point). As the underlying bug condition is "impossible" and therefore by
-> definition unrecoverable, this is the only sensible action other than a
-> full panic.
-> 
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> ---
->  net/ipv4/tcp.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
-> 
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index 197c000..d612308 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -1628,7 +1628,7 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
->  				 "recvmsg bug: copied %X seq %X rcvnxt %X fl %X\n",
->  				 *seq, TCP_SKB_CB(skb)->seq, tp->rcv_nxt,
->  				 flags))
-> -				break;
-> +				goto selfdestruct;
->  
->  			offset = *seq - TCP_SKB_CB(skb)->seq;
->  			if (tcp_hdr(skb)->syn)
-> @@ -1936,6 +1936,11 @@ recv_urg:
->  recv_sndq:
->  	err = tcp_peek_sndq(sk, msg, len);
->  	goto out;
-> +
-> +selfdestruct:
-> +	err = -EBADFD;
-> +	tcp_done(sk);
-> +	goto out;
->  }
->  EXPORT_SYMBOL(tcp_recvmsg);
->  
+> Warning(drivers/input/input-mt.c:38): No description found for parameter 'flags'
 
+Thanks for the patch. It seemed reasonable to expand the function
+documentation a bit as well, hope you are alright with the patch
+below, Dmitry, care to pick this up for 3.7? Otherwise I can carry it
+for 3.8.
 
-What I find very sad in all this is that you didnt mention the driver
-that was triggering this bug.
+Thanks,
+Henrik
 
-So instead of making real progress, we are discussing of some dubious
-'fixes'
+---
 
+>From a96b3a67eefba05d7e6de3afa1b51d17728d45d3 Mon Sep 17 00:00:00 2001
+From: Henrik Rydberg <rydberg@euromail.se>
+Date: Wed, 7 Nov 2012 20:40:24 +0100
+Subject: [PATCH] Input: MT - Document undocumented init argument
 
+Fixes new kernel-doc warning in input-mt.c:
+
+Warning(drivers/input/input-mt.c:38): No description found for parameter 'flags'
+
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+ drivers/input/input-mt.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
+index c0ec7d4..1abbc17 100644
+--- a/drivers/input/input-mt.c
++++ b/drivers/input/input-mt.c
+@@ -26,10 +26,14 @@ static void copy_abs(struct input_dev *dev, unsigned int dst, unsigned int src)
+  * input_mt_init_slots() - initialize MT input slots
+  * @dev: input device supporting MT events and finger tracking
+  * @num_slots: number of slots used by the device
++ * @flags: mt tasks to handle in core
+  *
+  * This function allocates all necessary memory for MT slot handling
+  * in the input device, prepares the ABS_MT_SLOT and
+  * ABS_MT_TRACKING_ID events for use and sets up appropriate buffers.
++ * Depending on the flags set, it also performs pointer emulation and
++ * frame synchronization.
++ *
+  * May be called repeatedly. Returns -EINVAL if attempting to
+  * reinitialize with a different number of slots.
+  */
+-- 
+1.8.0
 
