@@ -1,102 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab2KGP75 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 10:59:57 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:40921 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616Ab2KGP74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 10:59:56 -0500
-Date: Wed, 7 Nov 2012 10:47:01 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/2] xen/generic: Disable fallback build on
- ARM.
-Message-ID: <20121107154701.GA18615@phenom.dumpdata.com>
-References: <1352239982-17389-1-git-send-email-konrad.wilk@oracle.com>
- <1352239982-17389-2-git-send-email-konrad.wilk@oracle.com>
- <1352272794.12977.17.camel@hastur.hellion.org.uk>
- <509A2C2402000078000A6EB9@nat28.tlf.novell.com>
+	id S1753147Ab2KGQFI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 11:05:08 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:60662 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751565Ab2KGQFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 11:05:05 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
+Date: Wed, 07 Nov 2012 17:09:16 +0100
+Message-ID: <2385996.Tx2Do9TUNJ@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1211071032070.1859-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1211071032070.1859-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <509A2C2402000078000A6EB9@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 08:38:44AM +0000, Jan Beulich wrote:
-> >>> On 07.11.12 at 08:19, Ian Campbell <ian.campbell@citrix.com> wrote:
-> > On Tue, 2012-11-06 at 22:13 +0000, Konrad Rzeszutek Wilk wrote:
-> >> As there is no need for it (the fallback code is for older
-> >> hypervisors and they won't run under ARM), 
-> > 
-> > I think more specifically they won't run on anything other than x86.
-> > 
-> > [...]
-> >> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-> >> index 46de6cd..273d2b9 100644
-> >> --- a/drivers/xen/Makefile
-> >> +++ b/drivers/xen/Makefile
-> >> @@ -1,8 +1,8 @@
-> >>  ifneq ($(CONFIG_ARM),y)
-> >> -obj-y	+= manage.o balloon.o
-> >> +obj-y	+= manage.o balloon.o fallback.o
-> >>  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
-> >>  endif
-> > 
-> > I think :
-> >   obj-$(CONFIG_X86) += fallback.o
-> > would better reflect what is going on here.
+On Wednesday, November 07, 2012 10:49:04 AM Alan Stern wrote:
+> On Wed, 7 Nov 2012, Huang Ying wrote:
 > 
-> Yes please.
+> > > > Devices will be disabled if the PCI driver is unbound from the PCI
+> > > > device.
+> > > 
+> > > Yes.  But without a PCI driver, nothing will call 
+> > > pm_runtime_set_suspended.
+> > 
+> > pm_runtime_set_suspended will be called in pci_device_remove or error
+> > path of local_pci_probe.
+> 
+> Yes, okay.  But that's what we want.  Unused, driverless PCI devices
+> shouldn't force their parents to remain at full power.
+> 
+> > >   And even if something does call 
+> > > pm_runtime_set_suspended, it's still not a problem -- the device can't 
+> > > be used without a driver.
+> > 
+> > The VGA device can be used without a driver.
+> 
+> Ah, right, that's your _real_ problem.  You should have mentioned this 
+> in the original Changelog for the patch.
+> 
+> Rafael, this does need to be fixed.
+
+Yup.
+
+> The PCI subsystem assumes that 
+> driverless devices are not in use, so they are disabled for runtime PM 
+> and marked as suspended.  This is not appropriate for VGA devices, 
+> which can indeed be used without a driver.
+> 
+> I'm not sure what the best solution is.  Maybe we should Ying's 
+> proposal a step farther:
+> 
+> 	Make pm_runtime_set_suspended() fail if runtime PM is 
+> 	forbidden.
+>
+> 	Make pm_runtime_forbid() call pm_runtime_set_active()
+> 	(and do a runtime resume of the parent) if disable_depth > 0.
+
+I'd prefer this one.  The callers of pm_runtime_forbid() may actually
+reasonably expect something like this to happen.
+
+> 	Make the PCI runtime-idle routine call 
+> 	pm_runtime_set_suspended() if disable_depth > 0.  Or maybe
+> 	do this for all devices, in the runtime PM core.
+
+That would mean calling it on every call to pm_runtime_put() and friends
+which seems to be a bit wasteful.
+
+Thanks,
+Rafael
 
 
->From 6bf926ddd44ddc67edbeb28d4069f207f2c6e07e Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Tue, 6 Nov 2012 15:49:27 -0500
-Subject: [PATCH 1/2] xen/generic: Disable fallback build on ARM.
-
-As there is no need for it (the fallback code is for older
-hypervisors and they only run under x86), and also b/c
-we get:
-
-drivers/xen/fallback.c: In function 'xen_event_channel_op_compat':
-drivers/xen/fallback.c:10:19: error: storage size of 'op' isn't known
-drivers/xen/fallback.c:15:2: error: implicit declaration of function '_hypercall1' [-Werror=implicit-function-declaration]
-drivers/xen/fallback.c:15:19: error: expected expression before 'int'
-drivers/xen/fallback.c:18:7: error: 'EVTCHNOP_close' undeclared (first use in this function)
-drivers/xen/fallback.c:18:7: note: each undeclared identifier is reported only once for each function it appears in
-.. and more
-
-[v1: Moved the enablement to be covered by CONFIG_X86 per Ian's suggestion]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/Makefile |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index 46de6cd..7435470 100644
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@ -2,7 +2,8 @@ ifneq ($(CONFIG_ARM),y)
- obj-y	+= manage.o balloon.o
- obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
- endif
--obj-y	+= grant-table.o features.o events.o fallback.o
-+obj-$(CONFIG_X86)			+= fallback.o
-+obj-y	+= grant-table.o features.o events.o
- obj-y	+= xenbus/
- 
- nostackp := $(call cc-option, -fno-stack-protector)
 -- 
-1.7.7.6
-
-
-> 
-> Jan
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
