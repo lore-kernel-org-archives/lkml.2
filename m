@@ -1,134 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab2KGEhf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 23:37:35 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:47310 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab2KGEhe (ORCPT
+	id S1754073Ab2KGEmg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 23:42:36 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:32604 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753566Ab2KGEmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 23:37:34 -0500
+	Tue, 6 Nov 2012 23:42:35 -0500
+Message-ID: <5099E6A4.7050802@oracle.com>
+Date: Wed, 07 Nov 2012 12:42:12 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1352207399-29497-3-git-send-email-alex.shi@intel.com>
-References: <1352207399-29497-1-git-send-email-alex.shi@intel.com>
-	<1352207399-29497-3-git-send-email-alex.shi@intel.com>
-Date: Wed, 7 Nov 2012 10:07:33 +0530
-Message-ID: <CAM4v1pMLkzN5Fhmkb8brExh=OxMZ_YrvLnsZGEpG+AtBB8UDDQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/3] sched: power aware load balance,
-From: Preeti Murthy <preeti.lkml@gmail.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
-        suresh.b.siddha@intel.com, arjan@linux.intel.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
-        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, cl@linux.com,
-        pjt@google.com, Viresh Kumar <viresh.kumar@linaro.org>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Kees Cook <keescook@chromium.org>
+CC: akpm@linux-foundation.org, aedilger@gmail.com, alan@linux.intel.com,
+        arnn@arndb.de, gregkh@linuxfoundation.org, jakub@redhat.com,
+        james.l.morris@oracle.com, john.sobecki@oracle.com, tytso@mit.edu,
+        viro@zeniv.linux.org.uk, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
+ added to -mm tree
+References: <20121107001609.9B7A9100047@wpzn3.hot.corp.google.com> <CAGXu5jJ779UvpZwO-fi7-m+i=OfqwgXh1PC4GNwjhfD9GD82wQ@mail.gmail.com> <5099E1C7.5000007@oracle.com> <CAGXu5j+fLM4YV==xjTsS4qU+CZY_ohL2cdAcEcXBjmS2WHa6Sw@mail.gmail.com>
+In-Reply-To: <CAGXu5j+fLM4YV==xjTsS4qU+CZY_ohL2cdAcEcXBjmS2WHa6Sw@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+On 11/07/2012 12:29 PM, Kees Cook wrote:
+> On Tue, Nov 6, 2012 at 8:21 PM, Jeff Liu <jeff.liu@oracle.com> wrote:
+>> Hi Andrew and Kees,
+>>
+>> Great thanks for both your comments!
+>>
+>> On 11/07/2012 09:11 AM, Kees Cook wrote:
+>>> Hrm, I don't like this. get_random_int() specifically says: "Get a
+>>> random word for internal kernel use only." The intent of AT_RANDOM is
+>>> for userspace pRNG seeding (though glibc currently uses it directly
+>>> for stack protector and pointer mangling), which is not "internal
+>>> kernel use only". :) Though I suppose this is already being used for
+>>> the randomize_stack_top(), but I think it'd still be better to use
+>>> higher quality bits.
+>> Btw Kees, does it sounds make sense if we just return the 16 bytes
+>> uninitialized stack array if the user disable the stack randomize via
+>> "/proc/sys/kernel/randomize_va_space = 0" or via the related sysctl, or
+>> even specified norandmaps on boot?
+> 
+> No, I feel that ASLR (randomize_va_space) is distinctly separate from
+> how glibc uses AT_RANDOM (stack protector and pointer mangling).
+> AT_RANDOM should remain active even if randomize_va_space is 0.
+Ok, I was confused about the semantics of ASLR, thanks for your
+clarification, will post another patch soon according to your feedback.
 
-What I am concerned about in this patchset as Peter also
-mentioned in the previous discussion of your approach
-(https://lkml.org/lkml/2012/8/13/139)
-is that:
+-Jeff
 
-1.Using nr_running of two different sched groups to decide which one
-can be group_leader or group_min might not be be the right approach,
-as this might mislead us to think that a group running one task is less
-loaded than the group running three tasks although the former task is
-a cpu hogger.
-
-2.Comparing the number of cpus with the number of tasks running in a sched
-group to decide if the group is underloaded or overloaded again faces
-the same issue.The tasks might be short running,not utilizing cpu much.
-
-I also feel before we introduce another side to the scheduler called
-'power aware',why not try and see if the current scheduler itself can
-perform better? We have an opportunity in terms of PJT's patches which
-can help scheduler make more realistic decisions in load balance.Also
-since PJT's metric is a statistical one,I believe we could vary it to
-allow scheduler to do more rigorous or less rigorous power savings.
-
-It is true however that this approach will not try and evacuate nearly idle
-cpus over to nearly full cpus.That is definitely one of the benefits of your
-patch,in terms of power savings,but I believe your patch is not making use
-of the right metric to decide that.
-
-IMHO,the appraoch towards power aware scheduler should take the following steps:
-
-1.Make use of PJT's per-entity-load tracking metric to allow scheduler to make
-more intelligent decisions in load balancing.Test the performance and power save
-numbers.
-
-2.If the above shows some characteristic change in behaviour over the earlier
-scheduler,it should be either towards power save or towards performance.If found
-positive towards one of them, try varying the calculation of
-per-entity-load to see
-if it can lean towards the other behaviour.If it can,then there you
-go,you have a
-knob to change between policies right there!
-
-3.If you don't get enough power savings with the above approach then
-add your patchset
-to evacuate nearly idle towards nearly busy groups,but by using PJT's metric to
-make the decision.
-
-What do you think?
-
-Regards
-Preeti U Murthy
-On Tue, Nov 6, 2012 at 6:39 PM, Alex Shi <alex.shi@intel.com> wrote:
-> This patch enabled the power aware consideration in load balance.
->
-> As mentioned in the power aware scheduler proposal, Power aware
-> scheduling has 2 assumptions:
-> 1, race to idle is helpful for power saving
-> 2, shrink tasks on less sched_groups will reduce power consumption
->
-> The first assumption make performance policy take over scheduling when
-> system busy.
-> The second assumption make power aware scheduling try to move
-> disperse tasks into fewer groups until that groups are full of tasks.
->
-> This patch reuse lots of Suresh's power saving load balance code.
-> Now the general enabling logical is:
-> 1, Collect power aware scheduler statistics with performance load
-> balance statistics collection.
-> 2, if domain is eligible for power load balance do it and forget
-> performance load balance, else do performance load balance.
->
-> Has tried on my 2 sockets * 4 cores * HT NHM EP machine.
-> and 2 sockets * 8 cores * HT SNB EP machine.
-> In the following checking, when I is 2/4/8/16, all tasks are
-> shrank to run on single core or single socket.
->
-> $for ((i=0; i < I; i++)) ; do while true; do : ; done & done
->
-> Checking the power consuming with a powermeter on the NHM EP.
->         powersaving     performance
-> I = 2   148w            160w
-> I = 4   175w            181w
-> I = 8   207w            224w
-> I = 16  324w            324w
->
-> On a SNB laptop(4 cores *HT)
->         powersaving     performance
-> I = 2   28w             35w
-> I = 4   38w             52w
-> I = 6   44w             54w
-> I = 8   56w             56w
->
-> On the SNB EP machine, when I = 16, power saved more than 100 Watts.
->
-> Also tested the specjbb2005 with jrockit, kbuild, their peak performance
-> has no clear change with powersaving policy on all machines. Just
-> specjbb2005 with openjdk has about 2% drop on NHM EP machine with
-> powersaving policy.
->
-> This patch seems a bit long, but seems hard to split smaller.
->
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
