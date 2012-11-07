@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab2KGIf7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 03:35:59 -0500
-Received: from umail.aei.mpg.de ([194.94.224.6]:39778 "EHLO umail.aei.mpg.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750996Ab2KGIf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 03:35:58 -0500
-X-Greylist: delayed 457 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Nov 2012 03:35:58 EST
-Date: Wed, 7 Nov 2012 09:28:20 +0100
-From: Steffen Grunewald <Steffen.Grunewald@aei.mpg.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: htejun@gmail.com, tj@kernel.org,
-        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
-Subject: Need assistance fixing a tg3 driver side-effect on IPMI
-Message-ID: <20121107082820.GP30936@casco.aei.mpg.de>
+	id S1752894Ab2KGIgS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 03:36:18 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:39654 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab2KGIgQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 03:36:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <dd11b4d47ab566931cb943dea34e67c1ce2c3e59.1351530856.git.viresh.kumar@linaro.org>
+References: <dd11b4d47ab566931cb943dea34e67c1ce2c3e59.1351530856.git.viresh.kumar@linaro.org>
+Date: Wed, 7 Nov 2012 14:06:16 +0530
+Message-ID: <CAKohpokakFB6v9P=ocmb3Zx8K6k7qmibzha7+2+boDSBt-TQbQ@mail.gmail.com>
+Subject: Re: [PATCH] mtd: map: Fix compilation warning
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: dwmw2@infradead.org
+Cc: linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dedekind1@gmail.com, Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On 29 October 2012 22:47, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> This patch is an attempt to fix following compilation warning.
+>
+> In file included from drivers/mtd/chips/cfi_cmdset_0001.c:35:0:
+> drivers/mtd/chips/cfi_cmdset_0001.c: In function 'cfi_intelext_write_words':
+> include/linux/mtd/map.h:331:11: warning: 'r.x[0]' may be used uninitialized in this function [-Wmaybe-uninitialized]
+>
+> I could have used uninitialized_var() too, but didn't used it as the final else
+> part of map_word_load() is missing. So there is a chance that it might be passed
+> uninitialized. Better initialize to zero.
+>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-I've been running into a problem while installing Debian Wheezy on a bunch
-of 6-year old machines which have been running Squeeze happily for years.
-
-They are SuperMicro-based (H8SSL opteron board), with two BCM95704A6 (Tigon3) 
-interfaces, and a BMC/IPMI card (SuperMicro 1U) which shares eth0.
-
-With a 2.6.32 kernel (and the 3.102 version of the tg3 driver) everything is fine.
-
-With Debian's 3.2 (and tg3 3.121) I lose access to the IPMI LAN (or LANplus)
-interface as soon as the tg3 module has been loaded. Even shutting down doesn't
-give the interface back - I've got to pull the power plug.
-
-Trying to git bisect the corresponding changes to the tg3 driver, I'm running
-against a wall at the point where the source code has been moved to another
-subtree back in 2011 (still a long time past Squeeze). I appear to be unable
-to go back beyond that.
-
-Can you advise how to find out when IPMI access got lost, and how to re-enable
-it? Any suggestion is appreciated.
-I suppose it wouldn't be as easy as "get the old source from 2.6.32, and plug
-it into drivers/net/ethernet/broadcom, then rebuild the kernel" -?
-
-Please keep me on CC, thanks.
-
-Regards,
- Steffen
+Ping!!
