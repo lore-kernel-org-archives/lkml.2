@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab2KGUsd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 15:48:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53586 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750802Ab2KGUsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 15:48:31 -0500
-Date: Wed, 7 Nov 2012 21:48:27 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] floppy
-In-Reply-To: <CA+1xoqcBx83FmN=0Rt0NGfeWSj8AYVNeFNugDejR4_3=nVXAeA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1211072147040.27271@pobox.suse.cz>
-References: <alpine.LNX.2.00.1210262112370.19184@pobox.suse.cz> <CA+1xoqcBx83FmN=0Rt0NGfeWSj8AYVNeFNugDejR4_3=nVXAeA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752909Ab2KGUxC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 15:53:02 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42950 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab2KGUw7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 15:52:59 -0500
+Message-ID: <509ACA28.307@kernel.org>
+Date: Wed, 07 Nov 2012 22:52:56 +0200
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg Thelen <gthelen@google.com>
+CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
+Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+References: <20121107105348.GA25549@lizard> <20121107112136.GA31715@shutemov.name> <xr93liedfhy4.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <xr93liedfhy4.fsf@gthelen.mtv.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Nov 2012, Sasha Levin wrote:
+Hi Greg,
 
-> Hi guys!
-> 
-> This is me complaining that I still see the spews that this pull
-> request should fix, probably because this mail got lost.
+On 11/7/12 7:20 PM, Greg Thelen wrote:
+ > Related question: are there plans to extend this system call to
+ > provide per-cgroup vm pressure notification?
 
-You are seeing that on -next, right?
+Yes, that's something that needs to be addressed before we can ever
+consider merging something like this to mainline.  We probably need help
+with that, though. Preferably from someone who knows cgroups. :-)
 
-That's because a different version of the patchset has been pushed to 
-Linus, but for-next branch in Jens' tree still contains the old patchset 
-containing the faulty patch (which is never going upstream).
-
-The fixed series is now in Linus' tree (as per -rc4), and I guess you are 
-not having the problem there, right?
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+                         Pekka
