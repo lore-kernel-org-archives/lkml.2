@@ -1,306 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab2KGI1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 03:27:10 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:37509 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab2KGI1I (ORCPT
+	id S1752009Ab2KGI25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 03:28:57 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:38722 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab2KGI24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 03:27:08 -0500
+	Wed, 7 Nov 2012 03:28:56 -0500
+Message-ID: <509A1B96.2000401@linux.vnet.ibm.com>
+Date: Wed, 07 Nov 2012 13:58:06 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20121106224539.GB4255@blackbox.djwong.org>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	<1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
-	<20121106224539.GB4255@blackbox.djwong.org>
-Date: Wed, 7 Nov 2012 16:27:05 +0800
-Message-ID: <CAEH94LgDuTqV2sddxs9mvp-2bKjwcSPag7iXa4UFYCTixwJFFA@mail.gmail.com>
-Subject: Re: [RFC v4+ hot_track 03/19] vfs: add I/O frequency update function
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+To: Benjamin Segall <bsegall@google.com>
+CC: Preeti Murthy <preeti.lkml@gmail.com>, pjt@google.com,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Venki Pallipadi <venki@google.com>, Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>, viresh.kumar@linaro.org
+Subject: Re: [patch 02/16] sched: maintain per-rq runnable averages
+References: <20120823141422.444396696@google.com> <20120823141506.442637130@google.com> <CAM4v1pOJfADYuz9=XaFMnNG-OYAJtsd93Y5YgMd6pn-9sz6Q+A@mail.gmail.com> <xm26hapd6uwo.fsf@sword-of-the-dawn.mtv.corp.google.com>
+In-Reply-To: <xm26hapd6uwo.fsf@sword-of-the-dawn.mtv.corp.google.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12110708-5816-0000-0000-00000542BC16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 6:45 AM, Darrick J. Wong <darrick.wong@oracle.com> wrote:
-> On Mon, Oct 29, 2012 at 12:30:45PM +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On 10/29/2012 11:08 PM, Benjamin Segall wrote:
+> Preeti Murthy <preeti.lkml@gmail.com> writes:
+> 
+>> Hi Paul, Ben,
 >>
->>   Add some util helpers to update access frequencies
->> for one file or its range.
+>> A few queries regarding this patch:
 >>
->> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> ---
->>  fs/hot_tracking.c            |  179 ++++++++++++++++++++++++++++++++++++++++++
->>  fs/hot_tracking.h            |    7 ++
->>  include/linux/hot_tracking.h |    2 +
->>  3 files changed, 188 insertions(+), 0 deletions(-)
+>> 1.What exactly is the significance of introducing sched_avg structure
+>> for a runqueue? If I have
+>>    understood correctly, sched_avg keeps track of how long a task has
+>> been active,
+>>    how long has it been serviced by the processor and its lifetime.How
+>> does this apply analogously
+>>    to the runqueue?
+> 
+> Remember that sched_avg's are not just for tasks, they're for any CFS
+> group entity (sched_entity), for which they track the time runnable and
+> the time used, which allows the system-wide per-task_group computation
+> of runnable and usage.
+> 
+> Computing these on the root has no usage in this patchset, but any
+> extensions of this using hierarchy-based fractional usage or runnable
+> time would need it, and retrofitting it afterwards would be a pain.
 >>
->> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
->> index 68591f0..0a7d9a3 100644
->> --- a/fs/hot_tracking.c
->> +++ b/fs/hot_tracking.c
->> @@ -172,6 +172,137 @@ static void hot_inode_tree_exit(struct hot_info *root)
->>       }
->>  }
+>> 2.Is this a right measure to overwrite rq->load.weight because the
+>> rq->sched_avg does not seem to
+>>    take care of task priorities.IOW, what is the idea behind
+>> introducing this metric for the runqueue?
+>>    Why cant the run queue load be updated the same way as the cfs_rq
+>> load is updated:
+>>     cfs_rq->runnable_load_avg and cfs_rq->blocked_load_avg.
+> 
+> Loadwise you would indeed want the cfs_rq statistics, that is what they
+> are there for. The sched_avg numbers are only useful in computing the
+> parent's load (irrelevant on the root), or for extensions using raw
+> usage/runnable numbers.
 >>
->> +struct hot_inode_item
->> +*hot_inode_item_find(struct hot_info *root, u64 ino)
->> +{
->> +     struct hot_inode_item *he;
->> +     int ret;
->> +
->> +again:
->> +     spin_lock(&root->lock);
->> +     he = radix_tree_lookup(&root->hot_inode_tree, ino);
->> +     if (he) {
->> +             kref_get(&he->hot_inode.refs);
->> +             spin_unlock(&root->lock);
->> +             return he;
->> +     }
->> +     spin_unlock(&root->lock);
->> +
->> +     he = kmem_cache_zalloc(hot_inode_item_cachep,
->> +                             GFP_KERNEL | GFP_NOFS);
->> +     if (!he)
->> +             return ERR_PTR(-ENOMEM);
->> +
->> +     hot_inode_item_init(he, ino, &root->hot_inode_tree);
->> +
->> +     ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
->> +     if (ret) {
->> +             kmem_cache_free(hot_inode_item_cachep, he);
->> +             return ERR_PTR(ret);
->> +     }
->> +
->> +     spin_lock(&root->lock);
->> +     ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
->> +     if (ret == -EEXIST) {
->> +             kmem_cache_free(hot_inode_item_cachep, he);
->> +             spin_unlock(&root->lock);
->> +             radix_tree_preload_end();
->> +             goto again;
->> +     }
->> +     spin_unlock(&root->lock);
->> +     radix_tree_preload_end();
->> +
->> +     kref_get(&he->hot_inode.refs);
->> +     return he;
->> +}
->> +EXPORT_SYMBOL_GPL(hot_inode_item_find);
->> +
->> +static struct hot_range_item
->> +*hot_range_item_find(struct hot_inode_item *he,
->> +                     u32 start)
->> +{
->> +     struct hot_range_item *hr;
->> +     int ret;
->> +
->> +again:
->> +     spin_lock(&he->lock);
->> +     hr = radix_tree_lookup(&he->hot_range_tree, start);
->> +     if (hr) {
->> +             kref_get(&hr->hot_range.refs);
->> +             spin_unlock(&he->lock);
->> +             return hr;
->> +     }
->> +     spin_unlock(&he->lock);
->> +
->> +     hr = kmem_cache_zalloc(hot_range_item_cachep,
->> +                             GFP_KERNEL | GFP_NOFS);
->> +     if (!hr)
->> +             return ERR_PTR(-ENOMEM);
->> +
->> +     hot_range_item_init(hr, start, he);
->> +
->> +     ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
->> +     if (ret) {
->> +             kmem_cache_free(hot_range_item_cachep, hr);
->> +             return ERR_PTR(ret);
->> +     }
->> +
->> +     spin_lock(&he->lock);
->> +     ret = radix_tree_insert(&he->hot_range_tree, start, hr);
->> +     if (ret == -EEXIST) {
->> +             kmem_cache_free(hot_range_item_cachep, hr);
->> +             spin_unlock(&he->lock);
->> +             radix_tree_preload_end();
->> +             goto again;
->> +     }
->> +     spin_unlock(&he->lock);
->> +     radix_tree_preload_end();
->> +
->> +     kref_get(&hr->hot_range.refs);
->> +     return hr;
->> +}
->> +
->> +/*
->> + * This function does the actual work of updating
->> + * the frequency numbers, whatever they turn out to be.
->> + */
->> +static u64 hot_average_update(struct timespec old_atime,
->> +             struct timespec cur_time, u64 old_avg)
->> +{
->> +     struct timespec delta_ts;
->> +     u64 new_avg;
->> +     u64 new_delta;
->> +
->> +     delta_ts = timespec_sub(cur_time, old_atime);
->> +     new_delta = timespec_to_ns(&delta_ts) >> FREQ_POWER;
->> +
->> +     new_avg = (old_avg << FREQ_POWER) - old_avg + new_delta;
->> +     new_avg = new_avg >> FREQ_POWER;
->> +
->> +     return new_avg;
->> +}
->> +
->> +static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
->> +{
->> +     struct timespec cur_time = current_kernel_time();
->> +
->> +     if (write) {
->> +             freq_data->nr_writes += 1;
->> +             freq_data->avg_delta_writes = hot_average_update(
->> +                             freq_data->last_write_time,
->> +                             cur_time,
->> +                             freq_data->avg_delta_writes);
->> +             freq_data->last_write_time = cur_time;
->> +     } else {
->> +             freq_data->nr_reads += 1;
->> +             freq_data->avg_delta_reads = hot_average_update(
->> +                             freq_data->last_read_time,
->> +                             cur_time,
->> +                             freq_data->avg_delta_reads);
->
-> I think you could just pass in a pointer to
-> freq_data->avg_delta_{writes,reads} here...
-why?
->
->> +             freq_data->last_read_time = cur_time;
->> +     }
->> +}
->> +
->>  /*
->>   * Initialize kmem cache for hot_inode_item and hot_range_item.
->>   */
->> @@ -199,6 +330,54 @@ err:
->>  EXPORT_SYMBOL_GPL(hot_cache_init);
->>
->>  /*
->> + * Main function to update access frequency from read/writepage(s) hooks
->> + */
->> +void hot_update_freqs(struct inode *inode, u64 start,
->> +                     u64 len, int rw)
->> +{
->> +     struct hot_info *root = inode->i_sb->s_hot_root;
->> +     struct hot_inode_item *he;
->> +     struct hot_range_item *hr;
->> +     u32 cur, end;
->> +
->> +     if (!root || (len == 0))
->> +             return;
->> +
->> +     he = hot_inode_item_find(root, inode->i_ino);
->> +     if (IS_ERR(he)) {
->> +             WARN_ON(1);
->> +             return;
->> +     }
->> +
->> +     spin_lock(&he->hot_inode.lock);
->> +     hot_freq_data_update(&he->hot_inode.hot_freq_data, rw);
->> +     spin_unlock(&he->hot_inode.lock);
->> +
->> +     /*
->> +      * Align ranges on RANGE_SIZE boundary
->> +      * to prevent proliferation of range structs
->> +      */
->> +     end = (start + len + RANGE_SIZE - 1) >> RANGE_BITS;
->> +     for (cur = (start >> RANGE_BITS); cur < end; cur++) {
->
-> Hm... start is u64, cur is u32, RANGE_BITS is 20.  Doesn't this overflow if,
-> say, I have a sparse file with blocks way out at 2^53 bytes?
-ah, good catch, thanks.
->
-> Also, RANGE_SIZE means that the hot tracking range granularity is 1MiB?  How
-yes.
-> did you decide on that?  Will we ever want to change that?
-It is one assumption, do you think 1 MB is not appropriate? Do you
-mean to add one proc file interface for it?
->
->> +             hr = hot_range_item_find(he, cur);
->> +             if (IS_ERR(hr)) {
->> +                     WARN_ON(1);
->
-> WARN(1, "hot_range_item_find returns %d\n", PTR_ERR(hr)); ?
-OK, done.
->
-> --D
->
->> +                     hot_inode_item_put(he);
->> +                     return;
->> +             }
->> +
->> +             spin_lock(&hr->hot_range.lock);
->> +             hot_freq_data_update(&hr->hot_range.hot_freq_data, rw);
->> +             spin_unlock(&hr->hot_range.lock);
->> +
->> +             hot_range_item_put(hr);
->> +     }
->> +
->> +     hot_inode_item_put(he);
->> +}
->> +EXPORT_SYMBOL_GPL(hot_update_freqs);
->> +
->> +/*
->>   * Initialize the data structures for hot data tracking.
->>   */
->>  int hot_track_init(struct super_block *sb)
->> diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
->> index e7ba121..cc4666e 100644
->> --- a/fs/hot_tracking.h
->> +++ b/fs/hot_tracking.h
->> @@ -20,6 +20,13 @@
->>  #define FREQ_DATA_TYPE_INODE (1 << 0)
->>  #define FREQ_DATA_TYPE_RANGE (1 << 1)
->>
->> +/* size of sub-file ranges */
->> +#define RANGE_BITS 20
->> +#define RANGE_SIZE (1 << RANGE_BITS)
->> +
->> +#define FREQ_POWER 4
->> +
->>  void hot_inode_item_put(struct hot_inode_item *he);
->> +struct hot_inode_item *hot_inode_item_find(struct hot_info *root, u64 ino);
->>
->>  #endif /* __HOT_TRACKING__ */
->> diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
->> index 4233207..e2d6028 100644
->> --- a/include/linux/hot_tracking.h
->> +++ b/include/linux/hot_tracking.h
->> @@ -71,5 +71,7 @@ struct hot_info {
->>  extern void __init hot_cache_init(void);
->>  extern int hot_track_init(struct super_block *sb);
->>  extern void hot_track_exit(struct super_block *sb);
->> +extern void hot_update_freqs(struct inode *inode, u64 start,
->> +                             u64 len, int rw);
->>
->>  #endif  /* _LINUX_HOTTRACK_H */
->> --
->> 1.7.6.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> 3.What is the significance of passing rq->nr_running in
+>> enqueue_task_fair while updating
+>>    the run queue load? Because __update_entity_runnable_avg does not
+>> treat this argument
+>>    any differently if it is >1.
+> 
+> That could just as well be rq->nr_running != 0, it would behave the same.
+
+Hi Ben,
+After going through your suggestions,below is a patch which I wish to begin
+with in my effort to integrate the per-entity-load-tracking metric with the
+scheduler.I had posted out a patchset earlier,
+(https://lkml.org/lkml/2012/10/25/162) but due to various drawbacks,
+I am redoing it along the lines of the suggestions posted in reply to it.
+Please do let me know if I am using the metric in the right way.Thanks.
+
+Regards
+Preeti U Murthy
+
+------------START OF PATCH--------------------------------------------
+
+Since load balancing requires runqueue load to track the load of the sched
+groups and hence the sched domains,introduce the cfs_rq equivalent metric of
+current runnable load to the run queue as well.
+
+The idea is something like this:
+
+1.The entire load balancing framework is hinged upon what
+weighted_cpuload() has to say about the load of the sched group which in turn
+adds upto the weight of the sched domain and will ultimately be used to decide
+whether to do load balance and to calculate the imbalance.
+
+2.Currently weighted_cpuload() is returning rq->load.weight,but it needs to
+use the per-entity-load-tracking metric to reflect the runqueue load.So it
+needs to be replaced it with rq->runnable_load_avg.
+
+3.This being the first step towards integrating the per-entity-load tracking
+metric with the load balancer.
+
+Signed-off-by: Preeti U Murthy
+---
+ kernel/sched/fair.c  |    9 ++++++++-
+ kernel/sched/sched.h |    1 +
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index a9cdc8f..6c89b28 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1499,8 +1499,11 @@ static inline void update_entity_load_avg(struct sched_entity *se,
+ 	if (!update_cfs_rq)
+ 		return;
+
+-	if (se->on_rq)
++	if (se->on_rq) {
+ 		cfs_rq->runnable_load_avg += contrib_delta;
++		if(!parent_entity(se))
++			rq->runnable_load_avg += contrib_delta;
++	}
+ 	else
+ 		subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
+ }
+@@ -1579,6 +1582,8 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 	}
+
+ 	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
++	if(!parent_entity(se))
++		rq->runnable_load_avg += se->avg.load_avg_contrib;
+ 	/* we force update consideration on load-balancer moves */
+ 	update_cfs_rq_blocked_load(cfs_rq, !wakeup);
+ }
+@@ -1597,6 +1602,8 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 	update_cfs_rq_blocked_load(cfs_rq, !sleep);
+
+ 	cfs_rq->runnable_load_avg -= se->avg.load_avg_contrib;
++	if(!parent_entity(se))
++		rq->runnable_load_avg -= se->avg.load_avg_contrib;
+ 	if (sleep) {
+ 		cfs_rq->blocked_load_avg += se->avg.load_avg_contrib;
+ 		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index bfd004a..3001d97 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -382,6 +382,7 @@ struct rq {
+ 	/* list of leaf cfs_rq on this cpu: */
+ 	struct list_head leaf_cfs_rq_list;
+ #ifdef CONFIG_SMP
++	u64 runnable_load_avg;
+ 	unsigned long h_load_throttle;
+ #endif /* CONFIG_SMP */
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
 
 
 
--- 
-Regards,
-
-Zhi Yong Wu
