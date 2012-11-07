@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab2KGSeI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 13:34:08 -0500
-Received: from fieldses.org ([174.143.236.118]:47097 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753628Ab2KGSeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 13:34:03 -0500
-Date: Wed, 7 Nov 2012 13:33:55 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
- connecting local transports
-Message-ID: <20121107183355.GA7421@fieldses.org>
-References: <20121008105437.18668.99905.stgit@localhost.localdomain>
- <20121009193506.GA19680@fieldses.org>
- <5098E31A.5080801@parallels.com>
- <20121106120642.GA6718@fieldses.org>
- <20121106124035.GA20522@infradead.org>
- <20121106130705.GC6718@fieldses.org>
- <20121106131018.GA12211@infradead.org>
- <20121106133605.GD6718@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121106133605.GD6718@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754370Ab2KGSeg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 13:34:36 -0500
+Received: from smtp161.dfw.emailsrvr.com ([67.192.241.161]:59866 "EHLO
+	smtp161.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753544Ab2KGScw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 13:32:52 -0500
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        MyungJoo Ham <myungjoo.ham@gmail.com>
+Subject: [PATCH 3/6 v4] cpufreq: tolerate inexact values when collecting stats
+Date: Wed,  7 Nov 2012 12:32:43 -0600
+Message-Id: <1352313166-28980-4-git-send-email-mark.langsdorf@calxeda.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1352313166-28980-1-git-send-email-mark.langsdorf@calxeda.com>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1352313166-28980-1-git-send-email-mark.langsdorf@calxeda.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 08:36:05AM -0500, J. Bruce Fields wrote:
-> On Tue, Nov 06, 2012 at 08:10:18AM -0500, Christoph Hellwig wrote:
-> > On Tue, Nov 06, 2012 at 08:07:06AM -0500, J. Bruce Fields wrote:
-> > > So you're worried that a bug in the nfs code could modify the root and
-> > > then not restore it?
-> > 
-> > At least the link you pointed to earlier never sets it back.
-> 
-> This? http://thread.gmane.org/gmane.linux.kernel/1259986/focus=47687
-> 
-> 	+	get_fs_root(current->fs, &root);
-> 	+	set_fs_root(current->fs, &transport->root);
-> 	+
-> 	 	status = xs_local_finish_connecting(xprt, sock);
-> 	+
-> 	+	set_fs_root(current->fs, &root);
-> 	+	path_put(&root);
-> 
-> > Instead
-> > of messing with it I'd rather have the sunrpc code use vfs_path_lookup
-> > and not care about current->fs->root at all.
-> 
-> The annoyance is that the lookup happens somewhere lower down in the
-> networking code (net/unix/af_unix.c:unix_find_other, I think).  So we'd
-> need some new (internal) API.  We'd likely be the only user of that new
-> API.
+When collecting stats, if a frequency doesn't match the table, go through
+the table again with both the search frequency and table values shifted
+left by 10 bits.
 
-So, if the only drawback is really just the risk of introducing a bug
-that leaves the fs_root changed--the above seems simple enough for that
-not to be a great risk, right?
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: MyungJoo Ham <myungjoo.ham@gmail.com>
+---
+Changes from v3, v2
+	None
+Changes from v1:
+        Implemented a simple round-up algorithm instead of the over/under
+method that could cause errors on Intel processors with boost mode.
 
-Is there any other hazard to doing this that people can think of?
+ drivers/cpufreq/cpufreq_stats.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
---b.
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index 3998316..30aee36 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -161,6 +161,9 @@ static int freq_table_get_index(struct cpufreq_stats *stat, unsigned int freq)
+ 	for (index = 0; index < stat->max_state; index++)
+ 		if (stat->freq_table[index] == freq)
+ 			return index;
++	for (index = 0; index < stat->max_state; index++)
++		if ((stat->freq_table[index] >> 10) == (freq >> 10))
++			return index;
+ 	return -1;
+ }
+ 
+@@ -251,6 +254,8 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
+ 	spin_lock(&cpufreq_stats_lock);
+ 	stat->last_time = get_jiffies_64();
+ 	stat->last_index = freq_table_get_index(stat, policy->cur);
++	if (stat->last_index > stat->max_state)
++		stat->last_index = stat->max_state - 1;
+ 	spin_unlock(&cpufreq_stats_lock);
+ 	cpufreq_cpu_put(data);
+ 	return 0;
+-- 
+1.7.11.7
+
