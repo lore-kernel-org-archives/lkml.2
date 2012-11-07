@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab2KGSl6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 13:41:58 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:41937 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751825Ab2KGSlz (ORCPT
+	id S1754313Ab2KGSmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 13:42:09 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:53158 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754261Ab2KGSmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 13:41:55 -0500
-Subject: [PATCH 05/12] VMCI: event handling implementation.
+	Wed, 7 Nov 2012 13:42:05 -0500
+Subject: [PATCH 06/12] VMCI: handle array implementation.
 To: linux-kernel@vger.kernel.org, georgezhang@vmware.com,
         virtualization@lists.linux-foundation.org
 From: George Zhang <georgezhang@vmware.com>
 Cc: pv-drivers@vmware.com, gregkh@linuxfoundation.org
-Date: Wed, 07 Nov 2012 10:41:55 -0800
-Message-ID: <20121107184150.9658.25635.stgit@promb-2n-dhcp175.eng.vmware.com>
+Date: Wed, 07 Nov 2012 10:42:05 -0800
+Message-ID: <20121107184200.9658.72587.stgit@promb-2n-dhcp175.eng.vmware.com>
 In-Reply-To: <20121107183624.9658.78903.stgit@promb-2n-dhcp175.eng.vmware.com>
 References: <20121107183624.9658.78903.stgit@promb-2n-dhcp175.eng.vmware.com>
 User-Agent: StGit/0.15
@@ -24,24 +24,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VMCI event code that manages event handlers and handles callbacks when specific
-events fire.
+VMCI handle code adds support for dynamic arrays that will grow if they need to.
 
 
 Signed-off-by: George Zhang <georgezhang@vmware.com>
 ---
- drivers/misc/vmw_vmci/vmci_event.c |  229 ++++++++++++++++++++++++++++++++++++
- drivers/misc/vmw_vmci/vmci_event.h |   25 ++++
- 2 files changed, 254 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/vmci_event.c
- create mode 100644 drivers/misc/vmw_vmci/vmci_event.h
+ drivers/misc/vmw_vmci/vmci_handle_array.c |  142 +++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_handle_array.h |   52 +++++++++++
+ 2 files changed, 194 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmci_handle_array.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_handle_array.h
 
-diff --git a/drivers/misc/vmw_vmci/vmci_event.c b/drivers/misc/vmw_vmci/vmci_event.c
+diff --git a/drivers/misc/vmw_vmci/vmci_handle_array.c b/drivers/misc/vmw_vmci/vmci_handle_array.c
 new file mode 100644
-index 0000000..e956c18
+index 0000000..9122373
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_event.c
-@@ -0,0 +1,229 @@
++++ b/drivers/misc/vmw_vmci/vmci_handle_array.c
+@@ -0,0 +1,142 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -57,226 +56,139 @@ index 0000000..e956c18
 + * for more details.
 + */
 +
-+#include <linux/vmw_vmci_defs.h>
-+#include <linux/vmw_vmci_api.h>
-+#include <linux/list.h>
-+#include <linux/module.h>
-+#include <linux/sched.h>
 +#include <linux/slab.h>
++#include "vmci_handle_array.h"
 +
-+#include "vmci_driver.h"
-+#include "vmci_event.h"
-+
-+#define EVENT_MAGIC 0xEABE0000
-+#define VMCI_EVENT_MAX_ATTEMPTS 10
-+
-+struct vmci_subscription {
-+	u32 id;
-+	u32 event;
-+	vmci_event_cb callback;
-+	void *callback_data;
-+	struct list_head node;	/* on one of subscriber lists */
-+};
-+
-+static struct list_head subscriber_array[VMCI_EVENT_MAX];
-+static DEFINE_MUTEX(subscriber_mutex);
-+
-+int __init vmci_event_init(void)
++static size_t handle_arr_calc_size(size_t capacity)
 +{
-+	int i;
-+
-+	for (i = 0; i < VMCI_EVENT_MAX; i++)
-+		INIT_LIST_HEAD(&subscriber_array[i]);
-+
-+	return VMCI_SUCCESS;
++	return sizeof(struct vmci_handle_arr) +
++	    capacity * sizeof(struct vmci_handle);
 +}
 +
-+void vmci_event_exit(void)
++struct vmci_handle_arr *vmci_handle_arr_create(size_t capacity)
 +{
-+	int e;
++	struct vmci_handle_arr *array;
 +
-+	/* We free all memory at exit. */
-+	for (e = 0; e < VMCI_EVENT_MAX; e++) {
-+		struct vmci_subscription *cur, *p2;
-+		list_for_each_entry_safe(cur, p2, &subscriber_array[e], node) {
++	if (capacity == 0)
++		capacity = VMCI_HANDLE_ARRAY_DEFAULT_SIZE;
 +
-+			/*
-+			 * We should never get here because all events
-+			 * should have been unregistered before we try
-+			 * to unload the driver module.
-+			 */
-+			pr_warn("Unexpected free events occurring.\n");
-+			list_del(&cur->node);
-+			kfree(cur);
-+		}
-+	}
++	array = kmalloc(handle_arr_calc_size(capacity), GFP_ATOMIC);
++	if (!array)
++		return NULL;
++
++	array->capacity = capacity;
++	array->size = 0;
++
++	return array;
 +}
 +
-+/*
-+ * Find entry. Assumes subscriber_mutex is held.
-+ */
-+static struct vmci_subscription *event_find(u32 sub_id)
++void vmci_handle_arr_destroy(struct vmci_handle_arr *array)
 +{
-+	int e;
++	kfree(array);
++}
 +
-+	for (e = 0; e < VMCI_EVENT_MAX; e++) {
-+		struct vmci_subscription *cur;
-+		list_for_each_entry(cur, &subscriber_array[e], node) {
-+			if (cur->id == sub_id)
-+				return cur;
-+		}
++void vmci_handle_arr_append_entry(struct vmci_handle_arr **array_ptr,
++				  struct vmci_handle handle)
++{
++	struct vmci_handle_arr *array = *array_ptr;
++
++	if (unlikely(array->size >= array->capacity)) {
++		/* reallocate. */
++		struct vmci_handle_arr *new_array;
++		size_t new_capacity = array->capacity * VMCI_ARR_CAP_MULT;
++		size_t new_size = handle_arr_calc_size(new_capacity);
++
++		new_array = krealloc(array, new_size, GFP_ATOMIC);
++		if (!new_array)
++			return;
++
++		new_array->capacity = new_capacity;
++		*array_ptr = array = new_array;
 +	}
-+	return NULL;
++
++	array->entries[array->size] = handle;
++	array->size++;
 +}
 +
 +/*
-+ * Actually delivers the events to the subscribers.
-+ * The callback function for each subscriber is invoked.
++ * Handle that was removed, VMCI_INVALID_HANDLE if entry not found.
 + */
-+static void event_deliver(struct vmci_event_msg *event_msg)
++struct vmci_handle vmci_handle_arr_remove_entry(struct vmci_handle_arr *array,
++						struct vmci_handle entry_handle)
 +{
-+	struct vmci_subscription *cur;
-+	struct list_head *subscriber_list;
++	struct vmci_handle handle = VMCI_INVALID_HANDLE;
++	size_t i;
 +
-+	rcu_read_lock();
-+	subscriber_list = &subscriber_array[event_msg->event_data.event];
-+	list_for_each_entry_rcu(cur, subscriber_list, node) {
-+		BUG_ON(cur->event != event_msg->event_data.event);
-+
-+		cur->callback(cur->id, &event_msg->event_data,
-+			      cur->callback_data);
-+	}
-+	rcu_read_unlock();
-+}
-+
-+/*
-+ * Dispatcher for the VMCI_EVENT_RECEIVE datagrams. Calls all
-+ * subscribers for given event.
-+ */
-+int vmci_event_dispatch(struct vmci_datagram *msg)
-+{
-+	struct vmci_event_msg *event_msg = (struct vmci_event_msg *)msg;
-+
-+	BUG_ON(msg->src.context != VMCI_HYPERVISOR_CONTEXT_ID ||
-+	       msg->dst.resource != VMCI_EVENT_HANDLER);
-+
-+	if (msg->payload_size < sizeof(u32) ||
-+	    msg->payload_size > sizeof(struct vmci_event_data_max))
-+		return VMCI_ERROR_INVALID_ARGS;
-+
-+	if (!VMCI_EVENT_VALID(event_msg->event_data.event))
-+		return VMCI_ERROR_EVENT_UNKNOWN;
-+
-+	event_deliver(event_msg);
-+	return VMCI_SUCCESS;
-+}
-+
-+/*
-+ * vmci_event_subscribe() - Subscribe to a given event.
-+ * @event:      The event to subscribe to.
-+ * @callback:   The callback to invoke upon the event.
-+ * @callback_data:      Data to pass to the callback.
-+ * @subscription_id:    ID used to track subscription.  Used with
-+ *              vmci_event_unsubscribe()
-+ *
-+ * Subscribes to the provided event. The callback specified will be
-+ * fired from RCU critical section and therefore must not sleep.
-+ */
-+int vmci_event_subscribe(u32 event,
-+			 vmci_event_cb callback,
-+			 void *callback_data,
-+			 u32 *new_subscription_id)
-+{
-+	struct vmci_subscription *sub;
-+	int attempts;
-+	int retval;
-+	bool have_new_id = false;
-+
-+	if (!new_subscription_id) {
-+		pr_devel("%s: Invalid subscription (NULL).\n", __func__);
-+		return VMCI_ERROR_INVALID_ARGS;
-+	}
-+
-+	if (!VMCI_EVENT_VALID(event) || !callback) {
-+		pr_devel("%s: Failed to subscribe to event (type=%d) (callback=%p) (data=%p).\n",
-+			 __func__, event, callback, callback_data);
-+		return VMCI_ERROR_INVALID_ARGS;
-+	}
-+
-+	sub = kzalloc(sizeof(*sub), GFP_KERNEL);
-+	if (!sub)
-+		return VMCI_ERROR_NO_MEM;
-+
-+	sub->id = VMCI_EVENT_MAX;
-+	sub->event = event;
-+	sub->callback = callback;
-+	sub->callback_data = callback_data;
-+	INIT_LIST_HEAD(&sub->node);
-+
-+	mutex_lock(&subscriber_mutex);
-+
-+	/* Creation of a new event is always allowed. */
-+	for (attempts = 0; attempts < VMCI_EVENT_MAX_ATTEMPTS; attempts++) {
-+		static u32 subscription_id;
-+		/*
-+		 * We try to get an id a couple of time before
-+		 * claiming we are out of resources.
-+		 */
-+
-+		/* Test for duplicate id. */
-+		if (!event_find(++subscription_id)) {
-+			sub->id = subscription_id;
-+			have_new_id = true;
++	for (i = 0; i < array->size; i++) {
++		if (VMCI_HANDLE_EQUAL(array->entries[i], entry_handle)) {
++			handle = array->entries[i];
++			array->size--;
++			array->entries[i] = array->entries[array->size];
++			array->entries[array->size] = VMCI_INVALID_HANDLE;
 +			break;
 +		}
 +	}
 +
-+	if (have_new_id) {
-+		list_add_rcu(&sub->node, &subscriber_array[event]);
-+		retval = VMCI_SUCCESS;
-+	} else {
-+		retval = VMCI_ERROR_NO_RESOURCES;
-+	}
-+
-+	mutex_unlock(&subscriber_mutex);
-+
-+	*new_subscription_id = sub->id;
-+	return retval;
++	return handle;
 +}
-+EXPORT_SYMBOL_GPL(vmci_event_subscribe);
 +
 +/*
-+ * vmci_event_unsubscribe() - unsubscribe from an event.
-+ * @sub_id:     A subscription ID as provided by vmci_event_subscribe()
-+ *
-+ * Unsubscribe from given event. Removes it from list and frees it.
-+ * Will return callback_data if requested by caller.
++ * Handle that was removed, VMCI_INVALID_HANDLE if array was empty.
 + */
-+int vmci_event_unsubscribe(u32 sub_id)
++struct vmci_handle vmci_handle_arr_remove_tail(struct vmci_handle_arr *array)
 +{
-+	struct vmci_subscription *s;
++	struct vmci_handle handle = VMCI_INVALID_HANDLE;
 +
-+	mutex_lock(&subscriber_mutex);
-+	s = event_find(sub_id);
-+	if (s)
-+		list_del_rcu(&s->node);
-+	mutex_unlock(&subscriber_mutex);
++	if (array->size) {
++		array->size--;
++		handle = array->entries[array->size];
++		array->entries[array->size] = VMCI_INVALID_HANDLE;
++	}
 +
-+	if (!s)
-+		return VMCI_ERROR_NOT_FOUND;
-+
-+	synchronize_rcu();
-+	kfree(s);
-+
-+	return VMCI_SUCCESS;
++	return handle;
 +}
-+EXPORT_SYMBOL_GPL(vmci_event_unsubscribe);
-diff --git a/drivers/misc/vmw_vmci/vmci_event.h b/drivers/misc/vmw_vmci/vmci_event.h
++
++/*
++ * Handle at given index, VMCI_INVALID_HANDLE if invalid index.
++ */
++struct vmci_handle
++vmci_handle_arr_get_entry(const struct vmci_handle_arr *array, size_t index)
++{
++	if (unlikely(index >= array->size))
++		return VMCI_INVALID_HANDLE;
++
++	return array->entries[index];
++}
++
++bool vmci_handle_arr_has_entry(const struct vmci_handle_arr *array,
++			       struct vmci_handle entry_handle)
++{
++	size_t i;
++
++	for (i = 0; i < array->size; i++)
++		if (VMCI_HANDLE_EQUAL(array->entries[i], entry_handle))
++			return true;
++
++	return false;
++}
++
++/*
++ * NULL if the array is empty. Otherwise, a pointer to the array
++ * of VMCI handles in the handle array.
++ */
++struct vmci_handle *vmci_handle_arr_get_handles(struct vmci_handle_arr *array)
++{
++	if (array->size)
++		return array->entries;
++
++	return NULL;
++}
+diff --git a/drivers/misc/vmw_vmci/vmci_handle_array.h b/drivers/misc/vmw_vmci/vmci_handle_array.h
 new file mode 100644
-index 0000000..7df9b1c
+index 0000000..b5f3a7f
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_event.h
-@@ -0,0 +1,25 @@
++++ b/drivers/misc/vmw_vmci/vmci_handle_array.h
+@@ -0,0 +1,52 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -292,14 +204,41 @@ index 0000000..7df9b1c
 + * for more details.
 + */
 +
-+#ifndef __VMCI_EVENT_H__
-+#define __VMCI_EVENT_H__
++#ifndef _VMCI_HANDLE_ARRAY_H_
++#define _VMCI_HANDLE_ARRAY_H_
 +
-+#include <linux/vmw_vmci_api.h>
++#include <linux/vmw_vmci_defs.h>
++#include <linux/types.h>
 +
-+int vmci_event_init(void);
-+void vmci_event_exit(void);
-+int vmci_event_dispatch(struct vmci_datagram *msg);
++#define VMCI_HANDLE_ARRAY_DEFAULT_SIZE 4
++#define VMCI_ARR_CAP_MULT 2	/* Array capacity multiplier */
 +
-+#endif /*__VMCI_EVENT_H__ */
++struct vmci_handle_arr {
++	size_t capacity;
++	size_t size;
++	struct vmci_handle entries[];
++};
++
++struct vmci_handle_arr *vmci_handle_arr_create(size_t capacity);
++void vmci_handle_arr_destroy(struct vmci_handle_arr *array);
++void vmci_handle_arr_append_entry(struct vmci_handle_arr **array_ptr,
++				  struct vmci_handle handle);
++struct vmci_handle vmci_handle_arr_remove_entry(struct vmci_handle_arr *array,
++						struct vmci_handle
++						entry_handle);
++struct vmci_handle vmci_handle_arr_remove_tail(struct vmci_handle_arr *array);
++struct vmci_handle
++vmci_handle_arr_get_entry(const struct vmci_handle_arr *array, size_t index);
++bool vmci_handle_arr_has_entry(const struct vmci_handle_arr *array,
++			       struct vmci_handle entry_handle);
++struct vmci_handle *vmci_handle_arr_get_handles(struct vmci_handle_arr *array);
++
++static inline size_t vmci_handle_arr_get_size(
++	const struct vmci_handle_arr *array)
++{
++	return array->size;
++}
++
++
++#endif /* _VMCI_HANDLE_ARRAY_H_ */
 
