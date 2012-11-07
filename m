@@ -1,37 +1,37 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1751101Ab2KDFib (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Sun, 4 Nov 2012 01:38:31 -0400
-Received: from danae.med.uoc.gr ([147.52.72.200]:40334 "EHLO danae.med.uoc.gr"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1750747Ab2KDFia convert rfc822-to-8bit (ORCPT
+        id S1752224Ab2KHFF0 (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Thu, 8 Nov 2012 00:05:26 -0500
+Received: from smtp01.osg.ufl.edu ([128.227.74.149]:34498 "EHLO smtp.ufl.edu"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1751221Ab2KHFFZ convert rfc822-to-8bit (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Sun, 4 Nov 2012 01:38:30 -0400
-Content-Type: text/plain; charset="iso-8859-1"
+        Thu, 8 Nov 2012 00:05:25 -0500
+X-Greylist: delayed 41151 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Nov 2012 00:05:25 EST
+Message-Id: <201211071738.qA7HbKU0016535@smtp.ufl.edu>
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7BIT
 Content-Description: Mail message body
-Subject: {Spam?} web mail active account problem service upgrade against spam and virus
-To: Recipients <info@iprghana.com>
-From: "Webmail System Administrator" <info@iprghana.com>
-Date: Sun, 04 Nov 2012 02:06:06 +0100
-Reply-To: info@iprghana.com
-Message-Id: <20121104010638.3A9D5140CFE@danae.med.uoc.gr>
-X-UOC-Medicine-Dep-MailScanner-Information: Please contact the ISP for more information
-X-UOC-Medicine-Dep-MailScanner-ID: 3A9D5140CFE.A701A
-X-UOC-Medicine-Dep-MailScanner: Found to be clean
-X-UOC-Medicine-Dep-MailScanner-SpamCheck: spam, spamhaus-ZEN, spamcop.net,
-        SBL+XBL, CBL, spamhaus-XBL
-X-UOC-Medicine-Dep-MailScanner-From: info@iprghana.com
+Subject: Hello
+To: Recipients <latarrababy@ufl.edu>
+From: "latarrababy@ufl.edu" <latarrababy@ufl.edu>
+Date: Wed, 07 Nov 2012 11:38:48 -0600
+Reply-To: emilybrokes@wildblue.net
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
+ definitions=2012-11-07_04:2012-11-07,2012-11-06,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=probablespam policy=default score=76 spamscore=76 ipscore=0
+ suspectscore=68 phishscore=0 bulkscore=0 adultscore=30 classifier=spam
+ adjust=0 reason=mlx engine=6.0.2-1203120001 definitions=main-1211070165
+X-UFL-Spam-Level: *****
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Help protect unwanted spam and delete virus from your webmail account by clicking the link below to upgrade and protect your account from unwanted spam and spy, virus from your account
- You have exceeded your email limit quota of 2GB. You need to upgrade
-your email limit quota to 10GB within the next 48 hours. Use the below web link to upgrade your valid email account:
+Hoping that you will expand my wishes as desired. I have US$200 Million for charity projects. You will be getting 30% of total funds as your commission if interested.
 
-https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dE9iRlF1TlZpNzJJTTY2a1p3THpJblE6MQ
+Regards,
+Mrs. Emily Brocksopp
+ 
 
-Thank you for using our email.
-Copyright ©2012 Email Helpdesk Centre.
+ 
