@@ -1,84 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab2KGHQb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 02:16:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43467 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab2KGHQ3 (ORCPT
+	id S1752856Ab2KGHTB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 02:19:01 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54528 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab2KGHS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 02:16:29 -0500
-Date: Tue, 6 Nov 2012 23:16:27 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v6 25/29] memcg/sl[au]b: shrink dead caches
-Message-Id: <20121106231627.3610c908.akpm@linux-foundation.org>
-In-Reply-To: <509A0A04.2030503@parallels.com>
-References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
-	<1351771665-11076-26-git-send-email-glommer@parallels.com>
-	<20121105164813.2eba5ecb.akpm@linux-foundation.org>
-	<509A0A04.2030503@parallels.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Nov 2012 02:18:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121106231447.GV3102@twin.jikos.cz>
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+	<1351485061-12297-11-git-send-email-zwu.kernel@gmail.com>
+	<20121106231447.GV3102@twin.jikos.cz>
+Date: Wed, 7 Nov 2012 15:18:57 +0800
+Message-ID: <CAEH94LggeTEK-RxBMUUM1VefpwgTDWcB5CLZsGD3rBPu86L1Tw@mail.gmail.com>
+Subject: Re: [RFC v4+ hot_track 10/19] vfs: introduce hot func register framework
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
+        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Nov 2012 08:13:08 +0100 Glauber Costa <glommer@parallels.com> wrote:
+On Wed, Nov 7, 2012 at 7:14 AM, David Sterba <dave@jikos.cz> wrote:
+> On Mon, Oct 29, 2012 at 12:30:52PM +0800, zwu.kernel@gmail.com wrote:
+>> +static struct hot_func_type *hot_func_get(const char *name)
+>> +{
+>> +     struct hot_func_type *f, *h = &hot_func_def;
+>> +
+>> +     spin_lock(&hot_func_list_lock);
+>> +     list_for_each_entry(f, &hot_func_list, list) {
+>> +             if (!strcmp(f->hot_func_name, name))
+>> +                     h = f;
+>
+> You probably want to break here
+Good catch, done, thanks.
+>
+>> +     }
+>> +     spin_unlock(&hot_func_list_lock);
+>> +
+>> +     return h;
+>> +}
+>> +
+>> +int hot_func_register(struct hot_func_type *h)
+>> +{
+>> +     struct hot_func_type *f, *t = NULL;
+>> +
+>> +     /* register, don't allow duplicate names */
+>> +     spin_lock(&hot_func_list_lock);
+>> +     list_for_each_entry(f, &hot_func_list, list) {
+>> +             if (!strcmp(f->hot_func_name, h->hot_func_name))
+>> +                     t = f;
+>
+> if duplicate names are not allowed, then a warning may make sense to
+> let us know that something is wrong
+done, thanks.
+>
+>> +     }
+>> +
+>> +     if (t) {
+>> +             spin_unlock(&hot_func_list_lock);
+>> +             return -EBUSY;
+>> +     }
+>> +
+>> +     list_add_tail(&h->list, &hot_func_list);
+>> +     spin_unlock(&hot_func_list_lock);
+>> +
+>> +     return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(hot_func_register);
+>> --- a/include/linux/hot_tracking.h
+>> +++ b/include/linux/hot_tracking.h
+>> @@ -73,6 +75,25 @@ struct hot_range_item {
+>>       u32 len; /* length in bytes */
+>>  };
+>>
+>> +typedef u64 (hot_rw_freq_calc_fn) (struct timespec old_atime,
+>> +                     struct timespec cur_time, u64 old_avg);
+>> +typedef u32 (hot_temp_calc_fn) (struct hot_freq_data *freq_data);
+>> +typedef bool (hot_is_obsolete_fn) (struct hot_freq_data *freq_data);
+>
+> I'm thinking, whether these typedefs are useful, similar ops structures
+> do not introduce them, also when you pick a struct member names exactly
+> same as the typedefs:
+>
+>> +struct hot_func_ops {
+>> +     hot_rw_freq_calc_fn *hot_rw_freq_calc_fn;
+>> +     hot_temp_calc_fn *hot_temp_calc_fn;
+>> +     hot_is_obsolete_fn *hot_is_obsolete_fn;
+>> +};
+>
+> My suggestion is to make the types explicit in the structure.
+sorry, i don't get your point, can you elaborate it about how to do this?
+>
+>> +/* identifies an hot func type */
+>> +struct hot_func_type {
+>> +     char hot_func_name[HOT_NAME_MAX];
+>
+> 'name' would be sufficient IMHO
+done, thanks.
+>
+>> +     /* fields provided by specific FS */
+>> +     struct hot_func_ops ops;
+>> +     struct list_head list;
+>> +};
+>
+> david
 
-> On 11/06/2012 01:48 AM, Andrew Morton wrote:
-> > On Thu,  1 Nov 2012 16:07:41 +0400
-> > Glauber Costa <glommer@parallels.com> wrote:
-> > 
-> >> This means that when we destroy a memcg cache that happened to be empty,
-> >> those caches may take a lot of time to go away: removing the memcg
-> >> reference won't destroy them - because there are pending references, and
-> >> the empty pages will stay there, until a shrinker is called upon for any
-> >> reason.
-> >>
-> >> In this patch, we will call kmem_cache_shrink for all dead caches that
-> >> cannot be destroyed because of remaining pages. After shrinking, it is
-> >> possible that it could be freed. If this is not the case, we'll schedule
-> >> a lazy worker to keep trying.
-> > 
-> > This patch is really quite nasty.  We poll the cache once per minute
-> > trying to shrink then free it?  a) it gives rise to concerns that there
-> > will be scenarios where the system could suffer unlimited memory windup
-> > but mainly b) it's just lame.
-> > 
-> > The kernel doesn't do this sort of thing.  The kernel tries to be
-> > precise: in a situation like this we keep track of the number of
-> > outstanding objects and when that falls to zero, we free their
-> > container synchronously.  If those objects are normally left floating
-> > around in an allocated but reclaimable state then we can address that
-> > by synchronously freeing them if their container has been destroyed.
-> > 
-> > Or something like that.  If it's something else then fine, but not this.
-> > 
-> > What do we need to do to fix this?
-> > 
-> The original patch had a unlikely() test in the free path, conditional
-> on whether or not the cache is dead, that would then call this is the
-> cache would now be empty.
-> 
-> I got several requests to remove it and change it to something like
-> this, because that is a fast path (I myself think an unlikely branch is
-> not that bad)
-> 
-> If you think such a test is acceptable, I can bring it back and argue in
-> the basis of "akpm made me do it!". But meanwhile I will give this extra
-> though to see if there is any alternative way I can do it...
 
-OK, thanks, please do take a look at it.
 
-I'd be interested in seeing the old version of the patch which had this
-test-n-branch.  Perhaps there's some trick we can pull to lessen its cost.
+-- 
+Regards,
 
+Zhi Yong Wu
