@@ -1,186 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab2KGImD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 03:42:03 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50352 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab2KGImA (ORCPT
+	id S1752750Ab2KGInB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 03:43:01 -0500
+Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:34527 "EHLO
+	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751285Ab2KGInA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 03:42:00 -0500
-From: Sha Zhengju <handai.szj@gmail.com>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org, mhocko@suse.cz,
-        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
-        rientjes@google.com
-Cc: linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
-Subject: [PATCH 2/2] oom: rework dump_tasks to optimize memcg-oom situation
-Date: Wed,  7 Nov 2012 16:41:59 +0800
-Message-Id: <1352277719-21760-1-git-send-email-handai.szj@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1352277602-21687-1-git-send-email-handai.szj@taobao.com>
-References: <1352277602-21687-1-git-send-email-handai.szj@taobao.com>
+	Wed, 7 Nov 2012 03:43:00 -0500
+From: Qing Xu <qingx@marvell.com>
+To: qingx@marvell.com, sameo@linux.intel.com, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, haojian.zhuang@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 5/7] mfd: max8925: support dt for regulator
+Date: Wed,  7 Nov 2012 16:41:50 +0800
+Message-Id: <1352277710-16149-1-git-send-email-qingx@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 07 Nov 2012 08:41:00.0439 (UTC) FILETIME=[9D203270:01CDBCC3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sha Zhengju <handai.szj@taobao.com>
+From: Qing Xu <qingx@marvell.com>
 
-If memcg oom happening, don't scan all system tasks to dump memory state of
-eligible tasks, instead we iterates only over the process attached to the oom
-memcg and avoid the rcu lock.
-
-
-Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Qing Xu <qingx@marvell.com>
 ---
- include/linux/memcontrol.h |    7 +++++
- include/linux/oom.h        |    2 +
- mm/memcontrol.c            |   14 +++++++++++
- mm/oom_kill.c              |   55 ++++++++++++++++++++++++++-----------------
- 4 files changed, 56 insertions(+), 22 deletions(-)
+ drivers/regulator/max8925-regulator.c |   72 +++++++++++++++++++++++++++++++-
+ 1 files changed, 69 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index c91e3c1..4322ca8 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -122,6 +122,8 @@ unsigned long mem_cgroup_get_lru_size(struct lruvec *lruvec, enum lru_list);
- void mem_cgroup_update_lru_size(struct lruvec *, enum lru_list, int);
- extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
- 					struct task_struct *p);
-+extern void dump_tasks_memcg(const struct mem_cgroup *memcg,
-+					const nodemask_t *nodemask);
- extern void mem_cgroup_replace_page_cache(struct page *oldpage,
- 					struct page *newpage);
+diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
+index 9bb0be3..5e84921 100644
+--- a/drivers/regulator/max8925-regulator.c
++++ b/drivers/regulator/max8925-regulator.c
+@@ -17,6 +17,8 @@
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/mfd/max8925.h>
++#include <linux/of.h>
++#include <linux/regulator/of_regulator.h>
  
-@@ -337,6 +339,11 @@ mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
- {
+ #define SD1_DVM_VMIN		850000
+ #define SD1_DVM_VMAX		1000000
+@@ -187,6 +189,34 @@ static struct regulator_ops max8925_regulator_ldo_ops = {
+ 	.enable_reg	= MAX8925_LDOCTL##_id,			\
  }
  
-+static inline void
-+dump_tasks_memcg(const struct mem_cgroup *memcg, const nodemask_t *nodemask)
-+{
-+}
++#ifdef CONFIG_OF
++static struct of_regulator_match max8925_regulator_matches[] = {
++	{ .name	= "SDV1",},
++	{ .name = "SDV2",},
++	{ .name = "SDV3",},
++	{ .name = "LDO1",},
++	{ .name = "LDO2",},
++	{ .name = "LDO3",},
++	{ .name = "LDO4",},
++	{ .name = "LDO5",},
++	{ .name = "LDO6",},
++	{ .name = "LDO7",},
++	{ .name = "LDO8",},
++	{ .name = "LDO9",},
++	{ .name = "LDO10",},
++	{ .name = "LDO11",},
++	{ .name = "LDO12",},
++	{ .name = "LDO13",},
++	{ .name = "LDO14",},
++	{ .name = "LDO15",},
++	{ .name = "LDO16",},
++	{ .name = "LDO17",},
++	{ .name = "LDO18",},
++	{ .name = "LDO19",},
++	{ .name = "LDO20",},
++};
++#endif
 +
- static inline void mem_cgroup_begin_update_page_stat(struct page *page,
- 					bool *locked, unsigned long *flags)
- {
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index 20b5c46..9ba3344 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -57,6 +57,8 @@ extern enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
- 		unsigned long totalpages, const nodemask_t *nodemask,
- 		bool force_kill);
+ static struct max8925_regulator_info max8925_regulator_info[] = {
+ 	MAX8925_SDV(1, 637.5, 1425, 12.5),
+ 	MAX8925_SDV(2,   650, 2225,   25),
+@@ -214,6 +244,36 @@ static struct max8925_regulator_info max8925_regulator_info[] = {
+ 	MAX8925_LDO(20, 750, 3900, 50),
+ };
  
-+extern inline void dump_per_task(struct task_struct *p,
-+				const nodemask_t *nodemask);
- extern void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
- 		int order, nodemask_t *mask, bool force_kill);
- extern int register_oom_notifier(struct notifier_block *nb);
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 2df5e72..fe648f8 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1665,6 +1665,20 @@ static u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
- 	return min(limit, memsw);
- }
- 
-+void dump_tasks_memcg(const struct mem_cgroup *memcg, const nodemask_t *nodemask)
++#ifdef CONFIG_OF
++static int max8925_regulator_dt_init(struct platform_device *pdev,
++				    struct max8925_regulator_info *info,
++				    struct regulator_config *config,
++				    int ridx)
 +{
-+	struct cgroup_iter it;
-+	struct task_struct *task;
-+	struct cgroup *cgroup = memcg->css.cgroup;
-+
-+	cgroup_iter_start(cgroup, &it);
-+	while ((task = cgroup_iter_next(cgroup, &it))) {
-+		dump_per_task(task, nodemask);
++	struct device_node *nproot, *np;
++	int rcount;
++	nproot = pdev->dev.parent->of_node;
++	if (!nproot)
++		return -ENODEV;
++	np = of_find_node_by_name(nproot, "regulators");
++	if (!np) {
++		dev_err(&pdev->dev, "failed to find regulators node\n");
++		return -ENODEV;
 +	}
 +
-+	cgroup_iter_end(cgroup, &it);
++	rcount = of_regulator_match(&pdev->dev, np,
++				&max8925_regulator_matches[ridx], 1);
++	if (rcount < 0)
++		return -ENODEV;
++	config->init_data =	max8925_regulator_matches[ridx].init_data;
++	config->of_node = max8925_regulator_matches[ridx].of_node;
++
++	return 0;
 +}
++#else
++#define max8925_regulator_dt_init(x, y, z)	(-1)
++#endif
 +
- static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
- 				     int order)
+ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
  {
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 4b8a6dd..aaf6237 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -367,6 +367,32 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- 	return chosen;
- }
+ 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+@@ -222,7 +282,7 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
+ 	struct max8925_regulator_info *ri;
+ 	struct resource *res;
+ 	struct regulator_dev *rdev;
+-	int i;
++	int i, regulator_idx;
  
-+inline void dump_per_task(struct task_struct *p, const nodemask_t *nodemask)
-+{
-+	struct task_struct *task;
-+
-+	if (oom_unkillable_task(p, NULL, nodemask))
-+		return;
-+
-+	task = find_lock_task_mm(p);
-+	if (!task) {
-+		/*
-+		 * This is a kthread or all of p's threads have already
-+		 * detached their mm's.  There's no need to report
-+		 * them; they can't be oom killed anyway.
-+		 */
-+		return;
-+	}
-+
-+	pr_info("[%5d] %5d %5d %8lu %8lu %7lu %8lu         %5d %s\n",
-+		task->pid, from_kuid(&init_user_ns, task_uid(task)),
-+		task->tgid, task->mm->total_vm, get_mm_rss(task->mm),
-+		task->mm->nr_ptes,
-+		get_mm_counter(task->mm, MM_SWAPENTS),
-+		task->signal->oom_score_adj, task->comm);
-+	task_unlock(task);
-+}
-+
- /**
-  * dump_tasks - dump current memory state of all system tasks
-  * @memcg: current's memory controller, if constrained
-@@ -381,32 +407,17 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
- static void dump_tasks(const struct mem_cgroup *memcg, const nodemask_t *nodemask)
- {
- 	struct task_struct *p;
--	struct task_struct *task;
- 
- 	pr_info("[ pid ]   uid  tgid total_vm      rss nr_ptes swapents oom_score_adj name\n");
--	rcu_read_lock();
--	for_each_process(p) {
--		if (oom_unkillable_task(p, memcg, nodemask))
--			continue;
--
--		task = find_lock_task_mm(p);
--		if (!task) {
--			/*
--			 * This is a kthread or all of p's threads have already
--			 * detached their mm's.  There's no need to report
--			 * them; they can't be oom killed anyway.
--			 */
--			continue;
--		}
- 
--		pr_info("[%5d] %5d %5d %8lu %8lu %7lu %8lu         %5d %s\n",
--			task->pid, from_kuid(&init_user_ns, task_uid(task)),
--			task->tgid, task->mm->total_vm, get_mm_rss(task->mm),
--			task->mm->nr_ptes,
--			get_mm_counter(task->mm, MM_SWAPENTS),
--			task->signal->oom_score_adj, task->comm);
--		task_unlock(task);
-+	if (memcg) {
-+		dump_tasks_memcg(memcg, nodemask);
-+		return;
+ 	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (!res) {
+@@ -231,9 +291,12 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
+ 	}
+ 	for (i = 0; i < ARRAY_SIZE(max8925_regulator_info); i++) {
+ 		ri = &max8925_regulator_info[i];
+-		if (ri->vol_reg == res->start)
++		if (ri->vol_reg == res->start) {
++			regulator_idx = i;
+ 			break;
++		}
  	}
 +
-+	rcu_read_lock();
-+	for_each_process(p)
-+		dump_per_task(p, nodemask);
- 	rcu_read_unlock();
- }
+ 	if (i == ARRAY_SIZE(max8925_regulator_info)) {
+ 		dev_err(&pdev->dev, "Failed to find regulator %llu\n",
+ 			(unsigned long long)res->start);
+@@ -243,9 +306,12 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
+ 	ri->chip = chip;
  
+ 	config.dev = &pdev->dev;
+-	config.init_data = pdata;
+ 	config.driver_data = ri;
+ 
++	if (max8925_regulator_dt_init(pdev, ri, &config, regulator_idx))
++		if (pdata)
++			config.init_data = pdata;
++
+ 	rdev = regulator_register(&ri->desc, &config);
+ 	if (IS_ERR(rdev)) {
+ 		dev_err(&pdev->dev, "failed to register regulator %s\n",
 -- 
-1.7.6.1
+1.7.0.4
 
