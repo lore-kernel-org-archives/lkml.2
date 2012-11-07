@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab2KGKtr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 05:49:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59069 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274Ab2KGKtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 05:49:45 -0500
-Date: Wed, 7 Nov 2012 10:49:40 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 15/19] mm: numa: Add fault driven placement and migration
-Message-ID: <20121107104940.GU8218@suse.de>
-References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
- <1352193295-26815-16-git-send-email-mgorman@suse.de>
- <509967D9.7050706@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <509967D9.7050706@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754710Ab2KGKud (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 05:50:33 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:31316 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754249Ab2KGKsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 05:48:51 -0500
+X-IronPort-AV: E=Sophos;i="4.80,729,1344182400"; 
+   d="scan'208";a="6154927"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-scsi@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: [PATCH 0/5] virtio-scsi: create a separate workqueue
+Date: Wed, 7 Nov 2012 18:18:09 +0800
+Message-Id: <1352283494-31200-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.0
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/07 18:17:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/07 18:17:57,
+	Serialize complete at 2012/11/07 18:17:57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 02:41:13PM -0500, Rik van Riel wrote:
-> On 11/06/2012 04:14 AM, Mel Gorman wrote:
-> >From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >
-> >NOTE: This patch is based on "sched, numa, mm: Add fault driven
-> >	placement and migration policy" but as it throws away all the policy
-> >	to just leave a basic foundation I had to drop the signed-offs-by.
-> >
-> >This patch creates a bare-bones method for setting PTEs pte_numa in the
-> >context of the scheduler that when faulted later will be faulted onto the
-> >node the CPU is running on.  In itself this does nothing useful but any
-> >placement policy will fundamentally depend on receiving hints on placement
-> >from fault context and doing something intelligent about it.
-> >
-> >Signed-off-by: Mel Gorman <mgorman@suse.de>
-> 
-> Excellent basis for implementing a smarter NUMA
-> policy.
-> 
-> Not sure if such a policy should be implemented
-> as a replacement for this patch, or on top of it...
-> 
+patch 1-3,5 are some cleanups.
+patch 4: create a separate work queue for virtio-scsi
+to improve the performance, I tested with tmpfs backed
+disk, the config file is like below,
+[global]
+bsrange=4k-64k
+ioengine=libaio
+direct=1
+iodepth=4
+loops=10
+size=64M
 
-I'm expecting on top of it. As a POC, I'm looking at implementing the CPU
-Follows Memory algorithm (mostly from autonuma) on top of this but using the
-home-node logic from schednuma to handle how processes get scheduled. MORON
-will need to relax to take the home node into account to avoid fighting
-the home-node decisions. task_numa_fault() determines if the home node
-needs to change based on statistics it gathers from faults. So far I am
-keeping within the framework but it is still a WIP.
+Before:
+Disk stats (read/write):
+  sda: ios=6547/5275, merge=37/39, ticks=3144/2645, in_queue=5780, util=81.62%
+  sdb: ios=6542/5277, merge=54/59, ticks=3234/3143, in_queue=6364, util=84.50%
+  sdc: ios=6532/5244, merge=65/62, ticks=3440/3076, in_queue=6505, util=86.83%
 
-> Either way, thank you for cleaning up all of the
-> NUMA base code, while I was away at conferences
-> and stuck in airports :)
-> 
+After:
+Disk stats (read/write):
+  sda: ios=6349/5318, merge=77/89, ticks=4820/3169, in_queue=7991, util=90.62%
+  sdb: ios=6364/5358, merge=39/53, ticks=3810/2816, in_queue=6615, util=84.63%
+  sdc: ios=6458/5352, merge=74/47, ticks=4425/3048, in_queue=7459, util=88.41%
 
-My pleasure. Thanks a lot for reviewing this!
+
+Wanlong Gao (5):
+  virtio-scsi: remove the useless assignment
+  virtio-scsi: remove the needless variable gfp_mask
+  virtio-scsi: use pr_err instead of printk
+  virtio-scsi: create a separate work queue for virtio-scsi
+  virtio-scsi: tidy up the goto label in init()
+
+
+
+Cc: James E.J. Bottomley <JBottomley@parallels.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-scsi@vger.kernel.org
+Cc: kvm@vger.kernel.org
+ drivers/scsi/virtio_scsi.c | 43 +++++++++++++++++++++++--------------------
+ 1 file changed, 23 insertions(+), 20 deletions(-)
 
 -- 
-Mel Gorman
-SUSE Labs
+1.8.0
+
