@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab2KGPtH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 10:49:07 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:39927 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751080Ab2KGPtF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 10:49:05 -0500
-Date: Wed, 7 Nov 2012 10:49:04 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Huang Ying <ying.huang@intel.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
-In-Reply-To: <1352248006.31033.192.camel@yhuang-dev>
-Message-ID: <Pine.LNX.4.44L0.1211071032070.1859-100000@iolanthe.rowland.org>
+	id S1752824Ab2KGPza (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 10:55:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14222 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751616Ab2KGPz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 10:55:28 -0500
+Date: Wed, 7 Nov 2012 10:54:34 -0500
+From: Dave Jones <davej@redhat.com>
+To: Julius Werner <jwerner@chromium.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Patrick McHardy <kaber@trash.net>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        James Morris <jmorris@namei.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        Sameer Nanda <snanda@chromium.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Eric Dumazet <edumazet@chromium.org>
+Subject: Re: [PATCH] tcp: Replace infinite loop on recvmsg bug with proper
+ crash
+Message-ID: <20121107155434.GA17677@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Julius Werner <jwerner@chromium.org>, linux-kernel@vger.kernel.org,
+	netdev@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
+	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+	James Morris <jmorris@namei.org>,
+	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+	"David S. Miller" <davem@davemloft.net>,
+	Sameer Nanda <snanda@chromium.org>,
+	Mandeep Singh Baines <msb@chromium.org>,
+	Eric Dumazet <edumazet@chromium.org>
+References: <1352247335-10396-1-git-send-email-jwerner@chromium.org>
+ <20121107013907.GA31185@redhat.com>
+ <CAODwPW-636Sn3B4CYajvrgccXxresZwPLg2UFz6xDDk9-FfTYQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAODwPW-636Sn3B4CYajvrgccXxresZwPLg2UFz6xDDk9-FfTYQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Nov 2012, Huang Ying wrote:
+On Tue, Nov 06, 2012 at 05:51:19PM -0800, Julius Werner wrote:
+ > > We've had reports of this WARN against the Fedora kernel for a while.
+ > > Had this been immediately followed by a BUG(), we'd have never seen those traces at all,
+ > > and just got "my machine just locked up" reports instead.
+ > >
+ > > The proper fix here is to find out why we're getting into this state.
+ > 
+ > Are you sure you don't mean the WARN below that ("recvmsg bug 2")
+ > instead? I don't think this one can happen without eventually running
+ > into the syslog overflow issue I described.
 
-> > > Devices will be disabled if the PCI driver is unbound from the PCI
-> > > device.
-> > 
-> > Yes.  But without a PCI driver, nothing will call 
-> > pm_runtime_set_suspended.
-> 
-> pm_runtime_set_suspended will be called in pci_device_remove or error
-> path of local_pci_probe.
+bug2 is more common (And usually is accompanied by mangled traces),
+but we have reports of the first WARN too..
 
-Yes, okay.  But that's what we want.  Unused, driverless PCI devices
-shouldn't force their parents to remain at full power.
+https://bugzilla.redhat.com/show_bug.cgi?id=841769
+https://bugzilla.redhat.com/show_bug.cgi?id=845853
+https://bugzilla.redhat.com/show_bug.cgi?id=846991
+https://bugzilla.redhat.com/show_bug.cgi?id=860039
 
-> >   And even if something does call 
-> > pm_runtime_set_suspended, it's still not a problem -- the device can't 
-> > be used without a driver.
-> 
-> The VGA device can be used without a driver.
+(I note that none of these reports mention "also, my hard disk is now full")
 
-Ah, right, that's your _real_ problem.  You should have mentioned this 
-in the original Changelog for the patch.
+ > I agree that the underlying cause must be fixed too, but as we will
+ > always have bugs in the kernel I think proper handling when it does
+ > happen is also important (and filling the hard disk with junk is
+ > obviously not the best approach). If you think a full panic is too
+ > extreme, I have an alternative version of this patch that logs the
+ > WARN once, closes the socket, and returns EBADFD from the syscall...
+ > would you think that is more appropriate?
 
-Rafael, this does need to be fixed.  The PCI subsystem assumes that 
-driverless devices are not in use, so they are disabled for runtime PM 
-and marked as suspended.  This is not appropriate for VGA devices, 
-which can indeed be used without a driver.
+It sounds more appropriate to me, instead of silently wedging the box.
+At least with that approach we have a chance of finding out what happened.
 
-I'm not sure what the best solution is.  Maybe we should Ying's 
-proposal a step farther:
-
-	Make pm_runtime_set_suspended() fail if runtime PM is 
-	forbidden.
-
-	Make pm_runtime_forbid() call pm_runtime_set_active()
-	(and do a runtime resume of the parent) if disable_depth > 0.
-
-	Make the PCI runtime-idle routine call 
-	pm_runtime_set_suspended() if disable_depth > 0.  Or maybe
-	do this for all devices, in the runtime PM core.
-
-What do you think?
-
-Alan Stern
+	Dave
 
