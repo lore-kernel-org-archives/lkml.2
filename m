@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340Ab2KGJxa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 04:53:30 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:52587 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab2KGJsV (ORCPT
+	id S1754054Ab2KGJxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 04:53:48 -0500
+Received: from kiruna.synopsys.com ([198.182.44.80]:58042 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab2KGJsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 04:48:21 -0500
+	Wed, 7 Nov 2012 04:48:20 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, arnd@arndb.de,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [RFC PATCH v1 06/31] asm-generic headers: Allow yet more arch overrides in checksum.h
-Date: Wed,  7 Nov 2012 10:47:29 +0100
-Message-Id: <1352281674-2186-7-git-send-email-vgupta@synopsys.com>
+Subject: [RFC PATCH v1 05/31] ARC: uaccess friends
+Date: Wed,  7 Nov 2012 10:47:28 +0100
+Message-Id: <1352281674-2186-6-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
 References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
@@ -21,63 +21,655 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arches can have more efficient implementation of these routines
-
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- include/asm-generic/checksum.h |    4 ++++
- lib/checksum.c                 |    2 ++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+ arch/arc/include/asm/segment.h |   24 ++
+ arch/arc/include/asm/uaccess.h |  605 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 629 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/include/asm/segment.h
+ create mode 100644 arch/arc/include/asm/uaccess.h
 
-diff --git a/include/asm-generic/checksum.h b/include/asm-generic/checksum.h
-index c084767..59811df 100644
---- a/include/asm-generic/checksum.h
-+++ b/include/asm-generic/checksum.h
-@@ -38,12 +38,15 @@ extern __wsum csum_partial_copy_from_user(const void __user *src, void *dst,
- 	csum_partial_copy((src), (dst), (len), (sum))
- #endif
- 
-+#ifndef ip_fast_csum
- /*
-  * This is a version of ip_compute_csum() optimized for IP headers,
-  * which always checksum on 4 octet boundaries.
-  */
- extern __sum16 ip_fast_csum(const void *iph, unsigned int ihl);
+diff --git a/arch/arc/include/asm/segment.h b/arch/arc/include/asm/segment.h
+new file mode 100644
+index 0000000..da2c459
+--- /dev/null
++++ b/arch/arc/include/asm/segment.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __ASMARC_SEGMENT_H
++#define __ASMARC_SEGMENT_H
++
++#ifndef __ASSEMBLY__
++
++typedef unsigned long mm_segment_t;
++
++#define MAKE_MM_SEG(s)	((mm_segment_t) { (s) })
++
++#define KERNEL_DS		MAKE_MM_SEG(0)
++#define USER_DS			MAKE_MM_SEG(TASK_SIZE)
++
++#define segment_eq(a, b)	((a) == (b))
++
++#endif /* __ASSEMBLY__ */
++#endif /* __ASMARC_SEGMENT_H */
+diff --git a/arch/arc/include/asm/uaccess.h b/arch/arc/include/asm/uaccess.h
+new file mode 100644
+index 0000000..503c98d
+--- /dev/null
++++ b/arch/arc/include/asm/uaccess.h
+@@ -0,0 +1,605 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * vineetg: June 2010
++ *    -__clear_user( ) called multiple times during elf load was byte loop
++ *    converted to do as much word clear as possible.
++ *
++ * vineetg: Dec 2009
++ *    -Hand crafted constant propagation for "constant" copy sizes
++ *    -stock kernel shrunk by 33K at -O3
++ *
++ * vineetg: Sept 2009
++ *    -Added option to (UN)inline copy_(to|from)_user to reduce code sz
++ *    -kernel shrunk by 200K even at -O3 (gcc 4.2.1)
++ *    -Enabled when doing -Os
++ *
++ * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
++ */
++
++#ifndef _ASM_ARC_UACCESS_H
++#define _ASM_ARC_UACCESS_H
++
++#include <linux/sched.h>
++#include <asm/errno.h>
++#include <linux/string.h>	/* for generic string functions */
++
++
++#define __kernel_ok		(segment_eq(get_fs(), KERNEL_DS))
++#define __user_ok(addr, sz)	(((sz) <= TASK_SIZE) && \
++				 (((addr)+(sz)) <= get_fs()))
++#define __access_ok(addr, sz)	(unlikely(__kernel_ok) || \
++				 likely(__user_ok((addr), (sz))))
++
++static inline unsigned long
++__arc_copy_from_user(void *to, const void __user *from, unsigned long n)
++{
++	long res = 0;
++	char val;
++	unsigned long tmp1, tmp2, tmp3, tmp4;
++	unsigned long orig_n = n;
++
++	if (n == 0)
++		return 0;
++
++	/* unaligned */
++	if (((unsigned long)to & 0x3) || ((unsigned long)from & 0x3)) {
++
++		unsigned char tmp;
++
++		__asm__ __volatile__ (
++		"	mov.f   lp_count, %0		\n"
++		"	lpnz 2f				\n"
++		"1:	ldb.ab  %1, [%3, 1]		\n"
++		"	stb.ab  %1, [%2, 1]		\n"
++		"	sub     %0,%0,1			\n"
++		"2:	;nop				\n"
++		"	.section .fixup, \"ax\"		\n"
++		"	.align 4			\n"
++		"3:	j   2b				\n"
++		"	.previous			\n"
++		"	.section __ex_table, \"a\"	\n"
++		"	.align 4			\n"
++		"	.word   1b, 3b			\n"
++		"	.previous			\n"
++
++		: "+r" (n),
++		/*
++		 * Note as an '&' earlyclobber operand to make sure the
++		 * temporary register inside the loop is not the same as
++		 *  FROM or TO.
++		*/
++		  "=&r" (tmp), "+r" (to), "+r" (from)
++		:
++		: "lp_count", "lp_start", "lp_end", "memory");
++
++		return n;
++	}
++
++	/*
++	 * Hand-crafted constant propagation to reduce code sz of the
++	 * laddered copy 16x,8,4,2,1
++	 */
++	if (__builtin_constant_p(orig_n)) {
++		res = orig_n;
++
++		if (orig_n / 16) {
++			orig_n = orig_n % 16;
++
++			__asm__ __volatile__(
++			"	lsr   lp_count, %7,4		\n"
++			"	lp    3f			\n"
++			"1:	ld.ab   %3, [%2, 4]		\n"
++			"11:	ld.ab   %4, [%2, 4]		\n"
++			"12:	ld.ab   %5, [%2, 4]		\n"
++			"13:	ld.ab   %6, [%2, 4]		\n"
++			"	st.ab   %3, [%1, 4]		\n"
++			"	st.ab   %4, [%1, 4]		\n"
++			"	st.ab   %5, [%1, 4]		\n"
++			"	st.ab   %6, [%1, 4]		\n"
++			"	sub     %0,%0,16		\n"
++			"3:	;nop				\n"
++			"	.section .fixup, \"ax\"		\n"
++			"	.align 4			\n"
++			"4:	j   3b				\n"
++			"	.previous			\n"
++			"	.section __ex_table, \"a\"	\n"
++			"	.align 4			\n"
++			"	.word   1b, 4b			\n"
++			"	.word   11b,4b			\n"
++			"	.word   12b,4b			\n"
++			"	.word   13b,4b			\n"
++			"	.previous			\n"
++			: "+r" (res), "+r"(to), "+r"(from),
++			  "=r"(tmp1), "=r"(tmp2), "=r"(tmp3), "=r"(tmp4)
++			: "ir"(n)
++			: "lp_count", "memory");
++		}
++		if (orig_n / 8) {
++			orig_n = orig_n % 8;
++
++			__asm__ __volatile__(
++			"14:	ld.ab   %3, [%2,4]		\n"
++			"15:	ld.ab   %4, [%2,4]		\n"
++			"	st.ab   %3, [%1,4]		\n"
++			"	st.ab   %4, [%1,4]		\n"
++			"	sub     %0,%0,8			\n"
++			"31:	;nop				\n"
++			"	.section .fixup, \"ax\"		\n"
++			"	.align 4			\n"
++			"4:	j   31b				\n"
++			"	.previous			\n"
++			"	.section __ex_table, \"a\"	\n"
++			"	.align 4			\n"
++			"	.word   14b,4b			\n"
++			"	.word   15b,4b			\n"
++			"	.previous			\n"
++			: "+r" (res), "+r"(to), "+r"(from),
++			  "=r"(tmp1), "=r"(tmp2)
++			:
++			: "memory");
++		}
++		if (orig_n / 4) {
++			orig_n = orig_n % 4;
++
++			__asm__ __volatile__(
++			"16:	ld.ab   %3, [%2,4]		\n"
++			"	st.ab   %3, [%1,4]		\n"
++			"	sub     %0,%0,4			\n"
++			"32:	;nop				\n"
++			"	.section .fixup, \"ax\"		\n"
++			"	.align 4			\n"
++			"4:	j   32b				\n"
++			"	.previous			\n"
++			"	.section __ex_table, \"a\"	\n"
++			"	.align 4			\n"
++			"	.word   16b,4b			\n"
++			"	.previous			\n"
++			: "+r" (res), "+r"(to), "+r"(from), "=r"(tmp1)
++			:
++			: "memory");
++		}
++		if (orig_n / 2) {
++			orig_n = orig_n % 2;
++
++			__asm__ __volatile__(
++			"17:	ldw.ab   %3, [%2,2]		\n"
++			"	stw.ab   %3, [%1,2]		\n"
++			"	sub      %0,%0,2		\n"
++			"33:	;nop				\n"
++			"	.section .fixup, \"ax\"		\n"
++			"	.align 4			\n"
++			"4:	j   33b				\n"
++			"	.previous			\n"
++			"	.section __ex_table, \"a\"	\n"
++			"	.align 4			\n"
++			"	.word   17b,4b			\n"
++			"	.previous			\n"
++			: "+r" (res), "+r"(to), "+r"(from), "=r"(tmp1)
++			:
++			: "memory");
++		}
++		if (orig_n & 1) {
++			__asm__ __volatile__(
++			"18:	ldb.ab   %3, [%2,2]		\n"
++			"	stb.ab   %3, [%1,2]		\n"
++			"	sub      %0,%0,1		\n"
++			"34:	; nop				\n"
++			"	.section .fixup, \"ax\"		\n"
++			"	.align 4			\n"
++			"4:	j   34b				\n"
++			"	.previous			\n"
++			"	.section __ex_table, \"a\"	\n"
++			"	.align 4			\n"
++			"	.word   18b,4b			\n"
++			"	.previous			\n"
++			: "+r" (res), "+r"(to), "+r"(from), "=r"(tmp1)
++			:
++			: "memory");
++		}
++	} else {  /* n is NOT constant, so laddered copy of 16x,8,4,2,1  */
++
++		__asm__ __volatile__(
++		"	mov %0,%3			\n"
++		"	lsr.f   lp_count, %3,4		\n"  /* 16x bytes */
++		"	lpnz    3f			\n"
++		"1:	ld.ab   %5, [%2, 4]		\n"
++		"11:	ld.ab   %6, [%2, 4]		\n"
++		"12:	ld.ab   %7, [%2, 4]		\n"
++		"13:	ld.ab   %8, [%2, 4]		\n"
++		"	st.ab   %5, [%1, 4]		\n"
++		"	st.ab   %6, [%1, 4]		\n"
++		"	st.ab   %7, [%1, 4]		\n"
++		"	st.ab   %8, [%1, 4]		\n"
++		"	sub     %0,%0,16		\n"
++		"3:	and.f   %3,%3,0xf		\n"  /* stragglers */
++		"	bz      34f			\n"
++		"	bbit0   %3,3,31f		\n"  /* 8 bytes left */
++		"14:	ld.ab   %5, [%2,4]		\n"
++		"15:	ld.ab   %6, [%2,4]		\n"
++		"	st.ab   %5, [%1,4]		\n"
++		"	st.ab   %6, [%1,4]		\n"
++		"	sub.f   %0,%0,8			\n"
++		"31:	bbit0   %3,2,32f		\n"  /* 4 bytes left */
++		"16:	ld.ab   %5, [%2,4]		\n"
++		"	st.ab   %5, [%1,4]		\n"
++		"	sub.f   %0,%0,4			\n"
++		"32:	bbit0   %3,1,33f		\n"  /* 2 bytes left */
++		"17:	ldw.ab  %5, [%2,2]		\n"
++		"	stw.ab  %5, [%1,2]		\n"
++		"	sub.f   %0,%0,2			\n"
++		"33:	bbit0   %3,0,34f		\n"
++		"18:	ldb.ab  %5, [%2,1]		\n"  /* 1 byte left */
++		"	stb.ab  %5, [%1,1]		\n"
++		"	sub.f   %0,%0,1			\n"
++		"34:	;nop				\n"
++		"	.section .fixup, \"ax\"		\n"
++		"	.align 4			\n"
++		"4:	j   34b				\n"
++		"	.previous			\n"
++		"	.section __ex_table, \"a\"	\n"
++		"	.align 4			\n"
++		"	.word   1b, 4b			\n"
++		"	.word   11b,4b			\n"
++		"	.word   12b,4b			\n"
++		"	.word   13b,4b			\n"
++		"	.word   14b,4b			\n"
++		"	.word   15b,4b			\n"
++		"	.word   16b,4b			\n"
++		"	.word   17b,4b			\n"
++		"	.word   18b,4b			\n"
++		"	.previous			\n"
++		: "=r" (res), "+r"(to), "+r"(from), "+r"(n), "=r"(val),
++		  "=r"(tmp1), "=r"(tmp2), "=r"(tmp3), "=r"(tmp4)
++		:
++		: "lp_count", "memory");
++	}
++
++	return res;
++}
++
++extern unsigned long slowpath_copy_to_user(void __user *to, const void *from,
++					   unsigned long n);
++
++static inline unsigned long
++__arc_copy_to_user(void __user *to, const void *from, unsigned long n)
++{
++	long res = 0;
++	char val;
++	unsigned long tmp1, tmp2, tmp3, tmp4;
++	unsigned long orig_n = n;
++
++	if (n == 0)
++		return 0;
++
++	/* unaligned */
++	if (((unsigned long)to & 0x3) || ((unsigned long)from & 0x3)) {
++
++		unsigned char tmp;
++
++		__asm__ __volatile__(
++		"	mov.f   lp_count, %0		\n"
++		"	lpnz 3f				\n"
++		"	ldb.ab  %1, [%3, 1]		\n"
++		"1:	stb.ab  %1, [%2, 1]		\n"
++		"	sub     %0, %0, 1		\n"
++		"3:	;nop				\n"
++		"	.section .fixup, \"ax\"		\n"
++		"	.align 4			\n"
++		"4:	j   3b				\n"
++		"	.previous			\n"
++		"	.section __ex_table, \"a\"	\n"
++		"	.align 4			\n"
++		"	.word   1b, 4b			\n"
++		"	.previous			\n"
++
++		: "+r" (n),
++		/* Note as an '&' earlyclobber operand to make sure the
++		 * temporary register inside the loop is not the same as
++		 * FROM or TO.
++		 */
++		  "=&r" (tmp), "+r" (to), "+r" (from)
++		:
++		: "lp_count", "lp_start", "lp_end", "memory");
++
++		return n;
++	}
++
++	if (__builtin_constant_p(orig_n)) {
++		res = orig_n;
++
++		if (orig_n / 16) {
++			orig_n = orig_n % 16;
++
++			__asm__ __volatile__(
++			"	lsr lp_count, %7,4		\n"
++			"	lp  3f				\n"
++			"	ld.ab %3, [%2, 4]		\n"
++			"	ld.ab %4, [%2, 4]		\n"
++			"	ld.ab %5, [%2, 4]		\n"
++			"	ld.ab %6, [%2, 4]		\n"
++			"1:	st.ab %3, [%1, 4]		\n"
++			"11:	st.ab %4, [%1, 4]		\n"
++			"12:	st.ab %5, [%1, 4]		\n"
++			"13:	st.ab %6, [%1, 4]		\n"
++			"	sub   %0, %0, 16		\n"
++			"3:;nop					\n"
++			"	.section .fixup, \"ax\"		\n"
++			"	.align 4			\n"
++			"4:	j   3b				\n"
++			"	.previous			\n"
++			"	.section __ex_table, \"a\"	\n"
++			"	.align 4			\n"
++			"	.word   1b, 4b			\n"
++			"	.word   11b,4b			\n"
++			"	.word   12b,4b			\n"
++			"	.word   13b,4b			\n"
++			"	.previous			\n"
++			: "+r" (res), "+r"(to), "+r"(from),
++			  "=r"(tmp1), "=r"(tmp2), "=r"(tmp3), "=r"(tmp4)
++			: "ir"(n)
++			: "lp_count", "memory");
++		}
++		if (orig_n / 8) {
++			orig_n = orig_n % 8;
++
++			__asm__ __volatile__(
++			"	ld.ab   %3, [%2,4]		\n"
++			"	ld.ab   %4, [%2,4]		\n"
++			"14:	st.ab   %3, [%1,4]		\n"
++			"15:	st.ab   %4, [%1,4]		\n"
++			"	sub     %0, %0, 8		\n"
++			"31:;nop				\n"
++			"	.section .fixup, \"ax\"		\n"
++			"	.align 4			\n"
++			"4:	j   31b				\n"
++			"	.previous			\n"
++			"	.section __ex_table, \"a\"	\n"
++			"	.align 4			\n"
++			"	.word   14b,4b			\n"
++			"	.word   15b,4b			\n"
++			"	.previous			\n"
++			: "+r" (res), "+r"(to), "+r"(from),
++			  "=r"(tmp1), "=r"(tmp2)
++			:
++			: "memory");
++		}
++		if (orig_n / 4) {
++			orig_n = orig_n % 4;
++
++			__asm__ __volatile__(
++			"	ld.ab   %3, [%2,4]		\n"
++			"16:	st.ab   %3, [%1,4]		\n"
++			"	sub     %0, %0, 4		\n"
++			"32:;nop				\n"
++			"	.section .fixup, \"ax\"		\n"
++			"	.align 4			\n"
++			"4:	j   32b				\n"
++			"	.previous			\n"
++			"	.section __ex_table, \"a\"	\n"
++			"	.align 4			\n"
++			"	.word   16b,4b			\n"
++			"	.previous			\n"
++			: "+r" (res), "+r"(to), "+r"(from), "=r"(tmp1)
++			:
++			: "memory");
++		}
++		if (orig_n / 2) {
++			orig_n = orig_n % 2;
++
++			__asm__ __volatile__(
++			"	ldw.ab    %3, [%2,2]		\n"
++			"17:	stw.ab    %3, [%1,2]		\n"
++			"	sub       %0, %0, 2		\n"
++			"33:;nop				\n"
++			"	.section .fixup, \"ax\"		\n"
++			"	.align 4			\n"
++			"4:	j   33b				\n"
++			"	.previous			\n"
++			"	.section __ex_table, \"a\"	\n"
++			"	.align 4			\n"
++			"	.word   17b,4b			\n"
++			"	.previous			\n"
++			: "+r" (res), "+r"(to), "+r"(from), "=r"(tmp1)
++			:
++			: "memory");
++		}
++		if (orig_n & 1) {
++			__asm__ __volatile__(
++			"	ldb.ab  %3, [%2,1]		\n"
++			"18:	stb.ab  %3, [%1,1]		\n"
++			"	sub     %0, %0, 1		\n"
++			"34:	;nop				\n"
++			"	.section .fixup, \"ax\"		\n"
++			"	.align 4			\n"
++			"4:	j   34b				\n"
++			"	.previous			\n"
++			"	.section __ex_table, \"a\"	\n"
++			"	.align 4			\n"
++			"	.word   18b,4b			\n"
++			"	.previous			\n"
++			: "+r" (res), "+r"(to), "+r"(from), "=r"(tmp1)
++			:
++			: "memory");
++		}
++	} else {  /* n is NOT constant, so laddered copy of 16x,8,4,2,1  */
++
++		__asm__ __volatile__(
++		"	mov   %0,%3			\n"
++		"	lsr.f lp_count, %3,4		\n"  /* 16x bytes */
++		"	lpnz  3f			\n"
++		"	ld.ab %5, [%2, 4]		\n"
++		"	ld.ab %6, [%2, 4]		\n"
++		"	ld.ab %7, [%2, 4]		\n"
++		"	ld.ab %8, [%2, 4]		\n"
++		"1:	st.ab %5, [%1, 4]		\n"
++		"11:	st.ab %6, [%1, 4]		\n"
++		"12:	st.ab %7, [%1, 4]		\n"
++		"13:	st.ab %8, [%1, 4]		\n"
++		"	sub   %0, %0, 16		\n"
++		"3:	and.f %3,%3,0xf			\n" /* stragglers */
++		"	bz 34f				\n"
++		"	bbit0   %3,3,31f		\n" /* 8 bytes left */
++		"	ld.ab   %5, [%2,4]		\n"
++		"	ld.ab   %6, [%2,4]		\n"
++		"14:	st.ab   %5, [%1,4]		\n"
++		"15:	st.ab   %6, [%1,4]		\n"
++		"	sub.f   %0, %0, 8		\n"
++		"31:	bbit0   %3,2,32f		\n"  /* 4 bytes left */
++		"	ld.ab   %5, [%2,4]		\n"
++		"16:	st.ab   %5, [%1,4]		\n"
++		"	sub.f   %0, %0, 4		\n"
++		"32:	bbit0 %3,1,33f			\n"  /* 2 bytes left */
++		"	ldw.ab    %5, [%2,2]		\n"
++		"17:	stw.ab    %5, [%1,2]		\n"
++		"	sub.f %0, %0, 2			\n"
++		"33:	bbit0 %3,0,34f			\n"
++		"	ldb.ab    %5, [%2,1]		\n"  /* 1 byte left */
++		"18:	stb.ab  %5, [%1,1]		\n"
++		"	sub.f %0, %0, 1			\n"
++		"34:	;nop				\n"
++		"	.section .fixup, \"ax\"		\n"
++		"	.align 4			\n"
++		"4:	j   34b				\n"
++		"	.previous			\n"
++		"	.section __ex_table, \"a\"	\n"
++		"	.align 4			\n"
++		"	.word   1b, 4b			\n"
++		"	.word   11b,4b			\n"
++		"	.word   12b,4b			\n"
++		"	.word   13b,4b			\n"
++		"	.word   14b,4b			\n"
++		"	.word   15b,4b			\n"
++		"	.word   16b,4b			\n"
++		"	.word   17b,4b			\n"
++		"	.word   18b,4b			\n"
++		"	.previous			\n"
++		: "=r" (res), "+r"(to), "+r"(from), "+r"(n), "=r"(val),
++		  "=r"(tmp1), "=r"(tmp2), "=r"(tmp3), "=r"(tmp4)
++		:
++		: "lp_count", "memory");
++	}
++
++	return res;
++}
++
++static inline unsigned long __arc_clear_user(void __user *to, unsigned long n)
++{
++	long res = n;
++	unsigned char *d_char = to;
++
++	__asm__ __volatile__(
++	"	bbit0   %0, 0, 1f		\n"
++	"75:	stb.ab  %2, [%0,1]		\n"
++	"	sub %1, %1, 1			\n"
++	"1:	bbit0   %0, 1, 2f		\n"
++	"76:	stw.ab  %2, [%0,2]		\n"
++	"	sub %1, %1, 2			\n"
++	"2:	asr.f   lp_count, %1, 2		\n"
++	"	lpnz    3f			\n"
++	"77:	st.ab   %2, [%0,4]		\n"
++	"	sub %1, %1, 4			\n"
++	"3:	bbit0   %1, 1, 4f		\n"
++	"78:	stw.ab  %2, [%0,2]		\n"
++	"	sub %1, %1, 2			\n"
++	"4:	bbit0   %1, 0, 5f		\n"
++	"79:	stb.ab  %2, [%0,1]		\n"
++	"	sub %1, %1, 1			\n"
++	"5:					\n"
++	"	.section .fixup, \"ax\"		\n"
++	"	.align 4			\n"
++	"3:	j   5b				\n"
++	"	.previous			\n"
++	"	.section __ex_table, \"a\"	\n"
++	"	.align 4			\n"
++	"	.word   75b, 3b			\n"
++	"	.word   76b, 3b			\n"
++	"	.word   77b, 3b			\n"
++	"	.word   78b, 3b			\n"
++	"	.word   79b, 3b			\n"
++	"	.previous			\n"
++	: "+r"(d_char), "+r"(res)
++	: "i"(0)
++	: "lp_count", "lp_start", "lp_end", "memory");
++
++	return res;
++}
++
++static inline long
++__arc_strncpy_from_user(char *dst, const char __user *src, long count)
++{
++	long res = count;
++	char val;
++	unsigned int hw_count;
++
++	if (count == 0)
++		return 0;
++
++	__asm__ __volatile__(
++	"	lp 2f		\n"
++	"1:	ldb.ab  %3, [%2, 1]		\n"
++	"	breq.d  %3, 0, 2f		\n"
++	"	stb.ab  %3, [%1, 1]		\n"
++	"2:	sub %0, %6, %4			\n"
++	"3:	;nop				\n"
++	"	.section .fixup, \"ax\"		\n"
++	"	.align 4			\n"
++	"4:	mov %0, %5			\n"
++	"	j   3b				\n"
++	"	.previous			\n"
++	"	.section __ex_table, \"a\"	\n"
++	"	.align 4			\n"
++	"	.word   1b, 4b			\n"
++	"	.previous			\n"
++	: "=r"(res), "+r"(dst), "+r"(src), "=&r"(val), "=l"(hw_count)
++	: "g"(-EFAULT), "ir"(count), "4"(count)	/* this "4" seeds lp_count */
++	: "memory");
++
++	return res;
++}
++
++static inline long __arc_strnlen_user(const char __user *s, long n)
++{
++	long res, tmp1, cnt;
++	char val;
++
++	__asm__ __volatile__(
++	"	mov %2, %1			\n"
++	"1:	ldb.ab  %3, [%0, 1]		\n"
++	"	breq.d  %3, 0, 2f		\n"
++	"	sub.f   %2, %2, 1		\n"
++	"	bnz 1b				\n"
++	"	sub %2, %2, 1			\n"
++	"2:	sub %0, %1, %2			\n"
++	"3:	;nop				\n"
++	"	.section .fixup, \"ax\"		\n"
++	"	.align 4			\n"
++	"4:	mov %0, 0			\n"
++	"	j   3b				\n"
++	"	.previous			\n"
++	"	.section __ex_table, \"a\"	\n"
++	"	.align 4			\n"
++	"	.word 1b, 4b			\n"
++	"	.previous			\n"
++	: "=r"(res), "=r"(tmp1), "=r"(cnt), "=r"(val)
++	: "0"(s), "1"(n)
++	: "memory");
++
++	return res;
++}
++
++#define __copy_from_user(t, f, n)	__arc_copy_from_user(t, f, n)
++#define __copy_to_user(t, f, n)		__arc_copy_to_user(t, f, n)
++#define __clear_user(d, n)		__arc_clear_user(d, n)
++#define __strncpy_from_user(d, s, n)	__arc_strncpy_from_user(d, s, n)
++#define __strnlen_user(s, n)		__arc_strnlen_user(s, n)
++
++#include <asm-generic/uaccess.h>
++
++extern int fixup_exception(struct pt_regs *regs);
++
 +#endif
- 
-+#ifndef csum_fold
- /*
-  * Fold a partial checksum
-  */
-@@ -54,6 +57,7 @@ static inline __sum16 csum_fold(__wsum csum)
- 	sum = (sum & 0xffff) + (sum >> 16);
- 	return (__force __sum16)~sum;
- }
-+#endif
- 
- #ifndef csum_tcpudp_nofold
- /*
-diff --git a/lib/checksum.c b/lib/checksum.c
-index 12dceb2..129775e 100644
---- a/lib/checksum.c
-+++ b/lib/checksum.c
-@@ -102,6 +102,7 @@ out:
- }
- #endif
- 
-+#ifndef ip_fast_csum
- /*
-  *	This is a version of ip_compute_csum() optimized for IP headers,
-  *	which always checksum on 4 octet boundaries.
-@@ -111,6 +112,7 @@ __sum16 ip_fast_csum(const void *iph, unsigned int ihl)
- 	return (__force __sum16)~do_csum(iph, ihl*4);
- }
- EXPORT_SYMBOL(ip_fast_csum);
-+#endif
- 
- /*
-  * computes the checksum of a memory block at buff, length len,
 -- 
 1.7.4.1
 
