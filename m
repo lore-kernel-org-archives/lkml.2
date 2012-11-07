@@ -1,137 +1,506 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab2KGEWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 23:22:11 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:33761 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520Ab2KGEWJ convert rfc822-to-8bit (ORCPT
+	id S1753797Ab2KGE24 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 23:28:56 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:64656 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab2KGE2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 23:22:09 -0500
+	Tue, 6 Nov 2012 23:28:54 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6888"; a="4747152"
+Message-ID: <24cf15558496fc4dff9035181df0a9bb.squirrel@www.codeaurora.org>
+In-Reply-To: <507D1295.5000908@samsung.com>
+References: <n@samsung.com>
+    <1349389748-815-1-git-send-email-merez@codeaurora.org>
+    <507D1295.5000908@samsung.com>
+Date: Tue, 6 Nov 2012 20:28:54 -0800 (PST)
+Subject: Re: [PATCH v2] mmc: core: Add support for idle time BKOPS
+From: merez@codeaurora.org
+To: "Jaehoon Chung" <jh80.chung@samsung.com>
+Cc: "Maya Erez" <merez@codeaurora.org>, linux-mmc@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        "Jaehoon Chung" <jh80.chung@samsung.com>,
+        "open list" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <50991C41.50705@gmail.com>
-References: <64c5278ebdec503f83e9b7002bf13affb7f3260f.1351225085.git.viresh.kumar@linaro.org>
-	<50991C41.50705@gmail.com>
-Date: Wed, 7 Nov 2012 09:52:05 +0530
-X-Google-Sender-Auth: aav8_QFrP-7XSqVZ080uyG2b-2M
-Message-ID: <CAOh2x==LNuSFftB1r8cyJ6TOqOVJfExMTUVxKZnS16wL4B8eBA@mail.gmail.com>
-Subject: Re: [PATCH Resend V2] dt: add helper function to read u8 & u16
- variables & arrays
-From: viresh kumar <viresh.kumar@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        linaro-dev@lists.linaro.org, andriy.shevchenko@intel.com,
-        patches@linaro.org, devicetree-discuss@lists.ozlabs.org,
-        spear-devel@list.st.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 7:48 PM, Rob Herring <robherring2@gmail.com> wrote:
->> +#define of_property_read_array(_np, _pname, _out, _sz)                       \
+Hi Jaehoon,
 
->> +     while (_sz--)                                                   \
->> +             *_out++ = (typeof(*_out))be32_to_cpup(_val++);          \
+Any update on this patch review and testing?
 
-> This will not work. You are incrementing _out by 1, 2, or 4 bytes, but
-> _val is always incremented by 4 bytes.
+Thanks,
+Maya
+On Mon, October 15, 2012 11:53 pm, Jaehoon Chung wrote:
+> Hi Maya,
 >
-> According to the dtc commit adding this feature, the values are packed:
+> I'm testing with your patch..but i need to have the more time for testing.
+> In now, it looks good to me. Thank you for working the idle bkops.
 >
-> With this patch the following property assignment:
+> Best Regards,
+> Jaehoon Chung
 >
->     property = /bits/ 16 <0x1234 0x5678 0x0 0xffff>;
+>> ---
+>> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+>> index 172a768..ed040d5 100644
+>> --- a/drivers/mmc/card/block.c
+>> +++ b/drivers/mmc/card/block.c
+>> @@ -827,6 +827,9 @@ static int mmc_blk_issue_discard_rq(struct mmc_queue
+>> *mq, struct request *req)
+>>  	from = blk_rq_pos(req);
+>>  	nr = blk_rq_sectors(req);
+>>
+>> +	if (card->ext_csd.bkops_en)
+>> +		card->bkops_info.sectors_changed += blk_rq_sectors(req);
+> using nr?
+>> +
+>>  	if (mmc_can_discard(card))
+>>  		arg = MMC_DISCARD_ARG;
+>>  	else if (mmc_can_trim(card))
+>> @@ -1268,6 +1271,9 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue
+>> *mq, struct request *rqc)
+>>  	if (!rqc && !mq->mqrq_prev->req)
+>>  		return 0;
+>>
+>> +	if (rqc && (card->ext_csd.bkops_en) && (rq_data_dir(rqc) == WRITE))
+>> +			card->bkops_info.sectors_changed += blk_rq_sectors(rqc);
+> Fix the indent.
+>> +
+>>  	do {
+>>  		if (rqc) {
+>>  			/*
+>> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+>> index e360a97..e96f5cf 100644
+>> --- a/drivers/mmc/card/queue.c
+>> +++ b/drivers/mmc/card/queue.c
+>> @@ -51,6 +51,7 @@ static int mmc_queue_thread(void *d)
+>>  {
+>>  	struct mmc_queue *mq = d;
+>>  	struct request_queue *q = mq->queue;
+>> +	struct mmc_card *card = mq->card;
+>>
+>>  	current->flags |= PF_MEMALLOC;
+>>
+>> @@ -66,6 +67,17 @@ static int mmc_queue_thread(void *d)
+>>  		spin_unlock_irq(q->queue_lock);
+>>
+>>  		if (req || mq->mqrq_prev->req) {
+>> +			/*
+>> +			 * If this is the first request, BKOPs might be in
+>> +			 * progress and needs to be stopped before issuing the
+>> +			 * request
+>> +			 */
+>> +			if (card->ext_csd.bkops_en &&
+>> +			    card->bkops_info.started_delayed_bkops) {
+>> +				card->bkops_info.started_delayed_bkops = false;
+>> +				mmc_stop_bkops(card);
+> if mmc_stop_bkops is failed..?
+>> +			}
+>> +
+>>  			set_current_state(TASK_RUNNING);
+>>  			mq->issue_fn(mq, req);
+>>  		} else {
+>> @@ -73,6 +85,7 @@ static int mmc_queue_thread(void *d)
+>>  				set_current_state(TASK_RUNNING);
+>>  				break;
+>>  			}
+>> +			mmc_start_delayed_bkops(card);
+>>  			up(&mq->thread_sem);
+>>  			schedule();
+>>  			down(&mq->thread_sem);
+>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+>> index 6612163..fd8783d 100644
+>> --- a/drivers/mmc/core/core.c
+>> +++ b/drivers/mmc/core/core.c
+>> @@ -253,9 +253,42 @@ mmc_start_request(struct mmc_host *host, struct
+>> mmc_request *mrq)
+>>  }
+>>
+>>  /**
+>> + * mmc_start_delayed_bkops() - Start a delayed work to check for
+>> + *      the need of non urgent BKOPS
+>> + *
+>> + * @card: MMC card to start BKOPS on
+>> + */
+>> +void mmc_start_delayed_bkops(struct mmc_card *card)
+>> +{
+>> +	if (!card || !card->ext_csd.bkops_en || mmc_card_doing_bkops(card))
+>> +		return;
+>> +
+>> +	if (card->bkops_info.sectors_changed <
+>> +	    BKOPS_MIN_SECTORS_TO_QUEUE_DELAYED_WORK)
+>> +		return;
+>> +
+>> +	pr_debug("%s: %s: queueing delayed_bkops_work\n",
+>> +		 mmc_hostname(card->host), __func__);
+>> +
+>> +	card->bkops_info.sectors_changed = 0;
+>> +
+>> +	/*
+>> +	 * cancel_delayed_bkops_work will prevent a race condition between
+>> +	 * fetching a request by the mmcqd and the delayed work, in case
+>> +	 * it was removed from the queue work but not started yet
+>> +	 */
+>> +	card->bkops_info.cancel_delayed_work = false;
+>> +	card->bkops_info.started_delayed_bkops = true;
+>> +	queue_delayed_work(system_nrt_wq, &card->bkops_info.dw,
+>> +			   msecs_to_jiffies(
+>> +				   card->bkops_info.delay_ms));
+>> +}
+>> +EXPORT_SYMBOL(mmc_start_delayed_bkops);
+>> +
+>> +/**
+>>   *	mmc_start_bkops - start BKOPS for supported cards
+>>   *	@card: MMC card to start BKOPS
+>> - *	@form_exception: A flag to indicate if this function was
+>> + *	@from_exception: A flag to indicate if this function was
+>>   *			 called due to an exception raised by the card
+>>   *
+>>   *	Start background operations whenever requested.
+>> @@ -269,25 +302,47 @@ void mmc_start_bkops(struct mmc_card *card, bool
+>> from_exception)
+>>  	bool use_busy_signal;
+>>
+>>  	BUG_ON(!card);
+>> -
+>> -	if (!card->ext_csd.bkops_en || mmc_card_doing_bkops(card))
+>> +	if (!card->ext_csd.bkops_en)
+>>  		return;
+>>
+>> +	mmc_claim_host(card->host);
+>> +
+>> +	if ((card->bkops_info.cancel_delayed_work) && !from_exception) {
+>> +		pr_debug("%s: %s: cancel_delayed_work was set, exit\n",
+>> +			 mmc_hostname(card->host), __func__);
+>> +		card->bkops_info.cancel_delayed_work = false;
+>> +		goto out;
+>> +	}
+>> +
+>> +	if (mmc_card_doing_bkops(card)) {
+>> +		pr_debug("%s: %s: already doing bkops, exit\n",
+>> +			 mmc_hostname(card->host), __func__);
+>> +		goto out;
+>> +	}
+>> +
+>>  	err = mmc_read_bkops_status(card);
+>>  	if (err) {
+>>  		pr_err("%s: Failed to read bkops status: %d\n",
+>>  		       mmc_hostname(card->host), err);
+>> -		return;
+>> +		goto out;
+>>  	}
+>>
+>>  	if (!card->ext_csd.raw_bkops_status)
+>> -		return;
+>> +		goto out;
+>> +
+>> +	pr_info("%s: %s: card->ext_csd.raw_bkops_status = 0x%x\n",
+>> +		mmc_hostname(card->host), __func__,
+>> +		card->ext_csd.raw_bkops_status);
+>>
+>> +	/*
+>> +	 * If the function was called due to exception but there is no need
+>> +	 * for urgent BKOPS, BKOPs will be performed by the delayed BKOPs
+>> +	 * work, before going to suspend
+>> +	 */
+>>  	if (card->ext_csd.raw_bkops_status < EXT_CSD_BKOPS_LEVEL_2 &&
+>>  	    from_exception)
+>> -		return;
+>> +		goto out;
+>>
+>> -	mmc_claim_host(card->host);
+>>  	if (card->ext_csd.raw_bkops_status >= EXT_CSD_BKOPS_LEVEL_2) {
+>>  		timeout = MMC_BKOPS_MAX_TIMEOUT;
+>>  		use_busy_signal = true;
+>> @@ -309,13 +364,108 @@ void mmc_start_bkops(struct mmc_card *card, bool
+>> from_exception)
+>>  	 * bkops executed synchronously, otherwise
+>>  	 * the operation is in progress
+>>  	 */
+>> -	if (!use_busy_signal)
+>> +	if (!use_busy_signal) {
+>>  		mmc_card_set_doing_bkops(card);
+>> +		pr_debug("%s: %s: starting the polling thread\n",
+>> +			 mmc_hostname(card->host), __func__);
+>> +		queue_work(system_nrt_wq,
+>> +			   &card->bkops_info.poll_for_completion);
+>> +	}
+>> +
+>>  out:
+>>  	mmc_release_host(card->host);
+>>  }
+>>  EXPORT_SYMBOL(mmc_start_bkops);
+>>
+>> +/**
+>> + * mmc_bkops_completion_polling() - Poll on the card status to
+>> + * wait for the non-blocking BKOPS completion
+>> + * @work:	The completion polling work
+>> + *
+>> + * The on-going reading of the card status will prevent the card
+>> + * from getting into suspend while it is in the middle of
+>> + * performing BKOPS.
+>> + * Since the non blocking BKOPS can be interrupted by a fetched
+>> + * request we also check IF mmc_card_doing_bkops in each
+>> + * iteration.
+>> + */
+>> +void mmc_bkops_completion_polling(struct work_struct *work)
+>> +{
+>> +	struct mmc_card *card = container_of(work, struct mmc_card,
+>> +			bkops_info.poll_for_completion);
+>> +	unsigned long timeout_jiffies = jiffies +
+>> +		msecs_to_jiffies(BKOPS_COMPLETION_POLLING_TIMEOUT_MS);
+>> +	u32 status;
+>> +	int err;
+>> +
+>> +	/*
+>> +	 * Wait for the BKOPs to complete. Keep reading the status to prevent
+>> +	 * the host from getting into suspend
+>> +	 */
+>> +	do {
+>> +		mmc_claim_host(card->host);
+>> +
+>> +		if (!mmc_card_doing_bkops(card))
+>> +			goto out;
+>> +
+>> +		err = mmc_send_status(card, &status);
+>> +		if (err) {
+>> +			pr_err("%s: error %d requesting status\n",
+>> +			       mmc_hostname(card->host), err);
+>> +			goto out;
+>> +		}
+>> +
+>> +		/*
+>> +		 * Some cards mishandle the status bits, so make sure to check
+>> +		 * both the busy indication and the card state.
+>> +		 */
+>> +		if ((status & R1_READY_FOR_DATA) &&
+>> +		    (R1_CURRENT_STATE(status) != R1_STATE_PRG)) {
+>> +			pr_debug("%s: %s: completed BKOPs, exit polling\n",
+>> +				 mmc_hostname(card->host), __func__);
+>> +			mmc_card_clr_doing_bkops(card);
+>> +			card->bkops_info.started_delayed_bkops = false;
+>> +			goto out;
+>> +		}
+>> +
+>> +		mmc_release_host(card->host);
+>> +
+>> +		/*
+>> +		 * Sleep before checking the card status again to allow the
+>> +		 * card to complete the BKOPs operation
+>> +		 */
+>> +		msleep(BKOPS_COMPLETION_POLLING_INTERVAL_MS);
+>> +	} while (time_before(jiffies, timeout_jiffies));
+>> +
+>> +	pr_err("%s: %s: exit polling due to timeout\n",
+>> +	       mmc_hostname(card->host), __func__);
+>> +
+>> +	return;
+>> +out:
+>> +	mmc_release_host(card->host);
+>> +}
+>> +
+>> +/**
+>> + * mmc_start_idle_time_bkops() - check if a non urgent BKOPS is
+>> + * needed
+>> + * @work:	The idle time BKOPS work
+>> + */
+>> +void mmc_start_idle_time_bkops(struct work_struct *work)
+>> +{
+>> +	struct mmc_card *card = container_of(work, struct mmc_card,
+>> +			bkops_info.dw.work);
+>> +
+>> +	/*
+>> +	 * Prevent a race condition between mmc_stop_bkops and the delayed
+>> +	 * BKOPS work in case the delayed work is executed on another CPU
+>> +	 */
+>> +	if (card->bkops_info.cancel_delayed_work)
+>> +		return;
+>> +
+>> +	mmc_start_bkops(card, false);
+>> +}
+>> +EXPORT_SYMBOL(mmc_start_idle_time_bkops);
+>> +
+>>  static void mmc_wait_done(struct mmc_request *mrq)
+>>  {
+>>  	complete(&mrq->completion);
+>> @@ -582,6 +732,19 @@ int mmc_stop_bkops(struct mmc_card *card)
+>>  	int err = 0;
+>>
+>>  	BUG_ON(!card);
+>> +
+>> +	mmc_claim_host(card->host);
+>> +
+>> +	/*
+>> +	 * Notify the delayed work to be cancelled, in case it was already
+>> +	 * removed from the queue, but was not started yet
+>> +	 */
+>> +	card->bkops_info.cancel_delayed_work = true;
+>> +	if (delayed_work_pending(&card->bkops_info.dw))
+>> +		cancel_delayed_work_sync(&card->bkops_info.dw);
+>> +	if (!mmc_card_doing_bkops(card))
+>> +		goto out;
+>> +
+>>  	err = mmc_interrupt_hpi(card);
+>>
+>>  	/*
+>> @@ -593,6 +756,8 @@ int mmc_stop_bkops(struct mmc_card *card)
+>>  		err = 0;
+>>  	}
+>>
+>> +out:
+>> +	mmc_release_host(card->host);
+>>  	return err;
+>>  }
+>>  EXPORT_SYMBOL(mmc_stop_bkops);
+>> @@ -2566,15 +2731,13 @@ int mmc_pm_notify(struct notifier_block
+>> *notify_block,
+>>  	switch (mode) {
+>>  	case PM_HIBERNATION_PREPARE:
+>>  	case PM_SUSPEND_PREPARE:
+>> -		if (host->card && mmc_card_mmc(host->card) &&
+>> -		    mmc_card_doing_bkops(host->card)) {
+>> +		if (host->card && mmc_card_mmc(host->card)) {
+>>  			err = mmc_stop_bkops(host->card);
+>>  			if (err) {
+>>  				pr_err("%s: didn't stop bkops\n",
+>>  					mmc_hostname(host));
+>>  				return err;
+>>  			}
+>> -			mmc_card_clr_doing_bkops(host->card);
+>>  		}
+>>
+>>  		spin_lock_irqsave(&host->lock, flags);
+>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+>> index 7509de1..f8ff640 100644
+>> --- a/drivers/mmc/core/mmc.c
+>> +++ b/drivers/mmc/core/mmc.c
+>> @@ -1258,6 +1258,30 @@ static int mmc_init_card(struct mmc_host *host,
+>> u32 ocr,
+>>  		}
+>>  	}
+>>
+>> +	if (!oldcard) {
+>> +		if (card->ext_csd.bkops_en) {
+>> +			INIT_DELAYED_WORK(&card->bkops_info.dw,
+>> +					  mmc_start_idle_time_bkops);
+>> +			INIT_WORK(&card->bkops_info.poll_for_completion,
+>> +				  mmc_bkops_completion_polling);
+>> +
+>> +			/*
+>> +			 * Calculate the time to start the BKOPs checking.
+>> +			 * The idle time of the host controller should be taken
+>> +			 * into account in order to prevent a race condition
+>> +			 * before starting BKOPs and going into suspend.
+>> +			 * If the host controller didn't set its idle time,
+>> +			 * a default value is used.
+>> +			 */
+>> +			card->bkops_info.delay_ms = MMC_IDLE_BKOPS_TIME_MS;
+>> +			if (card->bkops_info.host_suspend_tout_ms)
+>> +				card->bkops_info.delay_ms = min(
+>> +					card->bkops_info.delay_ms,
+>> +				      card->bkops_info.host_suspend_tout_ms/2);
+>> +
+>> +		}
+>> +	}
+>> +
+>>  	if (!oldcard)
+>>  		host->card = card;
+>>
+>> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+>> index 78cc3be..0e4d55a 100644
+>> --- a/include/linux/mmc/card.h
+>> +++ b/include/linux/mmc/card.h
+>> @@ -207,6 +207,48 @@ struct mmc_part {
+>>  #define MMC_BLK_DATA_AREA_GP	(1<<2)
+>>  };
+>>
+>> +/**
+>> + * struct mmc_bkops_info - BKOPS data
+>> + * @dw:	Idle time bkops delayed work
+>> + * @host_suspend_tout_ms:	The host controller idle time,
+>> + * before getting into suspend
+>> + * @delay_ms:	The time to start the BKOPS
+>> + *        delayed work once MMC thread is idle
+>> + * @poll_for_completion:	Poll on BKOPS completion
+>> + * @cancel_delayed_work: A flag to indicate if the delayed work
+>> + *        should be cancelled
+>> + * @started_delayed_bkops:  A flag to indicate if the delayed
+>> + *        work was scheduled
+>> + * @sectors_changed:  number of  sectors written or
+>> + *       discard since the last idle BKOPS were scheduled
+>> + */
+>> +struct mmc_bkops_info {
+>> +	struct delayed_work	dw;
+>> +	unsigned int		host_suspend_tout_ms;
+>> +	unsigned int		delay_ms;
+>> +/*
+>> + * A default time for checking the need for non urgent BKOPS once mmcqd
+>> + * is idle.
+>> + */
+>> +#define MMC_IDLE_BKOPS_TIME_MS 2000
+>> +	struct work_struct	poll_for_completion;
+>> +/* Polling timeout and interval for waiting on non-blocking BKOPs
+>> completion */
+>> +#define BKOPS_COMPLETION_POLLING_TIMEOUT_MS 10000 /* in ms */
+>> +#define BKOPS_COMPLETION_POLLING_INTERVAL_MS 1000 /* in ms */
+>> +	bool			cancel_delayed_work;
+>> +	bool			started_delayed_bkops;
+>> +	unsigned int		sectors_changed;
+>> +/*
+>> + * Since canceling the delayed work might have significant effect on
+>> the
+>> + * performance of small requests we won't queue the delayed work every
+>> time
+>> + * mmcqd thread is idle.
+>> + * The delayed work for idle BKOPS will be scheduled only after a
+>> significant
+>> + * amount of write or discard data.
+>> + * 100MB is chosen based on benchmark tests.
+>> + */
+>> +#define BKOPS_MIN_SECTORS_TO_QUEUE_DELAYED_WORK 204800 /* 100MB */
+>> +};
+>> +
+>>  /*
+>>   * MMC device
+>>   */
+>> @@ -281,6 +323,8 @@ struct mmc_card {
+>>  	struct dentry		*debugfs_root;
+>>  	struct mmc_part	part[MMC_NUM_PHY_PARTITION]; /* physical partitions */
+>>  	unsigned int    nr_parts;
+>> +
+>> +	struct mmc_bkops_info	bkops_info;
+>>  };
+>>
+>>  /*
+>> diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
+>> index 9b9cdaf..665d345 100644
+>> --- a/include/linux/mmc/core.h
+>> +++ b/include/linux/mmc/core.h
+>> @@ -145,6 +145,9 @@ extern int mmc_app_cmd(struct mmc_host *, struct
+>> mmc_card *);
+>>  extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
+>>  	struct mmc_command *, int);
+>>  extern void mmc_start_bkops(struct mmc_card *card, bool
+>> from_exception);
+>> +extern void mmc_start_delayed_bkops(struct mmc_card *card);
+>> +extern void mmc_start_idle_time_bkops(struct work_struct *work);
+>> +extern void mmc_bkops_completion_polling(struct work_struct *work);
+>>  extern int __mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int,
+>> bool);
+>>  extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
+>>
+>>
 >
-> is equivalent to:
 >
->     property = <0x12345678 0x0000ffff>;
 
-I thought of it a bit more and wasn't actually aligned with your explanation :(
 
-If that is the case, how will current implementation of u32 array will work
-if we pass something like: 0x88 0x84000000 0x5890 from DT?
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
 
-So, i did a dummy test of my current implementation, with following changes
-in one of my drivers:
-
-dts changes:
-
-                cluster0: cluster@0 {
-+                       data1 = <0x50 0x60 0x70>;
-+                       data2 = <0x5000 0x6000 0x7000>;
-+                       data3 = <0x50000000 0x60000000 0x70000000>;
-               }
-
-driver changes:
-
-+void test(struct device_node *cluster)
-+{
-+       u8 data1[3];
-+       u16 data2[3];
-+       u32 data3[3], i;
-+
-+       of_property_read_u8_array(cluster, "data1", data1, 3);
-+       of_property_read_u16_array(cluster, "data2", data2, 3);
-+       of_property_read_u32_array(cluster, "data3", data3, 3);
-+
-+       for (i = 0; i < 3; i++) {
-+               printk(KERN_INFO "u8 %d: %x\n", i, data1[i]);
-+               printk(KERN_INFO "u16 %d: %x\n", i, data2[i]);
-+               printk(KERN_INFO "u32 %d: %x\n", i, data3[i]);
-+       }
-+}
-
-And following is the output
-
-[    4.087205] u8 0: 50
-[    4.093746] u16 0: 5000
-[    4.101067] u32 0: 50000000
-[    4.109512] u8 1: 60
-[    4.116036] u16 1: 6000
-[    4.123357] u32 1: 60000000
-[    4.131718] u8 2: 70
-[    4.138241] u16 2: 7000
-[    4.145573] u32 2: 70000000
-
-which looks to be what we were looking for, isn't it?
-
-Following is fixup for the doc comment missing:
-
-commit 00803aed0781de451048df0d15a3e8c814a343c8
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Wed Nov 7 09:48:46 2012 +0530
-
-    fixup! dt: add helper function to read u8 & u16 variables & arrays
----
- drivers/of/base.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index fbb634b..4a6632e 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -669,6 +669,7 @@ EXPORT_SYMBOL(of_find_node_by_phandle);
-  * @np:                device node from which the property value is to be read.
-  * @propname:  name of the property to be searched.
-  * @out_value: pointer to return value, modified only if return value is 0.
-+ * @sz:                number of array elements to read
-  *
-  * Search for a property in a device node and read 8-bit value(s) from
-  * it. Returns 0 on success, -EINVAL if the property does not exist,
-@@ -690,6 +691,7 @@ EXPORT_SYMBOL_GPL(of_property_read_u8_array);
-  * @np:                device node from which the property value is to be read.
-  * @propname:  name of the property to be searched.
-  * @out_value: pointer to return value, modified only if return value is 0.
-+ * @sz:                number of array elements to read
-  *
-  * Search for a property in a device node and read 16-bit value(s) from
-  * it. Returns 0 on success, -EINVAL if the property does not exist,
-@@ -712,6 +714,7 @@ EXPORT_SYMBOL_GPL(of_property_read_u16_array);
-  * @np:                device node from which the property value is to be read.
-  * @propname:  name of the property to be searched.
-  * @out_value: pointer to return value, modified only if return value is 0.
-+ * @sz:                number of array elements to read
-  *
-  * Search for a property in a device node and read 32-bit value(s) from
-  * it. Returns 0 on success, -EINVAL if the property does not exist,
