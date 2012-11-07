@@ -1,160 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab2KGReK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 12:34:10 -0500
-Received: from smtp2-g21.free.fr ([212.27.42.2]:53506 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768Ab2KGReJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 12:34:09 -0500
-From: Nicolas Royer <nicolas@eukrea.com>
-To: linux-kernel@vger.kernel.org
-Cc: nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
-        linux-crypto@vger.kernel.org, herbert@gondor.hengli.com.au,
-        davem@davemloft.net, plagnioj@jcrosoft.com, eric@eukrea.com,
-        Nicolas Royer <nicolas@eukrea.com>
-Subject: [PATCH 2/5 v3] ARM: AT91SAM9G45: same platform data structure for all crypto peripherals
-Date: Wed,  7 Nov 2012 18:34:27 +0100
-Message-Id: <1352309667-30868-1-git-send-email-nicolas@eukrea.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <20121107164523.GG4576@game.jcrosoft.org>
-References: <20121107164523.GG4576@game.jcrosoft.org>
+	id S1752128Ab2KGRep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 12:34:45 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59582 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752685Ab2KGReo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 12:34:44 -0500
+Date: Wed, 7 Nov 2012 12:34:43 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Christof Meerwald <cmeerw@cmeerw.org>, Takashi Iwai <tiwai@suse.de>
+cc: Daniel Mack <zonque@gmail.com>, "Artem S. Tashkinov" <t.artem@lycos.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: A reliable kernel panic (3.6.2) and system crash when visiting
+ a particular website
+In-Reply-To: <20121105191336.GA1404@edge.cmeerw.net>
+Message-ID: <Pine.LNX.4.44L0.1211071220230.1175-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only AES use DMA in AT91SAM9G45 (TDES and SHA use PDC).
+On Mon, 5 Nov 2012, Christof Meerwald wrote:
 
-However latest Atmel TDES and SHA IP releases use DMA instead of PDC.
-  --> Atmel TDES and SHA drivers need DMA platform data for those IP releases.
+> BTW, I have been able to reproduce the problem on a completely
+> different machine (also running Ubuntu 12.10, but different hardware).
+> The important thing appears to be that the USB audio device is
+> connected via a USB 2.0 hub (and then using the test code posted in
+> http://pastebin.com/aHGe1S1X specifying the audio device as
+> "plughw:Set" (or whatever it's called) seems to trigger the freeze).
 
-Goal of this patch is to use the same platform data structure for all Atmel
-crypto peripherals. This structure contains information about DMA interface.
+Christof: Thank you for that reference, it was a big help.  After
+crashing my system many times I have tracked the problem, at least in
+part.  The patch below should prevent your system from freezing.
 
-Signed-off-by: Nicolas Royer <nicolas@eukrea.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Eric Bénard <eric@eukrea.com>
-Tested-by: Eric Bénard <eric@eukrea.com>
----
-v2 : check kzalloc return value.
 
-v3 : alt_atslave structure declared as static.
+Takashi: It turns out the the problem is triggered when the audio
+subsystem calls snd_usb_endpoint_stop() with wait == 0 and then calls
+snd_usb_endpoint_start().  Since the driver doesn't wait for the
+outstanding URBs to finish, it tries to submit them again while they
+are still active.
 
- arch/arm/mach-at91/at91sam9g45_devices.c   |   14 ++++++--------
- include/linux/platform_data/atmel-aes.h    |   22 ----------------------
- include/linux/platform_data/crypto-atmel.h |   22 ++++++++++++++++++++++
- 3 files changed, 28 insertions(+), 30 deletions(-)
- delete mode 100644 include/linux/platform_data/atmel-aes.h
- create mode 100644 include/linux/platform_data/crypto-atmel.h
+Normally the USB core would realize this and fail the submission, but a
+bug in ehci-hcd prevented this from happening.  (That bug is what the
+patch below fixes.)  The URB gets added to the active list twice,
+resulting in list corruption and an oops in interrupt context, which
+freezes the system.
 
-diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-index fcd233c..1501e58 100644
---- a/arch/arm/mach-at91/at91sam9g45_devices.c
-+++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-@@ -18,7 +18,7 @@
- #include <linux/platform_device.h>
- #include <linux/i2c-gpio.h>
- #include <linux/atmel-mci.h>
--#include <linux/platform_data/atmel-aes.h>
-+#include <linux/platform_data/crypto-atmel.h>
+The user program that triggers the problem basically looks like this:
+
+  snd_pcm_prepare(rec_pcm);
+  snd_pcm_start(rec_pcm);
+  snd_pcm_drop(rec_pcm);
+
+  snd_pcm_prepare(rec_pcm);
+  snd_pcm_start(rec_pcm);
+
+The snd_pcm_drop call unlinks the URBs but does not wait for them to
+finish.  Then the second snd_pcm_start call submits the URBs before
+they have finished.
+
+What is the right solution for this problem?
+
+Alan Stern
+
+
+
+Index: usb-3.7/drivers/usb/host/ehci-sched.c
+===================================================================
+--- usb-3.7.orig/drivers/usb/host/ehci-sched.c
++++ usb-3.7/drivers/usb/host/ehci-sched.c
+@@ -1632,7 +1632,7 @@ static void itd_link_urb(
  
- #include <linux/platform_data/at91_adc.h>
+ 	/* don't need that schedule data any more */
+ 	iso_sched_free (stream, iso_sched);
+-	urb->hcpriv = NULL;
++	urb->hcpriv = stream;
  
-@@ -1900,7 +1900,8 @@ static void __init at91_add_device_tdes(void) {}
-  * -------------------------------------------------------------------- */
+ 	++ehci->isoc_count;
+ 	enable_periodic(ehci);
+@@ -2031,7 +2031,7 @@ static void sitd_link_urb(
  
- #if defined(CONFIG_CRYPTO_DEV_ATMEL_AES) || defined(CONFIG_CRYPTO_DEV_ATMEL_AES_MODULE)
--static struct aes_platform_data aes_data;
-+static struct crypto_platform_data aes_data;
-+static struct crypto_dma_data alt_atslave;
- static u64 aes_dmamask = DMA_BIT_MASK(32);
+ 	/* don't need that schedule data any more */
+ 	iso_sched_free (stream, sched);
+-	urb->hcpriv = NULL;
++	urb->hcpriv = stream;
  
- static struct resource aes_resources[] = {
-@@ -1931,23 +1932,20 @@ static struct platform_device at91sam9g45_aes_device = {
- static void __init at91_add_device_aes(void)
- {
- 	struct at_dma_slave	*atslave;
--	struct aes_dma_data	*alt_atslave;
--
--	alt_atslave = kzalloc(sizeof(struct aes_dma_data), GFP_KERNEL);
- 
- 	/* DMA TX slave channel configuration */
--	atslave = &alt_atslave->txdata;
-+	atslave = &alt_atslave.txdata;
- 	atslave->dma_dev = &at_hdmac_device.dev;
- 	atslave->cfg = ATC_FIFOCFG_ENOUGHSPACE	| ATC_SRC_H2SEL_HW |
- 						ATC_SRC_PER(AT_DMA_ID_AES_RX);
- 
- 	/* DMA RX slave channel configuration */
--	atslave = &alt_atslave->rxdata;
-+	atslave = &alt_atslave.rxdata;
- 	atslave->dma_dev = &at_hdmac_device.dev;
- 	atslave->cfg = ATC_FIFOCFG_ENOUGHSPACE	| ATC_DST_H2SEL_HW |
- 						ATC_DST_PER(AT_DMA_ID_AES_TX);
- 
--	aes_data.dma_slave = alt_atslave;
-+	aes_data.dma_slave = &alt_atslave;
- 	platform_device_register(&at91sam9g45_aes_device);
- }
- #else
-diff --git a/include/linux/platform_data/atmel-aes.h b/include/linux/platform_data/atmel-aes.h
-deleted file mode 100644
-index ab68082..0000000
---- a/include/linux/platform_data/atmel-aes.h
-+++ /dev/null
-@@ -1,22 +0,0 @@
--#ifndef __LINUX_ATMEL_AES_H
--#define __LINUX_ATMEL_AES_H
--
--#include <linux/platform_data/dma-atmel.h>
--
--/**
-- * struct aes_dma_data - DMA data for AES
-- */
--struct aes_dma_data {
--	struct at_dma_slave	txdata;
--	struct at_dma_slave	rxdata;
--};
--
--/**
-- * struct aes_platform_data - board-specific AES configuration
-- * @dma_slave: DMA slave interface to use in data transfers.
-- */
--struct aes_platform_data {
--	struct aes_dma_data	*dma_slave;
--};
--
--#endif /* __LINUX_ATMEL_AES_H */
-diff --git a/include/linux/platform_data/crypto-atmel.h b/include/linux/platform_data/crypto-atmel.h
-new file mode 100644
-index 0000000..b46e0d9
---- /dev/null
-+++ b/include/linux/platform_data/crypto-atmel.h
-@@ -0,0 +1,22 @@
-+#ifndef __LINUX_CRYPTO_ATMEL_H
-+#define __LINUX_CRYPTO_ATMEL_H
-+
-+#include <linux/platform_data/dma-atmel.h>
-+
-+/**
-+ * struct crypto_dma_data - DMA data for AES/TDES/SHA
-+ */
-+struct crypto_dma_data {
-+	struct at_dma_slave	txdata;
-+	struct at_dma_slave	rxdata;
-+};
-+
-+/**
-+ * struct crypto_platform_data - board-specific AES/TDES/SHA configuration
-+ * @dma_slave: DMA slave interface to use in data transfers.
-+ */
-+struct crypto_platform_data {
-+	struct crypto_dma_data	*dma_slave;
-+};
-+
-+#endif /* __LINUX_CRYPTO_ATMEL_H */
--- 
-1.7.6.5
+ 	++ehci->isoc_count;
+ 	enable_periodic(ehci);
 
