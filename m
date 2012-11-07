@@ -1,72 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab2KGRuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 12:50:05 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47358 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955Ab2KGRuB (ORCPT
+	id S1753489Ab2KGRu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 12:50:56 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:56823 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955Ab2KGRuy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 12:50:01 -0500
-Date: Wed, 7 Nov 2012 18:49:58 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, fweisbec@gmail.com
-Subject: Re: [PATCH 3/9] cgroup: implement generic child / descendant walk
- macros
-Message-ID: <20121107174958.GB24475@dhcp22.suse.cz>
-References: <1351931915-1701-1-git-send-email-tj@kernel.org>
- <1351931915-1701-4-git-send-email-tj@kernel.org>
- <20121107165457.GD4131@dhcp22.suse.cz>
- <20121107170118.GD2660@mtj.dyndns.org>
+	Wed, 7 Nov 2012 12:50:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121107170118.GD2660@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1352299488-11351-3-git-send-email-peter.ujfalusi@ti.com>
+References: <1352299488-11351-1-git-send-email-peter.ujfalusi@ti.com>
+	<1352299488-11351-3-git-send-email-peter.ujfalusi@ti.com>
+Date: Wed, 7 Nov 2012 19:50:53 +0200
+Message-ID: <CANOLnOM7sp+O+KBKjiRk2drWh_63D6-bY86dx+upWkrvs7pp9w@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pwm: New driver to support PWMs on TWL4030/6030
+ series of PMICs
+From: Grazvydas Ignotas <notasas@gmail.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Tero Kristo <t-kristo@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-11-12 09:01:18, Tejun Heo wrote:
-> Hello, Michal.
-> 
-> On Wed, Nov 07, 2012 at 05:54:57PM +0100, Michal Hocko wrote:
-> > > +struct cgroup *cgroup_next_descendant_pre(struct cgroup *pos,
-> > > +					  struct cgroup *cgroup)
-> > > +{
-> > > +	struct cgroup *next;
-> > > +
-> > > +	WARN_ON_ONCE(!rcu_read_lock_held());
-> > > +
-> > > +	/* if first iteration, pretend we just visited @cgroup */
-> > > +	if (!pos) {
-> > > +		if (list_empty(&cgroup->children))
-> > > +			return NULL;
-> > > +		pos = cgroup;
-> > > +	}
-> > 
-> > Is there any specific reason why the root of the tree is excluded?
-> > This is bit impractical because you have to special case the root
-> > in the code.
-> 
-> Yeah, thought about including it but decided against it for two
-> reasons.
-> 
-> * To be consistent with cgroup_for_each_children() - it's a bit weird
->   for descendants to include self when children don't.
-> 
-> * Iteration root is likely to require different treatment anyway.
->   e.g. for cgroup_freezer, the root is updated to the specified config
->   while all the descendants inherit config from its immediate parent.
->   They are different.
+On Wed, Nov 7, 2012 at 4:44 PM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> The driver supports the following PWM outputs:
+> TWL4030 PWM0 and PWM1
+> TWL6030 PWM1 and PWM2
+>
+> On TWL4030 the PWM signals are muxed. Upon requesting the PWM the driver
+> will select the correct mux so the PWM can be used. When the PWM has been
+> freed the original configuration going to be restored.
+>
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> ---
+>  drivers/pwm/Kconfig   |  10 ++
+>  drivers/pwm/Makefile  |   1 +
+>  drivers/pwm/pwm-twl.c | 304 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 315 insertions(+)
+>  create mode 100644 drivers/pwm/pwm-twl.c
+>
 
-OK if there is a code which handles root differently then let's not
-overcomplicate this. The naming should be clear that root needs a
-special treatment.
+<snip>
 
-I will continue with the review tomorrow.
+> --- /dev/null
+> +++ b/drivers/pwm/pwm-twl.c
+
+<snip>
+
+> +
+> +static int twl4030_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +       int ret;
+> +       u8 val;
+> +
+> +       ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
+> +       if (ret < 0) {
+> +               dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
+> +               return ret;
+> +       }
+> +
+> +       val |= TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_BITS);
+
+In my experience doing it like this doesn't work reliably, i.e.
+sometimes it just won't enable. I had to first set CLK_ENABLE bit, and
+then ENABLE bit with separate i2c write. Perhaps it needs a cycle or
+two of 32k clock or something (that doesn't seem to be documented
+though).
+
+> +
+> +       ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
+> +       if (ret < 0)
+> +               dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
+> +
+> +       return ret;
+> +}
+> +
+> +static void twl4030_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +       int ret;
+> +       u8 val;
+> +
+> +       ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
+> +       if (ret < 0) {
+> +               dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
+> +               return;
+> +       }
+> +
+> +       val &= ~TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_BITS);
+
+Same problem here, I would sometimes get LED stuck at full brightness
+after this, first clearing ENABLE and then CLK_ENABLE fixed it (we
+have charger LED connected to PWM1 on pandora).
+
+> +
+> +       ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
+> +       if (ret < 0)
+> +               dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
+> +}
+> +
+> +static int twl4030_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +       struct twl_pwm_chip *twl = container_of(chip, struct twl_pwm_chip,
+> +                                               chip);
+> +       int ret;
+> +       u8 val, mask, bits;
+> +
+> +       ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_PMBR1_REG);
+> +       if (ret < 0) {
+> +               dev_err(chip->dev, "%s: Failed to read PMBR1\n", pwm->label);
+> +               return ret;
+> +       }
+> +
+> +       if (pwm->hwpwm) {
+> +               /* PWM 1 */
+> +               mask = TWL4030_GPIO7_VIBRASYNC_PWM1_MASK;
+> +               bits = TWL4030_GPIO7_VIBRASYNC_PWM1_PWM1;
+> +       } else {
+> +               /* PWM 0 */
+> +               mask = TWL4030_GPIO6_PWM0_MUTE_MASK;
+> +               bits = TWL4030_GPIO6_PWM0_MUTE_PWM0;
+> +       }
+> +
+> +       /* Save the current MUX configuration for the PWM */
+> +       twl->twl4030_pwm_mux &= ~mask;
+> +       twl->twl4030_pwm_mux |= (val & mask);
+
+Do we really need this mask clearing here? After probe twl4030_pwm_mux
+should be zero, and if twl4030_pwm_request is called twice you don't
+clear the important bits before |=, I think 'twl4030_pwm_mux = val &
+mask' would be better here.
+
+
 -- 
-Michal Hocko
-SUSE Labs
+Gražvydas
