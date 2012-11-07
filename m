@@ -1,59 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2KGMih (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 07:38:37 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:44589 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab2KGMig (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 07:38:36 -0500
+	id S1753687Ab2KGMkV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 07:40:21 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:38036 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942Ab2KGMkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 07:40:20 -0500
+X-IronPort-AV: E=Sophos;i="4.80,730,1344182400"; 
+   d="scan'208";a="6155296"
+Message-ID: <509A56B6.2010909@cn.fujitsu.com>
+Date: Wed, 07 Nov 2012 20:40:22 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Date: Wed, 7 Nov 2012 20:38:35 +0800
-Message-ID: <CAPgLHd_GJMWGiMbJp=Jd9cevekJm_LpAXuCT_QADbQXqoBoa0w@mail.gmail.com>
-Subject: [PATCH -next] ASoC: cs42l52: fix the return value of cs42l52_set_fmt()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: lrg@ti.com, broonie@opensource.wolfsonmicro.com, perex@perex.cz,
-        tiwai@suse.de
-Cc: yongjun_wei@trendmicro.com.cn, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Asias He <asias.hejun@gmail.com>
+CC: linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-scsi@vger.kernel.org,
+        kvm@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH 0/5] virtio-scsi: create a separate workqueue
+References: <1352283494-31200-1-git-send-email-gaowanlong@cn.fujitsu.com> <CAFO3S42dT_j9pQSNSUrdmkqu_pgxthx0zBy3qjdiuXrbxf5H+g@mail.gmail.com>
+In-Reply-To: <CAFO3S42dT_j9pQSNSUrdmkqu_pgxthx0zBy3qjdiuXrbxf5H+g@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/07 20:39:18,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/07 20:39:19,
+	Serialize complete at 2012/11/07 20:39:19
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On 11/07/2012 08:23 PM, Asias He wrote:
+> On Wed, Nov 7, 2012 at 6:18 PM, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
+>> patch 1-3,5 are some cleanups.
+>> patch 4: create a separate work queue for virtio-scsi
+>> to improve the performance, I tested with tmpfs backed
+>> disk, the config file is like below,
+>> [global]
+>> bsrange=4k-64k
+>> ioengine=libaio
+>> direct=1
+>> iodepth=4
+>> loops=10
+>> size=64M
+>>
+>> Before:
+>> Disk stats (read/write):
+>>   sda: ios=6547/5275, merge=37/39, ticks=3144/2645, in_queue=5780, util=81.62%
+>>   sdb: ios=6542/5277, merge=54/59, ticks=3234/3143, in_queue=6364, util=84.50%
+>>   sdc: ios=6532/5244, merge=65/62, ticks=3440/3076, in_queue=6505, util=86.83%
+> 
+> The result is about the disk stat. Can you please post the iops and
+> the bw instead?
 
-Fix the return value of cs42l52_set_fmt() when clock inversion is
-not allowed and also remove the useless variable ret.
+Sure,
 
-dpatch engine is used to auto generate this patch.
-(https://github.com/weiyj/dpatch)
+before:
+  write: io=589788KB, bw=122211KB/s, iops=3584 , runt=  4826msec
+  bw (KB/s)  : min=24208, max=116272, per=57.47%, avg=70236.40, stdev=35496.33  
+  WRITE: io=589788KB, aggrb=122210KB/s, minb=122210KB/s, maxb=122210KB/s, mint=4826msec, maxt=4826msec 
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- sound/soc/codecs/cs42l52.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+after:
+  write: io=589788KB, bw=124244KB/s, iops=3530 , runt=  4747msec
+  bw (KB/s)  : min=63496, max=117943, per=73.39%, avg=91184.20, stdev=20062.42
+  WRITE: io=589788KB, aggrb=124244KB/s, minb=124244KB/s, maxb=124244KB/s, mint=4747msec, maxt=4747msec
 
-diff --git a/sound/soc/codecs/cs42l52.c b/sound/soc/codecs/cs42l52.c
-index 4d8db36..97a8105 100644
---- a/sound/soc/codecs/cs42l52.c
-+++ b/sound/soc/codecs/cs42l52.c
-@@ -773,7 +773,6 @@ static int cs42l52_set_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
- {
- 	struct snd_soc_codec *codec = codec_dai->codec;
- 	struct cs42l52_private *cs42l52 = snd_soc_codec_get_drvdata(codec);
--	int ret = 0;
- 	u8 iface = 0;
- 
- 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
-@@ -822,7 +821,7 @@ static int cs42l52_set_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
- 	case SND_SOC_DAIFMT_NB_IF:
- 		break;
- 	default:
--		ret = -EINVAL;
-+		return -EINVAL;
- 	}
- 	cs42l52->config.format = iface;
- 	snd_soc_write(codec, CS42L52_IFACE_CTL1, cs42l52->config.format);
 
+Thanks,
+Wanlong Gao
+
+
+> 
+>> After:
+>> Disk stats (read/write):
+>>   sda: ios=6349/5318, merge=77/89, ticks=4820/3169, in_queue=7991, util=90.62%
+>>   sdb: ios=6364/5358, merge=39/53, ticks=3810/2816, in_queue=6615, util=84.63%
+>>   sdc: ios=6458/5352, merge=74/47, ticks=4425/3048, in_queue=7459, util=88.41%
+>>
+>>
+>> Wanlong Gao (5):
+>>   virtio-scsi: remove the useless assignment
+>>   virtio-scsi: remove the needless variable gfp_mask
+>>   virtio-scsi: use pr_err instead of printk
+>>   virtio-scsi: create a separate work queue for virtio-scsi
+>>   virtio-scsi: tidy up the goto label in init()
+>>
+>>
+>>
+>> Cc: James E.J. Bottomley <JBottomley@parallels.com>
+>> Cc: Paolo Bonzini <pbonzini@redhat.com>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> Cc: linux-scsi@vger.kernel.org
+>> Cc: kvm@vger.kernel.org
+>>  drivers/scsi/virtio_scsi.c | 43 +++++++++++++++++++++++--------------------
+>>  1 file changed, 23 insertions(+), 20 deletions(-)
+>>
+>> --
+>> 1.8.0
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+> 
 
