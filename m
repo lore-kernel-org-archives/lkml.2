@@ -1,259 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab2KGOqK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 09:46:10 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50617 "EHLO arroyo.ext.ti.com"
+	id S1753590Ab2KGOs1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 09:48:27 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:60407 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753269Ab2KGOoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 09:44:55 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Tero Kristo <t-kristo@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: [PATCH 1/3] pwm: Remove pwm-twl6030 driver
-Date: Wed, 7 Nov 2012 15:44:46 +0100
-Message-ID: <1352299488-11351-2-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1352299488-11351-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1352299488-11351-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1752128Ab2KGOs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 09:48:26 -0500
+Date: Wed, 7 Nov 2012 08:46:26 -0600
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: Matthew Fioravante <matthew.fioravante@jhuapl.edu>
+Cc: mail@srajiv.net, jeremy@goop.org, tpmdd-devel@lists.sourceforge.net,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] add tpm_xenu.ko: Xen Virtual TPM frontend driver
+Message-ID: <20121107144625.GA14628@ennui.austin.ibm.com>
+References: <1352128197-1539-1-git-send-email-matthew.fioravante@jhuapl.edu>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352128197-1539-1-git-send-email-matthew.fioravante@jhuapl.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110714-8974-0000-0000-000010CBC526
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00189257; UDB=6.00042855; UTC=2012-11-07
+ 14:48:22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver only supported the Charging indicator LED.
-New set of drivers going to provide support for both PWMs and LEDs for twl4030
-and twl6030 series of PMICs.
+Hi Matthew,
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/pwm/Kconfig       |   9 ---
- drivers/pwm/Makefile      |   1 -
- drivers/pwm/pwm-twl6030.c | 184 ----------------------------------------------
- 3 files changed, 194 deletions(-)
- delete mode 100644 drivers/pwm/pwm-twl6030.c
+On Mon, Nov 05, 2012 at 10:09:57AM -0500, Matthew Fioravante wrote:
+> This patch ports the xen vtpm frontend driver for linux
+> from the linux-2.6.18-xen.hg tree to linux-stable.
+> 
+> Signed-off-by: Matthew Fioravante <matthew.fioravante@jhuapl.edu>
+> ---
+>  drivers/char/tpm/Kconfig         |    9 +
+>  drivers/char/tpm/Makefile        |    2 +
+>  drivers/char/tpm/tpm.h           |   15 +
+>  drivers/char/tpm/tpm_vtpm.c      |  543 ++++++++++++++++++++++++++++++
+>  drivers/char/tpm/tpm_vtpm.h      |   55 +++
+>  drivers/char/tpm/tpm_xen.c       |  690 ++++++++++++++++++++++++++++++++++++++
+>  include/xen/interface/io/tpmif.h |   77 +++++
+>  7 files changed, 1391 insertions(+)
+>  create mode 100644 drivers/char/tpm/tpm_vtpm.c
+>  create mode 100644 drivers/char/tpm/tpm_vtpm.h
+>  create mode 100644 drivers/char/tpm/tpm_xen.c
+>  create mode 100644 include/xen/interface/io/tpmif.h
+> 
+> diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
+> index 915875e..08c1010 100644
+> --- a/drivers/char/tpm/Kconfig
+> +++ b/drivers/char/tpm/Kconfig
+> @@ -81,4 +81,13 @@ config TCG_IBMVTPM
+>  	  will be accessible from within Linux.  To compile this driver
+>  	  as a module, choose M here; the module will be called tpm_ibmvtpm.
+> 
+> +config TCG_XEN
+> +	tristate "XEN TPM Interface"
+> +	depends on TCG_TPM && XEN
+> +	---help---
+> +	  If you want to make TPM support available to a Xen user domain,
+> +	  say Yes and it will be accessible from within Linux.
+> +	  To compile this driver as a module, choose M here; the module
+> +	  will be called tpm_xenu.
+> +
+>  endif # TCG_TPM
+> diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
+> index 5b3fc8b..16911c5 100644
+> --- a/drivers/char/tpm/Makefile
+> +++ b/drivers/char/tpm/Makefile
+> @@ -17,3 +17,5 @@ obj-$(CONFIG_TCG_NSC) += tpm_nsc.o
+>  obj-$(CONFIG_TCG_ATMEL) += tpm_atmel.o
+>  obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
+>  obj-$(CONFIG_TCG_IBMVTPM) += tpm_ibmvtpm.o
+> +obj-$(CONFIG_TCG_XEN) += tpm_xenu.o
+> +tpm_xenu-y = tpm_xen.o tpm_vtpm.o
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index ed81720..e678005 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -142,15 +142,6 @@ config  PWM_TIEHRPWM
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-tiehrpwm.
- 
--config PWM_TWL6030
--	tristate "TWL6030 PWM support"
--	depends on TWL4030_CORE
--	help
--	  Generic PWM framework driver for TWL6030.
--
--	  To compile this driver as a module, choose M here: the module
--	  will be called pwm-twl6030.
--
- config PWM_VT8500
- 	tristate "vt8500 pwm support"
- 	depends on ARCH_VT8500
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index acfe482..29cf57e 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -11,5 +11,4 @@ obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
- obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
- obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
- obj-$(CONFIG_PWM_TIEHRPWM)	+= pwm-tiehrpwm.o
--obj-$(CONFIG_PWM_TWL6030)	+= pwm-twl6030.o
- obj-$(CONFIG_PWM_VT8500)	+= pwm-vt8500.o
-diff --git a/drivers/pwm/pwm-twl6030.c b/drivers/pwm/pwm-twl6030.c
-deleted file mode 100644
-index 8e63878..0000000
---- a/drivers/pwm/pwm-twl6030.c
-+++ /dev/null
-@@ -1,184 +0,0 @@
--/*
-- * twl6030_pwm.c
-- * Driver for PHOENIX (TWL6030) Pulse Width Modulator
-- *
-- * Copyright (C) 2010 Texas Instruments
-- * Author: Hemanth V <hemanthv@ti.com>
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of the GNU General Public License version 2 as published by
-- * the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program.  If not, see <http://www.gnu.org/licenses/>.
-- */
--
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/pwm.h>
--#include <linux/i2c/twl.h>
--#include <linux/slab.h>
--
--#define LED_PWM_CTRL1	0xF4
--#define LED_PWM_CTRL2	0xF5
--
--/* Max value for CTRL1 register */
--#define PWM_CTRL1_MAX	255
--
--/* Pull down disable */
--#define PWM_CTRL2_DIS_PD	(1 << 6)
--
--/* Current control 2.5 milli Amps */
--#define PWM_CTRL2_CURR_02	(2 << 4)
--
--/* LED supply source */
--#define PWM_CTRL2_SRC_VAC	(1 << 2)
--
--/* LED modes */
--#define PWM_CTRL2_MODE_HW	(0 << 0)
--#define PWM_CTRL2_MODE_SW	(1 << 0)
--#define PWM_CTRL2_MODE_DIS	(2 << 0)
--
--#define PWM_CTRL2_MODE_MASK	0x3
--
--struct twl6030_pwm_chip {
--	struct pwm_chip chip;
--};
--
--static int twl6030_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
--{
--	int ret;
--	u8 val;
--
--	/* Configure PWM */
--	val = PWM_CTRL2_DIS_PD | PWM_CTRL2_CURR_02 | PWM_CTRL2_SRC_VAC |
--	      PWM_CTRL2_MODE_HW;
--
--	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, LED_PWM_CTRL2);
--	if (ret < 0) {
--		dev_err(chip->dev, "%s: Failed to configure PWM, Error %d\n",
--			pwm->label, ret);
--		return ret;
--	}
--
--	return 0;
--}
--
--static int twl6030_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
--			      int duty_ns, int period_ns)
--{
--	u8 duty_cycle = (duty_ns * PWM_CTRL1_MAX) / period_ns;
--	int ret;
--
--	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, duty_cycle, LED_PWM_CTRL1);
--	if (ret < 0) {
--		pr_err("%s: Failed to configure PWM, Error %d\n",
--			pwm->label, ret);
--		return ret;
--	}
--
--	return 0;
--}
--
--static int twl6030_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
--{
--	int ret;
--	u8 val;
--
--	ret = twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, LED_PWM_CTRL2);
--	if (ret < 0) {
--		dev_err(chip->dev, "%s: Failed to enable PWM, Error %d\n",
--			pwm->label, ret);
--		return ret;
--	}
--
--	/* Change mode to software control */
--	val &= ~PWM_CTRL2_MODE_MASK;
--	val |= PWM_CTRL2_MODE_SW;
--
--	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, LED_PWM_CTRL2);
--	if (ret < 0) {
--		dev_err(chip->dev, "%s: Failed to enable PWM, Error %d\n",
--			pwm->label, ret);
--		return ret;
--	}
--
--	twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, LED_PWM_CTRL2);
--	return 0;
--}
--
--static void twl6030_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
--{
--	int ret;
--	u8 val;
--
--	ret = twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, LED_PWM_CTRL2);
--	if (ret < 0) {
--		dev_err(chip->dev, "%s: Failed to disable PWM, Error %d\n",
--			pwm->label, ret);
--		return;
--	}
--
--	val &= ~PWM_CTRL2_MODE_MASK;
--	val |= PWM_CTRL2_MODE_HW;
--
--	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, LED_PWM_CTRL2);
--	if (ret < 0) {
--		dev_err(chip->dev, "%s: Failed to disable PWM, Error %d\n",
--			pwm->label, ret);
--	}
--}
--
--static const struct pwm_ops twl6030_pwm_ops = {
--	.request = twl6030_pwm_request,
--	.config = twl6030_pwm_config,
--	.enable = twl6030_pwm_enable,
--	.disable = twl6030_pwm_disable,
--};
--
--static int twl6030_pwm_probe(struct platform_device *pdev)
--{
--	struct twl6030_pwm_chip *twl6030;
--	int ret;
--
--	twl6030 = devm_kzalloc(&pdev->dev, sizeof(*twl6030), GFP_KERNEL);
--	if (!twl6030)
--		return -ENOMEM;
--
--	twl6030->chip.dev = &pdev->dev;
--	twl6030->chip.ops = &twl6030_pwm_ops;
--	twl6030->chip.base = -1;
--	twl6030->chip.npwm = 1;
--
--	ret = pwmchip_add(&twl6030->chip);
--	if (ret < 0)
--		return ret;
--
--	platform_set_drvdata(pdev, twl6030);
--
--	return 0;
--}
--
--static int twl6030_pwm_remove(struct platform_device *pdev)
--{
--	struct twl6030_pwm_chip *twl6030 = platform_get_drvdata(pdev);
--
--	return pwmchip_remove(&twl6030->chip);
--}
--
--static struct platform_driver twl6030_pwm_driver = {
--	.driver = {
--		.name = "twl6030-pwm",
--	},
--	.probe = twl6030_pwm_probe,
--	.remove = __devexit_p(twl6030_pwm_remove),
--};
--module_platform_driver(twl6030_pwm_driver);
--
--MODULE_ALIAS("platform:twl6030-pwm");
--MODULE_LICENSE("GPL");
--- 
-1.8.0
+ Let's match the naming convention of the other drivers if we can, so this
+would be something like tpm_xenvtpm.c. tpm_vtpm is too generic...
+
+> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+> index 8ef7649..2e5a47a 100644
+> --- a/drivers/char/tpm/tpm.h
+> +++ b/drivers/char/tpm/tpm.h
+> @@ -130,6 +130,9 @@ struct tpm_chip {
+> 
+>  	struct list_head list;
+>  	void (*release) (struct device *);
+> +#if CONFIG_XEN
+> +	void *priv;
+> +#endif
+
+ Can you use the chip->vendor.data pointer here instead? tpm_ibmvtpm is
+already using that as a priv pointer. I should probably change that name
+to make it more obvious what that's used for.
+
+>  };
+> 
+>  #define to_tpm_chip(n) container_of(n, struct tpm_chip, vendor)
+> @@ -310,6 +313,18 @@ struct tpm_cmd_t {
+> 
+>  ssize_t	tpm_getcap(struct device *, __be32, cap_t *, const char *);
+> 
+> +#ifdef CONFIG_XEN
+> +static inline void *chip_get_private(const struct tpm_chip *chip)
+> +{
+> +	return chip->priv;
+> +}
+> +
+> +static inline void chip_set_private(struct tpm_chip *chip, void *priv)
+> +{
+> +	chip->priv = priv;
+> +}
+> +#endif
+
+ Can you put these in tpm_vtpm.c please?  One less #define. :-)
+
+[cut]
+> +#ifndef __XEN_PUBLIC_IO_TPMIF_H__
+> +#define __XEN_PUBLIC_IO_TPMIF_H__
+> +
+> +#include "../grant_table.h"
+> +
+> +struct tpmif_tx_request {
+> +	unsigned long addr;   /* Machine address of packet.   */
+> +	grant_ref_t ref;      /* grant table access reference */
+> +	uint16_t unused;
+> +	uint16_t size;        /* Packet size in bytes.        */
+> +};
+> +typedef struct tpmif_tx_request tpmif_tx_request_t;
+
+  checkpatch warned on this new typedef - please run through checkpatch
+and fix up that stuff.
+
+> +
+> +/*
+> + * The TPMIF_TX_RING_SIZE defines the number of pages the
+> + * front-end and backend can exchange (= size of array).
+> + */
+> +typedef uint32_t TPMIF_RING_IDX;
+> +
+> +#define TPMIF_TX_RING_SIZE 1
+> +
+> +/* This structure must fit in a memory page. */
+> +
+> +struct tpmif_ring {
+> +	struct tpmif_tx_request req;
+> +};
+> +typedef struct tpmif_ring tpmif_ring_t;
+> +
+> +struct tpmif_tx_interface {
+> +	struct tpmif_ring ring[TPMIF_TX_RING_SIZE];
+> +};
+> +typedef struct tpmif_tx_interface tpmif_tx_interface_t;
+> +
+> +#endif
+> +
+> +/*
+> + * Local variables:
+> + * mode: C
+> + * c-set-style: "BSD"
+> + * c-basic-offset: 4
+> + * tab-width: 4
+> + * indent-tabs-mode: nil
+> + * End:
+> + */
+
+  Please take this comment out, see Documentation/CodingStyle.
+
+Thanks,
+Kent
+
+> -- 
+> 1.7.10.4
+> 
+> 
 
