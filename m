@@ -1,119 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab2KGJ5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 04:57:47 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:40405 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754370Ab2KGJ5f (ORCPT
+	id S1754538Ab2KGJ6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 04:58:09 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:57906 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754436Ab2KGJ5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 04:57:35 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, arnd@arndb.de,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [RFC PATCH v1 28/31] ARC: split ret_from_fork, simplify kernel_thread()
-Date: Wed,  7 Nov 2012 10:47:51 +0100
-Message-Id: <1352281674-2186-29-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
+	Wed, 7 Nov 2012 04:57:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <CANN689F8ScQdtNFgtREQcQLJEKYDcUGngNFFF6to5eakCz9FnQ@mail.gmail.com>
+References: <508086DA.3010600@oracle.com>
+	<5089A05E.7040000@gmail.com>
+	<CA+1xoqf2v_jEapwU68BzXyi4abSRmi_=AiaJVHM3dBbHtsBnqQ@mail.gmail.com>
+	<CAA_GA1d-rw_vkDF98fcf9E0=h86dsp+83-0_RE5b482juxaGVw@mail.gmail.com>
+	<CANN689HXoCMTP4ZRMUNOGAdOBmizKyo6jMqbqAFx8wwPXp+AzQ@mail.gmail.com>
+	<CAA_GA1eYHi4zWZwKp5KGi4gP7V8bfnSF=aLKMiN-Wi5JyLaCdw@mail.gmail.com>
+	<CANN689HfmX8uBa17t38PYv2Ap5d3LPjShq81tbcgET5ZqzjzeQ@mail.gmail.com>
+	<CANN689HM=h2k33sJcoDYys9LHVadv+NaGz00kG7O-OEH=qadvA@mail.gmail.com>
+	<CANN689F6=mkJmgLFbALRPeYKG4RwTef+_r2TsHOLuobAxXbtPg@mail.gmail.com>
+	<CANN689F8ScQdtNFgtREQcQLJEKYDcUGngNFFF6to5eakCz9FnQ@mail.gmail.com>
+Date: Wed, 7 Nov 2012 17:57:35 +0800
+Message-ID: <CAA_GA1ePuotRdHztKu-ORJgZ30pUR5hX+WjcxdUeE5ys+GO1ig@mail.gmail.com>
+Subject: Re: mm: NULL ptr deref in anon_vma_interval_tree_verify
+From: Bob Liu <lliubbo@gmail.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, hughd@google.com,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/kernel/entry.S   |    8 ++++++++
- arch/arc/kernel/process.c |   32 +++++++++++++-------------------
- 2 files changed, 21 insertions(+), 19 deletions(-)
+Hi Michel,
 
-diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index fe9a17c..46d0280 100644
---- a/arch/arc/kernel/entry.S
-+++ b/arch/arc/kernel/entry.S
-@@ -580,6 +580,14 @@ ARC_ENTRY ret_from_fork
- 	b @ret_from_exception
- ARC_EXIT ret_from_fork
- 
-+ARC_ENTRY ret_from_kernel_thread
-+	bl  @schedule_tail
-+	ld  r1, [sp, PT_r1]
-+	j.d [r1]
-+	ld  r0, [sp, PT_r0]
-+	j   @sys_exit
-+ARC_EXIT ret_from_kernel_thread
-+
- ;################### Special Sys Call Wrappers ##########################
- 
- ARC_ENTRY sys_execve_wrapper
-diff --git a/arch/arc/kernel/process.c b/arch/arc/kernel/process.c
-index c116fa5..fee3e11 100644
---- a/arch/arc/kernel/process.c
-+++ b/arch/arc/kernel/process.c
-@@ -142,24 +142,13 @@ void cpu_idle(void)
- 	}
- }
- 
--void kernel_thread_helper(void)
--{
--	__asm__ __volatile__(
--		"mov   r0, r2	\n\t"
--		"mov   r1, r3	\n\t"
--		"j     [r1]	\n\t");
--}
--
- int kernel_thread(int (*fn) (void *), void *arg, unsigned long flags)
- {
--	struct pt_regs regs;
-+	struct pt_regs regs = {
-+		.r0 = (unsigned long)arg,
-+		.r1 = (unsigned long)fn
-+	};
- 
--	memset(&regs, 0, sizeof(regs));
--
--	regs.r2 = (unsigned long)arg;
--	regs.r3 = (unsigned long)fn;
--	regs.blink = (unsigned long)do_exit;
--	regs.ret = (unsigned long)kernel_thread_helper;
- 	regs.status32 = read_aux_reg(0xa);
- 
- 	/* Ok, create the new process.. */
-@@ -170,6 +159,7 @@ int kernel_thread(int (*fn) (void *), void *arg, unsigned long flags)
- EXPORT_SYMBOL(kernel_thread);
- 
- asmlinkage void ret_from_fork(void);
-+asmlinkage void ret_from_kernel_thread(void) __attribute__((noreturn));
- 
- /* Layout of Child kernel mode stack as setup at the end of this function is
-  *
-@@ -226,18 +216,22 @@ int copy_thread(unsigned long clone_flags,
- 	/* Copy parents pt regs on child's kernel mode stack */
- 	*c_regs = *regs;
- 
--	/* __switch_to expects FP(0), BLINK(return addr) at top of stack */
--	childksp[0] = 0;				/* for POP fp */
--	childksp[1] = (unsigned long)ret_from_fork;	/* for POP blink */
--
- 	if (!(user_mode(regs))) {
- 		c_regs->sp =
- 		    (unsigned long)task_thread_info(p) + (THREAD_SIZE - 4);
-+
-+		/* __switch_to expects FP(0), BLINK(return addr) at top */
-+		childksp[0] = 0;			/* fp */
-+		childksp[1] = (unsigned long)ret_from_kernel_thread; /* blink */
- 		return 0;
- 	}
- 
- 	/*--------- User Task Only --------------*/
- 
-+	/* __switch_to expects FP(0), BLINK(return addr) at top of stack */
-+	childksp[0] = 0;				/* for POP fp */
-+	childksp[1] = (unsigned long)ret_from_fork;	/* for POP blink */
-+
- 	c_regs->sp = usp;
- 	c_regs->r0 = 0;		/* fork returns 0 in child */
- 
+On Wed, Nov 7, 2012 at 11:54 AM, Michel Lespinasse <walken@google.com> wrote:
+> On Tue, Nov 6, 2012 at 12:24 AM, Michel Lespinasse <walken@google.com> wrote:
+>> On Mon, Nov 5, 2012 at 5:41 AM, Michel Lespinasse <walken@google.com> wrote:
+>>> On Sun, Nov 4, 2012 at 8:44 PM, Michel Lespinasse <walken@google.com> wrote:
+>>>> On Sun, Nov 4, 2012 at 8:14 PM, Bob Liu <lliubbo@gmail.com> wrote:
+>>>>> Hmm, I attached a simple fix patch.
+>>>>
+>>>> Reviewed-by: Michel Lespinasse <walken@google.com>
+>>>> (also ran some tests with it, but I could never reproduce the original
+>>>> issue anyway).
+>>>
+>>> Wait a minute, this is actually wrong. You need to call
+>>> vma_lock_anon_vma() / vma_unlock_anon_vma() to avoid the issue with
+>>> vma->anon_vma == NULL.
+>>>
+>>> I'll fix it and integrate it into my next patch series, which I intend
+>>> to send later today. (I am adding new code into validate_mm(), so that
+>>> it's easier to have it in the same patch series to avoid merge
+>>> conflicts)
+>>
+>> Hmmm, now I'm getting confused about anon_vma locking again :/
+>>
+>> As Hugh privately remarked to me, the same_vma linked list is supposed
+>> to be protected by exclusive mmap_sem ownership, not by anon_vma lock.
+>> So now looking at it a bit more, I'm not sure what race we're
+>> preventing by taking the anon_vma lock in validate_mm() ???
+>
+> Looking at it a bit more:
+>
+> the same_vma linked list is *generally* protected by *exclusive*
+> mmap_sem ownership. However, in expand_stack() we only have *shared*
+> mmap_sem ownership, so that two concurrent expand_stack() calls
+> (possibly on different vmas that have a different anon_vma lock) could
+> race with each other. For this reason we do need the validate_mm()
+> taking each vma's anon_vma lock (if any) before calling
+> anon_vma_interval_tree_verify().
+>
+
+Sorry for the late response.
+Actually my origin concern was:
+avc was removed in some race place which caused the NULL pointer deref
+in validate_mm().
+
+But after looking it more, i didn't find out the race place.
+I think avc only freed at free_pgtable() --> unlink_anon_vmas().
+
+> While this justifies Bob's patch, this does not explain Sasha's
+> reports - in both of them the backtrace did not involve
+> expand_stack(), and there should be exclusive mmap_sem ownership, so
+> I'm still unclear as to what could be causing Sasha's issue.
+>
+> Sasha, how reproduceable is this ?
+>
+> Also, would the following change print something when the issue triggers ?
+>
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 619b280505fe..4c09e7ebcfa7 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -404,8 +404,13 @@ void validate_mm(struct mm_struct *mm)
+>         while (vma) {
+>                 struct anon_vma_chain *avc;
+>                 vma_lock_anon_vma(vma);
+
+And for our patch, i think vma_lock_anon_vma()/anon_vma_lock() is used
+to protect
+the same_anon_vma list.
+It seems not suitable here.
+
+> -               list_for_each_entry(avc, &vma->anon_vma_chain, same_vma)
+> +               list_for_each_entry(avc, &vma->anon_vma_chain, same_vma) {
+> +                       if (avc->vma != vma) {
+> +                               printk("avc->vma %p vma %p\n", avc->vma, vma);
+> +                               bug = 1;
+> +                       }
+>                         anon_vma_interval_tree_verify(avc);
+> +               }
+>                 vma_unlock_anon_vma(vma);
+>                 highest_address = vma->vm_end;
+>                 vma = vma->vm_next;
+>
+> --
+> Michel "Walken" Lespinasse
+> A program is never fully debugged until the last user dies.
+
 -- 
-1.7.4.1
-
+Thanks,
+--Bob
