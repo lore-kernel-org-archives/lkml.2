@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab2KGBOB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 20:14:01 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:47235 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752619Ab2KGBN7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 20:13:59 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19F3StKoMcq4SMukfGyd4uw
-Date: Tue, 6 Nov 2012 17:13:55 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Javier Martinez Canillas <javier@dowhile0.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	id S1754215Ab2KGBPZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 20:15:25 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:39202 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754126Ab2KGBPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 20:15:24 -0500
+Date: Wed, 7 Nov 2012 01:15:21 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ARM: OMAP: Add maintainer entry for IGEP machines
-Message-ID: <20121107011355.GY6801@atomide.com>
-References: <1349686054-7486-1-git-send-email-javier@dowhile0.org>
+Subject: [git pull] drm radeon + core fixes
+Message-ID: <alpine.DEB.2.00.1211070114190.1310@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349686054-7486-1-git-send-email-javier@dowhile0.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Javier Martinez Canillas <javier@dowhile0.org> [121008 01:49]:
-> Enric and I have been mantained this machine and while we
-> are moving to device trees, it is good that people cc us
-> when reporting bugs or regression on the board file until
-> we have proper DT support.
 
-Thanks applying into omap-for-v3.8/board branch.
+Hi Linus,
 
-Regards,
+a single radeon typo fix for a regressions
+and two fixes for a regression in the open helper addres space stuff.
 
-Tony
+Dave.
+
+The following changes since commit 3d70f8c617a436c7146ecb81df2265b4626dfe89:
+
+  Linux 3.7-rc4 (2012-11-04 11:07:39 -0800)
+
+are available in the git repository at:
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+Alex Deucher (1):
+      drm/radeon: fix typo in evergreen_mc_resume()
+
+Ilija Hadzic (2):
+      drm: restore open_count if drm_setup fails
+      drm: set dev_mapping before calling drm_open_helper
+
+ drivers/gpu/drm/drm_fops.c         |   44 ++++++++++++++++++++++++-----------
+ drivers/gpu/drm/radeon/evergreen.c |    2 +-
+ 2 files changed, 31 insertions(+), 15 deletions(-)
