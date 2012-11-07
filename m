@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab2KGA6U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 19:58:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:16148 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619Ab2KGA6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 19:58:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,725,1344236400"; 
-   d="scan'208";a="238257900"
-From: Huang Ying <ying.huang@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Huang Ying <ying.huang@intel.com>
-Subject: [PATCH -v2] ACPI/PCI: Make PCI devices notified when its power resource turned on
-Date: Wed,  7 Nov 2012 08:57:59 +0800
-Message-Id: <1352249879-11406-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754085Ab2KGBEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 20:04:50 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54085 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129Ab2KGBEt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 20:04:49 -0500
+Message-ID: <5099B3A8.3010604@infradead.org>
+Date: Tue, 06 Nov 2012 17:04:40 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        eric paris <eparis@redhat.com>
+CC: linux-audit@redhat.com
+Subject: [PATCH] audit: fix auditfilter kernel-doc warning
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A set of power resources may be shared by multiple devices.  When all
-devices share one set of power resources is put into D3_COLD state,
-the power resources will be turned off.  When one of the device is
-waked, the power resource will be turned on and all devices share it
-will be powered on to D0uninitialized state.  These devices should be
-resumed, so that they can get opportunity to go to low power state
-later.
+From: Randy Dunlap <rdunlap@infradead.org>
 
-v2:
+Fix new kernel-doc warning in auditfilter.c:
 
-- Fix build error
+Warning(kernel/auditfilter.c:1157): Excess function parameter 'uid' description in 'audit_receive_filter'
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc:	Al Viro <viro@zeniv.linux.org.uk>
+Cc:	Eric Paris <eparis@redhat.com>
+Cc:	linux-audit@redhat.com (subscribers-only)
 ---
- drivers/acpi/pci_bind.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/auditfilter.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/acpi/pci_bind.c
-+++ b/drivers/acpi/pci_bind.c
-@@ -45,6 +45,7 @@ static int acpi_pci_unbind(struct acpi_d
- 
- 	device_set_run_wake(&dev->dev, false);
- 	pci_acpi_remove_pm_notifier(device);
-+	acpi_power_resource_unregister_device(&dev->dev, device->handle);
- 
- 	if (!dev->subordinate)
- 		goto out;
-@@ -71,6 +72,7 @@ static int acpi_pci_bind(struct acpi_dev
- 		return 0;
- 
- 	pci_acpi_add_pm_notifier(device, dev);
-+	acpi_power_resource_register_device(&dev->dev, device->handle);
- 	if (device->wakeup.flags.run_wake)
- 		device_set_run_wake(&dev->dev, true);
- 
+--- lnx-37-rc4.orig/kernel/auditfilter.c
++++ lnx-37-rc4/kernel/auditfilter.c
+@@ -1144,7 +1144,6 @@ static void audit_log_rule_change(kuid_t
+  * audit_receive_filter - apply all rules to the specified message type
+  * @type: audit message type
+  * @pid: target pid for netlink audit messages
+- * @uid: target uid for netlink audit messages
+  * @seq: netlink audit message sequence (serial) number
+  * @data: payload data
+  * @datasz: size of payload data
