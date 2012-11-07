@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab2KGKud (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 05:50:33 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:31316 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754249Ab2KGKsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 05:48:51 -0500
-X-IronPort-AV: E=Sophos;i="4.80,729,1344182400"; 
-   d="scan'208";a="6154927"
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-scsi@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: [PATCH 0/5] virtio-scsi: create a separate workqueue
-Date: Wed, 7 Nov 2012 18:18:09 +0800
-Message-Id: <1352283494-31200-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.0
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/07 18:17:54,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/07 18:17:57,
-	Serialize complete at 2012/11/07 18:17:57
+	id S1754298Ab2KGK45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 05:56:57 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55759 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab2KGK4z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 05:56:55 -0500
+Date: Wed, 7 Nov 2012 02:53:49 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
+Subject: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
+Message-ID: <20121107105348.GA25549@lizard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-patch 1-3,5 are some cleanups.
-patch 4: create a separate work queue for virtio-scsi
-to improve the performance, I tested with tmpfs backed
-disk, the config file is like below,
-[global]
-bsrange=4k-64k
-ioengine=libaio
-direct=1
-iodepth=4
-loops=10
-size=64M
+Hi all,
 
-Before:
-Disk stats (read/write):
-  sda: ios=6547/5275, merge=37/39, ticks=3144/2645, in_queue=5780, util=81.62%
-  sdb: ios=6542/5277, merge=54/59, ticks=3234/3143, in_queue=6364, util=84.50%
-  sdc: ios=6532/5244, merge=65/62, ticks=3440/3076, in_queue=6505, util=86.83%
+This is the third RFC. As suggested by Minchan Kim, the API is much
+simplified now (comparing to vmevent_fd):
 
-After:
-Disk stats (read/write):
-  sda: ios=6349/5318, merge=77/89, ticks=4820/3169, in_queue=7991, util=90.62%
-  sdb: ios=6364/5358, merge=39/53, ticks=3810/2816, in_queue=6615, util=84.63%
-  sdc: ios=6458/5352, merge=74/47, ticks=4425/3048, in_queue=7459, util=88.41%
+- As well as Minchan, KOSAKI Motohiro didn't like the timers, so the
+  timers are gone now;
+- Pekka Enberg didn't like the complex attributes matching code, and so it
+  is no longer there;
+- Nobody liked the raw vmstat attributes, and so they were eliminated too.
 
+But, conceptually, it is the exactly the same approach as in v2: three
+discrete levels of the pressure -- low, medium and oom. The levels are
+based on the reclaimer inefficiency index as proposed by Mel Gorman, but
+userland does not see the raw index values. The description why I moved
+away from reporting the raw 'reclaimer inefficiency index' can be found in
+v2: http://lkml.org/lkml/2012/10/22/177
 
-Wanlong Gao (5):
-  virtio-scsi: remove the useless assignment
-  virtio-scsi: remove the needless variable gfp_mask
-  virtio-scsi: use pr_err instead of printk
-  virtio-scsi: create a separate work queue for virtio-scsi
-  virtio-scsi: tidy up the goto label in init()
+While the new API is very simple, it is still extensible (i.e. versioned).
 
+As there are a lot of drastic changes in the API itself, I decided to just
+add a new files along with vmevent, it is much easier to review it this
+way (I can prepare a separate patch that removes vmevent files, if we care
+to preserve the history through the vmevent tree).
 
+Thanks,
+Anton.
 
-Cc: James E.J. Bottomley <JBottomley@parallels.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-scsi@vger.kernel.org
-Cc: kvm@vger.kernel.org
- drivers/scsi/virtio_scsi.c | 43 +++++++++++++++++++++++--------------------
- 1 file changed, 23 insertions(+), 20 deletions(-)
-
--- 
-1.8.0
-
+--
+ Documentation/sysctl/vm.txt                |  47 +++++
+ arch/x86/syscalls/syscall_64.tbl           |   1 +
+ include/linux/syscalls.h                   |   2 +
+ include/linux/vmpressure.h                 | 128 ++++++++++++
+ kernel/sys_ni.c                            |   1 +
+ kernel/sysctl.c                            |  31 +++
+ mm/Kconfig                                 |  13 ++
+ mm/Makefile                                |   1 +
+ mm/vmpressure.c                            | 231 +++++++++++++++++++++
+ mm/vmscan.c                                |   5 +
+ tools/testing/vmpressure/.gitignore        |   1 +
+ tools/testing/vmpressure/Makefile          |  30 +++
+ tools/testing/vmpressure/vmpressure-test.c |  93 +++++++++
+ 13 files changed, 584 insertions(+)
