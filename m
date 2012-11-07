@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab2KGNDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 08:03:32 -0500
-Received: from mga02.intel.com ([134.134.136.20]:1394 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751955Ab2KGNDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 08:03:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,730,1344236400"; 
-   d="scan'208";a="216293015"
-Date: Wed, 7 Nov 2012 15:05:48 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        lenb@kernel.org, rafael.j.wysocki@intel.com,
-        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
-        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
-Message-ID: <20121107130548.GZ24532@intel.com>
-References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
- <2584820.Vd5p0uzRAK@vostro.rjw.lan>
- <20121107095842.GY24532@intel.com>
- <1493573.krE1QVlUux@vostro.rjw.lan>
+	id S1755123Ab2KGND7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 08:03:59 -0500
+Received: from nm36-vm7.bullet.mail.bf1.yahoo.com ([72.30.238.143]:41445 "EHLO
+	nm36-vm7.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755108Ab2KGND5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 08:03:57 -0500
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Nov 2012 08:03:57 EST
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 433627.48865.bm@omp1019.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=ZaIH+45qUqUle5zVDnpEXePKKlFNlFewkSBxjasLLjz81HDONcQyhUUFpBi2V4DJq1MzHaE6qppHn185NTn4DO1QYQu7SfhXQxtEmf4LkJNvDej2uSW0KSBRbiDQP7cY9X060F47+sLbsNfa+Rdg8/zn3JR5bIDFg/hDo6NpjCI=;
+X-YMail-OSG: MvKNbsgVM1nTv1mBvhK7Xo3K3ElWXXd6fVyb6KuVdaS206Q
+ 56G39PsBtEjOA447k02We.CHiTQL93I0ehbTLPEmjmuCJ3hCaI9PojEG7ZCp
+ CDKztTaeHYFxgV_UYjF8uwbhri_f.KIapEBIS1rYECSoBMwzJMib_1sbF1NN
+ TfuTVZHrnN0phm6EEGARrLXD.EsgJwbpsaUS8WhfNigLKfjFCCxMNYAoJ_gB
+ cIgkzp8JtqruQxGoPMkSQ5kX0Kx0CHGd78JmmzgSBSn9GJZjOg73kl49rt8P
+ r8udoW1TrKFJ1b1o8cK9El_dUxpzKjVk.kDg7thCmw1iEPUkIJYU.Wytcz2x
+ j8G75rpuhirf8hHbqJcIxgo7J03WxcqL7BEnFj1MgqY6NRD5I1QPtwIFmz2k
+ fWJFitBCT3oIqb_DZBCtGzDE9eLb_DYlF25rwRbA_MD1QbpwF_9qzHnDvLqZ
+ z3FXWX5vgGuEDtwlTI3C_IweLqIJUX_gDCOzP3OAIVx_l.JIMzeo4vbiEt1N
+ KpTI1HQvffyX12xjEJx8aoRZ3LRIVFQXgbpf3I1ZA
+X-Rocket-MIMEInfo: 001.001,TXkgbmFtZSBpcyBtb3JpbmUgZGlja3NvbiBpIGFtIHdyaXR0aW5nIGZyb20gZGFrYXIgc2VuZWdhbCBpbiB3ZXN0IGFmcmljYSBwbGVhc2UgaSBoYXZlIHNvbWV0aGluZyB0byBleHBsYWluIHRvIHlvdSBwbGVhc2UuCk1vcmluZQEwAQEBAQ--
+X-Mailer: YahooMailClassic/15.0.8 YahooMailWebService/0.8.123.460
+Message-ID: <1352292666.12779.YahooMailClassic@web140201.mail.bf1.yahoo.com>
+Date: Wed, 7 Nov 2012 04:51:06 -0800 (PST)
+From: morine Christiana <morinechristiana@yahoo.com>
+Subject: FROM MISS MORINE DICKSON..
+To: undisclosed recipients:;
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1493573.krE1QVlUux@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 12:14:31PM +0100, Rafael J. Wysocki wrote:
-> > So is the idea now that the ACPI core parses the resources and passes them
-> > forward via struct acpi_device? I'm just wondering how to proceed with
-> > these I2C and SPI enumeration patches.
-> 
-> Well, we definitely don't want to duplicate what drivers/pnp/pnpacpi/rsparser.c
-> does, so the idea is to move the code from there to the core in such a way that
-> both the SPI/I2C patches and the PNP layer can use it.
-
-Ok.
-
-> I'll have some prototype code ready shortly, hopefully, and I'll post it
-> in that form for comments (and so that you know what to expect).
-
-Sounds good. Thanks!
+My name is morine dickson i am writting from dakar senegal in west africa please i have something to explain to you please.
+Morine
