@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724Ab2KGBsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 20:48:46 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39626 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab2KGBsn (ORCPT
+	id S1753374Ab2KGBvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 20:51:22 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:52148 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab2KGBvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 20:48:43 -0500
-From: Joshua Emele <jemele@gmail.com>
-To: Kevin Hilman <khilman@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-omap@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Joshua Emele <jemele@gmail.com>
-Subject: [PATCH 3/4] cpufreq: OMAP: ensure the iva coprocessor is at the same opp as the mpu
-Date: Tue,  6 Nov 2012 17:47:40 -0800
-Message-Id: <1352252861-18384-4-git-send-email-jemele@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1352252861-18384-1-git-send-email-jemele@gmail.com>
-References: <1352252861-18384-1-git-send-email-jemele@gmail.com>
+	Tue, 6 Nov 2012 20:51:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121107013907.GA31185@redhat.com>
+References: <1352247335-10396-1-git-send-email-jwerner@chromium.org>
+	<20121107013907.GA31185@redhat.com>
+Date: Tue, 6 Nov 2012 17:51:19 -0800
+X-Google-Sender-Auth: XGK1MlfOoa26UTkXcg8kUtOLvBQ
+Message-ID: <CAODwPW-636Sn3B4CYajvrgccXxresZwPLg2UFz6xDDk9-FfTYQ@mail.gmail.com>
+Subject: Re: [PATCH] tcp: Replace infinite loop on recvmsg bug with proper crash
+From: Julius Werner <jwerner@chromium.org>
+To: Dave Jones <davej@redhat.com>, Julius Werner <jwerner@chromium.org>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Patrick McHardy <kaber@trash.net>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        James Morris <jmorris@namei.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        Sameer Nanda <snanda@chromium.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Eric Dumazet <edumazet@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> We've had reports of this WARN against the Fedora kernel for a while.
+> Had this been immediately followed by a BUG(), we'd have never seen those traces at all,
+> and just got "my machine just locked up" reports instead.
+>
+> The proper fix here is to find out why we're getting into this state.
 
-Signed-off-by: Joshua Emele <jemele@gmail.com>
----
- drivers/cpufreq/omap-cpufreq.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+Are you sure you don't mean the WARN below that ("recvmsg bug 2")
+instead? I don't think this one can happen without eventually running
+into the syslog overflow issue I described.
 
-diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
-index d8a751f..e8bcad8 100644
---- a/drivers/cpufreq/omap-cpufreq.c
-+++ b/drivers/cpufreq/omap-cpufreq.c
-@@ -220,6 +220,9 @@ static inline void clk_free(void)
- static int __cpuinit omap_iva_init(struct cpufreq_policy *policy)
- {
- 	int result;
-+	unsigned long iva_rate;
-+	unsigned int opp_index, mpu_freq = omap_getspeed(policy->cpu);
-+
- 	if (!iva_clk_name) {
- 		pr_info("%s: iva unavailable\n", __func__);
- 		return 0;
-@@ -241,6 +244,21 @@ static int __cpuinit omap_iva_init(struct cpufreq_policy *policy)
- 				__func__, policy->cpu, result);
- 		return result;
- 	}
-+	result = cpufreq_frequency_table_target(policy, freq_table, mpu_freq,
-+		CPUFREQ_RELATION_L, &opp_index);
-+	if (result) {
-+		dev_err(mpu_dev, "%s: cpu%d: no freq match for %u[%d]\n",
-+				__func__, policy->cpu, mpu_freq, result);
-+		return result;
-+	}
-+	iva_rate = iva_freq_table[opp_index].frequency * 1000;
-+	result = clk_set_rate(iva_clk, iva_rate);
-+	if (result) {
-+		pr_err("%s: cpu%d: failed to set %s rate %lu[%d]\n",
-+				__func__, policy->cpu, iva_clk->name, iva_rate,
-+				result);
-+		return result;
-+	}
- 	return 0;
- }
- 
--- 
-1.7.6.5
-
+I agree that the underlying cause must be fixed too, but as we will
+always have bugs in the kernel I think proper handling when it does
+happen is also important (and filling the hard disk with junk is
+obviously not the best approach). If you think a full panic is too
+extreme, I have an alternative version of this patch that logs the
+WARN once, closes the socket, and returns EBADFD from the syscall...
+would you think that is more appropriate?
