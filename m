@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab2KGJsy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 04:48:54 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:39278 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab2KGJsm (ORCPT
+	id S1754397Ab2KGJvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 04:51:10 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:53876 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263Ab2KGJsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 04:48:42 -0500
+	Wed, 7 Nov 2012 04:48:52 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, arnd@arndb.de,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [RFC PATCH v1 18/31] ARC: Page Table Management
-Date: Wed,  7 Nov 2012 10:47:41 +0100
-Message-Id: <1352281674-2186-19-git-send-email-vgupta@synopsys.com>
+Subject: [RFC PATCH v1 24/31] ARC: startup #1: low-level, setup_arch(), /proc/cpuinfo, mem init
+Date: Wed,  7 Nov 2012 10:47:47 +0100
+Message-Id: <1352281674-2186-25-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
 References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
@@ -23,663 +23,586 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/include/asm/page.h    |   92 +++++++++
- arch/arc/include/asm/pgalloc.h |  134 +++++++++++++
- arch/arc/include/asm/pgtable.h |  401 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 627 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/pgalloc.h
- create mode 100644 arch/arc/include/asm/pgtable.h
+ arch/arc/include/asm/arcregs.h   |    5 +
+ arch/arc/include/asm/setup.h     |   22 +++++
+ arch/arc/kernel/head.S           |   78 ++++++++++++++++
+ arch/arc/kernel/reset.c          |   33 +++++++
+ arch/arc/kernel/setup.c          |  166 ++++++++++++++++++++++++++++++++++
+ arch/arc/mm/init.c               |  185 ++++++++++++++++++++++++++++++++++++++
+ arch/arc/plat-arcfpga/platform.c |   29 ++++++
+ 7 files changed, 518 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/include/asm/setup.h
+ create mode 100644 arch/arc/kernel/head.S
+ create mode 100644 arch/arc/kernel/reset.c
+ create mode 100644 arch/arc/kernel/setup.c
+ create mode 100644 arch/arc/mm/init.c
+ create mode 100644 arch/arc/plat-arcfpga/platform.c
 
-diff --git a/arch/arc/include/asm/page.h b/arch/arc/include/asm/page.h
-index 7cd1224..d111d0c 100644
---- a/arch/arc/include/asm/page.h
-+++ b/arch/arc/include/asm/page.h
-@@ -35,6 +35,98 @@
+diff --git a/arch/arc/include/asm/arcregs.h b/arch/arc/include/asm/arcregs.h
+index aedfbf1..725b94c 100644
+--- a/arch/arc/include/asm/arcregs.h
++++ b/arch/arc/include/asm/arcregs.h
+@@ -257,6 +257,11 @@
+ 	}						\
+ }
  
- #define PAGE_MASK	(~(PAGE_SIZE-1))
++/* Helpers */
++#define TO_KB(bytes)		((bytes) >> 10)
++#define TO_MB(bytes)		(TO_KB(bytes) >> 10)
++#define PAGES_TO_KB(n_pages)	((n_pages) << (PAGE_SHIFT - 10))
++#define PAGES_TO_MB(n_pages)	(PAGES_TO_KB(n_pages) >> 10)
  
-+#ifdef __KERNEL__
-+
-+#ifndef __ASSEMBLY__
-+
-+#define get_user_page(vaddr)		__get_free_page(GFP_KERNEL)
-+#define free_user_page(page, addr)	free_page(addr)
-+
-+/* TBD: for now don't worry about VIPT D$ aliasing */
-+#define clear_page(paddr)		memset((paddr), 0, PAGE_SIZE)
-+#define copy_page(to, from)		memcpy((to), (from), PAGE_SIZE)
-+
-+#define clear_user_page(addr, vaddr, pg)	clear_page(addr)
-+#define copy_user_page(vto, vfrom, vaddr, pg)	copy_page(vto, vfrom)
-+
-+#undef STRICT_MM_TYPECHECKS
-+
-+#ifdef STRICT_MM_TYPECHECKS
-+/*
-+ * These are used to make use of C type-checking..
-+ */
-+typedef struct {
-+	unsigned long pte;
-+} pte_t;
-+typedef struct {
-+	unsigned long pgd;
-+} pgd_t;
-+typedef struct {
-+	unsigned long pgprot;
-+} pgprot_t;
-+typedef unsigned long pgtable_t;
-+
-+#define pte_val(x)      ((x).pte)
-+#define pgd_val(x)      ((x).pgd)
-+#define pgprot_val(x)   ((x).pgprot)
-+
-+#define __pte(x)        ((pte_t) { (x) })
-+#define __pgd(x)        ((pgd_t) { (x) })
-+#define __pgprot(x)     ((pgprot_t) { (x) })
-+
-+#else /* !STRICT_MM_TYPECHECKS */
-+
-+typedef unsigned long pte_t;
-+typedef unsigned long pgd_t;
-+typedef unsigned long pgprot_t;
-+typedef unsigned long pgtable_t;
-+
-+#define pte_val(x)	(x)
-+#define pgd_val(x)	(x)
-+#define pgprot_val(x)	(x)
-+#define __pte(x)	(x)
-+#define __pgprot(x)	(x)
-+
-+#endif
-+
-+#define ARCH_PFN_OFFSET     (CONFIG_LINUX_LINK_BASE >> PAGE_SHIFT)
-+
-+#define pfn_valid(pfn)      (((pfn) - ARCH_PFN_OFFSET) < max_mapnr)
-+
-+/*
-+ * __pa, __va, virt_to_page (ALERT: deprecated, don't use them)
-+ *
-+ * These macros have historically been misnamed
-+ * virt here means link-address/program-address as embedded in object code.
-+ * So if kernel img is linked at 0x8000_0000 onwards, 0x8010_0000 will be
-+ * 128th page, and virt_to_page( ) will return the struct page corresp to it.
-+ * mem_map[ ] is an array of struct page for each page frame in the system
-+ *
-+ * Independent of where linux is linked at, link-addr = physical address
-+ * So the old macro  __pa = vaddr + PAGE_OFFSET - CONFIG_LINUX_LINK_BASE
-+ * would have been wrong in case kernel is not at 0x8zs
-+ */
-+#define __pa(vaddr)  ((unsigned long)vaddr)
-+#define __va(paddr)  ((void *)((unsigned long)(paddr)))
-+
-+#define virt_to_page(kaddr)	\
-+	(mem_map + ((__pa(kaddr) - CONFIG_LINUX_LINK_BASE) >> PAGE_SHIFT))
-+
-+#define virt_addr_valid(kaddr)  pfn_valid(__pa(kaddr) >> PAGE_SHIFT)
-+
-+/* Default Permissions for page, used in mmap.c */
-+#ifdef CONFIG_ARC_STACK_NONEXEC
-+#define VM_DATA_DEFAULT_FLAGS   (VM_READ | VM_WRITE | VM_MAYREAD | VM_MAYWRITE)
-+#else
-+#define VM_DATA_DEFAULT_FLAGS   (VM_READ | VM_WRITE | VM_EXEC | \
-+				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-+#endif
-+
-+#define WANT_PAGE_VIRTUAL   1
-+
-+#include <asm-generic/memory_model.h>   /* page_to_pfn, pfn_to_page */
-+#include <asm-generic/getorder.h>
-+
- #endif /* !__ASSEMBLY__ */
- 
- #endif /* __KERNEL__ */
-diff --git a/arch/arc/include/asm/pgalloc.h b/arch/arc/include/asm/pgalloc.h
+ #ifdef CONFIG_ARC_FPU_SAVE_RESTORE
+ /* These DPFP regs need to be saved/restored across ctx-sw */
+diff --git a/arch/arc/include/asm/setup.h b/arch/arc/include/asm/setup.h
 new file mode 100644
-index 0000000..36a9f20
+index 0000000..ab427e6
 --- /dev/null
-+++ b/arch/arc/include/asm/pgalloc.h
-@@ -0,0 +1,134 @@
++++ b/arch/arc/include/asm/setup.h
+@@ -0,0 +1,22 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
-+ *
-+ * vineetg: June 2011
-+ *  -"/proc/meminfo | grep PageTables" kept on increasing
-+ *   Recently added pgtable dtor was not getting called.
-+ *
-+ * vineetg: May 2011
-+ *  -Variable pg-sz means that Page Tables could be variable sized themselves
-+ *    So calculate it based on addr traversal split [pgd-bits:pte-bits:xxx]
-+ *  -Page Table size capped to max 1 to save memory - hence verified.
-+ *  -Since these deal with constants, gcc compile-time optimizes them.
-+ *
-+ * vineetg: Nov 2010
-+ *  -Added pgtable ctor/dtor used for pgtable mem accounting
-+ *
-+ * vineetg: April 2010
-+ *  -Switched pgtable_t from being struct page * to unsigned long
-+ *      =Needed so that Page Table allocator (pte_alloc_one) is not forced to
-+ *       to deal with struct page. Thay way in future we can make it allocate
-+ *       multiple PG Tbls in one Page Frame
-+ *      =sweet side effect is avoiding calls to ugly page_address( ) from the
-+ *       pg-tlb allocator sub-sys (pte_alloc_one, ptr_free, pmd_populate
-+ *
-+ *  Amit Bhor, Sameer Dhavale: Codito Technologies 2004
 + */
 +
-+#ifndef _ASM_ARC_PGALLOC_H
-+#define _ASM_ARC_PGALLOC_H
++#ifndef __ASMARC_SETUP_H
++#define __ASMARC_SETUP_H
 +
-+#include <linux/mm.h>
-+#include <linux/log2.h>
++#include <linux/types.h>
 +
-+static inline void
-+pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd, pte_t *pte)
-+{
-+	pmd_set(pmd, pte);
-+}
++#define COMMAND_LINE_SIZE 256
 +
-+static inline void
-+pmd_populate(struct mm_struct *mm, pmd_t *pmd, pgtable_t ptep)
-+{
-+	pmd_set(pmd, (pte_t *) ptep);
-+}
++extern int root_mountflags, end_mem;
++extern int running_on_hw;
 +
-+static inline int __get_order_pgd(void)
-+{
-+	return get_order(PTRS_PER_PGD * 4);
-+}
++void __init setup_processor(void);
++void __init setup_arch_memory(void);
 +
-+static inline pgd_t *pgd_alloc(struct mm_struct *mm)
-+{
-+	int num, num2;
-+	pgd_t *ret = (pgd_t *) __get_free_pages(GFP_KERNEL, __get_order_pgd());
-+
-+	if (ret) {
-+		num = USER_PTRS_PER_PGD + USER_KERNEL_GUTTER / PGDIR_SIZE;
-+		memzero(ret, num * sizeof(pgd_t));
-+
-+		num2 = VMALLOC_SIZE / PGDIR_SIZE;
-+		memcpy(ret + num, swapper_pg_dir + num, num2 * sizeof(pgd_t));
-+
-+		memzero(ret + num + num2,
-+			       (PTRS_PER_PGD - num - num2) * sizeof(pgd_t));
-+
-+	}
-+	return ret;
-+}
-+
-+static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
-+{
-+	free_pages((unsigned long)pgd, __get_order_pgd());
-+}
-+
-+
-+/*
-+ * With software-only page-tables, addr-split for traversal is tweakable and
-+ * that directly governs how big tables would be at each level.
-+ * Further, the MMU page size is configurable.
-+ * Thus we need to programatically assert the size constraint
-+ * All of this is const math, allowing gcc to do constant folding/propagation.
-+ */
-+
-+static inline int __get_order_pte(void)
-+{
-+	return get_order(PTRS_PER_PTE * 4);
-+}
-+
-+static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
-+					unsigned long address)
-+{
-+	pte_t *pte;
-+
-+	pte = (pte_t *) __get_free_pages(GFP_KERNEL | __GFP_REPEAT | __GFP_ZERO,
-+					 __get_order_pte());
-+
-+	return pte;
-+}
-+
-+static inline pgtable_t
-+pte_alloc_one(struct mm_struct *mm, unsigned long address)
-+{
-+	pgtable_t pte_pg;
-+
-+	pte_pg = __get_free_pages(GFP_KERNEL | __GFP_REPEAT, __get_order_pte());
-+	if (pte_pg) {
-+		memzero((void *)pte_pg, PTRS_PER_PTE * 4);
-+		pgtable_page_ctor(virt_to_page(pte_pg));
-+	}
-+
-+	return pte_pg;
-+}
-+
-+static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
-+{
-+	free_pages((unsigned long)pte, __get_order_pte()); /* takes phy addr */
-+}
-+
-+static inline void pte_free(struct mm_struct *mm, pgtable_t ptep)
-+{
-+	pgtable_page_dtor(virt_to_page(ptep));
-+	free_pages(ptep, __get_order_pte());
-+}
-+
-+#define __pte_free_tlb(tlb, pte, addr)  pte_free((tlb)->mm, pte)
-+
-+#define check_pgt_cache()   do { } while (0)
-+#define pmd_pgtable(pmd) pmd_page_vaddr(pmd)
-+
-+#endif /* _ASM_ARC_PGALLOC_H */
-diff --git a/arch/arc/include/asm/pgtable.h b/arch/arc/include/asm/pgtable.h
++#endif /* __ASMARC_SETUP_H */
+diff --git a/arch/arc/kernel/head.S b/arch/arc/kernel/head.S
 new file mode 100644
-index 0000000..dcb07015
+index 0000000..e63f6a4
 --- /dev/null
-+++ b/arch/arc/include/asm/pgtable.h
-@@ -0,0 +1,401 @@
++++ b/arch/arc/kernel/head.S
+@@ -0,0 +1,78 @@
 +/*
++ * ARC CPU startup Code
++ *
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
-+ * vineetg: May 2011
-+ *  -Folded PAGE_PRESENT (used by VM) and PAGE_VALID (used by MMU) into 1.
-+ *     They are semantically the same although in different contexts
-+ *     VALID marks a TLB entry exists and it will only happen if PRESENT
-+ *  - Utilise some unused free bits to confine PTE flags to 12 bits
-+ *     This is a must for 4k pg-sz
-+ *
-+ * vineetg: Mar 2011 - changes to accomodate MMU TLB Page Descriptor mods
-+ *  -TLB Locking never really existed, except for initial specs
-+ *  -SILENT_xxx not needed for our port
-+ *  -Per my request, MMU V3 changes the layout of some of the bits
-+ *     to avoid a few shifts in TLB Miss handlers.
-+ *
-+ * vineetg: April 2010
-+ *  -PGD entry no longer contains any flags. If empty it is 0, otherwise has
-+ *   Pg-Tbl ptr. Thus pmd_present(), pmd_valid(), pmd_set( ) become simpler
-+ *
-+ * vineetg: April 2010
-+ *  -Switched form 8:11:13 split for page table lookup to 11:8:13
-+ *  -this speeds up page table allocation itself as we now have to memset 1K
-+ *    instead of 8k per page table.
-+ * -TODO: Right now page table alloc is 8K and rest 7K is unused
-+ *    need to optimise it
-+ *
-+ * Amit Bhor, Sameer Dhavale: Codito Technologies 2004
++ * Vineetg: Dec 2007
++ *  -Check if we are running on Simulator or on real hardware
++ *      to skip certain things during boot on simulator
 + */
 +
-+#ifndef _ASM_ARC_PGTABLE_H
-+#define _ASM_ARC_PGTABLE_H
++#include <asm/asm-offsets.h>
++#include <asm/entry.h>
++#include <linux/linkage.h>
++#include <asm/arcregs.h>
 +
++	.cpu A7
++
++	.section .init.text, "ax",@progbits
++	.type stext, @function
++	.globl stext
++stext:
++	;-------------------------------------------------------------------
++	; Don't clobber r0-r4 yet. It might have bootloader provided info
++	;-------------------------------------------------------------------
++
++	; Clear BSS before updating any globals
++	; XXX: use ZOL here
++	mov	r5, __bss_start
++	mov	r6, __bss_stop
++1:
++	st.ab   0, [r5,4]
++	brlt    r5, r6, 1b
++
++#ifdef CONFIG_CMDLINE_UBOOT
++	; support for bootloader provided cmdline
++	;    If cmdline passed by u-boot, then
++	;    r0 = 1  (because ATAGS parsing, now retired, used to use 0)
++	;    r1 = magic number (board identity)
++	;    r2 = addr of cmdline string (somewhere in memory/flash)
++
++	brne	r0, 1, .Lother_bootup_chores	; u-boot didn't pass cmdline
++	breq	r2, 0, .Lother_bootup_chores	; or cmdline is NULL
++
++	mov	r5, @command_line
++1:
++	ldb.ab  r6, [r2, 1]
++	breq    r6, 0, .Lother_bootup_chores
++	b.d     1b
++	stb.ab  r6, [r5, 1]
++#endif
++
++.Lother_bootup_chores:
++
++	; Identify if running on ISS vs Silicon
++	; 	IDENTITY Reg [ 3  2  1  0 ]
++	;	(chip-id)      ^^^^^		==> 0xffff for ISS
++	lr	r0, [identity]
++	lsr	r3, r0, 16
++	cmp	r3, 0xffff
++	mov.z	r4, 0
++	mov.nz	r4, 1
++	st	r4, [@running_on_hw]
++
++	; setup "current" tsk and optionally cache it in dedicated r25
++	mov	r9, @init_task
++	SET_CURR_TASK_ON_CPU  r9, r0	; r9 = tsk, r0 = scratch
++
++	; setup stack (fp, sp)
++	mov	fp, 0
++
++	; tsk->thread_info is really a PAGE, whose bottom hoists stack
++	GET_TSK_STACK_BASE r9, sp	; r9 = tsk, sp = stack base(output)
++
++	j	start_kernel	; "C" entry point
+diff --git a/arch/arc/kernel/reset.c b/arch/arc/kernel/reset.c
+new file mode 100644
+index 0000000..e227a2b
+--- /dev/null
++++ b/arch/arc/kernel/reset.c
+@@ -0,0 +1,33 @@
++/*
++ * Copyright (C) 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/printk.h>
++#include <linux/reboot.h>
++#include <linux/pm.h>
++
++void machine_halt(void)
++{
++	/* Halt the processor */
++	__asm__ __volatile__("flag  1\n");
++}
++
++void machine_restart(char *__unused)
++{
++	/* Soft reset : jump to reset vector */
++	pr_info("Put your restart handler here\n");
++	machine_halt();
++}
++
++void machine_power_off(void)
++{
++	/* FIXME ::  power off ??? */
++	machine_halt();
++}
++
++void (*pm_power_off) (void) = NULL;
+diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
+new file mode 100644
+index 0000000..82ac206
+--- /dev/null
++++ b/arch/arc/kernel/setup.c
+@@ -0,0 +1,166 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/seq_file.h>
++#include <linux/fs.h>
++#include <linux/delay.h>
++#include <linux/root_dev.h>
++#include <linux/console.h>
++#include <linux/module.h>
++#include <linux/cpu.h>
++#include <asm/arcregs.h>
++#include <asm/tlb.h>
++#include <asm/cache.h>
++#include <asm/setup.h>
 +#include <asm/page.h>
-+#include <asm/mmu.h>
-+#include <asm-generic/pgtable-nopmd.h>
++#include <asm/irq.h>
++#include <asm/arcregs.h>
 +
-+/**************************************************************************
-+ * Page Table Flags
-+ *
-+ * ARC700 MMU only deals with softare managed TLB entries.
-+ * Page Tables are purely for Linux VM's consumption and the bits below are
-+ * suited to that (uniqueness). Hence some are not implemented in the TLB and
-+ * some have different value in TLB.
-+ * e.g. MMU v2: K_READ bit is 8 and so is GLOBAL (possible becoz they live in
-+ *      seperate PD0 and PD1, which combined forms a translation entry)
-+ *      while for PTE perspective, they are 8 and 9 respectively
-+ * with MMU v3: Most bits (except SHARED) represent the exact hardware pos
-+ *      (saves some bit shift ops in TLB Miss hdlrs)
-+ */
++#define FIX_PTR(x)  __asm__ __volatile__(";" : "+r"(x))
 +
-+#if (CONFIG_ARC_MMU_VER <= 2)
++int running_on_hw = 1;	/* vs. on ISS */
 +
-+#define _PAGE_ACCESSED      (1<<1)	/* Page is accessed (S) */
-+#define _PAGE_CACHEABLE     (1<<2)	/* Page is cached (H) */
-+#define _PAGE_EXECUTE       (1<<3)	/* Page has user execute perm (H) */
-+#define _PAGE_WRITE         (1<<4)	/* Page has user write perm (H) */
-+#define _PAGE_READ          (1<<5)	/* Page has user read perm (H) */
-+#define _PAGE_K_EXECUTE     (1<<6)	/* Page has kernel execute perm (H) */
-+#define _PAGE_K_WRITE       (1<<7)	/* Page has kernel write perm (H) */
-+#define _PAGE_K_READ        (1<<8)	/* Page has kernel perm (H) */
-+#define _PAGE_GLOBAL        (1<<9)	/* Page is global (H) */
-+#define _PAGE_MODIFIED      (1<<10)	/* Page modified (dirty) (S) */
-+#define _PAGE_FILE          (1<<10)	/* page cache/ swap (S) */
-+#define _PAGE_PRESENT       (1<<11)	/* TLB entry is valid (H) */
++char __initdata command_line[COMMAND_LINE_SIZE];
 +
-+#else
++struct task_struct *_current_task[NR_CPUS];	/* For stack switching */
 +
-+/* PD1 */
-+#define _PAGE_CACHEABLE     (1<<0)	/* Page is cached (H) */
-+#define _PAGE_EXECUTE       (1<<1)	/* Page has user execute perm (H) */
-+#define _PAGE_WRITE         (1<<2)	/* Page has user write perm (H) */
-+#define _PAGE_READ          (1<<3)	/* Page has user read perm (H) */
-+#define _PAGE_K_EXECUTE     (1<<4)	/* Page has kernel execute perm (H) */
-+#define _PAGE_K_WRITE       (1<<5)	/* Page has kernel write perm (H) */
-+#define _PAGE_K_READ        (1<<6)	/* Page has kernel perm (H) */
-+#define _PAGE_ACCESSED      (1<<7)	/* Page is accessed (S) */
++struct cpuinfo_arc cpuinfo_arc700[NR_CPUS];
 +
-+/* PD0 */
-+#define _PAGE_GLOBAL        (1<<8)	/* Page is global (H) */
-+#define _PAGE_PRESENT       (1<<9)	/* TLB entry is valid (H) */
-+#define _PAGE_SHARED_CODE   (1<<10)	/* Shared Code page with cmn vaddr
-+					   usable for shared TLB entries (H) */
-+
-+#define _PAGE_MODIFIED      (1<<11)	/* Page modified (dirty) (S) */
-+#define _PAGE_FILE          (1<<12)	/* page cache/ swap (S) */
-+
-+#define _PAGE_SHARED_CODE_H (1<<31)	/* Hardware counterpart of above */
-+#endif
-+
-+/* Kernel allowed all permissions for all pages */
-+#define _K_PAGE_PERMS  (_PAGE_K_EXECUTE | _PAGE_K_WRITE | _PAGE_K_READ)
-+
-+#ifdef CONFIG_ARC_CACHE_PAGES
-+#define _PAGE_DEF_CACHEABLE _PAGE_CACHEABLE
-+#else
-+#define _PAGE_DEF_CACHEABLE (0)
-+#endif
-+
-+/* Helper for every "user" page
-+ * -kernel can R/W/X
-+ * -by default cached, unless config otherwise
-+ * -present in memory
-+ */
-+#define ___DEF (_PAGE_PRESENT | _K_PAGE_PERMS | _PAGE_DEF_CACHEABLE)
-+
-+/* Set of bits not changed in pte_modify */
-+#define _PAGE_CHG_MASK	(PAGE_MASK | _PAGE_ACCESSED | _PAGE_MODIFIED)
-+
-+/* More Abbrevaited helpers */
-+#define PAGE_U_NONE     __pgprot(___DEF)
-+#define PAGE_U_R        __pgprot(___DEF | _PAGE_READ)
-+#define PAGE_U_W_R      __pgprot(___DEF | _PAGE_READ | _PAGE_WRITE)
-+#define PAGE_U_X_R      __pgprot(___DEF | _PAGE_READ | _PAGE_EXECUTE)
-+#define PAGE_U_X_W_R    __pgprot(___DEF | _PAGE_READ | _PAGE_WRITE | \
-+						       _PAGE_EXECUTE)
-+
-+#define PAGE_SHARED	PAGE_U_W_R
-+
-+/* While kernel runs out of unstrslated space, vmalloc/modules use a chunk of
-+ * kernel vaddr space - visible in all addr spaces, but kernel mode only
-+ * Thus Global, all-kernel-access, no-user-access, cached
-+ */
-+#define PAGE_KERNEL          __pgprot(___DEF | _PAGE_GLOBAL)
-+
-+/* ioremap */
-+#define PAGE_KERNEL_NO_CACHE __pgprot(_PAGE_PRESENT | _K_PAGE_PERMS | \
-+						     _PAGE_GLOBAL)
-+
-+/**************************************************************************
-+ * Mapping of vm_flags (Generic VM) to PTE flags (arch specific)
-+ *
-+ * Certain cases have 1:1 mapping
-+ *  e.g. __P101 means VM_READ, VM_EXEC and !VM_SHARED
-+ *       which directly corresponds to  PAGE_U_X_R
-+ *
-+ * Other rules which cause the divergence from 1:1 mapping
-+ *
-+ *  1. Although ARC700 can do exclusive execute/write protection (meaning R
-+ *     can be tracked independet of X/W unlike some other CPUs), still to
-+ *     keep things consistent with other archs:
-+ *      -Write implies Read:   W => R
-+ *      -Execute implies Read: X => R
-+ *
-+ *  2. Pvt Writable doesn't have Write Enabled initially: Pvt-W => !W
-+ *     This is to enable COW mechanism
-+ */
-+	/* xwr */
-+#define __P000  PAGE_U_NONE
-+#define __P001  PAGE_U_R
-+#define __P010  PAGE_U_R	/* Pvt-W => !W */
-+#define __P011  PAGE_U_R	/* Pvt-W => !W */
-+#define __P100  PAGE_U_X_R	/* X => R */
-+#define __P101  PAGE_U_X_R
-+#define __P110  PAGE_U_X_R	/* Pvt-W => !W and X => R */
-+#define __P111  PAGE_U_X_R	/* Pvt-W => !W */
-+
-+#define __S000  PAGE_U_NONE
-+#define __S001  PAGE_U_R
-+#define __S010  PAGE_U_W_R	/* W => R */
-+#define __S011  PAGE_U_W_R
-+#define __S100  PAGE_U_X_R	/* X => R */
-+#define __S101  PAGE_U_X_R
-+#define __S110  PAGE_U_X_W_R	/* X => R */
-+#define __S111  PAGE_U_X_W_R
-+
-+/****************************************************************
-+ * Page Table Lookup split
-+ *
-+ * We implement 2 tier paging and since this is all software, we are free
-+ * to customize the span of a PGD / PTE entry to suit us
-+ *
-+ *			32 bit virtual address
-+ * -------------------------------------------------------
-+ * | BITS_FOR_PGD    |  BITS_FOR_PTE    |  BITS_IN_PAGE  |
-+ * -------------------------------------------------------
-+ *       |                  |                |
-+ *       |                  |                --> off in page frame
-+ *       |		    |
-+ *       |                  ---> index into Page Table
-+ *       |
-+ *       ----> index into Page Directory
-+ */
-+
-+#define BITS_IN_PAGE	PAGE_SHIFT
-+
-+/* Optimal Sizing of Pg Tbl - based on MMU page size */
-+#if defined(CONFIG_ARC_PAGE_SIZE_8K)
-+#define BITS_FOR_PTE	8
-+#elif defined(CONFIG_ARC_PAGE_SIZE_16K)
-+#define BITS_FOR_PTE	8
-+#elif defined(CONFIG_ARC_PAGE_SIZE_4K)
-+#define BITS_FOR_PTE	9
-+#endif
-+
-+#define BITS_FOR_PGD	(32 - BITS_FOR_PTE - BITS_IN_PAGE)
-+
-+#define PGDIR_SHIFT	(BITS_FOR_PTE + BITS_IN_PAGE)
-+#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)	/* vaddr span, not PDG sz */
-+#define PGDIR_MASK	(~(PGDIR_SIZE-1))
-+
-+#ifdef __ASSEMBLY__
-+#define	PTRS_PER_PTE	(1 << BITS_FOR_PTE)
-+#define	PTRS_PER_PGD	(1 << BITS_FOR_PGD)
-+#else
-+#define	PTRS_PER_PTE	(1UL << BITS_FOR_PTE)
-+#define	PTRS_PER_PGD	(1UL << BITS_FOR_PGD)
-+#endif
-+/*
-+ * Number of entries a user land program use.
-+ * TASK_SIZE is the maximum vaddr that can be used by a userland program.
-+ */
-+#define	USER_PTRS_PER_PGD	(TASK_SIZE / PGDIR_SIZE)
-+
-+/*
-+ * No special requirements for lowest virtual address we permit any user space
-+ * mapping to be mapped at.
-+ */
-+#define FIRST_USER_ADDRESS      0
-+
-+
-+/****************************************************************
-+ * Bucket load of VM Helpers
-+ */
-+
-+#ifndef __ASSEMBLY__
-+
-+#define pte_ERROR(e) \
-+	pr_crit("%s:%d: bad pte %08lx.\n", __FILE__, __LINE__, pte_val(e))
-+#define pgd_ERROR(e) \
-+	pr_crit("%s:%d: bad pgd %08lx.\n", __FILE__, __LINE__, pgd_val(e))
-+
-+/* the zero page used for uninitialized and anonymous pages */
-+extern char empty_zero_page[PAGE_SIZE];
-+#define ZERO_PAGE(vaddr)	(virt_to_page(empty_zero_page))
-+
-+#define pte_unmap(pte)		do { } while (0)
-+#define pte_unmap_nested(pte)		do { } while (0)
-+
-+#define set_pte(pteptr, pteval)	((*(pteptr)) = (pteval))
-+#define set_pmd(pmdptr, pmdval)	(*(pmdptr) = pmdval)
-+
-+/* find the page descriptor of the Page Tbl ref by PMD entry */
-+#define pmd_page(pmd)		virt_to_page(pmd_val(pmd) & PAGE_MASK)
-+
-+/* find the logical addr (phy for ARC) of the Page Tbl ref by PMD entry */
-+#define pmd_page_vaddr(pmd)	(pmd_val(pmd) & PAGE_MASK)
-+
-+/* In a 2 level sys, setup the PGD entry with PTE value */
-+static inline void pmd_set(pmd_t *pmdp, pte_t *ptep)
++void __init read_arc_build_cfg_regs(void)
 +{
-+	pmd_val(*pmdp) = (unsigned long)ptep;
-+}
-+
-+#define pte_none(x)			(!pte_val(x))
-+#define pte_present(x)			(pte_val(x) & _PAGE_PRESENT)
-+#define pte_clear(mm, addr, ptep)	set_pte_at(mm, addr, ptep, __pte(0))
-+
-+#define pmd_none(x)			(!pmd_val(x))
-+#define	pmd_bad(x)			((pmd_val(x) & ~PAGE_MASK))
-+#define pmd_present(x)			(pmd_val(x))
-+#define pmd_clear(xp)			do { pmd_val(*(xp)) = 0; } while (0)
-+
-+#define pte_page(x) (mem_map + \
-+		(unsigned long)(((pte_val(x) - PAGE_OFFSET) >> PAGE_SHIFT)))
-+
-+#define mk_pte(page, pgprot)						\
-+({									\
-+	pte_t pte;							\
-+	pte_val(pte) = __pa(page_address(page)) + pgprot_val(pgprot);	\
-+	pte;								\
-+})
-+
-+/* TBD: Non linear mapping stuff */
-+static inline int pte_file(pte_t pte)
-+{
-+	return pte_val(pte) & _PAGE_FILE;
-+}
-+
-+#define PTE_FILE_MAX_BITS	30
-+#define pgoff_to_pte(x)         __pte(x)
-+#define pte_to_pgoff(x)		(pte_val(x) >> 2)
-+#define pte_pfn(pte)		(pte_val(pte) >> PAGE_SHIFT)
-+#define pfn_pte(pfn, prot)	(__pte(((pfn) << PAGE_SHIFT) | pgprot_val(prot)))
-+#define __pte_index(addr)	(((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1))
-+
-+/*
-+ * pte_offset gets a @ptr to PMD entry (PGD in our 2-tier paging system)
-+ * and returns ptr to PTE entry corresponding to @addr
-+ */
-+#define pte_offset(dir, addr) ((pte_t *)(pmd_page_vaddr(*dir)) +\
-+					 __pte_index(addr))
-+
-+/* No mapping of Page Tables in high mem etc, so following same as above */
-+#define pte_offset_kernel(dir, addr)		pte_offset(dir, addr)
-+#define pte_offset_map(dir, addr)		pte_offset(dir, addr)
-+
-+/* Zoo of pte_xxx function */
-+#define pte_read(pte)		(pte_val(pte) & _PAGE_READ)
-+#define pte_write(pte)		(pte_val(pte) & _PAGE_WRITE)
-+#define pte_dirty(pte)		(pte_val(pte) & _PAGE_MODIFIED)
-+#define pte_young(pte)		(pte_val(pte) & _PAGE_ACCESSED)
-+#define pte_special(pte)	(0)
-+
-+#define PTE_BIT_FUNC(fn, op) \
-+	static inline pte_t pte_##fn(pte_t pte) { pte_val(pte) op; return pte; }
-+
-+PTE_BIT_FUNC(wrprotect,	&= ~(_PAGE_WRITE));
-+PTE_BIT_FUNC(mkwrite,	|= (_PAGE_WRITE));
-+PTE_BIT_FUNC(mkclean,	&= ~(_PAGE_MODIFIED));
-+PTE_BIT_FUNC(mkdirty,	|= (_PAGE_MODIFIED));
-+PTE_BIT_FUNC(mkold,	&= ~(_PAGE_ACCESSED));
-+PTE_BIT_FUNC(mkyoung,	|= (_PAGE_ACCESSED));
-+PTE_BIT_FUNC(exprotect,	&= ~(_PAGE_EXECUTE));
-+PTE_BIT_FUNC(mkexec,	|= (_PAGE_EXECUTE));
-+
-+static inline pte_t pte_mkspecial(pte_t pte) { return pte; }
-+
-+static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
-+{
-+	return __pte((pte_val(pte) & _PAGE_CHG_MASK) | pgprot_val(newprot));
-+}
-+
-+/* Macro to mark a page protection as uncacheable */
-+#define pgprot_noncached(prot)	(__pgprot(pgprot_val(prot) & ~_PAGE_CACHEABLE))
-+
-+static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
-+			      pte_t *ptep, pte_t pteval)
-+{
-+	set_pte(ptep, pteval);
++	read_decode_mmu_bcr();
++	read_decode_cache_bcr();
 +}
 +
 +/*
-+ * All kernel related VM pages are in init's mm.
++ * Initialize and setup the processor core
++ * This is called by all the CPUs thus should not do special case stuff
++ *    such as only for boot CPU etc
 + */
-+#define pgd_offset_k(address)	pgd_offset(&init_mm, address)
-+#define pgd_index(addr)		((addr) >> PGDIR_SHIFT)
-+#define pgd_offset(mm, addr)	(((mm)->pgd)+pgd_index(addr))
 +
-+/*
-+ * Macro to quickly access the PGD entry, utlising the fact that some
-+ * arch may cache the pointer to Page Directory of "current" task
-+ * in a MMU register
-+ *
-+ * Thus task->mm->pgd (3 pointer dereferences, cache misses etc simply
-+ * becomes read a register
-+ *
-+ * ********CAUTION*******:
-+ * Kernel code might be dealing with some mm_struct of NON "current"
-+ * Thus use this macro only when you are certain that "current" is current
-+ * e.g. when dealing with signal frame setup code etc
-+ */
-+#define pgd_offset_fast(mm, addr)	\
-+({					\
-+	pgd_t *pgd_base = (pgd_t *) read_aux_reg(ARC_REG_SCRATCH_DATA0);  \
-+	pgd_base + pgd_index(addr);	\
-+})
++void __init setup_processor(void)
++{
++	read_arc_build_cfg_regs();
++	arc_init_IRQ();
++	arc_mmu_init();
++	arc_cache_init();
++}
 +
-+extern void paging_init(void);
-+extern pgd_t swapper_pg_dir[] __aligned(PAGE_SIZE);
-+void update_mmu_cache(struct vm_area_struct *vma, unsigned long address,
-+		      pte_t *ptep);
++void __init __attribute__((weak)) arc_platform_early_init(void)
++{
++}
 +
-+/* Encode swap {type,off} tuple into PTE
-+ * We reserve 13 bits for 5-bit @type, keeping bits 12-5 zero, ensuring that
-+ * both PAGE_FILE and PAGE_PRESENT are zero in a PTE holding swap "identifier"
-+ */
-+#define __swp_entry(type, off)	((swp_entry_t) { \
-+					((type) & 0x1f) | ((off) << 13) })
-+
-+/* Decode a PTE containing swap "identifier "into constituents */
-+#define __swp_type(pte_lookalike)	(((pte_lookalike).val) & 0x1f)
-+#define __swp_offset(pte_lookalike)	((pte_lookalike).val << 13)
-+
-+/* NOPs, to keep generic kernel happy */
-+#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
-+#define __swp_entry_to_pte(x)	((pte_t) { (x).val })
-+
-+#define kern_addr_valid(addr)	(1)
-+
-+/*
-+ * remap a physical page `pfn' of size `size' with page protection `prot'
-+ * into virtual address `from'
-+ */
-+#define io_remap_pfn_range(vma, from, pfn, size, prot) \
-+			remap_pfn_range(vma, from, pfn, size, prot)
-+
-+#include <asm-generic/pgtable.h>
-+
-+/*
-+ * No page table caches to initialise
-+ */
-+#define pgtable_cache_init()   do { } while (0)
-+
-+#endif /* __ASSEMBLY__ */
-+
++void __init setup_arch(char **cmdline_p)
++{
++#ifdef CONFIG_CMDLINE_UBOOT
++	/* Make sure that a whitespace is inserted before */
++	strlcat(command_line, " ", sizeof(command_line));
 +#endif
++	/*
++	 * Append .config cmdline to base command line, which might already
++	 * contain u-boot "bootargs" (handled by head.S, if so configured)
++	 */
++	strlcat(command_line, CONFIG_CMDLINE, sizeof(command_line));
++
++	/* Save unparsed command line copy for /proc/cmdline */
++	strlcpy(boot_command_line, command_line, COMMAND_LINE_SIZE);
++	*cmdline_p = command_line;
++
++	/* To force early parsing of things like mem=xxx */
++	parse_early_param();
++
++	/* Platform/board specific: e.g. early console registration */
++	arc_platform_early_init();
++
++	setup_processor();
++
++	setup_arch_memory();
++
++	/* Can be issue if someone passes cmd line arg "ro"
++	 * But that is unlikely so keeping it as it is
++	 */
++	root_mountflags &= ~MS_RDONLY;
++
++	console_verbose();
++
++#if defined(CONFIG_VT) && defined(CONFIG_DUMMY_CONSOLE)
++	conswitchp = &dummy_con;
++#endif
++
++}
++
++/*
++ *  Get CPU information for use by the procfs.
++ */
++
++#define cpu_to_ptr(c)	((void *)(0xFFFF0000 | (unsigned int)(c)))
++#define ptr_to_cpu(p)	(~0xFFFF0000UL & (unsigned int)(p))
++
++static int show_cpuinfo(struct seq_file *m, void *v)
++{
++	char *str;
++	int cpu_id = ptr_to_cpu(v);
++
++	str = (char *)__get_free_page(GFP_TEMPORARY);
++	if (!str)
++		goto done;
++
++	seq_printf(m, "ARC700 #%d\n", cpu_id);
++
++	seq_printf(m, "Bogo MIPS : \t%lu.%02lu\n",
++		   loops_per_jiffy / (500000 / HZ),
++		   (loops_per_jiffy / (5000 / HZ)) % 100);
++
++	free_page((unsigned long)str);
++done:
++	seq_printf(m, "\n\n");
++
++	return 0;
++}
++
++static void *c_start(struct seq_file *m, loff_t *pos)
++{
++	/*
++	 * Callback returns cpu-id to iterator for show routine, NULL to stop.
++	 * However since NULL is also a valid cpu-id (0), we use a round-about
++	 * way to pass it w/o having to kmalloc/free a 2 byte string.
++	 * Encode cpu-id as 0xFFcccc, which is decoded by show routine.
++	 */
++	return *pos < num_possible_cpus() ? cpu_to_ptr(*pos) : NULL;
++}
++
++static void *c_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	++*pos;
++	return c_start(m, pos);
++}
++
++static void c_stop(struct seq_file *m, void *v)
++{
++}
++
++const struct seq_operations cpuinfo_op = {
++	.start	= c_start,
++	.next	= c_next,
++	.stop	= c_stop,
++	.show	= show_cpuinfo
++};
++
++static DEFINE_PER_CPU(struct cpu, cpu_topology);
++
++static int __init topology_init(void)
++{
++	int cpu;
++
++	for_each_present_cpu(cpu)
++	    register_cpu(&per_cpu(cpu_topology, cpu), cpu);
++
++	return 0;
++}
++
++subsys_initcall(topology_init);
+diff --git a/arch/arc/mm/init.c b/arch/arc/mm/init.c
+new file mode 100644
+index 0000000..2373ebf
+--- /dev/null
++++ b/arch/arc/mm/init.c
+@@ -0,0 +1,185 @@
++/*
++ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/mm.h>
++#include <linux/bootmem.h>
++#ifdef CONFIG_BLOCK_DEV_RAM
++#include <linux/blk.h>
++#endif
++#include <linux/swap.h>
++#include <linux/module.h>
++#include <asm/page.h>
++#include <asm/pgalloc.h>
++#include <asm/sections.h>
++#include <asm/arcregs.h>
++
++pgd_t swapper_pg_dir[PTRS_PER_PGD] __aligned(PAGE_SIZE);
++char empty_zero_page[PAGE_SIZE] __aligned(PAGE_SIZE);
++EXPORT_SYMBOL(empty_zero_page);
++
++/* Default tot mem from .config */
++static unsigned long end_mem = CONFIG_ARC_PLAT_SDRAM_SIZE +
++				CONFIG_LINUX_LINK_BASE;
++
++/* User can over-ride above with "mem=nnn[KkMm]" in cmdline */
++static int __init setup_mem_sz(char *str)
++{
++	unsigned long sz_bytes;
++
++	sz_bytes = memparse(str, NULL);
++	end_mem = CONFIG_LINUX_LINK_BASE + (sz_bytes & PAGE_MASK);
++
++	/* early console might not be setup yet - it will show up later */
++	pr_info("\"mem=%s\": End mem set to 0x%lx\n", str, end_mem);
++
++	return 0;
++}
++early_param("mem", setup_mem_sz);
++
++/*
++ * First memory setup routine called from setup_arch()
++ * 1. setup swapper's mm @init_mm
++ * 2. Count the pages we have and setup bootmem allocator
++ * 3. zone setup
++ */
++void __init setup_arch_memory(void)
++{
++	int bootmap_sz;
++	unsigned int first_free_pfn;
++	unsigned long kernel_img_end, alloc_start;
++	unsigned long zones_size[MAX_NR_ZONES] = { 0, 0 };
++
++	init_mm.start_code = (unsigned long)_text;
++	init_mm.end_code = (unsigned long)_etext;
++	init_mm.end_data = (unsigned long)_edata;
++	init_mm.brk = (unsigned long)_end;
++
++	/* _end needs to be page aligned */
++	kernel_img_end = (unsigned long)_end;
++	BUG_ON(kernel_img_end & ~PAGE_MASK);
++
++	/* first page of system - kernel .vector starts here */
++	min_low_pfn = PFN_DOWN(CONFIG_LINUX_LINK_BASE);
++
++	/* First free page beyond kernel image */
++	first_free_pfn = PFN_DOWN(kernel_img_end);
++
++	/*
++	 * Last usable page of low mem (no HIGHMEM yet for ARC port)
++	 * -must be BASE + SIZE
++	 */
++	max_low_pfn = max_pfn = PFN_DOWN(end_mem);
++
++	max_mapnr = num_physpages = max_low_pfn - min_low_pfn;
++
++	/* setup bootmem allocator */
++	bootmap_sz = init_bootmem_node(NODE_DATA(0),
++				       first_free_pfn,/* bitmap start */
++				       min_low_pfn,   /* First pg to track */
++				       max_low_pfn);  /* Last pg to track */
++
++	/*
++	 * init_bootmem above marks all tracked Page-frames as inuse "allocated"
++	 * This includes pages occupied by kernel's elf segments.
++	 * Beyond that, excluding bootmem bitmap itself, mark the rest of
++	 * free-mem as "allocatable"
++	 */
++	alloc_start = kernel_img_end + bootmap_sz;
++	free_bootmem(alloc_start, end_mem - alloc_start);
++
++	memset(zones_size, 0, sizeof(zones_size));
++	zones_size[ZONE_NORMAL] = num_physpages;
++
++	/*
++	 * Must not use free_area_init() as that uses PAGE_OFFSET, which
++	 * need not be the case when our kernel linked at non-default addr
++	 * i.e. when CONFIG_LINUX_LINK_BASE != PAGE_OFFSET
++	 */
++	free_area_init_node(0,			/* node-id */
++			    zones_size,		/* num pages per zone */
++			    min_low_pfn,	/* first pfn of node */
++			    NULL);		/* NO holes */
++}
++
++/*
++ * mem_init - initializes memory
++ *
++ * Frees up bootmem
++ * Calculates and displays memory available/used
++ */
++void __init mem_init(void)
++{
++	int codesize, datasize, initsize, reserved_pages, free_pages;
++	int tmp;
++
++	high_memory = (void *)end_mem;
++
++	totalram_pages = free_all_bootmem();
++
++	/* count all reserved pages [kernel code/data/mem_map..] */
++	reserved_pages = 0;
++	for (tmp = 0; tmp < max_mapnr; tmp++)
++		if (PageReserved(mem_map + tmp))
++			reserved_pages++;
++
++	/* XXX: nr_free_pages() is equivalent */
++	free_pages = max_mapnr - reserved_pages;
++
++	/*
++	 * For the purpose of display below, split the "reserve mem"
++	 * kernel code/data is already shown explicitly,
++	 * Show any other reservations (mem_map[ ] et al)
++	 */
++	reserved_pages -= (((unsigned int)_end - CONFIG_LINUX_LINK_BASE) >>
++								PAGE_SHIFT);
++
++	codesize = _etext - _text;
++	datasize = _end - _etext;
++	initsize = __init_end - __init_begin;
++
++	pr_info("Memory Available: %dM / %uM (%dK code, %dK data, %dK init, %dK reserv)\n",
++		PAGES_TO_MB(free_pages),
++		TO_MB(CONFIG_ARC_PLAT_SDRAM_SIZE),
++		TO_KB(codesize), TO_KB(datasize), TO_KB(initsize),
++		PAGES_TO_KB(reserved_pages));
++}
++
++static void __init free_init_pages(const char *what, unsigned long begin,
++				   unsigned long end)
++{
++	unsigned long addr;
++
++	pr_info("Freeing %s: %ldk [%lx] to [%lx]\n",
++		what, TO_KB(end - begin), begin, end);
++
++	/* need to check that the page we free is not a partial page */
++	for (addr = begin; addr + PAGE_SIZE <= end; addr += PAGE_SIZE) {
++		ClearPageReserved(virt_to_page(addr));
++		init_page_count(virt_to_page(addr));
++		free_page(addr);
++		totalram_pages++;
++	}
++}
++
++/*
++ * free_initmem: Free all the __init memory.
++ */
++void __init_refok free_initmem(void)
++{
++	free_init_pages("unused kernel memory",
++			(unsigned long)__init_begin,
++			(unsigned long)__init_end);
++}
++
++#ifdef CONFIG_BLK_DEV_INITRD
++void __init free_initrd_mem(unsigned long start, unsigned long end)
++{
++	free_init_pages("initrd memory", start, end);
++}
++#endif
+diff --git a/arch/arc/plat-arcfpga/platform.c b/arch/arc/plat-arcfpga/platform.c
+new file mode 100644
+index 0000000..7b5dcab
+--- /dev/null
++++ b/arch/arc/plat-arcfpga/platform.c
+@@ -0,0 +1,29 @@
++/*
++ * ARC FPGA Platform support code
++ *
++ * Copyright (C) 2012 Synopsys, Inc. (www.synopsys.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/types.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++
++/*
++ * Early Platform Initialization called from setup_arch()
++ */
++void __init arc_platform_early_init(void)
++{
++	pr_info("[plat-arcfpga]: registering early dev resources\n");
++}
++
++int __init fpga_plat_init(void)
++{
++	pr_info("[plat-arcfpga]: registering device resources\n");
++
++	return 0;
++}
++arch_initcall(fpga_plat_init);
 -- 
 1.7.4.1
 
