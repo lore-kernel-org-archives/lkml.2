@@ -1,214 +1,536 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab2KGMwZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 07:52:25 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:40399 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab2KGMwX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 07:52:23 -0500
-Message-ID: <1352292734.7340.35.camel@shinybook.infradead.org>
-Subject: [PATCH v3 8/7] pppoatm: fix missing wakeup in pppoatm_send()
-From: David Woodhouse <dwmw2@infradead.org>
-To: Krzysztof Mazur <krzysiek@podlesie.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chas Williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
-        davem@davemloft.net
-Date: Wed, 07 Nov 2012 12:52:14 +0000
-In-Reply-To: <1352240222-363-1-git-send-email-krzysiek@podlesie.net>
-References: <1352240222-363-1-git-send-email-krzysiek@podlesie.net>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-us/UYG2JcdwM4HgNkZxz"
-X-Mailer: Evolution 3.6.1 (3.6.1-1.fc18) 
-Mime-Version: 1.0
+	id S1755012Ab2KGM6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 07:58:24 -0500
+Received: from mga01.intel.com ([192.55.52.88]:57235 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753419Ab2KGM6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 07:58:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,730,1344236400"; 
+   d="scan'208,223";a="243622347"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <jbeulich@suse.com>
+Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Index: AQHNvD3JTi91BiFLfUibRvXA4zlK85feVKOg
+Date: Wed, 7 Nov 2012 12:58:19 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233537B99E@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
+ <20121026201409.GF2708@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC8292335377346@SHSMSX101.ccr.corp.intel.com>
+ <20121102164937.GC27213@konrad-lan.dumpdata.com>
+ <alpine.DEB.2.02.1211051512260.2689@kaball.uk.xensource.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B10C@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B147@SHSMSX101.ccr.corp.intel.com>
+ <alpine.DEB.2.02.1211061455150.2689@kaball.uk.xensource.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B479@SHSMSX101.ccr.corp.intel.com>
+ <20121106164303.GO9966@phenom.dumpdata.com>
+In-Reply-To: <20121106164303.GO9966@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: multipart/mixed;
+	boundary="_002_DE8DF0795D48FD4CA783C40EC829233537B99ESHSMSX101ccrcorpi_"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-us/UYG2JcdwM4HgNkZxz
-Content-Type: text/plain; charset="UTF-8"
+--_002_DE8DF0795D48FD4CA783C40EC829233537B99ESHSMSX101ccrcorpi_
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: quoted-printable
 
-Now that we can return zero from pppoatm_send() for reasons *other* than
-the queue being full, that means we can't depend on a subsequent call to
-pppoatm_pop() waking the queue, and we might leave it stalled
-indefinitely.
+>>>=20
+>>> If it is generic ACPI code, than it can depend only on ACPI.
+>>> If it is ACPI code that contains X86 specific info, than it needs to
+>>> depend on X86 too.
+>>=20
+>> No x86 specific so let's depend on ACPI.
+>=20
+> Huh? This feature is x86 specific isn't it? I mean it is in the ACPI
+> spec, but only x86 does it right?
 
-Fix this by immediately scheduling the wakeup tasklet. As documented
-already elsewhere, the PPP channel's ->downl lock protects against the
-wakeup happening too soon and effectively being missed.
+OK, updated w/ ACPI & X86 dependency, and per other comments.
 
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-----
-Untested.
-With this sorted, Acked-By: David Woodhouse <David.Woodhouse@intel.com<
-to the other seven. Thanks.
+Thanks,
+Jinsong
 
-diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
-index 7507c20..56ad541 100644
---- a/net/atm/pppoatm.c
-+++ b/net/atm/pppoatm.c
-@@ -283,11 +283,11 @@ static int pppoatm_send(struct ppp_channel *chan, str=
-uct sk_buff *skb)
- 	vcc =3D ATM_SKB(skb)->vcc;
- 	bh_lock_sock(sk_atm(vcc));
- 	if (sock_owned_by_user(sk_atm(vcc)))
--		goto nospace;
-+		goto nospace_sched_wakeup;
- 	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
--			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
--			|| !test_bit(ATM_VF_READY, &vcc->flags))
--		goto nospace;
-+	    || test_bit(ATM_VF_CLOSE, &vcc->flags)
-+	    || !test_bit(ATM_VF_READY, &vcc->flags))
-+		goto nospace_sched_wakeup;
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+
+>From d5f462cc8029863955a574f1541bece72aafb986 Mon Sep 17 00:00:00 2001
+From: Liu, Jinsong <jinsong.liu@intel.com>
+Date: Thu, 8 Nov 2012 04:29:07 +0800
+Subject: [PATCH 1/2] Xen acpi pad implement
+
+PAD is acpi Processor Aggregator Device which provides a control point
+that enables the platform to perform specific processor configuration
+and control that applies to all processors in the platform.
+
+This patch is to implement Xen acpi pad logic. When running under Xen
+virt platform, native pad driver would not work. Instead Xen pad driver,
+a self-contained and thin logic level, would take over acpi pad logic.
+
+When acpi pad notify OSPM, xen pad logic intercept and parse _PUR object
+to get the expected idle cpu number, and then hypercall to hypervisor.
+Xen hypervisor would then do the rest work, say, core parking, to idle
+specific number of cpus on its own policy.
+
+Signed-off-by: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+---
+ drivers/xen/Makefile             |    3 +-
+ drivers/xen/xen-acpi-pad.c       |  186 ++++++++++++++++++++++++++++++++++=
+++++
+ include/xen/interface/platform.h |   17 ++++
+ include/xen/interface/version.h  |   15 +++
+ 4 files changed, 220 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/xen/xen-acpi-pad.c
+
+diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+index 0e86370..3c39717 100644
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@ -10,7 +10,8 @@ CFLAGS_features.o			:=3D $(nostackp)
 =20
- 	switch (pvcc->encaps) {		/* LLC encapsulation needed */
- 	case e_llc:
-@@ -328,7 +328,17 @@ static int pppoatm_send(struct ppp_channel *chan, stru=
-ct sk_buff *skb)
- 	    ? DROP_PACKET : 1;
- 	bh_unlock_sock(sk_atm(vcc));
- 	return ret;
--nospace:
-+ nospace_sched_wakeup:
-+	/* If we're returning zero for reasons *other* than the queue
-+	 * being full, then we need to ensure that a wakeup will
-+	 * happen and not just leave the channel stalled for ever.
-+	 * Just schedule the wakeup tasklet directly. As observed in
-+	 * pppoatm_pop(), it'll take the channel's ->downl lock which
-+	 * is also held by our caller, so it can't happen "too soon"
-+	 * and cause us to effectively miss a wakeup.
-+	 */
-+	tasklet_schedule(&pvcc->wakeup_tasklet);
-+ nospace:
- 	bh_unlock_sock(sk_atm(vcc));
- 	/*
- 	 * We don't have space to send this SKB now, but we might have
-
+ dom0-$(CONFIG_PCI) +=3D pci.o
+ dom0-$(CONFIG_USB_SUPPORT) +=3D dbgp.o
+-dom0-$(CONFIG_ACPI) +=3D acpi.o
++dom0-$(CONFIG_ACPI) +=3D acpi.o $(xen-pad-y)
++xen-pad-$(CONFIG_X86) +=3D xen-acpi-pad.o
+ dom0-$(CONFIG_X86) +=3D pcpu.o
+ obj-$(CONFIG_XEN_DOM0)			+=3D $(dom0-y)
+ obj-$(CONFIG_BLOCK)			+=3D biomerge.o
+diff --git a/drivers/xen/xen-acpi-pad.c b/drivers/xen/xen-acpi-pad.c
+new file mode 100644
+index 0000000..f02d3ff
+--- /dev/null
++++ b/drivers/xen/xen-acpi-pad.c
+@@ -0,0 +1,186 @@
++/*
++ * xen-acpi-pad.c - Xen pad interface
++ *
++ * Copyright (c) 2012, Intel Corporation.
++ *    Author: Liu, Jinsong <jinsong.liu@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License f=
+or
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along=
+ with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <acpi/acpi_bus.h>
++#include <acpi/acpi_drivers.h>
++#include <asm/xen/hypercall.h>
++#include <xen/interface/version.h>
++
++#define ACPI_PROCESSOR_AGGREGATOR_CLASS	"acpi_pad"
++#define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
++#define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
++
++static DEFINE_MUTEX(xen_cpu_lock);
++
++static int xen_acpi_pad_idle_cpus(unsigned int idle_nums)
++{
++	struct xen_platform_op op;
++
++	op.cmd =3D XENPF_core_parking;
++	op.u.core_parking.type =3D XEN_CORE_PARKING_SET;
++	op.u.core_parking.idle_nums =3D idle_nums;
++
++	return HYPERVISOR_dom0_op(&op);
++}
++
++static int xen_acpi_pad_idle_cpus_num(void)
++{
++	struct xen_platform_op op;
++
++	op.cmd =3D XENPF_core_parking;
++	op.u.core_parking.type =3D XEN_CORE_PARKING_GET;
++
++	return HYPERVISOR_dom0_op(&op)
++	       ?: op.u.core_parking.idle_nums;
++}
++
++/*
++ * Query firmware how many CPUs should be idle
++ * return -1 on failure
++ */
++static int acpi_pad_pur(acpi_handle handle)
++{
++	struct acpi_buffer buffer =3D {ACPI_ALLOCATE_BUFFER, NULL};
++	union acpi_object *package;
++	int num =3D -1;
++
++	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_PUR", NULL, &buffer)))
++		return num;
++
++	if (!buffer.length || !buffer.pointer)
++		return num;
++
++	package =3D buffer.pointer;
++
++	if (package->type =3D=3D ACPI_TYPE_PACKAGE &&
++		package->package.count =3D=3D 2 &&
++		package->package.elements[0].integer.value =3D=3D 1) /* rev 1 */
++
++		num =3D package->package.elements[1].integer.value;
++
++	kfree(buffer.pointer);
++	return num;
++}
++
++/* Notify firmware how many CPUs are idle */
++static void acpi_pad_ost(acpi_handle handle, int stat,
++	uint32_t idle_nums)
++{
++	union acpi_object params[3] =3D {
++		{.type =3D ACPI_TYPE_INTEGER,},
++		{.type =3D ACPI_TYPE_INTEGER,},
++		{.type =3D ACPI_TYPE_BUFFER,},
++	};
++	struct acpi_object_list arg_list =3D {3, params};
++
++	params[0].integer.value =3D ACPI_PROCESSOR_AGGREGATOR_NOTIFY;
++	params[1].integer.value =3D  stat;
++	params[2].buffer.length =3D 4;
++	params[2].buffer.pointer =3D (void *)&idle_nums;
++	acpi_evaluate_object(handle, "_OST", &arg_list, NULL);
++}
++
++static void acpi_pad_handle_notify(acpi_handle handle)
++{
++	int idle_nums;
++
++	mutex_lock(&xen_cpu_lock);
++	idle_nums =3D acpi_pad_pur(handle);
++	if (idle_nums < 0) {
++		mutex_unlock(&xen_cpu_lock);
++		return;
++	}
++
++	idle_nums =3D xen_acpi_pad_idle_cpus(idle_nums)
++		    ?: xen_acpi_pad_idle_cpus_num();
++	if (idle_nums >=3D 0)
++		acpi_pad_ost(handle, 0, idle_nums);
++	mutex_unlock(&xen_cpu_lock);
++}
++
++static void acpi_pad_notify(acpi_handle handle, u32 event,
++	void *data)
++{
++	switch (event) {
++	case ACPI_PROCESSOR_AGGREGATOR_NOTIFY:
++		acpi_pad_handle_notify(handle);
++		break;
++	default:
++		pr_warn("Unsupported event [0x%x]\n", event);
++		break;
++	}
++}
++
++static int acpi_pad_add(struct acpi_device *device)
++{
++	acpi_status status;
++
++	strcpy(acpi_device_name(device), ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME);
++	strcpy(acpi_device_class(device), ACPI_PROCESSOR_AGGREGATOR_CLASS);
++
++	status =3D acpi_install_notify_handler(device->handle,
++		ACPI_DEVICE_NOTIFY, acpi_pad_notify, device);
++	if (ACPI_FAILURE(status))
++		return -ENODEV;
++
++	return 0;
++}
++
++static int acpi_pad_remove(struct acpi_device *device,
++	int type)
++{
++	mutex_lock(&xen_cpu_lock);
++	xen_acpi_pad_idle_cpus(0);
++	mutex_unlock(&xen_cpu_lock);
++
++	acpi_remove_notify_handler(device->handle,
++		ACPI_DEVICE_NOTIFY, acpi_pad_notify);
++	return 0;
++}
++
++static const struct acpi_device_id pad_device_ids[] =3D {
++	{"ACPI000C", 0},
++	{"", 0},
++};
++
++static struct acpi_driver acpi_pad_driver =3D {
++	.name =3D "processor_aggregator",
++	.class =3D ACPI_PROCESSOR_AGGREGATOR_CLASS,
++	.ids =3D pad_device_ids,
++	.ops =3D {
++		.add =3D acpi_pad_add,
++		.remove =3D acpi_pad_remove,
++	},
++};
++
++static int __init xen_acpi_pad_init(void)
++{
++	/* Only DOM0 and Xen4.2 or later support Xen acpi pad */
++	if (!xen_initial_domain() ||
++		!xen_running_on_version_or_later(4, 2))
++		return -ENODEV;
++
++	return acpi_bus_register_driver(&acpi_pad_driver);
++}
++subsys_initcall(xen_acpi_pad_init);
++
+diff --git a/include/xen/interface/platform.h b/include/xen/interface/platf=
+orm.h
+index 4755b5f..5e36932 100644
+--- a/include/xen/interface/platform.h
++++ b/include/xen/interface/platform.h
+@@ -324,6 +324,22 @@ struct xenpf_cpu_ol {
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xenpf_cpu_ol);
+=20
++/*
++ * CMD 58 and 59 are reserved for cpu hotadd and memory hotadd,
++ * which are already occupied at Xen hypervisor side.
++ */
++#define XENPF_core_parking     60
++struct xenpf_core_parking {
++	/* IN variables */
++#define XEN_CORE_PARKING_SET   1
++#define XEN_CORE_PARKING_GET   2
++	uint32_t type;
++	/* IN variables:  set cpu nums expected to be idled */
++	/* OUT variables: get cpu nums actually be idled */
++	uint32_t idle_nums;
++};
++DEFINE_GUEST_HANDLE_STRUCT(xenpf_core_parking);
++
+ struct xen_platform_op {
+ 	uint32_t cmd;
+ 	uint32_t interface_version; /* XENPF_INTERFACE_VERSION */
+@@ -341,6 +357,7 @@ struct xen_platform_op {
+ 		struct xenpf_set_processor_pminfo set_pminfo;
+ 		struct xenpf_pcpuinfo          pcpu_info;
+ 		struct xenpf_cpu_ol            cpu_ol;
++		struct xenpf_core_parking      core_parking;
+ 		uint8_t                        pad[128];
+ 	} u;
+ };
+diff --git a/include/xen/interface/version.h b/include/xen/interface/versio=
+n.h
+index 7ff6498..96d8d3d 100644
+--- a/include/xen/interface/version.h
++++ b/include/xen/interface/version.h
+@@ -63,4 +63,19 @@ struct xen_feature_info {
+ /* arg =3D=3D xen_domain_handle_t. */
+ #define XENVER_guest_handle 8
+=20
++/* Check if running on Xen version (major, minor) or later */
++static inline bool
++xen_running_on_version_or_later(unsigned int major, unsigned int minor)
++{
++	unsigned int version;
++
++	if (!xen_domain())
++		return false;
++
++	version =3D HYPERVISOR_xen_version(XENVER_version, NULL);
++	if ((((version >> 16) =3D=3D major) && ((version & 0xffff) >=3D minor)) |=
+|
++		((version >> 16) > major))
++		return true;
++	return false;
++}
+ #endif /* __XEN_PUBLIC_VERSION_H__ */
 --=20
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+1.7.1
 
-
-
-
---=-us/UYG2JcdwM4HgNkZxz
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
+--_002_DE8DF0795D48FD4CA783C40EC829233537B99ESHSMSX101ccrcorpi_
+Content-Type: application/octet-stream;
+	name="0001-Xen-acpi-pad-implement.patch"
+Content-Description: 0001-Xen-acpi-pad-implement.patch
+Content-Disposition: attachment;
+	filename="0001-Xen-acpi-pad-implement.patch"; size=8743;
+	creation-date="Wed, 07 Nov 2012 12:49:11 GMT";
+	modification-date="Wed, 07 Nov 2012 20:32:34 GMT"
 Content-Transfer-Encoding: base64
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
-AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
-4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
-wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
-xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
-MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
-w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
-c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
-dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
-BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
-aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
-bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
-oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
-MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
-dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
-MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
-hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
-DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
-ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
-NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
-mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
-AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
-MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
-A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
-Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
-7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
-KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
-wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
-V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
-vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
-CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
-ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
-YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
-ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
-IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
-U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
-ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
-BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
-aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
-bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
-dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
-CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
-QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
-ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
-AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
-t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
-gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
-H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
-kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
-MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
-eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMTA3MTI1MjE0WjAjBgkqhkiG9w0BCQQx
-FgQUjSHDAXqgMzxemrz0bDAZX19klK4wgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
-SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
-ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
-ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
-TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
-aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQCl6c+7dog/jM3Y2TIN9PW1y1vb
-uGu/WGiEODkBwkKXM4eYEroGnqo4skVQjUGErMAF598BFJJXvwjneyi5FI0p3HQmCfoZmEQ/eEIa
-hpGYwAkl5G57eCL8BbT8DvR0oX7GruD6G3xlb7dxCdRn8CjyIgvVQW/KFLkArlFD2ssbURq5PS0C
-2XQXQquVb646GN2Y8puj50+Y/vOrNDVoE1kT2C0es2zSf1p5x7iVwfOWtS7XdY1HcK2accksQQ05
-bt3u2Cz+Ul5+4AMXoiRMKq5Cs7UhlTcYbgEYURVju+S9oqa783wQ6LZFuqD1lnp87wypl/sn5Mdb
-VwjMe53lR9HvAAAAAAAA
+RnJvbSBkNWY0NjJjYzgwMjk4NjM5NTVhNTc0ZjE1NDFiZWNlNzJhYWZiOTg2IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
+RGF0ZTogVGh1LCA4IE5vdiAyMDEyIDA0OjI5OjA3ICswODAwClN1YmplY3Q6IFtQQVRDSCAxLzJd
+IFhlbiBhY3BpIHBhZCBpbXBsZW1lbnQKClBBRCBpcyBhY3BpIFByb2Nlc3NvciBBZ2dyZWdhdG9y
+IERldmljZSB3aGljaCBwcm92aWRlcyBhIGNvbnRyb2wgcG9pbnQKdGhhdCBlbmFibGVzIHRoZSBw
+bGF0Zm9ybSB0byBwZXJmb3JtIHNwZWNpZmljIHByb2Nlc3NvciBjb25maWd1cmF0aW9uCmFuZCBj
+b250cm9sIHRoYXQgYXBwbGllcyB0byBhbGwgcHJvY2Vzc29ycyBpbiB0aGUgcGxhdGZvcm0uCgpU
+aGlzIHBhdGNoIGlzIHRvIGltcGxlbWVudCBYZW4gYWNwaSBwYWQgbG9naWMuIFdoZW4gcnVubmlu
+ZyB1bmRlciBYZW4KdmlydCBwbGF0Zm9ybSwgbmF0aXZlIHBhZCBkcml2ZXIgd291bGQgbm90IHdv
+cmsuIEluc3RlYWQgWGVuIHBhZCBkcml2ZXIsCmEgc2VsZi1jb250YWluZWQgYW5kIHRoaW4gbG9n
+aWMgbGV2ZWwsIHdvdWxkIHRha2Ugb3ZlciBhY3BpIHBhZCBsb2dpYy4KCldoZW4gYWNwaSBwYWQg
+bm90aWZ5IE9TUE0sIHhlbiBwYWQgbG9naWMgaW50ZXJjZXB0IGFuZCBwYXJzZSBfUFVSIG9iamVj
+dAp0byBnZXQgdGhlIGV4cGVjdGVkIGlkbGUgY3B1IG51bWJlciwgYW5kIHRoZW4gaHlwZXJjYWxs
+IHRvIGh5cGVydmlzb3IuClhlbiBoeXBlcnZpc29yIHdvdWxkIHRoZW4gZG8gdGhlIHJlc3Qgd29y
+aywgc2F5LCBjb3JlIHBhcmtpbmcsIHRvIGlkbGUKc3BlY2lmaWMgbnVtYmVyIG9mIGNwdXMgb24g
+aXRzIG93biBwb2xpY3kuCgpTaWduZWQtb2ZmLWJ5OiBKYW4gQmV1bGljaCA8SkJldWxpY2hAc3Vz
+ZS5jb20+ClNpZ25lZC1vZmYtYnk6IExpdSBKaW5zb25nIDxqaW5zb25nLmxpdUBpbnRlbC5jb20+
+Ci0tLQogZHJpdmVycy94ZW4vTWFrZWZpbGUgICAgICAgICAgICAgfCAgICAzICstCiBkcml2ZXJz
+L3hlbi94ZW4tYWNwaS1wYWQuYyAgICAgICB8ICAxODYgKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKysrKysrKysKIGluY2x1ZGUveGVuL2ludGVyZmFjZS9wbGF0Zm9ybS5oIHwgICAxNyAr
+KysrCiBpbmNsdWRlL3hlbi9pbnRlcmZhY2UvdmVyc2lvbi5oICB8ICAgMTUgKysrCiA0IGZpbGVz
+IGNoYW5nZWQsIDIyMCBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9ucygtKQogY3JlYXRlIG1vZGUg
+MTAwNjQ0IGRyaXZlcnMveGVuL3hlbi1hY3BpLXBhZC5jCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy94
+ZW4vTWFrZWZpbGUgYi9kcml2ZXJzL3hlbi9NYWtlZmlsZQppbmRleCAwZTg2MzcwLi4zYzM5NzE3
+IDEwMDY0NAotLS0gYS9kcml2ZXJzL3hlbi9NYWtlZmlsZQorKysgYi9kcml2ZXJzL3hlbi9NYWtl
+ZmlsZQpAQCAtMTAsNyArMTAsOCBAQCBDRkxBR1NfZmVhdHVyZXMubwkJCTo9ICQobm9zdGFja3Ap
+CiAKIGRvbTAtJChDT05GSUdfUENJKSArPSBwY2kubwogZG9tMC0kKENPTkZJR19VU0JfU1VQUE9S
+VCkgKz0gZGJncC5vCi1kb20wLSQoQ09ORklHX0FDUEkpICs9IGFjcGkubworZG9tMC0kKENPTkZJ
+R19BQ1BJKSArPSBhY3BpLm8gJCh4ZW4tcGFkLXkpCit4ZW4tcGFkLSQoQ09ORklHX1g4NikgKz0g
+eGVuLWFjcGktcGFkLm8KIGRvbTAtJChDT05GSUdfWDg2KSArPSBwY3B1Lm8KIG9iai0kKENPTkZJ
+R19YRU5fRE9NMCkJCQkrPSAkKGRvbTAteSkKIG9iai0kKENPTkZJR19CTE9DSykJCQkrPSBiaW9t
+ZXJnZS5vCmRpZmYgLS1naXQgYS9kcml2ZXJzL3hlbi94ZW4tYWNwaS1wYWQuYyBiL2RyaXZlcnMv
+eGVuL3hlbi1hY3BpLXBhZC5jCm5ldyBmaWxlIG1vZGUgMTAwNjQ0CmluZGV4IDAwMDAwMDAuLmYw
+MmQzZmYKLS0tIC9kZXYvbnVsbAorKysgYi9kcml2ZXJzL3hlbi94ZW4tYWNwaS1wYWQuYwpAQCAt
+MCwwICsxLDE4NiBAQAorLyoKKyAqIHhlbi1hY3BpLXBhZC5jIC0gWGVuIHBhZCBpbnRlcmZhY2UK
+KyAqCisgKiBDb3B5cmlnaHQgKGMpIDIwMTIsIEludGVsIENvcnBvcmF0aW9uLgorICogICAgQXV0
+aG9yOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4KKyAqCisgKiBUaGlzIHBy
+b2dyYW0gaXMgZnJlZSBzb2Z0d2FyZTsgeW91IGNhbiByZWRpc3RyaWJ1dGUgaXQgYW5kL29yIG1v
+ZGlmeSBpdAorICogdW5kZXIgdGhlIHRlcm1zIGFuZCBjb25kaXRpb25zIG9mIHRoZSBHTlUgR2Vu
+ZXJhbCBQdWJsaWMgTGljZW5zZSwKKyAqIHZlcnNpb24gMiwgYXMgcHVibGlzaGVkIGJ5IHRoZSBG
+cmVlIFNvZnR3YXJlIEZvdW5kYXRpb24uCisgKgorICogVGhpcyBwcm9ncmFtIGlzIGRpc3RyaWJ1
+dGVkIGluIHRoZSBob3BlIGl0IHdpbGwgYmUgdXNlZnVsLCBidXQgV0lUSE9VVAorICogQU5ZIFdB
+UlJBTlRZOyB3aXRob3V0IGV2ZW4gdGhlIGltcGxpZWQgd2FycmFudHkgb2YgTUVSQ0hBTlRBQklM
+SVRZIG9yCisgKiBGSVRORVNTIEZPUiBBIFBBUlRJQ1VMQVIgUFVSUE9TRS4gIFNlZSB0aGUgR05V
+IEdlbmVyYWwgUHVibGljIExpY2Vuc2UgZm9yCisgKiBtb3JlIGRldGFpbHMuCisgKgorICogWW91
+IHNob3VsZCBoYXZlIHJlY2VpdmVkIGEgY29weSBvZiB0aGUgR05VIEdlbmVyYWwgUHVibGljIExp
+Y2Vuc2UgYWxvbmcgd2l0aAorICogdGhpcyBwcm9ncmFtOyBpZiBub3QsIHdyaXRlIHRvIHRoZSBG
+cmVlIFNvZnR3YXJlIEZvdW5kYXRpb24sIEluYy4sCisgKiA1MSBGcmFua2xpbiBTdCAtIEZpZnRo
+IEZsb29yLCBCb3N0b24sIE1BIDAyMTEwLTEzMDEgVVNBLgorICoKKyAqLworCisjaW5jbHVkZSA8
+bGludXgva2VybmVsLmg+CisjaW5jbHVkZSA8bGludXgvdHlwZXMuaD4KKyNpbmNsdWRlIDxhY3Bp
+L2FjcGlfYnVzLmg+CisjaW5jbHVkZSA8YWNwaS9hY3BpX2RyaXZlcnMuaD4KKyNpbmNsdWRlIDxh
+c20veGVuL2h5cGVyY2FsbC5oPgorI2luY2x1ZGUgPHhlbi9pbnRlcmZhY2UvdmVyc2lvbi5oPgor
+CisjZGVmaW5lIEFDUElfUFJPQ0VTU09SX0FHR1JFR0FUT1JfQ0xBU1MJImFjcGlfcGFkIgorI2Rl
+ZmluZSBBQ1BJX1BST0NFU1NPUl9BR0dSRUdBVE9SX0RFVklDRV9OQU1FICJQcm9jZXNzb3IgQWdn
+cmVnYXRvciIKKyNkZWZpbmUgQUNQSV9QUk9DRVNTT1JfQUdHUkVHQVRPUl9OT1RJRlkgMHg4MAor
+CitzdGF0aWMgREVGSU5FX01VVEVYKHhlbl9jcHVfbG9jayk7CisKK3N0YXRpYyBpbnQgeGVuX2Fj
+cGlfcGFkX2lkbGVfY3B1cyh1bnNpZ25lZCBpbnQgaWRsZV9udW1zKQoreworCXN0cnVjdCB4ZW5f
+cGxhdGZvcm1fb3Agb3A7CisKKwlvcC5jbWQgPSBYRU5QRl9jb3JlX3Bhcmtpbmc7CisJb3AudS5j
+b3JlX3BhcmtpbmcudHlwZSA9IFhFTl9DT1JFX1BBUktJTkdfU0VUOworCW9wLnUuY29yZV9wYXJr
+aW5nLmlkbGVfbnVtcyA9IGlkbGVfbnVtczsKKworCXJldHVybiBIWVBFUlZJU09SX2RvbTBfb3Ao
+Jm9wKTsKK30KKworc3RhdGljIGludCB4ZW5fYWNwaV9wYWRfaWRsZV9jcHVzX251bSh2b2lkKQor
+eworCXN0cnVjdCB4ZW5fcGxhdGZvcm1fb3Agb3A7CisKKwlvcC5jbWQgPSBYRU5QRl9jb3JlX3Bh
+cmtpbmc7CisJb3AudS5jb3JlX3BhcmtpbmcudHlwZSA9IFhFTl9DT1JFX1BBUktJTkdfR0VUOwor
+CisJcmV0dXJuIEhZUEVSVklTT1JfZG9tMF9vcCgmb3ApCisJICAgICAgID86IG9wLnUuY29yZV9w
+YXJraW5nLmlkbGVfbnVtczsKK30KKworLyoKKyAqIFF1ZXJ5IGZpcm13YXJlIGhvdyBtYW55IENQ
+VXMgc2hvdWxkIGJlIGlkbGUKKyAqIHJldHVybiAtMSBvbiBmYWlsdXJlCisgKi8KK3N0YXRpYyBp
+bnQgYWNwaV9wYWRfcHVyKGFjcGlfaGFuZGxlIGhhbmRsZSkKK3sKKwlzdHJ1Y3QgYWNwaV9idWZm
+ZXIgYnVmZmVyID0ge0FDUElfQUxMT0NBVEVfQlVGRkVSLCBOVUxMfTsKKwl1bmlvbiBhY3BpX29i
+amVjdCAqcGFja2FnZTsKKwlpbnQgbnVtID0gLTE7CisKKwlpZiAoQUNQSV9GQUlMVVJFKGFjcGlf
+ZXZhbHVhdGVfb2JqZWN0KGhhbmRsZSwgIl9QVVIiLCBOVUxMLCAmYnVmZmVyKSkpCisJCXJldHVy
+biBudW07CisKKwlpZiAoIWJ1ZmZlci5sZW5ndGggfHwgIWJ1ZmZlci5wb2ludGVyKQorCQlyZXR1
+cm4gbnVtOworCisJcGFja2FnZSA9IGJ1ZmZlci5wb2ludGVyOworCisJaWYgKHBhY2thZ2UtPnR5
+cGUgPT0gQUNQSV9UWVBFX1BBQ0tBR0UgJiYKKwkJcGFja2FnZS0+cGFja2FnZS5jb3VudCA9PSAy
+ICYmCisJCXBhY2thZ2UtPnBhY2thZ2UuZWxlbWVudHNbMF0uaW50ZWdlci52YWx1ZSA9PSAxKSAv
+KiByZXYgMSAqLworCisJCW51bSA9IHBhY2thZ2UtPnBhY2thZ2UuZWxlbWVudHNbMV0uaW50ZWdl
+ci52YWx1ZTsKKworCWtmcmVlKGJ1ZmZlci5wb2ludGVyKTsKKwlyZXR1cm4gbnVtOworfQorCisv
+KiBOb3RpZnkgZmlybXdhcmUgaG93IG1hbnkgQ1BVcyBhcmUgaWRsZSAqLworc3RhdGljIHZvaWQg
+YWNwaV9wYWRfb3N0KGFjcGlfaGFuZGxlIGhhbmRsZSwgaW50IHN0YXQsCisJdWludDMyX3QgaWRs
+ZV9udW1zKQoreworCXVuaW9uIGFjcGlfb2JqZWN0IHBhcmFtc1szXSA9IHsKKwkJey50eXBlID0g
+QUNQSV9UWVBFX0lOVEVHRVIsfSwKKwkJey50eXBlID0gQUNQSV9UWVBFX0lOVEVHRVIsfSwKKwkJ
+ey50eXBlID0gQUNQSV9UWVBFX0JVRkZFUix9LAorCX07CisJc3RydWN0IGFjcGlfb2JqZWN0X2xp
+c3QgYXJnX2xpc3QgPSB7MywgcGFyYW1zfTsKKworCXBhcmFtc1swXS5pbnRlZ2VyLnZhbHVlID0g
+QUNQSV9QUk9DRVNTT1JfQUdHUkVHQVRPUl9OT1RJRlk7CisJcGFyYW1zWzFdLmludGVnZXIudmFs
+dWUgPSAgc3RhdDsKKwlwYXJhbXNbMl0uYnVmZmVyLmxlbmd0aCA9IDQ7CisJcGFyYW1zWzJdLmJ1
+ZmZlci5wb2ludGVyID0gKHZvaWQgKikmaWRsZV9udW1zOworCWFjcGlfZXZhbHVhdGVfb2JqZWN0
+KGhhbmRsZSwgIl9PU1QiLCAmYXJnX2xpc3QsIE5VTEwpOworfQorCitzdGF0aWMgdm9pZCBhY3Bp
+X3BhZF9oYW5kbGVfbm90aWZ5KGFjcGlfaGFuZGxlIGhhbmRsZSkKK3sKKwlpbnQgaWRsZV9udW1z
+OworCisJbXV0ZXhfbG9jaygmeGVuX2NwdV9sb2NrKTsKKwlpZGxlX251bXMgPSBhY3BpX3BhZF9w
+dXIoaGFuZGxlKTsKKwlpZiAoaWRsZV9udW1zIDwgMCkgeworCQltdXRleF91bmxvY2soJnhlbl9j
+cHVfbG9jayk7CisJCXJldHVybjsKKwl9CisKKwlpZGxlX251bXMgPSB4ZW5fYWNwaV9wYWRfaWRs
+ZV9jcHVzKGlkbGVfbnVtcykKKwkJICAgID86IHhlbl9hY3BpX3BhZF9pZGxlX2NwdXNfbnVtKCk7
+CisJaWYgKGlkbGVfbnVtcyA+PSAwKQorCQlhY3BpX3BhZF9vc3QoaGFuZGxlLCAwLCBpZGxlX251
+bXMpOworCW11dGV4X3VubG9jaygmeGVuX2NwdV9sb2NrKTsKK30KKworc3RhdGljIHZvaWQgYWNw
+aV9wYWRfbm90aWZ5KGFjcGlfaGFuZGxlIGhhbmRsZSwgdTMyIGV2ZW50LAorCXZvaWQgKmRhdGEp
+Cit7CisJc3dpdGNoIChldmVudCkgeworCWNhc2UgQUNQSV9QUk9DRVNTT1JfQUdHUkVHQVRPUl9O
+T1RJRlk6CisJCWFjcGlfcGFkX2hhbmRsZV9ub3RpZnkoaGFuZGxlKTsKKwkJYnJlYWs7CisJZGVm
+YXVsdDoKKwkJcHJfd2FybigiVW5zdXBwb3J0ZWQgZXZlbnQgWzB4JXhdXG4iLCBldmVudCk7CisJ
+CWJyZWFrOworCX0KK30KKworc3RhdGljIGludCBhY3BpX3BhZF9hZGQoc3RydWN0IGFjcGlfZGV2
+aWNlICpkZXZpY2UpCit7CisJYWNwaV9zdGF0dXMgc3RhdHVzOworCisJc3RyY3B5KGFjcGlfZGV2
+aWNlX25hbWUoZGV2aWNlKSwgQUNQSV9QUk9DRVNTT1JfQUdHUkVHQVRPUl9ERVZJQ0VfTkFNRSk7
+CisJc3RyY3B5KGFjcGlfZGV2aWNlX2NsYXNzKGRldmljZSksIEFDUElfUFJPQ0VTU09SX0FHR1JF
+R0FUT1JfQ0xBU1MpOworCisJc3RhdHVzID0gYWNwaV9pbnN0YWxsX25vdGlmeV9oYW5kbGVyKGRl
+dmljZS0+aGFuZGxlLAorCQlBQ1BJX0RFVklDRV9OT1RJRlksIGFjcGlfcGFkX25vdGlmeSwgZGV2
+aWNlKTsKKwlpZiAoQUNQSV9GQUlMVVJFKHN0YXR1cykpCisJCXJldHVybiAtRU5PREVWOworCisJ
+cmV0dXJuIDA7Cit9CisKK3N0YXRpYyBpbnQgYWNwaV9wYWRfcmVtb3ZlKHN0cnVjdCBhY3BpX2Rl
+dmljZSAqZGV2aWNlLAorCWludCB0eXBlKQoreworCW11dGV4X2xvY2soJnhlbl9jcHVfbG9jayk7
+CisJeGVuX2FjcGlfcGFkX2lkbGVfY3B1cygwKTsKKwltdXRleF91bmxvY2soJnhlbl9jcHVfbG9j
+ayk7CisKKwlhY3BpX3JlbW92ZV9ub3RpZnlfaGFuZGxlcihkZXZpY2UtPmhhbmRsZSwKKwkJQUNQ
+SV9ERVZJQ0VfTk9USUZZLCBhY3BpX3BhZF9ub3RpZnkpOworCXJldHVybiAwOworfQorCitzdGF0
+aWMgY29uc3Qgc3RydWN0IGFjcGlfZGV2aWNlX2lkIHBhZF9kZXZpY2VfaWRzW10gPSB7CisJeyJB
+Q1BJMDAwQyIsIDB9LAorCXsiIiwgMH0sCit9OworCitzdGF0aWMgc3RydWN0IGFjcGlfZHJpdmVy
+IGFjcGlfcGFkX2RyaXZlciA9IHsKKwkubmFtZSA9ICJwcm9jZXNzb3JfYWdncmVnYXRvciIsCisJ
+LmNsYXNzID0gQUNQSV9QUk9DRVNTT1JfQUdHUkVHQVRPUl9DTEFTUywKKwkuaWRzID0gcGFkX2Rl
+dmljZV9pZHMsCisJLm9wcyA9IHsKKwkJLmFkZCA9IGFjcGlfcGFkX2FkZCwKKwkJLnJlbW92ZSA9
+IGFjcGlfcGFkX3JlbW92ZSwKKwl9LAorfTsKKworc3RhdGljIGludCBfX2luaXQgeGVuX2FjcGlf
+cGFkX2luaXQodm9pZCkKK3sKKwkvKiBPbmx5IERPTTAgYW5kIFhlbjQuMiBvciBsYXRlciBzdXBw
+b3J0IFhlbiBhY3BpIHBhZCAqLworCWlmICgheGVuX2luaXRpYWxfZG9tYWluKCkgfHwKKwkJIXhl
+bl9ydW5uaW5nX29uX3ZlcnNpb25fb3JfbGF0ZXIoNCwgMikpCisJCXJldHVybiAtRU5PREVWOwor
+CisJcmV0dXJuIGFjcGlfYnVzX3JlZ2lzdGVyX2RyaXZlcigmYWNwaV9wYWRfZHJpdmVyKTsKK30K
+K3N1YnN5c19pbml0Y2FsbCh4ZW5fYWNwaV9wYWRfaW5pdCk7CisKZGlmZiAtLWdpdCBhL2luY2x1
+ZGUveGVuL2ludGVyZmFjZS9wbGF0Zm9ybS5oIGIvaW5jbHVkZS94ZW4vaW50ZXJmYWNlL3BsYXRm
+b3JtLmgKaW5kZXggNDc1NWI1Zi4uNWUzNjkzMiAxMDA2NDQKLS0tIGEvaW5jbHVkZS94ZW4vaW50
+ZXJmYWNlL3BsYXRmb3JtLmgKKysrIGIvaW5jbHVkZS94ZW4vaW50ZXJmYWNlL3BsYXRmb3JtLmgK
+QEAgLTMyNCw2ICszMjQsMjIgQEAgc3RydWN0IHhlbnBmX2NwdV9vbCB7CiB9OwogREVGSU5FX0dV
+RVNUX0hBTkRMRV9TVFJVQ1QoeGVucGZfY3B1X29sKTsKIAorLyoKKyAqIENNRCA1OCBhbmQgNTkg
+YXJlIHJlc2VydmVkIGZvciBjcHUgaG90YWRkIGFuZCBtZW1vcnkgaG90YWRkLAorICogd2hpY2gg
+YXJlIGFscmVhZHkgb2NjdXBpZWQgYXQgWGVuIGh5cGVydmlzb3Igc2lkZS4KKyAqLworI2RlZmlu
+ZSBYRU5QRl9jb3JlX3BhcmtpbmcgICAgIDYwCitzdHJ1Y3QgeGVucGZfY29yZV9wYXJraW5nIHsK
+KwkvKiBJTiB2YXJpYWJsZXMgKi8KKyNkZWZpbmUgWEVOX0NPUkVfUEFSS0lOR19TRVQgICAxCisj
+ZGVmaW5lIFhFTl9DT1JFX1BBUktJTkdfR0VUICAgMgorCXVpbnQzMl90IHR5cGU7CisJLyogSU4g
+dmFyaWFibGVzOiAgc2V0IGNwdSBudW1zIGV4cGVjdGVkIHRvIGJlIGlkbGVkICovCisJLyogT1VU
+IHZhcmlhYmxlczogZ2V0IGNwdSBudW1zIGFjdHVhbGx5IGJlIGlkbGVkICovCisJdWludDMyX3Qg
+aWRsZV9udW1zOworfTsKK0RFRklORV9HVUVTVF9IQU5ETEVfU1RSVUNUKHhlbnBmX2NvcmVfcGFy
+a2luZyk7CisKIHN0cnVjdCB4ZW5fcGxhdGZvcm1fb3AgewogCXVpbnQzMl90IGNtZDsKIAl1aW50
+MzJfdCBpbnRlcmZhY2VfdmVyc2lvbjsgLyogWEVOUEZfSU5URVJGQUNFX1ZFUlNJT04gKi8KQEAg
+LTM0MSw2ICszNTcsNyBAQCBzdHJ1Y3QgeGVuX3BsYXRmb3JtX29wIHsKIAkJc3RydWN0IHhlbnBm
+X3NldF9wcm9jZXNzb3JfcG1pbmZvIHNldF9wbWluZm87CiAJCXN0cnVjdCB4ZW5wZl9wY3B1aW5m
+byAgICAgICAgICBwY3B1X2luZm87CiAJCXN0cnVjdCB4ZW5wZl9jcHVfb2wgICAgICAgICAgICBj
+cHVfb2w7CisJCXN0cnVjdCB4ZW5wZl9jb3JlX3BhcmtpbmcgICAgICBjb3JlX3Bhcmtpbmc7CiAJ
+CXVpbnQ4X3QgICAgICAgICAgICAgICAgICAgICAgICBwYWRbMTI4XTsKIAl9IHU7CiB9OwpkaWZm
+IC0tZ2l0IGEvaW5jbHVkZS94ZW4vaW50ZXJmYWNlL3ZlcnNpb24uaCBiL2luY2x1ZGUveGVuL2lu
+dGVyZmFjZS92ZXJzaW9uLmgKaW5kZXggN2ZmNjQ5OC4uOTZkOGQzZCAxMDA2NDQKLS0tIGEvaW5j
+bHVkZS94ZW4vaW50ZXJmYWNlL3ZlcnNpb24uaAorKysgYi9pbmNsdWRlL3hlbi9pbnRlcmZhY2Uv
+dmVyc2lvbi5oCkBAIC02Myw0ICs2MywxOSBAQCBzdHJ1Y3QgeGVuX2ZlYXR1cmVfaW5mbyB7CiAv
+KiBhcmcgPT0geGVuX2RvbWFpbl9oYW5kbGVfdC4gKi8KICNkZWZpbmUgWEVOVkVSX2d1ZXN0X2hh
+bmRsZSA4CiAKKy8qIENoZWNrIGlmIHJ1bm5pbmcgb24gWGVuIHZlcnNpb24gKG1ham9yLCBtaW5v
+cikgb3IgbGF0ZXIgKi8KK3N0YXRpYyBpbmxpbmUgYm9vbAoreGVuX3J1bm5pbmdfb25fdmVyc2lv
+bl9vcl9sYXRlcih1bnNpZ25lZCBpbnQgbWFqb3IsIHVuc2lnbmVkIGludCBtaW5vcikKK3sKKwl1
+bnNpZ25lZCBpbnQgdmVyc2lvbjsKKworCWlmICgheGVuX2RvbWFpbigpKQorCQlyZXR1cm4gZmFs
+c2U7CisKKwl2ZXJzaW9uID0gSFlQRVJWSVNPUl94ZW5fdmVyc2lvbihYRU5WRVJfdmVyc2lvbiwg
+TlVMTCk7CisJaWYgKCgoKHZlcnNpb24gPj4gMTYpID09IG1ham9yKSAmJiAoKHZlcnNpb24gJiAw
+eGZmZmYpID49IG1pbm9yKSkgfHwKKwkJKCh2ZXJzaW9uID4+IDE2KSA+IG1ham9yKSkKKwkJcmV0
+dXJuIHRydWU7CisJcmV0dXJuIGZhbHNlOworfQogI2VuZGlmIC8qIF9fWEVOX1BVQkxJQ19WRVJT
+SU9OX0hfXyAqLwotLSAKMS43LjEKCg==
 
-
---=-us/UYG2JcdwM4HgNkZxz--
-
+--_002_DE8DF0795D48FD4CA783C40EC829233537B99ESHSMSX101ccrcorpi_--
