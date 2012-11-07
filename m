@@ -1,83 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab2KGJkc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 04:40:32 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53620 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab2KGJkU (ORCPT
+	id S1753676Ab2KGJmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 04:42:22 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:56591 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751938Ab2KGJmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 04:40:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121107082820.GP30936@casco.aei.mpg.de>
-References: <20121107082820.GP30936@casco.aei.mpg.de>
-Date: Wed, 7 Nov 2012 17:40:19 +0800
-Message-ID: <CAD9gYJ+2D6-Lu4L_CNEjsypd6WxhUzmkC1gY5STQSPp41p6J5Q@mail.gmail.com>
-Subject: Re: Need assistance fixing a tg3 driver side-effect on IPMI
-From: =?GB2312?B?zfW98MbW?= <jinpuwang@gmail.com>
-To: Steffen Grunewald <Steffen.Grunewald@aei.mpg.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, htejun@gmail.com, tj@kernel.org,
-        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Nov 2012 04:42:20 -0500
+From: Qing Xu <qingx@marvell.com>
+To: qingx@marvell.com, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH v3 5/7] mfd: max8925: support dt for regulator
+Date: Wed,  7 Nov 2012 17:42:55 +0800
+Message-Id: <1352281375-17056-1-git-send-email-qingx@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 07 Nov 2012 09:42:11.0267 (UTC) FILETIME=[291C1930:01CDBCCC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/7 Steffen Grunewald <Steffen.Grunewald@aei.mpg.de>:
-> Hi everyone,
->
-> I've been running into a problem while installing Debian Wheezy on a bunch
-> of 6-year old machines which have been running Squeeze happily for years.
->
-> They are SuperMicro-based (H8SSL opteron board), with two BCM95704A6 (Tigon3)
-> interfaces, and a BMC/IPMI card (SuperMicro 1U) which shares eth0.
->
-> With a 2.6.32 kernel (and the 3.102 version of the tg3 driver) everything is fine.
->
-> With Debian's 3.2 (and tg3 3.121) I lose access to the IPMI LAN (or LANplus)
-> interface as soon as the tg3 module has been loaded. Even shutting down doesn't
-> give the interface back - I've got to pull the power plug.
->
-> Trying to git bisect the corresponding changes to the tg3 driver, I'm running
-> against a wall at the point where the source code has been moved to another
-> subtree back in 2011 (still a long time past Squeeze). I appear to be unable
-> to go back beyond that.
->
-> Can you advise how to find out when IPMI access got lost, and how to re-enable
-> it? Any suggestion is appreciated.
-> I suppose it wouldn't be as easy as "get the old source from 2.6.32, and plug
-> it into drivers/net/ethernet/broadcom, then rebuild the kernel" -?
->
-> Please keep me on CC, thanks.
->
-> Regards,
->  Steffen
-> --
-Ferenc met samilar problem :
+From: Qing Xu <qingx@marvell.com>
 
-"Michael Chan" <mchan@broadcom.com> writes:
+Signed-off-by: Qing Xu <qingx@marvell.com>
+---
+ .../bindings/regulator/max8925-regulator.txt       |   29 ++++++++
+ drivers/regulator/max8925-regulator.c              |   72 +++++++++++++++++++-
+ 2 files changed, 98 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/max8925-regulator.txt
 
-> On Tue, 2012-10-02 at 18:49 +0200, Ferenc Wagner wrote:
->
->> Going into the opposite direction: I found that Linux 3.6 does not
->> permanently break the SoL console on upping eth0!  I'll try to find
->> the commit which (sort of) fixed it.
->
-> These are the likely fixes:
->
-> commit cf9ecf4b631f649a964fa611f1a5e8874f2a76db
-> Author: Matt Carlson <mcarlson@broadcom.com>
-> Date: Mon Nov 28 09:41:03 2011 +0000
->
-> tg3: Fix TSO CAP for 5704 devs w / ASF enabled
+diff --git a/Documentation/devicetree/bindings/regulator/max8925-regulator.txt b/Documentation/devicetree/bindings/regulator/max8925-regulator.txt
+new file mode 100644
+index 0000000..073b41d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/max8925-regulator.txt
+@@ -0,0 +1,29 @@
++Max8925 Voltage regulators
++
++max8925 regulator device register is still handled by mfd_add_devices, not by
++of_xxx, so, it is not necessary to add compatible name. Also, those reg
++offset and id info is stored in mfd_cell(see max8925-core.c), as a result
++there is not private properties in dts.
++
++node's name should match with the definition in max8925_regulator_matches
++(see max8925-regulator.c)
++
++
++Optional properties:
++- Any optional property defined in bindings/regulator/regulator.txt
++
++
++Example:
++
++
++	regulators {
++		SDV1 {
++			regulator-min-microvolt = <637500>;
++			regulator-max-microvolt = <1425000>;
++			regulator-boot-on;
++			regulator-always-on;
++		};
++
++		...
++		...
++	}
+diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
+index 9bb0be3..5e84921 100644
+--- a/drivers/regulator/max8925-regulator.c
++++ b/drivers/regulator/max8925-regulator.c
+@@ -17,6 +17,8 @@
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/mfd/max8925.h>
++#include <linux/of.h>
++#include <linux/regulator/of_regulator.h>
+ 
+ #define SD1_DVM_VMIN		850000
+ #define SD1_DVM_VMAX		1000000
+@@ -187,6 +189,34 @@ static struct regulator_ops max8925_regulator_ldo_ops = {
+ 	.enable_reg	= MAX8925_LDOCTL##_id,			\
+ }
+ 
++#ifdef CONFIG_OF
++static struct of_regulator_match max8925_regulator_matches[] = {
++	{ .name	= "SDV1",},
++	{ .name = "SDV2",},
++	{ .name = "SDV3",},
++	{ .name = "LDO1",},
++	{ .name = "LDO2",},
++	{ .name = "LDO3",},
++	{ .name = "LDO4",},
++	{ .name = "LDO5",},
++	{ .name = "LDO6",},
++	{ .name = "LDO7",},
++	{ .name = "LDO8",},
++	{ .name = "LDO9",},
++	{ .name = "LDO10",},
++	{ .name = "LDO11",},
++	{ .name = "LDO12",},
++	{ .name = "LDO13",},
++	{ .name = "LDO14",},
++	{ .name = "LDO15",},
++	{ .name = "LDO16",},
++	{ .name = "LDO17",},
++	{ .name = "LDO18",},
++	{ .name = "LDO19",},
++	{ .name = "LDO20",},
++};
++#endif
++
+ static struct max8925_regulator_info max8925_regulator_info[] = {
+ 	MAX8925_SDV(1, 637.5, 1425, 12.5),
+ 	MAX8925_SDV(2,   650, 2225,   25),
+@@ -214,6 +244,36 @@ static struct max8925_regulator_info max8925_regulator_info[] = {
+ 	MAX8925_LDO(20, 750, 3900, 50),
+ };
+ 
++#ifdef CONFIG_OF
++static int max8925_regulator_dt_init(struct platform_device *pdev,
++				    struct max8925_regulator_info *info,
++				    struct regulator_config *config,
++				    int ridx)
++{
++	struct device_node *nproot, *np;
++	int rcount;
++	nproot = pdev->dev.parent->of_node;
++	if (!nproot)
++		return -ENODEV;
++	np = of_find_node_by_name(nproot, "regulators");
++	if (!np) {
++		dev_err(&pdev->dev, "failed to find regulators node\n");
++		return -ENODEV;
++	}
++
++	rcount = of_regulator_match(&pdev->dev, np,
++				&max8925_regulator_matches[ridx], 1);
++	if (rcount < 0)
++		return -ENODEV;
++	config->init_data =	max8925_regulator_matches[ridx].init_data;
++	config->of_node = max8925_regulator_matches[ridx].of_node;
++
++	return 0;
++}
++#else
++#define max8925_regulator_dt_init(x, y, z)	(-1)
++#endif
++
+ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+@@ -222,7 +282,7 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
+ 	struct max8925_regulator_info *ri;
+ 	struct resource *res;
+ 	struct regulator_dev *rdev;
+-	int i;
++	int i, regulator_idx;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (!res) {
+@@ -231,9 +291,12 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
+ 	}
+ 	for (i = 0; i < ARRAY_SIZE(max8925_regulator_info); i++) {
+ 		ri = &max8925_regulator_info[i];
+-		if (ri->vol_reg == res->start)
++		if (ri->vol_reg == res->start) {
++			regulator_idx = i;
+ 			break;
++		}
+ 	}
++
+ 	if (i == ARRAY_SIZE(max8925_regulator_info)) {
+ 		dev_err(&pdev->dev, "Failed to find regulator %llu\n",
+ 			(unsigned long long)res->start);
+@@ -243,9 +306,12 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
+ 	ri->chip = chip;
+ 
+ 	config.dev = &pdev->dev;
+-	config.init_data = pdata;
+ 	config.driver_data = ri;
+ 
++	if (max8925_regulator_dt_init(pdev, ri, &config, regulator_idx))
++		if (pdata)
++			config.init_data = pdata;
++
+ 	rdev = regulator_register(&ri->desc, &config);
+ 	if (IS_ERR(rdev)) {
+ 		dev_err(&pdev->dev, "failed to register regulator %s\n",
+-- 
+1.7.0.4
 
-You are exactly right: cf9ecf4b fixed the premanent SoL breakage
-introduced by dabc5c67.  Looks like ASF utilizes similar technology to
-that of the HS20 BMC.  Thanks for the tip, it greatly reduced our CPU
-wear. :)  It's a pity ethtool -k did not give a hint.  Do you think it's
-possible to work around in 3.2 by eg. fiddling some ethtool setting?
-
-the fix already go into Precise update to 3.2.31 stable release
-
-So update your kernel should fix your problem.
-
-Jack
