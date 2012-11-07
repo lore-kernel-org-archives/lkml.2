@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab2KGHEa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 02:04:30 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:49409 "EHLO mx2.parallels.com"
+	id S1751762Ab2KGHFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 02:05:23 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:49447 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141Ab2KGHE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 02:04:28 -0500
-Message-ID: <509A07E3.5090700@parallels.com>
-Date: Wed, 7 Nov 2012 08:04:03 +0100
+	id S1751141Ab2KGHFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 02:05:22 -0500
+Message-ID: <509A0826.1030708@parallels.com>
+Date: Wed, 7 Nov 2012 08:05:10 +0100
 From: Glauber Costa <glommer@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
@@ -18,11 +18,11 @@ CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
         Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
         David Rientjes <rientjes@google.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>, JoonSoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v6 19/29] memcg: infrastructure to match an allocation
- to the right cache
-References: <1351771665-11076-1-git-send-email-glommer@parallels.com> <1351771665-11076-20-git-send-email-glommer@parallels.com> <20121105162837.5fdac20c.akpm@linux-foundation.org>
-In-Reply-To: <20121105162837.5fdac20c.akpm@linux-foundation.org>
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v6 18/29] Allocate memory for memcg caches whenever a
+ new memcg appears
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com> <1351771665-11076-19-git-send-email-glommer@parallels.com> <20121105162330.4aa629f8.akpm@linux-foundation.org>
+In-Reply-To: <20121105162330.4aa629f8.akpm@linux-foundation.org>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [88.2.50.55]
@@ -30,35 +30,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 01:28 AM, Andrew Morton wrote:
-> On Thu,  1 Nov 2012 16:07:35 +0400
+On 11/06/2012 01:23 AM, Andrew Morton wrote:
+> On Thu,  1 Nov 2012 16:07:34 +0400
 > Glauber Costa <glommer@parallels.com> wrote:
 > 
->> +static __always_inline struct kmem_cache *
->> +memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+>> Every cache that is considered a root cache (basically the "original" caches,
+>> tied to the root memcg/no-memcg) will have an array that should be large enough
+>> to store a cache pointer per each memcg in the system.
+>>
+>> Theoreticaly, this is as high as 1 << sizeof(css_id), which is currently in the
+>> 64k pointers range. Most of the time, we won't be using that much.
+>>
+>> What goes in this patch, is a simple scheme to dynamically allocate such an
+>> array, in order to minimize memory usage for memcg caches. Because we would
+>> also like to avoid allocations all the time, at least for now, the array will
+>> only grow. It will tend to be big enough to hold the maximum number of
+>> kmem-limited memcgs ever achieved.
+>>
+>> We'll allocate it to be a minimum of 64 kmem-limited memcgs. When we have more
+>> than that, we'll start doubling the size of this array every time the limit is
+>> reached.
+>>
+>> Because we are only considering kmem limited memcgs, a natural point for this
+>> to happen is when we write to the limit. At that point, we already have
+>> set_limit_mutex held, so that will become our natural synchronization
+>> mechanism.
+>>
+>> ...
+>>
+>> +static struct ida kmem_limited_groups;
 > 
-> I still don't understand why this code uses __always_inline so much.
+> Could use DEFINE_IDA() here
 > 
-> I don't recall seeing the compiler producing out-of-line versions of
-> "static inline" functions (and perhaps it has special treatment for
-> functions which were defined in a header file?).
+>>
+>> ...
+>>
+>>  static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+>>  {
+>> +	int ret;
+>> +
+>>  	memcg->kmemcg_id = -1;
+>> -	memcg_propagate_kmem(memcg);
+>> +	ret = memcg_propagate_kmem(memcg);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	if (mem_cgroup_is_root(memcg))
+>> +		ida_init(&kmem_limited_groups);
 > 
-> And if the compiler *does* decide to uninline the function, perhaps it
-> knows best, and the function shouldn't have been declared inline in the
-> first place.
-> 
-> 
-> If it is indeed better to use __always_inline in this code then we have
-> a heck of a lot of other "static inline" definitions whcih we need to
-> convert!  So, what's going on here?
+> and zap this?
 > 
 
-The original motivation is indeed performance related. We want to make
-sure it is inline so it will figure out quickly the "I am not a memcg
-user" case and keep it going. The slub, for instance, is full of
-__always_inline functions to make sure that the fast path contains
-absolutely no function calls. So I was just following this here.
+Ok.
 
-I can remove the marker without a problem and leave it to the compiler
-if you think it is best
+I am starting to go over your replies now, and general question:
+Since you have already included this in mm, would you like me to
+resubmit the series changing things according to your feedback, or
+should I send incremental patches?
+
 
