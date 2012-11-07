@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab2KHABY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 19:01:24 -0500
-Received: from ozlabs.org ([203.10.76.45]:47545 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752130Ab2KHABW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 19:01:22 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Lee Jones <lee.jones@linaro.org>, Pawel Moll <pawel.moll@arm.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-mmio: Fix irq parsing in command line parameter
-In-Reply-To: <20121105134413.GC5220@gmail.com>
-References: <1352120454.10947.5.camel@hornet> <1352120572-16256-1-git-send-email-pawel.moll@arm.com> <20121105134413.GC5220@gmail.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 08 Nov 2012 08:52:41 +1030
-Message-ID: <87bof93vf2.fsf@rustcorp.com.au>
+	id S1753795Ab2KHAF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 19:05:58 -0500
+Received: from [201.191.100.135] ([201.191.100.135]:50437 "EHLO
+	bruno.wildbear.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130Ab2KHAF4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 19:05:56 -0500
+X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Nov 2012 19:05:56 EST
+Date: Wed, 7 Nov 2012 17:56:19 -0600 (CST)
+From: Joseph Parmelee <jparmele@wildbear.com>
+X-X-Sender: jparmele@bruno
+To: linux-kernel@vger.kernel.org
+Subject: Binutils test suite freezes kernel
+Message-ID: <alpine.LNX.2.00.1211071634440.1754@bruno>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee Jones <lee.jones@linaro.org> writes:
-> On Mon, 05 Nov 2012, Pawel Moll wrote:
->
->> On 64-bit machines resource_size_t is a 64-bit value, while
->> sscanf() format for this argument was defined as "%u". Fixed
->> by using an intermediate local value of a known length.
->> 
->> Also added cleaned up the resource creation and adde extra
->> comments to make the parameters parsing easier to follow.
->> 
->> Reported-by: Lee Jones <lee.jones@linaro.org>
->> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
->> ---
->>  drivers/virtio/virtio_mmio.c |   26 ++++++++++++++++++--------
->>  1 file changed, 18 insertions(+), 8 deletions(-)
->
-> Resorted to poaching now have we Pawel? ;)
+Greetings:
 
-I hope you were joking!  Doing your work for you isn't poaching.
+The gas test suite in recent binutils snapshots from
+ftp://sourceware.org/pub/binutils/snapshots/ consistently freezes my i386
+custom-built kernels.  This may be a kernel configuration problem but if so
+it has manifested only recently.  I have been building kernels since 1995
+and this is the first instance I have seen where the kernel is brought down
+by a non-privileged user space process.  AIUI this should be impossible
+regardless of what that process is doing.  The problem affects all kernels
+between 3.6.2 and 3.6.6.  These are merely the kernels were I have seen the
+problem; it may well affect other kernels.
 
-Your correct response was "thanks" followed by 'Tested-by:'.
+My system uses a raid1 array of two SATA disks, each having a root partition
+and a much smaller swap partition.  Because the raid arrays have been in use
+since 2001 on various disks over the years they use the older kernel
+automatic raid detection metadata.
 
-Cheers,
-Rusty.
+When the freeze occurs not all system processes always stop but most do such
+that I can change virtual terminals but cannot enter characters into any of
+them except sysreq magic keys.  Often this also affects telnet from other
+hosts, but not always.  If a can kill the test process, either through
+telnet or sysreq magic keys, the system returns, though it appears that the
+system clock has also been stopped during the freeze.
+
+If however I press the reset button during the freeze, this results in a
+reconstruction of the raided swap partition on system restart.  What is most
+striking is that this reconstruction is not always successful because of
+hard disk errors in one of the swap partitions.  They are unrecoverable CRC
+read errors which cause the affected partition to be kicked out of the raid
+array.  However, they disappear when the badblock program is run with the -w
+(write then read) option on the affected partition.  The partition can then
+be added back into the array without further incident.  This suggests to me
+that sometimes the system freeze occurs in the middle of swap sector writes
+such that they are actually bad on the disk.  Just how that is happening is
+a mystery to me.
+
+I do not pretend to understand what is happening here but I will do what I
+can to provide whatever additional information may be necessary.
+
+Please CC me directly as I am no longer subscribed to the list.
+
+Yours,
+
+Joseph
+jparmele at wildbear dot com
+
