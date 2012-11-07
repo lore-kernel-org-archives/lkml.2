@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab2KGT01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 14:26:27 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51278 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab2KGT0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 14:26:25 -0500
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Ben Collins <bcollins@bluecherry.net>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ismael Luceno <ismael.luceno@gmail.com>,
-        Devendra Naga <devendra.aaru@gmail.com>, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] Staging/media: Use dev_ printks in solo6x10/p2m.c
-Date: Thu,  8 Nov 2012 04:26:19 +0900
-Message-Id: <1352316379-8078-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751746Ab2KGT3N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 14:29:13 -0500
+Received: from wolff.to ([65.117.131.163]:34230 "HELO wolff.to"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750802Ab2KGT3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 14:29:12 -0500
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Nov 2012 14:29:11 EST
+Date: Wed, 7 Nov 2012 13:21:41 -0600
+From: Bruno Wolff III <bruno@wolff.to>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] MODSIGN: Only sign modules if built in-tree
+Message-ID: <20121107192141.GA4615@wolff.to>
+References: <20121031132749.GH6627@hansolo.jdub.homelinux.org>
+ <87390t6bs0.fsf@rustcorp.com.au>
+ <20121101112655.GM6627@hansolo.jdub.homelinux.org>
+ <20121101145013.GN6627@hansolo.jdub.homelinux.org>
+ <87liek4rt5.fsf@rustcorp.com.au>
+ <20121102123404.GO6627@hansolo.jdub.homelinux.org>
+ <87vcdkyfi4.fsf@rustcorp.com.au>
+ <20121105191903.GG27352@hansolo.jdub.homelinux.org>
+ <87a9uv5xbp.fsf@rustcorp.com.au>
+ <20121106125417.GI27352@hansolo.jdub.homelinux.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20121106125417.GI27352@hansolo.jdub.homelinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warning.
-- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+On Tue, Nov 06, 2012 at 07:54:17 -0500,
+   Josh Boyer <jwboyer@redhat.com> wrote:
+>On Tue, Nov 06, 2012 at 12:04:02PM +1030, Rusty Russell wrote:
+>>
+>> I've applied this in my fixes branch, will push to Linus later this
+>> week.
+>
+>Great.  Thanks Rusty!
+>
+>josh
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/media/solo6x10/p2m.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/media/solo6x10/p2m.c b/drivers/staging/media/solo6x10/p2m.c
-index 56210f0..58ab61b 100644
---- a/drivers/staging/media/solo6x10/p2m.c
-+++ b/drivers/staging/media/solo6x10/p2m.c
-@@ -231,15 +231,15 @@ static void run_p2m_test(struct solo_dev *solo_dev)
- 	u32 size = SOLO_JPEG_EXT_ADDR(solo_dev) + SOLO_JPEG_EXT_SIZE(solo_dev);
- 	int i, d;
- 
--	printk(KERN_WARNING "%s: Testing %u bytes of external ram\n",
--	       SOLO6X10_NAME, size);
-+	dev_warn(&solo_dev->pdev->dev, "Testing %u bytes of external ram\n",
-+		 size);
- 
- 	for (i = 0; i < size; i += TEST_CHUNK_SIZE)
- 		for (d = 0; d < 4; d++)
- 			errs += p2m_test(solo_dev, d, i, TEST_CHUNK_SIZE);
- 
--	printk(KERN_WARNING "%s: Found %llu errors during p2m test\n",
--	       SOLO6X10_NAME, errs);
-+	dev_warn(&solo_dev->pdev->dev, "Found %llu errors during p2m test\n",
-+		 errs);
- 
- 	return;
- }
--- 
-1.7.9.5
-
+I tested building dahdi-linux with kernel-3.7.0-0.rc4.git1.1.fc19 which 
+has this patch and the build went fine. I won't be able to test that the 
+module works until tonight, but even if it ends up being broken the signing 
+patch is unlikely to be the cause.
