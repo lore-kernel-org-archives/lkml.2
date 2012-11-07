@@ -1,114 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab2KGWRP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 17:17:15 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:51689 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab2KGWRN (ORCPT
+	id S1754111Ab2KGWXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 17:23:37 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:51838 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab2KGWXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 17:17:13 -0500
-Date: Wed, 7 Nov 2012 23:17:09 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
-        rientjes@google.com, linux-kernel@vger.kernel.org,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH 1/2] memcg, oom: provide more precise dump info while
- memcg oom happening
-Message-ID: <20121107221709.GB26382@dhcp22.suse.cz>
-References: <1352277602-21687-1-git-send-email-handai.szj@taobao.com>
- <1352277696-21724-1-git-send-email-handai.szj@taobao.com>
+	Wed, 7 Nov 2012 17:23:35 -0500
+Date: Wed, 7 Nov 2012 14:22:34 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Airlie <airlied@linux.ie>, Michal Hocko <mhocko@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: Linux 3.7-rc3
+Message-ID: <20121107222233.GG2541@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com>
+ <2471412.ilAVQkroSv@vostro.rjw.lan>
+ <CA+55aFzfbvb4HsY0viCXC0FnVt7fcyhzyZgR4R6tu5uYC8qzPA@mail.gmail.com>
+ <2859519.IO8aRDjQvR@vostro.rjw.lan>
+ <CA+55aFx+w2hFifGTr_u76D9d_sDKxKJBDd2L4p0GVk-RXCczMA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1352277696-21724-1-git-send-email-handai.szj@taobao.com>
+In-Reply-To: <CA+55aFx+w2hFifGTr_u76D9d_sDKxKJBDd2L4p0GVk-RXCczMA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110722-7282-0000-0000-00000EB70245
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-11-12 16:41:36, Sha Zhengju wrote:
-> From: Sha Zhengju <handai.szj@taobao.com>
+On Fri, Nov 02, 2012 at 04:10:34PM -0700, Linus Torvalds wrote:
+> On Fri, Nov 2, 2012 at 3:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >
+> > Well, not everything is rosy in the suspend land, though.  This is a
+> > failure to freeze khubd during the second in a row attempt to suspend to
+> > RAM (your current tree):
 > 
-> Current, when a memcg oom is happening the oom dump messages is still global
-> state and provides few useful info for users. This patch prints more pointed
-> memcg page statistics for memcg-oom.
+> Ugh. So khubd is blocked in usb_start_wait_urb(), and apparently the
+> timeout for that block is longer than the freezing timeout.
 > 
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  mm/memcontrol.c |   71 ++++++++++++++++++++++++++++++++++++++++++++++++-------
->  mm/oom_kill.c   |    6 +++-
->  2 files changed, 66 insertions(+), 11 deletions(-)
+> There's a comment about why khubd needs to be freezable, but I wonder
+> if that whole thing isn't doing something wrong. Causing the suspend
+> to fail is definitely always the wrong thing.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 0eab7d5..2df5e72 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-[...]
-> @@ -1501,8 +1509,59 @@ static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
->  	spin_unlock_irqrestore(&memcg->move_lock, *flags);
->  }
->  
-> +#define K(x) ((x) << (PAGE_SHIFT-10))
-> +static void mem_cgroup_print_oom_stat(struct mem_cgroup *memcg)
-> +{
-> +	struct mem_cgroup *mi;
-> +	unsigned int i;
-> +
-> +	if (!memcg->use_hierarchy && memcg != root_mem_cgroup) {
-> +		for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
-> +			if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
-> +				continue;
-> +			printk(KERN_CONT "%s:%ldKB ", mem_cgroup_stat_names[i],
-> +				K(mem_cgroup_read_stat(memcg, i)));
-> +		}
-> +
-> +		for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++)
-> +			printk(KERN_CONT "%s:%lu ", mem_cgroup_events_names[i],
-> +				mem_cgroup_read_events(memcg, i));
-> +
-> +		for (i = 0; i < NR_LRU_LISTS; i++)
-> +			printk(KERN_CONT "%s:%luKB ", mem_cgroup_lru_names[i],
-> +				K(mem_cgroup_nr_lru_pages(memcg, BIT(i))));
-> +	} else {
-> +
-> +		for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
-> +			long long val = 0;
-> +
-> +			if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
-> +				continue;
-> +			for_each_mem_cgroup_tree(mi, memcg)
-> +				val += mem_cgroup_read_stat(mi, i);
-> +			printk(KERN_CONT "%s:%lldKB ", mem_cgroup_stat_names[i], K(val));
-> +		}
-> +
-> +		for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++) {
-> +			unsigned long long val = 0;
-> +
-> +			for_each_mem_cgroup_tree(mi, memcg)
-> +				val += mem_cgroup_read_events(mi, i);
-> +			printk(KERN_CONT "%s:%llu ",
-> +				mem_cgroup_events_names[i], val);
-> +		}
-> +
-> +		for (i = 0; i < NR_LRU_LISTS; i++) {
-> +			unsigned long long val = 0;
-> +
-> +			for_each_mem_cgroup_tree(mi, memcg)
-> +				val += mem_cgroup_nr_lru_pages(mi, BIT(i));
-> +			printk(KERN_CONT "%s:%lluKB ", mem_cgroup_lru_names[i], K(val));
-> +		}
-> +	}
+> Greg?
+> 
+> > [  125.780766] [ INFO: suspicious RCU usage. ]
+> > [  125.780804] 3.7.0-rc3+ #988 Not tainted
+> > [  125.780838] -------------------------------
+> > [  125.780875] /home/rafael/src/linux/kernel/sched/core.c:4497 suspicious rcu_dereference_check() usage!
+> 
+> Heh. The RCU usage is from the debug printout from sched_show_task(),
+> so it's "related", but it's a totally independent issue.
+> 
+> It's apparently because we've not done a "rcu_read_lock()" around that
+> sequence, but I seriously doubt we care. But it's technically a real
+> bug - even if the fix might be to just not print out the parent pid
+> (or to just ignore the bug and turn the rcu dereference into an
+> ACCESS_ONCE() or something.
+> 
+> Ingo, Peter, any comments about that sched/core.c:4497 RCU usage?
 
-This is just plain ugly. for_each_mem_cgroup_tree is use_hierarchy aware
-and there is no need for if (use_hierarchy) part.
-memcg != root_mem_cgroup test doesn't make much sense as well because we
-call that a global oom killer ;)
--- 
-Michal Hocko
-SUSE Labs
+Rafael, does the following patch fix that problem?
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+sched: Mark RCU reader in sched_show_task()
+
+When sched_show_task() is invoked from try_to_freeze_tasks(), there is
+no RCU read-side critical section, resulting in the following splat:
+
+[  125.780730] ===============================
+[  125.780766] [ INFO: suspicious RCU usage. ]
+[  125.780804] 3.7.0-rc3+ #988 Not tainted
+[  125.780838] -------------------------------
+[  125.780875] /home/rafael/src/linux/kernel/sched/core.c:4497 suspicious rcu_dereference_check() usage!
+[  125.780946]
+[  125.780946] other info that might help us debug this:
+[  125.780946]
+[  125.781031]
+[  125.781031] rcu_scheduler_active = 1, debug_locks = 0
+[  125.781087] 4 locks held by s2ram/4211:
+[  125.781120]  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811e2acf>] sysfs_write_file+0x3f/0x160
+[  125.781233]  #1:  (s_active#94){.+.+.+}, at: [<ffffffff811e2b58>] sysfs_write_file+0xc8/0x160
+[  125.781339]  #2:  (pm_mutex){+.+.+.}, at: [<ffffffff81090a81>] pm_suspend+0x81/0x230
+[  125.781439]  #3:  (tasklist_lock){.?.?..}, at: [<ffffffff8108feed>] try_to_freeze_tasks+0x2cd/0x3f0
+[  125.781543]
+[  125.781543] stack backtrace:
+[  125.781584] Pid: 4211, comm: s2ram Not tainted 3.7.0-rc3+ #988
+[  125.781632] Call Trace:
+[  125.781662]  [<ffffffff810a3c73>] lockdep_rcu_suspicious+0x103/0x140
+[  125.781719]  [<ffffffff8107cf21>] sched_show_task+0x121/0x180
+[  125.781770]  [<ffffffff8108ffb4>] try_to_freeze_tasks+0x394/0x3f0
+[  125.781823]  [<ffffffff810903b5>] freeze_kernel_threads+0x25/0x80
+[  125.781876]  [<ffffffff81090b65>] pm_suspend+0x165/0x230
+[  125.781924]  [<ffffffff8108fa29>] state_store+0x99/0x100
+[  125.781975]  [<ffffffff812f5867>] kobj_attr_store+0x17/0x20
+[  125.782038]  [<ffffffff811e2b71>] sysfs_write_file+0xe1/0x160
+[  125.782091]  [<ffffffff811667a6>] vfs_write+0xc6/0x180
+[  125.782138]  [<ffffffff81166ada>] sys_write+0x5a/0xa0
+[  125.782185]  [<ffffffff812ff6ae>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[  125.782242]  [<ffffffff81669dd2>] system_call_fastpath+0x16/0x1b
+
+This commit therefore adds the needed RCU read-side critical section.
+
+Reported-by: "Rafael J. Wysocki" <rjw@sisk.pl>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 6d4569e..36f2608 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4474,6 +4474,7 @@ static const char stat_nam[] = TASK_STATE_TO_CHAR_STR;
+ void sched_show_task(struct task_struct *p)
+ {
+ 	unsigned long free = 0;
++	int ppid;
+ 	unsigned state;
+ 
+ 	state = p->state ? __ffs(p->state) + 1 : 0;
+@@ -4493,8 +4494,11 @@ void sched_show_task(struct task_struct *p)
+ #ifdef CONFIG_DEBUG_STACK_USAGE
+ 	free = stack_not_used(p);
+ #endif
++	rcu_read_lock();
++	ppid = task_pid_nr(rcu_dereference(p->real_parent));
++	rcu_read_unlock();
+ 	printk(KERN_CONT "%5lu %5d %6d 0x%08lx\n", free,
+-		task_pid_nr(p), task_pid_nr(rcu_dereference(p->real_parent)),
++		task_pid_nr(p), ppid,
+ 		(unsigned long)task_thread_info(p)->flags);
+ 
+ 	show_stack(p, NULL);
+
