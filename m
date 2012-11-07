@@ -1,57 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab2KGKCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 05:02:53 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:20428 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751573Ab2KGKCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 05:02:50 -0500
-Subject: [PATCH 4/4] ipc: add more comments to message copying related code
-To: akpm@linux-foundation.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: ebiederm@xmission.com, devel@openvz.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, jmorris@namei.org
-Date: Wed, 07 Nov 2012 13:05:10 +0300
-Message-ID: <20121107100510.22846.706.stgit@localhost.localdomain>
-In-Reply-To: <20121107100317.22846.94715.stgit@localhost.localdomain>
-References: <20121107100317.22846.94715.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1754085Ab2KGKJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 05:09:17 -0500
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:44103 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751300Ab2KGKJQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 05:09:16 -0500
+From: Qing Xu <qingx@marvell.com>
+To: qingx@marvell.com, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH v4 5/7] mfd: max8925: support dt for regulator
+Date: Wed,  7 Nov 2012 18:09:53 +0800
+Message-Id: <1352282993-26449-1-git-send-email-qingx@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 07 Nov 2012 10:09:03.0986 (UTC) FILETIME=[EA5D7D20:01CDBCCF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- ipc/msg.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+From: Qing Xu <qingx@marvell.com>
 
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 5e317fe..4a4725c 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -770,6 +770,10 @@ static long do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz)
+Signed-off-by: Qing Xu <qingx@marvell.com>
+---
+ .../bindings/regulator/max8925-regulator.txt       |   29 ++++++++
+ drivers/regulator/max8925-regulator.c              |   72 +++++++++++++++++++-
+ 2 files changed, 98 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/max8925-regulator.txt
+
+diff --git a/Documentation/devicetree/bindings/regulator/max8925-regulator.txt b/Documentation/devicetree/bindings/regulator/max8925-regulator.txt
+new file mode 100644
+index 0000000..073b41d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/max8925-regulator.txt
+@@ -0,0 +1,29 @@
++Max8925 Voltage regulators
++
++max8925 regulator device register is still handled by mfd_add_devices, not by
++of_xxx, so, it is not necessary to add compatible name. Also, those reg
++offset and id info is stored in mfd_cell(see max8925-core.c), as a result
++there is not private properties in dts.
++
++node's name should match with the definition in max8925_regulator_matches
++(see max8925-regulator.c)
++
++
++Optional properties:
++- Any optional property defined in bindings/regulator/regulator.txt
++
++
++Example:
++
++
++	regulators {
++		SDV1 {
++			regulator-min-microvolt = <637500>;
++			regulator-max-microvolt = <1425000>;
++			regulator-boot-on;
++			regulator-always-on;
++		};
++
++		...
++		...
++	}
+diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
+index 9bb0be3..2b54979 100644
+--- a/drivers/regulator/max8925-regulator.c
++++ b/drivers/regulator/max8925-regulator.c
+@@ -17,6 +17,8 @@
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/mfd/max8925.h>
++#include <linux/of.h>
++#include <linux/regulator/of_regulator.h>
+ 
+ #define SD1_DVM_VMIN		850000
+ #define SD1_DVM_VMAX		1000000
+@@ -187,6 +189,34 @@ static struct regulator_ops max8925_regulator_ldo_ops = {
+ 	.enable_reg	= MAX8925_LDOCTL##_id,			\
  }
  
- #ifdef CONFIG_CHECKPOINT_RESTORE
-+/*
-+ * This function creates new kernel message structure, large enough to store
-+ * bufsz message bytes.
-+ */
- static inline struct msg_msg *prepare_copy(void __user *buf, size_t bufsz,
- 					   int msgflg, long *msgtyp,
- 					   unsigned long *copy_number)
-@@ -881,6 +885,10 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
- 				msg = ERR_PTR(-E2BIG);
- 				goto out_unlock;
- 			}
-+			/*
-+			 * If we are copying, then do not unlink message and do
-+			 * not update queue parameters.
-+			 */
- 			if (msgflg & MSG_COPY)
- 				goto out_unlock;
- 			list_del(&msg->m_list);
++#ifdef CONFIG_OF
++static struct of_regulator_match max8925_regulator_matches[] = {
++	{ .name	= "SDV1",},
++	{ .name = "SDV2",},
++	{ .name = "SDV3",},
++	{ .name = "LDO1",},
++	{ .name = "LDO2",},
++	{ .name = "LDO3",},
++	{ .name = "LDO4",},
++	{ .name = "LDO5",},
++	{ .name = "LDO6",},
++	{ .name = "LDO7",},
++	{ .name = "LDO8",},
++	{ .name = "LDO9",},
++	{ .name = "LDO10",},
++	{ .name = "LDO11",},
++	{ .name = "LDO12",},
++	{ .name = "LDO13",},
++	{ .name = "LDO14",},
++	{ .name = "LDO15",},
++	{ .name = "LDO16",},
++	{ .name = "LDO17",},
++	{ .name = "LDO18",},
++	{ .name = "LDO19",},
++	{ .name = "LDO20",},
++};
++#endif
++
+ static struct max8925_regulator_info max8925_regulator_info[] = {
+ 	MAX8925_SDV(1, 637.5, 1425, 12.5),
+ 	MAX8925_SDV(2,   650, 2225,   25),
+@@ -214,6 +244,36 @@ static struct max8925_regulator_info max8925_regulator_info[] = {
+ 	MAX8925_LDO(20, 750, 3900, 50),
+ };
+ 
++#ifdef CONFIG_OF
++static int max8925_regulator_dt_init(struct platform_device *pdev,
++				    struct max8925_regulator_info *info,
++				    struct regulator_config *config,
++				    int ridx)
++{
++	struct device_node *nproot, *np;
++	int rcount;
++	nproot = pdev->dev.parent->of_node;
++	if (!nproot)
++		return -ENODEV;
++	np = of_find_node_by_name(nproot, "regulators");
++	if (!np) {
++		dev_err(&pdev->dev, "failed to find regulators node\n");
++		return -ENODEV;
++	}
++
++	rcount = of_regulator_match(&pdev->dev, np,
++				&max8925_regulator_matches[ridx], 1);
++	if (rcount < 0)
++		return -ENODEV;
++	config->init_data =	max8925_regulator_matches[ridx].init_data;
++	config->of_node = max8925_regulator_matches[ridx].of_node;
++
++	return 0;
++}
++#else
++#define max8925_regulator_dt_init(w, x, y, z)	(-1)
++#endif
++
+ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
+@@ -222,7 +282,7 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
+ 	struct max8925_regulator_info *ri;
+ 	struct resource *res;
+ 	struct regulator_dev *rdev;
+-	int i;
++	int i, regulator_idx;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
+ 	if (!res) {
+@@ -231,9 +291,12 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
+ 	}
+ 	for (i = 0; i < ARRAY_SIZE(max8925_regulator_info); i++) {
+ 		ri = &max8925_regulator_info[i];
+-		if (ri->vol_reg == res->start)
++		if (ri->vol_reg == res->start) {
++			regulator_idx = i;
+ 			break;
++		}
+ 	}
++
+ 	if (i == ARRAY_SIZE(max8925_regulator_info)) {
+ 		dev_err(&pdev->dev, "Failed to find regulator %llu\n",
+ 			(unsigned long long)res->start);
+@@ -243,9 +306,12 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
+ 	ri->chip = chip;
+ 
+ 	config.dev = &pdev->dev;
+-	config.init_data = pdata;
+ 	config.driver_data = ri;
+ 
++	if (max8925_regulator_dt_init(pdev, ri, &config, regulator_idx))
++		if (pdata)
++			config.init_data = pdata;
++
+ 	rdev = regulator_register(&ri->desc, &config);
+ 	if (IS_ERR(rdev)) {
+ 		dev_err(&pdev->dev, "failed to register regulator %s\n",
+-- 
+1.7.0.4
 
