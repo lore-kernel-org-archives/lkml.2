@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab2KGQoq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 11:44:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56888 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751657Ab2KGQop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 11:44:45 -0500
-Date: Wed, 7 Nov 2012 11:43:58 -0500
-From: Dave Jones <davej@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Julius Werner <jwerner@chromium.org>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        James Morris <jmorris@namei.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>,
-        Sameer Nanda <snanda@chromium.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Eric Dumazet <edumazet@chromium.org>
-Subject: Re: [PATCH] tcp: Replace infinite loop on recvmsg bug with proper
- crashusers
-Message-ID: <20121107164358.GA20495@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	Julius Werner <jwerner@chromium.org>, linux-kernel@vger.kernel.org,
-	netdev@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
-	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-	James Morris <jmorris@namei.org>,
-	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-	"David S. Miller" <davem@davemloft.net>,
-	Sameer Nanda <snanda@chromium.org>,
-	Mandeep Singh Baines <msb@chromium.org>,
-	Eric Dumazet <edumazet@chromium.org>
-References: <1352247335-10396-1-git-send-email-jwerner@chromium.org>
- <20121107013907.GA31185@redhat.com>
- <CAODwPW-636Sn3B4CYajvrgccXxresZwPLg2UFz6xDDk9-FfTYQ@mail.gmail.com>
- <20121107155434.GA17677@redhat.com>
- <1352305752.3140.4449.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1352305752.3140.4449.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753079Ab2KGQpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 11:45:52 -0500
+Received: from 17.mo3.mail-out.ovh.net ([87.98.178.58]:42872 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751657Ab2KGQpv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 11:45:51 -0500
+X-Greylist: delayed 3321 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Nov 2012 11:45:51 EST
+Date: Wed, 7 Nov 2012 16:50:26 +0100
+From: Eric =?ISO-8859-1?B?QuluYXJk?= <eric@eukrea.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Nicolas Royer <nicolas@eukrea.com>, linux-kernel@vger.kernel.org,
+        nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
+        linux-crypto@vger.kernel.org, herbert@gondor.hengli.com.au,
+        davem@davemloft.net
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH 2/5] ARM: AT91SAM9G45: same platform data structure for
+ all crypto peripherals
+Message-ID: <20121107165026.4e64422f@eb-e6520>
+In-Reply-To: <20121107152615.GD4576@game.jcrosoft.org>
+References: <1352219544-30416-1-git-send-email-nicolas@eukrea.com>
+	<20121107152615.GD4576@game.jcrosoft.org>
+Organization: =?ISO-8859-1?B?RXVrculh?= Electromatique
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Ovh-Tracer-Id: 9458122168813006252
+X-Ovh-Remote: 82.240.38.71 (pac33-2-82-240-38-71.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrfeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomhepgfhrihgtuceurohnrghrugcuoegvrhhitgesvghukhhrvggrrdgtohhmqeenucfjughrpeffhffvuffkjghfohfogggtgfesthhqredtredtud
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrfeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomhepgfhrihgtuceurohnrghrugcuoegvrhhitgesvghukhhrvggrrdgtohhmqeenucfjughrpeffhffvuffkjghfohfogggtgfesthhqredtredtud
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 08:29:12AM -0800, Eric Dumazet wrote:
- > On Wed, 2012-11-07 at 10:54 -0500, Dave Jones wrote:
- > 
- > > It sounds more appropriate to me, instead of silently wedging the box.
- > > At least with that approach we have a chance of finding out what happened.
- > 
- > Its quite the opposite.
- > 
- > If bug is still there 6 months after the commits that broke the drivers,
- > (making an old bug visible) that means that people never realized the
- > bug was there.
+Hi Jean-Christophe,
 
-dude, look at the bug reports I just pointed you at.
-People _are_ aware there are bugs there.
+Le Wed, 7 Nov 2012 16:26:15 +0100,
+Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> a écrit :
+> > @@ -1931,9 +1931,9 @@ static struct platform_device at91sam9g45_aes_device = {
+> >  static void __init at91_add_device_aes(void)
+> >  {
+> >  	struct at_dma_slave	*atslave;
+> > -	struct aes_dma_data	*alt_atslave;
+> > +	struct crypto_dma_data	*alt_atslave;
+> >  
+> > -	alt_atslave = kzalloc(sizeof(struct aes_dma_data), GFP_KERNEL);
+> > +	alt_atslave = kzalloc(sizeof(struct crypto_dma_data), GFP_KERNEL);
+> we do not check the result of kzalloc ouch
+> 
+> and why we allocate it?
+> 
+for both remarks : that's the way it's done in at91_add_device_mci since
+75305d768d296a07fd02df9af3e5de326df1c72e
+A v2 will follow (and also a fix for at91_add_device_mci).
 
-If you turn that into a BUG() those reports would never have been filed.
-How is that increasing awareness ?  People are going to see wedged computers,
-and hit the reset button. If we're lucky, we'll get photos of someone lucky
-enough to have hit it while at the console, not in X. But this is a huge
-step backwards for debugability.
-
- > I understand a distro maintainer has its own choices, but for upstream
- > kernel we want to have early reports.
-
-I'm running out of ways to word this, but I'll try again.
-You won't get those early reports if you turn this into a BUG().
-
- > This bug is fatal and a security issue. BUG() is appropriate.
-
-turning a bug into a remote DoS is also a security issue.
-
-	Dave
-
+Eric
