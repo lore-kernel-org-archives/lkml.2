@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455Ab2KGK6r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 05:58:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43299 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754101Ab2KGK6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 05:58:46 -0500
-Subject: GFS2: Pull request (fixes)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-k4+KRJKJ5SOmj3F1Edtq"
-Organization: Red Hat UK Ltd
-Date: Wed, 07 Nov 2012 10:58:09 +0000
-Message-ID: <1352285889.2729.12.camel@menhir>
-Mime-Version: 1.0
+	id S1754599Ab2KGK7n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 05:59:43 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:23847 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248Ab2KGK7m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 05:59:42 -0500
+X-IronPort-AV: E=Sophos;i="4.80,728,1344211200"; 
+   d="scan'208";a="213712671"
+Message-ID: <1352285859.12977.45.camel@hastur.hellion.org.uk>
+Subject: Re: [Xen-devel] [PATCH 2/2] xen/arm: Fix compile errors when
+ drivers are compiled as modules.
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 7 Nov 2012 11:57:39 +0100
+In-Reply-To: <alpine.DEB.2.02.1211070959150.2689@kaball.uk.xensource.com>
+References: <1352239982-17389-1-git-send-email-konrad.wilk@oracle.com>
+	 <1352239982-17389-3-git-send-email-konrad.wilk@oracle.com>
+	 <alpine.DEB.2.02.1211070959150.2689@kaball.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-11-07 at 10:25 +0000, Stefano Stabellini wrote:
+> On Tue, 6 Nov 2012, Konrad Rzeszutek Wilk wrote:
+> > We end up with:
+> > 
+> > ERROR: "HYPERVISOR_event_channel_op" [drivers/xen/xen-gntdev.ko] undefined!
+> > ERROR: "privcmd_call" [drivers/xen/xen-privcmd.ko] undefined!
+> > ERROR: "HYPERVISOR_grant_table_op" [drivers/net/xen-netback/xen-netback.ko] undefined!
+> > 
+> > and this patch exports said function (which is implemented in hypercall.S).
+> > 
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> Thank you very much for going out of your way to fix this issue (I am
+> currently at LinuxCon).
+> 
+> 
+> >  arch/arm/xen/enlighten.c |    5 +++++
+> >  1 files changed, 5 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+> > index 59bcb96..96d969d 100644
+> > --- a/arch/arm/xen/enlighten.c
+> > +++ b/arch/arm/xen/enlighten.c
+> > @@ -166,3 +166,8 @@ void free_xenballooned_pages(int nr_pages, struct page **pages)
+> >  	*pages = NULL;
+> >  }
+> >  EXPORT_SYMBOL_GPL(free_xenballooned_pages);
+> > +
+> > +/* In the hypervisor.S file. */
+> > +EXPORT_SYMBOL_GPL(HYPERVISOR_event_channel_op);
+> > +EXPORT_SYMBOL_GPL(HYPERVISOR_grant_table_op);
+> > +EXPORT_SYMBOL_GPL(privcmd_call);
+>  
+> I think the patch is OK and I tested it: it fixes the issue reported
+> by Russell.
+> However I am wondering, does it actually make sense only to export 3
+> hypercalls among the set implemented in hypercall.S?
+> Maybe it does make sense only to export a subset, but I wouldn't
+> necessarly do the differentiation here, I would just export all the
+> hypercalls implemented in hypercalls.S.
+> In fact if we separate the hypercalls in two sets, I would like to
+> see a similar differentiation on x86 too.
 
---=-k4+KRJKJ5SOmj3F1Edtq
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On x86 these functions are static inline (all of them, I think) so
+exporting them is not necessary or possible.
 
-Hi,
+I don't think you can export from a .S, otherwise the obvious answer
+would be to integrate it with the macro in hypercall.S.
 
-Please consider pulling the following GFS2 fixes,
+Possibly mad idea: auto-generate hypercall.[Sc] (.S=stubs & .c=exports)
+from include/xen/interface/xen.h:HYPERVISOR_* ?
 
-Steve.
+(Aside: the whitespace in hypercall.S is a bit fubarred, wrt the line
+wrapping in the macros)
 
----------------------------------------------------------------------------=
---------
-
-Here are a number of GFS2 bug fixes. There are three from Andy Price
-which fix various issues spotted by automated code analysis. There are two
-from Lukas Czerner fixing my mistaken assumptions as to how FITRIM
-should work. Finally Ben Marzinski has fixed a bug relating to mmap and
-atime and also a bug relating to a locking issue in the transaction code.
-
-
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37=
-:
-
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-fixes.git ma=
-ster
-
-Andrew Price (3):
-      GFS2: Fix an unchecked error from gfs2_rs_alloc
-      GFS2: Fix possible null pointer deref in gfs2_rs_alloc
-      GFS2: Clean up some unused assignments
-
-Benjamin Marzinski (2):
-      GFS2: Don't call file_accessed() with a shared glock
-      GFS2: Test bufdata with buffer locked and gfs2_log_lock held
-
-Lukas Czerner (2):
-      GFS2: Require user to provide argument for FITRIM
-      GFS2: Fix FITRIM argument handling
-
- fs/gfs2/file.c  |   14 +++++---------
- fs/gfs2/lops.c  |   16 ++--------------
- fs/gfs2/quota.c |    7 +++++--
- fs/gfs2/rgrp.c  |   33 +++++++++++++++++++++------------
- fs/gfs2/super.c |    3 ++-
- fs/gfs2/trans.c |    8 ++++++++
- 6 files changed, 43 insertions(+), 38 deletions(-)
-
-
---=-k4+KRJKJ5SOmj3F1Edtq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJQmj68AAoJEMrg3m4a/8jS5EIP/RvYGsyvP2KlOzQTPdBfb7EL
-xVOZW1Sk4eJv7YCtJ+sdtaZQbEBS3d1Sj8MPwDQvlNV3QNjzit0PdmaLG0nX4Ry+
-ODwcQUQESsTmkgFDkM/WqcrPueBbQ7VUmEm4aKnsC+bFuq2yAEt9zQ485kY7sXRo
-yAh2PmX0LdWDI54UzoZIA5Z7hQvjY46TENQRy5YUQtmNteL6oektlRQn6XrbfPww
-OlKOPxtn0bbTLsYhWB5YkYkCxDb4Fmgn1wCP16w1EG0VSU+cLvryipouPciS/CEy
-DlomfUKekSohMiz5c8DqRmFsjfqHL1+3oBkPTPwSpDq03WhjsRvCzU2r1q0rwDPC
-bX9uzEx++EOA4m7zaQDjELj1deA/hVjTxT0n4XqXO4MnW3GLackInScavR8NKNEf
-xddczIoLtOuO5NEqesYylp7TmCzWpipsny3pc1aTGB4bD1KYGTSkTwfDYpnQlexh
-Bsr8xPpISF1JCzVJqwhPcH3riv/Ps8GD6+QqudVHtHbytYL4ORK5Cd3OkJiaHQCR
-T8oyUrv9HFfM+HK/Aue4SKf4S1Pcb6wehM5qBvJvin3iEu98uuMn+dGlBSCWkTry
-3MkWPJ578bD450XtFddm6aSEoKTNCSZkL1pN8De+coRuJM9ewS4Ag1QrDFpZ78FG
-/Z61EeBXooFLoTagkzt4
-=2V8t
------END PGP SIGNATURE-----
-
---=-k4+KRJKJ5SOmj3F1Edtq--
+Ian.
 
