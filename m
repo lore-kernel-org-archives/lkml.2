@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab2KGOg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 09:36:58 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:58648 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab2KGOg5 (ORCPT
+	id S1753188Ab2KGOhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 09:37:48 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60580 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab2KGOhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 09:36:57 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [RFC Patch v1 00/31] Synopsys ARC Linux kernel Port
-Date: Wed, 7 Nov 2012 14:36:51 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
+	Wed, 7 Nov 2012 09:37:47 -0500
+Date: Wed, 7 Nov 2012 15:38:00 +0100
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] 3.7-rc3+git hard lockup on CPU after
+ inserting/removing USB stick
+Message-ID: <20121107143800.GA14146@kroah.com>
+References: <201211071501.38288.Martin@lichtvoll.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211071436.52035.arnd@arndb.de>
-X-Provags-ID: V02:K0:C7z07I61Pac6imnaCJ1Z4cf1WDCMe7gXVJGSD3Qpjhq
- tRrQwFVoue+nHJ2j9DUqZ5v4TODgnZwmvjPLnednqDFA+eNjvR
- yldJjHP1jqJAaoFptdFN76q6/6C1VkjGQwx+Sr0La2+S31WrSf
- o3TKDklf3J0o8xtZ3X93vtppnVIxVCnJoCwVVbNIW5etS/1Fo2
- 0CHpvQjtwvGUOTemlTRCr/Lh5E+IFpoxtFhDw5bbz74r2tHIPK
- jG6ywSP/MtbwlmtF5XfPrLlmPGHphsbd4oIFN8ey67QoNekCgI
- sXuT4Xgbhsw6kRXHNbv1z+l7UNlIRYvvtogl+9+x5y5eBDsG+d
- Juayeedm8pAfIudKbEus=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201211071501.38288.Martin@lichtvoll.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 November 2012, Vineet Gupta wrote:
-> This patchset based off-of 3.7-rc3, introduces the Linux kernel port to
-> ARC700 processor family (750D and 770D) from Synopsys.
+On Wed, Nov 07, 2012 at 03:01:38PM +0100, Martin Steigerwald wrote:
+> Hi!
 > 
-> ARC700 is highly configurable and power efficient 32-bit RISC core with MMU.
-> It is embedded in SoCs deployed in TV Set Top boxes, Digital Media Players,
-> all the way to Network-on-Chips.
+> I had this with something in between 3.7-rc3 und 3.7-rc4 after inserting
+> and removing an USB stick. This example is with a kernel + f2fs patches v3,
+> but I had this with 3.7-rc3 as well.
 
-Hi Vineet,
+Ok, so it's not a new thing introduced in 3.7-rc4 (which is good, as
+there wasn't any USB patches added between -rc3 and -rc4.)
 
-I'm largely quite happy with how the series has turned out, having looked
-at earlier versions of the ARC kernel a couple of years ago. I've commented
-already on individual patches, but overall, I see two main issues that
-need to be resolved in order to merge the port:
+Does it also happen on -rc2?  Anything older?  Can you run 'git bisect'
+to try to track it down?
 
-* You have to use the generic syscall interface, and that means not using
-  any of the legacy system calls that have since been replaced by newer
-  versions of the same.
+thanks,
 
-* You are missing dynamic hardware detection. Rather than building a kernel
-  with everything known about the hardware at compile time, new ports these
-  days are normally able to run on all kinds of hardware and detect the
-  differences by looking at configuration registers (e.g. PCI), asking
-  firmware (Open Firmware, ACPI, ...) or by interpreting a device tree
-  that is passed by the boot loader (most embedded systems).
-  I assume that device tree is the right solution for you because a lot of
-  the hardware you use is likely shared with ARM, PowerPC or MIPS based
-  SoCs and they are all using (or getting migrated to) DT now instead of
-  static platform devices,
-
-	Arnd
+greg k-h
