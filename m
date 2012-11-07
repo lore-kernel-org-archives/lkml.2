@@ -1,162 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab2KGIsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 03:48:24 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:33258 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751492Ab2KGIsW (ORCPT
+	id S1753714Ab2KGIvQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 03:51:16 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41398 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752306Ab2KGIvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 03:48:22 -0500
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <50999145.2070306@wwwdotorg.org>
-Date: Wed, 7 Nov 2012 09:47:47 +0100
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <5A5C45CB-CDF8-4D93-8698-46A27143ABFA@antoniou-consulting.com>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <50999145.2070306@wwwdotorg.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-X-Mailer: Apple Mail (2.1085)
+	Wed, 7 Nov 2012 03:51:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+Date: Wed, 7 Nov 2012 16:51:11 +0800
+Message-ID: <CAEH94LiD4-_Ao7=x0TEtwJ3d+V+w3bOQjhTRCosTwe6vrpzBpw@mail.gmail.com>
+Subject: Re: [RFC v4+ hot_track 00/19] vfs: hot data tracking
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
+        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Mon, Oct 29, 2012 at 12:30 PM,  <zwu.kernel@gmail.com> wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>
+> NOTE:
+>
+>   The patchset can be obtained via my kernel dev git on github:
+> git@github.com:wuzhy/kernel.git hot_tracking
+>   If you're interested, you can also can review them via
+> https://github.com/wuzhy/kernel/commits/hot_tracking
+hi, guys,
 
-On Nov 6, 2012, at 11:37 PM, Stephen Warren wrote:
+The latest code change has been pushed into my above dev git tree. If
+no further comments are done, i will post next version soon.
 
-> On 11/05/2012 01:40 PM, Grant Likely wrote:
->> Hey folks,
->> 
->> As promised, here is my early draft to try and capture what device
->> tree overlays need to do and how to get there. Comments and
->> suggestions greatly appreciated.
-> 
-> Interesting. This just came up internally at NVIDIA within the last
-> couple weeks, and was discussed on the U-Boot mailing list very recently
-> too:
-> 
-> http://lists.denx.de/pipermail/u-boot/2012-October/thread.html#138227
-> (it spills into the November archive too)
+>
+>   For more info, please check hot_tracking.txt in Documentation
+>
+> TODO List:
+>
+>  1.) Need to do scalability or performance tests.
+>  2.) Need one simpler but effective temp calc'ing function
+>  3.) How to save the file temperature among the umount to be able to
+>      preserve the file tempreture after reboot
+>
+> Ben Chociej, Matt Lupfer and Conor Scott originally wrote this code to
+>  be very btrfs-specific.  I've taken their code and attempted to
+> make it more generic and integrate it at the VFS level.
+>
+> Changelog from v3:
+>  1.) Rewritten debugfs support based seq_file operation. [Dave Chinner]
+>  2.) Refactored workqueue support. [Dave Chinner]
+>  3.) Turn some Micro into be tunable   [Zhiyong, Zheng Liu]
+>        TIME_TO_KICK, and HEAT_UPDATE_DELAY
+>  4.) Introduce hot func registering framework [Zhiyong]
+>  5.) Remove global variable for hot tracking [Zhiyong]
+>  6.) Add xfs hot tracking support [Dave Chinner]
+>  7.) Add ext4 hot tracking support [Zheng Liu]
+>  8.) Cleanedup a lot of other issues [Dave Chinner]
+>
+> v3:
+>  1.) Converted to Radix trees, not RB-tree [Zhiyong, Dave Chinner]
+>  2.) Added memory shrinker [Dave Chinner]
+>
+> v2:
+>  1.) Converted to one workqueue to update map info periodically [Dave Chinner]
+>  2.) Cleanedup a lot of other issues [Dave Chinner]
+>
+> v1:
+>  1.) Reduce new files and put all in fs/hot_tracking.[ch] [Dave Chinner]
+>  2.) Add btrfs hot tracking support [Zhiyong]
+>  3.) The first three patches can probably just be flattened into one.
+>                                         [Marco Stornelli , Dave Chinner]
+>
+> Dave Chinner (1):
+>   xfs: add hot tracking support
+>
+> Zheng Liu (1):
+>   ext4: add hot tracking support
+>
+> Zhi Yong Wu (17):
+>   vfs: introduce private radix tree structures
+>   vfs: initialize and free data structures
+>   vfs: add I/O frequency update function
+>   vfs: add two map arrays
+>   vfs: add hooks to enable hot tracking
+>   vfs: add temp calculation function
+>   vfs: add map info update function
+>   vfs: add aging function
+>   vfs: add one work queue
+>   vfs: introduce hot func register framework
+>   vfs: register one shrinker
+>   vfs: add one ioctl interface
+>   debugfs: introduce one function
+>   vfs: add debugfs support
+>   sysfs: add two hot_track proc files
+>   btrfs: add hot tracking support
+>   vfs: add documentation
+>
+>  Documentation/filesystems/00-INDEX         |    2 +
+>  Documentation/filesystems/hot_tracking.txt |  262 ++++++
+>  fs/Makefile                                |    2 +-
+>  fs/btrfs/ctree.h                           |    1 +
+>  fs/btrfs/super.c                           |   22 +-
+>  fs/compat_ioctl.c                          |    5 +
+>  fs/dcache.c                                |    2 +
+>  fs/debugfs/inode.c                         |   26 +
+>  fs/direct-io.c                             |    6 +
+>  fs/ext4/ext4.h                             |    3 +
+>  fs/ext4/super.c                            |   13 +-
+>  fs/hot_tracking.c                          | 1367 ++++++++++++++++++++++++++++
+>  fs/hot_tracking.h                          |   58 ++
+>  fs/ioctl.c                                 |   78 ++
+>  fs/xfs/xfs_mount.h                         |    1 +
+>  fs/xfs/xfs_super.c                         |   16 +
+>  include/linux/debugfs.h                    |    9 +
+>  include/linux/fs.h                         |    4 +
+>  include/linux/hot_tracking.h               |  149 +++
+>  kernel/sysctl.c                            |   14 +
+>  mm/filemap.c                               |    6 +
+>  mm/page-writeback.c                        |   12 +
+>  mm/readahead.c                             |    6 +
+>  23 files changed, 2061 insertions(+), 3 deletions(-)
+>  create mode 100644 Documentation/filesystems/hot_tracking.txt
+>  create mode 100644 fs/hot_tracking.c
+>  create mode 100644 fs/hot_tracking.h
+>  create mode 100644 include/linux/hot_tracking.h
+>
+> --
+> 1.7.6.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I am aware of this discussion. For our use case u-boot DT manipulation was
-tried, but then abandoned. Asking our user base to modify anything in u-boot
-was ruled out.
- 
-> 
->> For these cases it is proposed to implement an overlay feature for the
->> so that the initial device tree data can be modified by userspace at
-> 
-> I don't know if you're maintaining this as a document and taking patches
-> to it, but if so:
-> 
-> "for the so" split across those two lines.
-> 
->> Jane solves this problem by storing an FDT overlay for each cape in the
->> root filesystem. When the kernel detects that a cape is installed it
->> reads the cape's eeprom to identify it and uses request_firmware() to
->> obtain the appropriate overlay. Userspace passes the overlay to the
->> kernel in the normal way. If the cape doesn't have an eeprom, then the
->> kernel will still use firmware_request(), but userspace needs to already
->> know which cape is installed.
-> 
-> As mentioned by Pantelis, multiple versions of a board is also very
-> common. We already have the following .dts files in the kernel where
-> this applies, for the main board even:
-> 
-> arch/arm/boot/dts/tegra30-cardhu.dtsi
-> arch/arm/boot/dts/tegra30-cardhu-a02.dts
-> arch/arm/boot/dts/tegra30-cardhu-a04.dts
-> 
-
-Exactly. I've made this point in another email, but IMHO board-revision
-management is exactly the same with cape revision management.
-
-Ideally you'd like to get rid of those three, and replace it with only
-one that's properly versioned.
 
 
->> Summary points:
-> 
->>  - SHOULD reliably handle changes between different underlying overlays
->>    (ie. what happens to existing .dtb overly files if the structure of
->>    the dtb it is layered over changes. If not possible, then SHALL
->>    detect when the base tree doesn't match and refuse to apply the
->>    overlay.
-> 
-> Perhaps use (versioned) DT bindings to represent the interface between
-> the two .dts files? See the links to the U-Boot mailing list discussions
-> below?
-> 
->> - What is the model for overlays?
->>  - Can an overlay modify existing properties?
->>  - Can an overlay add new properties to existing nodes?
->>  - Can an overlay delete existing nodes/properties?
-> 
-> This proposal is very oriented at an overlay-based approach. I'm not
-> totally convinced that a pure overlay approach (as in how dtc does
-> overlayed DT nodes) will be flexible enough, but would love to be
-> persuaded. Again see below.
-> 
->> It may be sufficient to solve it by making the phandle values less
->> volatile. Right now dtc generates phandles linearly. Generated phandles
->> could be overridden with explicit phandle properties, but it isn't a
->> fantastic solution. Perhaps generating the phandle from a hash of the
->> node name would be sufficient.
-> 
-> Node names don't have to be unique though right; perhaps hash the
-> path-name instead of the node-name? But then, why not just reference by
-> path name; similar to <{&/path/to/node}> rather than <&label>?
-> 
+-- 
+Regards,
 
-It would work for references to the known base DTS. If you have a
-cape that's cross-device compatible that can simply fail.
-
-I like this for it's simplicity though.
-
->> This handles many of the use cases, but it assumes that an overlay is
->> board specific. If it ever is required to support multiple base boards
->> with a single overlay file then there is a problem. The .dtb overlays
->> generated in this manor cannot handle different phandles or nodes that
->> are in a different place. On the other hand, the overlay source files
->> should have no problem being compiled for multiple targets.
-> 
-> s/manor/manner/
-> 
-> I do rather suspect this use-case is quite common. NVIDIA certainly has
-> a bunch of development boards with pluggable
-> PMIC/audio/WiFi/display/..., and I believe there's some ability to
-> re-use the pluggable components with a variety of base-boards.
-> 
-> Given people within NVIDIA started talking about this recently, I asked
-> them to enumerate all the boards we have that support pluggable
-> components, and how common it is that some boards support being plugged
-> into different main boards. I don't know when that enumeration will
-> complete (or even start) but hopefully I can provide some feedback on
-> how common the use-case is for us once it's done.
-> 
-> My earlier thoughts on how to support this included explicit
-> inter-board/-component connector objects in the .dts files that allow
-> "renaming" of GPIOs, I2C buses, regulators, etc.:
-> 
-> http://lists.denx.de/pipermail/u-boot/2012-October/138476.html
-> http://lists.denx.de/pipermail/u-boot/2012-November/138925.html
-
-Sounds very similar to our case.
-
-Very interesting to say the least ;)
-
-Regards
-
--- Pantelis
+Zhi Yong Wu
