@@ -1,170 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab2KGPzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 10:55:52 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:48285 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab2KGPzv (ORCPT
+	id S1752314Ab2KGP5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 10:57:41 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42967 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab2KGP5j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 10:55:51 -0500
-Message-ID: <509A83F8.6040402@oracle.com>
-Date: Wed, 07 Nov 2012 10:53:28 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
-        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v6 28/29] slub: slub-specific propagation changes.
-References: <1351771665-11076-1-git-send-email-glommer@parallels.com> <1351771665-11076-29-git-send-email-glommer@parallels.com>
-In-Reply-To: <1351771665-11076-29-git-send-email-glommer@parallels.com>
+	Wed, 7 Nov 2012 10:57:39 -0500
+Date: Wed, 7 Nov 2012 16:02:32 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, florianSchandinat@gmx.de
+Subject: Re: tty, vt: lockdep warnings
+Message-ID: <20121107160232.18e83ee9@pyramind.ukuu.org.uk>
+In-Reply-To: <509A665C.3030603@gmail.com>
+References: <50899507.1040900@oracle.com>
+	<20121026143754.50277bd8@pyramind.ukuu.org.uk>
+	<CA+1xoqdEesjh1EZvR_r7Hn0GUc7741EDWn59qagngcxg4=9bjQ@mail.gmail.com>
+	<20121105175937.26f31d2a@pyramind.ukuu.org.uk>
+	<5097FEA9.2090603@oracle.com>
+	<alpine.LNX.2.00.1211051106590.1709@eggly.anvils>
+	<20121105201507.79fe47d7@pyramind.ukuu.org.uk>
+	<alpine.LNX.2.00.1211051231070.21645@eggly.anvils>
+	<20121106161100.216c6d79@pyramind.ukuu.org.uk>
+	<20121106164214.GA18246@redhat.com>
+	<20121106173845.4a50d661@pyramind.ukuu.org.uk>
+	<509A665C.3030603@gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2012 08:07 AM, Glauber Costa wrote:
-> SLUB allows us to tune a particular cache behavior with sysfs-based
-> tunables.  When creating a new memcg cache copy, we'd like to preserve
-> any tunables the parent cache already had.
+On Wed, 07 Nov 2012 08:47:08 -0500
+Sasha Levin <levinsasha928@gmail.com> wrote:
+
+> On 11/06/2012 12:38 PM, Alan Cox wrote:
+> >>  > The root
+> >>  > cause is loading two different framebuffers with one taking over from
+> >>  > another - that should be an obscure corner case and once the fuzz testing
+> >>  > can avoid.
+> >>  > 
+> >>  > I had a semi-informed poke at this and came up with a possible patch (not very tested)
+> >>
+> >> If this fixes the real problems we've been seeing, I'll dance a jig.
+> > 
+> > Youtube...
 > 
-> This can be done by tapping into the store attribute function provided
-> by the allocator. We of course don't need to mess with read-only
-> fields. Since the attributes can have multiple types and are stored
-> internally by sysfs, the best strategy is to issue a ->show() in the
-> root cache, and then ->store() in the memcg cache.
+> +1
 > 
-> The drawback of that, is that sysfs can allocate up to a page in
-> buffering for show(), that we are likely not to need, but also can't
-> guarantee. To avoid always allocating a page for that, we can update the
-> caches at store time with the maximum attribute size ever stored to the
-> root cache. We will then get a buffer big enough to hold it. The
-> corolary to this, is that if no stores happened, nothing will be
-> propagated.
+> > At this point my bigger concern is that it'll just make something else
+> > warn instead. The underlying problem is that fbcon layer implements a
+> > single threaded notifier whose locking semantics are at best random. It's
+> > not calld with a specific set of locks each time. Possibly it sohuld be
+> > two notifiers (one for fb stuff, one for console layer stuff) but the
+> > entire layer is horrible. I live in home the KMS guys will rip out the
+> > useful bits and build a straight kms fb layer with refcounting and the
+> > like 8)
+> > 
+> > Testing certainly needed and if it's still blowing up then hopefully
+> > further traces will help fix up the other cases we don't know about.
 > 
-> It can also happen that a root cache has its tunables updated during
-> normal system operation. In this case, we will propagate the change to
-> all caches that are already active.
+> So the good news are that the original lockdep splat I've reported is gone.
 > 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: Michal Hocko <mhocko@suse.cz>
-> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Johannes Weiner <hannes@cmpxchg.org>
-> CC: Suleiman Souhlal <suleiman@google.com>
-> CC: Tejun Heo <tj@kernel.org>
-> ---
+> The semi-bad news are that there's a new one. It happens less frequently
+> but I assume it's not a new splat either, but was well hidden behind the
+> other splat.
 
-Hi guys,
+Doesn't look too bad (fingers crossed)
 
-This patch is making lockdep angry! *bark bark*
+try
 
-[  351.935003] ======================================================
-[  351.937693] [ INFO: possible circular locking dependency detected ]
-[  351.939720] 3.7.0-rc4-next-20121106-sasha-00008-g353b62f #117 Tainted: G        W
-[  351.942444] -------------------------------------------------------
-[  351.943528] trinity-child13/6961 is trying to acquire lock:
-[  351.943528]  (s_active#43){++++.+}, at: [<ffffffff812f9e11>] sysfs_addrm_finish+0x31/0x60
-[  351.943528]
-[  351.943528] but task is already holding lock:
-[  351.943528]  (slab_mutex){+.+.+.}, at: [<ffffffff81228a42>] kmem_cache_destroy+0x22/0xe0
-[  351.943528]
-[  351.943528] which lock already depends on the new lock.
-[  351.943528]
-[  351.943528]
-[  351.943528] the existing dependency chain (in reverse order) is:
-[  351.943528]
--> #1 (slab_mutex){+.+.+.}:
-[  351.960334]        [<ffffffff8118536a>] lock_acquire+0x1aa/0x240
-[  351.960334]        [<ffffffff83a944d9>] __mutex_lock_common+0x59/0x5a0
-[  351.960334]        [<ffffffff83a94a5f>] mutex_lock_nested+0x3f/0x50
-[  351.960334]        [<ffffffff81256a6e>] slab_attr_store+0xde/0x110
-[  351.960334]        [<ffffffff812f820a>] sysfs_write_file+0xfa/0x150
-[  351.960334]        [<ffffffff8127a220>] vfs_write+0xb0/0x180
-[  351.960334]        [<ffffffff8127a540>] sys_pwrite64+0x60/0xb0
-[  351.960334]        [<ffffffff83a99298>] tracesys+0xe1/0xe6
-[  351.960334]
--> #0 (s_active#43){++++.+}:
-[  351.960334]        [<ffffffff811825af>] __lock_acquire+0x14df/0x1ca0
-[  351.960334]        [<ffffffff8118536a>] lock_acquire+0x1aa/0x240
-[  351.960334]        [<ffffffff812f9272>] sysfs_deactivate+0x122/0x1a0
-[  351.960334]        [<ffffffff812f9e11>] sysfs_addrm_finish+0x31/0x60
-[  351.960334]        [<ffffffff812fa369>] sysfs_remove_dir+0x89/0xd0
-[  351.960334]        [<ffffffff819e1d96>] kobject_del+0x16/0x40
-[  351.960334]        [<ffffffff8125ed40>] __kmem_cache_shutdown+0x40/0x60
-[  351.960334]        [<ffffffff81228a60>] kmem_cache_destroy+0x40/0xe0
-[  351.960334]        [<ffffffff82b21058>] mon_text_release+0x78/0xe0
-[  351.960334]        [<ffffffff8127b3b2>] __fput+0x122/0x2d0
-[  351.960334]        [<ffffffff8127b569>] ____fput+0x9/0x10
-[  351.960334]        [<ffffffff81131b4e>] task_work_run+0xbe/0x100
-[  351.960334]        [<ffffffff81110742>] do_exit+0x432/0xbd0
-[  351.960334]        [<ffffffff81110fa4>] do_group_exit+0x84/0xd0
-[  351.960334]        [<ffffffff8112431d>] get_signal_to_deliver+0x81d/0x930
-[  351.960334]        [<ffffffff8106d5aa>] do_signal+0x3a/0x950
-[  351.960334]        [<ffffffff8106df1e>] do_notify_resume+0x3e/0x90
-[  351.960334]        [<ffffffff83a993aa>] int_signal+0x12/0x17
-[  351.960334]
-[  351.960334] other info that might help us debug this:
-[  351.960334]
-[  351.960334]  Possible unsafe locking scenario:
-[  351.960334]
-[  351.960334]        CPU0                    CPU1
-[  351.960334]        ----                    ----
-[  351.960334]   lock(slab_mutex);
-[  351.960334]                                lock(s_active#43);
-[  351.960334]                                lock(slab_mutex);
-[  351.960334]   lock(s_active#43);
-[  351.960334]
-[  351.960334]  *** DEADLOCK ***
-[  351.960334]
-[  351.960334] 2 locks held by trinity-child13/6961:
-[  351.960334]  #0:  (mon_lock){+.+.+.}, at: [<ffffffff82b21005>] mon_text_release+0x25/0xe0
-[  351.960334]  #1:  (slab_mutex){+.+.+.}, at: [<ffffffff81228a42>] kmem_cache_destroy+0x22/0xe0
-[  351.960334]
-[  351.960334] stack backtrace:
-[  351.960334] Pid: 6961, comm: trinity-child13 Tainted: G        W    3.7.0-rc4-next-20121106-sasha-00008-g353b62f #117
-[  351.960334] Call Trace:
-[  351.960334]  [<ffffffff83a3c736>] print_circular_bug+0x1fb/0x20c
-[  351.960334]  [<ffffffff811825af>] __lock_acquire+0x14df/0x1ca0
-[  351.960334]  [<ffffffff81184045>] ? debug_check_no_locks_freed+0x185/0x1e0
-[  351.960334]  [<ffffffff8118536a>] lock_acquire+0x1aa/0x240
-[  351.960334]  [<ffffffff812f9e11>] ? sysfs_addrm_finish+0x31/0x60
-[  351.960334]  [<ffffffff812f9272>] sysfs_deactivate+0x122/0x1a0
-[  351.960334]  [<ffffffff812f9e11>] ? sysfs_addrm_finish+0x31/0x60
-[  351.960334]  [<ffffffff812f9e11>] sysfs_addrm_finish+0x31/0x60
-[  351.960334]  [<ffffffff812fa369>] sysfs_remove_dir+0x89/0xd0
-[  351.960334]  [<ffffffff819e1d96>] kobject_del+0x16/0x40
-[  351.960334]  [<ffffffff8125ed40>] __kmem_cache_shutdown+0x40/0x60
-[  351.960334]  [<ffffffff81228a60>] kmem_cache_destroy+0x40/0xe0
-[  351.960334]  [<ffffffff82b21058>] mon_text_release+0x78/0xe0
-[  351.960334]  [<ffffffff8127b3b2>] __fput+0x122/0x2d0
-[  351.960334]  [<ffffffff8127b569>] ____fput+0x9/0x10
-[  351.960334]  [<ffffffff81131b4e>] task_work_run+0xbe/0x100
-[  351.960334]  [<ffffffff81110742>] do_exit+0x432/0xbd0
-[  351.960334]  [<ffffffff811243b9>] ? get_signal_to_deliver+0x8b9/0x930
-[  351.960334]  [<ffffffff8117d402>] ? get_lock_stats+0x22/0x70
-[  351.960334]  [<ffffffff8117d48e>] ? put_lock_stats.isra.16+0xe/0x40
-[  351.960334]  [<ffffffff83a977fb>] ? _raw_spin_unlock_irq+0x2b/0x80
-[  351.960334]  [<ffffffff81110fa4>] do_group_exit+0x84/0xd0
-[  351.960334]  [<ffffffff8112431d>] get_signal_to_deliver+0x81d/0x930
-[  351.960334]  [<ffffffff8117d48e>] ? put_lock_stats.isra.16+0xe/0x40
-[  351.960334]  [<ffffffff8106d5aa>] do_signal+0x3a/0x950
-[  351.960334]  [<ffffffff811c8b33>] ? rcu_cleanup_after_idle+0x23/0x170
-[  351.960334]  [<ffffffff811cc1c4>] ? rcu_eqs_exit_common+0x64/0x3a0
-[  351.960334]  [<ffffffff811caa5d>] ? rcu_user_enter+0x10d/0x140
-[  351.960334]  [<ffffffff811cc8d5>] ? rcu_user_exit+0xc5/0xf0
-[  351.960334]  [<ffffffff8106df1e>] do_notify_resume+0x3e/0x90
-[  351.960334]  [<ffffffff83a993aa>] int_signal+0x12/0x17
+commit 8f965b0816d98ed535fdfccc3e50d84818e9c43b
+Author: Alan Cox <alan@linux.intel.com>
+Date:   Wed Nov 7 15:48:48 2012 +0000
 
+    fb: Rework locking to fix lock ordering on takeover
+    
+    Adjust the console layer to allow a take over call where the caller already
+    holds the locks. Make the fb layer lock in order.
+    
+    This s partly a band aid, the fb layer is terminally confused about the
+    locking rules it uses for its notifiers it seems.
+    
+    Signed-off-by: Alan Cox <alan@linux.intel.com>
 
-Thanks,
-Sasha
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index f87d7e8..ea57f27 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -2984,7 +2984,7 @@ int __init vty_init(const struct file_operations *console_fops)
+ 
+ static struct class *vtconsole_class;
+ 
+-static int bind_con_driver(const struct consw *csw, int first, int last,
++static int do_bind_con_driver(const struct consw *csw, int first, int last,
+ 			   int deflt)
+ {
+ 	struct module *owner = csw->owner;
+@@ -2995,7 +2995,7 @@ static int bind_con_driver(const struct consw *csw, int first, int last,
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
+ 
+-	console_lock();
++	WARN_CONSOLE_UNLOCKED();
+ 
+ 	/* check if driver is registered */
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+@@ -3080,11 +3080,22 @@ static int bind_con_driver(const struct consw *csw, int first, int last,
+ 
+ 	retval = 0;
+ err:
+-	console_unlock();
+ 	module_put(owner);
+ 	return retval;
+ };
+ 
++
++static int bind_con_driver(const struct consw *csw, int first, int last,
++			   int deflt)
++{
++	int ret;
++	
++	console_unlock();
++	ret = do_bind_con_driver(csw, first, last, deflt);
++	console_unlock();
++	return ret;
++}
++	
+ #ifdef CONFIG_VT_HW_CONSOLE_BINDING
+ static int con_is_graphics(const struct consw *csw, int first, int last)
+ {
+@@ -3196,9 +3207,9 @@ int unbind_con_driver(const struct consw *csw, int first, int last, int deflt)
+ 	if (!con_is_bound(csw))
+ 		con_driver->flag &= ~CON_DRIVER_FLAG_INIT;
+ 
+-	console_unlock();
+ 	/* ignore return value, binding should not fail */
+-	bind_con_driver(defcsw, first, last, deflt);
++	do_bind_con_driver(defcsw, first, last, deflt);
++	console_unlock();
+ err:
+ 	module_put(owner);
+ 	return retval;
+@@ -3489,28 +3500,18 @@ int con_debug_leave(void)
+ }
+ EXPORT_SYMBOL_GPL(con_debug_leave);
+ 
+-/**
+- * register_con_driver - register console driver to console layer
+- * @csw: console driver
+- * @first: the first console to take over, minimum value is 0
+- * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
+- *
+- * DESCRIPTION: This function registers a console driver which can later
+- * bind to a range of consoles specified by @first and @last. It will
+- * also initialize the console driver by calling con_startup().
+- */
+-int register_con_driver(const struct consw *csw, int first, int last)
++static int do_register_con_driver(const struct consw *csw, int first, int last)
+ {
+ 	struct module *owner = csw->owner;
+ 	struct con_driver *con_driver;
+ 	const char *desc;
+ 	int i, retval = 0;
+ 
++	WARN_CONSOLE_UNLOCKED();
++
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
+ 
+-	console_lock();
+-
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+ 		con_driver = &registered_con_driver[i];
+ 
+@@ -3563,10 +3564,29 @@ int register_con_driver(const struct consw *csw, int first, int last)
+ 	}
+ 
+ err:
+-	console_unlock();
+ 	module_put(owner);
+ 	return retval;
+ }
++
++/**
++ * register_con_driver - register console driver to console layer
++ * @csw: console driver
++ * @first: the first console to take over, minimum value is 0
++ * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
++ *
++ * DESCRIPTION: This function registers a console driver which can later
++ * bind to a range of consoles specified by @first and @last. It will
++ * also initialize the console driver by calling con_startup().
++ */
++int register_con_driver(const struct consw *csw, int first, int last)
++{
++	int retval;
++	
++	console_lock();
++	retval = do_register_con_driver(csw, first, last);
++	console_unlock();
++	return retval;
++}
+ EXPORT_SYMBOL(register_con_driver);
+ 
+ /**
+@@ -3622,6 +3642,29 @@ EXPORT_SYMBOL(unregister_con_driver);
+  *
+  *      take_over_console is basically a register followed by unbind
+  */
++int do_take_over_console(const struct consw *csw, int first, int last, int deflt)
++{
++	int err;
++
++	err = do_register_con_driver(csw, first, last);
++	/* if we get an busy error we still want to bind the console driver
++	 * and return success, as we may have unbound the console driver
++	 * but not unregistered it.
++	*/
++	if (err == -EBUSY)
++		err = 0;
++	if (!err)
++		do_bind_con_driver(csw, first, last, deflt);
++
++	return err;
++}
++/*
++ *	If we support more console drivers, this function is used
++ *	when a driver wants to take over some existing consoles
++ *	and become default driver for newly opened ones.
++ *
++ *      take_over_console is basically a register followed by unbind
++ */
+ int take_over_console(const struct consw *csw, int first, int last, int deflt)
+ {
+ 	int err;
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index fdefa8f..c75f8ce 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -529,6 +529,34 @@ static int search_for_mapped_con(void)
+ 	return retval;
+ }
+ 
++static int do_fbcon_takeover(int show_logo)
++{
++	int err, i;
++
++	if (!num_registered_fb)
++		return -ENODEV;
++
++	if (!show_logo)
++		logo_shown = FBCON_LOGO_DONTSHOW;
++
++	for (i = first_fb_vc; i <= last_fb_vc; i++)
++		con2fb_map[i] = info_idx;
++
++	err = do_take_over_console(&fb_con, first_fb_vc, last_fb_vc,
++				fbcon_is_default);
++
++	if (err) {
++		for (i = first_fb_vc; i <= last_fb_vc; i++) {
++			con2fb_map[i] = -1;
++		}
++		info_idx = -1;
++	} else {
++		fbcon_has_console_bind = 1;
++	}
++
++	return err;
++}
++
+ static int fbcon_takeover(int show_logo)
+ {
+ 	int err, i;
+@@ -3115,7 +3143,7 @@ static int fbcon_fb_registered(struct fb_info *info)
+ 		}
+ 
+ 		if (info_idx != -1)
+-			ret = fbcon_takeover(1);
++			ret = do_fbcon_takeover(1);
+ 	} else {
+ 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
+ 			if (con2fb_map_boot[i] == idx)
+diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+index 3ff0105..564ebe9 100644
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1650,7 +1650,9 @@ static int do_register_framebuffer(struct fb_info *fb_info)
+ 	event.info = fb_info;
+ 	if (!lock_fb_info(fb_info))
+ 		return -ENODEV;
++        console_lock();
+ 	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
++        console_unlock();
+ 	unlock_fb_info(fb_info);
+ 	return 0;
+ }
+@@ -1853,11 +1855,8 @@ int fb_new_modelist(struct fb_info *info)
+ 	err = 1;
+ 
+ 	if (!list_empty(&info->modelist)) {
+-		if (!lock_fb_info(info))
+-			return -ENODEV;
+ 		event.info = info;
+ 		err = fb_notifier_call_chain(FB_EVENT_NEW_MODELIST, &event);
+-		unlock_fb_info(info);
+ 	}
+ 
+ 	return err;
+diff --git a/drivers/video/fbsysfs.c b/drivers/video/fbsysfs.c
+index a55e366..ef476b0 100644
+--- a/drivers/video/fbsysfs.c
++++ b/drivers/video/fbsysfs.c
+@@ -177,6 +177,8 @@ static ssize_t store_modes(struct device *device,
+ 	if (i * sizeof(struct fb_videomode) != count)
+ 		return -EINVAL;
+ 
++	if (!lock_fb_info(fb_info))
++		return -ENODEV;
+ 	console_lock();
+ 	list_splice(&fb_info->modelist, &old_list);
+ 	fb_videomode_to_modelist((const struct fb_videomode *)buf, i,
+@@ -188,6 +190,7 @@ static ssize_t store_modes(struct device *device,
+ 		fb_destroy_modelist(&old_list);
+ 
+ 	console_unlock();
++	unlock_fb_info(fb_info);
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/console.h b/include/linux/console.h
+index dedb082..4ef4307 100644
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -78,6 +78,7 @@ int con_is_bound(const struct consw *csw);
+ int register_con_driver(const struct consw *csw, int first, int last);
+ int unregister_con_driver(const struct consw *csw);
+ int take_over_console(const struct consw *sw, int first, int last, int deflt);
++int do_take_over_console(const struct consw *sw, int first, int last, int deflt);
+ void give_up_console(const struct consw *sw);
+ #ifdef CONFIG_HW_CONSOLE
+ int con_debug_enter(struct vc_data *vc);
