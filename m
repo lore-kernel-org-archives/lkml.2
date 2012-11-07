@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab2KGHhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 02:37:00 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43594 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab2KGHg6 (ORCPT
+	id S1753142Ab2KGHil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 02:38:41 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51338 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab2KGHik convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 02:36:58 -0500
+	Wed, 7 Nov 2012 02:38:40 -0500
+X-AuditID: 9c930197-b7c0bae00000042f-82-509a0ffdedfa
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v2 00/16] perf: add memory access sampling support
+References: <1352123463-7346-1-git-send-email-eranian@google.com>
+	<20121106205220.GF13629@infradead.org>
+Date: Wed, 07 Nov 2012 16:38:36 +0900
+In-Reply-To: <20121106205220.GF13629@infradead.org> (Arnaldo Carvalho de
+	Melo's message of "Tue, 6 Nov 2012 17:52:21 -0300")
+Message-ID: <87fw4looar.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20121106233058.GW3102@twin.jikos.cz>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	<1351485061-12297-13-git-send-email-zwu.kernel@gmail.com>
-	<20121106233058.GW3102@twin.jikos.cz>
-Date: Wed, 7 Nov 2012 15:36:56 +0800
-Message-ID: <CAEH94Lj7vuQz6nqG3_u5DjcoeWc_LjejfxxWc3W0UoRs_worNg@mail.gmail.com>
-Subject: Re: [RFC v4+ hot_track 12/19] vfs: add one ioctl interface
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 7:30 AM, David Sterba <dave@jikos.cz> wrote:
-> On Mon, Oct 29, 2012 at 12:30:54PM +0800, zwu.kernel@gmail.com wrote:
->> +static int ioctl_heat_info(struct file *file, void __user *argp)
->> +{
->> +     struct inode *inode = file->f_dentry->d_inode;
->> +     struct hot_heat_info *heat_info;
->> +     struct hot_inode_item *he;
->> +     int ret = 0;
->> +
->> +     heat_info = kmalloc(sizeof(struct hot_heat_info),
->> +                             GFP_KERNEL | GFP_NOFS);
+Hi Arnaldo,
+
+On Tue, 6 Nov 2012 17:52:21 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Nov 05, 2012 at 02:50:47PM +0100, Stephane Eranian escreveu:
+> [root@sandy acme]# perf mem -t load rep --stdio --sort=symbol,symbol_daddr,cost
+> # Samples: 30  of event 'cpu/mem-loads/pp'
+> # Total cost : 640
+> # Sort order : symbol,symbol_daddr,cost
+> #
+> # Overhead      Samples                  Symbol             Data Symbol     Cost
+> # ........  ...........  ......................  ......................  .......
+> #
+>     55.00%            1  [k] lookup_fast         [k] 0xffff8803b7521bd4      352
+>      5.47%            1  [k] cache_alloc_refill  [k] 0xffff880407705024       35
+>      3.44%            1  [k] cache_alloc_refill  [k] 0xffff88041d8527d8       22
+>      3.28%            1  [k] run_timer_softirq   [k] 0xffff88041e2c3e90       21
+>      2.50%            1  [k] __list_add          [k] 0xffff8803b7521d68       16
+>      2.19%            1  [.] __strcoll_l         [.] 0x00007fffa8d44080       14
+>      1.88%            1  [.] __strcoll_l         [.] 0x00007fffa8d44104       12
 >
-> heat_info is small enough to fit onto the stack, so you can avoid the
-> kmalloc, I don't think there are deep callstacks to be expected.
-ok, done.
-> Nevertheless, if you want to use kmalloc here, then please check the
-> return value and use GFP_KERNEL.
-thanks for your pointing out.
+> If we go to the annotation browser to see where is that lookup_fast hitting we get:
 >
->> +
->> +     if (copy_from_user((void *) heat_info,
->> +                     argp,
->> +                     sizeof(struct hot_heat_info)) != 0) {
->> +             ret = -EFAULT;
->> +             goto err;
->> +     }
->> +
->> +     he = hot_inode_item_find(inode->i_sb->s_hot_root, inode->i_ino);
->> +     if (!he) {
->> +             /* we don't have any info on this file yet */
->> +             ret = -ENODATA;
->> +             goto err;
->> +     }
->> +
->> +     spin_lock(&he->hot_inode.lock);
->> +     heat_info->avg_delta_reads =
->> +             (__u64) he->hot_inode.hot_freq_data.avg_delta_reads;
->> +     heat_info->avg_delta_writes =
->> +             (__u64) he->hot_inode.hot_freq_data.avg_delta_writes;
->> +     heat_info->last_read_time =
->> +     (__u64) timespec_to_ns(&he->hot_inode.hot_freq_data.last_read_time);
->> +     heat_info->last_write_time =
->> +     (__u64) timespec_to_ns(&he->hot_inode.hot_freq_data.last_write_time);
->> +     heat_info->num_reads =
->> +             (__u32) he->hot_inode.hot_freq_data.nr_reads;
->> +     heat_info->num_writes =
->> +             (__u32) he->hot_inode.hot_freq_data.nr_writes;
->> +
->> +     if (heat_info->live > 0) {
->> +             /*
->> +              * got a request for live temperature,
->> +              * call hot_hash_calc_temperature to recalculate
->> +              */
->> +             heat_info->temp =
->> +             inode->i_sb->s_hot_root->hot_func_type->ops.hot_temp_calc_fn(
->> +                                     &he->hot_inode.hot_freq_data);
->> +     } else {
->> +             /* not live temperature, get it from the hashlist */
->> +             heat_info->temp = he->hot_inode.hot_freq_data.last_temp;
->> +     }
->> +     spin_unlock(&he->hot_inode.lock);
->> +
->> +     hot_inode_item_put(he);
->> +
->> +     if (copy_to_user(argp, (void *) heat_info,
->> +                     sizeof(struct hot_heat_info))) {
->> +             ret = -EFAULT;
->> +             goto err;
->> +     }
->> +
->> +err:
->> +     kfree(heat_info);
->> +     return ret;
->> +}
+> 100.00 │       mov    -0x34(%rbp),%eax
 >
-> david
+> How to map 0xffff8803b7521bd4 to a stack variable, struct members and all?
+>
+> Humm, for userspace we have PERF_SAMPLE_REGS_USER for the dwarf unwinder we
+> need for userspace, but what about reverse mapping of kernel variables? Jiri?
 
+I suspect there aren't much thing we can do on stack.  One thing we can
+do is adding dso_daddr to sort key and seeing it's a [stack] (or
+[stack:tid]) or not.  But not sure it can be done for kernel stacks too.
 
-
--- 
-Regards,
-
-Zhi Yong Wu
+Thanks,
+Namhyung
