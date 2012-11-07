@@ -1,190 +1,651 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab2KGON4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 09:13:56 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:55459 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab2KGONy (ORCPT
+	id S1751719Ab2KGOPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 09:15:11 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54965 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab2KGOPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 09:13:54 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [RFC PATCH v1 26/31] ARC: Build system: Makefiles, Kconfig, Linker script
-Date: Wed, 7 Nov 2012 14:13:49 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-27-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1352281674-2186-27-git-send-email-vgupta@synopsys.com>
+	Wed, 7 Nov 2012 09:15:09 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211071413.49178.arnd@arndb.de>
-X-Provags-ID: V02:K0:BrJS1tV783hF0AMS32ziZhYYjeTDjilYibtte2Jr2qa
- q4vXg/TuiiHr3f111B5EPi4ajXzUo31HIsHq404OxXeoceFD13
- bk11xZHYC//PVGh8XNUBMrS9zqaORQz3//7vaDSJ3OCMLEgDX6
- S2VWr95g1L+yOHRZZAQahNWiPzN7Mv/QWAxi1onvR/zczF0Sug
- jo/G2I6ADJy7gq5A2pMDn+FkN04CHG1C7Bxd9CkevC0GKKHKjH
- 1qReS8zgsN6JnKjsIysDK0Kv37lvdzBV0n7rkXksuvhVkgrsRw
- hM4lRQMZEwvGwfNcIgTvqKr/Fhi6h31xVKFRY3RfGK1KpMAArH
- NPqi2rvd9eOf4IGg8FU8=
+Date: Wed, 7 Nov 2012 09:15:07 -0500
+Message-ID: <CAJRGBZyoWvgKnu3eoxn8W69x1-YveXPGgfx30pX40fCCaCv0Hw@mail.gmail.com>
+Subject: [headache] 3.7.0-rc2 can't handle mutt (with 3.7G mail file) +FF (4
+ tabs) on a 4G memory+4 core system ?
+From: Luming Yu <luming.yu@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 November 2012, Vineet Gupta wrote:
+Hi,
 
-> +
-> +config ARC
-> +	def_bool y
-> +	select ARCH_WANT_IPC_PARSE_VERSION
-> +	# ARC Busybox based initramfs absolutely relies on DEVTMPFS for /dev
-> +	# DEVTMPS in turn needs HOTPLUG
-> +	select DEVTMPFS if !INITRAMFS_SOURCE=""
-> +	select GENERIC_ATOMIC64
-> +	select GENERIC_CLOCKEVENTS
-> +	select GENERIC_FIND_FIRST_BIT
-> +	# for now, we don't need GENERIC_IRQ_PROBE, CONFIG_GENERIC_IRQ_CHIP
-> +	select GENERIC_IRQ_SHOW
-> +	select GENERIC_PENDING_IRQ if SMP
-> +	select GENERIC_SMP_IDLE_THREAD
-> +	select HAVE_GENERIC_HARDIRQS
-> +	select HOTPLUG if !INITRAMFS_SOURCE=""
-> +	select MODULES_USE_ELF_RELA
+when I hit Q trying to quit from mutt, the system seemed to begin bump
+. I echo l > /proc/sysrq-trigger 3 times. The call traces looks like a
+live lock..but  I'm not sure,
+It is strange that trying to quit from mutt with a big mail file could
+trigger a similar "system hang" on a leading edge 4Gmemory+4 core
+system as I experienced on a ancient P4 system with 512memory + 1
+core... Any ideas? /l
 
-You should not need ARCH_WANT_IPC_PARSE_VERSION
 
-> +# for old_[ug]id_t - do we need this ?
-> +config UID16
-> +	def_bool y
-
-No, not needed either.
-
-> +menu "ARC Architecture Configuration"
-> +
-> +choice
-> +	prompt "ARC Platform"
-> +	default ARC_PLAT_FPGA_LEGACY
-> +
-> +config ARC_PLAT_FPGA_LEGACY
-> +	bool "\"Legacy\" ARC FPGA dev platform"
-> +	help
-> +	  Support for ARC development platforms, provided by Synopsys.
-> +	  These are based on FPGA or ISS. e.g.
-> +	  - ARCAngel4
-> +	  - ML509
-> +	  - MetaWare ISS
-> +
-> +#New platform adds here
-> +endchoice
-
-Platform selection should generally be non-exclusive. Just remove the
-"choice" statement here, and make sure that any platforms can be enabled
-together to build a single kernel.
-
-> +menu "ARC CPU Configuration"
-> +
-> +choice
-> +	prompt "ARC Core"
-> +	default ARC_CPU_770
-> +
-> +config ARC_CPU_750D
-> +	bool "ARC750D"
-> +	help
-> +	  Support for ARC750 core
-> +
-> +config ARC_CPU_770
-> +	bool "ARC770"
-> +	select ARC_CPU_REL_4_10
-> +	help
-> +	  Support for ARC770 core introduced with Rel 4.10 (Summer 2011)
-> +	  This core has a bunch of cool new features:
-> +	  -MMU-v3: Variable Page Sz (4k, 8k, 16k), bigger J-TLB (128x4)
-> +                   Shared Address Spaces (for sharing TLB entires in MMU)
-> +	  -Caches: New Prog Model, Region Flush
-> +	  -Insns: endian swap, load-locked/store-conditional, time-stamp-ctr
-> +
-> +endchoice
-
-Same thing here: If the different CPUs can in theory run the same kernel
-code, they should allow that. It doesn't stop you from making the default
-to enable only one of them and optimize for that case.
-
-> +
-> +choice
-> +	prompt "ARC700 MMU Version"
-> +	default ARC_MMU_V3 if ARC_CPU_770
-> +	default ARC_MMU_V2 if ARC_CPU_750D
-> +
-
-> +endchoice
-
-> +choice
-> +	prompt "MMU Page Size"
-> +	default ARC_PAGE_SIZE_8K
-> +
->
-> +
-> +endchoice
-
-For MMU, page size and endianess, I would not expect that to work though,
-so they probably need to remain mutually exclusive.
-
-> +menu "Platform Board Configuration"
-> +
-> +source "arch/arc/plat-arcfpga/Kconfig"
-> +#New platform adds here
-> +
-> +config ARC_PLAT_CLK
-> +	int "Clk speed in Hz"
-> +	default "80000000"
-> +
-> +config LINUX_LINK_BASE
-> +	hex "Linux Link Address"
-> +	default "0x80000000"
-> +	help
-> +	  ARC700 divides the 32 bit phy address space into two equal halves
-> +	  -Lower 2G (0 - 0x7FFF_FFFF ) is user virtual, translated by MMU
-> +	  -Upper 2G (0x8000_0000 onwards) is untranslated, for kernel
-> +	  Typically Linux kernel is linked at the start of untransalted addr,
-> +	  hence the default value of 0x8zs.
-> +	  However some customers have peripherals mapped at this addr, so
-> +	  Linux needs to be scooted a bit.
-> +	  If you don't know what the above means, leave this setting alone.
-> +
-> +config ARC_PLAT_SDRAM_SIZE
-> +	hex "SD RAM Size"
-> +	default "0x10000000"
-> +	help
-> +	  Implies the amount of SDRAM/DRAM Linux is going to claim/own.
-> +	  The actual memory itself could be larger than this number. But for
-> +	  all software purposes, this is the amt of memory.
-> +
-> +endmenu # "Platform Board Configuration"
-
-Clock speed and memory size are things that the kernel should normally
-be able to find out itself, if not from the hardware then from looking
-at the device tree binary that gets passed from the boot loader, or
-some other boot protocol that is already established.
-
-> +if ARC_PLAT_FPGA_LEGACY
-> +
-> +choice
-> +	prompt "FPGA Board"
-> +
-> +config ARC_BOARD_ANGEL4
-> +	bool "ARC Angel4"
-> +	help
-> +	  ARC Angel4 FPGA Ref Platform (Xilinx Virtex Based)
-> +
-> +config ARC_BOARD_ML509
-> +	bool "ML509"
-> +	help
-> +	  ARC ML509 FPGA Ref Platform (Xilinx Virtex-5 Based)
-> +
-> +endchoice
-
-Board files again should not be mutually exclusive.
-
-	Arnd
+[176737.388593] SysRq : Show backtrace of all active CPUs
+[176737.388597] sending NMI to all CPUs:
+[176737.388600] NMI backtrace for cpu 1
+[176737.388603] CPU 1
+[176737.388606] Pid: 64, comm: kswapd0 Tainted: G    B
+3.7.0-rc2+ #6 LENOVO 232045C/232045C
+[176737.388608] RIP: 0010:[<ffffffff8135530c>]  [<ffffffff8135530c>]
+debug_locks_off+0xc/0x40
+[176737.388614] RSP: 0000:ffff880110729aa8  EFLAGS: 00000046
+[176737.388616] RAX: 0000000000000246 RBX: 0000000000000000 RCX:
+0000000000000001
+[176737.388617] RDX: 0000000000000000 RSI: 0000000000000000 RDI:
+ffffffff81c7fcf8
+[176737.388619] RBP: ffff880110729aa8 R08: 0000000000000000 R09:
+0000000000000001
+[176737.388620] R10: 000000000000003c R11: 0000000000000000 R12:
+ffff8801106c4d20
+[176737.388622] R13: ffffffff81c7fcf8 R14: ffff880110729d00 R15:
+ffffffff811d176d
+[176737.388624] FS:  0000000000000000(0000) GS:ffff880119000000(0000)
+knlGS:0000000000000000
+[176737.388625] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[176737.388627] CR2: 0000000008b0bb1c CR3: 0000000001c0b000 CR4:
+00000000001407e0
+[176737.388629] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[176737.388630] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[176737.388632] Process kswapd0 (pid: 64, threadinfo ffff880110728000,
+task ffff8801106c4d20)
+[176737.388633] Stack:
+[176737.388635]  ffff880110729af8 ffffffff810d3f95 0000000000000000
+0000000000000246
+[176737.388640]  ffff880110729b18 ffffffff81c7fce0 ffffffff81c7fcf8
+0000000000000000
+[176737.388644]  ffff880110729d00 ffff880110729d00 ffff880110729b28
+ffffffff816e6092
+[176737.388649] Call Trace:
+[176737.388653]  [<ffffffff810d3f95>] lock_acquired+0x135/0x410
+[176737.388657]  [<ffffffff816e6092>] _raw_spin_lock+0x72/0x80
+[176737.388661]  [<ffffffff811d176d>] ? put_super+0x1d/0x40
+[176737.388663]  [<ffffffff811d176d>] put_super+0x1d/0x40
+[176737.388666]  [<ffffffff811d1852>] drop_super+0x22/0x30
+[176737.388669]  [<ffffffff811d29b9>] prune_super+0x149/0x1b0
+[176737.388673]  [<ffffffff811738da>] shrink_slab+0xba/0x500
+[176737.388676]  [<ffffffff811c2120>] ? mem_cgroup_iter+0x190/0x300
+[176737.388679]  [<ffffffff811c206f>] ? mem_cgroup_iter+0xdf/0x300
+[176737.388682]  [<ffffffff811764a7>] ? shrink_zone+0x57/0xa0
+[176737.388685]  [<ffffffff81177ce1>] balance_pgdat+0x611/0x7e0
+[176737.388689]  [<ffffffff81178041>] kswapd+0x191/0x610
+[176737.388693]  [<ffffffff81094200>] ? wake_up_bit+0x40/0x40
+[176737.388695]  [<ffffffff81177eb0>] ? balance_pgdat+0x7e0/0x7e0
+[176737.388698]  [<ffffffff810938fd>] kthread+0xed/0x100
+[176737.388702]  [<ffffffff81093810>] ? flush_kthread_worker+0x190/0x190
+[176737.388705]  [<ffffffff816f00ec>] ret_from_fork+0x7c/0xb0
+[176737.388708]  [<ffffffff81093810>] ? flush_kthread_worker+0x190/0x190
+[176737.388710] Code: 89 4f 0c 48 83 c4 10 5b 41 5c 41 5d 41 5e 41 5f
+5d c3 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 00 55 31 d2 48 89 e5 87 15
+34 f2 95 00 <31> c0 85 d2 74 20 8b 0d 68 50 76 01 85 c9 75 16 8b 15 ae
+1d 8d
+[176737.388751] NMI backtrace for cpu 3
+[176737.388753] CPU 3
+[176737.388755] Pid: 11850, comm: bash Tainted: G    B
+3.7.0-rc2+ #6 LENOVO 232045C/232045C
+[176737.388757] RIP: 0010:[<ffffffff81022580>]  [<ffffffff81022580>]
+rtc_cmos_write+0x10/0x10
+[176737.388763] RSP: 0018:ffff8800b7773db8  EFLAGS: 00000002
+[176737.388765] RAX: 0000000045feac80 RBX: 0000000000002710 RCX:
+0000000000000008
+[176737.388766] RDX: 00000000002aa163 RSI: 0000000000000008 RDI:
+00000000002aa164
+[176737.388768] RBP: ffff8800b7773de8 R08: 0000000000000000 R09:
+0000000000000001
+[176737.388770] R10: 0000000000000000 R11: 0000000000000439 R12:
+ffff8800b7773fd8
+[176737.388771] R13: 0000000000000282 R14: 00000000002aa164 R15:
+0000000000000003
+[176737.388773] FS:  00007ff45079f740(0000) GS:ffff880119400000(0000)
+knlGS:0000000000000000
+[176737.388775] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[176737.388777] CR2: 00007ff4507b2000 CR3: 000000007df29000 CR4:
+00000000001407e0
+[176737.388778] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[176737.388780] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[176737.388782] Process bash (pid: 11850, threadinfo ffff8800b7772000,
+task ffff8800c4b32690)
+[176737.388783] Stack:
+[176737.388784]  ffffffff8135319b 0000000000002710 000000000000006c
+0000000000000282
+[176737.388789]  0000000000000000 000000000000000f ffff8800b7773df8
+ffffffff813530f8
+[176737.388792]  ffff8800b7773e18 ffffffff810413fa 0000000000000000
+ffffffff81cc24e0
+[176737.388797] Call Trace:
+[176737.388801]  [<ffffffff8135319b>] ? delay_tsc+0x3b/0xc0
+[176737.388804]  [<ffffffff813530f8>] __const_udelay+0x28/0x30
+[176737.388807]  [<ffffffff810413fa>] arch_trigger_all_cpu_backtrace+0x7a/0xb0
+[176737.388811]  [<ffffffff8140bcee>] sysrq_handle_showallcpus+0xe/0x10
+[176737.388814]  [<ffffffff8140c1d7>] __handle_sysrq+0x127/0x190
+[176737.388817]  [<ffffffff8140c240>] ? __handle_sysrq+0x190/0x190
+[176737.388820]  [<ffffffff8140c28a>] write_sysrq_trigger+0x4a/0x50
+[176737.388823]  [<ffffffff8123e630>] proc_reg_write+0x80/0xc0
+[176737.388827]  [<ffffffff811cf26f>] vfs_write+0xaf/0x190
+[176737.388829]  [<ffffffff811cf5c5>] sys_write+0x55/0xa0
+[176737.388832]  [<ffffffff816f0199>] system_call_fastpath+0x16/0x1b
+[176737.388834] Code: 0f 1f 84 00 00 00 00 00 0f 1f 00 55 89 f8 48 89
+e5 e6 70 e4 71 5d c3 0f 1f 40 00 55 89 f0 48 89 e5 e6 70 89 f8 e6 71
+5d c3 66 90 <55> 48 89 e5 0f 31 89 c0 48 c1 e2 20 48 09 c2 48 89 d0 5d
+c3 66
+[176737.388879] NMI backtrace for cpu 2
+[176737.388881] CPU 2
+[176737.388883] Pid: 0, comm: swapper/2 Tainted: G    B
+3.7.0-rc2+ #6 LENOVO 232045C/232045C
+[176737.388885] RIP: 0010:[<ffffffff813a8d1e>]  [<ffffffff813a8d1e>]
+intel_idle+0xbe/0x160
+[176737.388890] RSP: 0018:ffff880116d35e28  EFLAGS: 00000046
+[176737.388891] RAX: 0000000000000010 RBX: 0000000000000004 RCX:
+0000000000000001
+[176737.388893] RDX: 0000000000000000 RSI: ffff880116d35fd8 RDI:
+00000000005ba2ce
+[176737.388894] RBP: ffff880116d35e88 R08: ffffffffffffffff R09:
+0001c1c02d612227
+[176737.388895] R10: 0000000000000000 R11: 0000000000000000 R12:
+0000000000000002
+[176737.388897] R13: ffff8801193dbc70 R14: 0000000000000010 R15:
+12c47a6281435078
+[176737.388899] FS:  0000000000000000(0000) GS:ffff880119200000(0000)
+knlGS:0000000000000000
+[176737.388900] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[176737.388902] CR2: 000000000acff04c CR3: 0000000001c0b000 CR4:
+00000000001407e0
+[176737.388903] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[176737.388905] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[176737.388907] Process swapper/2 (pid: 0, threadinfo
+ffff880116d34000, task ffff880116d38000)
+[176737.388908] Stack:
+[176737.388909]  0000000000000000 0000000000085a0b ffff880116d35e98
+0000000281554fda
+[176737.388912]  0000000000000000 0000000000085a0b 0000000000000000
+ffff8801193dbc70
+[176737.388916]  ffffffff81d33880 0000000000000002 0000000000000002
+ffffffff81cb7c80
+[176737.388920] Call Trace:
+[176737.388924]  [<ffffffff81553019>] cpuidle_enter+0x19/0x20
+[176737.388926]  [<ffffffff815536b2>] cpuidle_idle_call+0xa2/0x600
+[176737.388930]  [<ffffffff810244d5>] cpu_idle+0xc5/0x140
+[176737.388933]  [<ffffffff816d1e60>] start_secondary+0x258/0x25a
+[176737.388934] Code: 28 e0 ff ff 83 e2 08 75 22 31 d2 48 83 c0 10 48
+89 d1 0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 4c 89
+f0 0f 01 c9 <e8> dd f4 d1 ff 4c 29 f8 48 89 c7 e8 92 82 cc ff 48 89 45
+a0 48
+[176737.388975] NMI backtrace for cpu 0
+[176737.388977] CPU 0
+[176737.388980] Pid: 0, comm: swapper/0 Tainted: G    B
+3.7.0-rc2+ #6 LENOVO 232045C/232045C
+[176737.388981] RIP: 0010:[<ffffffff813a8d1e>]  [<ffffffff813a8d1e>]
+intel_idle+0xbe/0x160
+[176737.388985] RSP: 0018:ffffffff81c01de8  EFLAGS: 00000046
+[176737.388987] RAX: 0000000000000000 RBX: 0000000000000002 RCX:
+0000000000000001
+[176737.388988] RDX: 0000000000000000 RSI: ffffffff81c01fd8 RDI:
+00000000005ba2ce
+[176737.388990] RBP: ffffffff81c01e48 R08: ffffffffffffffff R09:
+0001c1c02d612227
+[176737.388992] R10: 0140000000000000 R11: 0000000000000000 R12:
+0000000000000001
+[176737.388993] R13: ffff880118fdbc70 R14: 0000000000000000 R15:
+12c47a62813c8bca
+[176737.388995] FS:  0000000000000000(0000) GS:ffff880118e00000(0000)
+knlGS:0000000000000000
+[176737.388997] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[176737.388998] CR2: 000000000cbd514c CR3: 00000000c4a04000 CR4:
+00000000001407f0
+[176737.389000] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[176737.389001] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[176737.389003] Process swapper/0 (pid: 0, threadinfo
+ffffffff81c00000, task ffffffff81c13420)
+[176737.389005] Stack:
+[176737.389006]  0000000000000000 00000000001e6294 ffffffff81c01e58
+0000000081554fda
+[176737.389010]  0000000000000000 00000000001e6294 0000000000000000
+ffff880118fdbc70
+[176737.389014]  ffffffff81d33880 0000000000000001 0000000000000000
+ffffffff81cb7c80
+[176737.389017] Call Trace:
+[176737.389021]  [<ffffffff81553019>] cpuidle_enter+0x19/0x20
+[176737.389024]  [<ffffffff815536b2>] cpuidle_idle_call+0xa2/0x600
+[176737.389028]  [<ffffffff810244d5>] cpu_idle+0xc5/0x140
+[176737.389032]  [<ffffffff816be6e9>] rest_init+0x149/0x150
+[176737.389035]  [<ffffffff816be5a5>] ? rest_init+0x5/0x150
+[176737.389039]  [<ffffffff81f15c7c>] start_kernel+0x409/0x416
+[176737.389042]  [<ffffffff81f15672>] ? repair_env_string+0x5e/0x5e
+[176737.389045]  [<ffffffff81f15356>] x86_64_start_reservations+0x131/0x135
+[176737.389048]  [<ffffffff81f1545a>] x86_64_start_kernel+0x100/0x10f
+[176737.389049] Code: 28 e0 ff ff 83 e2 08 75 22 31 d2 48 83 c0 10 48
+89 d1 0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 4c 89
+f0 0f 01 c9 <e8> dd f4 d1 ff 4c 29 f8 48 89 c7 e8 92 82 cc ff 48 89 45
+a0 48
+[176991.499385] SysRq : Show backtrace of all active CPUs
+[176991.499389] sending NMI to all CPUs:
+[176991.499392] NMI backtrace for cpu 2
+[176991.499395] CPU 2
+[176991.499398] Pid: 64, comm: kswapd0 Tainted: G    B
+3.7.0-rc2+ #6 LENOVO 232045C/232045C
+[176991.499400] RIP: 0010:[<ffffffff810d761c>]  [<ffffffff810d761c>]
+lock_release+0xbc/0x310
+[176991.499406] RSP: 0018:ffff880110729ad8  EFLAGS: 00000246
+[176991.499407] RAX: ffff8801106c4d20 RBX: ffff8801106c4d20 RCX:
+0000000000000001
+[176991.499409] RDX: ffff8801106c4d20 RSI: 0000000000000001 RDI:
+0000000000000246
+[176991.499410] RBP: ffff880110729b08 R08: 0000000000000000 R09:
+0000000000000001
+[176991.499412] R10: 000000000000003c R11: 0000000000000000 R12:
+ffffffff81c7fcf8
+[176991.499414] R13: ffffffff811d1781 R14: 0000000000000246 R15:
+0000000000000001
+[176991.499416] FS:  0000000000000000(0000) GS:ffff880119200000(0000)
+knlGS:0000000000000000
+[176991.499417] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[176991.499419] CR2: 0000000001127011 CR3: 0000000001c0b000 CR4:
+00000000001407e0
+[176991.499420] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[176991.499422] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[176991.499424] Process kswapd0 (pid: 64, threadinfo ffff880110728000,
+task ffff8801106c4d20)
+[176991.499425] Stack:
+[176991.499426]  ffffffff81c7fcf8 ffffffff81c7fce0 ffff88010f998000
+0000000000000000
+[176991.499431]  ffff880110729d00 ffff880110729d00 ffff880110729b28
+ffffffff816e6b43
+[176991.499435]  ffff88010f998000 ffff88010f998000 ffff880110729b48
+ffffffff811d1781
+[176991.499439] Call Trace:
+[176991.499443]  [<ffffffff816e6b43>] _raw_spin_unlock+0x23/0x50
+[176991.499447]  [<ffffffff811d1781>] put_super+0x31/0x40
+[176991.499450]  [<ffffffff811d1852>] drop_super+0x22/0x30
+[176991.499452]  [<ffffffff811d29b9>] prune_super+0x149/0x1b0
+[176991.499456]  [<ffffffff811738da>] shrink_slab+0xba/0x500
+[176991.499460]  [<ffffffff811c2120>] ? mem_cgroup_iter+0x190/0x300
+[176991.499462]  [<ffffffff811c206f>] ? mem_cgroup_iter+0xdf/0x300
+[176991.499466]  [<ffffffff81177ce1>] balance_pgdat+0x611/0x7e0
+[176991.499469]  [<ffffffff81178041>] kswapd+0x191/0x610
+[176991.499473]  [<ffffffff81094200>] ? wake_up_bit+0x40/0x40
+[176991.499476]  [<ffffffff81177eb0>] ? balance_pgdat+0x7e0/0x7e0
+[176991.499478]  [<ffffffff810938fd>] kthread+0xed/0x100
+[176991.499482]  [<ffffffff81093810>] ? flush_kthread_worker+0x190/0x190
+[176991.499485]  [<ffffffff816f00ec>] ret_from_fork+0x7c/0xb0
+[176991.499488]  [<ffffffff81093810>] ? flush_kthread_worker+0x190/0x190
+[176991.499490] Code: 85 ea 00 00 00 4c 89 ea 4c 89 e6 48 89 df e8 2c
+fc ff ff 65 48 8b 04 25 00 c9 00 00 4c 89 f7 c7 80 c4 08 00 00 00 00
+00 00 57 9d <0f> 1f 44 00 00 48 8b 5d d8 4c 8b 65 e0 4c 8b 6d e8 4c 8b
+75 f0
+[176991.499531] NMI backtrace for cpu 0
+[176991.499533] CPU 0
+[176991.499535] Pid: 1430, comm: bash Tainted: G    B
+3.7.0-rc2+ #6 LENOVO 232045C/232045C
+[176991.499537] RIP: 0010:[<ffffffff813530d1>]  [<ffffffff813530d1>]
+__const_udelay+0x1/0x30
+[176991.499542] RSP: 0018:ffff8800b2873df8  EFLAGS: 00000046
+[176991.499544] RAX: 0000000000000000 RBX: 0000000000002710 RCX:
+0000000000000008
+[176991.499546] RDX: 00000000000000ff RSI: 0000000000000008 RDI:
+0000000000418958
+[176991.499547] RBP: ffff8800b2873e18 R08: 0000000000000000 R09:
+0000000000000001
+[176991.499549] R10: 0000000000000000 R11: 00000000000004bd R12:
+000000000000006c
+[176991.499551] R13: 0000000000000282 R14: 0000000000000000 R15:
+000000000000000f
+[176991.499553] FS:  00007ffced4f3740(0000) GS:ffff880118e00000(0000)
+knlGS:0000000000000000
+[176991.499554] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[176991.499556] CR2: 00007ffced4ff000 CR3: 00000000b4748000 CR4:
+00000000001407f0
+[176991.499558] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[176991.499559] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[176991.499561] Process bash (pid: 1430, threadinfo ffff8800b2872000,
+task ffff8800b473cd20)
+[176991.499562] Stack:
+[176991.499564]  ffff8800b2873e18 ffffffff810413fa 0000000000000000
+ffffffff81cc24e0
+[176991.499568]  ffff8800b2873e28 ffffffff8140bcee ffff8800b2873e68
+ffffffff8140c1d7
+[176991.499572]  ffff8800b2873e68 0000000000000002 ffff8800b2938dc0
+ffffffff8140c240
+[176991.499576] Call Trace:
+[176991.499580]  [<ffffffff810413fa>] ? arch_trigger_all_cpu_backtrace+0x7a/0xb0
+[176991.499584]  [<ffffffff8140bcee>] sysrq_handle_showallcpus+0xe/0x10
+[176991.499587]  [<ffffffff8140c1d7>] __handle_sysrq+0x127/0x190
+[176991.499590]  [<ffffffff8140c240>] ? __handle_sysrq+0x190/0x190
+[176991.499593]  [<ffffffff8140c28a>] write_sysrq_trigger+0x4a/0x50
+[176991.499597]  [<ffffffff8123e630>] proc_reg_write+0x80/0xc0
+[176991.499600]  [<ffffffff811cf26f>] vfs_write+0xaf/0x190
+[176991.499602]  [<ffffffff811cf5c5>] sys_write+0x55/0xa0
+[176991.499605]  [<ffffffff816f0199>] system_call_fastpath+0x16/0x1b
+[176991.499607] Code: ff c8 5d c3 66 0f 1f 44 00 00 0f 1f 44 00 00 55
+48 89 e5 ff 15 f9 0b 96 00 5d c3 66 66 66 66 66 66 2e 0f 1f 84 00 00
+00 00 00 55 <48> 8d 04 bd 00 00 00 00 65 48 8b 14 25 18 4a 1d 00 48 89
+e5 48
+[176991.499651] NMI backtrace for cpu 1
+[176991.499653] CPU 1
+[176991.499655] Pid: 0, comm: swapper/1 Tainted: G    B
+3.7.0-rc2+ #6 LENOVO 232045C/232045C
+[176991.499657] RIP: 0010:[<ffffffff813a8d1e>]  [<ffffffff813a8d1e>]
+intel_idle+0xbe/0x160
+[176991.499661] RSP: 0000:ffff880116d2fe28  EFLAGS: 00000046
+[176991.499663] RAX: 0000000000000030 RBX: 0000000000000010 RCX:
+0000000000000001
+[176991.499664] RDX: 0000000000000000 RSI: ffff880116d2ffd8 RDI:
+00000000005ba2ce
+[176991.499666] RBP: ffff880116d2fe88 R08: ffffffffffffffff R09:
+0001c265b5b072ce
+[176991.499667] R10: 0000000000000000 R11: 0000000000000000 R12:
+0000000000000004
+[176991.499669] R13: ffff8801191dbc70 R14: 0000000000000030 R15:
+12c47a9dc1f68a64
+[176991.499671] FS:  0000000000000000(0000) GS:ffff880119000000(0000)
+knlGS:0000000000000000
+[176991.499672] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[176991.499673] CR2: 0000000039067118 CR3: 0000000001c0b000 CR4:
+00000000001407e0
+[176991.499675] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[176991.499676] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[176991.499678] Process swapper/1 (pid: 0, threadinfo
+ffff880116d2e000, task ffff880116ce2690)
+[176991.499679] Stack:
+[176991.499680]  0000000000000000 00000000000ac922 ffff880116d2fe98
+0000000181554fda
+[176991.499684]  0000000000000000 00000000000ac922 0000000000000000
+ffff8801191dbc70
+[176991.499687]  ffffffff81d33880 0000000000000004 0000000000000001
+ffffffff81cb7c80
+[176991.499691] Call Trace:
+[176991.499695]  [<ffffffff81553019>] cpuidle_enter+0x19/0x20
+[176991.499698]  [<ffffffff815536b2>] cpuidle_idle_call+0xa2/0x600
+[176991.499701]  [<ffffffff810244d5>] cpu_idle+0xc5/0x140
+[176991.499704]  [<ffffffff816d1e60>] start_secondary+0x258/0x25a
+[176991.499706] Code: 28 e0 ff ff 83 e2 08 75 22 31 d2 48 83 c0 10 48
+89 d1 0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 4c 89
+f0 0f 01 c9 <e8> dd f4 d1 ff 4c 29 f8 48 89 c7 e8 92 82 cc ff 48 89 45
+a0 48
+[176991.499746] NMI backtrace for cpu 3
+[176991.499748] CPU 3
+[176991.499751] Pid: 0, comm: swapper/3 Tainted: G    B
+3.7.0-rc2+ #6 LENOVO 232045C/232045C
+[176991.499752] RIP: 0010:[<ffffffff813a8d1e>]  [<ffffffff813a8d1e>]
+intel_idle+0xbe/0x160
+[176991.499756] RSP: 0000:ffff880116d37e28  EFLAGS: 00000046
+[176991.499758] RAX: 0000000000000030 RBX: 0000000000000010 RCX:
+0000000000000001
+[176991.499759] RDX: 0000000000000000 RSI: ffff880116d37fd8 RDI:
+00000000005ba2ce
+[176991.499761] RBP: ffff880116d37e88 R08: ffffffffffffffff R09:
+0001c265b585d20f
+[176991.499763] R10: 0140000000000000 R11: 0000000000000000 R12:
+0000000000000004
+[176991.499764] R13: ffff8801195dbc70 R14: 0000000000000030 R15:
+12c47a9dc1e747f3
+[176991.499766] FS:  0000000000000000(0000) GS:ffff880119400000(0000)
+knlGS:0000000000000000
+[176991.499768] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[176991.499770] CR2: 000000001d68a90c CR3: 0000000001c0b000 CR4:
+00000000001407e0
+[176991.499771] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[176991.499773] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[176991.499774] Process swapper/3 (pid: 0, threadinfo
+ffff880116d36000, task ffff880116d3cd20)
+[176991.499776] Stack:
+[176991.499777]  0000000000000000 00000000014f88c8 ffff880116d37e98
+0000000381554fda
+[176991.499781]  0000000000000000 00000000014f88c8 0000000000000000
+ffff8801195dbc70
+[176991.499785]  ffffffff81d33880 0000000000000004 0000000000000003
+ffffffff81cb7c80
+[176991.499788] Call Trace:
+[176991.499792]  [<ffffffff81553019>] cpuidle_enter+0x19/0x20
+[176991.499796]  [<ffffffff815536b2>] cpuidle_idle_call+0xa2/0x600
+[176991.499799]  [<ffffffff810244d5>] cpu_idle+0xc5/0x140
+[176991.499802]  [<ffffffff816d1e60>] start_secondary+0x258/0x25a
+[176991.499803] Code: 28 e0 ff ff 83 e2 08 75 22 31 d2 48 83 c0 10 48
+89 d1 0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 4c 89
+f0 0f 01 c9 <e8> dd f4 d1 ff 4c 29 f8 48 89 c7 e8 92 82 cc ff 48 89 45
+a0 48
+[177784.169161] SysRq : Show backtrace of all active CPUs
+[177784.169168] sending NMI to all CPUs:
+[177784.169172] NMI backtrace for cpu 2
+[177784.169174] CPU 2
+[177784.169178] Pid: 923, comm: X Tainted: G    B        3.7.0-rc2+ #6
+LENOVO 232045C/232045C
+[177784.169180] RIP: 0010:[<ffffffff810e3193>]  [<ffffffff810e3193>]
+__module_address+0xb3/0x140
+[177784.169187] RSP: 0018:ffff8800364c5828  EFLAGS: 00000246
+[177784.169188] RAX: 0000000000000000 RBX: ffffffffa0099b3a RCX:
+0000000000000001
+[177784.169190] RDX: 0000000000000000 RSI: ffffffffa0099471 RDI:
+ffffffffa0099b3a
+[177784.169192] RBP: ffff8800364c5848 R08: ffff880110fad498 R09:
+0000000000000000
+[177784.169193] R10: 0000000000400000 R11: ffff880118808240 R12:
+ffffffffa0466188
+[177784.169195] R13: ffff8800364c5bf8 R14: ffff8800364c5c00 R15:
+ffffffff81802a20
+[177784.169197] FS:  00007f4de364b980(0000) GS:ffff880119200000(0000)
+knlGS:0000000000000000
+[177784.169199] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[177784.169200] CR2: 00007f4de0f02000 CR3: 00000000c9952000 CR4:
+00000000001407e0
+[177784.169202] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[177784.169204] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[177784.169206] Process X (pid: 923, threadinfo ffff8800364c4000, task
+ffff8800c9bacd20)
+[177784.169207] Stack:
+[177784.169208]  0000000000000001 ffffffffa0466188 ffffffffa0099b3a
+0000000000000000
+[177784.169213]  ffff8800364c5868 ffffffff810e3236 0000000000000202
+ffff8800364c4000
+[177784.169217]  ffff8800364c5888 ffffffff810e7eb7 0000000000000202
+ffffffffa0099b3a
+[177784.169221] Call Trace:
+[177784.169235]  [<ffffffffa0099b3a>] ?
+i915_gem_do_execbuffer.isra.13+0x60a/0x1260 [i915]
+[177784.169239]  [<ffffffff810e3236>] __module_text_address+0x16/0x60
+[177784.169242]  [<ffffffff810e7eb7>] is_module_text_address+0x27/0x40
+[177784.169251]  [<ffffffffa0099b3a>] ?
+i915_gem_do_execbuffer.isra.13+0x60a/0x1260 [i915]
+[177784.169256]  [<ffffffff81090138>] __kernel_text_address+0x58/0x80
+[177784.169263]  [<ffffffffa0099b3a>] ?
+i915_gem_do_execbuffer.isra.13+0x60a/0x1260 [i915]
+[177784.169267]  [<ffffffff8101d83f>] print_context_stack+0x8f/0xf0
+[177784.169271]  [<ffffffff8101c68f>] dump_trace+0x1af/0x2d0
+[177784.169274]  [<ffffffff810294af>] save_stack_trace+0x2f/0x50
+[177784.169278]  [<ffffffff81369eb2>] dma_entry_alloc+0x62/0xa0
+[177784.169281]  [<ffffffff8136a33c>] debug_dma_map_sg+0x15c/0x180
+[177784.169291]  [<ffffffffa009b7b4>]
+i915_gem_gtt_prepare_object+0xe4/0x120 [i915]
+[177784.169299]  [<ffffffffa0091218>]
+i915_gem_object_bind_to_gtt+0x248/0x5e0 [i915]
+[177784.169302]  [<ffffffff810d853d>] ? trace_hardirqs_on+0xd/0x10
+[177784.169310]  [<ffffffffa0094eb3>] i915_gem_object_pin+0x123/0x190 [i915]
+[177784.169319]  [<ffffffffa00222ce>] ? drm_gem_object_lookup+0x2e/0x80 [drm]
+[177784.169327]  [<ffffffffa009906f>]
+i915_gem_execbuffer_reserve_object.isra.7+0x7f/0x1a0 [i915]
+[177784.169335]  [<ffffffffa0099471>]
+i915_gem_execbuffer_reserve.isra.8+0x2b1/0x310 [i915]
+[177784.169342]  [<ffffffffa0099b3a>]
+i915_gem_do_execbuffer.isra.13+0x60a/0x1260 [i915]
+[177784.169350]  [<ffffffffa009ac6c>] ? i915_gem_execbuffer2+0x5c/0x290 [i915]
+[177784.169357]  [<ffffffffa009acc1>] i915_gem_execbuffer2+0xb1/0x290 [i915]
+[177784.169364]  [<ffffffffa00205c3>] drm_ioctl+0x4d3/0x580 [drm]
+[177784.169372]  [<ffffffffa009ac10>] ? i915_gem_execbuffer+0x480/0x480 [i915]
+[177784.169376]  [<ffffffff811e1c99>] do_vfs_ioctl+0x99/0x5a0
+[177784.169379]  [<ffffffff812e3b77>] ? file_has_perm+0x97/0xb0
+[177784.169382]  [<ffffffff811e2231>] sys_ioctl+0x91/0xb0
+[177784.169386]  [<ffffffff813545de>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[177784.169389]  [<ffffffff816f0199>] system_call_fastpath+0x16/0x1b
+[177784.169391] Code: 48 8b 90 50 01 00 00 48 39 d3 72 0e 8b 88 60 01
+00 00 48 01 ca 48 39 d3 72 da 48 8b 40 08 48 89 45 e8 4c 8b 65 e8 e8
+cd c8 fa ff <85> c0 74 99 80 3d 99 ad c2 00 00 75 90 e8 bb c8 fa ff 85
+c0 74
+[177784.169432] NMI backtrace for cpu 1
+[177784.169434] CPU 1
+[177784.169436] Pid: 1430, comm: bash Tainted: G    B
+3.7.0-rc2+ #6 LENOVO 232045C/232045C
+[177784.169438] RIP: 0010:[<ffffffff81355bf2>]  [<ffffffff81355bf2>]
+__bitmap_empty+0x72/0x80
+[177784.169443] RSP: 0018:ffff8800b2873df8  EFLAGS: 00000046
+[177784.169445] RAX: 0000000000000000 RBX: 0000000000002710 RCX:
+0000000000000008
+[177784.169446] RDX: 00000000000000ff RSI: 0000000000000008 RDI:
+ffffffff81d313a0
+[177784.169448] RBP: ffff8800b2873df8 R08: 0000000000000000 R09:
+0000000000000001
+[177784.169450] R10: 0000000000000000 R11: 0000000000000537 R12:
+000000000000006c
+[177784.169451] R13: 0000000000000282 R14: 0000000000000000 R15:
+000000000000000f
+[177784.169453] FS:  00007ffced4f3740(0000) GS:ffff880119000000(0000)
+knlGS:0000000000000000
+[177784.169455] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[177784.169456] CR2: 00007ffced4ff000 CR3: 00000000b4748000 CR4:
+00000000001407e0
+[177784.169458] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[177784.169460] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[177784.169462] Process bash (pid: 1430, threadinfo ffff8800b2872000,
+task ffff8800b473cd20)
+[177784.169463] Stack:
+[177784.169464]  ffff8800b2873e18 ffffffff81041411 0000000000000000
+ffffffff81cc24e0
+[177784.169468]  ffff8800b2873e28 ffffffff8140bcee ffff8800b2873e68
+ffffffff8140c1d7
+[177784.169472]  ffff8800b2873e68 0000000000000002 ffff8800a3fc5340
+ffffffff8140c240
+[177784.169476] Call Trace:
+[177784.169480]  [<ffffffff81041411>] arch_trigger_all_cpu_backtrace+0x91/0xb0
+[177784.169483]  [<ffffffff8140bcee>] sysrq_handle_showallcpus+0xe/0x10
+[177784.169486]  [<ffffffff8140c1d7>] __handle_sysrq+0x127/0x190
+[177784.169489]  [<ffffffff8140c240>] ? __handle_sysrq+0x190/0x190
+[177784.169492]  [<ffffffff8140c28a>] write_sysrq_trigger+0x4a/0x50
+[177784.169496]  [<ffffffff8123e630>] proc_reg_write+0x80/0xc0
+[177784.169500]  [<ffffffff811cf26f>] vfs_write+0xaf/0x190
+[177784.169502]  [<ffffffff811cf5c5>] sys_write+0x55/0xa0
+[177784.169505]  [<ffffffff816f0199>] system_call_fastpath+0x16/0x1b
+[177784.169506] Code: c1 ea 1a 8d 0c 16 83 e1 3f 29 d1 ba 01 00 00 00
+48 d3 e2 48 83 ea 01 48 85 14 c7 75 0c b8 01 00 00 00 5d c3 0f 1f 44
+00 00 31 c0 <5d> c3 31 c0 eb c2 0f 1f 84 00 00 00 00 00 8d 4e 3f 85 f6
+55 0f
+[177784.169549] NMI backtrace for cpu 0
+[177784.169550] CPU 0
+[177784.169553] Pid: 64, comm: kswapd0 Tainted: G    B
+3.7.0-rc2+ #6 LENOVO 232045C/232045C
+[177784.169554] RIP: 0010:[<ffffffff8117391d>]  [<ffffffff8117391d>]
+shrink_slab+0xfd/0x500
+[177784.169558] RSP: 0000:ffff880110729bb8  EFLAGS: 00000206
+[177784.169559] RAX: 0000000000000000 RBX: 0000000000000400 RCX:
+000000000002dc8d
+[177784.169561] RDX: 0000000000007d00 RSI: 0000000000000001 RDI:
+ffffffff81c7fce0
+[177784.169562] RBP: ffff880110729c78 R08: 0000000000000000 R09:
+0000000000000001
+[177784.169564] R10: 000000000000003c R11: 0000000000000000 R12:
+00000000000002bc
+[177784.169565] R13: ffff88010fd32ac0 R14: 00000000000001f4 R15:
+ffff880110729d00
+[177784.169567] FS:  0000000000000000(0000) GS:ffff880118e00000(0000)
+knlGS:0000000000000000
+[177784.169568] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[177784.169569] CR2: 000000000e7dd230 CR3: 0000000001c0b000 CR4:
+00000000001407f0
+[177784.169571] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[177784.169572] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[177784.169574] Process kswapd0 (pid: 64, threadinfo ffff880110728000,
+task ffff8801106c4d20)
+[177784.169575] Stack:
+[177784.169576]  ffff880110729c38 ffffffff811c2120 ffffffff811c206f
+ffffc90000607000
+[177784.169579]  ffffc90000607000 01ff880110729be0 ffff880110729fd8
+ffff880110729fd8
+[177784.169583]  ffff880110729fd8 ffff880110729fd8 ffff880110729fd8
+0000000000000080
+[177784.169586] Call Trace:
+[177784.169589]  [<ffffffff811c2120>] ? mem_cgroup_iter+0x190/0x300
+[177784.169592]  [<ffffffff811c206f>] ? mem_cgroup_iter+0xdf/0x300
+[177784.169595]  [<ffffffff81177ce1>] balance_pgdat+0x611/0x7e0
+[177784.169598]  [<ffffffff81178041>] kswapd+0x191/0x610
+[177784.169602]  [<ffffffff81094200>] ? wake_up_bit+0x40/0x40
+[177784.169604]  [<ffffffff81177eb0>] ? balance_pgdat+0x7e0/0x7e0
+[177784.169607]  [<ffffffff810938fd>] kthread+0xed/0x100
+[177784.169610]  [<ffffffff81093810>] ? flush_kthread_worker+0x190/0x190
+[177784.169613]  [<ffffffff816f00ec>] ret_from_fork+0x7c/0xb0
+[177784.169616]  [<ffffffff81093810>] ? flush_kthread_worker+0x190/0x190
+[177784.169617] Code: 31 d2 48 89 45 a0 49 87 55 28 49 63 4d 08 48 8b
+45 98 48 89 55 b8 31 d2 48 f7 f1 48 8b 55 b0 8d 4a 01 31 d2 49 0f af
+c6 48 f7 f1 <48> 8b 55 b8 48 01 c2 48 89 45 c8 0f 88 ce 03 00 00 4c 89
+f0 48
+[177784.169655] NMI backtrace for cpu 3
+[177784.169657] CPU 3
+[177784.169659] Pid: 0, comm: swapper/3 Tainted: G    B
+3.7.0-rc2+ #6 LENOVO 232045C/232045C
+[177784.169661] RIP: 0010:[<ffffffff813a8d1e>]  [<ffffffff813a8d1e>]
+intel_idle+0xbe/0x160
+[177784.169666] RSP: 0000:ffff880116d37e28  EFLAGS: 00000046
+[177784.169668] RAX: 0000000000000020 RBX: 0000000000000008 RCX:
+0000000000000001
+[177784.169670] RDX: 0000000000000000 RSI: ffff880116d37fd8 RDI:
+00000000005ba2ce
+[177784.169671] RBP: ffff880116d37e88 R08: ffffffffffffffff R09:
+0001c46a115a6f17
+[177784.169673] R10: 0140000000000000 R11: 0000000000000000 R12:
+0000000000000003
+[177784.169675] R13: ffff8801195dbc70 R14: 0000000000000020 R15:
+12c47b5696ee60fc
+[177784.169677] FS:  0000000000000000(0000) GS:ffff880119400000(0000)
+knlGS:0000000000000000
+[177784.169679] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[177784.169680] CR2: 000000000335e1f0 CR3: 0000000001c0b000 CR4:
+00000000001407e0
+[177784.169682] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[177784.169684] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[177784.169686] Process swapper/3 (pid: 0, threadinfo
+ffff880116d36000, task ffff880116d3cd20)
+[177784.169687] Stack:
+[177784.169688]  0000000000000000 00000000000f2daf ffff880116d37e98
+0000000381554fda
+[177784.169692]  0000000000000000 00000000000f2daf 0000000000000000
+ffff8801195dbc70
+[177784.169696]  ffffffff81d33880 0000000000000003 0000000000000003
+ffffffff81cb7c80
+[177784.169700] Call Trace:
+[177784.169705]  [<ffffffff81553019>] cpuidle_enter+0x19/0x20
+[177784.169708]  [<ffffffff815536b2>] cpuidle_idle_call+0xa2/0x600
+[177784.169712]  [<ffffffff810244d5>] cpu_idle+0xc5/0x140
+[177784.169715]  [<ffffffff816d1e60>] start_secondary+0x258/0x25a
+[177784.169716] Code: 28 e0 ff ff 83 e2 08 75 22 31 d2 48 83 c0 10 48
+89 d1 0f 01 c8 0f ae f0 48 8b 86 38 e0 ff ff a8 08 75 08 b1 01 4c 89
+f0 0f 01 c9 <e8> dd f4 d1 ff 4c 29 f8 48 89 c7 e8 92 82 cc ff 48 89 45
+a0 48
