@@ -1,48 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab2KGAAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 19:00:44 -0500
-Received: from twin.jikos.cz ([89.185.236.188]:50719 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753527Ab2KGAAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 19:00:42 -0500
-Date: Wed, 7 Nov 2012 01:00:25 +0100
-From: David Sterba <dave@jikos.cz>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Subject: Re: [RFC v4+ hot_track 16/19] btrfs: add hot tracking support
-Message-ID: <20121107000025.GY3102@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-	viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-	cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
- <1351485061-12297-17-git-send-email-zwu.kernel@gmail.com>
+	id S1754063Ab2KGAD3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 19:03:29 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:16766 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab2KGAD2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 19:03:28 -0500
 MIME-Version: 1.0
+Message-ID: <0e2b1932-628b-4110-8c80-7cfbe3323452@default>
+Date: Tue, 6 Nov 2012 16:02:51 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, sjenning@linux.vnet.ibm.com,
+        dan.magenheimer@oracle.com, ngupta@vflare.org, minchan@kernel.org,
+        rcj@linux.vnet.ibm.com, linux-mm@kvack.org, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org
+Cc: akpm@linux-foundation.org
+Subject: RE: [RFC PATCH] zcache2 cleanups (s/int/bool + debugfs movement).
+References: <<1352126254-28933-1-git-send-email-konrad.wilk@oracle.com>>
+In-Reply-To: <<1352126254-28933-1-git-send-email-konrad.wilk@oracle.com>>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6661.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351485061-12297-17-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 12:30:58PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> Sent: Monday, November 05, 2012 7:37 AM
+> To: linux-kernel@vger.kernel.org; sjenning@linux.vnet.ibm.com; dan.magenheimer@oracle.com;
+> ngupta@vflare.org; minchan@kernel.org; rcj@linux.vnet.ibm.com; linux-mm@kvack.org;
+> gregkh@linuxfoundation.org; devel@driverdev.osuosl.org
+> Cc: akpm@linux-foundation.org
+> Subject: [RFC PATCH] zcache2 cleanups (s/int/bool + debugfs movement).
 > 
->   Introduce one new mount option '-o hot_track',
-> and add its parsing support.
->   Its usage looks like:
->    mount -o hot_track
->    mount -o nouser,hot_track
->    mount -o nouser,hot_track,loop
->    mount -o hot_track,nouser
+> Looking at the zcache2 code there were a couple of things that I thought
+> would make sense to move out of the code. For one thing it makes it easier
+> to read, and for anoter - it can be cleanly compiled out. It also allows
+> to have a clean seperation of counters that we _need_ vs the optional ones.
+> Which means that in the future we could get rid of the optional ones.
 > 
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Reviewed-by: David Sterba <dsterba@suse.cz>
+> This patchset is based on the patchset that Dan sent out
+> (https://lkml.org/lkml/2012/10/31/790). I've stuck
+> them (and addressed some review comments) and put them in my branch:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/mm.git devel/zcache.v3
+> 
+> I am going to repost the module loading some time later this week - Bob Liu had
+> some comments that I want to address.
+> 
+> So back to this patchset - it fixes some outstanding compile warnings, cleans
+> up some of the code, and rips out the debug counters out of zcache-main.c
+> and sticks them in a debug.c file.
+> 
+> I was hoping it would end up with less code, but sadly it ended up with
+> a bit more due to the empty non-debug functions.
+> 
+>  drivers/staging/ramster/Kconfig       |    8 +
+>  drivers/staging/ramster/Makefile      |    1 +
+>  drivers/staging/ramster/debug.c       |   66 ++++++
+>  drivers/staging/ramster/debug.h       |  225 +++++++++++++++++++
+>  drivers/staging/ramster/zcache-main.c |  384 ++++++++-------------------------
+>  5 files changed, 389 insertions(+), 295 deletions(-)
+> 
+> Konrad Rzeszutek Wilk (11):
+>       zcache2: s/int/bool/ on the various options.
+>       zcache: Module license is defined twice.
+>       zcache: Provide accessory functions for counter increase
+>       zcache: Provide accessory functions for counter decrease.
+>       zcache: The last of the atomic reads has now an accessory function.
+>       zcache: Fix compile warnings due to usage of debugfs_create_size_t
+>       zcache: Make the debug code use pr_debug
+>       zcache: Move debugfs code out of zcache-main.c file.
+>       zcache: Use an array to initialize/use debugfs attributes.
+>       zcache: Move the last of the debugfs counters out
+>       zcache: Coalesce all debug under CONFIG_ZCACHE2_DEBUG
+
+FWIW, for all these patches, please add my:
+
+Reviewed-by: Dan Magenheimer <dan.magenheimer@oracle.com>
