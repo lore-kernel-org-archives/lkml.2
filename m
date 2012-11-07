@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab2KGRCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 12:02:32 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:39860 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab2KGRCa (ORCPT
+	id S1752712Ab2KGRFJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 12:05:09 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62738 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab2KGRFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 12:02:30 -0500
-Date: Wed, 7 Nov 2012 09:02:21 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, fweisbec@gmail.com,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH 1/9] cgroup: add cgroup_subsys->post_create()
-Message-ID: <20121107170221.GE2660@mtj.dyndns.org>
-References: <1351931915-1701-1-git-send-email-tj@kernel.org>
- <1351931915-1701-2-git-send-email-tj@kernel.org>
- <20121107152516.GA4131@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121107152516.GA4131@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 Nov 2012 12:05:07 -0500
+Subject: Re: [PATCH] tcp: Replace infinite loop on recvmsg bug with proper
+ crashusers
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Julius Werner <jwerner@chromium.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        James Morris <jmorris@namei.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        Sameer Nanda <snanda@chromium.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Eric Dumazet <edumazet@chromium.org>
+In-Reply-To: <20121107164358.GA20495@redhat.com>
+References: <1352247335-10396-1-git-send-email-jwerner@chromium.org>
+	 <20121107013907.GA31185@redhat.com>
+	 <CAODwPW-636Sn3B4CYajvrgccXxresZwPLg2UFz6xDDk9-FfTYQ@mail.gmail.com>
+	 <20121107155434.GA17677@redhat.com>
+	 <1352305752.3140.4449.camel@edumazet-glaptop>
+	 <20121107164358.GA20495@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Nov 2012 09:05:02 -0800
+Message-ID: <1352307902.3140.4588.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
+On Wed, 2012-11-07 at 11:43 -0500, Dave Jones wrote:
 
-On Wed, Nov 07, 2012 at 04:25:16PM +0100, Michal Hocko wrote:
-> > This patch adds ->post_create().  It's called after all ->create()
-> > succeeded and the cgroup is linked into the generic cgroup hierarchy.
-> > This plays the counterpart of ->pre_destroy().
+> dude, look at the bug reports I just pointed you at.
+> People _are_ aware there are bugs there.
 > 
-> Hmm, I had to look at "cgroup_freezer: implement proper hierarchy
-> support" to actually understand what is the callback good for. The above
-> sounds as if the callback is needed when a controller wants to use
-> the new iterators or when pre_destroy is defined.
+
+If I remember well, I helped to fix some of them.
+
+> If you turn that into a BUG() those reports would never have been filed.
+> How is that increasing awareness ?  People are going to see wedged computers,
+> and hit the reset button. If we're lucky, we'll get photos of someone lucky
+> enough to have hit it while at the console, not in X. But this is a huge
+> step backwards for debugability.
 > 
-> I think it would be helpful if the changelog described that the callback
-> is needed when the controller keeps a mutable shared state for the
-> hierarchy. For example memory controller doesn't have any such a strict
-> requirement so we can safely use your new iterators without pre_destroy.
+>  > I understand a distro maintainer has its own choices, but for upstream
+>  > kernel we want to have early reports.
+> 
+> I'm running out of ways to word this, but I'll try again.
+> You won't get those early reports if you turn this into a BUG().
+> 
+>  > This bug is fatal and a security issue. BUG() is appropriate.
+> 
+> turning a bug into a remote DoS is also a security issue.
+> 
 
-Hmm.... will try to explain it but I think it might be best to just
-refer to the later patch for details.  It's a bit tricky to explain.
+Apparently in some cases we can loop and fill the syslog, or
+else Julius wouldnt have sent a patch.
 
-Thanks.
+So the proper fix is to emit this message only once, and to find
+a way to alert the user security is compromised.
 
--- 
-tejun
+So if BUG() isnt good, just use WARN_ON_ONCE()
+
+I feel that WARN_ON_ONCE() wont be clear enough to the user, especially
+if we recover from this by closing the tcp session, exactly as if we
+received a proper FIN.
+
+Really if you object a BUG() here, I cant understand you didnt shout to
+other BUG() uses in the kernel.
+
+
+
