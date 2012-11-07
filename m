@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab2KGOl1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 09:41:27 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:47154 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab2KGOlZ (ORCPT
+	id S1753320Ab2KGOlb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 09:41:31 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:52039 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab2KGOl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 09:41:25 -0500
-Date: Wed, 7 Nov 2012 15:41:38 +0100
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
-        suresh.b.siddha@intel.com, arjan@linux.intel.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de, andre.przywara@amd.com,
-        rjw@sisk.pl, paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, cl@linux.com,
-        pjt@google.com
-Subject: Re: [RFC PATCH 1/3] sched: add sched_policy and it's sysfs interface
-Message-ID: <20121107144137.GD14146@kroah.com>
-References: <1352207399-29497-1-git-send-email-alex.shi@intel.com>
- <1352207399-29497-2-git-send-email-alex.shi@intel.com>
- <20121106134831.GA969@kroah.com>
- <509A53A5.5090909@intel.com>
+	Wed, 7 Nov 2012 09:41:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <509A53A5.5090909@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351643663-23828-28-git-send-email-andi@firstfloor.org>
+References: <1351643663-23828-1-git-send-email-andi@firstfloor.org>
+	<1351643663-23828-28-git-send-email-andi@firstfloor.org>
+Date: Wed, 7 Nov 2012 15:41:26 +0100
+Message-ID: <CABPqkBQ=aeDzhM3a5yWXtG7E2JDOQ+1v7tbPStC_VBuup12HmA@mail.gmail.com>
+Subject: Re: [PATCH 27/32] perf, x86: Support CPU specific sysfs events
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 08:27:17PM +0800, Alex Shi wrote:
-> >> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-> >> index 6345294..5f6a573 100644
-> >> --- a/drivers/base/cpu.c
-> >> +++ b/drivers/base/cpu.c
-> >> @@ -330,4 +330,6 @@ void __init cpu_dev_init(void)
-> >>  		panic("Failed to register CPU subsystem");
-> >>  
-> >>  	cpu_dev_register_generic();
-> >> +
-> >> +	create_sysfs_sched_policy_group(cpu_subsys.dev_root);
-> > 
-> > Are you sure you didn't just race with userspace, creating the sysfs
-> > files after the device was created and announced to userspace?
-> 
-> Sorry for don't fully get you. Is the sysfs announced to userspace
-> just in 'mount -t sysfs sysfs /sys'?
+On Wed, Oct 31, 2012 at 1:34 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> Add a way for the CPU initialization code to register additional events,
+> and merge them into the events attribute directory. Used in the next
+> patch.
+>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-No, when the struct device is registered with the driver core.
+Acked-by: Stephane Eranian <eranian@google.com>
 
-> The old powersaving interface: sched_smt_power_savings also
-> created here. and cpu_dev_init was called early before do_initcalls
-> which cpuidle/cpufreq sysfs were initialized.
-> 
-> Do you mean this line need to init as core_initcall?
-
-No, you need to make this as an attribute group for the device, so the
-driver core will create it automatically before it tells userspace that
-the device is now present.
-
-Use the default attribute groups and you should be fine.
-
-Hope this helps,
-
-greg k-h
+> ---
+>  arch/x86/kernel/cpu/perf_event.c |   29 +++++++++++++++++++++++++++++
+>  arch/x86/kernel/cpu/perf_event.h |    1 +
+>  2 files changed, 30 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index af38635..e247423 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -1344,6 +1344,30 @@ static void __init filter_events(struct attribute **attrs)
+>         }
+>  }
+>
+> +/* Merge two pointer arrays */
+> +static __init struct attribute **merge_attr(struct attribute **a,
+> +                                           struct attribute **b)
+> +{
+> +       struct attribute **new;
+> +       int j, i;
+> +
+> +       for (j = 0; a[j]; j++)
+> +               ;
+> +       for (i = 0; b[i]; i++)
+> +               j++;
+> +       j++;
+> +       new = kmalloc(sizeof(struct attribute *) * j, GFP_KERNEL);
+> +       if (!new)
+> +               return a;
+> +       j = 0;
+> +       for (i = 0; a[i]; i++)
+> +               new[j++] = a[i];
+> +       for (i = 0; b[i]; i++)
+> +               new[j++] = b[i];
+> +       new[j] = NULL;
+> +       return new;
+> +}
+> +
+>  ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
+>                           char *page)
+>  {
+> @@ -1481,6 +1505,11 @@ static int __init init_hw_perf_events(void)
+>         else
+>                 filter_events(x86_pmu_events_group.attrs);
+>
+> +       if (x86_pmu.cpu_events)
+> +               x86_pmu_events_group.attrs =
+> +                       merge_attr(x86_pmu_events_group.attrs,
+> +                                  x86_pmu.cpu_events);
+> +
+>         pr_info("... version:                %d\n",     x86_pmu.version);
+>         pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
+>         pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index 12ae625..22f8003 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -360,6 +360,7 @@ struct x86_pmu {
+>         struct attribute **format_attrs;
+>
+>         ssize_t         (*events_sysfs_show)(char *page, u64 config);
+> +       struct attribute **cpu_events;
+>
+>         /*
+>          * CPU Hotplug hooks
+> --
+> 1.7.7.6
+>
