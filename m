@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab2KGTk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 14:40:56 -0500
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:60476 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab2KGTky (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 14:40:54 -0500
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsW3AAW5mlBV5h1yPGdsb2JhbABEilK4GgEBexkBAQEBHxkNJ4IeAQEEATocEwEPBQsIAw4DAwECLxQlCgwOE4gECrxoFIt5gUWBLoJzYQOVeoV7jTo
-X-IronPort-AV: E=Sophos;i="4.80,732,1344204000"; 
-   d="scan'208";a="225690663"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 7 Nov 2012 20:46:17 +0100
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] input: fix input-mt kernel-doc warning
-Message-ID: <20121107194617.GA3738@polaris.bitmath.org>
-References: <5099B45E.8080105@infradead.org>
+	id S1752758Ab2KGTlR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 14:41:17 -0500
+Received: from void.printf.net ([89.145.121.20]:36082 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751414Ab2KGTlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 14:41:15 -0500
+From: Chris Ball <cjb@laptop.org>
+To: wwang <wei_wang@realsil.com.cn>
+Cc: "sameo\@linux.intel.com" <sameo@linux.intel.com>,
+        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc\@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd\@arndb.de" <arnd@arndb.de>, "oakad\@yahoo.com" <oakad@yahoo.com>,
+        "bp\@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH v7 0/3] Add modules to support realtek PCIE card reader
+References: <cover.1351481260.git.wei_wang@realsil.com.cn>
+	<508F4A88.8010207@realsil.com.cn>
+Date: Wed, 07 Nov 2012 14:41:00 -0500
+In-Reply-To: <508F4A88.8010207@realsil.com.cn> (wwang's message of "Tue, 30
+	Oct 2012 11:33:28 +0800")
+Message-ID: <87r4o56w1f.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5099B45E.8080105@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+Hi,
 
-> From: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Fix new kernel-doc warning in input-mt.c:
-> 
-> Warning(drivers/input/input-mt.c:38): No description found for parameter 'flags'
+On Mon, Oct 29 2012, wwang wrote:
+> Hi Chris, Samuel and Alex:
+>
+> Can you help to review this patchset, please?
+>
+> I have asked Greg to remove rts_pstor from the staging tree. So this
+> driver have to be merged into 3.8 kernel, or else Realtek'sPCI-E card
+> reader can not be accessed easily.
 
-Thanks for the patch. It seemed reasonable to expand the function
-documentation a bit as well, hope you are alright with the patch
-below, Dmitry, care to pick this up for 3.7? Otherwise I can carry it
-for 3.8.
+I'm happy with the MMC portion.  I think we're mainly waiting for the
+MFD patch -- Samuel, do you have any remaining review comments that need
+to be fixed?
 
 Thanks,
-Henrik
 
----
-
->From a96b3a67eefba05d7e6de3afa1b51d17728d45d3 Mon Sep 17 00:00:00 2001
-From: Henrik Rydberg <rydberg@euromail.se>
-Date: Wed, 7 Nov 2012 20:40:24 +0100
-Subject: [PATCH] Input: MT - Document undocumented init argument
-
-Fixes new kernel-doc warning in input-mt.c:
-
-Warning(drivers/input/input-mt.c:38): No description found for parameter 'flags'
-
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/input/input-mt.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
-index c0ec7d4..1abbc17 100644
---- a/drivers/input/input-mt.c
-+++ b/drivers/input/input-mt.c
-@@ -26,10 +26,14 @@ static void copy_abs(struct input_dev *dev, unsigned int dst, unsigned int src)
-  * input_mt_init_slots() - initialize MT input slots
-  * @dev: input device supporting MT events and finger tracking
-  * @num_slots: number of slots used by the device
-+ * @flags: mt tasks to handle in core
-  *
-  * This function allocates all necessary memory for MT slot handling
-  * in the input device, prepares the ABS_MT_SLOT and
-  * ABS_MT_TRACKING_ID events for use and sets up appropriate buffers.
-+ * Depending on the flags set, it also performs pointer emulation and
-+ * frame synchronization.
-+ *
-  * May be called repeatedly. Returns -EINVAL if attempting to
-  * reinitialize with a different number of slots.
-  */
+- Chris.
 -- 
-1.8.0
-
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
