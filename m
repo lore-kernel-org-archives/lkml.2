@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab2KGSm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 13:42:27 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:41991 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754225Ab2KGSm0 (ORCPT
+	id S1754414Ab2KGSmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 13:42:37 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:53241 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754388Ab2KGSme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 13:42:26 -0500
-Subject: [PATCH 08/12] VMCI: resource object implementation.
+	Wed, 7 Nov 2012 13:42:34 -0500
+Subject: [PATCH 09/12] VMCI: routing implementation.
 To: linux-kernel@vger.kernel.org, georgezhang@vmware.com,
         virtualization@lists.linux-foundation.org
 From: George Zhang <georgezhang@vmware.com>
 Cc: pv-drivers@vmware.com, gregkh@linuxfoundation.org
-Date: Wed, 07 Nov 2012 10:42:25 -0800
-Message-ID: <20121107184220.9658.70212.stgit@promb-2n-dhcp175.eng.vmware.com>
+Date: Wed, 07 Nov 2012 10:42:34 -0800
+Message-ID: <20121107184230.9658.91954.stgit@promb-2n-dhcp175.eng.vmware.com>
 In-Reply-To: <20121107183624.9658.78903.stgit@promb-2n-dhcp175.eng.vmware.com>
 References: <20121107183624.9658.78903.stgit@promb-2n-dhcp175.eng.vmware.com>
 User-Agent: StGit/0.15
@@ -24,23 +24,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VMCI resource tracks all used resources within the vmci code.
+VMCI routing code is responsible for routing between various hosts/guests as well as
+routing in nested scenarios.
 
 
 Signed-off-by: George Zhang <georgezhang@vmware.com>
 ---
- drivers/misc/vmw_vmci/vmci_resource.c |  232 +++++++++++++++++++++++++++++++++
- drivers/misc/vmw_vmci/vmci_resource.h |   59 ++++++++
- 2 files changed, 291 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/vmci_resource.c
- create mode 100644 drivers/misc/vmw_vmci/vmci_resource.h
+ drivers/misc/vmw_vmci/vmci_route.c |  229 ++++++++++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_route.h |   30 +++++
+ 2 files changed, 259 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.h
 
-diff --git a/drivers/misc/vmw_vmci/vmci_resource.c b/drivers/misc/vmw_vmci/vmci_resource.c
+diff --git a/drivers/misc/vmw_vmci/vmci_route.c b/drivers/misc/vmw_vmci/vmci_route.c
 new file mode 100644
-index 0000000..b241dde
+index 0000000..adf2f9f
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_resource.c
-@@ -0,0 +1,232 @@
++++ b/drivers/misc/vmw_vmci/vmci_route.c
+@@ -0,0 +1,229 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -57,228 +58,225 @@ index 0000000..b241dde
 + */
 +
 +#include <linux/vmw_vmci_defs.h>
-+#include <linux/hash.h>
-+#include <linux/types.h>
-+#include <linux/rculist.h>
++#include <linux/vmw_vmci_api.h>
 +
 +#include "vmci_common_int.h"
-+#include "vmci_resource.h"
++#include "vmci_context.h"
 +#include "vmci_driver.h"
-+
-+
-+#define VMCI_RESOURCE_HASH_BITS         7
-+#define VMCI_RESOURCE_HASH_BUCKETS      (1 << VMCI_RESOURCE_HASH_BITS)
-+
-+struct vmci_hash_table {
-+	spinlock_t lock;
-+	struct hlist_head entries[VMCI_RESOURCE_HASH_BUCKETS];
-+};
-+
-+static struct vmci_hash_table vmci_resource_table = {
-+	.lock = __SPIN_LOCK_UNLOCKED(vmci_resource_table.lock),
-+};
-+
-+static unsigned int vmci_resource_hash(struct vmci_handle handle)
-+{
-+	return hash_32(VMCI_HANDLE_TO_RESOURCE_ID(handle),
-+		       VMCI_RESOURCE_HASH_BITS);
-+}
++#include "vmci_route.h"
 +
 +/*
-+ * Gets a resource (if one exists) matching given handle from the hash table.
++ * Make a routing decision for the given source and destination handles.
++ * This will try to determine the route using the handles and the available
++ * devices.  Will set the source context if it is invalid.
 + */
-+static struct vmci_resource *vmci_resource_lookup(struct vmci_handle handle)
++int vmci_route(struct vmci_handle *src,
++	       const struct vmci_handle *dst,
++	       bool from_guest,
++	       enum vmci_route *route)
 +{
-+	struct vmci_resource *r, *resource = NULL;
-+	struct hlist_node *node;
-+	unsigned int idx = vmci_resource_hash(handle);
++	bool has_host_device = vmci_host_code_active();
++	bool has_guest_device = vmci_guest_code_active();
 +
-+	rcu_read_lock();
-+	hlist_for_each_entry_rcu(r, node,
-+				 &vmci_resource_table.entries[idx], node) {
-+		u32 rid = VMCI_HANDLE_TO_RESOURCE_ID(r->handle);
-+		u32 cid = VMCI_HANDLE_TO_CONTEXT_ID(r->handle);
-+
-+		if (rid == VMCI_HANDLE_TO_RESOURCE_ID(handle) &&
-+		    (cid == VMCI_HANDLE_TO_CONTEXT_ID(handle) ||
-+		     cid == VMCI_INVALID_ID)) {
-+			resource = r;
-+			break;
-+		}
-+	}
-+	rcu_read_unlock();
-+
-+	return resource;
-+}
-+
-+/*
-+ * Find an unused resource ID and return it. The first
-+ * VMCI_RESERVED_RESOURCE_ID_MAX are reserved so we start from
-+ * its value + 1.
-+ * Returns VMCI resource id on success, VMCI_INVALID_ID on failure.
-+ */
-+static u32 vmci_resource_find_id(u32 context_id)
-+{
-+	static u32 resource_id = VMCI_RESERVED_RESOURCE_ID_MAX + 1;
-+	u32 old_rid = resource_id;
-+	u32 current_rid;
++	*route = VMCI_ROUTE_NONE;
 +
 +	/*
-+	 * Generate a unique resource ID.  Keep on trying until we wrap around
-+	 * in the RID space.
++	 * "from_guest" is only ever set to true by
++	 * IOCTL_VMCI_DATAGRAM_SEND (or by the vmkernel equivalent),
++	 * which comes from the VMX, so we know it is coming from a
++	 * guest.
++	 *
++	 * To avoid inconsistencies, test these once.  We will test
++	 * them again when we do the actual send to ensure that we do
++	 * not touch a non-existent device.
 +	 */
-+	BUG_ON(old_rid <= VMCI_RESERVED_RESOURCE_ID_MAX);
 +
-+	do {
-+		struct vmci_handle handle;
++	/* Must have a valid destination context. */
++	if (VMCI_INVALID_ID == dst->context)
++		return VMCI_ERROR_INVALID_ARGS;
 +
-+		current_rid = resource_id;
-+		resource_id++;
-+		if (unlikely(resource_id == VMCI_INVALID_ID)) {
-+			/* Skip the reserved rids. */
-+			resource_id = VMCI_RESERVED_RESOURCE_ID_MAX + 1;
-+		}
++	/* Anywhere to hypervisor. */
++	if (VMCI_HYPERVISOR_CONTEXT_ID == dst->context) {
 +
-+		handle = vmci_make_handle(context_id, current_rid);
-+		if (!vmci_resource_lookup(handle))
-+			return current_rid;
-+	} while (resource_id != old_rid);
++		/*
++		 * If this message already came from a guest then we
++		 * cannot send it to the hypervisor.  It must come
++		 * from a local client.
++		 */
++		if (from_guest)
++			return VMCI_ERROR_DST_UNREACHABLE;
 +
-+	return VMCI_INVALID_ID;
-+}
++		/*
++		 * We must be acting as a guest in order to send to
++		 * the hypervisor.
++		 */
++		if (!has_guest_device)
++			return VMCI_ERROR_DEVICE_NOT_FOUND;
 +
++		/* And we cannot send if the source is the host context. */
++		if (VMCI_HOST_CONTEXT_ID == src->context)
++			return VMCI_ERROR_INVALID_ARGS;
 +
-+int vmci_resource_add(struct vmci_resource *resource,
-+		      enum vmci_resource_type resource_type,
-+		      struct vmci_handle handle)
++		/*
++		 * If the client passed the ANON source handle then
++		 * respect it (both context and resource are invalid).
++		 * However, if they passed only an invalid context,
++		 * then they probably mean ANY, in which case we
++		 * should set the real context here before passing it
++		 * down.
++		 */
++		if (VMCI_INVALID_ID == src->context &&
++		    VMCI_INVALID_ID != src->resource)
++			src->context = vmci_get_context_id();
 +
-+{
-+	unsigned int idx;
-+	int result;
-+
-+	spin_lock(&vmci_resource_table.lock);
-+
-+	if (handle.resource == VMCI_INVALID_ID) {
-+		handle.resource = vmci_resource_find_id(handle.context);
-+		if (handle.resource == VMCI_INVALID_ID) {
-+			result = VMCI_ERROR_NO_HANDLE;
-+			goto out;
-+		}
-+	} else if (vmci_resource_lookup(handle)) {
-+		result = VMCI_ERROR_ALREADY_EXISTS;
-+		goto out;
++		/* Send from local client down to the hypervisor. */
++		*route = VMCI_ROUTE_AS_GUEST;
++		return VMCI_SUCCESS;
 +	}
 +
-+	resource->handle = handle;
-+	resource->type = resource_type;
-+	INIT_HLIST_NODE(&resource->node);
-+	kref_init(&resource->kref);
-+	init_completion(&resource->done);
++	/* Anywhere to local client on host. */
++	if (VMCI_HOST_CONTEXT_ID == dst->context) {
++		/*
++		 * If it is not from a guest but we are acting as a
++		 * guest, then we need to send it down to the host.
++		 * Note that if we are also acting as a host then this
++		 * will prevent us from sending from local client to
++		 * local client, but we accept that restriction as a
++		 * way to remove any ambiguity from the host context.
++		 */
++		if (src->context == VMCI_HYPERVISOR_CONTEXT_ID) {
++			/*
++			 * If the hypervisor is the source, this is
++			 * host local communication. The hypervisor
++			 * may send vmci event datagrams to the host
++			 * itself, but it will never send datagrams to
++			 * an "outer host" through the guest device.
++			 */
 +
-+	idx = vmci_resource_hash(resource->handle);
-+	BUG_ON(idx >= VMCI_RESOURCE_HASH_BUCKETS);
-+	hlist_add_head_rcu(&resource->node, &vmci_resource_table.entries[idx]);
-+
-+	result = VMCI_SUCCESS;
-+
-+out:
-+	spin_unlock(&vmci_resource_table.lock);
-+	return result;
-+}
-+
-+void vmci_resource_remove(struct vmci_resource *resource)
-+{
-+	struct vmci_handle handle = resource->handle;
-+	unsigned int idx = vmci_resource_hash(handle);
-+	struct vmci_resource *r;
-+	struct hlist_node *node;
-+
-+	/* Remove resource from hash table. */
-+	spin_lock(&vmci_resource_table.lock);
-+
-+	hlist_for_each_entry(r, node, &vmci_resource_table.entries[idx], node) {
-+		if (VMCI_HANDLE_EQUAL(r->handle, resource->handle)) {
-+			BUG_ON(r != resource);
-+			hlist_del_init_rcu(&r->node);
-+			break;
++			if (has_host_device) {
++				*route = VMCI_ROUTE_AS_HOST;
++				return VMCI_SUCCESS;
++			} else {
++				return VMCI_ERROR_DEVICE_NOT_FOUND;
++			}
 +		}
++
++		if (!from_guest && has_guest_device) {
++			/* If no source context then use the current. */
++			if (VMCI_INVALID_ID == src->context)
++				src->context = vmci_get_context_id();
++
++			/* Send it from local client down to the host. */
++			*route = VMCI_ROUTE_AS_GUEST;
++			return VMCI_SUCCESS;
++		}
++
++		/*
++		 * Otherwise we already received it from a guest and
++		 * it is destined for a local client on this host, or
++		 * it is from another local client on this host.  We
++		 * must be acting as a host to service it.
++		 */
++		if (!has_host_device)
++			return VMCI_ERROR_DEVICE_NOT_FOUND;
++
++		if (VMCI_INVALID_ID == src->context) {
++			/*
++			 * If it came from a guest then it must have a
++			 * valid context.  Otherwise we can use the
++			 * host context.
++			 */
++			if (from_guest)
++				return VMCI_ERROR_INVALID_ARGS;
++
++			src->context = VMCI_HOST_CONTEXT_ID;
++		}
++
++		/* Route to local client. */
++		*route = VMCI_ROUTE_AS_HOST;
++		return VMCI_SUCCESS;
 +	}
 +
-+	spin_unlock(&vmci_resource_table.lock);
-+	synchronize_rcu();
-+
-+	vmci_resource_put(resource);
-+	wait_for_completion(&resource->done);
-+}
-+
-+struct vmci_resource *
-+vmci_resource_by_handle(struct vmci_handle resource_handle,
-+			enum vmci_resource_type resource_type)
-+{
-+	struct vmci_resource *r, *resource = NULL;
-+
-+	rcu_read_lock();
-+
-+	r = vmci_resource_lookup(resource_handle);
-+	if (r &&
-+	    (resource_type == r->type ||
-+	     resource_type == VMCI_RESOURCE_TYPE_ANY)) {
-+		resource = vmci_resource_get(r);
-+	}
-+
-+	rcu_read_unlock();
-+
-+	return resource;
-+}
-+
-+/*
-+ * Get a reference to given resource.
-+ */
-+struct vmci_resource *vmci_resource_get(struct vmci_resource *resource)
-+{
-+	kref_get(&resource->kref);
-+
-+	return resource;
-+}
-+
-+static void vmci_release_resource(struct kref *kref)
-+{
-+	struct vmci_resource *resource =
-+		container_of(kref, struct vmci_resource, kref);
-+
-+	/* Verify the resource has been unlinked from hash table */
-+	WARN_ON(!hlist_unhashed(&resource->node));
-+
-+	/* Signal that container of this resource can now be destroyed */
-+	complete(&resource->done);
-+}
-+
-+/*
-+ * Resource's release function will get called if last reference.
-+ * If it is the last reference, then we are sure that nobody else
-+ * can increment the count again (it's gone from the resource hash
-+ * table), so there's no need for locking here.
-+ */
-+int vmci_resource_put(struct vmci_resource *resource)
-+{
 +	/*
-+	 * We propagate the information back to caller in case it wants to know
-+	 * whether entry was freed.
++	 * If we are acting as a host then this might be destined for
++	 * a guest.
 +	 */
-+	return kref_put(&resource->kref, vmci_release_resource) ?
-+		VMCI_SUCCESS_ENTRY_DEAD : VMCI_SUCCESS;
-+}
++	if (has_host_device) {
++		/* It will have a context if it is meant for a guest. */
++		if (vmci_ctx_exists(dst->context)) {
++			if (VMCI_INVALID_ID == src->context) {
++				/*
++				 * If it came from a guest then it
++				 * must have a valid context.
++				 * Otherwise we can use the host
++				 * context.
++				 */
 +
-+struct vmci_handle vmci_resource_handle(struct vmci_resource *resource)
-+{
-+	return resource->handle;
++				if (from_guest)
++					return VMCI_ERROR_INVALID_ARGS;
++
++				src->context = VMCI_HOST_CONTEXT_ID;
++			} else if (VMCI_CONTEXT_IS_VM(src->context) &&
++				   src->context != dst->context) {
++				/*
++				 * VM to VM communication is not
++				 * allowed. Since we catch all
++				 * communication destined for the host
++				 * above, this must be destined for a
++				 * VM since there is a valid context.
++				 */
++
++				ASSERT(VMCI_CONTEXT_IS_VM(dst->context));
++
++				return VMCI_ERROR_DST_UNREACHABLE;
++			}
++
++			/* Pass it up to the guest. */
++			*route = VMCI_ROUTE_AS_HOST;
++			return VMCI_SUCCESS;
++		} else if (!has_guest_device) {
++			/*
++			 * The host is attempting to reach a CID
++			 * without an active context, and we can't
++			 * send it down, since we have no guest
++			 * device.
++			 */
++
++			return VMCI_ERROR_DST_UNREACHABLE;
++		}
++	}
++
++	/*
++	 * We must be a guest trying to send to another guest, which means
++	 * we need to send it down to the host. We do not filter out VM to
++	 * VM communication here, since we want to be able to use the guest
++	 * driver on older versions that do support VM to VM communication.
++	 */
++	if (!has_guest_device) {
++		/*
++		 * Ending up here means we have neither guest nor host
++		 * device.
++		 */
++		return VMCI_ERROR_DEVICE_NOT_FOUND;
++	}
++
++	/* If no source context then use the current context. */
++	if (VMCI_INVALID_ID == src->context)
++		src->context = vmci_get_context_id();
++
++	/*
++	 * Send it from local client down to the host, which will
++	 * route it to the other guest for us.
++	 */
++	*route = VMCI_ROUTE_AS_GUEST;
++	return VMCI_SUCCESS;
 +}
-diff --git a/drivers/misc/vmw_vmci/vmci_resource.h b/drivers/misc/vmw_vmci/vmci_resource.h
+diff --git a/drivers/misc/vmw_vmci/vmci_route.h b/drivers/misc/vmw_vmci/vmci_route.h
 new file mode 100644
-index 0000000..9190cd2
+index 0000000..3b30e82
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_resource.h
-@@ -0,0 +1,59 @@
++++ b/drivers/misc/vmw_vmci/vmci_route.h
+@@ -0,0 +1,30 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -294,48 +292,19 @@ index 0000000..9190cd2
 + * for more details.
 + */
 +
-+#ifndef _VMCI_RESOURCE_H_
-+#define _VMCI_RESOURCE_H_
++#ifndef _VMCI_ROUTE_H_
++#define _VMCI_ROUTE_H_
 +
 +#include <linux/vmw_vmci_defs.h>
-+#include <linux/types.h>
 +
-+#include "vmci_context.h"
-+
-+
-+enum vmci_resource_type {
-+	VMCI_RESOURCE_TYPE_ANY,
-+	VMCI_RESOURCE_TYPE_API,
-+	VMCI_RESOURCE_TYPE_GROUP,
-+	VMCI_RESOURCE_TYPE_DATAGRAM,
-+	VMCI_RESOURCE_TYPE_DOORBELL,
-+	VMCI_RESOURCE_TYPE_QPAIR_GUEST,
-+	VMCI_RESOURCE_TYPE_QPAIR_HOST
++enum vmci_route {
++	VMCI_ROUTE_NONE,
++	VMCI_ROUTE_AS_HOST,
++	VMCI_ROUTE_AS_GUEST,
 +};
 +
-+struct vmci_resource {
-+	struct vmci_handle handle;
-+	enum vmci_resource_type type;
-+	struct hlist_node node;
-+	struct kref kref;
-+	struct completion done;
-+};
++int vmci_route(struct vmci_handle *src, const struct vmci_handle *dst,
++	       bool from_guest, enum vmci_route *route);
 +
-+
-+int vmci_resource_add(struct vmci_resource *resource,
-+		      enum vmci_resource_type resource_type,
-+		      struct vmci_handle handle);
-+
-+void vmci_resource_remove(struct vmci_resource *resource);
-+
-+struct vmci_resource *
-+vmci_resource_by_handle(struct vmci_handle resource_handle,
-+			enum vmci_resource_type resource_type);
-+
-+struct vmci_resource *vmci_resource_get(struct vmci_resource *resource);
-+int vmci_resource_put(struct vmci_resource *resource);
-+
-+struct vmci_handle vmci_resource_handle(struct vmci_resource *resource);
-+
-+#endif /* _VMCI_RESOURCE_H_ */
++#endif /* _VMCI_ROUTE_H_ */
 
