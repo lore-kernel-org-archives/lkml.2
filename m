@@ -1,71 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530Ab2KGIRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 03:17:11 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63842 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab2KGIRJ (ORCPT
+	id S1751917Ab2KGISe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 03:18:34 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61130 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab2KGISd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 03:17:09 -0500
-Date: Wed, 7 Nov 2012 00:17:06 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [patch] mm, mempolicy: remove duplicate code
-Message-ID: <alpine.DEB.2.00.1211070016080.21854@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 7 Nov 2012 03:18:33 -0500
+Subject: Re: Network routing problem after upgrading to 3.6.2
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: multipart/signed; boundary="Apple-Mail=_C5E5150C-F72B-4B11-9EFD-7186F3BFF080"; protocol="application/pkcs7-signature"; micalg=sha1
+From: Melby Sjamsuddin <melby.s@vulytrampolines.com>
+In-Reply-To: <CAFLxGvx_ASg3=dspS33ajsT5DJgNqsz2TmTY8b+k9BfmGhHXwg@mail.gmail.com>
+Date: Wed, 7 Nov 2012 18:18:26 +1000
+Cc: linux-kernel@vger.kernel.org
+Message-Id: <0678A2A4-F1BE-4A18-B3F2-ECCCAEEB1093@vulytrampolines.com>
+References: <E3FFC807-CA31-45EA-A8EF-1266A27F9A0D@vulytrampolines.com> <CAFLxGvx_ASg3=dspS33ajsT5DJgNqsz2TmTY8b+k9BfmGhHXwg@mail.gmail.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove some duplicate code and simplify alloc_pages_vma().  No functional
-change.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/mempolicy.c |   21 ++++-----------------
- 1 file changed, 4 insertions(+), 17 deletions(-)
+--Apple-Mail=_C5E5150C-F72B-4B11-9EFD-7186F3BFF080
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=utf-8
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1907,7 +1907,6 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
- 		unsigned long addr, int node)
- {
- 	struct mempolicy *pol;
--	struct zonelist *zl;
- 	struct page *page;
- 	unsigned int cpuset_mems_cookie;
- 
-@@ -1926,23 +1925,11 @@ retry_cpuset:
- 
- 		return page;
- 	}
--	zl = policy_zonelist(gfp, pol, node);
--	if (unlikely(mpol_needs_cond_ref(pol))) {
--		/*
--		 * slow path: ref counted shared policy
--		 */
--		struct page *page =  __alloc_pages_nodemask(gfp, order,
--						zl, policy_nodemask(gfp, pol));
--		__mpol_put(pol);
--		if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
--			goto retry_cpuset;
--		return page;
--	}
--	/*
--	 * fast path:  default or task policy
--	 */
--	page = __alloc_pages_nodemask(gfp, order, zl,
-+	page = __alloc_pages_nodemask(gfp, order,
-+				      policy_zonelist(gfp, pol, node),
- 				      policy_nodemask(gfp, pol));
-+	if (unlikely(mpol_needs_cond_ref(pol)))
-+		__mpol_put(pol);
- 	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
- 		goto retry_cpuset;
- 	return page;
+Hi Richard,
+
+I tested 3.5.7 and everything seems to be normal, so it must be 3.6.
+Let me know if there's anything I can help.
+
+
+Melby Sjamsuddin
+Software Developermobile. 0403 714 482
+www.vulytrampolines.com  =E2=97=A6  like us on Facebook
+For more general enquiries email: sales@vulytrampolines.com or call 1300 =
+667 514
+=20
+
+On 05/11/2012, at 7:15 PM, richard -rw- weinberger wrote:
+
+> On Mon, Nov 5, 2012 at 10:02 AM, Melby Sjamsuddin
+> <melby.s@vulytrampolines.com> wrote:
+>> I have a network issue with two routers at work. They're setup with =
+vrrp and do load balancing with
+>> 'ip route nexthop' and iptables connmark, using different vlan to =
+connect to different modems.
+>>=20
+>> They have been working fine until recently where suddenly http =
+connections just never finish
+>> loading and very slow. I thought it was just slow until I recall that =
+it started to happen after fedora 16
+>> updated the kernel to 3.6.2.
+>>=20
+>> If I boot to older kernel (3.4.11), everything becomes normal again.
+>=20
+> Does 3.5 work?
+> Please find out the exact release where it broke...
+>=20
+> --=20
+> Thanks,
+> //richard
+
+
+--Apple-Mail=_C5E5150C-F72B-4B11-9EFD-7186F3BFF080
+Content-Disposition: attachment;
+	filename=smime.p7s
+Content-Type: application/pkcs7-signature;
+	name=smime.p7s
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIO5zCCBIow
+ggNyoAMCAQICECf06hH0eobEbp27bqkXBwcwDQYJKoZIhvcNAQEFBQAwbzELMAkGA1UEBhMCU0Ux
+FDASBgNVBAoTC0FkZFRydXN0IEFCMSYwJAYDVQQLEx1BZGRUcnVzdCBFeHRlcm5hbCBUVFAgTmV0
+d29yazEiMCAGA1UEAxMZQWRkVHJ1c3QgRXh0ZXJuYWwgQ0EgUm9vdDAeFw0wNTA2MDcwODA5MTBa
+Fw0yMDA1MzAxMDQ4MzhaMIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMCVVQxFzAVBgNVBAcTDlNh
+bHQgTGFrZSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxITAfBgNVBAsTGGh0
+dHA6Ly93d3cudXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVROLVVTRVJGaXJzdC1DbGllbnQgQXV0
+aGVudGljYXRpb24gYW5kIEVtYWlsMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsjmF
+pPJ9q0E7YkY3rs3BYHW8OWX5ShpHornMSMxqmNVNNRm5pELlzkniii8efNIxB8dOtINknS4p1aJk
+xIW9hVE1eaROaJB7HHqkkqgX8pgV8pPMyaQylbsMTzC9mKALi+VuG6JG+ni8om+rWV6lL8/K2m2q
+L+usobNqqrcuZzWLeeEeaYji5kbNoKXqvgvOdjp6Dpvq/NonWz1zHyLmSGHGTPNpsaguG7bUMSAs
+vIKKjqQOpdeJQ/wWWq8dcdcRWdq6hw2v+vPhwvCkxWeM1tZUOt4KpLoDd7NlyP0e03RiqhjKaJMe
+oYV+9Udly/hNVyh00jT/MLbu9mIwFIws6wIDAQABo4HhMIHeMB8GA1UdIwQYMBaAFK29mHo0tCb3
++sQmVO8DveAky1QaMB0GA1UdDgQWBBSJgmd9xJ0mcABLtFBIfN49rgRufTAOBgNVHQ8BAf8EBAMC
+AQYwDwYDVR0TAQH/BAUwAwEB/zB7BgNVHR8EdDByMDigNqA0hjJodHRwOi8vY3JsLmNvbW9kb2Nh
+LmNvbS9BZGRUcnVzdEV4dGVybmFsQ0FSb290LmNybDA2oDSgMoYwaHR0cDovL2NybC5jb21vZG8u
+bmV0L0FkZFRydXN0RXh0ZXJuYWxDQVJvb3QuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQAZ2IkRbyis
+pgCi54fBm5AD236hEv0e8+LwAamUVEJrmgnEoG3XkJIEA2Z5Q3H8+G+v23ZF4jcaPd3kWQR4rBz0
+g0bzes9bhHIt5UbBuhgRKfPLSXmHPLptBZ2kbWhPrXIUNqi5sf2/z3/wpGqUNVCPz4FtVbHdWTBK
+322gnGQfSXzvNrv042n0+DmPWq1LhTq3Du3Tzw1EovsEv+QvcI4l+1pUBrPQxLxtjftzMizpm4Qk
+LdZ/kXpoAlAfDj9N6cz1u2fo3BwuO/xOzf4CjuOoEwqlJkRl6RDyTVKnrtw+ymsyXEFs/vVdoOr/
+0fqbhlhtPZZH5f4ulQTCAMyOofK7MIIFGjCCBAKgAwIBAgIQbRnqpxlPajMi5iIyeqpx3jANBgkq
+hkiG9w0BAQUFADCBrjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExh
+a2UgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8v
+d3d3LnVzZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRp
+Y2F0aW9uIGFuZCBFbWFpbDAeFw0xMTA0MjgwMDAwMDBaFw0yMDA1MzAxMDQ4MzhaMIGTMQswCQYD
+VQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYDVQQHEwdTYWxmb3JkMRow
+GAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09NT0RPIENsaWVudCBBdXRoZW50
+aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC
+AQEAkoSEW0tXmNReL4uk4UDIo1NYX2Zl8TJO958yfVXQeExVt0KU4PkncQfFxmmkuTLE8UAakMwn
+VmJ/F7Vxaa7lIBvky2NeYMqiQfZq4aP/uN8fSG1lQ4wqLitjOHffsReswtqCAtbUMmrUZ28gE49c
+NfrlVICv2HEKHTcKAlBTbJUdqRAUtJmVWRIx/wmi0kzcUtve4kABW0ho3cVKtODtJB86r3FfB+Os
+vxQ7sCVxaD30D9YXWEYVgTxoi4uDD216IVfmNLDbMn7jSuGlUnJkJpFOpZIP/+CxYP0ab2hRmWON
+GoulzEKbm30iY9OpoPzOnpDfRBn0XFs1uhbzp5v/wQIDAQABo4IBSzCCAUcwHwYDVR0jBBgwFoAU
+iYJnfcSdJnAAS7RQSHzePa4Ebn0wHQYDVR0OBBYEFHoTTgB0W8Z4Y2QnwS/ioFu8ecV7MA4GA1Ud
+DwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMBEGA1UdIAQKMAgwBgYEVR0gADBYBgNVHR8E
+UTBPME2gS6BJhkdodHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vVVROLVVTRVJGaXJzdC1DbGllbnRB
+dXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDB0BggrBgEFBQcBAQRoMGYwPQYIKwYBBQUHMAKGMWh0
+dHA6Ly9jcnQudXNlcnRydXN0LmNvbS9VVE5BZGRUcnVzdENsaWVudF9DQS5jcnQwJQYIKwYBBQUH
+MAGGGWh0dHA6Ly9vY3NwLnVzZXJ0cnVzdC5jb20wDQYJKoZIhvcNAQEFBQADggEBAIXWvnhXVW0z
+f0RS/kLVBqgBA4CK+w2y/Uq/9q9BSfUbWsXSrRtzbj7pJnzmTJjBMCjfy/tCPKElPgp11tA9OYZm
+0aGbtU2bb68obB2v5ep0WqjascDxdXovnrqTecr+4pEeVnSy+I3T4ENyG+2P/WA5IEf7i686ZUg8
+mD2lJb+972DgSeUWyOs/Q4Pw4O4NwdPNM1+b0L1garM7/vrUyTo8H+2b/5tJM75CKTmD7jNpLoKd
+RU2oadqAGx490hpdfEeZpZsIbRKZhtZdVwcbpzC+S0lEuJB+ytF5OOu0M/qgOl0mWJ5hVRi0IdWZ
+1eBDQEIwvuql55TSsP7zdfl/bucwggU3MIIEH6ADAgECAhBqUIrac7KF3+wys6cyG9+SMA0GCSqG
+SIb3DQEBBQUAMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAw
+DgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09N
+T0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMB4XDTEyMDkxMzAw
+MDAwMFoXDTEzMDkxMzIzNTk1OVowLDEqMCgGCSqGSIb3DQEJARYbbWVsYnkuc0B2dWx5dHJhbXBv
+bGluZXMuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmpFpF7UjME3G4fwKKyUI
+afTMn60d0Fqs7y4cMtqjbKGG+zCFpCMcrsgCBa7CDSBKTPcrb8eg/3JmVLfNZGJd+8gOiU/izr+E
+0NwBP3KpVDYSdRFAie8TunNI7v1wxLRGhVl3+rppNHjurt3KXyfSlNGWElj4sCt7VW9syGjizcxV
+Az2hrZrhOKTU95pcd6tRtzmK/9CjcEFkVkyaIqOUthXjyycBNKWjG4F1iziwkFM5CTOqucsGCrKT
+0Qepdb7znTt+n0EMFG9+P0xXAIb0BjXibFc6RC/JVbbsos4kBvf8KA/sDSPJ6CBXCaF/7B64e0m1
+mArW4jPKBXeiPuczvwIDAQABo4IB6zCCAecwHwYDVR0jBBgwFoAUehNOAHRbxnhjZCfBL+KgW7x5
+xXswHQYDVR0OBBYEFAI8y4Ea2zyDlvbcpkwCYuh8YoCkMA4GA1UdDwEB/wQEAwIFoDAMBgNVHRMB
+Af8EAjAAMCAGA1UdJQQZMBcGCCsGAQUFBwMEBgsrBgEEAbIxAQMFAjARBglghkgBhvhCAQEEBAMC
+BSAwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIBAQEwKzApBggrBgEFBQcCARYdaHR0cHM6Ly9zZWN1
+cmUuY29tb2RvLm5ldC9DUFMwVwYDVR0fBFAwTjBMoEqgSIZGaHR0cDovL2NybC5jb21vZG9jYS5j
+b20vQ09NT0RPQ2xpZW50QXV0aGVudGljYXRpb25hbmRTZWN1cmVFbWFpbENBLmNybDCBiAYIKwYB
+BQUHAQEEfDB6MFIGCCsGAQUFBzAChkZodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9DT01PRE9DbGll
+bnRBdXRoZW50aWNhdGlvbmFuZFNlY3VyZUVtYWlsQ0EuY3J0MCQGCCsGAQUFBzABhhhodHRwOi8v
+b2NzcC5jb21vZG9jYS5jb20wJgYDVR0RBB8wHYEbbWVsYnkuc0B2dWx5dHJhbXBvbGluZXMuY29t
+MA0GCSqGSIb3DQEBBQUAA4IBAQBA0ThKvqXaDulNCv7SiNT3vjgE2EciuU9uRGI2YZldutxaOnxT
+0UdLkXeU8KMaYJSbbx7RbpBERmgtMYGNdZd4V66vONRNfeqCRDvInyl1Lcg7Wmm9Z8jDo0n364wF
+ya89WkGgnvm+T9Fll7hscNB2RGYbNSplxopKIyC/aQEtwUTdNfk2BD/MOO6MCqNOEA/hRqYvqP/e
+VSX9nJiaxMGaK/+UKSCLy8awU5JcyQkTCYz4P+OZYVDraY49rPVvuS/zpF6kLX9C32Guid0+oHOw
+4FiDfGYSVAY//WIBKR1oE2sk5SHd4aSb0XksieBYmIXMnEDubMxM4dzHrNXptJjyMYIDqzCCA6cC
+AQEwgagwgZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNV
+BAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8g
+Q2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEGpQitpzsoXf7DKzpzIb
+35IwCQYFKw4DAhoFAKCCAdcwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
+DxcNMTIxMTA3MDgxODI3WjAjBgkqhkiG9w0BCQQxFgQUL7UyBjI674Z+11eqCCDxv5sBQxUwgbkG
+CSsGAQQBgjcQBDGBqzCBqDCBkzELMAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hl
+c3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgGA1UEChMRQ09NT0RPIENBIExpbWl0ZWQxOTA3BgNV
+BAMTMENPTU9ETyBDbGllbnQgQXV0aGVudGljYXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQalCK
+2nOyhd/sMrOnMhvfkjCBuwYLKoZIhvcNAQkQAgsxgauggagwgZMxCzAJBgNVBAYTAkdCMRswGQYD
+VQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9E
+TyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8gQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBT
+ZWN1cmUgRW1haWwgQ0ECEGpQitpzsoXf7DKzpzIb35IwDQYJKoZIhvcNAQEBBQAEggEAFhqx3oef
+OKQ4wQiyh+PrJhhVpLGbwB1kH5MhTzNLc4wqI9hf4xm3NBU85ZLnrmFvDWuOHDpTRo1hmx1ISeH6
+UyhPq+kVd2HdUiiNAsYyzgOt7gm3bJme2c/8kZi5nh9VKciLAHPx+EpgSJ3NUQsxLBPLFcu+jHw5
+p/yUa7g6reYEHEsLAvz7BvHAp2/ihO/4bz8zcn/V62jTWvkoZGiUVaZNYZZL31pZ0JImcjNjbH92
+Wvaqwp4olU/wwErLNnb3sp66dh1UptVcBDg9aksZb0CQCyeQFwvbjgaLmK/EQQdlw5ZwBOdl48Yc
+2MElPhE+Rw1DESizkvkxUmEtS75wLgAAAAAAAA==
+
+--Apple-Mail=_C5E5150C-F72B-4B11-9EFD-7186F3BFF080--
