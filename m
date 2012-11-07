@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab2KGX1l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 18:27:41 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35614 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab2KGX1j (ORCPT
+	id S1754001Ab2KGXb2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 18:31:28 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10460 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab2KGXb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 18:27:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <C825ADB6BE8AC2468577BFFCE7DF5B8A1F080FA111@VMBX133.ihostexchange.net>
-References: <CAFub=KTf2dWxM9=saG2JaNJpEioJM8rM3UBG9BkyxRN-+j0psQ@mail.gmail.com>
-	<1352313131.2751.152.camel@fourier>
-	<C825ADB6BE8AC2468577BFFCE7DF5B8A1F080FA111@VMBX133.ihostexchange.net>
-Date: Thu, 8 Nov 2012 00:27:37 +0100
-Message-ID: <CAFLxGvy3voev7gm=6sej=tNmWOB31Kgf6gFZf5ew7xh9r1qRGA@mail.gmail.com>
-Subject: Re: Why Cypress does not upstream its trackpad driver?
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Troy Abercrombia <ta@cypress.com>
-Cc: Kamal Mostafa <kamal@canonical.com>,
-        =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozancag@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        customercare <customercare@cypress.com>,
-        "mario_limonciello@dell.com" <mario_limonciello@dell.com>,
-        David Solda <dso@cypress.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Nov 2012 18:31:26 -0500
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=1_eV1jEYbIxN57c27y0A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Subject: [ANNOUNCE] 3.4.18-rt29
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Nov 2012 18:31:12 -0500
+Message-ID: <1352331072.29766.0.camel@acer.local.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 8, 2012 at 12:13 AM, Troy Abercrombia <ta@cypress.com> wrote:
-> Hello Kamal
->
-> Unfortunately, We're not able to upstream the driver as it would be denied because it changes the Linux mouse structure framework.
 
-Then write a sane driver or submit patches which add the features you
-need in the Linux input device framework...
+Dear RT Folks,
 
--- 
-Thanks,
-//richard
+I'm pleased to announce the 3.4.18-rt29 stable release.
+
+
+This release is just an update to the new stable 3.4.18 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 613aa8330dbba64a48c206d2a4078a62aa8dfaf5
+
+
+Or to build 3.4.18-rt29 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.18.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.18-rt29.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
