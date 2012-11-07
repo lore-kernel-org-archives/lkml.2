@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab2KGTUT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 14:20:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53006 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab2KGTUR (ORCPT
+	id S1754189Ab2KGTYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 14:24:13 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:43354 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab2KGTYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 14:20:17 -0500
-Date: Wed, 7 Nov 2012 11:20:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: ebiederm@xmission.com, devel@openvz.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, jmorris@namei.org
-Subject: Re: [PATCH 2/4] ipc: convert prepare_copy() from macro to function
-Message-Id: <20121107112016.d9321efe.akpm@linux-foundation.org>
-In-Reply-To: <20121107100500.22846.143.stgit@localhost.localdomain>
-References: <20121107100317.22846.94715.stgit@localhost.localdomain>
-	<20121107100500.22846.143.stgit@localhost.localdomain>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Nov 2012 14:24:11 -0500
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Devendra Naga <develkernel412222@gmail.com>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH] Staging/media: Use dev_ printks in cxd2099/cxd2099.h
+Date: Thu,  8 Nov 2012 04:24:04 +0900
+Message-Id: <1352316245-8009-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Nov 2012 13:05:00 +0300
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+fixed below checkpatch warning.
+- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
 
-> This code works if CONFIG_CHECKPOINT_RESTORE is disabled.
-> 
-> ...
->
-> --- a/ipc/msg.c
-> +++ b/ipc/msg.c
-> @@ -803,8 +803,15 @@ static inline void free_copy(struct msg_msg *copy)
->  		free_msg(copy);
->  }
->  #else
-> -#define prepare_copy(buf, sz, msgflg, msgtyp, copy_nr)	ERR_PTR(-ENOSYS)
->  #define fill_copy(copy_nr, msg_nr, msg, copy)		NULL
-> +
-> +static inline struct msg_msg *prepare_copy(void __user *buf, size_t bufsz,
-> +					   int msgflg, long *msgtyp,
-> +					   unsigned long *copy_number)
-> +{
-> +	return ERR_PTR(-ENOSYS);
-> +}
-> +
->  static inline void free_copy(struct msg_msg *copy)
->  {
->  }
-> @@ -819,7 +826,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
->  	int mode;
->  	struct ipc_namespace *ns;
->  	struct msg_msg *copy = NULL;
-> -	unsigned long __maybe_unused copy_number;
-> +	unsigned long __maybe_unused copy_number = 0;
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+---
+ drivers/staging/media/cxd2099/cxd2099.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The __maybe_unused here makes no sense.  I'll remove it.
+diff --git a/drivers/staging/media/cxd2099/cxd2099.h b/drivers/staging/media/cxd2099/cxd2099.h
+index 19c588a..0eb607c 100644
+--- a/drivers/staging/media/cxd2099/cxd2099.h
++++ b/drivers/staging/media/cxd2099/cxd2099.h
+@@ -43,7 +43,7 @@ struct dvb_ca_en50221 *cxd2099_attach(struct cxd2099_cfg *cfg,
+ static inline struct dvb_ca_en50221 *cxd2099_attach(struct cxd2099_cfg *cfg,
+ 					void *priv, struct i2c_adapter *i2c)
+ {
+-	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
++	dev_warn(&i2c->dev, "%s: driver disabled by Kconfig\n", __func__);
+ 	return NULL;
+ }
+ #endif
+-- 
+1.7.9.5
 
->  
->  	if (msqid < 0 || (long) bufsz < 0)
->  		return -EINVAL;
