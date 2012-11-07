@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab2KGJ4X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 04:56:23 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33210 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753566Ab2KGJ4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 04:56:21 -0500
-Date: Wed, 7 Nov 2012 10:56:16 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: David Miller <davem@davemloft.net>
-Cc: pebolle@tiscali.nl, linux-kernel@vger.kernel.org, isdn@linux-pingi.de,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 8/9] isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
-Message-ID: <20121107095616.GA13463@gmail.com>
-References: <20121104105332.GC27124@gmail.com>
- <20121104.123013.700345271120279281.davem@davemloft.net>
- <20121105103126.GB5220@gmail.com>
- <20121106.185752.1986400393399264104.davem@davemloft.net>
+	id S1754481Ab2KGJ4h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 04:56:37 -0500
+Received: from mga02.intel.com ([134.134.136.20]:17676 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754159Ab2KGJ4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 04:56:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,728,1344236400"; 
+   d="scan'208";a="238449748"
+Date: Wed, 7 Nov 2012 11:58:42 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, rafael.j.wysocki@intel.com,
+        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+Message-ID: <20121107095842.GY24532@intel.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CAErSpo44pWUJmRAP6eR9T+2WvO5hJPFOC=Nn-WPXDtCY0v0EDw@mail.gmail.com>
+ <1996776.cC14CHafyR@vostro.rjw.lan>
+ <2584820.Vd5p0uzRAK@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121106.185752.1986400393399264104.davem@davemloft.net>
+In-Reply-To: <2584820.Vd5p0uzRAK@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 06 Nov 2012, David Miller wrote:
-
-> From: Lee Jones <lee.jones@linaro.org>
-> Date: Mon, 5 Nov 2012 11:31:26 +0100
-> 
-> > Does something like look like a better solution?
+On Tue, Nov 06, 2012 at 11:36:08PM +0100, Rafael J. Wysocki wrote:
 > > 
-> > Author: Lee Jones <lee.jones@linaro.org>
-> > Date:   Sat Nov 3 22:06:02 2012 +0100
-> > 
-> >     isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
+> > OK, but then we need to pass the information obtained from _CRS
+> > (presumably after some adjustments through _SRS) to drivers, or rather to
+> > things like the SPI core, I2C core etc. so that they can create device
+> > objects for drivers to bind to and quite frankly I don't see why not to use
+> > ACPI resources for that.
 > 
-> Yes, it looks good, please resubmit it formally.
+> Nevertheless, the routines for parsing those resources should belong
+> to the ACPI core, mostly to avoid code duplication.
 
-Done. Thanks for reviewing.
+Rafael,
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+So is the idea now that the ACPI core parses the resources and passes them
+forward via struct acpi_device? I'm just wondering how to proceed with
+these I2C and SPI enumeration patches.
+
+Thanks.
