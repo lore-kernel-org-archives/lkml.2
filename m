@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581Ab2KGPWB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 10:22:01 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52663 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432Ab2KGPV6 convert rfc822-to-8bit (ORCPT
+	id S1753392Ab2KGPYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 10:24:11 -0500
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:34657 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751432Ab2KGPYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 10:21:58 -0500
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "paul@pwsan.com" <paul@pwsan.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>
-CC: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
+	Wed, 7 Nov 2012 10:24:09 -0500
+From: Mathias LEBLANC <Mathias.LEBLANC@st.com>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Cc: Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
+        Sirrix AG <tpmdd@sirrix.com>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 6/8] pwm: pwm-tiehrpwm: Adding TBCLK gating support.
-Thread-Topic: [PATCH 6/8] pwm: pwm-tiehrpwm: Adding TBCLK gating support.
-Thread-Index: AQHNuzgji9uGjRQDykmHbTJ8YyrhrpfcAi+AgABmL5A=
-Date: Wed, 7 Nov 2012 15:20:30 +0000
-Deferred-Delivery: Wed, 7 Nov 2012 15:20:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E9DE3AA@DBDE01.ent.ti.com>
-References: <1352106749-9437-1-git-send-email-avinashphilip@ti.com>
- <1352106749-9437-7-git-send-email-avinashphilip@ti.com>
- <B5906170F1614E41A8A28DE3B8D121433EC04483@DBDE01.ent.ti.com>
-In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433EC04483@DBDE01.ent.ti.com>
+        Jean-Luc BLANC <jean-luc.blanc@st.com>
+Date: Wed, 7 Nov 2012 16:23:14 +0100
+Subject: RE: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
+Thread-Topic: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
+Thread-Index: Ac28+T+eJqvfKs9RTEu/i63x3PIUSQAAFerT
+Message-ID: <35286B1AE75A7C47BFF0870081A31B4B387510DB14@SAFEX1MAIL4.st.com>
+References: <1352290509-14834-1-git-send-email-mathias.leblanc@st.com>,<20121107150257.GD14628@ennui.austin.ibm.com>
+In-Reply-To: <20121107150257.GD14628@ennui.austin.ibm.com>
 Accept-Language: en-US
-Content-Language: en-US
+Content-Language: en-GB
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA7FOFlD021387
 
-On Tue, Nov 06, 2012 at 12:16:13, Bedia, Vaibhav wrote:
-> On Mon, Nov 05, 2012 at 14:42:27, Philip, Avinash wrote:
-> [...]
-> 
-> > +	/* Some platforms require explicit tbclk gating */
-> > +	if (of_property_read_bool(pdev->dev.of_node, "tbclkgating")) {
-> > +		pc->tbclk = clk_get(&pdev->dev, "tbclk");
-> > +		if (IS_ERR(pc->tbclk)) {
-> > +			dev_err(&pdev->dev, "Could not get EHRPWM TBCLK\n");
-> > +			return PTR_ERR(pc->tbclk);
-> > +		}
-> > +	}
-> > +
-> > +	/* Enable tbclk & leave */
-> > +	if (pc->tbclk)
-> > +		clk_enable(pc->tbclk);
-> > +
-> 
-> Here also why are you leaving this clock always running?
+Hi Kent,
 
-This is an additional clock gating for EHRPWM functional clock from
-control module. The enabling of this clock to pwm_enable 
-& disabling to pwm_disable. I will correct it.
+Sorry for sending new driver, it was a mistake.
+Today, I will upload the new version of the Linux driver without the errors that you have mentioned in your previous mail.
 
+About :
+> +/*
+> + * tpm_st33_i2c_ioctl provides 2 handles:
+> + * - TPMIOC_CANCEL: allow to CANCEL a TPM commands execution.
+> + *   See tpm_stm_i2c_cancel description above
+> + * - TPMIOC_TRANSMIT: allow to transmit a TPM commands.
+> + * - TPMIOC_HASH: allow to compute a locality 4 hash
+> + * - TPMIOC_CHANGELOCALITY: allow to change the current locality
 
+  Can we get rid of the ioctl path?  cancel and transmit are available
+through read/write already, but I need help understanding what hash and
+change locality would be useful for. If the kernel is running you can
+just use the crypto api for a hash operation, right?
 
-Thanks
-Avinash
+  As for changing locality, what's the idea there? If you can just
+switch localities at any time with an ioctl and no DRTM, why have it?
 
-> 
-> Regards,
-> Vaibhav
-> 
+[cut]
+> +static const struct file_operations tpm_st33_i2c_fops = {
+> +     .owner = THIS_MODULE,
+> +     .llseek = no_llseek,
+> +     .read = tpm_read,
+> +     .write = tpm_write,
+> +     .open = tpm_open,
+> +     .release = tpm_release,
+> +};
 
+The TPM specification, specifies all four localities used for different levels
+LOCALITY4_HASH by a CPU instruction to start
+LOCALITY3 for BIOS
+LOCALITY2 for MBR
+LOCALITY1 for operation login
+LOCALITY0 for common OS tasks.
+
+The use of these localities is agreement with the specifications and must always be down (4, 3, 2, 1, 0) to be sure that the verification steps lower levels will never be altered to ensure "sustainability".
+If once the OS loaded, I am able to use the locality 4, I could potentially alter the values â€‹â€‹of the starting steps below ...
+Access to these localities in the driver * Linux * has been given only for the purpose of validation.
+
+________________________________________
+From: Kent Yoder [key@linux.vnet.ibm.com]
+Sent: 07 November 2012 16:02
+To: Mathias LEBLANC
+Cc: Rajiv Andrade; Marcel Selhorst; Sirrix AG; tpmdd-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org; Jean-Luc BLANC
+Subject: Re: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
+
+On Wed, Nov 07, 2012 at 01:15:09PM +0100, Mathias Leblanc wrote:
+>  * STMicroelectronics version 1.2.0, Copyright (C) 2010
+>  * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
+>  * This is free software, and you are welcome to redistribute it
+>  * under certain conditions.
+>
+> This is the driver for TPM chip from ST Microelectronics.
+>
+> If you have a TPM security chip from STMicroelectronics working with
+> an I2C, in menuconfig or .config choose the tpm driver on
+> device --> tpm and activate the protocol of your choice before compiling
+> the kernel.
+> The driver will be accessible from within Linux.
+>
+> Tested on linux x86/x64, beagleboard REV B & XM REV C and CHROMIUM OS
+>
+> Signed-off-by: Mathias Leblanc <mathias.leblanc@st.com>
+
+Hi Mathias,
+
+  I didn't see a reply to my mail from Oct 31, and very little has
+changed here.  Did I miss something?
+
+Kent
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
