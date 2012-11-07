@@ -1,95 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab2KGWDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 17:03:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9993 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751727Ab2KGWD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 17:03:29 -0500
-Date: Wed, 7 Nov 2012 20:02:56 -0200
-From: Rafael Aquini <aquini@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v11 5/7] virtio_balloon: introduce migration primitives
- to balloon pages
-Message-ID: <20121107220255.GC10444@optiplex.redhat.com>
-References: <cover.1352256081.git.aquini@redhat.com>
- <265aaff9a79f503672f0cdcdff204114b5b5ba5b.1352256088.git.aquini@redhat.com>
- <20121107115810.1ae286ac.akpm@linux-foundation.org>
-MIME-Version: 1.0
+	id S1753704Ab2KGWIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 17:08:21 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:51022 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751727Ab2KGWIT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 17:08:19 -0500
+Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
+Mime-Version: 1.0 (Apple Message framework v1085)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121107115810.1ae286ac.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <509A97D0.5010006@wwwdotorg.org>
+Date: Wed, 7 Nov 2012 23:08:06 +0100
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <CCACD7FB-2EEB-470C-8942-BC67092D93AD@antoniou-consulting.com>
+References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <50999145.2070306@wwwdotorg.org> <5A5C45CB-CDF8-4D93-8698-46A27143ABFA@antoniou-consulting.com> <509A97D0.5010006@wwwdotorg.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 11:58:10AM -0800, Andrew Morton wrote:
-> On Wed,  7 Nov 2012 01:05:52 -0200
-> Rafael Aquini <aquini@redhat.com> wrote:
-> 
-> > Memory fragmentation introduced by ballooning might reduce significantly
-> > the number of 2MB contiguous memory blocks that can be used within a guest,
-> > thus imposing performance penalties associated with the reduced number of
-> > transparent huge pages that could be used by the guest workload.
-> > 
-> > Besides making balloon pages movable at allocation time and introducing
-> > the necessary primitives to perform balloon page migration/compaction,
-> > this patch also introduces the following locking scheme, in order to
-> > enhance the syncronization methods for accessing elements of struct
-> > virtio_balloon, thus providing protection against concurrent access
-> > introduced by parallel memory migration threads.
-> > 
-> > ...
-> >
-> > @@ -122,18 +128,25 @@ static void set_page_pfns(u32 pfns[], struct page *page)
-> >  
-> >  static void fill_balloon(struct virtio_balloon *vb, size_t num)
-> >  {
-> > +	struct balloon_dev_info *vb_dev_info = vb->vb_dev_info;
-> > +
-> > +	static DEFINE_RATELIMIT_STATE(fill_balloon_rs,
-> > +				      DEFAULT_RATELIMIT_INTERVAL,
-> > +				      DEFAULT_RATELIMIT_BURST);
-> > +
-> >  	/* We can only do one array worth at a time. */
-> >  	num = min(num, ARRAY_SIZE(vb->pfns));
-> >  
-> > +	mutex_lock(&vb->balloon_lock);
-> >  	for (vb->num_pfns = 0; vb->num_pfns < num;
-> >  	     vb->num_pfns += VIRTIO_BALLOON_PAGES_PER_PAGE) {
-> > -		struct page *page = alloc_page(GFP_HIGHUSER | __GFP_NORETRY |
-> > -					__GFP_NOMEMALLOC | __GFP_NOWARN);
-> > +		struct page *page = balloon_page_enqueue(vb_dev_info);
-> > +
-> >  		if (!page) {
-> > -			if (printk_ratelimit())
-> > +			if (__ratelimit(&fill_balloon_rs))
-> >  				dev_printk(KERN_INFO, &vb->vdev->dev,
-> >  					   "Out of puff! Can't get %zu pages\n",
-> > -					   num);
-> > +					   VIRTIO_BALLOON_PAGES_PER_PAGE);
-> >  			/* Sleep for at least 1/5 of a second before retry. */
-> >  			msleep(200);
-> >  			break;
-> 
-> linux-next's fill_balloon() has already been converted to
-> dev_info_ratelimited().  I fixed everything up.  Please check the result.
+Hi Stephen,
 
-Looks great, thanks for doing it
+On Nov 7, 2012, at 6:18 PM, Stephen Warren wrote:
 
+> On 11/07/2012 01:47 AM, Pantelis Antoniou wrote:
+>> Hi Stephen,
+>> 
+>> On Nov 6, 2012, at 11:37 PM, Stephen Warren wrote:
+>> 
+>>> On 11/05/2012 01:40 PM, Grant Likely wrote:
+>>>> Hey folks,
+>>>> 
+>>>> As promised, here is my early draft to try and capture what device
+>>>> tree overlays need to do and how to get there. Comments and
+>>>> suggestions greatly appreciated.
+>>> 
+>>> Interesting. This just came up internally at NVIDIA within the last
+>>> couple weeks, and was discussed on the U-Boot mailing list very recently
+>>> too:
+>>> 
+>>> http://lists.denx.de/pipermail/u-boot/2012-October/thread.html#138227
+>>> (it spills into the November archive too)
+>> 
+>> I am aware of this discussion. For our use case u-boot DT manipulation was
+>> tried, but then abandoned. Asking our user base to modify anything in u-boot
+>> was ruled out.
+>> 
+>>> 
+>>>> For these cases it is proposed to implement an overlay feature for the
+>>>> so that the initial device tree data can be modified by userspace at
+>>> 
+>>> I don't know if you're maintaining this as a document and taking patches
+>>> to it, but if so:
+>>> 
+>>> "for the so" split across those two lines.
+>>> 
+>>>> Jane solves this problem by storing an FDT overlay for each cape in the
+>>>> root filesystem. When the kernel detects that a cape is installed it
+>>>> reads the cape's eeprom to identify it and uses request_firmware() to
+>>>> obtain the appropriate overlay. Userspace passes the overlay to the
+>>>> kernel in the normal way. If the cape doesn't have an eeprom, then the
+>>>> kernel will still use firmware_request(), but userspace needs to already
+>>>> know which cape is installed.
+>>> 
+>>> As mentioned by Pantelis, multiple versions of a board is also very
+>>> common. We already have the following .dts files in the kernel where
+>>> this applies, for the main board even:
+>>> 
+>>> arch/arm/boot/dts/tegra30-cardhu.dtsi
+>>> arch/arm/boot/dts/tegra30-cardhu-a02.dts
+>>> arch/arm/boot/dts/tegra30-cardhu-a04.dts
+>> 
+>> Exactly. I've made this point in another email, but IMHO board-revision
+>> management is exactly the same with cape revision management.
+>> 
+>> Ideally you'd like to get rid of those three, and replace it with only
+>> one that's properly versioned.
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> I don't expect we would ever get rid of some of those .dts files; there
+> is after all a common subset that applies to all boards, and an
+> incremental difference that applies to only A02/3, and another for
+> A04/5/... Representing those as separate source files seems appropriate
+> to me. If we try and dump all the multiple versions into a single file
+> with some markup indicating which version of the board some sub-sections
+> of the .dts apply to, I think we'll end up with rather complex .dts
+> files. In this case, the simple overlay model works extremely well.
+
+If that's your use case, fine. We're not really trying to impose any
+special format for the DT files. We think that for our use cases
+a single DT works better, not so much from the developer point of view
+but from the users. A single DT is much easier to support, especially
+for users that aren't so great at boot-loader option juggling.
+
+Regards
+
+-- Pantelis
+
