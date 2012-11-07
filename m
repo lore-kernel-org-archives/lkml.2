@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab2KGMJf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 07:09:35 -0500
-Received: from [204.155.152.216] ([204.155.152.216]:44859 "EHLO shutemov.name"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754832Ab2KGMJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 07:09:33 -0500
-Date: Wed, 7 Nov 2012 14:11:10 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Mel Gorman <mgorman@suse.de>, Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [RFC v3 0/3] vmpressure_fd: Linux VM pressure notifications
-Message-ID: <20121107121110.GA32402@shutemov.name>
-References: <20121107105348.GA25549@lizard>
- <20121107112136.GA31715@shutemov.name>
- <20121107114346.GA32565@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121107114346.GA32565@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754818Ab2KGMKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 07:10:49 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:49695 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab2KGMKs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 07:10:48 -0500
+Date: Wed, 7 Nov 2012 13:10:37 +0100
+From: Alban Bedel <alban.bedel@avionic-design.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Alban Bedel <alban.bedel@avionic-design.de>
+Subject: Re: [PATCH] pwm-backlight: Add support for active low PWM
+ backlights
+Message-ID: <20121107131037.3bd52a96@avionic-0020.adnet.avionic-design.de>
+In-Reply-To: <20121106064405.GB14863@avionic-0098.mockup.avionic-design.de>
+References: <1352130541-16819-1-git-send-email-alban.bedel@avionic-design.de>
+	<20121106064405.GB14863@avionic-0098.mockup.avionic-design.de>
+Organization: Avionic Design
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:IO+h3d2NXjxzysVMR2mf/Sa9A2x06nMS0GA6aB/i5Cm
+ QGtcGMlunqdzoNj66yXylQ7EUahRJLgTVCzDsrzGU25xZu5e1F
+ A+UEFVSlW9gBdemQ9if/rVv/oADuxXd1dsRdJGvIXucCm1sprW
+ m3vQPXQfr42okK4Gt+Khr0+kA7ng7ih0hqkVXrpJcXE25bSFcJ
+ tFJtwPdH6LgPwWcK84l/RMTR0OolDi4emPeit3chvxQ9EARvwc
+ jQMt4j0rn1q02+TYIrn9oPfTlTmuKMjWMzBLg/Ga9EofRFZq18
+ jhwZuocDRxlMH9VccJecbmEPbEjOGWux2pvEZmtU3/jQYLnokh
+ mf3qsFfRRcYUKv0//gBWJd9zlcK3lyGHzTU9S/bmBWUPklnBva
+ +o6fx6zsRQG6vjkUdUTJBFG2Y8jWZzUkF4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 03:43:46AM -0800, Anton Vorontsov wrote:
-> On Wed, Nov 07, 2012 at 01:21:36PM +0200, Kirill A. Shutemov wrote:
-> [...]
-> > Sorry, I didn't follow previous discussion on this, but could you
-> > explain what's wrong with memory notifications from memcg?
-> > As I can see you can get pretty similar functionality using memory
-> > thresholds on the root cgroup. What's the point?
-> 
-> There are a few reasons we don't use cgroup notifications:
-> 
-> 1. We're not interested in the absolute number of pages/KB of available
->    memory, as provided by cgroup memory controller. What we're interested
->    in is the amount of easily reclaimable memory and new memory
->    allocations' cost.
-> 
->    We can have plenty of "free" memory, of which say 90% will be caches,
->    and say 10% idle. But we do want to differentiate these types of memory
->    (although not going into details about it), i.e. we want to get
->    notified when kernel is reclaiming. And we also want to know when the
->    memory comes from swapping others' pages out (well, actually we don't
->    call it swap, it's "new allocations cost becomes high" -- it might be a
->    result of many factors (swapping, fragmentation, etc.) -- and userland
->    might analyze the situation when this happens).
-> 
->    Exposing all the VM details to userland is not an option
+On Tue, 6 Nov 2012 07:44:06 +0100
+Thierry Reding <thierry.reding@avionic-design.de> wrote:
 
-IIUC, you want MemFree + Buffers + Cached + SwapCached, right?
-It's already exposed to userspace.
-
-> -- it is not
->    possible to build a stable ABI on this. Plus, it makes it really hard
->    for userland to deal with all the low level details of Linux VM
->    internals.
+> > --- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> > +++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+> > @@ -14,6 +14,7 @@ Required properties:
+> >  Optional properties:
+> >    - pwm-names: a list of names for the PWM devices specified in the
+> >                 "pwms" property (see PWM binding[0])
+> > +  - active-low: boolean indicating that the backlight use active low logic
 > 
->    So, no, raw numbers of "free/used KBs" are not interesting at all.
-> 
-> 1.5. But it is important to understand that vmpressure_fd() is not
->      orthogonal to cgroups (like it was with vmevent_fd()). We want it to
->      be "cgroup'able" too. :) But optionally.
-> 
-> 2. The last time I checked, cgroups memory controller did not (and I guess
->    still does not) not account kernel-owned slabs. I asked several times
->    why so, but nobody answered.
+> Couldn't you use the brightness-levels property to achieve the same
+> effect?
 
-Almost there. Glauber works on it.
+Not in the current state as the curve currently hardcode the fact the
+first element have 0% duty and the last 100%. But relaxing this
+limitation is probably better as it would also allow clamping the curve
+like the lth_brightness parameter do when no curve is used.
 
--- 
- Kirill A. Shutemov
+I'll send a new patch implementing this soon.
+
+Alban
