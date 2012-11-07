@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751143Ab2KGFLx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 00:11:53 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:57330 "EHLO
+	id S1751185Ab2KGFOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 00:14:21 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:42662 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761Ab2KGFLw (ORCPT
+	with ESMTP id S1750761Ab2KGFOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 00:11:52 -0500
+	Wed, 7 Nov 2012 00:14:20 -0500
 MIME-Version: 1.0
-In-Reply-To: <1352215003-30268-1-git-send-email-linus.walleij@stericsson.com>
-References: <1352215003-30268-1-git-send-email-linus.walleij@stericsson.com>
-Date: Wed, 7 Nov 2012 10:41:51 +0530
-X-Google-Sender-Auth: hnbhqgcctKpkmDZvcx3aFXYmiNA
-Message-ID: <CAOh2x==WYpq_hZa9bZhDNhD_ptE3hw3hBBugtyRu4AN0qetyTw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] gpiolib-of: staticize the pin range calls
+In-Reply-To: <1352215014-30305-1-git-send-email-linus.walleij@stericsson.com>
+References: <1352215014-30305-1-git-send-email-linus.walleij@stericsson.com>
+Date: Wed, 7 Nov 2012 10:44:20 +0530
+X-Google-Sender-Auth: gIWquRInKFIHF0ucApF7_00YBVU
+Message-ID: <CAOh2x=nT8_95uu9tfEnOHy9Gkm6gEEAVAKKwPAqbLJz3bwFDNw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] gpiolib: remove duplicate pin range code
 From: viresh kumar <viresh.kumar@linaro.org>
 To: Linus Walleij <linus.walleij@stericsson.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -27,33 +27,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 November 2012 20:46, Linus Walleij <linus.walleij@stericsson.com> wrote:
-diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+On Tue, Nov 6, 2012 at 8:46 PM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+>
+> Commit 69e1601bca88809dc118abd1becb02c15a02ec71
+> "gpiolib: provide provision to register pin ranges"
+>
+> Introduced both of_gpiochip_remove_pin_range() and
+> gpiochip_remove_pin_ranges(). But the contents are exactly
+> the same so remove the OF one and rely on the range deletion
+> in the core.
+>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
- #ifdef CONFIG_PINCTRL
--void of_gpiochip_add_pin_range(struct gpio_chip *chip)
-+static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
- {
-        struct device_node *np = chip->of_node;
-        struct gpio_pin_range *pin_range;
-@@ -254,7 +254,7 @@ void of_gpiochip_add_pin_range(struct gpio_chip *chip)
-        } while (index++);
- }
-
--void of_gpiochip_remove_pin_range(struct gpio_chip *chip)
-+static void of_gpiochip_remove_pin_range(struct gpio_chip *chip)
- {
-        struct gpio_pin_range *pin_range, *tmp;
-
-@@ -265,8 +265,8 @@ void of_gpiochip_remove_pin_range(struct gpio_chip *chip)
-        }
- }
- #else
--void of_gpiochip_add_pin_range(struct gpio_chip *chip) {}
--void of_gpiochip_remove_pin_range(struct gpio_chip *chip) {}
-+static void of_gpiochip_add_pin_range(struct gpio_chip *chip) {}
-+static void of_gpiochip_remove_pin_range(struct gpio_chip *chip) {}
-
-Maybe static inline??
+I can't believe that i did this :(
 
 Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
