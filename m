@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab2KGOmp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 09:42:45 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:33768 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762Ab2KGOmn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 09:42:43 -0500
-Message-ID: <509A735E.4080103@ti.com>
-Date: Wed, 7 Nov 2012 08:42:38 -0600
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1753455Ab2KGOo4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 09:44:56 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:47536 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752850Ab2KGOoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 09:44:54 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Tero Kristo <t-kristo@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH 0/3] pwm: Drivers for twl4030/6030 PWMs and LEDs
+Date: Wed, 7 Nov 2012 15:44:45 +0100
+Message-ID: <1352299488-11351-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-To: Joshua Emele <jemele@gmail.com>
-CC: Kevin Hilman <khilman@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        <linux-omap@vger.kernel.org>, <cpufreq@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] cpufreq: OMAP: if available, scale the iva coprocessor
-References: <1352252861-18384-1-git-send-email-jemele@gmail.com>
-In-Reply-To: <1352252861-18384-1-git-send-email-jemele@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-On Tuesday 06 November 2012 07:47 PM, Joshua Emele wrote:
-> The iva coprocessor, available on some omap platforms, shares a voltage domain
-> with the mpu. If cpufreq is active and the mpu processor is scaled down, the iva
-> coprocessor should also be scaled. The goal is to make sure we do not ramp down
-> the voltage on the domain and affect clocking on the iva coprocessor leading to
-> a dsp crash.
->
-> I only have access to an omap3evm-ish device, so I do not know what the iva
-> clock name is for omap24xx and omap44xx. This detail can be added later if the
-> general approach is approved.
->
-> I have tested a version of this patch against the linux-3.3 kernel, so this my
-> attempt at a forward port against the current mainline. I have based my patch
-> series against linux-omap-pm/pm-next.
->
-How about making use of CPUFREQ notifiers to handle it. I don't like
-this series since it adds multi-media co-processor scaling into the
-CPUFreq driver.
+The currently available pwm-twl6030.c driver only supports TWL6030's Charging
+indication LED.
+Remove this driver and add two new ones which implements support for all PWM
+driven outputs:
+pwm-twl driver supports twl4030 (PWM 0/1) and twl6030 (PWM 1/2) instances
+pwm-twl-led driver supports twl4030 (PWM driven LED A/B ports) and twl6030's
+Charging indication LED (PWM driven).
 
-Regards
-Santosh
+Regards,
+Peter
+---
+Peter Ujfalusi (3):
+  pwm: Remove pwm-twl6030 driver
+  pwm: New driver to support PWMs on TWL4030/6030 series of PMICs
+  pwm: New driver to support PWM driven LEDs on TWL4030/6030 series of
+    PMICs
+
+ drivers/pwm/Kconfig       |  19 ++-
+ drivers/pwm/Makefile      |   3 +-
+ drivers/pwm/pwm-twl-led.c | 287 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/pwm/pwm-twl.c     | 304 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/pwm/pwm-twl6030.c | 184 ----------------------------
+ 5 files changed, 608 insertions(+), 189 deletions(-)
+ create mode 100644 drivers/pwm/pwm-twl-led.c
+ create mode 100644 drivers/pwm/pwm-twl.c
+ delete mode 100644 drivers/pwm/pwm-twl6030.c
+
+-- 
+1.8.0
+
