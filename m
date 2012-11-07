@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab2KGHN5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 02:13:57 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:52580 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab2KGHNy (ORCPT
+	id S1752448Ab2KGHQb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 02:16:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43467 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab2KGHQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 02:13:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <509A078D.8060705@oracle.com>
-References: <5099F133.5030305@oracle.com>
-	<5099FBAA.6000200@oracle.com>
-	<CAGXu5jLpE5kTGGqLqDRwRaEOt+nhpKc52jQFs+rsa+0GVKA-vw@mail.gmail.com>
-	<509A078D.8060705@oracle.com>
-Date: Tue, 6 Nov 2012 23:13:54 -0800
-X-Google-Sender-Auth: 6G1vRub5wlsbEjOI1eZTJWLt1bw
-Message-ID: <CAGXu5jLC9aj3KewbFb2tHoisjvqj4KkMwpA6KiZ7y8k15WWOwA@mail.gmail.com>
-Subject: Re: [RESEND PATCH V3] binfmt_elf.c: use get_random_int() to fix
- entropy depleting
-From: Kees Cook <keescook@chromium.org>
-To: Jeff Liu <jeff.liu@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <aedilger@gmail.com>,
-        John Sobecki <john.sobecki@oracle.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        Alan Cox <alan@linux.intel.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        James Morris <james.l.morris@oracle.com>, "Ted Ts'o" <tytso@mit.edu>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        jakub@redhat.com, drepper@redhat.com,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Nov 2012 02:16:29 -0500
+Date: Tue, 6 Nov 2012 23:16:27 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v6 25/29] memcg/sl[au]b: shrink dead caches
+Message-Id: <20121106231627.3610c908.akpm@linux-foundation.org>
+In-Reply-To: <509A0A04.2030503@parallels.com>
+References: <1351771665-11076-1-git-send-email-glommer@parallels.com>
+	<1351771665-11076-26-git-send-email-glommer@parallels.com>
+	<20121105164813.2eba5ecb.akpm@linux-foundation.org>
+	<509A0A04.2030503@parallels.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 6, 2012 at 11:02 PM, Jeff Liu <jeff.liu@oracle.com> wrote:
-> On 11/07/2012 02:21 PM, Kees Cook wrote:
->> I still want to hear at least from Ted about this changes -- we would
->> be potentially increasing the predictability of these bytes...
->
-> We would not increasing that if this routine would be used for AT_RANDOM
-> only(and if the array keeping aligned to 4 bytes).
-> Otherwise, it would be, so let's waiting for further feedbacks.
+On Wed, 7 Nov 2012 08:13:08 +0100 Glauber Costa <glommer@parallels.com> wrote:
 
-get_random_int() comes from a different pool than get_random_bytes(),
-IIUC. I'd like to hear some convincing reasoning as to why this change
-doesn't compromise predictability. :)
+> On 11/06/2012 01:48 AM, Andrew Morton wrote:
+> > On Thu,  1 Nov 2012 16:07:41 +0400
+> > Glauber Costa <glommer@parallels.com> wrote:
+> > 
+> >> This means that when we destroy a memcg cache that happened to be empty,
+> >> those caches may take a lot of time to go away: removing the memcg
+> >> reference won't destroy them - because there are pending references, and
+> >> the empty pages will stay there, until a shrinker is called upon for any
+> >> reason.
+> >>
+> >> In this patch, we will call kmem_cache_shrink for all dead caches that
+> >> cannot be destroyed because of remaining pages. After shrinking, it is
+> >> possible that it could be freed. If this is not the case, we'll schedule
+> >> a lazy worker to keep trying.
+> > 
+> > This patch is really quite nasty.  We poll the cache once per minute
+> > trying to shrink then free it?  a) it gives rise to concerns that there
+> > will be scenarios where the system could suffer unlimited memory windup
+> > but mainly b) it's just lame.
+> > 
+> > The kernel doesn't do this sort of thing.  The kernel tries to be
+> > precise: in a situation like this we keep track of the number of
+> > outstanding objects and when that falls to zero, we free their
+> > container synchronously.  If those objects are normally left floating
+> > around in an allocated but reclaimable state then we can address that
+> > by synchronously freeing them if their container has been destroyed.
+> > 
+> > Or something like that.  If it's something else then fine, but not this.
+> > 
+> > What do we need to do to fix this?
+> > 
+> The original patch had a unlikely() test in the free path, conditional
+> on whether or not the cache is dead, that would then call this is the
+> cache would now be empty.
+> 
+> I got several requests to remove it and change it to something like
+> this, because that is a fast path (I myself think an unlikely branch is
+> not that bad)
+> 
+> If you think such a test is acceptable, I can bring it back and argue in
+> the basis of "akpm made me do it!". But meanwhile I will give this extra
+> though to see if there is any alternative way I can do it...
 
--Kees
+OK, thanks, please do take a look at it.
 
--- 
-Kees Cook
-Chrome OS Security
+I'd be interested in seeing the old version of the patch which had this
+test-n-branch.  Perhaps there's some trick we can pull to lessen its cost.
+
