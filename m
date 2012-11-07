@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab2KGLJr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 06:09:47 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:40112 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754641Ab2KGLJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 06:09:45 -0500
-Message-ID: <1352286575.4164.2.camel@joe-AO722>
-Subject: Re: [PATCH V2 3/3] checkpatch: Emit an warning when floating point
- values are used
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, Adil Mujeeb <mujeeb.adil@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org
-Date: Wed, 07 Nov 2012 03:09:35 -0800
-In-Reply-To: <20121106153625.c48ba1f1.akpm@linux-foundation.org>
-References: <cover.1351736873.git.joe@perches.com>
-	 <359a78054bc0dfaedede95222781b4177d3c33ce.1351736873.git.joe@perches.com>
-	 <20121106153625.c48ba1f1.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754783Ab2KGLKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 06:10:22 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:60262 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753530Ab2KGLKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 06:10:21 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, rafael.j.wysocki@intel.com,
+        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+Date: Wed, 07 Nov 2012 12:14:31 +0100
+Message-ID: <1493573.krE1QVlUux@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20121107095842.GY24532@intel.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com> <2584820.Vd5p0uzRAK@vostro.rjw.lan> <20121107095842.GY24532@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-06 at 15:36 -0800, Andrew Morton wrote:
-> On Thu,  1 Nov 2012 00:12:18 -0700
-> Joe Perches <joe@perches.com> wrote:
-> > Linux kernel doesn't like floating point, say so. 
-[]
-> > --- a/scripts/checkpatch.pl
-> > +++ b/scripts/checkpatch.pl
-> > @@ -2332,6 +2332,13 @@ sub process {
-> >  			     "do not add new typedefs\n" . $herecurr);
-> >  		}
-> >  
-> > +# check for floating point constants
-> > +
-> > +		if ($line =~ /\b$Float\b/) {
-> > +			WARN("KERNEL_FLOAT",
-> > +			     "Floating point is not supported in linux kernel source\n" . $herecurr);
-> > +		}
-> > +
-> >  # * goes on variable not on type
-> >  		# (char*[ const])
-> >  		while ($line =~ m{(\($NonptrType(\s*(?:$Modifier\b\s*|\*\s*)+)\))}g) {
+On Wednesday, November 07, 2012 11:58:42 AM Mika Westerberg wrote:
+> On Tue, Nov 06, 2012 at 11:36:08PM +0100, Rafael J. Wysocki wrote:
+> > > 
+> > > OK, but then we need to pass the information obtained from _CRS
+> > > (presumably after some adjustments through _SRS) to drivers, or rather to
+> > > things like the SPI core, I2C core etc. so that they can create device
+> > > objects for drivers to bind to and quite frankly I don't see why not to use
+> > > ACPI resources for that.
+> > 
+> > Nevertheless, the routines for parsing those resources should belong
+> > to the ACPI core, mostly to avoid code duplication.
 > 
-> The earlier review comments were not addressed.
-
-You didn't read my response in the thread then.
-I "addressed" it by saying that the problem exists
-without solution.
-
-> In particular, I don't see a problem with people doing
+> Rafael,
 > 
-> 	int foo = 1.1 * 2.2;
+> So is the idea now that the ACPI core parses the resources and passes them
+> forward via struct acpi_device? I'm just wondering how to proceed with
+> these I2C and SPI enumeration patches.
 
-Neither do I but I know of no way to determine that any
-calc is a constant.
+Well, we definitely don't want to duplicate what drivers/pnp/pnpacpi/rsparser.c
+does, so the idea is to move the code from there to the core in such a way that
+both the SPI/I2C patches and the PNP layer can use it.
 
+I'll have some prototype code ready shortly, hopefully, and I'll post it
+in that form for comments (and so that you know what to expect).
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
