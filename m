@@ -1,306 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab2KGRwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 12:52:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57074 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768Ab2KGRv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 12:51:59 -0500
-Date: Wed, 7 Nov 2012 18:47:31 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/1] percpu_rw_semaphore: reimplement to not block
-	the readers unnecessarily
-Message-ID: <20121107174731.GA3075@redhat.com>
-References: <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com> <20121102180629.GB13255@redhat.com> <Pine.LNX.4.64.1211071048140.9669@file.rdu.redhat.com>
+	id S1753079Ab2KGSCO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 13:02:14 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:55918 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346Ab2KGSCM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 13:02:12 -0500
+Date: Wed, 7 Nov 2012 10:02:09 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sha Zhengju <handai.szj@gmail.com>
+cc: linux-mm@kvack.org, cgroups@vger.kernel.org, mhocko@suse.cz,
+        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 1/2] memcg, oom: provide more precise dump info while
+ memcg oom happening
+In-Reply-To: <1352277696-21724-1-git-send-email-handai.szj@taobao.com>
+Message-ID: <alpine.DEB.2.00.1211070956540.27451@chino.kir.corp.google.com>
+References: <1352277602-21687-1-git-send-email-handai.szj@taobao.com> <1352277696-21724-1-git-send-email-handai.szj@taobao.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1211071048140.9669@file.rdu.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07, Mikulas Patocka wrote:
->
-> It looks sensible.
->
-> Here I'm sending an improvement of the patch - I changed it so that there
-> are not two-level nested functions for the fast path and so that both
-> percpu_down_read and percpu_up_read use the same piece of code (to reduce
-> cache footprint).
+On Wed, 7 Nov 2012, Sha Zhengju wrote:
 
-IOW, the only change is that you eliminate "static update_fast_ctr()"
-and fold it into down/up_read which takes the additional argument.
-
-Honestly, personally I do not think this is better, but I won't argue.
-I agree with everything but I guess we need the ack from Paul.
-
-As for EXPORT_SYMBOL, I do not mind of course. But currently the only
-user is block_dev.c.
-
-> Currently the writer does msleep() plus synchronize_sched() 3 times
-> to acquire/release the semaphore, and during this time the readers
-> are blocked completely. Even if the "write" section was not actually
-> started or if it was already finished.
-> 
-> With this patch down_write/up_write does synchronize_sched() twice
-> and down_read/up_read are still possible during this time, just they
-> use the slow path.
-> 
-> percpu_down_write() first forces the readers to use rw_semaphore and
-> increment the "slow" counter to take the lock for reading, then it
-> takes that rw_semaphore for writing and blocks the readers.
-> 
-> Also. With this patch the code relies on the documented behaviour of
-> synchronize_sched(), it doesn't try to pair synchronize_sched() with
-> barrier.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> ---
->  include/linux/percpu-rwsem.h |   80 ++++++-------------------------
->  lib/Makefile                 |    2 
->  lib/percpu-rwsem.c           |  110 +++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 127 insertions(+), 65 deletions(-)
->  create mode 100644 lib/percpu-rwsem.c
-> 
-> Index: linux-3.6.6-fast/include/linux/percpu-rwsem.h
-> ===================================================================
-> --- linux-3.6.6-fast.orig/include/linux/percpu-rwsem.h	2012-11-05 16:21:29.000000000 +0100
-> +++ linux-3.6.6-fast/include/linux/percpu-rwsem.h	2012-11-07 16:44:04.000000000 +0100
-> @@ -2,82 +2,34 @@
->  #define _LINUX_PERCPU_RWSEM_H
->  
->  #include <linux/mutex.h>
-> +#include <linux/rwsem.h>
->  #include <linux/percpu.h>
-> -#include <linux/rcupdate.h>
-> -#include <linux/delay.h>
-> +#include <linux/wait.h>
->  
->  struct percpu_rw_semaphore {
-> -	unsigned __percpu *counters;
-> -	bool locked;
-> -	struct mutex mtx;
-> +	unsigned int __percpu	*fast_read_ctr;
-> +	struct mutex		writer_mutex;
-> +	struct rw_semaphore	rw_sem;
-> +	atomic_t		slow_read_ctr;
-> +	wait_queue_head_t	write_waitq;
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 0eab7d5..2df5e72 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -118,6 +118,14 @@ static const char * const mem_cgroup_events_names[] = {
+>  	"pgmajfault",
 >  };
 >  
-> -#define light_mb()	barrier()
-> -#define heavy_mb()	synchronize_sched()
-> +extern void __percpu_down_up_read(struct percpu_rw_semaphore *, int);
->  
-> -static inline void percpu_down_read(struct percpu_rw_semaphore *p)
-> -{
-> -	rcu_read_lock_sched();
-> -	if (unlikely(p->locked)) {
-> -		rcu_read_unlock_sched();
-> -		mutex_lock(&p->mtx);
-> -		this_cpu_inc(*p->counters);
-> -		mutex_unlock(&p->mtx);
-> -		return;
-> -	}
-> -	this_cpu_inc(*p->counters);
-> -	rcu_read_unlock_sched();
-> -	light_mb(); /* A, between read of p->locked and read of data, paired with D */
-> -}
-> -
-> -static inline void percpu_up_read(struct percpu_rw_semaphore *p)
-> -{
-> -	light_mb(); /* B, between read of the data and write to p->counter, paired with C */
-> -	this_cpu_dec(*p->counters);
-> -}
-> -
-> -static inline unsigned __percpu_count(unsigned __percpu *counters)
-> -{
-> -	unsigned total = 0;
-> -	int cpu;
-> -
-> -	for_each_possible_cpu(cpu)
-> -		total += ACCESS_ONCE(*per_cpu_ptr(counters, cpu));
-> +extern void percpu_down_write(struct percpu_rw_semaphore *);
-> +extern void percpu_up_write(struct percpu_rw_semaphore *);
->  
-> -	return total;
-> -}
-> -
-> -static inline void percpu_down_write(struct percpu_rw_semaphore *p)
-> -{
-> -	mutex_lock(&p->mtx);
-> -	p->locked = true;
-> -	synchronize_sched(); /* make sure that all readers exit the rcu_read_lock_sched region */
-> -	while (__percpu_count(p->counters))
-> -		msleep(1);
-> -	heavy_mb(); /* C, between read of p->counter and write to data, paired with B */
-> -}
-> -
-> -static inline void percpu_up_write(struct percpu_rw_semaphore *p)
-> -{
-> -	heavy_mb(); /* D, between write to data and write to p->locked, paired with A */
-> -	p->locked = false;
-> -	mutex_unlock(&p->mtx);
-> -}
-> +extern int percpu_init_rwsem(struct percpu_rw_semaphore *);
-> +extern void percpu_free_rwsem(struct percpu_rw_semaphore *);
->  
-> -static inline int percpu_init_rwsem(struct percpu_rw_semaphore *p)
-> +static inline void percpu_down_read(struct percpu_rw_semaphore *s)
->  {
-> -	p->counters = alloc_percpu(unsigned);
-> -	if (unlikely(!p->counters))
-> -		return -ENOMEM;
-> -	p->locked = false;
-> -	mutex_init(&p->mtx);
-> -	return 0;
-> +	__percpu_down_up_read(s, 1);
+> +static const char * const mem_cgroup_lru_names[] = {
+> +	"inactive_anon",
+> +	"active_anon",
+> +	"inactive_file",
+> +	"active_file",
+> +	"unevictable",
+> +};
+> +
+>  /*
+>   * Per memcg event counter is incremented at every pagein/pageout. With THP,
+>   * it will be incremated by the number of pages. This counter is used for
+> @@ -1501,8 +1509,59 @@ static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
+>  	spin_unlock_irqrestore(&memcg->move_lock, *flags);
 >  }
 >  
-> -static inline void percpu_free_rwsem(struct percpu_rw_semaphore *p)
-> +static inline void percpu_up_read(struct percpu_rw_semaphore *s)
->  {
-> -	free_percpu(p->counters);
-> -	p->counters = NULL; /* catch use after free bugs */
-> +	__percpu_down_up_read(s, -1);
->  }
->  
->  #endif
-> Index: linux-3.6.6-fast/lib/Makefile
-> ===================================================================
-> --- linux-3.6.6-fast.orig/lib/Makefile	2012-10-02 00:47:57.000000000 +0200
-> +++ linux-3.6.6-fast/lib/Makefile	2012-11-07 03:10:44.000000000 +0100
-> @@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmd
->  	 idr.o int_sqrt.o extable.o prio_tree.o \
->  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
->  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
-> -	 is_single_threaded.o plist.o decompress.o
-> +	 is_single_threaded.o plist.o decompress.o percpu-rwsem.o
->  
->  lib-$(CONFIG_MMU) += ioremap.o
->  lib-$(CONFIG_SMP) += cpumask.o
-> Index: linux-3.6.6-fast/lib/percpu-rwsem.c
-> ===================================================================
-> --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-> +++ linux-3.6.6-fast/lib/percpu-rwsem.c	2012-11-07 16:43:27.000000000 +0100
-> @@ -0,0 +1,110 @@
-> +#include <linux/percpu-rwsem.h>
-> +#include <linux/rcupdate.h>
-> +#include <linux/sched.h>
-> +#include <linux/module.h>
-> +
-> +int percpu_init_rwsem(struct percpu_rw_semaphore *brw)
+> +#define K(x) ((x) << (PAGE_SHIFT-10))
+> +static void mem_cgroup_print_oom_stat(struct mem_cgroup *memcg)
 > +{
-> +	brw->fast_read_ctr = alloc_percpu(int);
-> +	if (unlikely(!brw->fast_read_ctr))
-> +		return -ENOMEM;
+> +	struct mem_cgroup *mi;
+> +	unsigned int i;
 > +
-> +	mutex_init(&brw->writer_mutex);
-> +	init_rwsem(&brw->rw_sem);
-> +	atomic_set(&brw->slow_read_ctr, 0);
-> +	init_waitqueue_head(&brw->write_waitq);
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(percpu_init_rwsem);
-> +
-> +void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
-> +{
-> +	free_percpu(brw->fast_read_ctr);
-> +	brw->fast_read_ctr = NULL; /* catch use after free bugs */
-> +}
-> +EXPORT_SYMBOL(percpu_free_rwsem);
-> +
-> +void __percpu_down_up_read(struct percpu_rw_semaphore *brw, int val)
-> +{
-> +	preempt_disable();
-> +	if (likely(!mutex_is_locked(&brw->writer_mutex))) {
-> +		__this_cpu_add(*brw->fast_read_ctr, val);
-> +		preempt_enable();
-> +		return;
-> +	}
-> +	preempt_enable();
-> +	if (val >= 0) {
-> +		down_read(&brw->rw_sem);
-> +		atomic_inc(&brw->slow_read_ctr);
-> +		up_read(&brw->rw_sem);
-> +	} else {
-> +		if (atomic_dec_and_test(&brw->slow_read_ctr))
-> +			wake_up_all(&brw->write_waitq);
-> +	}
-> +}
-> +EXPORT_SYMBOL(__percpu_down_up_read);
-> +
-> +static int clear_fast_ctr(struct percpu_rw_semaphore *brw)
-> +{
-> +	unsigned int sum = 0;
-> +	int cpu;
-> +
-> +	for_each_possible_cpu(cpu) {
-> +		sum += per_cpu(*brw->fast_read_ctr, cpu);
-> +		per_cpu(*brw->fast_read_ctr, cpu) = 0;
-> +	}
-> +
-> +	return sum;
-> +}
-> +
-> +/*
-> + * A writer takes ->writer_mutex to exclude other writers and to force the
-> + * readers to switch to the slow mode, note the mutex_is_locked() check in
-> + * update_fast_ctr().
-> + *
-> + * After that the readers can only inc/dec the slow ->slow_read_ctr counter,
-> + * ->fast_read_ctr is stable. Once the writer moves its sum into the slow
-> + * counter it represents the number of active readers.
-> + *
-> + * Finally the writer takes ->rw_sem for writing and blocks the new readers,
-> + * then waits until the slow counter becomes zero.
-> + */
-> +void percpu_down_write(struct percpu_rw_semaphore *brw)
-> +{
-> +	/* also blocks update_fast_ctr() which checks mutex_is_locked() */
-> +	mutex_lock(&brw->writer_mutex);
-> +
-> +	/*
-> +	 * 1. Ensures mutex_is_locked() is visible to any down_read/up_read
-> +	 *    so that update_fast_ctr() can't succeed.
-> +	 *
-> +	 * 2. Ensures we see the result of every previous this_cpu_add() in
-> +	 *    update_fast_ctr().
-> +	 *
-> +	 * 3. Ensures that if any reader has exited its critical section via
-> +	 *    fast-path, it executes a full memory barrier before we return.
-> +	 */
-> +	synchronize_sched();
-> +
-> +	/* nobody can use fast_read_ctr, move its sum into slow_read_ctr */
-> +	atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
-> +
-> +	/* block the new readers completely */
-> +	down_write(&brw->rw_sem);
-> +
-> +	/* wait for all readers to complete their percpu_up_read() */
-> +	wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
-> +}
-> +EXPORT_SYMBOL(percpu_down_write);
-> +
-> +void percpu_up_write(struct percpu_rw_semaphore *brw)
-> +{
-> +	/* allow the new readers, but only the slow-path */
-> +	up_write(&brw->rw_sem);
-> +
-> +	/* insert the barrier before the next fast-path in down_read */
-> +	synchronize_sched();
-> +
-> +	mutex_unlock(&brw->writer_mutex);
-> +}
-> +EXPORT_SYMBOL(percpu_up_write);
+> +	if (!memcg->use_hierarchy && memcg != root_mem_cgroup) {
+> +		for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
+> +			if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
+> +				continue;
+> +			printk(KERN_CONT "%s:%ldKB ", mem_cgroup_stat_names[i],
 
+This printk isn't continuing any previous printk, so using KERN_CONT here 
+will require a short header to be printed first ("Memcg: "?) with 
+KERN_INFO before the iterations.
+
+> +				K(mem_cgroup_read_stat(memcg, i)));
+> +		}
+> +
+> +		for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++)
+> +			printk(KERN_CONT "%s:%lu ", mem_cgroup_events_names[i],
+> +				mem_cgroup_read_events(memcg, i));
+> +
+> +		for (i = 0; i < NR_LRU_LISTS; i++)
+> +			printk(KERN_CONT "%s:%luKB ", mem_cgroup_lru_names[i],
+> +				K(mem_cgroup_nr_lru_pages(memcg, BIT(i))));
+> +	} else {
+> +
+
+Spurious newline.
+
+Eek, is there really no way to avoid this if-conditional and just use 
+for_each_mem_cgroup_tree() for everything and use
+
+	mem_cgroup_iter_break(memcg, iter);
+	break;
+
+for !memcg->use_hierarchy?
+
+> +		for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
+> +			long long val = 0;
+> +
+> +			if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
+> +				continue;
+> +			for_each_mem_cgroup_tree(mi, memcg)
+> +				val += mem_cgroup_read_stat(mi, i);
+> +			printk(KERN_CONT "%s:%lldKB ", mem_cgroup_stat_names[i], K(val));
+> +		}
+> +
+> +		for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++) {
+> +			unsigned long long val = 0;
+> +
+> +			for_each_mem_cgroup_tree(mi, memcg)
+> +				val += mem_cgroup_read_events(mi, i);
+> +			printk(KERN_CONT "%s:%llu ",
+> +				mem_cgroup_events_names[i], val);
+> +		}
+> +
+> +		for (i = 0; i < NR_LRU_LISTS; i++) {
+> +			unsigned long long val = 0;
+> +
+> +			for_each_mem_cgroup_tree(mi, memcg)
+> +				val += mem_cgroup_nr_lru_pages(mi, BIT(i));
+> +			printk(KERN_CONT "%s:%lluKB ", mem_cgroup_lru_names[i], K(val));
+> +		}
+> +	}
+> +	printk(KERN_CONT "\n");
+> +}
+>  /**
+> - * mem_cgroup_print_oom_info: Called from OOM with tasklist_lock held in read mode.
+>   * @memcg: The memory cgroup that went over limit
+>   * @p: Task that is going to be killed
+>   *
+> @@ -1569,6 +1628,8 @@ done:
+>  		res_counter_read_u64(&memcg->kmem, RES_USAGE) >> 10,
+>  		res_counter_read_u64(&memcg->kmem, RES_LIMIT) >> 10,
+>  		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
+> +
+> +	mem_cgroup_print_oom_stat(memcg);
+
+I think this should be folded into mem_cgroup_print_oom_info(), I don't 
+see a need for a new function.
+
+>  }
+>  
+>  /*
+> @@ -5195,14 +5256,6 @@ static int memcg_numa_stat_show(struct cgroup *cont, struct cftype *cft,
+>  }
+>  #endif /* CONFIG_NUMA */
+>  
+> -static const char * const mem_cgroup_lru_names[] = {
+> -	"inactive_anon",
+> -	"active_anon",
+> -	"inactive_file",
+> -	"active_file",
+> -	"unevictable",
+> -};
+> -
+>  static inline void mem_cgroup_lru_names_not_uptodate(void)
+>  {
+>  	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 7e9e911..4b8a6dd 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -421,8 +421,10 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+>  	cpuset_print_task_mems_allowed(current);
+>  	task_unlock(current);
+>  	dump_stack();
+> -	mem_cgroup_print_oom_info(memcg, p);
+> -	show_mem(SHOW_MEM_FILTER_NODES);
+> +	if (memcg)
+> +		mem_cgroup_print_oom_info(memcg, p);
+
+mem_cgroup_print_oom_info() already returns immediately for !memcg, so I'm 
+not sure why this change is made.
+
+> +	else
+> +		show_mem(SHOW_MEM_FILTER_NODES);
+
+Well that's disappointing if memcg == root_mem_cgroup, we'd probably like 
+to know the global memory state to determine what the problem is.
+
+>  	if (sysctl_oom_dump_tasks)
+>  		dump_tasks(memcg, nodemask);
+>  }
