@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab2KGXmi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 18:42:38 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63006 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754428Ab2KGXmh (ORCPT
+	id S1754146Ab2KGX7y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 18:59:54 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:42407 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130Ab2KGX7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 18:42:37 -0500
-Subject: Re: [PATCH] tcp: Avoid infinite loop on recvmsg bug
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Julius Werner <jwerner@chromium.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        James Morris <jmorris@namei.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>, Dave Jones <davej@redhat.com>,
-        Sameer Nanda <snanda@chromium.org>,
-        Mandeep Singh Baines <msb@chromium.org>
-In-Reply-To: <1352331192.2748.10.camel@edumazet-glaptop>
-References: <CAODwPW9kiG-jo=n0zedv5KT-8-gJcEUrdC3F2mAEjt78tne18g@mail.gmail.com>
-	 <1352316791-16491-1-git-send-email-jwerner@chromium.org>
-	 <1352317219.5552.6.camel@edumazet-glaptop>
-	 <CAODwPW8mBJspF3k5SCBR-BShNvBLQpD-vyhLRh5Cq-4h=VZDgg@mail.gmail.com>
-	 <1352331192.2748.10.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Nov 2012 15:42:34 -0800
-Message-ID: <1352331754.2748.14.camel@edumazet-glaptop>
+	Wed, 7 Nov 2012 18:59:53 -0500
+Date: Wed, 07 Nov 2012 18:59:51 -0500 (EST)
+Message-Id: <20121107.185951.1536161042866737820.davem@davemloft.net>
+To: lee.jones@linaro.org
+Cc: linux-kernel@vger.kernel.org, isdn@linux-pingi.de, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1] isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1352282103-13665-1-git-send-email-lee.jones@linaro.org>
+References: <1352282103-13665-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=iso-8859-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA8000Nn023425
 
-On Wed, 2012-11-07 at 15:33 -0800, Eric Dumazet wrote:
+From: Lee Jones <lee.jones@linaro.org>
+Date: Wed,  7 Nov 2012 10:55:03 +0100
 
-> So you probably are fighting a bug we already fixed in upstream kernel.
+> It doesn't make much sense to enable ISDN services if you don't
+> intend to connect to a network. Therefore insisting that ISDN
+> depends on NETDEVICES seems logical. We can then remove any
+> guards mentioning NETDEVICES inside all subordinate drivers.
 > 
-> (commit c8628155ece363 "tcp: reduce out_of_order memory use" did not
-> played well with cloned skbs.)
+> This also has the nice side-effect of fixing the warning below
+> when ISDN_I4L && !CONFIG_NETDEVICES at compile time.
 > 
-> This issue was already discussed on netdev in the past.
+> This patch fixes:
+> drivers/isdn/i4l/isdn_common.c: In function ¡isdn_ioctl¢:
+> drivers/isdn/i4l/isdn_common.c:1278:8: warning: unused variable ¡s¢ [-Wunused-variable]
+> 
+> Cc: Karsten Keil <isdn@linux-pingi.de>
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-If you use a 3.4 kernel, you want the following patch.
-
-(I guess you could reproduce the crash easily running a tcpdump in //)
-
-
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 257b617..9f8f68c 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -4496,7 +4496,9 @@ static void tcp_data_queue_ofo(struct sock *sk, struct sk_buff *skb)
- 		 * to avoid future tcp_collapse_ofo_queue(),
- 		 * probably the most expensive function in tcp stack.
- 		 */
--		if (skb->len <= skb_tailroom(skb1) && !tcp_hdr(skb)->fin) {
-+		if (skb->len <= skb_tailroom(skb1) &&
-+		    !tcp_hdr(skb)->fin &&
-+		    !skb_cloned(skb1)) {
- 			NET_INC_STATS_BH(sock_net(sk),
- 					 LINUX_MIB_TCPRCVCOALESCE);
- 			BUG_ON(skb_copy_bits(skb, 0,
-
-
-
+Applied, thanks.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
