@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab2KGOhs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 09:37:48 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60580 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab2KGOhr (ORCPT
+	id S1752975Ab2KGOju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 09:39:50 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45905 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab2KGOjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 09:37:47 -0500
-Date: Wed, 7 Nov 2012 15:38:00 +0100
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] 3.7-rc3+git hard lockup on CPU after
- inserting/removing USB stick
-Message-ID: <20121107143800.GA14146@kroah.com>
-References: <201211071501.38288.Martin@lichtvoll.de>
+	Wed, 7 Nov 2012 09:39:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201211071501.38288.Martin@lichtvoll.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBQmZz13wAK9nUrY_O_zau6-F_SwDox1uUNK05RKjmWPnw@mail.gmail.com>
+References: <1352123463-7346-1-git-send-email-eranian@google.com>
+	<1352123463-7346-9-git-send-email-eranian@google.com>
+	<20121106133135.GC25167@tassilo.jf.intel.com>
+	<CABPqkBSWagWME-OLE=uiT3gqGShDuGuBXL6mz8wt7tKWubS-hg@mail.gmail.com>
+	<20121106185058.GD25167@tassilo.jf.intel.com>
+	<CABPqkBQmZz13wAK9nUrY_O_zau6-F_SwDox1uUNK05RKjmWPnw@mail.gmail.com>
+Date: Wed, 7 Nov 2012 15:39:47 +0100
+Message-ID: <CABPqkBQ77+ysGb3i0PVgA_gfJHqJ2ikL7TerWpanBVMr8wnuHQ@mail.gmail.com>
+Subject: Re: [PATCH v2 08/16] perf/x86: add memory profiling via PEBS Load Latency
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 07, 2012 at 03:01:38PM +0100, Martin Steigerwald wrote:
-> Hi!
-> 
-> I had this with something in between 3.7-rc3 und 3.7-rc4 after inserting
-> and removing an USB stick. This example is with a kernel + f2fs patches v3,
-> but I had this with 3.7-rc3 as well.
+On Tue, Nov 6, 2012 at 8:37 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Tue, Nov 6, 2012 at 7:50 PM, Andi Kleen <ak@linux.intel.com> wrote:
+>> On Tue, Nov 06, 2012 at 03:29:01PM +0100, Stephane Eranian wrote:
+>>> On Tue, Nov 6, 2012 at 2:31 PM, Andi Kleen <ak@linux.intel.com> wrote:
+>>> >> +EVENT_ATTR(cpu-cycles,                       CPU_CYCLES              );
+>>> >> +EVENT_ATTR(instructions,             INSTRUCTIONS            );
+>>> >> +EVENT_ATTR(cache-references,         CACHE_REFERENCES        );
+>>> >> +EVENT_ATTR(cache-misses,             CACHE_MISSES            );
+>>> >> +EVENT_ATTR(branch-instructions,              BRANCH_INSTRUCTIONS     );
+>>> >> +EVENT_ATTR(branch-misses,            BRANCH_MISSES           );
+>>> >> +EVENT_ATTR(bus-cycles,                       BUS_CYCLES              );
+>>> >> +EVENT_ATTR(stalled-cycles-frontend,  STALLED_CYCLES_FRONTEND );
+>>> >> +EVENT_ATTR(stalled-cycles-backend,   STALLED_CYCLES_BACKEND  );
+>>> >> +EVENT_ATTR(ref-cycles,                       REF_CPU_CYCLES          );
+>>> >
+>>> > The merge_events() approach from the Haswell patches should be far cleaner
+>>> >
 
-Ok, so it's not a new thing introduced in 3.7-rc4 (which is good, as
-there wasn't any USB patches added between -rc3 and -rc4.)
-
-Does it also happen on -rc2?  Anything older?  Can you run 'git bisect'
-to try to track it down?
-
-thanks,
-
-greg k-h
+>>> And which patch in your HSW series implements this?
+>>
+>> [PATCH 27/32] perf, x86: Support CPU specific sysfs events
+>>
+Ok, integrated that patch in my series and changed my code to use it.
+It works.
