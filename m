@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743Ab2KGA0u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 19:26:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:50730 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619Ab2KGA0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 19:26:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,725,1344236400"; 
-   d="scan'208";a="245056444"
-Message-ID: <1352248006.31033.192.camel@yhuang-dev>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and
- forbidden
-From: Huang Ying <ying.huang@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Wed, 07 Nov 2012 08:26:46 +0800
-In-Reply-To: <Pine.LNX.4.44L0.1211061010390.1430-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1211061010390.1430-100000@iolanthe.rowland.org>
+	id S1753984Ab2KGAaI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 19:30:08 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:53837 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab2KGAaG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 19:30:06 -0500
+Subject: Re: [PATCH 077/104] drivers/target/sbp: remove depends on
+ CONFIG_EXPERIMENTAL
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Chris Boot <bootc@bootc.net>,
+        target-devel <target-devel@vger.kernel.org>
+In-Reply-To: <1352156701-4038-78-git-send-email-keescook@chromium.org>
+References: <1352156701-4038-1-git-send-email-keescook@chromium.org>
+	 <1352156701-4038-78-git-send-email-keescook@chromium.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+Date: Tue, 06 Nov 2012 16:30:03 -0800
+Message-ID: <1352248203.29589.234.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-06 at 10:17 -0500, Alan Stern wrote:
-> On Tue, 6 Nov 2012, Huang Ying wrote:
+On Mon, 2012-11-05 at 15:04 -0800, Kees Cook wrote:
+> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+> while now and is almost always enabled by default. As agreed during the
+> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 > 
-> > On Sun, 2012-11-04 at 20:56 -0500, Alan Stern wrote:
-> > > On Mon, 5 Nov 2012, Huang Ying wrote:
-> > > 
-> > > > In current runtime PM implementation, the active child count of the
-> > > > parent device may be decreased if the runtime PM of the child device
-> > > > is disabled and forbidden.  For example, to unbind a PCI driver with a
-> > > > PCI device, the following code path is possible:
-> > > > 
-> > > >   pci_device_remove
-> > > >     pm_runtime_set_suspended
-> > > >       __pm_runtime_set_status
-> > > >         atomic_add_unless(&parent->power.child_count, -1, 0)
-> > > > 
-> > > > That is, the parent device may be suspended, even if the runtime PM of
-> > > > child device is forbidden to be suspended.  This violate the rule that
-> > > > parent is allowed to be suspended only after all its children are
-> > > > suspended, and may cause issue.
-> > > 
-> > > This doesn't sound like a correct description of the situation.  The 
-> > > rule is not violated.  After pm_runtime_set_suspended runs, the child 
-> > > _is_ suspended.  Thus there's no reason not to allow the parent to be 
-> > > suspended.
-> > > 
-> > > The problem -- if there really is one -- is that a driver can put a 
-> > > device into the suspended state by calling pm_runtime_disable followed 
-> > > by pm_runtime_set_suspended, even if the usage count is > 0.
-> > > 
-> > > I'm not so sure this should count as a problem.  Generally devices 
-> > > aren't disabled for runtime PM unless something is wrong.
-> > 
-> > Devices will be disabled if the PCI driver is unbound from the PCI
-> > device.
+> CC: Chris Boot <bootc@bootc.net>
+> CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  drivers/target/sbp/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Yes.  But without a PCI driver, nothing will call 
-> pm_runtime_set_suspended.
+> diff --git a/drivers/target/sbp/Kconfig b/drivers/target/sbp/Kconfig
+> index 132da54..1614bc7 100644
+> --- a/drivers/target/sbp/Kconfig
+> +++ b/drivers/target/sbp/Kconfig
+> @@ -1,6 +1,6 @@
+>  config SBP_TARGET
+>  	tristate "FireWire SBP-2 fabric module"
+> -	depends on FIREWIRE && EXPERIMENTAL
+> +	depends on FIREWIRE
+>  	help
+>  	  Say Y or M here to enable SCSI target functionality over FireWire.
+>  	  This enables you to expose SCSI devices to other nodes on the FireWire
 
-pm_runtime_set_suspended will be called in pci_device_remove or error
-path of local_pci_probe.
+Looks fine to drop this usage for sbp-target.
 
->   And even if something does call 
-> pm_runtime_set_suspended, it's still not a problem -- the device can't 
-> be used without a driver.
+Do you want this patch to be include into the target-pending/for-next ->
+for-3.8 branch, or are you planning to take this full series upstream
+through a different tree..?
 
-The VGA device can be used without a driver.
-
-Best Regards,
-Huang Ying
-
-
-> > So I think the rule could be: even if the device is suspended, the
-> > device can be put into suspended state only if its usage count == 0.  In
-> > this way, we can solve the issue for PCI driver unbound and that looks
-> > more reasonable.
-> 
-> You still have not shown that there really is a problem.  Do you have 
-> any particular use case in mind?
-> 
-> Alan Stern
-> 
-
+--nab
 
