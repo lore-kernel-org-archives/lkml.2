@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082Ab2KGNDd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 08:03:33 -0500
+	id S1755052Ab2KGNDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 08:03:32 -0500
 Received: from mga02.intel.com ([134.134.136.20]:1394 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755036Ab2KGNDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 08:03:32 -0500
+	id S1751955Ab2KGNDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 08:03:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,730,1344236400"; 
-   d="scan'208";a="238514505"
-Message-ID: <509A5C1D.601@intel.com>
-Date: Wed, 07 Nov 2012 21:03:25 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+   d="scan'208";a="216293015"
+Date: Wed, 7 Nov 2012 15:05:48 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, rafael.j.wysocki@intel.com,
+        broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, khali@linux-fr.org, ben-linux@fluff.org,
+        w.sang@pengutronix.de, mathias.nyman@linux.intel.com,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 2/3] spi / ACPI: add ACPI enumeration support
+Message-ID: <20121107130548.GZ24532@intel.com>
+References: <1351928793-14375-1-git-send-email-mika.westerberg@linux.intel.com>
+ <2584820.Vd5p0uzRAK@vostro.rjw.lan>
+ <20121107095842.GY24532@intel.com>
+ <1493573.krE1QVlUux@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Luming Yu <luming.yu@gmail.com>
-CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
-        suresh.b.siddha@intel.com, arjan@linux.intel.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
-        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, cl@linux.com,
-        pjt@google.com
-Subject: Re: [RFC PATCH 1/3] sched: add sched_policy and it's sysfs interface
-References: <1352207399-29497-1-git-send-email-alex.shi@intel.com> <1352207399-29497-2-git-send-email-alex.shi@intel.com> <CAJRGBZzPcCGAz1nc_rGpVd5rq2sZiFZ0Gu_PVnsEzhkaUd7zFA@mail.gmail.com>
-In-Reply-To: <CAJRGBZzPcCGAz1nc_rGpVd5rq2sZiFZ0Gu_PVnsEzhkaUd7zFA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1493573.krE1QVlUux@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 11:20 PM, Luming Yu wrote:
-> On Tue, Nov 6, 2012 at 8:09 AM, Alex Shi <alex.shi@intel.com> wrote:
->> This patch add the power aware scheduler knob into sysfs:
+On Wed, Nov 07, 2012 at 12:14:31PM +0100, Rafael J. Wysocki wrote:
+> > So is the idea now that the ACPI core parses the resources and passes them
+> > forward via struct acpi_device? I'm just wondering how to proceed with
+> > these I2C and SPI enumeration patches.
 > 
-> The problem is user doesn't know how to use this knob.
-> 
-> Based on what data, people could select one policy which could be surely
-> better than another?
-> 
-> "Packing small tasks" approach could be better and more intelligent.
-> http://thread.gmane.org/gmane.linux.kernel/1348522
+> Well, we definitely don't want to duplicate what drivers/pnp/pnpacpi/rsparser.c
+> does, so the idea is to move the code from there to the core in such a way that
+> both the SPI/I2C patches and the PNP layer can use it.
 
-It is not conflict with this patchset. :)
-> 
-> Just some random thoughts, as I didn't have chance to look into the
-> details of that patch set yet. But to me, we need to exploit the fact
-> that we could automatically bind a group of tasks on minimal set of
-> CPUs that can provide sufficient CPU cycles that are comparable to
-> a"cpu- run-average" that the task group can get in pure CFS situation
-> in a given period, until we see more CPU is needed.Then we probably
-> can maintain required CPU power available to the corresponding
-> workload, while leaving all other CPUs into power saving mode. The
-> problem is historical data suggested pattern could become invalid in
-> future, then we need more CPUs in future..I think this is the point we
-> need to know before spread or not-spread decision ...if spread would
-> not help CPU-run-average ,we don't need waste CPU power..but I don't
-> know how hard it could be. But I'm pretty sure sysfs knob is harder.
-> :-) /l
-> 
+Ok.
 
+> I'll have some prototype code ready shortly, hopefully, and I'll post it
+> in that form for comments (and so that you know what to expect).
 
--- 
-Thanks
-    Alex
+Sounds good. Thanks!
