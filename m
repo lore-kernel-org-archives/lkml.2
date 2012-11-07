@@ -1,119 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab2KGHTB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 02:19:01 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54528 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab2KGHS7 (ORCPT
+	id S1752252Ab2KGHUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 02:20:12 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:59475 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab2KGHUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 02:18:59 -0500
+	Wed, 7 Nov 2012 02:20:10 -0500
+X-Spam-Score: -100.8
+Message-ID: <509A0BE7.4020400@asianux.com>
+Date: Wed, 07 Nov 2012 15:21:11 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121106231447.GV3102@twin.jikos.cz>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	<1351485061-12297-11-git-send-email-zwu.kernel@gmail.com>
-	<20121106231447.GV3102@twin.jikos.cz>
-Date: Wed, 7 Nov 2012 15:18:57 +0800
-Message-ID: <CAEH94LggeTEK-RxBMUUM1VefpwgTDWcB5CLZsGD3rBPu86L1Tw@mail.gmail.com>
-Subject: Re: [RFC v4+ hot_track 10/19] vfs: introduce hot func register framework
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Eric Dumazet <eric.dumazet@gmail.com>, Shan Wei <shanwei88@gmail.com>,
+        David Miller <davem@davemloft.net>
+Subject: [Result] total stat for "* %8s *" in kernel region
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 7:14 AM, David Sterba <dave@jikos.cz> wrote:
-> On Mon, Oct 29, 2012 at 12:30:52PM +0800, zwu.kernel@gmail.com wrote:
->> +static struct hot_func_type *hot_func_get(const char *name)
->> +{
->> +     struct hot_func_type *f, *h = &hot_func_def;
->> +
->> +     spin_lock(&hot_func_list_lock);
->> +     list_for_each_entry(f, &hot_func_list, list) {
->> +             if (!strcmp(f->hot_func_name, name))
->> +                     h = f;
->
-> You probably want to break here
-Good catch, done, thanks.
->
->> +     }
->> +     spin_unlock(&hot_func_list_lock);
->> +
->> +     return h;
->> +}
->> +
->> +int hot_func_register(struct hot_func_type *h)
->> +{
->> +     struct hot_func_type *f, *t = NULL;
->> +
->> +     /* register, don't allow duplicate names */
->> +     spin_lock(&hot_func_list_lock);
->> +     list_for_each_entry(f, &hot_func_list, list) {
->> +             if (!strcmp(f->hot_func_name, h->hot_func_name))
->> +                     t = f;
->
-> if duplicate names are not allowed, then a warning may make sense to
-> let us know that something is wrong
-done, thanks.
->
->> +     }
->> +
->> +     if (t) {
->> +             spin_unlock(&hot_func_list_lock);
->> +             return -EBUSY;
->> +     }
->> +
->> +     list_add_tail(&h->list, &hot_func_list);
->> +     spin_unlock(&hot_func_list_lock);
->> +
->> +     return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(hot_func_register);
->> --- a/include/linux/hot_tracking.h
->> +++ b/include/linux/hot_tracking.h
->> @@ -73,6 +75,25 @@ struct hot_range_item {
->>       u32 len; /* length in bytes */
->>  };
->>
->> +typedef u64 (hot_rw_freq_calc_fn) (struct timespec old_atime,
->> +                     struct timespec cur_time, u64 old_avg);
->> +typedef u32 (hot_temp_calc_fn) (struct hot_freq_data *freq_data);
->> +typedef bool (hot_is_obsolete_fn) (struct hot_freq_data *freq_data);
->
-> I'm thinking, whether these typedefs are useful, similar ops structures
-> do not introduce them, also when you pick a struct member names exactly
-> same as the typedefs:
->
->> +struct hot_func_ops {
->> +     hot_rw_freq_calc_fn *hot_rw_freq_calc_fn;
->> +     hot_temp_calc_fn *hot_temp_calc_fn;
->> +     hot_is_obsolete_fn *hot_is_obsolete_fn;
->> +};
->
-> My suggestion is to make the types explicit in the structure.
-sorry, i don't get your point, can you elaborate it about how to do this?
->
->> +/* identifies an hot func type */
->> +struct hot_func_type {
->> +     char hot_func_name[HOT_NAME_MAX];
->
-> 'name' would be sufficient IMHO
-done, thanks.
->
->> +     /* fields provided by specific FS */
->> +     struct hot_func_ops ops;
->> +     struct list_head list;
->> +};
->
-> david
+Hello :
+
+1) Result:
+
+   A) netdev:		3 patches (got all reply)
+   B) arch/x86:		1 patch (waiting reply)
+   C) arch/blackfin:	1 patch (waiting reply)
+   D) fs/ocfs1:		1 patch (waiting reply)
+   E) drivers/gpu/drm:	1 suggestion (waiting reply)
+   F) kernel/irq:	1 suggestion (waiting reply)
+
+   These are all which I can find to need improvement, in kernel region.
+
+2) Thanks:
+
+   A) Thank Eric Dumazet, which gives important supports to me.
+   B) Thank Shan Wei and David Miller, which provide suggestions to me.
+   C) I referenced original Asianux patch (which not packed into kernel)
+      but sorry, I cannot find original author (seems OGAWA Hirofumi)
 
 
+3) Next:
+
+   A) I will continue analysing Asianux patches
+      if 'lucky', maybe can find another 'valuable' things, again.
+
+   B) I will continue using LTP to test kernel
+      if 'lucky', maybe meet another issues (not only nfs)
+
+   C) Welcome any members to providing 'tasks' to me.
+      i)   for myself, I prefer to do something for netdev
+      ii)  since they have truly given me much help in mailing list.
+      iii) but now, I am truly not know, what to do for them, next.
+
+      maybe truly need additional communications with each other.
+
+
+   thanks.
 
 -- 
-Regards,
+Chen Gang
 
-Zhi Yong Wu
+Asianux Corporation
