@@ -1,127 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab2KGRZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 12:25:29 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49558 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab2KGRZ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 12:25:27 -0500
-Message-ID: <509A9984.3000709@wwwdotorg.org>
-Date: Wed, 07 Nov 2012 10:25:24 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1752204Ab2KGReK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 12:34:10 -0500
+Received: from smtp2-g21.free.fr ([212.27.42.2]:53506 "EHLO smtp2-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750768Ab2KGReJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 12:34:09 -0500
+From: Nicolas Royer <nicolas@eukrea.com>
+To: linux-kernel@vger.kernel.org
+Cc: nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
+        linux-crypto@vger.kernel.org, herbert@gondor.hengli.com.au,
+        davem@davemloft.net, plagnioj@jcrosoft.com, eric@eukrea.com,
+        Nicolas Royer <nicolas@eukrea.com>
+Subject: [PATCH 2/5 v3] ARM: AT91SAM9G45: same platform data structure for all crypto peripherals
+Date: Wed,  7 Nov 2012 18:34:27 +0100
+Message-Id: <1352309667-30868-1-git-send-email-nicolas@eukrea.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <20121107164523.GG4576@game.jcrosoft.org>
+References: <20121107164523.GG4576@game.jcrosoft.org>
 MIME-Version: 1.0
-To: Benoit Cousson <b-cousson@ti.com>
-CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Deepak Saxena <dsaxena@linaro.org>,
-        Scott Wood <scottwood@freescale.com>, Russ Dill <Russ.Dill@ti.com>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices
- to mach-omap2)
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com> <CACxGe6vDzmPWsOZ53HTwkYmDEivg9TpnRrvudY2FK95V06O24w@mail.gmail.com> <A5170602-2AE7-4EC4-BE0F-0DF015A287D7@antoniou-consulting.com> <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com> <5ED17D42-07B8-4D4F-B54F-82B4CC60584C@antoniou-consulting.com> <509A3595.7050600@ti.com>
-In-Reply-To: <509A3595.7050600@ti.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2012 03:19 AM, Benoit Cousson wrote:
-> Hi Panto,
-> 
-> On 11/07/2012 09:13 AM, Pantelis Antoniou wrote:
->> Hi Grant
->>
->> On Nov 6, 2012, at 9:45 PM, Grant Likely wrote:
->>
->>> On Tue, Nov 6, 2012 at 7:34 PM, Pantelis Antoniou
->>> <panto@antoniou-consulting.com> wrote:
->>
->> [ snip ]
->>>
->>> g.
->>
->> Since we've started talking about longer term goals, and the versioning
->> provision seems to stand, I hope we address how much the fragment versioning
->> thing is similar to the way board revisions progress.
->>
->> If a versioning syntax is available then one could create a single DT 
->> file for a bunch of 'almost' similar board and board revisions.
-> 
-> I even think that the version issue is probably much more important for the short term than the overlay aspect. Well at least as important. We start having as well a bunch a panda board version with different HW setup.
-> 
-> Having a single board-XXX.dts that will support all these versions is probably the best approach to avoid choosing that from the bootloader.
-> 
-> We need to figure out a format + mechanism compatible with the current non-versioned format to allow filtering the nodes at runtime to keep only the relevant one.
-> 
-> Something that can find the driver that will provide the proper board version or subsystem version or whatever like that:
-> 
-> 	compatible-version = "ti,panda-version", "panda";
-> 
-> Then at runtime we should create only the node with the correct match between the driver version and the string version.
-> 
-> 
-> /* regular panda audio routing */
-> sound: sound {
-> 	compatible = "ti,abe-twl6040";
-> 	ti,model = "PandaBoard";
-> 	compatible-version = "ti,panda-version", "panda";
-> 
-> 	/* Audio routing */
-> 	ti,audio-routing =
-> 		"Headset Stereophone", "HSOL",
-> 		"Headset Stereophone", "HSOR",
-> 		"Ext Spk", "HFL",
-> 		"Ext Spk", "HFR",
-> 		"Line Out", "AUXL",
-> 		"Line Out", "AUXR",
-> 		"HSMIC", "Headset Mic",
-> 		"Headset Mic", "Headset Mic Bias",
-> 		"AFML", "Line In",
-> 		"AFMR", "Line In";
-> };
-> 
-> 
-> /* Audio routing is different between PandaBoard4430 and PandaBoardES */
-> &sound {
-> 	ti,model = "PandaBoardES";
-> 	compatible-version = "ti,panda-version", "panda-es";
-> 
-> 	/* Audio routing */
-> 	ti,audio-routing =
-> 		"Headset Stereophone", "HSOL",
-> 		"Headset Stereophone", "HSOR",
-> 		"Ext Spk", "HFL",
-> 		"Ext Spk", "HFR",
-> 		"Line Out", "AUXL",
-> 		"Line Out", "AUXR",
-> 		"AFML", "Line In",
-> 		"AFMR", "Line In";
-> };
-> 
-> 
-> Maybe some extra version match table can just be passed during the board machine_init 
-> 
-> 	of_platform_populate(NULL, omap_dt_match_table, NULL, NULL, panda_version_match_table);
+Only AES use DMA in AT91SAM9G45 (TDES and SHA use PDC).
 
-Is the only difference here the content of the ti,audio-routing
-property? If so, then I don't think there's any need for infra-structure
-for this; the driver code already reads that property and adjusts its
-behaviour based upon it.
+However latest Atmel TDES and SHA IP releases use DMA instead of PDC.
+  --> Atmel TDES and SHA drivers need DMA platform data for those IP releases.
 
-I do see that "Headset Mic" exists only in one of the tables above.
-Perhaps the driver could scan the routing table, and only create the
-ASoC object for the headset if it's mentioned in the routing table?
+Goal of this patch is to use the same platform data structure for all Atmel
+crypto peripherals. This structure contains information about DMA interface.
 
-If there are additional differences, then you can always use the .data
-field in of_device_id to automatically associate some configuration data
-with different compatible values.
+Signed-off-by: Nicolas Royer <nicolas@eukrea.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Eric Bénard <eric@eukrea.com>
+Tested-by: Eric Bénard <eric@eukrea.com>
+---
+v2 : check kzalloc return value.
 
-Even better might be to extend the binding so that all HW differences
-are represented explicitly as properties; that way you wouldn't even
-need different compatible values.
+v3 : alt_atslave structure declared as static.
+
+ arch/arm/mach-at91/at91sam9g45_devices.c   |   14 ++++++--------
+ include/linux/platform_data/atmel-aes.h    |   22 ----------------------
+ include/linux/platform_data/crypto-atmel.h |   22 ++++++++++++++++++++++
+ 3 files changed, 28 insertions(+), 30 deletions(-)
+ delete mode 100644 include/linux/platform_data/atmel-aes.h
+ create mode 100644 include/linux/platform_data/crypto-atmel.h
+
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index fcd233c..1501e58 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -18,7 +18,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/i2c-gpio.h>
+ #include <linux/atmel-mci.h>
+-#include <linux/platform_data/atmel-aes.h>
++#include <linux/platform_data/crypto-atmel.h>
+ 
+ #include <linux/platform_data/at91_adc.h>
+ 
+@@ -1900,7 +1900,8 @@ static void __init at91_add_device_tdes(void) {}
+  * -------------------------------------------------------------------- */
+ 
+ #if defined(CONFIG_CRYPTO_DEV_ATMEL_AES) || defined(CONFIG_CRYPTO_DEV_ATMEL_AES_MODULE)
+-static struct aes_platform_data aes_data;
++static struct crypto_platform_data aes_data;
++static struct crypto_dma_data alt_atslave;
+ static u64 aes_dmamask = DMA_BIT_MASK(32);
+ 
+ static struct resource aes_resources[] = {
+@@ -1931,23 +1932,20 @@ static struct platform_device at91sam9g45_aes_device = {
+ static void __init at91_add_device_aes(void)
+ {
+ 	struct at_dma_slave	*atslave;
+-	struct aes_dma_data	*alt_atslave;
+-
+-	alt_atslave = kzalloc(sizeof(struct aes_dma_data), GFP_KERNEL);
+ 
+ 	/* DMA TX slave channel configuration */
+-	atslave = &alt_atslave->txdata;
++	atslave = &alt_atslave.txdata;
+ 	atslave->dma_dev = &at_hdmac_device.dev;
+ 	atslave->cfg = ATC_FIFOCFG_ENOUGHSPACE	| ATC_SRC_H2SEL_HW |
+ 						ATC_SRC_PER(AT_DMA_ID_AES_RX);
+ 
+ 	/* DMA RX slave channel configuration */
+-	atslave = &alt_atslave->rxdata;
++	atslave = &alt_atslave.rxdata;
+ 	atslave->dma_dev = &at_hdmac_device.dev;
+ 	atslave->cfg = ATC_FIFOCFG_ENOUGHSPACE	| ATC_DST_H2SEL_HW |
+ 						ATC_DST_PER(AT_DMA_ID_AES_TX);
+ 
+-	aes_data.dma_slave = alt_atslave;
++	aes_data.dma_slave = &alt_atslave;
+ 	platform_device_register(&at91sam9g45_aes_device);
+ }
+ #else
+diff --git a/include/linux/platform_data/atmel-aes.h b/include/linux/platform_data/atmel-aes.h
+deleted file mode 100644
+index ab68082..0000000
+--- a/include/linux/platform_data/atmel-aes.h
++++ /dev/null
+@@ -1,22 +0,0 @@
+-#ifndef __LINUX_ATMEL_AES_H
+-#define __LINUX_ATMEL_AES_H
+-
+-#include <linux/platform_data/dma-atmel.h>
+-
+-/**
+- * struct aes_dma_data - DMA data for AES
+- */
+-struct aes_dma_data {
+-	struct at_dma_slave	txdata;
+-	struct at_dma_slave	rxdata;
+-};
+-
+-/**
+- * struct aes_platform_data - board-specific AES configuration
+- * @dma_slave: DMA slave interface to use in data transfers.
+- */
+-struct aes_platform_data {
+-	struct aes_dma_data	*dma_slave;
+-};
+-
+-#endif /* __LINUX_ATMEL_AES_H */
+diff --git a/include/linux/platform_data/crypto-atmel.h b/include/linux/platform_data/crypto-atmel.h
+new file mode 100644
+index 0000000..b46e0d9
+--- /dev/null
++++ b/include/linux/platform_data/crypto-atmel.h
+@@ -0,0 +1,22 @@
++#ifndef __LINUX_CRYPTO_ATMEL_H
++#define __LINUX_CRYPTO_ATMEL_H
++
++#include <linux/platform_data/dma-atmel.h>
++
++/**
++ * struct crypto_dma_data - DMA data for AES/TDES/SHA
++ */
++struct crypto_dma_data {
++	struct at_dma_slave	txdata;
++	struct at_dma_slave	rxdata;
++};
++
++/**
++ * struct crypto_platform_data - board-specific AES/TDES/SHA configuration
++ * @dma_slave: DMA slave interface to use in data transfers.
++ */
++struct crypto_platform_data {
++	struct crypto_dma_data	*dma_slave;
++};
++
++#endif /* __LINUX_CRYPTO_ATMEL_H */
+-- 
+1.7.6.5
+
