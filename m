@@ -1,97 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab2KGWqo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 17:46:44 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:49386 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471Ab2KGWqm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 17:46:42 -0500
-Date: Wed, 7 Nov 2012 23:46:40 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] memcg: oom: fix totalpages calculation for
- memory.swappiness==0
-Message-ID: <20121107224640.GE26382@dhcp22.suse.cz>
-References: <20121011085038.GA29295@dhcp22.suse.cz>
- <1349945859-1350-1-git-send-email-mhocko@suse.cz>
- <20121015220354.GA11682@dhcp22.suse.cz>
- <20121107141025.2ac62206.akpm@linux-foundation.org>
+	id S1754297Ab2KGWrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 17:47:08 -0500
+Received: from ogre.sisk.pl ([193.178.161.156]:33052 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752870Ab2KGWrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 17:47:06 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
+Date: Wed, 07 Nov 2012 23:51:15 +0100
+Message-ID: <1748065.Php9fUYGsh@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1211071653140.1188-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1211071653140.1188-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121107141025.2ac62206.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-11-12 14:10:25, Andrew Morton wrote:
-> On Tue, 16 Oct 2012 00:04:08 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
+On Wednesday, November 07, 2012 04:56:49 PM Alan Stern wrote:
+> On Wed, 7 Nov 2012, Rafael J. Wysocki wrote:
 > 
-> > As Kosaki correctly pointed out, the glogal reclaim doesn't have this
-> > issue because we _do_ swap on swappinnes==0 so the swap space has
-> > to be considered. So the v2 is just acks + changelog fix.
+> > > Right.  The reasoning behind my proposal goes like this: When there's
+> > > no driver, the subsystem can let userspace directly control the
+> > > device's power level through the power/control attribute.
 > > 
-> > Changes since v1
-> > - drop a note about global swappiness affected as well from the
-> >   changelog
-> > - stable needs 3.2+ rather than 3.5+ because the fe35004f has been
-> >   backported to stable
-> > ---
-> > >From c2ae4849f09dbfda6b61472c6dd1fd8c2fe8ac81 Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Wed, 10 Oct 2012 15:46:54 +0200
-> > Subject: [PATCH] memcg: oom: fix totalpages calculation for
-> >  memory.swappiness==0
+> > Well, we might as well just leave the runtime PM of PCI devices enabled, even
+> > if they have no drivers, but modify the PCI bus type's runtime PM callbacks
+> > to ignore devices with no drivers.
 > > 
-> > oom_badness takes totalpages argument which says how many pages are
-> > available and it uses it as a base for the score calculation. The value
-> > is calculated by mem_cgroup_get_limit which considers both limit and
-> > total_swap_pages (resp. memsw portion of it).
-> > 
-> > This is usually correct but since fe35004f (mm: avoid swapping out
-> > with swappiness==0) we do not swap when swappiness is 0 which means
-> > that we cannot really use up all the totalpages pages. This in turn
-> > confuses oom score calculation if the memcg limit is much smaller than
-> > the available swap because the used memory (capped by the limit) is
-> > negligible comparing to totalpages so the resulting score is too small
-> > if adj!=0 (typically task with CAP_SYS_ADMIN or non zero oom_score_adj).
-> > A wrong process might be selected as result.
-> > 
-> > The problem can be worked around by checking mem_cgroup_swappiness==0
-> > and not considering swap at all in such a case.
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > Acked-by: David Rientjes <rientjes@google.com>
-> > Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> > Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Cc: stable [3.2+]
+> > IIRC the reason why we decided to disable runtime PM for PCI device with no
+> > drivers was that some of them refused to work again after being put by the
+> > core into D3.  By making the PCI bus type's runtime PM callbacks ignore them
+> > we'd avoid this problem without modifying the core's behavior.
 > 
-> That's "Cc: <stable@vger.kernel.org>", please.
+> It comes down to a question of the parent.  If a driverless PCI device
+> isn't being used, shouldn't its parent be allowed to go into runtime
+> suspend?  As things stand now, we do allow it.
+> 
+> The problem is that we don't disallow it when the driverless device
+> _is_ being used.
 
-Will do next time.
+We can make it depend on what's there in the control file.  Let's say if that's
+"on" (ie. the devices usage counter is not zero), we won't allow the parent
+to be suspended.
 
-> It's unobvious from the changelog that a -stable backport is really
-> needed.  The bug looks pretty obscure and has been there for a long
-> time.
+So, as I said, why don't we keep the runtime PM of PCI devices always enabled,
+regardless of whether or not there is a driver, and arrange things in such a
+way that the device is automatically "suspended" if user space writes "auto"
+to the control file.  IOW, I suppose we can do something like this:
 
-Yes but it is not _that_ long since fe35004f made it into stable trees
-(e.g. 3.2.29).
-The reason why we probably do not see many reports is because people
-didn't get used to swappiness==0 really works these days - especially
-with memcg where it means _really_ no swapping.
+---
+ drivers/pci/pci-driver.c |   34 ++++++++++++----------------------
+ drivers/pci/pci.c        |    2 ++
+ 2 files changed, 14 insertions(+), 22 deletions(-)
 
-> Realistically, is anyone likely to hurt from this?
+Index: linux-pm/drivers/pci/pci-driver.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci-driver.c
++++ linux-pm/drivers/pci/pci-driver.c
+@@ -263,22 +263,17 @@ static long local_pci_probe(void *_ddi)
+ 	/* The parent bridge must be in active state when probing */
+ 	if (parent)
+ 		pm_runtime_get_sync(parent);
+-	/* Unbound PCI devices are always set to disabled and suspended.
+-	 * During probe, the device is set to enabled and active and the
+-	 * usage count is incremented.  If the driver supports runtime PM,
+-	 * it should call pm_runtime_put_noidle() in its probe routine and
++	/*
++	 * During probe, the device is set to active and the usage count is
++	 * incremented.  If the driver supports runtime PM, it should call
++	 * pm_runtime_put_noidle() in its probe routine and
+ 	 * pm_runtime_get_noresume() in its remove routine.
+ 	 */
+-	pm_runtime_get_noresume(dev);
+-	pm_runtime_set_active(dev);
+-	pm_runtime_enable(dev);
+-
++	pm_runtime_get_sync(dev);
+ 	rc = ddi->drv->probe(ddi->dev, ddi->id);
+-	if (rc) {
+-		pm_runtime_disable(dev);
+-		pm_runtime_set_suspended(dev);
+-		pm_runtime_put_noidle(dev);
+-	}
++	if (rc)
++		pm_runtime_put_sync(dev);
++
+ 	if (parent)
+ 		pm_runtime_put(parent);
+ 	return rc;
+@@ -369,9 +364,7 @@ static int pci_device_remove(struct devi
+ 	}
+ 
+ 	/* Undo the runtime PM settings in local_pci_probe() */
+-	pm_runtime_disable(dev);
+-	pm_runtime_set_suspended(dev);
+-	pm_runtime_put_noidle(dev);
++	pm_runtime_put_sync(dev);
+ 
+ 	/*
+ 	 * If the device is still on, set the power state as "unknown",
+@@ -1003,7 +996,7 @@ static int pci_pm_runtime_suspend(struct
+ 	int error;
+ 
+ 	if (!pm || !pm->runtime_suspend)
+-		return -ENOSYS;
++		return 0;
+ 
+ 	pci_dev->no_d3cold = false;
+ 	error = pm->runtime_suspend(dev);
+@@ -1038,7 +1031,7 @@ static int pci_pm_runtime_resume(struct
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+ 
+ 	if (!pm || !pm->runtime_resume)
+-		return -ENOSYS;
++		return 0;
+ 
+ 	pci_restore_standard_config(pci_dev);
+ 	pci_fixup_device(pci_fixup_resume_early, pci_dev);
+@@ -1056,10 +1049,7 @@ static int pci_pm_runtime_idle(struct de
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+ 
+-	if (!pm)
+-		return -ENOSYS;
+-
+-	if (pm->runtime_idle) {
++	if (pm && pm->runtime_idle) {
+ 		int ret = pm->runtime_idle(dev);
+ 		if (ret)
+ 			return ret;
+Index: linux-pm/drivers/pci/pci.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci.c
++++ linux-pm/drivers/pci/pci.c
+@@ -1868,6 +1868,8 @@ void pci_pm_init(struct pci_dev *dev)
+ 	u16 pmc;
+ 
+ 	pm_runtime_forbid(&dev->dev);
++	pm_runtime_set_active(dev);
++	pm_runtime_enable(&dev->dev);
+ 	device_enable_async_suspend(&dev->dev);
+ 	dev->wakeup_prepared = false;
+ 
 
-The primary motivation for the fix was a real report by a customer.
+
+
 -- 
-Michal Hocko
-SUSE Labs
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
