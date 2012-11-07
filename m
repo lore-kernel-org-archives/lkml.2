@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab2KGAjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 19:39:15 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:43204 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325Ab2KGAjO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 19:39:14 -0500
-Date: Wed, 7 Nov 2012 01:39:05 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, mtk.manpages@gmail.com,
-        Andi Kleen <ak@linux.intel.com>, Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v7
-Message-ID: <20121107003905.GA16230@one.firstfloor.org>
-References: <1352157848-29473-1-git-send-email-andi@firstfloor.org> <1352157848-29473-2-git-send-email-andi@firstfloor.org> <20121106132737.c2aa3c47.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121106132737.c2aa3c47.akpm@linux-foundation.org>
-User-Agent: Mutt/1.4.2.2i
+	id S1754044Ab2KGApR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 19:45:17 -0500
+Received: from smtp.getmail.no ([84.208.15.66]:60469 "EHLO smtp.getmail.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753527Ab2KGApQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 19:45:16 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Help low-jitter man.
+References: <50992F56.3080209@paradoxuncreated.com>
+ <50993696.8040006@paradoxuncreated.com>
+Date: Wed, 07 Nov 2012 01:45:13 +0100
+From: Ove Karlsen <ove.karlsen@paradoxuncreated.com>
+Message-id: <op.wndodnkz1c32bs@localhost.localdomain>
+In-reply-to: <50993696.8040006@paradoxuncreated.com>
+User-Agent: Opera Mail/12.02 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 06, 2012 at 01:27:37PM -0800, Andrew Morton wrote:
-> On Mon,  5 Nov 2012 15:24:08 -0800
-> Andi Kleen <andi@firstfloor.org> wrote:
-> 
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > There was some desire in large applications using MAP_HUGETLB/SHM_HUGETLB
-> > to use 1GB huge pages on some mappings, and stay with 2MB on others. This
-> > is useful together with NUMA policy: use 2MB interleaving on some mappings,
-> > but 1GB on local mappings.
-> > 
-> > This patch extends the IPC/SHM syscall interfaces slightly to allow specifying
-> > the page size.
-> > 
-> > It borrows some upper bits in the existing flag arguments and allows encoding
-> > the log of the desired page size in addition to the *_HUGETLB flag.
-> > When 0 is specified the default size is used, this makes the change fully
-> > compatible.
-> > 
-> > Extending the internal hugetlb code to handle this is straight forward. Instead
-> > of a single mount it just keeps an array of them and selects the right
-> > mount based on the specified page size. When no page size is specified
-> > it uses the mount of the default page size.
-> > 
-> > The change is not visible in /proc/mounts because internal mounts
-> > don't appear there. It also has very little overhead: the additional
-> > mounts just consume a super block, but not more memory when not used.
-> > 
-> > I also exported the new flags to the user headers
-> > (they were previously under __KERNEL__). Right now only symbols
-> > for x86 and some other architecture for 1GB and 2MB are defined.
-> > The interface should already work for all other architectures
-> > though.  Only architectures that define multiple hugetlb sizes
-> > actually need it (that is currently x86, tile, powerpc). However
-> > tile and powerpc have user configurable hugetlb sizes, so it's
-> > not easy to add defines. A program on those architectures would
-> > need to query sysfs and use the appropiate log2.
-> 
-> I can't say the userspace interface is a thing of beauty, but I guess
-> we'll live.
+On Tue, 06 Nov 2012 17:11:02 +0100, Ove Karlsen  
+<ove.karlsen@paradoxuncreated.com> wrote:
 
-Thanks.
+> Den 06.11.2012 16:40, skrev Ove Karlsen:
+>> Heya, it`s me again. I am getting my low-jitter E5 computer, soon, and I
+>> have done all the tweaks I can think of with the kernel.
+>>
+>> I was wondering if anyone had anything to add, any good technical
+>> opinion on reducing jitter (for workstation desktop/OpenGL).
+>>
+>> I have a kernel with "low latency desktop" enabled. And edited
+>> Kconfig.hz to 90.
+>> idle=poll and tick_skew=1 in boot options.
+>> Compile a shaved local kernel by doing "make localmodconfig" from a full
+>> distro kernel.
+>> (Also turned of high_res_timers, to get 90hz)
+>>
+>> CFS granularity 1158500nS. (Current setting is a bit high)
+>> Reniced X to -20, to prevent X being a bottleneck.
+>> Remove 60hz limit in doom 3, to avoid timing jitter.
+>> http://paradoxuncreated.com/tmp/AutoExec.cfg
+>>
+>> Some nvidia-specific stuff on my blog aswell :
+>> http://paradoxuncreated.com/Blog/wordpress/?p=2268
+>>
+>> A lot of people think SLAB has lower jitter than SLUB etc, aswell, and
+>> some tuning with regards to what kernel options execute the least code,
+>> least background activity can be done. Opinions?
+>>
+>> I use SLUB currently, and have turned off mem-compaction.
+>> And probably all kinds of debugging, counters and tracers.
+>>
+>> RCU boost to 99.
+>>
+>> I think I have collected most the relevant data for a low-jitter linux
+>> config. but in case there is additional information, I would love to
+>> hear it.
+>>
+>> Also ACPI on or off seems to be varying opions on. Some state ACPI
+>> removes SMI`s? I don`t know what is true here, and knowing that some
+>> recommend 10000hz timer for "low-jitter" (which is going the completely
+>> wrong way) I would like to hear your opinion on this aswell.
+>>
+>> Also approaching a transparent OS, with realtime-threads is interesting.
+>> Such as running maintask (optionally + depencies) as realtime.
+>> Unfortunately it doesn`t seem to work so well with standard FIFO. Do you
+>> think deadline could help this? Accurate 0.95ms of 1ms would be
+>> interesting to try.
+>>
+>> Also if anyone knows a linux-distro with the same philosophy throughout
+>> the OS, I would be interested to know about it.
+>>
+>
+> Also have anyone given any thoughts to vsynced HZ? And also even  
+> possibly dividing subhz off that, or more hz counters if neccesary.
 
-> 
-> Did you have a test app?  If so, can we get it into
-> tools/testing/selftests and point the arch maintainers at it?
+Ok, I think after this, simple renicing seems to reduce significant  
+amounts of jitter. So then the question becomes, how far can you take  
+renice.
 
-Yes I do. I'll send a patch separately.
-
-However you have to run with the right options and it may 
-be slightly x86 specific.
-
->  	unregister_filesystem(&hugetlbfs_fs_type);
->  	bdi_destroy(&hugetlbfs_backing_dev_info);
-> 
-> (we're not supposed to split strings like that, but screw 'em!)
-
-Thanks I assume you handle that.
-
--Andi
-
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Peace Be With you.
