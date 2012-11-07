@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab2KGINy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 03:13:54 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:50132 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750768Ab2KGINx (ORCPT
+	id S1751530Ab2KGIRL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 03:17:11 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63842 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab2KGIRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 03:13:53 -0500
-Subject: Re: [RFC] Device Tree Overlays Proposal (Was Re: capebus moving omap_devices to mach-omap2)
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com>
-Date: Wed, 7 Nov 2012 09:13:36 +0100
-Cc: Rob Herring <robherring2@gmail.com>, Deepak Saxena <dsaxena@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>, Matt Porter <mporter@ti.com>,
-        linux-omap@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, devicetree-discuss@lists.ozlabs.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <5ED17D42-07B8-4D4F-B54F-82B4CC60584C@antoniou-consulting.com>
-References: <CACxGe6vu8ek7-K-yDDMXyg9x-oKiFt_cSz+Pz-yZf5U5vwe=0g@mail.gmail.com> <02FF5400-9F97-4B8A-AEF0-267B01C8099F@antoniou-consulting.com> <CACxGe6vDzmPWsOZ53HTwkYmDEivg9TpnRrvudY2FK95V06O24w@mail.gmail.com> <A5170602-2AE7-4EC4-BE0F-0DF015A287D7@antoniou-consulting.com> <CACxGe6sJXubOSGGg5AmDK6DQMjv60H44nax9wUnnCGsqXGbfxw@mail.gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-X-Mailer: Apple Mail (2.1085)
+	Wed, 7 Nov 2012 03:17:09 -0500
+Date: Wed, 7 Nov 2012 00:17:06 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch] mm, mempolicy: remove duplicate code
+Message-ID: <alpine.DEB.2.00.1211070016080.21854@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant
+Remove some duplicate code and simplify alloc_pages_vma().  No functional
+change.
 
-On Nov 6, 2012, at 9:45 PM, Grant Likely wrote:
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ mm/mempolicy.c |   21 ++++-----------------
+ 1 file changed, 4 insertions(+), 17 deletions(-)
 
-> On Tue, Nov 6, 2012 at 7:34 PM, Pantelis Antoniou
-> <panto@antoniou-consulting.com> wrote:
-
-[ snip ]
-> 
-> g.
-
-Since we've started talking about longer term goals, and the versioning
-provision seems to stand, I hope we address how much the fragment versioning
-thing is similar to the way board revisions progress.
-
-If a versioning syntax is available then one could create a single DT 
-file for a bunch of 'almost' similar board and board revisions.
-
-Using a single DTB in the same manner you have a single uImage would
-make some people quite happy, since you won't have to do any bootloader
-magic to make sure you pass the correct DTB for the specific revision.
-
-Regards
-
--- Pantelis
-
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1907,7 +1907,6 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
+ 		unsigned long addr, int node)
+ {
+ 	struct mempolicy *pol;
+-	struct zonelist *zl;
+ 	struct page *page;
+ 	unsigned int cpuset_mems_cookie;
+ 
+@@ -1926,23 +1925,11 @@ retry_cpuset:
+ 
+ 		return page;
+ 	}
+-	zl = policy_zonelist(gfp, pol, node);
+-	if (unlikely(mpol_needs_cond_ref(pol))) {
+-		/*
+-		 * slow path: ref counted shared policy
+-		 */
+-		struct page *page =  __alloc_pages_nodemask(gfp, order,
+-						zl, policy_nodemask(gfp, pol));
+-		__mpol_put(pol);
+-		if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
+-			goto retry_cpuset;
+-		return page;
+-	}
+-	/*
+-	 * fast path:  default or task policy
+-	 */
+-	page = __alloc_pages_nodemask(gfp, order, zl,
++	page = __alloc_pages_nodemask(gfp, order,
++				      policy_zonelist(gfp, pol, node),
+ 				      policy_nodemask(gfp, pol));
++	if (unlikely(mpol_needs_cond_ref(pol)))
++		__mpol_put(pol);
+ 	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
+ 		goto retry_cpuset;
+ 	return page;
