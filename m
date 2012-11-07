@@ -1,89 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab2KGWMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 17:12:25 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:54198 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab2KGWMX (ORCPT
+	id S1754134Ab2KGWRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 17:17:15 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:51689 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab2KGWRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 17:12:23 -0500
-Date: Wed, 7 Nov 2012 17:12:12 -0500 (EST)
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-scsi@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <819170817.7936726.1352326332306.JavaMail.root@redhat.com>
-In-Reply-To: <1352283494-31200-1-git-send-email-gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH 0/5] virtio-scsi: create a separate workqueue
+	Wed, 7 Nov 2012 17:17:13 -0500
+Date: Wed, 7 Nov 2012 23:17:09 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
+        rientjes@google.com, linux-kernel@vger.kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH 1/2] memcg, oom: provide more precise dump info while
+ memcg oom happening
+Message-ID: <20121107221709.GB26382@dhcp22.suse.cz>
+References: <1352277602-21687-1-git-send-email-handai.szj@taobao.com>
+ <1352277696-21724-1-git-send-email-handai.szj@taobao.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [88.2.49.222]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352277696-21724-1-git-send-email-handai.szj@taobao.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> patch 1-3,5 are some cleanups.
-> patch 4: create a separate work queue for virtio-scsi
-> to improve the performance, I tested with tmpfs backed
-> disk, the config file is like below,
+On Wed 07-11-12 16:41:36, Sha Zhengju wrote:
+> From: Sha Zhengju <handai.szj@taobao.com>
+> 
+> Current, when a memcg oom is happening the oom dump messages is still global
+> state and provides few useful info for users. This patch prints more pointed
+> memcg page statistics for memcg-oom.
+> 
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  mm/memcontrol.c |   71 ++++++++++++++++++++++++++++++++++++++++++++++++-------
+>  mm/oom_kill.c   |    6 +++-
+>  2 files changed, 66 insertions(+), 11 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 0eab7d5..2df5e72 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+[...]
+> @@ -1501,8 +1509,59 @@ static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
+>  	spin_unlock_irqrestore(&memcg->move_lock, *flags);
+>  }
+>  
+> +#define K(x) ((x) << (PAGE_SHIFT-10))
+> +static void mem_cgroup_print_oom_stat(struct mem_cgroup *memcg)
+> +{
+> +	struct mem_cgroup *mi;
+> +	unsigned int i;
+> +
+> +	if (!memcg->use_hierarchy && memcg != root_mem_cgroup) {
+> +		for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
+> +			if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
+> +				continue;
+> +			printk(KERN_CONT "%s:%ldKB ", mem_cgroup_stat_names[i],
+> +				K(mem_cgroup_read_stat(memcg, i)));
+> +		}
+> +
+> +		for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++)
+> +			printk(KERN_CONT "%s:%lu ", mem_cgroup_events_names[i],
+> +				mem_cgroup_read_events(memcg, i));
+> +
+> +		for (i = 0; i < NR_LRU_LISTS; i++)
+> +			printk(KERN_CONT "%s:%luKB ", mem_cgroup_lru_names[i],
+> +				K(mem_cgroup_nr_lru_pages(memcg, BIT(i))));
+> +	} else {
+> +
+> +		for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
+> +			long long val = 0;
+> +
+> +			if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
+> +				continue;
+> +			for_each_mem_cgroup_tree(mi, memcg)
+> +				val += mem_cgroup_read_stat(mi, i);
+> +			printk(KERN_CONT "%s:%lldKB ", mem_cgroup_stat_names[i], K(val));
+> +		}
+> +
+> +		for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++) {
+> +			unsigned long long val = 0;
+> +
+> +			for_each_mem_cgroup_tree(mi, memcg)
+> +				val += mem_cgroup_read_events(mi, i);
+> +			printk(KERN_CONT "%s:%llu ",
+> +				mem_cgroup_events_names[i], val);
+> +		}
+> +
+> +		for (i = 0; i < NR_LRU_LISTS; i++) {
+> +			unsigned long long val = 0;
+> +
+> +			for_each_mem_cgroup_tree(mi, memcg)
+> +				val += mem_cgroup_nr_lru_pages(mi, BIT(i));
+> +			printk(KERN_CONT "%s:%lluKB ", mem_cgroup_lru_names[i], K(val));
+> +		}
+> +	}
 
-I think something else caused the improvement, because the code you
-touched (complete_event) shouldn't ever run during a normal benchmark.
-It's only used for hotplug/hot-unplug.
-
-Nevertheless, I'll queue the cleanup patches.  Thanks for those.
-
-Paolo
-
-> [global]
-> bsrange=4k-64k
-> ioengine=libaio
-> direct=1
-> iodepth=4
-> loops=10
-> size=64M
-> 
-> Before:
-> Disk stats (read/write):
->   sda: ios=6547/5275, merge=37/39, ticks=3144/2645, in_queue=5780,
->   util=81.62%
->   sdb: ios=6542/5277, merge=54/59, ticks=3234/3143, in_queue=6364,
->   util=84.50%
->   sdc: ios=6532/5244, merge=65/62, ticks=3440/3076, in_queue=6505,
->   util=86.83%
-> 
-> After:
-> Disk stats (read/write):
->   sda: ios=6349/5318, merge=77/89, ticks=4820/3169, in_queue=7991,
->   util=90.62%
->   sdb: ios=6364/5358, merge=39/53, ticks=3810/2816, in_queue=6615,
->   util=84.63%
->   sdc: ios=6458/5352, merge=74/47, ticks=4425/3048, in_queue=7459,
->   util=88.41%
-> 
-> 
-> Wanlong Gao (5):
->   virtio-scsi: remove the useless assignment
->   virtio-scsi: remove the needless variable gfp_mask
->   virtio-scsi: use pr_err instead of printk
->   virtio-scsi: create a separate work queue for virtio-scsi
->   virtio-scsi: tidy up the goto label in init()
-> 
-> 
-> 
-> Cc: James E.J. Bottomley <JBottomley@parallels.com>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: linux-scsi@vger.kernel.org
-> Cc: kvm@vger.kernel.org
->  drivers/scsi/virtio_scsi.c | 43
->  +++++++++++++++++++++++--------------------
->  1 file changed, 23 insertions(+), 20 deletions(-)
-> 
-> --
-> 1.8.0
-> 
-> 
+This is just plain ugly. for_each_mem_cgroup_tree is use_hierarchy aware
+and there is no need for if (use_hierarchy) part.
+memcg != root_mem_cgroup test doesn't make much sense as well because we
+call that a global oom killer ;)
+-- 
+Michal Hocko
+SUSE Labs
