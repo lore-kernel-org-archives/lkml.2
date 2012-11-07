@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab2KGSls (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 13:41:48 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:53062 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754116Ab2KGSlq (ORCPT
+	id S1754244Ab2KGSl6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 13:41:58 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:41937 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751825Ab2KGSlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 13:41:46 -0500
-Subject: [PATCH 04/12] VMCI: device driver implementaton.
+	Wed, 7 Nov 2012 13:41:55 -0500
+Subject: [PATCH 05/12] VMCI: event handling implementation.
 To: linux-kernel@vger.kernel.org, georgezhang@vmware.com,
         virtualization@lists.linux-foundation.org
 From: George Zhang <georgezhang@vmware.com>
 Cc: pv-drivers@vmware.com, gregkh@linuxfoundation.org
-Date: Wed, 07 Nov 2012 10:41:45 -0800
-Message-ID: <20121107184141.9658.11551.stgit@promb-2n-dhcp175.eng.vmware.com>
+Date: Wed, 07 Nov 2012 10:41:55 -0800
+Message-ID: <20121107184150.9658.25635.stgit@promb-2n-dhcp175.eng.vmware.com>
 In-Reply-To: <20121107183624.9658.78903.stgit@promb-2n-dhcp175.eng.vmware.com>
 References: <20121107183624.9658.78903.stgit@promb-2n-dhcp175.eng.vmware.com>
 User-Agent: StGit/0.15
@@ -24,23 +24,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VMCI driver code implementes both the host and guest personalities of the VMCI driver.
+VMCI event code that manages event handlers and handles callbacks when specific
+events fire.
 
 
 Signed-off-by: George Zhang <georgezhang@vmware.com>
 ---
- drivers/misc/vmw_vmci/vmci_driver.c |  116 +++++++++++++++++++++++++++++++++++
- drivers/misc/vmw_vmci/vmci_driver.h |   50 +++++++++++++++
- 2 files changed, 166 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/vmw_vmci/vmci_driver.c
- create mode 100644 drivers/misc/vmw_vmci/vmci_driver.h
+ drivers/misc/vmw_vmci/vmci_event.c |  229 ++++++++++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_event.h |   25 ++++
+ 2 files changed, 254 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_event.h
 
-diff --git a/drivers/misc/vmw_vmci/vmci_driver.c b/drivers/misc/vmw_vmci/vmci_driver.c
+diff --git a/drivers/misc/vmw_vmci/vmci_event.c b/drivers/misc/vmw_vmci/vmci_event.c
 new file mode 100644
-index 0000000..8c5db38
+index 0000000..e956c18
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_driver.c
-@@ -0,0 +1,116 @@
++++ b/drivers/misc/vmw_vmci/vmci_event.c
+@@ -0,0 +1,229 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -58,111 +59,224 @@ index 0000000..8c5db38
 +
 +#include <linux/vmw_vmci_defs.h>
 +#include <linux/vmw_vmci_api.h>
-+#include <linux/atomic.h>
-+#include <linux/kernel.h>
++#include <linux/list.h>
 +#include <linux/module.h>
-+#include <linux/init.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
 +
 +#include "vmci_driver.h"
 +#include "vmci_event.h"
 +
-+static bool vmci_disable_host;
-+module_param_named(disable_host, vmci_disable_host, bool, 0);
-+MODULE_PARM_DESC(disable_host,
-+		 "Disable driver host personality (default=enabled)");
++#define EVENT_MAGIC 0xEABE0000
++#define VMCI_EVENT_MAX_ATTEMPTS 10
 +
-+static bool vmci_disable_guest;
-+module_param_named(disable_guest, vmci_disable_guest, bool, 0);
-+MODULE_PARM_DESC(disable_guest,
-+		 "Disable driver guest personality (default=enabled)");
++struct vmci_subscription {
++	u32 id;
++	u32 event;
++	vmci_event_cb callback;
++	void *callback_data;
++	struct list_head node;	/* on one of subscriber lists */
++};
 +
-+static bool vmci_guest_personality_initialized;
-+static bool vmci_host_personality_initialized;
++static struct list_head subscriber_array[VMCI_EVENT_MAX];
++static DEFINE_MUTEX(subscriber_mutex);
++
++int __init vmci_event_init(void)
++{
++	int i;
++
++	for (i = 0; i < VMCI_EVENT_MAX; i++)
++		INIT_LIST_HEAD(&subscriber_array[i]);
++
++	return VMCI_SUCCESS;
++}
++
++void vmci_event_exit(void)
++{
++	int e;
++
++	/* We free all memory at exit. */
++	for (e = 0; e < VMCI_EVENT_MAX; e++) {
++		struct vmci_subscription *cur, *p2;
++		list_for_each_entry_safe(cur, p2, &subscriber_array[e], node) {
++
++			/*
++			 * We should never get here because all events
++			 * should have been unregistered before we try
++			 * to unload the driver module.
++			 */
++			pr_warn("Unexpected free events occurring.\n");
++			list_del(&cur->node);
++			kfree(cur);
++		}
++	}
++}
 +
 +/*
-+ * vmci_get_context_id() - Gets the current context ID.
-+ *
-+ * Returns the current context ID.  Note that since this is accessed only
-+ * from code running in the host, this always returns the host context ID.
++ * Find entry. Assumes subscriber_mutex is held.
 + */
-+u32 vmci_get_context_id(void)
++static struct vmci_subscription *event_find(u32 sub_id)
 +{
-+	if (vmci_guest_code_active())
-+		return vmci_get_vm_context_id();
-+	else if (vmci_host_code_active())
-+		return VMCI_HOST_CONTEXT_ID;
++	int e;
 +
-+	return VMCI_INVALID_ID;
++	for (e = 0; e < VMCI_EVENT_MAX; e++) {
++		struct vmci_subscription *cur;
++		list_for_each_entry(cur, &subscriber_array[e], node) {
++			if (cur->id == sub_id)
++				return cur;
++		}
++	}
++	return NULL;
 +}
-+EXPORT_SYMBOL_GPL(vmci_get_context_id);
 +
-+static int __init vmci_drv_init(void)
++/*
++ * Actually delivers the events to the subscribers.
++ * The callback function for each subscriber is invoked.
++ */
++static void event_deliver(struct vmci_event_msg *event_msg)
 +{
-+	int vmci_err;
-+	int error;
++	struct vmci_subscription *cur;
++	struct list_head *subscriber_list;
 +
-+	vmci_err = vmci_event_init();
-+	if (vmci_err < VMCI_SUCCESS) {
-+		pr_err("Failed to initialize VMCIEvent (result=%d).\n", vmci_err);
-+		return -EINVAL;
++	rcu_read_lock();
++	subscriber_list = &subscriber_array[event_msg->event_data.event];
++	list_for_each_entry_rcu(cur, subscriber_list, node) {
++		BUG_ON(cur->event != event_msg->event_data.event);
++
++		cur->callback(cur->id, &event_msg->event_data,
++			      cur->callback_data);
++	}
++	rcu_read_unlock();
++}
++
++/*
++ * Dispatcher for the VMCI_EVENT_RECEIVE datagrams. Calls all
++ * subscribers for given event.
++ */
++int vmci_event_dispatch(struct vmci_datagram *msg)
++{
++	struct vmci_event_msg *event_msg = (struct vmci_event_msg *)msg;
++
++	BUG_ON(msg->src.context != VMCI_HYPERVISOR_CONTEXT_ID ||
++	       msg->dst.resource != VMCI_EVENT_HANDLER);
++
++	if (msg->payload_size < sizeof(u32) ||
++	    msg->payload_size > sizeof(struct vmci_event_data_max))
++		return VMCI_ERROR_INVALID_ARGS;
++
++	if (!VMCI_EVENT_VALID(event_msg->event_data.event))
++		return VMCI_ERROR_EVENT_UNKNOWN;
++
++	event_deliver(event_msg);
++	return VMCI_SUCCESS;
++}
++
++/*
++ * vmci_event_subscribe() - Subscribe to a given event.
++ * @event:      The event to subscribe to.
++ * @callback:   The callback to invoke upon the event.
++ * @callback_data:      Data to pass to the callback.
++ * @subscription_id:    ID used to track subscription.  Used with
++ *              vmci_event_unsubscribe()
++ *
++ * Subscribes to the provided event. The callback specified will be
++ * fired from RCU critical section and therefore must not sleep.
++ */
++int vmci_event_subscribe(u32 event,
++			 vmci_event_cb callback,
++			 void *callback_data,
++			 u32 *new_subscription_id)
++{
++	struct vmci_subscription *sub;
++	int attempts;
++	int retval;
++	bool have_new_id = false;
++
++	if (!new_subscription_id) {
++		pr_devel("%s: Invalid subscription (NULL).\n", __func__);
++		return VMCI_ERROR_INVALID_ARGS;
 +	}
 +
-+	if (!vmci_disable_guest) {
-+		error = vmci_guest_init();
-+		if (error) {
-+			pr_warn("Failed to initialize guest personality (err=%d).\n",
-+				error);
-+		} else {
-+			vmci_guest_personality_initialized = true;
-+			pr_info("Guest personality initialized and is %s\n",
-+				vmci_guest_code_active() ?
-+				"active" : "inactive");
++	if (!VMCI_EVENT_VALID(event) || !callback) {
++		pr_devel("%s: Failed to subscribe to event (type=%d) (callback=%p) (data=%p).\n",
++			 __func__, event, callback, callback_data);
++		return VMCI_ERROR_INVALID_ARGS;
++	}
++
++	sub = kzalloc(sizeof(*sub), GFP_KERNEL);
++	if (!sub)
++		return VMCI_ERROR_NO_MEM;
++
++	sub->id = VMCI_EVENT_MAX;
++	sub->event = event;
++	sub->callback = callback;
++	sub->callback_data = callback_data;
++	INIT_LIST_HEAD(&sub->node);
++
++	mutex_lock(&subscriber_mutex);
++
++	/* Creation of a new event is always allowed. */
++	for (attempts = 0; attempts < VMCI_EVENT_MAX_ATTEMPTS; attempts++) {
++		static u32 subscription_id;
++		/*
++		 * We try to get an id a couple of time before
++		 * claiming we are out of resources.
++		 */
++
++		/* Test for duplicate id. */
++		if (!event_find(++subscription_id)) {
++			sub->id = subscription_id;
++			have_new_id = true;
++			break;
 +		}
 +	}
 +
-+	if (!vmci_disable_host) {
-+		error = vmci_host_init();
-+		if (error) {
-+			pr_warn("Unable to initialize host personality (err=%d).\n",
-+				error);
-+		} else {
-+			vmci_host_personality_initialized = true;
-+			pr_info("Initialized host personality\n");
-+		}
++	if (have_new_id) {
++		list_add_rcu(&sub->node, &subscriber_array[event]);
++		retval = VMCI_SUCCESS;
++	} else {
++		retval = VMCI_ERROR_NO_RESOURCES;
 +	}
 +
-+	if (!vmci_guest_personality_initialized &&
-+	    !vmci_host_personality_initialized) {
-+		vmci_event_exit();
-+		return -ENODEV;
-+	}
++	mutex_unlock(&subscriber_mutex);
 +
-+	return 0;
++	*new_subscription_id = sub->id;
++	return retval;
 +}
-+module_init(vmci_drv_init);
++EXPORT_SYMBOL_GPL(vmci_event_subscribe);
 +
-+static void __exit vmci_drv_exit(void)
++/*
++ * vmci_event_unsubscribe() - unsubscribe from an event.
++ * @sub_id:     A subscription ID as provided by vmci_event_subscribe()
++ *
++ * Unsubscribe from given event. Removes it from list and frees it.
++ * Will return callback_data if requested by caller.
++ */
++int vmci_event_unsubscribe(u32 sub_id)
 +{
-+	if (vmci_guest_personality_initialized)
-+		vmci_guest_exit();
++	struct vmci_subscription *s;
 +
-+	if (vmci_host_personality_initialized)
-+		vmci_host_exit();
++	mutex_lock(&subscriber_mutex);
++	s = event_find(sub_id);
++	if (s)
++		list_del_rcu(&s->node);
++	mutex_unlock(&subscriber_mutex);
 +
-+	vmci_event_exit();
++	if (!s)
++		return VMCI_ERROR_NOT_FOUND;
++
++	synchronize_rcu();
++	kfree(s);
++
++	return VMCI_SUCCESS;
 +}
-+module_exit(vmci_drv_exit);
-+
-+MODULE_AUTHOR("VMware, Inc.");
-+MODULE_DESCRIPTION("VMware Virtual Machine Communication Interface.");
-+MODULE_VERSION(VMCI_DRIVER_VERSION_STRING);
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/misc/vmw_vmci/vmci_driver.h b/drivers/misc/vmw_vmci/vmci_driver.h
++EXPORT_SYMBOL_GPL(vmci_event_unsubscribe);
+diff --git a/drivers/misc/vmw_vmci/vmci_event.h b/drivers/misc/vmw_vmci/vmci_event.h
 new file mode 100644
-index 0000000..f69156a
+index 0000000..7df9b1c
 --- /dev/null
-+++ b/drivers/misc/vmw_vmci/vmci_driver.h
-@@ -0,0 +1,50 @@
++++ b/drivers/misc/vmw_vmci/vmci_event.h
+@@ -0,0 +1,25 @@
 +/*
 + * VMware VMCI Driver
 + *
@@ -178,39 +292,14 @@ index 0000000..f69156a
 + * for more details.
 + */
 +
-+#ifndef _VMCI_DRIVER_H_
-+#define _VMCI_DRIVER_H_
++#ifndef __VMCI_EVENT_H__
++#define __VMCI_EVENT_H__
 +
-+#include <linux/vmw_vmci_defs.h>
-+#include <linux/wait.h>
++#include <linux/vmw_vmci_api.h>
 +
-+#include "vmci_queue_pair.h"
-+#include "vmci_context.h"
++int vmci_event_init(void);
++void vmci_event_exit(void);
++int vmci_event_dispatch(struct vmci_datagram *msg);
 +
-+enum vmci_obj_type {
-+	VMCIOBJ_VMX_VM = 10,
-+	VMCIOBJ_CONTEXT,
-+	VMCIOBJ_SOCKET,
-+	VMCIOBJ_NOT_SET,
-+};
-+
-+/* For storing VMCI structures in file handles. */
-+struct vmci_obj {
-+	void *ptr;
-+	enum vmci_obj_type type;
-+};
-+
-+u32 vmci_get_context_id(void);
-+int vmci_send_datagram(struct vmci_datagram *dg);
-+
-+int vmci_host_init(void);
-+void vmci_host_exit(void);
-+bool vmci_host_code_active(void);
-+
-+int vmci_guest_init(void);
-+void vmci_guest_exit(void);
-+bool vmci_guest_code_active(void);
-+u32 vmci_get_vm_context_id(void);
-+
-+#endif /* _VMCI_DRIVER_H_ */
++#endif /*__VMCI_EVENT_H__ */
 
