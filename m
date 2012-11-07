@@ -1,409 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122Ab2KGHGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 02:06:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:19657 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291Ab2KGHGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 02:06:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,727,1344236400"; 
-   d="scan'208";a="243511578"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: "Zhang, Rui" <rui.zhang@intel.com>
-CC: Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Amit Dinel Kachhap <amit.kachhap@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: RE: [PATCH v4] Thermal: exynos: Add sysfs node supporting exynos's
- emulation mode.
-Thread-Topic: [PATCH v4] Thermal: exynos: Add sysfs node supporting exynos's
- emulation mode.
-Thread-Index: AQHNuKFCQZrUeBXrjEKwvsyCzTSQhJfV/0+wgAeXtICAAGPSUA==
-Date: Wed, 7 Nov 2012 07:06:33 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB592021AD@BGSMSX101.gar.corp.intel.com>
-References: <1351823091-2540-1-git-send-email-jonghwa3.lee@samsung.com>
-	 <4D68720C2E767A4AA6A8796D42C8EB591FFA29@BGSMSX101.gar.corp.intel.com>
- <1352270197.2137.32.camel@rzhang1-mobl4>
-In-Reply-To: <1352270197.2137.32.camel@rzhang1-mobl4>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1752601Ab2KGHGy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 02:06:54 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:55518 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab2KGHGv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 02:06:51 -0500
 MIME-Version: 1.0
+In-Reply-To: <20121106225136.GU3102@twin.jikos.cz>
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+	<1351485061-12297-6-git-send-email-zwu.kernel@gmail.com>
+	<20121106225136.GU3102@twin.jikos.cz>
+Date: Wed, 7 Nov 2012 15:06:49 +0800
+Message-ID: <CAEH94LhWFxYuptv9GbnAt-PxJU6a_1A86wHopzT-7hsknE0p0w@mail.gmail.com>
+Subject: Re: [RFC v4+ hot_track 05/19] vfs: add hooks to enable hot tracking
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
+        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
+        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qA776h5g019063
 
-Hi Rui,
+On Wed, Nov 7, 2012 at 6:51 AM, David Sterba <dave@jikos.cz> wrote:
+> On Mon, Oct 29, 2012 at 12:30:47PM +0800, zwu.kernel@gmail.com wrote:
+>> --- a/mm/readahead.c
+>> +++ b/mm/readahead.c
+>> @@ -19,6 +19,7 @@
+>>  #include <linux/pagemap.h>
+>>  #include <linux/syscalls.h>
+>>  #include <linux/file.h>
+>> +#include <linux/hot_tracking.h>
+>>
+>>  /*
+>>   * Initialise a struct file's readahead state.  Assumes that the caller has
+>> @@ -138,6 +139,11 @@ static int read_pages(struct address_space *mapping, struct file *filp,
+>>  out:
+>>       blk_finish_plug(&plug);
+>>
+>> +     /* Hot data tracking */
+>> +     hot_update_freqs(mapping->host, (u64)(list_entry(pages->prev,\
+>> +                             struct page, lru)->index) << PAGE_CACHE_SHIFT,
+>> +                     (u64)nr_pages * PAGE_CACHE_SIZE, 0);
+>
+> There's a stale \ at the end of the line, and I find this formatting
+> hard to read. Does the following look acceptable?
+yes, great, thanks.
+>
+>         hot_update_freqs(mapping->host,
+>                 (u64)(list_entry(pages->prev, struct page, lru)->index)
+>                         << PAGE_CACHE_SHIFT,
+>                 (u64)nr_pages * PAGE_CACHE_SIZE, 0);
+>
+>> +
+>>       return ret;
+>>  }
+>>
 
 
-> -----Original Message-----
-> From: Zhang, Rui
-> Sent: Wednesday, November 07, 2012 12:07 PM
-> To: R, Durgadoss
-> Cc: Jonghwa Lee; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> Brown, Len; Rafael J. Wysocki; Amit Dinel Kachhap; MyungJoo Ham;
-> Kyungmin Park
-> Subject: RE: [PATCH v4] Thermal: exynos: Add sysfs node supporting
-> exynos's emulation mode.
-> 
-> On Thu, 2012-11-01 at 23:13 -0600, R, Durgadoss wrote:
-> > Hi Lee,
-> >
-> > > -----Original Message-----
-> > > From: Jonghwa Lee [mailto:jonghwa3.lee@samsung.com]
-> > > Sent: Friday, November 02, 2012 7:55 AM
-> > > To: linux-pm@vger.kernel.org
-> > > Cc: linux-kernel@vger.kernel.org; Brown, Len; R, Durgadoss; Rafael J.
-> > > Wysocki; Amit Dinel Kachhap; MyungJoo Ham; Kyungmin Park; Jonghwa
-> Lee
-> > > Subject: [PATCH v4] Thermal: exynos: Add sysfs node supporting
-> exynos's
-> > > emulation mode.
-> > >
-> > > This patch supports exynos's emulation mode with newly created sysfs
-> node.
-> > > Exynos 4x12 (4212, 4412) and 5 series provide emulation mode for
-> thermal
-> > > management unit. Thermal emulation mode supports software debug for
-> > > TMU's
-> > > operation. User can set temperature manually with software code and
-> TMU
-> > > will read current temperature from user value not from sensor's value.
-> > > This patch includes also documentary placed under
-> > > Documentation/thermal/.
-> > >
-> >
-> first of all, what would happen if overheat happens during emulation?
-> 
-> I just had a thought about if we can introduce this to the generic
-> thermal layer.
 
-Sure, we can.
+-- 
+Regards,
 
-> to do this, we only need to:
-> 1) introduce tz->emulation
-> 2) introduce thermal_get_temp()
->       static int thermal_get_temp(tz) {
->           if (tz->emulation)
->               return tz->emulation;
->           else
->               return tz->ops->get_temp(tz);
->       }
-> 3) replace tz->ops->get_temp() with thermal_get_temp() in thermal layer
-> 4) introduce /sys/class/thermal/thermal_zoneX/emulation
-> 5) when setting /sys/class/thermal/thermal_zoneX/emulation,
->    a) set tz->emulation
->    b) invoke thermal_zone_device_update();
-> this is a pure software emulation solution but it would work on all
-> generic thermal layer users.
-> 
-> do you think this proposal would work properly?
-
-Yes, this should work..
-But, I am working on (top of your -next tree) to add multiple sensor support to
-thermal framework.(What we discussed in Plumbers this year).
-This changes APIs quite a bit in the thermal framework.
-So, we will add this emulation support after the above changes are
-in. What do you think ?
-
-Thanks,
-Durga
-
-> if yes, I'd like to see if it is valuable for the other platform thermal
-> drivers.
-> 
-> thanks,
-> rui
-> > Thanks for fixing the comments.
-> > Please CC linux-acpi, when you submit thermal patches, going forward.
-> > I am CCing Rui for now, for him to review/merge this patch.
-> >
-> > Reviewed-by: Durgadoss R <durgadoss.r@intel.com>
-> >
-> > Thanks,
-> > Durga
-> >
-> > > Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> > > ---
-> > > v4
-> > >  - Fix Typo.
-> > >  - Remove unnecessary codes.
-> > >  - Add comments about feature of exynos emulation operation to the
-> > > document.
-> > >
-> > > v3
-> > >  - Remove unnecessay variables.
-> > >  - Do some code clean in exynos_tmu_emulation_store().
-> > >  - Make wrapping function of sysfs node creation function to use
-> > >    #ifdefs in minimum.
-> > >
-> > > v2
-> > >  exynos_thermal.c
-> > >  - Fix build error occured by wrong emulation control register name.
-> > >  - Remove exynos5410 dependent codes.
-> > >  exynos_thermal_emulation
-> > >  - Align indentation.
-> > >
-> > >  Documentation/thermal/exynos_thermal_emulation |   56
-> > > +++++++++++++++
-> > >  drivers/thermal/Kconfig                        |    9 +++
-> > >  drivers/thermal/exynos_thermal.c               |   91
-> > > ++++++++++++++++++++++++
-> > >  3 files changed, 156 insertions(+), 0 deletions(-)
-> > >  create mode 100644
-> Documentation/thermal/exynos_thermal_emulation
-> > >
-> > > diff --git a/Documentation/thermal/exynos_thermal_emulation
-> > > b/Documentation/thermal/exynos_thermal_emulation
-> > > new file mode 100644
-> > > index 0000000..a6ea06f
-> > > --- /dev/null
-> > > +++ b/Documentation/thermal/exynos_thermal_emulation
-> > > @@ -0,0 +1,56 @@
-> > > +EXYNOS EMULATION MODE
-> > > +========================
-> > > +
-> > > +Copyright (C) 2012 Samsung Electronics
-> > > +
-> > > +Written by Jonghwa Lee <jonghwa3.lee@samsung.com>
-> > > +
-> > > +Description
-> > > +-----------
-> > > +
-> > > +Exynos 4x12 (4212, 4412) and 5 series provide emulation mode for
-> thermal
-> > > management unit.
-> > > +Thermal emulation mode supports software debug for TMU's
-> operation.
-> > > User can set temperature
-> > > +manually with software code and TMU will read current temperature
-> from
-> > > user value not from
-> > > +sensor's value.
-> > > +
-> > > +Enabling CONFIG_EXYNOS_THERMAL_EMUL option will make this
-> support
-> > > in available.
-> > > +When it's enabled, sysfs node will be created under
-> > > +/sys/bus/platform/devices/'exynos device name'/ with name of
-> > > 'emulation'.
-> > > +
-> > > +The sysfs node, 'emulation', will contain value 0 for the initial state.
-> When
-> > > you input any
-> > > +temperature you want to update to sysfs node, it automatically enable
-> > > emulation mode and
-> > > +current temperature will be changed into it.
-> > > +(Exynos also supports user changable delay time which would be used
-> to
-> > > delay of
-> > > + changing temperature. However, this node only uses same delay of real
-> > > sensing time, 938us.)
-> > > +
-> > > +Exynos emulation mode requires synchronous of value changing and
-> > > enabling. It means when you
-> > > +want to update the any value of delay or next temperature, then you
-> have
-> > > to enable emulation
-> > > +mode at the same time. (Or you have to keep the mode enabling.) If
-> you
-> > > don't, it fails to
-> > > +change the value to updated one and just use last succeessful value
-> > > repeatedly. That's why
-> > > +this node gives users the right to change termerpature only. Just one
-> > > interface makes it more
-> > > +simply to use.
-> > > +
-> > > +Disabling emulation mode only requires writing value 0 to sysfs node.
-> > > +
-> > > +
-> > > +TEMP	120 |
-> > > +	    |
-> > > +	100 |
-> > > +	    |
-> > > +	 80 |
-> > > +	    |		     	 	 +-----------
-> > > +	 60 |      		     	 |	    |
-> > > +	    |	           +-------------|          |
-> > > +	 40 |              |         	 |          |
-> > > +   	    |		   |	     	 |          |
-> > > +	 20 |		   |	     	 |          +----------
-> > > +	    |	 	   |	     	 |          |          |
-> > > +  	  0
-> > >
-> |______________|_____________|__________|__________|_______
-> > > __
-> > > +		   A	    	 A	    A	   	       A     TIME
-> > > +		   |<----->|	 |<----->|  |<----->|	       |
-> > > +		   | 938us |  	 |	 |  |       |          |
-> > > +emulation    :  0  50	   |  	 70      |  20      |          0
-> > > +current temp :   sensor   50		 70         20	      sensor
-> > > +
-> > > +
-> > > +
-> > > diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> > > index e1cb6bd..c02a66c 100644
-> > > --- a/drivers/thermal/Kconfig
-> > > +++ b/drivers/thermal/Kconfig
-> > > @@ -55,3 +55,12 @@ config EXYNOS_THERMAL
-> > >  	help
-> > >  	  If you say yes here you get support for TMU (Thermal Managment
-> > >  	  Unit) on SAMSUNG EXYNOS series of SoC.
-> > > +
-> > > +config EXYNOS_THERMAL_EMUL
-> > > +	bool "EXYNOS TMU emulation mode support"
-> > > +	depends on !CPU_EXYNOS4210 && EXYNOS_THERMAL
-> > > +	help
-> > > +	  Exynos 4412 and 4414 and 5 series has emulation mode on TMU.
-> > > +	  Enable this option will be make sysfs node in exynos thermal
-> > > platform
-> > > +	  device directory to support emulation mode. With emulation mode
-> > > sysfs
-> > > +	  node, you can manually input temperature to TMU for simulation
-> > > purpose.
-> > > diff --git a/drivers/thermal/exynos_thermal.c
-> > > b/drivers/thermal/exynos_thermal.c
-> > > index fd03e85..eebd4e5 100644
-> > > --- a/drivers/thermal/exynos_thermal.c
-> > > +++ b/drivers/thermal/exynos_thermal.c
-> > > @@ -99,6 +99,14 @@
-> > >  #define IDLE_INTERVAL 10000
-> > >  #define MCELSIUS	1000
-> > >
-> > > +#ifdef CONFIG_EXYNOS_THERMAL_EMUL
-> > > +#define EXYNOS_EMUL_TIME	0x57F0
-> > > +#define EXYNOS_EMUL_TIME_SHIFT	16
-> > > +#define EXYNOS_EMUL_DATA_SHIFT	8
-> > > +#define EXYNOS_EMUL_DATA_MASK	0xFF
-> > > +#define EXYNOS_EMUL_ENABLE	0x1
-> > > +#endif /* CONFIG_EXYNOS_THERMAL_EMUL */
-> > > +
-> > >  /* CPU Zone information */
-> > >  #define PANIC_ZONE      4
-> > >  #define WARN_ZONE       3
-> > > @@ -832,6 +840,82 @@ static inline struct  exynos_tmu_platform_data
-> > > *exynos_get_driver_data(
-> > >  	return (struct exynos_tmu_platform_data *)
-> > >  			platform_get_device_id(pdev)->driver_data;
-> > >  }
-> > > +
-> > > +#ifdef CONFIG_EXYNOS_THERMAL_EMUL
-> > > +static ssize_t exynos_tmu_emulation_show(struct device *dev,
-> > > +					 struct device_attribute *attr,
-> > > +					 char *buf)
-> > > +{
-> > > +	struct platform_device *pdev = container_of(dev,
-> > > +					struct platform_device, dev);
-> > > +	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
-> > > +	unsigned int reg;
-> > > +	u8 temp_code;
-> > > +	int temp = 0;
-> > > +
-> > > +	mutex_lock(&data->lock);
-> > > +	clk_enable(data->clk);
-> > > +	reg = readl(data->base + EXYNOS_EMUL_CON);
-> > > +	clk_disable(data->clk);
-> > > +	mutex_unlock(&data->lock);
-> > > +
-> > > +	if (reg & EXYNOS_EMUL_ENABLE) {
-> > > +		reg >>= EXYNOS_EMUL_DATA_SHIFT;
-> > > +		temp_code = reg & EXYNOS_EMUL_DATA_MASK;
-> > > +		temp = code_to_temp(data, temp_code);
-> > > +	}
-> > > +
-> > > +	return sprintf(buf, "%d\n", temp);
-> > > +}
-> > > +
-> > > +static ssize_t exynos_tmu_emulation_store(struct device *dev,
-> > > +					struct device_attribute *attr,
-> > > +					const char *buf, size_t count)
-> > > +{
-> > > +	struct platform_device *pdev = container_of(dev,
-> > > +					struct platform_device, dev);
-> > > +	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
-> > > +	unsigned int reg;
-> > > +	int temp;
-> > > +
-> > > +	if (!sscanf(buf, "%d\n", &temp) || temp < 0)
-> > > +		return -EINVAL;
-> > > +
-> > > +	mutex_lock(&data->lock);
-> > > +	clk_enable(data->clk);
-> > > +
-> > > +	reg = readl(data->base + EXYNOS_EMUL_CON);
-> > > +
-> > > +	if (temp)
-> > > +		reg = (EXYNOS_EMUL_TIME << EXYNOS_EMUL_TIME_SHIFT)
-> > > |
-> > > +			(temp_to_code(data, temp) <<
-> > > EXYNOS_EMUL_DATA_SHIFT) |
-> > > +			EXYNOS_EMUL_ENABLE;
-> > > +	else
-> > > +		reg &= ~EXYNOS_EMUL_ENABLE;
-> > > +
-> > > +	writel(reg, data->base + EXYNOS_EMUL_CON);
-> > > +
-> > > +	clk_disable(data->clk);
-> > > +	mutex_unlock(&data->lock);
-> > > +
-> > > +	return count;
-> > > +}
-> > > +
-> > > +static DEVICE_ATTR(emulation, 0644, exynos_tmu_emulation_show,
-> > > +					exynos_tmu_emulation_store);
-> > > +static int create_emulation_sysfs(struct device *dev)
-> > > +{
-> > > +	return device_create_file(dev, &dev_attr_emulation);
-> > > +}
-> > > +static void remove_emulation_sysfs(struct device *dev)
-> > > +{
-> > > +	device_remove_file(dev, &dev_attr_emulation);
-> > > +}
-> > > +#else
-> > > +static inline int create_emulation_sysfs(struct device *dev) {return 0;}
-> > > +static inline void remove_emulation_sysfs(struct device *dev){}
-> > > +#endif
-> > > +
-> > >  static int __devinit exynos_tmu_probe(struct platform_device *pdev)
-> > >  {
-> > >  	struct exynos_tmu_data *data;
-> > > @@ -930,6 +1014,11 @@ static int __devinit exynos_tmu_probe(struct
-> > > platform_device *pdev)
-> > >  		dev_err(&pdev->dev, "Failed to register thermal
-> > > interface\n");
-> > >  		goto err_clk;
-> > >  	}
-> > > +
-> > > +	ret = create_emulation_sysfs(&pdev->dev);
-> > > +	if (ret)
-> > > +		dev_err(&pdev->dev, "Failed to create emulation mode
-> > > sysfs node\n");
-> > > +
-> > >  	return 0;
-> > >  err_clk:
-> > >  	platform_set_drvdata(pdev, NULL);
-> > > @@ -941,6 +1030,8 @@ static int __devexit exynos_tmu_remove(struct
-> > > platform_device *pdev)
-> > >  {
-> > >  	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
-> > >
-> > > +	remove_emulation_sysfs(&pdev->dev);
-> > > +
-> > >  	exynos_tmu_control(pdev, false);
-> > >
-> > >  	exynos_unregister_thermal();
-> > > --
-> > > 1.7.4.1
-> >
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Zhi Yong Wu
