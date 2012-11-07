@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab2KGK7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 05:59:43 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:23847 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248Ab2KGK7m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 05:59:42 -0500
-X-IronPort-AV: E=Sophos;i="4.80,728,1344211200"; 
-   d="scan'208";a="213712671"
-Message-ID: <1352285859.12977.45.camel@hastur.hellion.org.uk>
-Subject: Re: [Xen-devel] [PATCH 2/2] xen/arm: Fix compile errors when
- drivers are compiled as modules.
-From: Ian Campbell <ian.campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 7 Nov 2012 11:57:39 +0100
-In-Reply-To: <alpine.DEB.2.02.1211070959150.2689@kaball.uk.xensource.com>
-References: <1352239982-17389-1-git-send-email-konrad.wilk@oracle.com>
-	 <1352239982-17389-3-git-send-email-konrad.wilk@oracle.com>
-	 <alpine.DEB.2.02.1211070959150.2689@kaball.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	id S1754689Ab2KGLAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 06:00:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59479 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754249Ab2KGLAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 06:00:13 -0500
+Date: Wed, 7 Nov 2012 11:00:09 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/19] mm: numa: Create basic numa page hinting
+ infrastructure
+Message-ID: <20121107110008.GW8218@suse.de>
+References: <1352193295-26815-1-git-send-email-mgorman@suse.de>
+ <1352193295-26815-9-git-send-email-mgorman@suse.de>
+ <50995DD2.8000200@redhat.com>
+ <20121107103839.GT8218@suse.de>
+ <509A3C7E.9040809@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <509A3C7E.9040809@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-07 at 10:25 +0000, Stefano Stabellini wrote:
-> On Tue, 6 Nov 2012, Konrad Rzeszutek Wilk wrote:
-> > We end up with:
-> > 
-> > ERROR: "HYPERVISOR_event_channel_op" [drivers/xen/xen-gntdev.ko] undefined!
-> > ERROR: "privcmd_call" [drivers/xen/xen-privcmd.ko] undefined!
-> > ERROR: "HYPERVISOR_grant_table_op" [drivers/net/xen-netback/xen-netback.ko] undefined!
-> > 
-> > and this patch exports said function (which is implemented in hypercall.S).
-> > 
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Wed, Nov 07, 2012 at 05:48:30AM -0500, Rik van Riel wrote:
+> On 11/07/2012 05:38 AM, Mel Gorman wrote:
+> >On Tue, Nov 06, 2012 at 01:58:26PM -0500, Rik van Riel wrote:
+> >>On 11/06/2012 04:14 AM, Mel Gorman wrote:
+> >>>Note: This patch started as "mm/mpol: Create special PROT_NONE
+> >>>	infrastructure" and preserves the basic idea but steals *very*
+> >>>	heavily from "autonuma: numa hinting page faults entry points" for
+> >>>	the actual fault handlers without the migration parts.	The end
+> >>>	result is barely recognisable as either patch so all Signed-off
+> >>>	and Reviewed-bys are dropped. If Peter, Ingo and Andrea are ok with
+> >>>	this version, I will re-add the signed-offs-by to reflect the history.
+> >>>
+> >>>In order to facilitate a lazy -- fault driven -- migration of pages, create
+> >>>a special transient PAGE_NUMA variant, we can then use the 'spurious'
+> >>>protection faults to drive our migrations from.
+> >>>
+> >>>Pages that already had an effective PROT_NONE mapping will not be detected
+> >>
+> >>The patch itself is good, but the changelog needs a little
+> >>fix. While you are defining _PAGE_NUMA to _PAGE_PROTNONE on
+> >>x86, this may be different on other architectures.
+> >>
+> >>Therefore, the changelog should refer to PAGE_NUMA, not
+> >>PROT_NONE.
+> >>
+> >
+> >Fair point. I still want to record the point that PROT_NONE will not
+> >generate the faults though. How about this?
+> >
+> >     In order to facilitate a lazy -- fault driven -- migration of pages, create
+> >     a special transient PAGE_NUMA variant, we can then use the 'spurious'
+> >     protection faults to drive our migrations from.
+> >
+> >     The meaning of PAGE_NUMA depends on the architecture but on x86 it is
+> >     effectively PROT_NONE. In this case, PROT_NONE mappings will not be detected
+> >     to generate these 'spurious' faults for the simple reason that we cannot
+> >     distinguish them on their protection bits, see pte_numa(). This isn't
+> >     a problem since PROT_NONE (and possible PROT_WRITE with dirty tracking)
+> >     aren't used or are rare enough for us to not care about their placement.
 > 
-> Thank you very much for going out of your way to fix this issue (I am
-> currently at LinuxCon).
+> Actual PROT_NONE mappings will not generate these NUMA faults
+> for the reason that the page fault code checks the permission
+> on the VMA (and will throw a segmentation fault on actual
+> PROT_NONE mappings), before it ever calls handle_mm_fault.
 > 
-> 
-> >  arch/arm/xen/enlighten.c |    5 +++++
-> >  1 files changed, 5 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-> > index 59bcb96..96d969d 100644
-> > --- a/arch/arm/xen/enlighten.c
-> > +++ b/arch/arm/xen/enlighten.c
-> > @@ -166,3 +166,8 @@ void free_xenballooned_pages(int nr_pages, struct page **pages)
-> >  	*pages = NULL;
-> >  }
-> >  EXPORT_SYMBOL_GPL(free_xenballooned_pages);
-> > +
-> > +/* In the hypervisor.S file. */
-> > +EXPORT_SYMBOL_GPL(HYPERVISOR_event_channel_op);
-> > +EXPORT_SYMBOL_GPL(HYPERVISOR_grant_table_op);
-> > +EXPORT_SYMBOL_GPL(privcmd_call);
->  
-> I think the patch is OK and I tested it: it fixes the issue reported
-> by Russell.
-> However I am wondering, does it actually make sense only to export 3
-> hypercalls among the set implemented in hypercall.S?
-> Maybe it does make sense only to export a subset, but I wouldn't
-> necessarly do the differentiation here, I would just export all the
-> hypercalls implemented in hypercalls.S.
-> In fact if we separate the hypercalls in two sets, I would like to
-> see a similar differentiation on x86 too.
 
-On x86 these functions are static inline (all of them, I think) so
-exporting them is not necessary or possible.
+Updated. Thanks.
 
-I don't think you can export from a .S, otherwise the obvious answer
-would be to integrate it with the macro in hypercall.S.
-
-Possibly mad idea: auto-generate hypercall.[Sc] (.S=stubs & .c=exports)
-from include/xen/interface/xen.h:HYPERVISOR_* ?
-
-(Aside: the whitespace in hypercall.S is a bit fubarred, wrt the line
-wrapping in the macros)
-
-Ian.
-
+-- 
+Mel Gorman
+SUSE Labs
