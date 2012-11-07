@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab2KGMYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 07:24:12 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44666 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab2KGMYL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 07:24:11 -0500
+	id S1751719Ab2KGM1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 07:27:45 -0500
+Received: from mga09.intel.com ([134.134.136.24]:49303 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745Ab2KGM1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 07:27:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,730,1344236400"; 
+   d="scan'208";a="216282199"
+Message-ID: <509A53A5.5090909@intel.com>
+Date: Wed, 07 Nov 2012 20:27:17 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1352283494-31200-1-git-send-email-gaowanlong@cn.fujitsu.com>
-References: <1352283494-31200-1-git-send-email-gaowanlong@cn.fujitsu.com>
-From: Asias He <asias.hejun@gmail.com>
-Date: Wed, 7 Nov 2012 20:23:28 +0800
-Message-ID: <CAFO3S42dT_j9pQSNSUrdmkqu_pgxthx0zBy3qjdiuXrbxf5H+g@mail.gmail.com>
-Subject: Re: [PATCH 0/5] virtio-scsi: create a separate workqueue
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-scsi@vger.kernel.org,
-        kvm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
+        suresh.b.siddha@intel.com, arjan@linux.intel.com,
+        vincent.guittot@linaro.org, tglx@linutronix.de, andre.przywara@amd.com,
+        rjw@sisk.pl, paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, cl@linux.com,
+        pjt@google.com
+Subject: Re: [RFC PATCH 1/3] sched: add sched_policy and it's sysfs interface
+References: <1352207399-29497-1-git-send-email-alex.shi@intel.com> <1352207399-29497-2-git-send-email-alex.shi@intel.com> <20121106134831.GA969@kroah.com>
+In-Reply-To: <20121106134831.GA969@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 6:18 PM, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
-> patch 1-3,5 are some cleanups.
-> patch 4: create a separate work queue for virtio-scsi
-> to improve the performance, I tested with tmpfs backed
-> disk, the config file is like below,
-> [global]
-> bsrange=4k-64k
-> ioengine=libaio
-> direct=1
-> iodepth=4
-> loops=10
-> size=64M
->
-> Before:
-> Disk stats (read/write):
->   sda: ios=6547/5275, merge=37/39, ticks=3144/2645, in_queue=5780, util=81.62%
->   sdb: ios=6542/5277, merge=54/59, ticks=3234/3143, in_queue=6364, util=84.50%
->   sdc: ios=6532/5244, merge=65/62, ticks=3440/3076, in_queue=6505, util=86.83%
+>> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+>> index 6345294..5f6a573 100644
+>> --- a/drivers/base/cpu.c
+>> +++ b/drivers/base/cpu.c
+>> @@ -330,4 +330,6 @@ void __init cpu_dev_init(void)
+>>  		panic("Failed to register CPU subsystem");
+>>  
+>>  	cpu_dev_register_generic();
+>> +
+>> +	create_sysfs_sched_policy_group(cpu_subsys.dev_root);
+> 
+> Are you sure you didn't just race with userspace, creating the sysfs
+> files after the device was created and announced to userspace?
 
-The result is about the disk stat. Can you please post the iops and
-the bw instead?
+Sorry for don't fully get you. Is the sysfs announced to userspace
+just in 'mount -t sysfs sysfs /sys'?
 
-> After:
-> Disk stats (read/write):
->   sda: ios=6349/5318, merge=77/89, ticks=4820/3169, in_queue=7991, util=90.62%
->   sdb: ios=6364/5358, merge=39/53, ticks=3810/2816, in_queue=6615, util=84.63%
->   sdc: ios=6458/5352, merge=74/47, ticks=4425/3048, in_queue=7459, util=88.41%
->
->
-> Wanlong Gao (5):
->   virtio-scsi: remove the useless assignment
->   virtio-scsi: remove the needless variable gfp_mask
->   virtio-scsi: use pr_err instead of printk
->   virtio-scsi: create a separate work queue for virtio-scsi
->   virtio-scsi: tidy up the goto label in init()
->
->
->
-> Cc: James E.J. Bottomley <JBottomley@parallels.com>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: linux-scsi@vger.kernel.org
-> Cc: kvm@vger.kernel.org
->  drivers/scsi/virtio_scsi.c | 43 +++++++++++++++++++++++--------------------
->  1 file changed, 23 insertions(+), 20 deletions(-)
->
-> --
-> 1.8.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The old powersaving interface: sched_smt_power_savings also
+created here. and cpu_dev_init was called early before do_initcalls
+which cpuidle/cpufreq sysfs were initialized.
 
+Do you mean this line need to init as core_initcall?
+
+Thanks for comments! :)
+> 
+> If so, you need to fix this :)
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
 
 -- 
-Asias He
+Thanks
+    Alex
