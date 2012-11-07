@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab2KGUJD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 15:09:03 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37830 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab2KGUJC (ORCPT
+	id S1753095Ab2KGUOK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 15:14:10 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:38557 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab2KGUOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 15:09:02 -0500
-Message-ID: <509ABFD9.8090704@wwwdotorg.org>
-Date: Wed, 07 Nov 2012 13:08:57 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 7 Nov 2012 15:14:07 -0500
+Message-ID: <509AC0C4.4030704@linux.vnet.ibm.com>
+Date: Thu, 08 Nov 2012 01:42:52 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
-        dwmw2@infradead.org, artem.bityutskiy@linux.intel.com, hs@denx.de,
-        nsekhar@ti.com, mikedunn@newsguy.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        gregkh@linuxfoundation.org, hdoyu@nvidia.com, santosh.shilimkar@ti.com
-Subject: Re: [RFC v2 PATCH 2/2] mtd: davinci - remove DaVinci architecture
- depedency
-References: <1352238427-26085-1-git-send-email-m-karicheri2@ti.com> <1352238427-26085-3-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1352238427-26085-3-git-send-email-m-karicheri2@ti.com>
-X-Enigmail-Version: 1.4.4
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org, mgorman@suse.de, mjg59@srcf.ucam.org,
+        paulmck@linux.vnet.ibm.com, maxime.coquelin@stericsson.com,
+        loic.pallardy@stericsson.com, arjan@linux.intel.com,
+        kmpark@infradead.org, kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org,
+        rjw@sisk.pl, gargankita@gmail.com, amit.kachhap@linaro.org,
+        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org,
+        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/8] mm: Introduce memory regions data-structure to
+ capture region boundaries within node
+References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121106195225.6941.2868.stgit@srivatsabhat.in.ibm.com> <50999755.4000209@linux.vnet.ibm.com>
+In-Reply-To: <50999755.4000209@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12110720-7014-0000-0000-000002282B64
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2012 02:47 PM, Murali Karicheri wrote:
-> DaVinci NAND driver is a controller driver based on the AEMIF hardware
-> IP found on TI SoCs. It is also used on SoCs that are not DaVinci based. This
-> patch removes the driver dependency on DaVinci architecture so that it
-> can be used on other architectures such as c6x, keystone etc.
+On 11/07/2012 04:33 AM, Dave Hansen wrote:
+> On 11/06/2012 11:52 AM, Srivatsa S. Bhat wrote:
+>> But of course, memory regions are sub-divisions *within* a node, so it makes
+>> sense to keep the data-structures in the node's struct pglist_data. (Thus
+>> this placement makes memory regions parallel to zones in that node).
 > 
-> Also migrate the driver to use the new AEMIF platform driver API and
-> moving Documentation to Documentation/devicetree/bindings/mtd/davinci-nand.txt
-> as this is expected to be used outside of arm/davinci.
+> I think it's pretty silly to create *ANOTHER* subdivision of memory
+> separate from sparsemem.  One that doesn't handle large amounts of
+> memory or scale with memory hotplug.  As it stands, you can only support
+> 256*512MB=128GB of address space, which seems pretty puny.
+> 
+> This node_regions[]:
+> 
+>> @@ -687,6 +698,8 @@ typedef struct pglist_data {
+>>  	struct zone node_zones[MAX_NR_ZONES];
+>>  	struct zonelist node_zonelists[MAX_ZONELISTS];
+>>  	int nr_zones;
+>> +	struct node_mem_region node_regions[MAX_NR_REGIONS];
+>> +	int nr_node_regions;
+>>  #ifdef CONFIG_FLAT_NODE_MEM_MAP	/* means !SPARSEMEM */
+>>  	struct page *node_mem_map;
+>>  #ifdef CONFIG_MEMCG
+> 
+> looks like it's indexed the same way regardless of which node it is in.
+>  In other words, if there are two nodes, at least half of it is wasted,
+> and 3/4 if there are four nodes.  That seems a bit suboptimal.
+> 
 
->  delete mode 100644 Documentation/devicetree/bindings/arm/davinci/nand.txt
->  create mode 100644 Documentation/devicetree/bindings/mtd/davinci-nand.txt
->  create mode 100644 include/linux/platform_data/davinci-nand.h
+You're right, I have not addressed that problem in this initial RFC. Thanks
+for pointing it out! Going forward, we can surely optimize the way we deal
+with memory regions on NUMA systems, using some of the sparsemem techniques.
 
-Using "git format-patch -M" might show this as a file move/rename rather
-than a delete/add, which would be useful to highlight any changes you
-made at the same time.
+> Could you remind us of the logic for leaving sparsemem out of the
+> equation here?
+> 
 
-> diff --git a/Documentation/devicetree/bindings/mtd/davinci-nand.txt b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
+Nothing, its just that in this first RFC I was more focussed towards getting
+the overall design right, in terms of having an acceptable way of tracking
+pages belonging to different regions within the page allocator (freelists)
+and using it to influence page allocation decisions. And also to compare
+the merits of this approach over the previous "Hierarchy" design, in a broad
+("big picture") sense.
 
-> +Example (enbw_cmc board):
-> +aemif@60000000 {
-> +	compatible = "ti,davinci-aemif";
-> +	#address-cells = <2>;
-> +	#size-cells = <1>;
-> +	reg = <0x68000000 0x80000>;
-> +	ranges = <2 0 0x60000000 0x02000000
-> +		  3 0 0x62000000 0x02000000
-> +		  4 0 0x64000000 0x02000000
-> +		  5 0 0x66000000 0x02000000
-> +		  6 0 0x68000000 0x02000000>;
-> +	nand@3,0 {
+I'll add the above point you raised in my todo-list and address it in
+subsequent versions of the patchset.
 
-Here, isn't 3,0 the aemif chip-select ID that is decoding the NAND accesses?
-
-> +		compatible = "ti,davinci-nand";
-> +		reg = <3 0x0 0x807ff
-> +			6 0x0 0x8000>;
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +		ti,davinci-chipselect = <1>;
-
-So I don't understand why that chipselect property is needed, or has a
-different value. Is this muxing the AEMIF output chip-selects onto
-different SoC package pins or something? Seems like a job for pinctrl
-perhaps?
+Thank you very much for the quick feedback!
+ 
+Regards,
+Srivatsa S. Bhat
 
