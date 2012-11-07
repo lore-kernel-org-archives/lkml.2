@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab2KGO7d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 09:59:33 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42885 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab2KGO7b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 09:59:31 -0500
-Date: Wed, 7 Nov 2012 15:04:36 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1] isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
-Message-ID: <20121107150436.3d25ee51@pyramind.ukuu.org.uk>
-In-Reply-To: <1352282103-13665-1-git-send-email-lee.jones@linaro.org>
-References: <1352282103-13665-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754124Ab2KGPAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 10:00:15 -0500
+Received: from mga11.intel.com ([192.55.52.93]:35374 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753419Ab2KGPAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 10:00:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,730,1344236400"; 
+   d="scan'208";a="245324818"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
+Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH v5 02/11] thp: zap_huge_pmd(): zap huge zero pmd
+Date: Wed,  7 Nov 2012 17:00:54 +0200
+Message-Id: <1352300463-12627-3-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  7 Nov 2012 10:55:03 +0100
-Lee Jones <lee.jones@linaro.org> wrote:
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-> It doesn't make much sense to enable ISDN services if you don't
-> intend to connect to a network. 
+We don't have a real page to zap in huge zero page case. Let's just
+clear pmd and remove it from tlb.
 
-I would disagree. However what I don't understand and you've not
-explained is why the current code is a bug or a problem ?
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ mm/huge_memory.c |   21 +++++++++++++--------
+ 1 files changed, 13 insertions(+), 8 deletions(-)
 
-This seems to be a make-work inconvenience causing patch that serves no
-useful purpose ?
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index e5ce979..ff834ea 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1058,15 +1058,20 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 		pmd_t orig_pmd;
+ 		pgtable = pgtable_trans_huge_withdraw(tlb->mm);
+ 		orig_pmd = pmdp_get_and_clear(tlb->mm, addr, pmd);
+-		page = pmd_page(orig_pmd);
+ 		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
+-		page_remove_rmap(page);
+-		VM_BUG_ON(page_mapcount(page) < 0);
+-		add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
+-		VM_BUG_ON(!PageHead(page));
+-		tlb->mm->nr_ptes--;
+-		spin_unlock(&tlb->mm->page_table_lock);
+-		tlb_remove_page(tlb, page);
++		if (is_huge_zero_pmd(orig_pmd)) {
++			tlb->mm->nr_ptes--;
++			spin_unlock(&tlb->mm->page_table_lock);
++		} else {
++			page = pmd_page(orig_pmd);
++			page_remove_rmap(page);
++			VM_BUG_ON(page_mapcount(page) < 0);
++			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
++			VM_BUG_ON(!PageHead(page));
++			tlb->mm->nr_ptes--;
++			spin_unlock(&tlb->mm->page_table_lock);
++			tlb_remove_page(tlb, page);
++		}
+ 		pte_free(tlb->mm, pgtable);
+ 		ret = 1;
+ 	}
+-- 
+1.7.7.6
 
-Alan
