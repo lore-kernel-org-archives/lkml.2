@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab2KGP0T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 10:26:19 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:50083 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab2KGP0R (ORCPT
+	id S1753938Ab2KGP3g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 10:29:36 -0500
+Received: from mo4.mail-out.ovh.net ([178.32.228.4]:42863 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab2KGP3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 10:26:17 -0500
-From: Alban Bedel <alban.bedel@avionic-design.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Roland Stigge <stigge@antcom.de>,
-        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Subject: [PATCH] pwm: lpc32xx - Fix the PWM polarity
-Date: Wed,  7 Nov 2012 16:25:55 +0100
-Message-Id: <1352301955-15960-1-git-send-email-alban.bedel@avionic-design.de>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20121106181939.61c50233@avionic-0020.adnet.avionic-design.de>
-References: <20121106181939.61c50233@avionic-0020.adnet.avionic-design.de>
-X-Provags-ID: V02:K0:hLoqvDnsBxBIMZ7TxOmTCq195B2cYP5IIvlZdmOKSQ7
- NLv84FROms87vPuovw9ygeM7sPQjj1RCDAq2ThleYWomIbLcAa
- AjDvLpy4LvkKvJEw4zcVSd3f3nFirnnuNIVHOcX0Oy06UAKhfX
- G+VtV3xD0kdOCMHgoaVi2AY6LlRG38IpDokZOt/1hr/lxOXi9r
- L4utqFM+2Dn1RtFLjJ6ID1hdALAS6UfG2vns2Hn4w5Sy9x/qcz
- dQAYMFnhjIEKZvvp3hU3JIB0Dt84pk8vgUXDfjF6Ob0vjUzRMT
- aKeiWd4yVikGhJHpYhgKKREt2vfdOTgYn+C3ifjkEsXT42Haf8
- eq9PFcblg4VWrrMeYFMs1Klm+5NS+z7FcFRizcG92YdreTutHy
- H6GEeKvZtYftp/6hfjov4UXcy6qstozJ8hspFq+4aqVUez0FDw
- WbGv3
+	Wed, 7 Nov 2012 10:29:35 -0500
+Date: Wed, 7 Nov 2012 16:27:29 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Royer <nicolas@eukrea.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
+        linux-crypto@vger.kernel.org, herbert@gondor.hengli.com.au,
+        davem@davemloft.net, eric@eukrea.com
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH 1/5] ARM: AT91SAM9G45: fix crypto peripherals irq issue
+ due to sparse irq support.
+Message-ID: <20121107152729.GE4576@game.jcrosoft.org>
+References: <1352219463-30360-1-git-send-email-nicolas@eukrea.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1352219463-30360-1-git-send-email-nicolas@eukrea.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 9105434023217703700
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrfeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtugfgjggfsehtkefttddtredu
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrfeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtugfgjggfsehtkefttddtredu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
----
- drivers/pwm/pwm-lpc32xx.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+On 17:31 Tue 06 Nov     , Nicolas Royer wrote:
+> Spare irq support introduced by commit "8fe82a5 ARM: at91: sparse irq support"
+> involves to add the NR_IRQS_LEGACY offset to irq number.
+> 
+> Signed-off-by: Nicolas Royer <nicolas@eukrea.com>
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Acked-by: Eric Bénard <eric@eukrea.com>
+> Tested-by: Eric Bénard <eric@eukrea.com>
+> Cc: stable@vger.kernel.org # 3.6
 
-diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
-index adb87f0..0dc278d 100644
---- a/drivers/pwm/pwm-lpc32xx.c
-+++ b/drivers/pwm/pwm-lpc32xx.c
-@@ -51,7 +51,11 @@ static int lpc32xx_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 
- 	c = 256 * duty_ns;
- 	do_div(c, period_ns);
--	duty_cycles = c;
-+	if (c == 0)
-+		c = 256;
-+	if (c > 255)
-+		c = 255;
-+	duty_cycles = 256 - c;
- 
- 	writel(PWM_ENABLE | PWM_RELOADV(period_cycles) | PWM_DUTY(duty_cycles),
- 		lpc32xx->base + (pwm->hwpwm << 2));
--- 
-1.7.0.4
+ok will see if we can have it for 3.7
 
+Best Regards,
+J.
