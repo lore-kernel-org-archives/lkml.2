@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab2KGDGp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 22:06:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5001 "EHLO mx1.redhat.com"
+	id S1753978Ab2KGDGu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 22:06:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65225 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223Ab2KGDGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 22:06:41 -0500
+	id S1753207Ab2KGDGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 22:06:47 -0500
 From: Rafael Aquini <aquini@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
         Minchan Kim <minchan@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, aquini@redhat.com
-Subject: [PATCH v11 1/7] mm: adjust address_space_operations.migratepage() return code
-Date: Wed,  7 Nov 2012 01:05:48 -0200
-Message-Id: <74bc30697313206e1225f6fc658bc5952b588dcc.1352256085.git.aquini@redhat.com>
+Subject: [PATCH v11 4/7] mm: introduce compaction and migration for ballooned pages
+Date: Wed,  7 Nov 2012 01:05:51 -0200
+Message-Id: <08be4346b620ae9344691cc6c2ad0bc51f492e01.1352256088.git.aquini@redhat.com>
 In-Reply-To: <cover.1352256081.git.aquini@redhat.com>
 References: <cover.1352256081.git.aquini@redhat.com>
 In-Reply-To: <cover.1352256081.git.aquini@redhat.com>
@@ -28,152 +28,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces MIGRATEPAGE_SUCCESS as the default return code
-for address_space_operations.migratepage() method and documents the
-expected return code for the same method in failure cases.
+Memory fragmentation introduced by ballooning might reduce significantly
+the number of 2MB contiguous memory blocks that can be used within a guest,
+thus imposing performance penalties associated with the reduced number of
+transparent huge pages that could be used by the guest workload.
+
+This patch introduces the helper functions as well as the necessary changes
+to teach compaction and migration bits how to cope with pages which are
+part of a guest memory balloon, in order to make them movable by memory
+compaction procedures.
 
 Signed-off-by: Rafael Aquini <aquini@redhat.com>
 ---
- fs/hugetlbfs/inode.c    |  4 ++--
- include/linux/migrate.h |  7 +++++++
- mm/migrate.c            | 22 +++++++++++-----------
- 3 files changed, 20 insertions(+), 13 deletions(-)
+ mm/compaction.c | 21 +++++++++++++++++++--
+ mm/migrate.c    | 36 ++++++++++++++++++++++++++++++++++--
+ 2 files changed, 53 insertions(+), 4 deletions(-)
 
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index c5bc355..bdeda2c 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -608,11 +608,11 @@ static int hugetlbfs_migrate_page(struct address_space *mapping,
- 	int rc;
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 9eef558..76abd84 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -14,6 +14,7 @@
+ #include <linux/backing-dev.h>
+ #include <linux/sysctl.h>
+ #include <linux/sysfs.h>
++#include <linux/balloon_compaction.h>
+ #include "internal.h"
  
- 	rc = migrate_huge_page_move_mapping(mapping, newpage, page);
--	if (rc)
-+	if (rc != MIGRATEPAGE_SUCCESS)
- 		return rc;
- 	migrate_page_copy(newpage, page);
+ #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+@@ -565,9 +566,24 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 			goto next_pageblock;
+ 		}
  
--	return 0;
-+	return MIGRATEPAGE_SUCCESS;
- }
+-		/* Check may be lockless but that's ok as we recheck later */
+-		if (!PageLRU(page))
++		/*
++		 * Check may be lockless but that's ok as we recheck later.
++		 * It's possible to migrate LRU pages and balloon pages
++		 * Skip any other type of page
++		 */
++		if (!PageLRU(page)) {
++			if (unlikely(balloon_page_movable(page))) {
++				if (locked && balloon_page_isolate(page)) {
++					/* Successfully isolated */
++					cc->finished_update_migrate = true;
++					list_add(&page->lru, migratelist);
++					cc->nr_migratepages++;
++					nr_isolated++;
++					goto check_compact_cluster;
++				}
++			}
+ 			continue;
++		}
  
- static int hugetlbfs_statfs(struct dentry *dentry, struct kstatfs *buf)
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index ce7e667..a4e886d 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -7,6 +7,13 @@
+ 		/*
+ 		 * PageLRU is set. lru_lock normally excludes isolation
+@@ -621,6 +637,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		cc->nr_migratepages++;
+ 		nr_isolated++;
  
- typedef struct page *new_page_t(struct page *, unsigned long private, int **);
- 
-+/*
-+ * Return values from addresss_space_operations.migratepage():
-+ * - negative errno on page migration failure;
-+ * - zero on page migration success;
-+ */
-+#define MIGRATEPAGE_SUCCESS		0
-+
- #ifdef CONFIG_MIGRATION
- 
- extern void putback_lru_pages(struct list_head *l);
++check_compact_cluster:
+ 		/* Avoid isolating too much */
+ 		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX) {
+ 			++low_pfn;
 diff --git a/mm/migrate.c b/mm/migrate.c
-index 77ed2d7..98c7a89 100644
+index 98c7a89..87ffe54 100644
 --- a/mm/migrate.c
 +++ b/mm/migrate.c
-@@ -286,7 +286,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
- 		/* Anonymous page without mapping */
- 		if (page_count(page) != 1)
- 			return -EAGAIN;
--		return 0;
-+		return MIGRATEPAGE_SUCCESS;
- 	}
+@@ -35,6 +35,7 @@
+ #include <linux/hugetlb.h>
+ #include <linux/hugetlb_cgroup.h>
+ #include <linux/gfp.h>
++#include <linux/balloon_compaction.h>
  
- 	spin_lock_irq(&mapping->tree_lock);
-@@ -356,7 +356,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
- 	}
- 	spin_unlock_irq(&mapping->tree_lock);
+ #include <asm/tlbflush.h>
  
--	return 0;
-+	return MIGRATEPAGE_SUCCESS;
+@@ -79,7 +80,10 @@ void putback_lru_pages(struct list_head *l)
+ 		list_del(&page->lru);
+ 		dec_zone_page_state(page, NR_ISOLATED_ANON +
+ 				page_is_file_cache(page));
+-		putback_lru_page(page);
++		if (unlikely(balloon_page_movable(page)))
++			balloon_page_putback(page);
++		else
++			putback_lru_page(page);
+ 	}
  }
  
- /*
-@@ -372,7 +372,7 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
- 	if (!mapping) {
- 		if (page_count(page) != 1)
- 			return -EAGAIN;
--		return 0;
-+		return MIGRATEPAGE_SUCCESS;
+@@ -778,6 +782,18 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+ 		}
  	}
  
- 	spin_lock_irq(&mapping->tree_lock);
-@@ -399,7 +399,7 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
- 	page_unfreeze_refs(page, expected_count - 1);
- 
- 	spin_unlock_irq(&mapping->tree_lock);
--	return 0;
-+	return MIGRATEPAGE_SUCCESS;
- }
- 
- /*
-@@ -486,11 +486,11 @@ int migrate_page(struct address_space *mapping,
- 
- 	rc = migrate_page_move_mapping(mapping, newpage, page, NULL, mode);
- 
--	if (rc)
-+	if (rc != MIGRATEPAGE_SUCCESS)
- 		return rc;
- 
- 	migrate_page_copy(newpage, page);
--	return 0;
-+	return MIGRATEPAGE_SUCCESS;
- }
- EXPORT_SYMBOL(migrate_page);
- 
-@@ -513,7 +513,7 @@ int buffer_migrate_page(struct address_space *mapping,
- 
- 	rc = migrate_page_move_mapping(mapping, newpage, page, head, mode);
- 
--	if (rc)
-+	if (rc != MIGRATEPAGE_SUCCESS)
- 		return rc;
- 
++	if (unlikely(balloon_page_movable(page))) {
++		/*
++		 * A ballooned page does not need any special attention from
++		 * physical to virtual reverse mapping procedures.
++		 * Skip any attempt to unmap PTEs or to remap swap cache,
++		 * in order to avoid burning cycles at rmap level, and perform
++		 * the page migration right away (proteced by page lock).
++		 */
++		rc = balloon_page_migrate(newpage, page, mode);
++		goto uncharge;
++	}
++
  	/*
-@@ -549,7 +549,7 @@ int buffer_migrate_page(struct address_space *mapping,
- 
- 	} while (bh != head);
- 
--	return 0;
-+	return MIGRATEPAGE_SUCCESS;
- }
- EXPORT_SYMBOL(buffer_migrate_page);
- #endif
-@@ -814,7 +814,7 @@ skip_unmap:
+ 	 * Corner case handling:
+ 	 * 1. When a new swap-cache page is read into, it is added to the LRU
+@@ -814,7 +830,9 @@ skip_unmap:
  		put_anon_vma(anon_vma);
  
  uncharge:
--	mem_cgroup_end_migration(mem, page, newpage, rc == 0);
-+	mem_cgroup_end_migration(mem, page, newpage, rc == MIGRATEPAGE_SUCCESS);
+-	mem_cgroup_end_migration(mem, page, newpage, rc == MIGRATEPAGE_SUCCESS);
++	mem_cgroup_end_migration(mem, page, newpage,
++				 (rc == MIGRATEPAGE_SUCCESS ||
++				  rc == MIGRATEPAGE_BALLOON_SUCCESS));
  unlock:
  	unlock_page(page);
  out:
-@@ -987,7 +987,7 @@ int migrate_pages(struct list_head *from,
- 			case -EAGAIN:
- 				retry++;
- 				break;
--			case 0:
-+			case MIGRATEPAGE_SUCCESS:
- 				break;
- 			default:
- 				/* Permanent failure */
-@@ -1024,7 +1024,7 @@ int migrate_huge_page(struct page *hpage, new_page_t get_new_page,
- 			/* try again */
- 			cond_resched();
- 			break;
--		case 0:
-+		case MIGRATEPAGE_SUCCESS:
+@@ -846,6 +864,20 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
  			goto out;
- 		default:
- 			rc = -EIO;
+ 
+ 	rc = __unmap_and_move(page, newpage, force, offlining, mode);
++
++	if (unlikely(rc == MIGRATEPAGE_BALLOON_SUCCESS)) {
++		/*
++		 * A ballooned page has been migrated already.
++		 * Now, it's the time to remove the old page from the isolated
++		 * pageset list and handle it back to Buddy, wrap-up counters
++		 * and return.
++		 */
++		dec_zone_page_state(page, NR_ISOLATED_ANON +
++				    page_is_file_cache(page));
++		put_page(page);
++		__free_page(page);
++		return 0;
++	}
+ out:
+ 	if (rc != -EAGAIN) {
+ 		/*
 -- 
 1.7.11.7
 
