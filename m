@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab2KGBPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 20:15:25 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:39202 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754126Ab2KGBPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 20:15:24 -0500
-Date: Wed, 7 Nov 2012 01:15:21 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm radeon + core fixes
-Message-ID: <alpine.DEB.2.00.1211070114190.1310@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754112Ab2KGBa3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 20:30:29 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42135 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab2KGBa2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Nov 2012 20:30:28 -0500
+X-AuditID: 9c930179-b7c8bae000003559-83-5099b9b068e3
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, David Ahern <dsahern@gmail.com>,
+        Irina Tirdea <irina.tirdea@gmail.com>
+Subject: [PATCH] perf tools: Don't try to lookup objdump for live mode
+Date: Wed,  7 Nov 2012 10:30:15 +0900
+Message-Id: <1352251815-12615-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Hi Linus,
+Arnaldo reported that annotation during perf top resulted in a
+segfault.  It was because the env->arch was NULL and we don't set it
+for a live session.  In fact, no need to look up objdump in this case
+since we can use system's default (native) objdump.
 
-a single radeon typo fix for a regressions
-and two fixes for a regression in the open helper addres space stuff.
+Reported-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Irina Tirdea <irina.tirdea@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/arch/common.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Dave.
+diff --git a/tools/perf/arch/common.c b/tools/perf/arch/common.c
+index 5683529135b1..3e975cb6232e 100644
+--- a/tools/perf/arch/common.c
++++ b/tools/perf/arch/common.c
+@@ -199,6 +199,13 @@ out_error:
+ 
+ int perf_session_env__lookup_objdump(struct perf_session_env *env)
+ {
++	/*
++	 * For live mode, env->arch will be NULL and we can use
++	 * the native objdump tool.
++	 */
++	if (env->arch == NULL)
++		return 0;
++
+ 	return perf_session_env__lookup_binutils_path(env, "objdump",
+ 						      &objdump_path);
+ }
+-- 
+1.7.11.7
 
-The following changes since commit 3d70f8c617a436c7146ecb81df2265b4626dfe89:
-
-  Linux 3.7-rc4 (2012-11-04 11:07:39 -0800)
-
-are available in the git repository at:
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-Alex Deucher (1):
-      drm/radeon: fix typo in evergreen_mc_resume()
-
-Ilija Hadzic (2):
-      drm: restore open_count if drm_setup fails
-      drm: set dev_mapping before calling drm_open_helper
-
- drivers/gpu/drm/drm_fops.c         |   44 ++++++++++++++++++++++++-----------
- drivers/gpu/drm/radeon/evergreen.c |    2 +-
- 2 files changed, 31 insertions(+), 15 deletions(-)
