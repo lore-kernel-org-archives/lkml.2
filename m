@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab2KGNfT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 08:35:19 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:56057 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab2KGNfF (ORCPT
+	id S1753091Ab2KGNoJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 08:44:09 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38791 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab2KGNoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 08:35:05 -0500
+	Wed, 7 Nov 2012 08:44:07 -0500
+From: sjur.brandeland@stericsson.com
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, sjur@brendeland.net,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [PATCH resend] virtio_console: Free buffers from out-queue upon close
+Date: Wed,  7 Nov 2012 14:43:42 +0100
+Message-Id: <1352295822-22906-1-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.9.5
+References: <1350287856-5284-1-git-send-email-sjur.brandeland@stericsson.com> <1350287856-5284-5-git-send-email-sjur.brandeland@stericsson.com> <878vayhsca.fsf@rustcorp.com.au> <20121101073951.GA17012@amit.redhat.com> <87r4oc52ov.fsf@rustcorp.com.au> <20121102102047.GE10483@amit.redhat.com> <81C3A93C17462B4BBD7E272753C1057923BE98E5C6@EXDCVYMBSTM005.EQ1STM.local> <1352298171-21869-1-git-send-email-sjur.brandeland@stericsson.com>
+In-Reply-To: <20121102102047.GE10483@amit.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1352215711.3692.1.camel@phoenix>
-References: <1352215711.3692.1.camel@phoenix>
-Date: Wed, 7 Nov 2012 22:35:04 +0900
-X-Google-Sender-Auth: qgKib4XKd4AtFk-h1wpxE5FjZYc
-Message-ID: <CAH9JG2UKuuxg+GdaXNuiOZQDr2mbrbXDzFrxuj8jkTP3QRO+5g@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: samsung: Remove a redundant settting for ctrldesc->npins
-From: Kyungmin Park <kmpark@infradead.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-On Wed, Nov 7, 2012 at 12:28 AM, Axel Lin <axel.lin@ingics.com> wrote:
-> Set it once is enough.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/pinctrl/pinctrl-samsung.c |    1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
-> index fc34cac..1307283 100644
-> --- a/drivers/pinctrl/pinctrl-samsung.c
-> +++ b/drivers/pinctrl/pinctrl-samsung.c
-> @@ -714,7 +714,6 @@ static int __devinit samsung_pinctrl_register(struct platform_device *pdev,
->         }
->         ctrldesc->pins = pindesc;
->         ctrldesc->npins = drvdata->ctrl->nr_pins;
-> -       ctrldesc->npins = drvdata->ctrl->nr_pins;
->
->         /* dynamically populate the pin number and pin name for pindesc */
->         for (pin = 0, pdesc = pindesc; pin < ctrldesc->npins; pin++, pdesc++)
-> --
-> 1.7.9.5
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Free pending output buffers from the virtio out-queue when
+host has acknowledged port_close. Also removed WARN_ON()
+in remove_port_data().
+
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+---
+
+Resending, this time including a proper "Subject"...
+--
+
+Hi Amit,
+
+Note: This patch is compile tested only. I have done the removal
+of buffers from out-queue in handle_control_message()
+when host has acked the close request. This seems less
+racy than doing it in the release function.
+
+I you want to change this further, feel free to take over from
+here and refine this.
+
+Thanks,
+Sjur
+
+ drivers/char/virtio_console.c |   14 ++++++--------
+ 1 files changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 3fa036a..3a5831d 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1522,15 +1522,9 @@ static void remove_port_data(struct port *port)
+ 	while ((buf = virtqueue_detach_unused_buf(port->in_vq)))
+ 		free_buf(buf, true);
+ 
+-	/*
+-	 * Check the out-queue for buffers. For VIRTIO_CONSOLE it is a
+-	 * bug if this happens. But for RPROC_SERIAL the remote processor
+-	 * may have crashed, leaving buffers hanging in the out-queue.
+-	 */
+-	while ((buf = virtqueue_detach_unused_buf(port->out_vq))) {
+-		WARN_ON_ONCE(!is_rproc_serial(port->portdev->vdev));
++	/* Free pending buffers from the out-queue. */
++	while ((buf = virtqueue_detach_unused_buf(port->out_vq)))
+ 		free_buf(buf, true);
+-	}
+ }
+ 
+ /*
+@@ -1655,6 +1649,10 @@ static void handle_control_message(struct ports_device *portdev,
+ 		 */
+ 		spin_lock_irq(&port->outvq_lock);
+ 		reclaim_consumed_buffers(port);
++
++		/* Free pending buffers from the out-queue. */
++		while ((buf = virtqueue_detach_unused_buf(port->out_vq)))
++			free_buf(buf, true);
+ 		spin_unlock_irq(&port->outvq_lock);
+ 
+ 		/*
+-- 
+1.7.5.4
+
