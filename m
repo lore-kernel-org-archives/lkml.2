@@ -1,112 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab2KGJyq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 04:54:46 -0500
-Received: from hermes.synopsys.com ([198.182.44.81]:53843 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927Ab2KGJsN (ORCPT
+	id S1754124Ab2KGJz3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 04:55:29 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57811 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374Ab2KGJz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 04:48:13 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, arnd@arndb.de,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [RFC PATCH v1 01/31] ARC: Generic Headers
-Date: Wed,  7 Nov 2012 10:47:24 +0100
-Message-Id: <1352281674-2186-2-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
+	Wed, 7 Nov 2012 04:55:27 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: davem@davemloft.net, Lee Jones <lee.jones@linaro.org>,
+        Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org
+Subject: [PATCH 1/1] isdn: Make CONFIG_ISDN depend on CONFIG_NETDEVICES
+Date: Wed,  7 Nov 2012 10:55:03 +0100
+Message-Id: <1352282103-13665-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/include/asm/Kbuild        |   57 ++++++++++++++++++++++++++++++++++++
- arch/arc/include/asm/asm-offsets.h |    9 ++++++
- 2 files changed, 66 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/include/asm/Kbuild
- create mode 100644 arch/arc/include/asm/asm-offsets.h
+It doesn't make much sense to enable ISDN services if you don't
+intend to connect to a network. Therefore insisting that ISDN
+depends on NETDEVICES seems logical. We can then remove any
+guards mentioning NETDEVICES inside all subordinate drivers.
 
-diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
-new file mode 100644
-index 0000000..d6c037a
---- /dev/null
-+++ b/arch/arc/include/asm/Kbuild
-@@ -0,0 +1,57 @@
-+include include/asm-generic/Kbuild.asm
-+
-+# 7-Oct-12: Jeremy Bennett <jeremy.bennett@embecosm.com>. Some of these
-+# headers, beyond those specified in the generic set are needed by user code.
-+
-+header-y += page.h
-+header-y += cachectl.h
-+
-+generic-y += auxvec.h
-+generic-y += bugs.h
-+generic-y += bitsperlong.h
-+generic-y += clkdev.h
-+generic-y += cputime.h
-+generic-y += current.h
-+generic-y += device.h
-+generic-y += div64.h
-+generic-y += emergency-restart.h
-+generic-y += errno.h
-+generic-y += fcntl.h
-+generic-y += fb.h
-+generic-y += ftrace.h
-+generic-y += hardirq.h
-+generic-y += hw_irq.h
-+generic-y += ioctl.h
-+generic-y += ioctls.h
-+generic-y += ipcbuf.h
-+generic-y += irq_regs.h
-+generic-y += kmap_types.h
-+generic-y += kvm_para.h
-+generic-y += local.h
-+generic-y += local64.h
-+generic-y += mman.h
-+generic-y += msgbuf.h
-+generic-y += param.h
-+generic-y += parport.h
-+generic-y += percpu.h
-+generic-y += poll.h
-+generic-y += posix_types.h
-+generic-y += resource.h
-+generic-y += scatterlist.h
-+generic-y += sembuf.h
-+generic-y += shmbuf.h
-+generic-y += shmparam.h
-+generic-y += siginfo.h
-+generic-y += socket.h
-+generic-y += sockios.h
-+generic-y += stat.h
-+generic-y += statfs.h
-+generic-y += termbits.h
-+generic-y += termios.h
-+generic-y += topology.h
-+generic-y += types.h
-+generic-y += ucontext.h
-+generic-y += unaligned.h
-+generic-y += user.h
-+generic-y += vga.h
-+generic-y += xor.h
-diff --git a/arch/arc/include/asm/asm-offsets.h b/arch/arc/include/asm/asm-offsets.h
-new file mode 100644
-index 0000000..dad1876
---- /dev/null
-+++ b/arch/arc/include/asm/asm-offsets.h
-@@ -0,0 +1,9 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <generated/asm-offsets.h>
+This also has the nice side-effect of fixing the warning below
+when ISDN_I4L && !CONFIG_NETDEVICES at compile time.
+
+This patch fixes:
+drivers/isdn/i4l/isdn_common.c: In function ‘isdn_ioctl’:
+drivers/isdn/i4l/isdn_common.c:1278:8: warning: unused variable ‘s’ [-Wunused-variable]
+
+Cc: Karsten Keil <isdn@linux-pingi.de>
+Cc: netdev@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/isdn/Kconfig           |    2 +-
+ drivers/isdn/i4l/Kconfig       |    2 +-
+ drivers/isdn/i4l/isdn_common.c |    4 ----
+ 3 files changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/isdn/Kconfig b/drivers/isdn/Kconfig
+index a233ed5..86cd75a 100644
+--- a/drivers/isdn/Kconfig
++++ b/drivers/isdn/Kconfig
+@@ -4,7 +4,7 @@
+ 
+ menuconfig ISDN
+ 	bool "ISDN support"
+-	depends on NET
++	depends on NET && NETDEVICES
+ 	depends on !S390 && !UML
+ 	---help---
+ 	  ISDN ("Integrated Services Digital Network", called RNIS in France)
+diff --git a/drivers/isdn/i4l/Kconfig b/drivers/isdn/i4l/Kconfig
+index 2302fbe..9c6650e 100644
+--- a/drivers/isdn/i4l/Kconfig
++++ b/drivers/isdn/i4l/Kconfig
+@@ -6,7 +6,7 @@ if ISDN_I4L
+ 
+ config ISDN_PPP
+ 	bool "Support synchronous PPP"
+-	depends on INET && NETDEVICES
++	depends on INET
+ 	select SLHC
+ 	help
+ 	  Over digital connections such as ISDN, there is no need to
+diff --git a/drivers/isdn/i4l/isdn_common.c b/drivers/isdn/i4l/isdn_common.c
+index 8c610fa..e2a945e 100644
+--- a/drivers/isdn/i4l/isdn_common.c
++++ b/drivers/isdn/i4l/isdn_common.c
+@@ -1312,7 +1312,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
+ 			} else
+ 				return -EINVAL;
+ 			break;
+-#ifdef CONFIG_NETDEVICES
+ 		case IIOCNETGPN:
+ 			/* Get peer phone number of a connected
+ 			 * isdn network interface */
+@@ -1322,7 +1321,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
+ 				return isdn_net_getpeer(&phone, argp);
+ 			} else
+ 				return -EINVAL;
+-#endif
+ 		default:
+ 			return -EINVAL;
+ 		}
+@@ -1352,7 +1350,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
+ 		case IIOCNETLCR:
+ 			printk(KERN_INFO "INFO: ISDN_ABC_LCR_SUPPORT not enabled\n");
+ 			return -ENODEV;
+-#ifdef CONFIG_NETDEVICES
+ 		case IIOCNETAIF:
+ 			/* Add a network-interface */
+ 			if (arg) {
+@@ -1491,7 +1488,6 @@ isdn_ioctl(struct file *file, uint cmd, ulong arg)
+ 				return -EFAULT;
+ 			return isdn_net_force_hangup(name);
+ 			break;
+-#endif                          /* CONFIG_NETDEVICES */
+ 		case IIOCSETVER:
+ 			dev->net_verbose = arg;
+ 			printk(KERN_INFO "isdn: Verbose-Level is %d\n", dev->net_verbose);
 -- 
-1.7.4.1
+1.7.9.5
 
