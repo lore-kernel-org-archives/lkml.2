@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab2KGPBN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 10:01:13 -0500
-Received: from mga11.intel.com ([192.55.52.93]:35374 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753263Ab2KGPAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754054Ab2KGPAN (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 7 Nov 2012 10:00:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29288 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753263Ab2KGPAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 10:00:10 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,730,1344236400"; 
-   d="scan'208";a="243663132"
+   d="scan'208";a="238555964"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
@@ -16,9 +16,9 @@ Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
         linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH v5 06/11] thp: change split_huge_page_pmd() interface
-Date: Wed,  7 Nov 2012 17:00:58 +0200
-Message-Id: <1352300463-12627-7-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH v5 01/11] thp: huge zero page: basic preparation
+Date: Wed,  7 Nov 2012 17:00:53 +0200
+Message-Id: <1352300463-12627-2-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -28,252 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Pass vma instead of mm and add address parameter.
+Huge zero page (hzp) is a non-movable huge page (2M on x86-64) filled
+with zeros.
 
-In most cases we already have vma on the stack. We provides
-split_huge_page_pmd_mm() for few cases when we have mm, but not vma.
+For now let's allocate the page on hugepage_init(). We'll switch to lazy
+allocation later.
 
-This change is preparation to huge zero pmd splitting implementation.
+We are not going to map the huge zero page until we can handle it
+properly on all code paths.
+
+is_huge_zero_{pfn,pmd}() functions will be used by following patches to
+check whether the pfn/pmd is huge zero page.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- Documentation/vm/transhuge.txt |    4 ++--
- arch/x86/kernel/vm86_32.c      |    2 +-
- fs/proc/task_mmu.c             |    2 +-
- include/linux/huge_mm.h        |   14 ++++++++++----
- mm/huge_memory.c               |   24 +++++++++++++++++++-----
- mm/memory.c                    |    4 ++--
- mm/mempolicy.c                 |    2 +-
- mm/mprotect.c                  |    2 +-
- mm/mremap.c                    |    2 +-
- mm/pagewalk.c                  |    2 +-
- 10 files changed, 39 insertions(+), 19 deletions(-)
+ mm/huge_memory.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
-index f734bb2..677a599 100644
---- a/Documentation/vm/transhuge.txt
-+++ b/Documentation/vm/transhuge.txt
-@@ -276,7 +276,7 @@ unaffected. libhugetlbfs will also work fine as usual.
- == Graceful fallback ==
- 
- Code walking pagetables but unware about huge pmds can simply call
--split_huge_page_pmd(mm, pmd) where the pmd is the one returned by
-+split_huge_page_pmd(vma, pmd, addr) where the pmd is the one returned by
- pmd_offset. It's trivial to make the code transparent hugepage aware
- by just grepping for "pmd_offset" and adding split_huge_page_pmd where
- missing after pmd_offset returns the pmd. Thanks to the graceful
-@@ -299,7 +299,7 @@ diff --git a/mm/mremap.c b/mm/mremap.c
- 		return NULL;
- 
- 	pmd = pmd_offset(pud, addr);
--+	split_huge_page_pmd(mm, pmd);
-++	split_huge_page_pmd(vma, pmd, addr);
- 	if (pmd_none_or_clear_bad(pmd))
- 		return NULL;
- 
-diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
-index 5c9687b..1dfe69c 100644
---- a/arch/x86/kernel/vm86_32.c
-+++ b/arch/x86/kernel/vm86_32.c
-@@ -182,7 +182,7 @@ static void mark_screen_rdonly(struct mm_struct *mm)
- 	if (pud_none_or_clear_bad(pud))
- 		goto out;
- 	pmd = pmd_offset(pud, 0xA0000);
--	split_huge_page_pmd(mm, pmd);
-+	split_huge_page_pmd_mm(mm, 0xA0000, pmd);
- 	if (pmd_none_or_clear_bad(pmd))
- 		goto out;
- 	pte = pte_offset_map_lock(mm, pmd, 0xA0000, &ptl);
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 90c63f9..291a0d1 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -643,7 +643,7 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
- 	spinlock_t *ptl;
- 	struct page *page;
- 
--	split_huge_page_pmd(walk->mm, pmd);
-+	split_huge_page_pmd(vma, addr, pmd);
- 	if (pmd_trans_unstable(pmd))
- 		return 0;
- 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index b31cb7d..856f080 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -91,12 +91,14 @@ extern int handle_pte_fault(struct mm_struct *mm,
- 			    struct vm_area_struct *vma, unsigned long address,
- 			    pte_t *pte, pmd_t *pmd, unsigned int flags);
- extern int split_huge_page(struct page *page);
--extern void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd);
--#define split_huge_page_pmd(__mm, __pmd)				\
-+extern void __split_huge_page_pmd(struct vm_area_struct *vma,
-+		unsigned long address, pmd_t *pmd);
-+#define split_huge_page_pmd(__vma, __address, __pmd)			\
- 	do {								\
- 		pmd_t *____pmd = (__pmd);				\
- 		if (unlikely(pmd_trans_huge(*____pmd)))			\
--			__split_huge_page_pmd(__mm, ____pmd);		\
-+			__split_huge_page_pmd(__vma, __address,		\
-+					____pmd);			\
- 	}  while (0)
- #define wait_split_huge_page(__anon_vma, __pmd)				\
- 	do {								\
-@@ -106,6 +108,8 @@ extern void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd);
- 		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
- 		       pmd_trans_huge(*____pmd));			\
- 	} while (0)
-+extern void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
-+		pmd_t *pmd);
- #if HPAGE_PMD_ORDER > MAX_ORDER
- #error "hugepages can't be allocated by the buddy allocator"
- #endif
-@@ -173,10 +177,12 @@ static inline int split_huge_page(struct page *page)
- {
- 	return 0;
- }
--#define split_huge_page_pmd(__mm, __pmd)	\
-+#define split_huge_page_pmd(__vma, __address, __pmd)	\
- 	do { } while (0)
- #define wait_split_huge_page(__anon_vma, __pmd)	\
- 	do { } while (0)
-+#define split_huge_page_pmd_mm(__mm, __address, __pmd)	\
-+	do { } while (0)
- #define compound_trans_head(page) compound_head(page)
- static inline int hugepage_madvise(struct vm_area_struct *vma,
- 				   unsigned long *vm_flags, int advice)
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 05490b3..90e651c 100644
+index 40f17c3..e5ce979 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -2509,19 +2509,23 @@ static int khugepaged(void *none)
- 	return 0;
+@@ -47,6 +47,7 @@ static unsigned int khugepaged_scan_sleep_millisecs __read_mostly = 10000;
+ /* during fragmentation poll the hugepage allocator once every minute */
+ static unsigned int khugepaged_alloc_sleep_millisecs __read_mostly = 60000;
+ static struct task_struct *khugepaged_thread __read_mostly;
++static unsigned long huge_zero_pfn __read_mostly;
+ static DEFINE_MUTEX(khugepaged_mutex);
+ static DEFINE_SPINLOCK(khugepaged_mm_lock);
+ static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
+@@ -159,6 +160,29 @@ static int start_khugepaged(void)
+ 	return err;
  }
  
--void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd)
-+void __split_huge_page_pmd(struct vm_area_struct *vma, unsigned long address,
-+		pmd_t *pmd)
- {
- 	struct page *page;
-+	unsigned long haddr = address & HPAGE_PMD_MASK;
- 
--	spin_lock(&mm->page_table_lock);
-+	BUG_ON(vma->vm_start > haddr || vma->vm_end < haddr + HPAGE_PMD_SIZE);
-+
-+	spin_lock(&vma->vm_mm->page_table_lock);
- 	if (unlikely(!pmd_trans_huge(*pmd))) {
--		spin_unlock(&mm->page_table_lock);
-+		spin_unlock(&vma->vm_mm->page_table_lock);
- 		return;
- 	}
- 	page = pmd_page(*pmd);
- 	VM_BUG_ON(!page_count(page));
- 	get_page(page);
--	spin_unlock(&mm->page_table_lock);
-+	spin_unlock(&vma->vm_mm->page_table_lock);
- 
- 	split_huge_page(page);
- 
-@@ -2529,6 +2533,16 @@ void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd)
- 	BUG_ON(pmd_trans_huge(*pmd));
- }
- 
-+void split_huge_page_pmd_mm(struct mm_struct *mm, unsigned long address,
-+		pmd_t *pmd)
++static int init_huge_zero_page(void)
 +{
-+	struct vm_area_struct *vma;
++	struct page *hpage;
 +
-+	vma = find_vma(mm, address);
-+	BUG_ON(vma == NULL);
-+	split_huge_page_pmd(vma, address, pmd);
++	hpage = alloc_pages((GFP_TRANSHUGE | __GFP_ZERO) & ~__GFP_MOVABLE,
++			HPAGE_PMD_ORDER);
++	if (!hpage)
++		return -ENOMEM;
++
++	huge_zero_pfn = page_to_pfn(hpage);
++	return 0;
 +}
 +
- static void split_huge_page_address(struct mm_struct *mm,
- 				    unsigned long address)
- {
-@@ -2553,7 +2567,7 @@ static void split_huge_page_address(struct mm_struct *mm,
- 	 * Caller holds the mmap_sem write mode, so a huge pmd cannot
- 	 * materialize from under us.
- 	 */
--	split_huge_page_pmd(mm, pmd);
-+	split_huge_page_pmd_mm(mm, address, pmd);
++static inline bool is_huge_zero_pfn(unsigned long pfn)
++{
++	return pfn == huge_zero_pfn;
++}
++
++static inline bool is_huge_zero_pmd(pmd_t pmd)
++{
++	return is_huge_zero_pfn(pmd_pfn(pmd));
++}
++
+ #ifdef CONFIG_SYSFS
+ 
+ static ssize_t double_flag_show(struct kobject *kobj,
+@@ -540,6 +564,10 @@ static int __init hugepage_init(void)
+ 	if (err)
+ 		return err;
+ 
++	err = init_huge_zero_page();
++	if (err)
++		goto out;
++
+ 	err = khugepaged_slab_init();
+ 	if (err)
+ 		goto out;
+@@ -562,6 +590,8 @@ static int __init hugepage_init(void)
+ 
+ 	return 0;
+ out:
++	if (huge_zero_pfn)
++		__free_page(pfn_to_page(huge_zero_pfn));
+ 	hugepage_exit_sysfs(hugepage_kobj);
+ 	return err;
  }
- 
- void __vma_adjust_trans_huge(struct vm_area_struct *vma,
-diff --git a/mm/memory.c b/mm/memory.c
-index 6edc030..6017e23 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1243,7 +1243,7 @@ static inline unsigned long zap_pmd_range(struct mmu_gather *tlb,
- 					BUG();
- 				}
- #endif
--				split_huge_page_pmd(vma->vm_mm, pmd);
-+				split_huge_page_pmd(vma, addr, pmd);
- 			} else if (zap_huge_pmd(tlb, vma, pmd, addr))
- 				goto next;
- 			/* fall through */
-@@ -1512,7 +1512,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 	}
- 	if (pmd_trans_huge(*pmd)) {
- 		if (flags & FOLL_SPLIT) {
--			split_huge_page_pmd(mm, pmd);
-+			split_huge_page_pmd(vma, address, pmd);
- 			goto split_fallthrough;
- 		}
- 		spin_lock(&mm->page_table_lock);
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index d04a8a5..b68061e 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -511,7 +511,7 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
- 	pmd = pmd_offset(pud, addr);
- 	do {
- 		next = pmd_addr_end(addr, end);
--		split_huge_page_pmd(vma->vm_mm, pmd);
-+		split_huge_page_pmd(vma, addr, pmd);
- 		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
- 			continue;
- 		if (check_pte_range(vma, pmd, addr, next, nodes,
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index a409926..e8c3938 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -90,7 +90,7 @@ static inline void change_pmd_range(struct vm_area_struct *vma, pud_t *pud,
- 		next = pmd_addr_end(addr, end);
- 		if (pmd_trans_huge(*pmd)) {
- 			if (next - addr != HPAGE_PMD_SIZE)
--				split_huge_page_pmd(vma->vm_mm, pmd);
-+				split_huge_page_pmd(vma, addr, pmd);
- 			else if (change_huge_pmd(vma, pmd, addr, newprot))
- 				continue;
- 			/* fall through */
-diff --git a/mm/mremap.c b/mm/mremap.c
-index 1b61c2d..eabb24d 100644
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -182,7 +182,7 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
- 				need_flush = true;
- 				continue;
- 			} else if (!err) {
--				split_huge_page_pmd(vma->vm_mm, old_pmd);
-+				split_huge_page_pmd(vma, old_addr, old_pmd);
- 			}
- 			VM_BUG_ON(pmd_trans_huge(*old_pmd));
- 		}
-diff --git a/mm/pagewalk.c b/mm/pagewalk.c
-index 6c118d0..35aa294 100644
---- a/mm/pagewalk.c
-+++ b/mm/pagewalk.c
-@@ -58,7 +58,7 @@ again:
- 		if (!walk->pte_entry)
- 			continue;
- 
--		split_huge_page_pmd(walk->mm, pmd);
-+		split_huge_page_pmd_mm(walk->mm, addr, pmd);
- 		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
- 			goto again;
- 		err = walk_pte_range(pmd, addr, next, walk);
 -- 
 1.7.7.6
 
