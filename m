@@ -1,162 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab2KGISe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 03:18:34 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61130 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab2KGISd (ORCPT
+	id S1752169Ab2KGI1K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 03:27:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:37509 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab2KGI1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 03:18:33 -0500
-Subject: Re: Network routing problem after upgrading to 3.6.2
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: multipart/signed; boundary="Apple-Mail=_C5E5150C-F72B-4B11-9EFD-7186F3BFF080"; protocol="application/pkcs7-signature"; micalg=sha1
-From: Melby Sjamsuddin <melby.s@vulytrampolines.com>
-In-Reply-To: <CAFLxGvx_ASg3=dspS33ajsT5DJgNqsz2TmTY8b+k9BfmGhHXwg@mail.gmail.com>
-Date: Wed, 7 Nov 2012 18:18:26 +1000
-Cc: linux-kernel@vger.kernel.org
-Message-Id: <0678A2A4-F1BE-4A18-B3F2-ECCCAEEB1093@vulytrampolines.com>
-References: <E3FFC807-CA31-45EA-A8EF-1266A27F9A0D@vulytrampolines.com> <CAFLxGvx_ASg3=dspS33ajsT5DJgNqsz2TmTY8b+k9BfmGhHXwg@mail.gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-X-Mailer: Apple Mail (2.1283)
+	Wed, 7 Nov 2012 03:27:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121106224539.GB4255@blackbox.djwong.org>
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+	<1351485061-12297-4-git-send-email-zwu.kernel@gmail.com>
+	<20121106224539.GB4255@blackbox.djwong.org>
+Date: Wed, 7 Nov 2012 16:27:05 +0800
+Message-ID: <CAEH94LgDuTqV2sddxs9mvp-2bKjwcSPag7iXa4UFYCTixwJFFA@mail.gmail.com>
+Subject: Re: [RFC v4+ hot_track 03/19] vfs: add I/O frequency update function
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 7, 2012 at 6:45 AM, Darrick J. Wong <darrick.wong@oracle.com> wrote:
+> On Mon, Oct 29, 2012 at 12:30:45PM +0800, zwu.kernel@gmail.com wrote:
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>
+>>   Add some util helpers to update access frequencies
+>> for one file or its range.
+>>
+>> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>> ---
+>>  fs/hot_tracking.c            |  179 ++++++++++++++++++++++++++++++++++++++++++
+>>  fs/hot_tracking.h            |    7 ++
+>>  include/linux/hot_tracking.h |    2 +
+>>  3 files changed, 188 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+>> index 68591f0..0a7d9a3 100644
+>> --- a/fs/hot_tracking.c
+>> +++ b/fs/hot_tracking.c
+>> @@ -172,6 +172,137 @@ static void hot_inode_tree_exit(struct hot_info *root)
+>>       }
+>>  }
+>>
+>> +struct hot_inode_item
+>> +*hot_inode_item_find(struct hot_info *root, u64 ino)
+>> +{
+>> +     struct hot_inode_item *he;
+>> +     int ret;
+>> +
+>> +again:
+>> +     spin_lock(&root->lock);
+>> +     he = radix_tree_lookup(&root->hot_inode_tree, ino);
+>> +     if (he) {
+>> +             kref_get(&he->hot_inode.refs);
+>> +             spin_unlock(&root->lock);
+>> +             return he;
+>> +     }
+>> +     spin_unlock(&root->lock);
+>> +
+>> +     he = kmem_cache_zalloc(hot_inode_item_cachep,
+>> +                             GFP_KERNEL | GFP_NOFS);
+>> +     if (!he)
+>> +             return ERR_PTR(-ENOMEM);
+>> +
+>> +     hot_inode_item_init(he, ino, &root->hot_inode_tree);
+>> +
+>> +     ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
+>> +     if (ret) {
+>> +             kmem_cache_free(hot_inode_item_cachep, he);
+>> +             return ERR_PTR(ret);
+>> +     }
+>> +
+>> +     spin_lock(&root->lock);
+>> +     ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
+>> +     if (ret == -EEXIST) {
+>> +             kmem_cache_free(hot_inode_item_cachep, he);
+>> +             spin_unlock(&root->lock);
+>> +             radix_tree_preload_end();
+>> +             goto again;
+>> +     }
+>> +     spin_unlock(&root->lock);
+>> +     radix_tree_preload_end();
+>> +
+>> +     kref_get(&he->hot_inode.refs);
+>> +     return he;
+>> +}
+>> +EXPORT_SYMBOL_GPL(hot_inode_item_find);
+>> +
+>> +static struct hot_range_item
+>> +*hot_range_item_find(struct hot_inode_item *he,
+>> +                     u32 start)
+>> +{
+>> +     struct hot_range_item *hr;
+>> +     int ret;
+>> +
+>> +again:
+>> +     spin_lock(&he->lock);
+>> +     hr = radix_tree_lookup(&he->hot_range_tree, start);
+>> +     if (hr) {
+>> +             kref_get(&hr->hot_range.refs);
+>> +             spin_unlock(&he->lock);
+>> +             return hr;
+>> +     }
+>> +     spin_unlock(&he->lock);
+>> +
+>> +     hr = kmem_cache_zalloc(hot_range_item_cachep,
+>> +                             GFP_KERNEL | GFP_NOFS);
+>> +     if (!hr)
+>> +             return ERR_PTR(-ENOMEM);
+>> +
+>> +     hot_range_item_init(hr, start, he);
+>> +
+>> +     ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
+>> +     if (ret) {
+>> +             kmem_cache_free(hot_range_item_cachep, hr);
+>> +             return ERR_PTR(ret);
+>> +     }
+>> +
+>> +     spin_lock(&he->lock);
+>> +     ret = radix_tree_insert(&he->hot_range_tree, start, hr);
+>> +     if (ret == -EEXIST) {
+>> +             kmem_cache_free(hot_range_item_cachep, hr);
+>> +             spin_unlock(&he->lock);
+>> +             radix_tree_preload_end();
+>> +             goto again;
+>> +     }
+>> +     spin_unlock(&he->lock);
+>> +     radix_tree_preload_end();
+>> +
+>> +     kref_get(&hr->hot_range.refs);
+>> +     return hr;
+>> +}
+>> +
+>> +/*
+>> + * This function does the actual work of updating
+>> + * the frequency numbers, whatever they turn out to be.
+>> + */
+>> +static u64 hot_average_update(struct timespec old_atime,
+>> +             struct timespec cur_time, u64 old_avg)
+>> +{
+>> +     struct timespec delta_ts;
+>> +     u64 new_avg;
+>> +     u64 new_delta;
+>> +
+>> +     delta_ts = timespec_sub(cur_time, old_atime);
+>> +     new_delta = timespec_to_ns(&delta_ts) >> FREQ_POWER;
+>> +
+>> +     new_avg = (old_avg << FREQ_POWER) - old_avg + new_delta;
+>> +     new_avg = new_avg >> FREQ_POWER;
+>> +
+>> +     return new_avg;
+>> +}
+>> +
+>> +static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
+>> +{
+>> +     struct timespec cur_time = current_kernel_time();
+>> +
+>> +     if (write) {
+>> +             freq_data->nr_writes += 1;
+>> +             freq_data->avg_delta_writes = hot_average_update(
+>> +                             freq_data->last_write_time,
+>> +                             cur_time,
+>> +                             freq_data->avg_delta_writes);
+>> +             freq_data->last_write_time = cur_time;
+>> +     } else {
+>> +             freq_data->nr_reads += 1;
+>> +             freq_data->avg_delta_reads = hot_average_update(
+>> +                             freq_data->last_read_time,
+>> +                             cur_time,
+>> +                             freq_data->avg_delta_reads);
+>
+> I think you could just pass in a pointer to
+> freq_data->avg_delta_{writes,reads} here...
+why?
+>
+>> +             freq_data->last_read_time = cur_time;
+>> +     }
+>> +}
+>> +
+>>  /*
+>>   * Initialize kmem cache for hot_inode_item and hot_range_item.
+>>   */
+>> @@ -199,6 +330,54 @@ err:
+>>  EXPORT_SYMBOL_GPL(hot_cache_init);
+>>
+>>  /*
+>> + * Main function to update access frequency from read/writepage(s) hooks
+>> + */
+>> +void hot_update_freqs(struct inode *inode, u64 start,
+>> +                     u64 len, int rw)
+>> +{
+>> +     struct hot_info *root = inode->i_sb->s_hot_root;
+>> +     struct hot_inode_item *he;
+>> +     struct hot_range_item *hr;
+>> +     u32 cur, end;
+>> +
+>> +     if (!root || (len == 0))
+>> +             return;
+>> +
+>> +     he = hot_inode_item_find(root, inode->i_ino);
+>> +     if (IS_ERR(he)) {
+>> +             WARN_ON(1);
+>> +             return;
+>> +     }
+>> +
+>> +     spin_lock(&he->hot_inode.lock);
+>> +     hot_freq_data_update(&he->hot_inode.hot_freq_data, rw);
+>> +     spin_unlock(&he->hot_inode.lock);
+>> +
+>> +     /*
+>> +      * Align ranges on RANGE_SIZE boundary
+>> +      * to prevent proliferation of range structs
+>> +      */
+>> +     end = (start + len + RANGE_SIZE - 1) >> RANGE_BITS;
+>> +     for (cur = (start >> RANGE_BITS); cur < end; cur++) {
+>
+> Hm... start is u64, cur is u32, RANGE_BITS is 20.  Doesn't this overflow if,
+> say, I have a sparse file with blocks way out at 2^53 bytes?
+ah, good catch, thanks.
+>
+> Also, RANGE_SIZE means that the hot tracking range granularity is 1MiB?  How
+yes.
+> did you decide on that?  Will we ever want to change that?
+It is one assumption, do you think 1 MB is not appropriate? Do you
+mean to add one proc file interface for it?
+>
+>> +             hr = hot_range_item_find(he, cur);
+>> +             if (IS_ERR(hr)) {
+>> +                     WARN_ON(1);
+>
+> WARN(1, "hot_range_item_find returns %d\n", PTR_ERR(hr)); ?
+OK, done.
+>
+> --D
+>
+>> +                     hot_inode_item_put(he);
+>> +                     return;
+>> +             }
+>> +
+>> +             spin_lock(&hr->hot_range.lock);
+>> +             hot_freq_data_update(&hr->hot_range.hot_freq_data, rw);
+>> +             spin_unlock(&hr->hot_range.lock);
+>> +
+>> +             hot_range_item_put(hr);
+>> +     }
+>> +
+>> +     hot_inode_item_put(he);
+>> +}
+>> +EXPORT_SYMBOL_GPL(hot_update_freqs);
+>> +
+>> +/*
+>>   * Initialize the data structures for hot data tracking.
+>>   */
+>>  int hot_track_init(struct super_block *sb)
+>> diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
+>> index e7ba121..cc4666e 100644
+>> --- a/fs/hot_tracking.h
+>> +++ b/fs/hot_tracking.h
+>> @@ -20,6 +20,13 @@
+>>  #define FREQ_DATA_TYPE_INODE (1 << 0)
+>>  #define FREQ_DATA_TYPE_RANGE (1 << 1)
+>>
+>> +/* size of sub-file ranges */
+>> +#define RANGE_BITS 20
+>> +#define RANGE_SIZE (1 << RANGE_BITS)
+>> +
+>> +#define FREQ_POWER 4
+>> +
+>>  void hot_inode_item_put(struct hot_inode_item *he);
+>> +struct hot_inode_item *hot_inode_item_find(struct hot_info *root, u64 ino);
+>>
+>>  #endif /* __HOT_TRACKING__ */
+>> diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
+>> index 4233207..e2d6028 100644
+>> --- a/include/linux/hot_tracking.h
+>> +++ b/include/linux/hot_tracking.h
+>> @@ -71,5 +71,7 @@ struct hot_info {
+>>  extern void __init hot_cache_init(void);
+>>  extern int hot_track_init(struct super_block *sb);
+>>  extern void hot_track_exit(struct super_block *sb);
+>> +extern void hot_update_freqs(struct inode *inode, u64 start,
+>> +                             u64 len, int rw);
+>>
+>>  #endif  /* _LINUX_HOTTRACK_H */
+>> --
+>> 1.7.6.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
---Apple-Mail=_C5E5150C-F72B-4B11-9EFD-7186F3BFF080
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=utf-8
-
-Hi Richard,
-
-I tested 3.5.7 and everything seems to be normal, so it must be 3.6.
-Let me know if there's anything I can help.
 
 
-Melby Sjamsuddin
-Software Developermobile. 0403 714 482
-www.vulytrampolines.com  =E2=97=A6  like us on Facebook
-For more general enquiries email: sales@vulytrampolines.com or call 1300 =
-667 514
-=20
+-- 
+Regards,
 
-On 05/11/2012, at 7:15 PM, richard -rw- weinberger wrote:
-
-> On Mon, Nov 5, 2012 at 10:02 AM, Melby Sjamsuddin
-> <melby.s@vulytrampolines.com> wrote:
->> I have a network issue with two routers at work. They're setup with =
-vrrp and do load balancing with
->> 'ip route nexthop' and iptables connmark, using different vlan to =
-connect to different modems.
->>=20
->> They have been working fine until recently where suddenly http =
-connections just never finish
->> loading and very slow. I thought it was just slow until I recall that =
-it started to happen after fedora 16
->> updated the kernel to 3.6.2.
->>=20
->> If I boot to older kernel (3.4.11), everything becomes normal again.
->=20
-> Does 3.5 work?
-> Please find out the exact release where it broke...
->=20
-> --=20
-> Thanks,
-> //richard
-
-
---Apple-Mail=_C5E5150C-F72B-4B11-9EFD-7186F3BFF080
-Content-Disposition: attachment;
-	filename=smime.p7s
-Content-Type: application/pkcs7-signature;
-	name=smime.p7s
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIO5zCCBIow
-ggNyoAMCAQICECf06hH0eobEbp27bqkXBwcwDQYJKoZIhvcNAQEFBQAwbzELMAkGA1UEBhMCU0Ux
-FDASBgNVBAoTC0FkZFRydXN0IEFCMSYwJAYDVQQLEx1BZGRUcnVzdCBFeHRlcm5hbCBUVFAgTmV0
-d29yazEiMCAGA1UEAxMZQWRkVHJ1c3QgRXh0ZXJuYWwgQ0EgUm9vdDAeFw0wNTA2MDcwODA5MTBa
-Fw0yMDA1MzAxMDQ4MzhaMIGuMQswCQYDVQQGEwJVUzELMAkGA1UECBMCVVQxFzAVBgNVBAcTDlNh
-bHQgTGFrZSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxITAfBgNVBAsTGGh0
-dHA6Ly93d3cudXNlcnRydXN0LmNvbTE2MDQGA1UEAxMtVVROLVVTRVJGaXJzdC1DbGllbnQgQXV0
-aGVudGljYXRpb24gYW5kIEVtYWlsMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsjmF
-pPJ9q0E7YkY3rs3BYHW8OWX5ShpHornMSMxqmNVNNRm5pELlzkniii8efNIxB8dOtINknS4p1aJk
-xIW9hVE1eaROaJB7HHqkkqgX8pgV8pPMyaQylbsMTzC9mKALi+VuG6JG+ni8om+rWV6lL8/K2m2q
-L+usobNqqrcuZzWLeeEeaYji5kbNoKXqvgvOdjp6Dpvq/NonWz1zHyLmSGHGTPNpsaguG7bUMSAs
-vIKKjqQOpdeJQ/wWWq8dcdcRWdq6hw2v+vPhwvCkxWeM1tZUOt4KpLoDd7NlyP0e03RiqhjKaJMe
-oYV+9Udly/hNVyh00jT/MLbu9mIwFIws6wIDAQABo4HhMIHeMB8GA1UdIwQYMBaAFK29mHo0tCb3
-+sQmVO8DveAky1QaMB0GA1UdDgQWBBSJgmd9xJ0mcABLtFBIfN49rgRufTAOBgNVHQ8BAf8EBAMC
-AQYwDwYDVR0TAQH/BAUwAwEB/zB7BgNVHR8EdDByMDigNqA0hjJodHRwOi8vY3JsLmNvbW9kb2Nh
-LmNvbS9BZGRUcnVzdEV4dGVybmFsQ0FSb290LmNybDA2oDSgMoYwaHR0cDovL2NybC5jb21vZG8u
-bmV0L0FkZFRydXN0RXh0ZXJuYWxDQVJvb3QuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQAZ2IkRbyis
-pgCi54fBm5AD236hEv0e8+LwAamUVEJrmgnEoG3XkJIEA2Z5Q3H8+G+v23ZF4jcaPd3kWQR4rBz0
-g0bzes9bhHIt5UbBuhgRKfPLSXmHPLptBZ2kbWhPrXIUNqi5sf2/z3/wpGqUNVCPz4FtVbHdWTBK
-322gnGQfSXzvNrv042n0+DmPWq1LhTq3Du3Tzw1EovsEv+QvcI4l+1pUBrPQxLxtjftzMizpm4Qk
-LdZ/kXpoAlAfDj9N6cz1u2fo3BwuO/xOzf4CjuOoEwqlJkRl6RDyTVKnrtw+ymsyXEFs/vVdoOr/
-0fqbhlhtPZZH5f4ulQTCAMyOofK7MIIFGjCCBAKgAwIBAgIQbRnqpxlPajMi5iIyeqpx3jANBgkq
-hkiG9w0BAQUFADCBrjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVUMRcwFQYDVQQHEw5TYWx0IExh
-a2UgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3JrMSEwHwYDVQQLExhodHRwOi8v
-d3d3LnVzZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmlyc3QtQ2xpZW50IEF1dGhlbnRp
-Y2F0aW9uIGFuZCBFbWFpbDAeFw0xMTA0MjgwMDAwMDBaFw0yMDA1MzAxMDQ4MzhaMIGTMQswCQYD
-VQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYDVQQHEwdTYWxmb3JkMRow
-GAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09NT0RPIENsaWVudCBBdXRoZW50
-aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC
-AQEAkoSEW0tXmNReL4uk4UDIo1NYX2Zl8TJO958yfVXQeExVt0KU4PkncQfFxmmkuTLE8UAakMwn
-VmJ/F7Vxaa7lIBvky2NeYMqiQfZq4aP/uN8fSG1lQ4wqLitjOHffsReswtqCAtbUMmrUZ28gE49c
-NfrlVICv2HEKHTcKAlBTbJUdqRAUtJmVWRIx/wmi0kzcUtve4kABW0ho3cVKtODtJB86r3FfB+Os
-vxQ7sCVxaD30D9YXWEYVgTxoi4uDD216IVfmNLDbMn7jSuGlUnJkJpFOpZIP/+CxYP0ab2hRmWON
-GoulzEKbm30iY9OpoPzOnpDfRBn0XFs1uhbzp5v/wQIDAQABo4IBSzCCAUcwHwYDVR0jBBgwFoAU
-iYJnfcSdJnAAS7RQSHzePa4Ebn0wHQYDVR0OBBYEFHoTTgB0W8Z4Y2QnwS/ioFu8ecV7MA4GA1Ud
-DwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMBEGA1UdIAQKMAgwBgYEVR0gADBYBgNVHR8E
-UTBPME2gS6BJhkdodHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vVVROLVVTRVJGaXJzdC1DbGllbnRB
-dXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDB0BggrBgEFBQcBAQRoMGYwPQYIKwYBBQUHMAKGMWh0
-dHA6Ly9jcnQudXNlcnRydXN0LmNvbS9VVE5BZGRUcnVzdENsaWVudF9DQS5jcnQwJQYIKwYBBQUH
-MAGGGWh0dHA6Ly9vY3NwLnVzZXJ0cnVzdC5jb20wDQYJKoZIhvcNAQEFBQADggEBAIXWvnhXVW0z
-f0RS/kLVBqgBA4CK+w2y/Uq/9q9BSfUbWsXSrRtzbj7pJnzmTJjBMCjfy/tCPKElPgp11tA9OYZm
-0aGbtU2bb68obB2v5ep0WqjascDxdXovnrqTecr+4pEeVnSy+I3T4ENyG+2P/WA5IEf7i686ZUg8
-mD2lJb+972DgSeUWyOs/Q4Pw4O4NwdPNM1+b0L1garM7/vrUyTo8H+2b/5tJM75CKTmD7jNpLoKd
-RU2oadqAGx490hpdfEeZpZsIbRKZhtZdVwcbpzC+S0lEuJB+ytF5OOu0M/qgOl0mWJ5hVRi0IdWZ
-1eBDQEIwvuql55TSsP7zdfl/bucwggU3MIIEH6ADAgECAhBqUIrac7KF3+wys6cyG9+SMA0GCSqG
-SIb3DQEBBQUAMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAw
-DgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09N
-T0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMB4XDTEyMDkxMzAw
-MDAwMFoXDTEzMDkxMzIzNTk1OVowLDEqMCgGCSqGSIb3DQEJARYbbWVsYnkuc0B2dWx5dHJhbXBv
-bGluZXMuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmpFpF7UjME3G4fwKKyUI
-afTMn60d0Fqs7y4cMtqjbKGG+zCFpCMcrsgCBa7CDSBKTPcrb8eg/3JmVLfNZGJd+8gOiU/izr+E
-0NwBP3KpVDYSdRFAie8TunNI7v1wxLRGhVl3+rppNHjurt3KXyfSlNGWElj4sCt7VW9syGjizcxV
-Az2hrZrhOKTU95pcd6tRtzmK/9CjcEFkVkyaIqOUthXjyycBNKWjG4F1iziwkFM5CTOqucsGCrKT
-0Qepdb7znTt+n0EMFG9+P0xXAIb0BjXibFc6RC/JVbbsos4kBvf8KA/sDSPJ6CBXCaF/7B64e0m1
-mArW4jPKBXeiPuczvwIDAQABo4IB6zCCAecwHwYDVR0jBBgwFoAUehNOAHRbxnhjZCfBL+KgW7x5
-xXswHQYDVR0OBBYEFAI8y4Ea2zyDlvbcpkwCYuh8YoCkMA4GA1UdDwEB/wQEAwIFoDAMBgNVHRMB
-Af8EAjAAMCAGA1UdJQQZMBcGCCsGAQUFBwMEBgsrBgEEAbIxAQMFAjARBglghkgBhvhCAQEEBAMC
-BSAwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIBAQEwKzApBggrBgEFBQcCARYdaHR0cHM6Ly9zZWN1
-cmUuY29tb2RvLm5ldC9DUFMwVwYDVR0fBFAwTjBMoEqgSIZGaHR0cDovL2NybC5jb21vZG9jYS5j
-b20vQ09NT0RPQ2xpZW50QXV0aGVudGljYXRpb25hbmRTZWN1cmVFbWFpbENBLmNybDCBiAYIKwYB
-BQUHAQEEfDB6MFIGCCsGAQUFBzAChkZodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9DT01PRE9DbGll
-bnRBdXRoZW50aWNhdGlvbmFuZFNlY3VyZUVtYWlsQ0EuY3J0MCQGCCsGAQUFBzABhhhodHRwOi8v
-b2NzcC5jb21vZG9jYS5jb20wJgYDVR0RBB8wHYEbbWVsYnkuc0B2dWx5dHJhbXBvbGluZXMuY29t
-MA0GCSqGSIb3DQEBBQUAA4IBAQBA0ThKvqXaDulNCv7SiNT3vjgE2EciuU9uRGI2YZldutxaOnxT
-0UdLkXeU8KMaYJSbbx7RbpBERmgtMYGNdZd4V66vONRNfeqCRDvInyl1Lcg7Wmm9Z8jDo0n364wF
-ya89WkGgnvm+T9Fll7hscNB2RGYbNSplxopKIyC/aQEtwUTdNfk2BD/MOO6MCqNOEA/hRqYvqP/e
-VSX9nJiaxMGaK/+UKSCLy8awU5JcyQkTCYz4P+OZYVDraY49rPVvuS/zpF6kLX9C32Guid0+oHOw
-4FiDfGYSVAY//WIBKR1oE2sk5SHd4aSb0XksieBYmIXMnEDubMxM4dzHrNXptJjyMYIDqzCCA6cC
-AQEwgagwgZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNV
-BAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8g
-Q2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEGpQitpzsoXf7DKzpzIb
-35IwCQYFKw4DAhoFAKCCAdcwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-DxcNMTIxMTA3MDgxODI3WjAjBgkqhkiG9w0BCQQxFgQUL7UyBjI674Z+11eqCCDxv5sBQxUwgbkG
-CSsGAQQBgjcQBDGBqzCBqDCBkzELMAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hl
-c3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgGA1UEChMRQ09NT0RPIENBIExpbWl0ZWQxOTA3BgNV
-BAMTMENPTU9ETyBDbGllbnQgQXV0aGVudGljYXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQalCK
-2nOyhd/sMrOnMhvfkjCBuwYLKoZIhvcNAQkQAgsxgauggagwgZMxCzAJBgNVBAYTAkdCMRswGQYD
-VQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9E
-TyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8gQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBT
-ZWN1cmUgRW1haWwgQ0ECEGpQitpzsoXf7DKzpzIb35IwDQYJKoZIhvcNAQEBBQAEggEAFhqx3oef
-OKQ4wQiyh+PrJhhVpLGbwB1kH5MhTzNLc4wqI9hf4xm3NBU85ZLnrmFvDWuOHDpTRo1hmx1ISeH6
-UyhPq+kVd2HdUiiNAsYyzgOt7gm3bJme2c/8kZi5nh9VKciLAHPx+EpgSJ3NUQsxLBPLFcu+jHw5
-p/yUa7g6reYEHEsLAvz7BvHAp2/ihO/4bz8zcn/V62jTWvkoZGiUVaZNYZZL31pZ0JImcjNjbH92
-Wvaqwp4olU/wwErLNnb3sp66dh1UptVcBDg9aksZb0CQCyeQFwvbjgaLmK/EQQdlw5ZwBOdl48Yc
-2MElPhE+Rw1DESizkvkxUmEtS75wLgAAAAAAAA==
-
---Apple-Mail=_C5E5150C-F72B-4B11-9EFD-7186F3BFF080--
+Zhi Yong Wu
