@@ -1,83 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab2KGLBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 06:01:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59522 "EHLO mx2.suse.de"
+	id S1754694Ab2KGLCD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 06:02:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50613 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754285Ab2KGLBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 06:01:01 -0500
-Date: Wed, 7 Nov 2012 12:00:57 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, fweisbec@gmail.com
-Subject: Re: [PATCH 9/9] cgroup_freezer: implement proper hierarchy support
-Message-ID: <20121107110024.GA4143@dhcp22.suse.cz>
-References: <1351931915-1701-1-git-send-email-tj@kernel.org>
- <1351931915-1701-10-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351931915-1701-10-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754285Ab2KGLCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 06:02:00 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <877gpxokqm.fsf@sejong.aot.lge.com>
+References: <877gpxokqm.fsf@sejong.aot.lge.com> <25722.1352156007@warthog.procyon.org.uk> <15094.1352155791@warthog.procyon.org.uk> <4600.1352157507@warthog.procyon.org.uk>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: dhowells@redhat.com, mingo@kernel.org, tglx@linutronix.de,
+        acme@ghostprotocols.net, bp@alien8.de, torvalds@linux-foundation.org,
+        paulus@samba.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, jolsa@redhat.com
+Subject: Re: tools, perf: Fix up for x86 UAPI disintegration
+Date: Wed, 07 Nov 2012 11:01:31 +0000
+Message-ID: <10457.1352286091@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 03-11-12 01:38:35, Tejun Heo wrote:
-[...]
-> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> index 4f12d31..3262537 100644
-> --- a/kernel/cgroup_freezer.c
-> +++ b/kernel/cgroup_freezer.c
-[...]
-> @@ -320,14 +388,39 @@ static void freezer_apply_state(struct freezer *freezer, bool freeze,
->   * @freezer: freezer of interest
->   * @freeze: whether to freeze or thaw
->   *
-> - * Freeze or thaw @cgroup according to @freeze.
-> + * Freeze or thaw @freezer according to @freeze.  The operations are
-> + * recursive - all descendants of @freezer will be affected.
->   */
->  static void freezer_change_state(struct freezer *freezer, bool freeze)
->  {
-> +	struct cgroup *pos;
-> +
->  	/* update @freezer */
->  	spin_lock_irq(&freezer->lock);
->  	freezer_apply_state(freezer, freeze, CGROUP_FREEZING_SELF);
->  	spin_unlock_irq(&freezer->lock);
-> +
-> +	/*
-> +	 * Update all its descendants in pre-order traversal.  Each
-> +	 * descendant will try to inherit its parent's FREEZING state as
-> +	 * CGROUP_FREEZING_PARENT.
-> +	 */
-> +	rcu_read_lock();
-> +	cgroup_for_each_descendant_pre(pos, freezer->css.cgroup) {
-> +		struct freezer *pos_f = cgroup_freezer(pos);
-> +		struct freezer *parent = parent_freezer(freezer);
+Namhyung Kim <namhyung@kernel.org> wrote:
 
-This doesn't seem right. Why are we interested in freezer->parent here
-at all? We should either care about freezer->state & CGROUP_FREEZING or
-parent = parent_freezer(pos_f), right?
+> I've tested your branch and it seems that it conflicts with Jiri's
+> latest perf test patchset which merged into Arnaldo's perf/core branch.
+> 
+> Simple fix will be adding '-Iutil -I.' right after '-I$(OUTPUT)util' in
+> BASIC_CFLAGS.
 
-> +
-> +		/*
-> +		 * Our update to @parent->state is already visible which is
-> +		 * all we need.  No need to lock @parent.  For more info on
-> +		 * synchronization, see freezer_post_create().
-> +		 */
-> +		spin_lock_irq(&pos_f->lock);
-> +		freezer_apply_state(pos_f, parent->state & CGROUP_FREEZING,
-> +				    CGROUP_FREEZING_PARENT);
-> +		spin_unlock_irq(&pos_f->lock);
-> +	}
-> +	rcu_read_unlock();
->  }
->  
->  static int freezer_write(struct cgroup *cgroup, struct cftype *cft,
--- 
-Michal Hocko
-SUSE Labs
+Should I be developing my patches on top of:
+
+	http://git.kernel.org/?p=linux/kernel/git/acme/linux.git;a=shortlog;h=refs/heads/perf/core
+
+rather than on tipbot's perf/core?
+
+David
