@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab2KGIis (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 03:38:48 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:53994 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab2KGIir convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Wed, 7 Nov 2012 03:38:47 -0500
-Message-Id: <509A2C2402000078000A6EB9@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 07 Nov 2012 08:38:44 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ian Campbell" <ian.campbell@citrix.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/2] xen/generic: Disable fallback
- build on ARM.
-References: <1352239982-17389-1-git-send-email-konrad.wilk@oracle.com>
- <1352239982-17389-2-git-send-email-konrad.wilk@oracle.com>
- <1352272794.12977.17.camel@hastur.hellion.org.uk>
-In-Reply-To: <1352272794.12977.17.camel@hastur.hellion.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753277Ab2KGIjA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 03:39:00 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58299 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752770Ab2KGIi5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 03:38:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <0678A2A4-F1BE-4A18-B3F2-ECCCAEEB1093@vulytrampolines.com>
+References: <E3FFC807-CA31-45EA-A8EF-1266A27F9A0D@vulytrampolines.com>
+	<CAFLxGvx_ASg3=dspS33ajsT5DJgNqsz2TmTY8b+k9BfmGhHXwg@mail.gmail.com>
+	<0678A2A4-F1BE-4A18-B3F2-ECCCAEEB1093@vulytrampolines.com>
+Date: Wed, 7 Nov 2012 09:38:56 +0100
+Message-ID: <CAFLxGvzN1m1V2RDndD2vM+peHuoomuTMhQXab5UzTnq6aX3tyg@mail.gmail.com>
+Subject: Re: Network routing problem after upgrading to 3.6.2
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Melby Sjamsuddin <melby.s@vulytrampolines.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 07.11.12 at 08:19, Ian Campbell <ian.campbell@citrix.com> wrote:
-> On Tue, 2012-11-06 at 22:13 +0000, Konrad Rzeszutek Wilk wrote:
->> As there is no need for it (the fallback code is for older
->> hypervisors and they won't run under ARM), 
-> 
-> I think more specifically they won't run on anything other than x86.
-> 
-> [...]
->> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
->> index 46de6cd..273d2b9 100644
->> --- a/drivers/xen/Makefile
->> +++ b/drivers/xen/Makefile
->> @@ -1,8 +1,8 @@
->>  ifneq ($(CONFIG_ARM),y)
->> -obj-y	+= manage.o balloon.o
->> +obj-y	+= manage.o balloon.o fallback.o
->>  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
->>  endif
-> 
-> I think :
->   obj-$(CONFIG_X86) += fallback.o
-> would better reflect what is going on here.
+On Wed, Nov 7, 2012 at 9:18 AM, Melby Sjamsuddin
+<melby.s@vulytrampolines.com> wrote:
+> Hi Richard,
+>
+> I tested 3.5.7 and everything seems to be normal, so it must be 3.6.
+> Let me know if there's anything I can help.
 
-Yes please.
+Now you can do a git bisect between 3.5 and 3.6 to find the bad commit.
+And you can report the issue (in detail!) to netdev@vger.kernel.org
 
-Jan
-
+-- 
+Thanks,
+//richard
