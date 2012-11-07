@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab2KGQlf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 11:41:35 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:56378 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab2KGQh5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 11:37:57 -0500
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 02/13] HID: hid-input: round return value of hidinput_calc_abs_res
-Date: Wed,  7 Nov 2012 17:37:25 +0100
-Message-Id: <1352306256-12180-3-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
+	id S1753430Ab2KGQoq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 11:44:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56888 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751657Ab2KGQop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 11:44:45 -0500
+Date: Wed, 7 Nov 2012 11:43:58 -0500
+From: Dave Jones <davej@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Julius Werner <jwerner@chromium.org>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        James Morris <jmorris@namei.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>,
+        Sameer Nanda <snanda@chromium.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Eric Dumazet <edumazet@chromium.org>
+Subject: Re: [PATCH] tcp: Replace infinite loop on recvmsg bug with proper
+ crashusers
+Message-ID: <20121107164358.GA20495@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Eric Dumazet <eric.dumazet@gmail.com>,
+	Julius Werner <jwerner@chromium.org>, linux-kernel@vger.kernel.org,
+	netdev@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
+	Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+	James Morris <jmorris@namei.org>,
+	Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+	"David S. Miller" <davem@davemloft.net>,
+	Sameer Nanda <snanda@chromium.org>,
+	Mandeep Singh Baines <msb@chromium.org>,
+	Eric Dumazet <edumazet@chromium.org>
+References: <1352247335-10396-1-git-send-email-jwerner@chromium.org>
+ <20121107013907.GA31185@redhat.com>
+ <CAODwPW-636Sn3B4CYajvrgccXxresZwPLg2UFz6xDDk9-FfTYQ@mail.gmail.com>
+ <20121107155434.GA17677@redhat.com>
+ <1352305752.3140.4449.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1352305752.3140.4449.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hidinput_calc_abs_res should return the closest int in the division
-instead of the floor.
-On a device with a logical_max of 3008 and a physical_max of 255mm,
-previous implementation gave a resolution of 11 instead of 12.
-With 11, user-space computes a physical size of 273.5mm and the
-round_closest results gives 250.6mm.
-The old implementation introduced an error of 2cm in this example.
+On Wed, Nov 07, 2012 at 08:29:12AM -0800, Eric Dumazet wrote:
+ > On Wed, 2012-11-07 at 10:54 -0500, Dave Jones wrote:
+ > 
+ > > It sounds more appropriate to me, instead of silently wedging the box.
+ > > At least with that approach we have a chance of finding out what happened.
+ > 
+ > Its quite the opposite.
+ > 
+ > If bug is still there 6 months after the commits that broke the drivers,
+ > (making an old bug visible) that means that people never realized the
+ > bug was there.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
----
- drivers/hid/hid-input.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+dude, look at the bug reports I just pointed you at.
+People _are_ aware there are bugs there.
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index f5b1d57..67044f3 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -287,7 +287,7 @@ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
- 	}
- 
- 	/* Calculate resolution */
--	return logical_extents / physical_extents;
-+	return DIV_ROUND_CLOSEST(logical_extents, physical_extents);
- }
- EXPORT_SYMBOL_GPL(hidinput_calc_abs_res);
- 
--- 
-1.7.11.7
+If you turn that into a BUG() those reports would never have been filed.
+How is that increasing awareness ?  People are going to see wedged computers,
+and hit the reset button. If we're lucky, we'll get photos of someone lucky
+enough to have hit it while at the console, not in X. But this is a huge
+step backwards for debugability.
+
+ > I understand a distro maintainer has its own choices, but for upstream
+ > kernel we want to have early reports.
+
+I'm running out of ways to word this, but I'll try again.
+You won't get those early reports if you turn this into a BUG().
+
+ > This bug is fatal and a security issue. BUG() is appropriate.
+
+turning a bug into a remote DoS is also a security issue.
+
+	Dave
 
