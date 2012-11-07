@@ -1,206 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab2KGSHT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 13:07:19 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33582 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab2KGSHQ (ORCPT
+	id S1752941Ab2KGSK6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 13:10:58 -0500
+Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:53727 "EHLO
+	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747Ab2KGSK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 13:07:16 -0500
-Date: Wed, 7 Nov 2012 10:07:14 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sha Zhengju <handai.szj@gmail.com>
-cc: linux-mm@kvack.org, cgroups@vger.kernel.org, mhocko@suse.cz,
-        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH 2/2] oom: rework dump_tasks to optimize memcg-oom
- situation
-In-Reply-To: <1352277719-21760-1-git-send-email-handai.szj@taobao.com>
-Message-ID: <alpine.DEB.2.00.1211071003150.27451@chino.kir.corp.google.com>
-References: <1352277602-21687-1-git-send-email-handai.szj@taobao.com> <1352277719-21760-1-git-send-email-handai.szj@taobao.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 7 Nov 2012 13:10:56 -0500
+Message-ID: <509AA434.80702@calxeda.com>
+Date: Wed, 07 Nov 2012 12:11:00 -0600
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
+Subject: Re: [PATCH 0/6 v3] cpufreq: add support for Calxeda ECX-1000 (highbank)
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1352233089-22586-1-git-send-email-mark.langsdorf@calxeda.com>
+In-Reply-To: <1352233089-22586-1-git-send-email-mark.langsdorf@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Nov 2012, Sha Zhengju wrote:
+On 11/06/2012 02:18 PM, Mark Langsdorf wrote:
+> This patch series adds cpufreq support for the Calxeda
+> ECX-1000 (highbank) SoCs. The driver is based on the 
+> cpufreq-cpu0 driver. Because of the unique way that 
+> highbank uses the EnergyCore Management Engine to manage
+> voltages, it was not possible to use the cpufreq-cpu0 driver.
 
-> From: Sha Zhengju <handai.szj@taobao.com>
-> 
-> If memcg oom happening, don't scan all system tasks to dump memory state of
-> eligible tasks, instead we iterates only over the process attached to the oom
-> memcg and avoid the rcu lock.
-> 
+I accidentally sent out old versions of the patches. Please ignore the
+v3 series and look at the v4 instead.
 
-Avoiding the rcu lock isn't actually that impressive here, the cgroup 
-iterator will use it's own lock for that memcg.
+--Mark Langsdorf
 
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  include/linux/memcontrol.h |    7 +++++
->  include/linux/oom.h        |    2 +
->  mm/memcontrol.c            |   14 +++++++++++
->  mm/oom_kill.c              |   55 ++++++++++++++++++++++++++-----------------
->  4 files changed, 56 insertions(+), 22 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index c91e3c1..4322ca8 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -122,6 +122,8 @@ unsigned long mem_cgroup_get_lru_size(struct lruvec *lruvec, enum lru_list);
->  void mem_cgroup_update_lru_size(struct lruvec *, enum lru_list, int);
->  extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
->  					struct task_struct *p);
-> +extern void dump_tasks_memcg(const struct mem_cgroup *memcg,
-> +					const nodemask_t *nodemask);
-
-Shouldn't need the nodemask parameter, just have dump_tasks_memcg() pass 
-NULL to dump_per_task(), we won't be isolating to tasks with mempolicies 
-restricted to a particular set of nodes since we're in the memcg oom path 
-here, not the global page allocator oom path.
-
->  extern void mem_cgroup_replace_page_cache(struct page *oldpage,
->  					struct page *newpage);
->  
-> @@ -337,6 +339,11 @@ mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
->  {
->  }
->  
-> +static inline void
-> +dump_tasks_memcg(const struct mem_cgroup *memcg, const nodemask_t *nodemask)
-> +{
-> +}
-> +
->  static inline void mem_cgroup_begin_update_page_stat(struct page *page,
->  					bool *locked, unsigned long *flags)
->  {
-> diff --git a/include/linux/oom.h b/include/linux/oom.h
-> index 20b5c46..9ba3344 100644
-> --- a/include/linux/oom.h
-> +++ b/include/linux/oom.h
-> @@ -57,6 +57,8 @@ extern enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
->  		unsigned long totalpages, const nodemask_t *nodemask,
->  		bool force_kill);
->  
-> +extern inline void dump_per_task(struct task_struct *p,
-> +				const nodemask_t *nodemask);
-
-This is a global symbol, so dump_per_task() doesn't make a lot of sense: 
-it would need to be prefixed with "oom_" so perhaps oom_dump_task() is 
-better?
-
->  extern void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
->  		int order, nodemask_t *mask, bool force_kill);
->  extern int register_oom_notifier(struct notifier_block *nb);
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 2df5e72..fe648f8 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1665,6 +1665,20 @@ static u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
->  	return min(limit, memsw);
->  }
->  
-> +void dump_tasks_memcg(const struct mem_cgroup *memcg, const nodemask_t *nodemask)
-> +{
-> +	struct cgroup_iter it;
-> +	struct task_struct *task;
-> +	struct cgroup *cgroup = memcg->css.cgroup;
-> +
-> +	cgroup_iter_start(cgroup, &it);
-> +	while ((task = cgroup_iter_next(cgroup, &it))) {
-> +		dump_per_task(task, nodemask);
-> +	}
-> +
-> +	cgroup_iter_end(cgroup, &it);
-> +}
-> +
->  static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  				     int order)
->  {
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 4b8a6dd..aaf6237 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -367,6 +367,32 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
->  	return chosen;
->  }
->  
-> +inline void dump_per_task(struct task_struct *p, const nodemask_t *nodemask)
-
-No inline.
-
-> +{
-> +	struct task_struct *task;
-> +
-> +	if (oom_unkillable_task(p, NULL, nodemask))
-> +		return;
-> +
-> +	task = find_lock_task_mm(p);
-> +	if (!task) {
-> +		/*
-> +		 * This is a kthread or all of p's threads have already
-> +		 * detached their mm's.  There's no need to report
-> +		 * them; they can't be oom killed anyway.
-> +		 */
-> +		return;
-> +	}
-> +
-> +	pr_info("[%5d] %5d %5d %8lu %8lu %7lu %8lu         %5d %s\n",
-> +		task->pid, from_kuid(&init_user_ns, task_uid(task)),
-> +		task->tgid, task->mm->total_vm, get_mm_rss(task->mm),
-> +		task->mm->nr_ptes,
-> +		get_mm_counter(task->mm, MM_SWAPENTS),
-> +		task->signal->oom_score_adj, task->comm);
-> +	task_unlock(task);
-> +}
-> +
->  /**
->   * dump_tasks - dump current memory state of all system tasks
->   * @memcg: current's memory controller, if constrained
-> @@ -381,32 +407,17 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
->  static void dump_tasks(const struct mem_cgroup *memcg, const nodemask_t *nodemask)
->  {
->  	struct task_struct *p;
-> -	struct task_struct *task;
->  
->  	pr_info("[ pid ]   uid  tgid total_vm      rss nr_ptes swapents oom_score_adj name\n");
-> -	rcu_read_lock();
-> -	for_each_process(p) {
-> -		if (oom_unkillable_task(p, memcg, nodemask))
-> -			continue;
-> -
-> -		task = find_lock_task_mm(p);
-> -		if (!task) {
-> -			/*
-> -			 * This is a kthread or all of p's threads have already
-> -			 * detached their mm's.  There's no need to report
-> -			 * them; they can't be oom killed anyway.
-> -			 */
-> -			continue;
-> -		}
->  
-> -		pr_info("[%5d] %5d %5d %8lu %8lu %7lu %8lu         %5d %s\n",
-> -			task->pid, from_kuid(&init_user_ns, task_uid(task)),
-> -			task->tgid, task->mm->total_vm, get_mm_rss(task->mm),
-> -			task->mm->nr_ptes,
-> -			get_mm_counter(task->mm, MM_SWAPENTS),
-> -			task->signal->oom_score_adj, task->comm);
-> -		task_unlock(task);
-> +	if (memcg) {
-> +		dump_tasks_memcg(memcg, nodemask);
-> +		return;
->  	}
-> +
-> +	rcu_read_lock();
-> +	for_each_process(p)
-> +		dump_per_task(p, nodemask);
->  	rcu_read_unlock();
->  }
->  
