@@ -1,51 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab2KGQbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 11:31:51 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:47698 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab2KGQbt (ORCPT
+	id S1752966Ab2KGQh7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 11:37:59 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33927 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910Ab2KGQh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 11:31:49 -0500
-Date: Wed, 7 Nov 2012 08:31:44 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, fweisbec@gmail.com
-Subject: Re: [PATCH 9/9] cgroup_freezer: implement proper hierarchy support
-Message-ID: <20121107163144.GB2660@mtj.dyndns.org>
-References: <1351931915-1701-1-git-send-email-tj@kernel.org>
- <1351931915-1701-10-git-send-email-tj@kernel.org>
- <20121107110024.GA4143@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121107110024.GA4143@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 Nov 2012 11:37:56 -0500
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 01/13] HID: hid-input: export hidinput_calc_abs_res
+Date: Wed,  7 Nov 2012 17:37:24 +0100
+Message-Id: <1352306256-12180-2-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
+References: <1352306256-12180-1-git-send-email-benjamin.tissoires@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
+Exporting the function allows us to calculate the resolution in third
+party drivers like hid-multitouch.
+This patch also complete the function with additional valid axes.
 
-On Wed, Nov 07, 2012 at 12:00:57PM +0100, Michal Hocko wrote:
-> > +	 * Update all its descendants in pre-order traversal.  Each
-> > +	 * descendant will try to inherit its parent's FREEZING state as
-> > +	 * CGROUP_FREEZING_PARENT.
-> > +	 */
-> > +	rcu_read_lock();
-> > +	cgroup_for_each_descendant_pre(pos, freezer->css.cgroup) {
-> > +		struct freezer *pos_f = cgroup_freezer(pos);
-> > +		struct freezer *parent = parent_freezer(freezer);
-> 
-> This doesn't seem right. Why are we interested in freezer->parent here
-> at all? We should either care about freezer->state & CGROUP_FREEZING or
-> parent = parent_freezer(pos_f), right?
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+---
+ drivers/hid/hid-input.c      | 9 ++++++++-
+ drivers/hid/hid-multitouch.c | 1 +
+ include/linux/hid.h          | 1 +
+ 3 files changed, 10 insertions(+), 1 deletion(-)
 
-Yeap, that should have been parent_freezer(pos_f).  Argh...
-
-Thanks.
-
+diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+index 10248cf..f5b1d57 100644
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -208,7 +208,7 @@ static int hidinput_setkeycode(struct input_dev *dev,
+  * Only exponent 1 length units are processed. Centimeters and inches are
+  * converted to millimeters. Degrees are converted to radians.
+  */
+-static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
++__s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
+ {
+ 	__s32 unit_exponent = field->unit_exponent;
+ 	__s32 logical_extents = field->logical_maximum -
+@@ -229,6 +229,12 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
+ 	case ABS_X:
+ 	case ABS_Y:
+ 	case ABS_Z:
++	case ABS_MT_POSITION_X:
++	case ABS_MT_POSITION_Y:
++	case ABS_MT_TOOL_X:
++	case ABS_MT_TOOL_Y:
++	case ABS_MT_TOUCH_MAJOR:
++	case ABS_MT_TOUCH_MINOR:
+ 		if (field->unit == 0x11) {		/* If centimeters */
+ 			/* Convert to millimeters */
+ 			unit_exponent += 1;
+@@ -283,6 +289,7 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
+ 	/* Calculate resolution */
+ 	return logical_extents / physical_extents;
+ }
++EXPORT_SYMBOL_GPL(hidinput_calc_abs_res);
+ 
+ #ifdef CONFIG_HID_BATTERY_STRENGTH
+ static enum power_supply_property hidinput_battery_props[] = {
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 3eb02b9..9f64e36 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -298,6 +298,7 @@ static void set_abs(struct input_dev *input, unsigned int code,
+ 	int fmax = field->logical_maximum;
+ 	int fuzz = snratio ? (fmax - fmin) / snratio : 0;
+ 	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
++	input_abs_set_res(input, code, hidinput_calc_abs_res(field, code));
+ }
+ 
+ static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index 7e1f37d..9edb06c 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -743,6 +743,7 @@ int hid_input_report(struct hid_device *, int type, u8 *, int, int);
+ int hidinput_find_field(struct hid_device *hid, unsigned int type, unsigned int code, struct hid_field **field);
+ struct hid_field *hidinput_get_led_field(struct hid_device *hid);
+ unsigned int hidinput_count_leds(struct hid_device *hid);
++__s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code);
+ void hid_output_report(struct hid_report *report, __u8 *data);
+ struct hid_device *hid_allocate_device(void);
+ struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
 -- 
-tejun
+1.7.11.7
+
