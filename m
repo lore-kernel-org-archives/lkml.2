@@ -1,156 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714Ab2KGHtb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 02:49:31 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64495 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab2KGHt3 (ORCPT
+	id S1753567Ab2KGHzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 02:55:40 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:41264 "HELO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751380Ab2KGHzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 02:49:29 -0500
+	Wed, 7 Nov 2012 02:55:39 -0500
+Message-ID: <509A137C.3020903@mellanox.com>
+Date: Wed, 7 Nov 2012 09:53:32 +0200
+From: Haggai Eran <haggaie@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <20121106234556.GX3102@twin.jikos.cz>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	<1351485061-12297-15-git-send-email-zwu.kernel@gmail.com>
-	<20121106234556.GX3102@twin.jikos.cz>
-Date: Wed, 7 Nov 2012 15:49:27 +0800
-Message-ID: <CAEH94Lh7q2k_-HC1Lvt9K8_HywP_fNOec6kAox0xYKwa_a+69A@mail.gmail.com>
-Subject: Re: [RFC v4+ hot_track 14/19] vfs: add debugfs support
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: dave@jikos.cz, zwu.kernel@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [patch] mm: fix build warning for uninitialized value
+References: <alpine.DEB.2.00.1210312234180.31758@chino.kir.corp.google.com> <alpine.DEB.2.00.1211051334490.5296@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1211051334490.5296@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.0.13.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 7:45 AM, David Sterba <dave@jikos.cz> wrote:
-> On Mon, Oct 29, 2012 at 12:30:56PM +0800, zwu.kernel@gmail.com wrote:
->> +static int hot_range_seq_show(struct seq_file *seq, void *v)
->> +{
->> +     struct hot_range_item *hr = v;
->> +     struct hot_inode_item *he = hr->hot_inode;
->> +     struct hot_freq_data *freq_data = &hr->hot_range.hot_freq_data;
->> +
->> +     /* Always lock hot_inode_item first */
->> +     spin_lock(&he->hot_inode.lock);
->> +     spin_lock(&hr->hot_range.lock);
->> +     seq_printf(seq, "inode #%llu, range start " \
->
-> the # seems unnecessary to me
-OK, removed.
->
->> +                     "%llu (range len %u) reads %u, writes %u, "
->> +                     "avg read time %llu, avg write time %llu, temp %u\n",
->
-> compiler will complain if it sees a %llu format and not the expected
-> type of 'unsigned long long'
-When built, i haven't seen any warning report about this...
->
->> +                     he->i_ino,
->
->                         (unsigned long long)he->i_ino,
->
->> +                     (u64)hr->start * RANGE_SIZE,
->> +                     hr->len,
->> +                     freq_data->nr_reads,
->> +                     freq_data->nr_writes,
->> +                     freq_data->avg_delta_reads / NSEC_PER_MSEC,
->> +                     freq_data->avg_delta_writes / NSEC_PER_MSEC,
->> +                     freq_data->last_temp >> (32 - HEAT_MAP_BITS));
->> +     spin_unlock(&hr->hot_range.lock);
->> +     spin_unlock(&he->hot_inode.lock);
->> +
->> +     return 0;
->> +}
->> +
->> +static int hot_inode_seq_show(struct seq_file *seq, void *v)
->> +{
->> +     struct hot_inode_item *he = v;
->> +     struct hot_freq_data *freq_data = &he->hot_inode.hot_freq_data;
->> +
->> +     spin_lock(&he->hot_inode.lock);
->> +     seq_printf(seq, "inode #%llu, reads %u, writes %u, " \
->> +             "avg read time %llu, avg write time %llu, temp %u\n",
->
-> (same here)
-ditto.
->
->> +             he->i_ino,
->> +             freq_data->nr_reads,
->> +             freq_data->nr_writes,
->> +             freq_data->avg_delta_reads / NSEC_PER_MSEC,
->> +             freq_data->avg_delta_writes / NSEC_PER_MSEC,
->> +             freq_data->last_temp >> (32 - HEAT_MAP_BITS));
->> +     spin_unlock(&he->hot_inode.lock);
->> +
->> +     return 0;
->> +}
->>
->> +static void *hot_spot_range_seq_next(struct seq_file *seq, void *v, loff_t *pos)
->> +{
->> +     struct hot_info *root = seq->private;
->> +     struct hot_range_item *hr_next, *hr = v;
->> +     struct hot_comm_item *comm_item;
->> +     struct list_head *n_list;
->> +     int i =
->> +      hr->hot_range.hot_freq_data.last_temp >> (32 - HEAT_MAP_BITS);
->
-> now I have noticed that I've seen the ... (32 - HEAT_MAP_BITS)
-> expression so many times that it tend to think it deserves a helper
-> function
-This helper function has existed, hot_raw_shift(), i will replace this with it.
->
->> +
->> +     n_list = seq_list_next(&hr->hot_range.n_list,
->> +             &root->heat_range_map[i].node_list, pos);
->> +     hot_range_item_put(hr);
->> +next:
->> +     if (n_list) {
->> +             comm_item = container_of(n_list,
->> +                     struct hot_comm_item, n_list);
->> +             hr_next = container_of(comm_item,
->> +                     struct hot_range_item, hot_range);
->> +             kref_get(&hr_next->hot_range.refs);
->> +             return hr_next;
->> +     } else if (--i >= 0) {
->> +             n_list = seq_list_next(&root->heat_range_map[i].node_list,
->> +                             &root->heat_range_map[i].node_list, pos);
->> +             goto next;
->> +     }
->> +
->> +     return NULL;
->> +}
->> +
->> +static void hot_debugfs_exit(struct super_block *sb)
->> +{
->> +     struct dentry *vol_dentry;
->> +
->> +     vol_dentry = debugfs_get_dentry(sb->s_id,
->> +                             sb->s_hot_root->debugfs_root, strlen(sb->s_id));
->> +     /* remove all debugfs entries recursively from the volume root */
->> +     if (vol_dentry)
->> +             debugfs_remove_recursive(vol_dentry);
->> +     else
->> +             BUG_ON(1);
->
->                 BUG()
-done, thanks.
->
->> +
->> +     if (list_empty(&sb->s_hot_root->debugfs_root->d_subdirs))
->> +             debugfs_remove(sb->s_hot_root->debugfs_root);
->> +}
->> +
->> +/*
->
-> david
+On 05/11/2012 23:36, David Rientjes wrote:
+> do_wp_page() sets mmun_called if mmun_start and mmun_end were initialized 
+> and, if so, may call mmu_notifier_invalidate_range_end() with these 
+> values.  This doesn't prevent gcc from emitting a build warning though:
+> 
+> mm/memory.c: In function ‘do_wp_page’:
+> mm/memory.c:2530: warning: ‘mmun_start’ may be used uninitialized in this function
+> mm/memory.c:2531: warning: ‘mmun_end’ may be used uninitialized in this function
 
+I haven't seen these warning. Perhaps I used a different compiler
+version, or the right flags.
 
+> 
+> It's much easier to initialize the variables to impossible values and do a 
+> simple comparison to determine if they were initialized to remove the bool 
+> entirely.
 
--- 
-Regards,
+This solution looks great to me.
 
-Zhi Yong Wu
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  mm/memory.c |   10 ++++------
+>  1 file changed, 4 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/memory.c b/mm/memory.c
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2527,9 +2527,8 @@ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	int ret = 0;
+>  	int page_mkwrite = 0;
+>  	struct page *dirty_page = NULL;
+> -	unsigned long mmun_start;	/* For mmu_notifiers */
+> -	unsigned long mmun_end;		/* For mmu_notifiers */
+> -	bool mmun_called = false;	/* For mmu_notifiers */
+> +	unsigned long mmun_start = 0;	/* For mmu_notifiers */
+> +	unsigned long mmun_end = 0;	/* For mmu_notifiers */
+>  
+>  	old_page = vm_normal_page(vma, address, orig_pte);
+>  	if (!old_page) {
+> @@ -2708,8 +2707,7 @@ gotten:
+>  		goto oom_free_new;
+>  
+>  	mmun_start  = address & PAGE_MASK;
+> -	mmun_end    = (address & PAGE_MASK) + PAGE_SIZE;
+> -	mmun_called = true;
+> +	mmun_end    = mmun_start + PAGE_SIZE;
+>  	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+>  
+>  	/*
+> @@ -2778,7 +2776,7 @@ gotten:
+>  		page_cache_release(new_page);
+>  unlock:
+>  	pte_unmap_unlock(page_table, ptl);
+> -	if (mmun_called)
+> +	if (mmun_end > mmun_start)
+>  		mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
+>  	if (old_page) {
+>  		/*
+> 
+
