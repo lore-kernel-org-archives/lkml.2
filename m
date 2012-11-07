@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab2KGLnD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 06:43:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42186 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754820Ab2KGLnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 06:43:00 -0500
-From: Nikolay Aleksandrov <nikolay@redhat.com>
-To: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, JBottomley@parallels.com, nikolay@redhat.com
-Subject: [PATCH] [SCSI] scsi_sysfs: fix a buffer overflow in sysfs handling
-Date: Wed,  7 Nov 2012 11:57:46 +0100
-Message-Id: <1352285866-16593-1-git-send-email-nikolay@redhat.com>
+	id S1754883Ab2KGLnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 06:43:10 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:54402 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754625Ab2KGLnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 06:43:07 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
+CC: Luotao Fu <l.fu@pengutronix.de>, <linux-leds@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] leds: leds-pwm: Convert to use devm_get_pwm
+Date: Wed, 7 Nov 2012 12:42:50 +0100
+Message-ID: <1352288570-32565-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Fix a stack buffer overflow in the SCSI layer sysfs handling code 
- (store_host_reset()). When a host reset type is read via sscanf in str
- there is no limit on the length and str is defined as char str[10].
+Update the driver to use the new API for requesting pwm so we can take
+advantage of the pwm_lookup table to find the correct pwm to be used for the
+LED functionality.
+If the devm_get_pwm fails we fall back to legacy mode to try to get the pwm.
 
-How to reproduce:
- Given that the sysfs entry exists, execute
- echo "AAAAAAAAAAAAAAAA" > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/scsi_host/host0/host_reset
-
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/scsi/scsi_sysfs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/leds/leds-pwm.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index ce5224c..51826e2 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -267,7 +267,7 @@ store_host_reset(struct device *dev, struct device_attribute *attr,
- 	char str[10];
- 	int type;
+diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+index f2e44c7..6bf9445 100644
+--- a/drivers/leds/leds-pwm.c
++++ b/drivers/leds/leds-pwm.c
+@@ -47,6 +47,19 @@ static void led_pwm_set(struct led_classdev *led_cdev,
+ 	}
+ }
  
--	sscanf(buf, "%s", str);
-+	sscanf(buf, "%9s", str);
- 	type = check_reset_type(str);
++static struct pwm_device *led_pwm_request_pwm(struct platform_device *pdev,
++					      struct led_pwm *cur_led)
++{
++	struct pwm_device *pwm;
++
++	pwm = devm_pwm_get(&pdev->dev, cur_led->name);
++	if (IS_ERR(pwm)) {
++		dev_err(&pdev->dev, "unable to request PWM, trying legacy API\n");
++		pwm = pwm_request(cur_led->pwm_id, cur_led->name);
++	}
++	return pwm;
++}
++
+ static int led_pwm_probe(struct platform_device *pdev)
+ {
+ 	struct led_pwm_platform_data *pdata = pdev->dev.platform_data;
+@@ -67,8 +80,7 @@ static int led_pwm_probe(struct platform_device *pdev)
+ 		cur_led = &pdata->leds[i];
+ 		led_dat = &leds_data[i];
  
- 	if (!type)
+-		led_dat->pwm = pwm_request(cur_led->pwm_id,
+-				cur_led->name);
++		led_dat->pwm = led_pwm_request_pwm(pdev, cur_led);
+ 		if (IS_ERR(led_dat->pwm)) {
+ 			ret = PTR_ERR(led_dat->pwm);
+ 			dev_err(&pdev->dev, "unable to request PWM %d\n",
 -- 
-1.7.11.4
+1.8.0
 
