@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab2KGG0a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 01:26:30 -0500
-Received: from mga14.intel.com ([143.182.124.37]:1175 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191Ab2KGG02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 01:26:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,726,1344236400"; 
-   d="scan'208";a="214438587"
-Message-ID: <1352269585.7176.6.camel@yhuang-dev>
-Subject: Re: [PATCH] pci/runtime-pm: respect devices autosuspend timeout on
- config access
-From: Huang Ying <ying.huang@intel.com>
-To: David Airlie <airlied@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Date: Wed, 07 Nov 2012 14:26:25 +0800
-In-Reply-To: <890104457.2285480.1352268931077.JavaMail.root@redhat.com>
-References: <890104457.2285480.1352268931077.JavaMail.root@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752030Ab2KGG0t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 01:26:49 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:32915 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab2KGG0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 01:26:47 -0500
+Date: Tue, 6 Nov 2012 22:26:41 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Sasha Levin <sasha.levin@oracle.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Dave Jones <davej@redhat.com>, linux-fbdev@vger.kernel.org,
+        florianSchandinat@gmx.de
+Subject: Re: tty, vt: lockdep warnings
+In-Reply-To: <alpine.LNX.2.00.1211061950020.1712@eggly.anvils>
+Message-ID: <alpine.LNX.2.00.1211062219470.1077@eggly.anvils>
+References: <50899507.1040900@oracle.com> <20121026143754.50277bd8@pyramind.ukuu.org.uk> <CA+1xoqdEesjh1EZvR_r7Hn0GUc7741EDWn59qagngcxg4=9bjQ@mail.gmail.com> <20121105175937.26f31d2a@pyramind.ukuu.org.uk> <5097FEA9.2090603@oracle.com>
+ <alpine.LNX.2.00.1211051106590.1709@eggly.anvils> <20121105201507.79fe47d7@pyramind.ukuu.org.uk> <alpine.LNX.2.00.1211051231070.21645@eggly.anvils> <20121106161100.216c6d79@pyramind.ukuu.org.uk> <alpine.LNX.2.00.1211061950020.1712@eggly.anvils>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-07 at 01:15 -0500, David Airlie wrote:
-> > > 
-> > > Cc: Huang Ying <ying.huang@intel.com>
-> > > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > > Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> > > Signed-off-by: Dave Airlie <airlied@redhat.com>
-> > > ---
-> > >  drivers/pci/pci-sysfs.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> > > index 02d107b..12d3d52 100644
-> > > --- a/drivers/pci/pci-sysfs.c
-> > > +++ b/drivers/pci/pci-sysfs.c
-> > > @@ -487,7 +487,7 @@ pci_config_pm_runtime_put(struct pci_dev *pdev)
-> > >  	struct device *dev = &pdev->dev;
-> > >  	struct device *parent = dev->parent;
-> > >  
-> > > -	pm_runtime_put(dev);
-> > > +	pm_runtime_put_autosuspend(dev);
-> > >  	if (parent)
-> > >  		pm_runtime_put_sync(parent);
-> > >  }
-> > 
-> > I think you do not need that.  You can implement timeout
-> > in .runtime_idle callback of the driver.
+On Tue, 6 Nov 2012, Hugh Dickins wrote:
 > 
-> If I understand what you are suggesting, I should setup some kinda of timer callback to later call suspend, but that seems pointless for me if we have the autosuspend mechanism in place.
-> 
-> Won't I end up racing my timer against other pm stuff? I'm not really runtime pm expert so maybe I'm just missing something.
+> Ah, now I actually scan through it, I see references to blank screen:
+> I'll try taking off your patch and seeing if it came up at screen
+> blanking time, then put on your patch back on and try again.
+> I'll report back in an hour or two.
 
-You can call pm_runtime_autosuspend or pm_runtime_schedule_suspend
-in .runtime_idle callback of the driver.
+Yes, that was it.  When the console screen blanked on 3.7.0-rc3-mm1,
+it generated that lockdep splat, visible once I unblanked.  But once I
+applied your patch to the kernel, lockdep kept quiet across blank/unblank.
 
-Best Regards,
-Huang Ying
-
-
+Thanks!
+Hugh
