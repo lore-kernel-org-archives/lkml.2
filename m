@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab2KGQuk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 11:50:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40880 "EHLO mx1.redhat.com"
+	id S1753841Ab2KGQw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 11:52:56 -0500
+Received: from mga02.intel.com ([134.134.136.20]:8003 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751346Ab2KGQui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 11:50:38 -0500
-Message-ID: <509A915B.30105@redhat.com>
-Date: Wed, 07 Nov 2012 08:50:35 -0800
-From: Andy Grover <agrover@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120825 Thunderbird/10.0.7
+	id S1752128Ab2KGQwz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 11:52:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,730,1344236400"; 
+   d="scan'208";a="216385186"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <jbeulich@suse.com>
+Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Index: AQHNvQFcTi91BiFLfUibRvXA4zlK85felYuw
+Date: Wed, 7 Nov 2012 16:52:50 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233537BB2F@SHSMSX101.ccr.corp.intel.com>
+References: <20121026201409.GF2708@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC8292335377346@SHSMSX101.ccr.corp.intel.com>
+ <20121102164937.GC27213@konrad-lan.dumpdata.com>
+ <alpine.DEB.2.02.1211051512260.2689@kaball.uk.xensource.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B10C@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B147@SHSMSX101.ccr.corp.intel.com>
+ <alpine.DEB.2.02.1211061455150.2689@kaball.uk.xensource.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B479@SHSMSX101.ccr.corp.intel.com>
+ <20121106164303.GO9966@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC829233537B99E@SHSMSX101.ccr.corp.intel.com>
+ <20121107160301.GF18615@phenom.dumpdata.com>
+In-Reply-To: <20121107160301.GF18615@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Marc Fleischmann <mwf@risingtidesystems.com>,
-        Nicholas Bellinger <nab@risingtidesystems.com>
-Subject: scsi target, likely GPL violation
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick,
+Konrad Rzeszutek Wilk wrote:
+> On Wed, Nov 07, 2012 at 12:58:19PM +0000, Liu, Jinsong wrote:
+>>>>> 
+>>>>> If it is generic ACPI code, than it can depend only on ACPI.
+>>>>> If it is ACPI code that contains X86 specific info, than it needs
+>>>>> to depend on X86 too.
+>>>> 
+>>>> No x86 specific so let's depend on ACPI.
+>>> 
+>>> Huh? This feature is x86 specific isn't it? I mean it is in the ACPI
+>>> spec, but only x86 does it right?
+>> 
+>> OK, updated w/ ACPI & X86 dependency, and per other comments.
+> 
+> Ok. Could you send all the patchset in one go. I am bit lost of which
+> one to review as none of them seem to have the version information
+> [vX: Did this yyy]
 
-Your company appears to be shipping kernel features in RTS OS that are
-not made available under the GPL, specifically support for the
-EXTENDED_COPY and COMPARE_AND_WRITE SCSI commands, in order to claim
-full Vmware vSphere 5 VAAI support.
+Not quite clear your meaning, do you mean not reply old email and start a new thread with title like
+[PATCH vX 1/2]: xen/acpi: ACPI PAD driver
+[PATCH vX 2/2]: ...
+?
 
-http://www.risingtidesystems.com/storage.html
-http://www.linux-iscsi.org/wiki/VAAI
+> 
+> right above your name or in the title:
+> [PATCH vX 1/2]: yyyy
+> 
+> anyhow, some comments below.
+> 
 
-Private emails to you and RTS CEO Marc Fleischmann have not elicited a
-useful response.
+OK.
 
-You are subsystem maintainer for the in-kernel SCSI target support
-(drivers/target/*), and your company appears to be violating the GPL.
-Please explain.
-
-Regards -- Andy
+Thanks,
+Jinsong
