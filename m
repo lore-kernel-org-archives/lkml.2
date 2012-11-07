@@ -1,192 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab2KGJmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 04:42:22 -0500
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:56591 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751938Ab2KGJmU (ORCPT
+	id S1753851Ab2KGJsO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 04:48:14 -0500
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:52580 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab2KGJsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 04:42:20 -0500
-From: Qing Xu <qingx@marvell.com>
-To: qingx@marvell.com, lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        sameo@linux.intel.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH v3 5/7] mfd: max8925: support dt for regulator
-Date: Wed,  7 Nov 2012 17:42:55 +0800
-Message-Id: <1352281375-17056-1-git-send-email-qingx@marvell.com>
+	Wed, 7 Nov 2012 04:48:11 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, arnd@arndb.de,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [RFC Patch v1 00/31] Synopsys ARC Linux kernel Port
+Date: Wed,  7 Nov 2012 10:47:23 +0100
+Message-Id: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 07 Nov 2012 09:42:11.0267 (UTC) FILETIME=[291C1930:01CDBCCC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Qing Xu <qingx@marvell.com>
+Hi,
 
-Signed-off-by: Qing Xu <qingx@marvell.com>
----
- .../bindings/regulator/max8925-regulator.txt       |   29 ++++++++
- drivers/regulator/max8925-regulator.c              |   72 +++++++++++++++++++-
- 2 files changed, 98 insertions(+), 3 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/max8925-regulator.txt
+This patchset based off-of 3.7-rc3, introduces the Linux kernel port to
+ARC700 processor family (750D and 770D) from Synopsys.
 
-diff --git a/Documentation/devicetree/bindings/regulator/max8925-regulator.txt b/Documentation/devicetree/bindings/regulator/max8925-regulator.txt
-new file mode 100644
-index 0000000..073b41d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/max8925-regulator.txt
-@@ -0,0 +1,29 @@
-+Max8925 Voltage regulators
-+
-+max8925 regulator device register is still handled by mfd_add_devices, not by
-+of_xxx, so, it is not necessary to add compatible name. Also, those reg
-+offset and id info is stored in mfd_cell(see max8925-core.c), as a result
-+there is not private properties in dts.
-+
-+node's name should match with the definition in max8925_regulator_matches
-+(see max8925-regulator.c)
-+
-+
-+Optional properties:
-+- Any optional property defined in bindings/regulator/regulator.txt
-+
-+
-+Example:
-+
-+
-+	regulators {
-+		SDV1 {
-+			regulator-min-microvolt = <637500>;
-+			regulator-max-microvolt = <1425000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		...
-+		...
-+	}
-diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
-index 9bb0be3..5e84921 100644
---- a/drivers/regulator/max8925-regulator.c
-+++ b/drivers/regulator/max8925-regulator.c
-@@ -17,6 +17,8 @@
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
- #include <linux/mfd/max8925.h>
-+#include <linux/of.h>
-+#include <linux/regulator/of_regulator.h>
- 
- #define SD1_DVM_VMIN		850000
- #define SD1_DVM_VMAX		1000000
-@@ -187,6 +189,34 @@ static struct regulator_ops max8925_regulator_ldo_ops = {
- 	.enable_reg	= MAX8925_LDOCTL##_id,			\
- }
- 
-+#ifdef CONFIG_OF
-+static struct of_regulator_match max8925_regulator_matches[] = {
-+	{ .name	= "SDV1",},
-+	{ .name = "SDV2",},
-+	{ .name = "SDV3",},
-+	{ .name = "LDO1",},
-+	{ .name = "LDO2",},
-+	{ .name = "LDO3",},
-+	{ .name = "LDO4",},
-+	{ .name = "LDO5",},
-+	{ .name = "LDO6",},
-+	{ .name = "LDO7",},
-+	{ .name = "LDO8",},
-+	{ .name = "LDO9",},
-+	{ .name = "LDO10",},
-+	{ .name = "LDO11",},
-+	{ .name = "LDO12",},
-+	{ .name = "LDO13",},
-+	{ .name = "LDO14",},
-+	{ .name = "LDO15",},
-+	{ .name = "LDO16",},
-+	{ .name = "LDO17",},
-+	{ .name = "LDO18",},
-+	{ .name = "LDO19",},
-+	{ .name = "LDO20",},
-+};
-+#endif
-+
- static struct max8925_regulator_info max8925_regulator_info[] = {
- 	MAX8925_SDV(1, 637.5, 1425, 12.5),
- 	MAX8925_SDV(2,   650, 2225,   25),
-@@ -214,6 +244,36 @@ static struct max8925_regulator_info max8925_regulator_info[] = {
- 	MAX8925_LDO(20, 750, 3900, 50),
- };
- 
-+#ifdef CONFIG_OF
-+static int max8925_regulator_dt_init(struct platform_device *pdev,
-+				    struct max8925_regulator_info *info,
-+				    struct regulator_config *config,
-+				    int ridx)
-+{
-+	struct device_node *nproot, *np;
-+	int rcount;
-+	nproot = pdev->dev.parent->of_node;
-+	if (!nproot)
-+		return -ENODEV;
-+	np = of_find_node_by_name(nproot, "regulators");
-+	if (!np) {
-+		dev_err(&pdev->dev, "failed to find regulators node\n");
-+		return -ENODEV;
-+	}
-+
-+	rcount = of_regulator_match(&pdev->dev, np,
-+				&max8925_regulator_matches[ridx], 1);
-+	if (rcount < 0)
-+		return -ENODEV;
-+	config->init_data =	max8925_regulator_matches[ridx].init_data;
-+	config->of_node = max8925_regulator_matches[ridx].of_node;
-+
-+	return 0;
-+}
-+#else
-+#define max8925_regulator_dt_init(x, y, z)	(-1)
-+#endif
-+
- static int __devinit max8925_regulator_probe(struct platform_device *pdev)
- {
- 	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
-@@ -222,7 +282,7 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
- 	struct max8925_regulator_info *ri;
- 	struct resource *res;
- 	struct regulator_dev *rdev;
--	int i;
-+	int i, regulator_idx;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (!res) {
-@@ -231,9 +291,12 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
- 	}
- 	for (i = 0; i < ARRAY_SIZE(max8925_regulator_info); i++) {
- 		ri = &max8925_regulator_info[i];
--		if (ri->vol_reg == res->start)
-+		if (ri->vol_reg == res->start) {
-+			regulator_idx = i;
- 			break;
-+		}
- 	}
-+
- 	if (i == ARRAY_SIZE(max8925_regulator_info)) {
- 		dev_err(&pdev->dev, "Failed to find regulator %llu\n",
- 			(unsigned long long)res->start);
-@@ -243,9 +306,12 @@ static int __devinit max8925_regulator_probe(struct platform_device *pdev)
- 	ri->chip = chip;
- 
- 	config.dev = &pdev->dev;
--	config.init_data = pdata;
- 	config.driver_data = ri;
- 
-+	if (max8925_regulator_dt_init(pdev, ri, &config, regulator_idx))
-+		if (pdata)
-+			config.init_data = pdata;
-+
- 	rdev = regulator_register(&ri->desc, &config);
- 	if (IS_ERR(rdev)) {
- 		dev_err(&pdev->dev, "failed to register regulator %s\n",
+ARC700 is highly configurable and power efficient 32-bit RISC core with MMU.
+It is embedded in SoCs deployed in TV Set Top boxes, Digital Media Players,
+all the way to Network-on-Chips.
+
+More information is available @
+    http://www.synopsys.com/IP/ProcessorIP/ARCProcessors/Pages/default.aspx
+
+This series is part #1 of the entire port - just enough to build the kernel
+and bring up a Busybox shell on console (on ARCAngel4 FPGA ref platform)
+The console driver has already been accepted/merged into tty-next tree for 3.8
+
+The part #2 series containing additional features ptrace/SMP/perf/OProfile..
+will follow as we move along the review cycle. It has been withheld just to
+make it easier for reviewers.
+
+The entire series however is available at
+    git://github.com/foss-for-synopsys-dwc-arc-processors/linux.git arc-3.7-rc3
+
+The GNU tool-chain, based off of gcc 4.4  + uClibc 0.9.30.3 is also available
+from github. Please refer to Readme.md in "toolchain" repository also in same
+hierarchy as kernel above.
+
+We are already working on a buildroot based distro, to be made available soon.
+
+More info about the kernel port can also be found in the ELCE-Barclone '12
+talk on same topic.
+
+    https://raw.github.com/vineetgarc/publish/master/ELCE-2012-ARC-Linux.pdf
+
+All comments/criticisms are welcome !
+
+P.S. Despite 3.7 based, we are still short of the UAPI split for arch headers.
+That is also being worked upon with help from David. That will show up in v2
+of the patchseries.
+
+Thx,
+-Vineet
+
+Vineet Gupta (31):
+  ARC: Generic Headers
+  ARC: irqflags
+  ARC: atomic/bitops/cmpxchg/barriers
+  asm-generic headers: uaccess.h to conditionally define segment_eq()
+  ARC: uaccess friends
+  asm-generic headers: Allow yet more arch overrides in checksum.h
+  ARC: checksum/byteorder/swab routines
+  ARC: Fundamental ARCH data-types/defines
+  ARC: spinlock/rwlock/mutex primitives
+  ARC: string library
+  ARC: Low level IRQ/Trap/Exception(non-MMU) Handling
+  ARC: Interrupt Handling
+  ARC: Non-MMU Exception Handling
+  ARC: syscall support
+  ARC: Process/scheduling/clock/Timers/Delay Management
+  ARC: Signal handling
+  ARC: Cache Flush Management
+  ARC: Page Table Management
+  ARC: MMU Context Management
+  ARC: MMU Exception Handling
+  ARC: TLB flush Handling
+  ARC: Page Fault handling (incl uaccess fixup)
+  ARC: I/O and DMA Mappings
+  ARC: startup #1: low-level, setup_arch(), /proc/cpuinfo, mem init
+  ARC: [plat-arcfpga] Hooking up platform to ARC UART
+  ARC: Build system: Makefiles, Kconfig, Linker script
+  ARC: Last bits (stubs) to get to a running kernel with UART
+  ARC: split ret_from_fork, simplify kernel_thread()
+  ARC: switch to generic kernel_thread()
+  ARC: switch to generic kernel_execve() and sys_execve()
+  ARC: [plat-arcfpga] defconfig
+
+ arch/arc/Kbuild                               |    2 +
+ arch/arc/Kconfig                              |  338 ++++++++++
+ arch/arc/Kconfig.debug                        |   34 +
+ arch/arc/Makefile                             |  115 ++++
+ arch/arc/boot/Makefile                        |   27 +
+ arch/arc/configs/fpga_defconfig               |  607 ++++++++++++++++++
+ arch/arc/include/asm/Kbuild                   |   58 ++
+ arch/arc/include/asm/arcregs.h                |  330 ++++++++++
+ arch/arc/include/asm/asm-offsets.h            |    9 +
+ arch/arc/include/asm/atomic.h                 |  232 +++++++
+ arch/arc/include/asm/barrier.h                |   42 ++
+ arch/arc/include/asm/bitops.h                 |  507 +++++++++++++++
+ arch/arc/include/asm/bug.h                    |   37 ++
+ arch/arc/include/asm/byteorder.h              |   18 +
+ arch/arc/include/asm/cache.h                  |   75 +++
+ arch/arc/include/asm/cachectl.h               |   30 +
+ arch/arc/include/asm/cacheflush.h             |   67 ++
+ arch/arc/include/asm/checksum.h               |  101 +++
+ arch/arc/include/asm/cmpxchg.h                |  143 +++++
+ arch/arc/include/asm/delay.h                  |   68 ++
+ arch/arc/include/asm/dma-mapping.h            |  176 ++++++
+ arch/arc/include/asm/dma.h                    |   14 +
+ arch/arc/include/asm/elf.h                    |   97 +++
+ arch/arc/include/asm/entry.h                  |  495 +++++++++++++++
+ arch/arc/include/asm/exec.h                   |   15 +
+ arch/arc/include/asm/io.h                     |   26 +
+ arch/arc/include/asm/irq.h                    |   26 +
+ arch/arc/include/asm/irqflags.h               |  143 +++++
+ arch/arc/include/asm/kdebug.h                 |   19 +
+ arch/arc/include/asm/linkage.h                |   30 +
+ arch/arc/include/asm/mmu.h                    |   23 +
+ arch/arc/include/asm/mmu_context.h            |  209 ++++++
+ arch/arc/include/asm/module.h                 |   17 +
+ arch/arc/include/asm/mutex.h                  |    9 +
+ arch/arc/include/asm/page.h                   |  134 ++++
+ arch/arc/include/asm/pgalloc.h                |  134 ++++
+ arch/arc/include/asm/pgtable.h                |  401 ++++++++++++
+ arch/arc/include/asm/processor.h              |  146 +++++
+ arch/arc/include/asm/ptrace.h                 |  133 ++++
+ arch/arc/include/asm/sections.h               |   17 +
+ arch/arc/include/asm/segment.h                |   24 +
+ arch/arc/include/asm/setup.h                  |   22 +
+ arch/arc/include/asm/sigcontext.h             |   23 +
+ arch/arc/include/asm/signal.h                 |   27 +
+ arch/arc/include/asm/smp.h                    |   34 +
+ arch/arc/include/asm/spinlock.h               |  144 +++++
+ arch/arc/include/asm/spinlock_types.h         |   35 +
+ arch/arc/include/asm/string.h                 |   40 ++
+ arch/arc/include/asm/swab.h                   |   99 +++
+ arch/arc/include/asm/switch_to.h              |   41 ++
+ arch/arc/include/asm/syscall.h                |   72 +++
+ arch/arc/include/asm/syscalls.h               |   30 +
+ arch/arc/include/asm/thread_info.h            |  120 ++++
+ arch/arc/include/asm/timex.h                  |   18 +
+ arch/arc/include/asm/tlb-mmu1.h               |  104 +++
+ arch/arc/include/asm/tlb.h                    |   58 ++
+ arch/arc/include/asm/tlbflush.h               |   28 +
+ arch/arc/include/asm/uaccess.h                |  605 ++++++++++++++++++
+ arch/arc/include/asm/unistd.h                 |   46 ++
+ arch/arc/include/asm/vmlinux.lds.h            |   12 +
+ arch/arc/kernel/Makefile                      |   16 +
+ arch/arc/kernel/arcksyms.c                    |   56 ++
+ arch/arc/kernel/asm-offsets.c                 |   46 ++
+ arch/arc/kernel/ctx_sw.c                      |   91 +++
+ arch/arc/kernel/ctx_sw_asm.S                  |   58 ++
+ arch/arc/kernel/entry.S                       |  635 +++++++++++++++++++
+ arch/arc/kernel/fpu.c                         |   55 ++
+ arch/arc/kernel/head.S                        |   78 +++
+ arch/arc/kernel/irq.c                         |  107 ++++
+ arch/arc/kernel/process.c                     |  259 ++++++++
+ arch/arc/kernel/ptrace.c                      |   26 +
+ arch/arc/kernel/reset.c                       |   33 +
+ arch/arc/kernel/setup.c                       |  166 +++++
+ arch/arc/kernel/signal.c                      |  360 +++++++++++
+ arch/arc/kernel/stacktrace.c                  |   43 ++
+ arch/arc/kernel/sys.c                         |   18 +
+ arch/arc/kernel/time.c                        |  237 +++++++
+ arch/arc/kernel/traps.c                       |  125 ++++
+ arch/arc/kernel/troubleshoot.c                |   17 +
+ arch/arc/kernel/vmlinux.lds.S                 |  117 ++++
+ arch/arc/lib/Makefile                         |    9 +
+ arch/arc/lib/memcmp.S                         |  124 ++++
+ arch/arc/lib/memcpy-700.S                     |   66 ++
+ arch/arc/lib/memset.S                         |   59 ++
+ arch/arc/lib/strchr-700.S                     |  123 ++++
+ arch/arc/lib/strcmp.S                         |   96 +++
+ arch/arc/lib/strcpy-700.S                     |   70 ++
+ arch/arc/lib/strlen.S                         |   83 +++
+ arch/arc/mm/Makefile                          |   10 +
+ arch/arc/mm/cache_arc700.c                    |  838 +++++++++++++++++++++++++
+ arch/arc/mm/dma.c                             |   91 +++
+ arch/arc/mm/extable.c                         |   26 +
+ arch/arc/mm/fault.c                           |  228 +++++++
+ arch/arc/mm/init.c                            |  185 ++++++
+ arch/arc/mm/ioremap.c                         |   62 ++
+ arch/arc/mm/mmap.c                            |   21 +
+ arch/arc/mm/tlb.c                             |  586 +++++++++++++++++
+ arch/arc/mm/tlbex.S                           |  351 +++++++++++
+ arch/arc/plat-arcfpga/Kconfig                 |   33 +
+ arch/arc/plat-arcfpga/Makefile                |    9 +
+ arch/arc/plat-arcfpga/include/plat/dma_addr.h |   45 ++
+ arch/arc/plat-arcfpga/include/plat/irq.h      |   27 +
+ arch/arc/plat-arcfpga/include/plat/memmap.h   |   31 +
+ arch/arc/plat-arcfpga/irq.c                   |   41 ++
+ arch/arc/plat-arcfpga/platform.c              |  134 ++++
+ include/asm-generic/checksum.h                |    4 +
+ include/asm-generic/uaccess.h                 |    3 +-
+ lib/checksum.c                                |    2 +
+ 108 files changed, 12585 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arc/Kbuild
+ create mode 100644 arch/arc/Kconfig
+ create mode 100644 arch/arc/Kconfig.debug
+ create mode 100644 arch/arc/Makefile
+ create mode 100644 arch/arc/boot/Makefile
+ create mode 100644 arch/arc/configs/fpga_defconfig
+ create mode 100644 arch/arc/include/asm/Kbuild
+ create mode 100644 arch/arc/include/asm/arcregs.h
+ create mode 100644 arch/arc/include/asm/asm-offsets.h
+ create mode 100644 arch/arc/include/asm/atomic.h
+ create mode 100644 arch/arc/include/asm/barrier.h
+ create mode 100644 arch/arc/include/asm/bitops.h
+ create mode 100644 arch/arc/include/asm/bug.h
+ create mode 100644 arch/arc/include/asm/byteorder.h
+ create mode 100644 arch/arc/include/asm/cache.h
+ create mode 100644 arch/arc/include/asm/cachectl.h
+ create mode 100644 arch/arc/include/asm/cacheflush.h
+ create mode 100644 arch/arc/include/asm/checksum.h
+ create mode 100644 arch/arc/include/asm/cmpxchg.h
+ create mode 100644 arch/arc/include/asm/delay.h
+ create mode 100644 arch/arc/include/asm/dma-mapping.h
+ create mode 100644 arch/arc/include/asm/dma.h
+ create mode 100644 arch/arc/include/asm/elf.h
+ create mode 100644 arch/arc/include/asm/entry.h
+ create mode 100644 arch/arc/include/asm/exec.h
+ create mode 100644 arch/arc/include/asm/io.h
+ create mode 100644 arch/arc/include/asm/irq.h
+ create mode 100644 arch/arc/include/asm/irqflags.h
+ create mode 100644 arch/arc/include/asm/kdebug.h
+ create mode 100644 arch/arc/include/asm/linkage.h
+ create mode 100644 arch/arc/include/asm/mmu.h
+ create mode 100644 arch/arc/include/asm/mmu_context.h
+ create mode 100644 arch/arc/include/asm/module.h
+ create mode 100644 arch/arc/include/asm/mutex.h
+ create mode 100644 arch/arc/include/asm/page.h
+ create mode 100644 arch/arc/include/asm/pgalloc.h
+ create mode 100644 arch/arc/include/asm/pgtable.h
+ create mode 100644 arch/arc/include/asm/processor.h
+ create mode 100644 arch/arc/include/asm/ptrace.h
+ create mode 100644 arch/arc/include/asm/sections.h
+ create mode 100644 arch/arc/include/asm/segment.h
+ create mode 100644 arch/arc/include/asm/setup.h
+ create mode 100644 arch/arc/include/asm/sigcontext.h
+ create mode 100644 arch/arc/include/asm/signal.h
+ create mode 100644 arch/arc/include/asm/smp.h
+ create mode 100644 arch/arc/include/asm/spinlock.h
+ create mode 100644 arch/arc/include/asm/spinlock_types.h
+ create mode 100644 arch/arc/include/asm/string.h
+ create mode 100644 arch/arc/include/asm/swab.h
+ create mode 100644 arch/arc/include/asm/switch_to.h
+ create mode 100644 arch/arc/include/asm/syscall.h
+ create mode 100644 arch/arc/include/asm/syscalls.h
+ create mode 100644 arch/arc/include/asm/thread_info.h
+ create mode 100644 arch/arc/include/asm/timex.h
+ create mode 100644 arch/arc/include/asm/tlb-mmu1.h
+ create mode 100644 arch/arc/include/asm/tlb.h
+ create mode 100644 arch/arc/include/asm/tlbflush.h
+ create mode 100644 arch/arc/include/asm/uaccess.h
+ create mode 100644 arch/arc/include/asm/unistd.h
+ create mode 100644 arch/arc/include/asm/vmlinux.lds.h
+ create mode 100644 arch/arc/kernel/Makefile
+ create mode 100644 arch/arc/kernel/arcksyms.c
+ create mode 100644 arch/arc/kernel/asm-offsets.c
+ create mode 100644 arch/arc/kernel/ctx_sw.c
+ create mode 100644 arch/arc/kernel/ctx_sw_asm.S
+ create mode 100644 arch/arc/kernel/entry.S
+ create mode 100644 arch/arc/kernel/fpu.c
+ create mode 100644 arch/arc/kernel/head.S
+ create mode 100644 arch/arc/kernel/irq.c
+ create mode 100644 arch/arc/kernel/process.c
+ create mode 100644 arch/arc/kernel/ptrace.c
+ create mode 100644 arch/arc/kernel/reset.c
+ create mode 100644 arch/arc/kernel/setup.c
+ create mode 100644 arch/arc/kernel/signal.c
+ create mode 100644 arch/arc/kernel/stacktrace.c
+ create mode 100644 arch/arc/kernel/sys.c
+ create mode 100644 arch/arc/kernel/time.c
+ create mode 100644 arch/arc/kernel/traps.c
+ create mode 100644 arch/arc/kernel/troubleshoot.c
+ create mode 100644 arch/arc/kernel/vmlinux.lds.S
+ create mode 100644 arch/arc/lib/Makefile
+ create mode 100644 arch/arc/lib/memcmp.S
+ create mode 100644 arch/arc/lib/memcpy-700.S
+ create mode 100644 arch/arc/lib/memset.S
+ create mode 100644 arch/arc/lib/strchr-700.S
+ create mode 100644 arch/arc/lib/strcmp.S
+ create mode 100644 arch/arc/lib/strcpy-700.S
+ create mode 100644 arch/arc/lib/strlen.S
+ create mode 100644 arch/arc/mm/Makefile
+ create mode 100644 arch/arc/mm/cache_arc700.c
+ create mode 100644 arch/arc/mm/dma.c
+ create mode 100644 arch/arc/mm/extable.c
+ create mode 100644 arch/arc/mm/fault.c
+ create mode 100644 arch/arc/mm/init.c
+ create mode 100644 arch/arc/mm/ioremap.c
+ create mode 100644 arch/arc/mm/mmap.c
+ create mode 100644 arch/arc/mm/tlb.c
+ create mode 100644 arch/arc/mm/tlbex.S
+ create mode 100644 arch/arc/plat-arcfpga/Kconfig
+ create mode 100644 arch/arc/plat-arcfpga/Makefile
+ create mode 100644 arch/arc/plat-arcfpga/include/plat/dma_addr.h
+ create mode 100644 arch/arc/plat-arcfpga/include/plat/irq.h
+ create mode 100644 arch/arc/plat-arcfpga/include/plat/memmap.h
+ create mode 100644 arch/arc/plat-arcfpga/irq.c
+ create mode 100644 arch/arc/plat-arcfpga/platform.c
+
 -- 
-1.7.0.4
+1.7.4.1
 
