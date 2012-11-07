@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313Ab2KGJ7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 04:59:31 -0500
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:52751 "EHLO
+	id S1754596Ab2KGJ75 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 04:59:57 -0500
+Received: from vaxjo.synopsys.com ([198.182.60.75]:52779 "EHLO
 	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab2KGJ70 (ORCPT
+	with ESMTP id S1754165Ab2KGJ72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 04:59:26 -0500
+	Wed, 7 Nov 2012 04:59:28 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, arnd@arndb.de,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [RFC PATCH v1 26/31] ARC: Build system: Makefiles, Kconfig, Linker script
-Date: Wed,  7 Nov 2012 10:47:49 +0100
-Message-Id: <1352281674-2186-27-git-send-email-vgupta@synopsys.com>
+Subject: [RFC PATCH v1 21/31] ARC: TLB flush Handling
+Date: Wed,  7 Nov 2012 10:47:44 +0100
+Message-Id: <1352281674-2186-22-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
 References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
@@ -23,600 +23,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/arc/Kbuild                    |    2 +
- arch/arc/Kconfig                   |  337 ++++++++++++++++++++++++++++++++++++
- arch/arc/Kconfig.debug             |   34 ++++
- arch/arc/Makefile                  |  115 ++++++++++++
- arch/arc/boot/Makefile             |   27 +++
- arch/arc/include/asm/Kbuild        |    1 +
- arch/arc/include/asm/vmlinux.lds.h |   12 ++
- arch/arc/kernel/Makefile           |   16 ++
- arch/arc/kernel/arcksyms.c         |   56 ++++++
- arch/arc/kernel/asm-offsets.c      |   46 +++++
- arch/arc/kernel/vmlinux.lds.S      |  117 +++++++++++++
- arch/arc/lib/Makefile              |    9 +
- arch/arc/mm/Makefile               |   10 +
- arch/arc/plat-arcfpga/Kconfig      |   33 ++++
- arch/arc/plat-arcfpga/Makefile     |    9 +
- 15 files changed, 824 insertions(+), 0 deletions(-)
- create mode 100644 arch/arc/Kbuild
- create mode 100644 arch/arc/Kconfig
- create mode 100644 arch/arc/Kconfig.debug
- create mode 100644 arch/arc/Makefile
- create mode 100644 arch/arc/boot/Makefile
- create mode 100644 arch/arc/include/asm/vmlinux.lds.h
- create mode 100644 arch/arc/kernel/Makefile
- create mode 100644 arch/arc/kernel/arcksyms.c
- create mode 100644 arch/arc/kernel/asm-offsets.c
- create mode 100644 arch/arc/kernel/vmlinux.lds.S
- create mode 100644 arch/arc/lib/Makefile
- create mode 100644 arch/arc/mm/Makefile
- create mode 100644 arch/arc/plat-arcfpga/Kconfig
- create mode 100644 arch/arc/plat-arcfpga/Makefile
+ arch/arc/include/asm/tlb.h      |   17 ++
+ arch/arc/include/asm/tlbflush.h |   28 ++++
+ arch/arc/mm/tlb.c               |  311 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 356 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arc/include/asm/tlbflush.h
 
-diff --git a/arch/arc/Kbuild b/arch/arc/Kbuild
+diff --git a/arch/arc/include/asm/tlb.h b/arch/arc/include/asm/tlb.h
+index b571e12..3eb2ce0 100644
+--- a/arch/arc/include/asm/tlb.h
++++ b/arch/arc/include/asm/tlb.h
+@@ -21,6 +21,23 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
++#define tlb_flush(tlb) local_flush_tlb_mm((tlb)->mm)
++
++/*
++ * This pair is called at time of munmap/exit to flush cache and TLB entries
++ * for mappings being torn down.
++ * 1) cache-flush part -implemented via tlb_start_vma( ) can be NOP (for now)
++ *    as we don't support aliasing configs in our VIPT D$.
++ * 2) tlb-flush part - implemted via tlb_end_vma( ) can be NOP as well-
++ *    albiet for difft reasons - its better handled by moving to new ASID
++ *
++ * Note, read http://lkml.org/lkml/2004/1/15/6
++ */
++#define tlb_start_vma(tlb, vma)
++#define tlb_end_vma(tlb, vma)
++
++#define __tlb_remove_tlb_entry(tlb, ptep, address)
++
+ #include <linux/pagemap.h>
+ #include <asm-generic/tlb.h>
+ 
+diff --git a/arch/arc/include/asm/tlbflush.h b/arch/arc/include/asm/tlbflush.h
 new file mode 100644
-index 0000000..082d329
+index 0000000..b2f9bc7
 --- /dev/null
-+++ b/arch/arc/Kbuild
-@@ -0,0 +1,2 @@
-+obj-y += kernel/
-+obj-y += mm/
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-new file mode 100644
-index 0000000..d6983afa
---- /dev/null
-+++ b/arch/arc/Kconfig
-@@ -0,0 +1,337 @@
-+#
-+# Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+#
-+# This program is free software; you can redistribute it and/or modify
-+# it under the terms of the GNU General Public License version 2 as
-+# published by the Free Software Foundation.
-+#
-+
-+config ARC
-+	def_bool y
-+	select ARCH_WANT_IPC_PARSE_VERSION
-+	# ARC Busybox based initramfs absolutely relies on DEVTMPFS for /dev
-+	# DEVTMPS in turn needs HOTPLUG
-+	select DEVTMPFS if !INITRAMFS_SOURCE=""
-+	select GENERIC_ATOMIC64
-+	select GENERIC_CLOCKEVENTS
-+	select GENERIC_FIND_FIRST_BIT
-+	# for now, we don't need GENERIC_IRQ_PROBE, CONFIG_GENERIC_IRQ_CHIP
-+	select GENERIC_IRQ_SHOW
-+	select GENERIC_PENDING_IRQ if SMP
-+	select GENERIC_SMP_IDLE_THREAD
-+	select HAVE_GENERIC_HARDIRQS
-+	select HOTPLUG if !INITRAMFS_SOURCE=""
-+	select MODULES_USE_ELF_RELA
-+
-+config SCHED_OMIT_FRAME_POINTER
-+	def_bool y
-+
-+config GENERIC_CSUM
-+	def_bool y
-+
-+config RWSEM_GENERIC_SPINLOCK
-+	def_bool y
-+
-+# for old_[ug]id_t - do we need this ?
-+config UID16
-+	def_bool y
-+
-+config ARCH_FLATMEM_ENABLE
-+	def_bool y
-+
-+config MMU
-+	def_bool y
-+
-+config NO_IOPORT
-+	def_bool y
-+
-+config GENERIC_CALIBRATE_DELAY
-+	def_bool y
-+
-+config GENERIC_HWEIGHT
-+	def_bool y
-+
-+config BINFMT_ELF
-+	def_bool y
-+
-+config STACKTRACE_SUPPORT
-+	def_bool y
-+	select STACKTRACE
-+
-+config HAVE_LATENCYTOP_SUPPORT
-+	def_bool y
-+
-+config NO_DMA
-+	def_bool n
-+
-+source "init/Kconfig"
-+source "kernel/Kconfig.freezer"
-+
-+menu "ARC Architecture Configuration"
-+
-+choice
-+	prompt "ARC Platform"
-+	default ARC_PLAT_FPGA_LEGACY
-+
-+config ARC_PLAT_FPGA_LEGACY
-+	bool "\"Legacy\" ARC FPGA dev platform"
-+	help
-+	  Support for ARC development platforms, provided by Synopsys.
-+	  These are based on FPGA or ISS. e.g.
-+	  - ARCAngel4
-+	  - ML509
-+	  - MetaWare ISS
-+
-+#New platform adds here
-+endchoice
-+
-+menu "ARC CPU Configuration"
-+
-+choice
-+	prompt "ARC Core"
-+	default ARC_CPU_770
-+
-+config ARC_CPU_750D
-+	bool "ARC750D"
-+	help
-+	  Support for ARC750 core
-+
-+config ARC_CPU_770
-+	bool "ARC770"
-+	select ARC_CPU_REL_4_10
-+	help
-+	  Support for ARC770 core introduced with Rel 4.10 (Summer 2011)
-+	  This core has a bunch of cool new features:
-+	  -MMU-v3: Variable Page Sz (4k, 8k, 16k), bigger J-TLB (128x4)
-+                   Shared Address Spaces (for sharing TLB entires in MMU)
-+	  -Caches: New Prog Model, Region Flush
-+	  -Insns: endian swap, load-locked/store-conditional, time-stamp-ctr
-+
-+endchoice
-+
-+config CPU_BIG_ENDIAN
-+	bool "Enable Big Endian Mode"
-+	default n
-+	help
-+	  Build kernel for Big Endian Mode of ARC CPU
-+
-+menuconfig ARC_CACHE
-+	bool "Enable Cache Support"
-+	default y
-+
-+if ARC_CACHE
-+
-+config ARC_CACHE_LINE_SHIFT
-+	int "Cache Line Length (as power of 2)"
-+	range 5 7
-+	default "6"
-+	help
-+	  Starting with ARC700 4.9, Cache line length is configurable,
-+	  This option specifies "N", with Line-len = 2 power N
-+	  So line lengths of 32, 64, 128 are specified by 5,6,7, respectively
-+	  Linux only supports same line lengths for I and D caches.
-+
-+config ARC_HAS_ICACHE
-+	bool "Use Instruction Cache"
-+	default y
-+
-+config ARC_HAS_DCACHE
-+	bool "Use Data Cache"
-+	default y
-+
-+config ARC_CACHE_PAGES
-+	bool "Per Page Cache Control"
-+	default y
-+	depends on ARC_HAS_ICACHE || ARC_HAS_DCACHE
-+	help
-+	  This can be used to over-ride the global I/D Cache Enable on a
-+	  per-page basis (but only for pages accessed via MMU such as
-+	  Kernel Virtual address or User Virtual Address)
-+	  TLB entries have a per-page Cache Enable Bit.
-+	  Note that Global I/D ENABLE + Per Page DISABLE works but corollary
-+	  Global DISABLE + Per Page ENABLE won't work
-+
-+endif	#ARC_CACHE
-+
-+config ARC_HAS_HW_MPY
-+	bool "Use Hardware Multiplier (Normal or Faster XMAC)"
-+	default y
-+	help
-+	  Influences how gcc generates code for MPY operations.
-+	  If enabled, MPYxx insns are generated, provided by Standard/XMAC
-+	  Multipler. Otherwise software multipy lib is used
-+
-+choice
-+	prompt "ARC700 MMU Version"
-+	default ARC_MMU_V3 if ARC_CPU_770
-+	default ARC_MMU_V2 if ARC_CPU_750D
-+
-+config ARC_MMU_V1
-+	bool "MMU v1"
-+	help
-+	  Orig ARC700 MMU
-+
-+config ARC_MMU_V2
-+	bool "MMU v2"
-+	help
-+	  Fixed the deficiency of v1 - possible thrashing in memcpy sceanrio
-+	  when 2 D-TLB and 1 I-TLB entries index into same 2way set.
-+
-+config ARC_MMU_V3
-+	bool "MMU v3"
-+	depends on ARC_CPU_770
-+	help
-+	  Introduced with ARC700 4.10: New Features
-+	  Variable Page size (1k-16k), var JTLB size 128 x (2 or 4)
-+	  Shared Address Spaces (SASID)
-+
-+endchoice
-+
-+
-+choice
-+	prompt "MMU Page Size"
-+	default ARC_PAGE_SIZE_8K
-+
-+config ARC_PAGE_SIZE_8K
-+	bool "8KB"
-+	help
-+	  Choose between 8k vs 16k
-+
-+config ARC_PAGE_SIZE_16K
-+	bool "16KB"
-+	depends on ARC_MMU_V3
-+
-+config ARC_PAGE_SIZE_4K
-+	bool "4KB"
-+	depends on ARC_MMU_V3
-+
-+endchoice
-+
-+config ARC_FPU_SAVE_RESTORE
-+	bool "Enable FPU state persistence across context switch"
-+	default n
-+	help
-+	  Double Precision Floating Point unit had dedictaed regs which
-+	  need to be saved/restored across context-switch.
-+	  Note that ARC FPU is overly simplistic, unlike say x86, which has
-+	  hardware pieces to allow software to conditionally save/restore,
-+	  based on actual usage of FPU by a task. Thus our implemn does
-+	  this for all tasks in system.
-+
-+menuconfig ARC_CPU_REL_4_10
-+	bool "Enable support for Rel 4.10 features"
-+	default n
-+	help
-+	  -ARC770 (and dependent features) enabled
-+	  -ARC750 also shares some of the new features with 770
-+
-+config ARC_HAS_LLSC
-+	bool "Insn: LLOCK/SCOND (efficient atomic ops)"
-+	default y
-+	depends on ARC_CPU_770
-+	# if SMP, enable LLSC ONLY if ARC implementation has coherent atomics
-+	depends on !SMP || ARC_HAS_COH_LLSC
-+
-+config ARC_HAS_SWAPE
-+	bool "Insn: SWAPE (endian-swap)"
-+	default y
-+	depends on ARC_CPU_REL_4_10
-+
-+config ARC_HAS_RTSC
-+	bool "Insn: RTSC (64-bit r/o cycle counter)"
-+	default y
-+	depends on ARC_CPU_REL_4_10
-+
-+endmenu   # "ARC CPU Configuration"
-+
-+menu "Platform Board Configuration"
-+
-+source "arch/arc/plat-arcfpga/Kconfig"
-+#New platform adds here
-+
-+config ARC_PLAT_CLK
-+	int "Clk speed in Hz"
-+	default "80000000"
-+
-+config LINUX_LINK_BASE
-+	hex "Linux Link Address"
-+	default "0x80000000"
-+	help
-+	  ARC700 divides the 32 bit phy address space into two equal halves
-+	  -Lower 2G (0 - 0x7FFF_FFFF ) is user virtual, translated by MMU
-+	  -Upper 2G (0x8000_0000 onwards) is untranslated, for kernel
-+	  Typically Linux kernel is linked at the start of untransalted addr,
-+	  hence the default value of 0x8zs.
-+	  However some customers have peripherals mapped at this addr, so
-+	  Linux needs to be scooted a bit.
-+	  If you don't know what the above means, leave this setting alone.
-+
-+config ARC_PLAT_SDRAM_SIZE
-+	hex "SD RAM Size"
-+	default "0x10000000"
-+	help
-+	  Implies the amount of SDRAM/DRAM Linux is going to claim/own.
-+	  The actual memory itself could be larger than this number. But for
-+	  all software purposes, this is the amt of memory.
-+
-+endmenu # "Platform Board Configuration"
-+
-+config ARC_STACK_NONEXEC
-+	bool "Make stack non-executable"
-+	default n
-+	help
-+	  To disable the execute permissions of stack/heap of processes
-+	  which are enabled by default.
-+
-+config HZ
-+	int "Timer Frequency"
-+	default 100
-+
-+menuconfig ARC_DBG
-+	bool "ARC debugging"
-+	default y
-+
-+config ARC_DBG_TLB_PARANOIA
-+	bool "Paranoia Checks in Low Level TLB Handlers"
-+	depends on ARC_DBG
-+	default n
-+
-+config ARC_DBG_TLB_MISS_COUNT
-+	bool "Profile TLB Misses"
-+	default n
-+	select DEBUG_FS
-+	depends on ARC_DBG
-+	help
-+	  Counts number of I and D TLB Misses and exports them via Debugfs
-+	  The counters can be cleared via Debugfs as well
-+
-+config CMDLINE
-+	string "Kernel command line to built-in"
-+	default "print-fatal-signals=1"
-+	help
-+	  The default command line which will be appended to the optional
-+	  u-boot provided command line (see below)
-+
-+config CMDLINE_UBOOT
-+	bool "Support U-boot kernel command line passing"
-+	default n
-+	help
-+	  If you are using U-boot (www.denx.de) and wish to pass the kernel
-+	  command line from the U-boot environment to the Linux kernel then
-+	  switch this option on.
-+	  ARC U-boot will setup the cmdline in RAM/flash and set r2 to point
-+	  to it. kernel startup code will copy the string into cmdline buffer
-+	  and also append CONFIG_CMDLINE.
-+
-+source "kernel/Kconfig.preempt"
-+
-+endmenu	 # "ARC Architecture Configuration"
-+
-+source "mm/Kconfig"
-+source "net/Kconfig"
-+source "drivers/Kconfig"
-+source "fs/Kconfig"
-+source "arch/arc/Kconfig.debug"
-+source "security/Kconfig"
-+source "crypto/Kconfig"
-+source "lib/Kconfig"
-diff --git a/arch/arc/Kconfig.debug b/arch/arc/Kconfig.debug
-new file mode 100644
-index 0000000..962c609
---- /dev/null
-+++ b/arch/arc/Kconfig.debug
-@@ -0,0 +1,34 @@
-+menu "Kernel hacking"
-+
-+source "lib/Kconfig.debug"
-+
-+config EARLY_PRINTK
-+	bool "Early printk" if EMBEDDED
-+	default y
-+	help
-+	  Write kernel log output directly into the VGA buffer or to a serial
-+	  port.
-+
-+	  This is useful for kernel debugging when your machine crashes very
-+	  early before the console code is initialized. For normal operation
-+	  it is not recommended because it looks ugly and doesn't cooperate
-+	  with klogd/syslogd or the X server. You should normally N here,
-+	  unless you want to debug such a crash.
-+
-+config DEBUG_STACKOVERFLOW
-+	bool "Check for stack overflows"
-+	depends on DEBUG_KERNEL
-+	help
-+	  This option will cause messages to be printed if free stack space
-+	  drops below a certain limit.
-+
-+config 16KSTACKS
-+	bool "Use 16Kb for kernel stacks instead of 8Kb"
-+	help
-+	  If you say Y here the kernel will use a  16Kb stacksize for the
-+	  kernel stack attached to each process/thread. The default is 8K.
-+	  This increases the resident kernel footprint and will cause less
-+	  threads to run on the system and also increase the pressure
-+	  on the VM subsystem for higher order allocations.
-+
-+endmenu
-diff --git a/arch/arc/Makefile b/arch/arc/Makefile
-new file mode 100644
-index 0000000..4d52a3b
---- /dev/null
-+++ b/arch/arc/Makefile
-@@ -0,0 +1,115 @@
-+#
-+# Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+#
-+# This program is free software; you can redistribute it and/or modify
-+# it under the terms of the GNU General Public License version 2 as
-+# published by the Free Software Foundation.
-+#
-+
-+UTS_MACHINE := arc
-+
-+KBUILD_DEFCONFIG := fpga_defconfig
-+
-+# For ARC FPGA Platforms
-+platform-$(CONFIG_ARC_PLAT_FPGA_LEGACY)	:= arcfpga
-+#New platform adds here
-+
-+PLATFORM := $(platform-y)
-+export PLATFORM
-+
-+cflags-y	+= -Iarch/arc/plat-$(PLATFORM)/include
-+cflags-y	+= -mA7 -fno-common -pipe -fno-builtin -D__linux__
-+
-+atleast_gcc44 :=  $(call cc-ifversion, -gt, 0402, y)
-+cflags-$(atleast_gcc44)			+= -fsection-anchors
-+
-+cflags-$(CONFIG_ARC_HAS_LLSC)		+= -mlock
-+cflags-$(CONFIG_ARC_HAS_SWAPE)		+= -mswape
-+cflags-$(CONFIG_ARC_HAS_RTSC)		+= -mrtsc
-+cflags-$(CONFIG_ARC_DW2_UNWIND)		+= -fasynchronous-unwind-tables
-+
-+ifndef CONFIG_CC_OPTIMIZE_FOR_SIZE
-+# Generic build system uses -O2, we want -O3
-+cflags-y  += -O3
-+endif
-+
-+# small data is default for elf32 tool-chain. If not usable, disable it
-+# This also allows repurposing GP as scratch reg to gcc reg allocator
-+disable_small_data := y
-+cflags-$(disable_small_data)		+= -mno-sdata -fcall-used-gp
-+
-+cflags-$(CONFIG_CPU_BIG_ENDIAN)		+= -mbig-endian
-+ldflags-$(CONFIG_CPU_BIG_ENDIAN)	+= -EB
-+
-+# STAR 9000518362:
-+# arc-linux-uclibc-ld (buildroot) or arceb-elf32-ld (EZChip) don't accept
-+# --build-id w/o "-marclinux".
-+# Default arc-elf32-ld is OK
-+ldflags-y				+= -marclinux
-+
-+ARC_LIBGCC				:= -mA7
-+cflags-$(CONFIG_ARC_HAS_HW_MPY)		+= -multcost=16
-+
-+ifndef CONFIG_ARC_HAS_HW_MPY
-+	cflags-y	+= -mno-mpy
-+
-+# newlib for ARC700 assumes MPY to be always present, which is generally true
-+# However, if someone really doesn't want MPY, we need to use the 600 ver
-+# which coupled with -mno-mpy will use mpy emulation
-+# With gcc 4.4.7, -mno-mpy is enough to make any other related adjustments,
-+# e.g. increased cost of MPY. With gcc 4.2.1 this had to be explicitly hinted
-+
-+	ARC_LIBGCC		:= -marc600
-+	ifneq ($(atleast_gcc44),y)
-+		cflags-y	+= -multcost=30
-+	endif
-+endif
-+
-+LIBGCC	:= $(shell $(CC) $(ARC_LIBGCC) $(cflags-y) --print-libgcc-file-name)
-+
-+# Modules with short calls might break for calls into builtin-kernel
-+KBUILD_CFLAGS_MODULE	+= -mlong-calls
-+
-+# Finally dump eveything into kernel build system
-+KBUILD_CFLAGS	+= $(cflags-y)
-+KBUILD_AFLAGS	+= $(KBUILD_CFLAGS)
-+LDFLAGS		+= $(ldflags-y)
-+
-+# Needed for Linker script preprocessing
-+KBUILD_CPPFLAGS	+= -Iarch/arc/plat-$(PLATFORM)/include
-+
-+head-y		:= arch/arc/kernel/head.o
-+
-+# See arch/arc/Kbuild for content of core part of the kernel
-+core-y		+= arch/arc/
-+
-+# w/o this ifneq, make ARCH=arc clean was crapping out
-+ifneq ($(platform-y),)
-+core-y		+= arch/arc/plat-$(PLATFORM)/
-+endif
-+
-+libs-y		+= arch/arc/lib/ $(LIBGCC)
-+
-+#default target for make without any arguements.
-+KBUILD_IMAGE := bootpImage
-+
-+all:	$(KBUILD_IMAGE)
-+boot	:= arch/arc/boot
-+
-+bootpImage: vmlinux
-+
-+uImage: vmlinux
-+	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
-+
-+archclean:
-+	$(Q)$(MAKE) $(clean)=$(boot)
-+
-+# Hacks to enable final link due to absence of link-time branch relexation
-+# and gcc choosing optimal(shorter) branches at -O3
-+#
-+# vineetg Feb 2010: -mlong-calls switched off for overall kernel build
-+# However lib/decompress_inflate.o (.init.text) calls
-+# zlib_inflate_workspacesize (.text) causing relocation errors.
-+# Thus forcing all exten calls in this file to be long calls
-+export CFLAGS_decompress_inflate.o = -mmedium-calls
-+export CFLAGS_initramfs.o = -mmedium-calls
-diff --git a/arch/arc/boot/Makefile b/arch/arc/boot/Makefile
-new file mode 100644
-index 0000000..4ff734d
---- /dev/null
-+++ b/arch/arc/boot/Makefile
-@@ -0,0 +1,27 @@
-+targets := vmlinux.bin vmlinux.bin.gz uImage
-+
-+# uImage build relies on mkimage being availble on your host for ARC target
-+# You will need to build u-boot for ARC, rename mkimage to arc-elf32-mkimage
-+# and make sure it's reacable from your PATH
-+MKIMAGE := $(srctree)/scripts/mkuboot.sh
-+
-+OBJCOPYFLAGS= -O binary -R .note -R .note.gnu.build-id -R .comment -S
-+
-+LINUX_START_TEXT = $$(readelf -h vmlinux | \
-+			grep "Entry point address" | grep -o 0x.*)
-+
-+quiet_cmd_uimage = UIMAGE $@
-+	cmd_uimage = $(CONFIG_SHELL) $(MKIMAGE) -A arc -O linux -T kernel \
-+			-C gzip -a $(CONFIG_LINUX_LINK_BASE) \
-+			-e $(LINUX_START_TEXT) -d $< $@
-+
-+$(obj)/vmlinux.bin: vmlinux FORCE
-+	$(call if_changed,objcopy)
-+
-+$(obj)/vmlinux.bin.gz: $(obj)/vmlinux.bin FORCE
-+	$(call if_changed,gzip)
-+
-+$(obj)/uImage: $(obj)/vmlinux.bin.gz FORCE
-+	$(call if_changed,uimage)
-+
-+PHONY += FORCE
-diff --git a/arch/arc/include/asm/Kbuild b/arch/arc/include/asm/Kbuild
-index d6c037a..148dfcf 100644
---- a/arch/arc/include/asm/Kbuild
-+++ b/arch/arc/include/asm/Kbuild
-@@ -33,6 +33,7 @@ generic-y += mman.h
- generic-y += msgbuf.h
- generic-y += param.h
- generic-y += parport.h
-+generic-y += pci.h
- generic-y += percpu.h
- generic-y += poll.h
- generic-y += posix_types.h
-diff --git a/arch/arc/include/asm/vmlinux.lds.h b/arch/arc/include/asm/vmlinux.lds.h
-new file mode 100644
-index 0000000..12c8e42
---- /dev/null
-+++ b/arch/arc/include/asm/vmlinux.lds.h
-@@ -0,0 +1,12 @@
++++ b/arch/arc/include/asm/tlbflush.h
+@@ -0,0 +1,28 @@
 +/*
 + * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 + *
@@ -625,354 +71,362 @@ index 0000000..12c8e42
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef __ASM_VMLINUX_LDS_H__
-+#define __ASM_VMLINUX_LDS_H__
++#ifndef __ASM_ARC_TLBFLUSH__
++#define __ASM_ARC_TLBFLUSH__
 +
-+#endif
-diff --git a/arch/arc/kernel/Makefile b/arch/arc/kernel/Makefile
-new file mode 100644
-index 0000000..47f6b33
---- /dev/null
-+++ b/arch/arc/kernel/Makefile
-@@ -0,0 +1,16 @@
-+#
-+# Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+#
-+# This program is free software; you can redistribute it and/or modify
-+# it under the terms of the GNU General Public License version 2 as
-+# published by the Free Software Foundation.
-+
-+obj-y	:= arcksyms.o setup.o irq.o time.o reset.o ptrace.o entry.o process.o \
-+	   signal.o traps.o sys.o troubleshoot.o stacktrace.o
-+
-+obj-$(CONFIG_ARC_FPU_SAVE_RESTORE)	+= fpu.o
-+CFLAGS_fpu.o   += -mdpfp
-+
-+obj-y += ctx_sw_asm.o
-+
-+extra-y := vmlinux.lds head.o
-diff --git a/arch/arc/kernel/arcksyms.c b/arch/arc/kernel/arcksyms.c
-new file mode 100644
-index 0000000..4d9e777
---- /dev/null
-+++ b/arch/arc/kernel/arcksyms.c
-@@ -0,0 +1,56 @@
-+/*
-+ * arcksyms.c - Exporting symbols not exportable from their own sources
-+ *
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+
-+/* libgcc functions, not part of kernel sources */
-+extern void __ashldi3(void);
-+extern void __ashrdi3(void);
-+extern void __divsi3(void);
-+extern void __divsf3(void);
-+extern void __lshrdi3(void);
-+extern void __modsi3(void);
-+extern void __muldi3(void);
-+extern void __ucmpdi2(void);
-+extern void __udivsi3(void);
-+extern void __umodsi3(void);
-+extern void __cmpdi2(void);
-+extern void __fixunsdfsi(void);
-+extern void __muldf3(void);
-+extern void __divdf3(void);
-+extern void __floatunsidf(void);
-+extern void __floatunsisf(void);
-+
-+EXPORT_SYMBOL(__ashldi3);
-+EXPORT_SYMBOL(__ashrdi3);
-+EXPORT_SYMBOL(__divsi3);
-+EXPORT_SYMBOL(__divsf3);
-+EXPORT_SYMBOL(__lshrdi3);
-+EXPORT_SYMBOL(__modsi3);
-+EXPORT_SYMBOL(__muldi3);
-+EXPORT_SYMBOL(__ucmpdi2);
-+EXPORT_SYMBOL(__udivsi3);
-+EXPORT_SYMBOL(__umodsi3);
-+EXPORT_SYMBOL(__cmpdi2);
-+EXPORT_SYMBOL(__fixunsdfsi);
-+EXPORT_SYMBOL(__muldf3);
-+EXPORT_SYMBOL(__divdf3);
-+EXPORT_SYMBOL(__floatunsidf);
-+EXPORT_SYMBOL(__floatunsisf);
-+
-+/* ARC optimised assembler routines */
-+EXPORT_SYMBOL(memset);
-+EXPORT_SYMBOL(memcpy);
-+EXPORT_SYMBOL(memcmp);
-+EXPORT_SYMBOL(strchr);
-+EXPORT_SYMBOL(strcpy);
-+EXPORT_SYMBOL(strcmp);
-+EXPORT_SYMBOL(strlen);
-diff --git a/arch/arc/kernel/asm-offsets.c b/arch/arc/kernel/asm-offsets.c
-new file mode 100644
-index 0000000..7f3f611
---- /dev/null
-+++ b/arch/arc/kernel/asm-offsets.c
-@@ -0,0 +1,46 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/sched.h>
 +#include <linux/mm.h>
-+#include <linux/interrupt.h>
-+#include <asm/hardirq.h>
-+#include <linux/thread_info.h>
-+#include <asm/page.h>
-+#include <linux/kbuild.h>
 +
-+int main(void)
-+{
-+	DEFINE(TASK_THREAD, offsetof(struct task_struct, thread));
-+	DEFINE(TASK_THREAD_INFO, offsetof(struct task_struct, stack));
++void local_flush_tlb_all(void);
++void local_flush_tlb_mm(struct mm_struct *mm);
++void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page);
++void local_flush_tlb_kernel_range(unsigned long start, unsigned long end);
++void local_flush_tlb_range(struct vm_area_struct *vma,
++			   unsigned long start, unsigned long end);
 +
-+	BLANK();
++/* XXX: Revisit for SMP */
++#define flush_tlb_range(vma, s, e)	local_flush_tlb_range(vma, s, e)
++#define flush_tlb_page(vma, page)	local_flush_tlb_page(vma, page)
++#define flush_tlb_kernel_range(s, e)	local_flush_tlb_kernel_range(s, e)
++#define flush_tlb_all()			local_flush_tlb_all()
++#define flush_tlb_mm(mm)		local_flush_tlb_mm(mm)
 +
-+	DEFINE(THREAD_KSP, offsetof(struct thread_struct, ksp));
-+	DEFINE(THREAD_CALLEE_REG, offsetof(struct thread_struct, callee_reg));
-+	DEFINE(THREAD_FAULT_ADDR,
-+	       offsetof(struct thread_struct, fault_address));
-+
-+	BLANK();
-+
-+	DEFINE(THREAD_INFO_FLAGS, offsetof(struct thread_info, flags));
-+	DEFINE(THREAD_INFO_PREEMPT_COUNT,
-+	       offsetof(struct thread_info, preempt_count));
-+
-+	BLANK();
-+
-+	DEFINE(TASK_ACT_MM, offsetof(struct task_struct, active_mm));
-+	DEFINE(TASK_TGID, offsetof(struct task_struct, tgid));
-+
-+	DEFINE(MM_CTXT, offsetof(struct mm_struct, context));
-+	DEFINE(MM_PGD, offsetof(struct mm_struct, pgd));
-+
-+	DEFINE(MM_CTXT_ASID, offsetof(mm_context_t, asid));
-+
-+	return 0;
-+}
-diff --git a/arch/arc/kernel/vmlinux.lds.S b/arch/arc/kernel/vmlinux.lds.S
-new file mode 100644
-index 0000000..67c35bd
---- /dev/null
-+++ b/arch/arc/kernel/vmlinux.lds.S
-@@ -0,0 +1,117 @@
-+/*
-+ * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
++#endif
+diff --git a/arch/arc/mm/tlb.c b/arch/arc/mm/tlb.c
+index 41afc84..c10111d 100644
+--- a/arch/arc/mm/tlb.c
++++ b/arch/arc/mm/tlb.c
+@@ -6,13 +6,97 @@
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * vineetg: Aug 2011
++ *  -Reintroduce duplicate PD fixup - some customer chips still have the issue
++ *
++ * vineetg: May 2011
++ *  -No need to flush_cache_page( ) for each call to update_mmu_cache()
++ *   some of the LMBench tests improved amazingly
++ *      = page-fault thrice as fast (75 usec to 28 usec)
++ *      = mmap twice as fast (9.6 msec to 4.6 msec),
++ *      = fork (5.3 msec to 3.7 msec)
++ *
++ * vineetg: April 2011 :
++ *  -MMU v3: PD{0,1} bits layout changed: They don't overlap anymore,
++ *      helps avoid a shift when preparing PD0 from PTE
++ *
++ * vineetg: April 2011 : Preparing for MMU V3
++ *  -MMU v2/v3 BCRs decoded differently
++ *  -Remove TLB_SIZE hardcoding as it's variable now: 256 or 512
++ *  -tlb_entry_erase( ) can be void
++ *  -local_flush_tlb_range( ):
++ *      = need not "ceil" @end
++ *      = walks MMU only if range spans < 32 entries, as opposed to 256
++ *
++ * Vineetg: Sept 10th 2008
++ *  -Changes related to MMU v2 (Rel 4.8)
++ *
++ * Vineetg: Aug 29th 2008
++ *  -In TLB Flush operations (Metal Fix MMU) there is a explict command to
++ *    flush Micro-TLBS. If TLB Index Reg is invalid prior to TLBIVUTLB cmd,
++ *    it fails. Thus need to load it with ANY valid value before invoking
++ *    TLBIVUTLB cmd
++ *
++ * Vineetg: Aug 21th 2008:
++ *  -Reduced the duration of IRQ lockouts in TLB Flush routines
++ *  -Multiple copies of TLB erase code seperated into a "single" function
++ *  -In TLB Flush routines, interrupt disabling moved UP to retrieve ASID
++ *       in interrupt-safe region.
++ *
++ * Vineetg: April 23rd Bug #93131
++ *    Problem: tlb_flush_kernel_range() doesnt do anything if the range to
++ *              flush is more than the size of TLB itself.
++ *
++ * Rahul Trivedi : Codito Technologies 2004
+  */
+ 
+ #include <linux/module.h>
+ #include <asm/arcregs.h>
++#include <asm/setup.h>
+ #include <asm/mmu_context.h>
+ #include <asm/tlb.h>
+ 
++/*			Need for ARC MMU v2
++ *
++ * ARC700 MMU-v1 had a Joint-TLB for Code and Data and is 2 way set-assoc.
++ * For a memcpy operation with 3 players (src/dst/code) such that all 3 pages
++ * map into same set, there would be contention for the 2 ways causing severe
++ * Thrashing.
++ *
++ * Although J-TLB is 2 way set assoc, ARC700 caches J-TLB into uTLBS which has
++ * much higher associativity. u-D-TLB is 8 ways, u-I-TLB is 4 ways.
++ * Given this, the thrasing problem should never happen because once the 3
++ * J-TLB entries are created (even though 3rd will knock out one of the prev
++ * two), the u-D-TLB and u-I-TLB will have what is required to accomplish memcpy
++ *
++ * Yet we still see the Thrashing because a J-TLB Write cause flush of u-TLBs.
++ * This is a simple design for keeping them in sync. So what do we do?
++ * The solution which James came up was pretty neat. It utilised the assoc
++ * of uTLBs by not invalidating always but only when absolutely necessary.
++ *
++ * - Existing TLB commands work as before
++ * - New command (TLBWriteNI) for TLB write without clearing uTLBs
++ * - New command (TLBIVUTLB) to invalidate uTLBs.
++ *
++ * The uTLBs need only be invalidated when pages are being removed from the
++ * OS page table. If a 'victim' TLB entry is being overwritten in the main TLB
++ * as a result of a miss, the removed entry is still allowed to exist in the
++ * uTLBs as it is still valid and present in the OS page table. This allows the
++ * full associativity of the uTLBs to hide the limited associativity of the main
++ * TLB.
++ *
++ * During a miss handler, the new "TLBWriteNI" command is used to load
++ * entries without clearing the uTLBs.
++ *
++ * When the OS page table is updated, TLB entries that may be associated with a
++ * removed page are removed (flushed) from the TLB using TLBWrite. In this
++ * circumstance, the uTLBs must also be cleared. This is done by using the
++ * existing TLBWrite command. An explicit IVUTLB is also required for those
++ * corner cases when TLBWrite was not executed at all because the corresp
++ * J-TLB entry got evicted/replaced.
 + */
 +
-+#include <asm-generic/vmlinux.lds.h>
-+#include <asm/vmlinux.lds.h>
-+#include <asm/cache.h>
-+#include <asm/page.h>
-+#include <asm/thread_info.h>
-+#include <plat/memmap.h>
+ /* A copy of the ASID from the PID reg is kept in asid_cache */
+ int asid_cache = FIRST_ASID;
+ 
+@@ -22,6 +106,233 @@ int asid_cache = FIRST_ASID;
+  */
+ struct mm_struct *asid_mm_map[NUM_ASID + 1];
+ 
++/*
++ * Utility Routine to erase a J-TLB entry
++ * The procedure is to look it up in the MMU. If found, ERASE it by
++ *  issuing a TlbWrite CMD with PD0 = PD1 = 0
++ */
 +
-+OUTPUT_ARCH(arc)
-+ENTRY(_stext)
-+
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+jiffies = jiffies_64 + 4;
-+#else
-+jiffies = jiffies_64;
-+#endif
-+
-+SECTIONS
++static void __tlb_entry_erase(void)
 +{
-+	. = CONFIG_LINUX_LINK_BASE;
++	write_aux_reg(ARC_REG_TLBPD1, 0);
++	write_aux_reg(ARC_REG_TLBPD0, 0);
++	write_aux_reg(ARC_REG_TLBCOMMAND, TLBWrite);
++}
 +
-+	_int_vec_base_lds = .;
-+	.vector : {
-+		*(.vector)
-+		. = ALIGN(PAGE_SIZE);
-+	}
++static void tlb_entry_erase(unsigned int vaddr_n_asid)
++{
++	unsigned int idx;
 +
-+	/*
-+	 * The reason for having a seperate subsection .init.ramfs is to
-+	 * prevent objump from including it in kernel dumps
-+	 *
-+	 * Reason for having .init.ramfs above .init is to make sure that the
-+	 * binary blob is tucked away to one side, reducing the displacement
-+	 * between .init.text and .text, avoiding any possible relocation
-+	 * errors because of calls from .init.text to .text
-+	 * Yes such calls do exist. e.g.
-+	 *	decompress_inflate.c:gunzip( ) -> zlib_inflate_workspace( )
-+	 */
++	/* Locate the TLB entry for this vaddr + ASID */
++	write_aux_reg(ARC_REG_TLBPD0, vaddr_n_asid);
++	write_aux_reg(ARC_REG_TLBCOMMAND, TLBProbe);
++	idx = read_aux_reg(ARC_REG_TLBINDEX);
 +
-+	__init_begin = .;
++	/* No error means entry found, zero it out */
++	if (likely(!(idx & TLB_LKUP_ERR))) {
++		__tlb_entry_erase();
++	} else {		/* Some sort of Error */
 +
-+	.init.ramfs : { INIT_RAM_FS }
-+
-+	. = ALIGN(PAGE_SIZE);
-+	_stext = .;
-+
-+	HEAD_TEXT_SECTION
-+	INIT_TEXT_SECTION(L1_CACHE_BYTES)
-+
-+	/* INIT_DATA_SECTION open-coded: special INIT_RAM_FS handling */
-+	.init.data : {
-+		INIT_DATA
-+		INIT_SETUP(L1_CACHE_BYTES)
-+		INIT_CALLS
-+		CON_INITCALL
-+		SECURITY_INITCALL
-+	}
-+
-+	PERCPU_SECTION(L1_CACHE_BYTES)
-+
-+	/*
-+	 * .exit.text is discard at runtime, not link time, to deal with
-+	 * references from .debug_frame
-+	 * It will be init freed, being inside [__init_start : __init_end]
-+	 */
-+	.exit.text : { EXIT_TEXT }
-+	.exit.data : { EXIT_DATA }
-+
-+	. = ALIGN(PAGE_SIZE);
-+	__init_end = .;
-+
-+	.text : {
-+		_text = .;
-+		TEXT_TEXT
-+		SCHED_TEXT
-+		LOCK_TEXT
-+		KPROBES_TEXT
-+		*(.fixup)
-+		*(.gnu.warning)
-+	}
-+	EXCEPTION_TABLE(L1_CACHE_BYTES)
-+	_etext = .;
-+
-+	_sdata = .;
-+	RO_DATA_SECTION(PAGE_SIZE)
-+
-+	/*
-+	 * 1. this is .data essentially
-+	 * 2. THREAD_SIZE for init.task, must be kernel-stk sz aligned
-+	 */
-+	RW_DATA_SECTION(L1_CACHE_BYTES, PAGE_SIZE, THREAD_SIZE)
-+
-+	_edata = .;
-+
-+	BSS_SECTION(0, 0, 0)
-+
-+	NOTES
-+
-+	. = ALIGN(PAGE_SIZE);
-+	_end = . ;
-+
-+	STABS_DEBUG
-+	DWARF_DEBUG
-+	DISCARDS
-+
-+	.arcextmap 0 : {
-+		*(.gnu.linkonce.arcextmap.*)
-+		*(.arcextmap.*)
++		/* Duplicate entry error */
++		if (idx & 0x1) {
++			/* TODO we need to handle this case too */
++			pr_emerg("unhandled Duplicate flush for %x\n",
++			       vaddr_n_asid);
++		}
++		/* else entry not found so nothing to do */
 +	}
 +}
-diff --git a/arch/arc/lib/Makefile b/arch/arc/lib/Makefile
-new file mode 100644
-index 0000000..f4eaaf4
---- /dev/null
-+++ b/arch/arc/lib/Makefile
-@@ -0,0 +1,9 @@
-+#
-+# Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+#
-+# This program is free software; you can redistribute it and/or modify
-+# it under the terms of the GNU General Public License version 2 as
-+# published by the Free Software Foundation.
 +
-+lib-y	:= strchr-700.o strcmp.o strcpy-700.o strlen.o \
-+	   memcmp.o memcpy-700.o memset.o
-diff --git a/arch/arc/mm/Makefile b/arch/arc/mm/Makefile
-new file mode 100644
-index 0000000..303f567
---- /dev/null
-+++ b/arch/arc/mm/Makefile
-@@ -0,0 +1,10 @@
-+#
-+# Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+#
-+# This program is free software; you can redistribute it and/or modify
-+# it under the terms of the GNU General Public License version 2 as
-+# published by the Free Software Foundation.
-+#
++/****************************************************************************
++ * ARC700 MMU caches recently used J-TLB entries (RAM) as uTLBs (FLOPs)
++ *
++ * New IVUTLB cmd in MMU v2 explictly invalidates the uTLB
++ *
++ * utlb_invalidate ( )
++ *  -For v2 MMU calls Flush uTLB Cmd
++ *  -For v1 MMU does nothing (except for Metal Fix v1 MMU)
++ *      This is because in v1 TLBWrite itself invalidate uTLBs
++ ***************************************************************************/
 +
-+obj-y	:= extable.o ioremap.o dma.o fault.o init.o mmap.o \
-+	   tlb.o tlbex.o cache_arc700.o
-diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
-new file mode 100644
-index 0000000..3b41a0e
---- /dev/null
-+++ b/arch/arc/plat-arcfpga/Kconfig
-@@ -0,0 +1,33 @@
-+#
-+# Copyright (C) 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+#
-+# This program is free software; you can redistribute it and/or modify
-+# it under the terms of the GNU General Public License version 2 as
-+# published by the Free Software Foundation.
-+#
++static void utlb_invalidate(void)
++{
++#if (CONFIG_ARC_MMU_VER >= 2)
 +
-+if ARC_PLAT_FPGA_LEGACY
++#if (CONFIG_ARC_MMU_VER < 3)
++	/* MMU v2 introduced the uTLB Flush command.
++	 * There was however an obscure hardware bug, where uTLB flush would
++	 * fail when a prior probe for J-TLB (both totally unrelated) would
++	 * return lkup err - because the entry didnt exist in MMU.
++	 * The Workround was to set Index reg with some valid value, prior to
++	 * flush. This was fixed in MMU v3 hence not needed any more
++	 */
++	unsigned int idx;
 +
-+choice
-+	prompt "FPGA Board"
++	/* make sure INDEX Reg is valid */
++	idx = read_aux_reg(ARC_REG_TLBINDEX);
 +
-+config ARC_BOARD_ANGEL4
-+	bool "ARC Angel4"
-+	help
-+	  ARC Angel4 FPGA Ref Platform (Xilinx Virtex Based)
++	/* If not write some dummy val */
++	if (unlikely(idx & TLB_LKUP_ERR))
++		write_aux_reg(ARC_REG_TLBINDEX, 0xa);
++#endif
 +
-+config ARC_BOARD_ML509
-+	bool "ML509"
-+	help
-+	  ARC ML509 FPGA Ref Platform (Xilinx Virtex-5 Based)
++	write_aux_reg(ARC_REG_TLBCOMMAND, TLBIVUTLB);
++#endif
 +
-+endchoice
++}
 +
-+config ARC_SERIAL_BAUD
-+	int "UART Baud rate"
-+	default "115200"
-+	depends on SERIAL_ARC
-+	help
-+	  Baud rate for the ARC UART
++/*
++ * Un-conditionally (without lookup) erase the entire MMU contents
++ */
 +
-+endif
-diff --git a/arch/arc/plat-arcfpga/Makefile b/arch/arc/plat-arcfpga/Makefile
-new file mode 100644
-index 0000000..385eb9d
---- /dev/null
-+++ b/arch/arc/plat-arcfpga/Makefile
-@@ -0,0 +1,9 @@
-+#
-+# Copyright (C) 2011-2012 Synopsys, Inc. (www.synopsys.com)
-+#
-+# This program is free software; you can redistribute it and/or modify
-+# it under the terms of the GNU General Public License version 2 as
-+# published by the Free Software Foundation.
-+#
++noinline void local_flush_tlb_all(void)
++{
++	unsigned long flags;
++	unsigned int entry;
++	struct cpuinfo_arc_mmu *mmu = &cpuinfo_arc700[smp_processor_id()].mmu;
 +
-+obj-y := platform.o irq.o
++	local_irq_save(flags);
++
++	/* Load PD0 and PD1 with template for a Blank Entry */
++	write_aux_reg(ARC_REG_TLBPD1, 0);
++	write_aux_reg(ARC_REG_TLBPD0, 0);
++
++	for (entry = 0; entry < mmu->num_tlb; entry++) {
++		/* write this entry to the TLB */
++		write_aux_reg(ARC_REG_TLBINDEX, entry);
++		write_aux_reg(ARC_REG_TLBCOMMAND, TLBWrite);
++	}
++
++	utlb_invalidate();
++
++	local_irq_restore(flags);
++}
++
++/*
++ * Flush the entrie MM for userland. The fastest way is to move to Next ASID
++ */
++noinline void local_flush_tlb_mm(struct mm_struct *mm)
++{
++	/*
++	 * Small optimisation courtesy IA64
++	 * flush_mm called during fork,exit,munmap etc, multiple times as well.
++	 * Only for fork( ) do we need to move parent to a new MMU ctxt,
++	 * all other cases are NOPs, hence this check.
++	 */
++	if (atomic_read(&mm->mm_users) == 0)
++		return;
++
++	/*
++	 * Workaround for Android weirdism:
++	 * A binder VMA could end up in a task such that vma->mm != tsk->mm
++	 * old code would cause h/w - s/w ASID to get out of sync
++	 */
++	if (current->mm != mm)
++		destroy_context(mm);
++	else
++		get_new_mmu_context(mm);
++}
++
++/*
++ * Flush a Range of TLB entries for userland.
++ * @start is inclusive, while @end is exclusive
++ * Difference between this and Kernel Range Flush is
++ *  -Here the fastest way (if range is too large) is to move to next ASID
++ *      without doing any explicit Shootdown
++ *  -In case of kernel Flush, entry has to be shot down explictly
++ */
++void local_flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
++			   unsigned long end)
++{
++	unsigned long flags;
++	unsigned int asid;
++
++	/* If range @start to @end is more than 32 TLB entries deep,
++	 * its better to move to a new ASID rather than searching for
++	 * individual entries and then shooting them down
++	 *
++	 * The calc above is rough, doesn't account for unaligned parts,
++	 * since this is heuristics based anyways
++	 */
++	if (unlikely((end - start) >= PAGE_SIZE * 32)) {
++		local_flush_tlb_mm(vma->vm_mm);
++		return;
++	}
++
++	/*
++	 * @start moved to page start: this alone suffices for checking
++	 * loop end condition below, w/o need for aligning @end to end
++	 * e.g. 2000 to 4001 will anyhow loop twice
++	 */
++	start &= PAGE_MASK;
++
++	local_irq_save(flags);
++	asid = vma->vm_mm->context.asid;
++
++	if (asid != NO_ASID) {
++		while (start < end) {
++			tlb_entry_erase(start | (asid & 0xff));
++			start += PAGE_SIZE;
++		}
++	}
++
++	utlb_invalidate();
++
++	local_irq_restore(flags);
++}
++
++/* Flush the kernel TLB entries - vmalloc/modules (Global from MMU perspective)
++ *  @start, @end interpreted as kvaddr
++ * Interestingly, shared TLB entries can also be flushed using just
++ * @start,@end alone (interpreted as user vaddr), although technically SASID
++ * is also needed. However our smart TLbProbe lookup takes care of that.
++ */
++void local_flush_tlb_kernel_range(unsigned long start, unsigned long end)
++{
++	unsigned long flags;
++
++	/* exactly same as above, except for TLB entry not taking ASID */
++
++	if (unlikely((end - start) >= PAGE_SIZE * 32)) {
++		local_flush_tlb_all();
++		return;
++	}
++
++	start &= PAGE_MASK;
++
++	local_irq_save(flags);
++	while (start < end) {
++		tlb_entry_erase(start);
++		start += PAGE_SIZE;
++	}
++
++	utlb_invalidate();
++
++	local_irq_restore(flags);
++}
++
++/*
++ * Delete TLB entry in MMU for a given page (??? address)
++ * NOTE One TLB entry contains translation for single PAGE
++ */
++
++void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page)
++{
++	unsigned long flags;
++
++	/* Note that it is critical that interrupts are DISABLED between
++	 * checking the ASID and using it flush the TLB entry
++	 */
++	local_irq_save(flags);
++
++	if (vma->vm_mm->context.asid != NO_ASID) {
++		tlb_entry_erase((page & PAGE_MASK) |
++				(vma->vm_mm->context.asid & 0xff));
++		utlb_invalidate();
++	}
++
++	local_irq_restore(flags);
++}
+ 
+ /*
+  * Routine to create a TLB entry
 -- 
 1.7.4.1
 
