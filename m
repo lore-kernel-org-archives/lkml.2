@@ -1,182 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab2KGBLS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Nov 2012 20:11:18 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:41926 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753693Ab2KGBLR (ORCPT
+	id S1754212Ab2KGBMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Nov 2012 20:12:09 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54256 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693Ab2KGBMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Nov 2012 20:11:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121107001609.9B7A9100047@wpzn3.hot.corp.google.com>
-References: <20121107001609.9B7A9100047@wpzn3.hot.corp.google.com>
-Date: Tue, 6 Nov 2012 17:11:17 -0800
-X-Google-Sender-Auth: aC0GMfkVHjdrq55VrhrSCtHxMS8
-Message-ID: <CAGXu5jJ779UvpZwO-fi7-m+i=OfqwgXh1PC4GNwjhfD9GD82wQ@mail.gmail.com>
-Subject: Re: + binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
- added to -mm tree
-From: Kees Cook <keescook@chromium.org>
-To: akpm@linux-foundation.org
-Cc: jeff.liu@oracle.com, aedilger@gmail.com, alan@linux.intel.com,
-        arnn@arndb.de, drepper@redhat.com, gregkh@linuxfoundation.org,
-        jakub@redhat.com, james.l.morris@oracle.com, john.sobecki@oracle.com,
-        tytso@mit.edu, viro@zeniv.linux.org.uk,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Nov 2012 20:12:07 -0500
+Date: Wed, 7 Nov 2012 02:12:03 +0100
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Antti Palosaari <crope@iki.fi>
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+Message-ID: <20121107021203.1a5c52bc@gaivota.chehab>
+In-Reply-To: <20121107110559.862517a9ca96383d0ea8f308@canb.auug.org.au>
+References: <20121107110559.862517a9ca96383d0ea8f308@canb.auug.org.au>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hrm, I don't like this. get_random_int() specifically says: "Get a
-random word for internal kernel use only." The intent of AT_RANDOM is
-for userspace pRNG seeding (though glibc currently uses it directly
-for stack protector and pointer mangling), which is not "internal
-kernel use only". :) Though I suppose this is already being used for
-the randomize_stack_top(), but I think it'd still be better to use
-higher quality bits.
+Em Wed, 7 Nov 2012 11:05:59 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> escreveu:
 
-Notes below...
+> Hi Mauro,
+> 
+> After merging the v4l-dvb tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/built-in.o: In function `sms_ir_event':
+> (.text+0x129b95): undefined reference to `ir_raw_event_store'
+> drivers/built-in.o: In function `sms_ir_event':
+> (.text+0x129bb4): undefined reference to `ir_raw_event_handle'
+> drivers/built-in.o: In function `sms_ir_init':
+> (.text+0x129bec): undefined reference to `smscore_get_board_id'
+> drivers/built-in.o: In function `sms_ir_init':
+> (.text+0x129c17): undefined reference to `rc_allocate_device'
+> drivers/built-in.o: In function `sms_ir_init':
+> (.text+0x129cac): undefined reference to `sms_get_board'
+> drivers/built-in.o: In function `sms_ir_init':
+> (.text+0x129d41): undefined reference to `sms_get_board'
+> drivers/built-in.o: In function `sms_ir_init':
+> (.text+0x129d8c): undefined reference to `rc_register_device'
+> drivers/built-in.o: In function `sms_ir_init':
+> (.text+0x129dc3): undefined reference to `rc_free_device'
+> drivers/built-in.o: In function `sms_ir_exit':
+> (.text+0x129e15): undefined reference to `rc_unregister_device'
+> 
+> Caused (I think) by commit fdd1eeb49d36 ("[media] siano: allow compiling
+> it without RC support").  In this build, CONFIG_SMS_SIANO_RC=y and
+> CONFIG_RC_CORE=m .
 
-On Tue, Nov 6, 2012 at 4:16 PM,  <akpm@linux-foundation.org> wrote:
->
-> The patch titled
->      Subject: binfmt_elf.c: use get_random_int() to fix entropy depleting
-> has been added to the -mm tree.  Its filename is
->      binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
->
-> Before you just go and hit "reply", please:
->    a) Consider who else should be cc'ed
->    b) Prefer to cc a suitable mailing list as well
->    c) Ideally: find the original patch on the mailing list and do a
->       reply-to-all to that, adding suitable additional cc's
->
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
-> The -mm tree is included into linux-next and is updated
-> there every 3-4 working days
->
-> ------------------------------------------------------
-> From: Jeff Liu <jeff.liu@oracle.com>
-> Subject: binfmt_elf.c: use get_random_int() to fix entropy depleting
->
-> Entropy is quickly depleted under normal operations like ls(1), cat(1),
-> etc...  between 2.6.30 to current mainline, for instance:
->
-> $ cat /proc/sys/kernel/random/entropy_avail
-> 3428
-> $ cat /proc/sys/kernel/random/entropy_avail
-> 2911
-> $cat /proc/sys/kernel/random/entropy_avail
-> 2620
->
-> We observed this problem has been occurring since 2.6.30 with
-> fs/binfmt_elf.c: create_elf_tables()->get_random_bytes(), introduced by
-> f06295b44c296c8f ("ELF: implement AT_RANDOM for glibc PRNG seeding").
->
-> /*
->  * Generate 16 random bytes for userspace PRNG seeding.
->  */
-> get_random_bytes(k_rand_bytes, sizeof(k_rand_bytes));
->
-> The patch introduces a wrapper around get_random_int() which has lower
-> overhead than calling get_random_bytes() directly.
->
-> With this patch applied:
-> $ cat /proc/sys/kernel/random/entropy_avail
-> 2731
-> $ cat /proc/sys/kernel/random/entropy_avail
-> 2802
-> $ cat /proc/sys/kernel/random/entropy_avail
-> 2878
->
-> Analyzed by John Sobecki.
->
-> Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-> Cc: John Sobecki <john.sobecki@oracle.com>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Andreas Dilger <aedilger@gmail.com>
-> Cc: Alan Cox <alan@linux.intel.com>
-> Cc: Arnd Bergmann <arnn@arndb.de>
-> Cc: James Morris <james.l.morris@oracle.com>
-> Cc: Ted Ts'o <tytso@mit.edu>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Jakub Jelinek <jakub@redhat.com>
-> Cc: Ulrich Drepper <drepper@redhat.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
->
->  fs/binfmt_elf.c |   26 +++++++++++++++++++++++++-
->  1 file changed, 25 insertions(+), 1 deletion(-)
->
-> diff -puN fs/binfmt_elf.c~binfmt_elfc-use-get_random_int-to-fix-entropy-depleting fs/binfmt_elf.c
-> --- a/fs/binfmt_elf.c~binfmt_elfc-use-get_random_int-to-fix-entropy-depleting
-> +++ a/fs/binfmt_elf.c
-> @@ -48,6 +48,7 @@ static int load_elf_binary(struct linux_
->  static int load_elf_library(struct file *);
->  static unsigned long elf_map(struct file *, unsigned long, struct elf_phdr *,
->                                 int, int, unsigned long);
-> +static void randomize_stack_user(unsigned char *buf, size_t nbytes);
->
->  /*
->   * If we don't support core dumping, then supply a NULL so we
-> @@ -200,7 +201,7 @@ create_elf_tables(struct linux_binprm *b
->         /*
->          * Generate 16 random bytes for userspace PRNG seeding.
->          */
-> -       get_random_bytes(k_rand_bytes, sizeof(k_rand_bytes));
-> +       randomize_stack_user(k_rand_bytes, sizeof(k_rand_bytes));
->         u_rand_bytes = (elf_addr_t __user *)
->                        STACK_ALLOC(p, sizeof(k_rand_bytes));
->         if (__copy_to_user(u_rand_bytes, k_rand_bytes, sizeof(k_rand_bytes)))
-> @@ -558,6 +559,29 @@ static unsigned long randomize_stack_top
->  #endif
->  }
->
-> +/*
-> + * A wrapper of get_random_int() to generate random bytes which has lower
-> + * overhead than call get_random_bytes() directly.
-> + * create_elf_tables() call this function to generate 16 random bytes for
-> + * userspace PRNG seeding.
-> + */
-> +static void randomize_stack_user(unsigned char *buf, size_t nbytes)
-> +{
-> +       unsigned char *p = buf;
-> +
-> +       while (nbytes) {
-> +               unsigned int random_variable;
-> +               size_t chunk = min(nbytes, sizeof(unsigned int));
-> +
-> +               random_variable = get_random_int() & STACK_RND_MASK;
-> +               random_variable <<= PAGE_SHIFT;
+Gah, this is one of those things that will require to trick Kconfig.
 
-Why is this using STACK_RND_MASK? That's not sensible. And the shift
-is especially odd. AIUI, these two lines should just be:
+The thing is that the siano core driver needs to depend on RC_CORE, when
+RC is selected. 
 
-random_variable = get_random_int();
+While I haven't tested yet, I suspect that the following patch will
+likely do the trick.
 
-> +
-> +               memcpy(p, &random_variable, chunk);
-> +               p += chunk;
-> +               nbytes -= chunk;
-> +       }
-> +}
-> +
->  static int load_elf_binary(struct linux_binprm *bprm)
->  {
->         struct file *interpreter = NULL; /* to shut gcc up */
-> _
->
-> Patches currently in -mm which might be from jeff.liu@oracle.com are
->
-> documentation-cgroups-memorytxt-s-mem_cgroup_charge-mem_cgroup_change_common.patch
-> mm-vmscanc-try_to_freeze-returns-boolean.patch
-> binfmt_elfc-use-get_random_int-to-fix-entropy-depleting.patch
-> binfmt_elfc-use-get_random_int-to-fix-entropy-depleting-fix.patch
->
+It has one small drawback: if RC_CORE is a module, the siano driver
+can't be builtin, even if siano RC is not selected. 
 
--Kees
+-
 
--- 
-Kees Cook
-Chrome OS Security
+siano: make siano driver a module, when RC_CORE is selected as 'm'
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/common/siano/Kconfig b/drivers/media/common/siano/Kconfig
+index 3cb7823..68f0f60 100644
+--- a/drivers/media/common/siano/Kconfig
++++ b/drivers/media/common/siano/Kconfig
+@@ -5,6 +5,7 @@
+ config SMS_SIANO_MDTV
+ 	tristate
+ 	depends on DVB_CORE && HAS_DMA
++	depends on !RC_CORE || RC_CORE
+ 	depends on SMS_USB_DRV || SMS_SDIO_DRV
+ 	default y
+ 
+diff --git a/drivers/media/common/siano/Makefile b/drivers/media/common/siano/Makefile
+index 0e6f5e9..9e7fdf2 100644
+--- a/drivers/media/common/siano/Makefile
++++ b/drivers/media/common/siano/Makefile
+@@ -1,7 +1,10 @@
+ smsmdtv-objs := smscoreapi.o sms-cards.o smsendian.o
+ 
+ obj-$(CONFIG_SMS_SIANO_MDTV) += smsmdtv.o smsdvb.o
+-obj-$(CONFIG_SMS_SIANO_RC) += smsir.o
++
++ifeq ($(CONFIG_SMS_SIANO_RC),y)
++  obj-$(CONFIG_SMS_SIANO_MDTV) += smsir.o
++endif
+ 
+ ccflags-y += -Idrivers/media/dvb-core
+ ccflags-y += $(extra-cflags-y) $(extra-cflags-m)
+diff --git a/drivers/media/mmc/siano/Kconfig b/drivers/media/mmc/siano/Kconfig
+index 69f8061..aa05ad3 100644
+--- a/drivers/media/mmc/siano/Kconfig
++++ b/drivers/media/mmc/siano/Kconfig
+@@ -4,7 +4,7 @@
+ 
+ config SMS_SDIO_DRV
+ 	tristate "Siano SMS1xxx based MDTV via SDIO interface"
+-	depends on DVB_CORE && RC_CORE && HAS_DMA
++	depends on DVB_CORE && HAS_DMA
+ 	depends on MMC
+ 	select MEDIA_COMMON_OPTIONS
+ 	---help---
+diff --git a/drivers/media/usb/siano/Kconfig b/drivers/media/usb/siano/Kconfig
+index b2c229e..5afbd9a 100644
+--- a/drivers/media/usb/siano/Kconfig
++++ b/drivers/media/usb/siano/Kconfig
+@@ -4,7 +4,7 @@
+ 
+ config SMS_USB_DRV
+ 	tristate "Siano SMS1xxx based MDTV receiver"
+-	depends on DVB_CORE && RC_CORE && HAS_DMA
++	depends on DVB_CORE && HAS_DMA
+ 	select MEDIA_COMMON_OPTIONS
+ 	---help---
+ 	  Choose if you would like to have Siano's support for USB interface
+
