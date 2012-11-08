@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab2KHVYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 16:24:05 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:63359 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756655Ab2KHVYC (ORCPT
+	id S1757071Ab2KHVZO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 16:25:14 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51571 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756946Ab2KHVZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 16:24:02 -0500
+	Thu, 8 Nov 2012 16:25:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <1352300492-24779-2-git-send-email-ldewangan@nvidia.com>
-References: <1352300492-24779-1-git-send-email-ldewangan@nvidia.com>
-	<1352300492-24779-2-git-send-email-ldewangan@nvidia.com>
-Date: Thu, 8 Nov 2012 22:24:01 +0100
-Message-ID: <CACRpkdYm283wr6Si4qcGw5LxCnEWrnT2xPqHfJCPonL7tCcLMA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gpio: tegra: fix suspend/resume apis
+In-Reply-To: <1352348544-24416-1-git-send-email-ldewangan@nvidia.com>
+References: <1352348544-24416-1-git-send-email-ldewangan@nvidia.com>
+Date: Thu, 8 Nov 2012 22:25:10 +0100
+Message-ID: <CACRpkdYZLa4U0GfzqQYmT9eRG6bC9=XY6cQe0De2EwXcRz-UOw@mail.gmail.com>
+Subject: Re: [PATCH V2] gpio: tegra: fix suspend/resume apis
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Laxman Dewangan <ldewangan@nvidia.com>
 Cc: grant.likely@secretlab.ca, swarren@nvidia.com,
@@ -23,22 +22,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 4:01 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+On Thu, Nov 8, 2012 at 5:22 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
 
-> Following are changes done to fix the suspend/resume
-> functionality of tegra gpio driver:
-> - Protect suspend/resume callbacks with CONFIG_PM_SLEEP
->   because CONFIG_PM doesn't actually enable any of the PM callbacks, it
->   only allows to enable CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME.
->   This means if CONFIG_PM is used to protect system sleep callbacks
->   then it may end up unreferenced if only runtime PM is enabled.
->
-> - Fix the suspend/resume APIs declaration as per callback prototype.
->
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Changes from V1:
+> - It was 2/2/ for prev patch and dropping 1/2.
+> - nit cleanup in change.
+> - Added ack from Stephen as it is acked in 2/2.
 
-OK patch applied to my devel branch, with Stephens ACK
-and I also fixed the whitespace issue he pointed out.
+Oh I didn't see you respun it yourself. Anyway it's applied now.
 
 Yours,
 Linus Walleij
