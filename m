@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab2KHPz4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 10:55:56 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:55575 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756182Ab2KHPzv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 10:55:51 -0500
-Date: Thu, 8 Nov 2012 10:55:50 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Takashi Iwai <tiwai@suse.de>
-cc: Daniel Mack <zonque@gmail.com>, Christof Meerwald <cmeerw@cmeerw.org>,
-        "Artem S. Tashkinov" <t.artem@lycos.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: A reliable kernel panic (3.6.2) and system crash when visiting
- a particular website
-In-Reply-To: <s5hr4o4frcf.wl%tiwai@suse.de>
-Message-ID: <Pine.LNX.4.44L0.1211081054340.1280-100000@iolanthe.rowland.org>
+	id S1756229Ab2KHP5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 10:57:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33867 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464Ab2KHP5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 10:57:53 -0500
+Date: Thu, 8 Nov 2012 16:57:48 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, fweisbec@gmail.com
+Subject: Re: [PATCH 9/9 v2] cgroup_freezer: implement proper hierarchy support
+Message-ID: <20121108155748.GO31821@dhcp22.suse.cz>
+References: <1351931915-1701-1-git-send-email-tj@kernel.org>
+ <1351931915-1701-10-git-send-email-tj@kernel.org>
+ <20121107163919.GC2660@mtj.dyndns.org>
+ <20121108140852.GI31821@dhcp22.suse.cz>
+ <20121108141848.GA12973@htj.dyndns.org>
+ <20121108152039.GL31821@dhcp22.suse.cz>
+ <20121108152923.GG12973@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121108152923.GG12973@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Nov 2012, Takashi Iwai wrote:
-
-> At Thu, 08 Nov 2012 08:31:35 +0100,
-> Daniel Mack wrote:
-> (snip)
-> > >> We can't simply stop both endpoints in the prepare callback.
-> > > 
-> > > The new function doesn't stop the stream by itself but it just syncs
-> > > if the stream is being stopped beforehand.  So, it's safe to call it
-> > > there.
-> > > 
-> > > Maybe the name was confusing.  It should have been like
-> > > snd_usb_endpoint_sync_pending_stop() or such.
+On Thu 08-11-12 07:29:23, Tejun Heo wrote:
+> Hey, Michal.
+> 
+> On Thu, Nov 08, 2012 at 04:20:39PM +0100, Michal Hocko wrote:
+> > > So, in the above example in CPU2, (B->state & FREEZING) test and
+> > > freezer_apply_state(C, false) can't be interleaved with the same
+> > > inheritance operation from CPU1.  They either happen before or after.
 > > 
-> > Ah, right. I was errornously looking closer to Alan's patch but then
-> > replied to yours. Alright then - thanks for explaining :)
+> > I am not sure I understand what you mean by inheritance operation but
 > 
-> OK, thanks for checking.
+> The operation of looking at one's parent and inherting the state.
+> Here, checking parent->state and calling apply_state accordingly.
 > 
-> FWIW, below is the patch I applied now to for-linus branch.
-> Renamed the function, added the comment and put NULL check to the
-> function to simplify.
+> > you are right that the race is not possible because spin_lock makes
+> > sure that Foo->state is done after the lock(Foo->child) and spin_unlock
+> > then serves as a leave barrier so the other CPUs will see the correctly
+> > updated value. The rest is handled by the fixed ordered tree walk. So
+> > there is really no interleaving going on here.
+> 
+> I'm worried that this is a bit too subtle.
 
-Thanks for fixing this.  Is your patch marked for -stable?
+Dunno, it looks obvious now, I just missed the entry&leave implicit
+barriers by spinlocks and again sorry about the confusion.
 
-I have submitted a patch for ehci-hcd, so we should be all set.
+> This will work fine with a single hierarchy mutex protecting hierarchy
+> updates and state propagations through it and that should work for
+> most controllers too.
 
-Alan Stern
+But single mutex is just ugly.
 
+> I want to have at least one example of finer grained locking for
+> future reference and cgroup_freezer happened to be the one I started
+> working on.
+
+I think this is a good example because it shows how to share the state
+without too many implementation details.
+
+> So, it is more complicated (not necessarily in written code but the
+> sync rules) than necessary.  I'm still not sure whether to keep it or
+> not.
+
+I think the locking is fine and I would keep it this way rather than a
+big lock.
+
+> I'll add more documentation about synchronization in
+> cgroup_for_each_descendant_pre() either way.
+
+more doc cannot hurt ;)
+
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
