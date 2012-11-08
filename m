@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab2KHC7h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 21:59:37 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:41565 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754982Ab2KHC7g (ORCPT
+	id S1755076Ab2KHDAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 22:00:09 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55429 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754966Ab2KHDAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 21:59:36 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qA82woPo005211, This message is released by code: ctaloc0852
-Message-ID: <509B1FEA.1040505@realsil.com.cn>
-Date: Thu, 8 Nov 2012 10:58:50 +0800
-From: wwang <wei_wang@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 7 Nov 2012 22:00:06 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <509B201D.3060909@jp.fujitsu.com>
+Date: Thu, 08 Nov 2012 11:59:41 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "oakad@yahoo.com" <oakad@yahoo.com>,
-        "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH v7 0/3] Add modules to support realtek PCIE card reader
-References: <cover.1351481260.git.wei_wang@realsil.com.cn> <508F4A88.8010207@realsil.com.cn> <87r4o56w1f.fsf@octavius.laptop.org>
-In-Reply-To: <87r4o56w1f.fsf@octavius.laptop.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Tejun Heo <tj@kernel.org>
+CC: lizefan@huawei.com, mhocko@suse.cz, rjw@sisk.pl,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        fweisbec@gmail.com, Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH 1/9 v2] cgroup: add cgroup_subsys->post_create()
+References: <1351931915-1701-1-git-send-email-tj@kernel.org> <1351931915-1701-2-git-send-email-tj@kernel.org> <20121107171508.GF2660@mtj.dyndns.org>
+In-Reply-To: <20121107171508.GF2660@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年11月08日 03:41, Chris Ball 写道:
+(2012/11/08 2:15), Tejun Heo wrote:
+> Currently, there's no way for a controller to find out whether a new
+> cgroup finished all ->create() allocatinos successfully and is
+> considered "live" by cgroup.
 >
-> On Mon, Oct 29 2012, wwang wrote:
->> Hi Chris, Samuel and Alex:
->>
->> Can you help to review this patchset, please?
->>
->> I have asked Greg to remove rts_pstor from the staging tree. So this
->> driver have to be merged into 3.8 kernel, or else Realtek'sPCI-E card
->> reader can not be accessed easily.
-> I'm happy with the MMC portion.  I think we're mainly waiting for the
-> MFD patch -- Samuel, do you have any remaining review comments that need
-> to be fixed?
+> This becomes a problem later when we add generic descendants walking
+> to cgroup which can be used by controllers as controllers don't have a
+> synchronization point where it can synchronize against new cgroups
+> appearing in such walks.
 >
-> Thanks,
+> This patch adds ->post_create().  It's called after all ->create()
+> succeeded and the cgroup is linked into the generic cgroup hierarchy.
+> This plays the counterpart of ->pre_destroy().
 >
-> - Chris.
+> When used in combination with the to-be-added generic descendant
+> iterators, ->post_create() can be used to implement reliable state
+> inheritance.  It will be explained with the descendant iterators.
+>
+> v2: Added a paragraph about its future use w/ descendant iterators per
+>      Michal.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Cc: Glauber Costa <glommer@parallels.com>
 
-Hi Chris:
 
-Thank you for your comment.  :-)
-
-
-Hi Alex:
-
-Do you have any comment on the MEMSTICK part in this v7 patchset? Can 
-you help to merge the patch to the kernel tree?
-
-Thanks.
-Wei WANG
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
 
