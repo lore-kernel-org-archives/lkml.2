@@ -1,111 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278Ab2KHRH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 12:07:56 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:55661 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751267Ab2KHRHz (ORCPT
+	id S1755194Ab2KHRLh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 12:11:37 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36992 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab2KHRLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 12:07:55 -0500
-Date: Thu, 8 Nov 2012 12:07:54 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Huang Ying <ying.huang@intel.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and forbidden
-In-Reply-To: <1434035.IipKXWk2Vr@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1211081125470.1280-100000@iolanthe.rowland.org>
+	Thu, 8 Nov 2012 12:11:36 -0500
+Message-ID: <509BE7C5.4030109@wwwdotorg.org>
+Date: Thu, 08 Nov 2012 10:11:33 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        arm@kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 2/2] pinctrl/nomadik: make independent of prcmu driver
+References: <1352375742-29611-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1352375742-29611-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Nov 2012, Rafael J. Wysocki wrote:
-
-> > > > is it a good idea to allow to set device state to SUSPENDED if the device
-> > > > is disabled?
-> > > 
-> > > No, it is not.  The status should always be ACTIVE as long as usage_count > 0.
-
-That isn't strictly true, because pm_runtime_get_noresume violates this
-rule.  What the PM core actually does is prevent a transition from the
-ACTIVE state to the SUSPENDING/SUSPENDED state if usage_count > 0,
-_provided_ runtime PM is enabled.  There's no such restriction when it
-is disabled.
-
-BTW, do we need to think about what happens in the case where the
-device _does_ have a driver and for some reason the driver has disabled
-the device for runtime PM?  I would just as soon ignore the issue.
-
-> > > However, in some cases we actually would like to change the status to
-> > > SUSPENDED when usage_count becomes equal to 0, because that means we can
-> > > suspend (I mean really suspend) the parents of the devices in question
-> > > (and we want to notify the parents in those cases).
-> > 
-> > So do you think Alan Stern's suggestion about forbidden and disabled is
-> > the right way to go?
+On 11/08/2012 04:55 AM, Linus Walleij wrote:
+> From: Jonas Aaberg <jonas.aberg@stericsson.com>
 > 
-> I'm not really sure about that.
+> Currently there are some unnecessary criss-cross
+> dependencies between the PRCMU driver in MFD and a lot of
+> other drivers, mainly because other drivers need to poke
+> around in the PRCM register range.
 > 
-> My original idea was that the runtime PM status and usage counter would
-> only matter when runtime PM of a device was enabled.  That leads to
-> problems, though, when we enable runtime PM of a device whose usage
-> counter is greater from zero and status is SUSPENDED.
+> In cases like this there are actually just a few select
+> registers that the pinctrl driver need to read/modify/write,
+> and it turns out that no other driver is actually using
+> these registers, so there are no concurrency issues
+> whatsoever.
+> 
+> So: don't let the location of the register range complicate
+> things, just poke into these registers directly and skip
+> a layer of indirection.
 
-That doesn't seem to be a problem.  It can arise without disabling
-runtime PM at all -- just call pm_runtime_get_noresume.
-
->  Also when the
-> device's status is ACTIVE, but its parent's child count is 0.
-
-__pm_runtime_set_status prevents this situation from arising.  When the 
-device's status is set to ACTIVE, the parent's child count is 
-incremented.  So this isn't a problem either.
-
-> It's not very easy to fix this at the core level, though, because we
-> depend on the current behavior in some places.  I'm thinking that
-> perhaps pm_runtime_enable() should just WARN() if things are obviously
-> inconsistent (although there still may be problems, for example, if the
-> parent's child count is 2 when we enable runtime PM for its child, but that
-> child is the only one it actually has).
-
-I think we should continue the original strategy of ignoring the status
-and usage counter when runtime PM is disabled.  This is definitely the
-easiest and most straightforward approach.  Fixing the problem at hand
-(VGA controllers) by changing the PCI subsystem seems like the simplest
-solution.
-
-Your revised patch does do the job, except for a few problems.  
-Namely, while local_pci_probe() and pci_device_remove() are running,
-the device _does_ have a driver.  This means that local_pci_probe()
-should not call pm_runtime_get_sync(), for example.  Doing so would
-invoke the driver's runtime_resume routine before calling the driver's
-probe routine!
-
-The USB subsystem solves this problem by carefully keeping track of the 
-state of the device-driver binding:
-
-	Originally the device is UNBOUND.
-
-	At the start of the subsystem's probe routine, the state
-	changes to BINDING.
-
-	If the probe succeeds then it changes to BOUND; otherwise
-	it goes back to UNBOUND.
-
-	At the start of the subsystem's remove routine, the state
-	changes to UNBINDING.  At the end it goes to UNBOUND.
-
-When the state is anything other than BOUND, the subsystem's runtime PM 
-routines act as though there is no driver.  This works because the 
-subsystem makes sure that the device is ACTIVE with a nonzero usage 
-count before calling the driver's probe or remove routine, so no 
-runtime PM callbacks can occur at these awkward times.
-
-If PCI adopted this strategy then your new patch would work okay.  I 
-think -- I haven't checked it thoroughly.
-
-Alan Stern
-
+Do you actually need to store the run-time data in struct
+nmk_pinctrl_soc_data too? I would have expected all the soc_data
+pointers to remain const, and to store the runtime register pointer
+somewhere else, and perhaps pass it as a separate parameter to the
+relevant init functions; wouldn't that make the patch much smaller?
