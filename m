@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab2KHGNs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 01:13:48 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:53178 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab2KHGNr (ORCPT
+	id S1754090Ab2KHGVh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 01:21:37 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18116 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288Ab2KHGVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 01:13:47 -0500
+	Thu, 8 Nov 2012 01:21:36 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 07 Nov 2012 22:08:13 -0800
+From: Alex Courbot <acourbot@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: How about a gpio_get(device *, char *) function?
+Date: Thu, 8 Nov 2012 15:23:22 +0900
+Message-ID: <1503934.I4tc7K6I6s@percival>
+Organization: NVIDIA
+User-Agent: KMail/4.9.2 (Linux/3.6.4-1-ARCH; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <CACRpkdYqCQc0Er1JR_eVzZPCycvKjd0Pph8Dcay0FbU3Q64D8A@mail.gmail.com>
+References: <38620644.IyR5R8rjKP@percival> <1801189.6J3flQFRCq@percival> <CACRpkdYqCQc0Er1JR_eVzZPCycvKjd0Pph8Dcay0FbU3Q64D8A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121106165144.bdeca850.akpm@linux-foundation.org>
-References: <CAPgLHd-q7WCFrO_hW3nGHPj784jMtR9=fEzMqo5uQKapwO2NUA@mail.gmail.com>
-	<20121106165144.bdeca850.akpm@linux-foundation.org>
-Date: Thu, 8 Nov 2012 14:13:46 +0800
-Message-ID: <CAPgLHd_Hx=uDnghRe9mQDNdHB1LmzFzfPDQ0sF2LPKambUvPLA@mail.gmail.com>
-Subject: Re: [PATCH] rtc: avoid calling platform_device_put() twice in test_init()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: akpm@linux-foundation.org
-Cc: a.zummo@towertech.it, yongjun_wei@trendmicro.com.cn,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2012 08:51 AM, Andrew Morton wrote:
-> On Tue, 23 Oct 2012 13:08:41 +0800
-> Wei Yongjun <weiyj.lk@gmail.com> wrote:
->
->> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->>
->> In case of error, the function test_init() need to call
->> platform_device_del() instead of platform_device_unregister().
->> Otherwise, we may call platform_device_put() twice.
->>
-> Is platform_device_del() the partner to platform_device_add()?  If so
-> then yes, this looks right.  But I think the labels can be improved:
->
-> _
->
->
-> However, take a look at test_exit().  it does
-> platform_device_unregister(test0) when test0 is in the same state.  Is
-> that code wrong as well?  Presumably it's working OK?
+On Thursday 08 November 2012 05:24:19 Linus Walleij wrote:
+> On Tue, Nov 6, 2012 at 2:33 AM, Alex Courbot <acourbot@nvidia.com> wrote:
+> > How about, in a first time (and because I'd also like to get the power
+> > seqs
+> > moving on), a typedef from int to gpio_handle_t and a first implementation
+> > of the gpio_handle_*() API that would just call the existing
+> > integer-based API (apart from gpio_handle_get())? That way things will
+> > not break when we switch to a real handle.
+> 
+> I'm afraid of typedef:ing gpio_handle_t to int because it sort of
+> encourages non-handlers to be used mixed with the old integers.
+> 
+> I would prefer to create, e.g. in <linux/gpio/consumer.h>
+> something like:
+> 
+> struct gpio;
+> 
+> struct gpio *gpio_get(struct device *dev, const char *name);
+> 
+> int gpio_get_value(struct gpio *g);
+> 
+> Nothing more! I.e. struct gpio is an opaque cookie, nothing to be known
+> about it.
 
-platform_device_unregister() is a warp of platform_device_del()
-and platform_device_put(), if platform_device_add() success, we
-can use platform_device_unregister() to do this, so that code
-is OK.
- 
+However these is already a struct gpio declared in linux/gpio.h. Shall the 
+opaque handler be renamed something like "struct gpioh", or is your idea to 
+make both APIs mutually exclusive?
 
+Alex.
 
