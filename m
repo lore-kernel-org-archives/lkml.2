@@ -1,158 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab2KHTzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 14:55:00 -0500
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:37353 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756551Ab2KHTy6 (ORCPT
+	id S1756866Ab2KHTzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 14:55:15 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:39903 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756772Ab2KHTzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 14:54:58 -0500
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: linux-kernel@vger.kernel.org
-Cc: Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: [RFC PATCH] mm: trace filemap add and del
-Date: Thu,  8 Nov 2012 20:54:10 +0100
-Message-Id: <1352404450-30100-1-git-send-email-robert.jarzmik@free.fr>
-X-Mailer: git-send-email 1.7.10
+	Thu, 8 Nov 2012 14:55:00 -0500
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Jarod Wilson <jarod@wilsonet.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Sean Young <sean@mess.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH] staging/media: Use dev_ or pr_ printks in lirc/lirc_imon.c
+Date: Fri,  9 Nov 2012 04:54:54 +0900
+Message-Id: <1352404494-7735-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the events API to trace filemap loading and
-unloading of file pieces into the page cache.
+fixed below checkpatch warnings.
+- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
 
-This patch aims at tracing the eviction reload
-cycle of executable and shared libraries pages in
-a memory constrained environment.
+and add pr_fmt.
 
-The typical usage is to spot a specific device and
-inode (for example /lib/libc.so) to see the eviction
-cycles, and find out if frequently used code is
-rather spread across many pages (bad) or coallesced
-(good).
-
-Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
 ---
- include/trace/events/filemap.h |   79 ++++++++++++++++++++++++++++++++++++++++
- mm/filemap.c                   |    5 +++
- 2 files changed, 84 insertions(+)
- create mode 100644 include/trace/events/filemap.h
+ drivers/staging/media/lirc/lirc_imon.c |   28 +++++++++++++---------------
+ 1 file changed, 13 insertions(+), 15 deletions(-)
 
-diff --git a/include/trace/events/filemap.h b/include/trace/events/filemap.h
-new file mode 100644
-index 0000000..a8319e2
---- /dev/null
-+++ b/include/trace/events/filemap.h
-@@ -0,0 +1,79 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM filemap
-+
-+#if !defined(_TRACE_FILEMAP_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_FILEMAP_H
-+
-+#include <linux/types.h>
-+#include <linux/tracepoint.h>
-+#include <linux/mm.h>
-+#include <linux/memcontrol.h>
-+#include <linux/device.h>
-+#include <linux/kdev_t.h>
-+
-+TRACE_EVENT(mm_filemap_delete_from_page_cache,
-+
-+	TP_PROTO(struct page *page),
-+
-+	TP_ARGS(page),
-+
-+	TP_STRUCT__entry(
-+		__field(struct page *, page)
-+		__field(unsigned long, i_no)
-+		__field(unsigned long, pageofs)
-+		__field(dev_t, s_dev)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->page = page;
-+		__entry->i_no = page->mapping->host->i_ino;
-+		__entry->pageofs = page->index;
-+		if (page->mapping->host->i_sb)
-+			__entry->s_dev = page->mapping->host->i_sb->s_dev;
-+		else
-+			__entry->s_dev = page->mapping->host->i_rdev;
-+	),
-+
-+	TP_printk("page=%p pfn=%lu blk=%d:%d inode+ofs=%lu+%lu",
-+		__entry->page,
-+		page_to_pfn(__entry->page),
-+		MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
-+		__entry->i_no,
-+		__entry->pageofs << PAGE_SHIFT)
-+);
-+
-+TRACE_EVENT(mm_filemap_add_to_page_cache,
-+
-+	TP_PROTO(struct page *page),
-+
-+	TP_ARGS(page),
-+
-+	TP_STRUCT__entry(
-+		__field(struct page *, page)
-+		__field(unsigned long, i_no)
-+		__field(unsigned long, pageofs)
-+		__field(dev_t, s_dev)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->page = page;
-+		__entry->i_no = page->mapping->host->i_ino;
-+		__entry->pageofs = page->index;
-+		if (page->mapping->host->i_sb)
-+			__entry->s_dev = page->mapping->host->i_sb->s_dev;
-+		else
-+			__entry->s_dev = page->mapping->host->i_rdev;
-+	),
-+
-+	TP_printk("page=%p pfn=%lu blk=%d:%d inode+ofs=%lu+%lu",
-+		__entry->page,
-+		page_to_pfn(__entry->page),
-+		MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
-+		__entry->i_no,
-+		__entry->pageofs)
-+);
-+
-+#endif /* _TRACE_FILEMAP_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 3843445..9753b7c 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -35,6 +35,9 @@
- #include <linux/cleancache.h>
- #include "internal.h"
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/filemap.h>
-+
- /*
-  * FIXME: remove all knowledge of the buffer layer from the core VM
+diff --git a/drivers/staging/media/lirc/lirc_imon.c b/drivers/staging/media/lirc/lirc_imon.c
+index 2944fde..343c622 100644
+--- a/drivers/staging/media/lirc/lirc_imon.c
++++ b/drivers/staging/media/lirc/lirc_imon.c
+@@ -20,6 +20,8 @@
+  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   */
-@@ -113,6 +116,7 @@ void __delete_from_page_cache(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
  
-+	trace_mm_filemap_delete_from_page_cache(page);
- 	/*
- 	 * if we're uptodate, flush out into the cleancache, otherwise
- 	 * invalidate any existing cleancache entries.  We can't leave
-@@ -467,6 +471,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 		} else {
- 			page->mapping = NULL;
- 			/* Leave page->index set: truncation relies upon it */
-+			trace_mm_filemap_add_to_page_cache(page);
- 			spin_unlock_irq(&mapping->tree_lock);
- 			mem_cgroup_uncharge_cache_page(page);
- 			page_cache_release(page);
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/errno.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+@@ -205,12 +207,12 @@ static void deregister_from_lirc(struct imon_context *context)
+ 
+ 	retval = lirc_unregister_driver(minor);
+ 	if (retval)
+-		printk(KERN_ERR KBUILD_MODNAME
+-		       ": %s: unable to deregister from lirc(%d)",
+-		       __func__, retval);
++		dev_err(&context->usbdev->dev,
++			": %s: unable to deregister from lirc(%d)",
++			__func__, retval);
+ 	else
+-		printk(KERN_INFO MOD_NAME ": Deregistered iMON driver "
+-		       "(minor:%d)\n", minor);
++		dev_info(&context->usbdev->dev,
++			 "Deregistered iMON driver (minor:%d)\n", minor);
+ 
+ }
+ 
+@@ -231,8 +233,7 @@ static int display_open(struct inode *inode, struct file *file)
+ 	subminor = iminor(inode);
+ 	interface = usb_find_interface(&imon_driver, subminor);
+ 	if (!interface) {
+-		printk(KERN_ERR KBUILD_MODNAME
+-		       ": %s: could not find interface for minor %d\n",
++		pr_err("%s: could not find interface for minor %d\n",
+ 		       __func__, subminor);
+ 		retval = -ENODEV;
+ 		goto exit;
+@@ -282,8 +283,7 @@ static int display_close(struct inode *inode, struct file *file)
+ 	context = file->private_data;
+ 
+ 	if (!context) {
+-		printk(KERN_ERR KBUILD_MODNAME
+-		       "%s: no context for device\n", __func__);
++		pr_err("%s: no context for device\n", __func__);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -391,8 +391,7 @@ static ssize_t vfd_write(struct file *file, const char __user *buf,
+ 
+ 	context = file->private_data;
+ 	if (!context) {
+-		printk(KERN_ERR KBUILD_MODNAME
+-		       "%s: no context for device\n", __func__);
++		pr_err("%s: no context for device\n", __func__);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -521,8 +520,7 @@ static void ir_close(void *data)
+ 
+ 	context = (struct imon_context *)data;
+ 	if (!context) {
+-		printk(KERN_ERR KBUILD_MODNAME
+-		       "%s: no context for device\n", __func__);
++		pr_err("%s: no context for device\n", __func__);
+ 		return;
+ 	}
+ 
+@@ -1009,8 +1007,8 @@ static void imon_disconnect(struct usb_interface *interface)
+ 
+ 	mutex_unlock(&driver_lock);
+ 
+-	printk(KERN_INFO "%s: iMON device (intf%d) disconnected\n",
+-	       __func__, ifnum);
++	dev_info(&interface->dev, "%s: iMON device (intf%d) disconnected\n",
++		 __func__, ifnum);
+ }
+ 
+ static int imon_suspend(struct usb_interface *intf, pm_message_t message)
 -- 
 1.7.9.5
 
