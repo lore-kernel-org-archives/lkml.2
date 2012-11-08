@@ -1,402 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab2KHNcb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:32:31 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:48270 "EHLO bear.ext.ti.com"
+	id S1755795Ab2KHNcz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:32:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31635 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755626Ab2KHNbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:31:39 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Tero Kristo <t-kristo@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: [PATCH v2 2/3] pwm: New driver to support PWMs on TWL4030/6030 series of PMICs
-Date: Thu, 8 Nov 2012 14:31:29 +0100
-Message-ID: <1352381490-30009-3-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1352381490-30009-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1352381490-30009-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1751193Ab2KHNcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 08:32:54 -0500
+Date: Thu, 8 Nov 2012 14:33:27 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] percpu_rw_semaphore: reimplement to not block
+	the readers unnecessarily
+Message-ID: <20121108133327.GA23425@redhat.com>
+References: <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com> <20121102180629.GB13255@redhat.com> <20121108011654.GJ2541@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121108011654.GJ2541@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver supports the following PWM outputs:
-TWL4030 PWM0 and PWM1
-TWL6030 PWM1 and PWM2
+On 11/07, Paul E. McKenney wrote:
+>
+> On Fri, Nov 02, 2012 at 07:06:29PM +0100, Oleg Nesterov wrote:
+> > +void percpu_down_write(struct percpu_rw_semaphore *brw)
+> > +{
+> > +	/* also blocks update_fast_ctr() which checks mutex_is_locked() */
+> > +	mutex_lock(&brw->writer_mutex);
+> > +
+> > +	/*
+> > +	 * 1. Ensures mutex_is_locked() is visible to any down_read/up_read
+> > +	 *    so that update_fast_ctr() can't succeed.
+> > +	 *
+> > +	 * 2. Ensures we see the result of every previous this_cpu_add() in
+> > +	 *    update_fast_ctr().
+> > +	 *
+> > +	 * 3. Ensures that if any reader has exited its critical section via
+> > +	 *    fast-path, it executes a full memory barrier before we return.
+> > +	 */
+> > +	synchronize_sched();
+> > +
+> > +	/* nobody can use fast_read_ctr, move its sum into slow_read_ctr */
+> > +	atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
+> > +
+> > +	/* block the new readers completely */
+> > +	down_write(&brw->rw_sem);
+> > +
+> > +	/* wait for all readers to complete their percpu_up_read() */
+> > +	wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
+> > +}
+> > +
+> > +void percpu_up_write(struct percpu_rw_semaphore *brw)
+> > +{
+> > +	/* allow the new readers, but only the slow-path */
+> > +	up_write(&brw->rw_sem);
+> > +
+> > +	/* insert the barrier before the next fast-path in down_read */
+> > +	synchronize_sched();
+>
+> Ah, my added comments describing the memory-order properties of
+> synchronize_sched() were incomplete.  As you say in the comment above,
+> a valid RCU implementation must ensure that each CPU executes a memory
+> barrier between the time that synchronize_sched() starts executing and
+> the time that this same CPU starts its first RCU read-side critical
+> section that ends after synchronize_sched() finishes executing.  (This
+> is symmetric with the requirement discussed earlier.)
 
-On TWL4030 the PWM signals are muxed. Upon requesting the PWM the driver
-will select the correct mux so the PWM can be used. When the PWM has been
-freed the original configuration going to be restored.
+I think, yes. Let me repeat my example (changed a little bit). Suppose
+that we have
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/pwm/Kconfig   |  10 ++
- drivers/pwm/Makefile  |   1 +
- drivers/pwm/pwm-twl.c | 322 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 333 insertions(+)
- create mode 100644 drivers/pwm/pwm-twl.c
+	int A = 0, B = 0, STOP = 0;
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index e678005..c577db9 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -142,6 +142,16 @@ config  PWM_TIEHRPWM
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-tiehrpwm.
- 
-+config PWM_TWL
-+	tristate "TWL4030/6030 PWM support"
-+	select HAVE_PWM
-+	depends on TWL4030_CORE
-+	help
-+	  Generic PWM framework driver for TWL4030/6030.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-twl.
-+
- config PWM_VT8500
- 	tristate "vt8500 pwm support"
- 	depends on ARCH_VT8500
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 29cf57e..3324c06 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -11,4 +11,5 @@ obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
- obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
- obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
- obj-$(CONFIG_PWM_TIEHRPWM)	+= pwm-tiehrpwm.o
-+obj-$(CONFIG_PWM_TWL)		+= pwm-twl.o
- obj-$(CONFIG_PWM_VT8500)	+= pwm-vt8500.o
-diff --git a/drivers/pwm/pwm-twl.c b/drivers/pwm/pwm-twl.c
-new file mode 100644
-index 0000000..26e57e9
---- /dev/null
-+++ b/drivers/pwm/pwm-twl.c
-@@ -0,0 +1,322 @@
-+/*
-+ * Driver for TWL4030/6030 Generic Pulse Width Modulator
-+ *
-+ * Copyright (C) 2012 Texas Instruments
-+ * Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/i2c/twl.h>
-+#include <linux/slab.h>
-+
-+/*
-+ * This driver handles the PWMs of TWL4030 and TWL6030.
-+ * The TRM names for the PWMs on TWL4030 are: PWM0, PWM1
-+ * TWL6030 also have two PWMs named in the TRM as PWM1, PWM2
-+ */
-+
-+#define TWL_PWM_MAX		0x7f
-+
-+/* Registers, bits and macro for TWL4030 */
-+#define TWL4030_GPBR1_REG	0x0c
-+#define TWL4030_PMBR1_REG	0x0d
-+
-+/* GPBR1 register bits */
-+#define TWL4030_PWMXCLK_ENABLE	(1 << 0)
-+#define TWL4030_PWMX_ENABLE	(1 << 2)
-+#define TWL4030_PWMX_BITS	(TWL4030_PWMX_ENABLE | TWL4030_PWMXCLK_ENABLE)
-+#define TWL4030_PWM_TOGGLE(pwm, x)	((x) << (pwm))
-+
-+/* PMBR1 register bits */
-+#define TWL4030_GPIO6_PWM0_MUTE_MASK		(0x03 << 2)
-+#define TWL4030_GPIO6_PWM0_MUTE_PWM0		(0x01 << 2)
-+#define TWL4030_GPIO7_VIBRASYNC_PWM1_MASK	(0x03 << 4)
-+#define TWL4030_GPIO7_VIBRASYNC_PWM1_PWM1	(0x03 << 4)
-+
-+/* Register, bits and macro for TWL6030 */
-+#define TWL6030_TOGGLE3_REG	0x92
-+
-+#define TWL6030_PWMXR		(1 << 0)
-+#define TWL6030_PWMXS		(1 << 1)
-+#define TWL6030_PWMXEN		(1 << 2)
-+#define TWL6030_PWM_TOGGLE(pwm, x)	((x) << (pwm * 3))
-+
-+struct twl_pwm_chip {
-+	struct pwm_chip chip;
-+	u8 twl6030_toggle3;
-+	u8 twl4030_pwm_mux;
-+};
-+
-+static int twl_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+			      int duty_ns, int period_ns)
-+{
-+	int duty_cycle = (duty_ns * TWL_PWM_MAX) / period_ns;
-+	u8 on_time;
-+	u8 pwm_config[2];
-+	int base, ret;
-+
-+	if (duty_cycle >= TWL_PWM_MAX)
-+		on_time = TWL_PWM_MAX;
-+	else if (!duty_cycle)
-+		on_time = TWL_PWM_MAX - 1;
-+	else
-+		on_time = TWL_PWM_MAX - duty_cycle;
-+
-+	base = pwm->hwpwm * 3;
-+
-+	pwm_config[0] = on_time;
-+	pwm_config[1] = TWL_PWM_MAX;
-+
-+	ret = twl_i2c_write(TWL_MODULE_PWM, pwm_config, base, 2);
-+	if (ret < 0)
-+		dev_err(chip->dev, "%s: Failed to configure PWM\n", pwm->label);
-+
-+	return ret;
-+}
-+
-+static int twl4030_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	int ret;
-+	u8 val;
-+
-+	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
-+		return ret;
-+	}
-+
-+	val |= TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMXCLK_ENABLE);
-+
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
-+	if (ret < 0)
-+		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
-+
-+	val |= TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_ENABLE);
-+
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
-+	if (ret < 0)
-+		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
-+
-+	return ret;
-+}
-+
-+static void twl4030_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	int ret;
-+	u8 val;
-+
-+	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_GPBR1_REG);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to read GPBR1\n", pwm->label);
-+		return;
-+	}
-+
-+	val &= ~TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMX_ENABLE);
-+
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
-+	if (ret < 0)
-+		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
-+
-+	val &= ~TWL4030_PWM_TOGGLE(pwm->hwpwm, TWL4030_PWMXCLK_ENABLE);
-+
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_GPBR1_REG);
-+	if (ret < 0)
-+		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
-+}
-+
-+static int twl4030_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct twl_pwm_chip *twl = container_of(chip, struct twl_pwm_chip,
-+						chip);
-+	int ret;
-+	u8 val, mask, bits;
-+
-+	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_PMBR1_REG);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to read PMBR1\n", pwm->label);
-+		return ret;
-+	}
-+
-+	if (pwm->hwpwm) {
-+		/* PWM 1 */
-+		mask = TWL4030_GPIO7_VIBRASYNC_PWM1_MASK;
-+		bits = TWL4030_GPIO7_VIBRASYNC_PWM1_PWM1;
-+	} else {
-+		/* PWM 0 */
-+		mask = TWL4030_GPIO6_PWM0_MUTE_MASK;
-+		bits = TWL4030_GPIO6_PWM0_MUTE_PWM0;
-+	}
-+
-+	/* Save the current MUX configuration for the PWM */
-+	twl->twl4030_pwm_mux &= ~mask;
-+	twl->twl4030_pwm_mux |= (val & mask);
-+
-+	/* Select PWM functionality */
-+	val &= ~mask;
-+	val |= bits;
-+
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_PMBR1_REG);
-+	if (ret < 0)
-+		dev_err(chip->dev, "%s: Failed to request PWM\n", pwm->label);
-+
-+	return ret;
-+}
-+
-+static void twl4030_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct twl_pwm_chip *twl = container_of(chip, struct twl_pwm_chip,
-+						chip);
-+	int ret;
-+	u8 val, mask;
-+
-+	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &val, TWL4030_PMBR1_REG);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to read PMBR1\n", pwm->label);
-+		return;
-+	}
-+
-+	if (pwm->hwpwm)
-+		/* PWM 1 */
-+		mask = TWL4030_GPIO7_VIBRASYNC_PWM1_MASK;
-+	else
-+		/* PWM 0 */
-+		mask = TWL4030_GPIO6_PWM0_MUTE_MASK;
-+
-+	/* Restore the MUX configuration for the PWM */
-+	val &= ~mask;
-+	val |= (twl->twl4030_pwm_mux & mask);
-+
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, val, TWL4030_PMBR1_REG);
-+	if (ret < 0)
-+		dev_err(chip->dev, "%s: Failed to free PWM\n", pwm->label);
-+}
-+
-+static int twl6030_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct twl_pwm_chip *twl = container_of(chip, struct twl_pwm_chip,
-+						chip);
-+	int ret;
-+	u8 val;
-+
-+	val = twl->twl6030_toggle3;
-+	val |= TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN);
-+	val &= ~TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXR);
-+
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to enable PWM\n", pwm->label);
-+		return ret;
-+	}
-+
-+	twl->twl6030_toggle3 = val;
-+
-+	return 0;
-+}
-+
-+static void twl6030_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct twl_pwm_chip *twl = container_of(chip, struct twl_pwm_chip,
-+						chip);
-+	int ret;
-+	u8 val;
-+
-+	val = twl->twl6030_toggle3;
-+	val |= TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXR);
-+	val &= ~TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN);
-+
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to read TOGGLE3\n", pwm->label);
-+		return;
-+	}
-+
-+	val |= TWL6030_PWM_TOGGLE(pwm->hwpwm, TWL6030_PWMXS | TWL6030_PWMXEN);
-+
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, TWL6030_TOGGLE3_REG);
-+	if (ret < 0) {
-+		dev_err(chip->dev, "%s: Failed to disable PWM\n", pwm->label);
-+		return;
-+	}
-+
-+	twl->twl6030_toggle3 = val;
-+}
-+
-+static struct pwm_ops twl_pwm_ops = {
-+	.config = twl_pwm_config,
-+};
-+
-+static int twl_pwm_probe(struct platform_device *pdev)
-+{
-+	struct twl_pwm_chip *twl;
-+	int ret;
-+
-+	twl = devm_kzalloc(&pdev->dev, sizeof(*twl), GFP_KERNEL);
-+	if (!twl)
-+		return -ENOMEM;
-+
-+	if (twl_class_is_4030()) {
-+		twl_pwm_ops.enable = twl4030_pwm_enable;
-+		twl_pwm_ops.disable = twl4030_pwm_disable;
-+		twl_pwm_ops.request = twl4030_pwm_request;
-+		twl_pwm_ops.free = twl4030_pwm_free;
-+	} else {
-+		twl_pwm_ops.enable = twl6030_pwm_enable;
-+		twl_pwm_ops.disable = twl6030_pwm_disable;
-+	}
-+
-+	twl->chip.dev = &pdev->dev;
-+	twl->chip.ops = &twl_pwm_ops;
-+	twl->chip.base = -1;
-+	twl->chip.npwm = 2;
-+
-+	ret = pwmchip_add(&twl->chip);
-+	if (ret < 0)
-+		return ret;
-+
-+	platform_set_drvdata(pdev, twl);
-+
-+	return 0;
-+}
-+
-+static int twl_pwm_remove(struct platform_device *pdev)
-+{
-+	struct twl_pwm_chip *twl = platform_get_drvdata(pdev);
-+
-+	return pwmchip_remove(&twl->chip);
-+}
-+
-+static struct of_device_id twl_pwm_of_match[] = {
-+	{ .compatible = "ti,twl4030-pwm" },
-+	{ .compatible = "ti,twl6030-pwm" },
-+};
-+
-+MODULE_DEVICE_TABLE(of, twl_pwm_of_match);
-+
-+static struct platform_driver twl_pwm_driver = {
-+	.driver = {
-+		.name = "twl-pwm",
-+		.of_match_table = of_match_ptr(twl_pwm_of_match),
-+	},
-+	.probe = twl_pwm_probe,
-+	.remove = __devexit_p(twl_pwm_remove),
-+};
-+module_platform_driver(twl_pwm_driver);
-+
-+MODULE_AUTHOR("Peter Ujfalusi <peter.ujfalusi@ti.com>");
-+MODULE_DESCRIPTION("PWM driver for TWL4030 and TWL6030");
-+MODULE_ALIAS("platform:twl-pwm");
-+MODULE_LICENSE("GPL");
--- 
-1.8.0
+	// can be called at any time, and many times
+	void func(void)
+	{
+		rcu_read_lock_sched();
+		if (!STOP) {
+			A++;
+			B++;
+		}
+		rcu_read_unlock_sched();
+	}
+
+Then I believe the following code should be correct:
+
+	STOP = 1;
+
+	synchronize_sched();
+
+	BUG_ON(A != B);
+
+We should see the result of the previous increments, and func() should
+see STOP != 0 if it races with BUG_ON().
+
+> And if a reader sees brw->writer_mutex as unlocked, then that reader's
+> RCU read-side critical section must end after the above synchronize_sched()
+> completes, which in turn means that there must have been a memory barrier
+> on that reader's CPU after the synchronize_sched() started, so that the
+> reader correctly sees the writer's updates.
+
+Yes.
+
+> But please let me know what you
+> think of the added memory-order constraint.
+
+I am going to (try to) do other changes on top of this patch, and I'll
+certainly try to think more about this, thanks.
+
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+Great! thanks a lot Paul.
+
+Oleg.
 
