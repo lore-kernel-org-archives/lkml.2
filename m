@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964851Ab2KHVC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 16:02:27 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48404 "EHLO
+	id S964885Ab2KHVCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 16:02:36 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40162 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964789Ab2KHVCX (ORCPT
+	with ESMTP id S964849Ab2KHVCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 16:02:23 -0500
+	Thu, 8 Nov 2012 16:02:32 -0500
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
         Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
         Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH 06/11] ARM: pxa: convert timer suspend/resume to clock_event_device
-Date: Thu,  8 Nov 2012 14:01:51 -0700
-Message-Id: <1352408516-21988-8-git-send-email-swarren@wwwdotorg.org>
+        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [RFC PATCH 11/11] ARM: delete struct sys_timer
+Date: Thu,  8 Nov 2012 14:01:56 -0700
+Message-Id: <1352408516-21988-13-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
 References: <1352408516-21988-1-git-send-email-swarren@wwwdotorg.org>
@@ -29,119 +26,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-Move PXA's timer suspend/resume functions from struct sys_timer
-pxa_timer into struct clock_event_device ckevt_pxa_osmr0. This
-will allow the sys_timer suspend/resume fields to be removed, and
-eventually lead to a complete removal of struct sys_timer.
+Now that the only field in struct sys_timer is .init, delete the struct,
+and replace the machine descriptor .timer field with the initialization
+function itself.
 
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+This will enable moving timer drivers into drivers/clocksource without
+having to place a public prototype of each struct sys_timer object into
+include/linux; the intent is to create a single of_clocksource_init()
+function that determines which timer driver to initialize by scanning
+the device dtree, much like the proposed irqchip_init() at:
+http://www.spinics.net/lists/arm-kernel/msg203686.html
+
+RFC: This will be quite a large patch since it'll end up touching tens
+or hundreds of ARM board files, timer drivers, etc. Perhaps it'd be
+better to create patches that:
+
+1) Add .init_time field to machine descriptor, update ARM's time_init to
+   use that if present, else fall back to .timer.init.
+2) 1 patch per ARM sub-architecture to convert to from .timer to
+   .init_time.
+3) Remove sys_timer and machine descriptor .timer field.
+
+For now, this patch only converts Tegra as an example of my intent.
+
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- arch/arm/mach-pxa/time.c |   76 +++++++++++++++++++++++-----------------------
- 1 files changed, 38 insertions(+), 38 deletions(-)
+ arch/arm/include/asm/mach/arch.h       |    3 +--
+ arch/arm/include/asm/mach/time.h       |   16 ----------------
+ arch/arm/kernel/time.c                 |    9 +--------
+ arch/arm/mach-tegra/board-dt-tegra20.c |    2 +-
+ arch/arm/mach-tegra/board-dt-tegra30.c |    2 +-
+ arch/arm/mach-tegra/board.h            |    2 +-
+ arch/arm/mach-tegra/timer.c            |    6 +-----
+ 7 files changed, 6 insertions(+), 34 deletions(-)
 
-diff --git a/arch/arm/mach-pxa/time.c b/arch/arm/mach-pxa/time.c
-index 4bc47d6..ce58bc9 100644
---- a/arch/arm/mach-pxa/time.c
-+++ b/arch/arm/mach-pxa/time.c
-@@ -89,12 +89,50 @@ pxa_osmr0_set_mode(enum clock_event_mode mode, struct clock_event_device *dev)
- 	}
- }
+diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+index 917d4fc..308ad7d 100644
+--- a/arch/arm/include/asm/mach/arch.h
++++ b/arch/arm/include/asm/mach/arch.h
+@@ -12,7 +12,6 @@
  
-+#ifdef CONFIG_PM
-+static unsigned long osmr[4], oier, oscr;
-+
-+static void pxa_timer_suspend(struct clock_event_device *cedev)
-+{
-+	osmr[0] = readl_relaxed(OSMR0);
-+	osmr[1] = readl_relaxed(OSMR1);
-+	osmr[2] = readl_relaxed(OSMR2);
-+	osmr[3] = readl_relaxed(OSMR3);
-+	oier = readl_relaxed(OIER);
-+	oscr = readl_relaxed(OSCR);
-+}
-+
-+static void pxa_timer_resume(struct clock_event_device *cedev)
-+{
-+	/*
-+	 * Ensure that we have at least MIN_OSCR_DELTA between match
-+	 * register 0 and the OSCR, to guarantee that we will receive
-+	 * the one-shot timer interrupt.  We adjust OSMR0 in preference
-+	 * to OSCR to guarantee that OSCR is monotonically incrementing.
-+	 */
-+	if (osmr[0] - oscr < MIN_OSCR_DELTA)
-+		osmr[0] += MIN_OSCR_DELTA;
-+
-+	writel_relaxed(osmr[0], OSMR0);
-+	writel_relaxed(osmr[1], OSMR1);
-+	writel_relaxed(osmr[2], OSMR2);
-+	writel_relaxed(osmr[3], OSMR3);
-+	writel_relaxed(oier, OIER);
-+	writel_relaxed(oscr, OSCR);
-+}
-+#else
-+#define pxa_timer_suspend NULL
-+#define pxa_timer_resume NULL
-+#endif
-+
- static struct clock_event_device ckevt_pxa_osmr0 = {
- 	.name		= "osmr0",
- 	.features	= CLOCK_EVT_FEAT_ONESHOT,
- 	.rating		= 200,
- 	.set_next_event	= pxa_osmr0_set_next_event,
- 	.set_mode	= pxa_osmr0_set_mode,
-+	.suspend	= pxa_timer_suspend,
-+	.resume		= pxa_timer_resume,
+ struct tag;
+ struct meminfo;
+-struct sys_timer;
+ struct pt_regs;
+ struct smp_operations;
+ #ifdef CONFIG_SMP
+@@ -48,7 +47,7 @@ struct machine_desc {
+ 	void			(*map_io)(void);/* IO mapping function	*/
+ 	void			(*init_early)(void);
+ 	void			(*init_irq)(void);
+-	struct sys_timer	*timer;		/* system tick timer	*/
++	void			(*init_time)(void);
+ 	void			(*init_machine)(void);
+ 	void			(*init_late)(void);
+ #ifdef CONFIG_MULTI_IRQ_HANDLER
+diff --git a/arch/arm/include/asm/mach/time.h b/arch/arm/include/asm/mach/time.h
+index d316d76..90c12e1 100644
+--- a/arch/arm/include/asm/mach/time.h
++++ b/arch/arm/include/asm/mach/time.h
+@@ -10,22 +10,6 @@
+ #ifndef __ASM_ARM_MACH_TIME_H
+ #define __ASM_ARM_MACH_TIME_H
+ 
+-/*
+- * This is our kernel timer structure.
+- *
+- * - init
+- *   Initialise the kernels jiffy timer source, claim interrupt
+- *   using setup_irq.  This is called early on during initialisation
+- *   while interrupts are still disabled on the local CPU.
+- * - offset
+- *   Return the timer offset in microseconds since the last timer
+- *   interrupt.  Note: this must take account of any unprocessed
+- *   timer interrupt which may be pending.
+- */
+-struct sys_timer {
+-	void			(*init)(void);
+-};
+-
+ extern void timer_tick(void);
+ 
+ struct timespec;
+diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
+index 0b51a7c..955d92d 100644
+--- a/arch/arm/kernel/time.c
++++ b/arch/arm/kernel/time.c
+@@ -30,11 +30,6 @@
+ #include <asm/mach/arch.h>
+ #include <asm/mach/time.h>
+ 
+-/*
+- * Our system timer.
+- */
+-static struct sys_timer *system_timer;
+-
+ #if defined(CONFIG_RTC_DRV_CMOS) || defined(CONFIG_RTC_DRV_CMOS_MODULE) || \
+     defined(CONFIG_NVRAM) || defined(CONFIG_NVRAM_MODULE)
+ /* this needs a better home */
+@@ -120,8 +115,6 @@ int __init register_persistent_clock(clock_access_fn read_boot,
+ 
+ void __init time_init(void)
+ {
+-	system_timer = machine_desc->timer;
+-	system_timer->init();
++	machine_desc->init_time();
+ 	sched_clock_postinit();
+ }
+-
+diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
+index 22f5a9b..3777b03 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra20.c
++++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+@@ -192,7 +192,7 @@ DT_MACHINE_START(TEGRA_DT, "nVidia Tegra20 (Flattened Device Tree)")
+ 	.init_early	= tegra20_init_early,
+ 	.init_irq	= tegra_dt_init_irq,
+ 	.handle_irq	= gic_handle_irq,
+-	.timer		= &tegra_sys_timer,
++	.init_time	= tegra_init_timer,
+ 	.init_machine	= tegra_dt_init,
+ 	.init_late	= tegra_dt_init_late,
+ 	.restart	= tegra_assert_system_reset,
+diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
+index cd30338..08d3b19 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra30.c
++++ b/arch/arm/mach-tegra/board-dt-tegra30.c
+@@ -104,7 +104,7 @@ DT_MACHINE_START(TEGRA30_DT, "NVIDIA Tegra30 (Flattened Device Tree)")
+ 	.init_early	= tegra30_init_early,
+ 	.init_irq	= tegra_dt_init_irq,
+ 	.handle_irq	= gic_handle_irq,
+-	.timer		= &tegra_sys_timer,
++	.init_time	= tegra_init_timer,
+ 	.init_machine	= tegra30_dt_init,
+ 	.init_late	= tegra_init_late,
+ 	.restart	= tegra_assert_system_reset,
+diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
+index 91fbe73..744cdd2 100644
+--- a/arch/arm/mach-tegra/board.h
++++ b/arch/arm/mach-tegra/board.h
+@@ -55,5 +55,5 @@ static inline int harmony_pcie_init(void) { return 0; }
+ 
+ void __init tegra_paz00_wifikill_init(void);
+ 
+-extern struct sys_timer tegra_sys_timer;
++extern void tegra_init_timer(void);
+ #endif
+diff --git a/arch/arm/mach-tegra/timer.c b/arch/arm/mach-tegra/timer.c
+index e4863f3..b0036e5 100644
+--- a/arch/arm/mach-tegra/timer.c
++++ b/arch/arm/mach-tegra/timer.c
+@@ -168,7 +168,7 @@ static const struct of_device_id rtc_match[] __initconst = {
+ 	{}
  };
  
- static struct irqaction pxa_ost0_irq = {
-@@ -127,44 +165,6 @@ static void __init pxa_timer_init(void)
- 	clockevents_register_device(&ckevt_pxa_osmr0);
+-static void __init tegra_init_timer(void)
++void __init tegra_init_timer(void)
+ {
+ 	struct device_node *np;
+ 	struct clk *clk;
+@@ -273,10 +273,6 @@ static void __init tegra_init_timer(void)
+ 	register_persistent_clock(NULL, tegra_read_persistent_clock);
  }
  
--#ifdef CONFIG_PM
--static unsigned long osmr[4], oier, oscr;
+-struct sys_timer tegra_sys_timer = {
+-	.init = tegra_init_timer,
+-};
 -
--static void pxa_timer_suspend(void)
--{
--	osmr[0] = readl_relaxed(OSMR0);
--	osmr[1] = readl_relaxed(OSMR1);
--	osmr[2] = readl_relaxed(OSMR2);
--	osmr[3] = readl_relaxed(OSMR3);
--	oier = readl_relaxed(OIER);
--	oscr = readl_relaxed(OSCR);
--}
--
--static void pxa_timer_resume(void)
--{
--	/*
--	 * Ensure that we have at least MIN_OSCR_DELTA between match
--	 * register 0 and the OSCR, to guarantee that we will receive
--	 * the one-shot timer interrupt.  We adjust OSMR0 in preference
--	 * to OSCR to guarantee that OSCR is monotonically incrementing.
--	 */
--	if (osmr[0] - oscr < MIN_OSCR_DELTA)
--		osmr[0] += MIN_OSCR_DELTA;
--
--	writel_relaxed(osmr[0], OSMR0);
--	writel_relaxed(osmr[1], OSMR1);
--	writel_relaxed(osmr[2], OSMR2);
--	writel_relaxed(osmr[3], OSMR3);
--	writel_relaxed(oier, OIER);
--	writel_relaxed(oscr, OSCR);
--}
--#else
--#define pxa_timer_suspend NULL
--#define pxa_timer_resume NULL
--#endif
--
- struct sys_timer pxa_timer = {
- 	.init		= pxa_timer_init,
--	.suspend	= pxa_timer_suspend,
--	.resume		= pxa_timer_resume,
- };
+ #ifdef CONFIG_PM
+ static u32 usec_config;
+ 
 -- 
 1.7.0.4
 
