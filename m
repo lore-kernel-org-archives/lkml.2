@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab2KHNEU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:04:20 -0500
+	id S1755778Ab2KHNEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:04:16 -0500
 Received: from mga01.intel.com ([192.55.52.88]:24988 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755774Ab2KHNEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:04:16 -0500
+	id S1755488Ab2KHNEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 08:04:13 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,737,1344236400"; 
-   d="scan'208";a="244102396"
+   d="scan'208";a="244102381"
 From: dragos.tatulea@intel.com
 To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org, cjb@laptop.org
 Cc: kirill.shutemov@linux.intel.com, irina.tirdea@intel.com,
         octavian.purdila@intel.com, tony.luck@intel.com, keescook@chromium.org,
         dragos.tatulea@gmail.com, Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH v2 17/26] mmc: sdhci: panic write: call tasklets inline
-Date: Thu,  8 Nov 2012 15:06:15 +0200
-Message-Id: <1352379984-18381-18-git-send-email-dragos.tatulea@intel.com>
+Subject: [PATCH v2 16/26] mmc: sdhci: panic write: no sleeping
+Date: Thu,  8 Nov 2012 15:06:14 +0200
+Message-Id: <1352379984-18381-17-git-send-email-dragos.tatulea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1352379984-18381-1-git-send-email-dragos.tatulea@intel.com>
 References: <1352379984-18381-1-git-send-email-dragos.tatulea@intel.com>
@@ -26,126 +26,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-When in panic task, we need to schedule other tasklets than normally.
-
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- drivers/mmc/host/sdhci.c |   31 +++++++++++++++++++++----------
- 1 file changed, 21 insertions(+), 10 deletions(-)
+ drivers/mmc/host/sdhci.c |   26 +++++++++++++++++++++-----
+ 1 file changed, 21 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 827e34f..ff72e98 100644
+index 1ed78f0..827e34f 100644
 --- a/drivers/mmc/host/sdhci.c
 +++ b/drivers/mmc/host/sdhci.c
-@@ -914,6 +914,17 @@ static void sdhci_set_transfer_mode(struct sdhci_host *host,
- 	sdhci_writew(host, mode, SDHCI_TRANSFER_MODE);
- }
+@@ -1536,6 +1536,14 @@ static int sdhci_check_ro(struct sdhci_host *host)
  
-+static void sdhci_tasklet_card(unsigned long param);
-+static void sdhci_tasklet_finish(unsigned long param);
-+
-+#define sdhci_sched_tasklet(host, name)				\
-+{								\
-+	if (mmc_am_panic_task(host->mmc))			\
-+		sdhci_tasklet_##name((unsigned long)host);	\
-+	else							\
-+		tasklet_schedule(&host->name##_tasklet);	\
+ #define SAMPLE_COUNT	5
+ 
++static void sdhci_msleep(struct sdhci_host *host, unsigned int ms)
++{
++	if (mmc_am_panic_task(host->mmc))
++		mdelay(ms);
++	else
++		msleep(ms);
 +}
 +
- static void sdhci_finish_data(struct sdhci_host *host)
+ static int sdhci_do_get_ro(struct sdhci_host *host)
  {
- 	struct mmc_data *data;
-@@ -965,7 +976,7 @@ static void sdhci_finish_data(struct sdhci_host *host)
- 
- 		sdhci_send_command(host, data->stop);
- 	} else
--		tasklet_schedule(&host->finish_tasklet);
-+		sdhci_sched_tasklet(host, finish);
+ 	int i, ro_count;
+@@ -1549,7 +1557,7 @@ static int sdhci_do_get_ro(struct sdhci_host *host)
+ 			if (++ro_count > SAMPLE_COUNT / 2)
+ 				return 1;
+ 		}
+-		msleep(30);
++		sdhci_msleep(host, 30);
+ 	}
+ 	return 0;
+ }
+@@ -1605,6 +1613,14 @@ static void sdhci_enable_sdio_irq(struct mmc_host *mmc, int enable)
+ 	sdhci_unlock_irqrestore(host, flags);
  }
  
- static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
-@@ -994,7 +1005,7 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
- 				"inhibit bit(s).\n", mmc_hostname(host->mmc));
- 			sdhci_dumpregs(host);
- 			cmd->error = -EIO;
--			tasklet_schedule(&host->finish_tasklet);
-+			sdhci_sched_tasklet(host, finish);
- 			return;
- 		}
- 		timeout--;
-@@ -1015,7 +1026,7 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
- 		pr_err("%s: Unsupported response type!\n",
- 			mmc_hostname(host->mmc));
- 		cmd->error = -EINVAL;
--		tasklet_schedule(&host->finish_tasklet);
-+		sdhci_sched_tasklet(host, finish);
- 		return;
- 	}
- 
-@@ -1076,7 +1087,7 @@ static void sdhci_finish_command(struct sdhci_host *host)
- 			sdhci_finish_data(host);
- 
- 		if (!host->cmd->data)
--			tasklet_schedule(&host->finish_tasklet);
-+			sdhci_sched_tasklet(host, finish);
- 
- 		host->cmd = NULL;
- 	}
-@@ -1303,7 +1314,7 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
- 
- 	if (!present || host->flags & SDHCI_DEVICE_DEAD) {
- 		host->mrq->cmd->error = -ENOMEDIUM;
--		tasklet_schedule(&host->finish_tasklet);
-+		sdhci_sched_tasklet(host, finish);
- 	} else {
- 		u32 present_state;
- 
-@@ -2079,7 +2090,7 @@ static void sdhci_tasklet_card(unsigned long param)
- 		sdhci_reset(host, SDHCI_RESET_DATA);
- 
- 		host->mrq->cmd->error = -ENOMEDIUM;
--		tasklet_schedule(&host->finish_tasklet);
-+		sdhci_sched_tasklet(host, finish);
- 	}
- 
- 	sdhci_unlock_irqrestore(host, flags);
-@@ -2174,7 +2185,7 @@ static void sdhci_timeout_timer(unsigned long data)
- 			else
- 				host->mrq->cmd->error = -ETIMEDOUT;
- 
--			tasklet_schedule(&host->finish_tasklet);
-+			sdhci_sched_tasklet(host, finish);
++#define sdhci_usleep_range(host, min, max)		\
++do {							\
++	if (mmc_am_panic_task((host)->mmc))		\
++		mdelay(DIV_ROUND_UP(min, 1000));	\
++	else						\
++		usleep_range(min, max);			\
++} while (0)
++
+ static int sdhci_do_3_3v_signal_voltage_switch(struct sdhci_host *host,
+ 						u16 ctrl)
+ {
+@@ -1623,7 +1639,7 @@ static int sdhci_do_3_3v_signal_voltage_switch(struct sdhci_host *host,
  		}
  	}
+ 	/* Wait for 5ms */
+-	usleep_range(5000, 5500);
++	sdhci_usleep_range(host, 5000, 5500);
  
-@@ -2221,7 +2232,7 @@ static void sdhci_cmd_irq(struct sdhci_host *host, u32 intmask)
- 		host->cmd->error = -EILSEQ;
+ 	/* 3.3V regulator output should be stable within 5 ms */
+ 	ctrl = sdhci_readw(host, SDHCI_HOST_CONTROL2);
+@@ -1668,7 +1684,7 @@ static int sdhci_do_1_8v_signal_voltage_switch(struct sdhci_host *host,
+ 			sdhci_writew(host, ctrl, SDHCI_HOST_CONTROL2);
  
- 	if (host->cmd->error) {
--		tasklet_schedule(&host->finish_tasklet);
-+		sdhci_sched_tasklet(host, finish);
- 		return;
- 	}
+ 			/* Wait for 5ms */
+-			usleep_range(5000, 5500);
++			sdhci_usleep_range(host, 5000, 5500);
  
-@@ -2429,7 +2440,7 @@ again:
- 		sdhci_writel(host, intmask & (SDHCI_INT_CARD_INSERT |
- 			     SDHCI_INT_CARD_REMOVE), SDHCI_INT_STATUS);
- 		intmask &= ~(SDHCI_INT_CARD_INSERT | SDHCI_INT_CARD_REMOVE);
--		tasklet_schedule(&host->card_tasklet);
-+		sdhci_sched_tasklet(host, card);
- 	}
+ 			ctrl = sdhci_readw(host, SDHCI_HOST_CONTROL2);
+ 			if (ctrl & SDHCI_CTRL_VDD_180) {
+@@ -1676,7 +1692,7 @@ static int sdhci_do_1_8v_signal_voltage_switch(struct sdhci_host *host,
+ 				clk = sdhci_readw(host, SDHCI_CLOCK_CONTROL);
+ 				clk |= SDHCI_CLOCK_CARD_EN;
+ 				sdhci_writew(host, clk, SDHCI_CLOCK_CONTROL);
+-				usleep_range(1000, 1500);
++				sdhci_usleep_range(host, 1000, 1500);
  
- 	if (intmask & SDHCI_INT_CMD_MASK) {
-@@ -3192,7 +3203,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
- 				" transfer!\n", mmc_hostname(host->mmc));
+ 				/*
+ 				 * If DAT[3:0] level is 1111b, then the card
+@@ -1703,7 +1719,7 @@ static int sdhci_do_1_8v_signal_voltage_switch(struct sdhci_host *host,
+ 		regulator_disable(host->vmmc);
  
- 			host->mrq->cmd->error = -ENOMEDIUM;
--			tasklet_schedule(&host->finish_tasklet);
-+			sdhci_sched_tasklet(host, finish);
- 		}
- 
- 		sdhci_unlock_irqrestore(host, flags);
+ 	/* Wait for 1ms as per the spec */
+-	usleep_range(1000, 1500);
++	sdhci_usleep_range(host, 1000, 1500);
+ 	pwr |= SDHCI_POWER_ON;
+ 	sdhci_writeb(host, pwr, SDHCI_POWER_CONTROL);
+ 	if (host->vmmc)
 -- 
 1.7.9.5
 
