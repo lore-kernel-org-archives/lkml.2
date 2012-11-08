@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab2KHMwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 07:52:30 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:33099 "EHLO
+	id S1755530Ab2KHMyl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 07:54:41 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:45380 "EHLO
 	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755461Ab2KHMwS (ORCPT
+	with ESMTP id S1755497Ab2KHMyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 07:52:18 -0500
+	Thu, 8 Nov 2012 07:54:40 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAKohpon2OBMgNjc5RRGibEUqN_yPGPdXX5RBFP-bQLmyeF4zuw@mail.gmail.com>
-References: <1352214994-30232-1-git-send-email-linus.walleij@stericsson.com>
-	<CAKohpon2OBMgNjc5RRGibEUqN_yPGPdXX5RBFP-bQLmyeF4zuw@mail.gmail.com>
-Date: Thu, 8 Nov 2012 13:52:16 +0100
-Message-ID: <CACRpkda0mZ8=ZhR7XkM8b09tWQeK8N3gKTv_FTNTnp_=ennqeA@mail.gmail.com>
-Subject: Re: [PATCH 1/5] gpiolib: fix up function prototypes etc
+In-Reply-To: <CAOh2x=nT8_95uu9tfEnOHy9Gkm6gEEAVAKKwPAqbLJz3bwFDNw@mail.gmail.com>
+References: <1352215014-30305-1-git-send-email-linus.walleij@stericsson.com>
+	<CAOh2x=nT8_95uu9tfEnOHy9Gkm6gEEAVAKKwPAqbLJz3bwFDNw@mail.gmail.com>
+Date: Thu, 8 Nov 2012 13:54:39 +0100
+Message-ID: <CACRpkdbZ8VLixWwKOEUMNe+6BJOwCs0Me3=7_oR8xvT9MZx1Aw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] gpiolib: remove duplicate pin range code
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
+To: viresh kumar <viresh.kumar@linaro.org>
 Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Shiraz Hashim <shiraz.hashim@st.com>,
@@ -27,19 +27,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 6:09 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 6 November 2012 20:46, Linus Walleij <linus.walleij@stericsson.com>
-
->> -void gpiochip_add_pin_range(struct gpio_chip *chip, const char
->> *pinctl_name,
->> -               unsigned int pin_base, unsigned int npins);
->> -void gpiochip_remove_pin_ranges(struct gpio_chip *chip);
->> -#endif
->> +#ifdef CONFIG_PINCTRL
+On Wed, Nov 7, 2012 at 6:14 AM, viresh kumar <viresh.kumar@linaro.org> wrote:
+> On Tue, Nov 6, 2012 at 8:46 PM, Linus Walleij
+> <linus.walleij@stericsson.com> wrote:
+>> From: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> Commit 69e1601bca88809dc118abd1becb02c15a02ec71
+>> "gpiolib: provide provision to register pin ranges"
+>>
+>> Introduced both of_gpiochip_remove_pin_range() and
+>> gpiochip_remove_pin_ranges(). But the contents are exactly
+>> the same so remove the OF one and rely on the range deletion
+>> in the core.
+>>
+>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 >
-> Shouldn't this be ifndef??
+> I can't believe that i did this :(
 
-Probably, fixed up in later patches...
+Don't worry, it's impossible to get these things right. I am
+trying to fix it properly here and just introduce new bugs
+for every fix I try to make.
+
+Maybe I'll soon have something that actually doesn't
+break x86...
 
 Yours,
 Linus Walleij
