@@ -1,130 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab2KHFoc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 00:44:32 -0500
-Received: from mga02.intel.com ([134.134.136.20]:33923 "EHLO mga02.intel.com"
+	id S1753692Ab2KHGBz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 01:01:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:2403 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752304Ab2KHFob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 00:44:31 -0500
+	id S1750881Ab2KHGBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 01:01:53 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,736,1344236400"; 
-   d="scan'208,223";a="216653655"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jan Beulich <jbeulich@suse.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: [PATCH v2 2/2] Xen/acpi: revert pad config check in xen_check_mwait
-Thread-Topic: [PATCH v2 2/2] Xen/acpi: revert pad config check in
- xen_check_mwait
-Thread-Index: Ac29dB4WcWRk6UxxSqmLuVimXOjUhQ==
-Date: Thu, 8 Nov 2012 05:44:28 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC829233537BF64@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/mixed;
-	boundary="_002_DE8DF0795D48FD4CA783C40EC829233537BF64SHSMSX101ccrcorpi_"
-MIME-Version: 1.0
+   d="scan'208";a="216658718"
+Message-ID: <1352354503.2190.7.camel@rzhang1-mobl4>
+Subject: Re: [PATCH 1/4] thermal: Add new thermal trend type to support
+ quick cooling
+From: Zhang Rui <rui.zhang@intel.com>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, durgadoss.r@intel.com, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, jonghwa3.lee@samsung.com
+Date: Thu, 08 Nov 2012 14:01:43 +0800
+In-Reply-To: <1352348786-24255-2-git-send-email-amit.kachhap@linaro.org>
+References: <1352348786-24255-1-git-send-email-amit.kachhap@linaro.org>
+	 <1352348786-24255-2-git-send-email-amit.kachhap@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_DE8DF0795D48FD4CA783C40EC829233537BF64SHSMSX101ccrcorpi_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2012-11-08 at 09:56 +0530, Amit Daniel Kachhap wrote:
+> This modification adds 2 new thermal trend type THERMAL_TREND_RAISE_FULL
+> and THERMAL_TREND_DROP_FULL. This thermal trend can be used to quickly
+> jump to the upper or lower cooling level instead of incremental increase
+> or decrease.
 
-With Xen acpi pad logic added into kernel, we can now revert xen mwait rela=
-ted
-patch df88b2d96e36d9a9e325bfcd12eb45671cbbc937. The reason is, when running=
- under
-newer Xen platform, Xen pad driver would be early loaded, so native pad dri=
-ver
-would fail to be loaded, and hence no mwait/monitor #UD risk again.
+IMO, what we need is a new more aggressive cooling governor which always
+uses upper limit when the temperature is raising and lower limit when
+the temperature is dropping.
 
-Another point is, only Xen4.2 or later support Xen acpi pad, so we won't ex=
-pose
-mwait cpuid capability when running under older Xen platform.
+I can write such a governor if you do not have time to.
 
-Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
----
- arch/x86/xen/enlighten.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+thanks,
+rui
+>  This is needed for temperature sensors which support rising/falling
+> threshold interrupts and polling can be totally avoided.
+> 
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 586d838..548296f 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -287,8 +287,7 @@ static void xen_cpuid(unsigned int *ax, unsigned int *b=
-x,
-=20
- static bool __init xen_check_mwait(void)
- {
--#if defined(CONFIG_ACPI) && !defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR) && =
-\
--	!defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR_MODULE)
-+#ifdef CONFIG_ACPI
- 	struct xen_platform_op op =3D {
- 		.cmd			=3D XENPF_set_processor_pminfo,
- 		.u.set_pminfo.id	=3D -1,
-@@ -309,6 +308,13 @@ static bool __init xen_check_mwait(void)
- 	if (!xen_initial_domain())
- 		return false;
-=20
-+	/*
-+	 * When running under platform earlier than Xen4.2, do not expose
-+	 * mwait, to avoid the risk of loading native acpi pad driver
-+	 */
-+	if (!xen_running_on_version_or_later(4, 2))
-+		return false;
-+
- 	ax =3D 1;
- 	cx =3D 0;
-=20
---=20
-1.7.1
 
---_002_DE8DF0795D48FD4CA783C40EC829233537BF64SHSMSX101ccrcorpi_
-Content-Type: application/octet-stream;
-	name="0002-Xen-acpi-revert-pad-config-check-in-xen_check_mwait.patch"
-Content-Description: 0002-Xen-acpi-revert-pad-config-check-in-xen_check_mwait.patch
-Content-Disposition: attachment;
-	filename="0002-Xen-acpi-revert-pad-config-check-in-xen_check_mwait.patch";
-	size=1709; creation-date="Wed, 07 Nov 2012 17:23:53 GMT";
-	modification-date="Thu, 08 Nov 2012 01:12:02 GMT"
-Content-Transfer-Encoding: base64
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+> ---
+>  drivers/thermal/step_wise.c |   19 +++++++++++++++----
+>  include/linux/thermal.h     |    2 ++
+>  2 files changed, 17 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+> index 1242cff..0d2d8d6 100644
+> --- a/drivers/thermal/step_wise.c
+> +++ b/drivers/thermal/step_wise.c
+> @@ -35,6 +35,10 @@
+>   *       state for this trip point
+>   *    b. if the trend is THERMAL_TREND_DROPPING, use lower cooling
+>   *       state for this trip point
+> + *    c. if the trend is THERMAL_TREND_RAISE_FULL, use highest cooling
+> + *       state for this trip point
+> + *    d. if the trend is THERMAL_TREND_DROP_FULL, use lowest cooling
+> + *       state for this trip point
+>   */
+>  static unsigned long get_target_state(struct thermal_instance *instance,
+>  					enum thermal_trend trend)
+> @@ -50,7 +54,10 @@ static unsigned long get_target_state(struct thermal_instance *instance,
+>  	} else if (trend == THERMAL_TREND_DROPPING) {
+>  		cur_state = cur_state > instance->lower ?
+>  			    (cur_state - 1) : instance->lower;
+> -	}
+> +	} else if (trend == THERMAL_TREND_RAISE_FULL)
+> +		cur_state = instance->upper;
+> +	else if (trend == THERMAL_TREND_DROP_FULL)
+> +		cur_state = instance->lower;
+>  
+>  	return cur_state;
+>  }
+> @@ -87,7 +94,8 @@ static void update_instance_for_throttle(struct thermal_zone_device *tz,
+>  }
+>  
+>  static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
+> -				int trip, enum thermal_trip_type trip_type)
+> +				int trip, enum thermal_trip_type trip_type,
+> +				enum thermal_trend trend)
+>  {
+>  	struct thermal_instance *instance;
+>  	struct thermal_cooling_device *cdev;
+> @@ -101,7 +109,10 @@ static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
+>  		cdev = instance->cdev;
+>  		cdev->ops->get_cur_state(cdev, &cur_state);
+>  
+> -		instance->target = cur_state > instance->lower ?
+> +		if (trend == THERMAL_TREND_DROP_FULL)
+> +			instance->target = instance->lower;
+> +		else
+> +			instance->target = cur_state > instance->lower ?
+>  			    (cur_state - 1) : THERMAL_NO_TARGET;
+>  
+>  		/* Deactivate a passive thermal instance */
+> @@ -133,7 +144,7 @@ static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
+>  	if (tz->temperature >= trip_temp)
+>  		update_instance_for_throttle(tz, trip, trip_type, trend);
+>  	else
+> -		update_instance_for_dethrottle(tz, trip, trip_type);
+> +		update_instance_for_dethrottle(tz, trip, trip_type, trend);
+>  
+>  	mutex_unlock(&tz->lock);
+>  }
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index 807f214..8bce3ec 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -68,6 +68,8 @@ enum thermal_trend {
+>  	THERMAL_TREND_STABLE, /* temperature is stable */
+>  	THERMAL_TREND_RAISING, /* temperature is raising */
+>  	THERMAL_TREND_DROPPING, /* temperature is dropping */
+> +	THERMAL_TREND_RAISE_FULL, /* Apply highest cooling action*/
+> +	THERMAL_TREND_DROP_FULL, /* Apply lowest cooling action*/
+>  };
+>  
+>  /* Events supported by Thermal Netlink */
 
-RnJvbSBlODA0ZDU0N2JmZjBmN2NlMTA4ZTJiYjk1ODNmNjU3NzBkYzk3NDRiIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
-RGF0ZTogVGh1LCA4IE5vdiAyMDEyIDA5OjA5OjE5ICswODAwClN1YmplY3Q6IFtQQVRDSCAyLzJd
-IFhlbi9hY3BpOiByZXZlcnQgcGFkIGNvbmZpZyBjaGVjayBpbiB4ZW5fY2hlY2tfbXdhaXQKCldp
-dGggWGVuIGFjcGkgcGFkIGxvZ2ljIGFkZGVkIGludG8ga2VybmVsLCB3ZSBjYW4gbm93IHJldmVy
-dCB4ZW4gbXdhaXQgcmVsYXRlZApwYXRjaCBkZjg4YjJkOTZlMzZkOWE5ZTMyNWJmY2QxMmViNDU2
-NzFjYmJjOTM3LiBUaGUgcmVhc29uIGlzLCB3aGVuIHJ1bm5pbmcgdW5kZXIKbmV3ZXIgWGVuIHBs
-YXRmb3JtLCBYZW4gcGFkIGRyaXZlciB3b3VsZCBiZSBlYXJseSBsb2FkZWQsIHNvIG5hdGl2ZSBw
-YWQgZHJpdmVyCndvdWxkIGZhaWwgdG8gYmUgbG9hZGVkLCBhbmQgaGVuY2Ugbm8gbXdhaXQvbW9u
-aXRvciAjVUQgcmlzayBhZ2Fpbi4KCkFub3RoZXIgcG9pbnQgaXMsIG9ubHkgWGVuNC4yIG9yIGxh
-dGVyIHN1cHBvcnQgWGVuIGFjcGkgcGFkLCBzbyB3ZSB3b24ndCBleHBvc2UKbXdhaXQgY3B1aWQg
-Y2FwYWJpbGl0eSB3aGVuIHJ1bm5pbmcgdW5kZXIgb2xkZXIgWGVuIHBsYXRmb3JtLgoKU2lnbmVk
-LW9mZi1ieTogTGl1LCBKaW5zb25nIDxqaW5zb25nLmxpdUBpbnRlbC5jb20+Ci0tLQogYXJjaC94
-ODYveGVuL2VubGlnaHRlbi5jIHwgICAxMCArKysrKysrKy0tCiAxIGZpbGVzIGNoYW5nZWQsIDgg
-aW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni94ZW4v
-ZW5saWdodGVuLmMgYi9hcmNoL3g4Ni94ZW4vZW5saWdodGVuLmMKaW5kZXggNTg2ZDgzOC4uNTQ4
-Mjk2ZiAxMDA2NDQKLS0tIGEvYXJjaC94ODYveGVuL2VubGlnaHRlbi5jCisrKyBiL2FyY2gveDg2
-L3hlbi9lbmxpZ2h0ZW4uYwpAQCAtMjg3LDggKzI4Nyw3IEBAIHN0YXRpYyB2b2lkIHhlbl9jcHVp
-ZCh1bnNpZ25lZCBpbnQgKmF4LCB1bnNpZ25lZCBpbnQgKmJ4LAogCiBzdGF0aWMgYm9vbCBfX2lu
-aXQgeGVuX2NoZWNrX213YWl0KHZvaWQpCiB7Ci0jaWYgZGVmaW5lZChDT05GSUdfQUNQSSkgJiYg
-IWRlZmluZWQoQ09ORklHX0FDUElfUFJPQ0VTU09SX0FHR1JFR0FUT1IpICYmIFwKLQkhZGVmaW5l
-ZChDT05GSUdfQUNQSV9QUk9DRVNTT1JfQUdHUkVHQVRPUl9NT0RVTEUpCisjaWZkZWYgQ09ORklH
-X0FDUEkKIAlzdHJ1Y3QgeGVuX3BsYXRmb3JtX29wIG9wID0gewogCQkuY21kCQkJPSBYRU5QRl9z
-ZXRfcHJvY2Vzc29yX3BtaW5mbywKIAkJLnUuc2V0X3BtaW5mby5pZAk9IC0xLApAQCAtMzA5LDYg
-KzMwOCwxMyBAQCBzdGF0aWMgYm9vbCBfX2luaXQgeGVuX2NoZWNrX213YWl0KHZvaWQpCiAJaWYg
-KCF4ZW5faW5pdGlhbF9kb21haW4oKSkKIAkJcmV0dXJuIGZhbHNlOwogCisJLyoKKwkgKiBXaGVu
-IHJ1bm5pbmcgdW5kZXIgcGxhdGZvcm0gZWFybGllciB0aGFuIFhlbjQuMiwgZG8gbm90IGV4cG9z
-ZQorCSAqIG13YWl0LCB0byBhdm9pZCB0aGUgcmlzayBvZiBsb2FkaW5nIG5hdGl2ZSBhY3BpIHBh
-ZCBkcml2ZXIKKwkgKi8KKwlpZiAoIXhlbl9ydW5uaW5nX29uX3ZlcnNpb25fb3JfbGF0ZXIoNCwg
-MikpCisJCXJldHVybiBmYWxzZTsKKwogCWF4ID0gMTsKIAljeCA9IDA7CiAKLS0gCjEuNy4xCgo=
 
---_002_DE8DF0795D48FD4CA783C40EC829233537BF64SHSMSX101ccrcorpi_--
