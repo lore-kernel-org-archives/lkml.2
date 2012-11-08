@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab2KHKHd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 05:07:33 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:19689 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755170Ab2KHKHX (ORCPT
+	id S1755333Ab2KHKHj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 05:07:39 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:13365 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298Ab2KHKHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 05:07:23 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-0a-509b845959c9
+	Thu, 8 Nov 2012 05:07:34 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-63-509b8457f990
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH] async_tx: fix checking of dma_wait_for_async_tx() return value
-Date: Thu, 08 Nov 2012 11:03:16 +0100
+Subject: [PATCH 2/2] DMA: remove dma_async_memcpy_complete() macro
+Date: Thu, 08 Nov 2012 11:01:01 +0100
 User-Agent: KMail/1.13.2 (Linux/3.5.0-rc2+; KDE/4.4.5; i686; ; )
 Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
         Tomasz Figa <t.figa@samsung.com>,
@@ -19,26 +19,25 @@ Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
 MIME-version: 1.0
 Content-type: Text/Plain; charset=us-ascii
 Content-transfer-encoding: 7bit
-Message-id: <201211081103.16707.b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t9jAd3IltkBBhs2illc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MDyseMBc84qm429XC0sB4i6uLkZNDQsBE4uCFa6wQtpjEhXvr
-	2boYuTiEBBYxSky4t4cVwlnKJPG3Zw87SBWbgJXExPZVjCC2iICCxObeZ2DdwgL+ErenrwWq
-	4eBgEVCVmNFlBxIWFXCQ6Jw6AWwos8AERolfaw+zgCR4BQQlfky+B2YzC2hJNL/ZxAhhy0ts
-	XvOWGaLGUuLVovdMExj5ZiFpmYWkZRaSlgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcx
-	gkPqmfQOxlUNFocYBTgYlXh4NSRnBwixJpYVV+YeYpTgYFYS4V3mDBTiTUmsrEotyo8vKs1J
-	LT7EKM3BoiTO2+yREiAkkJ5YkpqdmlqQWgSTZeLglGpgTJ7QIuJoyXI/LqH2mJXallqmRXYb
-	l7xkNdZ1vut1NN6uzETMS3WDf/Mx7b+mEY/8Gie5Ptn+3+zy55KP8+fYfwly2Kbm/PycPbPt
-	Q9msrzdzzyw10lAu4uP2Mt1wWFR36/QN/XE7E8K66mfOdH3isnxLwf2Xos8Tmv6Itmk6yX01
-	lltwt3qmEktxRqKhFnNRcSIAhYApCSUCAAA=
+Message-id: <201211081101.01566.b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t9jAd3wltkBBs+fW1pc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MJw9eMxcsFKg4uHQqcwPjbd4uRk4OCQETiWOfXrBB2GISF+6t
+	B7K5OIQEFjFKLLwxgxHCWcok0TmvgRWkik3ASmJi+ypGEFtEQEFic+8zsLiwgJPE3iMTwGwW
+	AVWJk/PeMYHYogIOEp1TJ4BNZRaYwCjxa+1hFpAEr4CgxI/J98BsZgEtieY3mxghbHmJzWve
+	MkPUWEps3XqeaQIj3ywkLbOQtMxC0rKAkXkVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnBQ
+	PZPawbiyweIQowAHoxIPr4bk7AAh1sSy4srcQ4wSHMxKIrzLnIFCvCmJlVWpRfnxRaU5qcWH
+	GKU5WJTEeZs9UgKEBNITS1KzU1MLUotgskwcnFINjHH+66u8Js6akXFm+S+JvafWrIxawPlI
+	JvgM28XnOqG7GMVuzPnTwbz7cO23j/cUvXc/+HFi3+dwKxnfdT0yOTbCNon/8tt+Vstncucz
+	i7hNnP9zivfPdRsaHJclH657yeaQ5yZ3zenKTpm60icPU+4GsVyaErKvwu6N0i/FggUvNlaa
+	rJnb2KPEUpyRaKjFXFScCAAK6e8OJgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [PATCH] async_tx: fix checking of dma_wait_for_async_tx() return value
+Subject: [PATCH 2/2] DMA: remove dma_async_memcpy_complete() macro
 
-dma_wait_for_async_tx() can also return DMA_PAUSED (which
-should be considered as error).
+Just use dma_async_is_tx_complete() directly.
 
 Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <djbw@fb.com>
@@ -46,33 +45,42 @@ Cc: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- crypto/async_tx/async_tx.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ include/linux/dmaengine.h |    5 +----
+ net/ipv4/tcp.c            |    2 +-
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-Index: b/crypto/async_tx/async_tx.c
+Index: b/include/linux/dmaengine.h
 ===================================================================
---- a/crypto/async_tx/async_tx.c	2012-11-07 16:30:47.940875970 +0100
-+++ b/crypto/async_tx/async_tx.c	2012-11-07 16:31:34.888875965 +0100
-@@ -128,8 +128,8 @@ async_tx_channel_switch(struct dma_async
- 		}
- 		device->device_issue_pending(chan);
- 	} else {
--		if (dma_wait_for_async_tx(depend_tx) == DMA_ERROR)
--			panic("%s: DMA_ERROR waiting for depend_tx\n",
-+		if (dma_wait_for_async_tx(depend_tx) != DMA_SUCCESS)
-+			panic("%s: DMA error waiting for depend_tx\n",
- 			      __func__);
- 		tx->tx_submit(tx);
- 	}
-@@ -280,8 +280,9 @@ void async_tx_quiesce(struct dma_async_t
- 		 * we are referring to the correct operation
- 		 */
- 		BUG_ON(async_tx_test_ack(*tx));
--		if (dma_wait_for_async_tx(*tx) == DMA_ERROR)
--			panic("DMA_ERROR waiting for transaction\n");
-+		if (dma_wait_for_async_tx(*tx) != DMA_SUCCESS)
-+			panic("%s: DMA error waiting for transaction\n",
-+			      __func__);
- 		async_tx_ack(*tx);
- 		*tx = NULL;
- 	}
+--- a/include/linux/dmaengine.h	2012-11-07 16:04:41.028876159 +0100
++++ b/include/linux/dmaengine.h	2012-11-07 16:05:22.004876153 +0100
+@@ -927,16 +927,13 @@ static inline enum dma_status dma_async_
+ 	return status;
+ }
+ 
+-#define dma_async_memcpy_complete(chan, cookie, last, used)\
+-	dma_async_is_tx_complete(chan, cookie, last, used)
+-
+ /**
+  * dma_async_is_complete - test a cookie against chan state
+  * @cookie: transaction identifier to test status of
+  * @last_complete: last know completed transaction
+  * @last_used: last cookie value handed out
+  *
+- * dma_async_is_complete() is used in dma_async_memcpy_complete()
++ * dma_async_is_complete() is used in dma_async_is_tx_complete()
+  * the test logic is separated for lightweight testing of multiple cookies
+  */
+ static inline enum dma_status dma_async_is_complete(dma_cookie_t cookie,
+Index: b/net/ipv4/tcp.c
+===================================================================
+--- a/net/ipv4/tcp.c	2012-11-07 16:04:11.700876163 +0100
++++ b/net/ipv4/tcp.c	2012-11-07 16:04:26.444876161 +0100
+@@ -1413,7 +1413,7 @@ static void tcp_service_net_dma(struct s
+ 	dma_async_issue_pending(tp->ucopy.dma_chan);
+ 
+ 	do {
+-		if (dma_async_memcpy_complete(tp->ucopy.dma_chan,
++		if (dma_async_is_tx_complete(tp->ucopy.dma_chan,
+ 					      last_issued, &done,
+ 					      &used) == DMA_SUCCESS) {
+ 			/* Safe to free early-copied skbs now */
