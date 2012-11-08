@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab2KHNxF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:53:05 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:39888 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755897Ab2KHNxA (ORCPT
+	id S1755955Ab2KHNxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:53:10 -0500
+Received: from oproxy9.bluehost.com ([69.89.24.6]:57577 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755897Ab2KHNxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:53:00 -0500
+	Thu, 8 Nov 2012 08:53:07 -0500
 From: Tao Ma <tm@tao.ma>
 To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>,
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3/5] checkpatch: Remove reference to feature-removal-schedule.txt.
-Date: Thu,  8 Nov 2012 21:50:33 +0800
-Message-Id: <1352382635-2773-3-git-send-email-tm@tao.ma>
+Subject: [PATCH 5/5] drivers: Remove reference to feature-removal-schedule.txt.
+Date: Thu,  8 Nov 2012 21:50:35 +0800
+Message-Id: <1352382635-2773-5-git-send-email-tm@tao.ma>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1352382635-2773-1-git-send-email-tm@tao.ma>
 References: <1352382402-2706-1-git-send-email-tm@tao.ma>
@@ -29,76 +29,47 @@ From: Tao Ma <boyu.mt@taobao.com>
 In 9c0ece069, Linus removed feature-removal-schedule.txt from Documentation,
 but there is still some reference to this file. So remove them.
 
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Tao Ma <boyu.mt@taobao.com>
 ---
- scripts/checkpatch.pl |   44 --------------------------------------------
- 1 files changed, 0 insertions(+), 44 deletions(-)
+ drivers/mmc/host/Kconfig     |    4 +---
+ drivers/net/wireless/Kconfig |    6 +-----
+ 2 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 21a9f5d..b0240b8 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -352,27 +352,6 @@ sub deparenthesize {
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 9bf10e7..82fc4c8 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -282,9 +282,7 @@ config MMC_AT91
+ 	depends on ARCH_AT91
+ 	help
+ 	  This selects the AT91 MCI controller. This driver will
+-	  be removed soon (for more information have a look to
+-	  Documentation/feature-removal-schedule.txt). Please use
+-	  MMC_ATMEL_MCI.
++	  be removed soon. Please use MMC_ATMEL_MCI.
  
- $chk_signoff = 0 if ($file);
+ 	  If unsure, say N.
  
--my @dep_includes = ();
--my @dep_functions = ();
--my $removal = "Documentation/feature-removal-schedule.txt";
--if ($tree && -f "$root/$removal") {
--	open(my $REMOVE, '<', "$root/$removal") ||
--				die "$P: $removal: open failed - $!\n";
--	while (<$REMOVE>) {
--		if (/^Check:\s+(.*\S)/) {
--			for my $entry (split(/[, ]+/, $1)) {
--				if ($entry =~ m@include/(.*)@) {
--					push(@dep_includes, $1);
+diff --git a/drivers/net/wireless/Kconfig b/drivers/net/wireless/Kconfig
+index 6deaae1..28aa05f 100644
+--- a/drivers/net/wireless/Kconfig
++++ b/drivers/net/wireless/Kconfig
+@@ -156,11 +156,7 @@ config PRISM54
+ 	---help---
+ 	  This enables support for FullMAC PCI/Cardbus prism54 devices. This
+ 	  driver is now deprecated in favor for the SoftMAC driver, p54pci.
+-	  p54pci supports FullMAC PCI/Cardbus devices as well. For details on
+-	  the scheduled removal of this driver on the kernel see the feature
+-	  removal schedule:
 -
--				} elsif ($entry !~ m@/@) {
--					push(@dep_functions, $entry);
--				}
--			}
--		}
--	}
--	close($REMOVE);
--}
--
- my @rawlines = ();
- my @lines = ();
- my $vname;
-@@ -3181,29 +3160,6 @@ sub process {
- 			}
- 		}
+-	  Documentation/feature-removal-schedule.txt
++	  p54pci supports FullMAC PCI/Cardbus devices as well.
  
--# don't include deprecated include files (uses RAW line)
--		for my $inc (@dep_includes) {
--			if ($rawline =~ m@^.\s*\#\s*include\s*\<$inc>@) {
--				ERROR("DEPRECATED_INCLUDE",
--				      "Don't use <$inc>: see Documentation/feature-removal-schedule.txt\n" . $herecurr);
--			}
--		}
--
--# don't use deprecated functions
--		for my $func (@dep_functions) {
--			if ($line =~ /\b$func\b/) {
--				ERROR("DEPRECATED_FUNCTION",
--				      "Don't use $func(): see Documentation/feature-removal-schedule.txt\n" . $herecurr);
--			}
--		}
--
--# no volatiles please
--		my $asm_volatile = qr{\b(__asm__|asm)\s+(__volatile__|volatile)\b};
--		if ($line =~ /\bvolatile\b/ && $line !~ /$asm_volatile/) {
--			WARN("VOLATILE",
--			     "Use of volatile is usually wrong: see Documentation/volatile-considered-harmful.txt\n" . $herecurr);
--		}
--
- # warn about #if 0
- 		if ($line =~ /^.\s*\#\s*if\s+0\b/) {
- 			CHK("REDUNDANT_CODE",
+ 	  For more information refer to the p54 wiki:
+ 
 -- 
 1.7.0.4
 
