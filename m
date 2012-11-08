@@ -1,115 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967Ab2KHJPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 04:15:22 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50433 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab2KHJPS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 04:15:18 -0500
+	id S1752109Ab2KHJQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 04:16:45 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:4735 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751184Ab2KHJQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 04:16:43 -0500
+X-IronPort-AV: E=Sophos;i="4.80,737,1344182400"; 
+   d="scan'208";a="6161222"
+Message-ID: <509B79DB.1010208@cn.fujitsu.com>
+Date: Thu, 08 Nov 2012 17:22:35 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-X-Google-Sender-Delegation: a3at.mail@gmail.com
-In-Reply-To: <20121108044715.GA12652@kroah.com>
-References: <20121031014527.GA2984@kroah.com>
-	<CAAW1UO9BtAU5jpy=MqgFCwwXn3Gb8HA3m7FMktmQkYGqYrS0Rw@mail.gmail.com>
-	<20121106124826.GA21806@kroah.com>
-	<41011456.LYWJPCi9Xt@vostro.rjw.lan>
-	<20121108044715.GA12652@kroah.com>
-Date: Thu, 8 Nov 2012 13:15:18 +0400
-X-Google-Sender-Auth: CKMl1mKqtzWmanlWoa-_e8C84sM
-Message-ID: <CAAW1UO9HBb5uBXrFrjkSO3i=rBng8stc01MFKu1bLEu29aRc_w@mail.gmail.com>
-Subject: Re: ACPI errors with 3.7-rc3
-From: Azat Khuzhin <dohardgopro@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        Len Brown <lenb@kernel.org>, "Moore, Robert" <robert.moore@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        lai jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [PATCH v2] memory-hotplug: fix NR_FREE_PAGES mismatch's fix
+References: <509B75FF.6070806@cn.fujitsu.com>
+In-Reply-To: <509B75FF.6070806@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/08 17:16:40,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/08 17:16:43,
+	Serialize complete at 2012/11/08 17:16:43
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is mine - https://gist.github.com/4037687
+At 11/08/2012 05:06 PM, Wen Congyang Wrote:
+> 
+> When a page is freed and put into pcp list, get_freepage_migratetype()
+> doesn't return MIGRATE_ISOLATE even if this pageblock is isolated.
+> So we should use get_freepage_migratetype() instead of mt to check
+> whether it is isolated.
 
-To Greg:
-acpidump 20100513-3.1
-And I don't have pmtools installed
+In my local tree, there are some patches from isimatu, so I don't add
+-s option when generating the patch. So I forgot to add:
 
-On Thu, Nov 8, 2012 at 8:47 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Wed, Nov 07, 2012 at 10:49:40PM +0100, Rafael J. Wysocki wrote:
->> On Tuesday, November 06, 2012 01:48:26 PM Greg KH wrote:
->> > On Tue, Nov 06, 2012 at 04:42:24PM +0400, Azat Khuzhin wrote:
->> > > I'v also have such errors on my macbook pro.
->> > >
->> > > $ dmesg | tail
->> > > [17056.008564] ACPI Error: Method parse/execution failed
->> > > [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
->> > > (20120711/psparse-536)
->> > > [17056.011194] ACPI Error: Method parse/execution failed
->> > > [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
->> > > (20120711/psparse-536)
->> > > [17056.013793] ACPI Error: Method parse/execution failed
->> > > [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
->> > > (20120711/psparse-536)
->> > > [17056.016383] ACPI Exception: AE_TIME, Evaluating _BST (20120711/battery-464)
->> > > [17056.511373] ACPI: EC: input buffer is not empty, aborting transaction
->> > > [17056.512672] ACPI Exception: AE_TIME, Returned by Handler for
->> > > [EmbeddedControl] (20120711/evregion-501)
->> > > [17056.515256] ACPI Error: Method parse/execution failed
->> > > [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88026547ea10), AE_TIME
->> > > (20120711/psparse-536)
->> > > [17056.517886] ACPI Error: Method parse/execution failed
->> > > [\_SB_.BAT0.UBST] (Node ffff88026547e678), AE_TIME
->> > > (20120711/psparse-536)
->> > > [17056.520479] ACPI Error: Method parse/execution failed
->> > > [\_SB_.BAT0._BST] (Node ffff88026547e740), AE_TIME
->> > > (20120711/psparse-536)
->> > > [17056.523070] ACPI Exception: AE_TIME, Evaluating _BST (20120711/battery-464)
->> >
->> > I'm seeing this again right now.  I'm wondering if it's because I'm
->> > running on battery power at the moment:
->> >
->> > [41694.309264] ACPI Exception: AE_TIME, Returned by Handler for [EmbeddedControl] (20120913/evregion-501)
->> > [41694.309282] ACPI Error: Method parse/execution failed [\_SB_.PCI0.LPCB.EC__.SMB0.SBRW] (Node ffff88045cc64618), AE_TIME (20120913/psparse-536)
->> > [41694.309300] ACPI Error: Method parse/execution failed [\_SB_.BAT0.UBST] (Node ffff88045cc64988), AE_TIME (20120913/psparse-536)
->> > [41694.309310] ACPI Error: Method parse/execution failed [\_SB_.BAT0._BST] (Node ffff88045cc648c0), AE_TIME (20120913/psparse-536)
->> > [41694.309324] ACPI Exception: AE_TIME, Evaluating _BST (20120913/battery-464)
->> > [41694.809093] ACPI: EC: input buffer is not empty, aborting transaction
->> >
->> > ec_storm_threshold is still set to 8 in /sys/module/acpi/parameters/ so that's
->> > not the issue here.
->> >
->> > > And also loadavg is too high ~ 10
->> > > While there is no process that load CPU up to 100% or like that.
->> > > I think that this because of processes that is done in kernel space.
->> > > (basically that one who write such errors)
->> > >
->> > > $ uname -a
->> > > Linux macbook-pro-sq 3.6.5macbook-pro-custom-v0.1 #4 SMP Sun Nov 4
->> > > 12:39:03 UTC 2012 x86_64 GNU/Linux
->> >
->> > Ah, ok, that means it's not something new in 3.7-rc, so maybe it's just never
->> > worked properly for this hardware :)
->> >
->> > So it's not a regression, just an ACPI issue, any ACPI developer have an idea
->> > about this?
->>
->> Can you please send the output of acpidump from the affected machine(s)?
->
-> # ./acpidump
-> ACPI tables were not found. If you know location of RSD PTR table (from dmesg, etc), supply it with either --addr or -a option
->
-> What am I doing wrong here?
->
-> Is there a newer version of pmtools than the one labled pmtools-20071116
-> that I should be using?  A link to download it would be appreciated.
->
-> thanks,
->
-> greg k-h
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Reported-by: Jianguo Wu <wujianguo106@gmail.com>
 
 
+> ---
+>  mm/page_alloc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 027afd0..795875f 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -667,7 +667,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+>  			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+>  			__free_one_page(page, zone, 0, mt);
+>  			trace_mm_page_pcpu_drain(page, 0, mt);
+> -			if (likely(mt != MIGRATE_ISOLATE)) {
+> +			if (likely(get_pageblock_migratetype(page) != MIGRATE_ISOLATE)) {
+>  				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
+>  				if (is_migrate_cma(mt))
+>  					__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
 
--- 
-Azat Khuzhin
