@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab2KHC44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 21:56:56 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:57886 "EHLO
+	id S1755079Ab2KHC5B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 21:57:01 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:53799 "EHLO
 	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754998Ab2KHC4y (ORCPT
+	with ESMTP id S1754966Ab2KHC46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 21:56:54 -0500
+	Wed, 7 Nov 2012 21:56:58 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH 4/5] x86: acpi: Print warning for malformed host bridge resources
-Date: Wed,  7 Nov 2012 21:55:55 -0500
-Message-Id: <1352343356-4006-5-git-send-email-peter@hurleysoftware.com>
+        Aaron Sierra <asierra@xes-inc.com>, Peter Tyser <ptyser@xes-inc.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH 5/5] drivers: mfd: Fix resource request for [mem 0x00000000]
+Date: Wed,  7 Nov 2012 21:55:56 -0500
+Message-Id: <1352343356-4006-6-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1352343356-4006-1-git-send-email-peter@hurleysoftware.com>
 References: <1352343356-4006-1-git-send-email-peter@hurleysoftware.com>
@@ -26,46 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An incorrectly specified host bridge window may prevent
-other devices from claiming assigned resources. For example,
-this flawed _CRS resource descriptor from a Dell T5400:
-     DWordMemory (ResourceProducer, PosDecode, MinFixed, MaxFixed, NonCacheable, ReadWrite,
-     	 0x00000000,         // Granularity
-         0xF0000000,         // Range Minimum
-         0xFE000000,         // Range Maximum
-         0x00000000,         // Translation Offset
-         0x0E000000,         // Length
-         ,, , AddressRangeMemory, TypeStatic)
-prevents the adjacent device from claiming [mem 0xfe0000000-0xfe01ffff]
+The older southbridges supported by the lpc_ich driver do not
+provide memory-mapped space of the root complex. The driver
+correctly avoids computing the iomem address in this case, yet
+submits a zeroed resource request anyway (via mfd_add_devices()).
 
-Sanity check that the resource at least conforms to a valid
-PCI BAR; if not, emit a diagnostic warning.
+Remove the iomem resource from the resource array submitted to the
+mfd core for the older southbridges.
 
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: x86@kernel.org
+Cc: Aaron Sierra <asierra@xes-inc.com>
+Cc: Peter Tyser <ptyser@xes-inc.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- arch/x86/pci/acpi.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/mfd/lpc_ich.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 192397c..3468d16 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -298,6 +298,10 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
- 			"host bridge window [%#llx-%#llx] "
- 			"([%#llx-%#llx] ignored, not CPU addressable)\n", 
- 			start, orig_end, end + 1, orig_end);
-+	} else if (flags & IORESOURCE_MEM && (start & 0x0f || ~end & 0x0f)) {
-+		dev_warn(&info->bridge->dev,
-+			 "invalid host bridge window [%#llx-%#llx]\n",
-+			 start, end);
+diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
+index a22544f..a46095b 100644
+--- a/drivers/mfd/lpc_ich.c
++++ b/drivers/mfd/lpc_ich.c
+@@ -842,6 +842,9 @@ static int __devinit lpc_ich_init_wdt(struct pci_dev *dev,
+ 		res = wdt_mem_res(ICH_RES_MEM_GCS);
+ 		res->start = base_addr + ACPIBASE_GCS_OFF;
+ 		res->end = base_addr + ACPIBASE_GCS_END;
++	} else {
++		/* So don't register iomem for TCO ver 1 */
++		--lpc_ich_cells[LPC_WDT].num_resources;
  	}
  
- 	res = &info->res[info->res_num];
+ 	lpc_ich_finalize_cell(&lpc_ich_cells[LPC_WDT], id);
 -- 
 1.7.12.3
 
