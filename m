@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab2KHPCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 10:02:14 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:58937 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab2KHPCK (ORCPT
+	id S1756006Ab2KHPEO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 10:04:14 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:58954 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab2KHPEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 10:02:10 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Matt Porter <mporter@ti.com>
-Subject: Re: [PATCH 2/2] ARM: davinci: enable SRAM ping ping buffering on DA850
-Date: Thu, 8 Nov 2012 15:02:04 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, gururaja.hebbar@ti.com,
-        Sekhar Nori <nsekhar@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alsa Devel List <alsa-devel@alsa-project.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Ben Gardiner <bengardiner@nanometrics.ca>,
-        Daniel Mack <zonque@gmail.com>
-References: <1349345745-10584-1-git-send-email-mporter@ti.com> <1349345745-10584-3-git-send-email-mporter@ti.com>
-In-Reply-To: <1349345745-10584-3-git-send-email-mporter@ti.com>
+	Thu, 8 Nov 2012 10:04:12 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211081502.04980.arnd@arndb.de>
-X-Provags-ID: V02:K0:X8N34vw0U61FG4aZOqN1PBtLinoVktjqglPlxEoj2Bz
- FzuzrizD4VkTz2OogX5/OufDkz8HLRS7g6AAtgTjgiyDHeNvaT
- +OP4Ods0C0CbGZHGjes0sEZ28ij9vraDZ6pPXsCThBovSFjGEH
- Um3DKCq6Z3QyjwKRkRJ1qMUunEQEk5atltm2iS4pxZD79uY8+n
- OrLk+EhXZHdTt9qzTX2WMvwEM2Ig1fofKB8KQ6pxvX7lZuixwA
- vBZ7McxY4X0LQH8X72THsZjzk4qUwLGtAMS/niatrM/hKAv151
- xmvoan8v4br48/DULvIMIIPXVHOiE9WHDw0/A/A7rxAtPL8L00
- veMe2TPfWwWp+U0vEwpU=
+In-Reply-To: <CAMR49Lp07mn3dOhaN9LpckCHVY7vMBc2SRvp4JqX3cYTtcG=nQ@mail.gmail.com>
+References: <1352189869-27190-1-git-send-email-jarkko.sakkinen@iki.fi>
+	<50998834.5030407@schaufler-ca.com>
+	<CAMR49Lp07mn3dOhaN9LpckCHVY7vMBc2SRvp4JqX3cYTtcG=nQ@mail.gmail.com>
+Date: Thu, 8 Nov 2012 10:04:11 -0500
+Message-ID: <CACLa4pv-dutho5OokuoRUYxJ1noNOZV04wvcyQe3wmS9Ux2HPg@mail.gmail.com>
+Subject: Re: [PATCH] smack: SMACK_MAGIC to include/uapi/linux/magic.h
+From: Eric Paris <eparis@parisplace.org>
+To: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
+Cc: Casey Schaufler <casey@schaufler-ca.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 October 2012, Matt Porter wrote:
-> Passes the DA850 shared SRAM gen_pool to the McASP driver
-> and enables the ping-pong buffer DMA support.
-> 
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> ---
+Then it only works by accident that magic.h is included by some random
+path in smackfs.c.  You really should be including it in smack.h (or
+each .c file individually, up to casey)
 
-It seems this is in linux-next now, but the patch it depends on
-(ARM: davinci: add platform hook to fetch the SRAM pool) is not.
-
-	Arnd
+On Thu, Nov 8, 2012 at 5:43 AM, Jarkko Sakkinen <jarkko.sakkinen@iki.fi> wrote:
+> On Tue, Nov 6, 2012 at 11:59 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>
+>> On 11/6/2012 12:17 AM, Jarkko Sakkinen wrote:
+>> > SMACK_MAGIC moved to a proper place for easy user space access
+>> > (i.e. libsmack).
+>> >
+>> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
+>> > ---
+>> >  include/uapi/linux/magic.h |    1 +
+>> >  security/smack/smack.h     |    5 -----
+>> >  2 files changed, 1 insertion(+), 5 deletions(-)
+>>
+>> Will security/smack/smack_lsm.c and security/smack/smackfs.c
+>> compile after this change?
+>
+> Sorry I haven't replied earlier. Anyway, I made a sanity check.
+>
+> I retried build from clean. Works. I also checked that vmlinux contains
+> SMACK symbols. It does.
+>
+>>
+>> >
+>> > diff --git a/include/uapi/linux/magic.h b/include/uapi/linux/magic.h
+>> > index e15192c..12735ad 100644
+>> > --- a/include/uapi/linux/magic.h
+>> > +++ b/include/uapi/linux/magic.h
+>> > @@ -11,6 +11,7 @@
+>> >  #define DEBUGFS_MAGIC          0x64626720
+>> >  #define SECURITYFS_MAGIC     0x73636673
+>> >  #define SELINUX_MAGIC                0xf97cff8c
+>> > +#define SMACK_MAGIC          0x43415d53      /* "SMAC" */
+>> >  #define RAMFS_MAGIC          0x858458f6      /* some random number */
+>> >  #define TMPFS_MAGIC          0x01021994
+>> >  #define HUGETLBFS_MAGIC      0x958458f6      /* some random number */
+>> > diff --git a/security/smack/smack.h b/security/smack/smack.h
+>> > index 99b3612..8ad3095 100644
+>> > --- a/security/smack/smack.h
+>> > +++ b/security/smack/smack.h
+>> > @@ -149,11 +149,6 @@ struct smack_known {
+>> >  #define SMACK_CIPSO_SOCKET   1
+>> >
+>> >  /*
+>> > - * smackfs magic number
+>> > - */
+>> > -#define SMACK_MAGIC  0x43415d53 /* "SMAC" */
+>> > -
+>> > -/*
+>> >   * CIPSO defaults.
+>> >   */
+>> >  #define SMACK_CIPSO_DOI_DEFAULT              3       /* Historical */
+>>
+>
+> /Jarkko
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
