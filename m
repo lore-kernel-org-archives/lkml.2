@@ -1,86 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705Ab2KHLuN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 06:50:13 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:61724 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588Ab2KHLuK convert rfc822-to-8bit (ORCPT
+	id S1755182Ab2KHLwO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 06:52:14 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45055 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab2KHLwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 06:50:10 -0500
+	Thu, 8 Nov 2012 06:52:11 -0500
+Message-ID: <509B9CC2.4070502@kernel.dk>
+Date: Thu, 08 Nov 2012 12:51:30 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <1352371427-32363-1-git-send-email-cornelia.huck@de.ibm.com>
-References: <1352371427-32363-1-git-send-email-cornelia.huck@de.ibm.com>
-Date: Thu, 8 Nov 2012 12:50:09 +0100
-Message-ID: <CAJK669bgpLoypjBWn4qs4pAizcnzR7g7zsszjTyCQ4QtOAPdjg@mail.gmail.com>
-Subject: Re: [PATCH] virtio: Don't access index after unregister.
-From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Wei Yongjun <weiyj.lk@gmail.com>
+CC: smani@micron.com, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] mtip32xx: fix potential NULL pointer dereference
+ in mtip_timeout_function()
+References: <CAPgLHd96n4i905x6WdYtKM5wkSGo7V+zLKzE1mjCXBJ2v6-EbA@mail.gmail.com>
+In-Reply-To: <CAPgLHd96n4i905x6WdYtKM5wkSGo7V+zLKzE1mjCXBJ2v6-EbA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 8, 2012 at 11:43 AM, Cornelia Huck <cornelia.huck@de.ibm.com> wrote:
-> Virtio wants to release used indices after the corresponding
-> virtio device has been unregistered. However, virtio does not
-> hold an extra reference, giving up its last reference with
-> device_unregister(), making accessing dev->index afterwards
-> invalid.
->
-> I actually saw problems when testing my (not-yet-merged)
-> virtio-ccw code:
->
-> - device_add virtio-net,id=xxx
-> -> creates device virtio<n> with n>0
->
-> - device_del xxx
-> -> deletes virtio<n>, but calls ida_simple_remove with an
->    index of 0
->
-> - device_add virtio-net,id=xxx
-> -> tries to add virtio0, which is still in use...
->
-> So let's save the index we want to release before calling
-> device_unregister().
->
-> Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-> ---
->  drivers/virtio/virtio.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-> index 1e8659c..809b0de 100644
-> --- a/drivers/virtio/virtio.c
-> +++ b/drivers/virtio/virtio.c
-> @@ -225,8 +225,10 @@ EXPORT_SYMBOL_GPL(register_virtio_device);
->
->  void unregister_virtio_device(struct virtio_device *dev)
->  {
-> +       int index = dev->index; /* save for after device release */
-> +
->         device_unregister(&dev->dev);
-> -       ida_simple_remove(&virtio_index_ida, dev->index);
-> +       ida_simple_remove(&virtio_index_ida, index);
->  }
->  EXPORT_SYMBOL_GPL(unregister_virtio_device);
+On 2012-11-08 10:35, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> The dereference to port should be moved below the NULL test.
+> 
+> dpatch engine is used to auto generate this patch.
+> (https://github.com/weiyj/dpatch)
 
-Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Thanks, it definitely doesn't make sense to check for !port after having
+dereferenced it. Applied.
 
-Great minds think alike! I discovered issues with this implementation
-a while back and Michael suggested an identical patch:
-https://lkml.org/lkml/2012/9/4/173
-https://lkml.org/lkml/2012/9/7/105
+-- 
+Jens Axboe
 
-The issue I ran into was that when virtio devices are created by remoteproc
-the device memory might be freed when calling  device_unregister(), and
-the value of dev->index is then undefined. So this bug bites when
-unregistering a Virtio devices from remoteproc with CONFIG_DEBUG_SLAB
-enabled. However this bug is not triggered by virtio_pci as it implements a
-non-standard device release-function that does not free the device memory.
-
-Thanks,
-Sjur
