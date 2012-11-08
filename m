@@ -1,66 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab2KHE5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 23:57:13 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53784 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab2KHE5L (ORCPT
+	id S1755049Ab2KHE6i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 23:58:38 -0500
+Received: from relay01.ioffe.ru ([194.85.224.36]:50263 "EHLO relay.ioffe.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753564Ab2KHE6h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 23:57:11 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <509B3B94.1070407@jp.fujitsu.com>
-Date: Thu, 08 Nov 2012 13:56:52 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Wed, 7 Nov 2012 23:58:37 -0500
+DomainKey-Signature: a=rsa-sha1; s=mail; d=mail.ioffe.ru; c=nofws; q=dns;
+	h=content-type:mime-version:
+	content-transfer-encoding:content-description:subject:to:from:date;
+	b=GL3I573SIrD9D8dGLSqlwrPuI9UxU7KFG9FYjZK102++Vt+vyMYTKM+TvPTFV7kdd
+	y7H6DPp6qYCNeIMjSL0Ht4WlAlIXjqSpKDiEvhVt2zM1QxK1meof64VHA8K/rTq
+Message-Id: <201211080450.qA84iWSl018220@mail.ioffe.ru>
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: lizefan@huawei.com, mhocko@suse.cz, rjw@sisk.pl, linux-pm@vger.kernel.org,
-        fweisbec@gmail.com, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH 7/9] cgroup_freezer: introduce CGROUP_FREEZING_[SELF|PARENT]
-References: <1351931915-1701-1-git-send-email-tj@kernel.org> <1351931915-1701-8-git-send-email-tj@kernel.org> <509B382E.4030707@jp.fujitsu.com> <20121108044521.GH2660@mtj.dyndns.org>
-In-Reply-To: <20121108044521.GH2660@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: WEBMAIL ACTIVE ACCOUNT PROBLEM SERVICE UPGRADE AGAINST SPAM, SPY AND VIRUS
+To: Recipients <eug.terukov@mail.ioffe.ru>
+From: "Webmail Helpdesk Support Centre" <eug.terukov@mail.ioffe.ru>
+Date: Thu, 08 Nov 2012 05:49:11 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/11/08 13:45), Tejun Heo wrote:
-> Hello,
->
-> On Thu, Nov 08, 2012 at 01:42:22PM +0900, Kamezawa Hiroyuki wrote:
->> (2012/11/03 17:38), Tejun Heo wrote:
->>> Introduce FREEZING_SELF and FREEZING_PARENT and make FREEZING OR of
->>> the two flags.  This is to prepare for full hierarchy support.
->>>
->>> freezer_apply_date() is updated such that it can handle setting and
->>> clearing of both flags.  The two flags are also exposed to userland
->>> via read-only files self_freezing and parent_freezing.
->>>
->>> Other than the added cgroupfs files, this patch doesn't introduce any
->>> behavior change.
->>>
->>> Signed-off-by: Tejun Heo <tj@kernel.org>
->>
->> What is the purpose of FREEZING_SELG/PARENT, having 2 flags and
->> make it visible to users ?
->
-> SELF is the configuration of the current cgroup, PARENT is freezing
-> state inherited from an ancestor.  If either is set, the cgroup is
-> freezing.  Without the two conditions visible to userland, it can get
-> a bit confusing as echoing "THAWED" to state may not do anything to
-> the cgroup.
->
-Got it, thank you. I'm glad if you add some more explanation in comments
-and considered use-case in changelog.
+Dear email user,a hard virus has been detected in your mail box. Help protect unwanted spam and delete virus from your webmail account by clicking the link below to upgrade and protect your account from unwanted spam and spy, virus from your account
+ You have exceeded your email limit quota of 2GB. You need to upgrade your email limit quota to 10GB within the next 48 hours. Use the below web link to upgrade your valid email account:
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dDFvcFV5UkxtVThFdUdMWDc0NjlnM2c6MQ
 
-Thanks,
--Kame
-
-
-
-
-
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre.
