@@ -1,102 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab2KHA3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 19:29:00 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:62563 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab2KHA27 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 19:28:59 -0500
+	id S1754568Ab2KHAcc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 19:32:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22813 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752828Ab2KHAcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 19:32:31 -0500
+Date: Wed, 7 Nov 2012 22:32:01 -0200
+From: Rafael Aquini <aquini@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andi Kleen <andi@firstfloor.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v11 5/7] virtio_balloon: introduce migration primitives
+ to balloon pages
+Message-ID: <20121108003159.GD10444@optiplex.redhat.com>
+References: <cover.1352256081.git.aquini@redhat.com>
+ <265aaff9a79f503672f0cdcdff204114b5b5ba5b.1352256088.git.aquini@redhat.com>
+ <87625h3tl1.fsf@rustcorp.com.au>
+ <20121107161146.b99dc4a8.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1352293609-22659-1-git-send-email-stigge@antcom.de>
-References: <1352293609-22659-1-git-send-email-stigge@antcom.de>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Wed, 7 Nov 2012 16:28:37 -0800
-Message-ID: <CAK5ve-J4prh2GSOsM6iadOgOey9K05PuqH9Y5Yfj8+GwLqKxnQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND] leds: leds-gpio: Defer probing in case of deferred
- gpio probing
-To: Roland Stigge <stigge@antcom.de>
-Cc: rpurdie@rpsys.net, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121107161146.b99dc4a8.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 7, 2012 at 5:06 AM, Roland Stigge <stigge@antcom.de> wrote:
-> This patch makes leds-gpio's probe() return -EPROBE_DEFER if any of the gpios
-> to register are deferred themselves. This makes a change of
-> gpio_leds_create_of()'s return value necessary: Instead of returning NULL on
-> error, we now use ERR_PTR() error coding.
+On Wed, Nov 07, 2012 at 04:11:46PM -0800, Andrew Morton wrote:
+> On Thu, 08 Nov 2012 09:32:18 +1030
+> Rusty Russell <rusty@rustcorp.com.au> wrote:
+> 
+> > Rafael Aquini <aquini@redhat.com> writes:
+> > > + * virtballoon_migratepage - perform the balloon page migration on behalf of
+> > > + *			     a compation thread.     (called under page lock)
+> > 
+> > > +	if (!mutex_trylock(&vb->balloon_lock))
+> > > +		return -EAGAIN;
+> > 
+> > Erk, OK...
+> 
+> Not really.  As is almost always the case with a trylock, it needs a
+> comment explaining why we couldn't use the far superior mutex_lock(). 
+> Data: this reader doesn't know!
 >
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Sorry about this, actually I've already merged it into my for-next
-branch and forgot to reply this email.
-It's here: http://git.kernel.org/?p=linux/kernel/git/cooloney/linux-leds.git;a=commitdiff;h=424f58e4cebd76458b44e69ed31f7297808770cd
-So is the same one as here?
 
--Bryan
+That was just to alleviate balloon_lock contention if we're migrating pages
+concurrently with balloon_fill() or balloon_leak(), as it's easier to retry
+the page migration later (in the contended case).
 
-> ---
->  drivers/leds/leds-gpio.c |   17 +++++++++++------
->  1 file changed, 11 insertions(+), 6 deletions(-)
->
-> --- linux-2.6.orig/drivers/leds/leds-gpio.c
-> +++ linux-2.6/drivers/leds/leds-gpio.c
-> @@ -21,6 +21,7 @@
->  #include <linux/workqueue.h>
->  #include <linux/module.h>
->  #include <linux/pinctrl/consumer.h>
-> +#include <linux/err.h>
->
->  struct gpio_led_data {
->         struct led_classdev cdev;
-> @@ -176,12 +177,16 @@ static struct gpio_leds_priv * __devinit
->         /* count LEDs in this device, so we know how much to allocate */
->         count = of_get_child_count(np);
->         if (!count)
-> -               return NULL;
-> +               return ERR_PTR(-ENODEV);
-> +
-> +       for_each_child_of_node(np, child)
-> +               if (of_get_gpio(child, 0) == -EPROBE_DEFER)
-> +                       return ERR_PTR(-EPROBE_DEFER);
->
->         priv = devm_kzalloc(&pdev->dev, sizeof_gpio_leds_priv(count),
->                         GFP_KERNEL);
->         if (!priv)
-> -               return NULL;
-> +               return ERR_PTR(-ENOMEM);
->
->         for_each_child_of_node(np, child) {
->                 struct gpio_led led = {};
-> @@ -216,7 +221,7 @@ static struct gpio_leds_priv * __devinit
->  err:
->         for (count = priv->num_leds - 2; count >= 0; count--)
->                 delete_gpio_led(&priv->leds[count]);
-> -       return NULL;
-> +       return ERR_PTR(-ENODEV);
->  }
->
->  static const struct of_device_id of_gpio_leds_match[] = {
-> @@ -226,7 +231,7 @@ static const struct of_device_id of_gpio
->  #else /* CONFIG_OF_GPIO */
->  static struct gpio_leds_priv * __devinit gpio_leds_create_of(struct platform_device *pdev)
->  {
-> -       return NULL;
-> +       return ERR_PTR(-ENODEV);
->  }
->  #endif /* CONFIG_OF_GPIO */
->
-> @@ -264,8 +269,8 @@ static int __devinit gpio_led_probe(stru
->                 }
->         } else {
->                 priv = gpio_leds_create_of(pdev);
-> -               if (!priv)
-> -                       return -ENODEV;
-> +               if (IS_ERR(priv))
-> +                       return PTR_ERR(priv);
->         }
->
->         platform_set_drvdata(pdev, priv);
+ 
+> > > +	/* balloon's page migration 1st step  -- inflate "newpage" */
+> > > +	spin_lock_irqsave(&vb_dev_info->pages_lock, flags);
+> > > +	balloon_page_insert(newpage, mapping, &vb_dev_info->pages);
+> > > +	vb_dev_info->isolated_pages--;
+> > > +	spin_unlock_irqrestore(&vb_dev_info->pages_lock, flags);
+> > > +	vb->num_pfns = VIRTIO_BALLOON_PAGES_PER_PAGE;
+> > > +	set_page_pfns(vb->pfns, newpage);
+> > > +	tell_host(vb, vb->inflate_vq);
+> > 
+> > tell_host does wait_event(), so you can't call it under the page_lock.
+> > Right?
+> 
+> Sleeping inside lock_page() is OK.  More problematic is that GFP_KERNEL
+> allocation.  iirc it _should_ be OK.  Core VM uses trylock_page() and
+> the filesystems shouldn't be doing a synchronous lock_page() in the
+> pageout path.  But I suspect it isn't a well-tested area.
+
+
+The locked page under migration is not contended by any other FS / core VM path,
+as it is already isolated by compaction to a private migration page list.
+OTOH, there's a chance of another parallel compaction thread hitting this page
+while scanning page blocks for isolation, but that path can be considered safe
+as it uses trylock_page()
+
+
+
+> 
+> > You probably get away with it because current qemu will service you
+> > immediately.  You could spin here in this case for the moment.
+> > 
+> > There's a second call to tell_host():
+> > 
+> > > +	/*
+> > > +	 * balloon's page migration 2nd step -- deflate "page"
+> > > +	 *
+> > > +	 * It's safe to delete page->lru here because this page is at
+> > > +	 * an isolated migration list, and this step is expected to happen here
+> > > +	 */
+> > > +	balloon_page_delete(page);
+> > > +	vb->num_pfns = VIRTIO_BALLOON_PAGES_PER_PAGE;
+> > > +	set_page_pfns(vb->pfns, page);
+> > > +	tell_host(vb, vb->deflate_vq);
+> > 
+> > The first one can be delayed, the second one can be delayed if the host
+> > didn't ask for VIRTIO_BALLOON_F_MUST_TELL_HOST (qemu doesn't).
+> > 
+> > We could implement a proper request queue for these, and return -EAGAIN
+> > if the queue fills.  Though in practice, it's not important (it might
+> > help performance).
+> 
