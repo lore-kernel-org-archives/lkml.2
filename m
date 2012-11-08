@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab2KHNm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 08:42:27 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64060 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404Ab2KHNmX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:42:23 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Deepak Sikri <deepak.sikri@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 3/3] input: spear-keyboard: Fix for balancing the enable_irq_wake
-Date: Thu,  8 Nov 2012 19:10:49 +0530
-Message-Id: <367241d1362f7b642e223bb7e7b108bc72df0851.1352381962.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
-References: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
-In-Reply-To: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
-References: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
+	id S1755539Ab2KHNrl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:47:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23658 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069Ab2KHNrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 08:47:40 -0500
+Date: Thu, 8 Nov 2012 14:48:05 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND v2 0/1] percpu_rw_semaphore: reimplement to not
+	block the readers unnecessarily
+Message-ID: <20121108134805.GA23870@redhat.com>
+References: <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121102180606.GA13255@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Deepak Sikri <deepak.sikri@st.com>
+On 11/02, Oleg Nesterov wrote:
+>
+> On 11/01, Linus Torvalds wrote:
+> >
+> > Other than that, I guess it looks ok.
+>
+> Great, please see v2.
+>
+> I am not sure I addressed Paul's concerns, so I guess I need his ack.
 
-This patch handles the fix for unbalanced irq for the cases when
-enable_irq_wake fails, and a warning related to same is displayed
-on the console. The workaround is handled at the driver level.
+And now I have it, so I think the patch is ready.
 
-Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/input/keyboard/spear-keyboard.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+Please see 1/1. No changes except I added Reviewed-by from Paul.
 
-diff --git a/drivers/input/keyboard/spear-keyboard.c b/drivers/input/keyboard/spear-keyboard.c
-index 9792924..b8784df 100644
---- a/drivers/input/keyboard/spear-keyboard.c
-+++ b/drivers/input/keyboard/spear-keyboard.c
-@@ -60,6 +60,7 @@ struct spear_kbd {
- 	struct clk *clk;
- 	unsigned int irq;
- 	unsigned int mode;
-+	unsigned int irq_wake;
- 	unsigned short last_key;
- 	unsigned short keycodes[NUM_ROWS * NUM_COLS];
- 	bool rep;
-@@ -327,7 +328,8 @@ static int spear_kbd_suspend(struct device *dev)
- 	mode_ctl_reg = readl_relaxed(kbd->io_base + MODE_CTL_REG);
- 
- 	if (device_may_wakeup(&pdev->dev)) {
--		enable_irq_wake(kbd->irq);
-+		if (!enable_irq_wake(kbd->irq))
-+			kbd->irq_wake = 1;
- 
- 		/*
- 		 * reprogram the keyboard operating frequency as on some
-@@ -373,7 +375,10 @@ static int spear_kbd_resume(struct device *dev)
- 	mutex_lock(&input_dev->mutex);
- 
- 	if (device_may_wakeup(&pdev->dev)) {
--		disable_irq_wake(kbd->irq);
-+		if (kbd->irq_wake) {
-+			kbd->irq_wake = 0;
-+			disable_irq_wake(kbd->irq);
-+		}
- 	} else {
- 		if (input_dev->users)
- 			clk_enable(kbd->clk);
--- 
-1.7.12.rc2.18.g61b472e
+If it is too late for 3.7, then may be Andrew can pick it.
+
+Oleg.
 
