@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab2KHPJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 10:09:29 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33299 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942Ab2KHPJX (ORCPT
+	id S1756131Ab2KHPKJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 10:10:09 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60365 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab2KHPKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 10:09:23 -0500
+	Thu, 8 Nov 2012 10:10:06 -0500
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: cjb@laptop.org
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/2] mmc: sdhci-spear: Don't call clk_{un}prepare() in suspend resume
-Date: Thu,  8 Nov 2012 20:39:10 +0530
-Message-Id: <e677b5b8e17c2349d624e949722f4ab1a5e1698c.1352387305.git.viresh.kumar@linaro.org>
+To: jgarzik@pobox.com
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] ata: pata_arasan: Initialize cf clock to 166MHz
+Date: Thu,  8 Nov 2012 20:39:54 +0530
+Message-Id: <382d2087350ff0955ba14f125294ace4ed28382b.1352387366.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <fd576f198e6f3dc4031bb905247ed9c0a0b66a20.1352387305.git.viresh.kumar@linaro.org>
-References: <fd576f198e6f3dc4031bb905247ed9c0a0b66a20.1352387305.git.viresh.kumar@linaro.org>
-In-Reply-To: <fd576f198e6f3dc4031bb905247ed9c0a0b66a20.1352387305.git.viresh.kumar@linaro.org>
-References: <fd576f198e6f3dc4031bb905247ed9c0a0b66a20.1352387305.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clk_{un}prepare is mandatory for platforms using common clock framework. Because
-for SPEAr we don't do anything in clk_{un}prepare() calls, just call them ones
-in probe/remove.
+From: Vipul Kumar Samar <vipulkumar.samar@st.com>
 
+PATA arasan driver expects the clock to be set to 166 MHz for proper functioning.
+This patch sets clk to 166 MHz in probe.
+
+Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/mmc/host/sdhci-spear.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/pata_arasan_cf.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/mmc/host/sdhci-spear.c b/drivers/mmc/host/sdhci-spear.c
-index fea8bf9..87a7009 100644
---- a/drivers/mmc/host/sdhci-spear.c
-+++ b/drivers/mmc/host/sdhci-spear.c
-@@ -302,7 +302,7 @@ static int sdhci_suspend(struct device *dev)
- 
- 	ret = sdhci_suspend_host(host);
- 	if (!ret)
--		clk_disable_unprepare(sdhci->clk);
-+		clk_disable(sdhci->clk);
- 
- 	return ret;
- }
-@@ -313,7 +313,7 @@ static int sdhci_resume(struct device *dev)
- 	struct spear_sdhci *sdhci = dev_get_platdata(dev);
- 	int ret;
- 
--	ret = clk_prepare_enable(sdhci->clk);
-+	ret = clk_enable(sdhci->clk);
- 	if (ret) {
- 		dev_dbg(dev, "Resume: Error enabling clock\n");
+diff --git a/drivers/ata/pata_arasan_cf.c b/drivers/ata/pata_arasan_cf.c
+index 26201eb..71111f2 100644
+--- a/drivers/ata/pata_arasan_cf.c
++++ b/drivers/ata/pata_arasan_cf.c
+@@ -317,6 +317,12 @@ static int cf_init(struct arasan_cf_dev *acdev)
  		return ret;
+ 	}
+ 
++	ret = clk_set_rate(acdev->clk, 166000000);
++	if (ret) {
++		dev_warn(acdev->host->dev, "clock set rate failed");
++		return ret;
++	}
++
+ 	spin_lock_irqsave(&acdev->host->lock, flags);
+ 	/* configure CF interface clock */
+ 	writel((pdata->cf_if_clk <= CF_IF_CLK_200M) ? pdata->cf_if_clk :
 -- 
 1.7.12.rc2.18.g61b472e
 
