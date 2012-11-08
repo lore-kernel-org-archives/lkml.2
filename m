@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab2KHPIK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 10:08:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52250 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317Ab2KHPIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 10:08:05 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <509251CA.8050008@synopsys.com>
-References: <509251CA.8050008@synopsys.com> <18137.1349203013@warthog.procyon.org.uk> <CAAG0J9_gYLn5+4j9WUnPmxWyJfQK_b8e5xjxZdRPG21euXoCFg@mail.gmail.com> <CAAG0J9_LZ5Q1fNdcbSOyieesabkqcTMT0ueEDLXmemV2C_+F=g@mail.gmail.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: dhowells@redhat.com, James Hogan <james@albanarts.com>, torvalds@osdl.org,
-        arnd@arndb.de, hpa@zytor.com, alan@lxorguk.ukuu.org.uk,
-        fengguang.wu@intel.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: UAPI for new arches (was Re: [GIT PULL] User API Disintegrate: Preparatory patches)
-Date: Thu, 08 Nov 2012 15:07:41 +0000
-Message-ID: <8419.1352387261@warthog.procyon.org.uk>
+	id S1756122Ab2KHPJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 10:09:20 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46468 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755942Ab2KHPJS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Nov 2012 10:09:18 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: cjb@laptop.org
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 1/2] mmc: sdhci-spear: Initialize sdhci clk to 50 MHz
+Date: Thu,  8 Nov 2012 20:39:09 +0530
+Message-Id: <fd576f198e6f3dc4031bb905247ed9c0a0b66a20.1352387305.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+From: Vipul Kumar Samar <vipulkumar.samar@st.com>
 
-> I'm planning to submit ARC Linux kernel port (from Synopsys) for review
-> on lkml and arch mailing lists. I already have a a 3.7-rc3 based kernel
-> (modulo the arch UAPI split). What would be the best way to get the UAPI
-> split done.
-> 
-> Can you point me to the latest scripts and the best way to use them (so
-> we have consistent automated split of headers). Otherwise if you like,
-> you could take a stab at it yourself via my tree at
-> 
-> git://github.com/organizations/foss-for-synopsys-dwc-arc-processors/linux.git
-> arc-3.7-rc3-newport
+SPEAr sdhci driver expects the clock to be set to 50 MHz for proper functioning.
+This patch sets clk to 50 MHz in probe.
 
-If you look at:
+Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/mmc/host/sdhci-spear.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-	http://git.infradead.org/users/dhowells/linux-headers.git/shortlog/refs/tags/disintegrate-arc-20121108
+diff --git a/drivers/mmc/host/sdhci-spear.c b/drivers/mmc/host/sdhci-spear.c
+index 6be89c0..fea8bf9 100644
+--- a/drivers/mmc/host/sdhci-spear.c
++++ b/drivers/mmc/host/sdhci-spear.c
+@@ -146,6 +146,11 @@ static int __devinit sdhci_probe(struct platform_device *pdev)
+ 		goto put_clk;
+ 	}
+ 
++	ret = clk_set_rate(sdhci->clk, 50000000);
++	if (ret)
++		dev_dbg(&pdev->dev, "Error setting desired clk, clk=%lu\n",
++				clk_get_rate(sdhci->clk));
++
+ 	if (np) {
+ 		sdhci->data = sdhci_probe_config_dt(pdev);
+ 		if (IS_ERR(sdhci->data)) {
+-- 
+1.7.12.rc2.18.g61b472e
 
-You'll find a branch with a patch that does the UAPI disintegration for you as
-one piece.  I've merged your branch onto Linus's latest before doing the
-disintegration.  If you'd prefer it directly on your branch, that should be
-possible too.
-
-David
