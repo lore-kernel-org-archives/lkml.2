@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab2KHNmT (ORCPT <rfc822;w@1wt.eu>);
+	id S1755636Ab2KHNmV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 08:42:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755404Ab2KHNmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Nov 2012 08:42:19 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65516 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404Ab2KHNmR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 08:42:17 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Vipul Kumar Samar <vipulkumar.samar@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/3] Input: spear-keyboard: Add clk_{un}prepare() support
-Date: Thu,  8 Nov 2012 19:10:48 +0530
-Message-Id: <27d9eea3815593df228c85958096bc14d7985e7e.1352381962.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
-References: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
-In-Reply-To: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
-References: <9f07bb7dbf29978970d901bbe89add0a333cc925.1352381962.git.viresh.kumar@linaro.org>
+Date: Thu, 8 Nov 2012 14:42:47 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/1] percpu_rw_semaphore: reimplement to not block
+	the readers unnecessarily
+Message-ID: <20121108134247.GB23425@redhat.com>
+References: <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <20121030184800.GA16129@redhat.com> <20121031194135.GA504@redhat.com> <20121031194158.GB504@redhat.com> <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com> <20121102180606.GA13255@redhat.com> <20121102180629.GB13255@redhat.com> <Pine.LNX.4.64.1211071048140.9669@file.rdu.redhat.com> <20121107174731.GA3075@redhat.com> <Pine.LNX.4.64.1211071403320.9320@file.rdu.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1211071403320.9320@file.rdu.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+On 11/07, Mikulas Patocka wrote:
+>
+> On Wed, 7 Nov 2012, Oleg Nesterov wrote:
+>
+> > On 11/07, Mikulas Patocka wrote:
+> > >
+> > > It looks sensible.
+> > >
+> > > Here I'm sending an improvement of the patch - I changed it so that there
+> > > are not two-level nested functions for the fast path and so that both
+> > > percpu_down_read and percpu_up_read use the same piece of code (to reduce
+> > > cache footprint).
+> >
+> > IOW, the only change is that you eliminate "static update_fast_ctr()"
+> > and fold it into down/up_read which takes the additional argument.
+> >
+> > Honestly, personally I do not think this is better, but I won't argue.
+> > I agree with everything but I guess we need the ack from Paul.
+>
+> If you look at generated assembly (for x86-64), the footprint of my patch
+> is 78 bytes shared for both percpu_down_read and percpu_up_read.
+>
+> The footprint of your patch is 62 bytes for update_fast_ctr, 46 bytes for
+> percpu_down_read and 20 bytes for percpu_up_read.
 
-clk_{un}prepare is mandatory for platforms using common clock framework. Because
-for SPEAr we don't do anything in clk_{un}prepare() calls, just call them ones
-in probe/remove.
+Still I think the code looks more clean this way, and personally I think
+this is more important. Plus, this lessens the footprint for the caller
+although I agree this is minor.
 
-Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/input/keyboard/spear-keyboard.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+Please send the increnental patch if you wish, I won't argue. But note
+that with the lockdep annotations (and I'll send the patch soon) the
+code will look even worse. Either you need another "if (val > 0)" check
+or you need to add rwsem_acquire_read/rwsem_release into .h
 
-diff --git a/drivers/input/keyboard/spear-keyboard.c b/drivers/input/keyboard/spear-keyboard.c
-index 1d24fb2..9792924 100644
---- a/drivers/input/keyboard/spear-keyboard.c
-+++ b/drivers/input/keyboard/spear-keyboard.c
-@@ -245,6 +245,10 @@ static int __devinit spear_kbd_probe(struct platform_device *pdev)
- 		goto err_free_mem;
- 	}
- 
-+	error = clk_prepare(kbd->clk);
-+	if (error)
-+		goto err_free_mem;
-+
- 	input_dev->name = "Spear Keyboard";
- 	input_dev->phys = "keyboard/input0";
- 	input_dev->dev.parent = &pdev->dev;
-@@ -259,7 +263,7 @@ static int __devinit spear_kbd_probe(struct platform_device *pdev)
- 					   kbd->keycodes, input_dev);
- 	if (error) {
- 		dev_err(&pdev->dev, "Failed to build keymap\n");
--		goto err_free_mem;
-+		goto err_unprepare_clk;
- 	}
- 
- 	if (kbd->rep)
-@@ -272,13 +276,13 @@ static int __devinit spear_kbd_probe(struct platform_device *pdev)
- 			"keyboard", kbd);
- 	if (error) {
- 		dev_err(&pdev->dev, "request_irq fail\n");
--		goto err_free_mem;
-+		goto err_unprepare_clk;
- 	}
- 
- 	error = input_register_device(input_dev);
- 	if (error) {
- 		dev_err(&pdev->dev, "Unable to register keyboard device\n");
--		goto err_free_mem;
-+		goto err_unprepare_clk;
- 	}
- 
- 	device_init_wakeup(&pdev->dev, 1);
-@@ -286,6 +290,8 @@ static int __devinit spear_kbd_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
-+err_unprepare_clk:
-+	clk_unprepare(kbd->clk);
- err_free_mem:
- 	input_free_device(input_dev);
- 
-@@ -297,6 +303,7 @@ static int __devexit spear_kbd_remove(struct platform_device *pdev)
- 	struct spear_kbd *kbd = platform_get_drvdata(pdev);
- 
- 	input_unregister_device(kbd->input);
-+	clk_unprepare(kbd->clk);
- 
- 	device_init_wakeup(&pdev->dev, 0);
- 	platform_set_drvdata(pdev, NULL);
--- 
-1.7.12.rc2.18.g61b472e
+And if you do this change please also update the comments, they still
+refer to update_fast_ctr() you folded into down_up ;)
+
+Oleg.
 
