@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab2KHRPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 12:15:40 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:42390 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754563Ab2KHRPh (ORCPT
+	id S1756292Ab2KHRPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 12:15:39 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37769 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779Ab2KHRPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Nov 2012 12:15:37 -0500
-Date: Thu, 8 Nov 2012 17:15:36 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v6 25/29] memcg/sl[au]b: shrink dead caches
-In-Reply-To: <20121107144612.e822986f.akpm@linux-foundation.org>
-Message-ID: <0000013ae1050e6f-7f908e0b-720a-4e68-a275-e5086a4f5c74-000000@email.amazonses.com>
-References: <1351771665-11076-1-git-send-email-glommer@parallels.com> <1351771665-11076-26-git-send-email-glommer@parallels.com> <20121105164813.2eba5ecb.akpm@linux-foundation.org> <509A0A04.2030503@parallels.com> <20121106231627.3610c908.akpm@linux-foundation.org>
- <509A2849.9090509@parallels.com> <20121107144612.e822986f.akpm@linux-foundation.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Date: Thu, 8 Nov 2012 09:15:32 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: lizefan@huawei.com, rjw@sisk.pl, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, fweisbec@gmail.com
+Subject: Re: [PATCH 3/9] cgroup: implement generic child / descendant walk
+ macros
+Message-ID: <20121108171532.GI12973@htj.dyndns.org>
+References: <1351931915-1701-1-git-send-email-tj@kernel.org>
+ <1351931915-1701-4-git-send-email-tj@kernel.org>
+ <20121108095013.GA31821@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121108095013.GA31821@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Nov 2012, Andrew Morton wrote:
+Hey, Michal.
 
-> What's up with kmem_cache_shrink?  It's global and exported to modules
-> but its only external caller is some weird and hopelessly poorly
-> documented site down in drivers/acpi/osl.c.  slab and slob implement
-> kmem_cache_shrink() *only* for acpi!  wtf?  Let's work out what acpi is
-> trying to actually do there, then do it properly, then killkillkill!
+On Thu, Nov 08, 2012 at 10:50:13AM +0100, Michal Hocko wrote:
+> On Sat 03-11-12 01:38:29, Tejun Heo wrote:
+> > Currently, cgroup doesn't provide any generic helper for walking a
+> > given cgroup's children or descendants.  This patch adds the following
+> > three macros.
+> > 
+> > * cgroup_for_each_child() - walk immediate children of a cgroup.
+> > 
+> > * cgroup_for_each_descendant_pre() - visit all descendants of a cgroup
+> >   in pre-order tree traversal.
+> > 
+> > * cgroup_for_each_descendant_post() - visit all descendants of a
+> >   cgroup in post-order tree traversal.
+> > 
+> > All three only require the user to hold RCU read lock during
+> > traversal.  Verifying that each iterated cgroup is online is the
+> > responsibility of the user.  When used with proper synchronization,
+> > cgroup_for_each_descendant_pre() can be used to propagate config
+> > updates to descendants in reliable way.  See comments for details.
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> 
+> I will convert mem_cgroup_iter to use this rather than css_get_next
+> after this gets into the next tree so that it can fly via Andrew.
+> 
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> 
+> Just a minor knit. You are talking about a config propagation while I
+> would consider state propagation more clear and less confusing. Config
+> is usually stable enough so that post_create is not necessary for
+> syncing (e.g. memcg.swappiness). It is a state which must be consistent
+> throughout the hierarchy which matters here.
 
-kmem_cache_shrink is also used internally. Its simply releasing unused
-cached objects.
+Did s/config/state/g
 
-> Secondly, as slab and slub (at least) have the ability to shed cached
-> memory, why aren't they hooked into the core cache-shinking machinery.
-> After all, it's called "shrink_slab"!
+Thanks.
 
-Because the core cache shrinking needs the slab caches to free up memory
-from inodes and dentries. We could call kmem_cache_shrink at the end of
-the shrink passes in vmscan. The price would be that the caches would have
-to be repopulated when new allocations occur.
->
-> If we can fix all that up then I wonder whether this particular patch
-> needs to exist at all.  If the kmem_cache is no longer used then we
-> can simply leave it floating around in memory and the regular cache
-> shrinking code out of shrink_slab() will clean up any remaining pages.
-> The kmem_cache itself can be reclaimed via another shrinker, if
-> necessary?
-
-The kmem_cache can only be released if all its objects (used and unused)
-are released.  kmem_cache_shrink drops the unused objects on some internal
-slab specific list. That may enable us to release the kmem_cache
-structure.
-
+-- 
+tejun
