@@ -1,115 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab2KHBbo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 20:31:44 -0500
-Received: from mga14.intel.com ([143.182.124.37]:7324 "EHLO mga14.intel.com"
+	id S1754701Ab2KHBpy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 20:45:54 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:52862 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752897Ab2KHBbm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 20:31:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,735,1344236400"; 
-   d="scan'208";a="165755946"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Ming Lei <ming.lei@canonical.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] firmware loader: Fix the race FW_STATUS_DONE is
- followed by class_timeout
-Thread-Topic: [PATCH] firmware loader: Fix the race FW_STATUS_DONE is
- followed by class_timeout
-Thread-Index: AQHNvNQ/5SQqMoRScEiMffh0F5aH45ffJ6aA
-Date: Thu, 8 Nov 2012 01:31:33 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A1BFA76@SHSMSX101.ccr.corp.intel.com>
-References: <1352306744.15558.1608.camel@cliu38-desktop-build>
- <CACVXFVOtbY8FX1GTsBR4R0W_R8UjHjjmGTTcKfqvNY5tX7h6OQ@mail.gmail.com>
-In-Reply-To: <CACVXFVOtbY8FX1GTsBR4R0W_R8UjHjjmGTTcKfqvNY5tX7h6OQ@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750720Ab2KHBpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 20:45:53 -0500
+Date: Wed, 7 Nov 2012 17:23:05 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/1] percpu_rw_semaphore: reimplement to not block the
+ readers unnecessarily
+Message-ID: <20121108012305.GK2541@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121018175747.GA30691@redhat.com>
+ <20121019192838.GM2518@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+ <20121030184800.GA16129@redhat.com>
+ <20121031194135.GA504@redhat.com>
+ <20121031194158.GB504@redhat.com>
+ <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
+ <20121102180606.GA13255@redhat.com>
+ <20121102180629.GB13255@redhat.com>
+ <Pine.LNX.4.64.1211071048140.9669@file.rdu.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1211071048140.9669@file.rdu.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110801-8974-0000-0000-000010D2149A
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000295; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00189387; UDB=6.00042885; UTC=2012-11-08
+ 01:45:50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 07, 2012 at 12:04:48PM -0500, Mikulas Patocka wrote:
+> It looks sensible.
+> 
+> Here I'm sending an improvement of the patch - I changed it so that there 
+> are not two-level nested functions for the fast path and so that both 
+> percpu_down_read and percpu_up_read use the same piece of code (to reduce 
+> cache footprint).
+> 
+> ---
+> 
+> Currently the writer does msleep() plus synchronize_sched() 3 times
+> to acquire/release the semaphore, and during this time the readers
+> are blocked completely. Even if the "write" section was not actually
+> started or if it was already finished.
+> 
+> With this patch down_write/up_write does synchronize_sched() twice
+> and down_read/up_read are still possible during this time, just they
+> use the slow path.
+> 
+> percpu_down_write() first forces the readers to use rw_semaphore and
+> increment the "slow" counter to take the lock for reading, then it
+> takes that rw_semaphore for writing and blocks the readers.
+> 
+> Also. With this patch the code relies on the documented behaviour of
+> synchronize_sched(), it doesn't try to pair synchronize_sched() with
+> barrier.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 
+>From a memory-ordering viewpoint, this looks to me to work the same
+way that Oleg's does.  Oleg's approach looks better to me, though that
+might be because I have looked at it quite a few times over the past
+several days.
 
-> -----Original Message-----
-> From: Ming Lei [mailto:ming.lei@canonical.com]
-> Sent: Wednesday, November 07, 2012 6:40 PM
-> To: Liu, Chuansheng
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] firmware loader: Fix the race FW_STATUS_DONE is
-> followed by class_timeout
+							Thanx, Paul
+
+> ---
+>  include/linux/percpu-rwsem.h |   80 ++++++-------------------------
+>  lib/Makefile                 |    2 
+>  lib/percpu-rwsem.c           |  110 +++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 127 insertions(+), 65 deletions(-)
+>  create mode 100644 lib/percpu-rwsem.c
 > 
-> On Thu, Nov 8, 2012 at 12:45 AM, Chuansheng Liu
-> <chuansheng.liu@intel.com> wrote:
-> >
-> > There is a race condition as below when calling request_firmware():
-> >
-> > CPU1                                    CPU2
-> > write 0 > loading
-> > mutex_lock(&fw_lock);
-> > ...
-> > set_bit FW_STATUS_DONE                  class_timeout is coming
-> >                                         set_bit
-> FW_STATUS_ABORT
-> > complete_all &completion
-> > ...
-> > mutex_unlock(&fw_lock)
+> Index: linux-3.6.6-fast/include/linux/percpu-rwsem.h
+> ===================================================================
+> --- linux-3.6.6-fast.orig/include/linux/percpu-rwsem.h	2012-11-05 16:21:29.000000000 +0100
+> +++ linux-3.6.6-fast/include/linux/percpu-rwsem.h	2012-11-07 16:44:04.000000000 +0100
+> @@ -2,82 +2,34 @@
+>  #define _LINUX_PERCPU_RWSEM_H
 > 
-> Good catch, but your fix isn't correct.
+>  #include <linux/mutex.h>
+> +#include <linux/rwsem.h>
+>  #include <linux/percpu.h>
+> -#include <linux/rcupdate.h>
+> -#include <linux/delay.h>
+> +#include <linux/wait.h>
 > 
-> >
-> > In this time, the bit FW_STATUS_DONE and FW_STATUS_ABORT are set,
-> > and request_firmware() will return failure due to condition in
-> > _request_firmware_load():
-> >
-> >         if (!buf->size || test_bit(FW_STATUS_ABORT, &buf->status))
-> >                 retval = -ENOENT;
-> >
-> > But from the above scenerio, it should be a succcessful requesting.
-> > So we need judge if the FW_STATUS_DONE is set before calling abort
-> > in timeout function firmware_class_timeout().
-> >
-> > Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> > ---
-> >  drivers/base/firmware_class.c |    7 +++++++
-> >  1 files changed, 7 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> > index 8945f4e..35fffd8 100644
-> > --- a/drivers/base/firmware_class.c
-> > +++ b/drivers/base/firmware_class.c
-> > @@ -671,6 +671,13 @@ static void firmware_class_timeout(u_long data)
-> >  {
-> >         struct firmware_priv *fw_priv = (struct firmware_priv *) data;
-> >
-> > +       mutex_lock(&fw_lock);
+>  struct percpu_rw_semaphore {
+> -	unsigned __percpu *counters;
+> -	bool locked;
+> -	struct mutex mtx;
+> +	unsigned int __percpu	*fast_read_ctr;
+> +	struct mutex		writer_mutex;
+> +	struct rw_semaphore	rw_sem;
+> +	atomic_t		slow_read_ctr;
+> +	wait_queue_head_t	write_waitq;
+>  };
 > 
-> mutex can't be used in interrupt context, so one candidate fix is
-> to convert the timeout timer into delayed work, and hold the
-> 'fw_lock' during the work function.
+> -#define light_mb()	barrier()
+> -#define heavy_mb()	synchronize_sched()
+> +extern void __percpu_down_up_read(struct percpu_rw_semaphore *, int);
 > 
-> > +       if (test_bit(FW_STATUS_DONE, &(fw_priv->buf->status))) {
-> > +               mutex_unlock(&fw_lock);
-> > +               return;
-> > +       }
-> > +       mutex_unlock(&fw_lock);
-> > +
-> >         fw_load_abort(fw_priv);
-> >  }
+> -static inline void percpu_down_read(struct percpu_rw_semaphore *p)
+> -{
+> -	rcu_read_lock_sched();
+> -	if (unlikely(p->locked)) {
+> -		rcu_read_unlock_sched();
+> -		mutex_lock(&p->mtx);
+> -		this_cpu_inc(*p->counters);
+> -		mutex_unlock(&p->mtx);
+> -		return;
+> -	}
+> -	this_cpu_inc(*p->counters);
+> -	rcu_read_unlock_sched();
+> -	light_mb(); /* A, between read of p->locked and read of data, paired with D */
+> -}
+> -
+> -static inline void percpu_up_read(struct percpu_rw_semaphore *p)
+> -{
+> -	light_mb(); /* B, between read of the data and write to p->counter, paired with C */
+> -	this_cpu_dec(*p->counters);
+> -}
+> -
+> -static inline unsigned __percpu_count(unsigned __percpu *counters)
+> -{
+> -	unsigned total = 0;
+> -	int cpu;
+> -
+> -	for_each_possible_cpu(cpu)
+> -		total += ACCESS_ONCE(*per_cpu_ptr(counters, cpu));
+> +extern void percpu_down_write(struct percpu_rw_semaphore *);
+> +extern void percpu_up_write(struct percpu_rw_semaphore *);
 > 
-> Also the lock of 'fw_lock' should be held when setting 'FW_STATUS_DONE'
-> in _request_firmware_load().
+> -	return total;
+> -}
+> -
+> -static inline void percpu_down_write(struct percpu_rw_semaphore *p)
+> -{
+> -	mutex_lock(&p->mtx);
+> -	p->locked = true;
+> -	synchronize_sched(); /* make sure that all readers exit the rcu_read_lock_sched region */
+> -	while (__percpu_count(p->counters))
+> -		msleep(1);
+> -	heavy_mb(); /* C, between read of p->counter and write to data, paired with B */
+> -}
+> -
+> -static inline void percpu_up_write(struct percpu_rw_semaphore *p)
+> -{
+> -	heavy_mb(); /* D, between write to data and write to p->locked, paired with A */
+> -	p->locked = false;
+> -	mutex_unlock(&p->mtx);
+> -}
+> +extern int percpu_init_rwsem(struct percpu_rw_semaphore *);
+> +extern void percpu_free_rwsem(struct percpu_rw_semaphore *);
 > 
-> Could you send out a new patch to fix the race?
-Thanks your review and proposal, has sent the patch V2 to be reviewed.
+> -static inline int percpu_init_rwsem(struct percpu_rw_semaphore *p)
+> +static inline void percpu_down_read(struct percpu_rw_semaphore *s)
+>  {
+> -	p->counters = alloc_percpu(unsigned);
+> -	if (unlikely(!p->counters))
+> -		return -ENOMEM;
+> -	p->locked = false;
+> -	mutex_init(&p->mtx);
+> -	return 0;
+> +	__percpu_down_up_read(s, 1);
+>  }
 > 
-> Thanks,
-> --
-> Ming Lei
+> -static inline void percpu_free_rwsem(struct percpu_rw_semaphore *p)
+> +static inline void percpu_up_read(struct percpu_rw_semaphore *s)
+>  {
+> -	free_percpu(p->counters);
+> -	p->counters = NULL; /* catch use after free bugs */
+> +	__percpu_down_up_read(s, -1);
+>  }
+> 
+>  #endif
+> Index: linux-3.6.6-fast/lib/Makefile
+> ===================================================================
+> --- linux-3.6.6-fast.orig/lib/Makefile	2012-10-02 00:47:57.000000000 +0200
+> +++ linux-3.6.6-fast/lib/Makefile	2012-11-07 03:10:44.000000000 +0100
+> @@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmd
+>  	 idr.o int_sqrt.o extable.o prio_tree.o \
+>  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+>  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+> -	 is_single_threaded.o plist.o decompress.o
+> +	 is_single_threaded.o plist.o decompress.o percpu-rwsem.o
+> 
+>  lib-$(CONFIG_MMU) += ioremap.o
+>  lib-$(CONFIG_SMP) += cpumask.o
+> Index: linux-3.6.6-fast/lib/percpu-rwsem.c
+> ===================================================================
+> --- /dev/null	1970-01-01 00:00:00.000000000 +0000
+> +++ linux-3.6.6-fast/lib/percpu-rwsem.c	2012-11-07 16:43:27.000000000 +0100
+> @@ -0,0 +1,110 @@
+> +#include <linux/percpu-rwsem.h>
+> +#include <linux/rcupdate.h>
+> +#include <linux/sched.h>
+> +#include <linux/module.h>
+> +
+> +int percpu_init_rwsem(struct percpu_rw_semaphore *brw)
+> +{
+> +	brw->fast_read_ctr = alloc_percpu(int);
+> +	if (unlikely(!brw->fast_read_ctr))
+> +		return -ENOMEM;
+> +
+> +	mutex_init(&brw->writer_mutex);
+> +	init_rwsem(&brw->rw_sem);
+> +	atomic_set(&brw->slow_read_ctr, 0);
+> +	init_waitqueue_head(&brw->write_waitq);
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(percpu_init_rwsem);
+> +
+> +void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
+> +{
+> +	free_percpu(brw->fast_read_ctr);
+> +	brw->fast_read_ctr = NULL; /* catch use after free bugs */
+> +}
+> +EXPORT_SYMBOL(percpu_free_rwsem);
+> +
+> +void __percpu_down_up_read(struct percpu_rw_semaphore *brw, int val)
+> +{
+> +	preempt_disable();
+> +	if (likely(!mutex_is_locked(&brw->writer_mutex))) {
+> +		__this_cpu_add(*brw->fast_read_ctr, val);
+> +		preempt_enable();
+> +		return;
+> +	}
+> +	preempt_enable();
+> +	if (val >= 0) {
+> +		down_read(&brw->rw_sem);
+> +		atomic_inc(&brw->slow_read_ctr);
+> +		up_read(&brw->rw_sem);
+> +	} else {
+> +		if (atomic_dec_and_test(&brw->slow_read_ctr))
+> +			wake_up_all(&brw->write_waitq);
+> +	}
+> +}
+> +EXPORT_SYMBOL(__percpu_down_up_read);
+> +
+> +static int clear_fast_ctr(struct percpu_rw_semaphore *brw)
+> +{
+> +	unsigned int sum = 0;
+> +	int cpu;
+> +
+> +	for_each_possible_cpu(cpu) {
+> +		sum += per_cpu(*brw->fast_read_ctr, cpu);
+> +		per_cpu(*brw->fast_read_ctr, cpu) = 0;
+> +	}
+> +
+> +	return sum;
+> +}
+> +
+> +/*
+> + * A writer takes ->writer_mutex to exclude other writers and to force the
+> + * readers to switch to the slow mode, note the mutex_is_locked() check in
+> + * update_fast_ctr().
+> + *
+> + * After that the readers can only inc/dec the slow ->slow_read_ctr counter,
+> + * ->fast_read_ctr is stable. Once the writer moves its sum into the slow
+> + * counter it represents the number of active readers.
+> + *
+> + * Finally the writer takes ->rw_sem for writing and blocks the new readers,
+> + * then waits until the slow counter becomes zero.
+> + */
+> +void percpu_down_write(struct percpu_rw_semaphore *brw)
+> +{
+> +	/* also blocks update_fast_ctr() which checks mutex_is_locked() */
+> +	mutex_lock(&brw->writer_mutex);
+> +
+> +	/*
+> +	 * 1. Ensures mutex_is_locked() is visible to any down_read/up_read
+> +	 *    so that update_fast_ctr() can't succeed.
+> +	 *
+> +	 * 2. Ensures we see the result of every previous this_cpu_add() in
+> +	 *    update_fast_ctr().
+> +	 *
+> +	 * 3. Ensures that if any reader has exited its critical section via
+> +	 *    fast-path, it executes a full memory barrier before we return.
+> +	 */
+> +	synchronize_sched();
+> +
+> +	/* nobody can use fast_read_ctr, move its sum into slow_read_ctr */
+> +	atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
+> +
+> +	/* block the new readers completely */
+> +	down_write(&brw->rw_sem);
+> +
+> +	/* wait for all readers to complete their percpu_up_read() */
+> +	wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
+> +}
+> +EXPORT_SYMBOL(percpu_down_write);
+> +
+> +void percpu_up_write(struct percpu_rw_semaphore *brw)
+> +{
+> +	/* allow the new readers, but only the slow-path */
+> +	up_write(&brw->rw_sem);
+> +
+> +	/* insert the barrier before the next fast-path in down_read */
+> +	synchronize_sched();
+> +
+> +	mutex_unlock(&brw->writer_mutex);
+> +}
+> +EXPORT_SYMBOL(percpu_up_write);
+> 
+
