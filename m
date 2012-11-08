@@ -1,195 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab2KHBPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Nov 2012 20:15:12 -0500
-Received: from mga02.intel.com ([134.134.136.20]:34972 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720Ab2KHBPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Nov 2012 20:15:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,735,1344236400"; 
-   d="scan'208";a="238796277"
-Message-ID: <1352337308.7176.28.camel@yhuang-dev>
-Subject: Re: [BUGFIX] PM: Fix active child counting when disabled and
- forbidden
-From: Huang Ying <ying.huang@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Thu, 08 Nov 2012 09:15:08 +0800
-In-Reply-To: <38669905.umVnjWsO2W@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1211071653140.1188-100000@iolanthe.rowland.org>
-	 <1748065.Php9fUYGsh@vostro.rjw.lan> <38669905.umVnjWsO2W@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754743Ab2KHBRD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Nov 2012 20:17:03 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:48668 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab2KHBRA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Nov 2012 20:17:00 -0500
+Date: Wed, 7 Nov 2012 17:16:54 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] percpu_rw_semaphore: reimplement to not block the
+ readers unnecessarily
+Message-ID: <20121108011654.GJ2541@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121018163833.GK2518@linux.vnet.ibm.com>
+ <20121018175747.GA30691@redhat.com>
+ <20121019192838.GM2518@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+ <20121030184800.GA16129@redhat.com>
+ <20121031194135.GA504@redhat.com>
+ <20121031194158.GB504@redhat.com>
+ <CA+55aFx0yyke6V1+wgMPBN4QZ0w=YoV7yBRqp0uy6aGKbcmC5g@mail.gmail.com>
+ <20121102180606.GA13255@redhat.com>
+ <20121102180629.GB13255@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121102180629.GB13255@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12110801-3620-0000-0000-0000004B81EA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-08 at 00:09 +0100, Rafael J. Wysocki wrote:
-> On Wednesday, November 07, 2012 11:51:15 PM Rafael J. Wysocki wrote:
-> > On Wednesday, November 07, 2012 04:56:49 PM Alan Stern wrote:
-> > > On Wed, 7 Nov 2012, Rafael J. Wysocki wrote:
-> > > 
-> > > > > Right.  The reasoning behind my proposal goes like this: When there's
-> > > > > no driver, the subsystem can let userspace directly control the
-> > > > > device's power level through the power/control attribute.
-> > > > 
-> > > > Well, we might as well just leave the runtime PM of PCI devices enabled, even
-> > > > if they have no drivers, but modify the PCI bus type's runtime PM callbacks
-> > > > to ignore devices with no drivers.
-> > > > 
-> > > > IIRC the reason why we decided to disable runtime PM for PCI device with no
-> > > > drivers was that some of them refused to work again after being put by the
-> > > > core into D3.  By making the PCI bus type's runtime PM callbacks ignore them
-> > > > we'd avoid this problem without modifying the core's behavior.
-> > > 
-> > > It comes down to a question of the parent.  If a driverless PCI device
-> > > isn't being used, shouldn't its parent be allowed to go into runtime
-> > > suspend?  As things stand now, we do allow it.
-> > > 
-> > > The problem is that we don't disallow it when the driverless device
-> > > _is_ being used.
-> > 
-> > We can make it depend on what's there in the control file.  Let's say if that's
-> > "on" (ie. the devices usage counter is not zero), we won't allow the parent
-> > to be suspended.
-> > 
-> > So, as I said, why don't we keep the runtime PM of PCI devices always enabled,
-> > regardless of whether or not there is a driver, and arrange things in such a
-> > way that the device is automatically "suspended" if user space writes "auto"
-> > to the control file.  IOW, I suppose we can do something like this:
+On Fri, Nov 02, 2012 at 07:06:29PM +0100, Oleg Nesterov wrote:
+> Currently the writer does msleep() plus synchronize_sched() 3 times
+> to acquire/release the semaphore, and during this time the readers
+> are blocked completely. Even if the "write" section was not actually
+> started or if it was already finished.
 > 
-> It probably is better to treat the "no driver" case in a special way, though:
+> With this patch down_write/up_write does synchronize_sched() twice
+> and down_read/up_read are still possible during this time, just they
+> use the slow path.
 > 
+> percpu_down_write() first forces the readers to use rw_semaphore and
+> increment the "slow" counter to take the lock for reading, then it
+> takes that rw_semaphore for writing and blocks the readers.
+> 
+> Also. With this patch the code relies on the documented behaviour of
+> synchronize_sched(), it doesn't try to pair synchronize_sched() with
+> barrier.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 > ---
->  drivers/pci/pci-driver.c |   45 +++++++++++++++++++++++++--------------------
->  drivers/pci/pci.c        |    2 ++
->  2 files changed, 27 insertions(+), 20 deletions(-)
+>  include/linux/percpu-rwsem.h |   83 +++++------------------------
+>  lib/Makefile                 |    2 +-
+>  lib/percpu-rwsem.c           |  123 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 137 insertions(+), 71 deletions(-)
+>  create mode 100644 lib/percpu-rwsem.c
 > 
-> Index: linux-pm/drivers/pci/pci-driver.c
-> ===================================================================
-> --- linux-pm.orig/drivers/pci/pci-driver.c
-> +++ linux-pm/drivers/pci/pci-driver.c
-> @@ -263,22 +263,17 @@ static long local_pci_probe(void *_ddi)
->  	/* The parent bridge must be in active state when probing */
->  	if (parent)
->  		pm_runtime_get_sync(parent);
-> -	/* Unbound PCI devices are always set to disabled and suspended.
-> -	 * During probe, the device is set to enabled and active and the
-> -	 * usage count is incremented.  If the driver supports runtime PM,
-> -	 * it should call pm_runtime_put_noidle() in its probe routine and
-> +	/*
-> +	 * During probe, the device is set to active and the usage count is
-> +	 * incremented.  If the driver supports runtime PM, it should call
-> +	 * pm_runtime_put_noidle() in its probe routine and
->  	 * pm_runtime_get_noresume() in its remove routine.
->  	 */
-> -	pm_runtime_get_noresume(dev);
-> -	pm_runtime_set_active(dev);
-> -	pm_runtime_enable(dev);
-> -
-> +	pm_runtime_get_sync(dev);
->  	rc = ddi->drv->probe(ddi->dev, ddi->id);
-> -	if (rc) {
-> -		pm_runtime_disable(dev);
-> -		pm_runtime_set_suspended(dev);
-> -		pm_runtime_put_noidle(dev);
+> diff --git a/include/linux/percpu-rwsem.h b/include/linux/percpu-rwsem.h
+> index 250a4ac..592f0d6 100644
+> --- a/include/linux/percpu-rwsem.h
+> +++ b/include/linux/percpu-rwsem.h
+> @@ -2,82 +2,25 @@
+>  #define _LINUX_PERCPU_RWSEM_H
+> 
+>  #include <linux/mutex.h>
+> +#include <linux/rwsem.h>
+>  #include <linux/percpu.h>
+> -#include <linux/rcupdate.h>
+> -#include <linux/delay.h>
+> +#include <linux/wait.h>
+> 
+>  struct percpu_rw_semaphore {
+> -	unsigned __percpu *counters;
+> -	bool locked;
+> -	struct mutex mtx;
+> +	unsigned int __percpu	*fast_read_ctr;
+> +	struct mutex		writer_mutex;
+> +	struct rw_semaphore	rw_sem;
+> +	atomic_t		slow_read_ctr;
+> +	wait_queue_head_t	write_waitq;
+>  };
+> 
+> -#define light_mb()	barrier()
+> -#define heavy_mb()	synchronize_sched()
+> +extern void percpu_down_read(struct percpu_rw_semaphore *);
+> +extern void percpu_up_read(struct percpu_rw_semaphore *);
+> 
+> -static inline void percpu_down_read(struct percpu_rw_semaphore *p)
+> -{
+> -	rcu_read_lock_sched();
+> -	if (unlikely(p->locked)) {
+> -		rcu_read_unlock_sched();
+> -		mutex_lock(&p->mtx);
+> -		this_cpu_inc(*p->counters);
+> -		mutex_unlock(&p->mtx);
+> -		return;
 > -	}
-> +	if (rc)
-> +		pm_runtime_put_sync(dev);
-> +
->  	if (parent)
->  		pm_runtime_put(parent);
->  	return rc;
-> @@ -369,9 +364,7 @@ static int pci_device_remove(struct devi
->  	}
->  
->  	/* Undo the runtime PM settings in local_pci_probe() */
-> -	pm_runtime_disable(dev);
-> -	pm_runtime_set_suspended(dev);
-> -	pm_runtime_put_noidle(dev);
-> +	pm_runtime_put_sync(dev);
->  
->  	/*
->  	 * If the device is still on, set the power state as "unknown",
-> @@ -998,10 +991,14 @@ static int pci_pm_restore(struct device
->  static int pci_pm_runtime_suspend(struct device *dev)
->  {
->  	struct pci_dev *pci_dev = to_pci_dev(dev);
-> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-> +	const struct dev_pm_ops *pm;
->  	pci_power_t prev = pci_dev->current_state;
->  	int error;
->  
-> +	if (!dev->driver)
-> +		return 0;
-> +
-> +	pm = dev->driver->pm;
->  	if (!pm || !pm->runtime_suspend)
->  		return -ENOSYS;
->  
-> @@ -1035,8 +1032,12 @@ static int pci_pm_runtime_resume(struct
->  {
->  	int rc;
->  	struct pci_dev *pci_dev = to_pci_dev(dev);
-> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-> +	const struct dev_pm_ops *pm;
-> +
-> +	if (!dev->driver)
-> +		return 0;
->  
-> +	pm = dev->driver->pm;
->  	if (!pm || !pm->runtime_resume)
->  		return -ENOSYS;
->  
-> @@ -1054,8 +1055,12 @@ static int pci_pm_runtime_resume(struct
->  
->  static int pci_pm_runtime_idle(struct device *dev)
->  {
-> -	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-> +	const struct dev_pm_ops *pm;
-> +
-> +	if (!dev->driver)
-> +		goto out:
->  
-> +	pm = dev->driver->pm;
->  	if (!pm)
->  		return -ENOSYS;
->  
-> @@ -1065,8 +1070,8 @@ static int pci_pm_runtime_idle(struct de
->  			return ret;
->  	}
->  
-> + out:
->  	pm_runtime_suspend(dev);
+> -	this_cpu_inc(*p->counters);
+> -	rcu_read_unlock_sched();
+> -	light_mb(); /* A, between read of p->locked and read of data, paired with D */
+> -}
+> +extern void percpu_down_write(struct percpu_rw_semaphore *);
+> +extern void percpu_up_write(struct percpu_rw_semaphore *);
+> 
+> -static inline void percpu_up_read(struct percpu_rw_semaphore *p)
+> -{
+> -	light_mb(); /* B, between read of the data and write to p->counter, paired with C */
+> -	this_cpu_dec(*p->counters);
+> -}
 > -
->  	return 0;
->  }
->  
-> Index: linux-pm/drivers/pci/pci.c
-> ===================================================================
-> --- linux-pm.orig/drivers/pci/pci.c
-> +++ linux-pm/drivers/pci/pci.c
-> @@ -1868,6 +1868,8 @@ void pci_pm_init(struct pci_dev *dev)
->  	u16 pmc;
->  
->  	pm_runtime_forbid(&dev->dev);
-> +	pm_runtime_set_active(dev);
-> +	pm_runtime_enable(&dev->dev);
->  	device_enable_async_suspend(&dev->dev);
->  	dev->wakeup_prepared = false;
->  
+> -static inline unsigned __percpu_count(unsigned __percpu *counters)
+> -{
+> -	unsigned total = 0;
+> -	int cpu;
+> -
+> -	for_each_possible_cpu(cpu)
+> -		total += ACCESS_ONCE(*per_cpu_ptr(counters, cpu));
+> -
+> -	return total;
+> -}
+> -
+> -static inline void percpu_down_write(struct percpu_rw_semaphore *p)
+> -{
+> -	mutex_lock(&p->mtx);
+> -	p->locked = true;
+> -	synchronize_sched(); /* make sure that all readers exit the rcu_read_lock_sched region */
+> -	while (__percpu_count(p->counters))
+> -		msleep(1);
+> -	heavy_mb(); /* C, between read of p->counter and write to data, paired with B */
+> -}
+> -
+> -static inline void percpu_up_write(struct percpu_rw_semaphore *p)
+> -{
+> -	heavy_mb(); /* D, between write to data and write to p->locked, paired with A */
+> -	p->locked = false;
+> -	mutex_unlock(&p->mtx);
+> -}
+> -
+> -static inline int percpu_init_rwsem(struct percpu_rw_semaphore *p)
+> -{
+> -	p->counters = alloc_percpu(unsigned);
+> -	if (unlikely(!p->counters))
+> -		return -ENOMEM;
+> -	p->locked = false;
+> -	mutex_init(&p->mtx);
+> -	return 0;
+> -}
+> -
+> -static inline void percpu_free_rwsem(struct percpu_rw_semaphore *p)
+> -{
+> -	free_percpu(p->counters);
+> -	p->counters = NULL; /* catch use after free bugs */
+> -}
+> +extern int percpu_init_rwsem(struct percpu_rw_semaphore *);
+> +extern void percpu_free_rwsem(struct percpu_rw_semaphore *);
+> 
+>  #endif
+> diff --git a/lib/Makefile b/lib/Makefile
+> index 821a162..4dad4a7 100644
+> --- a/lib/Makefile
+> +++ b/lib/Makefile
+> @@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+>  	 idr.o int_sqrt.o extable.o \
+>  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+>  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
+> -	 is_single_threaded.o plist.o decompress.o
+> +	 is_single_threaded.o plist.o decompress.o percpu-rwsem.o
+> 
+>  lib-$(CONFIG_MMU) += ioremap.o
+>  lib-$(CONFIG_SMP) += cpumask.o
+> diff --git a/lib/percpu-rwsem.c b/lib/percpu-rwsem.c
+> new file mode 100644
+> index 0000000..0e3bc0f
+> --- /dev/null
+> +++ b/lib/percpu-rwsem.c
+> @@ -0,0 +1,123 @@
+> +#include <linux/percpu-rwsem.h>
+> +#include <linux/rcupdate.h>
+> +#include <linux/sched.h>
+> +
+> +int percpu_init_rwsem(struct percpu_rw_semaphore *brw)
+> +{
+> +	brw->fast_read_ctr = alloc_percpu(int);
+> +	if (unlikely(!brw->fast_read_ctr))
+> +		return -ENOMEM;
+> +
+> +	mutex_init(&brw->writer_mutex);
+> +	init_rwsem(&brw->rw_sem);
+> +	atomic_set(&brw->slow_read_ctr, 0);
+> +	init_waitqueue_head(&brw->write_waitq);
+> +	return 0;
+> +}
+> +
+> +void percpu_free_rwsem(struct percpu_rw_semaphore *brw)
+> +{
+> +	free_percpu(brw->fast_read_ctr);
+> +	brw->fast_read_ctr = NULL; /* catch use after free bugs */
+> +}
+> +
+> +static bool update_fast_ctr(struct percpu_rw_semaphore *brw, unsigned int val)
+> +{
+> +	bool success = false;
+> +
+> +	preempt_disable();
+> +	if (likely(!mutex_is_locked(&brw->writer_mutex))) {
+> +		__this_cpu_add(*brw->fast_read_ctr, val);
+> +		success = true;
+> +	}
+> +	preempt_enable();
+> +
+> +	return success;
+> +}
+> +
+> +/*
+> + * Like the normal down_read() this is not recursive, the writer can
+> + * come after the first percpu_down_read() and create the deadlock.
+> + */
+> +void percpu_down_read(struct percpu_rw_semaphore *brw)
+> +{
+> +	if (likely(update_fast_ctr(brw, +1)))
+> +		return;
+> +
+> +	down_read(&brw->rw_sem);
+> +	atomic_inc(&brw->slow_read_ctr);
+> +	up_read(&brw->rw_sem);
+> +}
+> +
+> +void percpu_up_read(struct percpu_rw_semaphore *brw)
+> +{
+> +	if (likely(update_fast_ctr(brw, -1)))
+> +		return;
+> +
+> +	/* false-positive is possible but harmless */
+> +	if (atomic_dec_and_test(&brw->slow_read_ctr))
+> +		wake_up_all(&brw->write_waitq);
+> +}
+> +
+> +static int clear_fast_ctr(struct percpu_rw_semaphore *brw)
+> +{
+> +	unsigned int sum = 0;
+> +	int cpu;
+> +
+> +	for_each_possible_cpu(cpu) {
+> +		sum += per_cpu(*brw->fast_read_ctr, cpu);
+> +		per_cpu(*brw->fast_read_ctr, cpu) = 0;
+> +	}
+> +
+> +	return sum;
+> +}
+> +
+> +/*
+> + * A writer takes ->writer_mutex to exclude other writers and to force the
+> + * readers to switch to the slow mode, note the mutex_is_locked() check in
+> + * update_fast_ctr().
+> + *
+> + * After that the readers can only inc/dec the slow ->slow_read_ctr counter,
+> + * ->fast_read_ctr is stable. Once the writer moves its sum into the slow
+> + * counter it represents the number of active readers.
+> + *
+> + * Finally the writer takes ->rw_sem for writing and blocks the new readers,
+> + * then waits until the slow counter becomes zero.
+> + */
+> +void percpu_down_write(struct percpu_rw_semaphore *brw)
+> +{
+> +	/* also blocks update_fast_ctr() which checks mutex_is_locked() */
+> +	mutex_lock(&brw->writer_mutex);
+> +
+> +	/*
+> +	 * 1. Ensures mutex_is_locked() is visible to any down_read/up_read
+> +	 *    so that update_fast_ctr() can't succeed.
+> +	 *
+> +	 * 2. Ensures we see the result of every previous this_cpu_add() in
+> +	 *    update_fast_ctr().
+> +	 *
+> +	 * 3. Ensures that if any reader has exited its critical section via
+> +	 *    fast-path, it executes a full memory barrier before we return.
+> +	 */
+> +	synchronize_sched();
+> +
+> +	/* nobody can use fast_read_ctr, move its sum into slow_read_ctr */
+> +	atomic_add(clear_fast_ctr(brw), &brw->slow_read_ctr);
+> +
+> +	/* block the new readers completely */
+> +	down_write(&brw->rw_sem);
+> +
+> +	/* wait for all readers to complete their percpu_up_read() */
+> +	wait_event(brw->write_waitq, !atomic_read(&brw->slow_read_ctr));
+> +}
+> +
+> +void percpu_up_write(struct percpu_rw_semaphore *brw)
+> +{
+> +	/* allow the new readers, but only the slow-path */
+> +	up_write(&brw->rw_sem);
+> +
+> +	/* insert the barrier before the next fast-path in down_read */
+> +	synchronize_sched();
 
-I think the patch can fix the issue in a better way.
+Ah, my added comments describing the memory-order properties of
+synchronize_sched() were incomplete.  As you say in the comment above,
+a valid RCU implementation must ensure that each CPU executes a memory
+barrier between the time that synchronize_sched() starts executing and
+the time that this same CPU starts its first RCU read-side critical
+section that ends after synchronize_sched() finishes executing.  (This
+is symmetric with the requirement discussed earlier.)
 
-Do we still need to clarify state about disabled and forbidden?  When a
-device is forbidden and the usage_count > 0, is it a good idea to allow
-to set device state to SUSPENDED if the device is disabled?
+This works for the user-level RCU implementations as well -- some of
+them supply the memory barriers under the control of the synchronize_rcu(),
+while others supply them at the beginnings and ends of the RCU read-side
+critical section.  Either way works, as required.
 
-Best Regards,
-Huang Ying
+(Why do I care about potential implementations with memory barriers in
+the read-side primitives?  Well, I hope that I never have reason to.
+But if memory barriers do some day become free and if energy efficiency
+continues to grow in importance, some hardware might prefer the memory
+barriers in rcu_read_lock() and rcu_read_unlock() to interrupting CPUs
+to force them to execute memory barriers.)
 
+This in turn means that if a given RCU read-side critical section is
+totally overlapped by a synchronize_sched(), there are no guarantees
+of any memory barriers.  Which is OK, you don't rely on this.
+
+> +	mutex_unlock(&brw->writer_mutex);
+
+And if a reader sees brw->writer_mutex as unlocked, then that reader's
+RCU read-side critical section must end after the above synchronize_sched()
+completes, which in turn means that there must have been a memory barrier
+on that reader's CPU after the synchronize_sched() started, so that the
+reader correctly sees the writer's updates.
+
+> +}
+
+Sorry to be such a pain (and a slow pain at that) on this one, but
+we really needed to get this right.  But please let me know what you
+think of the added memory-order constraint.  Note that a CPU that never
+ever executes any RCU read-side critical sections need not execute any
+synchronize_sched()-induced memory barriers.
+
+So:
+
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+							Thanx, Paul
 
