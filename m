@@ -1,179 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab2KHTym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Nov 2012 14:54:42 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55083 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756551Ab2KHTyj (ORCPT
+	id S1756854Ab2KHTzA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Nov 2012 14:55:00 -0500
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:37353 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756551Ab2KHTy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Nov 2012 14:54:39 -0500
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Jarod Wilson <jarod@wilsonet.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>, Sean Young <sean@mess.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH] staging/media: Use pr_ printks in lirc/lirc_parallel.c
-Date: Fri,  9 Nov 2012 04:54:33 +0900
-Message-Id: <1352404473-7701-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 8 Nov 2012 14:54:58 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: linux-kernel@vger.kernel.org
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: [RFC PATCH] mm: trace filemap add and del
+Date: Thu,  8 Nov 2012 20:54:10 +0100
+Message-Id: <1352404450-30100-1-git-send-email-robert.jarzmik@free.fr>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warnings.
-- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
-- WARNING: Prefer netdev_notice(netdev, ... then dev_notice(dev, ... then pr_notice(...  to printk(KERN_NOTICE ...
-- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
+Use the events API to trace filemap loading and
+unloading of file pieces into the page cache.
 
-and add pr_fmt.
+This patch aims at tracing the eviction reload
+cycle of executable and shared libraries pages in
+a memory constrained environment.
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+The typical usage is to spot a specific device and
+inode (for example /lib/libc.so) to see the eviction
+cycles, and find out if frequently used code is
+rather spread across many pages (bad) or coallesced
+(good).
+
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
 ---
- drivers/staging/media/lirc/lirc_parallel.c |   49 +++++++++++-----------------
- 1 file changed, 19 insertions(+), 30 deletions(-)
+ include/trace/events/filemap.h |   79 ++++++++++++++++++++++++++++++++++++++++
+ mm/filemap.c                   |    5 +++
+ 2 files changed, 84 insertions(+)
+ create mode 100644 include/trace/events/filemap.h
 
-diff --git a/drivers/staging/media/lirc/lirc_parallel.c b/drivers/staging/media/lirc/lirc_parallel.c
-index dd2bca7..139920c 100644
---- a/drivers/staging/media/lirc/lirc_parallel.c
-+++ b/drivers/staging/media/lirc/lirc_parallel.c
-@@ -22,6 +22,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+diff --git a/include/trace/events/filemap.h b/include/trace/events/filemap.h
+new file mode 100644
+index 0000000..a8319e2
+--- /dev/null
++++ b/include/trace/events/filemap.h
+@@ -0,0 +1,79 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM filemap
 +
- /*** Includes ***/
++#if !defined(_TRACE_FILEMAP_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_FILEMAP_H
++
++#include <linux/types.h>
++#include <linux/tracepoint.h>
++#include <linux/mm.h>
++#include <linux/memcontrol.h>
++#include <linux/device.h>
++#include <linux/kdev_t.h>
++
++TRACE_EVENT(mm_filemap_delete_from_page_cache,
++
++	TP_PROTO(struct page *page),
++
++	TP_ARGS(page),
++
++	TP_STRUCT__entry(
++		__field(struct page *, page)
++		__field(unsigned long, i_no)
++		__field(unsigned long, pageofs)
++		__field(dev_t, s_dev)
++	),
++
++	TP_fast_assign(
++		__entry->page = page;
++		__entry->i_no = page->mapping->host->i_ino;
++		__entry->pageofs = page->index;
++		if (page->mapping->host->i_sb)
++			__entry->s_dev = page->mapping->host->i_sb->s_dev;
++		else
++			__entry->s_dev = page->mapping->host->i_rdev;
++	),
++
++	TP_printk("page=%p pfn=%lu blk=%d:%d inode+ofs=%lu+%lu",
++		__entry->page,
++		page_to_pfn(__entry->page),
++		MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
++		__entry->i_no,
++		__entry->pageofs << PAGE_SHIFT)
++);
++
++TRACE_EVENT(mm_filemap_add_to_page_cache,
++
++	TP_PROTO(struct page *page),
++
++	TP_ARGS(page),
++
++	TP_STRUCT__entry(
++		__field(struct page *, page)
++		__field(unsigned long, i_no)
++		__field(unsigned long, pageofs)
++		__field(dev_t, s_dev)
++	),
++
++	TP_fast_assign(
++		__entry->page = page;
++		__entry->i_no = page->mapping->host->i_ino;
++		__entry->pageofs = page->index;
++		if (page->mapping->host->i_sb)
++			__entry->s_dev = page->mapping->host->i_sb->s_dev;
++		else
++			__entry->s_dev = page->mapping->host->i_rdev;
++	),
++
++	TP_printk("page=%p pfn=%lu blk=%d:%d inode+ofs=%lu+%lu",
++		__entry->page,
++		page_to_pfn(__entry->page),
++		MAJOR(__entry->s_dev), MINOR(__entry->s_dev),
++		__entry->i_no,
++		__entry->pageofs)
++);
++
++#endif /* _TRACE_FILEMAP_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 3843445..9753b7c 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -35,6 +35,9 @@
+ #include <linux/cleancache.h>
+ #include "internal.h"
  
- #include <linux/module.h>
-@@ -115,8 +117,7 @@ static void out(int offset, int value)
- 		parport_write_control(pport, value);
- 		break;
- 	case LIRC_LP_STATUS:
--		printk(KERN_INFO "%s: attempt to write to status register\n",
--		       LIRC_DRIVER_NAME);
-+		pr_info("attempt to write to status register\n");
- 		break;
- 	}
- }
-@@ -166,27 +167,23 @@ static unsigned int init_lirc_timer(void)
- 		if (default_timer == 0) {
- 			/* autodetect timer */
- 			newtimer = (1000000*count)/timeelapsed;
--			printk(KERN_INFO "%s: %u Hz timer detected\n",
--			       LIRC_DRIVER_NAME, newtimer);
-+			pr_info("%u Hz timer detected\n", newtimer);
- 			return newtimer;
- 		}  else {
- 			newtimer = (1000000*count)/timeelapsed;
- 			if (abs(newtimer - default_timer) > default_timer/10) {
- 				/* bad timer */
--				printk(KERN_NOTICE "%s: bad timer: %u Hz\n",
--				       LIRC_DRIVER_NAME, newtimer);
--				printk(KERN_NOTICE "%s: using default timer: "
--				       "%u Hz\n",
--				       LIRC_DRIVER_NAME, default_timer);
-+				pr_notice("bad timer: %u Hz\n", newtimer);
-+				pr_notice("using default timer: %u Hz\n",
-+					  default_timer);
- 				return default_timer;
- 			} else {
--				printk(KERN_INFO "%s: %u Hz timer detected\n",
--				       LIRC_DRIVER_NAME, newtimer);
-+				pr_info("%u Hz timer detected\n", newtimer);
- 				return newtimer; /* use detected value */
- 			}
- 		}
- 	} else {
--		printk(KERN_NOTICE "%s: no timer detected\n", LIRC_DRIVER_NAME);
-+		pr_notice("no timer detected\n");
- 		return 0;
- 	}
- }
-@@ -194,13 +191,10 @@ static unsigned int init_lirc_timer(void)
- static int lirc_claim(void)
++#define CREATE_TRACE_POINTS
++#include <trace/events/filemap.h>
++
+ /*
+  * FIXME: remove all knowledge of the buffer layer from the core VM
+  */
+@@ -113,6 +116,7 @@ void __delete_from_page_cache(struct page *page)
  {
- 	if (parport_claim(ppdevice) != 0) {
--		printk(KERN_WARNING "%s: could not claim port\n",
--		       LIRC_DRIVER_NAME);
--		printk(KERN_WARNING "%s: waiting for port becoming available"
--		       "\n", LIRC_DRIVER_NAME);
-+		pr_warn("could not claim port\n");
-+		pr_warn("waiting for port becoming available\n");
- 		if (parport_claim_or_block(ppdevice) < 0) {
--			printk(KERN_NOTICE "%s: could not claim port, giving"
--			       " up\n", LIRC_DRIVER_NAME);
-+			pr_notice("could not claim port, giving up\n");
- 			return 0;
- 		}
- 	}
-@@ -219,7 +213,7 @@ static void rbuf_write(int signal)
- 	if (nwptr == rptr) {
- 		/* no new signals will be accepted */
- 		lost_irqs++;
--		printk(KERN_NOTICE "%s: buffer overrun\n", LIRC_DRIVER_NAME);
-+		pr_notice("buffer overrun\n");
- 		return;
- 	}
- 	rbuf[wptr] = signal;
-@@ -290,7 +284,7 @@ static void irq_handler(void *blah)
- 		if (signal > timeout
- 		    || (check_pselecd && (in(1) & LP_PSELECD))) {
- 			signal = 0;
--			printk(KERN_NOTICE "%s: timeout\n", LIRC_DRIVER_NAME);
-+			pr_notice("timeout\n");
- 			break;
- 		}
- 	} while (lirc_get_signal());
-@@ -644,8 +638,7 @@ static int __init lirc_parallel_init(void)
+ 	struct address_space *mapping = page->mapping;
  
- 	result = platform_driver_register(&lirc_parallel_driver);
- 	if (result) {
--		printk(KERN_NOTICE "platform_driver_register"
--					" returned %d\n", result);
-+		pr_notice("platform_driver_register returned %d\n", result);
- 		return result;
- 	}
- 
-@@ -661,8 +654,7 @@ static int __init lirc_parallel_init(void)
- 
- 	pport = parport_find_base(io);
- 	if (pport == NULL) {
--		printk(KERN_NOTICE "%s: no port at %x found\n",
--		       LIRC_DRIVER_NAME, io);
-+		pr_notice("no port at %x found\n", io);
- 		result = -ENXIO;
- 		goto exit_device_put;
- 	}
-@@ -670,8 +662,7 @@ static int __init lirc_parallel_init(void)
- 					   pf, kf, irq_handler, 0, NULL);
- 	parport_put_port(pport);
- 	if (ppdevice == NULL) {
--		printk(KERN_NOTICE "%s: parport_register_device() failed\n",
--		       LIRC_DRIVER_NAME);
-+		pr_notice("parport_register_device() failed\n");
- 		result = -ENXIO;
- 		goto exit_device_put;
- 	}
-@@ -706,14 +697,12 @@ static int __init lirc_parallel_init(void)
- 	driver.dev = &lirc_parallel_dev->dev;
- 	driver.minor = lirc_register_driver(&driver);
- 	if (driver.minor < 0) {
--		printk(KERN_NOTICE "%s: register_chrdev() failed\n",
--		       LIRC_DRIVER_NAME);
-+		pr_notice("register_chrdev() failed\n");
- 		parport_unregister_device(ppdevice);
- 		result = -EIO;
- 		goto exit_device_put;
- 	}
--	printk(KERN_INFO "%s: installed using port 0x%04x irq %d\n",
--	       LIRC_DRIVER_NAME, io, irq);
-+	pr_info("installed using port 0x%04x irq %d\n", io, irq);
- 	return 0;
- 
- exit_device_put:
++	trace_mm_filemap_delete_from_page_cache(page);
+ 	/*
+ 	 * if we're uptodate, flush out into the cleancache, otherwise
+ 	 * invalidate any existing cleancache entries.  We can't leave
+@@ -467,6 +471,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ 		} else {
+ 			page->mapping = NULL;
+ 			/* Leave page->index set: truncation relies upon it */
++			trace_mm_filemap_add_to_page_cache(page);
+ 			spin_unlock_irq(&mapping->tree_lock);
+ 			mem_cgroup_uncharge_cache_page(page);
+ 			page_cache_release(page);
 -- 
 1.7.9.5
 
